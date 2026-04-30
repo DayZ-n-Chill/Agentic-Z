@@ -1,0 +1,23 @@
+{
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "relative",
+  "useMarkdownLinks": true,
+  "attachmentFolderPath": "output/obsidian-attachments",
+  "promptDelete": true,
+  "trashOption": "system",
+  "showLineNumber": true,
+  "showFrontmatter": true,
+  "foldHeading": true,
+  "foldIndent": true,
+  "readableLineLength": true,
+  "strictLineBreaks": false,
+  "tabSize": 2,
+  "spellcheck": true,
+  "userIgnoreFilters": [
+    "node_modules/",
+    ".git/",
+    "workspace/",
+    "output/",
+    ".claude/agent-memory/"
+  ]
+}
