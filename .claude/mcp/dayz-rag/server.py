@@ -181,13 +181,16 @@ def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Op
     to prevent arbitrary file read.
     """
     p = Path(path)
+    if not p.is_absolute():
+        return {"error": f"path must be absolute (got {path!r})"}
+    if p.drive.upper() != "P:":
+        return {"error": f"refusing to read outside P:\\ (got {p.drive or '<no drive>'})"}
     try:
         resolved = p.resolve()
     except OSError as e:
         return {"error": f"path resolution failed: {e}"}
-    drive = str(resolved)[:2].upper()
-    if drive != "P:":
-        return {"error": f"refusing to read outside P:\\ (got {drive})"}
+    if resolved.drive.upper() != "P:":
+        return {"error": f"refusing to read outside P:\\ (resolved to {resolved.drive})"}
     if not resolved.exists() or not resolved.is_file():
         return {"error": f"not a file: {resolved}"}
     try:
