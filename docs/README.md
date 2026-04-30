@@ -107,6 +107,7 @@ The exact text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`. Summary:
 - **Bootstrap — run `/sync-skills` after cloning.** Required to make Codex and Gemini see the slash commands.
 - **Memory — local-memory only, never for rules.** User/machine notes only; rules go in the repo.
 - **Model routing — match model to task.** Searches/research → Sonnet subagent; trivial file-find → Haiku subagent; coding/design → main Opus thread. See [`docs/model-routing.md`](model-routing.md).
+- **Prompt conventions — caps are a finite signal.** Uppercase section headers are structural; inline `MUST` / `NEVER` / `ALWAYS` are behavioral and measurably affect model compliance, but only when rare. See [`docs/prompt-conventions.md`](prompt-conventions.md).
 
 ## DayZ Modding workflow
 

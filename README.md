@@ -156,6 +156,7 @@ The full text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
 - **[`docs/README.md`](docs/README.md)** — architecture overview, how to add skills/agents, local-memory rules.
 - **[`docs/dayz-modding.md`](docs/dayz-modding.md)** — full DayZ workflow, prerequisites, env vars, troubleshooting.
 - **[`docs/model-routing.md`](docs/model-routing.md)** — when to use Opus / Sonnet / Haiku and the subagent patterns.
+- **[`docs/prompt-conventions.md`](docs/prompt-conventions.md)** — why agent and skill files use caps the way they do (RFC 2119 directives, when to cap, when to stay lowercase).
 - **`wiki/`** — Docusaurus build of the docs (kept in sync via `/docs-sync`).
 
 ---

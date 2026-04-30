@@ -23,6 +23,7 @@ Other CLIs (Codex, Gemini) have analogous tiers — same principle applies even 
 ## Why fan-out is the wrong default
 
 Running searches inline on the main Opus thread costs:
+
 - ~10–20s per tool result while Opus generates the next "thinking" block
 - Multi-step search (3+ tool calls) → 30–60s of wall-clock for a sub-second lookup
 - All search results land in main context, polluting it for the actual work
