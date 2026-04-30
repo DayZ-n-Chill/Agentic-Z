@@ -1,12 +1,11 @@
 ---
 name: "dayz-mod-reviewer"
-
-model: opus
+model: sonnet
 color: purple
 memory: project
 ---
 
-&lt;span className="badge badge--primary" style="margin-right: 8px"&gt;Agent&lt;/span&gt;&lt;span className="badge badge--secondary" style="margin-right: 8px"&gt;opus&lt;/span&gt;&lt;span className="badge" style="background-color: purple; color: white"&gt;Purple&lt;/span&gt;
+&lt;span className="badge badge--primary" style="margin-right: 8px"&gt;Agent&lt;/span&gt;&lt;span className="badge badge--secondary" style="margin-right: 8px"&gt;sonnet&lt;/span&gt;&lt;span className="badge" style="background-color: purple; color: white"&gt;Purple&lt;/span&gt;
 
 ## Overview
 

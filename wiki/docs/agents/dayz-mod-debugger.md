@@ -1,6 +1,5 @@
 ---
 name: "dayz-mod-debugger"
-
 model: opus
 color: yellow
 memory: project

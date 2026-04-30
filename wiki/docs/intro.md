@@ -106,6 +106,8 @@ The exact text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`. Summary:
 - **Doc maintenance — plain copies.** `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` hold the same content. Edit all three together.
 - **Bootstrap — run `/sync-skills` after cloning.** Required to make Codex and Gemini see the slash commands.
 - **Memory — local-memory only, never for rules.** User/machine notes only; rules go in the repo.
+- **Model routing — match model to task.** Searches/research → Sonnet subagent; trivial file-find → Haiku subagent; coding/design → main Opus thread. See [model-routing](./model-routing).
+- **Prompt conventions — caps are a finite signal.** Uppercase section headers are structural; inline `MUST` / `NEVER` / `ALWAYS` are behavioral and measurably affect model compliance, but only when rare.
 
 ## DayZ Modding workflow
 
@@ -124,17 +126,20 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | [`/dayz-types-edit`](./skills/dayz-types-edit) | Programmatically edit a single `&lt;type&gt;` in `types.xml` |
 | [`/dayz-types-split`](./skills/dayz-types-split) | Split monolithic `types.xml` into 18 categorized files |
 | [`/dayz-rag-index`](./skills/dayz-rag-index) | Build the semantic-search index over vanilla DayZ source (powers the `dayz-rag` MCP server) |
+| [`/dayz-rag-wiki-index`](./skills/dayz-rag-wiki-index) | Index the Bohemia community wiki into the same DB |
+| [`/dayz-rag-download`](./skills/dayz-rag-download) | Pull prebuilt vector index from GitHub releases instead of building locally |
 | [`/dayz-clean-workspace`](./skills/dayz-clean-workspace) | Remove DayZ scaffolds and their deployed artifacts |
 | [`/clean-repo`](./skills/clean-repo) | Orchestrator — run every domain's cleanup skill |
+| [`/docs-sync`](./skills/docs-sync) | Detect drift between canonical sources and the Docusaurus wiki; invoke `docs-wiki-sync` agent to apply updates |
 
-**MCP server:** `dayz-rag` — exposes `search_dayz_source`, `get_dayz_file`, `list_indexed_sources` to every DayZ specialist agent. Backed by the index built via `/dayz-rag-index`.
+**MCP server:** `dayz-rag` — exposes `search_dayz_source`, `search_dayz_wiki`, `get_dayz_file`, `list_indexed_sources` to every DayZ specialist agent. Backed by the index built via `/dayz-rag-index` + `/dayz-rag-wiki-index`.
 
 **Native prereqs** (per-clone, one-time install):
 
 - **DayZ Tools** (Steam) — for AddonBuilder, WorkDrive, ImageToPAA
 - **DayZ game** (Steam) — for the diag client used in `/dayz-launch-test`
 - **DayZ Server** (Steam appid 223350) — only for the initial mission bootstrap; can be uninstalled after
-- *(no API keys)* The RAG layer (`/dayz-rag-index` + `dayz-rag` MCP server) runs fully locally via `nomic-ai/CodeRankEmbed`. First indexer run downloads ~280MB of model weights to the HuggingFace cache; everything after that is offline.
+- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-rag-index` and query-time embedding via `voyage-code-3` (200M-token free tier covers ~3 full rebuilds). Or run `/dayz-rag-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
 
 L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](./dayz-conventions).
 
@@ -156,5 +161,6 @@ Specialist agents live under `.claude/agents/` and cover the major DayZ surfaces
 | `dayz-server-admin` | `types.xml`, `init.c`, `cfggameplay.json`, server performance |
 | `dayz-ui-specialist` | `.layout` files, widget scripting, HUD/menu, UI theme/color |
 | `dayz-workbench-specialist` | Workbench plugin development (editor-time tooling) |
+| `docs-wiki-sync` | Keep `wiki/` (Docusaurus) in sync with canonical docs/agents/skills sources; default model: sonnet |
 
 Plus `agent-creator` for scaffolding new agent definitions to the standard template.

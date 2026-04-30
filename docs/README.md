@@ -126,6 +126,8 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | [`/dayz-types-edit`](../.claude/skills/dayz-types-edit/SKILL.md) | Programmatically edit a single `<type>` in `types.xml` |
 | [`/dayz-types-split`](../.claude/skills/dayz-types-split/SKILL.md) | Split monolithic `types.xml` into 18 categorized files |
 | [`/dayz-rag-index`](../.claude/skills/dayz-rag-index/SKILL.md) | Build the semantic-search index over vanilla DayZ source (powers the `dayz-rag` MCP server) |
+| [`/dayz-rag-wiki-index`](../.claude/skills/dayz-rag-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB |
+| [`/dayz-rag-download`](../.claude/skills/dayz-rag-download/SKILL.md) | Pull prebuilt vector index from GitHub releases instead of building locally |
 | [`/dayz-clean-workspace`](../.claude/skills/dayz-clean-workspace/SKILL.md) | Remove DayZ scaffolds and their deployed artifacts |
 | [`/clean-repo`](../.claude/skills/clean-repo/SKILL.md) | Orchestrator — run every domain's cleanup skill |
 | [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the Docusaurus wiki; invoke `docs-wiki-sync` agent to apply updates |
@@ -137,7 +139,7 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 - **DayZ Tools** (Steam) — for AddonBuilder, WorkDrive, ImageToPAA
 - **DayZ game** (Steam) — for the diag client used in `/dayz-launch-test`
 - **DayZ Server** (Steam appid 223350) — only for the initial mission bootstrap; can be uninstalled after
-- *(no API keys)* The RAG layer (`/dayz-rag-index` + `dayz-rag` MCP server) runs fully locally via `nomic-ai/CodeRankEmbed`. First indexer run downloads ~280MB of model weights to the HuggingFace cache; everything after that is offline.
+- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-rag-index` and query-time embedding via `voyage-code-3` (200M-token free tier covers ~3 full rebuilds). Or run `/dayz-rag-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
 
 L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](../.claude/skills/_shared/dayz-conventions.md).
 

@@ -32,7 +32,7 @@ You need a Windows machine with:
 | **`P:\Mods\` junction** | One-time: `cmd /c mklink /J P:\Mods "&lt;DayZ install&gt;\!Workshop"` | The DayZ engine and Launcher load mods from `&lt;DayZ install&gt;\!Workshop\`. The `P:\Mods\` junction lets builds deploy via `P:\Mods\@&lt;ModName&gt;\Addons\&lt;ModName&gt;.pbo` and actually land where the engine reads. Build-pbo hard-fails if this junction is missing or points at a regular folder. |
 | **Vanilla DayZ data on `P:\`** | DayZ Tools → "Extract Game Data" | Configs in your mod inherit from base classes (`ItemBase`, `Inventory_Base`, etc.) which only exist if vanilla PBOs are unpacked. |
 | **Python 3.8+** on `PATH` | python.org | The skills are Python scripts. |
-| **RAG embedding model** *(optional, only for RAG)* | First run of `python .claude\skills\dayz-rag-index\index.py --full` downloads `nomic-ai/CodeRankEmbed` (~280MB) to your HuggingFace cache | Powers `/dayz-rag-index` and the `dayz-rag` MCP server. Enables semantic search ("how does vanilla handle X?") over the indexed source. Fully local — no API keys, no network at query time. Without it, agents fall back to `Grep` on the documented vanilla paths — fully functional, just less smart. |
+| **Voyage AI API key** *(optional, only for RAG)* | Sign up at &lt;https://dash.voyageai.com&gt; (free, 200M-token allowance), add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root | Powers `/dayz-rag-index` and the `dayz-rag` MCP server. Enables semantic search ("how does vanilla handle X?") over the indexed source. Embeddings via `voyage-code-3` (code-tuned, 1024-dim). Without it, agents fall back to `Grep` on the documented vanilla paths — fully functional, just less smart. **Shortcut:** `/dayz-rag-download` pulls a prebuilt index from GitHub releases (~1 min) — no key needed for download, but query-time still requires the key. |
 
 ---
 
@@ -44,6 +44,10 @@ From a fresh clone:
 git clone &lt;this-repo&gt; my-dayz-mod
 cd my-dayz-mod
 python .claude\skills\sync-skills\sync.py
+
+:: Optional but recommended — pull the prebuilt vector index from GitHub
+:: releases instead of running /dayz-rag-index locally (~25 min vs ~1 min):
+python .claude\skills\dayz-rag-download\download.py
 ```
 
 Then, every time you start a modding session:

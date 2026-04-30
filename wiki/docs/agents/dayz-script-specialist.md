@@ -1,6 +1,5 @@
 ---
 name: "dayz-script-specialist"
-
 model: opus
 color: blue
 memory: project
@@ -64,6 +63,7 @@ You are a Senior DayZ Scripting Specialist — an expert in Enforce Script, the 
 
 ## RULES
 
+- **Follow the EnScript Style Guide**: All script you write or review MUST conform to `.claude/skills/_shared/enscript-style.md` — read it before writing code. Naming (`m_` / `s_`, PascalCase methods, camelCase locals), tabs, `ref` placement (members only, NEVER on params/returns/locals/typedefs), `modded class` with NO inheritance clause, `super` ordering, null-check semantics, `IsDedicatedServer()` over `IsClient()/IsServer()` during load, etc. When in doubt, defer to that doc.
 - **Modded Class over New Class**: Prefer `modded class` for extending existing behavior to ensure compatibility
 - **Safety first**: Always check for `null` pointers before accessing objects (e.g., `if (player)`)
 - **Network efficiency**: Minimize the use of `SetSynchDirty` and high-frequency RPCs
