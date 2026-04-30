@@ -1,2 +1,2 @@
-# DayZ-n-Chill-Agentic-Z
+# Agentic-Z
 AI Agent Stack for DayZ Modding
