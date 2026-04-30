@@ -6,8 +6,6 @@ This file provides foundational guidance for agents working in this repository.
 
 This repo is **Agentic-Z** — an AI Agent Stack for DayZ Modding, with first-class support for Claude Code, Codex, and Gemini. Cloning it starts a new DayZ mod project. Every clone inherits the same scaffolding: rules, agents, skills, helper scripts.
 
-> Branch note: this branch (`DayZAgents`) is DayZ-only. The multi-domain version of the template lives on a separate branch.
-
 ## Default rules (apply to every clone)
 
 These are the L1 rules of the template. They apply to every clone of this repo, every agent, every skill. DayZ-specific rules live separately at `.claude/skills/_shared/dayz-conventions.md` and are referenced from the individual agent/skill files that need them.

@@ -2,8 +2,6 @@
 
 **An AI Agent Stack for DayZ Modding** — clone it, and your repo comes pre-loaded with specialist agents, slash commands, and a local RAG index that turn Claude Code, Codex, or Gemini CLI into a competent DayZ modding co-author.
 
-> **Branch note:** `DayZAgents` (this branch) is the DayZ-only build. The multi-domain template lives on a separate branch.
-
 ---
 
 ## What you get
