@@ -6,8 +6,6 @@ This file provides foundational guidance for agents working in this repository.
 
 This repo is **Agentic-Z** — an AI Agent Stack for DayZ Modding, with first-class support for Claude Code, Codex, and Gemini. Cloning it starts a new DayZ mod project. Every clone inherits the same scaffolding: rules, agents, skills, helper scripts.
 
-> Branch note: this branch (`DayZAgents`) is DayZ-only. The multi-domain version of the template lives on a separate branch.
-
 ## Default rules (apply to every clone)
 
 These are the L1 rules of the template. They apply to every clone of this repo, every agent, every skill. DayZ-specific rules live separately at `.claude/skills/_shared/dayz-conventions.md` and are referenced from the individual agent/skill files that need them.
@@ -39,6 +37,14 @@ After cloning the template, run `/sync-skills` (or `python .claude/skills/sync-s
 ### Memory — `.claude/local-memory/` only, never for rules
 
 User/machine-specific notes go in `<repo>/.claude/local-memory/` (gitignored, per-clone). Never store rules or conventions there — those go in the repo so they travel with every clone. L1 rules live in this file; L2 DayZ rules live at `.claude/skills/_shared/dayz-conventions.md`.
+
+### Methodology scope — TDD off for DayZ, Enforce Script conventions strict
+
+This repo bundles the **Superpowers** plugin (`obra/superpowers` via `.claude/settings.json` → `extraKnownMarketplaces`) which adds opinionated workflows: TDD red-green-refactor, plan-first, brainstorm-first, four-phase systematic debugging. These apply to **general code only** — Python/JS/shell helpers under `scripts/`, `.claude/skills/`, `.claude/mcp/`. They do **not** apply to DayZ work (`.paa`, `.p3d`, `.rvmat`, `config.cpp`, `types.xml`, modded `.c` Enforce Script). DayZ has no Enforce Script unit-test runner, so the quality lever there is **strict adherence to `.claude/skills/_shared/enscript-style.md`** (the EnScript style guide referenced from L2 conventions). On DayZ tasks: skip TDD, enforce conventions hard, lean on `dayz-script-specialist` for modded-class work. Minimalism rule still wins for trivial fixes — a one-line bug fix doesn't trigger a brainstorm + plan + TDD cycle.
+
+### Knowledge base — Obsidian vault at repo root
+
+The repo root is also a usable Obsidian vault (`.obsidian/` checked in). Open the repo as a vault to navigate `CLAUDE.md` ↔ `.claude/agents/` ↔ `.claude/skills/` ↔ `docs/` via graph view + backlinks. On first open, Obsidian prompts to install the listed community plugins (Dataview, Templater, Excalidraw, Outliner, Git) — accept to enable repo-managed defaults, or skip if you prefer your own setup. Per-user auto-memory still lives at `~/.claude/projects/<repo>/memory/` (not in the repo).
 
 ## Repository Use
 

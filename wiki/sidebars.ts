@@ -46,6 +46,11 @@ const sidebars: SidebarsConfig = {
           id: 'dayz-conventions',
           label: 'Rules & Conventions',
         },
+        {
+          type: 'doc',
+          id: 'model-routing',
+          label: 'Model Routing',
+        },
       ],
     },
     {

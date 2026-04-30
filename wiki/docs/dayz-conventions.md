@@ -31,15 +31,15 @@ Skills resolve paths in this order: env var → Windows registry (Tools only) �
 
 Skills MUST use the shared resolver helpers (`find_dayz_tools`, `find_vanilla_data` in `dayz-preflight/preflight.py`) rather than re-implementing path discovery. This keeps the resolution order consistent across the whole DayZ skill set.
 
-## RAG embedding (local)
+## RAG embedding
 
-The RAG layer (`/dayz-rag-index` + the `dayz-rag` MCP server) runs **fully locally** with `nomic-ai/CodeRankEmbed` (137M-param code-specialised model, 768-dim, top of CoIR). No API keys, no network calls, no per-query cost.
+The RAG layer (`/dayz-rag-index` + the `dayz-rag` MCP server) uses **Voyage AI** (`voyage-code-3`, 1024-dim, code-tuned) via the cloud API. Requires `VOYAGE_API_KEY=pa-…` in `.env` at the repo root. Voyage offers a 200M-token free tier — comfortably covers multiple full rebuilds.
 
-- First indexer run downloads ~280MB of model weights to the HuggingFace cache (`~/.cache/huggingface/`). After that, indexing and queries are entirely offline.
-- Full index: ~7,000 chunks, builds in ~90s on a typical CPU.
-- Per-query latency: ~50-150ms (local embed + numpy cosine).
+- Full index: ~34,000 chunks (source + wiki), builds in ~25-30 min on a fresh clone.
+- Shortcut: run `/dayz-rag-download` to pull the maintainer's prebuilt index from GitHub releases (~1 min) instead of building locally.
+- Query-time embedding also requires the key (each search sends the query string to Voyage).
 
-DayZ Tools is the only per-machine install needed. There's no per-clone API key.
+`VOYAGE_API_KEY` is the only required API credential. DayZ Tools is the only required local install.
 
 ## Project layout
 
@@ -120,7 +120,7 @@ When the user requests a color/theme change: ask for scope FIRST (single element
 
 ## Vanilla source recall — `search_dayz_source` MCP tool
 
-The `dayz-rag` MCP server exposes semantic search over indexed vanilla DayZ source: `.c` (Enforce Script under `P:\scripts\`), `.layout` (GUI under `P:\gui\`), and `.cpp`/`.cfg`/`.hpp`/`.h` config blocks (under `P:\dz\` and friends). Backed by a per-user numpy + sqlite index at `~/.claude/dayz-rag-index/`, built and rebuilt by `/dayz-rag-index --full`. Embedding runs locally via `nomic-ai/CodeRankEmbed` — no API keys, no network calls.
+The `dayz-rag` MCP server exposes semantic search over indexed vanilla DayZ source: `.c` (Enforce Script under `P:\scripts\`), `.layout` (GUI under `P:\gui\`), and `.cpp`/`.cfg`/`.hpp`/`.h` config blocks (under `P:\dz\` and friends). Backed by a per-user LanceDB index at `~/.claude/dayz-rag-index/`, built and rebuilt by `/dayz-rag-index --full`. Embedding via `voyage-code-3` (Voyage AI cloud API, `VOYAGE_API_KEY` required).
 
 **Default to Grep for code-shaped questions** (class names, symbol lookups, exact strings, inheritance trees via `class X extends Y` patterns). `Grep` over `P:\scripts\` is sub-second and exhaustive.
 

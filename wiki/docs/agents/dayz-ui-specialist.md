@@ -1,12 +1,11 @@
 ---
 name: "dayz-ui-specialist"
-
-model: opus
+model: sonnet
 color: green
 memory: project
 ---
 
-&lt;span className="badge badge--primary" style="margin-right: 8px"&gt;Agent&lt;/span&gt;&lt;span className="badge badge--secondary" style="margin-right: 8px"&gt;opus&lt;/span&gt;&lt;span className="badge" style="background-color: green; color: white"&gt;Green&lt;/span&gt;
+&lt;span className="badge badge--primary" style="margin-right: 8px"&gt;Agent&lt;/span&gt;&lt;span className="badge badge--secondary" style="margin-right: 8px"&gt;sonnet&lt;/span&gt;&lt;span className="badge" style="background-color: green; color: white"&gt;Green&lt;/span&gt;
 
 ## Overview
 
