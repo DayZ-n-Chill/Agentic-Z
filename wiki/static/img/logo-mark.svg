@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Agentic-Z mark">
+  <defs>
+    <linearGradient id="frameGradLg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a0421f"/>
+      <stop offset="100%" stop-color="#7a3018"/>
+    </linearGradient>
+    <pattern id="grime" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="4" fill="#1a1a14"/>
+      <circle cx="1" cy="1" r="0.3" fill="#2a2a20" opacity="0.6"/>
+      <circle cx="3" cy="2.5" r="0.2" fill="#3a3a2a" opacity="0.4"/>
+    </pattern>
+  </defs>
+  <polygon points="100,12 175,55 175,145 100,188 25,145 25,55"
+           fill="url(#grime)"
+           stroke="url(#frameGradLg)"
+           stroke-width="6"/>
+  <polygon points="100,22 167,60 167,140 100,178 33,140 33,60"
+           fill="none"
+           stroke="#3a3a2a"
+           stroke-width="1.5"/>
+  <path d="M 56 68 L 144 68 L 68 132 L 144 132"
+        fill="none"
+        stroke="#e8e4d4"
+        stroke-width="14"
+        stroke-linecap="square"
+        stroke-linejoin="miter"/>
+  <rect x="96" y="126" width="10" height="14" fill="url(#grime)"/>
+  <circle cx="100" cy="100" r="6" fill="#a0421f"/>
+  <circle cx="100" cy="100" r="11" fill="none" stroke="#a0421f" stroke-width="1.5" opacity="0.5"/>
+  <circle cx="100" cy="100" r="18" fill="none" stroke="#a0421f" stroke-width="1" opacity="0.25"/>
+  <text x="100" y="195" text-anchor="middle" font-family="'Courier New', monospace" font-size="6" fill="#c9c4a8" letter-spacing="2" opacity="0.5">AGENTIC-Z</text>
+</svg>

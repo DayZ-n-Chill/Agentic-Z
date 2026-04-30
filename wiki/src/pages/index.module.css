@@ -1,0 +1,403 @@
+/* Agentic-Z landing page — DayZ post-apocalyptic theme */
+
+.heroBanner {
+  position: relative;
+  padding: 6rem 0 5rem;
+  text-align: center;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at top, rgba(160, 66, 31, 0.18) 0%, transparent 60%),
+    linear-gradient(180deg, #1a1a14 0%, #0f0f0a 100%);
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
+}
+
+.heroBanner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(58, 58, 42, 0.06) 2px, rgba(58, 58, 42, 0.06) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(58, 58, 42, 0.04) 60px, rgba(58, 58, 42, 0.04) 61px);
+  pointer-events: none;
+}
+
+.heroBanner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 100%, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+}
+
+.heroInner {
+  position: relative;
+  z-index: 2;
+}
+
+.heroLogo {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 1.25rem;
+  filter: drop-shadow(0 0 16px rgba(160, 66, 31, 0.45));
+}
+
+.heroTitle {
+  font-family: 'Oswald', 'Inter', sans-serif;
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.5rem;
+  color: #e8e4d4;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 24px rgba(160, 66, 31, 0.35),
+    0 2px 0 rgba(0, 0, 0, 0.6);
+}
+
+.heroTitleAccent {
+  color: #cc6e2f;
+}
+
+.heroSubtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #c9c4a8;
+  opacity: 0.85;
+  margin-bottom: 0.5rem;
+}
+
+.heroTagline {
+  font-family: 'Oswald', 'Inter', sans-serif;
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  letter-spacing: 0.04em;
+  color: #c9c4a8;
+  margin-bottom: 2.5rem;
+  font-weight: 400;
+}
+
+.heroDivider {
+  display: inline-block;
+  width: 80px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #a0421f, transparent);
+  margin: 0 1rem;
+  vertical-align: middle;
+}
+
+.heroButtons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.heroMeta {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: #c9c4a8;
+}
+
+.heroMetaPre,
+.heroMetaPost,
+.heroMetaStudio {
+  font-size: 0.7rem;
+  opacity: 0.85;
+}
+
+.btnPrimary,
+.btnSecondary {
+  font-family: 'Oswald', 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.9rem 1.8rem;
+  border: 2px solid;
+  border-radius: 0;
+  transition: all 0.18s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btnPrimary:focus-visible,
+.btnSecondary:focus-visible {
+  outline: 2px solid #d88050;
+  outline-offset: 3px;
+}
+
+.btnPrimary {
+  background: #8b3a1f;
+  border-color: #a0421f;
+  color: #ffffff;
+  font-weight: 700;
+}
+.btnPrimary:hover {
+  background: #a0421f;
+  border-color: #cc6e2f;
+  color: #ffffff;
+  text-decoration: none;
+  box-shadow: 0 0 24px rgba(160, 66, 31, 0.55);
+}
+
+.btnSecondary {
+  background: transparent;
+  border-color: #c9c4a8;
+  color: #c9c4a8;
+}
+.btnSecondary:hover {
+  background: rgba(201, 196, 168, 0.08);
+  border-color: #e8e4d4;
+  color: #e8e4d4;
+  text-decoration: none;
+}
+
+/* Stats band */
+.statsBand {
+  background: #0f0f0a;
+  border-top: 1px solid var(--az-olive, #3a3a2a);
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
+  padding: 2.5rem 0;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+.statBlock {
+  border-left: 1px solid var(--az-olive, #3a3a2a);
+  padding: 0.5rem 1rem;
+}
+.statBlock:first-child { border-left: none; }
+
+@media (max-width: 768px) {
+  .statBlock { border-left: none; }
+}
+
+.statNum {
+  font-family: 'Oswald', sans-serif;
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: #cc6e2f;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.statLabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #c9c4a8;
+  opacity: 0.75;
+}
+
+/* Section common */
+.section {
+  padding: 4.5rem 0;
+  position: relative;
+}
+
+.sectionDark {
+  background: #1a1a14;
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
+}
+
+.sectionDarker {
+  background: #0f0f0a;
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
+}
+
+.sectionTitle {
+  font-family: 'Oswald', sans-serif;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #e8e4d4;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.sectionSubtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #a8a288;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+/* Architecture */
+.archGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 996px) {
+  .archGrid { grid-template-columns: 1fr; }
+}
+
+.archCard {
+  border: 1px solid var(--az-olive, #3a3a2a);
+  background: rgba(42, 42, 32, 0.4);
+  padding: 1.75rem;
+  position: relative;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.archCard:hover {
+  border-color: #a0421f;
+  transform: translateY(-2px);
+}
+
+.archLayer {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: #a0421f;
+  margin-bottom: 0.5rem;
+}
+
+.archTitle {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #e8e4d4;
+  margin-bottom: 0.75rem;
+}
+
+.archDesc {
+  color: #c9c4a8;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin-bottom: 0.75rem;
+}
+
+.archPath {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: #cc6e2f;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.4rem 0.6rem;
+  display: inline-block;
+  border-left: 2px solid #a0421f;
+}
+
+/* Agents grid */
+.agentsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.agentCard {
+  border: 1px solid var(--az-olive, #3a3a2a);
+  background: rgba(42, 42, 32, 0.3);
+  padding: 1rem 1.1rem;
+  transition: all 0.18s;
+  text-decoration: none;
+  display: block;
+}
+.agentCard:hover {
+  border-color: #a0421f;
+  background: rgba(42, 42, 32, 0.6);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.agentName {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #e8e4d4;
+  margin-bottom: 0.35rem;
+}
+
+.agentDesc {
+  font-size: 0.82rem;
+  color: #c9c4a8;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+/* Quick start terminal */
+.terminalWrap {
+  max-width: 720px;
+  margin: 0 auto;
+  border: 1px solid var(--az-olive, #3a3a2a);
+  background: #0a0a06;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+}
+
+.terminalBar {
+  background: #1a1a14;
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
+  padding: 0.55rem 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: #c9c4a8;
+  opacity: 0.7;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.terminalBody {
+  padding: 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  color: #c9c4a8;
+  line-height: 1.7;
+}
+
+.terminalPrompt {
+  color: #cc6e2f;
+  user-select: none;
+  margin-right: 0.6rem;
+}
+
+.terminalComment {
+  color: #9a9275;
+  font-style: italic;
+}
+
+.terminalCommand {
+  color: #e8e4d4;
+}
+
+.cursor {
+  display: inline-block;
+  margin-left: 1px;
+  color: #cc6e2f;
+  font-weight: 700;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}

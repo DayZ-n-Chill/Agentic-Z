@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/c/Users/band3055/WebApp/**)",
+      "Bash(python -c \"import openpyxl; print\\('openpyxl ok'\\)\")",
+      "Bash(py --version)",
+      "Bash(node -e \"require\\('exceljs'\\)\")",
+      "Bash(npm list *)",
+      "Bash(npm install *)",
+      "Bash(node *)",
+      "PowerShell(Test-DayZEnvironment *)",
+      "Bash(mkdir -p \"G:/AI-Templates/.claude/skills/dayz-script-wrap\")",
+      "Bash(mkdir -p \"G:/AI-Templates/.claude/skills/dayz-script-unwrap\")",
+      "Bash(rm scripts/agentic/install-agent-skill-links.ps1 scripts/agentic/install-codex-skill-links.ps1)",
+      "Bash(rm -rf ~/.claude/projects/G--AI-Templates/memory)",
+      "Bash(python .claude/skills/sync-skills/sync.py --dry-run)",
+      "Bash(python .claude/skills/docs-sync/sync.py --check --quiet)",
+      "Bash(python .claude/skills/docs-sync/sync.py *)",
+      "Bash(python *)",
+      "mcp__dayz-rag__search_dayz_source",
+      "mcp__dayz-rag__search_dayz_wiki",
+      "mcp__dayz-rag__get_dayz_file",
+      "mcp__dayz-rag__list_indexed_sources",
+      "Bash(rm -rf \".claude/agent-memory/design-system-architect\" \".claude/agent-memory/discord-bot-architect\" \".claude/agent-memory/discord-event-specialist\" \".claude/agent-memory/discord-interaction-specialist\" \".claude/agent-memory/ui-visual-specialist\" \".claude/agent-memory/ux-strategy-specialist\")",
+      "Bash(cp .claude/skills/dayz-build-pbo/exclude.lst /tmp/excl.lst)",
+      "Read(//tmp/**)",
+      "Bash(\"/c/Program Files \\(x86\\)/Steam/steamapps/common/DayZ Tools/Bin/AddonBuilder/AddonBuilder.exe\" P:\\\\\\\\MyBuildTest P:\\\\\\\\Mods\\\\\\\\@MyBuildTest\\\\\\\\Addons -prefix=MyBuildTest -temp=P:\\\\\\\\temp\\\\\\\\MyBuildTest -exclude=C:\\\\\\\\Users\\\\\\\\twora\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\excl.lst -clear)",
+      "Bash(rm .claude/skills/dayz-build-pbo/exclude.lst)",
+      "Bash(rm -f /tmp/excl.lst)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "dayz-rag"
+  ],
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/skills/docs-sync/sync.py\" --check --quiet",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

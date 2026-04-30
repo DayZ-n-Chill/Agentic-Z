@@ -1,0 +1,1 @@
+- [MainMenu button child-widget naming contract](feedback_mainmenu_button_child_widget_contract.md) — custom layouts inheriting ColorHighlight/ColorNormal need children named `<btn>_panel`, `<btn>_label`, `<btn>_image`

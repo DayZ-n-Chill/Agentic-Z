@@ -1,0 +1,4 @@
+mcp>=1.0.0
+lancedb>=0.10.0
+voyageai>=0.2.3
+python-dotenv>=1.0.0

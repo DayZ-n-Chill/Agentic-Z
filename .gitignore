@@ -1,0 +1,16 @@
+/node_modules
+
+# Python
+__pycache__/
+*.pyc
+
+# Claude Code runtime
+.claude/scheduled_tasks.lock
+
+# Per-clone local memory (user/machine-specific notes; never rules or conventions)
+.claude/local-memory/
+
+# Secrets — API keys, never commit
+.env
+.env.local
+.env.*.local

@@ -1,0 +1,162 @@
+/**
+ * Agentic-Z - DayZ post-apocalyptic survival theme
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --ifm-color-primary: #a0421f;
+  --ifm-color-primary-dark: #8b3a1f;
+  --ifm-color-primary-darker: #7a3018;
+  --ifm-color-primary-darkest: #5a2410;
+  --ifm-color-primary-light: #b85025;
+  --ifm-color-primary-lighter: #c2602a;
+  --ifm-color-primary-lightest: #d47540;
+
+  --ifm-background-color: #f4f1e6;
+  --ifm-background-surface-color: #ebe6d3;
+  --ifm-color-content: #2a2a20;
+  --ifm-heading-color: #1a1a14;
+
+  --ifm-code-font-size: 92%;
+  --ifm-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --ifm-font-family-monospace: 'JetBrains Mono', ui-monospace, monospace;
+  --ifm-heading-font-family: 'Oswald', 'Inter', sans-serif;
+  --ifm-heading-font-weight: 600;
+
+  --docusaurus-highlighted-code-line-bg: rgba(160, 66, 31, 0.15);
+
+  /* Custom Agentic-Z tokens */
+  --az-olive-darkest: #1a1a14;
+  --az-olive-dark: #2a2a20;
+  --az-olive: #3a3a2a;
+  --az-olive-light: #4a4a30;
+  --az-cream: #c9c4a8;
+  --az-bone: #e8e4d4;
+  --az-rust: #a0421f;
+  --az-rust-bright: #c2602a;
+  --az-blood: #5a1810;
+}
+
+[data-theme='dark'] {
+  /* WCAG AA: primary used for links — must hit 4.5:1 on #1a1a14. #cc6e2f = 4.83:1. */
+  --ifm-color-primary: #cc6e2f;
+  --ifm-color-primary-dark: #b85a25;
+  --ifm-color-primary-darker: #a0421f;
+  --ifm-color-primary-darkest: #5a2410;
+  --ifm-color-primary-light: #d88050;
+  --ifm-color-primary-lighter: #de8755;
+  --ifm-color-primary-lightest: #e8a070;
+
+  --ifm-background-color: #1a1a14;
+  --ifm-background-surface-color: #2a2a20;
+  --ifm-color-content: #c9c4a8;
+  --ifm-heading-color: #e8e4d4;
+  --ifm-navbar-background-color: rgba(26, 26, 20, 0.92);
+  --ifm-footer-background-color: #0d0d09;
+
+  --docusaurus-highlighted-code-line-bg: rgba(194, 96, 42, 0.2);
+}
+
+/* Headings — military stencil feel */
+[data-theme='dark'] h1,
+[data-theme='dark'] h2,
+[data-theme='dark'] h3,
+[data-theme='dark'] h4 {
+  font-family: 'Oswald', 'Inter', sans-serif;
+  letter-spacing: 0.02em;
+  color: var(--az-bone);
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Oswald', 'Inter', sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* Code blocks */
+code, pre {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+[data-theme='dark'] pre {
+  background-color: var(--az-olive-darkest) !important;
+  border: 1px solid var(--az-olive);
+}
+
+/* Navbar — weathered dark bar */
+[data-theme='dark'] .navbar {
+  border-bottom: 1px solid var(--az-olive);
+  backdrop-filter: blur(8px);
+}
+
+/* Links — rust accent (WCAG AA-compliant) */
+[data-theme='dark'] a {
+  color: #cc6e2f;
+}
+[data-theme='dark'] a:hover {
+  color: #de8755;
+  text-decoration: underline;
+  text-decoration-color: #cc6e2f;
+}
+
+/* Footer — override Docusaurus default dark blue-grey */
+.footer.footer--dark {
+  --ifm-footer-background-color: #0d0d09;
+  --ifm-footer-color: #c9c4a8;
+  --ifm-footer-link-color: #c9c4a8;
+  --ifm-footer-link-hover-color: #cc6e2f;
+  --ifm-footer-title-color: #e8e4d4;
+  background-color: #0d0d09;
+  color: #c9c4a8;
+  border-top: 1px solid #3a3a2a;
+}
+.footer.footer--dark .footer__title {
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #e8e4d4;
+}
+.footer.footer--dark .footer__link-item {
+  color: #c9c4a8;
+}
+.footer.footer--dark .footer__link-item:hover {
+  color: #cc6e2f;
+  text-decoration: underline;
+  text-decoration-color: #cc6e2f;
+}
+.footer.footer--dark .footer__copyright {
+  color: #a8a288;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+/* Navbar Open Source badge */
+.navbar-os-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  background: rgba(160, 66, 31, 0.12);
+  border: 1px solid #cc6e2f;
+  color: #cc6e2f;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-right: 0.25rem;
+}
+[data-theme='dark'] .navbar-os-badge {
+  background: rgba(204, 110, 47, 0.12);
+  color: #d88050;
+  border-color: #cc6e2f;
+}
+
+/* Visible focus indicator (WCAG 2.4.7) */
+*:focus-visible {
+  outline: 2px solid #cc6e2f;
+  outline-offset: 2px;
+}
+[data-theme='dark'] *:focus-visible {
+  outline-color: #d88050;
+}

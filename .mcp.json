@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dayz-rag": {
+      "command": "python",
+      "args": [".claude/mcp/dayz-rag/server.py"]
+    }
+  }
+}
