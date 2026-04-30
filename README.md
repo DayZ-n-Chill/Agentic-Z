@@ -168,6 +168,24 @@ The full text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
 
 ---
 
+## Community & contributing
+
+**Join us on Discord: [discord.gg/dayznchill](https://discord.gg/dayznchill)**
+
+Agentic-Z is built by and for the DayZ modding community, and contributions are **highly encouraged**. Every agent, skill, and convention in this repo started as a real problem someone hit while shipping a mod — the more modders contribute, the sharper the toolkit gets for everyone.
+
+In the Discord you can:
+
+- **Learn how to become a contributor.** New contributors are walked through the repo layout, the L1/L2/L3 rule structure, and how to land a first PR.
+- **Propose new agents and skills.** If you keep solving the same problem by hand, that's a skill waiting to be written. Pitch it in Discord and we'll help shape it.
+- **Report bugs and rough edges.** Path resolution quirks, AddonBuilder errors, agent prompts that miss the mark — all welcome.
+- **Share what you've built.** Mods, server setups, custom agents, RAG indexes over your own assets. The toolkit improves fastest when people show what they shipped with it.
+- **Help refine and enhance the product.** Docs improvements, troubleshooting entries, better defaults, new MCP integrations — every contribution compounds.
+
+Whether you're a seasoned Enforce Script developer, a server admin, a 3D artist, or just learning DayZ modding for the first time, there's a place for your work here. The goal is a tool that makes DayZ modding accessible and enjoyable for everyone — and that only happens with community input.
+
+---
+
 ## License
 
 See [`LICENSE`](LICENSE). Copyright (c) 2026 Brian Orr (DayZ n' Chill). Free to use for developing DayZ modifications.
