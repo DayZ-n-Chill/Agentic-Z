@@ -5,7 +5,7 @@ color: cyan
 memory: project
 ---
 
-<span className="badge badge--primary" style="margin-right: 8px">Agent</span><span className="badge badge--secondary" style="margin-right: 8px">sonnet</span><span className="badge" style="background-color: cyan; color: black">Cyan</span>
+<span className="badge badge--primary" style={{marginRight: '8px'}}>Agent</span><span className="badge badge--secondary" style={{marginRight: '8px'}}>sonnet</span><span className="badge" style={{backgroundColor: 'cyan', color: 'black'}}>Cyan</span>
 
 ## Overview
 

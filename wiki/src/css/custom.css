@@ -36,17 +36,29 @@
   --az-rust: #a0421f;
   --az-rust-bright: #c2602a;
   --az-blood: #5a1810;
+
+  /* Link / sidebar / TOC accent — matches logo's bone-on-olive vs olive-on-cream
+     hierarchy. Rust is reserved for CTAs, hero, stats, terminal prompt, hover. */
+  --az-link: #3b3a26;          /* deep olive on cream (light mode) */
+  --az-link-hover: #a0421f;    /* rust on hover */
+
+  /* Override Docusaurus link + sidebar + TOC accents */
+  --ifm-link-color: var(--az-link);
+  --ifm-link-hover-color: var(--az-link-hover);
+  --ifm-menu-color-active: var(--az-link);
+  --ifm-toc-link-color: var(--az-link);
+  --ifm-breadcrumb-color-active: var(--az-link);
 }
 
 [data-theme='dark'] {
-  /* WCAG AA: primary used for links — must hit 4.5:1 on #1a1a14. #cc6e2f = 4.83:1. */
-  --ifm-color-primary: #cc6e2f;
-  --ifm-color-primary-dark: #b85a25;
+  /* WCAG AA: primary on surface needs 4.5:1 on #2a2a20 — bumping to #e08855 (4.6:1). */
+  --ifm-color-primary: #e08855;
+  --ifm-color-primary-dark: #cc6e2f;
   --ifm-color-primary-darker: #a0421f;
   --ifm-color-primary-darkest: #5a2410;
-  --ifm-color-primary-light: #d88050;
-  --ifm-color-primary-lighter: #de8755;
-  --ifm-color-primary-lightest: #e8a070;
+  --ifm-color-primary-light: #e89870;
+  --ifm-color-primary-lighter: #eda07c;
+  --ifm-color-primary-lightest: #f4b894;
 
   --ifm-background-color: #1a1a14;
   --ifm-background-surface-color: #2a2a20;
@@ -56,48 +68,337 @@
   --ifm-footer-background-color: #0d0d09;
 
   --docusaurus-highlighted-code-line-bg: rgba(194, 96, 42, 0.2);
+
+  /* Dark mode: bone for links, rust on hover. Logo hierarchy. */
+  --az-link: #e8e4d4;
+  --az-link-hover: #e08855;
 }
 
-/* Headings — military stencil feel */
+/* Headings — military stencil feel (sizing identical across themes) */
+h1, h2, h3, h4 {
+  font-family: 'Oswald', 'Inter', sans-serif;
+  font-weight: var(--ifm-heading-font-weight);
+  letter-spacing: 0.02em;
+}
 [data-theme='dark'] h1,
 [data-theme='dark'] h2,
 [data-theme='dark'] h3,
 [data-theme='dark'] h4 {
-  font-family: 'Oswald', 'Inter', sans-serif;
-  letter-spacing: 0.02em;
   color: var(--az-bone);
 }
 
-h1, h2, h3, h4 {
-  font-family: 'Oswald', 'Inter', sans-serif;
-  letter-spacing: 0.02em;
-}
-
-/* Code blocks */
+/* Code blocks — terminal / field-manual aesthetic.
+   Olive border, deep olive interior, rust title bar accent, weighty drop shadow. */
 code, pre {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
-[data-theme='dark'] pre {
-  background-color: var(--az-olive-darkest) !important;
-  border: 1px solid var(--az-olive);
+.theme-code-block {
+  border: 1px solid var(--az-olive, #3a3a2a) !important;
+  border-radius: 0 !important;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(204, 110, 47, 0.10),
+    inset 0 0 100px rgba(0, 0, 0, 0.55) !important;
+  margin: 1.5rem 0 !important;
+  overflow: hidden;
 }
 
-/* Navbar — weathered dark bar */
-[data-theme='dark'] .navbar {
-  border-bottom: 1px solid var(--az-olive);
+/* Layered bg: warm-tinted base, rust glow corner, olive haze, dark vignette */
+[data-theme='dark'] .theme-code-block,
+[data-theme='light'] .theme-code-block {
+  background:
+    radial-gradient(ellipse 60% 80% at 100% 0%, rgba(160, 66, 31, 0.16) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 60% at 0% 100%, rgba(58, 58, 42, 0.28) 0%, transparent 60%),
+    linear-gradient(180deg, #24241c 0%, #12120c 100%) !important;
+}
+[data-theme='light'] .theme-code-block {
+  border-color: #4a4a30 !important;
+}
+
+/* Title bar (when ```lang title="filename" is used) — rust accent strip */
+[class*='codeBlockTitle_'] {
+  background: linear-gradient(
+    90deg,
+    rgba(160, 66, 31, 0.16) 0%,
+    rgba(160, 66, 31, 0.06) 100%
+  ) !important;
+  border-bottom: 1px solid var(--az-olive, #3a3a2a) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.76rem !important;
+  letter-spacing: 0.08em !important;
+  color: var(--az-bone, #e8e4d4) !important;
+  padding: 0.55rem 1rem !important;
+  border-radius: 0 !important;
+  text-transform: uppercase;
+}
+
+/* Code block body */
+[class*='codeBlockContent_'] {
+  border-radius: 0 !important;
+}
+.theme-code-block pre {
+  background-color: transparent !important;
+  border: none !important;
+  padding: 1rem 1.25rem !important;
+  font-size: 0.85rem !important;
+  line-height: 1.55;
+}
+
+/* Copy button — subtle, rust on hover */
+[class*='copyButton_'],
+[class*='codeButton_'] {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid var(--az-olive, #3a3a2a) !important;
+  border-radius: 0 !important;
+  color: var(--az-cream, #c9c4a8) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease !important;
+}
+[class*='copyButton_']:hover,
+[class*='codeButton_']:hover {
+  border-color: var(--az-rust, #a0421f) !important;
+  color: var(--az-rust-bright, #c2602a) !important;
+  background: rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Highlighted lines — rust tint on left edge */
+.theme-code-block-highlighted-line {
+  background-color: rgba(204, 110, 47, 0.08) !important;
+  border-left: 3px solid var(--az-rust-bright, #c2602a) !important;
+  padding-left: calc(1.25rem - 3px) !important;
+}
+
+/* Subtle scanline texture overlay on code blocks (very low opacity) */
+.theme-code-block::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(58, 58, 42, 0.04) 3px,
+    rgba(58, 58, 42, 0.04) 4px
+  );
+}
+.theme-code-block {
+  position: relative;
+}
+
+/* Inline code — rust accent on cream/dark backgrounds, monospace pill. */
+:not(pre) > code {
+  border: 1px solid var(--az-olive, #3a3a2a);
+  background: rgba(160, 66, 31, 0.06);
+  padding: 0.1rem 0.35rem;
+  font-size: 0.88em;
+}
+[data-theme='dark'] :not(pre) > code {
+  background: rgba(204, 110, 47, 0.08);
+}
+
+/* Doc-body headings — H2/H3 get stencil cap treatment + olive underline.
+   H1 already styled via the global heading rule. */
+.markdown h1 {
+  font-size: 2.6rem;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.6rem;
+  line-height: 1.15;
+}
+.markdown h2 {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
+  padding-bottom: 0.45rem;
+  margin-top: 3rem;
+  font-size: 1.6rem;
+}
+.markdown h3 {
+  letter-spacing: 0.03em;
+  color: var(--ifm-heading-color);
+  margin-top: 2.25rem;
+  font-size: 1.25rem;
+}
+[data-theme='dark'] .markdown h2 {
+  border-bottom-color: var(--az-olive);
+}
+
+/* Doc body — breathable spacing, slightly larger base font, more line-height */
+.markdown {
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+.markdown p {
+  margin-bottom: 1.25rem;
+}
+.markdown ul,
+.markdown ol {
+  margin-bottom: 1.25rem;
+}
+.markdown li {
+  margin-bottom: 0.4rem;
+}
+
+/* Pill embedded inside a heading — slightly larger and aligned with text baseline */
+.markdown h1 .pill,
+.markdown h2 .pill,
+.markdown h3 .pill {
+  font-size: 0.7rem;
+  vertical-align: middle;
+  position: relative;
+  top: -0.15em;
+}
+
+/* Blockquotes — field-manual aside. */
+.markdown blockquote {
+  border-left: 3px solid var(--az-rust, #a0421f);
+  background: rgba(160, 66, 31, 0.04);
+  padding: 0.85rem 1.1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+}
+[data-theme='dark'] .markdown blockquote {
+  background: rgba(204, 110, 47, 0.06);
+  border-left-color: #cc6e2f;
+}
+
+/* Tables — olive borders, no zebra. */
+.markdown table {
+  border: 1px solid var(--az-olive, #3a3a2a);
+}
+.markdown table thead {
+  background: rgba(58, 58, 42, 0.15);
+}
+.markdown table th {
+  font-family: 'Oswald', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.85em;
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
+}
+.markdown table td,
+.markdown table th {
+  border-color: var(--az-olive, #3a3a2a);
+}
+
+/* Custom scrollbar — weathered olive/rust. */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--az-olive-darkest, #1a1a14);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--az-olive, #3a3a2a);
+  border: 2px solid var(--az-olive-darkest, #1a1a14);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--az-rust, #a0421f);
+}
+* {
+  scrollbar-color: var(--az-olive, #3a3a2a) var(--az-olive-darkest, #1a1a14);
+  scrollbar-width: thin;
+}
+
+/* Themed admonitions — keep Docusaurus structure, retint to match palette. */
+.theme-admonition {
+  border-left-width: 3px !important;
+  font-family: inherit;
+}
+.theme-admonition-info,
+.theme-admonition-note {
+  border-left-color: var(--az-olive, #3a3a2a) !important;
+  background: rgba(58, 58, 42, 0.08) !important;
+}
+.theme-admonition-tip,
+.theme-admonition-success {
+  border-left-color: #6b7250 !important;
+  background: rgba(107, 114, 80, 0.08) !important;
+}
+.theme-admonition-warning,
+.theme-admonition-caution {
+  border-left-color: var(--az-rust-bright, #c2602a) !important;
+  background: rgba(194, 96, 42, 0.08) !important;
+}
+.theme-admonition-danger {
+  border-left-color: var(--az-blood, #5a1810) !important;
+  background: rgba(90, 24, 16, 0.12) !important;
+}
+
+/* Sidebar — match screenshot 2: muted warm-gray category headers,
+   bright bone sub-items, both at ~0.8rem for tight matching weights. */
+.menu__list-item-collapsible > .menu__link,
+.theme-doc-sidebar-item-category > .menu__list-item-collapsible > .menu__link {
+  font-family: 'Oswald', 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+[data-theme='dark'] .menu__list-item-collapsible > .menu__link,
+[data-theme='dark'] .theme-doc-sidebar-item-category > .menu__list-item-collapsible > .menu__link {
+  color: #8a8576 !important;
+}
+[data-theme='light'] .menu__list-item-collapsible > .menu__link,
+[data-theme='light'] .theme-doc-sidebar-item-category > .menu__list-item-collapsible > .menu__link {
+  color: #6b6655 !important;
+}
+
+/* Sub-items — bright bone, same compact size as category headers */
+.menu__list .menu__list .menu__link {
+  font-size: 0.85rem;
+}
+[data-theme='dark'] .menu__list .menu__list .menu__link {
+  color: var(--az-bone, #e8e4d4) !important;
+}
+[data-theme='light'] .menu__list .menu__list .menu__link {
+  color: #2a2a20 !important;
+}
+
+/* Right-side TOC ("On this page") — active section bolds as you scroll.
+   No transition on hover — color flips instantly instead of fading. */
+.table-of-contents__link--active,
+.table-of-contents__link.table-of-contents__link--active {
+  font-weight: 700;
+}
+
+.table-of-contents__link,
+.table-of-contents__link:hover,
+.table-of-contents__link:focus {
+  transition: none !important;
+}
+
+/* Navbar — weathered bar (consistent dimensions across themes) */
+.navbar {
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
   backdrop-filter: blur(8px);
 }
+[data-theme='dark'] .navbar {
+  border-bottom-color: var(--az-olive);
+}
 
-/* Links — rust accent (WCAG AA-compliant) */
-[data-theme='dark'] a {
-  color: #cc6e2f;
+/* Links use --ifm-link-color / --ifm-link-hover-color from the root tokens.
+   No hover underline anywhere — color shift on hover (rust) is the only cue. */
+a:hover {
+  text-decoration: none;
 }
-[data-theme='dark'] a:hover {
-  color: #de8755;
-  text-decoration: underline;
-  text-decoration-color: #cc6e2f;
+
+/* Sidebar menu has Docusaurus base styles that re-add an underline on hover.
+   Force it off explicitly so the menu stays clean. */
+.menu__link,
+.menu__link:hover,
+.menu__link:focus,
+.menu__link--active {
+  text-decoration: none !important;
 }
+
+/* Sidebar hover color — rust, no underline. */
+.menu__link:hover {
+  color: var(--az-link-hover) !important;
+}
+
 
 /* Footer — override Docusaurus default dark blue-grey */
 .footer.footer--dark {
@@ -131,14 +432,14 @@ code, pre {
   letter-spacing: 0.04em;
 }
 
-/* Navbar Open Source badge */
+/* Navbar Open Source badge — light mode uses darker rust to clear AA on cream bg */
 .navbar-os-badge {
   display: inline-flex;
   align-items: center;
   padding: 0.3rem 0.65rem;
   background: rgba(160, 66, 31, 0.12);
-  border: 1px solid #cc6e2f;
-  color: #cc6e2f;
+  border: 1px solid #a0421f;
+  color: #a0421f;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.65rem;
   font-weight: 700;
@@ -148,7 +449,7 @@ code, pre {
 }
 [data-theme='dark'] .navbar-os-badge {
   background: rgba(204, 110, 47, 0.12);
-  color: #d88050;
+  color: #e08855;
   border-color: #cc6e2f;
 }
 

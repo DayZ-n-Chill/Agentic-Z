@@ -17,9 +17,13 @@
   "dependencies": {
     "@docusaurus/core": "3.10.0",
     "@docusaurus/faster": "^3.10.0",
+    "@docusaurus/plugin-ideal-image": "^3.10.0",
     "@docusaurus/preset-classic": "3.10.0",
+    "@docusaurus/theme-mermaid": "^3.10.0",
+    "@fortawesome/fontawesome-free": "^7.2.0",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
+    "plugin-image-zoom": "^1.2.0",
     "prism-react-renderer": "^2.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

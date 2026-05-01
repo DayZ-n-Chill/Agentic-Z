@@ -1,18 +1,18 @@
 # Agentic-Z
 
-**An AI Agent Stack for DayZ Modding**, with first-class support for Claude Code, Codex, and Gemini. Clone it to start a new DayZ mod project. Every clone inherits the same scaffolding: rules, agents, skills, helper scripts.
+**An AI Agent Stack for DayZ Modding**, with first-class support for Claude Code, Codex, and Gemini. Clone it to start a new DayZ mod, import a 3D model, set up a server, or tune the economy. Every project inherits opinionated rules, specialist agents, slash-command skills, and a local RAG over the vanilla engine source. Your AI shows up DayZ-fluent on day one.
 
 ## Quick start
 
 ```cmd
-git clone &lt;this-repo&gt; my-mod
+git clone https://github.com/DayZ-n-Chill/Agentic-Z.git my-mod
 cd my-mod
 python .claude\skills\sync-skills\sync.py
 ```
 
 After that, all three supported agent CLIs (Claude Code, Codex, Gemini) discover the same slash commands. From inside Claude Code you can also run `/sync-skills` instead of the python command.
 
-Then walk through [`docs/dayz-modding.md`](./dayz-modding) for prerequisites (DayZ Tools, P:\ drive setup, vanilla data extraction) and the end-to-end workflow.
+Then walk through [the DayZ modding guide](./dayz-modding) for prerequisites (DayZ Tools, P:\ drive setup, vanilla data extraction) and the end-to-end workflow.
 
 ## Architecture — three layers
 

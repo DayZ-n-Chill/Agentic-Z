@@ -1,0 +1,34 @@
+.section {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin: 2.5rem 0;
+}
+
+@media (min-width: 1100px) {
+  .section {
+    grid-template-columns: minmax(0, 1fr) 460px;
+    gap: 3rem;
+  }
+}
+
+.prose > *:first-child {
+  margin-top: 0;
+}
+
+.prose > *:last-child {
+  margin-bottom: 0;
+}
+
+.codeColumn {
+  position: relative;
+}
+
+.codeSticky {
+  position: sticky;
+  top: 5rem;
+}
+
+.codeSticky :global(.theme-code-block) {
+  margin: 0 !important;
+}

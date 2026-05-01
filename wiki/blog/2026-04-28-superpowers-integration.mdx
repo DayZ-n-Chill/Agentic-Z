@@ -1,0 +1,23 @@
+---
+slug: superpowers-integration
+title: "Superpowers plugin integrated — TDD, plan-first, brainstorm-first"
+authors: [brian]
+tags: [methodology, changelog]
+---
+
+The repo now bundles the [Superpowers](https://github.com/obra/superpowers) plugin via `.claude/settings.json` → `extraKnownMarketplaces`. It adds opinionated workflows: TDD red-green-refactor, plan-first, brainstorm-first, four-phase systematic debugging.
+
+{/* truncate */}
+
+## Where it applies
+
+- ✅ **General code** — Python, JS, shell helpers under `scripts/`, `.claude/skills/`, `.claude/mcp/`.
+- ❌ **DayZ work** — `.paa`, `.p3d`, `.rvmat`, `config.cpp`, `types.xml`, modded `.c` Enforce Script.
+
+DayZ has no Enforce Script unit-test runner, so on DayZ tasks the quality lever is **strict adherence to `.claude/skills/_shared/enscript-style.md`** instead of TDD.
+
+## Other methodology updates this round
+
+- New **prompt engineering conventions** doc for agents — referenced from agent definitions so they share a baseline for tool briefings, parallelism, and "why over what" patterns.
+- **L2 conventions** (DayZ-specific rules) explicitly carved out from L1 default rules. L1 in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`; L2 in `.claude/skills/_shared/dayz-conventions.md`.
+- Minimalism rule still wins for trivial fixes — a one-line bug fix doesn't trigger a brainstorm + plan + TDD cycle.

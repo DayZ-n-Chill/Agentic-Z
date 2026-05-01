@@ -1,0 +1,59 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid var(--az-olive, #3a3a2a);
+  background: rgba(58, 58, 42, 0.18);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--az-cream, #c9c4a8);
+  vertical-align: middle;
+  margin-left: 0.6rem;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.rust {
+  border-color: #cc6e2f;
+  background: rgba(204, 110, 47, 0.12);
+  color: #cc6e2f;
+}
+
+.sage {
+  border-color: #6b7250;
+  background: rgba(107, 114, 80, 0.14);
+  color: #94a07a;
+}
+
+.bone {
+  border-color: #c9c4a8;
+  background: rgba(232, 228, 212, 0.08);
+  color: #e8e4d4;
+}
+
+.olive {
+  border-color: #4a4a30;
+  background: rgba(74, 74, 48, 0.18);
+  color: #c9c4a8;
+}
+
+[data-theme='light'] .pill {
+  color: #2a2a20;
+  background: rgba(58, 58, 42, 0.08);
+}
+[data-theme='light'] .rust {
+  color: #a0421f;
+  background: rgba(160, 66, 31, 0.10);
+  border-color: #a0421f;
+}
+[data-theme='light'] .sage {
+  color: #4a5230;
+  background: rgba(107, 114, 80, 0.12);
+}
+[data-theme='light'] .bone {
+  color: #2a2a20;
+  background: rgba(232, 228, 212, 0.6);
+}

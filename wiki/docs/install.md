@@ -7,7 +7,7 @@ This guide will walk you through setting up Agentic-Z on your local machine. Fol
 Start by cloning this repository to your local machine.
 
 ```powershell
-git clone https://github.com/your-repo/agentic-z.git MyNewMod
+git clone https://github.com/DayZ-n-Chill/Agentic-Z.git MyNewMod
 cd MyNewMod
 ```
 

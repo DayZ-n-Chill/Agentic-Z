@@ -18,6 +18,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Foundations',
       collapsed: false,
+      className: 'sidebar-cat-foundations',
       items: [
         {
           type: 'doc',
@@ -35,6 +36,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'The DayZ Workflow',
       collapsed: false,
+      className: 'sidebar-cat-workflow',
       items: [
         {
           type: 'doc',
@@ -56,6 +58,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'AI Agents',
+      className: 'sidebar-cat-agents',
       link: {
         type: 'generated-index',
         title: 'Specialist Agents',
@@ -67,6 +70,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Skills & Tools',
+      className: 'sidebar-cat-skills',
       link: {
         type: 'generated-index',
         title: 'Modding Toolbox',
