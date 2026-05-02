@@ -81,7 +81,9 @@ def unescape_description(s: str) -> str:
 
 
 def render_example(body: str) -> str:
-    """Turn the inside of an <example> block into a styled markdown chunk."""
+    """Render an <example> block as a styled HTML container with each
+    speaker turn (Context / User / Assistant) as a label-on-top, content-
+    below pair. Plain HTML so it works in .md without JSX."""
     body = body.strip()
     commentary = ""
     m = COMMENTARY_RE.search(body)
@@ -89,28 +91,59 @@ def render_example(body: str) -> str:
         commentary = m.group(1).strip()
         body = COMMENTARY_RE.sub("", body).strip()
 
-    quote_lines: list[str] = []
+    turns: list[tuple[str, str]] = []
+    pending_label: str | None = None
+    pending_content: list[str] = []
+
+    def _flush() -> None:
+        if pending_label is not None:
+            turns.append((pending_label, " ".join(pending_content).strip()))
+
     for line in body.splitlines():
         line = line.rstrip()
         if not line.strip():
             continue
-        if line.lower().startswith("context:"):
-            line = "**Context:** " + line.split(":", 1)[1].strip()
-        elif line.lower().startswith("user:"):
-            line = "**User:** " + line.split(":", 1)[1].strip()
-        elif line.lower().startswith("assistant:"):
-            line = "**Assistant:** " + line.split(":", 1)[1].strip()
-        quote_lines.append(f"> {line}")
+        low = line.lower()
+        if low.startswith("context:"):
+            _flush()
+            pending_label, pending_content = "Context", [line.split(":", 1)[1].strip()]
+        elif low.startswith("user:"):
+            _flush()
+            pending_label, pending_content = "User", [line.split(":", 1)[1].strip()]
+        elif low.startswith("assistant:"):
+            _flush()
+            pending_label, pending_content = "Assistant", [line.split(":", 1)[1].strip()]
+        else:
+            pending_content.append(line)
+    _flush()
 
-    out = ["> **Example**", ">"] + quote_lines
+    parts = ['<div class="agent-example">', '<div class="agent-example__title">Example</div>']
+    for label, content in turns:
+        # HTML-escape angle brackets in content so MDX doesn't try to parse them as JSX.
+        safe = (
+            content.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
+        parts.append('<div class="agent-example__turn">')
+        parts.append(f'<div class="agent-example__label">{label}</div>')
+        parts.append(f'<div class="agent-example__content">{safe}</div>')
+        parts.append("</div>")
     if commentary:
-        out.append("")
-        out.append(f"*{commentary}*")
-    return "\n".join(out)
+        safe_c = (
+            commentary.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
+        parts.append(f'<div class="agent-example__commentary">{safe_c}</div>')
+    parts.append("</div>")
+    return "\n".join(parts)
 
 
 def description_to_markdown(description: str) -> str:
-    """Strip <example> tags from description, render examples as MD blockquotes.
+    """Strip <example> tags from description, keep only the FIRST example
+    rendered as a styled HTML container. Multiple stacked examples bloat
+    the page; one representative example is enough.
 
     The description may also contain backticked references to <example> /
     <commentary> tags as part of describing the agent's behavior. Those must
@@ -143,7 +176,8 @@ def description_to_markdown(description: str) -> str:
     parts: list[str] = []
     if intro:
         parts.append(intro)
-    parts.extend(examples)
+    if examples:
+        parts.append(examples[0])  # only the first example
     out = "\n\n".join(parts)
 
     # Restore backticked tag references.
