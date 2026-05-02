@@ -263,8 +263,15 @@ code, pre {
   border-left-color: #cc6e2f;
 }
 
-/* Tables — olive borders, no zebra. */
+/* Tables — olive borders, no zebra, fill the container width. Auto layout
+   so columns size to their content; max-width keeps them from bleeding past
+   the doc column under the TOC. */
 .markdown table {
+  display: table;
+  width: 100%;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
   border: 1px solid var(--az-olive, #3a3a2a);
 }
 .markdown table thead {
@@ -281,6 +288,56 @@ code, pre {
 .markdown table th {
   border-color: var(--az-olive, #3a3a2a);
 }
+
+/* Modest first-column min-width so single-word labels don't squeeze too
+   tight, but no fixed width — columns size to actual content. */
+.markdown table th:first-child,
+.markdown table td:first-child {
+  min-width: 7rem;
+}
+
+/* ─── Agent page badges ───────────────────────────────────────────────── */
+
+.agent-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: center;
+  margin: -0.25rem 0 1.5rem;
+}
+
+.agent-badges .badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  border-radius: 0;
+  font-weight: 600;
+}
+
+.agent-color-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  color: #fff !important;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+.agent-color-badge--blue    { background-color: #2b5d99 !important; }
+.agent-color-badge--green   { background-color: #4a7a3d !important; }
+.agent-color-badge--purple  { background-color: #6b3d8a !important; }
+.agent-color-badge--yellow  { background-color: #c89a2c !important; color: #1a1a14 !important; }
+.agent-color-badge--cyan    { background-color: #3d7a82 !important; }
+.agent-color-badge--red     { background-color: #a0421f !important; }
+.agent-color-badge--orange  { background-color: #c2602a !important; }
+.agent-color-badge--pink    { background-color: #b35a7e !important; }
+.agent-color-badge--teal    { background-color: #3d7a72 !important; }
 
 /* Custom scrollbar — weathered olive/rust. */
 ::-webkit-scrollbar {
