@@ -41,7 +41,7 @@ Embedding runs through Voyage AI's hosted API. Code-tuned model, much higher ret
 
 ### One-time setup
 
-1. Get a key at <https://dash.voyageai.com>.
+1. Get a key at [dash.voyageai.com](https://dash.voyageai.com).
 2. Add it to `.env` at the repo root (gitignored — never commits):
    ```
    VOYAGE_API_KEY=pa-xxxxxxxxxxxx

@@ -16,8 +16,8 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
    - `$DAYZ_WORK_DRIVE` env var
    - Cached path at `.claude/local-memory/dayz-work-drive.json` (set on first successful mount)
    - Windows registry — checks `Software\Bohemia Interactive\DayZ Tools` under HKCU and HKLM (WOW6432Node + native) for several common value names
-   - `&lt;DayZ Tools install&gt;\Bin\WorkDrive\` (last-resort default; resolved via `find_dayz_tools()` from preflight.py)
-3. Mounts via `subst P: &lt;path&gt;`.
+   - `<DayZ Tools install>\Bin\WorkDrive\` (last-resort default; resolved via `find_dayz_tools()` from preflight.py)
+3. Mounts via `subst P: <path>`.
 4. Verifies `P:\` is now visible.
 5. Caches the resolved path so future runs are instant.
 

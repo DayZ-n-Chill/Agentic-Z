@@ -16,7 +16,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 | 1 | `P:\` drive is mounted | **hard fail** — exit 1 |
 | 2 | DayZ Tools installed (AddonBuilder.exe locatable) | warn |
 | 3 | Vanilla DayZ data unpacked under `P:\` | warn |
-| 4 | `P:\Mods\` is a directory junction to `&lt;DayZ install&gt;\!Workshop\` (not a regular folder, not missing, not dangling) | warn — build-pbo hard-fails on the same condition |
+| 4 | `P:\Mods\` is a directory junction to `<DayZ install>\!Workshop\` (not a regular folder, not missing, not dangling) | warn — build-pbo hard-fails on the same condition |
 
 Exit code 0 = ready (or warnings only). Non-zero = hard environment issue, named in stderr.
 

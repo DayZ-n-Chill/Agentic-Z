@@ -1,5 +1,6 @@
 ---
 name: dayz-rag-download
+description: Download a prebuilt DayZ RAG vector index from the repo's GitHub releases and extract it to `~/.claude/dayz-rag-index/`, so a fresh clone can use the dayz-rag MCP server without running `/dayz-rag-index` (skipping the ~25-30 min build and Voyage API token cost). Idempotent — checks the existing index's manifest and skips re-download if it matches the release. Use this in place of `/dayz-rag-index` on a fresh machine.
 ---
 
 # /dayz-rag-download
