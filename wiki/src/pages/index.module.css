@@ -129,7 +129,22 @@
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.4rem;
+  line-height: 1;
+}
+
+/* Arrow inside a button — heavier weight + system font (Oswald arrows render
+   thin) and vertically nudged so it sits on the text baseline. */
+.btnArrow {
+  display: inline-block;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-weight: 900;
+  font-size: 1.15em;
+  line-height: 1;
+  letter-spacing: 0;
+  position: relative;
+  top: -0.04em;
 }
 
 .btnPrimary:focus-visible,
