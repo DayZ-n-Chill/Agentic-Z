@@ -23,7 +23,12 @@ const sidebars: SidebarsConfig = {
         {
           type: 'doc',
           id: 'intro',
-          label: 'Welcome & Architecture',
+          label: 'Introduction',
+        },
+        {
+          type: 'doc',
+          id: 'prerequisites',
+          label: 'Prerequisites',
         },
         {
           type: 'doc',

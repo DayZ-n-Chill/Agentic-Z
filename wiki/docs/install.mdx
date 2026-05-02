@@ -1,0 +1,58 @@
+# Installation & Setup
+
+This guide walks you through setting up Agentic-Z on your local machine. Follow these steps to prepare your environment for AI-powered DayZ modding.
+
+## 1. Clone the Repository
+
+Start by cloning this repository to your local machine.
+
+```powershell
+git clone https://github.com/DayZ-n-Chill/Agentic-Z.git MyNewMod
+cd MyNewMod
+```
+
+## 2. Bootstrap the Environment (optional)
+
+:::info[Only needed for multi-agent setups]
+
+**Skip this step if you're only using Claude Code.** Claude Code auto-loads `.claude/skills/` from the repo, so the slash commands and agents are already available.
+
+Run the sync only if you want to use **multiple agent CLIs** (Codex, Gemini, or all three together).
+
+:::
+
+If you want all three CLIs to see the same skills, run the sync once:
+
+```powershell
+python .claude/skills/sync-skills/sync.py
+```
+
+This symlinks the repo's `.claude/skills/` into Codex's and Gemini's home dirs so all three CLIs discover the same `/dayz-*` slash commands. From inside Claude Code you can also run `/sync-skills` instead of the python command.
+
+## 3. Verify Prerequisites
+
+DayZ modding requires DayZ Tools, DayZ Diag, the `P:\` drive, and a few other one-time setup pieces. The full list (with download links and reasons) lives on the **[Prerequisites](./prerequisites)** page.
+
+Run the preflight check to confirm everything's in place:
+
+```powershell
+python .claude/skills/dayz-preflight/preflight.py
+```
+
+## 4. Mount the Work Drive (P:\)
+
+DayZ Tools must have the `P:\` drive mounted for the engine and the packing tools to resolve file paths correctly.
+
+You can mount it via the **DayZ Tools UI** or use our automation skill:
+
+```powershell
+python .claude/skills/dayz-mount-p/mount.py
+```
+
+## 5. Next Steps
+
+Once your environment is verified and your drive is mounted, you're ready to start building.
+
+- **[Scaffold your first mod](./dayz-modding#quick-start)** using the `/dayz-new-mod` skill.
+- **[Meet your Agents](./agents)** to start generating code and assets.
+- **[Review the Conventions](./dayz-conventions)** to ensure your mod stays compatible with the template.
