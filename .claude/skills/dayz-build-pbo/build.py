@@ -26,6 +26,12 @@ P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
 TEMP_ROOT = P_DRIVE / "temp"
 
+# Ownership marker dropped at P:\Mods\@<ModName>\<MARKER> on successful build.
+# dayz-clean-workspace gates deployed-dir removal on this so it can never
+# delete a deployed mod it didn't produce. Located one level above Addons/
+# so AddonBuilder's -clear (which wipes Addons/) doesn't remove it.
+SCAFFOLD_MARKER = ".agentic-z-scaffold"
+
 OK = "[OK]   "
 WARN = "[WARN] "
 FAIL = "[FAIL] "
@@ -217,6 +223,13 @@ def main() -> int:
     size = pbo_path.stat().st_size
     print()
     print(f"{OK} Built: {pbo_path} ({size:,} bytes)")
+
+    marker_path = target_dir.parent / SCAFFOLD_MARKER
+    try:
+        marker_path.write_text(args.modname + "\n", encoding="utf-8")
+    except OSError as e:
+        print(f"{WARN} Could not write ownership marker {marker_path}: {e}")
+        print("       dayz-clean-workspace will refuse to remove this deployed dir.")
 
     try:
         shutil.rmtree(temp_dir)

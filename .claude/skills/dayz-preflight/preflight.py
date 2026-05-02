@@ -14,7 +14,6 @@ Run:
 from __future__ import annotations
 
 import os
-import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
@@ -242,6 +241,10 @@ def validate_p_mods() -> Optional[str]:
     `!Workshop` folder, so built PBOs deployed under P:\\Mods\\@<Mod>\\Addons\\
     actually land where the engine can load them.
 
+    Read-only: inspects state and returns a description of any problem.
+    Never mutates the filesystem — preflight is for reporting, fixes belong
+    to dedicated setup skills.
+
     Returns None on success, or a multi-line error message describing the issue
     and the exact fix command. Used by preflight (warn) and build-pbo (hard fail).
     """
@@ -255,28 +258,8 @@ def validate_p_mods() -> Optional[str]:
         fix_cmd = 'cmd /c mklink /J P:\\Mods "<DayZ install>\\!Workshop"'
 
     if not os.path.lexists(mods):
-        # Auto-create the junction when we have a valid target. Creating a
-        # junction is non-destructive and doesn't need admin; the target is
-        # canonical (<DayZ>\!Workshop). Only fall through to a hard error if
-        # we can't resolve the DayZ install or the target folder is missing.
-        if workshop and workshop.exists():
-            try:
-                subprocess.run(
-                    ["cmd", "/c", "mklink", "/J", str(mods), str(workshop)],
-                    check=True, capture_output=True, text=True,
-                )
-                print(f"{OK} Created junction P:\\Mods -> {workshop}")
-                return None
-            except subprocess.CalledProcessError as e:
-                return (
-                    "P:\\Mods\\ does not exist and auto-create failed.\n"
-                    f"       Tried: mklink /J P:\\Mods \"{workshop}\"\n"
-                    f"       Error: {(e.stderr or '').strip()}\n"
-                    f"       Fix manually: {fix_cmd}"
-                )
         return (
-            "P:\\Mods\\ does not exist and DayZ game install couldn't be located\n"
-            "       to auto-create the junction. It MUST be a junction to\n"
+            "P:\\Mods\\ does not exist. It MUST be a junction to\n"
             "       <DayZ install>\\!Workshop\\ so built PBOs deploy where the\n"
             "       engine actually loads them.\n"
             f"       Fix: {fix_cmd}"
