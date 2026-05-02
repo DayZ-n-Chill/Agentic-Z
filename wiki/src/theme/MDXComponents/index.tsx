@@ -16,6 +16,7 @@ import Mermaid from '@theme/Mermaid';
 import Pill from '@site/src/components/Pill';
 import Section from '@site/src/components/Section';
 import HeroBlock from '@site/src/components/HeroBlock';
+import QuickStartTerminal from '@site/src/components/QuickStartTerminal';
 
 import type {MDXComponentsObject} from '@theme/MDXComponents';
 
@@ -41,6 +42,7 @@ const MDXComponents: MDXComponentsObject = {
   Pill,
   Section,
   HeroBlock,
+  QuickStartTerminal,
 };
 
 export default MDXComponents;
