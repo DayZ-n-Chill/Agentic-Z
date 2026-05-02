@@ -379,32 +379,6 @@
   border-left: 2px solid #a0421f;
 }
 
-.archFlow {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  margin: 0.25rem 0 0.85rem;
-  flex-wrap: wrap;
-}
-
-.archFlowPill {
-  display: inline-block;
-  padding: 0.4rem 0.6rem;
-  background: rgba(0, 0, 0, 0.3);
-  border-left: 2px solid #a0421f;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.78rem;
-  color: #cc6e2f;
-  letter-spacing: 0.02em;
-}
-
-.archFlowArrow {
-  color: #cc6e2f;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1rem;
-  font-weight: 700;
-}
-
 /* Agents grid */
 .agentsGrid {
   display: grid;

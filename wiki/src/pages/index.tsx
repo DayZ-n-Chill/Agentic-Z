@@ -34,8 +34,7 @@ const LAYERS = [
     title: 'Agents & Skills',
     essence: 'Specialists for thinking, commands for doing.',
     body: 'Ask the script specialist about a tricky modded class. Hand the mod-debugger your crash log. Run /dayz-build-pbo to pack and deploy. The work is one step away, every time.',
-    flow: {from: 'Claude Code', to: 'dayz-script-specialist'},
-    path: '.claude/agents/ / .claude/skills/',
+    path: 'Claude Code → dayz-script-specialist',
   },
 ];
 
@@ -193,13 +192,6 @@ function ArchitectureSection() {
               <div className={styles.archTitle}>{l.title}</div>
               <p className={styles.archEssence}>{l.essence}</p>
               <p className={styles.archDesc}>{l.body}</p>
-              {l.flow && (
-                <div className={styles.archFlow}>
-                  <span className={styles.archFlowPill}>{l.flow.from}</span>
-                  <span className={styles.archFlowArrow}>→</span>
-                  <span className={styles.archFlowPill}>{l.flow.to}</span>
-                </div>
-              )}
               <code className={styles.archPath}>{l.path}</code>
             </div>
           ))}
