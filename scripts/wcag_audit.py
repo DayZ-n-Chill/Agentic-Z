@@ -46,6 +46,21 @@ PAIRS = [
     ("Light: navbar OS badge text on bg", "#a0421f", "#f4f1e6", 4.5),
     ("Light: link (deep olive) on bg", "#3b3a26", "#f4f1e6", 4.5),
     ("Light: link on surface", "#3b3a26", "#ebe6d3", 4.5),
+    # ---- AGENT EXAMPLE BLOCK ----
+    ("Light: example label warm-gray on faint olive", "#3a3a2a", "#ecead9", 4.5),  # 6% olive over cream
+    ("Light: example body on faint olive", "#2a2a20", "#ecead9", 4.5),
+    ("Dark: example label cream-dim on faint olive", blend_alpha("#c9c4a8", "#1a1a14", 0.7), "#22231a", 4.5),  # 18% olive over dark bg
+    ("Dark: example body cream on faint olive", "#c9c4a8", "#22231a", 4.5),
+    # ---- SIDEBAR CATEGORY HEADERS (muted) ----
+    ("Light: sidebar category header on sidebar bg", "#6b6655", "#ede8d6", 4.5),
+    ("Dark: sidebar category header on sidebar bg", "#8a8576", "#1a1a14", 4.5),
+    # ---- SIDEBAR SUB-ITEMS ----
+    ("Light: sub-item olive on sidebar bg", "#2a2a20", "#ede8d6", 4.5),
+    ("Dark: sub-item bone on sidebar bg", "#e8e4d4", "#1a1a14", 4.5),
+    # ---- TABLE CELLS ----
+    ("Light: table cell text on bg", "#2a2a20", "#f4f1e6", 4.5),
+    ("Dark: table cell text on bg", "#c9c4a8", "#1a1a14", 4.5),
+    ("Dark: table thead bg + body text", "#c9c4a8", "#26261d", 4.5),  # 15% olive over dark bg
     # ---- DARK MODE ----
     ("Dark: body text on bg", "#c9c4a8", "#1a1a14", 4.5),
     ("Dark: heading on bg", "#e8e4d4", "#1a1a14", 4.5),

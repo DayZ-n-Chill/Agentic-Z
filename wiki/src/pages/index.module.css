@@ -389,12 +389,12 @@
 
 .archFlowPill {
   display: inline-block;
-  padding: 0.35rem 0.65rem;
-  border: 1px solid var(--az-olive, #3a3a2a);
-  background: rgba(0, 0, 0, 0.35);
+  padding: 0.4rem 0.6rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 2px solid #a0421f;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.78rem;
-  color: #e8e4d4;
+  color: #cc6e2f;
   letter-spacing: 0.02em;
 }
 

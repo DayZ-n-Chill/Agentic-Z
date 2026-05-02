@@ -81,7 +81,8 @@ const config: Config = {
     image: 'img/AgenticZ_Logo.png',
     colorMode: {
       defaultMode: 'dark',
-      respectPrefersColorScheme: true,
+      disableSwitch: true,
+      respectPrefersColorScheme: false,
     },
     navbar: {
       title: 'Agentic-Z',

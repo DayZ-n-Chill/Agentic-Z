@@ -26,7 +26,7 @@ const LAYERS = [
     layer: 'L2',
     title: 'Conventions',
     essence: 'One DayZ playbook, every agent.',
-    body: 'From day one, your AI knows what $PBOPREFIX$ is, why some modded classes silently fail, and which suffix every texture needs. The DayZ quirks that usually take weeks to learn, baked in.',
+    body: 'From day one, your AI knows why some modded classes silently fail, which suffix every texture needs, and how to inherit cleanly from vanilla classes. The DayZ quirks that usually take weeks to learn, baked in.',
     path: '.claude/skills/_shared/dayz-conventions.md',
   },
   {

@@ -263,9 +263,8 @@ code, pre {
   border-left-color: #cc6e2f;
 }
 
-/* Tables — olive borders, no zebra, fill the container width. Auto layout
-   so columns size to their content; max-width keeps them from bleeding past
-   the doc column under the TOC. */
+/* Tables — olive borders, fill the container width. Auto layout (default)
+   so columns size naturally to their content. */
 .markdown table {
   display: table;
   width: 100%;
@@ -273,6 +272,12 @@ code, pre {
   word-wrap: break-word;
   overflow-wrap: break-word;
   border: 1px solid var(--az-olive, #3a3a2a);
+  border-collapse: collapse;
+}
+.markdown table td,
+.markdown table th {
+  padding: 0.55rem 0.75rem;
+  vertical-align: top;
 }
 .markdown table thead {
   background: rgba(58, 58, 42, 0.15);
@@ -288,45 +293,68 @@ code, pre {
 .markdown table th {
   border-color: var(--az-olive, #3a3a2a);
 }
-
-/* Modest first-column min-width so single-word labels don't squeeze too
-   tight, but no fixed width — columns size to actual content. */
-.markdown table th:first-child,
-.markdown table td:first-child {
-  min-width: 7rem;
+.markdown table tbody tr:not(:last-child) td {
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
 }
+
+/* Command-name tables (End-to-End guide) — first column shrinks to fit
+   its content and never wraps, so `/dayz-clean-workspace` etc. stay on
+   one line. Scoped to .cmd-table only; doesn't affect other tables. */
+.cmd-table table th:first-child,
+.cmd-table table td:first-child {
+  white-space: nowrap;
+  width: 1%;
+}
+
+/* Sidebar category chevron — kill the separate hover background on the caret
+   so it doesn't visually duplicate the parent row's hover. */
+.menu__caret,
+.menu__list-item-collapsible__icon {
+  background: transparent !important;
+  transition: none !important;
+}
+.menu__caret:hover,
+.menu__caret:focus,
+.menu__list-item-collapsible__icon:hover,
+.menu__list-item-collapsible__icon:focus,
+.menu__list-item-collapsible:hover .menu__caret,
+.menu__list-item-collapsible:hover .menu__list-item-collapsible__icon {
+  background: transparent !important;
+  outline: none !important;
+}
+
 
 /* ─── Agent page badges ───────────────────────────────────────────────── */
 
 .agent-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.85rem;
+  gap: 0.4rem;
   align-items: center;
-  margin: -0.25rem 0 1.5rem;
+  margin: 0.6rem 0 2rem;
 }
 
-.agent-badges .badge {
+/* Shared sizing for every badge in the row — identical box, font, padding,
+   and line-height so the heights match perfectly. */
+.agent-badges .badge,
+.agent-badges .agent-color-badge {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
+  font-size: 0.62rem;
+  line-height: 1;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 0.3rem 0.7rem;
-  border-radius: 0;
   font-weight: 600;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 0;
 }
 
 .agent-color-badge {
-  display: inline-flex;
-  align-items: center;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-weight: 600;
-  padding: 0.3rem 0.7rem;
   color: #fff !important;
-  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-color: rgba(0, 0, 0, 0.25);
 }
 
 .agent-color-badge--blue    { background-color: #2b5d99 !important; }
@@ -338,6 +366,71 @@ code, pre {
 .agent-color-badge--orange  { background-color: #c2602a !important; }
 .agent-color-badge--pink    { background-color: #b35a7e !important; }
 .agent-color-badge--teal    { background-color: #3d7a72 !important; }
+.agent-color-badge--indigo  { background-color: #4a4a99 !important; }
+.agent-color-badge--lime    { background-color: #7a9a2c !important; }
+.agent-color-badge--brown   { background-color: #8a5a3d !important; }
+
+/* ─── Agent example container ─────────────────────────────────────────── */
+
+.agent-example {
+  border: 1px solid var(--az-olive, #3a3a2a);
+  border-left: 3px solid var(--az-rust, #a0421f);
+  background: rgba(58, 58, 42, 0.06);
+  padding: 1rem 1.15rem;
+  margin: 1.25rem 0;
+  font-size: 0.92rem;
+}
+
+[data-theme='dark'] .agent-example {
+  background: rgba(58, 58, 42, 0.18);
+  border-left-color: #cc6e2f;
+}
+
+.agent-example__title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--az-rust-bright, #c2602a);
+  margin-bottom: 0.85rem;
+  opacity: 0.9;
+}
+
+.agent-example__turn {
+  margin-bottom: 0.85rem;
+}
+.agent-example__turn:last-of-type {
+  margin-bottom: 0;
+}
+
+.agent-example__label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--az-cream, #c9c4a8);
+  opacity: 0.7;
+  margin-bottom: 0.2rem;
+}
+[data-theme='light'] .agent-example__label {
+  color: var(--az-olive, #3a3a2a);
+  opacity: 0.85;
+}
+
+.agent-example__content {
+  line-height: 1.55;
+}
+
+.agent-example__commentary {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--az-olive, #3a3a2a);
+  font-style: italic;
+  font-size: 0.86rem;
+  opacity: 0.75;
+}
 
 /* Custom scrollbar — weathered olive/rust. */
 ::-webkit-scrollbar {
@@ -454,6 +547,21 @@ a:hover {
 /* Sidebar hover color — rust, no underline. */
 .menu__link:hover {
   color: var(--az-link-hover) !important;
+}
+
+/* Active sidebar item — rust shade with a small left bar so the current
+   page stands out without being shouty. */
+.menu__link--active:not(.menu__link--sublist) {
+  color: var(--az-rust-bright, #c2602a) !important;
+  background: rgba(204, 110, 47, 0.10) !important;
+  border-left: 2px solid var(--az-rust-bright, #c2602a) !important;
+  padding-left: calc(0.85rem - 2px) !important;
+  font-weight: 600 !important;
+}
+[data-theme='light'] .menu__link--active:not(.menu__link--sublist) {
+  color: var(--az-rust, #a0421f) !important;
+  background: rgba(160, 66, 31, 0.08) !important;
+  border-left-color: var(--az-rust, #a0421f) !important;
 }
 
 
