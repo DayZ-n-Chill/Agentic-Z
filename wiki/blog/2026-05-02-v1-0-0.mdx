@@ -1,0 +1,62 @@
+---
+slug: v1-0-0
+title: "v1.0.0 — First Stable Release"
+authors: [brian]
+tags: [release, changelog]
+---
+
+The toolkit graduates from v0.1.0 (initial scaffold) to v1.0.0 (stable). Same shape, sharper everything.
+
+{/* truncate */}
+
+## What's new
+
+### Pages and structure
+
+- **Foundations sidebar reorganized** into Introduction → Prerequisites → Installation & Setup → Plugins → MCP Servers. Prerequisites is now its own page with download links for DayZ, DayZ Tools, Voyage AI, and Python.
+- **About pages** for both AI Agents and Skills & Tools, sitting first in their accordions. They explain the roster as a whole instead of dumping a generated index of boxes.
+- **Plugins page** documenting Superpowers (`obra/superpowers`) and the Obsidian vault setup as optional adds.
+- **MCP Servers page** documenting `dayz-rag` (bundled), GitHub MCP, and Web-fetch MCP with copy-paste config.
+- **Model Routing page** rewritten as **Model Selection** — frames it as a per-agent default with an override workflow, instead of pretending the main thread auto-routes.
+
+### Agents
+
+- **Twelve unique colors.** Every agent now has its own display color (was: 5 agents sharing green). Same applies in Claude Code's agent picker and the wiki badges.
+- **Wiki agent pages cleaned up.** Escaped `&lt;span&gt;` badge soup gone; example blocks render as a styled container with bold Context / User / Assistant labels and an italic commentary divider; the runtime memory protocol stripped from the body. Each page shows a single representative example instead of three.
+- **Frontmatter badges** at the top of each agent page (Agent / model / color) with proper color rendering.
+
+### Skills
+
+- **`/agentic-z-update`** — new skill that pulls upstream template improvements into your clone without touching `workspace/`. Adds the upstream remote on first run, surfaces a changelog, merges only template paths, and re-runs `/sync-skills` automatically.
+- **Wiki skill mirrors regenerated** from canonical `SKILL.md` sources so escaped angle brackets render as code spans, not raw text.
+
+### Homepage
+
+- **Stats band:** 12 specialist agents, 20 slash skills, 3 agent CLIs, 2 MCP servers (replaced the old "1 Drive" filler).
+- **Three-Layer Stack** rewrites: each card now leads with a short pitch and explains the value to a non-technical reader. "What you get" lists three concrete behaviors per layer.
+- **On-Tap Reference** section showcases the local RAG over vanilla source + Bohemia community wiki.
+- **The Style Guide** section credits TrueDolphin's EnScript style guide, mirrored locally.
+- **Specialist Agents** grid links to per-agent pages.
+- **Quick Start terminal** with a typing animation cycling through 24 mod names — same component now reusable on the intro page via `<QuickStartTerminal align="left" />`.
+- **Become a Contributor** section with Discord and GitHub links.
+
+### Theme and styling
+
+- **Dark mode locked.** Theme switcher removed; site is dark-only.
+- **Logo-matched color hierarchy:** rust = CTAs and active states, bone = links, olive = borders/structure. WCAG 2.1 AA verified across 44+ contrast pairs.
+- **Sidebar polish:** stencil-uppercase category headers, rust active-page indicator with faint tint and 2px left bar, no hover underlines, no double-hover on the chevron.
+- **Code blocks** now have a layered background (warm gradient + rust corner glow + olive haze + scanlines + inset vignette) with rust title bars and themed copy buttons.
+- **Doc body theming:** uppercase H2 with olive underline, rust inline code pills, italicized rust-bordered blockquotes, olive-bordered tables that fill the column without bleeding under the TOC.
+- **Custom 404 page** — "404 — Off the Map" with rust hero accent.
+
+### Plugins now actually documented
+
+The L1 rules referenced Superpowers and Obsidian for a while as if they were installed. Removed those references back in v0.1.x; v1.0 puts both back as **opt-in, documented setup steps** on the new Plugins page.
+
+## What's next
+
+- Algolia DocSearch integration (waiting on OSS application approval).
+- More specialist agents for surfaces this template doesn't cover (Workshop publishing? Custom map workflows? Tell us in [Discord](https://discord.gg/dayznchill)).
+- Mermaid diagrams in the docs for the agent-dispatch flow.
+
+If you customize an agent or build a new skill, **send it back upstream** — every contribution sharpens the toolkit for the next person who clones.
