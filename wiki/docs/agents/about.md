@@ -8,6 +8,12 @@ title: About the Agents
 
 Agentic-Z ships with twelve specialist agents. Each one owns a slice of the DayZ stack and has its own model, color, and judgment style. You don't need to memorize the roster: ask a question, and the right specialist picks itself up.
 
+:::warning[These are default starter agents]
+
+Every agent here is a **starting point**. The baseline (vanilla source + wiki RAG, TrueDolphin's EnScript style guide, L1/L2 rules) covers most DayZ mods but **won't perfectly fit yours**. Expect to tune prompts, add agent memory, swap models, and write new specialists for what's missing.
+
+:::
+
 ## What an agent is
 
 A specialist AI persona with a focused domain. Every agent reads the L1 default rules and the L2 DayZ conventions before doing anything, so the rules stay aligned across all twelve. The agent's own definition adds the deep domain expertise on top.

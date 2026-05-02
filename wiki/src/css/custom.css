@@ -476,6 +476,9 @@ code, pre {
   border-left-color: var(--az-blood, #5a1810) !important;
   background: rgba(90, 24, 16, 0.12) !important;
 }
+.theme-admonition > div:last-child > :last-child {
+  margin-bottom: 0 !important;
+}
 
 /* Sidebar — match screenshot 2: muted warm-gray category headers,
    bright bone sub-items, both at ~0.8rem for tight matching weights. */
