@@ -5,7 +5,9 @@ description: Sync this repo's `.claude/skills/` into each agent CLI's home `skil
 
 # /sync-skills
 
-The bootstrap. One source of truth — `<repo>/.claude/skills/` — installed as symlinks (or junctions on Windows) into each agent CLI's home so every agent sees the same set of slash commands without copying any files.
+The bootstrap. **Links, not copies.** The single source of truth is `<repo>/.claude/skills/`; this skill creates symlinks (or junctions on Windows) in each agent CLI's home so every agent discovers the same slash commands. Nothing is copied, no skill content lives outside the repo, and editing a skill in the repo is instantly live in every agent.
+
+The reason the agent home dirs are involved at all: Claude Code reads the repo's `.claude/skills/` directly, but Codex and Gemini only scan their own home dirs. The links bridge that gap without duplicating files.
 
 ## When to run it
 
