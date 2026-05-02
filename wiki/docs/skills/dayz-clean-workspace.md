@@ -1,7 +1,10 @@
 ---
 name: dayz-clean-workspace
-description: Remove DayZ scaffolds and their deployed artifacts. For each scaffolded mod under workspace/<ModName>/, removes the workspace folder, the P:\<ModName>\ junction (only if it points at our workspace), and the P:\Mods\@<ModName>\ deployed dir. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes workspace/_server/. Interactive confirmation by default; --yes skips it.
 ---
+
+## Overview
+
+Remove DayZ scaffolds and their deployed artifacts. For each scaffolded mod under workspace/&lt;ModName&gt;/, removes the workspace folder, the P:\&lt;ModName&gt;\ junction (only if it points at our workspace), and the P:\Mods\@&lt;ModName&gt;\ deployed dir. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes workspace/_server/. Interactive confirmation by default; --yes skips it.
 
 # /dayz-clean-workspace
 
