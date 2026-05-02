@@ -1,6 +1,6 @@
 # Agentic-Z
 
-**An AI Agent Stack for DayZ Modding**, with first-class support for Claude Code, Codex, and Gemini. Clone it to start a new DayZ mod project. Every clone inherits the same scaffolding: rules, agents, skills, helper scripts.
+**An AI Agent Stack for DayZ Modding**, with first-class support for Claude Code, Codex, and Gemini. Clone it to start a new DayZ mod, import a 3D model, set up a server, or tune the economy. Every project inherits opinionated rules, specialist agents, slash-command skills, and a local RAG over the vanilla engine source. Your AI shows up DayZ-fluent on day one.
 
 ## Quick start
 

@@ -1,50 +1,50 @@
 ---
 name: dayz-clean-workspace
-description: Remove DayZ scaffolds and their deployed artifacts. For each scaffolded mod under workspace/&lt;ModName&gt;/, removes the workspace folder, the P:\&lt;ModName&gt;\ junction (only if it points at our workspace), and the P:\Mods\@&lt;ModName&gt;\ deployed dir. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes workspace/_server/. Interactive confirmation by default; --yes skips it.
+description: Remove DayZ scaffolds and their deployed artifacts. For each scaffolded mod under workspace/<ModName>/, removes the workspace folder, the P:\<ModName>\ junction (only if it points at our workspace), and the P:\Mods\@<ModName>\ deployed dir. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes workspace/_server/. Interactive confirmation by default; --yes skips it.
 ---
 
 # /dayz-clean-workspace
 
-Reset the DayZ workspace by removing scaffolds and their deployed artifacts. Safe — only removes mods that match a `workspace/&lt;ModName&gt;/` scaffold (folder containing `config.cpp` + `$PBOPREFIX$`). User-installed / subscribed mods under `&lt;DayZ install&gt;\!Workshop\` are never touched.
+Reset the DayZ workspace by removing scaffolds and their deployed artifacts. Safe — only removes mods that match a `workspace/<ModName>/` scaffold (folder containing `config.cpp` + `$PBOPREFIX$`). User-installed / subscribed mods under `<DayZ install>\!Workshop\` are never touched.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-clean-workspace\clean.py [--mod &lt;Name&gt;] [--include-server] [--yes] [--dry-run]
+python .claude\skills\dayz-clean-workspace\clean.py [--mod <Name>] [--include-server] [--yes] [--dry-run]
 ```
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `--mod &lt;Name&gt;` | no | Target a specific mod by name. Default: all scaffolded mods under `workspace/`. |
+| `--mod <Name>` | no | Target a specific mod by name. Default: all scaffolded mods under `workspace/`. |
 | `--include-server` | no | Also remove `workspace/_server/` (mission copies, per-map cfg, profiles, !ClientDiagLogs). |
 | `--yes` | no | Skip the interactive confirmation prompt. Required when stdin isn't a TTY. |
 | `--dry-run` | no | Print what would be removed; touch nothing. Always exit 0. |
 
 ## What it removes (per scaffolded mod)
 
-For each `workspace/&lt;ModName&gt;/` containing `config.cpp` + `$PBOPREFIX$`:
+For each `workspace/<ModName>/` containing `config.cpp` + `$PBOPREFIX$`:
 
 | Artifact | Removed when |
 |---|---|
-| `P:\&lt;ModName&gt;\` junction | It exists AND points at `workspace/&lt;ModName&gt;/`. (If the link points elsewhere or isn't a link, it's left alone — could be the user's own setup.) |
-| `P:\Mods\@&lt;ModName&gt;\` deployed dir | It exists. (`P:\Mods\` is your `!Workshop` junction; this only removes the `@&lt;ModName&gt;` subfolder, not the workshop folder itself.) |
-| `workspace/&lt;ModName&gt;/` | Always (it's the scaffold we're cleaning). |
+| `P:\<ModName>\` junction | It exists AND points at `workspace/<ModName>/`. (If the link points elsewhere or isn't a link, it's left alone — could be the user's own setup.) |
+| `P:\Mods\@<ModName>\` deployed dir | It exists. (`P:\Mods\` is your `!Workshop` junction; this only removes the `@<ModName>` subfolder, not the workshop folder itself.) |
+| `workspace/<ModName>/` | Always (it's the scaffold we're cleaning). |
 
 With `--include-server`, also removes `workspace/_server/` (mission copies, all per-map configs, all profiles, !ClientDiagLogs). Use this for a full reset; otherwise the server staging stays so you don't have to re-copy missions next time.
 
 ## What it WILL NOT touch
 
-- Mods you installed via Steam Workshop or DayZ Launcher (they live under `&lt;DayZ install&gt;\!Workshop\@&lt;Subscribed&gt;\` and only `@&lt;scaffold-name&gt;` matches are removed).
-- `P:\&lt;Name&gt;\` junctions or folders that don't correspond to a `workspace/&lt;Name&gt;/` scaffold.
-- `P:\Mods\` itself (the junction stays — only the `@&lt;ModName&gt;\` subfolders within it that match scaffolds are removed).
-- Anything outside `workspace/`, `P:\&lt;ModName&gt;\` for matched names, or `P:\Mods\@&lt;ModName&gt;\` for matched names.
+- Mods you installed via Steam Workshop or DayZ Launcher (they live under `<DayZ install>\!Workshop\@<Subscribed>\` and only `@<scaffold-name>` matches are removed).
+- `P:\<Name>\` junctions or folders that don't correspond to a `workspace/<Name>/` scaffold.
+- `P:\Mods\` itself (the junction stays — only the `@<ModName>\` subfolders within it that match scaffolds are removed).
+- Anything outside `workspace/`, `P:\<ModName>\` for matched names, or `P:\Mods\@<ModName>\` for matched names.
 
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero.
-- `--mod &lt;Name&gt;` is given but `workspace/&lt;Name&gt;/` isn't a scaffolded mod (no `config.cpp` / `$PBOPREFIX$`).
+- `--mod <Name>` is given but `workspace/<Name>/` isn't a scaffolded mod (no `config.cpp` / `$PBOPREFIX$`).
 - Stdin isn't a TTY and `--yes` wasn't passed (refuses to silently destroy without an explicit confirmation).
 
 ## Output
@@ -74,6 +74,6 @@ Proceed? [y/N]: y
 
 ## Do not
 
-- Don't add the ability to remove arbitrary `P:\Mods\@&lt;X&gt;\` entries that don't correspond to a `workspace/&lt;X&gt;/` scaffold. The match-on-scaffold rule is what makes this skill safe to run against a machine with subscribed mods.
+- Don't add the ability to remove arbitrary `P:\Mods\@<X>\` entries that don't correspond to a `workspace/<X>/` scaffold. The match-on-scaffold rule is what makes this skill safe to run against a machine with subscribed mods.
 - Don't follow junctions during removal. Use `cmd /c rmdir` (which removes the junction without descending into the target). Plain `rm -rf` on a junction is unreliable on Windows / Git Bash.
 - Don't gate this skill behind any "are you sure" beyond the `--yes` / TTY confirmation. Two prompts are noise.

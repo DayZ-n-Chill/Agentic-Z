@@ -5,7 +5,7 @@ description: Open Object Builder (DayZ Tools' .p3d model editor) from the CLI, o
 
 # /dayz-launch-objectbuilder
 
-Open Object Builder without leaving the terminal. Optionally pre-loads a `.p3d`, or sets the working folder to a specific mod's `P:\&lt;ModName&gt;\` so the file dialog opens inside it.
+Open Object Builder without leaving the terminal. Optionally pre-loads a `.p3d`, or sets the working folder to a specific mod's `P:\<ModName>\` so the file dialog opens inside it.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -15,8 +15,8 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 2. Locates `ObjectBuilder.exe` via DayZ Tools.
 3. Verifies the registry has been populated by `/dayz-setup-objectbuilder` — fails with a clear hint if not.
 4. Resolves the open target:
-   - `--file &lt;path&gt;` → opens that `.p3d` directly.
-   - `--mod &lt;ModName&gt;` → sets working dir to `P:\&lt;ModName&gt;\` so the open-dialog lands there.
+   - `--file <path>` → opens that `.p3d` directly.
+   - `--mod <ModName>` → sets working dir to `P:\<ModName>\` so the open-dialog lands there.
    - Neither → no argument; Object Builder opens its last-used file.
 5. Spawns `ObjectBuilder.exe` with `DETACHED_PROCESS` so the shell returns immediately. The window may take 2-5s to appear.
 
@@ -65,7 +65,7 @@ DayZ Object Builder launcher
 
 - `--file` and `--mod` are mutually exclusive — pass one or neither.
 - `--file` accepts an absolute path. Warns if the extension isn't `.p3d` (Object Builder may refuse).
-- `--mod` is just the mod name; the skill expands to `P:\&lt;ModName&gt;\`. Fails fast if the folder isn't there.
+- `--mod` is just the mod name; the skill expands to `P:\<ModName>\`. Fails fast if the folder isn't there.
 
 ## Why detached
 

@@ -1,0 +1,49 @@
+.terminalWrap {
+  max-width: 720px;
+  margin: 1.5rem auto 2rem;
+  border: 1px solid var(--az-olive, #3a3a2a);
+  background: #0a0a06;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+}
+
+/* Left-justified variant — used inside doc pages where the column already
+   has its own width and a centered terminal looks orphaned. */
+.terminalWrapLeft {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.terminalBar {
+  background: #1a1a14;
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
+  padding: 0.55rem 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: #c9c4a8;
+  opacity: 0.7;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.terminalBody {
+  padding: 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  color: #c9c4a8;
+  line-height: 1.7;
+}
+
+.terminalPrompt {
+  color: #cc6e2f;
+  user-select: none;
+  margin-right: 0.6rem;
+}
+
+.terminalComment {
+  color: #9a9275;
+  font-style: italic;
+}
+
+.terminalCommand {
+  color: #e8e4d4;
+}

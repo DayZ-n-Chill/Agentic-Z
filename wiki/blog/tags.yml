@@ -1,19 +1,29 @@
-facebook:
-  label: Facebook
-  permalink: /facebook
-  description: Facebook tag description
+release:
+  label: Release
+  permalink: /release
+  description: Tagged releases of Agentic-Z.
 
-hello:
-  label: Hello
-  permalink: /hello
-  description: Hello tag description
+changelog:
+  label: Changelog
+  permalink: /changelog
+  description: Notable changes between versions.
 
-docusaurus:
-  label: Docusaurus
-  permalink: /docusaurus
-  description: Docusaurus tag description
+skills:
+  label: Skills
+  permalink: /skills
+  description: New or updated slash skills.
 
-hola:
-  label: Hola
-  permalink: /hola
-  description: Hola tag description
+agents:
+  label: Agents
+  permalink: /agents
+  description: New or updated specialist agents.
+
+rag:
+  label: RAG
+  permalink: /rag
+  description: DayZ RAG (vector index + MCP server) updates.
+
+methodology:
+  label: Methodology
+  permalink: /methodology
+  description: Workflow and convention changes.

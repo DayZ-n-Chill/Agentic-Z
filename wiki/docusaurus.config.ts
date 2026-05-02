@@ -13,19 +13,45 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://your-domain.com',
+  url: 'https://agentic-z.com',
   baseUrl: '/',
 
-  organizationName: 'your-org',
-  projectName: 'agentic-z',
+  organizationName: 'DayZ-n-Chill',
+  projectName: 'Agentic-Z',
 
   onBrokenLinks: 'throw',
 
   markdown: {
+    mermaid: true,
     hooks: {
       onBrokenMarkdownLinks: 'warn',
     },
   },
+
+  themes: ['@docusaurus/theme-mermaid'],
+
+  plugins: [
+    [
+      '@docusaurus/plugin-ideal-image',
+      {
+        quality: 85,
+        max: 1200,
+        min: 480,
+        steps: 3,
+        disableInDev: true,
+      },
+    ],
+    [
+      'plugin-image-zoom',
+      {
+        selector: '.markdown img',
+        background: {
+          light: 'rgba(244, 241, 230, 0.9)',
+          dark: 'rgba(15, 15, 10, 0.92)',
+        },
+      },
+    ],
+  ],
 
   i18n: {
     defaultLocale: 'en',
@@ -55,7 +81,8 @@ const config: Config = {
     image: 'img/AgenticZ_Logo.png',
     colorMode: {
       defaultMode: 'dark',
-      respectPrefersColorScheme: true,
+      disableSwitch: true,
+      respectPrefersColorScheme: false,
     },
     navbar: {
       title: 'Agentic-Z',
@@ -77,7 +104,7 @@ const config: Config = {
           value: '<span class="navbar-os-badge">Source Available</span>',
         },
         {
-          href: 'https://github.com/your-repo',
+          href: 'https://github.com/DayZ-n-Chill/Agentic-Z',
           label: 'GitHub',
           position: 'right',
         },
@@ -117,7 +144,7 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/your-repo',
+              href: 'https://github.com/DayZ-n-Chill/Agentic-Z',
             },
           ],
         },

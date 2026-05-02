@@ -5,7 +5,7 @@ description: Sync this repo's `.claude/skills/` into each agent CLI's home `skil
 
 # /sync-skills
 
-The bootstrap. One source of truth — `&lt;repo&gt;/.claude/skills/` — installed as symlinks (or junctions on Windows) into each agent CLI's home so every agent sees the same set of slash commands without copying any files.
+The bootstrap. One source of truth — `<repo>/.claude/skills/` — installed as symlinks (or junctions on Windows) into each agent CLI's home so every agent sees the same set of slash commands without copying any files.
 
 ## When to run it
 
@@ -41,9 +41,9 @@ To support a new agent later, append an entry to `.claude/skills/sync-skills/age
 
 ## What it does, per skill, per agent
 
-For every folder under `.claude/skills/&lt;name&gt;/` containing `SKILL.md` (folders starting with `_` like `_shared/` are skipped — they're helpers, not skills):
+For every folder under `.claude/skills/<name>/` containing `SKILL.md` (folders starting with `_` like `_shared/` are skipped — they're helpers, not skills):
 
-| Existing state in `&lt;home&gt;/skills/&lt;name&gt;` | Action |
+| Existing state in `<home>/skills/<name>` | Action |
 |---|---|
 | Link already points at the repo skill | `[OK]` no-op |
 | Link points elsewhere (stale) | `[REFRESH]` retarget to the repo |
@@ -89,6 +89,6 @@ Non-zero exit if any operation failed.
 
 ## Do not
 
-- Don't edit skills inside `&lt;home&gt;/skills/&lt;name&gt;/` — those are links into the repo. Edit them in `&lt;repo&gt;/.claude/skills/&lt;name&gt;/` and changes are live everywhere.
+- Don't edit skills inside `<home>/skills/<name>/` — those are links into the repo. Edit them in `<repo>/.claude/skills/<name>/` and changes are live everywhere.
 - Don't commit anything outside the repo. The agent home dirs are out-of-tree.
 - Don't bother running with elevation just to get symlinks instead of junctions on Windows. They behave identically for skill discovery.

@@ -7,19 +7,19 @@ description: Launch a local DayZ Diag server plus the diag client connecting to 
 
 Run-only: launches a local DayZ test session for one or more built mods. Always starts the **server first**, then the **client** connecting to it — DayZ cannot be tested standalone (per L2 conventions). Both run from `DayZDiag_x64.exe` with `-filePatching` for fast iteration on Enforce Script and config edits.
 
-**Prerequisite:** the map you're testing on must have been added via `/dayz-add-map &lt;map&gt;` first. This skill does no setup — it verifies state and runs.
+**Prerequisite:** the map you're testing on must have been added via `/dayz-add-map <map>` first. This skill does no setup — it verifies state and runs.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-launch-test\launch.py &lt;ModName&gt; [&lt;ModName2&gt; ...] [--map &lt;name&gt;] [--port N] [--dry-run]
+python .claude\skills\dayz-launch-test\launch.py <ModName> [<ModName2> ...] [--map <name>] [--port N] [--dry-run]
 ```
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `&lt;ModName&gt; ...` | yes | One or more mod names already built. Each must have `P:\Mods\@&lt;ModName&gt;\Addons\&lt;ModName&gt;.pbo` present (build with `/dayz-build-pbo` first). |
+| `<ModName> ...` | yes | One or more mod names already built. Each must have `P:\Mods\@<ModName>\Addons\<ModName>.pbo` present (build with `/dayz-build-pbo` first). |
 | `--map` | no | Map / mission to test on. Default `chernarus`. Known aliases: `chernarus` → `dayzOffline.chernarusplus`, `livonia` → `dayzOffline.enoch`, `sakhal` → `dayzOffline.sakhal`. Custom missions: pass the actual mission folder name (e.g. `--map dayzOffline.namalsk`). |
 | `--port` | no | Server port. Default `2302`. |
 | `--dry-run` | no | Print the resolved server and client commands, then exit 0. Useful for verifying paths and arg construction without firing up the game. |
@@ -50,27 +50,27 @@ workspace/_server/
         └── profiles/
 ```
 
-The **client** uses `workspace/_server/!ClientDiagLogs/` as its `-profiles=` directory — all client-side diag artifacts get contained inside that one folder. The **server** uses per-map `workspace/_server/maps/&lt;map&gt;/profiles/` so server-side logs stay isolated by map.
+The **client** uses `workspace/_server/!ClientDiagLogs/` as its `-profiles=` directory — all client-side diag artifacts get contained inside that one folder. The **server** uses per-map `workspace/_server/maps/<map>/profiles/` so server-side logs stay isolated by map.
 
 The mission folders are **editable copies**, not the originals. Edit `workspace/_server/missions/dayzOffline.chernarusplus/init.c` (etc.) freely — `-filePatching` makes the server read your edits live. Each map has its own `serverDZ.cfg` so per-map tuning (player count, time of day, persistence) doesn't bleed across maps.
 
 ## What it does
 
 1. **Preflight gate** — runs `/dayz-preflight`; halts on non-zero.
-2. **Built-mod check** — for each mod, verifies `P:\Mods\@&lt;ModName&gt;\Addons\&lt;ModName&gt;.pbo` exists. Fails fast with a hint to run `/dayz-build-pbo` if missing.
+2. **Built-mod check** — for each mod, verifies `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists. Fails fast with a hint to run `/dayz-build-pbo` if missing.
 3. **Diag client resolution** — finds `DayZDiag_x64.exe` via `find_dayz_diag()` (env var → DayZ game install → Steam paths). **Hard-fails** if missing. Both client and server run from the same diag binary; the server adds `-server`. Retail `DayZ_x64.exe` and `DayZServer_x64.exe` are NOT used — both block past the loading screen with `-filePatching` enabled.
-4. **Map state verification** — confirms `workspace/_server/missions/&lt;template&gt;/` exists AND `workspace/_server/maps/&lt;map&gt;/serverDZ.cfg` exists. **Hard-fails with a hint to run `/dayz-add-map &lt;map&gt;`** if either is missing. The only mutation this skill performs on an existing cfg is auto-appending `allowFilePatching = 1;` if absent.
-5. **Launch server** — spawns `DayZDiag_x64.exe -server -config=&lt;map&gt;/serverDZ.cfg -profiles=&lt;map&gt;/profiles -mission=&lt;missions&gt;/&lt;template&gt; -mod=@Mod1;@Mod2 -filePatching -port=&lt;port&gt;`. The `-mission=&lt;absolute path&gt;` flag pins the mission folder explicitly so the engine doesn't look in the wrong `mpmissions/` dir.
+4. **Map state verification** — confirms `workspace/_server/missions/<template>/` exists AND `workspace/_server/maps/<map>/serverDZ.cfg` exists. **Hard-fails with a hint to run `/dayz-add-map <map>`** if either is missing. The only mutation this skill performs on an existing cfg is auto-appending `allowFilePatching = 1;` if absent.
+5. **Launch server** — spawns `DayZDiag_x64.exe -server -config=<map>/serverDZ.cfg -profiles=<map>/profiles -mission=<missions>/<template> -mod=@Mod1;@Mod2 -filePatching -port=<port>`. The `-mission=<absolute path>` flag pins the mission folder explicitly so the engine doesn't look in the wrong `mpmissions/` dir.
 6. **Wait 5s** for the server to start listening.
-7. **Launch client** — spawns `DayZDiag_x64.exe -profiles=workspace/_server/!ClientDiagLogs -mod=@Mod1;@Mod2 -connect=127.0.0.1 -port=&lt;port&gt; -filePatching` plus the display flags from per-clone preferences. The client `-profiles=` points at the `!ClientDiagLogs/` folder so all client-side diag artifacts (`Users/`, `DataCache/`, RPT, script logs, BE state) get contained in that one folder rather than spread across the `_server/` root or polluting the DayZ install dir.
+7. **Launch client** — spawns `DayZDiag_x64.exe -profiles=workspace/_server/!ClientDiagLogs -mod=@Mod1;@Mod2 -connect=127.0.0.1 -port=<port> -filePatching` plus the display flags from per-clone preferences. The client `-profiles=` points at the `!ClientDiagLogs/` folder so all client-side diag artifacts (`Users/`, `DataCache/`, RPT, script logs, BE state) get contained in that one folder rather than spread across the `_server/` root or polluting the DayZ install dir.
 8. **Print PIDs and exit.** Both processes run independently. Close the windows manually to stop them. (A future `/dayz-stop-test` skill can manage shutdown.)
 
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero.
-- Any named mod has no PBO at `P:\Mods\@&lt;ModName&gt;\Addons\&lt;ModName&gt;.pbo`.
+- Any named mod has no PBO at `P:\Mods\@<ModName>\Addons\<ModName>.pbo`.
 - `DayZDiag_x64.exe` is not found (set `DAYZ_DIAG_PATH`, or verify your DayZ install — diag lives next to retail in the DayZ game dir).
-- The selected `--map` hasn't been set up yet — `workspace/_server/missions/&lt;template&gt;/` or `workspace/_server/maps/&lt;map&gt;/serverDZ.cfg` is missing. Run `/dayz-add-map &lt;map&gt;` first. (This skill never copies missions or creates configs; setup is a separate, explicit step.)
+- The selected `--map` hasn't been set up yet — `workspace/_server/missions/<template>/` or `workspace/_server/maps/<map>/serverDZ.cfg` is missing. Run `/dayz-add-map <map>` first. (This skill never copies missions or creates configs; setup is a separate, explicit step.)
 
 ## Output (success — first run)
 
@@ -142,7 +142,7 @@ Created on first launch with these defaults:
 }
 ```
 
-These map to DayZ launch flags `-window`, `-x=&lt;width&gt;`, `-y=&lt;height&gt;`. The defaults exist because mod testing on an ultra-wide / large monitor in fullscreen is painful; 1080p windowed is comfortable for iteration. Edit the file freely — the skill won't overwrite it once it exists. Set `"windowed": false` for fullscreen, change resolution to whatever your monitor likes.
+These map to DayZ launch flags `-window`, `-x=<width>`, `-y=<height>`. The defaults exist because mod testing on an ultra-wide / large monitor in fullscreen is painful; 1080p windowed is comfortable for iteration. Edit the file freely — the skill won't overwrite it once it exists. Set `"windowed": false` for fullscreen, change resolution to whatever your monitor likes.
 
 The file is in `.claude/local-memory/` (gitignored, per-clone) — your monitor setup doesn't belong in the repo, and other users of the template clone can pick their own values.
 
@@ -156,6 +156,6 @@ Each map's `serverDZ.cfg` is independent. Tweak `workspace/_server/maps/chernaru
 - Don't substitute retail `DayZ_x64.exe` or `DayZServer_x64.exe` for the diag binary. Retail blocks past the loading screen with `-filePatching` enabled; mod development requires diag for both ends.
 - Don't re-implement DayZ install path discovery — import `find_dayz_diag` from `dayz-preflight/preflight.py`. (Mission copying lives in `/dayz-add-map` and uses `find_dayz_server`; this skill doesn't.)
 - Don't add bootstrap / setup logic to this skill. Setup is `/dayz-add-map`'s job; this skill verifies and runs only. Two skills, one responsibility each.
-- Don't edit missions inside the original DayZ Server install — edit the workspace copy under `workspace/_server/missions/&lt;template&gt;/`.
+- Don't edit missions inside the original DayZ Server install — edit the workspace copy under `workspace/_server/missions/<template>/`.
 - Don't auto-kill the spawned processes. The user closes them manually for now. Adding a process-lifecycle skill is a separate concern.
 - Don't bake user-specific tuning into the default `serverDZ.cfg` template. Keep it minimal; let the user edit per-map cfgs to taste.

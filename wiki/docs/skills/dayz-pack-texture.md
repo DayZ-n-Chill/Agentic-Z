@@ -24,12 +24,12 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-pack-texture\pack_texture.py &lt;input1&gt; [&lt;input2&gt; ...]
+python .claude\skills\dayz-pack-texture\pack_texture.py <input1> [<input2> ...]
 ```
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `&lt;input&gt;` | yes (one or more) | Path to a `.png` or `.tga` file with a valid suffix in the basename. Globs work via your shell. |
+| `<input>` | yes (one or more) | Path to a `.png` or `.tga` file with a valid suffix in the basename. Globs work via your shell. |
 
 ## What it does
 
@@ -38,7 +38,7 @@ python .claude\skills\dayz-pack-texture\pack_texture.py &lt;input1&gt; [&lt;inpu
 3. For each input:
    - Validate extension is `.png` or `.tga`.
    - Validate basename ends with one of `_co`, `_nohq`, `_smdi` (before the extension).
-   - Invoke `ImageToPAA.exe &lt;input&gt; &lt;output.paa&gt;`. Streams the tool's output live.
+   - Invoke `ImageToPAA.exe <input> <output.paa>`. Streams the tool's output live.
 4. Report a summary of successes and failures. Exit non-zero if any failed.
 
 ## Refuses to run if

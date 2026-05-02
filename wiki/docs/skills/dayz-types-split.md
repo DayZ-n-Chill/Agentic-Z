@@ -14,7 +14,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-types-split\split.py &lt;path-to-types.xml&gt;
+python .claude\skills\dayz-types-split\split.py <path-to-types.xml>
 ```
 
 Typical:
@@ -26,22 +26,22 @@ python .claude\skills\dayz-types-split\split.py workspace\_server\missions\dayzO
 ## What it does
 
 1. Preflight gate.
-2. Validate `&lt;types.xml&gt;` exists and `cfgeconomycore.xml` is one directory up (DayZ standard layout: `&lt;mission&gt;/cfgeconomycore.xml` + `&lt;mission&gt;/db/types.xml`).
-3. Back up `&lt;types.xml&gt;` to `&lt;types.xml&gt;.bak`.
+2. Validate `<types.xml>` exists and `cfgeconomycore.xml` is one directory up (DayZ standard layout: `<mission>/cfgeconomycore.xml` + `<mission>/db/types.xml`).
+3. Back up `<types.xml>` to `<types.xml>.bak`.
 4. Copy the vendored `typeSplitter.py` next to your `types.xml` (the upstream script uses `__file__` to find `types.xml`), run it with `python`, then remove the temp copy.
-5. Verify `&lt;dir&gt;/types/` was created and report the categorized files written.
+5. Verify `<dir>/types/` was created and report the categorized files written.
 
 ## What gets created
 
-- `&lt;dir&gt;/types/` — directory containing one XML per category (only categories with at least one entry are emitted):
+- `<dir>/types/` — directory containing one XML per category (only categories with at least one entry are emitted):
   - `ammo.xml`, `armbands.xml`, `ammo_boxes.xml`, `animals.xml`, `contamination.xml`, `flags.xml`, `staticObjs.xml`, `vehicles.xml`, `wrecks.xml`, `zombies.xml`, `seasonal.xml`, `clothes.xml`, `explosives.xml`, `containers.xml`, `food.xml`, `tools.xml`, `weapons.xml`, `vehicleParts.xml`, `uncategorized.xml`
-- `&lt;types.xml&gt;.bak` — backup of the original.
-- `&lt;mission&gt;/cfgeconomycore.xml` — updated with `&lt;ce folder="types"&gt;` + `&lt;file name="..." type="types"/&gt;` entries pointing at each new categorized file.
+- `<types.xml>.bak` — backup of the original.
+- `<mission>/cfgeconomycore.xml` — updated with `<ce folder="types">` + `<file name="..." type="types"/>` entries pointing at each new categorized file.
 
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero.
-- `&lt;types.xml&gt;` doesn't exist or isn't named `types.xml`.
+- `<types.xml>` doesn't exist or isn't named `types.xml`.
 - `cfgeconomycore.xml` isn't in the parent directory (the upstream tool requires that layout).
 
 ## Output

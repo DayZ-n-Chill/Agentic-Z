@@ -23,7 +23,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ## Where the index lives
 
-`~/.claude/dayz-rag-index/` (= `C:\Users\&lt;you&gt;\.claude\dayz-rag-index\`)
+`~/.claude/dayz-rag-index/` (= `C:\Users\<you>\.claude\dayz-rag-index\`)
 
 - `lancedb/` — vector store
 - `manifest.json` — embed model used, per-source chunk counts, indexed-at, **token usage + $ estimate**
@@ -41,7 +41,7 @@ Embedding runs through Voyage AI's hosted API. Code-tuned model, much higher ret
 
 ### One-time setup
 
-1. Get a key at [https://dash.voyageai.com](https://dash.voyageai.com).
+1. Get a key at [dash.voyageai.com](https://dash.voyageai.com).
 2. Add it to `.env` at the repo root (gitignored — never commits):
    ```
    VOYAGE_API_KEY=pa-xxxxxxxxxxxx
@@ -93,7 +93,7 @@ Walking vanilla folders: scripts, gui, dz, core, graphics, languagecore
   rvmat dedup: 33800 duplicates (97.6%)
 
 Embedding 34322 chunks via Voyage (voyage-code-3, document mode)...
-  embedding: 100%|██| 34322/34322 [03:42&lt;00:00] 12,847,231 tok / ~$2.312
+  embedding: 100%|██| 34322/34322 [03:42<00:00] 12,847,231 tok / ~$2.312
 
 [OK]    Index built: 34322 chunks
 [INFO]  Tokens used: 12,847,231  |  Estimated cost: $2.3125
@@ -109,7 +109,7 @@ Embedding 34322 chunks via Voyage (voyage-code-3, document mode)...
 ## Safety rails
 
 - Hard-fails if `VOYAGE_API_KEY` is missing — no silent partial runs.
-- Refuses to embed &gt;150k chunks without `--force` (cost/runtime backstop).
+- Refuses to embed >150k chunks without `--force` (cost/runtime backstop).
 - Retries on 429 / transient network errors with exponential backoff.
 - Live token counter + $ estimate so an unexpected blow-up surfaces instantly.
 

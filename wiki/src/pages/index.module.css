@@ -248,7 +248,44 @@
   text-transform: uppercase;
   color: #a8a288;
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+.sectionLead {
+  max-width: 720px;
+  margin: 0 auto 3rem;
+  text-align: center;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #c9c4a8;
+}
+
+.sectionLead strong {
+  color: #e8e4d4;
+  font-weight: 600;
+}
+
+.styleGuideCredit {
+  text-align: center;
+  margin: 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--az-olive, #3a3a2a);
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: #a8a288;
+  letter-spacing: 0.04em;
+}
+
+.styleGuideCredit a {
+  color: #cc6e2f;
+  text-decoration: none;
+}
+
+.styleGuideCredit a:hover {
+  text-decoration: underline;
 }
 
 /* Architecture */
@@ -284,18 +321,52 @@
 
 .archTitle {
   font-family: 'Oswald', sans-serif;
-  font-size: 1.3rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: #e8e4d4;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.4rem;
+  line-height: 1.1;
+}
+
+.archEssence {
+  font-family: 'Oswald', 'Inter', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #cc6e2f;
+  letter-spacing: 0.01em;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--az-olive, #3a3a2a);
 }
 
 .archDesc {
   color: #c9c4a8;
   font-size: 0.95rem;
   line-height: 1.55;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.archWhyLabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #a0421f;
+  opacity: 0.85;
+  margin-bottom: 0.3rem;
+}
+
+.archWhy {
+  color: #a8a288;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  font-style: italic;
+  margin-bottom: 0.85rem;
+  border-left: 2px solid var(--az-olive, #3a3a2a);
+  padding-left: 0.7rem;
 }
 
 .archPath {

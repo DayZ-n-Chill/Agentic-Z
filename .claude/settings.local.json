@@ -26,7 +26,8 @@
       "Read(//tmp/**)",
       "Bash(\"/c/Program Files \\(x86\\)/Steam/steamapps/common/DayZ Tools/Bin/AddonBuilder/AddonBuilder.exe\" P:\\\\\\\\MyBuildTest P:\\\\\\\\Mods\\\\\\\\@MyBuildTest\\\\\\\\Addons -prefix=MyBuildTest -temp=P:\\\\\\\\temp\\\\\\\\MyBuildTest -exclude=C:\\\\\\\\Users\\\\\\\\twora\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\excl.lst -clear)",
       "Bash(rm .claude/skills/dayz-build-pbo/exclude.lst)",
-      "Bash(rm -f /tmp/excl.lst)"
+      "Bash(rm -f /tmp/excl.lst)",
+      "Bash(curl *)"
     ]
   },
   "enabledMcpjsonServers": [

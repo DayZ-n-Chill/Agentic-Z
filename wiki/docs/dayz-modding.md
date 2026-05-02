@@ -1,78 +1,55 @@
 # DayZ Modding
 
-This template ships with a complete DayZ modding workflow as four slash commands. Together they cover the full mod lifecycle — from "fresh checkout" to "playing my mod on a local server."
+The full mod lifecycle, from a fresh checkout to a running local server, is covered by a handful of slash commands. They group into three phases: set up your environment and project once, iterate on your code repeatedly, then clean up when you're done.
 
-The six commands:
+### Setup
 
-1. **`/dayz-preflight`** — verifies your DayZ modding environment is ready.
-2. **`/dayz-new-mod`** — scaffolds a new mod project with the standard skeleton and the required `P:\&lt;ModName&gt;\` junction.
-3. **`/dayz-add-map`** — sets up a test map under `workspace/_server/`: copies the mission template, creates the per-map `serverDZ.cfg` + `profiles/`. One-time per map.
-4. **`/dayz-build-pbo`** — packs the mod into a deployable `.pbo` via DayZ Tools' AddonBuilder.
-5. **`/dayz-launch-test`** — spins up a local DayZ server with your mod loaded on the chosen map, then connects the client. Run-only — refuses if the map hasn't been added.
+The setup commands prepare your environment and your project. Most are one-time per machine or per mod, but technically you can run them again at any time. Re-running preflight verifies your environment, re-running scaffold throws an error if the project already exists (use clean first), and re-running add-map is idempotent.
 
-   Counterpart: **`/dayz-stop-test`** — force-kills any running DayZDiag_x64.exe processes so you can stop a session without hunting down windows. Doesn't gate on preflight (emergency escape hatch).
-6. **`/dayz-clean-workspace`** — DayZ-only cleanup. Removes scaffolds and their deployed artifacts (workspace folders, `P:\&lt;ModName&gt;\` junctions that target our workspace, `P:\Mods\@&lt;ModName&gt;\` deploy dirs). Match-on-scaffold rule keeps your subscribed mods safe. `--include-server` also removes `workspace/_server/`.
+<div class="cmd-table">
 
-For a repo-wide wipe across every domain (pre-push reset), use the general **`/clean-repo`** skill — it orchestrates each `&lt;domain&gt;-clean-workspace` cleanup in turn.
+| Command | What it does |
+|---|---|
+| **`/dayz-preflight`** | Verifies the DayZ modding environment (`P:\` mounted, Tools installed, vanilla data extracted). Every other DayZ skill calls this first. |
+| **`/dayz-new-mod`** | Scaffolds a new mod project under `workspace/<ModName>/` with the standard skeleton and the required `P:\<ModName>\` junction. |
+| **`/dayz-add-map`** | Sets up a test map under `workspace/_server/`: copies the mission template, creates the per-map `serverDZ.cfg` + `profiles/`. Run once per map. |
 
-Every step is gated on `/dayz-preflight` first per the L2 convention `.claude/skills/_shared/dayz-conventions.md`.
+</div>
+
+### Iteration
+
+The iteration commands are the loop you run repeatedly while building. Edit your code, build the PBO, launch the test server + client, see what happens, repeat. The stop command is your escape hatch when things hang.
+
+<div class="cmd-table">
+
+| Command | What it does |
+|---|---|
+| **`/dayz-build-pbo`** | Packs the mod into a deployable `.pbo` via DayZ Tools' AddonBuilder. |
+| **`/dayz-launch-test`** | Spins up a local DayZ server with your mod loaded on the chosen map, then connects the client. Refuses if the map hasn't been added. |
+| **`/dayz-stop-test`** | Force-kills any running `DayZDiag_x64.exe` processes. The emergency escape hatch. Doesn't gate on preflight, works even when the environment is broken. |
+
+</div>
+
+### Cleanup
+
+The cleanup commands wipe template-managed artifacts so your repo is ready to push or you can start a project fresh. Both are scoped: they only touch what Agentic-Z scaffolded, never your subscribed mods or hand-rolled projects.
+
+<div class="cmd-table">
+
+| Command | What it does |
+|---|---|
+| **`/dayz-clean-workspace`** | Removes scaffolds and their deployed artifacts (workspace folders, junctions, `P:\Mods\@<ModName>\` deploy dirs). Match-on-scaffold rule keeps your subscribed mods safe. Pass `--include-server` to also wipe `workspace/_server/`. |
+| **`/clean-repo`** | Orchestrates every cleanup skill at once for a pre-push reset. |
+
+</div>
+
+Every step except `/dayz-stop-test` gates on `/dayz-preflight` first, per the L2 convention at `.claude/skills/_shared/dayz-conventions.md`.
 
 ---
 
 ## Prerequisites
 
-You need a Windows machine with:
-
-| Requirement | How to get it | Why |
-|---|---|---|
-| **DayZ** (the game) | Steam — buy it | The client (`DayZ_x64.exe`) you'll use to test mods. |
-| **DayZ Tools** | Steam → Library → Tools (free) | AddonBuilder, Binarize, P-drive mounting. |
-| **DayZ Diag** | Comes with DayZ — `DayZDiag_x64.exe` lives next to `DayZ_x64.exe` in your DayZ install dir | The diagnostic build that allows `-filePatching` to function. Used for **both** client and server in `/dayz-launch-test`. Retail binaries block past the loading screen with filePatching on. |
-| **`P:\` drive mounted** | Open DayZ Tools → mount the P drive, **OR** run `python .claude\skills\dayz-mount-p\mount.py` (auto-resolves the work drive from DayZ Tools' `settings.ini`) | DayZ Tools and the engine both read from `P:\`. Preflight hard-fails without it. P:\ does not auto-mount; mount it at the start of each session. |
-| **`P:\Mods\` junction** | One-time: `cmd /c mklink /J P:\Mods "&lt;DayZ install&gt;\!Workshop"` | The DayZ engine and Launcher load mods from `&lt;DayZ install&gt;\!Workshop\`. The `P:\Mods\` junction lets builds deploy via `P:\Mods\@&lt;ModName&gt;\Addons\&lt;ModName&gt;.pbo` and actually land where the engine reads. Build-pbo hard-fails if this junction is missing or points at a regular folder. |
-| **Vanilla DayZ data on `P:\`** | DayZ Tools → "Extract Game Data" | Configs in your mod inherit from base classes (`ItemBase`, `Inventory_Base`, etc.) which only exist if vanilla PBOs are unpacked. |
-| **Python 3.8+** on `PATH` | python.org | The skills are Python scripts. |
-| **Voyage AI API key** *(optional, only for RAG)* | Sign up at &lt;https://dash.voyageai.com&gt; (free, 200M-token allowance), add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root | Powers `/dayz-rag-index` and the `dayz-rag` MCP server. Enables semantic search ("how does vanilla handle X?") over the indexed source. Embeddings via `voyage-code-3` (code-tuned, 1024-dim). Without it, agents fall back to `Grep` on the documented vanilla paths — fully functional, just less smart. **Shortcut:** `/dayz-rag-download` pulls a prebuilt index from GitHub releases (~1 min) — no key needed for download, but query-time still requires the key. |
-
----
-
-## Quick start
-
-From a fresh clone:
-
-```cmd
-git clone &lt;this-repo&gt; my-dayz-mod
-cd my-dayz-mod
-python .claude\skills\sync-skills\sync.py
-
-:: Optional but recommended — pull the prebuilt vector index from GitHub
-:: releases instead of running /dayz-rag-index locally (~25 min vs ~1 min):
-python .claude\skills\dayz-rag-download\download.py
-```
-
-Then, every time you start a modding session:
-
-```cmd
-:: 1. Verify environment (P:\ mounted, Tools installed, vanilla data extracted)
-python .claude\skills\dayz-preflight\preflight.py
-
-:: 2. Scaffold a new mod (only the first time per mod)
-python .claude\skills\dayz-new-mod\new_mod.py MyMod --author "MyHandle"
-
-:: 3. Set up a test map (only the first time per map — copies mission template,
-::    creates per-map serverDZ.cfg + profiles/)
-python .claude\skills\dayz-add-map\add_map.py chernarus
-
-:: 4. Edit your mod under workspace\MyMod\ — see Mod project layout below
-
-:: 5. Build the PBO
-python .claude\skills\dayz-build-pbo\build.py MyMod
-
-:: 6. Launch local server + client with your mod loaded on the chosen map
-python .claude\skills\dayz-launch-test\launch.py MyMod --map chernarus
-```
-
-Inside Claude Code, Codex, or Gemini CLI, the same commands are available as slash commands: `/dayz-preflight`, `/dayz-new-mod`, etc.
+This guide assumes you've already done the one-time setup: DayZ, DayZ Tools, DayZ Diag, the `P:\` drive, the `P:\Mods\` junction, vanilla data extracted, Python, and (optionally) a Voyage API key for RAG. If you haven't, head to **[Prerequisites](./prerequisites)** first.
 
 ---
 
@@ -297,81 +274,6 @@ The full L2 rules live at `.claude/skills/_shared/dayz-conventions.md`. The high
 - **Skills MUST use the shared resolvers** (`find_dayz_tools`, `find_dayz_game`, `find_dayz_diag`, `find_dayz_server`, `find_vanilla_data` in `dayz-preflight/preflight.py`) rather than re-implementing path discovery. Single source of truth.
 
 ---
-
-## Troubleshooting
-
-### `[FAIL] P:\ is NOT mounted`
-
-DayZ Tools didn't mount the P drive (or it was unmounted). Open DayZ Tools and use the "Mount P drive" command (Tools menu). `P:\` does not auto-mount across reboots.
-
-### `[FAIL] DayZ Tools not detected`
-
-Either DayZ Tools isn't installed, or it's installed somewhere unusual.
-
-- Install via Steam → Library → Tools → DayZ Tools (free).
-- If installed in a non-default location: set `$env:DAYZ_TOOLS_PATH` to the install root (parent of `Bin\AddonBuilder\AddonBuilder.exe`).
-
-### `[FAIL] Vanilla DayZ data not detected on P:\`
-
-You haven't extracted the vanilla DayZ PBOs to `P:\`. Open DayZ Tools → Extract Game Data → run the extraction. This is a one-time setup step (per Tools update).
-
-### `[FAIL] P:\Mods\ does not exist` / `is a regular folder, not a junction` / `junction is dangling`
-
-`P:\Mods\` must be a directory junction to `&lt;DayZ install&gt;\!Workshop\` so built PBOs land where the engine actually loads mods. Run:
-
-```cmd
-cmd /c rmdir P:\Mods                                                     (only if it exists as a regular folder)
-cmd /c mklink /J P:\Mods "C:\Program Files (x86)\Steam\steamapps\common\DayZ\!Workshop"
-```
-
-Adjust the target path if your DayZ install is elsewhere. Preflight warns; build-pbo refuses to run.
-
-### `Connection failed 0x00020005` / "The server does not support the client's current filePatching setting"
-
-The server's `serverDZ.cfg` is missing `allowFilePatching = 1;`. The client connects with `-filePatching` enabled, and the server refuses unless the cfg explicitly allows it. `/dayz-launch-test` auto-appends `allowFilePatching = 1;` to existing `serverDZ.cfg` files that don't have it — re-running the skill should fix it. If you've manually set `allowFilePatching = 0;`, the skill leaves your value alone (you have to know what you're doing); change it to `1` yourself for diag-mode testing.
-
-### "Mission script has no main function. PlayerConnect will stay disabled"
-
-The server can't find a valid mission folder, so it loaded an empty/broken mission. Check that:
-
-- `workspace/_server/missions/&lt;template&gt;/` exists (default chernarus → `dayzOffline.chernarusplus`).
-- That folder has an `init.c` with a proper `main()` function.
-
-`/dayz-launch-test` passes `-mission=&lt;absolute path to workspace/_server/missions/&lt;template&gt;>` so the engine doesn't look in the wrong `mpmissions/` location. If the workspace mission copy got corrupted or partially deleted, remove the affected folder and re-run the skill — it'll re-copy from DayZ Server install.
-
-### `[FAIL] DayZDiag_x64.exe not found`
-
-DayZ Diag is the diagnostic client required for mod development. It ships **alongside** the retail `DayZ_x64.exe` in your DayZ game install dir — if you have DayZ installed it should already be there. If it's not, your DayZ install may be incomplete or out of date. Verify the file integrity in Steam (Library → DayZ → Properties → Local Files → Verify). If your install is in a non-standard location, set `DAYZ_DIAG_PATH` directly to the exe path.
-
-### `[FAIL] P:\&lt;ModName&gt; already exists. Refusing to scaffold`
-
-You have a folder or junction at `P:\&lt;ModName&gt;\` that the skill won't clobber. Either:
-
-- It's a real folder (move or rename it manually).
-- It's a junction pointing somewhere other than `workspace/&lt;ModName&gt;/` (remove via `cmd /c rmdir P:\&lt;ModName&gt;` and re-run).
-
-### `[FAIL] workspace\&lt;ModName&gt; already exists`
-
-The scaffold already exists. Pick a different name, or `rm -rf workspace/&lt;ModName&gt;/` to start over (the skill will auto-clean the resulting dangling junction on the next scaffold).
-
-### `[FAIL] Mod '&lt;Name&gt;' has no built PBO`
-
-You called `/dayz-launch-test` before `/dayz-build-pbo`. Run the build first.
-
-### Mod doesn't load in-game
-
-Checklist:
-
-- `/dayz-preflight` passes?
-- `P:\&lt;ModName&gt;\` junction points at the right `workspace\&lt;ModName&gt;\`?
-- `workspace\&lt;ModName&gt;\config.cpp` has a `CfgPatches\&lt;ModName&gt;` entry?
-- `P:\Mods\@&lt;ModName&gt;\Addons\&lt;ModName&gt;.pbo` is newer than your last edit?
-- Server console log (`workspace\_server-profile\server_console.log`) shows the mod loading?
-- Client launch line includes `-mod=@&lt;ModName&gt;`?
-
-### Junction got corrupted / `P:\&lt;ModName&gt;\` lost track
-
-Quickest fix: `rm -rf workspace/&lt;ModName&gt;/` (back up first if there's local work), then re-run `/dayz-new-mod &lt;ModName&gt;`. The stale-junction auto-clean handles the orphaned junction on the re-scaffold.
 
 ---
 
