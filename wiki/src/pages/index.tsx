@@ -210,7 +210,7 @@ function RagSection() {
         <p className={styles.sectionLead}>
           Your AI doesn’t just know DayZ in general. It can read the actual engine source and the community wiki on demand, indexed locally on your machine, without you copy-pasting code into the chat.
         </p>
-        <div className={styles.archGrid} style={{gridTemplateColumns: 'repeat(2, 1fr)'}}>
+        <div className={`${styles.archGrid} ${styles.archGrid2col}`}>
           {RAG_FEATURES.map((f) => (
             <div className={styles.archCard} key={f.title}>
               <div className={styles.archLayer}>RAG</div>
