@@ -68,7 +68,12 @@ const config: Config = {
           routeBasePath: 'docs',
         },
         blog: {
-          showReadingTime: true,
+          path: 'blog',
+          routeBasePath: 'changelog',
+          blogTitle: 'Changelog',
+          blogDescription: 'Notable changes and releases for Agentic-Z.',
+          blogSidebarTitle: 'All releases',
+          showReadingTime: false,
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -97,7 +102,7 @@ const config: Config = {
           position: 'left',
           label: 'Documentation',
         },
-        {to: '/blog', label: 'Blog', position: 'left'},
+        {to: '/changelog', label: 'Changelog', position: 'left'},
         {
           type: 'html',
           position: 'right',
@@ -139,8 +144,8 @@ const config: Config = {
           title: 'More',
           items: [
             {
-              label: 'Blog',
-              to: '/blog',
+              label: 'Changelog',
+              to: '/changelog',
             },
             {
               label: 'GitHub',
