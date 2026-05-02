@@ -6,15 +6,21 @@ The full mod lifecycle, from a fresh checkout to a running local server, is cove
 
 The setup commands prepare your environment and your project. Most are one-time per machine or per mod, but technically you can run them again at any time. Re-running preflight verifies your environment, re-running scaffold throws an error if the project already exists (use clean first), and re-running add-map is idempotent.
 
+<div class="cmd-table">
+
 | Command | What it does |
 |---|---|
 | **`/dayz-preflight`** | Verifies the DayZ modding environment (`P:\` mounted, Tools installed, vanilla data extracted). Every other DayZ skill calls this first. |
 | **`/dayz-new-mod`** | Scaffolds a new mod project under `workspace/<ModName>/` with the standard skeleton and the required `P:\<ModName>\` junction. |
 | **`/dayz-add-map`** | Sets up a test map under `workspace/_server/`: copies the mission template, creates the per-map `serverDZ.cfg` + `profiles/`. Run once per map. |
 
+</div>
+
 ### Iteration
 
 The iteration commands are the loop you run repeatedly while building. Edit your code, build the PBO, launch the test server + client, see what happens, repeat. The stop command is your escape hatch when things hang.
+
+<div class="cmd-table">
 
 | Command | What it does |
 |---|---|
@@ -22,14 +28,20 @@ The iteration commands are the loop you run repeatedly while building. Edit your
 | **`/dayz-launch-test`** | Spins up a local DayZ server with your mod loaded on the chosen map, then connects the client. Refuses if the map hasn't been added. |
 | **`/dayz-stop-test`** | Force-kills any running `DayZDiag_x64.exe` processes. The emergency escape hatch. Doesn't gate on preflight, works even when the environment is broken. |
 
+</div>
+
 ### Cleanup
 
 The cleanup commands wipe template-managed artifacts so your repo is ready to push or you can start a project fresh. Both are scoped: they only touch what Agentic-Z scaffolded, never your subscribed mods or hand-rolled projects.
+
+<div class="cmd-table">
 
 | Command | What it does |
 |---|---|
 | **`/dayz-clean-workspace`** | Removes scaffolds and their deployed artifacts (workspace folders, junctions, `P:\Mods\@<ModName>\` deploy dirs). Match-on-scaffold rule keeps your subscribed mods safe. Pass `--include-server` to also wipe `workspace/_server/`. |
 | **`/clean-repo`** | Orchestrates every cleanup skill at once for a pre-push reset. |
+
+</div>
 
 Every step except `/dayz-stop-test` gates on `/dayz-preflight` first, per the L2 convention at `.claude/skills/_shared/dayz-conventions.md`.
 
