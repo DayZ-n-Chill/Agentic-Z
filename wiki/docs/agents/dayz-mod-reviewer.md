@@ -1,31 +1,32 @@
 ---
 name: "dayz-mod-reviewer"
 model: sonnet
-color: purple
+color: pink
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--purple">purple</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--pink">pink</span></p>
 
 ## Overview
 
 Use this agent to audit a mod under `workspace/<ModName>/` for convention compliance and common defects before building or releasing — config sanity, hidden-selection coverage, types.xml hygiene, asset suffix correctness, modded-class anti-patterns. Does not fix problems; produces a punch list and routes each item to the right specialist.
 
-> **Example**
->
-> **Context:** User finished a vest mod and wants a sanity check before building.
-> **User:** "Can you review my vest mod at workspace/MyVest/ before I build the PBO?"
-> **Assistant:** "I'll use the dayz-mod-reviewer to scan the mod folder — checking config.cpp inheritance, hiddenSelections vs. .rvmat coverage, $PBOPREFIX$ correctness, texture suffix compliance (_co/_nohq/_smdi), and modded-class extends-clause violations. Output is a punch list with each item routed to the right specialist for the fix."
-
-*Mod review is a survey-and-route task, not a fix task. The reviewer flags issues; specialists implement corrections.*
-
-> **Example**
->
-> **Context:** User got a bug report from another player and wants to find what's wrong.
-> **User:** "Someone says my mod conflicts with theirs. Can you sanity-check what I shipped?"
-> **Assistant:** "I'll use the dayz-mod-reviewer to look for common conflict-causers — unscoped `class X { }` instead of `modded class X { }`, asset paths colliding with vanilla, missing CfgPatches dependencies, broad event handlers that trample shared state."
-
-*Conflict-causing patterns are a known set; the reviewer surfaces them and hands off to script/config specialists for the actual rewrites.*
+<div class="agent-example">
+<div class="agent-example__title">Example</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Context</div>
+<div class="agent-example__content">User finished a vest mod and wants a sanity check before building.</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">User</div>
+<div class="agent-example__content">"Can you review my vest mod at workspace/MyVest/ before I build the PBO?"</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Assistant</div>
+<div class="agent-example__content">"I'll use the dayz-mod-reviewer to scan the mod folder — checking config.cpp inheritance, hiddenSelections vs. .rvmat coverage, $PBOPREFIX$ correctness, texture suffix compliance (_co/_nohq/_smdi), and modded-class extends-clause violations. Output is a punch list with each item routed to the right specialist for the fix."</div>
+</div>
+<div class="agent-example__commentary">Mod review is a survey-and-route task, not a fix task. The reviewer flags issues; specialists implement corrections.</div>
+</div>
 
 ## NAME
 

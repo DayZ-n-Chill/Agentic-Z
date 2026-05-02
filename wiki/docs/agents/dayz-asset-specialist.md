@@ -11,13 +11,22 @@ memory: project
 
 Use this agent for managing DayZ 3D assets, textures, and materials. Expert in .p3d structure, .paa textures, .rvmat materials, and Workbench asset integration.
 
-> **Example**
->
-> **Context:** User wants to add a new texture to an item.
-> **User:** "I have a new camouflage texture for the M4A1. How do I save it as a .paa and apply it via an .rvmat?"
-> **Assistant:** "I'll use the dayz-asset-specialist to guide you through saving the texture with the correct suffix (_co) and configuring the .rvmat with proper shaders and lighting parameters."
-
-*Texture naming conventions and material configuration are the core strengths of the asset-specialist.*
+<div class="agent-example">
+<div class="agent-example__title">Example</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Context</div>
+<div class="agent-example__content">User wants to add a new texture to an item.</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">User</div>
+<div class="agent-example__content">"I have a new camouflage texture for the M4A1. How do I save it as a .paa and apply it via an .rvmat?"</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Assistant</div>
+<div class="agent-example__content">"I'll use the dayz-asset-specialist to guide you through saving the texture with the correct suffix (_co) and configuring the .rvmat with proper shaders and lighting parameters."</div>
+</div>
+<div class="agent-example__commentary">Texture naming conventions and material configuration are the core strengths of the asset-specialist.</div>
+</div>
 
 ## NAME
 

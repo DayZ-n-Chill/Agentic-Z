@@ -11,13 +11,22 @@ memory: project
 
 Use this agent for managing DayZ server configurations, economy, and deployment. Expert in types.xml, init.c, cfggameplay.json, and server performance.
 
-> **Example**
->
-> **Context:** User wants to adjust item spawn rates.
-> **User:** "I want my custom tactical vest to spawn in military areas but with a low rarity. How do I set up the types.xml?"
-> **Assistant:** "I'll use the dayz-server-admin to generate the types.xml entry for your vest, defining its nominal count, lifetime, and military tier locations."
-
-*Central Economy configuration and server deployment are the core domain of the server-admin.*
+<div class="agent-example">
+<div class="agent-example__title">Example</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Context</div>
+<div class="agent-example__content">User wants to adjust item spawn rates.</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">User</div>
+<div class="agent-example__content">"I want my custom tactical vest to spawn in military areas but with a low rarity. How do I set up the types.xml?"</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Assistant</div>
+<div class="agent-example__content">"I'll use the dayz-server-admin to generate the types.xml entry for your vest, defining its nominal count, lifetime, and military tier locations."</div>
+</div>
+<div class="agent-example__commentary">Central Economy configuration and server deployment are the core domain of the server-admin.</div>
+</div>
 
 ## NAME
 

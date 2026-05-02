@@ -11,13 +11,22 @@ memory: project
 
 Use this agent for writing and debugging Enforce Script (C#-like) for DayZ mods. Expert in modded classes, RPCs, replication, and custom game logic.
 
-> **Example**
->
-> **Context:** User wants to create a custom item behavior.
-> **User:** "I need a script that makes a custom medical kit heal the player over time instead of instantly."
-> **Assistant:** "I'll use the dayz-script-specialist to override the OnActivate method and implement a custom timer-based healing logic."
-
-*Game logic and scripting in Enforce Script is the core domain of the script-specialist.*
+<div class="agent-example">
+<div class="agent-example__title">Example</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Context</div>
+<div class="agent-example__content">User wants to create a custom item behavior.</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">User</div>
+<div class="agent-example__content">"I need a script that makes a custom medical kit heal the player over time instead of instantly."</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Assistant</div>
+<div class="agent-example__content">"I'll use the dayz-script-specialist to override the OnActivate method and implement a custom timer-based healing logic."</div>
+</div>
+<div class="agent-example__commentary">Game logic and scripting in Enforce Script is the core domain of the script-specialist.</div>
+</div>
 
 ## NAME
 

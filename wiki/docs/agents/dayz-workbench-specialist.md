@@ -1,31 +1,32 @@
 ---
 name: "dayz-workbench-specialist"
 model: sonnet
-color: green
+color: indigo
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--green">green</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--indigo">indigo</span></p>
 
 ## Overview
 
 Use this agent for Enfusion Workbench plugin development — extending the Workbench IDE itself with custom tool panels, dockable windows, batch automation, and pipeline integrations. Distinct from runtime in-game UI work (that's dayz-ui-specialist). Workbench plugins are editor-time extensions written in Enforce Script (or C++ where the SDK allows), packaged so they load when the user opens DayZ Tools.
 
-> **Example**
->
-> **Context:** User wants a custom Workbench tool panel.
-> **User:** "I want a Workbench plugin that scans my mod's data folder and renames any .paa textures missing the _co/_nohq/_smdi suffix."
-> **Assistant:** "I'll use the dayz-workbench-specialist to scaffold a Workbench plugin with a tool panel that walks the data folder, detects suffix-less .paa textures, and offers a rename action via the Workbench UI."
-
-*Workbench plugin development — editor-time tooling, not runtime gameplay — is the core domain of the workbench-specialist.*
-
-> **Example**
->
-> **Context:** User wants to automate the asset pipeline from inside Workbench.
-> **User:** "Write a Workbench plugin that runs ImageToPAA on every PNG in the selected folder and reports successes/failures in a docked panel."
-> **Assistant:** "I'll use the dayz-workbench-specialist to build the plugin — Workbench script that drives ImageToPAA via process spawn, with a dockable status panel."
-
-*Integrating external tools into the Workbench UI is squarely workbench-specialist territory.*
+<div class="agent-example">
+<div class="agent-example__title">Example</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Context</div>
+<div class="agent-example__content">User wants a custom Workbench tool panel.</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">User</div>
+<div class="agent-example__content">"I want a Workbench plugin that scans my mod's data folder and renames any .paa textures missing the _co/_nohq/_smdi suffix."</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Assistant</div>
+<div class="agent-example__content">"I'll use the dayz-workbench-specialist to scaffold a Workbench plugin with a tool panel that walks the data folder, detects suffix-less .paa textures, and offers a rename action via the Workbench UI."</div>
+</div>
+<div class="agent-example__commentary">Workbench plugin development — editor-time tooling, not runtime gameplay — is the core domain of the workbench-specialist.</div>
+</div>
 
 ## NAME
 

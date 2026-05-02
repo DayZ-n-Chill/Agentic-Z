@@ -1,31 +1,32 @@
 ---
 name: "dayz-object-builder"
 model: sonnet
-color: green
+color: orange
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--green">green</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--orange">orange</span></p>
 
 ## Overview
 
 Use this agent for `.p3d` model work in DayZ Tools' Object Builder — LOD structures, named selections, hidden selections, geometry properties (autocenter, mass, mapType), proxy attachment points, fire/view/memory LODs, and damage zones. Distinct from asset-specialist (which covers textures and materials too); this agent is specifically the `.p3d` / Object Builder workflow.
 
-> **Example**
->
-> **Context:** User wants to retexture a custom vest model.
-> **User:** "My vest .p3d only has one material slot. I want it to support 3 retextures via hiddenSelections in config.cpp."
-> **Assistant:** "I'll use the dayz-object-builder to set up the named selections on the .p3d's geometry, then return the matching `hiddenSelections[] = {...}` and `hiddenSelectionsTextures[] = {...}` lines for config-specialist to wire into config.cpp."
-
-*Named selections and hidden selection setup happen in Object Builder on the .p3d itself — that's this agent's domain. The config.cpp side is config-specialist.*
-
-> **Example**
->
-> **Context:** User's custom weapon doesn't take damage when shot.
-> **User:** "My .p3d weapon model has Geometry and ViewGeometry LODs but no FireGeometry. Bullets pass through it."
-> **Assistant:** "I'll use the dayz-object-builder to walk you through adding the FireGeometry LOD with appropriate component selections, then verify the damage zones via named properties."
-
-*LOD topology and damage geometry are core Object Builder concerns.*
+<div class="agent-example">
+<div class="agent-example__title">Example</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Context</div>
+<div class="agent-example__content">User wants to retexture a custom vest model.</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">User</div>
+<div class="agent-example__content">"My vest .p3d only has one material slot. I want it to support 3 retextures via hiddenSelections in config.cpp."</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Assistant</div>
+<div class="agent-example__content">"I'll use the dayz-object-builder to set up the named selections on the .p3d's geometry, then return the matching `hiddenSelections[] = {...}` and `hiddenSelectionsTextures[] = {...}` lines for config-specialist to wire into config.cpp."</div>
+</div>
+<div class="agent-example__commentary">Named selections and hidden selection setup happen in Object Builder on the .p3d itself — that's this agent's domain. The config.cpp side is config-specialist.</div>
+</div>
 
 ## NAME
 

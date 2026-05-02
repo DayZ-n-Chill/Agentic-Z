@@ -1,42 +1,32 @@
 ---
 name: "agent-creator"
 model: opus
-color: yellow
+color: lime
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--yellow">yellow</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--lime">lime</span></p>
 
 ## Overview
 
 Use this agent when you need to create a new agent definition from scratch, validate an existing agent definition for compliance with the standard template, or rewrite/normalize an agent to match the required structure. Examples:
 
-> **Example**
->
-> **Context:** User wants to create a new agent for a specific purpose.
-> **User:** "Create an agent that reviews pull requests for security vulnerabilities"
-> **Assistant:** "I'll use the agent-creator to generate a fully structured agent definition for you."
-
-*Since the user is requesting a new agent, use the agent-creator agent to generate a properly formatted agent definition following the standard template.*
-
-> **Example**
->
-> **Context:** User has an existing agent definition they want validated.
-> **User:** "Here's my agent definition, can you check if it's correct?
-> NAME: code-linter
-> ROLE: You lint code
-> CAPABILITIES: Linting"
-> **Assistant:** "Let me use the agent-creator to validate this agent definition against the standard template."
-
-*Since the user wants validation of an existing agent, use the agent-creator agent to check compliance and return a corrected version if needed.*
-
-> **Example**
->
-> **Context:** User wants to normalize a loosely written agent description.
-> **User:** "I have this rough agent spec that I wrote quickly, can you clean it up and make it production-ready?"
-> **Assistant:** "I'll launch the agent-creator to normalize and reformat your agent spec to match the standard template."
-
-*Since the user wants an agent rewritten to the standard format, use the agent-creator agent to produce a clean, compliant version.*
+<div class="agent-example">
+<div class="agent-example__title">Example</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Context</div>
+<div class="agent-example__content">User wants to create a new agent for a specific purpose.</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">User</div>
+<div class="agent-example__content">"Create an agent that reviews pull requests for security vulnerabilities"</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Assistant</div>
+<div class="agent-example__content">"I'll use the agent-creator to generate a fully structured agent definition for you."</div>
+</div>
+<div class="agent-example__commentary">Since the user is requesting a new agent, use the agent-creator agent to generate a properly formatted agent definition following the standard template.</div>
+</div>
 
 ## NAME
 

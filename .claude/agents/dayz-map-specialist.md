@@ -2,7 +2,7 @@
 name: "dayz-map-specialist"
 description: "Use this agent for DayZ terrain building and map editing. Expert in Terrain Builder, DayZ Editor, map objects, clutter, and surface definitions.\n\n<example>\nContext: User wants to create a custom military base.\nuser: \"I'm building a new military base on Chernarus. Can you help me export my DayZ Editor layout to a format I can use in Terrain Builder?\"\nassistant: \"I'll use the dayz-map-specialist to guide you through exporting your objects as a .dz file and importing them into your Terrain Builder project.\"\n<commentary>\nMap object management and terrain workflow are the core strengths of the map-specialist.\n</commentary>\n</example>"
 model: sonnet
-color: green
+color: teal
 memory: project
 ---
 

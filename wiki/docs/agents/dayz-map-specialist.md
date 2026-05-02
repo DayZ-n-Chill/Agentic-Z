@@ -1,23 +1,32 @@
 ---
 name: "dayz-map-specialist"
 model: sonnet
-color: green
+color: teal
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--green">green</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--teal">teal</span></p>
 
 ## Overview
 
 Use this agent for DayZ terrain building and map editing. Expert in Terrain Builder, DayZ Editor, map objects, clutter, and surface definitions.
 
-> **Example**
->
-> **Context:** User wants to create a custom military base.
-> **User:** "I'm building a new military base on Chernarus. Can you help me export my DayZ Editor layout to a format I can use in Terrain Builder?"
-> **Assistant:** "I'll use the dayz-map-specialist to guide you through exporting your objects as a .dz file and importing them into your Terrain Builder project."
-
-*Map object management and terrain workflow are the core strengths of the map-specialist.*
+<div class="agent-example">
+<div class="agent-example__title">Example</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Context</div>
+<div class="agent-example__content">User wants to create a custom military base.</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">User</div>
+<div class="agent-example__content">"I'm building a new military base on Chernarus. Can you help me export my DayZ Editor layout to a format I can use in Terrain Builder?"</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Assistant</div>
+<div class="agent-example__content">"I'll use the dayz-map-specialist to guide you through exporting your objects as a .dz file and importing them into your Terrain Builder project."</div>
+</div>
+<div class="agent-example__commentary">Map object management and terrain workflow are the core strengths of the map-specialist.</div>
+</div>
 
 ## NAME
 

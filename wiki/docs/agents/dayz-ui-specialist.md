@@ -1,31 +1,32 @@
 ---
 name: "dayz-ui-specialist"
 model: sonnet
-color: green
+color: cyan
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--green">green</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--cyan">cyan</span></p>
 
 ## Overview
 
 Use this agent for ALL DayZ UI work — `.layout` files, widget scripting, HUD/menu logic, AND UI-side color/theme changes (overriding the `Colors` class and similar constants). Expert in the Workbench UI Editor and the relationship between layout files and the script-side classes that drive them.
 
-> **Example**
->
-> **Context:** User wants a custom HUD element.
-> **User:** "I want to add a custom compass to the player's screen that shows their current heading in degrees."
-> **Assistant:** "I'll use the dayz-ui-specialist to design the .layout for the compass and write the Enforce Script logic to update the rotation based on the player's orientation."
-
-*UI design and widget-based scripting are the core domain of the ui-specialist.*
-
-> **Example**
->
-> **Context:** User wants to change DayZ's primary UI color.
-> **User:** "DayZ's UI accent is red. Change it to blue using the vanilla pattern."
-> **Assistant:** "I'll use the dayz-ui-specialist — even though the `Colors` constants live in the scripts tree (P:\\scripts\\3_game\\colors.c), UI theme work belongs here. They override the Colors class via `modded class` so HUD/menu/hint elements pick up the new ARGB values automatically."
-
-*UI color/theme changes belong to the ui-specialist even though the constants are in scripts. The ui-specialist's lane includes specific UI-relevant scripts so they know exactly which constant maps to which visual element.*
+<div class="agent-example">
+<div class="agent-example__title">Example</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Context</div>
+<div class="agent-example__content">User wants a custom HUD element.</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">User</div>
+<div class="agent-example__content">"I want to add a custom compass to the player's screen that shows their current heading in degrees."</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Assistant</div>
+<div class="agent-example__content">"I'll use the dayz-ui-specialist to design the .layout for the compass and write the Enforce Script logic to update the rotation based on the player's orientation."</div>
+</div>
+<div class="agent-example__commentary">UI design and widget-based scripting are the core domain of the ui-specialist.</div>
+</div>
 
 ## NAME
 

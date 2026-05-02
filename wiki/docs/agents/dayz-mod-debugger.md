@@ -11,21 +11,22 @@ memory: project
 
 Use this agent for diagnosing DayZ mod failures from logs and crash artifacts — `script.log`, server/client RPT files, `crash.log`, BattlEye logs, performance bottlenecks. Specializes in reading what the engine wrote AFTER something went wrong, not in writing new code.
 
-> **Example**
->
-> **Context:** User's mod loads but the server crashes during startup.
-> **User:** "My server hangs on init then writes 'access violation' in the RPT. Here's the last 200 lines."
-> **Assistant:** "I'll use the dayz-mod-debugger to walk the RPT tail, identify the failing module from the call stack, and trace the symptom back to a specific class/file. Then hand off to script-specialist or config-specialist for the fix."
-
-*Log forensics and crash diagnosis is the debugger's lane. Fixing the underlying code belongs to the relevant specialist.*
-
-> **Example**
->
-> **Context:** User's modded class isn't applying.
-> **User:** "My modded class PlayerBase override isn't running. script.log says it compiled. Help me figure out why."
-> **Assistant:** "I'll use the dayz-mod-debugger to check whether the modded class registered (look for the compile line vs. the load order), verify there's no silent-no-op `extends` clause (per the modded-class rule), and confirm the file is in the right scripts/ subtree."
-
-*Debugging why mod-runtime behavior doesn't match expectations — even when nothing crashed — is the debugger's domain.*
+<div class="agent-example">
+<div class="agent-example__title">Example</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Context</div>
+<div class="agent-example__content">User's mod loads but the server crashes during startup.</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">User</div>
+<div class="agent-example__content">"My server hangs on init then writes 'access violation' in the RPT. Here's the last 200 lines."</div>
+</div>
+<div class="agent-example__turn">
+<div class="agent-example__label">Assistant</div>
+<div class="agent-example__content">"I'll use the dayz-mod-debugger to walk the RPT tail, identify the failing module from the call stack, and trace the symptom back to a specific class/file. Then hand off to script-specialist or config-specialist for the fix."</div>
+</div>
+<div class="agent-example__commentary">Log forensics and crash diagnosis is the debugger's lane. Fixing the underlying code belongs to the relevant specialist.</div>
+</div>
 
 ## NAME
 
