@@ -11,7 +11,7 @@ const STATS = [
   {num: '12', label: 'Specialist Agents'},
   {num: '20', label: 'Slash Skills'},
   {num: '3', label: 'Agent CLIs'},
-  {num: '1', label: 'Drive (P:\\)'},
+  {num: '2', label: 'MCP Servers'},
 ];
 
 const LAYERS = [
@@ -26,7 +26,7 @@ const LAYERS = [
     layer: 'L2',
     title: 'Conventions',
     essence: 'One DayZ playbook, every agent.',
-    body: 'From day one, your AI knows why some modded classes silently fail, which suffix every texture needs, and how to inherit cleanly from vanilla classes. The DayZ quirks that usually take weeks to learn, baked in.',
+    body: 'From day one, your AI knows how to inherit cleanly from vanilla classes, which suffix every texture needs, and why some modded classes silently fail. The DayZ quirks that can take weeks to learn.',
     path: '.claude/skills/_shared/dayz-conventions.md',
   },
   {
@@ -141,7 +141,7 @@ function HeroBanner({title, tagline}: {title: string; tagline: string}) {
         <p className={styles.heroTagline}>Built Source Available to all</p>
         <div className={styles.heroButtons}>
           <Link className={styles.btnPrimary} to="/docs/intro">
-            Get Started →
+            Get Started <span className={styles.btnArrow}>→</span>
           </Link>
           <Link
             className={styles.btnSecondary}
