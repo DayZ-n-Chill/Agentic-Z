@@ -29,6 +29,12 @@ P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
 SERVER_ROOT = WORKSPACE / "_server"
 
+# Ownership marker written by dayz-build-pbo at P:\Mods\@<ModName>\<MARKER>.
+# The deployed dir is removed only when this file exists AND its content
+# matches the modname — this is what makes us safe against name collisions
+# with subscribed mods or anything else the user dropped under !Workshop.
+SCAFFOLD_MARKER = ".agentic-z-scaffold"
+
 OK = "[OK]   "
 WARN = "[WARN] "
 FAIL = "[FAIL] "
@@ -77,10 +83,29 @@ def junction_targets_workspace(junction: Path, mod_path: Path) -> bool:
     return _normalize(Path(target)) == _normalize(mod_path)
 
 
-def find_artifacts(mod_path: Path) -> list[tuple[str, Path]]:
+def deployed_owned_by_us(deployed: Path, modname: str) -> bool:
+    """The deployed dir is ours iff it contains the scaffold marker file with
+    matching content. This protects against name collisions: a subscribed mod
+    or hand-placed @<X> folder under !Workshop has no marker and stays put.
+    """
+    marker = deployed / SCAFFOLD_MARKER
+    if not marker.is_file():
+        return False
+    try:
+        return marker.read_text(encoding="utf-8").strip() == modname
+    except OSError:
+        return False
+
+
+def find_artifacts(mod_path: Path) -> tuple[list[tuple[str, Path]], list[str]]:
     """Order matters: junction first (so it's broken before workspace removal),
-    then deployed dir, then workspace dir last."""
+    then deployed dir, then workspace dir last.
+
+    Returns (plan, warnings). Warnings flag artifacts we deliberately skipped
+    so the user can act on them manually.
+    """
     artifacts: list[tuple[str, Path]] = []
+    warnings: list[str] = []
     name = mod_path.name
 
     p_junction = P_DRIVE / name
@@ -89,10 +114,18 @@ def find_artifacts(mod_path: Path) -> list[tuple[str, Path]]:
 
     deployed = MODS_ROOT / f"@{name}"
     if deployed.exists():
-        artifacts.append(("deployed", deployed))
+        if deployed_owned_by_us(deployed, name):
+            artifacts.append(("deployed", deployed))
+        else:
+            warnings.append(
+                f"P:\\Mods\\@{name}\\ exists but has no Agentic-Z ownership marker\n"
+                f"        ({SCAFFOLD_MARKER} missing or content mismatch).\n"
+                "        Skipping — could be a subscribed mod or hand-placed folder.\n"
+                f"        If it's actually yours, remove manually: cmd /c rmdir /s /q P:\\Mods\\@{name}"
+            )
 
     artifacts.append(("workspace", mod_path))
-    return artifacts
+    return artifacts, warnings
 
 
 def remove_artifact(kind: str, path: Path, dry_run: bool) -> None:
@@ -146,10 +179,18 @@ def main() -> int:
 
     mods = discover_mods(args.mod)
     plan: list[tuple[str, Path]] = []
+    warnings: list[str] = []
     for mod in mods:
-        plan.extend(find_artifacts(mod))
+        mod_plan, mod_warnings = find_artifacts(mod)
+        plan.extend(mod_plan)
+        warnings.extend(mod_warnings)
     if args.include_server and SERVER_ROOT.exists():
         plan.append(("server staging", SERVER_ROOT))
+
+    for warning in warnings:
+        print(f"{WARN} {warning}")
+    if warnings:
+        print()
 
     if not plan:
         print(f"{OK} Nothing to clean.")
