@@ -1,0 +1,57 @@
+---
+slug: dayz-import-mod
+title: "Bring an existing mod into the workspace without copying it"
+authors: [brian]
+tags: [skills, dayz, changelog, safety]
+---
+
+You don't always want your mod source living inside the Agentic-Z workspace. Maybe it's already a separate git repo, maybe it lives on a different drive, maybe a teammate wrote it and you just want to build it. The new `/dayz-import-mod` skill links it in without moving anything.
+
+{/* truncate */}
+
+## What changed
+
+- Added the **`dayz-import-mod`** skill. Point it at an external folder, get a directory link at `workspace/<ModName>/` plus the matching `P:\<ModName>\` junction, so `/dayz-build-pbo`, `/dayz-launch-workbench`, and the rest of the toolchain work on it like a native scaffold. Source folder stays where it is, never copied or moved.
+- Added the **`dayz-add-scaffold`** skill. Companion to `/dayz-new-mod`, but works on a folder that already exists. Idempotent: writes only the missing pieces (`config.cpp`, `$PBOPREFIX$`, `workbench/dayz.gproj`, README, skeleton folders), never overwrites. Used by `/dayz-import-mod` for the y/N "add this missing piece?" prompts, also runnable directly when you cloned a mod into `workspace/` by hand and want the standard skeleton filled in.
+- Fixed a real safety bug in **`dayz-clean-workspace`**. The old code used `shutil.rmtree` on the workspace folder, which on Windows **recurses into junction targets** and would have wiped an imported mod's external source. Clean now detects links (junctions and symlinks) and removes them via `cmd /c rmdir`, which removes the link without touching what it points at. The plan output distinguishes the two: `(workspace)` for native scaffolds (folder + contents), `(workspace-link)` for imports (link only, source kept).
+
+## How `/dayz-import-mod` works
+
+```
+$ /dayz-import-mod --source C:\Users\me\repos\MyMod
+[OK]    Source validated: C:\Users\me\repos\MyMod
+[INFO]  Derived mod name: MyMod
+[OK]    workspace\MyMod -> C:\Users\me\repos\MyMod (junction)
+[OK]    P:\MyMod -> workspace\MyMod (junction)
+
+Scaffolding check:
+  [OK]    config.cpp present
+  [WARN]  $PBOPREFIX$ missing (needed for /dayz-build-pbo)
+  [WARN]  workbench/dayz.gproj missing (needed for /dayz-launch-workbench --mod)
+
+  Add $PBOPREFIX$ to your source folder? [y/N]: y
+  [OK]    $PBOPREFIX$ written
+  Add workbench/dayz.gproj? [y/N]: y
+  [OK]    workbench/dayz.gproj written
+```
+
+Mod name defaults to the source folder's basename. If the basename has spaces or punctuation, pass `--name <ValidName>` to override.
+
+For non-interactive runs, `--scaffold` auto-yes every prompt or `--no-scaffold` skip them all (link only).
+
+## Safety story
+
+The whole point of import is that **your source folder is untouchable** unless you explicitly opt in:
+
+- The link is created without copying. Files in your source repo are read-through.
+- `/dayz-clean-workspace --mod MyMod` removes the link and the `P:\MyMod\` junction. Your source folder at `C:\Users\me\repos\MyMod` is **never** touched.
+- The only writes into your source folder happen when you answer `y` to a scaffolding prompt (or pass `--scaffold`). The user's external repo has its own conventions, history, and `.gitignore`. We don't surprise it.
+
+## When to use which
+
+| Scenario | Use |
+|---|---|
+| Starting a brand new mod | `/dayz-new-mod <Name>` |
+| Mod source lives outside the repo, want it visible to the toolchain | `/dayz-import-mod --source <path>` |
+| Cloned someone else's mod into `workspace/` by hand, missing standard pieces | `/dayz-add-scaffold <Name>` |
+| Done with an imported mod, want the link gone (source kept) | `/dayz-clean-workspace --mod <Name>` |
