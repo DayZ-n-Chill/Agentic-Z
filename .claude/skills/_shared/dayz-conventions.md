@@ -173,6 +173,338 @@ What NOT to use: colors (not rendered), images (not rendered), HTML (escaped), c
 
 This rule applies regardless of which DayZ agent is answering — script-specialist, ui-specialist, server-admin, debugger, reviewer, all of them.
 
+## LOD canonical resolutions (DayZ-specific)
+
+DayZ inherits Bohemia's `.p3d` LOD-resolution-as-tag-number scheme but uses
+DIFFERENT numeric values than Arma 3 for the engine-system LODs. **Many
+modding guides online quote Arma 3 values; those are WRONG for DayZ** and
+will cause audit / migration scripts to misclassify LODs.
+
+| LOD | DayZ resolution | Arma 3 (do NOT use) | Purpose |
+|---|---|---|---|
+| Visual | `0.0`, `1.0`, `2.0`, ... | same | LOD0 = base, then progressively simplified |
+| ShadowVolume | `10000`, `11000` | same | Shadow casters |
+| Geometry | `1.0e+13` | same | Physics collision |
+| Memory | `1.0e+15` | same | Named memory points |
+| LandContact | `2.0e+15` | same | Foot/wheel contact |
+| **ViewGeometry** | **`6.0e+15`** | `7.0e+13` ❌ | Cursor / action raycast |
+| **FireGeometry** | **`7.0e+15`** | `3.0e+13` ❌ | Bullet / projectile collision |
+
+Verified against vanilla `DZ\gear\camping\wooden_case.p3d` (debinarized) — 9
+LODs total, with Visual(1..4), Geometry(`1e13`), Memory(`1e15`),
+LandContact(`2e15`), ViewGeo(`6e15`), FireGeo(`7e15`).
+
+### Heads-up for any audit script
+
+If a project's `audit_p3d.py` (or similar) `classify_lod()` function uses
+thresholds like `1e13 < res < 1e14` for FireGeo, it's using **Arma 3 ranges**
+and will silently misclassify DayZ ViewGeo and FireGeo as "unknown". A grep
+for `7e13` or `3e13` in classification code is a quick check.
+
+### Symptom of getting this wrong
+
+- Bullets pass through the model (FireGeometry not recognized → no projectile
+  collision shape).
+- Cursor doesn't detect the model / actions don't appear (ViewGeometry not
+  recognized → no raycast hit).
+- Audit script reports "missing FireGeo / ViewGeo" on a model that actually
+  has them, just with the resolution values the script doesn't recognize.
+
+---
+
+## py3d MLOD reader — `lod.facenormals` is a POOL, not per-face
+
+When using KoffeinFlummi's `py3d` library (or any MLOD reader), a critical
+detail to know:
+
+`lod.facenormals` is a **global pool of normal vectors** for the LOD, indexed
+by `vertex.normal_index`. It is NOT a per-face array.
+
+```python
+# WRONG mental model — face.facenormals[i] is NOT the normal of face[i]
+for i, face in enumerate(lod.faces):
+    n = lod.facenormals[i]   # ← WRONG, indexes pool not face
+
+# CORRECT — each Vertex has point_index AND normal_index pointing into pools
+for face in lod.faces:
+    for v in face.vertices:
+        point  = lod.points[v.point_index].coords      # (x, y, z)
+        normal = lod.facenormals[v.normal_index]       # (x, y, z)
+        uv     = v.uv                                   # (u, v)
+```
+
+`face.vertices[i].normal` is a property that resolves to
+`lod.facenormals[v.normal_index]` for you. It returns a tuple `(x, y, z)`
+directly — NOT a Vec3 object — so don't write `.coords` on it (compare with
+`lod.points[i].coords` which DOES require `.coords` because points ARE Vec3
+objects).
+
+### Pool size is independent of face count
+
+`len(lod.facenormals)` equals `num_facenormals` from the MLOD header. It is
+**independent** of `len(lod.faces)`. Smoothing-group merges multiple faces
+sharing a vertex normal; flat shading allocates one entry per face corner.
+Audit code that asserts `len(lod.facenormals) == len(lod.faces)` will fire
+spurious errors on most non-trivial models.
+
+### Why this matters for winding / handedness checks
+
+A common audit anti-pattern: compare `lod.facenormals[i]` to
+`cross(face.vertices[1].point - face.vertices[0].point, face.vertices[2].point - face.vertices[0].point)`
+to detect "winding mismatch". This breaks because:
+- `facenormals[i]` is not per-face,
+- and even if it were, smoothed-shaded faces have averaged corner normals
+  that won't match the flat winding cross product.
+
+The right approach is to **average the per-corner normals of one face** and
+compare to the winding cross product. See the audit / winding-diagnostics
+section for details.
+
+---
+
+## Dynamic items — `ThrowPhysically` vs manual `CreateDynamicPhysics`
+
+For items with `simulation = "inventoryItem"` and `physLayer = "item"`, the
+`ECE_CREATEPHYSICS` flag of `CreateObjectEx` creates the **collision shape**
+but leaves the rigid body **static / kinematic**. Calling
+`dBodyApplyImpulse` on a static body silently no-ops — common symptom is
+"item appears frozen in air after spawn".
+
+### Preferred pattern — `ThrowPhysically`
+
+The vanilla helper at `P:\scripts\3_game\entities\inventoryitem.c:26`:
+
+```c
+proto native void ThrowPhysically(DayZPlayer player, vector force, bool collideWithCharacters = true);
+```
+
+Internally calls `CreateDynamicPhysics(ITEM_LARGE)`,
+`SetDynamicPhysicsLifeTime(...)`, and applies `force` as an impulse. This is
+the pattern vanilla itself uses — see
+`P:\scripts\4_world\classes\miscgameplayfunctions.c` lines 1188 / 1204 / 1212
+for examples.
+
+```c
+EntityAI spawned = GetGame().CreateObjectEx("MyMod_Item", pos, ECE_CREATEPHYSICS|ECE_UPDATEPATHGRAPH);
+ItemBase ib = ItemBase.Cast(spawned);
+if (ib)
+    ib.ThrowPhysically(null, impulse, false);
+```
+
+### Manual pattern — when you need finer control
+
+If you need to drive lifetime, gravity, or interaction layer explicitly:
+
+```c
+obj.CreateDynamicPhysics(PhxInteractionLayers.DYNAMICITEM);
+obj.EnableDynamicCCD(true);
+obj.SetDynamicPhysicsLifeTime(20.0);     // without this, engine sleeps the body
+dBodyEnableGravity(obj, true);
+dBodyApplyImpulse(obj, impulse);
+```
+
+Verified APIs:
+
+- `P:\scripts\3_game\entities\object.c:462-464` — `CreateDynamicPhysics`,
+  `EnableDynamicCCD`, `SetDynamicPhysicsLifeTime`.
+- `P:\scripts\3_game\global\dayzphysics.c:1-29` — `PhxInteractionLayers` enum
+  (`DYNAMICITEM`, `DYNAMICITEM_NOCHAR`, ...).
+- `P:\scripts\1_core\proto\enphysics.c:64-69, 141` — `dBodyDynamic`,
+  `dBodyEnableGravity`, `dBodyApplyImpulse`.
+- `P:\scripts\4_world\entities\itembase.c:4530` — `StopItemDynamicPhysics`
+  reduces `SetDynamicPhysicsLifeTime` to `0.01` to "park" the body.
+
+The `SetDynamicPhysicsLifeTime` call is mandatory — without it the engine
+sleeps the body within a few ticks and the impulse is lost mid-flight.
+
+---
+
+## Custom `Container_Base` — non-obvious requirements
+
+Inheriting from `Container_Base` and declaring `scope = 2; model = ...` is
+NOT enough for the resulting object to (a) take damage, (b) stop bullets,
+or (c) appear as an interactive container. Three common omissions cause
+silent failures:
+
+### 1. `class Cargo` is mandatory (even if container is non-cargo)
+
+Some engine builds skip container initialization entirely without it. For
+containers that don't expose player cargo (loot drops via `EEKilled` etc.),
+declare an empty cargo class and mark zero size:
+
+```cpp
+class MyMod_FancyContainer : Container_Base
+{
+    scope = 2;
+    model = "\MyMod\data\fancy.p3d";
+
+    itemsCargoSize[] = {0, 0};    // no player cargo
+
+    class Cargo
+    {
+        itemsCargoSize[] = {0, 0};
+        openable = 0;
+        allowOwnedCargoManipulation = 0;
+    };
+};
+```
+
+Some builds emit an RPT warning for `itemsCargoSize[] = {0, 0}`. If yours
+does, fall back to extending `Inventory_Base` and removing `class Cargo`
+entirely.
+
+### 2. `class GlobalArmor` for projectile registration
+
+Without an armor declaration the engine may not register impacts of
+projectiles, causing "bullets pass through" even when FireGeometry is
+present:
+
+```cpp
+class GlobalArmor
+{
+    class FragGrenade
+    {
+        class Health { hit = 0; };
+        class Blood  { hit = 0; };
+        class Shock  { hit = 0; };
+    };
+    class Projectile
+    {
+        class Health { hit = 5; };
+    };
+};
+```
+
+### 3. `healthLevels[]` (modern format, not `healthLevelValues[]`)
+
+Modern DayZ damage system uses `healthLevels[]`. The legacy
+`healthLevelValues[]` parses but silently breaks DamageSystem on the entity:
+
+```cpp
+// CORRECT (modern)
+healthLevels[] =
+{
+    {1.0, {"\MyMod\data\fancy.rvmat"}},
+    {0.7, {"\MyMod\data\fancy_dam.rvmat"}},
+    {0.5, {"\MyMod\data\fancy_dest.rvmat"}},
+    {0.3, {""}},
+    {0.0, {""}}
+};
+
+// AVOID (legacy, silently breaks)
+healthLevelValues[] = { 1.0, 0.7, 0.5, 0.3, 0.0 };
+```
+
+Reference: vanilla `WoodenCrate` in `DZ\gear\camping\config.cpp` lines
+~10074-10210 has the canonical full pattern.
+
+---
+
+## Schema migration for admin-tunable JSON configs
+
+Mods that ship JSON config files (`cfggameplay.json`-style: admin opens it,
+edits values, restarts server) need a forward-compatible migration story.
+Otherwise: admin runs old JSON against new mod, missing fields → either
+crashes or silently uses default-of-default → admin reports "feature gone"
+that's actually just unset.
+
+### Pattern
+
+```c
+class MyMod_Settings
+{
+    static const int SCHEMA_VERSION = 3;
+
+    int    version;            // sentinel; 0 = "not loaded yet"
+    string serverName;
+    int    maxPlayers;
+    ref array<string> allowedKits;
+
+    // Constructor: minimal scalar defaults + empty arrays so the JSON
+    // serializer never sees null members.
+    void MyMod_Settings()
+    {
+        version = 0;
+        serverName = "";
+        maxPlayers = 0;
+        allowedKits = new array<string>;
+    }
+
+    // Defaults() is separate so it can be called at fresh-install time AND
+    // re-used at migration time to source new-field default values.
+    void Defaults()
+    {
+        serverName = "Untitled Server";
+        maxPlayers = 60;
+        allowedKits.Clear();
+        allowedKits.Insert("StarterKit_Basic");
+        version = SCHEMA_VERSION;
+    }
+}
+
+static MyMod_Settings LoadOrCreate(string path)
+{
+    MyMod_Settings cfg = new MyMod_Settings;
+
+    if (!FileExist(path))
+    {
+        cfg.Defaults();
+        SaveToDisk(cfg, path);
+        return cfg;
+    }
+
+    if (!JsonFileLoader<MyMod_Settings>.JsonLoadFile(path, cfg))
+    {
+        // Parse failed — admin probably has a typo. DO NOT overwrite;
+        // log + return defaults in memory only.
+        cfg.Defaults();
+        Print("[MyMod] settings JSON failed to parse — using in-memory defaults; not overwriting");
+        return cfg;
+    }
+
+    if (cfg.version < MyMod_Settings.SCHEMA_VERSION)
+    {
+        // Forward migration. Build a fresh defaults instance and copy in
+        // only the NEW fields that didn't exist in the old version.
+        MyMod_Settings fresh = new MyMod_Settings;
+        fresh.Defaults();
+
+        if (cfg.version < 2)
+        {
+            // Field added in v2:
+            cfg.maxPlayers = fresh.maxPlayers;
+        }
+        if (cfg.version < 3)
+        {
+            // Field added in v3:
+            cfg.allowedKits = fresh.allowedKits;
+        }
+
+        cfg.version = MyMod_Settings.SCHEMA_VERSION;
+        SaveToDisk(cfg, path);
+        Print("[MyMod] migrated settings v" + cfg.version + " → v" + MyMod_Settings.SCHEMA_VERSION);
+    }
+
+    return cfg;
+}
+```
+
+### Rules of thumb
+
+- Bump `SCHEMA_VERSION` whenever you add a field. Don't bump for behavior
+  changes that don't change the JSON shape.
+- Constructor stays minimal — just enough so the serializer doesn't choke on
+  null members. All "didactic example" defaults live in `Defaults()`.
+- On parse failure, DO NOT overwrite the file. The admin may be mid-edit
+  with a typo. Use defaults in memory only and log loudly.
+- Migration is incremental: each `if (cfg.version < N)` block patches in only
+  the fields added at version N.
+
+Reference pattern: `salutesh/DayZ-Expansion-Scripts/ExpansionGarageSettings.c::OnLoad`
+uses an equivalent approach.
+
+---
+
 ## How agents and skills reference this file
 
 Each DayZ agent or skill should include a one-line reference near the top of its definition:
