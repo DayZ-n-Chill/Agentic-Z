@@ -4,6 +4,7 @@ description: "Use this agent when you need to create a new agent definition from
 model: opus
 color: lime
 memory: project
+tools: Read, Write, Edit, Glob, Grep
 ---
 
 ## NAME

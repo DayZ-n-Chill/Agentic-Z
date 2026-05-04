@@ -4,6 +4,7 @@ description: "Use this agent to keep the repo's docs (`docs/`, L1 files, agent d
 model: sonnet
 color: brown
 memory: project
+tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
 ## NAME
