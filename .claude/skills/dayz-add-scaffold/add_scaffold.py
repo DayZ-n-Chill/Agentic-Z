@@ -13,13 +13,16 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 import shutil
 import sys
 from pathlib import Path
 
-# .../.claude/skills/dayz-add-scaffold/add_scaffold.py -> repo root is parents[3]
+# REPO_ROOT = where this skill ships from (plugin or template clone).
+# PROJECT_DIR = user's project (where workspace/ lives). Differ in plugin mode.
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WORKSPACE = REPO_ROOT / "workspace"
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+WORKSPACE = PROJECT_DIR / "workspace"
 NEW_MOD = REPO_ROOT / ".claude" / "skills" / "dayz-new-mod" / "new_mod.py"
 
 OK = "[OK]   "
@@ -184,7 +187,7 @@ def main() -> int:
     target = WORKSPACE / args.modname
     if not target.exists():
         try:
-            rel = target.relative_to(REPO_ROOT)
+            rel = target.relative_to(PROJECT_DIR)
         except ValueError:
             rel = target
         sys.exit(
@@ -193,11 +196,11 @@ def main() -> int:
             "       to import an existing folder."
         )
     if not target.is_dir():
-        sys.exit(f"{FAIL} {target.relative_to(REPO_ROOT)} is not a directory.")
+        sys.exit(f"{FAIL} {target.relative_to(PROJECT_DIR)} is not a directory.")
 
     print()
     try:
-        rel = target.relative_to(REPO_ROOT)
+        rel = target.relative_to(PROJECT_DIR)
     except ValueError:
         rel = target
     print(f"Scaffolding {rel}/\n")

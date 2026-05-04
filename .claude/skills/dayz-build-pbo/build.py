@@ -16,9 +16,11 @@ import time
 from pathlib import Path
 from typing import Optional
 
-# .../.claude/skills/dayz-build-pbo/build.py -> repo root is parents[3]
+# REPO_ROOT = where this skill ships from (plugin or template clone).
+# PROJECT_DIR = user's project (where workspace/ lives). Differ in plugin mode.
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WORKSPACE = REPO_ROOT / "workspace"
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+WORKSPACE = PROJECT_DIR / "workspace"
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 INCLUDE_LIST = Path(__file__).resolve().parent / "include.lst"
@@ -84,14 +86,14 @@ def verify_workspace(modname: str) -> Path:
     target = WORKSPACE / modname
     if not target.exists():
         sys.exit(
-            f"{FAIL} {target.relative_to(REPO_ROOT)} not found.\n"
+            f"{FAIL} {target.relative_to(PROJECT_DIR)} not found.\n"
             f"       Run: python .claude/skills/dayz-new-mod/new_mod.py {modname}"
         )
     if not (target / "config.cpp").exists():
-        sys.exit(f"{FAIL} {target.relative_to(REPO_ROOT)}/config.cpp missing.")
+        sys.exit(f"{FAIL} {target.relative_to(PROJECT_DIR)}/config.cpp missing.")
     if not (target / "$PBOPREFIX$").exists():
-        sys.exit(f"{FAIL} {target.relative_to(REPO_ROOT)}/$PBOPREFIX$ missing.")
-    print(f"{OK} {target.relative_to(REPO_ROOT)}\\ found")
+        sys.exit(f"{FAIL} {target.relative_to(PROJECT_DIR)}/$PBOPREFIX$ missing.")
+    print(f"{OK} {target.relative_to(PROJECT_DIR)}\\ found")
     return target
 
 

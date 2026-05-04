@@ -21,8 +21,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+# REPO_ROOT = where this skill ships from. PROJECT_DIR = user's project.
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WORKSPACE = REPO_ROOT / "workspace"
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+WORKSPACE = PROJECT_DIR / "workspace"
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 P_DRIVE = Path("P:\\")
@@ -101,7 +103,7 @@ def discover_mods(target: str | None) -> list[Path]:
         path = WORKSPACE / target
         if not is_scaffolded_mod(path):
             sys.exit(
-                f"{FAIL} {path.relative_to(REPO_ROOT)} is not a scaffolded mod "
+                f"{FAIL} {path.relative_to(PROJECT_DIR)} is not a scaffolded mod "
                 "(missing config.cpp or $PBOPREFIX$)."
             )
         return [path]
@@ -172,7 +174,7 @@ def find_artifacts(mod_path: Path) -> tuple[list[tuple[str, Path]], list[str]]:
 
 def remove_artifact(kind: str, path: Path, dry_run: bool) -> None:
     try:
-        rel = path.relative_to(REPO_ROOT)
+        rel = path.relative_to(PROJECT_DIR)
     except ValueError:
         rel = path
 
@@ -244,7 +246,7 @@ def main() -> int:
     print(f"Plan: {len(plan)} item(s) to remove")
     for kind, path in plan:
         try:
-            rel = path.relative_to(REPO_ROOT)
+            rel = path.relative_to(PROJECT_DIR)
         except ValueError:
             rel = path
         print(f"  ({kind}) {rel}")

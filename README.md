@@ -15,13 +15,26 @@
 
 ## Quick start
 
+There are two ways to use Agentic-Z. Pick one — running both side-by-side will load every skill twice (once unprefixed, once as `agentic-z:<name>`).
+
+**Option A — Clone as a template** (recommended for starting a new mod project):
+
 ```cmd
 git clone <this-repo> my-dayz-mod
 cd my-dayz-mod
 python .claude\skills\sync-skills\sync.py
 ```
 
-That symlinks the repo's `.claude/skills/` into each agent CLI's home directory so all three discover the same slash commands. Inside Claude Code you can also run `/sync-skills` instead.
+That symlinks the repo's `.claude/skills/` into each agent CLI's home directory so all three discover the same slash commands. Inside Claude Code you can also run `/sync-skills` instead. Skills appear unprefixed (`/dayz-build-pbo`).
+
+**Option B — Install as a Claude Code plugin** (for adding the toolkit to an existing project without forking):
+
+```text
+/plugin marketplace add DayZ-n-Chill/Agentic-Z
+/plugin install agentic-z@dayz-n-chill
+```
+
+Skills appear with the `agentic-z:` prefix (`/agentic-z:dayz-build-pbo`). The `dayz-rag` MCP server registers automatically.
 
 Then, from any of the agent CLIs:
 
@@ -186,6 +199,18 @@ In the Discord you can:
 - **Help refine and enhance the product.** Docs improvements, troubleshooting entries, better defaults, new MCP integrations — every contribution compounds.
 
 Whether you're a seasoned Enforce Script developer, a server admin, a 3D artist, or just learning DayZ modding for the first time, there's a place for your work here. The goal is a tool that makes DayZ modding accessible and enjoyable for everyone — and that only happens with community input.
+
+---
+
+## Security baseline
+
+The shipped configuration is the security baseline. **Tighten it for your environment, never loosen it without thinking.**
+
+- **`.claude/settings.json`** (committed) — narrow Bash allowlist limited to running this repo's own skills (`Bash(python .claude/skills/*)`, `Bash(npm list *)`, etc.) plus an explicit deny list that blocks the dangerous escape hatches: `Bash(python -c *)`, `Bash(python -m *)`, `Bash(node -e *)`, `Bash(node -p *)`, `Bash(npm install *)`, `Bash(npx *)`. Editing this file affects every clone — keep allows narrow and prefer deny rules over removing them.
+- **`.claude/settings.local.json`** (gitignored, per-clone) — your machine-specific overrides. **Never set `dangerouslySkipPermissions: true` in a long-lived clone**; it bypasses every prompt including the deny list. Use `/fewer-permission-prompts` to build a real allowlist incrementally as you hit prompts.
+- **`.claude/agents/*.md`** — every agent declares an explicit `tools:` allowlist. Auditor/diagnostic agents (`dayz-mod-reviewer`, `dayz-mod-debugger`) cannot Edit/Write/Bash. Authoring specialists get Read/Write/Edit/Glob/Grep plus the `dayz-rag` MCP tools but no shell or network. Subagents inherit only what's listed — no implicit full-toolset escalation.
+
+If you fork the repo to publish a downstream variant, run `git diff main -- .claude/settings.json .claude/agents/` before pushing and convince yourself any widened permissions are intentional.
 
 ---
 
