@@ -252,29 +252,31 @@ def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Op
 
     `path` should be one returned by search_dayz_source. Limited to paths under P:\\
     to prevent arbitrary file read.
+
+    Note: P:\\ is typically a Windows `subst` drive (or junction) pointing at a host
+    folder. Don't use Path.resolve() for the sandbox check — resolve() follows the
+    subst back to the host drive and breaks the check. Use os.path.normpath instead,
+    which collapses `..` and `.` lexically without touching the filesystem.
     """
     p = Path(path)
     if not p.is_absolute():
         return {"error": f"path must be absolute (got {path!r})"}
     if p.drive.upper() != "P:":
         return {"error": f"refusing to read outside P:\\ (got {p.drive or '<no drive>'})"}
+    normalized = Path(os.path.normpath(str(p)))
+    if normalized.drive.upper() != "P:":
+        return {"error": f"refusing to read outside P:\\ (normalized to {normalized})"}
+    if not normalized.exists() or not normalized.is_file():
+        return {"error": f"not a file: {normalized}"}
     try:
-        resolved = p.resolve()
-    except OSError as e:
-        return {"error": f"path resolution failed: {e}"}
-    if resolved.drive.upper() != "P:":
-        return {"error": f"refusing to read outside P:\\ (resolved to {resolved.drive})"}
-    if not resolved.exists() or not resolved.is_file():
-        return {"error": f"not a file: {resolved}"}
-    try:
-        size = resolved.stat().st_size
+        size = normalized.stat().st_size
         if size > MAX_FILE_BYTES and line_start is None:
             return {
                 "error": f"file is {size} bytes (>{MAX_FILE_BYTES}); pass line_start/line_end to fetch a slice",
-                "path": str(resolved),
+                "path": str(normalized),
                 "size_bytes": size,
             }
-        text = resolved.read_text(encoding="utf-8", errors="replace")
+        text = normalized.read_text(encoding="utf-8", errors="replace")
     except OSError as e:
         return {"error": f"read failed: {e}"}
 
@@ -283,8 +285,8 @@ def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Op
         s = max(1, int(line_start or 1))
         e = min(len(lines), int(line_end or len(lines)))
         slice_text = "\n".join(lines[s - 1 : e])
-        return {"path": str(resolved), "line_start": s, "line_end": e, "content": slice_text}
-    return {"path": str(resolved), "line_start": 1, "line_end": len(lines), "content": text}
+        return {"path": str(normalized), "line_start": s, "line_end": e, "content": slice_text}
+    return {"path": str(normalized), "line_start": 1, "line_end": len(lines), "content": text}
 
 
 def search_dayz_wiki_impl(
