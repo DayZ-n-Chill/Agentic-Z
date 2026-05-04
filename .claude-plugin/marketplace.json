@@ -1,6 +1,6 @@
 {
-  "name": "agentic-z",
-  "description": "Marketplace for the Agentic-Z plugin: AI agent stack for DayZ modding (specialist subagents, slash skills, dayz-rag MCP).",
+  "name": "dayz-n-chill",
+  "description": "DayZ n' Chill's plugin marketplace. Currently hosts Agentic-Z (AI agent stack for DayZ modding); future DayZ-modding plugins from the same org will land here too.",
   "owner": {
     "name": "DayZ n' Chill",
     "url": "https://github.com/DayZ-n-Chill"
