@@ -13,14 +13,18 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from textwrap import dedent
 
+# REPO_ROOT = where this skill ships from (plugin or template clone).
+# PROJECT_DIR = user's project (where workspace/ lives). Differ in plugin mode.
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WORKSPACE = REPO_ROOT / "workspace"
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+WORKSPACE = PROJECT_DIR / "workspace"
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 SERVER_ROOT = WORKSPACE / "_server"
@@ -72,7 +76,7 @@ def ensure_mission(template: str, refresh: bool) -> None:
     already_present = dest.exists() and any(dest.iterdir())
 
     if already_present and not refresh:
-        print(f"{OK} Mission already present: {dest.relative_to(REPO_ROOT)}")
+        print(f"{OK} Mission already present: {dest.relative_to(PROJECT_DIR)}")
         return
 
     server_root = find_dayz_server()
@@ -81,7 +85,7 @@ def ensure_mission(template: str, refresh: bool) -> None:
             f"{FAIL} DayZ Server install not found.\n"
             "       Required to copy mission templates. Install via Steam (Tools section,\n"
             "       free, appid 223350), or manually populate\n"
-            f"       {dest.relative_to(REPO_ROOT)} with mission content."
+            f"       {dest.relative_to(PROJECT_DIR)} with mission content."
         )
 
     src = server_root / "mpmissions" / template
@@ -104,7 +108,7 @@ def ensure_mission(template: str, refresh: bool) -> None:
     else:
         action = "Copied"
     shutil.copytree(src, dest)
-    print(f"{OK} {action} {dest.relative_to(REPO_ROOT)}  (from DayZ Server install)")
+    print(f"{OK} {action} {dest.relative_to(PROJECT_DIR)}  (from DayZ Server install)")
 
 
 def setup_map_dir(map_name: str, template: str) -> None:
@@ -116,17 +120,17 @@ def setup_map_dir(map_name: str, template: str) -> None:
     cfg_path = map_dir / "serverDZ.cfg"
     if not cfg_path.exists():
         cfg_path.write_text(default_server_cfg(map_name, template), encoding="utf-8")
-        print(f"{OK} Wrote default {cfg_path.relative_to(REPO_ROOT)}")
+        print(f"{OK} Wrote default {cfg_path.relative_to(PROJECT_DIR)}")
     else:
         cfg = cfg_path.read_text(encoding="utf-8")
         if "allowFilePatching" not in cfg:
             cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
             cfg_path.write_text(cfg, encoding="utf-8")
-            print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(REPO_ROOT)}")
+            print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(PROJECT_DIR)}")
         else:
-            print(f"{OK} {cfg_path.relative_to(REPO_ROOT)} unchanged (already configured)")
+            print(f"{OK} {cfg_path.relative_to(PROJECT_DIR)} unchanged (already configured)")
 
-    print(f"{OK} {profile_dir.relative_to(REPO_ROOT)} ready")
+    print(f"{OK} {profile_dir.relative_to(PROJECT_DIR)} ready")
 
 
 def default_server_cfg(map_name: str, template: str) -> str:
