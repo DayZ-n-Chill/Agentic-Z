@@ -9,7 +9,7 @@ designed to run in hooks (Stop hook) for fast, LLM-free drift detection.
 Usage:
     python .claude/skills/docs-sync/sync.py --check       # report drift, exit 0 if clean
     python .claude/skills/docs-sync/sync.py --check --quiet  # silent unless drift
-    python .claude/skills/docs-sync/sync.py --map         # print canonical→mirror map and exit
+    python .claude/skills/docs-sync/sync.py --map         # print canonical->mirror map and exit
 """
 from __future__ import annotations
 
@@ -189,7 +189,7 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--check", action="store_true", help="Report drift (default)")
     p.add_argument("--quiet", action="store_true", help="Silent on success, single-line on drift (for hooks)")
-    p.add_argument("--map", action="store_true", help="Print canonical→mirror map and exit")
+    p.add_argument("--map", action="store_true", help="Print canonical->mirror map and exit")
     args = p.parse_args()
 
     if args.map:
