@@ -1,11 +1,16 @@
 ---
 name: dayz-preflight
-description: Verify the DayZ modding environment is ready (P:\ mounted, DayZ Tools installed, vanilla data unpacked, workshop deploy folder accessible). Run this before any other DayZ skill. Hard-fails if P:\ is not mounted; warns on the rest.
 ---
+
+## Overview
+
+Verify the DayZ modding environment is ready (P:\ mounted, DayZ Tools installed, vanilla data unpacked, workshop deploy folder accessible). Run this before any other DayZ skill. Hard-fails if P:\ is not mounted; warns on the rest.
 
 # /dayz-preflight
 
 Verify the DayZ modding environment before doing any DayZ work. Halts with a clear error if `P:\` is not mounted (per `.claude/skills/_shared/dayz-conventions.md`); warns on optional checks so the user can decide whether to proceed.
+
+**Read-only.** Preflight inspects state and reports. It never mounts drives, creates junctions, or otherwise mutates the filesystem — fixes belong to dedicated setup skills (e.g. `/dayz-mount-p`).
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 

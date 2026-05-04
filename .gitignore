@@ -10,6 +10,9 @@ __pycache__/
 # Per-clone local memory (user/machine-specific notes; never rules or conventions)
 .claude/local-memory/
 
+# Superpowers brainstorming Visual Companion — session-local mockups, server state, click events
+.superpowers/
+
 # Secrets — API keys, never commit
 .env
 .env.local
@@ -18,3 +21,5 @@ __pycache__/
 # Release assets — uploaded to GitHub Releases, not committed (too big for git)
 output/release/
 *.tar.gz
+
+workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/

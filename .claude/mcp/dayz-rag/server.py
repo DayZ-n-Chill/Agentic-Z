@@ -30,6 +30,25 @@ DEFAULT_EMBED_MODEL = "voyage-code-3"
 MAX_TOP_K = 25
 MAX_FILE_BYTES = 200_000
 
+# Optional distance ceiling for search results. LanceDB returns L2² distance
+# (lower = closer match). Absolute thresholds depend on the embed model and
+# corpus — voyage-code-3 + vanilla DayZ source clusters on-topic hits in the
+# 0.7-0.85 range, with noise creeping in past ~1.0. Calibrate by running
+# representative queries with no filter, then setting a threshold just above
+# the worst on-topic hit you saw. Default OFF (None) so callers see everything
+# ranked; opt in via DAYZ_RAG_MAX_DISTANCE env var or per-call arg.
+def _load_default_max_distance() -> Optional[float]:
+    raw = os.environ.get("DAYZ_RAG_MAX_DISTANCE", "").strip()
+    if not raw:
+        return None
+    try:
+        v = float(raw)
+        return v if v > 0 else None
+    except ValueError:
+        return None
+
+DEFAULT_MAX_DISTANCE = _load_default_max_distance()
+
 VALID_FILE_TYPES = {"c", "cpp", "hpp", "h", "layout", "cfg", "rvmat", "xml", "json", "csv"}
 
 
@@ -68,6 +87,24 @@ _voyage_client = None
 _embed_model: Optional[str] = None
 _table = None
 _wiki_table = None
+_index_built_at: Optional[float] = None  # epoch seconds; set on first manifest load
+
+
+def _get_index_built_at() -> Optional[float]:
+    """Return the source-index build time as epoch seconds, or None if unavailable."""
+    global _index_built_at
+    if _index_built_at is not None:
+        return _index_built_at
+    manifest = INDEX_ROOT / "manifest.json"
+    if not manifest.exists():
+        return None
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        ts = data.get("indexed_at")
+        _index_built_at = float(ts) if ts is not None else None
+    except (json.JSONDecodeError, OSError, ValueError, TypeError):
+        _index_built_at = None
+    return _index_built_at
 
 
 def _get_client():
@@ -142,19 +179,50 @@ def _get_wiki_table():
     return _wiki_table
 
 
+def _check_stale(path_str: str) -> tuple[bool, Optional[str]]:
+    """For local file paths under P:\\, compare mtime to index build time.
+
+    Returns (is_stale, reason). For non-local paths (e.g. wiki URLs), returns
+    (False, None) — there's no local mtime to check against.
+    """
+    if not path_str or not path_str.startswith(("P:\\", "P:/")):
+        return False, None
+    built = _get_index_built_at()
+    if built is None:
+        return False, None
+    try:
+        st = Path(path_str).stat()
+    except OSError:
+        return True, "missing"
+    if st.st_mtime > built:
+        return True, "modified"
+    return False, None
+
+
 def _format_hit(row: dict) -> dict:
-    return {
-        "path": row.get("path", ""),
+    path_str = row.get("path", "")
+    is_stale, stale_reason = _check_stale(path_str)
+    out = {
+        "path": path_str,
         "file_type": row.get("file_type", ""),
         "parent_context": row.get("parent_context", ""),
         "line_start": int(row.get("line_start", 0)),
         "line_end": int(row.get("line_end", 0)),
         "score": float(row.get("_distance", 0.0)),
         "snippet": (row.get("content", "") or "")[:1500],
+        "is_stale": is_stale,
     }
+    if stale_reason:
+        out["stale_reason"] = stale_reason
+    return out
 
 
-def search_dayz_source_impl(query: str, top_k: int = 5, file_type: Optional[str] = None) -> list[dict]:
+def search_dayz_source_impl(
+    query: str,
+    top_k: int = 5,
+    file_type: Optional[str] = None,
+    max_distance: Optional[float] = None,
+) -> list[dict]:
     """Semantic search over indexed vanilla DayZ source. Returns top_k chunks."""
     if not query or not query.strip():
         return []
@@ -162,15 +230,20 @@ def search_dayz_source_impl(query: str, top_k: int = 5, file_type: Optional[str]
     if file_type is not None and file_type not in VALID_FILE_TYPES:
         raise ValueError(f"file_type must be one of {sorted(VALID_FILE_TYPES)} or None")
 
+    threshold = max_distance if max_distance is not None else DEFAULT_MAX_DISTANCE
+
     table = _get_table()
     vec = _embed_query(query)
 
-    q = table.search(vec).limit(top_k * 4 if file_type else top_k)
+    # Over-fetch when filtering so we can drop noise without underdelivering.
+    overfetch_factor = 4 if (file_type or threshold is not None) else 1
+    q = table.search(vec).limit(top_k * overfetch_factor)
     results = q.to_list()
     if file_type:
-        results = [r for r in results if r.get("file_type") == file_type][:top_k]
-    else:
-        results = results[:top_k]
+        results = [r for r in results if r.get("file_type") == file_type]
+    if threshold is not None:
+        results = [r for r in results if float(r.get("_distance", 0.0)) <= threshold]
+    results = results[:top_k]
     return [_format_hit(r) for r in results]
 
 
@@ -179,29 +252,31 @@ def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Op
 
     `path` should be one returned by search_dayz_source. Limited to paths under P:\\
     to prevent arbitrary file read.
+
+    Note: P:\\ is typically a Windows `subst` drive (or junction) pointing at a host
+    folder. Don't use Path.resolve() for the sandbox check — resolve() follows the
+    subst back to the host drive and breaks the check. Use os.path.normpath instead,
+    which collapses `..` and `.` lexically without touching the filesystem.
     """
     p = Path(path)
     if not p.is_absolute():
         return {"error": f"path must be absolute (got {path!r})"}
     if p.drive.upper() != "P:":
         return {"error": f"refusing to read outside P:\\ (got {p.drive or '<no drive>'})"}
+    normalized = Path(os.path.normpath(str(p)))
+    if normalized.drive.upper() != "P:":
+        return {"error": f"refusing to read outside P:\\ (normalized to {normalized})"}
+    if not normalized.exists() or not normalized.is_file():
+        return {"error": f"not a file: {normalized}"}
     try:
-        resolved = p.resolve()
-    except OSError as e:
-        return {"error": f"path resolution failed: {e}"}
-    if resolved.drive.upper() != "P:":
-        return {"error": f"refusing to read outside P:\\ (resolved to {resolved.drive})"}
-    if not resolved.exists() or not resolved.is_file():
-        return {"error": f"not a file: {resolved}"}
-    try:
-        size = resolved.stat().st_size
+        size = normalized.stat().st_size
         if size > MAX_FILE_BYTES and line_start is None:
             return {
                 "error": f"file is {size} bytes (>{MAX_FILE_BYTES}); pass line_start/line_end to fetch a slice",
-                "path": str(resolved),
+                "path": str(normalized),
                 "size_bytes": size,
             }
-        text = resolved.read_text(encoding="utf-8", errors="replace")
+        text = normalized.read_text(encoding="utf-8", errors="replace")
     except OSError as e:
         return {"error": f"read failed: {e}"}
 
@@ -210,18 +285,29 @@ def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Op
         s = max(1, int(line_start or 1))
         e = min(len(lines), int(line_end or len(lines)))
         slice_text = "\n".join(lines[s - 1 : e])
-        return {"path": str(resolved), "line_start": s, "line_end": e, "content": slice_text}
-    return {"path": str(resolved), "line_start": 1, "line_end": len(lines), "content": text}
+        return {"path": str(normalized), "line_start": s, "line_end": e, "content": slice_text}
+    return {"path": str(normalized), "line_start": 1, "line_end": len(lines), "content": text}
 
 
-def search_dayz_wiki_impl(query: str, top_k: int = 5) -> list[dict]:
+def search_dayz_wiki_impl(
+    query: str,
+    top_k: int = 5,
+    max_distance: Optional[float] = None,
+) -> list[dict]:
     """Semantic search over indexed Bohemia wiki pages (community.bistudio.com Category:DayZ)."""
     if not query or not query.strip():
         return []
     top_k = max(1, min(int(top_k), MAX_TOP_K))
+    threshold = max_distance if max_distance is not None else DEFAULT_MAX_DISTANCE
+
     table = _get_wiki_table()
     vec = _embed_query(query)
-    results = table.search(vec).limit(top_k).to_list()
+
+    overfetch_factor = 4 if threshold is not None else 1
+    results = table.search(vec).limit(top_k * overfetch_factor).to_list()
+    if threshold is not None:
+        results = [r for r in results if float(r.get("_distance", 0.0)) <= threshold]
+    results = results[:top_k]
     return [_format_hit(r) for r in results]
 
 
@@ -265,7 +351,12 @@ def main() -> int:
     mcp = FastMCP("dayz-rag")
 
     @mcp.tool()
-    def search_dayz_source(query: str, top_k: int = 5, file_type: Optional[str] = None) -> list[dict]:
+    def search_dayz_source(
+        query: str,
+        top_k: int = 5,
+        file_type: Optional[str] = None,
+        max_distance: Optional[float] = None,
+    ) -> list[dict]:
         """Semantic search over vanilla DayZ source (Enforce Script, layouts, configs, materials).
 
         Use this INSTEAD of Grep when looking for vanilla code by meaning rather than
@@ -276,11 +367,21 @@ def main() -> int:
             query: natural-language question or description
             top_k: max results (1-25, default 5)
             file_type: filter to one of "c", "layout", "config.cpp", "rvmat" (default: all)
+            max_distance: drop hits with `score` (LanceDB L2² distance) above this
+                threshold. Lower = closer match. Thresholds are model + corpus
+                dependent; calibrate by running unfiltered queries first.
+                voyage-code-3 + vanilla DayZ clusters on-topic hits around
+                0.7-0.85, with noise past ~1.0. Default None = no filter
+                (or env var DAYZ_RAG_MAX_DISTANCE if set).
 
-        Returns: list of {path, file_type, parent_context, line_start, line_end, score, snippet}.
-        Use get_dayz_file to fetch full content of a hit.
+        Returns: list of {path, file_type, parent_context, line_start, line_end,
+        score, snippet, is_stale, stale_reason}. `is_stale=True` means the file's
+        mtime is newer than the index build (or the file is missing); the snippet
+        may not match what's currently on disk. ALWAYS verify with get_dayz_file
+        before grounding claims on a hit (see cite-then-verify rule in
+        .claude/skills/_shared/dayz-conventions.md).
         """
-        return search_dayz_source_impl(query, top_k, file_type)
+        return search_dayz_source_impl(query, top_k, file_type, max_distance)
 
     @mcp.tool()
     def get_dayz_file(path: str, line_start: Optional[int] = None, line_end: Optional[int] = None) -> dict:
@@ -294,7 +395,11 @@ def main() -> int:
         return get_dayz_file_impl(path, line_start, line_end)
 
     @mcp.tool()
-    def search_dayz_wiki(query: str, top_k: int = 5) -> list[dict]:
+    def search_dayz_wiki(
+        query: str,
+        top_k: int = 5,
+        max_distance: Optional[float] = None,
+    ) -> list[dict]:
         """Semantic search over the indexed Bohemia community wiki (Category:DayZ + sub-categories).
 
         Use this for questions about the official DayZ docs / tutorials / class references —
@@ -304,11 +409,15 @@ def main() -> int:
         Args:
             query: natural-language question or description
             top_k: max results (1-25, default 5)
+            max_distance: drop hits with `score` above this threshold. See
+                search_dayz_source for guidance.
 
-        Returns: list of {path, file_type, parent_context, line_start, line_end, score, snippet}
-        where `path` is the wiki page URL and `parent_context` is "Page Title > Section > Subsection".
+        Returns: list of {path, file_type, parent_context, line_start, line_end,
+        score, snippet, is_stale} where `path` is the wiki page URL and
+        `parent_context` is "Page Title > Section > Subsection". `is_stale` is
+        always False for wiki hits (no local mtime to compare).
         """
-        return search_dayz_wiki_impl(query, top_k)
+        return search_dayz_wiki_impl(query, top_k, max_distance)
 
     @mcp.tool()
     def list_indexed_sources() -> dict:

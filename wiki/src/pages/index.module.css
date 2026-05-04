@@ -310,8 +310,14 @@
   gap: 1.25rem;
 }
 
+/* 2-col variant for sections like the RAG block where there are only two cards.
+   Inline style on the JSX would beat the mobile media query below; this class
+   pairs with the same breakpoint so the cards stack on phones. */
+.archGrid2col { grid-template-columns: repeat(2, 1fr); }
+
 @media (max-width: 996px) {
   .archGrid { grid-template-columns: 1fr; }
+  .archGrid2col { grid-template-columns: 1fr; }
 }
 
 .archCard {

@@ -31,7 +31,7 @@ SERVER_ROOT = WORKSPACE / "_server"
 
 # Ownership marker written by dayz-build-pbo at P:\Mods\@<ModName>\<MARKER>.
 # The deployed dir is removed only when this file exists AND its content
-# matches the modname — this is what makes us safe against name collisions
+# matches the modname - this is what makes us safe against name collisions
 # with subscribed mods or anything else the user dropped under !Workshop.
 SCAFFOLD_MARKER = ".agentic-z-scaffold"
 
@@ -49,10 +49,49 @@ def gate_on_preflight() -> None:
 
 
 def is_scaffolded_mod(path: Path) -> bool:
-    """Folder is a /dayz-new-mod scaffold iff it has config.cpp AND $PBOPREFIX$."""
+    """Folder is a managed mod if EITHER:
+      - it's a real directory with config.cpp + $PBOPREFIX$ (native /dayz-new-mod scaffold), OR
+      - it's a directory link (symlink/junction) under workspace/ - those only get
+        created by /dayz-new-mod or /dayz-import-mod, so the link itself is the
+        ownership marker. This covers bare imports where the user opted out of
+        scaffolding (--no-scaffold) and the linked source has neither file.
+    """
     if not path.is_dir():
         return False
+    if _is_link(path):
+        return True
     return (path / "config.cpp").exists() and (path / "$PBOPREFIX$").exists()
+
+
+def _is_link(path: Path) -> bool:
+    """True if path is a symlink OR a Windows junction (NTFS reparse point).
+
+    Critical for safe removal: shutil.rmtree on a junction recurses into the
+    target and would destroy an imported mod's external source folder.
+    os.path.islink is True for symlinks but False for junctions, so we also
+    check the reparse-point attribute via os.lstat on Windows.
+    """
+    if os.path.islink(path):
+        return True
+    if os.name == "nt":
+        try:
+            st = os.lstat(path)
+        except OSError:
+            return False
+        # FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+        return bool(getattr(st, "st_file_attributes", 0) & 0x400)
+    return False
+
+
+def _resolve_link_target(path: Path) -> Path | None:
+    """Return the link target (without \\\\?\\ prefix) or None if not a link."""
+    try:
+        target = os.readlink(path)
+    except OSError:
+        return None
+    if target.startswith("\\\\?\\"):
+        target = target[4:]
+    return Path(target)
 
 
 def discover_mods(target: str | None) -> list[Path]:
@@ -120,11 +159,14 @@ def find_artifacts(mod_path: Path) -> tuple[list[tuple[str, Path]], list[str]]:
             warnings.append(
                 f"P:\\Mods\\@{name}\\ exists but has no Agentic-Z ownership marker\n"
                 f"        ({SCAFFOLD_MARKER} missing or content mismatch).\n"
-                "        Skipping — could be a subscribed mod or hand-placed folder.\n"
+                "        Skipping - could be a subscribed mod or hand-placed folder.\n"
                 f"        If it's actually yours, remove manually: cmd /c rmdir /s /q P:\\Mods\\@{name}"
             )
 
-    artifacts.append(("workspace", mod_path))
+    if _is_link(mod_path):
+        artifacts.append(("workspace-link", mod_path))
+    else:
+        artifacts.append(("workspace", mod_path))
     return artifacts, warnings
 
 
@@ -138,7 +180,10 @@ def remove_artifact(kind: str, path: Path, dry_run: bool) -> None:
         print(f"{OK} would remove ({kind}): {rel}")
         return
 
-    if kind == "junction":
+    if kind in ("junction", "workspace-link"):
+        # Critical: never recurse into a link's target. shutil.rmtree on a
+        # Windows junction would walk the target and delete an imported mod's
+        # external source folder. cmd /c rmdir removes the link itself.
         subprocess.run(
             ["cmd", "/c", "rmdir", str(path)], check=True, capture_output=True, text=True
         )

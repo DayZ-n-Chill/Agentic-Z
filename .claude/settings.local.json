@@ -28,7 +28,8 @@
       "Bash(rm .claude/skills/dayz-build-pbo/exclude.lst)",
       "Bash(rm -f /tmp/excl.lst)",
       "Bash(curl *)"
-    ]
+    ],
+    "deny": []
   },
   "enabledMcpjsonServers": [
     "dayz-rag"

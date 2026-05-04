@@ -1,7 +1,10 @@
 ---
 name: dayz-build-pbo
-description: Pack a scaffolded mod from workspace/<ModName>/ into a .pbo at P:\Mods\@<ModName>\Addons\ via DayZ Tools AddonBuilder. Gates on /dayz-preflight, verifies the P:\<ModName>\ junction created by /dayz-new-mod, surfaces AddonBuilder output live. Default is binarized output; --clean wipes the target dir first.
 ---
+
+## Overview
+
+Pack a scaffolded mod from workspace/&lt;ModName&gt;/ into a .pbo at P:\Mods\@&lt;ModName&gt;\Addons\ via DayZ Tools AddonBuilder. Gates on /dayz-preflight, verifies the P:\&lt;ModName&gt;\ junction created by /dayz-new-mod, surfaces AddonBuilder output live. Default is binarized output; --clean wipes the target dir first.
 
 # /dayz-build-pbo
 
@@ -29,7 +32,8 @@ python .claude\skills\dayz-build-pbo\build.py <ModName> [--clean]
 5. **Prepare paths** — ensures `P:\Mods\@<ModName>\Addons\` and `P:\temp\<ModName>\` exist.
 6. **Build** — invokes `AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> [-clear]`. AddonBuilder's stdout/stderr stream live so you see binarization progress and config errors as they happen.
 7. **Verify output** — confirms `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and is newer than the build start.
-8. **Cleanup** — removes `P:\temp\<ModName>\` on success (kept on failure for debugging).
+8. **Drop ownership marker** — writes `P:\Mods\@<ModName>\.agentic-z-scaffold` (single line: the modname). `dayz-clean-workspace` requires this file before it will remove the deployed dir, so we never delete a deployed mod we didn't produce. Sits one level above `Addons/` so `--clean`'s `-clear` doesn't wipe it.
+9. **Cleanup** — removes `P:\temp\<ModName>\` on success (kept on failure for debugging).
 
 ## Refuses to run if
 

@@ -523,13 +523,22 @@ code, pre {
   transition: none !important;
 }
 
-/* Navbar — weathered bar (consistent dimensions across themes) */
+/* Navbar — weathered bar (consistent dimensions across themes).
+   `backdrop-filter` is desktop-only: on mobile it creates a containing block
+   for the position:fixed `.navbar-sidebar` (the hamburger drawer), which
+   pins the drawer inside the navbar's bounding box and hides it behind page
+   content. Disabling on mobile lets the drawer go fullscreen as intended. */
 .navbar {
   border-bottom: 1px solid var(--az-olive, #3a3a2a);
   backdrop-filter: blur(8px);
 }
 [data-theme='dark'] .navbar {
   border-bottom-color: var(--az-olive);
+}
+@media (max-width: 996px) {
+  .navbar {
+    backdrop-filter: none;
+  }
 }
 
 /* Links use --ifm-link-color / --ifm-link-hover-color from the root tokens.
@@ -628,4 +637,28 @@ a:hover {
 }
 [data-theme='dark'] *:focus-visible {
   outline-color: #d88050;
+}
+
+/* ─── Mobile navbar drawer ────────────────────────────────────────────────
+   Docusaurus default: the drawer renders two side-by-side panes (navbar
+   items as "primary", doc sidebar as "secondary") and slides between them
+   via a transform on `.navbar-sidebar__items`. On a phone this means tapping
+   the hamburger only ever shows ONE pane, and reaching the doc sidebar
+   requires tapping a back/forward toggle that's easy to miss.
+   Override: stack both panes vertically so the hamburger reveals both the
+   navbar items and the full doc sidebar in a single scroll. */
+@media (max-width: 996px) {
+  .navbar-sidebar__items {
+    flex-direction: column !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .navbar-sidebar__items .navbar-sidebar__item {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  /* The slide-back chevron is meaningless once both panes are stacked. */
+  .navbar-sidebar__back {
+    display: none !important;
+  }
 }

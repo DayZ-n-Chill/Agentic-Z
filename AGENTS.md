@@ -15,6 +15,7 @@ These are the L1 rules of the template. They apply to every clone of this repo, 
 1. **Communication** — answer first, caveat after.
 2. **Tooling** — dedicated tools (`Read`/`Edit`/`Write`/`Glob`/`Grep`) first; Python for non-trivial; PowerShell only when faster.
 3. **Memory** — `.claude/local-memory/` for user/machine notes; never for rules.
+4. **Subagent routing**. For DayZ work, dispatch the matching `dayz-*` specialist instead of generic Superpowers agents. Role-to-specialist table in `docs/dayz-modding.md`.
 
 ### Communication — answer first, caveat after
 
@@ -31,6 +32,14 @@ When asked for something an agent can't literally do (read a UI pane, see the sc
 ### Memory — `.claude/local-memory/` only, never for rules
 
 User/machine-specific notes go in `<repo>/.claude/local-memory/` (gitignored, per-clone). Never store rules or conventions there — those go in the repo so they travel with every clone. L1 rules live in this file; L2 DayZ rules live at `.claude/skills/_shared/dayz-conventions.md`.
+
+### Subagent routing for DayZ work
+
+When a Superpowers workflow (`/brainstorming`, `/executing-plans`, `/requesting-code-review`, `/dispatching-parallel-agents`, etc.) needs to dispatch a subagent and the work touches DayZ, route to the matching `dayz-*` specialist via the Agent tool. Generic Superpowers agents (e.g. `superpowers:code-reviewer`) don't know Enforce Script conventions and will miss DayZ-specific traps like the `modded class` no-extends rule or engine classes that can't be modded.
+
+Heuristic: anything under `workspace/<ModName>/`, `.claude/skills/dayz-*/`, `P:\`, or DayZ file types (`.c`, `.layout`, `.p3d`, `.paa`, `.rvmat`, `config.cpp`, `types.xml`) is DayZ work. See the role-to-specialist table at `docs/dayz-modding.md` ("Superpowers ↔ DayZ specialist routing").
+
+For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generic agents are fine.
 
 ## Repository Use
 

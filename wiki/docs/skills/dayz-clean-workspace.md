@@ -1,7 +1,10 @@
 ---
 name: dayz-clean-workspace
-description: Remove DayZ scaffolds and their deployed artifacts. For each scaffolded mod under workspace/<ModName>/, removes the workspace folder, the P:\<ModName>\ junction (only if it points at our workspace), and the P:\Mods\@<ModName>\ deployed dir. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes workspace/_server/. Interactive confirmation by default; --yes skips it.
 ---
+
+## Overview
+
+Remove DayZ scaffolds and their deployed artifacts. For each scaffolded mod under workspace/&lt;ModName&gt;/, removes the workspace folder, the P:\&lt;ModName&gt;\ junction (only if it points at our workspace), and the P:\Mods\@&lt;ModName&gt;\ deployed dir. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes workspace/_server/. Interactive confirmation by default; --yes skips it.
 
 # /dayz-clean-workspace
 
@@ -29,8 +32,12 @@ For each `workspace/<ModName>/` containing `config.cpp` + `$PBOPREFIX$`:
 | Artifact | Removed when |
 |---|---|
 | `P:\<ModName>\` junction | It exists AND points at `workspace/<ModName>/`. (If the link points elsewhere or isn't a link, it's left alone — could be the user's own setup.) |
-| `P:\Mods\@<ModName>\` deployed dir | It exists. (`P:\Mods\` is your `!Workshop` junction; this only removes the `@<ModName>` subfolder, not the workshop folder itself.) |
+| `P:\Mods\@<ModName>\` deployed dir | It exists AND contains the ownership marker `.agentic-z-scaffold` with content matching `<ModName>`. The marker is dropped by `/dayz-build-pbo` on every successful build, so any deployed dir we produced will have it. Without the marker, the dir is skipped with a `[WARN]` and a manual rmdir hint — protects against name collisions with hand-placed or subscribed mods. |
 | `workspace/<ModName>/` | Always (it's the scaffold we're cleaning). |
+
+### Note on existing deployed dirs
+
+If you have deployed dirs from before the marker was introduced, they won't have `.agentic-z-scaffold` and `dayz-clean-workspace` will skip them. Either rebuild via `/dayz-build-pbo <ModName>` (which writes the marker) or remove manually with `cmd /c rmdir /s /q P:\Mods\@<ModName>` after confirming it's actually yours.
 
 With `--include-server`, also removes `workspace/_server/` (mission copies, all per-map configs, all profiles, !ClientDiagLogs). Use this for a full reset; otherwise the server staging stays so you don't have to re-copy missions next time.
 

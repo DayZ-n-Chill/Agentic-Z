@@ -1,0 +1,28 @@
+---
+slug: drop-obsidian
+title: "Dropping Obsidian as an Agentic-Z plugin"
+authors: [brian]
+tags: [changelog, plugins]
+---
+
+Removed the checked-in Obsidian vault config. The agent stack doesn't need it, and recommending it as a "plugin" was a stretch.
+
+{/* truncate */}
+
+## What changed
+
+- Deleted `.obsidian/` from the repo root.
+- Deleted the original `obsidian-vault` blog post.
+- Removed the Obsidian section from the [Plugins](/docs/plugins) page. Superpowers stays.
+
+The historical release-note posts (`v0.1.0`, `v1.0.0`) keep their Obsidian mentions intact since they reflect what shipped at the time.
+
+## Why
+
+The pitch for Obsidian was "browse the agent stack as a graph." The agents already navigate that graph for you when they route a request to the right skill or doc. So the user-facing benefit was thin: a fancy markdown viewer with backlinks for files agents read on your behalf anyway.
+
+If you actively take design notes, sketch architecture diagrams, or want a personal knowledge base alongside the repo, Obsidian is great. But that's a personal choice, not something Agentic-Z needs to ship a config for.
+
+## What if you were using it?
+
+Nothing breaks. Your local Obsidian install still reads markdown files in this folder if you point it at the repo root. You just won't get the pre-configured plugin manifest on first open. Recreate `.obsidian/` locally and Obsidian will manage it from there.
