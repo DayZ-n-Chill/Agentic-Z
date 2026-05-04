@@ -7,8 +7,14 @@ __pycache__/
 # Claude Code runtime
 .claude/scheduled_tasks.lock
 
+# Per-clone Claude settings (user/machine-specific permissions, hooks, etc.)
+.claude/settings.local.json
+
 # Per-clone local memory (user/machine-specific notes; never rules or conventions)
 .claude/local-memory/
+
+# Per-agent memory (auto-created by agents at runtime; per-user, never committed)
+.claude/agent-memory/
 
 # Superpowers brainstorming Visual Companion — session-local mockups, server state, click events
 .superpowers/
