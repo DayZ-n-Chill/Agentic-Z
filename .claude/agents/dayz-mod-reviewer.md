@@ -4,6 +4,7 @@ description: "Use this agent to audit a mod under `workspace/<ModName>/` for con
 model: sonnet
 color: pink
 memory: project
+tools: Read, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources
 ---
 
 ## NAME

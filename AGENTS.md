@@ -45,9 +45,9 @@ For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generi
 
 - **Bootstrap**: After cloning, run `/sync-skills` (or `python .claude/skills/sync-skills/sync.py`). This links the repo's `.claude/skills/` into Claude Code, Codex, and Gemini home dirs so all three agents discover the same slash commands. The agent list lives in `.claude/skills/sync-skills/agents.json` — adding a new agent CLI later is a one-entry edit.
 - Agent definitions live in `.claude/agents/`.
-- Agent memory lives in `.claude/agent-memory/`.
+- Agent memory lives in `.claude/agent-memory/` (per-user, gitignored; auto-created on first write).
 - Reusable skills live in `.claude/skills/`.
-- Local settings live in `.claude/settings.local.json`.
+- Local settings live in `.claude/settings.local.json` (per-user, gitignored). Project-wide settings go in `.claude/settings.json`.
 - Keep the repository root clean.
 - `output/` is the **default destination for one-shot deliverables** — documents, decks, generated files, and other artifacts the user takes elsewhere. Goes under `output/<descriptive-folder>/` unless the user names a different destination.
 - `workspace/` is for **in-progress mod projects** — anything you're actively iterating on across sessions (DayZ mod sources, test server setup). Each mod gets its own subfolder (`workspace/<ModName>/`); shared server scaffolding lives at `workspace/_server/`.

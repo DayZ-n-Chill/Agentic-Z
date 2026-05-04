@@ -15,15 +15,19 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Optional
 
+# REPO_ROOT = where this skill ships from. PROJECT_DIR = user's project,
+# where workspace/, settings.local.json, and local-memory/ all live.
 _HERE = Path(__file__).resolve().parent
 REPO_ROOT = _HERE.parent.parent.parent
-WORKSPACE = REPO_ROOT / "workspace"
-SETTINGS_LOCAL = REPO_ROOT / ".claude" / "settings.local.json"
-SCOPE_STATE = REPO_ROOT / ".claude" / "local-memory" / "dayz-active-scope.json"
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+WORKSPACE = PROJECT_DIR / "workspace"
+SETTINGS_LOCAL = PROJECT_DIR / ".claude" / "settings.local.json"
+SCOPE_STATE = PROJECT_DIR / ".claude" / "local-memory" / "dayz-active-scope.json"
 
 OK = "[OK]   "
 WARN = "[WARN] "

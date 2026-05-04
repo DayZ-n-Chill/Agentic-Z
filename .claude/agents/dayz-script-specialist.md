@@ -4,6 +4,7 @@ description: "Use this agent for writing and debugging Enforce Script (C#-like) 
 model: opus
 color: blue
 memory: project
+tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources
 ---
 
 ## NAME

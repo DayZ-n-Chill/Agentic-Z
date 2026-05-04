@@ -17,10 +17,12 @@ import sys
 from pathlib import Path
 from string import Template
 
-# .../.claude/skills/dayz-new-mod/new_mod.py -> repo root is parents[3]
+# REPO_ROOT = where this skill ships from (plugin or template clone).
+# PROJECT_DIR = user's project (where workspace/ and local-memory/ live).
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WORKSPACE = REPO_ROOT / "workspace"
-LOCAL_MEMORY = REPO_ROOT / ".claude" / "local-memory"
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+WORKSPACE = PROJECT_DIR / "workspace"
+LOCAL_MEMORY = PROJECT_DIR / ".claude" / "local-memory"
 AUTHOR_CACHE = LOCAL_MEMORY / "dayz-author.txt"
 PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
 P_DRIVE = Path("P:\\")
@@ -170,7 +172,7 @@ def resolve_author(cli_value: str | None) -> str:
         AUTHOR_CACHE.write_text(value + "\n", encoding="utf-8")
         return value
 
-    rel = AUTHOR_CACHE.relative_to(REPO_ROOT)
+    rel = AUTHOR_CACHE.relative_to(PROJECT_DIR)
     sys.exit(
         f"{FAIL} No author handle available.\n"
         "       Run with --author 'YourHandle' (cached for future runs)\n"
@@ -181,7 +183,7 @@ def resolve_author(cli_value: str | None) -> str:
 def scaffold(modname: str, author: str) -> Path:
     target = WORKSPACE / modname
     target.mkdir(parents=True)
-    print(f"{OK} Created {target.relative_to(REPO_ROOT)}/")
+    print(f"{OK} Created {target.relative_to(PROJECT_DIR)}/")
 
     (target / "config.cpp").write_text(
         CONFIG_CPP_TEMPLATE.substitute(modname=modname, author=author),
@@ -441,7 +443,7 @@ def main() -> int:
 
     if workspace_target.exists():
         sys.exit(
-            f"{FAIL} {workspace_target.relative_to(REPO_ROOT)} already exists. Refusing to clobber."
+            f"{FAIL} {workspace_target.relative_to(PROJECT_DIR)} already exists. Refusing to clobber."
         )
     check_or_clean_p_drive_link(p_drive_link, workspace_target)
 
@@ -455,9 +457,9 @@ def main() -> int:
             f"{FAIL} Failed to create P:\\{args.modname} junction: {e}\n"
             "       Scaffold rolled back."
         )
-    print(f"{OK} P:\\{args.modname} {kind} -> {target.relative_to(REPO_ROOT)}")
+    print(f"{OK} P:\\{args.modname} {kind} -> {target.relative_to(PROJECT_DIR)}")
 
-    rel = target.relative_to(REPO_ROOT)
+    rel = target.relative_to(PROJECT_DIR)
     print()
     print("Next steps:")
     print(f"  - Add Enforce Script files under {rel}/scripts/3_Game (or 4_World, 5_Mission)")
