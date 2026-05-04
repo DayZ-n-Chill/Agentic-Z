@@ -74,6 +74,26 @@ python .claude\skills\dayz-launch-test\launch.py MyMod --map chernarus
 
 Inside Claude Code, Codex, or Gemini CLI, the same commands are available as slash commands: `/dayz-preflight`, `/dayz-new-mod`, etc.
 
+### Without the agent: `scripts\*.bat`
+
+Every slash-command skill has a matching `.bat` wrapper in `scripts\`. Each is a thin pass-through to the underlying skill's Python script with all arguments forwarded. Use these from Explorer or a plain terminal when you don't want to spin up an agent for a one-line action.
+
+Bat naming drops the `dayz-` prefix where present. Examples:
+
+```text
+scripts\preflight.bat               -> /dayz-preflight
+scripts\mount-p.bat                 -> /dayz-mount-p
+scripts\new-mod.bat MyMod           -> /dayz-new-mod MyMod
+scripts\build-pbo.bat MyMod         -> /dayz-build-pbo MyMod
+scripts\launch-test.bat MyMod       -> /dayz-launch-test MyMod
+scripts\workbench.bat --mod MyMod   -> /dayz-launch-workbench --mod MyMod
+scripts\stop-test.bat               -> /dayz-stop-test
+scripts\scope-mod.bat MyMod         -> /dayz-scope-mod MyMod
+scripts\clean-repo.bat --yes        -> /clean-repo --yes
+```
+
+For full per-skill argument detail, see the skill's `SKILL.md` or pass `--help` to the bat (most underlying scripts use argparse and surface helpful output).
+
 ---
 
 ## The four skills in detail
@@ -295,6 +315,29 @@ The full L2 rules live at `.claude/skills/_shared/dayz-conventions.md`. The high
 - **DayZ cannot be tested standalone.** A local server MUST be loaded with the same mod set as the client. `/dayz-launch-test` enforces; never launch the client alone for mod testing.
 - **Mod source under `workspace/<ModName>/`**. Built `.pbo` deploys to `P:\Mods\@<ModName>\Addons\`. Scaffold owns the `P:\<ModName>\` junction; build/test skills only verify it.
 - **Skills MUST use the shared resolvers** (`find_dayz_tools`, `find_dayz_game`, `find_dayz_diag`, `find_dayz_server`, `find_vanilla_data` in `dayz-preflight/preflight.py`) rather than re-implementing path discovery. Single source of truth.
+
+---
+
+## Superpowers ↔ DayZ specialist routing
+
+When a Superpowers workflow (`/brainstorming`, `/writing-plans`, `/executing-plans`, `/requesting-code-review`, `/dispatching-parallel-agents`, `/subagent-driven-development`, etc.) needs to dispatch a subagent and the work touches DayZ, route to the matching `dayz-*` specialist via the Agent tool. Do NOT use generic Superpowers agents (e.g. `superpowers:code-reviewer`) on DayZ code - they don't know Enforce Script, the `modded class` no-extends rule, hidden-selection conventions, or the engine-classes-can't-be-modded constraint.
+
+| Superpowers role / verb | DayZ specialist to dispatch |
+|---|---|
+| code review | `dayz-mod-reviewer` |
+| scripting (Enforce Script) | `dayz-script-specialist` |
+| config / data (config.cpp, CfgVehicles, etc.) | `dayz-config-specialist` |
+| UI (`.layout`, widgets, HUD, menus, color theme) | `dayz-ui-specialist` |
+| 3D model (`.p3d`, LODs, named selections) | `dayz-object-builder` |
+| textures / materials (`.paa`, `.rvmat`) | `dayz-asset-specialist` |
+| terrain / map / clutter | `dayz-map-specialist` |
+| server / Central Economy / `types.xml` / `init.c` | `dayz-server-admin` |
+| Workbench plugin (editor-time tooling) | `dayz-workbench-specialist` |
+| log / crash forensics (RPT, script.log, BattlEye) | `dayz-mod-debugger` |
+
+How to apply: when a Superpowers skill says "dispatch a code reviewer" while you're working on DayZ files, call `Agent(subagent_type="dayz-mod-reviewer", ...)` instead of the default. Same idea for the other roles. For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generic agents are fine.
+
+When in doubt, check the touched paths: anything under `workspace/<ModName>/`, `.claude/skills/dayz-*/`, `P:\`, or DayZ-specific files (`.c`, `.layout`, `.p3d`, `.paa`, `.rvmat`, `config.cpp`, `types.xml`) → DayZ specialist.
 
 ---
 

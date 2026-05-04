@@ -1,0 +1,46 @@
+---
+slug: superpowers-dayz-routing
+title: "Superpowers workflows now route to DayZ specialists"
+authors: [brian]
+tags: [changelog, agents, plugins]
+---
+
+When a Superpowers workflow (brainstorming, planning, code review, parallel dispatch) decides to hand off to a subagent and the work touches DayZ, it now routes to the matching `dayz-*` specialist instead of a generic Superpowers agent.
+
+{/* truncate */}
+
+## What changed
+
+- Added a routing rule to **L1** (`CLAUDE.md` / `AGENTS.md` / `GEMINI.md`): for DayZ work, dispatch the matching `dayz-*` specialist via the Agent tool.
+- Added a **role-to-specialist table** to [`docs/dayz-modding.md`](https://github.com/DayZ-n-Chill/Agentic-Z/blob/main/docs/dayz-modding.md) so the rule has a concrete mapping.
+
+## The mapping
+
+| Superpowers role | DayZ specialist |
+|---|---|
+| code review | `dayz-mod-reviewer` |
+| scripting (Enforce Script) | `dayz-script-specialist` |
+| config / data | `dayz-config-specialist` |
+| UI (`.layout`, widgets, theme) | `dayz-ui-specialist` |
+| 3D model (`.p3d`, LODs) | `dayz-object-builder` |
+| textures / materials | `dayz-asset-specialist` |
+| terrain / map | `dayz-map-specialist` |
+| server / Central Economy | `dayz-server-admin` |
+| Workbench plugin | `dayz-workbench-specialist` |
+| log / crash forensics | `dayz-mod-debugger` |
+
+## Why
+
+Generic Superpowers agents (like `superpowers:code-reviewer`) don't know Enforce Script. They'd miss DayZ-specific traps like:
+
+- `modded class Foo extends Foo` is a silent no-op (the `extends` is wrong; it has to be `modded class Foo { }`).
+- GUI-extending modded classes need a `#ifndef NO_GUI` guard or the server crashes at compile.
+- Engine classes rooted at `Managed` (UIScriptedMenu, Widget subtypes, UIManager) can't be modded at all.
+
+Your DayZ specialists know all of this. The routing rule makes sure they get called.
+
+## What it doesn't change
+
+- For non-DayZ work (Python skills, scripts, infra, wiki), Superpowers' generic agents are still used.
+- Superpowers' main-thread skills (brainstorming, writing-plans, systematic-debugging, etc.) still run as-is. Only the subagent-dispatch step changes.
+- No skill files were modified. The rule lives in L1 + the docs table; agents read both.
