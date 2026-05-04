@@ -4,6 +4,7 @@ description: "Use this agent for diagnosing DayZ mod failures from logs and cras
 model: opus
 color: yellow
 memory: project
+tools: Read, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources
 ---
 
 ## NAME
