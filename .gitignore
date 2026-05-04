@@ -18,3 +18,5 @@ __pycache__/
 # Release assets — uploaded to GitHub Releases, not committed (too big for git)
 output/release/
 *.tar.gz
+
+workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/

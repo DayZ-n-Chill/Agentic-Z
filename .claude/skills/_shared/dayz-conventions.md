@@ -146,6 +146,15 @@ The `dayz-rag` MCP server exposes semantic search over indexed vanilla DayZ sour
 - `get_dayz_file(path, line_start=None, line_end=None)` — fetch full or partial file content for follow-up after a search hit. Sandboxed to paths under `P:\`.
 - `list_indexed_sources()` — manifest summary; useful to confirm what was indexed and when.
 
+**Cite-then-verify (REQUIRED).** A `search_dayz_source` or `search_dayz_wiki` hit is a hint, not a fact. Before grounding any claim on a returned chunk:
+
+1. Call `get_dayz_file(path, line_start, line_end)` (or use the `Read` tool directly for paths under `P:\`) to fetch the cited file at the cited range. The 1500-char snippet returned by search is truncated and the index can lag the current state on disk.
+2. Verify the chunk says what you think it says, in the form you think it does. Retrieval can return results that are semantically near but functionally wrong (e.g. a similar-looking class from a different inheritance branch, or a constant that's never actually referenced anywhere).
+3. If verification disagrees with the snippet, trust the file on disk. Flag the index as possibly stale and suggest the user re-run `/dayz-rag-index --full` (or `/dayz-rag-wiki-index --full` for wiki drift).
+4. When you cite vanilla in your output, include `path:line_start-line_end` so the user can independently verify.
+
+Skip this only when a single search call is being used for navigation/exploration, not for an authoritative answer. A single chunk treated as ground truth without follow-up is the most common RAG failure mode; two cheap calls (search + verify) prevent it.
+
 **Setup gate:** Each DayZ specialist agent assumes the index has been built. If `search_dayz_source` returns `"no index"`, instruct the user to run `/dayz-rag-index --full` first. After a DayZ update, the index goes stale — rerun with `--full` to refresh.
 
 ## How agents and skills reference this file
