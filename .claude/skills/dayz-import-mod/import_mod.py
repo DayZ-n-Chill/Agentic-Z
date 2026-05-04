@@ -17,9 +17,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-# .../.claude/skills/dayz-import-mod/import_mod.py -> repo root is parents[3]
+# .../.claude/skills/dayz-import-mod/import_mod.py -> plugin/repo root is parents[3]
+# REPO_ROOT is for finding sibling skill scripts (always shipped together).
+# PROJECT_DIR is the USER's project (where workspace/ and .claude/local-memory/ live).
+# In template mode they're equal; in plugin mode they're different.
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WORKSPACE = REPO_ROOT / "workspace"
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+WORKSPACE = PROJECT_DIR / "workspace"
 NEW_MOD = REPO_ROOT / ".claude" / "skills" / "dayz-new-mod" / "new_mod.py"
 ADD_SCAFFOLD = REPO_ROOT / ".claude" / "skills" / "dayz-add-scaffold" / "add_scaffold.py"
 P_DRIVE = Path("P:\\")
@@ -115,7 +119,7 @@ def derive_modname(source: Path, name_override: str | None) -> str:
 def check_workspace_target(workspace_target: Path) -> None:
     if os.path.lexists(workspace_target):
         try:
-            rel = workspace_target.relative_to(REPO_ROOT)
+            rel = workspace_target.relative_to(PROJECT_DIR)
         except ValueError:
             rel = workspace_target
         sys.exit(
@@ -199,7 +203,7 @@ def main() -> int:
             f"{FAIL} Failed to create workspace link {workspace_target} -> {source}: {e}"
         )
     try:
-        rel_ws = workspace_target.relative_to(REPO_ROOT)
+        rel_ws = workspace_target.relative_to(PROJECT_DIR)
     except ValueError:
         rel_ws = workspace_target
     print(f"{OK} {rel_ws} -> {source} ({kind_ws})")
@@ -226,7 +230,7 @@ def main() -> int:
             "       Workspace link rolled back."
         )
     try:
-        target_disp = workspace_target.relative_to(REPO_ROOT)
+        target_disp = workspace_target.relative_to(PROJECT_DIR)
     except ValueError:
         target_disp = workspace_target
     print(f"{OK} P:\\{modname} -> {target_disp} ({kind_p})")

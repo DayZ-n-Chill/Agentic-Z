@@ -14,13 +14,16 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import time
 from pathlib import Path
 
+# REPO_ROOT = where this skill ships from. PROJECT_DIR = user's project.
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WORKSPACE = REPO_ROOT / "workspace"
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+WORKSPACE = PROJECT_DIR / "workspace"
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 P_DRIVE = Path("P:\\")
@@ -34,7 +37,7 @@ CLIENT_DIAG_LOGS = SERVER_ROOT / "!ClientDiagLogs"
 # .claude/local-memory/ so each clone of the template can have its own setup
 # without affecting the repo. Created with sane defaults on first launch; the
 # user can edit it freely afterward.
-LOCAL_MEMORY = REPO_ROOT / ".claude" / "local-memory"
+LOCAL_MEMORY = PROJECT_DIR / ".claude" / "local-memory"
 CLIENT_DISPLAY_PREFS = LOCAL_MEMORY / "dayz-client-display.json"
 DEFAULT_CLIENT_DISPLAY: dict = {
     "windowed": True,
@@ -153,9 +156,9 @@ def verify_map_environment(map_name: str) -> tuple[Path, Path, Path]:
 
     missing = []
     if not mission_path.exists():
-        missing.append(f"mission folder: {mission_path.relative_to(REPO_ROOT)}")
+        missing.append(f"mission folder: {mission_path.relative_to(PROJECT_DIR)}")
     if not cfg_path.exists():
-        missing.append(f"server cfg: {cfg_path.relative_to(REPO_ROOT)}")
+        missing.append(f"server cfg: {cfg_path.relative_to(PROJECT_DIR)}")
     if missing:
         details = "\n".join(f"          - {m}" for m in missing)
         sys.exit(
@@ -170,11 +173,11 @@ def verify_map_environment(map_name: str) -> tuple[Path, Path, Path]:
     if "allowFilePatching" not in cfg:
         cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
         cfg_path.write_text(cfg, encoding="utf-8")
-        print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(REPO_ROOT)}")
+        print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(PROJECT_DIR)}")
 
     profile_dir.mkdir(parents=True, exist_ok=True)
     print(f"{OK} Map: {map_name}  (mission: {template})")
-    print(f"{OK} Map dir: {map_dir.relative_to(REPO_ROOT)}")
+    print(f"{OK} Map dir: {map_dir.relative_to(PROJECT_DIR)}")
     return cfg_path, profile_dir, mission_path
 
 
@@ -217,7 +220,7 @@ def read_client_display_prefs() -> dict:
         try:
             return json.loads(CLIENT_DISPLAY_PREFS.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as e:
-            print(f"{WARN} Could not parse {CLIENT_DISPLAY_PREFS.relative_to(REPO_ROOT)}: {e}")
+            print(f"{WARN} Could not parse {CLIENT_DISPLAY_PREFS.relative_to(PROJECT_DIR)}: {e}")
             print(f"{WARN} Falling back to defaults: {DEFAULT_CLIENT_DISPLAY}")
             return dict(DEFAULT_CLIENT_DISPLAY)
     LOCAL_MEMORY.mkdir(parents=True, exist_ok=True)
@@ -226,7 +229,7 @@ def read_client_display_prefs() -> dict:
     )
     print(
         f"{OK} Wrote default client display prefs to "
-        f"{CLIENT_DISPLAY_PREFS.relative_to(REPO_ROOT)}"
+        f"{CLIENT_DISPLAY_PREFS.relative_to(PROJECT_DIR)}"
     )
     return dict(DEFAULT_CLIENT_DISPLAY)
 
@@ -337,7 +340,7 @@ def main() -> int:
     print()
     print("Both running. Close the windows manually to stop.")
     print(f"  Server PID: {server_proc.pid}    Client PID: {client_proc.pid}")
-    print(f"  Logs: {profile_dir.relative_to(REPO_ROOT)}")
+    print(f"  Logs: {profile_dir.relative_to(PROJECT_DIR)}")
     return 0
 
 

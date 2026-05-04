@@ -14,12 +14,16 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
 
+# REPO_ROOT = where this skill ships from. PROJECT_DIR = user's project,
+# used to resolve user-supplied relative paths (--file <relative>).
 REPO_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 P_DRIVE = Path("P:\\")
@@ -81,7 +85,7 @@ def resolve_target(file_arg: Optional[str], mod_arg: Optional[str]) -> Optional[
     if file_arg:
         p = Path(file_arg)
         if not p.is_absolute():
-            p = (REPO_ROOT / p).resolve()
+            p = (PROJECT_DIR / p).resolve()
         if not p.exists():
             sys.exit(f"{FAIL} --file path does not exist: {p}")
         if p.suffix.lower() != ".p3d":

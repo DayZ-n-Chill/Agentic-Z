@@ -1,0 +1,64 @@
+{
+  "name": "agentic-z",
+  "version": "1.0.1",
+  "description": "AI agent stack for DayZ modding. Ships 10 specialist subagents and 21 DayZ skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexers), plus the dayz-rag MCP server for semantic search over vanilla Enforce Script and the Bohemia community wiki.",
+  "author": {
+    "name": "DayZ n' Chill",
+    "url": "https://github.com/DayZ-n-Chill"
+  },
+  "homepage": "https://agentic-z.com",
+  "repository": "https://github.com/DayZ-n-Chill/Agentic-Z",
+  "license": "Custom (Agentic-Z License, see LICENSE)",
+  "keywords": [
+    "dayz",
+    "modding",
+    "enforce-script",
+    "rag",
+    "claude-code",
+    "agentic"
+  ],
+  "skills": [
+    "./.claude/skills/dayz-add-map",
+    "./.claude/skills/dayz-add-scaffold",
+    "./.claude/skills/dayz-build-pbo",
+    "./.claude/skills/dayz-clean-workspace",
+    "./.claude/skills/dayz-import-mod",
+    "./.claude/skills/dayz-launch-objectbuilder",
+    "./.claude/skills/dayz-launch-test",
+    "./.claude/skills/dayz-launch-workbench",
+    "./.claude/skills/dayz-mount-p",
+    "./.claude/skills/dayz-new-mod",
+    "./.claude/skills/dayz-pack-texture",
+    "./.claude/skills/dayz-preflight",
+    "./.claude/skills/dayz-rag-download",
+    "./.claude/skills/dayz-rag-index",
+    "./.claude/skills/dayz-rag-wiki-index",
+    "./.claude/skills/dayz-scope-clear",
+    "./.claude/skills/dayz-scope-mod",
+    "./.claude/skills/dayz-setup-objectbuilder",
+    "./.claude/skills/dayz-stop-test",
+    "./.claude/skills/dayz-types-edit",
+    "./.claude/skills/dayz-types-split"
+  ],
+  "agents": [
+    "./.claude/agents/agent-creator.md",
+    "./.claude/agents/dayz-asset-specialist.md",
+    "./.claude/agents/dayz-config-specialist.md",
+    "./.claude/agents/dayz-map-specialist.md",
+    "./.claude/agents/dayz-mod-debugger.md",
+    "./.claude/agents/dayz-mod-reviewer.md",
+    "./.claude/agents/dayz-object-builder.md",
+    "./.claude/agents/dayz-script-specialist.md",
+    "./.claude/agents/dayz-server-admin.md",
+    "./.claude/agents/dayz-ui-specialist.md",
+    "./.claude/agents/dayz-workbench-specialist.md"
+  ],
+  "mcpServers": {
+    "dayz-rag": {
+      "command": "python",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/.claude/mcp/dayz-rag/server.py"
+      ]
+    }
+  }
+}

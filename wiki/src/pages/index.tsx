@@ -183,7 +183,7 @@ function ArchitectureSection() {
         <h2 className={styles.sectionTitle}>Three-Layer Stack</h2>
         <div className={styles.sectionSubtitle}>// rules cascade from L1 → L3</div>
         <p className={styles.sectionLead}>
-          Add Agentic-Z to your project and your AI gets three layers of context: how it should behave, what it knows about DayZ, and the workflows you’d otherwise type by hand. It walks in already speaking DayZ instead of starting at zero.
+          Add Agentic-Z to your project and your AI gets three layers of context: how it should behave, what it knows about DayZ, and the slash commands you’d otherwise wire up by hand. It walks in already speaking DayZ instead of starting at zero.
         </p>
         <div className={styles.archGrid}>
           {LAYERS.map((l) => (
