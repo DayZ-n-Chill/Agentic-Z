@@ -105,7 +105,7 @@ ParticleSprite {
 }
 ```
 
-### All .emat properties (12):
+### All .emat properties (12)
 AlbedoMap (texture GUID+path), Color (RGBA 0-1), Diffuse (RGBA),
 Ambient (RGBA), Emissive (RGBA, self-glow), BlendMode (Additive_AlphaModulate
 or numeric), Sort (translucent/overlay/0), Softness (0-2, edge blending),

@@ -320,7 +320,7 @@ de winding aprendido en producción con a production crate mod y a vanilla-overr
 sección 1 ("Inverted Face Winding") con metodología de validación, trampas y
 checklist completo de importación.
 
-#### Cómo NO verificar — heurísticas que engañan
+### Cómo NO verificar — heurísticas que engañan
 
 ⚠️ **Check centroid-based (`cross(e1, e2) · (face_centroid - LOD_centroid) > 0`):**
 - Es **right-handed** (convención Three.js / OpenGL). DayZ es **left-handed**. Un modelo CORRECTO post-flip aparecerá como "winding inward" en ese check pero con normales declaradas outward — no es incoherencia, es el signo opuesto del cross product entre sistemas.
@@ -331,7 +331,7 @@ checklist completo de importación.
 
 ⚠️ **Asumir que `lod.facenormals[i]` es el normal de `lod.faces[i]`.** Falso. `lod.facenormals` es un POOL global (tamaño = `num_facenormals` del header MLOD, **independiente** de `len(lod.faces)`); cada Vertex apunta a él vía `normal_index`. Confundirlos lleva a checks que nunca corren (length mismatch) o checks que comparan cosas incorrectas.
 
-#### Cómo SÍ verificar
+### Cómo SÍ verificar
 
 1. **Check A — winding-vs-normal-promediada por face (DIAGNÓSTICO).** Para cada face, calcular `n_winding = normalize(cross(v1-v0, v2-v0))` y compararlo con el promedio normalizado de `face.vertices[i].normal` sobre los corners. El % de faces con `dot < -0.5` indica el estado de handedness:
    - **~100% UNIFORM_FLIPPED** → estado ESPERADO en DayZ (left-handed) tras export desde Blender (right-handed Z-up). El cambio de handedness invierte el cross product. **Verificado empíricamente con a production crate mod production-verified in-game: render/balas/cursor/colisión todo OK.** No action needed. → severity NOTE.
@@ -345,14 +345,14 @@ checklist completo de importación.
 
 4. **Test in-game directo.** Rebuild PBO → servidor de test → inspeccionar visual + collision + actions + ballistic. Es el último filtro y el único 100% definitivo. Cuando todo lo anterior diga "OK", igualmente probar in-game.
 
-#### Trampas conocidas (lessons learned)
+### Trampas conocidas (lessons learned)
 - **`flip_winding.py` aplicado dos veces** vuelve al estado original (idempotente módulo 2). Si no recuerdas si lo aplicaste, mira si hay backup `.p3d.bak_v4_pre_winding_flip` — si existe, ya se aplicó al menos una vez.
 - **`renegate_normals.py` es DEPRECATED** y basado en un malentendido. Si se aplicó, las normales del pool están negadas erróneamente; revertir negando otra vez. Ver "Scripts reutilizables".
 - **a production crate mod tiene winding mixto en Visual LOD** (38.6% bad edges en Check B, production-verified) pero **DayZ lo tolera en render** (verificado in-game: visual / balas / cursor / colisión OK). Los collision LODs (Geometry/LandContact/ViewGeo/FireGeo) son internamente consistentes. **El skill marca esto como CRITICAL en Check B**, lo cual está bien como señal preventiva, aunque el motor lo aguante en este caso particular. No re-flipar este modelo a menos que aparezca un síntoma in-game concreto.
 - **`face.flags |= 0x20000` (`NoBackfaceCulling`)** elude el problema en Visual LOD pero NO en collision LODs. Si lo usas en Visual, **sigue siendo obligatorio** arreglar el winding en Geometry/GeoPhys/FireGeo/ViewGeo.
 - **`make_double_sided.py` complica Check B:** introduce edges no-manifold (3+ faces compartiendo edge), lo cual es correcto pero el check debe tratarlo como NOTE, no como CRITICAL.
 
-#### Checklist al importar un modelo nuevo de Blender
+### Checklist al importar un modelo nuevo de Blender
 1. Abrir el .p3d con Object Builder o py3d. Listar LODs y resoluciones; confirmar que existen los requeridos (Visual=0, Geometry=1e13, Memory=1e15) y los recomendados (LandContact=2e15, ViewGeo=6e15, FireGeo=7e15) si el objeto interactúa con balas/cursor.
 2. Aplicar `flip_winding.py`. Comprobar que crea backup `.bak_v4_pre_winding_flip`.
 3. Correr Check A + Check B en TODOS los LODs (no solo Visual).

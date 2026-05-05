@@ -9,7 +9,7 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | Constant | .ptc filename |
 |---|---|
 
-## REGISTER ALL PARTICLES BELOW:
+## REGISTER ALL PARTICLES BELOW
 
 | Constant | .ptc filename |
 |---|---|
@@ -525,7 +525,7 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | Constant | .ptc filename |
 |---|---|
 
-## return ParticleList.INVALID;
+## return ParticleList.INVALID
 
 | Constant | .ptc filename |
 |---|---|
