@@ -14,10 +14,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import datetime
 import enum
 import json
+import os
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Optional
 
@@ -249,66 +253,6 @@ def compute_drift(baseline_sha: Optional[str], upstream_ref: str) -> dict[str, F
     return result
 
 
-def show_changelog() -> None:
-    """Print commits in upstream/main not in current branch, scoped to template paths."""
-    r = run(
-        [
-            "git",
-            "log",
-            "--oneline",
-            "--no-merges",
-            f"HEAD..{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}",
-            "--",
-            *TEMPLATE_PATHS,
-        ],
-        check=False,
-        capture=True,
-    )
-    out = r.stdout.strip()
-    if not out:
-        log("OK", "Already up to date — no template commits to pull.")
-        return
-    print()
-    print("─── Incoming template commits ───────────────────────────────")
-    print(out)
-    print("──────────────────────────────────────────────────────────────")
-    print()
-
-
-def merge_template_paths() -> tuple[list[str], list[str]]:
-    """Pull each template path from upstream/main into the working tree.
-
-    Returns (updated_paths, conflicted_paths).
-    """
-    updated: list[str] = []
-    conflicted: list[str] = []
-    for path in TEMPLATE_PATHS:
-        if not Path(path).exists() and not _exists_in_upstream(path):
-            continue
-        log("INFO", f"merging {path}")
-        r = run(
-            ["git", "checkout", f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}", "--", path],
-            check=False,
-            capture=True,
-        )
-        if r.returncode != 0:
-            err = (r.stderr or "").strip()
-            log("WARN", f"  conflict on {path}: {err}")
-            conflicted.append(path)
-        else:
-            updated.append(path)
-    return updated, conflicted
-
-
-def _exists_in_upstream(path: str) -> bool:
-    r = run(
-        ["git", "cat-file", "-e", f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}:{path}"],
-        check=False,
-        capture=True,
-    )
-    return r.returncode == 0
-
-
 def stage_and_commit(updated: list[str], upstream_sha: str) -> bool:
     """Stage updated paths and create a single commit."""
     r = run(["git", "add", "--", *updated], check=False)
@@ -343,10 +287,6 @@ def run_sync_skills() -> None:
     if r.returncode != 0:
         log("WARN", "sync-skills returned non-zero; review its output above")
 
-
-import os
-import urllib.request
-import urllib.error
 
 BASELINE_FILE = Path(".claude/.upstream-baseline")
 LOCK_FILE = Path(".claude/.upstream-update.lock")
@@ -410,7 +350,7 @@ def write_lock() -> None:
     LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "pid": os.getpid(),
-        "started_at": __import__("datetime").datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
     }
     LOCK_FILE.write_text(json.dumps(payload), encoding="utf-8")
 
@@ -518,7 +458,8 @@ def format_preview(drift: dict[str, FileStatus], baseline_sha: Optional[str], up
         by_status.setdefault(status, []).append(path)
 
     lines = []
-    lines.append(f"Agentic-Z update preview (upstream: {upstream_sha[:7]}, baseline: {(baseline_sha or 'first-run')[:7] if baseline_sha else 'first-run'})")
+    baseline_label = baseline_sha[:7] if baseline_sha else "first-run"
+    lines.append(f"Agentic-Z update preview (upstream: {upstream_sha[:7]}, baseline: {baseline_label})")
     lines.append("")
 
     # Order matters: safe stuff first, conflicts last.
@@ -760,8 +701,6 @@ def main() -> int:
         if not args.quiet:
             print("Up to date.")
         return 0
-
-    show_changelog()
 
     if args.dry_run:
         log("INFO", "--dry-run: stopping before merge.")
