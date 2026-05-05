@@ -2,9 +2,10 @@
 name: "agent-creator"
 description: "Use this agent when you need to create a new agent definition from scratch, validate an existing agent definition for compliance with the standard template, or rewrite/normalize an agent to match the required structure. Examples:\\n\\n<example>\\nContext: User wants to create a new agent for a specific purpose.\\nuser: \"Create an agent that reviews pull requests for security vulnerabilities\"\\nassistant: \"I'll use the agent-creator to generate a fully structured agent definition for you.\"\\n<commentary>\\nSince the user is requesting a new agent, use the agent-creator agent to generate a properly formatted agent definition following the standard template.\\n</commentary>\\n</example>\\n\\n<example>\\nContext: User has an existing agent definition they want validated.\\nuser: \"Here's my agent definition, can you check if it's correct?\\n\\nNAME: code-linter\\nROLE: You lint code\\nCAPABILITIES: Linting\"\\nassistant: \"Let me use the agent-creator to validate this agent definition against the standard template.\"\\n<commentary>\\nSince the user wants validation of an existing agent, use the agent-creator agent to check compliance and return a corrected version if needed.\\n</commentary>\\n</example>\\n\\n<example>\\nContext: User wants to normalize a loosely written agent description.\\nuser: \"I have this rough agent spec that I wrote quickly, can you clean it up and make it production-ready?\"\\nassistant: \"I'll launch the agent-creator to normalize and reformat your agent spec to match the standard template.\"\\n<commentary>\\nSince the user wants an agent rewritten to the standard format, use the agent-creator agent to produce a clean, compliant version.\\n</commentary>\\n</example>"
 model: opus
-color: lime
+color: green
 memory: project
 tools: Read, Write, Edit, Glob, Grep
+maxTurns: 50
 ---
 
 ## NAME
@@ -122,7 +123,7 @@ Output:
 ```markdown
 ---
 name: "rest-api-builder"
-description: "Use this agent when you need to design or implement REST APIs, generate route/controller boilerplate, or produce OpenAPI specifications. Examples:\n\n<example>\nContext: User wants CRUD endpoints for a new resource.\nuser: \"Build CRUD endpoints for a blog posts resource in FastAPI\"\nassistant: \"I'll use the rest-api-builder agent to generate the routes, schemas, and OpenAPI spec.\"\n<commentary>\nSince the user needs REST endpoint scaffolding, use the rest-api-builder agent.\n</commentary>\n</example>\n\n<example>\nContext: User needs to add auth to an existing API.\nuser: \"Add JWT authentication to my user API\"\nassistant: \"I'll use the rest-api-builder agent to add the JWT middleware and auth endpoints.\"\n<commentary>\nAuth integration on a REST API is within rest-api-builder's scope.\n</commentary>\n</example>"
+description: "Use this agent when you need to design or implement REST APIs, generate route/controller boilerplate, or produce OpenAPI specifications. Examples:\n\n<example>\nContext: User wants CRUD endpoints for a new resource.\nuser: \"Build CRUD endpoints for a blog posts resource in FastAPI\"\nassistant: \"I'll use the rest-api-builder agent to generate the routes, schemas, and OpenAPI spec.\"\n</example>\n\n<example>\nContext: User needs to add auth to an existing API.\nuser: \"Add JWT authentication to my user API\"\nassistant: \"I'll use the rest-api-builder agent to add the JWT middleware and auth endpoints.\"\n</example>"
 model: opus
 color: blue
 ---

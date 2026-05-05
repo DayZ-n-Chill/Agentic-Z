@@ -1,11 +1,11 @@
 ---
 name: "agent-creator"
 model: opus
-color: lime
+color: green
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--lime">lime</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--green">green</span></p>
 
 ## Overview
 
@@ -25,7 +25,6 @@ Use this agent when you need to create a new agent definition from scratch, vali
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the agent-creator to generate a fully structured agent definition for you."</div>
 </div>
-<div class="agent-example__commentary">Since the user is requesting a new agent, use the agent-creator agent to generate a properly formatted agent definition following the standard template.</div>
 </div>
 
 <div class="agent-example">
@@ -42,7 +41,6 @@ Use this agent when you need to create a new agent definition from scratch, vali
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"Let me use the agent-creator to validate this agent definition against the standard template."</div>
 </div>
-<div class="agent-example__commentary">Since the user wants validation of an existing agent, use the agent-creator agent to check compliance and return a corrected version if needed.</div>
 </div>
 
 <div class="agent-example">
@@ -59,7 +57,6 @@ Use this agent when you need to create a new agent definition from scratch, vali
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll launch the agent-creator to normalize and reformat your agent spec to match the standard template."</div>
 </div>
-<div class="agent-example__commentary">Since the user wants an agent rewritten to the standard format, use the agent-creator agent to produce a clean, compliant version.</div>
 </div>
 
 ## NAME

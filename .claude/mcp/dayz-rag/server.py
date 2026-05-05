@@ -1,6 +1,6 @@
 """dayz-rag MCP server.
 
-Exposes semantic search over the LanceDB index built by /dayz-rag-index.
+Exposes semantic search over the LanceDB index built by /dayz-search-index.
 Communicates with Claude Code over stdio.
 
 Tools:
@@ -23,7 +23,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-INDEX_ROOT = Path.home() / ".claude" / "dayz-rag-index"
+INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
 TABLE_NAME = "chunks"
 WIKI_TABLE_NAME = "wiki_chunks"
 DEFAULT_EMBED_MODEL = "voyage-code-3"
@@ -152,11 +152,11 @@ def _get_table():
         db_path = INDEX_ROOT / "lancedb"
         if not db_path.exists():
             raise RuntimeError(
-                f"No index at {INDEX_ROOT}. Run: python .claude/skills/dayz-rag-index/index.py --full"
+                f"No index at {INDEX_ROOT}. Run: python .claude/skills/dayz-search-index/index.py --full"
             )
         db = lancedb.connect(str(db_path))
         if TABLE_NAME not in db.table_names():
-            raise RuntimeError(f"Index table '{TABLE_NAME}' missing. Re-run /dayz-rag-index --full.")
+            raise RuntimeError(f"Index table '{TABLE_NAME}' missing. Re-run /dayz-search-index --full.")
         _table = db.open_table(TABLE_NAME)
     return _table
 
@@ -168,12 +168,12 @@ def _get_wiki_table():
         db_path = INDEX_ROOT / "lancedb"
         if not db_path.exists():
             raise RuntimeError(
-                f"No index at {INDEX_ROOT}. Run: python .claude/skills/dayz-rag-wiki-index/index.py --full"
+                f"No index at {INDEX_ROOT}. Run: python .claude/skills/dayz-search-wiki-index/index.py --full"
             )
         db = lancedb.connect(str(db_path))
         if WIKI_TABLE_NAME not in db.table_names():
             raise RuntimeError(
-                f"Wiki index table '{WIKI_TABLE_NAME}' missing. Run /dayz-rag-wiki-index --full."
+                f"Wiki index table '{WIKI_TABLE_NAME}' missing. Run /dayz-search-wiki-index --full."
             )
         _wiki_table = db.open_table(WIKI_TABLE_NAME)
     return _wiki_table
@@ -327,7 +327,7 @@ def list_indexed_sources_impl() -> dict:
         except (json.JSONDecodeError, OSError) as e:
             out["wiki"] = {"error": f"wiki manifest unreadable: {e}"}
     if not out:
-        return {"error": f"no index at {INDEX_ROOT}", "hint": "run /dayz-rag-index --full and/or /dayz-rag-wiki-index --full"}
+        return {"error": f"no index at {INDEX_ROOT}", "hint": "run /dayz-search-index --full and/or /dayz-search-wiki-index --full"}
     # Backwards compat: when only source is present, return source manifest at top level
     # so existing callers see the same shape.
     if "source" in out and "wiki" not in out:

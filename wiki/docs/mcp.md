@@ -17,7 +17,7 @@ The local semantic-search server over the vanilla DayZ source plus the Bohemia c
 | | |
 |---|---|
 | **Source** | `.claude/mcp/dayz-rag/` |
-| **Setup** | Build the index once with **[`/dayz-rag-index`](./skills/dayz-rag-index)** or pull a prebuilt one with **[`/dayz-rag-download`](./skills/dayz-rag-download)** |
+| **Setup** | Build the index once with **[`/dayz-search-index`](./skills/dayz-search-index)** or pull a prebuilt one with **[`/dayz-search-download`](./skills/dayz-search-download)** |
 | **Tools added** | `search_dayz_source`, `search_dayz_wiki`, `get_dayz_file`, `list_indexed_sources` |
 | **Backend** | Local vector DB (LanceDB) + Voyage embeddings (`voyage-code-3`) |
 

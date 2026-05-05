@@ -17,7 +17,7 @@ python .claude\skills\dayz-scope-mod\scope.py <ModName>
 :: Show current scope (or "no active scope")
 python .claude\skills\dayz-scope-mod\scope.py --status
 
-:: Lift the scope (also available as /dayz-scope-clear)
+:: Lift the scope
 python .claude\skills\dayz-scope-mod\scope.py --clear
 ```
 
@@ -62,7 +62,7 @@ DayZ scope: SuperMedKit
 [OK]    Active scope recorded at .claude\local-memory\dayz-active-scope.json
 
 Reads remain broad. Edit/Write to other mods is blocked.
-Run /dayz-scope-clear (or scope.py --clear) to lift.
+Run /dayz-scope-mod --clear (or scope.py --clear) to lift.
 ```
 
 If only one mod exists:

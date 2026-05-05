@@ -1,19 +1,19 @@
 ---
-slug: dayz-rag-download-skill
+slug: dayz-search-download-skill
 title: "Prebuilt DayZ RAG index now downloadable"
 authors: [brian]
 tags: [skills, rag, changelog]
 ---
 
-`/dayz-rag-index` builds a vector index of vanilla DayZ source + the Bohemia community wiki so the `dayz-rag` MCP server can do semantic search. The build takes 25–30 minutes and burns Voyage API tokens. On a fresh clone, that's a rough first impression.
+`/dayz-search-index` builds a vector index of vanilla DayZ source + the Bohemia community wiki so the `dayz-rag` MCP server can do semantic search. The build takes 25–30 minutes and burns Voyage API tokens. On a fresh clone, that's a rough first impression.
 
-The new `/dayz-rag-download` skill skips it.
+The new `/dayz-search-download` skill skips it.
 
 {/* truncate */}
 
 ## What changed
 
-- Added the **`dayz-rag-download`** skill — pulls a prebuilt index tarball from the repo's GitHub releases and extracts it to `~/.claude/dayz-rag-index/`, the same place `/dayz-rag-index` writes to.
+- Added the **`dayz-search-download`** skill — pulls a prebuilt index tarball from the repo's GitHub releases and extracts it to `~/.claude/dayz-search-index/`, the same place `/dayz-search-index` writes to.
 - Same on-disk result. Roughly 1 minute instead of 25–30. No Voyage API token cost at index time (query-time embedding still needs the key).
 - Idempotent — checks an installed-tag marker and skips re-download if you're already on the release version.
 - New **`docs-wiki-sync`** agent keeps the Docusaurus wiki at `wiki/` in sync with canonical sources (agent definitions, skill SKILL.md files, L1 docs).
@@ -23,8 +23,8 @@ The new `/dayz-rag-download` skill skips it.
 
 | Scenario | Use |
 |---|---|
-| Fresh clone, just want DayZ agents to work | **`/dayz-rag-download`** |
-| You re-extracted vanilla data after a DayZ update | `/dayz-rag-index --full` |
-| You changed embed model in `.env` | `/dayz-rag-index --full` |
+| Fresh clone, just want DayZ agents to work | **`/dayz-search-download`** |
+| You re-extracted vanilla data after a DayZ update | `/dayz-search-index --full` |
+| You changed embed model in `.env` | `/dayz-search-index --full` |
 
 The downloaded index is built against vanilla DayZ at the release-tagged version. If your local install is on a newer patch and you need precise recall against your installed source, rebuild locally.

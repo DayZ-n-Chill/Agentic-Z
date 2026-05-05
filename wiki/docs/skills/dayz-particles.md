@@ -70,8 +70,8 @@ Repeat (0=one-shot auto-deletes, 1=loop MUST stop manually)
 **Rotation:** RandomRotDir, RotMultiplier, RandomAngle
 
 **Curves (keyframe pairs: time value time value ...):**
-Color { t r g b t r g b }, Alpha { t a t a },
-Size { t s t s }, RotationSpeed { t s t s }
+`Color { t r g b t r g b }`, `Alpha { t a t a }`,
+`Size { t s t s }`, `RotationSpeed { t s t s }`
 
 **Master curves (modulate over EffectTime):**
 ColorMast, AlphaMast, SizeMast, BRateMast, VelocityMast, AirResistanceMast
