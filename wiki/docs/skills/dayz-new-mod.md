@@ -1,6 +1,5 @@
 ---
 name: dayz-new-mod
-description: Scaffold a new DayZ mod project under workspace/<ModName>/ with the standard skeleton (config.cpp stub, $PBOPREFIX$, scripts/3_Game/4_World/5_Mission, data, gui, workbench/, README). Workbench folder gets a copy of the official dayz.gproj + DayZSetting.xml from DayZ Tools, with the mod's script paths injected so Workbench can compile vanilla + mod together. First run prompts for an author handle and caches it in .claude/local-memory/.
 ---
 
 # /dayz-new-mod

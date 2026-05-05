@@ -1,6 +1,5 @@
 ---
 name: dayz-rag-index
-description: Index vanilla DayZ source (Enforce Script, .layout, config.cpp, .rvmat) into a per-user vector database so DayZ agents can do semantic search via the dayz-rag MCP server. One-time setup; rerun with --full after a DayZ update. Required before agents can use the search_dayz_source tool.
 ---
 
 # /dayz-rag-index

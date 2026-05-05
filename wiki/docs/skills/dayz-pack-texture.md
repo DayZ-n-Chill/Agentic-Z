@@ -1,10 +1,5 @@
 ---
 name: dayz-pack-texture
-description: >-
-  Convert PNG/TGA images to DayZ-format `.paa` textures via DayZ Tools' ImageToPAA.exe.
-  Validates the required suffix (`_co`, `_nohq`, `_smdi`) on each input filename so
-  the engine assigns the correct texture role. One-to-one: every input produces a `.paa`
-  next to itself.
 ---
 
 # /dayz-pack-texture

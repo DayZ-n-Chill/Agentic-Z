@@ -1,6 +1,5 @@
 ---
 name: dayz-launch-workbench
-description: Open Enfusion Workbench (DayZ Tools' script + UI editor) from the CLI, optionally pointed at a specific mod's project file. Spawns detached with cwd=P:\ so vanilla data resolves. Default behavior loads the vanilla dayz.gproj shipped with DayZ Tools; --mod <ModName> loads the per-mod gproj scaffolded by /dayz-new-mod.
 ---
 
 # /dayz-launch-workbench
