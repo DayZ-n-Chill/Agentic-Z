@@ -14,9 +14,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import enum
+import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
 
 UPSTREAM_URL = "https://github.com/DayZ-n-Chill/Agentic-Z.git"
 UPSTREAM_REMOTE = "upstream"
@@ -36,6 +39,71 @@ TEMPLATE_PATHS = [
     "GEMINI.md",
     "README.md",
 ]
+
+
+class FileStatus(enum.Enum):
+    UNCHANGED = "unchanged"          # no-op
+    SAFE_OVERWRITE = "safe-overwrite"  # local == baseline, take upstream
+    NEW = "new"                       # baseline + local missing, take upstream
+    LOCAL_ONLY_EDIT = "local-only-edit"  # only the user changed it, leave alone
+    CONFLICT = "conflict"             # both diverged, ask user
+    DELETED_CLEAN = "deleted-clean"   # local == baseline, upstream gone, delete OK
+    DELETED_CONFLICT = "deleted-conflict"  # local diverged, upstream gone, ask user
+
+
+def classify_per_file(
+    baseline: Optional[bytes],
+    local: Optional[bytes],
+    upstream: Optional[bytes],
+) -> FileStatus:
+    """Three-way classification for a single template file.
+
+    None for any blob means "file does not exist at that revision".
+    Returns a FileStatus enum value indicating what action (if any) to take.
+
+    See the spec at docs/superpowers/specs/2026-05-05-agentic-z-update-design.md
+    for the full classification table.
+    """
+    # Defensive: nothing exists anywhere.
+    if local is None and upstream is None and baseline is None:
+        return FileStatus.UNCHANGED
+
+    # Upstream removed the file (or never had it).
+    if upstream is None:
+        if local is None:
+            # Already gone locally too; nothing to do.
+            return FileStatus.UNCHANGED
+        if baseline is None:
+            # Upstream never had it and neither does baseline → user-created file, leave alone.
+            return FileStatus.LOCAL_ONLY_EDIT
+        if local == baseline:
+            return FileStatus.DELETED_CLEAN
+        return FileStatus.DELETED_CONFLICT
+
+    # Upstream has the file.
+    if local is None:
+        # Local missing. If baseline also missing, user never had it → new.
+        # If baseline existed, user deliberately deleted it → still treat as new
+        # (re-add upstream version; user can delete again if they want).
+        return FileStatus.NEW
+
+    # Local exists.
+    if local == upstream:
+        # Already identical, regardless of baseline.
+        return FileStatus.UNCHANGED
+
+    # Local != upstream. What did baseline look like?
+    if local == baseline:
+        # User didn't touch it; safe to take upstream.
+        return FileStatus.SAFE_OVERWRITE
+
+    # Local != baseline → user changed it locally.
+    if upstream == baseline:
+        # Upstream is unchanged from baseline; user's edit is the only change.
+        return FileStatus.LOCAL_ONLY_EDIT
+
+    # Both local and upstream diverged from baseline → conflict.
+    return FileStatus.CONFLICT
 
 
 def log(level: str, msg: str) -> None:
