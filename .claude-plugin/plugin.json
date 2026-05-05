@@ -1,7 +1,7 @@
 {
   "name": "agentic-z",
-  "version": "1.0.1",
-  "description": "AI agent stack for DayZ modding. Ships 10 specialist subagents and 21 DayZ skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexers), plus the dayz-rag MCP server for semantic search over vanilla Enforce Script and the Bohemia community wiki.",
+  "version": "1.2.0",
+  "description": "AI agent stack for DayZ modding. Ships 11 specialist subagents and 23 DayZ skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexers, p3d audit/debin, particle effects), plus the dayz-rag MCP server for semantic search over vanilla Enforce Script and the Bohemia community wiki.",
   "author": {
     "name": "DayZ n' Chill",
     "url": "https://github.com/DayZ-n-Chill"
@@ -28,7 +28,10 @@
     "./.claude/skills/dayz-launch-workbench",
     "./.claude/skills/dayz-workdrive",
     "./.claude/skills/dayz-new-mod",
+    "./.claude/skills/dayz-p3d-audit",
+    "./.claude/skills/dayz-p3d-debin",
     "./.claude/skills/dayz-pack-texture",
+    "./.claude/skills/dayz-particles",
     "./.claude/skills/dayz-preflight",
     "./.claude/skills/dayz-search-download",
     "./.claude/skills/dayz-search-index",
