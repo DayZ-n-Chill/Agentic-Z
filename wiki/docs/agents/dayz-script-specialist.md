@@ -25,7 +25,6 @@ Use this agent for writing and debugging Enforce Script (C#-like) for DayZ mods.
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-script-specialist to override the OnActivate method and implement a custom timer-based healing logic."</div>
 </div>
-<div class="agent-example__commentary">Game logic and scripting in Enforce Script is the core domain of the script-specialist.</div>
 </div>
 
 ## NAME

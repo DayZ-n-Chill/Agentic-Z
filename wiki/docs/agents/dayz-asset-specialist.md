@@ -25,7 +25,6 @@ Use this agent for managing DayZ 3D assets, textures, and materials. Expert in .
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-asset-specialist to guide you through saving the texture with the correct suffix (_co) and configuring the .rvmat with proper shaders and lighting parameters."</div>
 </div>
-<div class="agent-example__commentary">Texture naming conventions and material configuration are the core strengths of the asset-specialist.</div>
 </div>
 
 ## NAME

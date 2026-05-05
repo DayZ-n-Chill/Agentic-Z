@@ -25,7 +25,6 @@ Use this agent for managing DayZ config files (config.cpp, CfgPatches, CfgVehicl
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-config-specialist to create the CfgVehicles entry for your vest, including inventory slots, protection levels, and hiddenSelections definitions."</div>
 </div>
-<div class="agent-example__commentary">Defining item properties and inheritance in config.cpp is the core domain of the config-specialist.</div>
 </div>
 
 ## NAME

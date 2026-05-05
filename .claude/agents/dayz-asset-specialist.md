@@ -1,6 +1,6 @@
 ---
 name: "dayz-asset-specialist"
-description: "Use this agent for managing DayZ 3D assets, textures, and materials. Expert in .p3d structure, .paa textures, .rvmat materials, and Workbench asset integration.\n\n<example>\nContext: User wants to add a new texture to an item.\nuser: \"I have a new camouflage texture for the M4A1. How do I save it as a .paa and apply it via an .rvmat?\"\nassistant: \"I'll use the dayz-asset-specialist to guide you through saving the texture with the correct suffix (_co) and configuring the .rvmat with proper shaders and lighting parameters.\"\n<commentary>\nTexture naming conventions and material configuration are the core strengths of the asset-specialist.\n</commentary>\n</example>"
+description: "Use this agent for managing DayZ 3D assets, textures, and materials. Expert in .p3d structure, .paa textures, .rvmat materials, and Workbench asset integration.\n\n<example>\nContext: User wants to add a new texture to an item.\nuser: \"I have a new camouflage texture for the M4A1. How do I save it as a .paa and apply it via an .rvmat?\"\nassistant: \"I'll use the dayz-asset-specialist to guide you through saving the texture with the correct suffix (_co) and configuring the .rvmat with proper shaders and lighting parameters.\"\n</example>"
 model: sonnet
 color: purple
 memory: project

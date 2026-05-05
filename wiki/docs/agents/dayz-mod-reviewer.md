@@ -25,7 +25,6 @@ Use this agent to audit a mod under `workspace/<ModName>/` for convention compli
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-mod-reviewer to scan the mod folder — checking config.cpp inheritance, hiddenSelections vs. .rvmat coverage, $PBOPREFIX$ correctness, texture suffix compliance (_co/_nohq/_smdi), and modded-class extends-clause violations. Output is a punch list with each item routed to the right specialist for the fix."</div>
 </div>
-<div class="agent-example__commentary">Mod review is a survey-and-route task, not a fix task. The reviewer flags issues; specialists implement corrections.</div>
 </div>
 
 <div class="agent-example">
@@ -42,7 +41,6 @@ Use this agent to audit a mod under `workspace/<ModName>/` for convention compli
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-mod-reviewer to look for common conflict-causers — unscoped `class X { }` instead of `modded class X { }`, asset paths colliding with vanilla, missing CfgPatches dependencies, broad event handlers that trample shared state."</div>
 </div>
-<div class="agent-example__commentary">Conflict-causing patterns are a known set; the reviewer surfaces them and hands off to script/config specialists for the actual rewrites.</div>
 </div>
 
 ## NAME

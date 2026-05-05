@@ -1,6 +1,6 @@
 ---
 name: "dayz-config-specialist"
-description: "Use this agent for managing DayZ config files (config.cpp, CfgPatches, CfgVehicles, CfgWeapons). Expert in class inheritance, hidden selections, and item properties.\n\n<example>\nContext: User wants to add a custom vest to the game.\nuser: \"I have a 3D model for a tactical vest. Can you help me write the config.cpp to define its stats, attachments, and hidden selections for retexturing?\"\nassistant: \"I'll use the dayz-config-specialist to create the CfgVehicles entry for your vest, including inventory slots, protection levels, and hiddenSelections definitions.\"\n<commentary>\nDefining item properties and inheritance in config.cpp is the core domain of the config-specialist.\n</commentary>\n</example>"
+description: "Use this agent for managing DayZ config files (config.cpp, CfgPatches, CfgVehicles, CfgWeapons). Expert in class inheritance, hidden selections, and item properties.\n\n<example>\nContext: User wants to add a custom vest to the game.\nuser: \"I have a 3D model for a tactical vest. Can you help me write the config.cpp to define its stats, attachments, and hidden selections for retexturing?\"\nassistant: \"I'll use the dayz-config-specialist to create the CfgVehicles entry for your vest, including inventory slots, protection levels, and hiddenSelections definitions.\"\n</example>"
 model: sonnet
 color: green
 memory: project

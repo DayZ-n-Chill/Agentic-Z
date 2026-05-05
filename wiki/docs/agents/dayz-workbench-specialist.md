@@ -25,7 +25,6 @@ Use this agent for Enfusion Workbench plugin development — extending the Workb
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-workbench-specialist to scaffold a Workbench plugin with a tool panel that walks the data folder, detects suffix-less .paa textures, and offers a rename action via the Workbench UI."</div>
 </div>
-<div class="agent-example__commentary">Workbench plugin development — editor-time tooling, not runtime gameplay — is the core domain of the workbench-specialist.</div>
 </div>
 
 <div class="agent-example">
@@ -42,7 +41,6 @@ Use this agent for Enfusion Workbench plugin development — extending the Workb
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-workbench-specialist to build the plugin — Workbench script that drives ImageToPAA via process spawn, with a dockable status panel."</div>
 </div>
-<div class="agent-example__commentary">Integrating external tools into the Workbench UI is squarely workbench-specialist territory.</div>
 </div>
 
 ## NAME

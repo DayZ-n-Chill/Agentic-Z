@@ -25,7 +25,6 @@ Use this agent for `.p3d` model work in DayZ Tools' Object Builder — LOD struc
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-object-builder to set up the named selections on the .p3d's geometry, then return the matching `hiddenSelections[] = {...}` and `hiddenSelectionsTextures[] = {...}` lines for config-specialist to wire into config.cpp."</div>
 </div>
-<div class="agent-example__commentary">Named selections and hidden selection setup happen in Object Builder on the .p3d itself — that's this agent's domain. The config.cpp side is config-specialist.</div>
 </div>
 
 <div class="agent-example">
@@ -42,7 +41,6 @@ Use this agent for `.p3d` model work in DayZ Tools' Object Builder — LOD struc
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-object-builder to walk you through adding the FireGeometry LOD with appropriate component selections, then verify the damage zones via named properties."</div>
 </div>
-<div class="agent-example__commentary">LOD topology and damage geometry are core Object Builder concerns.</div>
 </div>
 
 ## NAME

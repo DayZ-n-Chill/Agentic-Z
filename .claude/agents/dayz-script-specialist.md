@@ -1,6 +1,6 @@
 ---
 name: "dayz-script-specialist"
-description: "Use this agent for writing and debugging Enforce Script (C#-like) for DayZ mods. Expert in modded classes, RPCs, replication, and custom game logic.\n\n<example>\nContext: User wants to create a custom item behavior.\nuser: \"I need a script that makes a custom medical kit heal the player over time instead of instantly.\"\nassistant: \"I'll use the dayz-script-specialist to override the OnActivate method and implement a custom timer-based healing logic.\"\n<commentary>\nGame logic and scripting in Enforce Script is the core domain of the script-specialist.\n</commentary>\n</example>"
+description: "Use this agent for writing and debugging Enforce Script (C#-like) for DayZ mods. Expert in modded classes, RPCs, replication, and custom game logic.\n\n<example>\nContext: User wants to create a custom item behavior.\nuser: \"I need a script that makes a custom medical kit heal the player over time instead of instantly.\"\nassistant: \"I'll use the dayz-script-specialist to override the OnActivate method and implement a custom timer-based healing logic.\"\n</example>"
 model: opus
 color: blue
 memory: project

@@ -25,7 +25,6 @@ Use this agent for DayZ terrain building and map editing. Expert in Terrain Buil
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-map-specialist to guide you through exporting your objects as a .dz file and importing them into your Terrain Builder project."</div>
 </div>
-<div class="agent-example__commentary">Map object management and terrain workflow are the core strengths of the map-specialist.</div>
 </div>
 
 ## NAME

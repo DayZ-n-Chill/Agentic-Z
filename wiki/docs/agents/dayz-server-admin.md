@@ -25,7 +25,6 @@ Use this agent for managing DayZ server configurations, economy, and deployment.
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-server-admin to generate the types.xml entry for your vest, defining its nominal count, lifetime, and military tier locations."</div>
 </div>
-<div class="agent-example__commentary">Central Economy configuration and server deployment are the core domain of the server-admin.</div>
 </div>
 
 ## NAME

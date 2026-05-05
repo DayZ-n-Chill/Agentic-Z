@@ -25,7 +25,6 @@ Use this agent for ALL DayZ UI work — `.layout` files, widget scripting, HUD/m
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-ui-specialist to design the .layout for the compass and write the Enforce Script logic to update the rotation based on the player's orientation."</div>
 </div>
-<div class="agent-example__commentary">UI design and widget-based scripting are the core domain of the ui-specialist.</div>
 </div>
 
 <div class="agent-example">
@@ -42,7 +41,6 @@ Use this agent for ALL DayZ UI work — `.layout` files, widget scripting, HUD/m
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-ui-specialist — even though the `Colors` constants live in the scripts tree (P:\\scripts\\3_game\\colors.c), UI theme work belongs here. They override the Colors class via `modded class` so HUD/menu/hint elements pick up the new ARGB values automatically."</div>
 </div>
-<div class="agent-example__commentary">UI color/theme changes belong to the ui-specialist even though the constants are in scripts. The ui-specialist's lane includes specific UI-relevant scripts so they know exactly which constant maps to which visual element.</div>
 </div>
 
 ## NAME

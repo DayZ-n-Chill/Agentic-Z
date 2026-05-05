@@ -1,6 +1,6 @@
 ---
 name: "dayz-server-admin"
-description: "Use this agent for managing DayZ server configurations, economy, and deployment. Expert in types.xml, init.c, cfggameplay.json, and server performance.\n\n<example>\nContext: User wants to adjust item spawn rates.\nuser: \"I want my custom tactical vest to spawn in military areas but with a low rarity. How do I set up the types.xml?\"\nassistant: \"I'll use the dayz-server-admin to generate the types.xml entry for your vest, defining its nominal count, lifetime, and military tier locations.\"\n<commentary>\nCentral Economy configuration and server deployment are the core domain of the server-admin.\n</commentary>\n</example>"
+description: "Use this agent for managing DayZ server configurations, economy, and deployment. Expert in types.xml, init.c, cfggameplay.json, and server performance.\n\n<example>\nContext: User wants to adjust item spawn rates.\nuser: \"I want my custom tactical vest to spawn in military areas but with a low rarity. How do I set up the types.xml?\"\nassistant: \"I'll use the dayz-server-admin to generate the types.xml entry for your vest, defining its nominal count, lifetime, and military tier locations.\"\n</example>"
 model: sonnet
 color: red
 memory: project

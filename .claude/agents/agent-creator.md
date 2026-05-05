@@ -123,7 +123,7 @@ Output:
 ```markdown
 ---
 name: "rest-api-builder"
-description: "Use this agent when you need to design or implement REST APIs, generate route/controller boilerplate, or produce OpenAPI specifications. Examples:\n\n<example>\nContext: User wants CRUD endpoints for a new resource.\nuser: \"Build CRUD endpoints for a blog posts resource in FastAPI\"\nassistant: \"I'll use the rest-api-builder agent to generate the routes, schemas, and OpenAPI spec.\"\n<commentary>\nSince the user needs REST endpoint scaffolding, use the rest-api-builder agent.\n</commentary>\n</example>\n\n<example>\nContext: User needs to add auth to an existing API.\nuser: \"Add JWT authentication to my user API\"\nassistant: \"I'll use the rest-api-builder agent to add the JWT middleware and auth endpoints.\"\n<commentary>\nAuth integration on a REST API is within rest-api-builder's scope.\n</commentary>\n</example>"
+description: "Use this agent when you need to design or implement REST APIs, generate route/controller boilerplate, or produce OpenAPI specifications. Examples:\n\n<example>\nContext: User wants CRUD endpoints for a new resource.\nuser: \"Build CRUD endpoints for a blog posts resource in FastAPI\"\nassistant: \"I'll use the rest-api-builder agent to generate the routes, schemas, and OpenAPI spec.\"\n</example>\n\n<example>\nContext: User needs to add auth to an existing API.\nuser: \"Add JWT authentication to my user API\"\nassistant: \"I'll use the rest-api-builder agent to add the JWT middleware and auth endpoints.\"\n</example>"
 model: opus
 color: blue
 ---

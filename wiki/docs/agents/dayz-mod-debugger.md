@@ -25,7 +25,6 @@ Use this agent for diagnosing DayZ mod failures from logs and crash artifacts â€
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-mod-debugger to walk the RPT tail, identify the failing module from the call stack, and trace the symptom back to a specific class/file. Then hand off to script-specialist or config-specialist for the fix."</div>
 </div>
-<div class="agent-example__commentary">Log forensics and crash diagnosis is the debugger's lane. Fixing the underlying code belongs to the relevant specialist.</div>
 </div>
 
 <div class="agent-example">
@@ -42,7 +41,6 @@ Use this agent for diagnosing DayZ mod failures from logs and crash artifacts â€
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-mod-debugger to check whether the modded class registered (look for the compile line vs. the load order), verify there's no silent-no-op `extends` clause (per the modded-class rule), and confirm the file is in the right scripts/ subtree."</div>
 </div>
-<div class="agent-example__commentary">Debugging why mod-runtime behavior doesn't match expectations â€” even when nothing crashed â€” is the debugger's domain.</div>
 </div>
 
 ## NAME
