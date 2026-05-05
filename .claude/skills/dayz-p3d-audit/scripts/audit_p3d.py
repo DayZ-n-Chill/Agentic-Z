@@ -25,18 +25,26 @@ except ImportError:
 # LOD classification
 # ============================================================================
 def classify_lod(resolution):
+    # LOD resolution mapping. Standard Bohemia Arma/DayZ scheme uses ~6e15 for ViewGeometry
+    # and ~7e15 for FireGeometry (see dayz-p3d-debinarizer/references/format_notes.md). Some
+    # DayZ models in the wild also use ~7e13 (ViewGeo) and ~3e13 (FireGeo); accept both
+    # ranges so the classifier matches either layout.
     if resolution < 1000:
         return "Visual"
+    if 9e9 <= resolution <= 1.1e10:
+        return "ShadowVolume"
     if 9.9e12 <= resolution <= 1.1e13:
         return "Geometry"
     if 1.9e13 <= resolution <= 2.1e13:
         return "GeoPhys"
-    if 2.9e13 <= resolution <= 3.1e13:
+    if (2.9e13 <= resolution <= 3.1e13) or (6.9e15 <= resolution <= 7.1e15):
         return "FireGeo"
-    if 6.9e13 <= resolution <= 7.1e13:
+    if (6.9e13 <= resolution <= 7.1e13) or (5.9e15 <= resolution <= 6.1e15):
         return "ViewGeo"
     if 9.9e14 <= resolution <= 1.1e15:
         return "Memory"
+    if 1.9e15 <= resolution <= 2.1e15:
+        return "LandContact"
     return f"Other({resolution:.1e})"
 
 # ============================================================================
@@ -345,8 +353,16 @@ def audit_p3d(filepath):
             zs = [pt.coords[2] for pt in lod.points]
             print(f"  BBox: X=[{min(xs):.3f}..{max(xs):.3f}] Y=[{min(ys):.3f}..{max(ys):.3f}] Z=[{min(zs):.3f}..{max(zs):.3f}]")
 
-        for check_fn in [check_face_winding, check_component_naming, check_component_coverage,
-                         check_autocenter_prop, check_watertight, check_degenerate_faces]:
+        # Component01 is required only on Geometry LOD; running it on GeoPhys/FireGeo
+        # produces false CRITICALs on valid vanilla models. face_winding removed entirely:
+        # the centroid heuristic flags every Blender export (left-handed transform) per
+        # SKILL.md "WINDING DIAGNOSTICS" section.
+        if lt == "Geometry":
+            check_fns = [check_component_naming, check_component_coverage,
+                         check_autocenter_prop, check_watertight, check_degenerate_faces]
+        else:
+            check_fns = [check_autocenter_prop, check_watertight, check_degenerate_faces]
+        for check_fn in check_fns:
             results = check_fn(lod)
             for sev, msg in results:
                 print(f"  {sev}: {msg}")

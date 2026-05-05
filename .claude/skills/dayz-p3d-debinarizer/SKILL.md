@@ -17,17 +17,21 @@ description: >
 
 Converts binarized DayZ .p3d files (ODOL format) to editable MLOD format for Object Builder.
 
+## Preflight gate
+
+Per the L2 rule (`.claude/skills/_shared/dayz-conventions.md`), every DayZ skill that does work gates on `/dayz-preflight` first. Debinarizing pulls .p3d files from anywhere, but the moment you target `P:\` paths an unmounted P-drive silently fails. Run `/dayz-preflight` before this skill.
+
 ## Quick Start
 
-```bash
-# Install dependencies (REQUIRED)
-apt-get install -y liblzo2-dev
-pip install python-lzo --break-system-packages
-pip install git+https://github.com/KoffeinFlummi/py3d.git --break-system-packages
+```cmd
+:: Install dependencies (REQUIRED). This is a Windows workspace; python-lzo and py3d
+:: have prebuilt wheels available, no native compiler needed.
+pip install python-lzo
+pip install git+https://github.com/KoffeinFlummi/py3d.git
 
-# Run conversion
-cd /path/to/skill/scripts
-python3 odol_to_mlod.py input.p3d output_mlod.p3d
+:: Run conversion
+cd <skill-path>\scripts
+python odol_to_mlod.py input.p3d output_mlod.p3d
 ```
 
 ## Architecture

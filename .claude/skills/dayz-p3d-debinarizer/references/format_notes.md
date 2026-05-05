@@ -207,8 +207,11 @@ ODOL {
 | Resolution | LOD Type |
 |-----------|----------|
 | 0.0 - 999.0 | Visual (value = view distance in meters) |
+| ~1.0e10 | ShadowVolume |
 | ~1.0e13 | Geometry |
+| ~2.0e13 | GeoPhys (DayZ-specific physics collision) |
 | ~1.0e15 | Memory |
+| ~2.0e15 | LandContact |
 | ~6.0e15 | View Geometry |
 | ~7.0e15 | Fire Geometry |
 

@@ -19,6 +19,10 @@ Validates .p3d model files, config.cpp, model.cfg, and .rvmat materials against
 DayZ engine requirements. Built from production debugging where models rendered
 correctly but had zero collision, missing animations, or broken textures.
 
+## Preflight gate
+
+Per the L2 rule (`.claude/skills/_shared/dayz-conventions.md`), every DayZ skill that does work gates on `/dayz-preflight` first. The audit reads `.p3d` files which can live anywhere, but the moment you point it at `P:\` paths or a built mod, an unmounted P-drive silently produces wrong results. Run `/dayz-preflight` before this skill.
+
 ## Quick Start
 
 ```bash

@@ -171,11 +171,13 @@ Auto-deletes non-looping particles. Used by FireplaceBase, torches, cooking.
 
 ### 2. `ParticleSource` extends Particle (ParticleSource.c)
 Native C++ backed. No EOnFrame. Auto-destroy flags: ON_END, ON_STOP, ALL, NONE.
-StopParticleFlags: NONE (gradual), IMMEDIATE, PAUSE (freeze visible).
+StopParticleFlags: `NONE = 0` (no-op; default `StopParticle()` already does gradual fade), IMMEDIATE, PAUSE (freeze visible).
 
 ### 3. `ParticleManager` pool (ParticleManager.c)
-Singleton: `ParticleManager.GetInstance()` — 10000 pool, client only, returns
-null on dedicated server. Pre-allocates+reuses ParticleSource objects.
+Global instance via `ParticleManager.GetInstance()` — 10000 pool, client only,
+returns null on dedicated server. Pre-allocates+reuses ParticleSource objects.
+Mods can also `new ParticleManager(settings)` to instantiate their own pools
+(the test framework does this); GetInstance() is the global, not a hard singleton.
 
 ### Wrapper: `SEffectManager`
 PowerGenerator pattern: `SEffectManager.PlayOnObject(effect, parent, pos, ori)`.
@@ -191,7 +193,10 @@ Full API signatures: `references/script-api-reference.md`
 // Static create+play
 Particle p = Particle.PlayOnObject(ID, parent, localPos, localOri, forceWorldRot);
 Particle p = Particle.PlayInWorld(ID, worldPos);
-ParticleSource ps = ParticleManager.GetInstance().PlayOnObject(ID, parent, localPos);
+// ParticleManager.GetInstance() returns null on dedicated server — always guard.
+ParticleManager pm = ParticleManager.GetInstance();
+ParticleSource ps;
+if (pm) ps = pm.PlayOnObject(ID, parent, localPos);
 
 // Instance control
 p.PlayParticle(optionalNewId);

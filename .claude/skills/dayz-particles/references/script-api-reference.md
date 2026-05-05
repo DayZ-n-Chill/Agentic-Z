@@ -133,7 +133,9 @@ enum ParticleAutoDestroyFlags {
 };
 
 enum StopParticleFlags {
-    NONE,       // gradual fade (default) — nulls lifetime, fades naturally
+    NONE,       // = 0; no-op flag value. The default StopParticle() behavior
+                // (called with no flags or NONE) IS gradual fade — but that's
+                // the default mode, not something the NONE flag activates.
     RESET,      // reset state after stopping
     IMMEDIATE,  // stop NOW, clear VISIBLE flag
     VISIBLE,    // keep visible (use with IMMEDIATE for PAUSE)
