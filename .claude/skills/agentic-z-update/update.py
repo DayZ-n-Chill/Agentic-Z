@@ -259,6 +259,81 @@ def run_sync_skills() -> None:
         log("WARN", "sync-skills returned non-zero; review its output above")
 
 
+import os
+
+BASELINE_FILE = Path(".claude/.upstream-baseline")
+LOCK_FILE = Path(".claude/.upstream-update.lock")
+
+
+def read_baseline() -> Optional[str]:
+    """Return the SHA of the last upstream merge, or None if not initialized."""
+    if not BASELINE_FILE.exists():
+        return None
+    try:
+        sha = BASELINE_FILE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if not sha or len(sha) < 7:
+        return None
+    return sha
+
+
+def write_baseline(sha: str) -> None:
+    """Atomically write the baseline SHA. Temp file + rename to avoid partial writes."""
+    BASELINE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    # Use NamedTemporaryFile in same dir so rename is on the same filesystem.
+    tmp = BASELINE_FILE.with_suffix(".tmp")
+    tmp.write_text(sha.strip() + "\n", encoding="utf-8")
+    tmp.replace(BASELINE_FILE)
+
+
+def _pid_alive(pid: int) -> bool:
+    """Return True if a process with this PID is still running. Cross-platform best-effort."""
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        # Windows: use tasklist as a portable check.
+        r = subprocess.run(
+            ["tasklist", "/FI", f"PID eq {pid}", "/NH", "/FO", "CSV"],
+            capture_output=True, text=True,
+        )
+        return str(pid) in (r.stdout or "")
+    # POSIX: signal 0 = liveness probe.
+    try:
+        os.kill(pid, 0)
+        return True
+    except (OSError, PermissionError):
+        return False
+
+
+def read_lock() -> Optional[dict]:
+    """Return parsed lock dict (with 'pid' and 'started_at') or None if no lock."""
+    if not LOCK_FILE.exists():
+        return None
+    try:
+        return json.loads(LOCK_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def write_lock() -> None:
+    """Write a lock file with this process's PID and an ISO timestamp."""
+    LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "pid": os.getpid(),
+        "started_at": __import__("datetime").datetime.utcnow().isoformat(timespec="seconds") + "Z",
+    }
+    LOCK_FILE.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def release_lock() -> None:
+    """Best-effort lock removal; ignores missing file."""
+    try:
+        LOCK_FILE.unlink()
+    except (FileNotFoundError, OSError):
+        pass
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Pull Agentic-Z upstream template updates.")
     parser.add_argument("--force", action="store_true", help="Skip the dirty-tree check.")

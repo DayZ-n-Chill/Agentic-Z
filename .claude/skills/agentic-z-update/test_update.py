@@ -60,5 +60,87 @@ class TestClassifyPerFile(unittest.TestCase):
         self.assertEqual(result, FileStatus.UNCHANGED)
 
 
+import os
+import tempfile
+
+from update import (
+    read_baseline, write_baseline, BASELINE_FILE,
+    read_lock, write_lock, release_lock, LOCK_FILE, _pid_alive,
+)
+
+
+class TestBaselineFile(unittest.TestCase):
+    """Baseline file roundtrip + edge cases. Uses a temp cwd to avoid touching the real one."""
+
+    def setUp(self):
+        self._orig_cwd = os.getcwd()
+        self._tmp = tempfile.mkdtemp(prefix="agentic-z-update-test-")
+        os.chdir(self._tmp)
+
+    def tearDown(self):
+        os.chdir(self._orig_cwd)
+        import shutil
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def test_read_returns_none_when_baseline_missing(self):
+        self.assertIsNone(read_baseline())
+
+    def test_write_then_read_roundtrip(self):
+        write_baseline("4816814b9d8a3f5e7c1234567890abcdef123456")
+        self.assertEqual(
+            read_baseline(),
+            "4816814b9d8a3f5e7c1234567890abcdef123456",
+        )
+
+    def test_write_overwrites_previous_baseline(self):
+        write_baseline("aaaaaaa")
+        write_baseline("bbbbbbb")
+        self.assertEqual(read_baseline(), "bbbbbbb")
+
+    def test_read_returns_none_for_too_short_sha(self):
+        BASELINE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        BASELINE_FILE.write_text("abc")  # too short
+        self.assertIsNone(read_baseline())
+
+
+class TestLockFile(unittest.TestCase):
+    def setUp(self):
+        self._orig_cwd = os.getcwd()
+        self._tmp = tempfile.mkdtemp(prefix="agentic-z-update-test-")
+        os.chdir(self._tmp)
+
+    def tearDown(self):
+        os.chdir(self._orig_cwd)
+        import shutil
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def test_read_returns_none_when_no_lock(self):
+        self.assertIsNone(read_lock())
+
+    def test_write_then_read_roundtrip(self):
+        write_lock()
+        lock = read_lock()
+        self.assertIsNotNone(lock)
+        self.assertEqual(lock["pid"], os.getpid())
+        self.assertIn("started_at", lock)
+
+    def test_release_removes_lock(self):
+        write_lock()
+        self.assertTrue(LOCK_FILE.exists())
+        release_lock()
+        self.assertFalse(LOCK_FILE.exists())
+
+    def test_release_is_safe_when_no_lock(self):
+        # Should not raise.
+        release_lock()
+
+    def test_pid_alive_for_self(self):
+        self.assertTrue(_pid_alive(os.getpid()))
+
+    def test_pid_alive_for_clearly_dead_pid(self):
+        # PID 999999 is virtually never a real process.
+        self.assertFalse(_pid_alive(999999))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
