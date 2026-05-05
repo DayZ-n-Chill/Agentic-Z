@@ -1,6 +1,5 @@
 ---
 name: dayz-add-map
-description: Set up a DayZ test map under workspace/_server/. Copies the mission template from DayZ Server install if missing, creates workspace/_server/maps/<map>/serverDZ.cfg and profiles/. One-time per map (re-runs are safe and idempotent). Required before /dayz-launch-test on a given map. Use --refresh-mission to re-copy the mission after a DayZ update.
 ---
 
 # /dayz-add-map

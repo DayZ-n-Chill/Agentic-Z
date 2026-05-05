@@ -1,6 +1,5 @@
 ---
 name: dayz-types-edit
-description: Programmatically add, update, or remove an entry in DayZ's types.xml. Upserts a `<type name="...">` block with the given attrs (nominal, min, lifetime, restock, cost, category, usage, value, tag). Auto-backs up the file before modifying. Idempotent — re-running with the same args is a no-op or a clean update.
 ---
 
 # /dayz-types-edit
