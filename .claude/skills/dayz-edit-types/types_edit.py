@@ -1,4 +1,4 @@
-"""dayz-types-edit: Add / update / remove an entry in DayZ types.xml.
+"""dayz-edit-types: Add / update / remove an entry in DayZ types.xml.
 
 Upserts a <type name="..."> block. Backs up to <file>.bak before writing.
 

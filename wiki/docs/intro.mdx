@@ -116,15 +116,15 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | Command | Purpose |
 |---|---|
 | [`/dayz-preflight`](./skills/dayz-preflight) | Verify environment (P:\ mounted, Tools installed, vanilla data extracted) |
-| [`/dayz-mount-p`](./skills/dayz-mount-p) | Mount `P:\` without opening DayZ Tools (auto-resolves work drive from `settings.ini`) |
+| [`/dayz-workdrive`](./skills/dayz-workdrive) | Mount `P:\` without opening DayZ Tools (auto-resolves work drive from `settings.ini`) |
 | [`/dayz-new-mod`](./skills/dayz-new-mod) | Scaffold `workspace/&lt;ModName&gt;/` + create `P:\&lt;ModName&gt;\` junction |
 | [`/dayz-build-pbo`](./skills/dayz-build-pbo) | Pack and deploy to `P:\Mods\@&lt;ModName&gt;\Addons\&lt;ModName&gt;.pbo` |
 | [`/dayz-add-map`](./skills/dayz-add-map) | Set up a test map under `workspace/_server/` |
 | [`/dayz-launch-test`](./skills/dayz-launch-test) | Start local Diag server + client with the mod loaded |
 | [`/dayz-stop-test`](./skills/dayz-stop-test) | Kill running DayZDiag_x64.exe processes |
 | [`/dayz-pack-texture`](./skills/dayz-pack-texture) | PNG/TGA → `.paa` via ImageToPAA |
-| [`/dayz-types-edit`](./skills/dayz-types-edit) | Programmatically edit a single `&lt;type&gt;` in `types.xml` |
-| [`/dayz-types-split`](./skills/dayz-types-split) | Split monolithic `types.xml` into 18 categorized files |
+| [`/dayz-edit-types`](./skills/dayz-edit-types) | Programmatically edit a single `&lt;type&gt;` in `types.xml` |
+| [`/dayz-split-types`](./skills/dayz-split-types) | Split monolithic `types.xml` into 18 categorized files |
 | [`/dayz-rag-index`](./skills/dayz-rag-index) | Build the semantic-search index over vanilla DayZ source (powers the `dayz-rag` MCP server) |
 | [`/dayz-rag-wiki-index`](./skills/dayz-rag-wiki-index) | Index the Bohemia community wiki into the same DB |
 | [`/dayz-rag-download`](./skills/dayz-rag-download) | Pull prebuilt vector index from GitHub releases instead of building locally |

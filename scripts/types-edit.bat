@@ -1,4 +1,4 @@
 @echo off
-REM Thin wrapper around the /dayz-types-edit skill. Forwards all arguments.
-REM See .claude\skills\dayz-types-edit\SKILL.md for full usage.
-python "%~dp0..\.claude\skills\dayz-types-edit\types_edit.py" %*
+REM Thin wrapper around the /dayz-edit-types skill. Forwards all arguments.
+REM See .claude\skills\dayz-edit-types\SKILL.md for full usage.
+python "%~dp0..\.claude\skills\dayz-edit-types\types_edit.py" %*

@@ -1,4 +1,4 @@
-"""dayz-types-split: Split a monolithic types.xml into 18 categorized files.
+"""dayz-split-types: Split a monolithic types.xml into 18 categorized files.
 
 Wraps DayZ-n-Chill/DayZ-TypeSplitterPro (vendored under vendor/typeSplitter.py).
 Original tool: https://github.com/DayZ-n-Chill/DayZ-TypeSplitterPro

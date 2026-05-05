@@ -60,7 +60,7 @@ Full prerequisites, env-var overrides, and troubleshooting: **[`docs/dayz-moddin
 | **DayZ** (Steam) | The diag client (`DayZDiag_x64.exe`) ships next to retail and is what `/dayz-launch-test` runs. |
 | **DayZ Tools** (Steam, free) | AddonBuilder, P-drive mounting, ImageToPAA. |
 | **DayZ Server** (Steam, appid 223350) | Only for the initial mission template bootstrap; can be uninstalled afterward. |
-| **`P:\` mounted** | Engine and Tools both read from `P:\`. Mount via DayZ Tools or `/dayz-mount-p`. Doesn't auto-mount across reboots. |
+| **`P:\` mounted** | Engine and Tools both read from `P:\`. Mount via DayZ Tools or `/dayz-workdrive`. Doesn't auto-mount across reboots. |
 | **`P:\Mods\` junction → `<DayZ install>\!Workshop\`** | One-time `mklink /J` so built PBOs land where the engine actually loads mods. |
 | **Vanilla data on `P:\`** | DayZ Tools → "Extract Game Data". Your configs inherit from `ItemBase`, `Inventory_Base`, etc. |
 | **Python 3.8+** on `PATH` | The skills are Python scripts. |
@@ -111,7 +111,7 @@ All gate on `/dayz-preflight` first per L2.
 | Command | Purpose |
 |---|---|
 | [`/dayz-preflight`](.claude/skills/dayz-preflight/SKILL.md) | Verify env (P:\ mounted, Tools installed, vanilla data extracted). |
-| [`/dayz-mount-p`](.claude/skills/dayz-mount-p/SKILL.md) | Mount `P:\` without opening DayZ Tools. |
+| [`/dayz-workdrive`](.claude/skills/dayz-workdrive/SKILL.md) | Mount `P:\` without opening DayZ Tools. |
 | [`/dayz-new-mod`](.claude/skills/dayz-new-mod/SKILL.md) | Scaffold `workspace/<ModName>/` + `P:\<ModName>\` junction. |
 | [`/dayz-build-pbo`](.claude/skills/dayz-build-pbo/SKILL.md) | Pack and deploy to `P:\Mods\@<ModName>\Addons\<ModName>.pbo`. |
 | [`/dayz-add-map`](.claude/skills/dayz-add-map/SKILL.md) | Set up a test map under `workspace/_server/`. |
@@ -121,8 +121,8 @@ All gate on `/dayz-preflight` first per L2.
 | [`/dayz-launch-objectbuilder`](.claude/skills/dayz-launch-objectbuilder/SKILL.md) | Open Object Builder (`.p3d` editor) detached. |
 | [`/dayz-setup-objectbuilder`](.claude/skills/dayz-setup-objectbuilder/SKILL.md) | One-time machine setup for Object Builder. |
 | [`/dayz-pack-texture`](.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates `_co` / `_nohq` / `_smdi` suffix. |
-| [`/dayz-types-edit`](.claude/skills/dayz-types-edit/SKILL.md) | Programmatically upsert a single `<type>` in `types.xml`. |
-| [`/dayz-types-split`](.claude/skills/dayz-types-split/SKILL.md) | Split monolithic `types.xml` into 18 categorized files. |
+| [`/dayz-edit-types`](.claude/skills/dayz-edit-types/SKILL.md) | Programmatically upsert a single `<type>` in `types.xml`. |
+| [`/dayz-split-types`](.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into 18 categorized files. |
 | [`/dayz-rag-index`](.claude/skills/dayz-rag-index/SKILL.md) | Build the vanilla-source semantic-search index. |
 | [`/dayz-rag-wiki-index`](.claude/skills/dayz-rag-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB. |
 | [`/dayz-rag-download`](.claude/skills/dayz-rag-download/SKILL.md) | Pull prebuilt vector index from GitHub releases instead of building locally. |

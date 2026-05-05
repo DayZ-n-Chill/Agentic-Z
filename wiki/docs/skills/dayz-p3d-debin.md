@@ -1,5 +1,5 @@
 ---
-name: dayz-p3d-debinarizer
+name: dayz-p3d-debin
 ---
 
 # DayZ P3D Debinarizer

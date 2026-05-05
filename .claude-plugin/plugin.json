@@ -26,7 +26,7 @@
     "./.claude/skills/dayz-launch-objectbuilder",
     "./.claude/skills/dayz-launch-test",
     "./.claude/skills/dayz-launch-workbench",
-    "./.claude/skills/dayz-mount-p",
+    "./.claude/skills/dayz-workdrive",
     "./.claude/skills/dayz-new-mod",
     "./.claude/skills/dayz-pack-texture",
     "./.claude/skills/dayz-preflight",
@@ -37,8 +37,8 @@
     "./.claude/skills/dayz-scope-mod",
     "./.claude/skills/dayz-setup-objectbuilder",
     "./.claude/skills/dayz-stop-test",
-    "./.claude/skills/dayz-types-edit",
-    "./.claude/skills/dayz-types-split"
+    "./.claude/skills/dayz-edit-types",
+    "./.claude/skills/dayz-split-types"
   ],
   "agents": [
     "./.claude/agents/agent-creator.md",

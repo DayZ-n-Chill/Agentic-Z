@@ -1,8 +1,9 @@
 ---
-name: dayz-mount-p
+name: dayz-workdrive
+description: Mount P:\ as the DayZ work drive after a Windows boot, without opening DayZ Tools' GUI. Resolves the work drive path via env var, cache, settings.ini, registry, or DayZ Tools install. Idempotent. Windows-only (uses subst).
 ---
 
-# /dayz-mount-p
+# /dayz-workdrive
 
 Mount `P:\` for DayZ modding without DayZ Tools' GUI.
 
@@ -10,14 +11,14 @@ Mount `P:\` for DayZ modding without DayZ Tools' GUI.
 
 Direct (preferred, no agent):
 ```
-scripts\mount-p.bat
-scripts\mount-p.bat -Path "C:\Path\To\WorkDrive"
-scripts\mount-p.bat -Unmount
+scripts\workdrive.bat
+scripts\workdrive.bat -Path "C:\Path\To\WorkDrive"
+scripts\workdrive.bat -Unmount
 ```
 
 Or call PowerShell directly:
 ```
-powershell -NoProfile -File .claude\skills\dayz-mount-p\mount.ps1
+powershell -NoProfile -File .claude\skills\dayz-workdrive\mount.ps1
 ```
 
 ## When

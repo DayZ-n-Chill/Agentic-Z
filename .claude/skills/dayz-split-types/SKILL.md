@@ -1,9 +1,9 @@
 ---
-name: dayz-types-split
+name: dayz-split-types
 description: Split a monolithic DayZ types.xml into 18 categorized files (ammo, weapons, vehicles, food, clothes, etc.) and auto-update cfgeconomycore.xml with the new file references. Wraps DayZ-n-Chill/DayZ-TypeSplitterPro (vendored). Backs up types.xml first.
 ---
 
-# /dayz-types-split
+# /dayz-split-types
 
 Take a monolithic `types.xml` and split it into 18 categorized XML files (`ammo.xml`, `weapons.xml`, `vehicles.xml`, `food.xml`, `clothes.xml`, etc.) under a `types/` subdirectory next to it. Auto-updates `cfgeconomycore.xml` (in the parent directory) with the new file references. Backs up the original first.
 
@@ -14,13 +14,13 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-types-split\split.py <path-to-types.xml>
+python .claude\skills\dayz-split-types\split.py <path-to-types.xml>
 ```
 
 Typical:
 
 ```cmd
-python .claude\skills\dayz-types-split\split.py workspace\_server\missions\dayzOffline.chernarusplus\db\types.xml
+python .claude\skills\dayz-split-types\split.py workspace\_server\missions\dayzOffline.chernarusplus\db\types.xml
 ```
 
 ## What it does

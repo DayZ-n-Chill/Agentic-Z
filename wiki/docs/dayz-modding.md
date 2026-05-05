@@ -28,7 +28,7 @@ You need a Windows machine with:
 | **DayZ** (the game) | Steam — buy it | The client (`DayZ_x64.exe`) you'll use to test mods. |
 | **DayZ Tools** | Steam → Library → Tools (free) | AddonBuilder, Binarize, P-drive mounting. |
 | **DayZ Diag** | Comes with DayZ — `DayZDiag_x64.exe` lives next to `DayZ_x64.exe` in your DayZ install dir | The diagnostic build that allows `-filePatching` to function. Used for **both** client and server in `/dayz-launch-test`. Retail binaries block past the loading screen with filePatching on. |
-| **`P:\` drive mounted** | Open DayZ Tools → mount the P drive, **OR** run `python .claude\skills\dayz-mount-p\mount.py` (auto-resolves the work drive from DayZ Tools' `settings.ini`) | DayZ Tools and the engine both read from `P:\`. Preflight hard-fails without it. P:\ does not auto-mount; mount it at the start of each session. |
+| **`P:\` drive mounted** | Open DayZ Tools → mount the P drive, **OR** run `python .claude\skills\dayz-workdrive\mount.py` (auto-resolves the work drive from DayZ Tools' `settings.ini`) | DayZ Tools and the engine both read from `P:\`. Preflight hard-fails without it. P:\ does not auto-mount; mount it at the start of each session. |
 | **`P:\Mods\` junction** | One-time: `cmd /c mklink /J P:\Mods "<DayZ install>\!Workshop"` | The DayZ engine and Launcher load mods from `<DayZ install>\!Workshop\`. The `P:\Mods\` junction lets builds deploy via `P:\Mods\@<ModName>\Addons\<ModName>.pbo` and actually land where the engine reads. Build-pbo hard-fails if this junction is missing or points at a regular folder. |
 | **Vanilla DayZ data on `P:\`** | DayZ Tools → "Extract Game Data" | Configs in your mod inherit from base classes (`ItemBase`, `Inventory_Base`, etc.) which only exist if vanilla PBOs are unpacked. |
 | **Python 3.8+** on `PATH` | python.org | The skills are Python scripts. |
@@ -82,7 +82,7 @@ Bat naming drops the `dayz-` prefix where present. Examples:
 
 ```text
 scripts\preflight.bat               -> /dayz-preflight
-scripts\mount-p.bat                 -> /dayz-mount-p
+scripts\workdrive.bat                 -> /dayz-workdrive
 scripts\new-mod.bat MyMod           -> /dayz-new-mod MyMod
 scripts\build-pbo.bat MyMod         -> /dayz-build-pbo MyMod
 scripts\launch-test.bat MyMod       -> /dayz-launch-test MyMod

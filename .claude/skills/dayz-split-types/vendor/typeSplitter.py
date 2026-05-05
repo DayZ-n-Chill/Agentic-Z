@@ -1,5 +1,5 @@
 """
-DayZ Type Splitter Pro — vendored under /dayz-types-split
+DayZ Type Splitter Pro — vendored under /dayz-split-types
 
 Original tool by DayZ-n-Chill:
   https://github.com/DayZ-n-Chill/DayZ-TypeSplitterPro

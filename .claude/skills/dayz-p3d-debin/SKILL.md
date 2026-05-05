@@ -1,5 +1,5 @@
 ---
-name: dayz-p3d-debinarizer
+name: dayz-p3d-debin
 description: >
   DayZ ODOL P3D debinarizer — converts binarized .p3d models (ODOL format) to editable MLOD format
   for Object Builder. Handles DayZ-specific ODOL v54 differences vs Arma 3, including Material v20

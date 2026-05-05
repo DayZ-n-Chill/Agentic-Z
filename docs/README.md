@@ -114,15 +114,15 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | Command | Purpose |
 |---|---|
 | [`/dayz-preflight`](../.claude/skills/dayz-preflight/SKILL.md) | Verify environment (P:\ mounted, Tools installed, vanilla data extracted) |
-| [`/dayz-mount-p`](../.claude/skills/dayz-mount-p/SKILL.md) | Mount `P:\` without opening DayZ Tools (auto-resolves work drive from `settings.ini`) |
+| [`/dayz-workdrive`](../.claude/skills/dayz-workdrive/SKILL.md) | Mount `P:\` without opening DayZ Tools (auto-resolves work drive from `settings.ini`) |
 | [`/dayz-new-mod`](../.claude/skills/dayz-new-mod/SKILL.md) | Scaffold `workspace/<ModName>/` + create `P:\<ModName>\` junction |
 | [`/dayz-build-pbo`](../.claude/skills/dayz-build-pbo/SKILL.md) | Pack and deploy to `P:\Mods\@<ModName>\Addons\<ModName>.pbo` |
 | [`/dayz-add-map`](../.claude/skills/dayz-add-map/SKILL.md) | Set up a test map under `workspace/_server/` |
 | [`/dayz-launch-test`](../.claude/skills/dayz-launch-test/SKILL.md) | Start local Diag server + client with the mod loaded |
 | [`/dayz-stop-test`](../.claude/skills/dayz-stop-test/SKILL.md) | Kill running DayZDiag_x64.exe processes |
 | [`/dayz-pack-texture`](../.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA |
-| [`/dayz-types-edit`](../.claude/skills/dayz-types-edit/SKILL.md) | Programmatically edit a single `<type>` in `types.xml` |
-| [`/dayz-types-split`](../.claude/skills/dayz-types-split/SKILL.md) | Split monolithic `types.xml` into 18 categorized files |
+| [`/dayz-edit-types`](../.claude/skills/dayz-edit-types/SKILL.md) | Programmatically edit a single `<type>` in `types.xml` |
+| [`/dayz-split-types`](../.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into 18 categorized files |
 | [`/dayz-rag-index`](../.claude/skills/dayz-rag-index/SKILL.md) | Build the semantic-search index over vanilla DayZ source (powers the `dayz-rag` MCP server) |
 | [`/dayz-rag-wiki-index`](../.claude/skills/dayz-rag-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB |
 | [`/dayz-rag-download`](../.claude/skills/dayz-rag-download/SKILL.md) | Pull prebuilt vector index from GitHub releases instead of building locally |

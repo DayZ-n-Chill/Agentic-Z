@@ -1,6 +1,6 @@
 ---
 name: dayz-scope-mod
-description: Scope the agent to a single mod under workspace/<ModName>/. Adds deny rules to .claude/settings.local.json that block Edit/Write to OTHER mods' workspace folders, P:\<other>\ junctions, and P:\Mods\@<other>\ deploy dirs, so an agent working on Mod A can't accidentally clobber Mod B. Reads stay broad. Companion --clear flag removes the rules. Also exposes /dayz-scope-clear.
+description: Scope the agent to a single mod under workspace/<ModName>/. Adds deny rules to .claude/settings.local.json that block Edit/Write to OTHER mods' workspace folders, P:\<other>\ junctions, and P:\Mods\@<other>\ deploy dirs, so an agent working on Mod A can't accidentally clobber Mod B. Reads stay broad. Use --clear to lift the scope.
 ---
 
 # /dayz-scope-mod
@@ -18,7 +18,7 @@ python .claude\skills\dayz-scope-mod\scope.py <ModName>
 :: Show current scope (or "no active scope")
 python .claude\skills\dayz-scope-mod\scope.py --status
 
-:: Lift the scope (also available as /dayz-scope-clear)
+:: Lift the scope
 python .claude\skills\dayz-scope-mod\scope.py --clear
 ```
 
@@ -63,7 +63,7 @@ DayZ scope: SuperMedKit
 [OK]    Active scope recorded at .claude\local-memory\dayz-active-scope.json
 
 Reads remain broad. Edit/Write to other mods is blocked.
-Run /dayz-scope-clear (or scope.py --clear) to lift.
+Run /dayz-scope-mod --clear (or scope.py --clear) to lift.
 ```
 
 If only one mod exists:
