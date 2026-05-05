@@ -34,7 +34,11 @@
       "mcp__dayz-rag__search_dayz_source",
       "mcp__dayz-rag__search_dayz_wiki",
       "mcp__dayz-rag__get_dayz_file",
-      "mcp__dayz-rag__list_indexed_sources"
+      "mcp__dayz-rag__list_indexed_sources",
+      "mcp__plugin_agentic-z_dayz-rag__search_dayz_source",
+      "mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki",
+      "mcp__plugin_agentic-z_dayz-rag__get_dayz_file",
+      "mcp__plugin_agentic-z_dayz-rag__list_indexed_sources"
     ],
     "deny": [
       "Bash(python -c *)",
