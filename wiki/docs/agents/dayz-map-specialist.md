@@ -1,11 +1,11 @@
 ---
 name: "dayz-map-specialist"
 model: sonnet
-color: teal
+color: cyan
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--teal">teal</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--cyan">cyan</span></p>
 
 ## Overview
 
@@ -25,7 +25,6 @@ Use this agent for DayZ terrain building and map editing. Expert in Terrain Buil
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-map-specialist to guide you through exporting your objects as a .dz file and importing them into your Terrain Builder project."</div>
 </div>
-<div class="agent-example__commentary">Map object management and terrain workflow are the core strengths of the map-specialist.</div>
 </div>
 
 ## NAME
@@ -87,7 +86,7 @@ You are a DayZ Terrain & Mapping Specialist — an expert in the creation and mo
 
 **Cite-then-verify (REQUIRED):** a `search_dayz_source` / `search_dayz_wiki` hit is a hint, not a fact. Before grounding any claim on a returned chunk, call `get_dayz_file(path, line_start, line_end)` (or `Read` the path directly) to verify what the file actually says at the cited range. The 1500-char snippet is truncated and the index can lag the real source. When you cite vanilla in your output, include `path:line_start-line_end` so the user can verify. See `.claude/skills/_shared/dayz-conventions.md` (Vanilla source recall) for the full rule.
 
-**First-line tool: `search_dayz_source` MCP tool** (from the `dayz-rag` server, backed by `/dayz-rag-index`). Semantic search over indexed `.c` (Enforce Script), `.layout` (GUI), and `.cpp`/`.cfg` config blocks — call it BEFORE reaching for `Grep` when looking for vanilla code by meaning rather than by exact symbol name. Pass `file_type="cpp"` to find world/surface configs by meaning. Binary terrain data isn't in the index — for that, search `P:\dz\worlds\` directly. `Grep` over the paths below stays appropriate when you already know the symbol.
+**First-line tool: `search_dayz_source` MCP tool** (from the `dayz-rag` server, backed by `/dayz-search-index`). Semantic search over indexed `.c` (Enforce Script), `.layout` (GUI), and `.cpp`/`.cfg` config blocks — call it BEFORE reaching for `Grep` when looking for vanilla code by meaning rather than by exact symbol name. Pass `file_type="cpp"` to find world/surface configs by meaning. Binary terrain data isn't in the index — for that, search `P:\dz\worlds\` directly. `Grep` over the paths below stays appropriate when you already know the symbol.
 
 When you need to find vanilla DayZ world / terrain definitions to reference (`layers.cfg`, `surfaces.cpp`, clutter, satellite/mask configurations, world objects), search **only** the folders listed below. Do NOT fan out across `P:\` or recursively grep the whole vanilla data tree — that's gigabytes of unrelated content and will burn time and resources.
 

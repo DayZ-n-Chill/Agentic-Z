@@ -116,30 +116,30 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | Command | Purpose |
 |---|---|
 | [`/dayz-preflight`](./skills/dayz-preflight) | Verify environment (P:\ mounted, Tools installed, vanilla data extracted) |
-| [`/dayz-mount-p`](./skills/dayz-mount-p) | Mount `P:\` without opening DayZ Tools (auto-resolves work drive from `settings.ini`) |
+| [`/dayz-workdrive`](./skills/dayz-workdrive) | Mount `P:\` without opening DayZ Tools (auto-resolves work drive from `settings.ini`) |
 | [`/dayz-new-mod`](./skills/dayz-new-mod) | Scaffold `workspace/&lt;ModName&gt;/` + create `P:\&lt;ModName&gt;\` junction |
 | [`/dayz-build-pbo`](./skills/dayz-build-pbo) | Pack and deploy to `P:\Mods\@&lt;ModName&gt;\Addons\&lt;ModName&gt;.pbo` |
 | [`/dayz-add-map`](./skills/dayz-add-map) | Set up a test map under `workspace/_server/` |
 | [`/dayz-launch-test`](./skills/dayz-launch-test) | Start local Diag server + client with the mod loaded |
 | [`/dayz-stop-test`](./skills/dayz-stop-test) | Kill running DayZDiag_x64.exe processes |
 | [`/dayz-pack-texture`](./skills/dayz-pack-texture) | PNG/TGA → `.paa` via ImageToPAA |
-| [`/dayz-types-edit`](./skills/dayz-types-edit) | Programmatically edit a single `&lt;type&gt;` in `types.xml` |
-| [`/dayz-types-split`](./skills/dayz-types-split) | Split monolithic `types.xml` into 18 categorized files |
-| [`/dayz-rag-index`](./skills/dayz-rag-index) | Build the semantic-search index over vanilla DayZ source (powers the `dayz-rag` MCP server) |
-| [`/dayz-rag-wiki-index`](./skills/dayz-rag-wiki-index) | Index the Bohemia community wiki into the same DB |
-| [`/dayz-rag-download`](./skills/dayz-rag-download) | Pull prebuilt vector index from GitHub releases instead of building locally |
+| [`/dayz-edit-types`](./skills/dayz-edit-types) | Programmatically edit a single `&lt;type&gt;` in `types.xml` |
+| [`/dayz-split-types`](./skills/dayz-split-types) | Split monolithic `types.xml` into 18 categorized files |
+| [`/dayz-search-index`](./skills/dayz-search-index) | Build the semantic-search index over vanilla DayZ source (powers the `dayz-rag` MCP server) |
+| [`/dayz-search-wiki-index`](./skills/dayz-search-wiki-index) | Index the Bohemia community wiki into the same DB |
+| [`/dayz-search-download`](./skills/dayz-search-download) | Pull prebuilt vector index from GitHub releases instead of building locally |
 | [`/dayz-clean-workspace`](./skills/dayz-clean-workspace) | Remove DayZ scaffolds and their deployed artifacts |
 | [`/clean-repo`](./skills/clean-repo) | Orchestrator — run every domain's cleanup skill |
 | [`/docs-sync`](./skills/docs-sync) | Detect drift between canonical sources and the Docusaurus wiki; invoke `docs-wiki-sync` agent to apply updates |
 
-**MCP server:** `dayz-rag` — exposes `search_dayz_source`, `search_dayz_wiki`, `get_dayz_file`, `list_indexed_sources` to every DayZ specialist agent. Backed by the index built via `/dayz-rag-index` + `/dayz-rag-wiki-index`.
+**MCP server:** `dayz-rag` — exposes `search_dayz_source`, `search_dayz_wiki`, `get_dayz_file`, `list_indexed_sources` to every DayZ specialist agent. Backed by the index built via `/dayz-search-index` + `/dayz-search-wiki-index`.
 
 **Native prereqs** (per-clone, one-time install):
 
 - **DayZ Tools** (Steam) — for AddonBuilder, WorkDrive, ImageToPAA
 - **DayZ game** (Steam) — for the diag client used in `/dayz-launch-test`
 - **DayZ Server** (Steam appid 223350) — only for the initial mission bootstrap; can be uninstalled after
-- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-rag-index` and query-time embedding via `voyage-code-3` (200M-token free tier covers ~3 full rebuilds). Or run `/dayz-rag-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
+- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3` (200M-token free tier covers ~3 full rebuilds). Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
 
 L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](./dayz-conventions).
 

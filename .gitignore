@@ -13,6 +13,10 @@ __pycache__/
 # Per-clone local memory (user/machine-specific notes; never rules or conventions)
 .claude/local-memory/
 
+# Per-clone agentic-z-update state (last-pulled upstream SHA + concurrency lock)
+.claude/.upstream-baseline
+.claude/.upstream-update.lock
+
 # Per-agent memory (auto-created by agents at runtime; per-user, never committed)
 .claude/agent-memory/
 

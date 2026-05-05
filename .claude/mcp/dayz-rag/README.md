@@ -4,14 +4,14 @@ Semantic search over vanilla DayZ source. Backs three tools that any DayZ
 specialist agent can call:
 
 - `search_dayz_source(query, top_k=5, file_type=None)` — vector search over
-  the index built by `/dayz-rag-index`
+  the index built by `/dayz-search-index`
 - `get_dayz_file(path, line_start=None, line_end=None)` — fetch full content
   for follow-up (paths must live under `P:\`)
 - `list_indexed_sources()` — manifest summary
 
 ## How it works
 
-1. **Indexer** (`/dayz-rag-index`) walks vanilla DayZ source on `P:\`, chunks per file type, embeds via Voyage AI, stores in LanceDB at `~/.claude/dayz-rag-index/`.
+1. **Indexer** (`/dayz-search-index`) walks vanilla DayZ source on `P:\`, chunks per file type, embeds via Voyage AI, stores in LanceDB at `~/.claude/dayz-search-index/`.
 2. **MCP server** (this) loads the LanceDB index lazily, embeds incoming search queries via Voyage, returns top-K matches.
 
 Both halves use **Voyage AI** (`voyage-code-3` by default — code-tuned, 1024D). Asymmetric encoding: documents at index time use `input_type="document"`; queries at search time use `input_type="query"`. Voyage docs say this materially improves retrieval quality.
@@ -38,7 +38,7 @@ pip install -r .claude\mcp\dayz-rag\requirements.txt
 ### 3. Build the index
 
 ```cmd
-python .claude\skills\dayz-rag-index\index.py --full
+python .claude\skills\dayz-search-index\index.py --full
 ```
 
 Walks `P:\`, chunks ~30k entries, embeds via Voyage (network-bound), writes to LanceDB. ~3-10 min total. Live token + $ counter prints during the embed loop.
@@ -77,14 +77,14 @@ python .claude\mcp\dayz-rag\server.py
 After a DayZ update, vanilla source on `P:\` may have changed. Rebuild:
 
 ```cmd
-python .claude\skills\dayz-rag-index\index.py --full
+python .claude\skills\dayz-search-index\index.py --full
 ```
 
 The MCP server picks up the new LanceDB on the next process start (restart Claude Code).
 
 ## Index location
 
-`~/.claude/dayz-rag-index/` (= `C:\Users\<you>\.claude\dayz-rag-index\`).
+`~/.claude/dayz-search-index/` (= `C:\Users\<you>\.claude\dayz-search-index\`).
 Per-user, gitignored, survives across clones.
 
 ## Environment variables
@@ -111,9 +111,9 @@ Full DayZ rebuild ≈ **65M tokens** (measured — dominated by ~34k unique rvma
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `No index at ~/.claude/dayz-rag-index` | Index not built | Run `python .claude\skills\dayz-rag-index\index.py --full` |
+| `No index at ~/.claude/dayz-search-index` | Index not built | Run `python .claude\skills\dayz-search-index\index.py --full` |
 | `VOYAGE_API_KEY not set` | Key missing from `.env` | Add `VOYAGE_API_KEY=pa-...` to `.env` at repo root |
 | `mcp SDK not installed` | Missing pip deps | `pip install -r .claude\mcp\dayz-rag\requirements.txt` |
-| Server starts but search returns nothing | Wrong embed model loaded | Check `~/.claude/dayz-rag-index/config.json` matches the model used at index time |
+| Server starts but search returns nothing | Wrong embed model loaded | Check `~/.claude/dayz-search-index/config.json` matches the model used at index time |
 | Path outside `P:\` refused | `get_dayz_file` is sandboxed | Only paths returned by `search_dayz_source` are valid |
 | 429 rate-limit errors | Burst beyond Voyage tier | Indexer auto-retries with backoff; query-side does too. If persistent, raise your Voyage tier or switch to `voyage-4-lite` (16M TPM). |
