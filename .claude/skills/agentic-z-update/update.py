@@ -64,9 +64,6 @@ def classify_per_file(
 
     None for any blob means "file does not exist at that revision".
     Returns a FileStatus enum value indicating what action (if any) to take.
-
-    See the spec at docs/superpowers/specs/2026-05-05-agentic-z-update-design.md
-    for the full classification table.
     """
     # Defensive: nothing exists anywhere.
     if local is None and upstream is None and baseline is None:
