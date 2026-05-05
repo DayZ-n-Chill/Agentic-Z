@@ -1,11 +1,11 @@
 ---
 name: "dayz-map-specialist"
 model: sonnet
-color: teal
+color: cyan
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--teal">teal</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--cyan">cyan</span></p>
 
 ## Overview
 

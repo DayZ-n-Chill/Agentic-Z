@@ -1,11 +1,11 @@
 ---
 name: "dayz-workbench-specialist"
 model: sonnet
-color: indigo
+color: blue
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--indigo">indigo</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--blue">blue</span></p>
 
 ## Overview
 

@@ -1,11 +1,11 @@
 ---
 name: "docs-wiki-sync"
 model: sonnet
-color: brown
+color: orange
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--brown">brown</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--orange">orange</span></p>
 
 ## Overview
 

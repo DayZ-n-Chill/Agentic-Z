@@ -1,11 +1,11 @@
 ---
 name: "agent-creator"
 model: opus
-color: lime
+color: green
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--lime">lime</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--green">green</span></p>
 
 ## Overview
 
