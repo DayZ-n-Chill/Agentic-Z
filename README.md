@@ -31,7 +31,7 @@ That symlinks the repo's `.claude/skills/` into each agent CLI's home directory 
 
 ```text
 /plugin marketplace add DayZ-n-Chill/Agentic-Z
-/plugin install agentic-z@agentic-z
+/plugin install agentic-z@dayz-n-chill
 ```
 
 Skills appear with the `agentic-z:` prefix (`/agentic-z:dayz-build-pbo`). The `dayz-rag` MCP server registers automatically.
