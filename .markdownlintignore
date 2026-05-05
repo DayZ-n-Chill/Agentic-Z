@@ -1,0 +1,21 @@
+# Mirrors the ignores in .markdownlint-cli2.jsonc so the VS Code
+# markdownlint extension (which reads this file, not the cli2 config)
+# applies the same scope.
+
+# Build artifacts
+wiki/build/
+wiki/.docusaurus/
+wiki/node_modules/
+node_modules/
+
+# Per-clone state (gitignored — IDE may still scan)
+.claude/local-memory/
+.claude/plugins/
+.claude/agent-memory/
+
+# Vendored skill assets shipped from upstream tools as-is
+.claude/skills/dayz-split-types/vendor/
+.claude/skills/dayz-p3d-debin/references/
+
+# Auto-generated content
+**/CHANGELOG.md
