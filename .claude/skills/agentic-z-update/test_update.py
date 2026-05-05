@@ -2,6 +2,7 @@
 
 Run: python .claude/skills/agentic-z-update/test_update.py
 """
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -140,6 +141,24 @@ class TestLockFile(unittest.TestCase):
     def test_pid_alive_for_clearly_dead_pid(self):
         # PID 999999 is virtually never a real process.
         self.assertFalse(_pid_alive(999999))
+
+
+class TestComputeDriftSmoke(unittest.TestCase):
+    """Single smoke test for compute_drift — full integration is covered by manual smoke later."""
+
+    def test_compute_drift_returns_dict(self):
+        # Without a real baseline, this calls list_template_files_at_ref which
+        # needs to be inside a git repo. Skip if we're in a temp dir.
+        if not Path(".git").exists():
+            self.skipTest("not a git repo; skipping compute_drift smoke")
+        from update import compute_drift
+        # Pass current HEAD as both baseline and upstream — drift should be empty.
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        drift = compute_drift(baseline_sha=head, upstream_ref=head)
+        self.assertEqual(drift, {})
 
 
 if __name__ == "__main__":
