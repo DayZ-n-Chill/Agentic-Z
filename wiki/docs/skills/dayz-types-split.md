@@ -1,6 +1,5 @@
 ---
 name: dayz-types-split
-description: Split a monolithic DayZ types.xml into 18 categorized files (ammo, weapons, vehicles, food, clothes, etc.) and auto-update cfgeconomycore.xml with the new file references. Wraps DayZ-n-Chill/DayZ-TypeSplitterPro (vendored). Backs up types.xml first.
 ---
 
 # /dayz-types-split

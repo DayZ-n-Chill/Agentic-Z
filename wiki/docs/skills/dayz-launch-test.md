@@ -1,6 +1,5 @@
 ---
 name: dayz-launch-test
-description: Launch a local DayZ Diag server plus the diag client connecting to it (run-only — does no setup). Verifies the map has been added via /dayz-add-map; refuses with a clear hint otherwise. --map selects the map (chernarus default). Always loads server alongside client per L2 conventions.
 ---
 
 # /dayz-launch-test

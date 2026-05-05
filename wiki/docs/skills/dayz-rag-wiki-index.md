@@ -1,6 +1,5 @@
 ---
 name: dayz-rag-wiki-index
-description: Index the Bohemia community wiki (community.bistudio.com Category:DayZ + sub-categories) into the same vector DB as /dayz-rag-index, so DayZ agents can semantic-search official docs alongside vanilla source. One-time setup per cookie cycle; rerun with --full when content drifts.
 ---
 
 # /dayz-rag-wiki-index

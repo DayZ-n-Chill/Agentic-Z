@@ -1,6 +1,5 @@
 ---
 name: docs-sync
-description: Sync the Docusaurus wiki at `wiki/docs/` with the canonical sources (`.claude/agents/`, `.claude/skills/`, `docs/`, L1 files). Detects drift, applies the Docusaurus transform, and writes updated mirrors. Default scope is "changed in this branch"; pass --all to re-validate everything. Default model for the sync agent is sonnet — pass --model opus for deeper reasoning on large changes, or --model haiku for trivial 1:1 mirroring.
 ---
 
 # /docs-sync

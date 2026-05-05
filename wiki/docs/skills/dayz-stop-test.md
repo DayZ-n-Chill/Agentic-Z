@@ -1,6 +1,5 @@
 ---
 name: dayz-stop-test
-description: Kill any running DayZDiag_x64.exe processes (server and/or client). Use after /dayz-launch-test when you want to stop a session without manually finding the windows. Does NOT gate on /dayz-preflight — this is an emergency-stop skill that should work even if the environment is half-broken.
 ---
 
 # /dayz-stop-test
