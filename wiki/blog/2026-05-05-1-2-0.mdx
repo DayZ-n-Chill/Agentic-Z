@@ -1,0 +1,80 @@
+---
+slug: 1-2-0
+title: "1.2.0 — Smart auto-update, hook nudge, security baseline"
+authors: [brian]
+tags: [release, changelog]
+---
+
+The headline change is the smart `/agentic-z-update`. Pulls from upstream now respect your customizations instead of clobbering them.
+
+{/* truncate */}
+
+## What's new
+
+### Smart `/agentic-z-update` (three-way merge)
+
+The legacy auto-update did `git checkout upstream/main -- <path>` which silently overwrote anything you had edited locally. 1.2.0 replaces it with a per-file three-way merge (baseline, local, upstream) that classifies every change and only applies the safe ones automatically. Conflicts default to leave-alone with `--per-file` for an interactive picker.
+
+New flags: `--check`, `--quiet`, `--yes`, `--per-file`. Persistent baseline at `.claude/.upstream-baseline`. PID-based concurrency lock at `.claude/.upstream-update.lock`.
+
+### SessionStart hook for upstream-ahead nudges
+
+A new `SessionStart` hook in `.claude/settings.json` runs `update.py --check --quiet` every time you open Claude Code. Silent on no-change, single-line nudge on drift, fail-open on network errors. Completes in under five seconds even on large repos.
+
+The same hook also surfaces newer prebuilt search-index releases on GitHub. Read-only, never auto-downloads (the index tarball is ~200MB).
+
+### Voyage AI free-tier projection check
+
+`/dayz-search-index` and `/dayz-search-wiki-index` estimate the build's tokens before the embed phase and warn if cumulative monthly usage would exceed 80% of the 200M-token Voyage free tier. Tracks usage in `~/.claude/dayz-search-index/usage.log`. New `--ignore-tier-warning` flag for CI.
+
+### Security baseline for shipped agents
+
+All twelve agent definitions tightened: explicit `tools:` allowlists, `maxTurns` caps, valid colors, stripped commentary blocks. Reviewer and debugger agents now run with `permissionMode: acceptEdits`. The shipped `.claude/settings.json` keeps a narrow Bash allowlist plus an explicit deny list (`python -c`, `python -m`, `node -e`, `npm install`, `npx`).
+
+### Skill renames for clarity
+
+| Old | New |
+|---|---|
+| `dayz-mount-p` | `dayz-workdrive` |
+| `dayz-rag-index` | `dayz-search-index` |
+| `dayz-rag-wiki-index` | `dayz-search-wiki-index` |
+| `dayz-rag-download` | `dayz-search-download` |
+| `dayz-types-edit` | `dayz-edit-types` |
+| `dayz-types-split` | `dayz-split-types` |
+| `dayz-p3d-debinarizer` | `dayz-p3d-debin` |
+| `dayz-scope-clear` (skill) | `/dayz-scope-mod --clear` (flag) |
+
+The on-disk index path also moved from `~/.claude/dayz-rag-index/` to `~/.claude/dayz-search-index/`. First-time users are unaffected. See "Upgrading from a pre-1.2.0 clone" below.
+
+### Plugin marketplace
+
+`.claude-plugin/marketplace.json` makes the repo installable via `/plugin install agentic-z@dayz-n-chill`.
+
+### Markdown lint hygiene
+
+Repo-wide markdown lint dropped from 40,349 errors to 0. `.markdownlint.json` was loosened for conversational prose; `.markdownlint-cli2.jsonc` and `.markdownlintignore` scope linting to canonical sources only (115 files, not 2,074).
+
+## Upgrading from a pre-1.2.0 clone
+
+If you're on a clone older than this release, your local `update.py` has a Unicode bug that crashes Windows cp1252 consoles when it tries to print the changelog box characters. To get past it once, run the upgrade with `PYTHONIOENCODING=utf-8`:
+
+```cmd
+set PYTHONIOENCODING=utf-8 && python .claude\skills\agentic-z-update\update.py
+```
+
+Once the upgrade completes, the new `update.py` no longer prints those characters and future runs are clean. The shipped `scripts/agentic-z-update.bat` wrapper sets the env var automatically.
+
+After the upgrade, you may see leftover folders from renamed skills in your working tree (the old `git checkout`-based merge didn't delete files removed upstream). Run `python .claude\skills\agentic-z-update\update.py --check --per-file` to walk through them and pick "take" to clean each one up.
+
+## Breaking changes
+
+- Skill names listed in the rename table above. References to old names (in your own scripts, hooks, agent prompts) need updating.
+- On-disk RAG index path moved. If you migrated manually, no action. If you didn't, run `/dayz-search-download` to re-fetch or `/dayz-search-index` to rebuild.
+
+## What's next
+
+- Real-world feedback from people running 1.2.0 in anger.
+- Revisit the deleted-locally-files-reappear-on-update behavior (currently a deliberate spec choice, also a UX wart).
+- Wider wiki crawl scope so the wiki index covers gameplay-mechanic pages, not just CE/admin docs.
+
+If you customize an agent or build a new skill, **send it back upstream** — every contribution sharpens the toolkit for the next person who clones.
