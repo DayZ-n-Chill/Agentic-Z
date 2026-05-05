@@ -1,0 +1,26 @@
+// markdownlint-cli2 configuration.
+// Rules live in .markdownlint.json (read by both cli2 and the VS Code extension).
+// This file scopes the linter to canonical sources only — generated artifacts,
+// vendored builds, and gitignored per-clone state are excluded.
+{
+  "globs": [
+    "**/*.md",
+    "**/*.mdx"
+  ],
+  "ignores": [
+    // Build artifacts
+    "wiki/build/**",
+    "wiki/.docusaurus/**",
+    "wiki/node_modules/**",
+    "node_modules/**",
+    // Per-clone state (gitignored — IDE may show them anyway)
+    ".claude/local-memory/**",
+    ".claude/plugins/**",
+    ".claude/agent-memory/**",
+    // Vendored skill assets that ship from upstream tools as-is
+    ".claude/skills/dayz-split-types/vendor/**",
+    ".claude/skills/dayz-p3d-debin/references/**",
+    // CHANGELOG-style or auto-generated content
+    "**/CHANGELOG.md"
+  ]
+}
