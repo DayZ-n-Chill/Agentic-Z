@@ -178,7 +178,7 @@ def cmd_scope(mod_name: str) -> int:
     print(f"{OK} Active scope recorded at .claude\\local-memory\\dayz-active-scope.json")
     print()
     print("Reads remain broad. Edit/Write to other mods is blocked.")
-    print("Run /dayz-scope-clear (or scope.py --clear) to lift.")
+    print("Run /dayz-scope-mod --clear (or scope.py --clear) to lift.")
     return 0
 
 
