@@ -281,7 +281,7 @@ proto native void ThrowPhysically(DayZPlayer player, vector force, bool collideW
 Internally calls `CreateDynamicPhysics(ITEM_LARGE)`,
 `SetDynamicPhysicsLifeTime(...)`, and applies `force` as an impulse. This is
 the pattern vanilla itself uses — see
-`P:\scripts\4_world\classes\miscgameplayfunctions.c` lines 1188 / 1204 / 1212
+`P:\scripts\4_world\static\miscgameplayfunctions.c` lines 1188 / 1204 / 1212
 for examples.
 
 ```c
@@ -357,38 +357,50 @@ entirely.
 
 Without an armor declaration the engine may not register impacts of
 projectiles, causing "bullets pass through" even when FireGeometry is
-present:
+present. Damage classes inside `GlobalArmor` are keyed by `cfgAmmo` class
+names (e.g. `Bullet_762x39`, `FragGrenade`, `MeleeFist`), and each entry
+uses `damage = N;` not `hit = N;`:
 
 ```cpp
 class GlobalArmor
 {
     class FragGrenade
     {
-        class Health { hit = 0; };
-        class Blood  { hit = 0; };
-        class Shock  { hit = 0; };
+        class Health { damage = 0; };
+        class Blood  { damage = 0; };
+        class Shock  { damage = 0; };
     };
-    class Projectile
+    class Bullet_762x39
     {
-        class Health { hit = 5; };
+        class Health { damage = 5; };
     };
 };
 ```
 
 ### 3. `healthLevels[]` (modern format, not `healthLevelValues[]`)
 
-Modern DayZ damage system uses `healthLevels[]`. The legacy
-`healthLevelValues[]` parses but silently breaks DamageSystem on the entity:
+Modern DayZ damage system uses `healthLevels[]`. It must be nested inside
+`class DamageSystem > class GlobalHealth > class Health` on the entity;
+declared at root level it parses but does nothing:
 
 ```cpp
-// CORRECT (modern)
-healthLevels[] =
+// CORRECT (modern, properly nested)
+class DamageSystem
 {
-    {1.0, {"\MyMod\data\fancy.rvmat"}},
-    {0.7, {"\MyMod\data\fancy_dam.rvmat"}},
-    {0.5, {"\MyMod\data\fancy_dest.rvmat"}},
-    {0.3, {""}},
-    {0.0, {""}}
+    class GlobalHealth
+    {
+        class Health
+        {
+            healthLevels[] =
+            {
+                {1.0, {"\MyMod\data\fancy.rvmat"}},
+                {0.7, {"\MyMod\data\fancy_dam.rvmat"}},
+                {0.5, {"\MyMod\data\fancy_dest.rvmat"}},
+                {0.3, {""}},
+                {0.0, {""}}
+            };
+        };
+    };
 };
 
 // AVOID (legacy, silently breaks)
