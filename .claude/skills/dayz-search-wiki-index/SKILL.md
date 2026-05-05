@@ -37,6 +37,8 @@ Same `.env` at the repo root as `/dayz-search-index`:
 VOYAGE_API_KEY=pa-xxxxxxxx
 ```
 
+This skill shares the local Voyage usage tracker with `/dayz-search-index` (same `~/.claude/dayz-search-index/usage.log` file), so the tier-warning prompt fires here too when projected monthly usage hits 80% of the 200M free tier. Wiki rebuilds are tiny (~130k tokens) so the warning will basically never fire from wiki runs alone, but the cumulative count includes them. Pass `--ignore-tier-warning` to skip the prompt. See `/dayz-search-index` SKILL.md for the full caveats list.
+
 ### 2. Cloudflare cookie
 
 Run:

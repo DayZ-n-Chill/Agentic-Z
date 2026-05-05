@@ -420,6 +420,7 @@ def main() -> int:
     parser.add_argument("--probe", action="store_true", help="Hit the API once with the cached cookie to verify it's still good")
     parser.add_argument("--max-depth", type=int, default=6, help="Max category recursion depth (default 6)")
     parser.add_argument("--limit", type=int, default=0, help="Limit pages crawled (0 = no limit, for testing)")
+    parser.add_argument("--ignore-tier-warning", action="store_true", help="Skip the Voyage free-tier prompt (CI / scripted use)")
     args = parser.parse_args()
 
     if args.status:
@@ -505,6 +506,13 @@ def main() -> int:
     chunks = nonempty
     texts = [(c["content"] or " ")[:EMBED_MAX_CHARS] for c in chunks]
 
+    # Voyage free-tier projection check (shared helper from source indexer).
+    chars_per_token = getattr(src_indexer, "CHARS_PER_TOKEN_EST", 1.8)
+    estimated_tokens = int(sum(max(1, len(t) // chars_per_token) for t in texts))
+    if not src_indexer._check_voyage_tier(estimated_tokens, args.ignore_tier_warning):
+        print(f"{FAIL} Cancelled by user. No tokens consumed.", file=sys.stderr)
+        return 1
+
     print(f"{INFO} embedding {len(chunks)} chunks via Voyage ({embed_model})...")
     t0 = time.time()
     embeddings, total_tokens = src_indexer._embed_all(texts, embed_model, api_key)
@@ -547,6 +555,9 @@ def main() -> int:
         "total_seconds": round(time.time() - started, 1),
     }
     WIKI_MANIFEST.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    # Track this run in the local Voyage usage log (shared with source indexer).
+    src_indexer._append_usage_entry(total_tokens, cost_estimate_usd, "dayz-search-wiki-index")
 
     print(f"\n{OK} wiki index built: {len(chunks)} chunks at {INDEX_ROOT}/lancedb/{WIKI_TABLE}")
     print(f"{INFO} tokens: {total_tokens:,}  |  cost: ${cost_estimate_usd:.4f}")
