@@ -380,11 +380,13 @@ def _pid_alive(pid: int) -> bool:
         return False
     if os.name == "nt":
         # Windows: use tasklist as a portable check.
+        # CSV output quotes the PID column ("1234") so we match the quoted form
+        # to avoid substring collisions (e.g. PID 123 matching inside "1234").
         r = subprocess.run(
             ["tasklist", "/FI", f"PID eq {pid}", "/NH", "/FO", "CSV"],
             capture_output=True, text=True,
         )
-        return str(pid) in (r.stdout or "")
+        return f'"{pid}"' in (r.stdout or "")
     # POSIX: signal 0 = liveness probe.
     try:
         os.kill(pid, 0)
@@ -734,6 +736,20 @@ def main() -> int:
 
     upstream_sha = upstream_head_sha()
     baseline_sha = read_baseline()
+
+    # First-run bootstrap: if no baseline file exists, persist one immediately
+    # at the current upstream HEAD. Without this, every subsequent run would
+    # also see baseline=None, re-bootstrap to upstream, and silently report
+    # "Up to date" forever — masking real drift. Safe to do even from --check
+    # because it's idempotent and a one-time initialization.
+    if baseline_sha is None:
+        try:
+            write_baseline(upstream_sha)
+            baseline_sha = upstream_sha
+        except OSError:
+            # Read-only FS or permission issue — fall through; compute_drift's
+            # in-memory bootstrap still produces correct first-run output.
+            pass
 
     if args.check:
         drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")

@@ -142,6 +142,56 @@ class TestLockFile(unittest.TestCase):
         # PID 999999 is virtually never a real process.
         self.assertFalse(_pid_alive(999999))
 
+    def test_pid_alive_no_substring_false_positive(self):
+        # On Windows tasklist's CSV quotes each field. Searching for a short PID
+        # like "1" must NOT match inside a longer quoted PID like "1234".
+        # Self PID is alive; PID composed by stripping a digit must still be
+        # judged on its own merits, not via substring of self.
+        my_pid = os.getpid()
+        # Pick a PID that's a substring of my_pid but unlikely to be live.
+        # Use my_pid + 1000000 so it shares no digit prefix yet is clearly fake.
+        fake_pid = my_pid + 1_000_000
+        self.assertFalse(_pid_alive(fake_pid))
+
+
+from update import acquire_lock
+
+
+class TestAcquireLock(unittest.TestCase):
+    def setUp(self):
+        self._orig_cwd = os.getcwd()
+        self._tmp = tempfile.mkdtemp(prefix="agentic-z-update-test-")
+        os.chdir(self._tmp)
+
+    def tearDown(self):
+        os.chdir(self._orig_cwd)
+        import shutil
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def test_acquire_when_no_lock(self):
+        self.assertTrue(acquire_lock())
+        self.assertTrue(LOCK_FILE.exists())
+        release_lock()
+
+    def test_acquire_refused_when_live_pid_holds_lock(self):
+        # Use our own PID to simulate a live holder.
+        LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+        import json as _json
+        LOCK_FILE.write_text(_json.dumps({"pid": os.getpid(), "started_at": "2026-05-05T00:00:00Z"}))
+        self.assertFalse(acquire_lock())
+        # Lock file untouched.
+        self.assertTrue(LOCK_FILE.exists())
+        release_lock()
+
+    def test_acquire_takes_over_stale_lock_with_dead_pid(self):
+        LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+        import json as _json
+        LOCK_FILE.write_text(_json.dumps({"pid": 999999, "started_at": "2020-01-01T00:00:00Z"}))
+        self.assertTrue(acquire_lock())
+        # Lock now belongs to us.
+        self.assertEqual(read_lock()["pid"], os.getpid())
+        release_lock()
+
 
 class TestComputeDriftSmoke(unittest.TestCase):
     """Single smoke test for compute_drift — full integration is covered by manual smoke later."""
