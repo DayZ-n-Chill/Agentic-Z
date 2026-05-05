@@ -110,7 +110,12 @@ def classify_per_file(
     return FileStatus.CONFLICT
 
 
+_QUIET = False
+
+
 def log(level: str, msg: str) -> None:
+    if _QUIET:
+        return
     print(f"[{level}]\t{msg}", flush=True)
 
 
@@ -164,7 +169,15 @@ def ensure_upstream() -> bool:
 
 def fetch_upstream() -> bool:
     log("INFO", f"Fetching {UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}...")
-    r = run(["git", "fetch", UPSTREAM_REMOTE, UPSTREAM_BRANCH], check=False)
+    # In quiet mode (SessionStart hook), suppress git's "From <url> ... -> FETCH_HEAD"
+    # progress line that goes to stderr. Capture both streams; surface only on failure.
+    if _QUIET:
+        r = subprocess.run(
+            ["git", "fetch", UPSTREAM_REMOTE, UPSTREAM_BRANCH],
+            check=False, capture_output=True, text=True,
+        )
+    else:
+        r = run(["git", "fetch", UPSTREAM_REMOTE, UPSTREAM_BRANCH], check=False)
     return r.returncode == 0
 
 
@@ -192,58 +205,68 @@ def git_show_blob(ref: str, path: str) -> Optional[bytes]:
     return r.stdout
 
 
-def list_template_files_at_ref(ref: str) -> set[str]:
-    """List every file under TEMPLATE_PATHS at the given ref. Returns relative paths."""
-    files: set[str] = set()
-    for tp in TEMPLATE_PATHS:
-        # `git ls-tree -r --name-only` for directories; for single files, just check existence.
+def _candidate_paths(baseline_sha: str, upstream_ref: str) -> set[str]:
+    """Files that COULD have a non-UNCHANGED status. Everything else is guaranteed
+    identical across baseline / local / upstream and can be skipped without classifying.
+
+    Three sources combined:
+      1. git diff baseline..upstream  (template files changed between baseline and upstream)
+      2. git diff baseline..HEAD       (template files changed locally since baseline, committed)
+      3. git status --porcelain        (uncommitted local edits + untracked files)
+    """
+    candidates: set[str] = set()
+
+    def diff_pair(left: str, right: str) -> None:
         r = subprocess.run(
-            ["git", "ls-tree", "-r", "--name-only", ref, "--", tp],
-            check=False,
-            capture_output=True,
-            text=True,
+            ["git", "diff", "--name-only", left, right, "--", *TEMPLATE_PATHS],
+            check=False, capture_output=True, text=True,
         )
         if r.returncode == 0:
             for line in r.stdout.splitlines():
-                line = line.strip()
-                if line:
-                    files.add(line)
-    return files
+                if line.strip():
+                    candidates.add(line.strip())
 
+    if baseline_sha != upstream_ref:
+        diff_pair(baseline_sha, upstream_ref)
+    diff_pair(baseline_sha, "HEAD")
 
-def list_template_files_in_working_tree() -> set[str]:
-    """List every file under TEMPLATE_PATHS in the current working tree. Returns relative paths."""
-    files: set[str] = set()
-    for tp in TEMPLATE_PATHS:
-        p = Path(tp)
-        if p.is_file():
-            files.add(tp)
-        elif p.is_dir():
-            for f in p.rglob("*"):
-                if f.is_file():
-                    files.add(f.as_posix())
-    return files
+    # Uncommitted + untracked. --porcelain output is `XY path` (2-char status + space).
+    r = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all", "--", *TEMPLATE_PATHS],
+        check=False, capture_output=True, text=True,
+    )
+    if r.returncode == 0:
+        for line in r.stdout.splitlines():
+            if len(line) > 3:
+                # Strip rename arrows: "R  oldpath -> newpath" → take both halves.
+                tail = line[3:].strip()
+                if " -> " in tail:
+                    old, new = tail.split(" -> ", 1)
+                    candidates.add(old.strip().strip('"'))
+                    candidates.add(new.strip().strip('"'))
+                else:
+                    candidates.add(tail.strip('"'))
+
+    return candidates
 
 
 def compute_drift(baseline_sha: Optional[str], upstream_ref: str) -> dict[str, FileStatus]:
-    """Return a {path: FileStatus} dict for every file that exists in any of the
-    three trees (baseline, working tree, upstream).
+    """Return a {path: FileStatus} dict for every template file with non-UNCHANGED status.
 
-    If baseline_sha is None (first run), every file is treated as already-up-to-date
-    relative to upstream (no warnings shown). Concretely we set baseline = upstream
-    so SAFE_OVERWRITE never fires until the user has a real baseline recorded.
+    Optimized to only classify files that COULD have changed between any of the three
+    revisions (baseline, working tree, upstream). Common case after a fresh pull is
+    "no candidates" → returns empty dict in well under a second.
+
+    If baseline_sha is None (first run), bootstrap with baseline = upstream so
+    SAFE_OVERWRITE never fires until the user has a real baseline recorded.
     """
     if baseline_sha is None:
         # Bootstrap: pretend baseline IS upstream. No drift surfaces this run.
         baseline_sha = upstream_ref
 
-    upstream_files = list_template_files_at_ref(upstream_ref)
-    baseline_files = list_template_files_at_ref(baseline_sha)
-    local_files = list_template_files_in_working_tree()
-
-    all_paths = upstream_files | baseline_files | local_files
+    candidates = _candidate_paths(baseline_sha, upstream_ref)
     result: dict[str, FileStatus] = {}
-    for path in sorted(all_paths):
+    for path in sorted(candidates):
         baseline_blob = git_show_blob(baseline_sha, path)
         upstream_blob = git_show_blob(upstream_ref, path)
         local_blob = git_show_blob("WORKING_TREE", path)
@@ -647,6 +670,12 @@ def main() -> int:
         help="Walk each conflict interactively: keep / take / diff / skip.",
     )
     args = parser.parse_args()
+
+    # Quiet mode (used by SessionStart hook): suppress all log() output and
+    # capture git fetch's stderr. Only the final preview line (or nothing) prints.
+    global _QUIET
+    if args.quiet:
+        _QUIET = True
 
     if not args.check and not args.quiet:
         print("Agentic-Z update")
