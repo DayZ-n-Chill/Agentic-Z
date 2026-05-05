@@ -37,7 +37,7 @@ Skills MUST use the shared resolver helpers (`find_dayz_tools`, `find_vanilla_da
 
 ## RAG embedding (local)
 
-The RAG layer (`/dayz-rag-index` + the `dayz-rag` MCP server) runs **fully locally** with `nomic-ai/CodeRankEmbed` (137M-param code-specialised model, 768-dim, top of CoIR). No API keys, no network calls, no per-query cost.
+The RAG layer (`/dayz-search-index` + the `dayz-rag` MCP server) runs **fully locally** with `nomic-ai/CodeRankEmbed` (137M-param code-specialised model, 768-dim, top of CoIR). No API keys, no network calls, no per-query cost.
 
 - First indexer run downloads ~280MB of model weights to the HuggingFace cache (`~/.cache/huggingface/`). After that, indexing and queries are entirely offline.
 - Full index: ~7,000 chunks, builds in ~90s on a typical CPU.
@@ -124,7 +124,7 @@ When the user requests a color/theme change: ask for scope FIRST (single element
 
 ## Vanilla source recall — `search_dayz_source` MCP tool
 
-The `dayz-rag` MCP server exposes semantic search over indexed vanilla DayZ source: `.c` (Enforce Script under `P:\scripts\`), `.layout` (GUI under `P:\gui\`), and `.cpp`/`.cfg`/`.hpp`/`.h` config blocks (under `P:\dz\` and friends). Backed by a per-user numpy + sqlite index at `~/.claude/dayz-rag-index/`, built and rebuilt by `/dayz-rag-index --full`. Embedding runs locally via `nomic-ai/CodeRankEmbed` — no API keys, no network calls.
+The `dayz-rag` MCP server exposes semantic search over indexed vanilla DayZ source: `.c` (Enforce Script under `P:\scripts\`), `.layout` (GUI under `P:\gui\`), and `.cpp`/`.cfg`/`.hpp`/`.h` config blocks (under `P:\dz\` and friends). Backed by a per-user numpy + sqlite index at `~/.claude/dayz-search-index/`, built and rebuilt by `/dayz-search-index --full`. Embedding runs locally via `nomic-ai/CodeRankEmbed` — no API keys, no network calls.
 
 **Default to Grep for code-shaped questions** (class names, symbol lookups, exact strings, inheritance trees via `class X extends Y` patterns). `Grep` over `P:\scripts\` is sub-second and exhaustive.
 
@@ -150,12 +150,12 @@ The `dayz-rag` MCP server exposes semantic search over indexed vanilla DayZ sour
 
 1. Call `get_dayz_file(path, line_start, line_end)` (or use the `Read` tool directly for paths under `P:\`) to fetch the cited file at the cited range. The 1500-char snippet returned by search is truncated and the index can lag the current state on disk.
 2. Verify the chunk says what you think it says, in the form you think it does. Retrieval can return results that are semantically near but functionally wrong (e.g. a similar-looking class from a different inheritance branch, or a constant that's never actually referenced anywhere).
-3. If verification disagrees with the snippet, trust the file on disk. Flag the index as possibly stale and suggest the user re-run `/dayz-rag-index --full` (or `/dayz-rag-wiki-index --full` for wiki drift).
+3. If verification disagrees with the snippet, trust the file on disk. Flag the index as possibly stale and suggest the user re-run `/dayz-search-index --full` (or `/dayz-search-wiki-index --full` for wiki drift).
 4. When you cite vanilla in your output, include `path:line_start-line_end` so the user can independently verify.
 
 Skip this only when a single search call is being used for navigation/exploration, not for an authoritative answer. A single chunk treated as ground truth without follow-up is the most common RAG failure mode; two cheap calls (search + verify) prevent it.
 
-**Setup gate:** Each DayZ specialist agent assumes the index has been built. If `search_dayz_source` returns `"no index"`, instruct the user to run `/dayz-rag-index --full` first. After a DayZ update, the index goes stale — rerun with `--full` to refresh.
+**Setup gate:** Each DayZ specialist agent assumes the index has been built. If `search_dayz_source` returns `"no index"`, instruct the user to run `/dayz-search-index --full` first. After a DayZ update, the index goes stale — rerun with `--full` to refresh.
 
 ## Formatting answers grounded in vanilla source
 

@@ -2,15 +2,15 @@
 
 Walk vanilla DayZ source on P:\\, chunk per file type, embed via Voyage AI
 (`voyage-code-3` by default — code-tuned, 1024-dim), store in LanceDB at
-~/.claude/dayz-rag-index/.
+~/.claude/dayz-search-index/.
 
 Cost reality: a full vanilla rebuild is ~5-20M tokens. Voyage gives 200M tokens
 free per Series-4 model. You'd have to rebuild ~10x before paying anything.
 Live token + $ telemetry prints during the embed loop so there are no surprises.
 
 Run:
-    python .claude/skills/dayz-rag-index/index.py --full   # first time / rebuild
-    python .claude/skills/dayz-rag-index/index.py --status # show manifest
+    python .claude/skills/dayz-search-index/index.py --full   # first time / rebuild
+    python .claude/skills/dayz-search-index/index.py --status # show manifest
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE.parent / "dayz-preflight"))
 from preflight import find_vanilla_data  # noqa: E402
 
-INDEX_ROOT = Path.home() / ".claude" / "dayz-rag-index"
+INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
 TABLE_NAME = "chunks"
 
 # Voyage model. Override via VOYAGE_MODEL env var (e.g. "voyage-4-lite" for

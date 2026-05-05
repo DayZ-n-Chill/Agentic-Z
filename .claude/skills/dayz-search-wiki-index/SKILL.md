@@ -1,12 +1,13 @@
 ---
-name: dayz-rag-wiki-index
+name: dayz-search-wiki-index
+description: Index the Bohemia community wiki (community.bistudio.com Category:DayZ + sub-categories) into the same vector DB as /dayz-search-index, so DayZ agents can semantic-search official docs alongside vanilla source. One-time setup per cookie cycle; rerun with --full when content drifts.
 ---
 
-# /dayz-rag-wiki-index
+# /dayz-search-wiki-index
 
 Build a semantic-search index over the **Bohemia DayZ wiki** so agents have access to the official docs/tutorials/class references that aren't present in vanilla source. Stored in the same LanceDB as the source index, queried via a sibling MCP tool.
 
-Companion to `/dayz-rag-index` (which indexes vanilla source on `P:\`). Two indexes, one DB, one MCP server, two search tools.
+Companion to `/dayz-search-index` (which indexes vanilla source on `P:\`). Two indexes, one DB, one MCP server, two search tools.
 
 ## Why a separate skill
 
@@ -15,23 +16,23 @@ The Bohemia wiki sits behind Cloudflare's bot challenge. The crawl path needs:
 - MediaWiki API calls (not HTML scraping) for clean content extraction
 - Politeness rate-limiting (1 req/sec)
 
-These don't share much with the source-file walker, so it's a separate skill. Embedding/storage *do* share — this skill imports `_embed_all` and the cost table from `/dayz-rag-index/index.py`.
+These don't share much with the source-file walker, so it's a separate skill. Embedding/storage *do* share — this skill imports `_embed_all` and the cost table from `/dayz-search-index/index.py`.
 
 ## Where the index lives
 
-Same root as the source index: `~/.claude/dayz-rag-index/`
+Same root as the source index: `~/.claude/dayz-search-index/`
 
 - `lancedb/wiki_chunks` — wiki vector table (sibling to `lancedb/chunks`)
 - `wiki-manifest.json` — pages crawled, sections chunked, tokens, cost
 - Reuses `config.json` from the source index (same embed model)
 
-The source rebuild (`/dayz-rag-index --full`) drops the `chunks` table only, leaving `wiki_chunks` intact. The wiki rebuild (this skill, `--full`) drops `wiki_chunks` only.
+The source rebuild (`/dayz-search-index --full`) drops the `chunks` table only, leaving `wiki_chunks` intact. The wiki rebuild (this skill, `--full`) drops `wiki_chunks` only.
 
 ## One-time setup
 
 ### 1. Voyage API key
 
-Same `.env` at the repo root as `/dayz-rag-index`:
+Same `.env` at the repo root as `/dayz-search-index`:
 ```
 VOYAGE_API_KEY=pa-xxxxxxxx
 ```
@@ -40,7 +41,7 @@ VOYAGE_API_KEY=pa-xxxxxxxx
 
 Run:
 ```cmd
-python .claude\skills\dayz-rag-wiki-index\index.py --setup-cookie
+python .claude\skills\dayz-search-wiki-index\index.py --setup-cookie
 ```
 
 This walks you through:
@@ -55,7 +56,7 @@ The cookie + UA are saved to `.claude/local-memory/dayz-wiki-cookie.json` (gitig
 ### 3. Verify cookie works
 
 ```cmd
-python .claude\skills\dayz-rag-wiki-index\index.py --probe
+python .claude\skills\dayz-search-wiki-index\index.py --probe
 ```
 
 Hits the API once with the cached cookie and prints the wiki sitename. If you get a Cloudflare challenge instead, the cookie/UA pair didn't match — re-run setup.
@@ -64,17 +65,17 @@ Hits the API once with the cached cookie and prints the wiki sitename. If you ge
 
 **Build / rebuild the wiki index:**
 ```cmd
-python .claude\skills\dayz-rag-wiki-index\index.py --full
+python .claude\skills\dayz-search-wiki-index\index.py --full
 ```
 
 **Test crawl (limit pages):**
 ```cmd
-python .claude\skills\dayz-rag-wiki-index\index.py --full --limit 25
+python .claude\skills\dayz-search-wiki-index\index.py --full --limit 25
 ```
 
 **Status:**
 ```cmd
-python .claude\skills\dayz-rag-wiki-index\index.py --status
+python .claude\skills\dayz-search-wiki-index\index.py --status
 ```
 
 | Argument | Notes |
@@ -120,4 +121,4 @@ Restart Claude Code so the dayz-rag MCP server picks up the new `wiki_chunks` ta
 - Don't crank `--max-depth` past ~8. Wiki categories form cycles in places; the BFS dedupe handles cycles, but very deep walks pull in tangentially-related content.
 - Don't commit `.claude/local-memory/dayz-wiki-cookie.json` — it's in `.gitignore` for a reason. Cookies are user-specific and short-lived.
 - Don't share your `cf_clearance` cookie. It's bound to your IP + UA; rotating it through someone else's session can invalidate it for everyone.
-- Don't run this concurrently with `/dayz-rag-index --full` — both write to the same LanceDB. Sequence them.
+- Don't run this concurrently with `/dayz-search-index --full` — both write to the same LanceDB. Sequence them.

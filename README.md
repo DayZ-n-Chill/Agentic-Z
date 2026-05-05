@@ -8,7 +8,7 @@
 
 - **11 DayZ specialist agents** covering scripts, configs, assets, maps, UI, server admin, debugging, and Workbench plugins.
 - **25 slash-command skills** that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
-- **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials) plus the Bohemia community wiki, exposed to every agent through the `dayz-rag` MCP server. Embeddings via Voyage AI (`voyage-code-3`, 200M-token free tier covers ~3 full rebuilds). Or skip the build entirely with `/dayz-rag-download` and pull the prebuilt index from GitHub releases.
+- **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials) plus the Bohemia community wiki, exposed to every agent through the `dayz-rag` MCP server. Embeddings via Voyage AI (`voyage-code-3`, 200M-token free tier covers ~3 full rebuilds). Or skip the build entirely with `/dayz-search-download` and pull the prebuilt index from GitHub releases.
 - **Three-CLI support out of the box.** The same agents and skills work in Claude Code, Codex CLI, and Gemini CLI. One `sync-skills` run wires them all up.
 
 ---
@@ -40,14 +40,14 @@ Then, from any of the agent CLIs:
 
 ```text
 /dayz-preflight                       # verify env (P:\ mounted, Tools installed, vanilla data extracted)
-/dayz-rag-download                    # pull prebuilt vanilla+wiki vector index from GitHub releases (~1 min)
+/dayz-search-download                    # pull prebuilt vanilla+wiki vector index from GitHub releases (~1 min)
 /dayz-new-mod MyMod                   # scaffold workspace/MyMod/ + create P:\MyMod\ junction
 /dayz-add-map chernarus               # set up a test map under workspace/_server/
 /dayz-build-pbo MyMod                 # pack and deploy to P:\Mods\@MyMod\Addons\
 /dayz-launch-test MyMod               # local diag server + client, mod loaded
 ```
 
-`/dayz-rag-download` is optional but recommended for fresh clones — it avoids the ~25-30 min `/dayz-rag-index` build and the Voyage API token cost. Skip it if you're on a custom DayZ branch and need recall against your local source.
+`/dayz-search-download` is optional but recommended for fresh clones — it avoids the ~25-30 min `/dayz-search-index` build and the Voyage API token cost. Skip it if you're on a custom DayZ branch and need recall against your local source.
 
 Full prerequisites, env-var overrides, and troubleshooting: **[`docs/dayz-modding.md`](docs/dayz-modding.md)**.
 
@@ -65,7 +65,7 @@ Full prerequisites, env-var overrides, and troubleshooting: **[`docs/dayz-moddin
 | **Vanilla data on `P:\`** | DayZ Tools → "Extract Game Data". Your configs inherit from `ItemBase`, `Inventory_Base`, etc. |
 | **Python 3.8+** on `PATH` | The skills are Python scripts. |
 
-RAG embeddings run through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim). A free Voyage account includes 200M tokens — enough for ~3 full rebuilds of the vanilla DayZ corpus. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root before running `/dayz-rag-index`. If you'd rather skip the build entirely, `/dayz-rag-download` pulls the maintainer's prebuilt index from GitHub releases (~1 minute, no API key needed for download — but query-time embedding still needs the key).
+RAG embeddings run through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim). A free Voyage account includes 200M tokens — enough for ~3 full rebuilds of the vanilla DayZ corpus. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root before running `/dayz-search-index`. If you'd rather skip the build entirely, `/dayz-search-download` pulls the maintainer's prebuilt index from GitHub releases (~1 minute, no API key needed for download — but query-time embedding still needs the key).
 
 ---
 
@@ -123,9 +123,9 @@ All gate on `/dayz-preflight` first per L2.
 | [`/dayz-pack-texture`](.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates `_co` / `_nohq` / `_smdi` suffix. |
 | [`/dayz-edit-types`](.claude/skills/dayz-edit-types/SKILL.md) | Programmatically upsert a single `<type>` in `types.xml`. |
 | [`/dayz-split-types`](.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into 18 categorized files. |
-| [`/dayz-rag-index`](.claude/skills/dayz-rag-index/SKILL.md) | Build the vanilla-source semantic-search index. |
-| [`/dayz-rag-wiki-index`](.claude/skills/dayz-rag-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB. |
-| [`/dayz-rag-download`](.claude/skills/dayz-rag-download/SKILL.md) | Pull prebuilt vector index from GitHub releases instead of building locally. |
+| [`/dayz-search-index`](.claude/skills/dayz-search-index/SKILL.md) | Build the vanilla-source semantic-search index. |
+| [`/dayz-search-wiki-index`](.claude/skills/dayz-search-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB. |
+| [`/dayz-search-download`](.claude/skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases instead of building locally. |
 | [`/dayz-clean-workspace`](.claude/skills/dayz-clean-workspace/SKILL.md) | Remove DayZ scaffolds and their deployed artifacts. |
 | [`/clean-repo`](.claude/skills/clean-repo/SKILL.md) | Repo-wide cleanup orchestrator across every domain. |
 | [`/sync-skills`](.claude/skills/sync-skills/SKILL.md) | Link `.claude/skills/` into each agent CLI's home dir. |

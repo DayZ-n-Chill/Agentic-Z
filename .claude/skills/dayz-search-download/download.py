@@ -1,6 +1,6 @@
 """Download a prebuilt dayz-rag vector index from GitHub releases.
 
-Fetches the release asset (tarball), extracts to ~/.claude/dayz-rag-index/.
+Fetches the release asset (tarball), extracts to ~/.claude/dayz-search-index/.
 Stdlib only — urllib + tarfile + json.
 
 Usage:
@@ -21,10 +21,10 @@ import urllib.request
 from pathlib import Path
 
 REPO = "DayZ-n-Chill/Agentic-Z"
-ASSET_PREFIX = "dayz-rag-index-"
+ASSET_PREFIX = "dayz-search-index-"
 ASSET_SUFFIX = ".tar.gz"
-INDEX_ROOT = Path.home() / ".claude" / "dayz-rag-index"
-INDEX_DIR_NAME = "dayz-rag-index"
+INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
+INDEX_DIR_NAME = "dayz-search-index"
 INSTALLED_TAG_FILE = "release-tag.txt"
 
 

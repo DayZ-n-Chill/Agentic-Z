@@ -123,21 +123,21 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | [`/dayz-pack-texture`](../.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA |
 | [`/dayz-edit-types`](../.claude/skills/dayz-edit-types/SKILL.md) | Programmatically edit a single `<type>` in `types.xml` |
 | [`/dayz-split-types`](../.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into 18 categorized files |
-| [`/dayz-rag-index`](../.claude/skills/dayz-rag-index/SKILL.md) | Build the semantic-search index over vanilla DayZ source (powers the `dayz-rag` MCP server) |
-| [`/dayz-rag-wiki-index`](../.claude/skills/dayz-rag-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB |
-| [`/dayz-rag-download`](../.claude/skills/dayz-rag-download/SKILL.md) | Pull prebuilt vector index from GitHub releases instead of building locally |
+| [`/dayz-search-index`](../.claude/skills/dayz-search-index/SKILL.md) | Build the semantic-search index over vanilla DayZ source (powers the `dayz-rag` MCP server) |
+| [`/dayz-search-wiki-index`](../.claude/skills/dayz-search-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB |
+| [`/dayz-search-download`](../.claude/skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases instead of building locally |
 | [`/dayz-clean-workspace`](../.claude/skills/dayz-clean-workspace/SKILL.md) | Remove DayZ scaffolds and their deployed artifacts |
 | [`/clean-repo`](../.claude/skills/clean-repo/SKILL.md) | Orchestrator — run every domain's cleanup skill |
 | [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the Docusaurus wiki; invoke `docs-wiki-sync` agent to apply updates |
 
-**MCP server:** [`dayz-rag`](../.claude/mcp/dayz-rag/README.md) — exposes `search_dayz_source`, `get_dayz_file`, `list_indexed_sources` to every DayZ specialist agent. Backed by the index built via `/dayz-rag-index`.
+**MCP server:** [`dayz-rag`](../.claude/mcp/dayz-rag/README.md) — exposes `search_dayz_source`, `get_dayz_file`, `list_indexed_sources` to every DayZ specialist agent. Backed by the index built via `/dayz-search-index`.
 
 **Native prereqs** (per-clone, one-time install):
 
 - **DayZ Tools** (Steam) — for AddonBuilder, WorkDrive, ImageToPAA
 - **DayZ game** (Steam) — for the diag client used in `/dayz-launch-test`
 - **DayZ Server** (Steam appid 223350) — only for the initial mission bootstrap; can be uninstalled after
-- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-rag-index` and query-time embedding via `voyage-code-3` (200M-token free tier covers ~3 full rebuilds). Or run `/dayz-rag-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
+- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3` (200M-token free tier covers ~3 full rebuilds). Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
 
 L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](../.claude/skills/_shared/dayz-conventions.md).
 

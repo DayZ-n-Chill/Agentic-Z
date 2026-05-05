@@ -9,9 +9,9 @@ cookie + matching User-Agent harvested from a real browser session. These
 are cached at .claude/local-memory/dayz-wiki-cookie.json and reused.
 
 Run:
-    python .claude/skills/dayz-rag-wiki-index/index.py --setup-cookie
-    python .claude/skills/dayz-rag-wiki-index/index.py --full
-    python .claude/skills/dayz-rag-wiki-index/index.py --status
+    python .claude/skills/dayz-search-wiki-index/index.py --setup-cookie
+    python .claude/skills/dayz-search-wiki-index/index.py --full
+    python .claude/skills/dayz-search-wiki-index/index.py --status
 """
 from __future__ import annotations
 
@@ -29,10 +29,10 @@ from typing import Iterator, Optional
 # Reuse Voyage embedding logic + manifest from the source indexer
 _HERE = Path(__file__).resolve().parent
 _REPO_ROOT = _HERE.parent.parent.parent
-sys.path.insert(0, str(_HERE.parent / "dayz-rag-index"))
+sys.path.insert(0, str(_HERE.parent / "dayz-search-index"))
 # Lazy import — only needed in main flow, avoids hard dep at module load
 
-INDEX_ROOT = Path.home() / ".claude" / "dayz-rag-index"
+INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
 WIKI_TABLE = "wiki_chunks"
 WIKI_MANIFEST = INDEX_ROOT / "wiki-manifest.json"
 COOKIE_PATH = _REPO_ROOT / ".claude" / "local-memory" / "dayz-wiki-cookie.json"
@@ -395,7 +395,7 @@ def _build_chunks_for_page(title: str, wikitext: str) -> list[dict]:
 
 def _embed_module():
     """Import the source-indexer module so we reuse _embed_all + cost table."""
-    src_dir = _HERE.parent / "dayz-rag-index"
+    src_dir = _HERE.parent / "dayz-search-index"
     sys.path.insert(0, str(src_dir))
     import index as src_indexer  # type: ignore
     return src_indexer

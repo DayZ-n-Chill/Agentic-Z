@@ -1,9 +1,8 @@
 ---
-name: dayz-rag-index
-description: Index vanilla DayZ source (Enforce Script, .layout, config.cpp, .rvmat) into a per-user vector database so DayZ agents can do semantic search via the dayz-rag MCP server. One-time setup; rerun with --full after a DayZ update. Required before agents can use the search_dayz_source tool.
+name: dayz-search-index
 ---
 
-# /dayz-rag-index
+# /dayz-search-index
 
 Build a semantic-search index over vanilla DayZ source so DayZ specialist agents stop flying blind through `P:\` with `Grep`. Backs the `dayz-rag` MCP server.
 
@@ -23,7 +22,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ## Where the index lives
 
-`~/.claude/dayz-rag-index/` (= `C:\Users\<you>\.claude\dayz-rag-index\`)
+`~/.claude/dayz-search-index/` (= `C:\Users\<you>\.claude\dayz-search-index\`)
 
 - `lancedb/` — vector store
 - `manifest.json` — embed model used, per-source chunk counts, indexed-at, **token usage + $ estimate**
@@ -59,12 +58,12 @@ The indexer auto-installs `voyageai` + `python-dotenv` on first run.
 
 **First time / after DayZ update:**
 ```cmd
-python .claude\skills\dayz-rag-index\index.py --full
+python .claude\skills\dayz-search-index\index.py --full
 ```
 
 **Status only:**
 ```cmd
-python .claude\skills\dayz-rag-index\index.py --status
+python .claude\skills\dayz-search-index\index.py --status
 ```
 
 ## When to run
@@ -81,7 +80,7 @@ DayZ RAG indexer
 [OK]    P:\ mounted
 [OK]    Vanilla data: P:\dz
 [OK]    VOYAGE_API_KEY loaded (pa-GRJ...edF)
-[INFO]  Index: C:\Users\you\.claude\dayz-rag-index\
+[INFO]  Index: C:\Users\you\.claude\dayz-search-index\
 [INFO]  Embedding model: voyage-code-3 (1024D, via Voyage cloud)
 [INFO]  Pricing: $0.18 per 1M tokens (Series-4 includes 200M free)
 
@@ -125,6 +124,6 @@ Embedding 34322 chunks via Voyage (voyage-code-3, document mode)...
 ## Do not
 
 - Don't gate this skill on `/dayz-preflight`'s warnings (Tools, Workshop) — only `P:\` mounted is mandatory.
-- Don't index per clone. The index reflects the user's *machine* (their DayZ install), not the project. It lives at `~/.claude/dayz-rag-index/`.
+- Don't index per clone. The index reflects the user's *machine* (their DayZ install), not the project. It lives at `~/.claude/dayz-search-index/`.
 - Don't commit `.env`. It's in `.gitignore`; keep it there.
 - Don't switch models without re-running `--full` — the LanceDB table is fixed-dim and switching providers/models will mismatch query and document vectors.
