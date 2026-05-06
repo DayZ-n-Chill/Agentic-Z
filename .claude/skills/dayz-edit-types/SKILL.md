@@ -18,7 +18,7 @@ python .claude\skills\dayz-edit-types\types_edit.py <types.xml> <ClassName> --re
 
 | Argument | Notes |
 |---|---|
-| `<types.xml>` | Path to the types.xml file. Typically `workspace/_server/missions/<template>/db/types.xml`. |
+| `<types.xml>` | Path to the types.xml file. Typically `.server/<instance>/mission/db/types.xml`. |
 | `<ClassName>` | The `name` attribute of the `<type>` block to upsert / remove. |
 | `--remove` | Remove the entry instead of upserting. Other field flags ignored. |
 | `--nominal N` | Target spawn count. Default for new entries: 1. |
