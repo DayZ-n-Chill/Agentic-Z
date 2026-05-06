@@ -1,11 +1,12 @@
 """dayz-launch-test: Launch a local DayZ Diag server + diag client for a built mod.
 
-Verifies state and launches. Setup (mission copy, per-map serverDZ.cfg, profiles/)
-is the responsibility of /dayz-add-map — this skill refuses to run if the map
-hasn't been set up yet.
+Verifies state and launches. Setup (mission copy, per-instance serverDZ.cfg,
+profile dirs) is the responsibility of /dayz-add-server. This skill refuses to
+run if the instance hasn't been added yet, or if the legacy workspace/_server/
+layout still exists (run /dayz-migrate-server first).
 
-Always launches the server first per L2 conventions — DayZ cannot be tested
-standalone. Both server and client run from DayZDiag_x64.exe with -filePatching.
+Always launches the server first per L2 conventions (DayZ cannot be tested
+standalone). Both server and client run from DayZDiag_x64.exe with -filePatching.
 
 See SKILL.md for full usage.
 """
@@ -23,15 +24,12 @@ from pathlib import Path
 # REPO_ROOT = where this skill ships from. PROJECT_DIR = user's project.
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
-WORKSPACE = PROJECT_DIR / "workspace"
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
-SERVER_ROOT = WORKSPACE / "_server"
-MISSIONS_DIR = SERVER_ROOT / "missions"
-MAPS_DIR = SERVER_ROOT / "maps"
-CLIENT_DIAG_LOGS = SERVER_ROOT / "!ClientDiagLogs"
+SERVER_ROOT = PROJECT_DIR / ".server"
+LEGACY_SERVER_ROOT = PROJECT_DIR / "workspace" / "_server"
 
 # Per-clone client display preferences (windowed mode, resolution). Lives under
 # .claude/local-memory/ so each clone of the template can have its own setup
@@ -45,14 +43,14 @@ DEFAULT_CLIENT_DISPLAY: dict = {
     "height": 1080,
 }
 
-# Friendly map name -> mission template folder under MISSIONS_DIR. Mirrors the
-# table in dayz-add-map; both skills must agree.
+# Friendly map name -> mission template folder. Used by verify_instance_environment
+# for display purposes; instance layout is flat so no template resolution needed.
 KNOWN_MAPS: dict[str, str] = {
     "chernarus": "dayzOffline.chernarusplus",
     "livonia": "dayzOffline.enoch",
     "sakhal": "dayzOffline.sakhal",
 }
-DEFAULT_MAP = "chernarus"
+DEFAULT_INSTANCE = "chernarus"
 
 OK = "[OK]   "
 WARN = "[WARN] "
@@ -83,6 +81,16 @@ def gate_on_preflight() -> None:
         sys.exit(result.returncode)
 
 
+def gate_on_old_layout() -> None:
+    """Refuse to run if workspace/_server/ still exists. Forces explicit migration."""
+    if LEGACY_SERVER_ROOT.exists():
+        sys.exit(
+            f"{FAIL} Old layout detected at {LEGACY_SERVER_ROOT.relative_to(PROJECT_DIR)}.\n"
+            "       The server runtime moved from workspace/_server/ to .server/.\n"
+            "       Run: python .claude/skills/dayz-migrate-server/migrate.py"
+        )
+
+
 def verify_built_mods(modnames: list[str]) -> None:
     """Confirm each mod has at least one .pbo under @<ModName>/Addons/.
 
@@ -111,7 +119,7 @@ def verify_built_mods(modnames: list[str]) -> None:
 
 
 def resolve_diag_client() -> Path:
-    """Returns the path to DayZDiag_x64.exe — required for filePatching to work.
+    """Returns the path to DayZDiag_x64.exe; required for filePatching to work.
 
     Retail DayZ_x64.exe blocks past the loading screen with -filePatching enabled,
     so mod testing always uses the diag build.
@@ -129,30 +137,19 @@ def resolve_diag_client() -> Path:
     return diag
 
 
-def resolve_mission_template(map_name: str) -> str:
-    """Map a user-friendly map name to its mission template folder name.
+def verify_instance_environment(instance: str) -> tuple[Path, Path, Path, Path]:
+    """Verify .server/<instance>/ has serverDZ.cfg + mission/ + server-profiles/ + client-profiles/.
 
-    Known names get their canonical mapping. Unknown names pass through, so
-    custom missions can be referenced by their actual folder name (e.g.
-    --map dayzOffline.namalsk).
+    Does NOT create anything (mission, cfg); that's /dayz-add-server's job.
+    Hard-fails with a hint if the instance hasn't been added yet.
+
+    Returns (cfg_path, server_profile_dir, mission_path, client_profile_dir).
     """
-    return KNOWN_MAPS.get(map_name, map_name)
-
-
-def verify_map_environment(map_name: str) -> tuple[Path, Path, Path]:
-    """Verify workspace/_server/maps/<map>/ exists with serverDZ.cfg + profiles/,
-    and that the mission template folder is present under workspace/_server/missions/.
-
-    Does NOT create anything — that's /dayz-add-map's job. Hard-fails with a hint
-    if state is missing.
-
-    Returns (cfg_path, profile_dir, mission_path).
-    """
-    template = resolve_mission_template(map_name)
-    mission_path = MISSIONS_DIR / template
-    map_dir = MAPS_DIR / map_name
-    cfg_path = map_dir / "serverDZ.cfg"
-    profile_dir = map_dir / "profiles"
+    inst_dir = SERVER_ROOT / instance
+    mission_path = inst_dir / "mission"
+    cfg_path = inst_dir / "serverDZ.cfg"
+    server_profile_dir = inst_dir / "server-profiles"
+    client_profile_dir = inst_dir / "client-profiles"
 
     missing = []
     if not mission_path.exists():
@@ -162,11 +159,11 @@ def verify_map_environment(map_name: str) -> tuple[Path, Path, Path]:
     if missing:
         details = "\n".join(f"          - {m}" for m in missing)
         sys.exit(
-            f"{FAIL} Map '{map_name}' is not set up. Missing:\n{details}\n"
-            f"       Run: python .claude/skills/dayz-add-map/add_map.py {map_name}"
+            f"{FAIL} Instance '{instance}' is not set up. Missing:\n{details}\n"
+            f"       Run: python .claude/skills/dayz-add-server/add_server.py {instance}"
         )
 
-    # Existing cfg — auto-append allowFilePatching=1 if missing (clients launch
+    # Existing cfg: auto-append allowFilePatching=1 if missing (clients launch
     # with -filePatching; without this setting the server refuses connection,
     # error 0x00020005). This is the only mutation the launch skill performs.
     cfg = cfg_path.read_text(encoding="utf-8")
@@ -175,10 +172,11 @@ def verify_map_environment(map_name: str) -> tuple[Path, Path, Path]:
         cfg_path.write_text(cfg, encoding="utf-8")
         print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(PROJECT_DIR)}")
 
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    print(f"{OK} Map: {map_name}  (mission: {template})")
-    print(f"{OK} Map dir: {map_dir.relative_to(PROJECT_DIR)}")
-    return cfg_path, profile_dir, mission_path
+    server_profile_dir.mkdir(parents=True, exist_ok=True)
+    client_profile_dir.mkdir(parents=True, exist_ok=True)
+    print(f"{OK} Instance: {instance}")
+    print(f"{OK} Instance dir: {inst_dir.relative_to(PROJECT_DIR)}")
+    return cfg_path, server_profile_dir, mission_path, client_profile_dir
 
 
 def build_server_cmd(
@@ -191,7 +189,7 @@ def build_server_cmd(
 ) -> list[str]:
     """Build the diagnostic server launch command.
 
-    Uses DayZDiag_x64.exe with `-server` — both client and server must be diag
+    Uses DayZDiag_x64.exe with `-server`; both client and server must be diag
     for `-filePatching` to work end-to-end. The retail DayZServer_x64.exe also
     blocks filePatching past the loading screen, same as retail DayZ_x64.exe.
     """
@@ -211,7 +209,7 @@ def read_client_display_prefs() -> dict:
     """Read client display preferences (windowed/resolution) from local-memory.
 
     Creates the file with DEFAULT_CLIENT_DISPLAY (1080p windowed) on first run.
-    Per-clone, gitignored — the user's monitor setup doesn't belong in the repo.
+    Per-clone, gitignored; the user's monitor setup doesn't belong in the repo.
 
     The file is JSON so the user can edit it without running any skill:
         {"windowed": true, "width": 1920, "height": 1080}
@@ -275,12 +273,11 @@ def main() -> int:
     )
     parser.add_argument("modnames", nargs="+", help="Mod names already built (PBO must exist).")
     parser.add_argument(
-        "--map",
-        default=DEFAULT_MAP,
+        "--server",
+        default=DEFAULT_INSTANCE,
         help=(
-            f"Map to test on (default: {DEFAULT_MAP}). Known aliases: "
-            f"{', '.join(KNOWN_MAPS)}. Custom missions: pass the mission folder "
-            "name (e.g. dayzOffline.namalsk)."
+            f"Server instance to launch on (default: {DEFAULT_INSTANCE}). "
+            "Must have been added via /dayz-add-server."
         ),
     )
     parser.add_argument("--port", type=int, default=2302, help="Server port (default: 2302).")
@@ -293,28 +290,20 @@ def main() -> int:
 
     gate_on_preflight()
     print()
+    gate_on_old_layout()
     verify_built_mods(args.modnames)
     diag_exe = resolve_diag_client()
-    cfg_path, profile_dir, mission_path = verify_map_environment(args.map)
-
-    # Client profile is workspace/_server/!ClientDiagLogs/ — diag artifacts
-    # (Users/, DataCache/, BattlEye/, RPT, script logs) get contained inside this
-    # one folder rather than spread across the _server root or polluting the DayZ
-    # game install dir.
-    CLIENT_DIAG_LOGS.mkdir(parents=True, exist_ok=True)
-    client_profile = CLIENT_DIAG_LOGS
+    cfg_path, server_profile_dir, mission_path, client_profile_dir = verify_instance_environment(args.server)
 
     display = read_client_display_prefs()
 
-    # Absolute mod paths — the engine resolves -mod=<arg> relative to its CWD
-    # (Bash's CWD when subprocess.Popen inherits), so a bare "@Sandbox" looks
-    # for <repo-root>/@Sandbox which doesn't exist. Always pass the full path
-    # via the P:\Mods junction so the engine actually finds the PBO.
+    # Absolute mod paths so the engine resolves -mod=<arg> correctly regardless
+    # of the working directory the subprocess inherits.
     mod_arg = ";".join(str(MODS_ROOT / f"@{name}") for name in args.modnames)
     server_cmd = build_server_cmd(
-        diag_exe, mod_arg, args.port, cfg_path, profile_dir, mission_path
+        diag_exe, mod_arg, args.port, cfg_path, server_profile_dir, mission_path
     )
-    client_cmd = build_client_cmd(diag_exe, mod_arg, args.port, client_profile, display)
+    client_cmd = build_client_cmd(diag_exe, mod_arg, args.port, client_profile_dir, display)
 
     if args.dry_run:
         print()
@@ -340,7 +329,8 @@ def main() -> int:
     print()
     print("Both running. Close the windows manually to stop.")
     print(f"  Server PID: {server_proc.pid}    Client PID: {client_proc.pid}")
-    print(f"  Logs: {profile_dir.relative_to(PROJECT_DIR)}")
+    print(f"  Server logs: {server_profile_dir.relative_to(PROJECT_DIR)}")
+    print(f"  Client logs: {client_profile_dir.relative_to(PROJECT_DIR)}")
     return 0
 
 
