@@ -23,7 +23,7 @@ from pathlib import Path
 
 # REPO_ROOT = where this skill ships from. PROJECT_DIR = user's project.
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+PROJECT_DIR = Path(os.getcwd()).resolve()
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 P_DRIVE = Path("P:\\")
@@ -290,6 +290,7 @@ def main() -> int:
 
     gate_on_preflight()
     print()
+    print(f"{OK} Project: {PROJECT_DIR}")
     gate_on_old_layout()
     verify_built_mods(args.modnames)
     diag_exe = resolve_diag_client()

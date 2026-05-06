@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+PROJECT_DIR = Path(os.getcwd()).resolve()
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 
@@ -220,6 +220,7 @@ def main() -> int:
 
     gate_on_preflight()
     print()
+    print(f"{OK} Project: {PROJECT_DIR}")
 
     if not LEGACY_SERVER_ROOT.exists():
         print(f"{OK} No legacy workspace/_server/ found. Nothing to migrate.")

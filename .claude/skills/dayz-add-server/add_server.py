@@ -26,7 +26,7 @@ from textwrap import dedent
 # REPO_ROOT = where this skill ships from (plugin or template clone).
 # PROJECT_DIR = user's project (where .server/ lives). Differ in plugin mode.
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+PROJECT_DIR = Path(os.getcwd()).resolve()
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 SERVER_ROOT = PROJECT_DIR / ".server"
@@ -226,6 +226,7 @@ def main() -> int:
 
     gate_on_preflight()
     print()
+    print(f"{OK} Project: {PROJECT_DIR}")
     gate_on_old_layout()
 
     map_name = resolve_map_name(args.instance, args.map_arg)
