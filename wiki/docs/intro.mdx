@@ -119,7 +119,8 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | [`/dayz-workdrive`](./skills/dayz-workdrive) | Mount `P:\` without opening DayZ Tools (auto-resolves work drive from `settings.ini`) |
 | [`/dayz-new-mod`](./skills/dayz-new-mod) | Scaffold `workspace/&lt;ModName&gt;/` + create `P:\&lt;ModName&gt;\` junction |
 | [`/dayz-build-pbo`](./skills/dayz-build-pbo) | Pack and deploy to `P:\Mods\@&lt;ModName&gt;\Addons\&lt;ModName&gt;.pbo` |
-| [`/dayz-add-map`](./skills/dayz-add-map) | Set up a test map under `workspace/_server/` |
+| [`/dayz-add-server`](./skills/dayz-add-server) | Set up a test server instance under `.server/&lt;instance&gt;/` |
+| [`/dayz-migrate-server`](./skills/dayz-migrate-server) | One-shot migration from legacy `workspace/_server/` to `.server/&lt;instance&gt;/` |
 | [`/dayz-launch-test`](./skills/dayz-launch-test) | Start local Diag server + client with the mod loaded |
 | [`/dayz-stop-test`](./skills/dayz-stop-test) | Kill running DayZDiag_x64.exe processes |
 | [`/dayz-pack-texture`](./skills/dayz-pack-texture) | PNG/TGA → `.paa` via ImageToPAA |
