@@ -2,7 +2,65 @@
 name: agentic-z-update
 ---
 
+## Overview
+
+Pull the latest Agentic-Z template improvements (agents, skills, conventions, docs) from upstream into your clone, without touching your DayZ mod work in `workspace/`. Adds the upstream remote on first run, fetches, shows a changelog, then merges only template-managed paths. Re-runs sync-skills automatically. Refuses if your working tree is dirty unless `--force` is passed.
+
 # /agentic-z-update
+
+## How updates work
+
+This skill pulls template improvements (agents, skills, conventions, docs) from upstream `DayZ-n-Chill/Agentic-Z`'s `main` branch into your clone. Three guarantees:
+
+1. **Your `workspace/` mod work is never touched.** Path scoping limits all changes to template-managed paths only.
+2. **Your customizations to template files are not overwritten silently.** A three-way merge per file detects when both you and upstream edited the same file, and asks before doing anything destructive.
+3. **No two updates can run at once.** A PID-based lock prevents concurrent invocations.
+
+The first time you run this in a clone, it bootstraps the baseline (the SHA of upstream `main` at install time). From then on, every run compares (your local file) vs (the file at baseline) vs (upstream's current file) to decide what to do per file.
+
+## Flags
+
+| Flag | Behavior |
+|---|---|
+| (default) | Preview drift, prompt y/N, apply safe changes (conflicts left alone) |
+| `--check` | Preview only; exits 1 if changes pending, 0 if up to date |
+| `--quiet` | With `--check`: single-line output for hooks |
+| `--yes` | Skip the confirmation prompt (CI / scripted use) |
+| `--per-file` | Walk each conflict interactively: keep / take / diff / skip |
+| `--force` | Override the dirty-tree check (existing) |
+| `--dry-run` | Show preview, do not apply (existing) |
+| `--no-sync` | Skip the post-merge `sync-skills` run (existing) |
+
+## Per-file status meanings
+
+| Status | What it means | Default action |
+|---|---|---|
+| `unchanged` | Your file matches upstream | nothing |
+| `safe-overwrite` | You didn't edit, upstream did | apply upstream |
+| `new` | New file from upstream | apply upstream |
+| `local-only-edit` | Only you edited it (upstream unchanged) | leave alone |
+| `conflict` | Both you and upstream edited it | leave alone (use `--per-file` to resolve) |
+| `deleted-clean` | Upstream removed it, you didn't customize | delete |
+| `deleted-conflict` | Upstream removed it, you customized it | leave alone |
+
+## Files this skill creates
+
+- `.claude/.upstream-baseline` — SHA of last upstream merge. Gitignored.
+- `.claude/.upstream-update.lock` — concurrency lock during apply phase. Gitignored.
+
+## SessionStart hook
+
+A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead OR if a newer prebuilt search index is available. Silent on no-change. Configured in `.claude/settings.json`.
+
+To disable temporarily: comment out the `SessionStart` block in `.claude/settings.json`.
+
+## Search index notification
+
+If you previously ran `/dayz-search-download`, this skill ALSO checks whether the GitHub release you installed has been superseded. The check is read-only -- it never auto-downloads (the index is ~200MB). Just nudges you to run `/dayz-search-download` when a newer release ships.
+
+To skip the check: ensure `~/.claude/dayz-search-index/release-tag.txt` doesn't exist (the check is silent when no installed tag is recorded).
+
+---
 
 Pull infrastructure updates from `https://github.com/DayZ-n-Chill/Agentic-Z` into your clone. Agents, skills, L1 docs, L2 conventions, scripts. Your `workspace/<ModName>/`, `output/`, `.claude/local-memory/`, and any settings you've changed locally are left alone.
 
@@ -15,7 +73,7 @@ Pull infrastructure updates from `https://github.com/DayZ-n-Chill/Agentic-Z` int
 ## When NOT to run
 
 - Mid-merge or mid-rebase.
-- With uncommitted changes to template files (it'll refuse — commit first).
+- With uncommitted changes to template files (it'll refuse -- commit first).
 - On a fork that has diverged heavily from upstream main (manual cherry-pick is safer).
 
 ## How to run
@@ -26,7 +84,7 @@ python .claude\skills\agentic-z-update\update.py [--force] [--dry-run] [--no-syn
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `--force` | no | Skip the dirty-tree check. Risky — uncommitted edits in template paths may be clobbered. |
+| `--force` | no | Skip the dirty-tree check. Risky -- uncommitted edits in template paths may be clobbered. |
 | `--dry-run` | no | Show what would change (commit log + file list) without merging or running sync-skills. |
 | `--no-sync` | no | Skip the post-merge `/sync-skills` re-run. Useful if you only use Claude Code. |
 
@@ -94,7 +152,7 @@ git diff upstream/main HEAD -- <path>     # see the difference
 
 ## Refuse rules
 
-- Not a git repo → fail with "run from inside an Agentic-Z clone."
-- Working tree has uncommitted changes in template paths → fail unless `--force`.
-- Upstream remote exists but points elsewhere → fail with instructions to fix.
-- Network failure on `git fetch` → fail with the underlying error.
+- Not a git repo -- fail with "run from inside an Agentic-Z clone."
+- Working tree has uncommitted changes in template paths -- fail unless `--force`.
+- Upstream remote exists but points elsewhere -- fail with instructions to fix.
+- Network failure on `git fetch` -- fail with the underlying error.

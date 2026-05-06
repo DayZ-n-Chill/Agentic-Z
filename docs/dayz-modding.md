@@ -6,12 +6,12 @@ The six commands:
 
 1. **`/dayz-preflight`** — verifies your DayZ modding environment is ready.
 2. **`/dayz-new-mod`** — scaffolds a new mod project with the standard skeleton and the required `P:\<ModName>\` junction.
-3. **`/dayz-add-map`** — sets up a test map under `workspace/_server/`: copies the mission template, creates the per-map `serverDZ.cfg` + `profiles/`. One-time per map.
+3. **`/dayz-add-server`** — sets up a test server instance under `.server/<instance>/`: copies the mission template, creates per-instance `serverDZ.cfg` + `server-profiles/` + `client-profiles/`. One-time per instance. Multiple variants of the same map allowed.
 4. **`/dayz-build-pbo`** — packs the mod into a deployable `.pbo` via DayZ Tools' AddonBuilder.
-5. **`/dayz-launch-test`** — spins up a local DayZ server with your mod loaded on the chosen map, then connects the client. Run-only — refuses if the map hasn't been added.
+5. **`/dayz-launch-test`** — spins up a local DayZ server with your mod loaded on the chosen instance, then connects the client. Run-only; refuses if the instance hasn't been added.
 
    Counterpart: **`/dayz-stop-test`** — force-kills any running DayZDiag_x64.exe processes so you can stop a session without hunting down windows. Doesn't gate on preflight (emergency escape hatch).
-6. **`/dayz-clean-workspace`** — DayZ-only cleanup. Removes scaffolds and their deployed artifacts (workspace folders, `P:\<ModName>\` junctions that target our workspace, `P:\Mods\@<ModName>\` deploy dirs). Match-on-scaffold rule keeps your subscribed mods safe. `--include-server` also removes `workspace/_server/`.
+6. **`/dayz-clean-workspace`** — DayZ-only cleanup. Removes scaffolds and their deployed artifacts (workspace folders, `P:\<ModName>\` junctions that target our workspace, `P:\Mods\@<ModName>\` deploy dirs). Match-on-scaffold rule keeps your subscribed mods safe. `--include-server` also removes `.server/`.
 
 For a repo-wide wipe across every domain (pre-push reset), use the general **`/clean-repo`** skill — it orchestrates each `<domain>-clean-workspace` cleanup in turn.
 
@@ -59,9 +59,9 @@ python .claude\skills\dayz-preflight\preflight.py
 :: 2. Scaffold a new mod (only the first time per mod)
 python .claude\skills\dayz-new-mod\new_mod.py MyMod --author "MyHandle"
 
-:: 3. Set up a test map (only the first time per map — copies mission template,
-::    creates per-map serverDZ.cfg + profiles/)
-python .claude\skills\dayz-add-map\add_map.py chernarus
+:: 3. Set up a test server instance (one-time per instance, copies mission template,
+::    creates per-instance serverDZ.cfg + profile dirs)
+python .claude\skills\dayz-add-server\add_server.py chernarus
 
 :: 4. Edit your mod under workspace\MyMod\ — see Mod project layout below
 
@@ -208,14 +208,14 @@ python .claude\skills\dayz-launch-test\launch.py <ModName> [<ModName2> ...] [--p
 1. Preflight gate.
 2. For each mod, verify `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists. Fails with a hint to run `/dayz-build-pbo` if missing.
 3. Resolve `DayZDiag_x64.exe` (env `DAYZ_DIAG_PATH` → DayZ game install → Steam fallbacks). **Hard-fail if missing.** Both server and client run from the same diag binary.
-4. **First-run only:** if `workspace/_server/missions/` is empty, copy missions from DayZ Server install's `mpmissions/` (resolved via `find_dayz_server`). After this initial copy, DayZ Server can be uninstalled — the workspace copy is the editable source.
-5. Ensure `workspace/_server/maps/<map>/serverDZ.cfg` and `profiles/` exist for the selected map (default `chernarus`). Default cfg is written on first run; existing cfgs are preserved but `allowFilePatching = 1;` is auto-appended if missing.
-6. Spawn the server: `DayZDiag_x64.exe -server -config=<map>/serverDZ.cfg -profiles=<map>/profiles -mission=<missions>/<template> -mod=@Mod1;@Mod2 -filePatching -port=<port>`. The `-mission=<absolute path>` flag pins the mission folder explicitly — the engine otherwise looks in the binary's local `mpmissions/`, which doesn't exist in the DayZ game install.
+4. **First-run only:** the instance must have been added via `/dayz-add-server <instance>`, which copies the mission template from DayZ Server's `mpmissions/<template>/` into `.server/<instance>/mission/`. After this initial copy, DayZ Server can be uninstalled.
+5. Verify `.server/<instance>/serverDZ.cfg` and `.server/<instance>/mission/` exist for the selected instance (default `chernarus`). Existing cfgs are preserved but `allowFilePatching = 1;` is auto-appended if missing.
+6. Spawn the server: `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/server-profiles -mission=<instance>/mission -mod=@Mod1;@Mod2 -filePatching -port=<port>`. The `-mission=<absolute path>` flag pins the mission folder explicitly.
 7. Wait 5 seconds for the server to start listening.
-8. Spawn the client: `DayZDiag_x64.exe -profiles=workspace/_server/!ClientDiagLogs -mod=@Mod1;@Mod2 -connect=127.0.0.1 -port=<port> -filePatching`. **The client must be DayZ Diag, not retail** — retail `DayZ_x64.exe` blocks past the loading screen with `-filePatching`. The client `-profiles=` points at `workspace/_server/!ClientDiagLogs/` so all client-side diag artifacts (`Users/`, `DataCache/`, `BattlEye/`, RPT, script logs) get contained in that one folder.
-9. Print both PIDs and exit. **You close both windows manually** to stop them. (A future `/dayz-stop-test` skill can manage shutdown.)
+8. Spawn the client: `DayZDiag_x64.exe -profiles=<instance>/client-profiles -mod=@Mod1;@Mod2 -connect=127.0.0.1 -port=<port> -filePatching`. **The client must be DayZ Diag, not retail.** Retail `DayZ_x64.exe` blocks past the loading screen with `-filePatching`. The client `-profiles=` points at `.server/<instance>/client-profiles/` so all client-side diag artifacts get contained per-instance.
+9. Print both PIDs and exit. **You close both windows manually** to stop them. (Or run `/dayz-stop-test`.)
 
-**`--map <name>`** selects which map to test on. Defaults to `chernarus`. Known aliases: `chernarus` → `dayzOffline.chernarusplus`, `livonia` → `dayzOffline.enoch`, `sakhal` → `dayzOffline.sakhal`. Custom missions: pass the mission folder name directly (e.g. `--map dayzOffline.namalsk`).
+**`--server <instance>`** selects which instance to test on. Defaults to `chernarus`. The instance must have been added via `/dayz-add-server` first.
 
 **`--dry-run`** prints the resolved server and client commands without launching. Useful for verifying paths and arg construction.
 
@@ -297,12 +297,14 @@ Two locations hold per-clone, gitignored, user/machine-specific state:
 | Path | Contents | Created by |
 |---|---|---|
 | `.claude/local-memory/dayz-author.txt` | One-line cached author handle (e.g. `MyHandle`) | `/dayz-new-mod` first run |
-| `workspace/_server/missions/<template>/` | **Editable copies** of DayZ mission folders (`dayzOffline.chernarusplus`, etc.) | `/dayz-launch-test` first run (bootstrapped from DayZ Server install) |
-| `workspace/_server/maps/<map>/` | Per-map `serverDZ.cfg` + `profiles/` (logs, BattlEye state). One folder per map you test on. | `/dayz-launch-test` first run for each map |
+| `.server/<instance>/mission/` | **Editable copy** of a DayZ mission folder (one per instance). | `/dayz-add-server` (bootstrapped from DayZ Server install) |
+| `.server/<instance>/serverDZ.cfg` | Per-instance server config. Tunable. | `/dayz-add-server` (default written on first add; preserved thereafter) |
+| `.server/<instance>/server-profiles/` | Server-side logs and BattlEye state. | `/dayz-add-server` (created empty); populated by `/dayz-launch-test` |
+| `.server/<instance>/client-profiles/` | Client-side logs, player profile, BattlEye state. | `/dayz-add-server` (created empty); populated by `/dayz-launch-test` |
 
 Override the author handle: `python .claude\skills\dayz-new-mod\new_mod.py MyMod --author "NewHandle"` (overwrites the cache) or delete `.claude/local-memory/dayz-author.txt`.
 
-The `_server-profile/` folder is preserved across runs so logs accumulate and your `serverDZ.cfg` edits stick. If you want it gitignored in your project, add `workspace/_server/` to `.gitignore` — the skill leaves that decision to you.
+`.server/` is gitignored by default except for `serverDZ.cfg` and `mission/` contents (so your tuned configs and mission edits stay in version control while logs and profiles do not). Override the gitignore in your clone if you want different behavior.
 
 ---
 
@@ -377,10 +379,10 @@ The server's `serverDZ.cfg` is missing `allowFilePatching = 1;`. The client conn
 
 The server can't find a valid mission folder, so it loaded an empty/broken mission. Check that:
 
-- `workspace/_server/missions/<template>/` exists (default chernarus → `dayzOffline.chernarusplus`).
+- `.server/<instance>/mission/` exists (default chernarus instance is created by `/dayz-add-server chernarus`).
 - That folder has an `init.c` with a proper `main()` function.
 
-`/dayz-launch-test` passes `-mission=<absolute path to workspace/_server/missions/<template>>` so the engine doesn't look in the wrong `mpmissions/` location. If the workspace mission copy got corrupted or partially deleted, remove the affected folder and re-run the skill — it'll re-copy from DayZ Server install.
+`/dayz-launch-test` passes `-mission=<absolute path to .server/<instance>/mission>` so the engine doesn't look in the wrong `mpmissions/` location. If the mission copy got corrupted or partially deleted, run `/dayz-add-server <instance> --refresh-mission` to re-copy from DayZ Server install.
 
 ### `[FAIL] DayZDiag_x64.exe not found`
 

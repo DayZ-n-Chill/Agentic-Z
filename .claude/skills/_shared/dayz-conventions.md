@@ -96,12 +96,15 @@ DayZ Tools is the only per-machine install needed. There's no per-clone API key.
 - DayZ Diag lives in the DayZ game install dir alongside the retail exe. The DayZ Server Steam install (appid 223350) is NOT required for diag-mode testing; it's only relevant for retail-server testing (which is a separate skill if/when added).
 - The shared resolver is `find_dayz_diag()` in `dayz-preflight/preflight.py` (env `DAYZ_DIAG_PATH` → DayZ game install → Steam fallbacks). Use it; do not re-implement.
 - **Server `serverDZ.cfg` MUST contain `allowFilePatching = 1;`** for clients launched with `-filePatching` to connect. Without it the connection fails with `0x00020005` ("The server does not support the client's current filePatching setting"). `/dayz-launch-test` auto-bakes this into the default cfg and auto-appends it to existing cfgs that lack it.
-- **Server staging area lives at `workspace/_server/`**, with two subtrees and the client profile at the root:
-  - `workspace/_server/missions/<mission-template>/` — **editable copies** of mission folders (e.g. `dayzOffline.chernarusplus/`). Created by `/dayz-add-map` on demand from DayZ Server's `mpmissions/`; user-editable thereafter (server runs with `-filePatching` so edits are live). Never edit the original DayZ Server install.
-  - `workspace/_server/maps/<map-name>/` — per-map `serverDZ.cfg` + `profiles/`. Created by `/dayz-add-map`. Each map (chernarus, livonia, sakhal, custom) has its own config + server-side log/BattlEye state so tuning doesn't bleed across maps.
-  - `workspace/_server/!ClientDiagLogs/` is the **client `-profiles=` directory**. All client-side diag artifacts (`Users/`, `DataCache/`, `BattlEye/`, RPT logs, script logs) get contained in that one folder rather than spreading across the `_server` root or polluting the DayZ game install dir.
-- **Setup vs run is split into two skills.** `/dayz-add-map <map>` does setup (mission copy + per-map cfg + profiles). `/dayz-launch-test <mod> --map <map>` does run (verify + spawn). The launch skill never copies missions, never writes cfgs from scratch — it refuses with a hint to run `/dayz-add-map` if state is missing. Only mutation launch does is auto-append `allowFilePatching = 1;` to an existing cfg that lacks it.
-- **Never gitignore `workspace/_server/` template-wide.** It's a per-clone decision: some users want their tuned cfgs and edited missions tracked in their project's git, others don't. The template doesn't enforce.
+- **Server runtime lives at `.server/<instance>/`** at the project root (not under `workspace/`). Each instance is fully self-contained:
+  - `.server/<instance>/mission/`: **editable copy** of the mission folder. Created by `/dayz-add-server` on demand from DayZ Server's `mpmissions/<template>/`; user-editable thereafter (server runs with `-filePatching` so edits are live). Never edit the original DayZ Server install. Folder is named `mission/` regardless of template (the launcher pins the path explicitly via `-mission=<abspath>`).
+  - `.server/<instance>/serverDZ.cfg`: per-instance server config. The `template = "..."` line links the instance to its DayZ mission base. Each instance can have totally different tuning (player count, persistence, time of day) without bleeding across instances.
+  - `.server/<instance>/server-profiles/`: server-side log dir (RPT, script.log, BattlEye state).
+  - `.server/<instance>/client-profiles/`: client-side `-profiles=` dir. Per-instance, so RPTs and player profiles don't mix when switching between instances.
+- **Instance is the unit of identity, not map.** A user can run multiple variants of the same map (chernarus vanilla vs chernarus-hardcore) by adding two instances. `serverDZ.cfg`'s `template` field is the only place the map link is encoded.
+- **Setup vs run is split into two skills.** `/dayz-add-server <instance>` does setup (mission copy + per-instance cfg + profile dirs). `/dayz-launch-test <mod> --server <instance>` does run (verify + spawn). The launch skill never copies missions, never writes cfgs from scratch; it refuses with a hint to run `/dayz-add-server` if state is missing. Only mutation launch does is auto-append `allowFilePatching = 1;` to an existing cfg that lacks it.
+- **Legacy `workspace/_server/` layout is migrated via `/dayz-migrate-server`.** All three runtime skills (`/dayz-add-server`, `/dayz-launch-test`, `/dayz-clean-workspace --include-server`) refuse to run while `workspace/_server/` still exists. Migration is one-shot and idempotent; the legacy folder is left intact for the user to delete after verifying.
+- **`.server/` is gitignored by default.** Logs, profiles, BE state, storage, and the rest of the runtime junk are not tracked. User-edited `serverDZ.cfg` and `mission/` contents are tracked via negation patterns in `.gitignore`.
 
 ## UI scripting realities (read this before any "change the X color" task)
 
@@ -119,8 +122,8 @@ When the user requests a color/theme change: ask for scope FIRST (single element
 
 ## Mission and DayZ Server install notes
 
-- The launch skill passes `-mission=<absolute path to workspace/_server/missions/<template>>` to pin the mission folder explicitly (the engine otherwise looks in the diag binary's local `mpmissions/`, which doesn't exist in the DayZ game install).
-- DayZ Server install (Steam appid 223350) is **only required for the initial mission bootstrap**. After missions are copied to `workspace/_server/missions/`, DayZ Server can be uninstalled — the workspace copy is the source of truth.
+- The launch skill passes `-mission=<absolute path to .server/<instance>/mission>` to pin the mission folder explicitly (the engine otherwise looks in the diag binary's local `mpmissions/`, which doesn't exist in the DayZ game install).
+- DayZ Server install (Steam appid 223350) is **only required for the initial mission bootstrap**. After missions are copied into `.server/<instance>/mission/`, DayZ Server can be uninstalled; the workspace copy is the source of truth.
 
 ## Vanilla source recall — `search_dayz_source` MCP tool
 
