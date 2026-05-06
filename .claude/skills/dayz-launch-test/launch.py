@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import socket
 import subprocess
 import sys
 import time
@@ -265,6 +266,47 @@ def read_client_display_prefs(project_dir: Path) -> dict:
     return dict(DEFAULT_CLIENT_DISPLAY)
 
 
+def wait_for_server_port(port: int, server_proc: subprocess.Popen, timeout_s: int = 180) -> bool:
+    """Poll UDP port `port` until the DayZ server binds to it. Returns True if
+    the port is bound within `timeout_s` seconds (i.e. the server is listening
+    and ready for clients), False if it gives up.
+
+    DayZ servers can take 30+ seconds to fully init (mission load, mod load,
+    persistence init) before binding the network port. The previous fixed-5s
+    sleep was way too short. We poll instead so the client launches as soon
+    as the server is actually ready, while still capping at 3 minutes.
+
+    The server's UDP query port is `port + 1` (e.g. 2303 when -port=2302).
+    Some DayZ versions also bind UDP port directly. We try the steam query
+    port first (more reliable signal of "ready") then the game port.
+    """
+    print(f"        Waiting up to {timeout_s}s for server port {port} to come up...")
+    sys.stdout.flush()
+    deadline = time.time() + timeout_s
+    last_dot = time.time()
+    query_port = port + 1
+    while time.time() < deadline:
+        if server_proc.poll() is not None:
+            print(f"\n{FAIL} Server process exited unexpectedly (rc={server_proc.returncode}).")
+            return False
+        for probe_port in (query_port, port):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                    s.settimeout(0.5)
+                    s.sendto(b"\xFF\xFF\xFF\xFFTSource Engine Query\x00", ("127.0.0.1", probe_port))
+                    s.recvfrom(2048)
+                    print(f"\n{OK} Server is listening on port {probe_port}")
+                    return True
+            except (socket.timeout, OSError):
+                pass
+        if time.time() - last_dot > 5:
+            print(".", end="", flush=True)
+            last_dot = time.time()
+        time.sleep(1)
+    print()
+    return False
+
+
 def build_client_cmd(
     diag_exe: Path, mod_arg: str, port: int, client_profile: Path, display: dict
 ) -> list[str]:
@@ -353,9 +395,11 @@ def main() -> int:
     sys.stdout.flush()
     server_proc = subprocess.Popen(server_cmd)
     print(f"{OK} Server PID: {server_proc.pid}")
-    print("        Waiting 5s for server to start listening...")
     sys.stdout.flush()
-    time.sleep(5)
+    if not wait_for_server_port(args.port, server_proc, timeout_s=180):
+        print(f"{FAIL} Server did not bind to port {args.port} within 180s.")
+        print(f"       Check the server RPT in {profile_dir}\\ for errors.")
+        return 1
 
     print()
     print(f"[Launch] Client: {' '.join(client_cmd)}")
