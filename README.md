@@ -42,7 +42,7 @@ Then, from any of the agent CLIs:
 /dayz-preflight                       # verify env (P:\ mounted, Tools installed, vanilla data extracted)
 /dayz-search-download                    # pull prebuilt vanilla+wiki vector index from GitHub releases (~1 min)
 /dayz-new-mod MyMod                   # scaffold workspace/MyMod/ + create P:\MyMod\ junction
-/dayz-add-map chernarus               # set up a test map under workspace/_server/
+/dayz-add-server chernarus            # set up a test server instance under .server/
 /dayz-build-pbo MyMod                 # pack and deploy to P:\Mods\@MyMod\Addons\
 /dayz-launch-test MyMod               # local diag server + client, mod loaded
 ```
@@ -114,7 +114,8 @@ All gate on `/dayz-preflight` first per L2.
 | [`/dayz-workdrive`](.claude/skills/dayz-workdrive/SKILL.md) | Mount `P:\` without opening DayZ Tools. |
 | [`/dayz-new-mod`](.claude/skills/dayz-new-mod/SKILL.md) | Scaffold `workspace/<ModName>/` + `P:\<ModName>\` junction. |
 | [`/dayz-build-pbo`](.claude/skills/dayz-build-pbo/SKILL.md) | Pack and deploy to `P:\Mods\@<ModName>\Addons\<ModName>.pbo`. |
-| [`/dayz-add-map`](.claude/skills/dayz-add-map/SKILL.md) | Set up a test map under `workspace/_server/`. |
+| [`/dayz-add-server`](.claude/skills/dayz-add-server/SKILL.md) | Set up a test server instance under `.server/<instance>/`. |
+| [`/dayz-migrate-server`](.claude/skills/dayz-migrate-server/SKILL.md) | One-shot migration from legacy `workspace/_server/` to `.server/<instance>/`. |
 | [`/dayz-launch-test`](.claude/skills/dayz-launch-test/SKILL.md) | Local diag server + client with mod loaded. |
 | [`/dayz-stop-test`](.claude/skills/dayz-stop-test/SKILL.md) | Kill running `DayZDiag_x64.exe` processes. |
 | [`/dayz-launch-workbench`](.claude/skills/dayz-launch-workbench/SKILL.md) | Open Enfusion Workbench (script + UI editor) detached. |

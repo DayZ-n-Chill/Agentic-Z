@@ -117,7 +117,8 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | [`/dayz-workdrive`](../.claude/skills/dayz-workdrive/SKILL.md) | Mount `P:\` without opening DayZ Tools (auto-resolves work drive from `settings.ini`) |
 | [`/dayz-new-mod`](../.claude/skills/dayz-new-mod/SKILL.md) | Scaffold `workspace/<ModName>/` + create `P:\<ModName>\` junction |
 | [`/dayz-build-pbo`](../.claude/skills/dayz-build-pbo/SKILL.md) | Pack and deploy to `P:\Mods\@<ModName>\Addons\<ModName>.pbo` |
-| [`/dayz-add-map`](../.claude/skills/dayz-add-map/SKILL.md) | Set up a test map under `workspace/_server/` |
+| [`/dayz-add-server`](../.claude/skills/dayz-add-server/SKILL.md) | Set up a test server instance under `.server/<instance>/` |
+| [`/dayz-migrate-server`](../.claude/skills/dayz-migrate-server/SKILL.md) | One-shot migration from legacy `workspace/_server/` to `.server/<instance>/` |
 | [`/dayz-launch-test`](../.claude/skills/dayz-launch-test/SKILL.md) | Start local Diag server + client with the mod loaded |
 | [`/dayz-stop-test`](../.claude/skills/dayz-stop-test/SKILL.md) | Kill running DayZDiag_x64.exe processes |
 | [`/dayz-pack-texture`](../.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA |

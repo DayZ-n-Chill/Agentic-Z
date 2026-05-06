@@ -29,7 +29,8 @@ PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
-SERVER_ROOT = WORKSPACE / "_server"
+SERVER_ROOT = PROJECT_DIR / ".server"
+LEGACY_SERVER_ROOT = WORKSPACE / "_server"
 
 # Ownership marker written by dayz-build-pbo at P:\Mods\@<ModName>\<MARKER>.
 # The deployed dir is removed only when this file exists AND its content
@@ -231,8 +232,16 @@ def main() -> int:
         mod_plan, mod_warnings = find_artifacts(mod)
         plan.extend(mod_plan)
         warnings.extend(mod_warnings)
-    if args.include_server and SERVER_ROOT.exists():
-        plan.append(("server staging", SERVER_ROOT))
+    if args.include_server:
+        if LEGACY_SERVER_ROOT.exists():
+            sys.exit(
+                f"{FAIL} Legacy layout detected at {LEGACY_SERVER_ROOT.relative_to(PROJECT_DIR)}.\n"
+                "       --include-server now targets .server/ at the project root, not\n"
+                "       workspace/_server/. Run: python .claude/skills/dayz-migrate-server/migrate.py\n"
+                "       (or remove the legacy folder manually if it is no longer wanted)."
+            )
+        if SERVER_ROOT.exists():
+            plan.append(("server staging", SERVER_ROOT))
 
     for warning in warnings:
         print(f"{WARN} {warning}")

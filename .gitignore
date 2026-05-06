@@ -33,3 +33,11 @@ output/release/
 *.tar.gz
 
 workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/
+
+# DayZ test-server runtime (.server/<instance>/). Logs, profiles, and storage are
+# runtime junk and should not be tracked. User-edited serverDZ.cfg and mission/
+# contents stay tracked via negation patterns.
+.server/*/
+!.server/*/serverDZ.cfg
+!.server/*/mission/
+!.server/*/mission/**

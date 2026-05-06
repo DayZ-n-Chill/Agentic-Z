@@ -1,6 +1,6 @@
 ---
 name: dayz-clean-workspace
-description: Remove DayZ scaffolds and their deployed artifacts. For each managed mod under workspace/<ModName>/ (native /dayz-new-mod scaffold OR /dayz-import-mod link), removes the workspace folder/link, the P:\<ModName>\ junction (only if it points at our workspace), and the P:\Mods\@<ModName>\ deployed dir. For imported mods, the external source folder is NEVER touched - only the link is removed. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes workspace/_server/. Interactive confirmation by default; --yes skips it.
+description: Remove DayZ scaffolds and their deployed artifacts. For each managed mod under workspace/<ModName>/ (native /dayz-new-mod scaffold OR /dayz-import-mod link), removes the workspace folder/link, the P:\<ModName>\ junction (only if it points at our workspace), and the P:\Mods\@<ModName>\ deployed dir. For imported mods, the external source folder is NEVER touched - only the link is removed. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes .server/ (refuses if legacy workspace/_server/ still exists; run /dayz-migrate-server first). Interactive confirmation by default; --yes skips it.
 ---
 
 # /dayz-clean-workspace
@@ -23,7 +23,7 @@ python .claude\skills\dayz-clean-workspace\clean.py [--mod <Name>] [--include-se
 | Argument | Required? | Notes |
 |---|---|---|
 | `--mod <Name>` | no | Target a specific mod by name. Default: all scaffolded mods under `workspace/`. |
-| `--include-server` | no | Also remove `workspace/_server/` (mission copies, per-map cfg, profiles, !ClientDiagLogs). |
+| `--include-server` | no | Also remove `.server/` at the project root (all instances: missions, configs, profiles, client logs). Refuses if legacy `workspace/_server/` still exists. |
 | `--yes` | no | Skip the interactive confirmation prompt. Required when stdin isn't a TTY. |
 | `--dry-run` | no | Print what would be removed; touch nothing. Always exit 0. |
 
@@ -42,7 +42,7 @@ For each `workspace/<ModName>/` containing `config.cpp` + `$PBOPREFIX$`:
 
 If you have deployed dirs from before the marker was introduced, they won't have `.agentic-z-scaffold` and `dayz-clean-workspace` will skip them. Either rebuild via `/dayz-build-pbo <ModName>` (which writes the marker) or remove manually with `cmd /c rmdir /s /q P:\Mods\@<ModName>` after confirming it's actually yours.
 
-With `--include-server`, also removes `workspace/_server/` (mission copies, all per-map configs, all profiles, !ClientDiagLogs). Use this for a full reset; otherwise the server staging stays so you don't have to re-copy missions next time.
+With `--include-server`, also removes `.server/` at the project root (all instances under it: missions, configs, profiles, client logs). Use this for a full reset; otherwise the server staging stays so you don't have to re-copy missions next time. If `workspace/_server/` (the legacy layout) still exists, this skill refuses with a hint to run `/dayz-migrate-server` first; we don't silently leave the old folder behind.
 
 ## What it WILL NOT touch
 
