@@ -41,7 +41,9 @@
     "./.claude/skills/dayz-setup-objectbuilder",
     "./.claude/skills/dayz-stop-test",
     "./.claude/skills/dayz-edit-types",
-    "./.claude/skills/dayz-split-types"
+    "./.claude/skills/dayz-split-types",
+    "./.claude/skills/dayz-init",
+    "./.claude/skills/dayz-fbx-to-p3d"
   ],
   "agents": [
     "./.claude/agents/agent-creator.md",
