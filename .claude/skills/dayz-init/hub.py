@@ -168,12 +168,105 @@ def _action_quit(_: Status) -> None:
     raise SystemExit(0)
 
 
+def _action_init_another(_: Status) -> None:
+    if not ask_yes_no(
+        "This will replace the cached project. Continue?", default=False
+    ):
+        return
+    cache = Path.home() / ".claude" / "local-memory" / "dayz-current-project.txt"
+    if cache.is_file():
+        cache.unlink()
+    print("Cache cleared. Re-run /dayz-init to set up another mod.")
+    raise SystemExit(0)
+
+
+def _action_switch_project(_: Status) -> None:
+    candidates = _discover_managed_projects()
+    if not candidates:
+        print("(no agentic-z-managed projects found under P:\\Mods\\@*)")
+        return
+    chosen = ask_select(
+        "Switch to which project?",
+        [str(p) for p in candidates],
+        default=str(candidates[0]),
+    )
+    from state import write_cached_project_root
+    write_cached_project_root(Path(chosen))
+    print(f"Switched to {chosen}. Re-run /dayz-init.")
+    raise SystemExit(0)
+
+
+def _discover_managed_projects() -> list[Path]:
+    """Scan P:\\Mods\\@*\\.agentic-z-scaffold for project paths."""
+    mods_root = Path("P:\\Mods")
+    if not mods_root.is_dir():
+        return []
+    out: list[Path] = []
+    for at_dir in mods_root.glob("@*"):
+        marker = at_dir / ".agentic-z-scaffold"
+        if marker.is_file():
+            text = marker.read_text(encoding="utf-8").strip()
+            if text:
+                out.append(Path(text))
+    return out
+
+
+def _action_reviewer(status: Status) -> None:
+    """Print guidance for invoking the reviewer agent via the Claude Code chat.
+
+    The reviewer is an Agent, not a slash skill. Agents are dispatched via the
+    Agent tool from the Claude Code conversation, not via Python subprocess.
+    So this hub action just tells the user how to ask Claude to run it.
+    """
+    print()
+    print(f"To audit {status.project.name}, ask Claude in this session:")
+    print(f"  > run dayz-mod-reviewer on {status.project}")
+    print("Then come back to /dayz-init for the next action.")
+
+
+def _action_set_voyage_key(_: Status) -> None:
+    from prompts import ask_text
+    key = ask_text("Paste your Voyage API key (pa-...):")
+    if not key.startswith("pa-"):
+        print("(skipped; key does not start with 'pa-')")
+        return
+    env_path = REPO_ROOT / ".env"
+    existing = ""
+    if env_path.is_file():
+        existing = env_path.read_text(encoding="utf-8")
+    if "VOYAGE_API_KEY=" in existing:
+        print("(VOYAGE_API_KEY already in .env; not overwriting)")
+        return
+    with open(env_path, "a", encoding="utf-8") as f:
+        f.write(f"\nVOYAGE_API_KEY={key}\n")
+    print(f"Wrote VOYAGE_API_KEY to {env_path}")
+    if ask_yes_no("Pull the prebuilt RAG index now?", default=True):
+        _run_skill("dayz-search-download", "download.py")
+
+
+def _action_add_test_server(status: Status) -> None:
+    if status.server_instance is not None:
+        print(f"(server '{status.server_instance}' already configured)")
+        return
+    chosen = ask_select(
+        "Map?",
+        ["chernarus", "livonia", "sakhal", "namalsk"],
+        default="chernarus",
+    )
+    _run_skill("dayz-add-server", "add_server.py", chosen, "--map", chosen)
+
+
 ACTIONS: list[tuple[str, Callable[[Status], None]]] = [
     ("build & launch", _action_build_and_launch),
     ("stop diag", _action_stop_diag),
     ("tail server log", _action_tail_log),
     ("open in workbench", _action_workbench),
     ("open in objectbuilder", _action_objbuilder),
+    ("run mod reviewer", _action_reviewer),
+    ("set voyage key", _action_set_voyage_key),
+    ("add test server", _action_add_test_server),
+    ("init another mod", _action_init_another),
+    ("switch project", _action_switch_project),
     ("quit", _action_quit),
 ]
 
