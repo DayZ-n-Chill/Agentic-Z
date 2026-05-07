@@ -9,10 +9,9 @@ Setup completion is derived from disk markers, not the state file.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
-CACHE_RELATIVE = Path(".claude/local-memory/dayz-current-project.txt")
+CACHE_FILENAME = "dayz-current-project.txt"
 STATE_DIR_NAME = ".agentic-z"
 STATE_FILE_NAME = "state.json"
 
@@ -25,7 +24,7 @@ def _claude_home(home: Path | None = None) -> Path:
 
 def cached_project_root(home: Path | None = None) -> Path | None:
     """Read the project-root cache. Returns None if file missing or empty."""
-    cache = _claude_home(home) / "dayz-current-project.txt"
+    cache = _claude_home(home) / CACHE_FILENAME
     if not cache.is_file():
         return None
     text = cache.read_text(encoding="utf-8").strip()
@@ -34,7 +33,7 @@ def cached_project_root(home: Path | None = None) -> Path | None:
 
 def write_cached_project_root(path: Path, home: Path | None = None) -> None:
     """Write the project-root cache, creating parent dirs as needed."""
-    cache = _claude_home(home) / "dayz-current-project.txt"
+    cache = _claude_home(home) / CACHE_FILENAME
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text(str(path), encoding="utf-8")
 
