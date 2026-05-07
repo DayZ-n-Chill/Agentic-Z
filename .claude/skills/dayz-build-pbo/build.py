@@ -17,12 +17,12 @@ from pathlib import Path
 from typing import Optional
 
 # REPO_ROOT = where this skill ships from (plugin or template clone).
-# PROJECT_DIR = user's project (where workspace/ lives). Differ in plugin mode.
+# Project dir (where workspace/ lives) is resolved at runtime from the
+# /dayz-init project cache; see resolve_project_dir().
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
-WORKSPACE = PROJECT_DIR / "workspace"
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
+DAYZ_INIT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-init"
 INCLUDE_LIST = Path(__file__).resolve().parent / "include.lst"
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
@@ -39,22 +39,35 @@ WARN = "[WARN] "
 FAIL = "[FAIL] "
 
 
-def _load_preflight_module():
-    """Load preflight.py as a module by file path so static analyzers don't choke
-    on a sys.path-based sibling import (preflight lives in dayz-preflight/, a
-    sibling skill folder)."""
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
+def _load_module_from_path(name: str, path: Path):
+    """Load a sibling-skill .py as a module by file path so static analyzers don't
+    choke on a sys.path-based sibling import."""
+    spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
+        raise RuntimeError(f"Could not load module at {path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
 # Reuse path resolution + validation from preflight per L2 conventions (single source of truth).
-_preflight = _load_preflight_module()
+_preflight = _load_module_from_path("dayz_preflight_module", PREFLIGHT)
 find_dayz_tools = _preflight.find_dayz_tools
 validate_p_mods = _preflight.validate_p_mods
+
+# Reuse the project-root cache reader from /dayz-init so build follows the same source of truth.
+_dayz_init_state = _load_module_from_path("dayz_init_state_module", DAYZ_INIT_DIR / "state.py")
+cached_project_root = _dayz_init_state.cached_project_root
+
+
+def resolve_project_dir() -> Path:
+    """Return the cached project root, or bail out pointing the user at /dayz-init."""
+    project = cached_project_root()
+    if project is None:
+        print("error: no project cached.", file=sys.stderr)
+        print("  Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
+        sys.exit(2)
+    return project.resolve()
 
 
 def gate_on_preflight() -> None:
@@ -82,18 +95,18 @@ def _paths_equal(a: Path, b: Path) -> bool:
     return os.path.normcase(os.path.normpath(str(a))) == os.path.normcase(os.path.normpath(str(b)))
 
 
-def verify_workspace(modname: str) -> Path:
-    target = WORKSPACE / modname
+def verify_workspace(modname: str, project_dir: Path) -> Path:
+    target = project_dir / "workspace" / modname
     if not target.exists():
         sys.exit(
-            f"{FAIL} {target.relative_to(PROJECT_DIR)} not found.\n"
+            f"{FAIL} {target.relative_to(project_dir)} not found.\n"
             f"       Run: python .claude/skills/dayz-new-mod/new_mod.py {modname}"
         )
     if not (target / "config.cpp").exists():
-        sys.exit(f"{FAIL} {target.relative_to(PROJECT_DIR)}/config.cpp missing.")
+        sys.exit(f"{FAIL} {target.relative_to(project_dir)}/config.cpp missing.")
     if not (target / "$PBOPREFIX$").exists():
-        sys.exit(f"{FAIL} {target.relative_to(PROJECT_DIR)}/$PBOPREFIX$ missing.")
-    print(f"{OK} {target.relative_to(PROJECT_DIR)}\\ found")
+        sys.exit(f"{FAIL} {target.relative_to(project_dir)}/$PBOPREFIX$ missing.")
+    print(f"{OK} {target.relative_to(project_dir)}\\ found")
     return target
 
 
@@ -174,12 +187,13 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    project_dir = resolve_project_dir()
     gate_on_preflight()
     p_mods_err = validate_p_mods()
     if p_mods_err is not None:
         sys.exit(f"{FAIL} {p_mods_err}")
     print(f"{OK} P:\\Mods junction valid")
-    workspace_target = verify_workspace(args.modname)
+    workspace_target = verify_workspace(args.modname, project_dir)
     verify_junction(args.modname, workspace_target)
     addon_builder = resolve_addon_builder()
 
