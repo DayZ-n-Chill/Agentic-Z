@@ -74,7 +74,6 @@ def run_wizard() -> int:
     )
 
     print("\n✓ Setup complete.")
-    print("(Hub mode arrives in Task 12. For now, re-run /dayz-init.)")
     return 0
 
 
@@ -82,10 +81,15 @@ def main(argv: list[str] | None = None) -> int:
     try:
         project = cached_project_root()
         if project is not None and is_setup_complete(project):
-            # Hub mode arrives in Task 12. For now, message and exit.
-            print(f"Project '{project.name}' is set up. Hub mode coming in Task 12.")
-            return 0
-        return run_wizard()
+            from hub import run_hub
+            return run_hub(project)
+        rc = run_wizard()
+        if rc == 0:
+            project = cached_project_root()
+            if project is not None and is_setup_complete(project):
+                from hub import run_hub
+                return run_hub(project)
+        return rc
     except (KeyboardInterrupt, EOFError):
         print("\nAborted.")
         return 1
