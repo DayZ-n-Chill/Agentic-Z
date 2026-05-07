@@ -146,7 +146,8 @@ def _dispatch(step: Step) -> None:
         return
 
     if step.kind == "scaffold":
-        _run("dayz-new-mod", "new_mod.py", *step.args)
+        mod_name, project_path = step.args
+        _run("dayz-new-mod", "new_mod.py", mod_name, "--path", project_path)
     elif step.kind == "import_mod":
         project_path, mod_name = step.args
         _run("dayz-import-mod", "import_mod.py", "--source", project_path, "--name", mod_name)
