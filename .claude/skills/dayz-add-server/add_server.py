@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
-import os
 import shutil
 import subprocess
 import sys
@@ -24,13 +23,12 @@ from pathlib import Path
 from textwrap import dedent
 
 # REPO_ROOT = where this skill ships from (plugin or template clone).
-# PROJECT_DIR = user's project (where .server/ lives). Differ in plugin mode.
+# Project dir (where .server/ lives) is resolved at runtime from the
+# /dayz-init project cache; see resolve_project_dir().
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_DIR = Path(os.getcwd()).resolve()
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
-SERVER_ROOT = PROJECT_DIR / ".server"
-LEGACY_SERVER_ROOT = PROJECT_DIR / "workspace" / "_server"
+DAYZ_INIT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-init"
 
 KNOWN_MAPS: dict[str, str] = {
     "chernarus": "dayzOffline.chernarusplus",
@@ -43,17 +41,33 @@ WARN = "[WARN] "
 FAIL = "[FAIL] "
 
 
-def _load_preflight_module():
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
+def _load_module_from_path(name: str, path: Path):
+    """Load a sibling-skill .py as a module by file path so static analyzers don't
+    choke on a sys.path-based sibling import."""
+    spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
+        raise RuntimeError(f"Could not load module at {path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-_preflight = _load_preflight_module()
+_preflight = _load_module_from_path("dayz_preflight_module", PREFLIGHT)
 find_dayz_server = _preflight.find_dayz_server
+
+# Reuse the project-root cache reader from /dayz-init so add-server follows the same source of truth.
+_dayz_init_state = _load_module_from_path("dayz_init_state_module", DAYZ_INIT_DIR / "state.py")
+cached_project_root = _dayz_init_state.cached_project_root
+
+
+def resolve_project_dir() -> Path:
+    """Return the cached project root, or bail out pointing the user at /dayz-init."""
+    project = cached_project_root()
+    if project is None:
+        print("error: no project cached.", file=sys.stderr)
+        print("  Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
+        sys.exit(2)
+    return project.resolve()
 
 
 def gate_on_preflight() -> None:
@@ -64,11 +78,12 @@ def gate_on_preflight() -> None:
         sys.exit(result.returncode)
 
 
-def gate_on_old_layout() -> None:
+def gate_on_old_layout(project_dir: Path) -> None:
     """Refuse to run if workspace/_server/ still exists. Forces explicit migration."""
-    if LEGACY_SERVER_ROOT.exists():
+    legacy_server_root = project_dir / "workspace" / "_server"
+    if legacy_server_root.exists():
         sys.exit(
-            f"{FAIL} Old layout detected at {LEGACY_SERVER_ROOT.relative_to(PROJECT_DIR)}.\n"
+            f"{FAIL} Old layout detected at {legacy_server_root.relative_to(project_dir)}.\n"
             "       The server runtime moved from workspace/_server/ to .server/.\n"
             "       Run: python .claude/skills/dayz-migrate-server/migrate.py"
         )
@@ -97,7 +112,7 @@ def resolve_mission_template(map_name: str) -> str:
     return KNOWN_MAPS.get(map_name, map_name)
 
 
-def ensure_mission(template: str, mission_dir: Path, refresh: bool) -> None:
+def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir: Path) -> None:
     """Ensure <instance>/mission/ exists, copied from DayZ Server install.
 
     Folder is named `mission/` regardless of template (the launcher pins the
@@ -106,7 +121,7 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool) -> None:
     already_present = mission_dir.exists() and any(mission_dir.iterdir())
 
     if already_present and not refresh:
-        print(f"{OK} Mission already present: {mission_dir.relative_to(PROJECT_DIR)}")
+        print(f"{OK} Mission already present: {mission_dir.relative_to(project_dir)}")
         return
 
     server_root = find_dayz_server()
@@ -115,7 +130,7 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool) -> None:
             f"{FAIL} DayZ Server install not found.\n"
             "       Required to copy mission templates. Install via Steam (Tools section,\n"
             "       free, appid 223350), or manually populate\n"
-            f"       {mission_dir.relative_to(PROJECT_DIR)} with mission content."
+            f"       {mission_dir.relative_to(project_dir)} with mission content."
         )
 
     src = server_root / "mpmissions" / template
@@ -138,12 +153,13 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool) -> None:
     else:
         action = "Copied"
     shutil.copytree(src, mission_dir)
-    print(f"{OK} {action} {mission_dir.relative_to(PROJECT_DIR)}  (from DayZ Server install)")
+    print(f"{OK} {action} {mission_dir.relative_to(project_dir)}  (from DayZ Server install)")
 
 
-def setup_instance_dir(instance: str, template: str) -> None:
+def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
     """Ensure .server/<instance>/ has serverDZ.cfg + server-profiles/ + client-profiles/."""
-    inst_dir = SERVER_ROOT / instance
+    server_root = project_dir / ".server"
+    inst_dir = server_root / instance
     server_profiles = inst_dir / "server-profiles"
     client_profiles = inst_dir / "client-profiles"
     server_profiles.mkdir(parents=True, exist_ok=True)
@@ -152,18 +168,18 @@ def setup_instance_dir(instance: str, template: str) -> None:
     cfg_path = inst_dir / "serverDZ.cfg"
     if not cfg_path.exists():
         cfg_path.write_text(default_server_cfg(instance, template), encoding="utf-8")
-        print(f"{OK} Wrote default {cfg_path.relative_to(PROJECT_DIR)}")
+        print(f"{OK} Wrote default {cfg_path.relative_to(project_dir)}")
     else:
         cfg = cfg_path.read_text(encoding="utf-8")
         if "allowFilePatching" not in cfg:
             cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
             cfg_path.write_text(cfg, encoding="utf-8")
-            print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(PROJECT_DIR)}")
+            print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(project_dir)}")
         else:
-            print(f"{OK} {cfg_path.relative_to(PROJECT_DIR)} unchanged (already configured)")
+            print(f"{OK} {cfg_path.relative_to(project_dir)} unchanged (already configured)")
 
-    print(f"{OK} {server_profiles.relative_to(PROJECT_DIR)} ready")
-    print(f"{OK} {client_profiles.relative_to(PROJECT_DIR)} ready")
+    print(f"{OK} {server_profiles.relative_to(project_dir)} ready")
+    print(f"{OK} {client_profiles.relative_to(project_dir)} ready")
 
 
 def default_server_cfg(instance: str, template: str) -> str:
@@ -224,20 +240,22 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    project_dir = resolve_project_dir()
     gate_on_preflight()
     print()
-    print(f"{OK} Project: {PROJECT_DIR}")
-    gate_on_old_layout()
+    print(f"{OK} Project: {project_dir}")
+    gate_on_old_layout(project_dir)
 
     map_name = resolve_map_name(args.instance, args.map_arg)
     template = resolve_mission_template(map_name)
     print(f"{OK} Instance: {args.instance}  (map: {map_name}, mission: {template})")
 
-    inst_dir = SERVER_ROOT / args.instance
+    server_root = project_dir / ".server"
+    inst_dir = server_root / args.instance
     mission_dir = inst_dir / "mission"
 
-    ensure_mission(template, mission_dir, refresh=args.refresh_mission)
-    setup_instance_dir(args.instance, template)
+    ensure_mission(template, mission_dir, refresh=args.refresh_mission, project_dir=project_dir)
+    setup_instance_dir(args.instance, template, project_dir)
 
     print()
     print(f"Instance '{args.instance}' is ready. Next:")
