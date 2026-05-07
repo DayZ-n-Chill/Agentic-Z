@@ -54,7 +54,7 @@ def build_steps(intent: Intent, autofix_issues: list[EnvIssue]) -> list[Step]:
             Step(
                 kind="import_mod",
                 label=f"Import existing mod at {intent.project_path}",
-                args=[str(intent.project_path)],
+                args=[str(intent.project_path), intent.mod_name],
             )
         )
 
@@ -82,7 +82,7 @@ def build_steps(intent: Intent, autofix_issues: list[EnvIssue]) -> list[Step]:
             Step(
                 kind="stage_server",
                 label=f"Stage {intent.server_map} server",
-                args=[intent.server_map],
+                args=[intent.server_map, intent.server_map],  # instance name = map alias for now
             )
         )
 
@@ -127,7 +127,7 @@ def execute(steps: list[Step]) -> int:
         try:
             _dispatch(step)
         except Exception as exc:
-            print(f"  failed: {exc}")
+            print(f"  failed [{step.kind}]: {exc}")
             return i
         print("  ok")
     return 0
@@ -138,7 +138,7 @@ def _dispatch(step: Step) -> None:
     if step.kind.startswith("autofix:"):
         which = step.kind.split(":", 1)[1]
         if which == "p_drive":
-            _run("dayz-workdrive", "workdrive.py")
+            _dispatch_p_drive_autofix()
         elif which == "mods_junction":
             _create_mods_junction()
         else:
@@ -148,14 +148,16 @@ def _dispatch(step: Step) -> None:
     if step.kind == "scaffold":
         _run("dayz-new-mod", "new_mod.py", *step.args)
     elif step.kind == "import_mod":
-        _run("dayz-import-mod", "import_mod.py", "--source", *step.args)
+        project_path, mod_name = step.args
+        _run("dayz-import-mod", "import_mod.py", "--source", project_path, "--name", mod_name)
     elif step.kind == "junction_mod":
         _create_mod_junction(*step.args)
     elif step.kind == "cache_project":
         from state import write_cached_project_root  # local import
         write_cached_project_root(Path(step.args[0]))
     elif step.kind == "stage_server":
-        _run("dayz-add-server", "add_server.py", *step.args)
+        instance, map_name = step.args
+        _run("dayz-add-server", "add_server.py", instance, "--map", map_name)
     elif step.kind == "build_pbo":
         _run("dayz-build-pbo", "build.py", *step.args)
     elif step.kind == "launch_diag":
@@ -172,17 +174,50 @@ def _run(skill_name: str, entry_filename: str, *args: str) -> None:
     subprocess.run(cmd, check=True)
 
 
+def _dispatch_p_drive_autofix() -> None:
+    """Mount P:\\ via dayz-workdrive's mount.ps1."""
+    skill_dir = REPO_ROOT / ".claude" / "skills" / "dayz-workdrive"
+    subprocess.run(
+        ["powershell", "-NoProfile", "-File", str(skill_dir / "mount.ps1")],
+        check=True,
+    )
+
+
 def _create_mods_junction() -> None:
-    """Best-effort junction P:\\Mods\\ to <DayZ install>\\!Workshop\\."""
-    # Implementation intentionally calls dayz-workdrive's helper via subprocess
-    # so the logic stays in one place. We re-use it here.
-    _run("dayz-workdrive", "workdrive.py", "--ensure-mods-junction")
+    """Create P:\\Mods\\ junction to <DayZ install>\\!Workshop\\.
+
+    Reads the DayZ install path from Steam's app manifest if available,
+    otherwise falls back to the conventional path. Best-effort.
+    """
+    workshop_candidates = [
+        Path(r"C:\Program Files (x86)\Steam\steamapps\common\DayZ\!Workshop"),
+        Path(r"C:\Program Files\Steam\steamapps\common\DayZ\!Workshop"),
+    ]
+    workshop = next((p for p in workshop_candidates if p.is_dir()), None)
+    if workshop is None:
+        raise RuntimeError(
+            "Could not find DayZ !Workshop directory. "
+            "Verify DayZ is installed via Steam, then re-run /dayz-init."
+        )
+    subprocess.run(
+        ["cmd", "/c", "mklink", "/J", "P:\\Mods", str(workshop)],
+        check=True,
+    )
 
 
 def _create_mod_junction(mod_name: str, project_path: str) -> None:
     """Create P:\\<ModName>\\ junction to <project_path>."""
     target = f"P:\\{mod_name}"
-    subprocess.run(
-        ["cmd", "/c", "mklink", "/J", target, project_path],
-        check=True,
-    )
+    try:
+        subprocess.run(
+            ["cmd", "/c", "mklink", "/J", target, project_path],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            f"Failed to create junction {target} -> {project_path}.\n"
+            f"  mklink output: {exc.stderr or exc.stdout}\n"
+            f"  Try running Claude Code with elevated privileges, or enable Developer Mode."
+        ) from exc
