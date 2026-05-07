@@ -58,21 +58,23 @@ def check_p_drive() -> EnvIssue | None:
 
 
 def _dayz_tools_installed() -> bool:
-    """Check DayZ Tools install: registry key plus AddonBuilder.exe on disk.
+    """Check DayZ Tools install: registry subkey plus AddonBuilder.exe on disk.
 
-    Reading InstallPath from the registry key and confirming the binary
-    exists is more robust than a key-only check (catches the case where
-    the user removed the install dir but the Steam-managed key remains).
+    DayZ Tools registers each tool under its own subkey (AddonBuilder, BinMake,
+    etc.) with `path` and `exe` values — there is no top-level InstallPath.
+    We resolve via the AddonBuilder subkey and verify the exe is on disk so a
+    stale registry entry (install dir manually deleted) still reads as missing.
     """
     try:
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE,
-            r"SOFTWARE\WOW6432Node\Bohemia Interactive\DayZ Tools",
+            r"SOFTWARE\WOW6432Node\Bohemia Interactive\DayZ Tools\AddonBuilder",
         ) as key:
-            install_path, _ = winreg.QueryValueEx(key, "InstallPath")
+            tool_path, _ = winreg.QueryValueEx(key, "path")
+            tool_exe, _ = winreg.QueryValueEx(key, "exe")
     except OSError:
         return False
-    return (Path(install_path) / "Bin" / "AddonBuilder" / "AddonBuilder.exe").is_file()
+    return (Path(tool_path) / tool_exe).is_file()
 
 
 def check_dayz_tools() -> EnvIssue | None:

@@ -8,6 +8,18 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+# Force UTF-8 on stdout/stderr so the box-drawing chars (──, •, ✓) used by
+# init/intent/plan/hub render in Windows consoles whose default codepage is
+# cp1252. Python 3.14 still picks the locale codepage when the device isn't a
+# UTF-8 TTY; reconfiguring once at the entry point is enough because every
+# print in this process inherits these streams.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError):
+            pass
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from env_check import run_all, classify  # noqa: E402
