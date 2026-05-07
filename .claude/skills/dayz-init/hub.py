@@ -62,7 +62,7 @@ def gather_status(project: Path) -> Status:
 
 def render_status(status: Status) -> str:
     mod_name = status.project.name
-    lines = [f"-- /dayz-init  -  {mod_name} --"]
+    lines = [f"── /dayz-init  •  {mod_name} ──"]
     lines.append(f"Path:    {status.project}")
     if status.pbo_path:
         lines.append(f"PBO:     built {status.pbo_age_minutes}m ago")
