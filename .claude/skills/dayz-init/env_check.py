@@ -6,8 +6,6 @@ steam:// links and human-readable messages.
 """
 from __future__ import annotations
 
-import os
-import shutil
 import sys
 import winreg
 from dataclasses import dataclass
@@ -41,7 +39,12 @@ def check_python() -> EnvIssue | None:
 
 
 def _p_drive_mounted() -> bool:
-    return Path("P:\\").exists()
+    """Check P:\\ via the logical-drive bitmask (no I/O, no popup risk)."""
+    import ctypes
+
+    bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+    # Bit 0 = A, bit 1 = B, ..., bit 15 = P
+    return bool(bitmask & (1 << 15))
 
 
 def check_p_drive() -> EnvIssue | None:
@@ -55,15 +58,21 @@ def check_p_drive() -> EnvIssue | None:
 
 
 def _dayz_tools_installed() -> bool:
-    """Check Steam app 830640 install via registry. Returns False on any error."""
+    """Check DayZ Tools install: registry key plus AddonBuilder.exe on disk.
+
+    Reading InstallPath from the registry key and confirming the binary
+    exists is more robust than a key-only check (catches the case where
+    the user removed the install dir but the Steam-managed key remains).
+    """
     try:
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE,
             r"SOFTWARE\WOW6432Node\Bohemia Interactive\DayZ Tools",
-        ):
-            return True
+        ) as key:
+            install_path, _ = winreg.QueryValueEx(key, "InstallPath")
     except OSError:
         return False
+    return (Path(install_path) / "Bin" / "AddonBuilder" / "AddonBuilder.exe").is_file()
 
 
 def check_dayz_tools() -> EnvIssue | None:
