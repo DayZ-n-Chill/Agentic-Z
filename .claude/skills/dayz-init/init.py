@@ -10,8 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from detect import cwd  # noqa: E402
-from env_check import run_all, classify, Severity  # noqa: E402
+from env_check import run_all, classify  # noqa: E402
 from intent import gather_intent  # noqa: E402
 from plan import build_steps, render_plan, execute  # noqa: E402
 from prompts import ask_yes_no  # noqa: E402
@@ -80,12 +79,16 @@ def run_wizard() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    project = cached_project_root()
-    if project is not None and is_setup_complete(project):
-        # Hub mode arrives in Task 12. For now, message and exit.
-        print(f"Project '{project.name}' is set up. Hub mode coming in Task 12.")
-        return 0
-    return run_wizard()
+    try:
+        project = cached_project_root()
+        if project is not None and is_setup_complete(project):
+            # Hub mode arrives in Task 12. For now, message and exit.
+            print(f"Project '{project.name}' is set up. Hub mode coming in Task 12.")
+            return 0
+        return run_wizard()
+    except (KeyboardInterrupt, EOFError):
+        print("\nAborted.")
+        return 1
 
 
 if __name__ == "__main__":
