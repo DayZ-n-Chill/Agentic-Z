@@ -52,6 +52,21 @@ class TestModNameFromConfigCpp(unittest.TestCase):
             cfg.write_text("// empty")
             self.assertIsNone(mod_name_from_config_cpp(Path(d)))
 
+    def test_extracts_class_when_brace_precedes_it(self):
+        # Real-world configs may have requiredAddons or other brace-containing
+        # tokens BEFORE the first inner class. The regex must skip past them.
+        with tempfile.TemporaryDirectory() as d:
+            cfg = Path(d) / "config.cpp"
+            cfg.write_text(
+                'class CfgPatches {\n'
+                '    requiredAddons[] = {"DZ_Data"};\n'
+                '    class MyMod {\n'
+                '        units[] = {};\n'
+                '    };\n'
+                '};\n'
+            )
+            self.assertEqual(mod_name_from_config_cpp(Path(d)), "MyMod")
+
 
 class TestIsModDir(unittest.TestCase):
     def test_true_when_config_cpp_exists(self):

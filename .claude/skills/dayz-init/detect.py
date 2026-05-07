@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 _CFGPATCHES_CLASS_RE = re.compile(
-    r"class\s+CfgPatches\s*\{[^}]*?class\s+(\w+)",
+    r"class\s+CfgPatches\s*\{.*?class\s+(\w+)",
     re.DOTALL,
 )
 
