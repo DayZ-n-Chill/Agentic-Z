@@ -4,7 +4,7 @@ name: agentic-z-update
 
 ## Overview
 
-Pull the latest Agentic-Z template improvements (agents, skills, conventions, docs) from upstream into your clone, without touching your DayZ mod work in `workspace/`. Adds the upstream remote on first run, fetches, shows a changelog, then merges only template-managed paths. Re-runs sync-skills automatically. Refuses if your working tree is dirty unless `--force` is passed.
+Pull the latest Agentic-Z template improvements (agents, skills, conventions, docs) from upstream into your clone, without touching your DayZ mod work in workspace/. Adds the upstream remote on first run, fetches, shows a changelog, then merges only template-managed paths. Re-runs sync-skills automatically. Refuses if your working tree is dirty unless --force is passed.
 
 # /agentic-z-update
 
@@ -56,7 +56,7 @@ To disable temporarily: comment out the `SessionStart` block in `.claude/setting
 
 ## Search index notification
 
-If you previously ran `/dayz-search-download`, this skill ALSO checks whether the GitHub release you installed has been superseded. The check is read-only -- it never auto-downloads (the index is ~200MB). Just nudges you to run `/dayz-search-download` when a newer release ships.
+If you previously ran `/dayz-search-download`, this skill ALSO checks whether the GitHub release you installed has been superseded. The check is read-only — it never auto-downloads (the index is ~200MB). Just nudges you to run `/dayz-search-download` when a newer release ships.
 
 To skip the check: ensure `~/.claude/dayz-search-index/release-tag.txt` doesn't exist (the check is silent when no installed tag is recorded).
 
@@ -73,7 +73,7 @@ Pull infrastructure updates from `https://github.com/DayZ-n-Chill/Agentic-Z` int
 ## When NOT to run
 
 - Mid-merge or mid-rebase.
-- With uncommitted changes to template files (it'll refuse -- commit first).
+- With uncommitted changes to template files (it'll refuse — commit first).
 - On a fork that has diverged heavily from upstream main (manual cherry-pick is safer).
 
 ## How to run
@@ -84,7 +84,7 @@ python .claude\skills\agentic-z-update\update.py [--force] [--dry-run] [--no-syn
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `--force` | no | Skip the dirty-tree check. Risky -- uncommitted edits in template paths may be clobbered. |
+| `--force` | no | Skip the dirty-tree check. Risky — uncommitted edits in template paths may be clobbered. |
 | `--dry-run` | no | Show what would change (commit log + file list) without merging or running sync-skills. |
 | `--no-sync` | no | Skip the post-merge `/sync-skills` re-run. Useful if you only use Claude Code. |
 
@@ -152,7 +152,7 @@ git diff upstream/main HEAD -- <path>     # see the difference
 
 ## Refuse rules
 
-- Not a git repo -- fail with "run from inside an Agentic-Z clone."
-- Working tree has uncommitted changes in template paths -- fail unless `--force`.
-- Upstream remote exists but points elsewhere -- fail with instructions to fix.
-- Network failure on `git fetch` -- fail with the underlying error.
+- Not a git repo → fail with "run from inside an Agentic-Z clone."
+- Working tree has uncommitted changes in template paths → fail unless `--force`.
+- Upstream remote exists but points elsewhere → fail with instructions to fix.
+- Network failure on `git fetch` → fail with the underlying error.

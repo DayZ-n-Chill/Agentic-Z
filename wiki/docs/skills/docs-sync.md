@@ -2,18 +2,24 @@
 name: docs-sync
 ---
 
+## Overview
+
+Sync the Docusaurus wiki at `wiki/docs/` with the canonical sources (`.claude/agents/`, `.claude/skills/`, `docs/`, L1 files). Pure-Python: detects drift, applies the Docusaurus transform (frontmatter trim, agent badge HTML, example-block parser, MDX-tag escape), prunes orphan wiki pages whose canonical source was deleted.
+
 # /docs-sync
 
-Keep `wiki/docs/` in sync with canonical sources. Two layers:
+Keep `wiki/docs/` in sync with canonical sources. One pure-Python script, two modes:
 
-1. **Drift detector** (Python, fast, no LLM cost) — lists what's out of sync.
-2. **Sync agent** (`docs-wiki-sync`, model: sonnet by default) — applies the Docusaurus transform and writes updates.
+1. **Drift detector** (`--check`, fast, no LLM cost) — lists what's out of sync. Wired to the Stop hook.
+2. **Apply** (`--apply`) — runs the deterministic Docusaurus transform and writes every mirror; prunes orphan wiki pages.
+
+The transform used to live in a `docs-wiki-sync` agent that needed to be dispatched manually, so wiki updates rotted between dispatches. The transforms are deterministic, so they're now in `apply.py` and run from the same script as drift detection.
 
 ## When to run it
 
 - After editing any `.claude/agents/<name>.md` or `.claude/skills/<name>/SKILL.md`.
 - After editing `docs/*.md` or the L1 files (`CLAUDE.md` / `AGENTS.md` / `GEMINI.md`).
-- After adding a new agent or skill (mirrors get created and tables updated).
+- After adding a new agent or skill (mirrors get created automatically).
 - Whenever the Stop hook flags drift at the end of a session.
 
 ## How to run
@@ -24,18 +30,17 @@ Keep `wiki/docs/` in sync with canonical sources. Two layers:
 python .claude\skills\docs-sync\sync.py --check
 ```
 
-**Apply the sync** (invokes the `docs-wiki-sync` agent):
+**Apply the sync** (writes mirrors and prunes orphans):
 
-Tell Claude Code: *"Run the docs-wiki-sync agent."* The agent reads the drift report, applies the Docusaurus transform, and writes the updated wiki files.
+```cmd
+python .claude\skills\docs-sync\sync.py --apply
+```
 
-## Model selection
+**Preview what `--apply` would do** (no writes, no deletions):
 
-The agent defaults to **sonnet** — fast and accurate for routine sync work. Override when needed:
-
-- **opus** — large rewrites, complex prose synthesis, or you want maximum quality.
-- **haiku** — purely mechanical 1:1 file mirror with no judgement calls.
-
-Tell the agent: *"Use opus for this sync"* or *"use haiku, just mirror the files"*. You can always ask for a different model — the default is the recommendation, not a constraint.
+```cmd
+python .claude\skills\docs-sync\sync.py --apply --dry-run
+```
 
 ## What gets synced
 
@@ -58,7 +63,7 @@ The Docusaurus transform applied during sync:
 The drift detector (`sync.py --check`) is wired to Claude Code's Stop hook. After each session, if any canonical file changed without its wiki mirror being updated, you'll see a one-line notice:
 
 ```
-docs-sync: 2 file(s) need wiki sync. Run /docs-sync.
+docs-sync: 2 file(s) need wiki sync. Run `python .claude/skills/docs-sync/sync.py --apply` to update the wiki.
 ```
 
 The hook never auto-applies edits — you decide when to run the sync.

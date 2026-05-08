@@ -2,6 +2,10 @@
 name: dayz-search-download
 ---
 
+## Overview
+
+Download a prebuilt DayZ RAG vector index from the repo's GitHub releases and extract it to `~/.claude/dayz-search-index/`, so a fresh clone can use the dayz-rag MCP server without running `/dayz-search-index` (skipping the ~25-30 min build and Voyage API token cost). Idempotent — checks the existing index's manifest and skips re-download if it matches the release. Use this in place of `/dayz-search-index` on a fresh machine.
+
 # /dayz-search-download
 
 Pull the prebuilt vanilla-source + wiki vector index from the repo's GitHub releases instead of building it locally. Same on-disk result as `/dayz-search-index` + `/dayz-search-wiki-index`, but downloads in a minute instead of 25-30.

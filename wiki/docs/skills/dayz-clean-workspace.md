@@ -4,16 +4,16 @@ name: dayz-clean-workspace
 
 ## Overview
 
-Remove DayZ scaffolds and their deployed artifacts. For each managed mod under `workspace/<ModName>/` (native `/dayz-new-mod` scaffold OR `/dayz-import-mod` link), removes the workspace folder/link, the `P:\<ModName>\` junction (only if it points at our workspace), and the `P:\Mods\@<ModName>\` deployed dir. For imported mods, the external source folder is NEVER touched -- only the link is removed. Never touches mods you didn't scaffold (subscribed/installed mods at `!Workshop` are safe). `--include-server` also removes `.server/` (refuses if legacy `workspace/_server/` still exists; run `/dayz-migrate-server` first). Interactive confirmation by default; `--yes` skips it.
+Remove DayZ scaffolds and their deployed artifacts. For each managed mod under workspace/&lt;ModName&gt;/ (native /dayz-new-mod scaffold OR /dayz-import-mod link), removes the workspace folder/link, the P:\&lt;ModName&gt;\ junction (only if it points at our workspace), and the P:\Mods\@&lt;ModName&gt;\ deployed dir. For imported mods, the external source folder is NEVER touched - only the link is removed. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes .server/ (refuses if legacy workspace/_server/ still exists; delete it manually first). Interactive confirmation by default; --yes skips it.
 
 # /dayz-clean-workspace
 
-Reset the DayZ workspace by removing scaffolds and their deployed artifacts. Safe -- only removes mods that match a `workspace/<ModName>/` entry (folder OR link containing `config.cpp` + `$PBOPREFIX$`). User-installed / subscribed mods under `<DayZ install>\!Workshop\` are never touched.
+Reset the DayZ workspace by removing scaffolds and their deployed artifacts. Safe - only removes mods that match a `workspace/<ModName>/` entry (folder OR link containing `config.cpp` + `$PBOPREFIX$`). User-installed / subscribed mods under `<DayZ install>\!Workshop\` are never touched.
 
 Handles both native scaffolds (`/dayz-new-mod`) and imported links (`/dayz-import-mod`):
 
-- **Native scaffold** -- folder is removed recursively.
-- **Imported link** -- the link itself is removed via `cmd /c rmdir`. The external source folder it pointed at is **never touched**.
+- **Native scaffold** - folder is removed recursively.
+- **Imported link** - the link itself is removed via `cmd /c rmdir`. The external source folder it pointed at is **never touched**.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -36,23 +36,23 @@ For each `workspace/<ModName>/` containing `config.cpp` + `$PBOPREFIX$`:
 
 | Artifact | Removed when |
 |---|---|
-| `P:\<ModName>\` junction | It exists AND points at `workspace/<ModName>/`. (If the link points elsewhere or isn't a link, it's left alone -- could be the user's own setup.) |
-| `P:\Mods\@<ModName>\` deployed dir | It exists AND contains the ownership marker `.agentic-z-scaffold` with content matching `<ModName>`. The marker is dropped by `/dayz-build-pbo` on every successful build, so any deployed dir we produced will have it. Without the marker, the dir is skipped with a `[WARN]` and a manual rmdir hint -- protects against name collisions with hand-placed or subscribed mods. |
+| `P:\<ModName>\` junction | It exists AND points at `workspace/<ModName>/`. (If the link points elsewhere or isn't a link, it's left alone - could be the user's own setup.) |
+| `P:\Mods\@<ModName>\` deployed dir | It exists AND contains the ownership marker `.agentic-z-scaffold` with content matching `<ModName>`. The marker is dropped by `/dayz-build-pbo` on every successful build, so any deployed dir we produced will have it. Without the marker, the dir is skipped with a `[WARN]` and a manual rmdir hint - protects against name collisions with hand-placed or subscribed mods. |
 | `workspace/<ModName>/` (native scaffold) | Always. Folder + contents removed recursively via `shutil.rmtree`. |
-| `workspace/<ModName>/` (imported link) | The link itself is removed via `cmd /c rmdir` (the same approach used for `P:\<ModName>\`). The link's target -- your external mod source -- is **never touched**. Output kind shows as `workspace-link` to make this visible. |
+| `workspace/<ModName>/` (imported link) | The link itself is removed via `cmd /c rmdir` (the same approach used for `P:\<ModName>\`). The link's target - your external mod source - is **never touched**. Output kind shows as `workspace-link` to make this visible. |
 
 ### Note on existing deployed dirs
 
 If you have deployed dirs from before the marker was introduced, they won't have `.agentic-z-scaffold` and `dayz-clean-workspace` will skip them. Either rebuild via `/dayz-build-pbo <ModName>` (which writes the marker) or remove manually with `cmd /c rmdir /s /q P:\Mods\@<ModName>` after confirming it's actually yours.
 
-With `--include-server`, also removes `.server/` at the project root (all instances under it: missions, configs, profiles, client logs). Use this for a full reset; otherwise the server staging stays so you don't have to re-copy missions next time. If `workspace/_server/` (the legacy layout) still exists, this skill refuses with a hint to run `/dayz-migrate-server` first; we don't silently leave the old folder behind.
+With `--include-server`, also removes `.server/` at the project root (all instances under it: missions, configs, profiles, client logs). Use this for a full reset; otherwise the server staging stays so you don't have to re-copy missions next time. If `workspace/_server/` (the legacy layout) still exists, this skill refuses; delete the folder manually first (the previous `/dayz-migrate-server` skill that copied content to `.server/<instance>/` was removed in 1.4.0).
 
 ## What it WILL NOT touch
 
 - Mods you installed via Steam Workshop or DayZ Launcher (they live under `<DayZ install>\!Workshop\@<Subscribed>\` and only `@<scaffold-name>` matches are removed).
 - `P:\<Name>\` junctions or folders that don't correspond to a `workspace/<Name>/` entry.
-- `P:\Mods\` itself (the junction stays -- only the `@<ModName>\` subfolders within it that match managed mods are removed).
-- **External source folders for imported mods**. If `workspace/<Name>/` is a `/dayz-import-mod` link pointing at, say, `C:\Users\you\repos\MyMod`, only the link is removed -- your source folder stays exactly as it was. The clean output kind shows as `workspace-link` to make this visible.
+- `P:\Mods\` itself (the junction stays - only the `@<ModName>\` subfolders within it that match managed mods are removed).
+- **External source folders for imported mods**. If `workspace/<Name>/` is a `/dayz-import-mod` link pointing at, say, `C:\Users\you\repos\MyMod`, only the link is removed - your source folder stays exactly as it was. The clean output kind shows as `workspace-link` to make this visible.
 - Anything outside `workspace/`, `P:\<ModName>\` for matched names, or `P:\Mods\@<ModName>\` for matched names.
 
 ## Refuses to run if

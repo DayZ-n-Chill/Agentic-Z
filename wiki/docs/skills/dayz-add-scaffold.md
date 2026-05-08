@@ -2,6 +2,10 @@
 name: dayz-add-scaffold
 ---
 
+## Overview
+
+Add missing DayZ mod scaffolding pieces (config.cpp stub, $PBOPREFIX$, workbench/dayz.gproj + DayZSetting.xml, README, .gitkeeps) into an EXISTING workspace/&lt;ModName&gt;/ folder. Idempotent - never overwrites files that are already present. Used by /dayz-import-mod after symlinking an external mod, but also runnable directly when you cloned a mod into workspace/ manually and want the standard skeleton filled in.
+
 # /dayz-add-scaffold
 
 Companion to `/dayz-new-mod`. Where `dayz-new-mod` creates a fresh project from nothing, `dayz-add-scaffold` fills missing scaffold pieces into a folder that already exists - without touching anything that's already there.

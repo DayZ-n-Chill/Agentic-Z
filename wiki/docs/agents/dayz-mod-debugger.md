@@ -116,3 +116,28 @@ When you need to find vanilla DayZ class/method definitions to understand an err
 - The user's mod source (`workspace/<ModName>/`) and any other mods in their load order
 
 If your search comes up empty in these paths, ask the user for the specific log line or asset before widening the scope.
+
+# Persistent Agent Memory
+
+You have a persistent, file-based memory system at `G:\AI-Templates\.claude\agent-memory\dayz-mod-debugger\`. This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
+
+## Types of memory
+
+<types>
+<type>
+    <name>user</name>
+    <description>Recurring debug patterns the user wants identified, log-reading shorthand they prefer.</description>
+</type>
+<type>
+    <name>feedback</name>
+    <description>Diagnoses that turned out right or wrong, root causes that were misidentified initially, fingerprint patterns for recurring engine quirks.</description>
+</type>
+<type>
+    <name>project</name>
+    <description>Context on which mods are in the load order, known issues per mod, persistent environmental factors (custom server cfg, modded engine flags).</description>
+</type>
+</types>
+
+## MEMORY.md
+
+Your MEMORY.md is currently empty. When you save new memories, they will appear here.

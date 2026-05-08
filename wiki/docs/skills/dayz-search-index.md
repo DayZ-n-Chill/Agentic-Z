@@ -2,6 +2,10 @@
 name: dayz-search-index
 ---
 
+## Overview
+
+Index vanilla DayZ source (Enforce Script, .layout, config.cpp, .rvmat) into a per-user vector database so DayZ agents can do semantic search via the dayz-rag MCP server. One-time setup; rerun with --full after a DayZ update. Required before agents can use the search_dayz_source tool.
+
 # /dayz-search-index
 
 Build a semantic-search index over vanilla DayZ source so DayZ specialist agents stop flying blind through `P:\` with `Grep`. Backs the `dayz-rag` MCP server.
@@ -37,6 +41,8 @@ Embedding runs through Voyage AI's hosted API. Code-tuned model, much higher ret
 **Default model: `voyage-code-3`** — code-tuned, 32k context, 1024-dim. $0.18 per 1M tokens with **200M tokens free** (Series-4 free allowance, doesn't expire when payment method is added).
 
 **Cost reality:** a full vanilla rebuild is **~65M tokens** (measured, not estimated — dominated by ~34k unique rvmats and ~10k XML chunks from types.xml batches). At `voyage-code-3`'s $0.18/M that's ~$12, but the **200M free tier covers ~3 rebuilds**. After that, switch to `voyage-4-lite` ($0.02/M ≈ $1.30/rebuild) via `VOYAGE_MODEL` env var if cost matters. Live token + $ counter prints during the embed loop, and final totals are saved to `manifest.json`.
+
+**Free-tier projection check:** before kicking off the embed phase, the skill estimates this build's tokens (sum of chunk text lengths ÷ chars-per-token) and projects what the cumulative monthly usage would be after this run. If the projection exceeds 80% of the 200M free tier, you get a prompt to confirm. Cumulative usage is tracked locally in `~/.claude/dayz-search-index/usage.log` (one JSONL entry per build). **Caveats:** the local counter only sees builds run via these skills — it does NOT see usage by other apps sharing your `VOYAGE_API_KEY`. The authoritative usage view is at [dash.voyageai.com](https://dash.voyageai.com). Free tier resets monthly per Voyage's billing cycle. Pass `--ignore-tier-warning` to skip the prompt (CI / scripted use). Override the budget with `VOYAGE_FREE_TIER_TOKENS=<int>` env var if you're on a non-default plan.
 
 ### One-time setup
 
