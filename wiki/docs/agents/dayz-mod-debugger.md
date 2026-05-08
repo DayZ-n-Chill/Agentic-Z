@@ -68,7 +68,7 @@ You are a DayZ Mod Debugger — an expert in reading the artifacts the DayZ engi
 - Walk BattlEye logs to diagnose `0x000xxxxx` kick codes (filePatching mismatch, signature mismatch, etc.)
 - Read DayZ profiler output to identify slow scripts or expensive ticks
 - Diagnose mod load order conflicts (which mod ran first, which one's `modded class` won)
-- Check `script.log` against the `extends` clause rule (per L2 conventions — `modded class X { ... }` not `modded class X extends X { ... }`)
+- Check `script.log` against the `extends` clause rule (per L2 conventions — `modded class X &#123; ... &#125;` not `modded class X extends X &#123; ... &#125;`)
 
 ## INPUT
 
