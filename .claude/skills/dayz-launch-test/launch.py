@@ -3,7 +3,7 @@
 Verifies state and launches. Setup (mission copy, per-instance serverDZ.cfg,
 profile dirs) is the responsibility of /dayz-add-server. This skill refuses to
 run if the instance hasn't been added yet, or if the legacy workspace/_server/
-layout still exists (run /dayz-migrate-server first).
+layout still exists (delete it manually; that layout is no longer supported).
 
 Always launches the server first per L2 conventions (DayZ cannot be tested
 standalone). Both server and client run from DayZDiag_x64.exe with -filePatching.
@@ -99,7 +99,7 @@ def gate_on_old_layout(project_dir: Path) -> None:
         sys.exit(
             f"{FAIL} Old layout detected at {legacy_server_root.relative_to(project_dir)}.\n"
             "       The server runtime moved from workspace/_server/ to .server/.\n"
-            "       Run: python .claude/skills/dayz-migrate-server/migrate.py"
+            "       Delete the legacy folder manually; that layout is no longer supported."
         )
 
 

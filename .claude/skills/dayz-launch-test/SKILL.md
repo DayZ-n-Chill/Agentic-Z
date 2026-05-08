@@ -1,6 +1,6 @@
 ---
 name: dayz-launch-test
-description: Launch a local DayZ Diag server plus the diag client connecting to it (run-only, does no setup). Verifies the instance has been added via /dayz-add-server; refuses with a clear hint otherwise. Refuses if the legacy workspace/_server/ folder still exists (run /dayz-migrate-server first). --server selects the instance (chernarus default). Always loads server alongside client per L2 conventions.
+description: Launch a local DayZ Diag server plus the diag client connecting to it (run-only, does no setup). Verifies the instance has been added via /dayz-add-server; refuses with a clear hint otherwise. Refuses if the legacy workspace/_server/ folder still exists (delete it manually; that layout is no longer supported). --server selects the instance (chernarus default). Always loads server alongside client per L2 conventions.
 ---
 
 # /dayz-launch-test
@@ -42,7 +42,7 @@ Each instance has its own `serverDZ.cfg` so per-instance tuning (player count, t
 ## What it does
 
 1. **Preflight gate**: runs `/dayz-preflight`; halts on non-zero.
-2. **Old-layout gate**: refuses if `workspace/_server/` still exists (run `/dayz-migrate-server`).
+2. **Old-layout gate**: refuses if `workspace/_server/` still exists. Delete the folder manually; that layout is no longer supported.
 3. **Built-mod check**: for each mod, verifies at least one `.pbo` exists in `P:\Mods\@<ModName>\Addons\`. Fails fast with a hint to run `/dayz-build-pbo` if missing.
 4. **Diag client resolution**: finds `DayZDiag_x64.exe` via `find_dayz_diag()` (env var, DayZ game install, Steam paths). Hard-fails if missing. Both client and server run from the same diag binary; the server adds `-server`. Retail `DayZ_x64.exe` and `DayZServer_x64.exe` are NOT used; both block past the loading screen with `-filePatching` enabled.
 5. **Instance state verification**: confirms `.server/<instance>/mission/` AND `.server/<instance>/serverDZ.cfg` exist. Hard-fails with a hint to run `/dayz-add-server <instance>` if either is missing. The only mutation this skill performs on an existing cfg is auto-appending `allowFilePatching = 1;` if absent.
@@ -54,7 +54,7 @@ Each instance has its own `serverDZ.cfg` so per-instance tuning (player count, t
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero.
-- `workspace/_server/` still exists (run `/dayz-migrate-server` first).
+- `workspace/_server/` still exists. Delete it manually; the legacy layout is no longer supported.
 - Any named mod has no `.pbo` at `P:\Mods\@<ModName>\Addons\`.
 - `DayZDiag_x64.exe` is not found.
 - The selected `--server` hasn't been added yet (`.server/<instance>/mission/` or `.server/<instance>/serverDZ.cfg` missing). Run `/dayz-add-server <instance>` first.
