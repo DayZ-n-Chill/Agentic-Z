@@ -159,16 +159,34 @@ def verify_instance_environment(instance: str, project_dir: Path) -> tuple[Path,
     """
     server_root = project_dir / ".server"
     inst_dir = server_root / instance
-    mission_path = inst_dir / "mission"
     cfg_path = inst_dir / "serverDZ.cfg"
     server_profile_dir = inst_dir / "server-profiles"
     client_profile_dir = inst_dir / "client-profiles"
 
     missing = []
-    if not mission_path.exists():
-        missing.append(f"mission folder: {mission_path.relative_to(project_dir)}")
     if not cfg_path.exists():
         missing.append(f"server cfg: {cfg_path.relative_to(project_dir)}")
+
+    # CRITICAL: -mission= must point at a path NAMED after the mission template
+    # (e.g. dayzOffline.chernarusplus), not at "mission/". The engine resolves the
+    # template name during the client connect handshake; pointing at "mission/"
+    # means the client connects but never spawns the player. /dayz-add-server
+    # creates a junction <template>/ -> mission/ so we can point at it here.
+    template_dirs = [p for p in inst_dir.glob("dayzOffline.*") if p.is_dir()]
+    if not template_dirs:
+        # Fall back to mission/ for the missing-files error message; user will be
+        # told to re-run /dayz-add-server which creates the junction.
+        mission_path = inst_dir / "mission"
+        if not mission_path.exists():
+            missing.append(f"mission folder: {mission_path.relative_to(project_dir)}")
+        else:
+            missing.append(
+                f"mission template junction (dayzOffline.<map>/ -> mission/): "
+                f"missing in {inst_dir.relative_to(project_dir)}"
+            )
+    else:
+        mission_path = template_dirs[0]
+
     if missing:
         details = "\n".join(f"          - {m}" for m in missing)
         sys.exit(
