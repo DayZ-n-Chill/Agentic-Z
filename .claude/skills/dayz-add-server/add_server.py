@@ -7,8 +7,8 @@ run multiple variants of the same map (chernarus, chernarus-hardcore, etc.).
 This is the setup half of the local-test loop. /dayz-launch-test is the run
 half and refuses to run for an instance that hasn't been added yet.
 
-Refuses to run if the legacy workspace/_server/ folder still exists. Run
-/dayz-migrate-server first.
+Refuses to run if the legacy workspace/_server/ folder still exists. Delete
+it manually; that layout is no longer supported.
 
 See SKILL.md for full usage.
 """
@@ -85,7 +85,7 @@ def gate_on_old_layout(project_dir: Path) -> None:
         sys.exit(
             f"{FAIL} Old layout detected at {legacy_server_root.relative_to(project_dir)}.\n"
             "       The server runtime moved from workspace/_server/ to .server/.\n"
-            "       Run: python .claude/skills/dayz-migrate-server/migrate.py"
+            "       Delete the legacy folder manually; that layout is no longer supported."
         )
 
 

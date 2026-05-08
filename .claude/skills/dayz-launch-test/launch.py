@@ -3,7 +3,7 @@
 Verifies state and launches. Setup (mission copy, per-instance serverDZ.cfg,
 profile dirs) is the responsibility of /dayz-add-server. This skill refuses to
 run if the instance hasn't been added yet, or if the legacy workspace/_server/
-layout still exists (run /dayz-migrate-server first).
+layout still exists (delete it manually; that layout is no longer supported).
 
 Always launches the server first per L2 conventions (DayZ cannot be tested
 standalone). Both server and client run from DayZDiag_x64.exe with -filePatching.
@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import socket
 import subprocess
 import sys
 import time
@@ -99,7 +100,7 @@ def gate_on_old_layout(project_dir: Path) -> None:
         sys.exit(
             f"{FAIL} Old layout detected at {legacy_server_root.relative_to(project_dir)}.\n"
             "       The server runtime moved from workspace/_server/ to .server/.\n"
-            "       Run: python .claude/skills/dayz-migrate-server/migrate.py"
+            "       Delete the legacy folder manually; that layout is no longer supported."
         )
 
 
@@ -265,6 +266,46 @@ def read_client_display_prefs(project_dir: Path) -> dict:
     return dict(DEFAULT_CLIENT_DISPLAY)
 
 
+def wait_for_server_port(port: int, server_proc: subprocess.Popen, timeout_s: int = 180) -> bool:
+    """Wait until the DayZ server has bound UDP `port`. Returns True when bound
+    within `timeout_s`, False if it gives up.
+
+    Detection: try to bind() the same UDP port ourselves. If bind fails with
+    EADDRINUSE (or any OSError), the server is holding it; we're good. If
+    bind succeeds, the server hasn't bound yet — release and retry.
+
+    DayZ does not respond to Source Engine Query on the game port, so packet-
+    based probes don't work. Bind-collision is the reliable signal.
+
+    DayZ servers can take 30+ seconds to fully init (mission load, mod load,
+    persistence init) before binding the network port; previous fixed-5s
+    sleep was way too short.
+    """
+    print(f"        Waiting up to {timeout_s}s for server to bind UDP port {port}...")
+    sys.stdout.flush()
+    deadline = time.time() + timeout_s
+    last_dot = time.time()
+    while time.time() < deadline:
+        if server_proc.poll() is not None:
+            print(f"\n{FAIL} Server process exited unexpectedly (rc={server_proc.returncode}).")
+            return False
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.bind(("0.0.0.0", port))
+            s.close()
+            # Bind succeeded => server has NOT bound yet. Keep waiting.
+        except OSError:
+            # Bind failed => something (the server) is holding the port. Ready.
+            print(f"\n{OK} Server has bound UDP port {port}")
+            return True
+        if time.time() - last_dot > 5:
+            print(".", end="", flush=True)
+            last_dot = time.time()
+        time.sleep(1)
+    print()
+    return False
+
+
 def build_client_cmd(
     diag_exe: Path, mod_arg: str, port: int, client_profile: Path, display: dict
 ) -> list[str]:
@@ -353,9 +394,11 @@ def main() -> int:
     sys.stdout.flush()
     server_proc = subprocess.Popen(server_cmd)
     print(f"{OK} Server PID: {server_proc.pid}")
-    print("        Waiting 5s for server to start listening...")
     sys.stdout.flush()
-    time.sleep(5)
+    if not wait_for_server_port(args.port, server_proc, timeout_s=180):
+        print(f"{FAIL} Server did not bind to port {args.port} within 180s.")
+        print(f"       Check the server RPT in {profile_dir}\\ for errors.")
+        return 1
 
     print()
     print(f"[Launch] Client: {' '.join(client_cmd)}")

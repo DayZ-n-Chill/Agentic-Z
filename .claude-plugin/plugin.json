@@ -19,8 +19,8 @@
   ],
   "skills": [
     "./.claude/skills/dayz-add-server",
-    "./.claude/skills/dayz-migrate-server",
     "./.claude/skills/dayz-add-scaffold",
+    "./.claude/skills/dayz-cot-bootstrap",
     "./.claude/skills/dayz-build-pbo",
     "./.claude/skills/dayz-clean-workspace",
     "./.claude/skills/dayz-import-mod",

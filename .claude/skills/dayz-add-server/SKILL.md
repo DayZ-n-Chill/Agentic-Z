@@ -1,6 +1,6 @@
 ---
 name: dayz-add-server
-description: Set up a DayZ test server instance under .server/<instance>/. Copies the mission template from DayZ Server install if missing, creates per-instance serverDZ.cfg, server-profiles/, client-profiles/. Each instance is fully isolated so you can run multiple variants of the same map (chernarus, chernarus-hardcore, etc.) without cross-contamination. Refuses if the legacy workspace/_server/ layout exists; run /dayz-migrate-server first. Required before /dayz-launch-test for a given instance. Use --refresh-mission to re-copy mission content after a DayZ update.
+description: Set up a DayZ test server instance under .server/<instance>/. Copies the mission template from DayZ Server install if missing, creates per-instance serverDZ.cfg, server-profiles/, client-profiles/. Each instance is fully isolated so you can run multiple variants of the same map (chernarus, chernarus-hardcore, etc.) without cross-contamination. Refuses if the legacy workspace/_server/ layout exists (delete it manually; that layout is no longer supported). Required before /dayz-launch-test for a given instance. Use --refresh-mission to re-copy mission content after a DayZ update.
 ---
 
 # /dayz-add-server
@@ -26,7 +26,7 @@ python .claude\skills\dayz-add-server\add_server.py <instance> [--map <name>] [-
 ## What it does
 
 1. **Preflight gate**: runs `/dayz-preflight`; halts on non-zero.
-2. **Old-layout gate**: refuses if `workspace/_server/` still exists, with a hint to run `/dayz-migrate-server`.
+2. **Old-layout gate**: refuses if `workspace/_server/` still exists. Delete the folder manually; that layout is no longer supported.
 3. **Resolve map and mission template**: turns the instance name and `--map` flag into the canonical mission folder name via the alias table.
 4. **Mission copy**: if `.server/<instance>/mission/` doesn't exist (or `--refresh-mission` was passed), copies it from `<DayZServer>/mpmissions/<template>/`. Folder is renamed to `mission/` regardless of template (the launcher pins the path explicitly).
 5. **Instance directory**: ensures `.server/<instance>/` exists with:
@@ -38,7 +38,7 @@ python .claude\skills\dayz-add-server\add_server.py <instance> [--map <name>] [-
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero.
-- `workspace/_server/` still exists (run `/dayz-migrate-server` first).
+- `workspace/_server/` still exists. Delete it manually; the legacy layout is no longer supported.
 - DayZ Server install isn't found AND the mission isn't already in `.server/<instance>/mission/`. (Install DayZ Server free from Steam appid 223350 for the initial copy. Once the mission is local, DayZ Server is no longer required.)
 - `<instance>` isn't a known map alias and `--map` wasn't given. (We have no way to guess the mission template from a free-form name.)
 - DayZ Server install lacks the requested mission template (e.g. `--map dayzOffline.namalsk` but DayZ Server doesn't ship namalsk; either provide the mission manually under `.server/<instance>/mission/` or correct the name).
