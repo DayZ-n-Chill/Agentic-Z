@@ -27,6 +27,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
 LAUNCH_TEST = REPO_ROOT / ".claude" / "skills" / "dayz-launch-test" / "launch.py"
+DAYZ_INIT_STATE = REPO_ROOT / ".claude" / "skills" / "dayz-init" / "state.py"
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
 
@@ -54,9 +55,10 @@ def _load(path: Path, alias: str):
 
 _preflight = _load(PREFLIGHT, "dayz_preflight_module")
 _launch = _load(LAUNCH_TEST, "dayz_launch_test_module")
+_dayz_init_state = _load(DAYZ_INIT_STATE, "dayz_init_state_module")
 
 find_dayz_diag = _preflight.find_dayz_diag
-read_current_project = _preflight.read_current_project
+cached_project_root = _dayz_init_state.cached_project_root
 verify_built_mods = _launch.verify_built_mods
 resolve_diag_client = _launch.resolve_diag_client
 verify_instance_environment = _launch.verify_instance_environment
@@ -277,7 +279,12 @@ def main() -> int:
 
     gate_on_preflight()
     print()
-    project_dir = read_current_project()
+    project_dir = cached_project_root()
+    if project_dir is None:
+        sys.exit(
+            f"{FAIL} No project cached.\n"
+            "       Run /dayz-init to set up your DayZ environment and project."
+        )
     print(f"{OK} Project: {project_dir}")
 
     verify_cf_cot_subscribed()
