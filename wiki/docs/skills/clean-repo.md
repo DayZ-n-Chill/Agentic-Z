@@ -2,6 +2,10 @@
 name: clean-repo
 ---
 
+## Overview
+
+Wipe ALL template-managed artifacts across every domain so the repo is ready to push. Orchestrator — discovers and runs every domain's `&lt;domain&gt;-clean-workspace` skill in turn (currently just `dayz-clean-workspace`). Future domains plug in here automatically when they ship their own cleanup skill following the naming convention. Interactive confirmation by default; --yes skips it; --dry-run lists what each domain would clean.
+
 # /clean-repo
 
 Wipe everything the template's skills created across all domains so the repo is ready to push to git. This is the "nuke the workspace" button.

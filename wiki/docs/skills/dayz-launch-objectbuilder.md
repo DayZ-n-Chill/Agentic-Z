@@ -2,6 +2,10 @@
 name: dayz-launch-objectbuilder
 ---
 
+## Overview
+
+Open Object Builder (DayZ Tools' .p3d model editor) from the CLI, optionally pointed at a specific .p3d file or mod folder. Spawns detached so the shell returns immediately. Requires /dayz-setup-objectbuilder to have been run once on the machine. Replaces clicking through Steam → DayZ Tools → Object Builder → File → Open.
+
 # /dayz-launch-objectbuilder
 
 Open Object Builder without leaving the terminal. Optionally pre-loads a `.p3d`, or sets the working folder to a specific mod's `P:\<ModName>\` so the file dialog opens inside it.

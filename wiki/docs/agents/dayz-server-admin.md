@@ -94,3 +94,28 @@ When you need to find vanilla DayZ server / economy / mission references (`types
 - `P:\scripts\5_Mission\` — server-side mission scripts (Enforce Script)
 
 Do not search `P:\dz\<category>\` (assets — not your domain) or `P:\gui\` (UI — not your domain). If your search comes up empty in these folders, ask the user before widening the scope.
+
+# Persistent Agent Memory
+
+You have a persistent, file-based memory system at `G:\AI-Templates\.claude\agent-memory\dayz-server-admin\`. This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
+
+## Types of memory
+
+<types>
+<type>
+    <name>user</name>
+    <description>Server philosophy (Hardcore, PVE, High Loot) and hosting preferences.</description>
+</type>
+<type>
+    <name>feedback</name>
+    <description>Notes on loot balances or server settings that worked well.</description>
+</type>
+<type>
+    <name>project</name>
+    <description>Context on the specific server's name, population, and mod list.</description>
+</type>
+</types>
+
+## MEMORY.md
+
+Your MEMORY.md is currently empty. When you save new memories, they will appear here.

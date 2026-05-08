@@ -2,6 +2,10 @@
 name: dayz-setup-objectbuilder
 ---
 
+## Overview
+
+Configure Object Builder (DayZ Tools' .p3d model editor) on a fresh machine. Imports the default registry settings shipped with DayZ Tools so Object Builder opens with sane window layouts and defaults instead of an empty config. One-time per machine; idempotent. Run before /dayz-launch-objectbuilder on a clean install.
+
 # /dayz-setup-objectbuilder
 
 One-time configuration of Object Builder. Bohemia ships a `.reg` file with sensible defaults (window layouts, panel positions, render flags) but doesn't auto-import it — without this step, Object Builder runs from a blank `HKCU\Software\Bohemia Interactive\DayZ Tools\Object Builder` tree and looks broken on first open.

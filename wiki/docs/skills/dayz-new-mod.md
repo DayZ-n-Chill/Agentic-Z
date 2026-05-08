@@ -2,6 +2,10 @@
 name: dayz-new-mod
 ---
 
+## Overview
+
+Scaffold a new DayZ mod project under workspace/&lt;ModName&gt;/ with the standard skeleton (config.cpp stub, $PBOPREFIX$, scripts/3_Game/4_World/5_Mission, data, gui, workbench/, README). Workbench folder gets a copy of the official dayz.gproj + DayZSetting.xml from DayZ Tools, with the mod's script paths injected so Workbench can compile vanilla + mod together. First run prompts for an author handle and caches it in .claude/local-memory/.
+
 # /dayz-new-mod
 
 Create a new DayZ mod project workspace conforming to `.claude/skills/_shared/dayz-conventions.md`. Gates on `/dayz-preflight` first per the L2 rule that every DayZ skill MUST preflight before doing work — refuses to run if `P:\` is not mounted, even though scaffolding itself only writes under `workspace/`.

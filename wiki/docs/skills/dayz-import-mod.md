@@ -2,6 +2,10 @@
 name: dayz-import-mod
 ---
 
+## Overview
+
+Import an existing DayZ mod folder (clone or local repo living outside this workspace) into workspace/&lt;ModName&gt;/ via a directory link, and create the matching P:\&lt;ModName&gt;\ junction so the rest of the DayZ skills (build, launch, clean) work on it. Optionally fills in missing scaffold pieces (config.cpp, $PBOPREFIX$, workbench/dayz.gproj) by prompting y/N per piece. Source folder is never moved or copied - the link points at it where it lives.
+
 # /dayz-import-mod
 
 Bring an existing DayZ mod into Agentic-Z without copying it. The skill creates a directory link at `workspace/<ModName>/` pointing at your external folder (and the matching `P:\<ModName>\` junction) so all the DayZ skills - `/dayz-build-pbo`, `/dayz-launch-workbench`, `/dayz-clean-workspace`, etc. - operate on it like a native scaffold. Then it scans for missing scaffold pieces and asks per-piece whether to fill them in.

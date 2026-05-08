@@ -2,6 +2,10 @@
 name: dayz-edit-types
 ---
 
+## Overview
+
+Programmatically add, update, or remove an entry in DayZ's types.xml. Upserts a `&lt;type name="..."&gt;` block with the given attrs (nominal, min, lifetime, restock, cost, category, usage, value, tag). Auto-backs up the file before modifying. Idempotent — re-running with the same args is a no-op or a clean update.
+
 # /dayz-edit-types
 
 Edit a DayZ Central Economy `types.xml` file programmatically — add a new spawn entry, update an existing one, or remove one. Backs up the file to `types.xml.bak` before any change.
@@ -17,7 +21,7 @@ python .claude\skills\dayz-edit-types\types_edit.py <types.xml> <ClassName> --re
 
 | Argument | Notes |
 |---|---|
-| `<types.xml>` | Path to the types.xml file. Typically `workspace/_server/missions/<template>/db/types.xml`. |
+| `<types.xml>` | Path to the types.xml file. Typically `.server/<instance>/mission/db/types.xml`. |
 | `<ClassName>` | The `name` attribute of the `<type>` block to upsert / remove. |
 | `--remove` | Remove the entry instead of upserting. Other field flags ignored. |
 | `--nominal N` | Target spawn count. Default for new entries: 1. |

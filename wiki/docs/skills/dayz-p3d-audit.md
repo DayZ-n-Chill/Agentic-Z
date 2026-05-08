@@ -2,6 +2,10 @@
 name: dayz-p3d-audit
 ---
 
+## Overview
+
+&gt;
+
 # DayZ P3D Audit — Complete Model & Mod Validator
 
 Validates .p3d model files, config.cpp, model.cfg, and .rvmat materials against

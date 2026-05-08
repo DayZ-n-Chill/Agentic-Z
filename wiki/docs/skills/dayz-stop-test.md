@@ -2,6 +2,10 @@
 name: dayz-stop-test
 ---
 
+## Overview
+
+Kill any running DayZDiag_x64.exe processes (server and/or client). Use after /dayz-launch-test when you want to stop a session without manually finding the windows. Does NOT gate on /dayz-preflight — this is an emergency-stop skill that should work even if the environment is half-broken.
+
 # /dayz-stop-test
 
 Stop a running local DayZ test session by killing every `DayZDiag_x64.exe` process. Counterpart to `/dayz-launch-test`.
@@ -11,10 +15,12 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-stop-test\stop_test.py
+.claude\skills\dayz-stop-test\stop_test.bat
 ```
 
 No arguments, no flags. Always kills every `DayZDiag_x64.exe` process via `taskkill /IM DayZDiag_x64.exe /F`.
+
+This skill is a thin `.bat` wrapper — no Python — because the entire job is a single `taskkill` invocation. Per the L1 rule (Python by default, `.bat` for trivial wrappers around an exe), this is the trivial case.
 
 ## Why no preflight gate
 
@@ -25,8 +31,9 @@ The rule going forward: skills that **do** work (scaffold, build, launch) gate o
 ## What it does
 
 1. Runs `taskkill /IM DayZDiag_x64.exe /F` (Windows). Force-kills any process with that image name — both server and client sessions.
-2. Reports how many processes were terminated.
-3. Exit 0 whether processes existed or not (no diag running is the desired end state either way).
+2. Lets `taskkill`'s own output through (one `SUCCESS:` line per killed process).
+3. If nothing was running, prints `[OK]   No DayZDiag_x64.exe processes running.` instead of `taskkill`'s noisy `ERROR: ... not found.`
+4. Exit 0 whether processes existed or not (no diag running is the desired end state either way).
 
 ## What it WILL NOT do
 
@@ -36,14 +43,17 @@ The rule going forward: skills that **do** work (scaffold, build, launch) gate o
 
 ## Output
 
-```
-[OK]    Stopped 2 DayZDiag_x64.exe process(es).
-```
-
-Or, if nothing was running:
+When something was running:
 
 ```
-[OK]    No DayZDiag_x64.exe processes running.
+SUCCESS: The process "DayZDiag_x64.exe" with PID 12345 has been terminated.
+SUCCESS: The process "DayZDiag_x64.exe" with PID 12346 has been terminated.
+```
+
+When nothing was running:
+
+```
+[OK]   No DayZDiag_x64.exe processes running.
 ```
 
 ## Do not
