@@ -92,6 +92,8 @@ def _diag_running() -> bool:
 
 def _run_skill(skill_name: str, entry_filename: str, *args: str) -> int:
     path = REPO_ROOT / ".claude" / "skills" / skill_name / entry_filename
+    if path.suffix.lower() == ".bat":
+        return subprocess.run([str(path), *args]).returncode
     return subprocess.run([sys.executable, str(path), *args]).returncode
 
 
@@ -123,7 +125,7 @@ def _action_build_and_launch(status: Status) -> None:
 def _action_stop_diag(_: Status) -> None:
     if not ask_yes_no("Stop the diag client?", default=True):
         return
-    _run_skill("dayz-stop-test", "stop_test.py")
+    _run_skill("dayz-stop-test", "stop_test.bat")
 
 
 def _action_tail_log(status: Status) -> None:
