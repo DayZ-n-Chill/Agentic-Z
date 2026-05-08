@@ -1,21 +1,35 @@
 # DayZ Modding
 
-Agentic-Z ships with a complete DayZ modding workflow as four slash commands. Together they cover the full mod lifecycle — from "fresh checkout" to "playing my mod on a local server."
+Agentic-Z ships with a complete DayZ modding workflow covering the full mod lifecycle — from "fresh checkout" to "playing my mod on a local server."
 
-The six commands:
+## Front door: `/dayz-init`
+
+The fastest path is the wizard:
+
+```
+/dayz-init
+```
+
+First run: env check, intent prompts (new mod or import, mod name, test map, build/launch toggles, RAG setup), executes the resulting plan. Every run after: drops into a mission-control hub for the cached project — build & launch, stop diag, tail server log, open Workbench / Object Builder, switch project, etc.
+
+The wizard wraps the lower-level skills below, never replaces them. Use it for normal flow; reach for the individual skills when you need surgical control.
+
+## Underlying skills (the wizard orchestrates these)
 
 1. **`/dayz-preflight`** — verifies your DayZ modding environment is ready.
-2. **`/dayz-new-mod`** — scaffolds a new mod project with the standard skeleton and the required `P:\<ModName>\` junction.
-3. **`/dayz-add-server`** — sets up a test server instance under `.server/<instance>/`: copies the mission template, creates per-instance `serverDZ.cfg` + `server-profiles/` + `client-profiles/`. One-time per instance. Multiple variants of the same map allowed.
-4. **`/dayz-build-pbo`** — packs the mod into a deployable `.pbo` via DayZ Tools' AddonBuilder.
-5. **`/dayz-launch-test`** — spins up a local DayZ server with your mod loaded on the chosen instance, then connects the client. Run-only; refuses if the instance hasn't been added.
+2. **`/dayz-new-mod`** / **`/dayz-import-mod`** — scaffold a new mod project (or symlink an existing one) with the required `P:\<ModName>\` junction.
+3. **`/dayz-add-scaffold`** — fill in missing scaffold pieces (config.cpp stub, gproj, etc.) on a mod folder that lacks them.
+4. **`/dayz-add-server`** — sets up a test server instance under `.server/<instance>/`: copies the mission template, creates per-instance `serverDZ.cfg` + `server-profiles/` + `client-profiles/`. One-time per instance. Multiple variants of the same map allowed.
+5. **`/dayz-build-pbo`** — packs the mod into a deployable `.pbo` via DayZ Tools' AddonBuilder.
+6. **`/dayz-launch-test`** — spins up a local DayZ server with your mod loaded on the chosen instance, then connects the client. Run-only; refuses if the instance hasn't been added.
 
    Counterpart: **`/dayz-stop-test`** — force-kills any running DayZDiag_x64.exe processes so you can stop a session without hunting down windows. Doesn't gate on preflight (emergency escape hatch).
-6. **`/dayz-clean-workspace`** — DayZ-only cleanup. Removes scaffolds and their deployed artifacts (workspace folders, `P:\<ModName>\` junctions that target our workspace, `P:\Mods\@<ModName>\` deploy dirs). Match-on-scaffold rule keeps your subscribed mods safe. `--include-server` also removes `.server/`.
+7. **`/dayz-cot-bootstrap`** — two-pass workflow that grants COT (Community-Online-Tools) admin perms on a fresh test instance. Auto-prepends @CF + @Community-Online-Tools, launches, waits for COT to write the per-player JSON, kills the session, edits the perm files, relaunches.
+8. **`/dayz-clean-workspace`** — DayZ-only cleanup. Removes scaffolds and their deployed artifacts (workspace folders, `P:\<ModName>\` junctions that target our workspace, `P:\Mods\@<ModName>\` deploy dirs). Match-on-scaffold rule keeps your subscribed mods safe. `--include-server` also removes `.server/`.
 
 For a repo-wide wipe across every domain (pre-push reset), use the general **`/clean-repo`** skill — it orchestrates each `<domain>-clean-workspace` cleanup in turn.
 
-Every step is gated on `/dayz-preflight` first per the L2 convention `.claude/skills/_shared/dayz-conventions.md`.
+Most skills gate on `/dayz-preflight` first per the L2 convention `.claude/skills/_shared/dayz-conventions.md`. Documented exceptions: `/dayz-stop-test` (escape hatch) and `/dayz-init` (orchestrator — runs preflight on its own steps).
 
 ---
 

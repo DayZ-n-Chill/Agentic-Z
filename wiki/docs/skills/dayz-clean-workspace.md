@@ -45,7 +45,7 @@ For each `workspace/<ModName>/` containing `config.cpp` + `$PBOPREFIX$`:
 
 If you have deployed dirs from before the marker was introduced, they won't have `.agentic-z-scaffold` and `dayz-clean-workspace` will skip them. Either rebuild via `/dayz-build-pbo <ModName>` (which writes the marker) or remove manually with `cmd /c rmdir /s /q P:\Mods\@<ModName>` after confirming it's actually yours.
 
-With `--include-server`, also removes `.server/` at the project root (all instances under it: missions, configs, profiles, client logs). Use this for a full reset; otherwise the server staging stays so you don't have to re-copy missions next time. If `workspace/_server/` (the legacy layout) still exists, this skill refuses; delete the folder manually first (the previous `/dayz-migrate-server` skill that copied content to `.server/<instance>/` was removed in 1.4.0).
+With `--include-server`, also removes `.server/` at the project root (all instances under it: missions, configs, profiles, client logs). Use this for a full reset; otherwise the server staging stays so you don't have to re-copy missions next time. If `workspace/_server/` (the legacy layout) still exists, this skill refuses; delete the folder manually first (the previous `dayz-migrate-server` skill that copied content to `.server/<instance>/` was removed in 1.4.0).
 
 ## What it WILL NOT touch
 

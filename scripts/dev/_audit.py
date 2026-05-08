@@ -97,8 +97,33 @@ def check_unregistered_skills():
 def check_dead_skill_refs_in_docs():
     section("docs reference SLASH-COMMANDS that no longer exist")
     on_disk_skills = set(p.name for p in (REPO / ".claude" / "skills").iterdir() if p.is_dir())
+    # Agents share the `/<name>` slug pattern with skills (e.g.
+    # `/dayz-mod-debugger` is an agent, not a skill). Treat both as
+    # "exists" so we don't false-positive on agent mentions.
+    on_disk_agents = set(p.stem for p in (REPO / ".claude" / "agents").glob("*.md"))
+    on_disk = on_disk_skills | on_disk_agents
+
+    # Names that look like `/dayz-foo` but are NOT skills/agents. Add
+    # known false-positives here to keep the report actionable.
+    KNOWN_NON_SKILLS = {
+        # MCP server name (referenced as /dayz-rag in URLs/configs)
+        "dayz-rag",
+        # Doc filenames (referenced as /dayz-modding etc. in markdown links)
+        "dayz-modding",
+        "dayz-conventions",
+        # Cache / config filenames in .claude/local-memory/
+        "dayz-active-scope",
+        "dayz-author",
+        "dayz-client-display",
+        "dayz-current-project",
+        "dayz-wiki-cookie",
+        "dayz-work-drive",
+        # Inline example agent names used in agent descriptions
+        "dayz-script-wrap",
+    }
+
     # Tighter heuristic: only match `/dayz-foo` (the slash-command form),
-    # which is unambiguously a skill reference vs. a file basename or agent.
+    # which is unambiguously a skill reference vs. a file basename.
     slash_pattern = re.compile(r"/(dayz-[a-z][a-z0-9-]+|sync-skills|agentic-z-update|clean-repo|docs-sync)\b")
     user_docs = list(REPO.glob("README.md")) + list(REPO.glob("CONTRIBUTING.md")) + \
                 list((REPO / "docs").rglob("*.md")) + list((REPO / ".claude" / "skills").rglob("SKILL.md")) + \
@@ -114,8 +139,9 @@ def check_dead_skill_refs_in_docs():
             continue
         for m in slash_pattern.finditer(text):
             name = m.group(1)
-            if name not in on_disk_skills:
-                seen.setdefault(name, set()).add(str(doc.relative_to(REPO)))
+            if name in on_disk or name in KNOWN_NON_SKILLS:
+                continue
+            seen.setdefault(name, set()).add(str(doc.relative_to(REPO)))
 
     if not seen:
         print("OK")
