@@ -5,4 +5,4 @@ REM Usage:
 REM   clean-repo.bat                 prompt then wipe everything
 REM   clean-repo.bat --yes           wipe immediately (no prompt)
 REM   clean-repo.bat --dry-run       list what would be removed, don't remove
-python "%~dp0..\.claude\skills\clean-repo\clean.py" %*
+python "%~dp0..\..\.claude\skills\clean-repo\clean.py" %*
