@@ -28,7 +28,7 @@ python .claude\skills\dayz-import-mod\import_mod.py [--source <path>] [--name <M
 | Argument | Required? | Notes |
 |---|---|---|
 | `--source <path>` | yes (or interactive) | Path to the existing mod folder (absolute or relative, `~` expanded). If omitted on a TTY, the skill prompts for it. |
-| `--name <ModName>` | no | Override the name the mod is imported under. Defaults to the source folder's basename, validated against `[A-Za-z][A-Za-z0-9_]{0,63}`. Required if the basename has spaces or other invalid characters. |
+| `--name <ModName>` | no | Override the name the mod is imported under. Defaults to the source folder's basename, validated against `[A-Za-z][A-Za-z0-9_]&#123;0,63&#125;`. Required if the basename has spaces or other invalid characters. |
 | `--scaffold` | no | Auto-yes for every "scaffold this missing piece?" prompt. Required for non-TTY use when missing pieces would otherwise prompt. |
 | `--no-scaffold` | no | Auto-no - link only, never write into the source folder. |
 
@@ -79,7 +79,7 @@ Next steps:
 - `--source` missing and stdin isn't a TTY.
 - Source path doesn't exist, isn't a directory, or is a UNC path (`\\server\share\...` - junctions can't target them on Windows).
 - Source path is inside `<repo>/workspace/` (avoids self-referential / circular links - the mod is already in workspace, no import needed).
-- Derived/given mod name fails the pattern (`[A-Za-z][A-Za-z0-9_]{0,63}`).
+- Derived/given mod name fails the pattern (`[A-Za-z][A-Za-z0-9_]&#123;0,63&#125;`).
 - `workspace/<Name>/` already exists (won't clobber).
 - `P:\<Name>\` exists as a real folder, or as a link pointing somewhere other than the new `workspace/<Name>/`.
 - Non-TTY run with missing scaffold pieces and neither `--scaffold` nor `--no-scaffold` was passed (refuses to silently skip without an explicit decision).

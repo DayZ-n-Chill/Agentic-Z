@@ -12,45 +12,39 @@ export default function QuickStartTerminal({align = 'center'}: Props): ReactNode
   const alignClass = align === 'left' ? styles.terminalWrapLeft : '';
   return (
     <div className={`${styles.terminalWrap} ${alignClass}`}>
-      <div className={styles.terminalBar}>~ // bash — agentic-z bootstrap</div>
+      <div className={styles.terminalBar}>~ // claude code — agentic-z install</div>
       <div className={styles.terminalBody}>
         <div>
           <span className={styles.terminalComment}>
-            # 1. Clone and link skills into every agent CLI
-          </span>
-        </div>
-        <div>
-          <span className={styles.terminalPrompt}>$</span>
-          <span className={styles.terminalCommand}>
-            git clone &lt;agentic-z&gt; my-mod &amp;&amp; cd my-mod
-          </span>
-        </div>
-        <div>
-          <span className={styles.terminalPrompt}>$</span>
-          <span className={styles.terminalCommand}>
-            python .claude/skills/sync-skills/sync.py
-          </span>
-        </div>
-        <div>&nbsp;</div>
-        <div>
-          <span className={styles.terminalComment}>
-            # 2. Verify DayZ environment (P:\, DayZ Tools, vanilla data)
-          </span>
-        </div>
-        <div>
-          <span className={styles.terminalPrompt}>&gt;</span>
-          <span className={styles.terminalCommand}>/dayz-preflight</span>
-        </div>
-        <div>&nbsp;</div>
-        <div>
-          <span className={styles.terminalComment}>
-            # 3. Scaffold a new mod
+            # 1. Add the marketplace + install the plugin
           </span>
         </div>
         <div>
           <span className={styles.terminalPrompt}>&gt;</span>
           <span className={styles.terminalCommand}>
-            /dayz-new-mod <ModNameCycle />
+            /plugin marketplace add DayZ-n-Chill/Agentic-Z
+          </span>
+        </div>
+        <div>
+          <span className={styles.terminalPrompt}>&gt;</span>
+          <span className={styles.terminalCommand}>
+            /plugin install agentic-z@dayz-n-chill
+          </span>
+        </div>
+        <div>&nbsp;</div>
+        <div>
+          <span className={styles.terminalComment}>
+            # 2. Run the wizard — env check, scaffold, build, launch
+          </span>
+        </div>
+        <div>
+          <span className={styles.terminalPrompt}>&gt;</span>
+          <span className={styles.terminalCommand}>/dayz-init</span>
+        </div>
+        <div>&nbsp;</div>
+        <div>
+          <span className={styles.terminalComment}>
+            # That's it. Wizard scaffolds <ModNameCycle />, builds the PBO, and launches diag.
           </span>
         </div>
       </div>

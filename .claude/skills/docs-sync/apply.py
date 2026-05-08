@@ -197,6 +197,34 @@ def escape_mdx_tags_in_body(body: str) -> str:
     return _MDX_TAG_PATTERN.sub(lambda m: f"&lt;{m.group(1)}&gt;", body)
 
 
+def escape_mdx_curlies_outside_fences(body: str) -> str:
+    """Escape { and } to HTML entities outside fenced code blocks.
+
+    MDX parses `{expr}` as a JavaScript expression even when the curly
+    braces appear in plain prose OR inline code (`code` spans). Fenced
+    code blocks (```...```) are preserved as-is by MDX, so we only
+    escape outside them. The HTML entities render visually as { and }
+    in the output (browsers decode entities inside <code> too) but
+    don't trip MDX's expression parser.
+
+    Triggered by skills like dayz-particles that document GUID syntax
+    like {HEXGUID}path/to/file.emat in prose and tables.
+    """
+    out: list[str] = []
+    in_fence = False
+    for line in body.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            out.append(line)
+            continue
+        if in_fence:
+            out.append(line)
+            continue
+        out.append(line.replace("{", "&#123;").replace("}", "&#125;"))
+    return "".join(out)
+
+
 # --- transforms --------------------------------------------------------
 
 _SKILL_FM_KEEP = ("name",)
@@ -213,7 +241,8 @@ def transform_skill(canonical_text: str) -> str:
     if description:
         overview = f"\n## Overview\n\n{html_escape(description)}\n\n"
 
-    return render_frontmatter(trimmed_fm) + overview + body.lstrip("\n")
+    safe_body = escape_mdx_curlies_outside_fences(body)
+    return render_frontmatter(trimmed_fm) + overview + safe_body.lstrip("\n")
 
 
 def transform_agent(canonical_text: str) -> str:
@@ -238,7 +267,7 @@ def transform_agent(canonical_text: str) -> str:
     else:
         overview = f"\n{badges}\n\n"
 
-    safe_body = escape_mdx_tags_in_body(body)
+    safe_body = escape_mdx_curlies_outside_fences(escape_mdx_tags_in_body(body))
 
     return render_frontmatter(trimmed_fm, keys_quoted=_AGENT_FM_QUOTED) + overview + safe_body.lstrip("\n")
 

@@ -8,7 +8,7 @@ Bootstrap Community-Online-Tools (COT) admin permissions on a DayZ test server i
 
 # /dayz-cot-bootstrap
 
-One-shot workflow for getting COT admin on a fresh test instance. COT writes its `PermissionsFramework/Players/<id>.json` and `PermissionsFramework/Roles/{admin,everyone}.txt` on first server boot once a player has loaded in; those files don't exist before that and can't be edited ahead of time. So the workflow is forced into two passes:
+One-shot workflow for getting COT admin on a fresh test instance. COT writes its `PermissionsFramework/Players/<id>.json` and `PermissionsFramework/Roles/&#123;admin,everyone&#125;.txt` on first server boot once a player has loaded in; those files don't exist before that and can't be edited ahead of time. So the workflow is forced into two passes:
 
 1. **First pass:** boot the server + client, let your character spawn so COT generates the perm files, then kill the session.
 2. **Edit:** add the `admin` role to your player JSON, flip `0` → `2` in `everyone.txt`.
