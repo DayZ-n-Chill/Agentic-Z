@@ -1,7 +1,7 @@
 {
   "name": "agentic-z",
-  "version": "1.3.0",
-  "description": "AI agent stack for DayZ modding. Ships 11 specialist subagents and 23 DayZ skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexers, p3d audit/debin, particle effects), plus the dayz-rag MCP server for semantic search over vanilla Enforce Script and the Bohemia community wiki.",
+  "version": "1.4.0",
+  "description": "AI agent stack for DayZ modding. After install, run /dayz-init for a guided setup wizard that takes you from empty repo to mod-loaded-in-DayZ. Ships 11 specialist subagents and 25 DayZ skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexers, p3d audit/debin, particle effects), plus the dayz-rag MCP server for semantic search over vanilla Enforce Script and the Bohemia community wiki.",
   "author": {
     "name": "DayZ n' Chill",
     "url": "https://github.com/DayZ-n-Chill"
@@ -19,8 +19,8 @@
   ],
   "skills": [
     "./.claude/skills/dayz-add-server",
-    "./.claude/skills/dayz-migrate-server",
     "./.claude/skills/dayz-add-scaffold",
+    "./.claude/skills/dayz-cot-bootstrap",
     "./.claude/skills/dayz-build-pbo",
     "./.claude/skills/dayz-clean-workspace",
     "./.claude/skills/dayz-import-mod",
@@ -41,7 +41,8 @@
     "./.claude/skills/dayz-setup-objectbuilder",
     "./.claude/skills/dayz-stop-test",
     "./.claude/skills/dayz-edit-types",
-    "./.claude/skills/dayz-split-types"
+    "./.claude/skills/dayz-split-types",
+    "./.claude/skills/dayz-init"
   ],
   "agents": [
     "./.claude/agents/agent-creator.md",

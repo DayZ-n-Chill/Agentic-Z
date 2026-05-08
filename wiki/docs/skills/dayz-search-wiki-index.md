@@ -2,6 +2,10 @@
 name: dayz-search-wiki-index
 ---
 
+## Overview
+
+Index the Bohemia community wiki (community.bistudio.com Category:DayZ + sub-categories) into the same vector DB as /dayz-search-index, so DayZ agents can semantic-search official docs alongside vanilla source. One-time setup per cookie cycle; rerun with --full when content drifts.
+
 # /dayz-search-wiki-index
 
 Build a semantic-search index over the **Bohemia DayZ wiki** so agents have access to the official docs/tutorials/class references that aren't present in vanilla source. Stored in the same LanceDB as the source index, queried via a sibling MCP tool.
@@ -35,6 +39,8 @@ Same `.env` at the repo root as `/dayz-search-index`:
 ```
 VOYAGE_API_KEY=pa-xxxxxxxx
 ```
+
+This skill shares the local Voyage usage tracker with `/dayz-search-index` (same `~/.claude/dayz-search-index/usage.log` file), so the tier-warning prompt fires here too when projected monthly usage hits 80% of the 200M free tier. Wiki rebuilds are tiny (~130k tokens) so the warning will basically never fire from wiki runs alone, but the cumulative count includes them. Pass `--ignore-tier-warning` to skip the prompt. See `/dayz-search-index` SKILL.md for the full caveats list.
 
 ### 2. Cloudflare cookie
 

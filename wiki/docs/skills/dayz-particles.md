@@ -2,6 +2,10 @@
 name: dayz-particles
 ---
 
+## Overview
+
+&gt;
+
 # DayZ Particle Effects — Complete Modding Reference
 
 ## CRITICAL: .ptc AND .emat ARE PLAIN TEXT

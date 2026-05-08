@@ -356,6 +356,32 @@ def make_dir_link(src: Path, dst: Path) -> str:
         raise
 
 
+# Project-discovery marker. Written at P:\<ModName>\.agentic-z-project (which
+# transparently lands inside the workspace via the junction). Contains the
+# absolute path to the workspace project root. Used by /dayz-init's hub to
+# discover ALL managed projects, not just the cached current one.
+#
+# This is a SEPARATE file from build-pbo's .agentic-z-scaffold marker (which
+# lives at P:\Mods\@<ModName>\ and contains the modname for clean-workspace's
+# ownership check). Different file, different location, different purpose.
+PROJECT_MARKER = ".agentic-z-project"
+
+
+def write_project_marker(p_drive_link: Path, project_root: Path) -> None:
+    """Write P:\\<ModName>\\.agentic-z-project containing the project root path.
+
+    Idempotent — overwrites if present (path may have moved since last run).
+    Failure is non-fatal: the project still works, just won't show up in the
+    /dayz-init hub's switch-project list.
+    """
+    marker = p_drive_link / PROJECT_MARKER
+    try:
+        marker.write_text(str(project_root.resolve()) + "\n", encoding="utf-8")
+    except OSError as e:
+        print(f"{WARN} Could not write project marker {marker}: {e}")
+        print("       /dayz-init hub's switch-project won't see this mod.")
+
+
 def _link_target(path: Path) -> Path | None:
     """Return the link target (without \\\\?\\ prefix) or None if the path is not a link."""
     try:
@@ -458,6 +484,8 @@ def main() -> int:
             "       Scaffold rolled back."
         )
     print(f"{OK} P:\\{args.modname} {kind} -> {target.relative_to(PROJECT_DIR)}")
+
+    write_project_marker(p_drive_link, target)
 
     rel = target.relative_to(PROJECT_DIR)
     print()

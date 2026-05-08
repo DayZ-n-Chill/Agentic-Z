@@ -2,6 +2,10 @@
 name: dayz-workdrive
 ---
 
+## Overview
+
+Mount P:\ as the DayZ work drive after a Windows boot, without opening DayZ Tools' GUI. Resolves the work drive path via env var, cache, settings.ini, registry, or DayZ Tools install. Idempotent. Windows-only (uses subst).
+
 # /dayz-workdrive
 
 Mount `P:\` for DayZ modding without DayZ Tools' GUI.
@@ -11,13 +15,15 @@ Mount `P:\` for DayZ modding without DayZ Tools' GUI.
 Direct (preferred, no agent):
 ```
 scripts\workdrive.bat
-scripts\workdrive.bat -Path "C:\Path\To\WorkDrive"
-scripts\workdrive.bat -Unmount
+scripts\workdrive.bat --path "C:\Path\To\WorkDrive"
+scripts\workdrive.bat --unmount
 ```
 
-Or call PowerShell directly:
+Or call Python directly:
 ```
-powershell -NoProfile -File .claude\skills\dayz-workdrive\mount.ps1
+python .claude\skills\dayz-workdrive\mount.py
+python .claude\skills\dayz-workdrive\mount.py --path "C:\Path\To\WorkDrive"
+python .claude\skills\dayz-workdrive\mount.py --unmount
 ```
 
 ## When
@@ -31,6 +37,6 @@ Chicken-and-egg: preflight checks for P:\, this skill mounts it. Run this first.
 
 ## Notes
 
-- Pure PowerShell. No Python required.
+- Python (per the L1 "Python by default" rule). Reuses `find_dayz_tools` from `dayz-preflight` to avoid duplicating registry/Steam-path probing.
 - Prints the actual `WorkDrive.exe /Mount` or `subst P:` command before executing it, so users learn the underlying primitive.
 - Caches the resolved path at `.claude/local-memory/dayz-work-drive.json` for instant re-runs.

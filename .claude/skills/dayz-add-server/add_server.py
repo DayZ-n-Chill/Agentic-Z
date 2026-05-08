@@ -7,8 +7,8 @@ run multiple variants of the same map (chernarus, chernarus-hardcore, etc.).
 This is the setup half of the local-test loop. /dayz-launch-test is the run
 half and refuses to run for an instance that hasn't been added yet.
 
-Refuses to run if the legacy workspace/_server/ folder still exists. Run
-/dayz-migrate-server first.
+Refuses to run if the legacy workspace/_server/ folder still exists. Delete
+it manually; that layout is no longer supported.
 
 See SKILL.md for full usage.
 """
@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
-import os
 import shutil
 import subprocess
 import sys
@@ -24,13 +23,12 @@ from pathlib import Path
 from textwrap import dedent
 
 # REPO_ROOT = where this skill ships from (plugin or template clone).
-# PROJECT_DIR = user's project (where .server/ lives). Differ in plugin mode.
+# Project dir (where .server/ lives) is resolved at runtime from the
+# /dayz-init project cache; see resolve_project_dir().
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_DIR = Path(os.getcwd()).resolve()
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
-SERVER_ROOT = PROJECT_DIR / ".server"
-LEGACY_SERVER_ROOT = PROJECT_DIR / "workspace" / "_server"
+DAYZ_INIT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-init"
 
 KNOWN_MAPS: dict[str, str] = {
     "chernarus": "dayzOffline.chernarusplus",
@@ -43,17 +41,33 @@ WARN = "[WARN] "
 FAIL = "[FAIL] "
 
 
-def _load_preflight_module():
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
+def _load_module_from_path(name: str, path: Path):
+    """Load a sibling-skill .py as a module by file path so static analyzers don't
+    choke on a sys.path-based sibling import."""
+    spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
+        raise RuntimeError(f"Could not load module at {path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-_preflight = _load_preflight_module()
+_preflight = _load_module_from_path("dayz_preflight_module", PREFLIGHT)
 find_dayz_server = _preflight.find_dayz_server
+
+# Reuse the project-root cache reader from /dayz-init so add-server follows the same source of truth.
+_dayz_init_state = _load_module_from_path("dayz_init_state_module", DAYZ_INIT_DIR / "state.py")
+cached_project_root = _dayz_init_state.cached_project_root
+
+
+def resolve_project_dir() -> Path:
+    """Return the cached project root, or bail out pointing the user at /dayz-init."""
+    project = cached_project_root()
+    if project is None:
+        print("error: no project cached.", file=sys.stderr)
+        print("  Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
+        sys.exit(2)
+    return project.resolve()
 
 
 def gate_on_preflight() -> None:
@@ -64,13 +78,14 @@ def gate_on_preflight() -> None:
         sys.exit(result.returncode)
 
 
-def gate_on_old_layout() -> None:
+def gate_on_old_layout(project_dir: Path) -> None:
     """Refuse to run if workspace/_server/ still exists. Forces explicit migration."""
-    if LEGACY_SERVER_ROOT.exists():
+    legacy_server_root = project_dir / "workspace" / "_server"
+    if legacy_server_root.exists():
         sys.exit(
-            f"{FAIL} Old layout detected at {LEGACY_SERVER_ROOT.relative_to(PROJECT_DIR)}.\n"
+            f"{FAIL} Old layout detected at {legacy_server_root.relative_to(project_dir)}.\n"
             "       The server runtime moved from workspace/_server/ to .server/.\n"
-            "       Run: python .claude/skills/dayz-migrate-server/migrate.py"
+            "       Delete the legacy folder manually; that layout is no longer supported."
         )
 
 
@@ -97,7 +112,7 @@ def resolve_mission_template(map_name: str) -> str:
     return KNOWN_MAPS.get(map_name, map_name)
 
 
-def ensure_mission(template: str, mission_dir: Path, refresh: bool) -> None:
+def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir: Path) -> None:
     """Ensure <instance>/mission/ exists, copied from DayZ Server install.
 
     Folder is named `mission/` regardless of template (the launcher pins the
@@ -106,7 +121,7 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool) -> None:
     already_present = mission_dir.exists() and any(mission_dir.iterdir())
 
     if already_present and not refresh:
-        print(f"{OK} Mission already present: {mission_dir.relative_to(PROJECT_DIR)}")
+        print(f"{OK} Mission already present: {mission_dir.relative_to(project_dir)}")
         return
 
     server_root = find_dayz_server()
@@ -115,7 +130,7 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool) -> None:
             f"{FAIL} DayZ Server install not found.\n"
             "       Required to copy mission templates. Install via Steam (Tools section,\n"
             "       free, appid 223350), or manually populate\n"
-            f"       {mission_dir.relative_to(PROJECT_DIR)} with mission content."
+            f"       {mission_dir.relative_to(project_dir)} with mission content."
         )
 
     src = server_root / "mpmissions" / template
@@ -138,59 +153,114 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool) -> None:
     else:
         action = "Copied"
     shutil.copytree(src, mission_dir)
-    print(f"{OK} {action} {mission_dir.relative_to(PROJECT_DIR)}  (from DayZ Server install)")
+    print(f"{OK} {action} {mission_dir.relative_to(project_dir)}  (from DayZ Server install)")
 
 
-def setup_instance_dir(instance: str, template: str) -> None:
-    """Ensure .server/<instance>/ has serverDZ.cfg + server-profiles/ + client-profiles/."""
-    inst_dir = SERVER_ROOT / instance
+def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
+    """Ensure .server/<instance>/ has serverDZ.cfg + server-profiles/ + client-profiles/
+    + profiles/ + a junction named after the mission template pointing at mission/.
+
+    The mission-template junction is REQUIRED for the client-spawn handshake. The
+    engine resolves the template name (e.g. dayzOffline.chernarusplus) relative to
+    the instance dir during connect; without it the world loads but the player
+    never spawns.
+    """
+    server_root = project_dir / ".server"
+    inst_dir = server_root / instance
     server_profiles = inst_dir / "server-profiles"
     client_profiles = inst_dir / "client-profiles"
+    profiles = inst_dir / "profiles"  # BattlEye/extended-controls dir
     server_profiles.mkdir(parents=True, exist_ok=True)
     client_profiles.mkdir(parents=True, exist_ok=True)
+    profiles.mkdir(parents=True, exist_ok=True)
+    # Top-level shared client diag logs (matches PonyWalkman convention)
+    (server_root / "!ClientDiagLogs").mkdir(parents=True, exist_ok=True)
 
     cfg_path = inst_dir / "serverDZ.cfg"
     if not cfg_path.exists():
         cfg_path.write_text(default_server_cfg(instance, template), encoding="utf-8")
-        print(f"{OK} Wrote default {cfg_path.relative_to(PROJECT_DIR)}")
+        print(f"{OK} Wrote default {cfg_path.relative_to(project_dir)}")
     else:
         cfg = cfg_path.read_text(encoding="utf-8")
         if "allowFilePatching" not in cfg:
             cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
             cfg_path.write_text(cfg, encoding="utf-8")
-            print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(PROJECT_DIR)}")
+            print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(project_dir)}")
         else:
-            print(f"{OK} {cfg_path.relative_to(PROJECT_DIR)} unchanged (already configured)")
+            print(f"{OK} {cfg_path.relative_to(project_dir)} unchanged (already configured)")
 
-    print(f"{OK} {server_profiles.relative_to(PROJECT_DIR)} ready")
-    print(f"{OK} {client_profiles.relative_to(PROJECT_DIR)} ready")
+    # Mission template junction: dayzOffline.<map> -> mission/. The engine looks
+    # for the template by name during the connect handshake; missing this causes
+    # client spawn to hang indefinitely (world loads, player entity created, but
+    # the player never renders into the world).
+    mission_dir = inst_dir / "mission"
+    template_junction = inst_dir / template
+    if mission_dir.exists() and not template_junction.exists():
+        import subprocess
+        result = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(template_junction), str(mission_dir)],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            print(f"{OK} Junction {template_junction.name}/ -> mission/ (template handshake)")
+        else:
+            print(f"{FAIL} Could not create template junction: {result.stderr.strip()}")
+
+    print(f"{OK} {server_profiles.relative_to(project_dir)} ready")
+    print(f"{OK} {client_profiles.relative_to(project_dir)} ready")
 
 
 def default_server_cfg(instance: str, template: str) -> str:
+    # Six-char shardId required by engine; truncate/pad instance name.
+    shard = (instance + "shard")[:6].lower()
     return dedent(
         f"""\
-        // DayZ server config for instance: {instance} (mission: {template})
-        // Generated by /dayz-add-server. Edit freely. The skill won't overwrite this once
-        // it exists, but it WILL re-add `allowFilePatching = 1;` if you remove it
-        // (clients launch with -filePatching and the server refuses connection without
-        // this setting).
-        hostname        = "Local Test ({instance})";
-        password        = "";
-        passwordAdmin   = "";
-        maxPlayers      = 4;
-        verifySignatures = 0;
-        forceSameBuild  = 0;
-        allowFilePatching = 1;
-        disableVoN      = 0;
-        disable3rdPerson = 0;
-        instanceId      = 1;
-        persistent      = 0;
+        hostname = "Local Test ({instance})";   // Server name
+        password = "";                          // Password to connect to the server
+        passwordAdmin = "";                     // Password to become a server admin
+
+        description = "Agentic-Z local diag test instance";   // Description shown in browser
+
+        enableWhitelist = 0;                    // Enable/disable whitelist (value 0-1)
+
+        maxPlayers = 4;                         // Maximum amount of players (local test)
+
+        verifySignatures = 0;                   // Verifies .pbos against .bisign files (only 2 is supported)
+        forceSameBuild = 0;                     // 0 for diag-mode mod testing (client/server diag may mismatch)
+        allowFilePatching = 1;                  // Required; clients launch with -filePatching
+
+        disableVoN = 0;                         // Enable/disable voice over network (value 0-1)
+        vonCodecQuality = 20;                   // VoN codec quality (values 0-30)
+
+        shardId = "{shard}";   // Six alphanumeric chars for the private shard
+
+        disable3rdPerson = 0;                   // Toggles the 3rd person view (value 0-1)
+        disableCrosshair = 0;                   // Toggles the cross-hair (value 0-1)
+
+        disablePersonalLight = 1;               // Disables personal light for all connected clients
+        lightingConfig = 0;                     // 0 for brighter night, 1 for darker night
+
+        serverTime = "SystemTime";              // Initial in-game time. "SystemTime" or "YYYY/MM/DD/HH/MM"
+        serverTimeAcceleration = 12;            // Day time multiplier (0-24)
+        serverNightTimeAcceleration = 1;        // Night time multiplier (0.1-64), stacks with serverTimeAcceleration
+        serverTimePersistent = 0;               // Persist server time across restarts (value 0-1)
+
+        guaranteedUpdates = 1;                  // Communication protocol; use only 1
+
+        loginQueueConcurrentPlayers = 5;        // Concurrent players processed during login
+        loginQueueMaxPlayers = 500;             // Max players in login queue
+
+        instanceId = 1;                         // Server instance id (storage folder selector)
+
+        storageAutoFix = 1;                     // Replace corrupted persistence files with empty ones (value 0-1)
+
+        persistent = 0;                         // Persistent world state (0 for fresh test sessions)
 
         class Missions
         {{
             class DayZ
             {{
-                template = "{template}";
+                template = "{template}";   // Mission to load on server startup
             }};
         }};
         """
@@ -224,20 +294,22 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    project_dir = resolve_project_dir()
     gate_on_preflight()
     print()
-    print(f"{OK} Project: {PROJECT_DIR}")
-    gate_on_old_layout()
+    print(f"{OK} Project: {project_dir}")
+    gate_on_old_layout(project_dir)
 
     map_name = resolve_map_name(args.instance, args.map_arg)
     template = resolve_mission_template(map_name)
     print(f"{OK} Instance: {args.instance}  (map: {map_name}, mission: {template})")
 
-    inst_dir = SERVER_ROOT / args.instance
+    server_root = project_dir / ".server"
+    inst_dir = server_root / args.instance
     mission_dir = inst_dir / "mission"
 
-    ensure_mission(template, mission_dir, refresh=args.refresh_mission)
-    setup_instance_dir(args.instance, template)
+    ensure_mission(template, mission_dir, refresh=args.refresh_mission, project_dir=project_dir)
+    setup_instance_dir(args.instance, template, project_dir)
 
     print()
     print(f"Instance '{args.instance}' is ready. Next:")

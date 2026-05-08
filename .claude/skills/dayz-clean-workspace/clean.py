@@ -238,8 +238,8 @@ def main() -> int:
             sys.exit(
                 f"{FAIL} Legacy layout detected at {LEGACY_SERVER_ROOT.relative_to(PROJECT_DIR)}.\n"
                 "       --include-server now targets .server/ at the project root, not\n"
-                "       workspace/_server/. Run: python .claude/skills/dayz-migrate-server/migrate.py\n"
-                "       (or remove the legacy folder manually if it is no longer wanted)."
+                "       workspace/_server/. Delete the legacy folder manually; that\n"
+                "       layout is no longer supported."
             )
         if SERVER_ROOT.exists():
             plan.append(("server staging", SERVER_ROOT))
