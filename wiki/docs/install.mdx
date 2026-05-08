@@ -1,58 +1,77 @@
-# Installation & Setup
+---
+sidebar_position: 2
+sidebar_label: Install & Setup
+title: Install & Setup
+---
 
-This guide walks you through setting up Agentic-Z on your local machine. Follow these steps to prepare your environment for AI-powered DayZ modding.
+# Install & Setup
 
-## 1. Clone the Repository
+Two ways to use Agentic-Z. Pick one, don't run both side-by-side (every skill loads twice and clutters your slash menu).
 
-Start by cloning this repository to your local machine.
+## Option A — Install as a Claude Code plugin (recommended)
 
-```powershell
-git clone https://github.com/DayZ-n-Chill/Agentic-Z.git MyNewMod
-cd MyNewMod
+Inside any Claude Code session, run:
+
+```text
+/plugin marketplace add DayZ-n-Chill/Agentic-Z
+/plugin install agentic-z@dayz-n-chill
 ```
 
-## 2. Bootstrap the Environment (optional)
+Skills appear with the `agentic-z:` prefix (`/agentic-z:dayz-build-pbo`). The `dayz-rag` MCP server registers automatically.
 
-:::info[Only needed for multi-agent setups]
+That's it for install. Then in your DayZ mod project:
 
-**Skip this step if you're only using Claude Code.** Claude Code auto-loads `.claude/skills/` from the repo, so the slash commands and agents are already available.
-
-Run the sync only if you want to use **multiple agent CLIs** (Codex, Gemini, or all three together).
-
-:::
-
-If you want all three CLIs to see the same skills, run the sync once:
-
-```powershell
-python .claude/skills/sync-skills/sync.py
+```text
+/dayz-init
 ```
 
-This symlinks the repo's `.claude/skills/` into Codex's and Gemini's home dirs so all three CLIs discover the same `/dayz-*` slash commands. From inside Claude Code you can also run `/sync-skills` instead of the python command.
+The wizard takes care of the rest: env check, scaffold (or import) your mod, junction `P:\<ModName>\`, optionally stage a test server and build a PBO and launch the diag client.
 
-## 3. Verify Prerequisites
+**Use this option if** you have an existing project (or empty repo) and want to add Agentic-Z to it without forking. The plugin works in any directory.
 
-DayZ modding requires DayZ Tools, DayZ Diag, the `P:\` drive, and a few other one-time setup pieces. The full list (with download links and reasons) lives on the **[Prerequisites](./prerequisites)** page.
+## Option B — Clone the template (for contributors / power users)
 
-Run the preflight check to confirm everything's in place:
+Use this if you want to read or edit the toolkit itself, or you're starting a brand-new mod from scratch and want the repo layout pre-built.
 
-```powershell
-python .claude/skills/dayz-preflight/preflight.py
+```cmd
+git clone https://github.com/DayZ-n-Chill/Agentic-Z my-mod
+cd my-mod
+python .claude\skills\sync-skills\sync.py
 ```
 
-## 4. Mount the Work Drive (P:\)
+`sync-skills` symlinks the repo's `.claude/skills/` into Claude Code, Codex, and Gemini home dirs so all three CLIs discover the same slash commands. Inside Claude Code you can also run `/sync-skills` as the slash equivalent.
 
-DayZ Tools must have the `P:\` drive mounted for the engine and the packing tools to resolve file paths correctly.
+Skills appear unprefixed (`/dayz-build-pbo`).
 
-You can mount it via the **DayZ Tools UI** or use our automation skill:
+Then, same as Option A:
 
-```powershell
-python .claude/skills/dayz-workdrive/mount.py
+```text
+/dayz-init
 ```
 
-## 5. Next Steps
+**Use this option if** you want to modify agents/skills locally, contribute back to the template, or run the full multi-CLI setup.
 
-Once your environment is verified and your drive is mounted, you're ready to start building.
+## After install — verify your environment
 
-- **[Scaffold your first mod](./dayz-modding#quick-start)** using the `/dayz-new-mod` skill.
-- **[Meet your Agents](./agents/about)** to start generating code and assets.
-- **[Review the Conventions](./dayz-conventions)** to ensure your mod stays compatible with the template.
+DayZ modding requires DayZ Tools, DayZ Diag, the `P:\` drive, and a few one-time setup pieces. The wizard checks all of these on first run and walks you through what's missing. The full reference list with download links lives on the **[Prerequisites](./prerequisites)** page.
+
+If you want to run preflight standalone (without the wizard):
+
+```text
+/dayz-preflight
+```
+
+Or, when Claude Code isn't running yet (e.g. fresh boot, `P:\` not mounted):
+
+```cmd
+scripts\setup\preflight.bat
+scripts\setup\workdrive.bat
+```
+
+(These `.bat` wrappers exist for the cold-start cases where you can't reach the slash commands yet. Daily work goes through `/dayz-init` and the slash commands.)
+
+## Next steps
+
+- **[Meet your agents](./agents/about)** to start generating code and assets.
+- **[Read the conventions](./dayz-conventions)** to keep your mod compatible with the template's L2 rules.
+- **[Browse the workflow](./dayz-modding)** for the underlying skill list (`/dayz-init` orchestrates these, but you can call them directly when you want surgical control).

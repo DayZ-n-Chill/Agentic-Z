@@ -8,10 +8,10 @@ import Layout from '@theme/Layout';
 import styles from './index.module.css';
 
 const STATS = [
-  {num: '12', label: 'Specialist Agents'},
-  {num: '20', label: 'Slash Skills'},
+  {num: '11', label: 'Specialist Agents'},
+  {num: '25', label: 'Slash Skills'},
   {num: '3', label: 'Agent CLIs'},
-  {num: '2', label: 'MCP Servers'},
+  {num: '4', label: 'RAG Tools'},
 ];
 
 const LAYERS = [
@@ -297,54 +297,48 @@ function QuickStartSection() {
     <section className={`${styles.section} ${styles.sectionDark}`}>
       <div className="container">
         <h2 className={styles.sectionTitle}>Quick Start</h2>
-        <div className={styles.sectionSubtitle}>// from clone to scaffolded mod</div>
+        <div className={styles.sectionSubtitle}>// install the plugin, run the wizard</div>
         <div className={styles.terminalWrap}>
-          <div className={styles.terminalBar}>~ // bash — agentic-z bootstrap</div>
+          <div className={styles.terminalBar}>~ // claude code — agentic-z install</div>
           <div className={styles.terminalBody}>
             <div>
               <span className={styles.terminalComment}>
-                # 1. Clone and link skills into every agent CLI
-              </span>
-            </div>
-            <div>
-              <span className={styles.terminalPrompt}>$</span>
-              <span className={styles.terminalCommand}>
-                git clone &lt;agentic-z&gt; my-mod &amp;&amp; cd my-mod
-              </span>
-            </div>
-            <div>
-              <span className={styles.terminalPrompt}>$</span>
-              <span className={styles.terminalCommand}>
-                python .claude/skills/sync-skills/sync.py
-              </span>
-            </div>
-            <div>&nbsp;</div>
-            <div>
-              <span className={styles.terminalComment}>
-                # 2. Verify DayZ environment (P:\, DayZ Tools, vanilla data)
-              </span>
-            </div>
-            <div>
-              <span className={styles.terminalPrompt}>&gt;</span>
-              <span className={styles.terminalCommand}>/dayz-preflight</span>
-            </div>
-            <div>&nbsp;</div>
-            <div>
-              <span className={styles.terminalComment}>
-                # 3. Scaffold a new mod
+                # 1. Add the marketplace + install the plugin
               </span>
             </div>
             <div>
               <span className={styles.terminalPrompt}>&gt;</span>
               <span className={styles.terminalCommand}>
-                /dayz-new-mod <ModNameCycle />
+                /plugin marketplace add DayZ-n-Chill/Agentic-Z
+              </span>
+            </div>
+            <div>
+              <span className={styles.terminalPrompt}>&gt;</span>
+              <span className={styles.terminalCommand}>
+                /plugin install agentic-z@dayz-n-chill
+              </span>
+            </div>
+            <div>&nbsp;</div>
+            <div>
+              <span className={styles.terminalComment}>
+                # 2. Run the wizard — env check, scaffold, build, launch
+              </span>
+            </div>
+            <div>
+              <span className={styles.terminalPrompt}>&gt;</span>
+              <span className={styles.terminalCommand}>/dayz-init</span>
+            </div>
+            <div>&nbsp;</div>
+            <div>
+              <span className={styles.terminalComment}>
+                # That's it. Wizard scaffolds <ModNameCycle />, builds the PBO, and launches diag.
               </span>
             </div>
           </div>
         </div>
         <div style={{textAlign: 'center', marginTop: '2.5rem'}}>
-          <Link className={styles.btnPrimary} to="/docs/dayz-modding">
-            Full Workflow Guide →
+          <Link className={styles.btnPrimary} to="/docs/install">
+            Install &amp; Setup Guide →
           </Link>
         </div>
       </div>
