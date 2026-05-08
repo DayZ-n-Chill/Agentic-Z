@@ -120,7 +120,6 @@ const AGENTS = [
   {name: 'dayz-workbench-specialist', desc: 'Enfusion Workbench plugins and editor extensions'},
   {name: 'dayz-mod-debugger', desc: 'RPT, script.log, BattlEye log forensics'},
   {name: 'dayz-mod-reviewer', desc: 'Audit a mod folder for convention compliance'},
-  {name: 'docs-wiki-sync', desc: 'Keep wiki in sync with canonical docs and skills'},
   {name: 'agent-creator', desc: 'Validate or create new agent definitions'},
 ];
 

@@ -77,7 +77,7 @@ The `superpowers:brainstorming` skill ships a browser-based Visual Companion (`s
 **When to reach for it (use the browser):**
 
 - Comparing 2-3 layout directions before writing any `.layout` XML (sidebar vs grid vs card layout, HUD element placement, menu structure)
-- Color theme proposals — render swatches as cards so the user can pick a direction before you write `modded class Colors { override void Init() { ... } }`
+- Color theme proposals — render swatches as cards so the user can pick a direction before you write `modded class Colors &#123; override void Init() &#123; ... &#125; &#125;`
 - Side-by-side widget arrangement comparisons
 - Anything where seeing it beats reading it
 

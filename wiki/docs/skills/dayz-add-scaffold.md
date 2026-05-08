@@ -26,7 +26,7 @@ python .claude\skills\dayz-add-scaffold\add_scaffold.py <ModName> [--piece confi
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<ModName>` | yes | Folder name under `workspace/`. The folder must already exist (real or a link). Same `[A-Za-z][A-Za-z0-9_]{0,63}` pattern as `/dayz-new-mod`. |
+| `<ModName>` | yes | Folder name under `workspace/`. The folder must already exist (real or a link). Same `[A-Za-z][A-Za-z0-9_]&#123;0,63&#125;` pattern as `/dayz-new-mod`. |
 | `--piece` | no | Default `all` = scan and add only missing pieces. Pick one to scaffold a single piece even if others are missing. |
 | `--author` | no | Author handle for `config.cpp`. Same resolution chain as `/dayz-new-mod`: flag → cache → interactive prompt → fail. Skipped if config.cpp already exists. |
 

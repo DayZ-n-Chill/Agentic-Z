@@ -59,7 +59,7 @@ EffectDef {
 **Shape & emission:** ShapeType (Point/Box/Ellipse), ShapeSize (x y z),
 ConeAngle (yaw pitch roll deg), MaxNum, BirthRate, BirthRateRND, Offset (x y z)
 
-**Visual:** Material ("{GUID}path.emat"), SizeMultiplier, SizeRND,
+**Visual:** Material ("&#123;GUID&#125;path.emat"), SizeMultiplier, SizeRND,
 BillboardingType (Full), CenterY (-1=bottom, 0=center), StretchMultiplier
 
 **Motion:** Velocity, VelocityRND, AirResistance, AirResistanceRND,
@@ -74,8 +74,8 @@ Repeat (0=one-shot auto-deletes, 1=loop MUST stop manually)
 **Rotation:** RandomRotDir, RotMultiplier, RandomAngle
 
 **Curves (keyframe pairs: time value time value ...):**
-`Color { t r g b t r g b }`, `Alpha { t a t a }`,
-`Size { t s t s }`, `RotationSpeed { t s t s }`
+`Color &#123; t r g b t r g b &#125;`, `Alpha &#123; t a t a &#125;`,
+`Size &#123; t s t s &#125;`, `RotationSpeed &#123; t s t s &#125;`
 
 **Master curves (modulate over EffectTime):**
 ColorMast, AlphaMast, SizeMast, BRateMast, VelocityMast, AirResistanceMast
@@ -122,7 +122,7 @@ Full reference with examples: `references/emat-format-reference.md`
 
 ## GUID REFERENCE SYSTEM
 
-Resources reference each other via `{HEXGUID}relative/path.ext`.
+Resources reference each other via `&#123;HEXGUID&#125;relative/path.ext`.
 
 - **Vanilla→vanilla**: GUIDs embedded, engine resolves by GUID first
 - **Mod .ptc→vanilla .emat**: USE vanilla GUID+path (mandatory, verified)
@@ -138,17 +138,17 @@ Reference these in custom .ptc to reuse vanilla visuals:
 
 | GUID | Short name | Visual type |
 |---|---|---|
-| `{CB7AF4FD8ACBFDFC}` | glow/glow1.emat | Soft glow dot |
-| `{009C2EBAACD2D72A}` | fire/sparks1.emat | Bright spark point |
-| `{0B829A150C6A13E5}` | fire/sparks_06.emat | Spark strip (8-tile) |
-| `{853257EDA4B1E35D}` | fire/fire_flame_01.emat | Fire flame billboard |
-| `{3E6CE4D61F8AC71F}` | fire/fire_medium_camp_02.emat | Medium fire anim |
-| `{83BCB6516091DB01}` | fire/fire_medium_camp_04.emat | Fire burst anim |
-| `{62F13B8B540EBC80}` | fire/fireball_1.emat | Fireball |
-| `{00BEA27443975BEB}` | smoke/smoke_anim_02.emat | Animated smoke puff |
-| `{008E25684854DAB8}` | smoke/steam_small_cook_01.emat | Steam/vapor cloud |
-| `{8FE2383D6913E098}` | enviroment/water_splash_01_NoEm.emat | Water splash |
-| `{D29B53088A5A3911}` | smoke/smoke_dust_01_W.emat | White dust/mist |
+| `&#123;CB7AF4FD8ACBFDFC&#125;` | glow/glow1.emat | Soft glow dot |
+| `&#123;009C2EBAACD2D72A&#125;` | fire/sparks1.emat | Bright spark point |
+| `&#123;0B829A150C6A13E5&#125;` | fire/sparks_06.emat | Spark strip (8-tile) |
+| `&#123;853257EDA4B1E35D&#125;` | fire/fire_flame_01.emat | Fire flame billboard |
+| `&#123;3E6CE4D61F8AC71F&#125;` | fire/fire_medium_camp_02.emat | Medium fire anim |
+| `&#123;83BCB6516091DB01&#125;` | fire/fire_medium_camp_04.emat | Fire burst anim |
+| `&#123;62F13B8B540EBC80&#125;` | fire/fireball_1.emat | Fireball |
+| `&#123;00BEA27443975BEB&#125;` | smoke/smoke_anim_02.emat | Animated smoke puff |
+| `&#123;008E25684854DAB8&#125;` | smoke/steam_small_cook_01.emat | Steam/vapor cloud |
+| `&#123;8FE2383D6913E098&#125;` | enviroment/water_splash_01_NoEm.emat | Water splash |
+| `&#123;D29B53088A5A3911&#125;` | smoke/smoke_dust_01_W.emat | White dust/mist |
 
 All paths prefixed with `Graphics/Particles/materials/`.
 

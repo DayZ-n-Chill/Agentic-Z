@@ -132,7 +132,7 @@ The simple peek heuristic is NOT enough. `odol_reader.py::ODOL._read` tries
 every plausible interpretation and validates by checking that the resulting
 LOD address table is internally consistent (every `lod_start[i]` and
 `lod_end[i]` inside file bounds, `lod_end >= lod_start`, `permanent[i]`
-in `{0, 1}`):
+in `&#123;0, 1&#125;`):
 
 | Candidate | Reads from `saved` | Validates |
 |---|---|---|

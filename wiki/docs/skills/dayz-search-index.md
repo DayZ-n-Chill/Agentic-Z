@@ -18,7 +18,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 |---|---|---|
 | `P:\scripts\**\*.c` | Enforce Script (~2,800 files) | per class/method |
 | `P:\gui\**\*.layout` | UI layouts (~210 files) | per top-level Widget block |
-| `P:\dz\**\config.cpp` | Vanilla configs (~200 files) | per `class X { ... }` block |
+| `P:\dz\**\config.cpp` | Vanilla configs (~200 files) | per `class X &#123; ... &#125;` block |
 | `P:\**\*.rvmat` | Materials (~35,000 files) | whole file, **content-deduped** by SHA-256 |
 | `P:\**\*.xml` | XML (types, etc.) | batched 50 elements/chunk |
 

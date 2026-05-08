@@ -120,7 +120,6 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | [`/dayz-new-mod`](./skills/dayz-new-mod) | Scaffold `workspace/&lt;ModName&gt;/` + create `P:\&lt;ModName&gt;\` junction |
 | [`/dayz-build-pbo`](./skills/dayz-build-pbo) | Pack and deploy to `P:\Mods\@&lt;ModName&gt;\Addons\&lt;ModName&gt;.pbo` |
 | [`/dayz-add-server`](./skills/dayz-add-server) | Set up a test server instance under `.server/&lt;instance&gt;/` |
-| [`/dayz-migrate-server`](./skills/dayz-migrate-server) | One-shot migration from legacy `workspace/_server/` to `.server/&lt;instance&gt;/` |
 | [`/dayz-launch-test`](./skills/dayz-launch-test) | Start local Diag server + client with the mod loaded |
 | [`/dayz-stop-test`](./skills/dayz-stop-test) | Kill running DayZDiag_x64.exe processes |
 | [`/dayz-pack-texture`](./skills/dayz-pack-texture) | PNG/TGA → `.paa` via ImageToPAA |
@@ -131,7 +130,7 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | [`/dayz-search-download`](./skills/dayz-search-download) | Pull prebuilt vector index from GitHub releases instead of building locally |
 | [`/dayz-clean-workspace`](./skills/dayz-clean-workspace) | Remove DayZ scaffolds and their deployed artifacts |
 | [`/clean-repo`](./skills/clean-repo) | Orchestrator — run every domain's cleanup skill |
-| [`/docs-sync`](./skills/docs-sync) | Detect drift between canonical sources and the Docusaurus wiki; invoke `docs-wiki-sync` agent to apply updates |
+| [`/docs-sync`](./skills/docs-sync) | Detect drift between canonical sources and the Docusaurus wiki; `--apply` writes the updated mirrors |
 
 **MCP server:** `dayz-rag` — exposes `search_dayz_source`, `search_dayz_wiki`, `get_dayz_file`, `list_indexed_sources` to every DayZ specialist agent. Backed by the index built via `/dayz-search-index` + `/dayz-search-wiki-index`.
 
@@ -162,6 +161,5 @@ Specialist agents live under `.claude/agents/` and cover the major DayZ surfaces
 | `dayz-server-admin` | `types.xml`, `init.c`, `cfggameplay.json`, server performance |
 | `dayz-ui-specialist` | `.layout` files, widget scripting, HUD/menu, UI theme/color |
 | `dayz-workbench-specialist` | Workbench plugin development (editor-time tooling) |
-| `docs-wiki-sync` | Keep `wiki/` (Docusaurus) in sync with canonical docs/agents/skills sources; default model: sonnet |
 
 Plus `agent-creator` for scaffolding new agent definitions to the standard template.

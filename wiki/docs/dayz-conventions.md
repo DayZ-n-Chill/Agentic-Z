@@ -9,7 +9,7 @@ These rules apply to every DayZ-related agent and skill in this repo. They sit *
 
 ## EnScript code style
 
-For all Enforce Script (`.c`) work, follow the **[EnScript Style Guide](enscript-style.md)** sitting alongside this file. It's the authoritative source for naming (`m_`/`s_`, PascalCase methods, camelCase locals, tabs), `ref`/`autoptr` rules (members only — never on params, returns, locals, or typedefs), `modded class` patterns (no inheritance clause), null-check semantics, `IsDedicatedServer()` over `IsClient()/IsServer()` during load, segfault traps, and more. When code in `workspace/` conflicts with that guide, the guide wins unless the user says otherwise.
+For all Enforce Script (`.c`) work, follow these conventions: naming (`m_`/`s_` member prefixes, PascalCase methods, camelCase locals, tabs not spaces), `ref`/`autoptr` rules (members only, never on params, returns, locals, or typedefs), `modded class` patterns (no inheritance clause, that's a silent no-op), null-check semantics, `IsDedicatedServer()` over `IsClient()/IsServer()` during load, segfault traps. When code in `workspace/` conflicts with these rules, the rules win unless the user says otherwise.
 
 ## Environment
 
