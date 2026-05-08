@@ -83,7 +83,7 @@ L3 files reference L2 in one line. The more specific layer wins ties.
 ```
 <repo>/
 ├── .claude/
-│   ├── agents/             # 11 DayZ specialists + agent-creator + docs-wiki-sync (L3)
+│   ├── agents/             # 11 DayZ specialists + agent-creator (L3)
 │   ├── skills/             # 25 slash-command skills (L3) + L2 shared conventions
 │   │   ├── _shared/dayz-conventions.md
 │   │   ├── sync-skills/    # bootstrap: link skills into Claude/Codex/Gemini home dirs
@@ -144,7 +144,6 @@ All gate on `/dayz-preflight` first per L2.
 | [`dayz-mod-debugger`](.claude/agents/dayz-mod-debugger.md) | Log/RPT/crash analysis, BattlEye diagnosis, performance profiling. |
 | [`dayz-mod-reviewer`](.claude/agents/dayz-mod-reviewer.md) | Audit `workspace/<ModName>/` for convention compliance; routes findings. |
 | [`dayz-workbench-specialist`](.claude/agents/dayz-workbench-specialist.md) | Workbench plugin development (editor-time tooling). |
-| [`docs-wiki-sync`](.claude/agents/docs-wiki-sync.md) | Keep `wiki/` in sync with canonical sources. |
 
 Plus [`agent-creator`](.claude/agents/agent-creator.md) for scaffolding new agent definitions.
 

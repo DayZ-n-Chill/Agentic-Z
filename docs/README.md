@@ -128,7 +128,7 @@ The slash commands cover the complete mod lifecycle: env preflight, project scaf
 | [`/dayz-search-download`](../.claude/skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases instead of building locally |
 | [`/dayz-clean-workspace`](../.claude/skills/dayz-clean-workspace/SKILL.md) | Remove DayZ scaffolds and their deployed artifacts |
 | [`/clean-repo`](../.claude/skills/clean-repo/SKILL.md) | Orchestrator — run every domain's cleanup skill |
-| [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the Docusaurus wiki; invoke `docs-wiki-sync` agent to apply updates |
+| [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the Docusaurus wiki; `--apply` writes the updated mirrors |
 
 **MCP server:** [`dayz-rag`](../.claude/mcp/dayz-rag/README.md) — exposes `search_dayz_source`, `get_dayz_file`, `list_indexed_sources` to every DayZ specialist agent. Backed by the index built via `/dayz-search-index`.
 
@@ -159,6 +159,5 @@ Specialist agents live under `.claude/agents/` and cover the major DayZ surfaces
 | `dayz-server-admin` | `types.xml`, `init.c`, `cfggameplay.json`, server performance |
 | `dayz-ui-specialist` | `.layout` files, widget scripting, HUD/menu, UI theme/color |
 | `dayz-workbench-specialist` | Workbench plugin development (editor-time tooling) |
-| `docs-wiki-sync` | Keep `wiki/` (Docusaurus) in sync with canonical docs/agents/skills sources; default model: sonnet |
 
 Plus `agent-creator` for scaffolding new agent definitions to the standard template.
