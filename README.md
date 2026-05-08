@@ -36,18 +36,15 @@ That symlinks the repo's `.claude/skills/` into each agent CLI's home directory 
 
 Skills appear with the `agentic-z:` prefix (`/agentic-z:dayz-build-pbo`). The `dayz-rag` MCP server registers automatically.
 
-Then, from any of the agent CLIs:
+Then, from your mod project in Claude Code:
 
 ```text
-/dayz-preflight                       # verify env (P:\ mounted, Tools installed, vanilla data extracted)
-/dayz-search-download                    # pull prebuilt vanilla+wiki vector index from GitHub releases (~1 min)
-/dayz-new-mod MyMod                   # scaffold workspace/MyMod/ + create P:\MyMod\ junction
-/dayz-add-server chernarus            # set up a test server instance under .server/
-/dayz-build-pbo MyMod                 # pack and deploy to P:\Mods\@MyMod\Addons\
-/dayz-launch-test MyMod               # local diag server + client, mod loaded
+/dayz-init
 ```
 
-`/dayz-search-download` is optional but recommended for fresh clones — it avoids the ~25-30 min `/dayz-search-index` build and the Voyage API token cost. Skip it if you're on a custom DayZ branch and need recall against your local source.
+That's it. The wizard asks what you're doing (new mod or import), where to scaffold, what map to test on, and whether to build/launch. It auto-fixes what it can (`P:\` mount, junctions) and surfaces steam:// links for the rest. Every run after the first drops you into a mission-control hub for the cached project.
+
+Power users can still call individual skills directly: `/dayz-preflight`, `/dayz-build-pbo`, `/dayz-launch-test`, etc. See the full slash-command list further down.
 
 Full prerequisites, env-var overrides, and troubleshooting: **[`docs/dayz-modding.md`](docs/dayz-modding.md)**.
 

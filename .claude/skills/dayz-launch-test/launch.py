@@ -15,28 +15,26 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
-import os
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-# REPO_ROOT = where this skill ships from. PROJECT_DIR = user's project.
+# REPO_ROOT = where this skill ships from (plugin or template clone).
+# Project dir (where .server/ lives) is resolved at runtime from the
+# /dayz-init project cache; see resolve_project_dir().
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_DIR = Path(os.getcwd()).resolve()
 PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
+DAYZ_INIT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-init"
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
-SERVER_ROOT = PROJECT_DIR / ".server"
-LEGACY_SERVER_ROOT = PROJECT_DIR / "workspace" / "_server"
 
 # Per-clone client display preferences (windowed mode, resolution). Lives under
-# .claude/local-memory/ so each clone of the template can have its own setup
-# without affecting the repo. Created with sane defaults on first launch; the
-# user can edit it freely afterward.
-LOCAL_MEMORY = PROJECT_DIR / ".claude" / "local-memory"
-CLIENT_DISPLAY_PREFS = LOCAL_MEMORY / "dayz-client-display.json"
+# <project>/.claude/local-memory/ so each clone of the template can have its
+# own setup without affecting the repo. Created with sane defaults on first
+# launch; the user can edit it freely afterward.
+CLIENT_DISPLAY_PREFS_NAME = "dayz-client-display.json"
 DEFAULT_CLIENT_DISPLAY: dict = {
     "windowed": True,
     "width": 1920,
@@ -57,20 +55,33 @@ WARN = "[WARN] "
 FAIL = "[FAIL] "
 
 
-def _load_preflight_module():
-    """Load preflight.py by file path so static analyzers don't choke on a
-    sys.path-based sibling import (preflight lives in dayz-preflight/, a sibling
-    skill folder)."""
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
+def _load_module_from_path(name: str, path: Path):
+    """Load a sibling-skill .py as a module by file path so static analyzers don't
+    choke on a sys.path-based sibling import."""
+    spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
+        raise RuntimeError(f"Could not load module at {path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-_preflight = _load_preflight_module()
+_preflight = _load_module_from_path("dayz_preflight_module", PREFLIGHT)
 find_dayz_diag = _preflight.find_dayz_diag
+
+# Reuse the project-root cache reader from /dayz-init so launch follows the same source of truth.
+_dayz_init_state = _load_module_from_path("dayz_init_state_module", DAYZ_INIT_DIR / "state.py")
+cached_project_root = _dayz_init_state.cached_project_root
+
+
+def resolve_project_dir() -> Path:
+    """Return the cached project root, or bail out pointing the user at /dayz-init."""
+    project = cached_project_root()
+    if project is None:
+        print("error: no project cached.", file=sys.stderr)
+        print("  Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
+        sys.exit(2)
+    return project.resolve()
 
 
 def gate_on_preflight() -> None:
@@ -81,11 +92,12 @@ def gate_on_preflight() -> None:
         sys.exit(result.returncode)
 
 
-def gate_on_old_layout() -> None:
+def gate_on_old_layout(project_dir: Path) -> None:
     """Refuse to run if workspace/_server/ still exists. Forces explicit migration."""
-    if LEGACY_SERVER_ROOT.exists():
+    legacy_server_root = project_dir / "workspace" / "_server"
+    if legacy_server_root.exists():
         sys.exit(
-            f"{FAIL} Old layout detected at {LEGACY_SERVER_ROOT.relative_to(PROJECT_DIR)}.\n"
+            f"{FAIL} Old layout detected at {legacy_server_root.relative_to(project_dir)}.\n"
             "       The server runtime moved from workspace/_server/ to .server/.\n"
             "       Run: python .claude/skills/dayz-migrate-server/migrate.py"
         )
@@ -137,7 +149,7 @@ def resolve_diag_client() -> Path:
     return diag
 
 
-def verify_instance_environment(instance: str) -> tuple[Path, Path, Path, Path]:
+def verify_instance_environment(instance: str, project_dir: Path) -> tuple[Path, Path, Path, Path]:
     """Verify .server/<instance>/ has serverDZ.cfg + mission/ + server-profiles/ + client-profiles/.
 
     Does NOT create anything (mission, cfg); that's /dayz-add-server's job.
@@ -145,17 +157,36 @@ def verify_instance_environment(instance: str) -> tuple[Path, Path, Path, Path]:
 
     Returns (cfg_path, server_profile_dir, mission_path, client_profile_dir).
     """
-    inst_dir = SERVER_ROOT / instance
-    mission_path = inst_dir / "mission"
+    server_root = project_dir / ".server"
+    inst_dir = server_root / instance
     cfg_path = inst_dir / "serverDZ.cfg"
     server_profile_dir = inst_dir / "server-profiles"
     client_profile_dir = inst_dir / "client-profiles"
 
     missing = []
-    if not mission_path.exists():
-        missing.append(f"mission folder: {mission_path.relative_to(PROJECT_DIR)}")
     if not cfg_path.exists():
-        missing.append(f"server cfg: {cfg_path.relative_to(PROJECT_DIR)}")
+        missing.append(f"server cfg: {cfg_path.relative_to(project_dir)}")
+
+    # CRITICAL: -mission= must point at a path NAMED after the mission template
+    # (e.g. dayzOffline.chernarusplus), not at "mission/". The engine resolves the
+    # template name during the client connect handshake; pointing at "mission/"
+    # means the client connects but never spawns the player. /dayz-add-server
+    # creates a junction <template>/ -> mission/ so we can point at it here.
+    template_dirs = [p for p in inst_dir.glob("dayzOffline.*") if p.is_dir()]
+    if not template_dirs:
+        # Fall back to mission/ for the missing-files error message; user will be
+        # told to re-run /dayz-add-server which creates the junction.
+        mission_path = inst_dir / "mission"
+        if not mission_path.exists():
+            missing.append(f"mission folder: {mission_path.relative_to(project_dir)}")
+        else:
+            missing.append(
+                f"mission template junction (dayzOffline.<map>/ -> mission/): "
+                f"missing in {inst_dir.relative_to(project_dir)}"
+            )
+    else:
+        mission_path = template_dirs[0]
+
     if missing:
         details = "\n".join(f"          - {m}" for m in missing)
         sys.exit(
@@ -170,12 +201,12 @@ def verify_instance_environment(instance: str) -> tuple[Path, Path, Path, Path]:
     if "allowFilePatching" not in cfg:
         cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
         cfg_path.write_text(cfg, encoding="utf-8")
-        print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(PROJECT_DIR)}")
+        print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(project_dir)}")
 
     server_profile_dir.mkdir(parents=True, exist_ok=True)
     client_profile_dir.mkdir(parents=True, exist_ok=True)
     print(f"{OK} Instance: {instance}")
-    print(f"{OK} Instance dir: {inst_dir.relative_to(PROJECT_DIR)}")
+    print(f"{OK} Instance dir: {inst_dir.relative_to(project_dir)}")
     return cfg_path, server_profile_dir, mission_path, client_profile_dir
 
 
@@ -205,7 +236,7 @@ def build_server_cmd(
     ]
 
 
-def read_client_display_prefs() -> dict:
+def read_client_display_prefs(project_dir: Path) -> dict:
     """Read client display preferences (windowed/resolution) from local-memory.
 
     Creates the file with DEFAULT_CLIENT_DISPLAY (1080p windowed) on first run.
@@ -214,20 +245,22 @@ def read_client_display_prefs() -> dict:
     The file is JSON so the user can edit it without running any skill:
         {"windowed": true, "width": 1920, "height": 1080}
     """
-    if CLIENT_DISPLAY_PREFS.exists():
+    local_memory = project_dir / ".claude" / "local-memory"
+    prefs_path = local_memory / CLIENT_DISPLAY_PREFS_NAME
+    if prefs_path.exists():
         try:
-            return json.loads(CLIENT_DISPLAY_PREFS.read_text(encoding="utf-8"))
+            return json.loads(prefs_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as e:
-            print(f"{WARN} Could not parse {CLIENT_DISPLAY_PREFS.relative_to(PROJECT_DIR)}: {e}")
+            print(f"{WARN} Could not parse {prefs_path.relative_to(project_dir)}: {e}")
             print(f"{WARN} Falling back to defaults: {DEFAULT_CLIENT_DISPLAY}")
             return dict(DEFAULT_CLIENT_DISPLAY)
-    LOCAL_MEMORY.mkdir(parents=True, exist_ok=True)
-    CLIENT_DISPLAY_PREFS.write_text(
+    local_memory.mkdir(parents=True, exist_ok=True)
+    prefs_path.write_text(
         json.dumps(DEFAULT_CLIENT_DISPLAY, indent=2) + "\n", encoding="utf-8"
     )
     print(
         f"{OK} Wrote default client display prefs to "
-        f"{CLIENT_DISPLAY_PREFS.relative_to(PROJECT_DIR)}"
+        f"{prefs_path.relative_to(project_dir)}"
     )
     return dict(DEFAULT_CLIENT_DISPLAY)
 
@@ -288,15 +321,18 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    project_dir = resolve_project_dir()
     gate_on_preflight()
     print()
-    print(f"{OK} Project: {PROJECT_DIR}")
-    gate_on_old_layout()
+    print(f"{OK} Project: {project_dir}")
+    gate_on_old_layout(project_dir)
     verify_built_mods(args.modnames)
     diag_exe = resolve_diag_client()
-    cfg_path, server_profile_dir, mission_path, client_profile_dir = verify_instance_environment(args.server)
+    cfg_path, server_profile_dir, mission_path, client_profile_dir = verify_instance_environment(
+        args.server, project_dir
+    )
 
-    display = read_client_display_prefs()
+    display = read_client_display_prefs(project_dir)
 
     # Absolute mod paths so the engine resolves -mod=<arg> correctly regardless
     # of the working directory the subprocess inherits.
@@ -330,8 +366,8 @@ def main() -> int:
     print()
     print("Both running. Close the windows manually to stop.")
     print(f"  Server PID: {server_proc.pid}    Client PID: {client_proc.pid}")
-    print(f"  Server logs: {server_profile_dir.relative_to(PROJECT_DIR)}")
-    print(f"  Client logs: {client_profile_dir.relative_to(PROJECT_DIR)}")
+    print(f"  Server logs: {server_profile_dir.relative_to(project_dir)}")
+    print(f"  Client logs: {client_profile_dir.relative_to(project_dir)}")
     return 0
 
 
