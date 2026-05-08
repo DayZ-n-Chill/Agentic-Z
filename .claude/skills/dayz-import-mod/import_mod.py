@@ -235,6 +235,11 @@ def main() -> int:
         target_disp = workspace_target
     print(f"{OK} P:\\{modname} -> {target_disp} ({kind_p})")
 
+    # Marker so /dayz-init's hub can discover this project under switch-project.
+    # Imported mods point P:\<X>\ at workspace/<X>/, which itself points at the
+    # external source. Resolve to the real source path so the marker is useful.
+    _nm.write_project_marker(p_drive_link, source.resolve())
+
     # Scaffolding check
     print()
     print("Scaffolding check:")

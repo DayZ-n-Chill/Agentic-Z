@@ -185,7 +185,9 @@ def _action_init_another(_: Status) -> None:
 def _action_switch_project(_: Status) -> None:
     candidates = _discover_managed_projects()
     if not candidates:
-        print("(no agentic-z-managed projects found under P:\\Mods\\@*)")
+        print("(no agentic-z-managed projects found)")
+        print("       Discovery looks for P:\\<ModName>\\.agentic-z-project markers.")
+        print("       Run /dayz-new-mod or /dayz-import-mod to register a project.")
         return
     chosen = ask_select(
         "Switch to which project?",
@@ -199,17 +201,38 @@ def _action_switch_project(_: Status) -> None:
 
 
 def _discover_managed_projects() -> list[Path]:
-    """Scan P:\\Mods\\@*\\.agentic-z-scaffold for project paths."""
-    mods_root = Path("P:\\Mods")
-    if not mods_root.is_dir():
+    """Scan P:\\<ModName>\\.agentic-z-project markers for managed mod projects.
+
+    The marker is written by /dayz-new-mod and /dayz-import-mod into the
+    junction at P:\\<ModName>\\, which transparently lands inside the actual
+    workspace. Reading the marker gives us the absolute project root path.
+
+    Stale markers (where the project folder has since been moved/deleted) are
+    silently skipped — discovery only returns projects that still exist on disk.
+
+    Distinct from build-pbo's .agentic-z-scaffold marker, which lives at
+    P:\\Mods\\@<ModName>\\ and stores just the modname for clean-workspace's
+    ownership check. Different file, different location, different purpose.
+    """
+    p_drive = Path("P:\\")
+    if not p_drive.is_dir():
         return []
     out: list[Path] = []
-    for at_dir in mods_root.glob("@*"):
-        marker = at_dir / ".agentic-z-scaffold"
-        if marker.is_file():
-            text = marker.read_text(encoding="utf-8").strip()
-            if text:
-                out.append(Path(text))
+    for entry in p_drive.iterdir():
+        try:
+            if not entry.is_dir():
+                continue
+        except OSError:
+            continue
+        marker = entry / ".agentic-z-project"
+        try:
+            if not marker.is_file():
+                continue
+            project_path = Path(marker.read_text(encoding="utf-8").strip())
+        except OSError:
+            continue
+        if project_path.is_dir():
+            out.append(project_path)
     return out
 
 
