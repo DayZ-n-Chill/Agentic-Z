@@ -4,11 +4,11 @@ name: dayz-add-server
 
 ## Overview
 
-Set up a DayZ test server instance under .server/&lt;instance&gt;/. Copies the mission template from DayZ Server install if missing, creates per-instance serverDZ.cfg, server-profiles/, client-profiles/. Each instance is fully isolated so you can run multiple variants of the same map (chernarus, chernarus-hardcore, etc.) without cross-contamination. Refuses if the legacy workspace/_server/ layout exists (delete it manually; that layout is no longer supported). Required before /dayz-launch-test for a given instance. Use --refresh-mission to re-copy mission content after a DayZ update.
+Set up a DayZ test server instance under .server/&lt;instance&gt;/. Copies the mission template from DayZ Server install if missing, creates per-instance serverDZ.cfg + Profiles/ (server -profiles=) and a top-level shared .server/!ClientDiagLogs/ (client -profiles=). Each instance is isolated on the server side so you can run multiple variants of the same map (chernarus, chernarus-hardcore, etc.) without cross-contamination. Refuses if the legacy workspace/_server/ layout exists (delete it manually; that layout is no longer supported). Required before /dayz-launch-test for a given instance. Use --refresh-mission to re-copy mission content after a DayZ update.
 
 # /dayz-add-server
 
-Set up a self-contained test server instance for local DayZ mod testing. Each instance lives under `.server/<instance>/` and owns its mission copy, server config, server logs, and client logs. Run as many instances as you want, including multiple variants of the same map.
+Set up a self-contained test server instance for local DayZ mod testing. Each instance lives under `.server/<instance>/` and owns its mission copy, server config, and server logs. Client diag logs are shared across instances at `.server/!ClientDiagLogs/`. Run as many instances as you want, including multiple variants of the same map.
 
 This is the **setup** half of the test loop. `/dayz-launch-test` is the **run** half, and refuses to run for an instance you haven't added yet.
 
@@ -34,8 +34,8 @@ python .claude\skills\dayz-add-server\add_server.py <instance> [--map <name>] [-
 4. **Mission copy**: if `.server/<instance>/mission/` doesn't exist (or `--refresh-mission` was passed), copies it from `<DayZServer>/mpmissions/<template>/`. Folder is renamed to `mission/` regardless of template (the launcher pins the path explicitly).
 5. **Instance directory**: ensures `.server/<instance>/` exists with:
    - `serverDZ.cfg`: default config pointing at the right mission template, with `allowFilePatching = 1;`
-   - `server-profiles/`: server-side log dir
-   - `client-profiles/`: client-side log dir (per-instance, so RPTs don't mix across instances)
+   - `Profiles/`: server-side `-profiles=` dir (RPT, script.log, BattlEye state). Per-instance.
+   Also ensures the shared `.server/!ClientDiagLogs/` dir at the project root exists; this is the client-side `-profiles=` dir, shared across all instances.
    If `serverDZ.cfg` already exists, the existing config is preserved; only `allowFilePatching = 1;` is auto-appended if missing.
 
 ## Refuses to run if
@@ -56,8 +56,8 @@ Preflight complete.
 [OK]    Instance: chernarus-hardcore  (map: chernarus, mission: dayzOffline.chernarusplus)
 [OK]    Copied .server\chernarus-hardcore\mission  (from DayZ Server install)
 [OK]    Wrote default .server\chernarus-hardcore\serverDZ.cfg
-[OK]    .server\chernarus-hardcore\server-profiles ready
-[OK]    .server\chernarus-hardcore\client-profiles ready
+[OK]    .server\chernarus-hardcore\Profiles ready
+[OK]    .server\!ClientDiagLogs ready
 
 Instance 'chernarus-hardcore' is ready. Next:
   /dayz-build-pbo <ModName>

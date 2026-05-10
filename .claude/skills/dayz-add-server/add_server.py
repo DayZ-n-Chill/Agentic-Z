@@ -157,8 +157,14 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir:
 
 
 def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
-    """Ensure .server/<instance>/ has serverDZ.cfg + server-profiles/ + client-profiles/
-    + profiles/ + a junction named after the mission template pointing at mission/.
+    """Ensure .server/<instance>/ has serverDZ.cfg + Profiles/ (per-instance
+    server -profiles=) plus a top-level .server/!ClientDiagLogs/ (shared client
+    -profiles=) and a junction named after the mission template pointing at mission/.
+
+    Per-instance server `Profiles/` keeps each instance's RPT, script.log, and
+    BattlEye state isolated. Client diag logs go to a single shared
+    `!ClientDiagLogs/` at the .server root (vanilla convention; the client
+    -profiles= dir doesn't need to be per-instance).
 
     The mission-template junction is REQUIRED for the client-spawn handshake. The
     engine resolves the template name (e.g. dayzOffline.chernarusplus) relative to
@@ -167,14 +173,10 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
     """
     server_root = project_dir / ".server"
     inst_dir = server_root / instance
-    server_profiles = inst_dir / "server-profiles"
-    client_profiles = inst_dir / "client-profiles"
-    profiles = inst_dir / "profiles"  # BattlEye/extended-controls dir
+    server_profiles = inst_dir / "Profiles"
+    client_diag_logs = server_root / "!ClientDiagLogs"
     server_profiles.mkdir(parents=True, exist_ok=True)
-    client_profiles.mkdir(parents=True, exist_ok=True)
-    profiles.mkdir(parents=True, exist_ok=True)
-    # Top-level shared client diag logs (matches PonyWalkman convention)
-    (server_root / "!ClientDiagLogs").mkdir(parents=True, exist_ok=True)
+    client_diag_logs.mkdir(parents=True, exist_ok=True)
 
     cfg_path = inst_dir / "serverDZ.cfg"
     if not cfg_path.exists():
@@ -207,7 +209,7 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
             print(f"{FAIL} Could not create template junction: {result.stderr.strip()}")
 
     print(f"{OK} {server_profiles.relative_to(project_dir)} ready")
-    print(f"{OK} {client_profiles.relative_to(project_dir)} ready")
+    print(f"{OK} {client_diag_logs.relative_to(project_dir)} ready")
 
 
 def default_server_cfg(instance: str, template: str) -> str:

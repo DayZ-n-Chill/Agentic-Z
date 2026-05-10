@@ -51,7 +51,7 @@ For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generi
 - Keep the repository root clean.
 - `output/` is the **default destination for one-shot deliverables** — documents, decks, generated files, and other artifacts the user takes elsewhere. Goes under `output/<descriptive-folder>/` unless the user names a different destination.
 - `workspace/` is for **in-progress mod projects** — anything you're actively iterating on across sessions. Each mod gets its own subfolder (`workspace/<ModName>/`).
-- `.server/` (project root) holds **DayZ test-server runtime**, one folder per instance (`.server/<instance>/{mission, serverDZ.cfg, server-profiles, client-profiles}`). Created by `/dayz-add-server`. Multiple instances allowed (e.g. chernarus, chernarus-hardcore). Gitignored by default except for `serverDZ.cfg` and `mission/` contents.
+- `.server/` (project root) holds **DayZ test-server runtime**: one folder per instance (`.server/<instance>/{mission, serverDZ.cfg, Profiles}`) plus a shared top-level `.server/!ClientDiagLogs/` for the client `-profiles=` dir. Created by `/dayz-add-server`. Multiple instances allowed (e.g. chernarus, chernarus-hardcore). Gitignored by default except for `serverDZ.cfg` and `mission/` contents.
 - `scripts/` is for **helper automation** — Python, PowerShell, batch, etc. that *produces* content elsewhere. Tools, not products.
 - Exceptions to the `output/` rule, none of which move:
   - Agent memory stays in `.claude/agent-memory/`.
