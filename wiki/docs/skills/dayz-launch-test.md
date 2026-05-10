@@ -31,16 +31,16 @@ python .claude\skills\dayz-launch-test\launch.py <ModName> [<ModName2> ...] [--s
 
 ```
 .server/
+├── !ClientDiagLogs/                   # client `-profiles=` dir (RPT, BattlEye state, Users/, DataCache/). SHARED across all instances.
 └── <instance>/
-    ├── mission/                        # mission copy (per-instance)
-    ├── serverDZ.cfg                    # has `template = ...` line for map link
-    ├── server-profiles/                # server-side RPT, script.log, BattlEye state
-    └── client-profiles/                # client-side RPT, script.log, BattlEye state, Users/, DataCache/
+    ├── mission/                       # mission copy (per-instance)
+    ├── serverDZ.cfg                   # has `template = ...` line for map link
+    └── Profiles/                      # server `-profiles=` dir (RPT, script.log, BattlEye state). Per-instance.
 ```
 
 The mission folder is an **editable copy**, not the original. Edit `.server/<instance>/mission/init.c` (etc.) freely. `-filePatching` makes the server read your edits live.
 
-Each instance has its own `serverDZ.cfg` so per-instance tuning (player count, time of day, persistence) doesn't bleed across instances. Each instance also has its own `client-profiles/`, so client RPTs from different instances don't mix.
+Each instance has its own `serverDZ.cfg` and `Profiles/` so per-instance tuning (player count, time of day, persistence) and server-side RPTs don't bleed across instances. The client `-profiles=` dir at `.server/!ClientDiagLogs/` is shared (vanilla naming convention).
 
 ## What it does
 
@@ -49,9 +49,9 @@ Each instance has its own `serverDZ.cfg` so per-instance tuning (player count, t
 3. **Built-mod check**: for each mod, verifies at least one `.pbo` exists in `P:\Mods\@<ModName>\Addons\`. Fails fast with a hint to run `/dayz-build-pbo` if missing.
 4. **Diag client resolution**: finds `DayZDiag_x64.exe` via `find_dayz_diag()` (env var, DayZ game install, Steam paths). Hard-fails if missing. Both client and server run from the same diag binary; the server adds `-server`. Retail `DayZ_x64.exe` and `DayZServer_x64.exe` are NOT used; both block past the loading screen with `-filePatching` enabled.
 5. **Instance state verification**: confirms `.server/<instance>/mission/` AND `.server/<instance>/serverDZ.cfg` exist. Hard-fails with a hint to run `/dayz-add-server <instance>` if either is missing. The only mutation this skill performs on an existing cfg is auto-appending `allowFilePatching = 1;` if absent.
-6. **Launch server**: spawns `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/server-profiles -mission=<instance>/mission -mod=@Mod1;@Mod2 -filePatching -port=<port>`.
+6. **Launch server**: spawns `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/mission -mod=@Mod1;@Mod2 -filePatching -port=<port>`.
 7. **Wait 5s** for the server to start listening.
-8. **Launch client**: spawns `DayZDiag_x64.exe -profiles=<instance>/client-profiles -mod=@Mod1;@Mod2 -connect=127.0.0.1 -port=<port> -filePatching` plus the display flags from per-clone preferences.
+8. **Launch client**: spawns `DayZDiag_x64.exe -profiles=!ClientDiagLogs -mod=@Mod1;@Mod2 -connect=127.0.0.1 -port=<port> -filePatching` plus the display flags from per-clone preferences.
 9. **Print PIDs and exit.** Both processes run independently. Close the windows manually to stop them, or run `/dayz-stop-test`.
 
 ## Refuses to run if
@@ -74,17 +74,17 @@ Preflight complete.
 [OK]    Instance: chernarus
 [OK]    Instance dir: .server\chernarus
 
-[Launch] Server: DayZDiag_x64.exe -server -config=...\chernarus\serverDZ.cfg -profiles=...\chernarus\server-profiles -mission=...\chernarus\mission -mod=@BuildTest -filePatching -port=2302
+[Launch] Server: DayZDiag_x64.exe -server -config=...\chernarus\serverDZ.cfg -profiles=...\chernarus\Profiles -mission=...\chernarus\mission -mod=@BuildTest -filePatching -port=2302
 [OK]    Server PID: 12345
         Waiting 5s for server to start listening...
 
-[Launch] Client: DayZDiag_x64.exe -profiles=...\chernarus\client-profiles -mod=@BuildTest -connect=127.0.0.1 -port=2302 -filePatching
+[Launch] Client: DayZDiag_x64.exe -profiles=...\!ClientDiagLogs -mod=@BuildTest -connect=127.0.0.1 -port=2302 -filePatching
 [OK]    Client PID: 67890
 
 Both running. Close the windows manually to stop.
   Server PID: 12345    Client PID: 67890
-  Server logs: .server\chernarus\server-profiles
-  Client logs: .server\chernarus\client-profiles
+  Server logs: .server\chernarus\Profiles
+  Client logs: .server\!ClientDiagLogs
 ```
 
 ## Output (`--dry-run`)

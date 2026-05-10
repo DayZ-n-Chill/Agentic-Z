@@ -151,18 +151,21 @@ def resolve_diag_client() -> Path:
 
 
 def verify_instance_environment(instance: str, project_dir: Path) -> tuple[Path, Path, Path, Path]:
-    """Verify .server/<instance>/ has serverDZ.cfg + mission/ + server-profiles/ + client-profiles/.
+    """Verify .server/<instance>/ has serverDZ.cfg + mission/ + Profiles/ and that
+    the top-level .server/!ClientDiagLogs/ exists.
 
     Does NOT create anything (mission, cfg); that's /dayz-add-server's job.
     Hard-fails with a hint if the instance hasn't been added yet.
 
     Returns (cfg_path, server_profile_dir, mission_path, client_profile_dir).
+    server_profile_dir is per-instance .server/<instance>/Profiles/.
+    client_profile_dir is shared top-level .server/!ClientDiagLogs/.
     """
     server_root = project_dir / ".server"
     inst_dir = server_root / instance
     cfg_path = inst_dir / "serverDZ.cfg"
-    server_profile_dir = inst_dir / "server-profiles"
-    client_profile_dir = inst_dir / "client-profiles"
+    server_profile_dir = inst_dir / "Profiles"
+    client_profile_dir = server_root / "!ClientDiagLogs"
 
     missing = []
     if not cfg_path.exists():
@@ -314,10 +317,10 @@ def build_client_cmd(
     Uses DayZDiag_x64.exe (not retail DayZ_x64.exe) so -filePatching actually
     lets the player into the world.
 
-    `-profiles=<client_profile>` points client-side diag artifacts
-    (!ClientDiagLogs/, BattlEye/, player profile, script logs) at our workspace
-    root rather than the default location next to the exe (which would clutter
-    the DayZ game install dir).
+    `-profiles=<client_profile>` points the client at our shared
+    .server/!ClientDiagLogs/ dir (RPT, BattlEye/, player profile, script logs)
+    rather than the default location next to the exe (which would clutter the
+    DayZ game install dir).
 
     `-window` + `-x=<W> -y=<H>` honor the user's display prefs (default 1080p
     windowed) so the game doesn't grab fullscreen on ultra-wide monitors.
