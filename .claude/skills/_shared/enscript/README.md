@@ -106,6 +106,7 @@ When debugging, jump to the file that owns the symptom.
 | HUD marker jitters at screen edges | `references/game_api.md` (`GetScreenPos` z-check) |
 | `string.ToLower()` mutates both copies | `references/types_collections.md` (force-allocate via `+ ""`) |
 | Older guide says *"write a custom Clamp"* | `references/types_collections.md` (`Math.Clamp` exists) |
+| Attachment slot silently rejects modded item | `dayz-conventions.md` (T148506 — vanilla `inventorySlot` is a string) |
 
 ## Our additions
 

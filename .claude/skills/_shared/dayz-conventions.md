@@ -265,6 +265,34 @@ section for details.
 
 ---
 
+## ⚠️ Vanilla bug — `inventorySlot` string vs array (`T148506`)
+
+When a vanilla item's config declares `inventorySlot` as a **string** (single slot), trying to extend it from a mod with the `+=` array-append syntax fails silently — the mod's slot is dropped at parse time.
+
+```cpp
+// Vanilla (DZ\gear\camping\config.cpp ~ line 10074):
+class WoodenCrate : Inventory_Base
+{
+    inventorySlot = "WoodenCrate";       // STRING, not array
+};
+
+// FAILS silently — append to a string isn't valid:
+class MyMod_FancyCrate : WoodenCrate
+{
+    inventorySlot[] += {"MyMod_CustomSlot"};
+};
+
+// FIX — redeclare as an explicit array, including the original value:
+class MyMod_FancyCrate : WoodenCrate
+{
+    inventorySlot[] = {"WoodenCrate", "MyMod_CustomSlot"};
+};
+```
+
+Bohemia ticket: `T148506`. The bug is "won't fix"; the workaround is mandatory. Symptom: attachment slot just doesn't accept the modded item, no RPT error, no script error.
+
+---
+
 ## Custom `Container_Base` — non-obvious requirements
 
 Inheriting from `Container_Base` and declaring `scope = 2; model = ...` is
