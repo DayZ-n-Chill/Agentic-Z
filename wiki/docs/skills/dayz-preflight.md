@@ -6,6 +6,9 @@ name: dayz-preflight
 
 Verify the DayZ modding environment is ready (P:\ mounted, DayZ Tools installed, vanilla data unpacked, workshop deploy folder accessible). Run this before any other DayZ skill. Hard-fails if P:\ is not mounted; warns on the rest.
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-preflight
 
 Verify the DayZ modding environment before doing any DayZ work. Halts with a clear error if `P:\` is not mounted (per `.claude/skills/_shared/dayz-conventions.md`); warns on optional checks so the user can decide whether to proceed.
@@ -42,7 +45,7 @@ The `find_dayz_tools()` and `find_vanilla_data()` helper functions in `preflight
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-preflight\preflight.py
+python "<skill-dir>\preflight.py"
 ```
 
 ## When to run

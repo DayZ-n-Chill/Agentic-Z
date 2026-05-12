@@ -6,6 +6,9 @@ name: clean-repo
 
 Wipe ALL template-managed artifacts across every domain so the repo is ready to push. Orchestrator — discovers and runs every domain's `&lt;domain&gt;-clean-workspace` skill in turn (currently just `dayz-clean-workspace`). Future domains plug in here automatically when they ship their own cleanup skill following the naming convention. Interactive confirmation by default; --yes skips it; --dry-run lists what each domain would clean.
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\<other>\`.
+
 # /clean-repo
 
 Wipe everything the template's skills created across all domains so the repo is ready to push to git. This is the "nuke the workspace" button.
@@ -21,7 +24,7 @@ Additional `<domain>-clean-workspace` skills plug in automatically when they fol
 ## How to run
 
 ```cmd
-python .claude\skills\clean-repo\clean.py [--yes] [--dry-run]
+python "<skill-dir>\clean.py" [--yes] [--dry-run]
 ```
 
 | Argument | Required? | Notes |

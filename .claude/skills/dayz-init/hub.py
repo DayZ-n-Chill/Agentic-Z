@@ -136,7 +136,7 @@ def _action_tail_log(status: Status) -> None:
         status.project
         / ".server"
         / status.server_instance
-        / "server-profiles"
+        / "Profiles"
         / "script.log"
     )
     if not log.is_file():

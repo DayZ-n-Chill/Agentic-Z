@@ -99,8 +99,8 @@ DayZ Tools is the only per-machine install needed. There's no per-clone API key.
 - **Server runtime lives at `.server/<instance>/`** at the project root (not under `workspace/`). Each instance is fully self-contained:
   - `.server/<instance>/mission/`: **editable copy** of the mission folder. Created by `/dayz-add-server` on demand from DayZ Server's `mpmissions/<template>/`; user-editable thereafter (server runs with `-filePatching` so edits are live). Never edit the original DayZ Server install. Folder is named `mission/` regardless of template (the launcher pins the path explicitly via `-mission=<abspath>`).
   - `.server/<instance>/serverDZ.cfg`: per-instance server config. The `template = "..."` line links the instance to its DayZ mission base. Each instance can have totally different tuning (player count, persistence, time of day) without bleeding across instances.
-  - `.server/<instance>/server-profiles/`: server-side log dir (RPT, script.log, BattlEye state).
-  - `.server/<instance>/client-profiles/`: client-side `-profiles=` dir. Per-instance, so RPTs and player profiles don't mix when switching between instances.
+  - `.server/<instance>/Profiles/`: server-side `-profiles=` dir (RPT, script.log, BattlEye state). Per-instance.
+  - `.server/!ClientDiagLogs/`: client-side `-profiles=` dir. Top-level, shared across all instances (vanilla naming convention; client diag artifacts don't need per-instance isolation).
 - **Instance is the unit of identity, not map.** A user can run multiple variants of the same map (chernarus vanilla vs chernarus-hardcore) by adding two instances. `serverDZ.cfg`'s `template` field is the only place the map link is encoded.
 - **Setup vs run is split into two skills.** `/dayz-add-server <instance>` does setup (mission copy + per-instance cfg + profile dirs). `/dayz-launch-test <mod> --server <instance>` does run (verify + spawn). The launch skill never copies missions, never writes cfgs from scratch; it refuses with a hint to run `/dayz-add-server` if state is missing. Only mutation launch does is auto-append `allowFilePatching = 1;` to an existing cfg that lacks it.
 - **Legacy `workspace/_server/` layout is no longer supported.** All three runtime skills (`/dayz-add-server`, `/dayz-launch-test`, `/dayz-clean-workspace --include-server`) refuse to run while `workspace/_server/` still exists. The user must delete the legacy folder manually before continuing; the dedicated `/dayz-migrate-server` skill that previously copied content into `.server/<instance>/` was removed in 1.4.0.
@@ -265,60 +265,31 @@ section for details.
 
 ---
 
-## Dynamic items — `ThrowPhysically` vs manual `CreateDynamicPhysics`
+## ⚠️ Vanilla bug — `inventorySlot` string vs array (`T148506`)
 
-For items with `simulation = "inventoryItem"` and `physLayer = "item"`, the
-`ECE_CREATEPHYSICS` flag of `CreateObjectEx` creates the **collision shape**
-but leaves the rigid body **static / kinematic**. Calling
-`dBodyApplyImpulse` on a static body silently no-ops — common symptom is
-"item appears frozen in air after spawn".
+When a vanilla item's config declares `inventorySlot` as a **string** (single slot), trying to extend it from a mod with the `+=` array-append syntax fails silently — the mod's slot is dropped at parse time.
 
-### Preferred pattern — `ThrowPhysically`
+```cpp
+// Vanilla (DZ\gear\camping\config.cpp ~ line 10074):
+class WoodenCrate : Inventory_Base
+{
+    inventorySlot = "WoodenCrate";       // STRING, not array
+};
 
-The vanilla helper at `P:\scripts\3_game\entities\inventoryitem.c:26`:
+// FAILS silently — append to a string isn't valid:
+class MyMod_FancyCrate : WoodenCrate
+{
+    inventorySlot[] += {"MyMod_CustomSlot"};
+};
 
-```c
-proto native void ThrowPhysically(DayZPlayer player, vector force, bool collideWithCharacters = true);
+// FIX — redeclare as an explicit array, including the original value:
+class MyMod_FancyCrate : WoodenCrate
+{
+    inventorySlot[] = {"WoodenCrate", "MyMod_CustomSlot"};
+};
 ```
 
-Internally calls `CreateDynamicPhysics(ITEM_LARGE)`,
-`SetDynamicPhysicsLifeTime(...)`, and applies `force` as an impulse. This is
-the pattern vanilla itself uses — see
-`P:\scripts\4_world\static\miscgameplayfunctions.c` lines 1188 / 1204 / 1212
-for examples.
-
-```c
-EntityAI spawned = GetGame().CreateObjectEx("MyMod_Item", pos, ECE_CREATEPHYSICS|ECE_UPDATEPATHGRAPH);
-ItemBase ib = ItemBase.Cast(spawned);
-if (ib)
-    ib.ThrowPhysically(null, impulse, false);
-```
-
-### Manual pattern — when you need finer control
-
-If you need to drive lifetime, gravity, or interaction layer explicitly:
-
-```c
-obj.CreateDynamicPhysics(PhxInteractionLayers.DYNAMICITEM);
-obj.EnableDynamicCCD(true);
-obj.SetDynamicPhysicsLifeTime(20.0);     // without this, engine sleeps the body
-dBodyEnableGravity(obj, true);
-dBodyApplyImpulse(obj, impulse);
-```
-
-Verified APIs:
-
-- `P:\scripts\3_game\entities\object.c:462-464` — `CreateDynamicPhysics`,
-  `EnableDynamicCCD`, `SetDynamicPhysicsLifeTime`.
-- `P:\scripts\3_game\global\dayzphysics.c:1-29` — `PhxInteractionLayers` enum
-  (`DYNAMICITEM`, `DYNAMICITEM_NOCHAR`, ...).
-- `P:\scripts\1_core\proto\enphysics.c:64-69, 141` — `dBodyDynamic`,
-  `dBodyEnableGravity`, `dBodyApplyImpulse`.
-- `P:\scripts\4_world\entities\itembase.c:4530` — `StopItemDynamicPhysics`
-  reduces `SetDynamicPhysicsLifeTime` to `0.01` to "park" the body.
-
-The `SetDynamicPhysicsLifeTime` call is mandatory — without it the engine
-sleeps the body within a few ticks and the impulse is lost mid-flight.
+Bohemia ticket: `T148506`. The bug is "won't fix"; the workaround is mandatory. Symptom: attachment slot just doesn't accept the modded item, no RPT error, no script error.
 
 ---
 
@@ -412,111 +383,6 @@ healthLevelValues[] = { 1.0, 0.7, 0.5, 0.3, 0.0 };
 
 Reference: vanilla `WoodenCrate` in `DZ\gear\camping\config.cpp` lines
 ~10074-10210 has the canonical full pattern.
-
----
-
-## Schema migration for admin-tunable JSON configs
-
-Mods that ship JSON config files (`cfggameplay.json`-style: admin opens it,
-edits values, restarts server) need a forward-compatible migration story.
-Otherwise: admin runs old JSON against new mod, missing fields → either
-crashes or silently uses default-of-default → admin reports "feature gone"
-that's actually just unset.
-
-### Pattern
-
-```c
-class MyMod_Settings
-{
-    static const int SCHEMA_VERSION = 3;
-
-    int    version;            // sentinel; 0 = "not loaded yet"
-    string serverName;
-    int    maxPlayers;
-    ref array<string> allowedKits;
-
-    // Constructor: minimal scalar defaults + empty arrays so the JSON
-    // serializer never sees null members.
-    void MyMod_Settings()
-    {
-        version = 0;
-        serverName = "";
-        maxPlayers = 0;
-        allowedKits = new array<string>;
-    }
-
-    // Defaults() is separate so it can be called at fresh-install time AND
-    // re-used at migration time to source new-field default values.
-    void Defaults()
-    {
-        serverName = "Untitled Server";
-        maxPlayers = 60;
-        allowedKits.Clear();
-        allowedKits.Insert("StarterKit_Basic");
-        version = SCHEMA_VERSION;
-    }
-}
-
-static MyMod_Settings LoadOrCreate(string path)
-{
-    MyMod_Settings cfg = new MyMod_Settings;
-
-    if (!FileExist(path))
-    {
-        cfg.Defaults();
-        SaveToDisk(cfg, path);
-        return cfg;
-    }
-
-    if (!JsonFileLoader<MyMod_Settings>.JsonLoadFile(path, cfg))
-    {
-        // Parse failed — admin probably has a typo. DO NOT overwrite;
-        // log + return defaults in memory only.
-        cfg.Defaults();
-        Print("[MyMod] settings JSON failed to parse — using in-memory defaults; not overwriting");
-        return cfg;
-    }
-
-    if (cfg.version < MyMod_Settings.SCHEMA_VERSION)
-    {
-        // Forward migration. Build a fresh defaults instance and copy in
-        // only the NEW fields that didn't exist in the old version.
-        MyMod_Settings fresh = new MyMod_Settings;
-        fresh.Defaults();
-
-        if (cfg.version < 2)
-        {
-            // Field added in v2:
-            cfg.maxPlayers = fresh.maxPlayers;
-        }
-        if (cfg.version < 3)
-        {
-            // Field added in v3:
-            cfg.allowedKits = fresh.allowedKits;
-        }
-
-        cfg.version = MyMod_Settings.SCHEMA_VERSION;
-        SaveToDisk(cfg, path);
-        Print("[MyMod] migrated settings v" + cfg.version + " → v" + MyMod_Settings.SCHEMA_VERSION);
-    }
-
-    return cfg;
-}
-```
-
-### Rules of thumb
-
-- Bump `SCHEMA_VERSION` whenever you add a field. Don't bump for behavior
-  changes that don't change the JSON shape.
-- Constructor stays minimal — just enough so the serializer doesn't choke on
-  null members. All "didactic example" defaults live in `Defaults()`.
-- On parse failure, DO NOT overwrite the file. The admin may be mid-edit
-  with a typo. Use defaults in memory only and log loudly.
-- Migration is incremental: each `if (cfg.version < N)` block patches in only
-  the fields added at version N.
-
-Reference pattern: `salutesh/DayZ-Expansion-Scripts/ExpansionGarageSettings.c::OnLoad`
-uses an equivalent approach.
 
 ---
 

@@ -3,6 +3,9 @@ name: dayz-launch-objectbuilder
 description: Open Object Builder (DayZ Tools' .p3d model editor) from the CLI, optionally pointed at a specific .p3d file or mod folder. Spawns detached so the shell returns immediately. Requires /dayz-setup-objectbuilder to have been run once on the machine. Replaces clicking through Steam → DayZ Tools → Object Builder → File → Open.
 ---
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-launch-objectbuilder
 
 Open Object Builder without leaving the terminal. Optionally pre-loads a `.p3d`, or sets the working folder to a specific mod's `P:\<ModName>\` so the file dialog opens inside it.
@@ -24,17 +27,17 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 **Just open the editor:**
 ```cmd
-python .claude\skills\dayz-launch-objectbuilder\launch.py
+python "<skill-dir>\launch.py"
 ```
 
 **Open a specific .p3d:**
 ```cmd
-python .claude\skills\dayz-launch-objectbuilder\launch.py --file P:\MyMod\data\model.p3d
+python "<skill-dir>\launch.py" --file P:\MyMod\data\model.p3d
 ```
 
 **Open with a mod folder as working directory:**
 ```cmd
-python .claude\skills\dayz-launch-objectbuilder\launch.py --mod MyMod
+python "<skill-dir>\launch.py" --mod MyMod
 ```
 (Requires `P:\MyMod\` to exist — typically created by `/dayz-new-mod`.)
 

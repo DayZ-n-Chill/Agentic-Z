@@ -297,9 +297,9 @@ def main() -> int:
 
     diag_exe = resolve_diag_client()
     cfg_path, profile_dir, mission_path, client_diag_dir = verify_instance_environment(
-        project_dir, args.server
+        args.server, project_dir
     )
-    display = read_client_display_prefs()
+    display = read_client_display_prefs(project_dir)
 
     mod_arg = ";".join(str(MODS_ROOT / f"@{name}") for name in full_mods)
     players_dir = profile_dir / "PermissionsFramework" / "Players"

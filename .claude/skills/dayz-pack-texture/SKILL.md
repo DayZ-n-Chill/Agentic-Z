@@ -7,6 +7,9 @@ description: >-
   next to itself.
 ---
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-pack-texture
 
 Convert one or more PNG/TGA images to `.paa` (DayZ's texture format) using DayZ Tools' `ImageToPAA.exe`. Each input file is required to follow the DayZ suffix convention so the engine knows what kind of texture it is:
@@ -24,7 +27,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-pack-texture\pack_texture.py <input1> [<input2> ...]
+python "<skill-dir>\pack_texture.py" <input1> [<input2> ...]
 ```
 
 | Argument | Required? | Notes |

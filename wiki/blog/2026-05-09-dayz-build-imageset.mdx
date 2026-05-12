@@ -1,0 +1,78 @@
+---
+slug: dayz-build-imageset
+title: "Pack PNG sprites into DayZ imagesets without Workbench"
+authors: [brian]
+tags: [skills, dayz, ui, changelog]
+---
+
+Imagesets are how DayZ batches sprites into a single texture so the GUI can composite them at runtime. The vanilla workflow is to drag images into Workbench and place them on the atlas by hand. The new `/dayz-build-imageset` skill replaces that with one Python invocation that takes a folder of PNGs and emits a ready-to-use `.imageset` + `.paa` pair.
+
+{/* truncate */}
+
+## What changed
+
+- Added the **`dayz-build-imageset`** skill. Drop PNGs into `<mod>/.gui-sources/<setname>/`, run the skill, get `<mod>/gui/imagesets/<setname>.imageset` + `<setname>.paa` with a 10px gutter on every side of every sprite.
+- Source PNGs stay in `.gui-sources/` (gitignored, kept out of the PBO payload). Only the packed atlas + definition file ship.
+- Each subfolder of `.gui-sources/` becomes one imageset. Rename the subfolder to rename the imageset.
+
+## Why a 10px gutter
+
+Bilinear/trilinear sampling at non-1:1 scales bleeds pixels from neighbouring sprites into whatever you're rendering. Vanilla atlases pad sprites for the same reason. 10px is wide enough to survive aggressive downscale at typical UI resolutions, narrow enough to keep atlas density reasonable.
+
+## Auto-split for large sprite sets
+
+A single 4096x4096 atlas only holds:
+
+| Sprite size | Fits per atlas |
+|---|---|
+| 256x256 | ~150 |
+| 512x512 | ~49 |
+| 1024x1024 | ~9 |
+| 2048x1024 | 3 |
+| 2048x2048 | 1 |
+
+When sprites won't fit in one atlas, the skill greedily splits them: `<setname>_1.imageset`, `<setname>_2.imageset`, `<setname>_3.imageset`, etc. Each part is self-contained and references its own `.paa`. Sprite names are preserved across the split, so a UI consumer just gets back a list of imageset names instead of one.
+
+## Format
+
+The generated `.imageset` matches the vanilla shape verified against `bleedingdrops.imageset` and `dayz_gui.imageset`:
+
+```
+ImageSetClass {
+ Name "loadscreens_1"
+ RefSize 4096 4096
+ Textures {
+  ImageSetTextureClass {
+   mpix 0
+   path "MyMod\gui\imagesets\loadscreens_1.paa"
+  }
+ }
+ Images {
+  ImageSetDefClass load_00 {
+   Name "load_00"
+   Pos 10 10
+   Size 2048 1024
+   Flags 0
+  }
+  ...
+ }
+ Groups {
+ }
+}
+```
+
+Atlas dimensions are power-of-two (rectangular allowed), `mpix 0`, `Flags 0`, mod-relative `path` (no Workbench GUID — those are auto-generated for vanilla and unnecessary for mods).
+
+## How to run
+
+```cmd
+python .claude\skills\dayz-build-imageset\build_imageset.py <mod-root> --mod-name <ModName>
+```
+
+Defaults: `<mod-root>` is the current directory; `--mod-name` falls back to its basename.
+
+The asset specialist can call it directly when handed a folder of UI sprites.
+
+## Prior art
+
+[WoozyMasta/imageset-packer](https://github.com/WoozyMasta/imageset-packer) is the established Go tool for the same job; it produces `.edds` atlases (the format vanilla uses) and supports rich packing options. `/dayz-build-imageset` produces `.paa` instead because that's the only headless converter shipped with DayZ Tools (no `ImageToEDDS.exe`), which keeps the skill fully scriptable from a clean DayZ Tools install. The engine loads `.paa` from the imageset `path` field without complaint.

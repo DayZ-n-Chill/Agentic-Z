@@ -7,7 +7,7 @@
 ## What you get
 
 - **11 DayZ specialist agents** covering scripts, configs, assets, maps, UI, server admin, debugging, and Workbench plugins.
-- **25 slash-command skills** that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
+- **26 slash-command skills** that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
 - **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials) plus the Bohemia community wiki, exposed to every agent through the `dayz-rag` MCP server. Embeddings via Voyage AI (`voyage-code-3`, 200M-token free tier covers ~3 full rebuilds). Or skip the build entirely with `/dayz-search-download` and pull the prebuilt index from GitHub releases.
 - **Three-CLI support out of the box.** The same agents and skills work in Claude Code, Codex CLI, and Gemini CLI. One `sync-skills` run wires them all up.
 
@@ -84,7 +84,7 @@ L3 files reference L2 in one line. The more specific layer wins ties.
 <repo>/
 ├── .claude/
 │   ├── agents/             # 11 DayZ specialists + agent-creator (L3)
-│   ├── skills/             # 25 slash-command skills (L3) + L2 shared conventions
+│   ├── skills/             # 26 slash-command skills (L3) + L2 shared conventions
 │   │   ├── _shared/dayz-conventions.md
 │   │   ├── sync-skills/    # bootstrap: link skills into Claude/Codex/Gemini home dirs
 │   │   └── dayz-*/         # one folder per DayZ skill
@@ -134,6 +134,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 |---|---|
 | [`/dayz-build-pbo`](.claude/skills/dayz-build-pbo/SKILL.md) | Pack and deploy to `P:\Mods\@<ModName>\Addons\<ModName>.pbo`. |
 | [`/dayz-pack-texture`](.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates `_co` / `_nohq` / `_smdi` suffix. |
+| [`/dayz-build-imageset`](.claude/skills/dayz-build-imageset/SKILL.md) | Pack `.gui-sources/<setname>/*.png` into a DayZ `.imageset` + `.paa` atlas with a 10px gutter; auto-splits into multiple parts when sprites won't fit in 4096x4096. |
 
 ### Test loop
 

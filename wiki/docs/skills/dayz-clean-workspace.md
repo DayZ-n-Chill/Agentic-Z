@@ -6,6 +6,9 @@ name: dayz-clean-workspace
 
 Remove DayZ scaffolds and their deployed artifacts. For each managed mod under workspace/&lt;ModName&gt;/ (native /dayz-new-mod scaffold OR /dayz-import-mod link), removes the workspace folder/link, the P:\&lt;ModName&gt;\ junction (only if it points at our workspace), and the P:\Mods\@&lt;ModName&gt;\ deployed dir. For imported mods, the external source folder is NEVER touched - only the link is removed. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes .server/ (refuses if legacy workspace/_server/ still exists; delete it manually first). Interactive confirmation by default; --yes skips it.
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-clean-workspace
 
 Reset the DayZ workspace by removing scaffolds and their deployed artifacts. Safe - only removes mods that match a `workspace/<ModName>/` entry (folder OR link containing `config.cpp` + `$PBOPREFIX$`). User-installed / subscribed mods under `<DayZ install>\!Workshop\` are never touched.
@@ -20,7 +23,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-clean-workspace\clean.py [--mod <Name>] [--include-server] [--yes] [--dry-run]
+python "<skill-dir>\clean.py" [--mod <Name>] [--include-server] [--yes] [--dry-run]
 ```
 
 | Argument | Required? | Notes |
