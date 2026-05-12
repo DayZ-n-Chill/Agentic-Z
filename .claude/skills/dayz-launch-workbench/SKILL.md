@@ -3,6 +3,9 @@ name: dayz-launch-workbench
 description: Open Enfusion Workbench (DayZ Tools' script + UI editor) from the CLI, optionally pointed at a specific mod's project file. Spawns detached with cwd=P:\ so vanilla data resolves. Default behavior loads the vanilla dayz.gproj shipped with DayZ Tools; --mod <ModName> loads the per-mod gproj scaffolded by /dayz-new-mod.
 ---
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-launch-workbench
 
 Open Workbench without leaving the terminal. Default loads vanilla DayZ; `--mod <ModName>` loads the customized `dayz.gproj` that `/dayz-new-mod` writes into `workspace/<ModName>/workbench/`, so Workbench compiles and lints vanilla + your mod together.
@@ -23,18 +26,18 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 **Just open Workbench on vanilla:**
 ```cmd
-python .claude\skills\dayz-launch-workbench\launch.py
+python "<skill-dir>\launch.py"
 ```
 
 **Open with a mod's project file (compiles vanilla + mod together):**
 ```cmd
-python .claude\skills\dayz-launch-workbench\launch.py --mod MyMod
+python "<skill-dir>\launch.py" --mod MyMod
 ```
 (Requires `P:\MyMod\workbench\dayz.gproj` to exist — created automatically by `/dayz-new-mod MyMod`.)
 
 **Open with an arbitrary gproj:**
 ```cmd
-python .claude\skills\dayz-launch-workbench\launch.py --gproj P:\Custom\path\to\my.gproj
+python "<skill-dir>\launch.py" --gproj P:\Custom\path\to\my.gproj
 ```
 
 ## When to run

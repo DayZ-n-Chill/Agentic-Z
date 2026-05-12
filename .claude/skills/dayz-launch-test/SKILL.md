@@ -3,6 +3,9 @@ name: dayz-launch-test
 description: Launch a local DayZ Diag server plus the diag client connecting to it (run-only, does no setup). Verifies the instance has been added via /dayz-add-server; refuses with a clear hint otherwise. Refuses if the legacy workspace/_server/ folder still exists (delete it manually; that layout is no longer supported). --server selects the instance (chernarus default). Always loads server alongside client per L2 conventions.
 ---
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-launch-test
 
 Run-only: launches a local DayZ test session for one or more built mods. Always starts the **server first**, then the **client** connecting to it (DayZ cannot be tested standalone, per L2 conventions). Both run from `DayZDiag_x64.exe` with `-filePatching` for fast iteration on Enforce Script and config edits.
@@ -14,7 +17,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-launch-test\launch.py <ModName> [<ModName2> ...] [--server <instance>] [--port N] [--dry-run]
+python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server <instance>] [--port N] [--dry-run]
 ```
 
 | Argument | Required? | Notes |

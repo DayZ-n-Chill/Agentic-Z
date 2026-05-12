@@ -3,6 +3,9 @@ name: dayz-cot-bootstrap
 description: Bootstrap Community-Online-Tools (COT) admin permissions on a DayZ test server in one shot. Auto-prepends @CF + @Community-Online-Tools to the mod chain, launches the server + client, waits for your character to spawn (detected when COT writes the per-player JSON), kills the session, grants you the `admin` role, flips every `0` to `2` in the `everyone` role file (so non-admins still get COT but with full perms, useful for solo testing), then relaunches. Requires /dayz-init + /dayz-add-server + /dayz-build-pbo first.
 ---
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-cot-bootstrap
 
 One-shot workflow for getting COT admin on a fresh test instance. COT writes its `PermissionsFramework/Players/<id>.json` and `PermissionsFramework/Roles/{admin,everyone}.txt` on first server boot once a player has loaded in; those files don't exist before that and can't be edited ahead of time. So the workflow is forced into two passes:
@@ -18,7 +21,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-cot-bootstrap\bootstrap.py <ModName> [<ModName2> ...] [--server <instance>] [--port N] [--timeout SEC]
+python "<skill-dir>\bootstrap.py" <ModName> [<ModName2> ...] [--server <instance>] [--port N] [--timeout SEC]
 ```
 
 | Argument | Required? | Notes |

@@ -3,6 +3,9 @@ name: dayz-search-index
 description: Index vanilla DayZ source (Enforce Script, .layout, config.cpp, .rvmat) into a per-user vector database so DayZ agents can do semantic search via the dayz-rag MCP server. One-time setup; rerun with --full after a DayZ update. Required before agents can use the search_dayz_source tool.
 ---
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-search-index
 
 Build a semantic-search index over vanilla DayZ source so DayZ specialist agents stop flying blind through `P:\` with `Grep`. Backs the `dayz-rag` MCP server.
@@ -61,12 +64,12 @@ The indexer auto-installs `voyageai` + `python-dotenv` on first run.
 
 **First time / after DayZ update:**
 ```cmd
-python .claude\skills\dayz-search-index\index.py --full
+python "<skill-dir>\index.py" --full
 ```
 
 **Status only:**
 ```cmd
-python .claude\skills\dayz-search-index\index.py --status
+python "<skill-dir>\index.py" --status
 ```
 
 ## When to run
