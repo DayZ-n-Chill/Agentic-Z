@@ -6,6 +6,9 @@ name: dayz-scope-mod
 
 Scope the agent to a single mod under workspace/&lt;ModName&gt;/. Adds deny rules to .claude/settings.local.json that block Edit/Write to OTHER mods' workspace folders, P:\&lt;other&gt;\ junctions, and P:\Mods\@&lt;other&gt;\ deploy dirs, so an agent working on Mod A can't accidentally clobber Mod B. Reads stay broad. Use --clear to lift the scope.
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-scope-mod
 
 Scope the agent to a single DayZ mod. While scoped, the agent can read anywhere but cannot Edit or Write to any other mod's source, P:\ junction, or workshop deploy dir. Designed for sessions where you're iterating on one mod and don't want a wrong-instinct call to land in a sibling mod.
@@ -16,13 +19,13 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ```cmd
 :: Scope to a specific mod
-python .claude\skills\dayz-scope-mod\scope.py <ModName>
+python "<skill-dir>\scope.py" <ModName>
 
 :: Show current scope (or "no active scope")
-python .claude\skills\dayz-scope-mod\scope.py --status
+python "<skill-dir>\scope.py" --status
 
 :: Lift the scope
-python .claude\skills\dayz-scope-mod\scope.py --clear
+python "<skill-dir>\scope.py" --clear
 ```
 
 ## What it does

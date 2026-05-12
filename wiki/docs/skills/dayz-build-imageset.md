@@ -6,6 +6,9 @@ name: dayz-build-imageset
 
 &gt;-
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-build-imageset
 
 Pack a folder of PNG sprites into a DayZ imageset (atlas + `.imageset` definition file). Source images stay in `.gui-sources/` (kept out of the mod payload); only the packed `.paa` atlas and `.imageset` file land under `gui/imagesets/` where the engine expects them.
@@ -34,7 +37,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-build-imageset\build_imageset.py [<mod-root>] [--mod-name <name>]
+python "<skill-dir>\build_imageset.py" [<mod-root>] [--mod-name <name>]
 ```
 
 | Argument | Required? | Notes |
