@@ -6,6 +6,9 @@ name: dayz-search-wiki-index
 
 Index the Bohemia community wiki (community.bistudio.com Category:DayZ + sub-categories) into the same vector DB as /dayz-search-index, so DayZ agents can semantic-search official docs alongside vanilla source. One-time setup per cookie cycle; rerun with --full when content drifts.
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-search-wiki-index
 
 Build a semantic-search index over the **Bohemia DayZ wiki** so agents have access to the official docs/tutorials/class references that aren't present in vanilla source. Stored in the same LanceDB as the source index, queried via a sibling MCP tool.
@@ -46,7 +49,7 @@ This skill shares the local Voyage usage tracker with `/dayz-search-index` (same
 
 Run:
 ```cmd
-python .claude\skills\dayz-search-wiki-index\index.py --setup-cookie
+python "<skill-dir>\index.py" --setup-cookie
 ```
 
 This walks you through:
@@ -61,7 +64,7 @@ The cookie + UA are saved to `.claude/local-memory/dayz-wiki-cookie.json` (gitig
 ### 3. Verify cookie works
 
 ```cmd
-python .claude\skills\dayz-search-wiki-index\index.py --probe
+python "<skill-dir>\index.py" --probe
 ```
 
 Hits the API once with the cached cookie and prints the wiki sitename. If you get a Cloudflare challenge instead, the cookie/UA pair didn't match — re-run setup.
@@ -70,17 +73,17 @@ Hits the API once with the cached cookie and prints the wiki sitename. If you ge
 
 **Build / rebuild the wiki index:**
 ```cmd
-python .claude\skills\dayz-search-wiki-index\index.py --full
+python "<skill-dir>\index.py" --full
 ```
 
 **Test crawl (limit pages):**
 ```cmd
-python .claude\skills\dayz-search-wiki-index\index.py --full --limit 25
+python "<skill-dir>\index.py" --full --limit 25
 ```
 
 **Status:**
 ```cmd
-python .claude\skills\dayz-search-wiki-index\index.py --status
+python "<skill-dir>\index.py" --status
 ```
 
 | Argument | Notes |

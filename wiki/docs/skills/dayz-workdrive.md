@@ -6,6 +6,9 @@ name: dayz-workdrive
 
 Mount P:\ as the DayZ work drive after a Windows boot, without opening DayZ Tools' GUI. Resolves the work drive path via env var, cache, settings.ini, registry, or DayZ Tools install. Idempotent. Windows-only (uses subst).
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-workdrive
 
 Mount `P:\` for DayZ modding without DayZ Tools' GUI.
@@ -21,9 +24,9 @@ scripts\workdrive.bat --unmount
 
 Or call Python directly:
 ```
-python .claude\skills\dayz-workdrive\mount.py
-python .claude\skills\dayz-workdrive\mount.py --path "C:\Path\To\WorkDrive"
-python .claude\skills\dayz-workdrive\mount.py --unmount
+python "<skill-dir>\mount.py"
+python "<skill-dir>\mount.py" --path "C:\Path\To\WorkDrive"
+python "<skill-dir>\mount.py" --unmount
 ```
 
 ## When
