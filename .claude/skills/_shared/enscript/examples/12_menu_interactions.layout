@@ -1,0 +1,147 @@
+﻿// Interactive menu — EditBox filter + 2-column TextListbox + action buttons.
+// Load via: UIScriptedMenu.GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/mymod_itembrowser.layout")
+//
+// Script companion (Scripts/5_Mission/GUI/MyMod_ItemBrowserMenu.c):
+//   class MyMod_ItemBrowserMenu : UIScriptedMenu {
+//     protected TextListboxWidget m_List;
+//     protected EditBoxWidget     m_Filter;
+//     protected TextWidget        m_Detail;
+//     override Widget Init() {
+//       layoutRoot = GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/mymod_itembrowser.layout");
+//       m_Filter = EditBoxWidget.Cast(layoutRoot.FindAnyWidget("EditFilter"));
+//       m_List   = TextListboxWidget.Cast(layoutRoot.FindAnyWidget("ItemList"));
+//       m_Detail = TextWidget.Cast(layoutRoot.FindAnyWidget("LabelDetail"));
+//       m_Filter.SetHandler(this);
+//       m_List.SetHandler(this);
+//       layoutRoot.FindAnyWidget("BtnClose").GetUserID();   // see OnClick
+//       Populate("");
+//       return layoutRoot;
+//     }
+//     override bool OnChange(Widget w, int x, int y, bool finished) {
+//       if (w == m_Filter) { Populate(m_Filter.GetText()); return true; }
+//       return false;
+//     }
+//     override bool OnClick(Widget w, int x, int y, int button) {
+//       if (w.GetUserID() == 1) { GetGame().GetUIManager().HideScriptedMenu(this); return true; }
+//       return false;
+//     }
+//     override bool OnItemSelected(Widget w, int row, int col) {
+//       if (w == m_List) {
+//         string name; string count;
+//         m_List.GetItemText(row, 0, name);
+//         m_List.GetItemText(row, 1, count);
+//         m_Detail.SetText(name + " x" + count);
+//         return true;
+//       }
+//       return false;
+//     }
+//     void Populate(string filter) {
+//       m_List.ClearItems();
+//       // ... add rows: m_List.AddItem("Apple", null, 0); m_List.SetItem(row, "5", null, 1);
+//     }
+//   }
+
+FrameWidgetClass MenuRoot {
+ position 0 0
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ {
+  PanelWidgetClass MenuBackground {
+   color 0.0863 0.0863 0.0863 0.902
+   size 460 340
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style rover_sim_colorable
+   {
+    TextWidgetClass LabelTitle {
+     ignorepointer 1
+     position 0 12
+     size 1 28
+     halign center_ref
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 1
+     text "Item Browser"
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text" 1
+     "exact text size" 18
+     "bold text" 1
+     "text halign" center
+     "text valign" center
+    }
+    EditBoxWidgetClass EditFilter {
+     position 8 48
+     size 444 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+     font "gui/fonts/sdf_MetronLight24"
+    }
+    TextListboxWidgetClass ItemList {
+     clipchildren 1
+     position 8 84
+     size 444 192
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+     "title visible" 0
+     colums "Name;75;Count;25"
+     font "gui/fonts/sdf_MetronLight24"
+    }
+    TextWidgetClass LabelDetail {
+     ignorepointer 1
+     position 8 284
+     size 280 24
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text ""
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 1
+     "exact text size" 12
+     "text valign" center
+    }
+    ButtonWidgetClass BtnRefresh {
+     position 118 14
+     size 100 28
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+     text "Refresh"
+     font "gui/fonts/sdf_MetronBook24"
+    }
+    ButtonWidgetClass BtnClose {
+     userID 1
+     position 12 14
+     size 100 28
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+     text "Close"
+     font "gui/fonts/sdf_MetronBook24"
+    }
+   }
+  }
+ }
+}

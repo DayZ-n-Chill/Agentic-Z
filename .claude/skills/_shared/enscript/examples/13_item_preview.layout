@@ -1,0 +1,138 @@
+﻿// Item inspect panel — uses ItemPreviewWidgetClass for live 3D item display.
+// The engine rotates the item model; script controls orientation via SetModelOrientation.
+//
+// Script companion (Scripts/5_Mission/GUI/MyMod_InspectMenu.c):
+//   class MyMod_InspectMenu : UIScriptedMenu {
+//     protected ItemPreviewWidget m_Preview;
+//     protected TextWidget        m_LabelName;
+//     protected TextWidget        m_LabelHealth;
+//     protected float             m_RotY = 0;
+//     override Widget Init() {
+//       layoutRoot = GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/mymod_inspect.layout");
+//       m_Preview    = ItemPreviewWidget.Cast(layoutRoot.FindAnyWidget("ItemRender"));
+//       m_LabelName  = TextWidget.Cast(layoutRoot.FindAnyWidget("LabelItemName"));
+//       m_LabelHealth = TextWidget.Cast(layoutRoot.FindAnyWidget("LabelHealth"));
+//       layoutRoot.FindAnyWidget("BtnRotateLeft").SetHandler(this);
+//       layoutRoot.FindAnyWidget("BtnRotateRight").SetHandler(this);
+//       layoutRoot.FindAnyWidget("BtnClose").SetHandler(this);
+//       return layoutRoot;
+//     }
+//     void SetItem(EntityAI item) {
+//       m_Preview.SetItem(item);
+//       m_LabelName.SetText(item.GetDisplayName());
+//       m_LabelHealth.SetText("Condition: " + item.GetHealthLevel().ToString()); // adjust cast as needed
+//     }
+//     override bool OnClick(Widget w, int x, int y, int button) {
+//       if (w.GetName() == "BtnRotateLeft")  { Rotate(-15); return true; }
+//       if (w.GetName() == "BtnRotateRight") { Rotate(15);  return true; }
+//       if (w.GetName() == "BtnClose")       { GetGame().GetUIManager().HideScriptedMenu(this); return true; }
+//       return false;
+//     }
+//     void Rotate(float delta) {
+//       m_RotY += delta;
+//       m_Preview.SetModelOrientation(Vector(m_RotY, 0, 0));
+//     }
+//   }
+
+FrameWidgetClass InspectRoot {
+ position 0 0
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ {
+  PanelWidgetClass InspectBackground {
+   color 0.0863 0.0863 0.0863 0.902
+   size 380 340
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style rover_sim_colorable
+   {
+    TextWidgetClass LabelItemName {
+     ignorepointer 1
+     position 0 10
+     size 1 26
+     halign center_ref
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 1
+     text "Item Name"
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text" 1
+     "exact text size" 16
+     "bold text" 1
+     "text halign" center
+     "text valign" center
+    }
+    ItemPreviewWidgetClass ItemRender {
+     position 50 44
+     size 280 236
+     halign center_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+    }
+    TextWidgetClass LabelHealth {
+     ignorepointer 1
+     position 0 288
+     size 1 24
+     halign center_ref
+     hexactpos 0
+     vexactpos 1
+     hexactsize 0
+     vexactsize 1
+     text "Condition: Pristine"
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text" 1
+     "exact text size" 13
+     "text halign" center
+     "text valign" center
+    }
+    ButtonWidgetClass BtnRotateLeft {
+     position 4 0
+     size 36 36
+     valign center_ref
+     hexactpos 1
+     vexactpos 0
+     hexactsize 1
+     vexactsize 1
+     style Default
+     text "<"
+     font "gui/fonts/sdf_MetronBook24"
+    }
+    ButtonWidgetClass BtnRotateRight {
+     position 4 0
+     size 36 36
+     halign right_ref
+     valign center_ref
+     hexactpos 1
+     vexactpos 0
+     hexactsize 1
+     vexactsize 1
+     style Default
+     text ">"
+     font "gui/fonts/sdf_MetronBook24"
+    }
+    ButtonWidgetClass BtnClose {
+     position 6 6
+     size 24 24
+     halign right_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     text "X"
+     font "gui/fonts/sdf_MetronBook24"
+    }
+   }
+  }
+ }
+}
