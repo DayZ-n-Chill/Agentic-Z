@@ -3,6 +3,9 @@ name: sync-skills
 description: Sync this repo's `.claude/skills/` into each agent CLI's home `skills/` directory (Claude Code, Codex, Gemini, plus anything added to `agents.json` later) so all of them auto-discover the same slash commands. Idempotent. Refreshes mismatched links, prunes orphans, falls back from symlink to junction on Windows. Run this right after cloning the repo, and any time you add or remove a skill.
 ---
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\<other>\`. For first-time bootstrap from a fresh clone (before any harness is loaded), use the literal repo-relative path: `python "<skill-dir>\sync.py"` from the repo root.
+
 # /sync-skills
 
 The bootstrap. **Links, not copies.** The single source of truth is `<repo>/.claude/skills/`; this skill creates symlinks (or junctions on Windows) in each agent CLI's home so every agent discovers the same slash commands. Nothing is copied, no skill content lives outside the repo, and editing a skill in the repo is instantly live in every agent.
@@ -19,14 +22,14 @@ The reason the agent home dirs are involved at all: Claude Code reads the repo's
 ## How to run
 
 ```cmd
-python .claude\skills\sync-skills\sync.py
+python "<skill-dir>\sync.py"
 ```
 
 Optional flags:
 
 ```cmd
-python .claude\skills\sync-skills\sync.py --agents claude codex     # subset
-python .claude\skills\sync-skills\sync.py --dry-run                 # preview, no writes
+python "<skill-dir>\sync.py" --agents claude codex     # subset
+python "<skill-dir>\sync.py" --dry-run                 # preview, no writes
 ```
 
 ## Where the per-agent skills folders live
@@ -82,7 +85,7 @@ Non-zero exit if any operation failed.
 
 ## Steps
 
-1. Run `python .claude\skills\sync-skills\sync.py` (no args = all agents).
+1. Run `python "<skill-dir>\sync.py"` (no args = all agents).
 2. Read the per-agent output. Confirm the skill counts match what's in `.claude/skills/`.
 3. Reload each agent session so it picks up the new entries:
    - **Claude Code:** restart the CLI / reopen the chat.

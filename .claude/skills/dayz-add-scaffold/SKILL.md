@@ -3,6 +3,9 @@ name: dayz-add-scaffold
 description: Add missing DayZ mod scaffolding pieces (config.cpp stub, $PBOPREFIX$, workbench/dayz.gproj + DayZSetting.xml, README, .gitkeeps) into an EXISTING workspace/<ModName>/ folder. Idempotent - never overwrites files that are already present. Used by /dayz-import-mod after symlinking an external mod, but also runnable directly when you cloned a mod into workspace/ manually and want the standard skeleton filled in.
 ---
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-add-scaffold
 
 Companion to `/dayz-new-mod`. Where `dayz-new-mod` creates a fresh project from nothing, `dayz-add-scaffold` fills missing scaffold pieces into a folder that already exists - without touching anything that's already there.
@@ -18,7 +21,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-add-scaffold\add_scaffold.py <ModName> [--piece config|prefix|workbench|readme|skeleton|all] [--author "YourHandle"]
+python "<skill-dir>\add_scaffold.py" <ModName> [--piece config|prefix|workbench|readme|skeleton|all] [--author "YourHandle"]
 ```
 
 | Argument | Required? | Notes |

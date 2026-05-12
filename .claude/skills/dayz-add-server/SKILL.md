@@ -3,6 +3,9 @@ name: dayz-add-server
 description: Set up a DayZ test server instance under .server/<instance>/. Copies the mission template from DayZ Server install if missing, creates per-instance serverDZ.cfg + Profiles/ (server -profiles=) and a top-level shared .server/!ClientDiagLogs/ (client -profiles=). Each instance is isolated on the server side so you can run multiple variants of the same map (chernarus, chernarus-hardcore, etc.) without cross-contamination. Refuses if the legacy workspace/_server/ layout exists (delete it manually; that layout is no longer supported). Required before /dayz-launch-test for a given instance. Use --refresh-mission to re-copy mission content after a DayZ update.
 ---
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-add-server
 
 Set up a self-contained test server instance for local DayZ mod testing. Each instance lives under `.server/<instance>/` and owns its mission copy, server config, and server logs. Client diag logs are shared across instances at `.server/!ClientDiagLogs/`. Run as many instances as you want, including multiple variants of the same map.
@@ -14,7 +17,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python .claude\skills\dayz-add-server\add_server.py <instance> [--map <name>] [--refresh-mission]
+python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 ```
 
 | Argument | Required? | Notes |
