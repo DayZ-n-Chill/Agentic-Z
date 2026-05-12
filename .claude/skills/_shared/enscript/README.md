@@ -24,11 +24,15 @@ enscript/
 
 | File | Topic |
 |---|---|
-| `modded_class.md` | `super.*` rules, field injection, mod load order, **no-extends rule, NO_GUI guard, Managed-rooted engine classes** |
+| `modded_class.md` | `super.*` rules, field injection, mod load order, **no-extends rule, NO_GUI guard, Managed-rooted engine classes, extend script class not config parent, member-field caveat** |
 | `netsync.md` | `RegisterNetSyncVariable*`, `SetSynchDirty`, `OnVariablesSynchronized`, bitfield packing |
 | `persistence.md` | `OnStoreSave`/`OnStoreLoad`, version header, write-order rules |
-| `rpc.md` | `ScriptRPC`, `RPCSingleParam`, `OnRPC` switch template, client-to-server validation |
-| `singleton.md` | Static `s_Instance`, lazy init, `GetInstance()` |
+| `rpc.md` | `ScriptRPC`, `RPCSingleParam`, `OnRPC` switch template, client-to-server validation, **ID-collision symptom** |
+| `singleton.md` | Static `s_Instance`, lazy init, `GetInstance()`, **`ScriptInvoker` shutdown null-guard** |
+| `actions.md` | `ActionBase`, `CCINonRuined` vs `CCINone`, full `RemoveAction` pickup-prevention pattern, client/server check-style mismatch |
+| `scheduler.md` | `CallLater` 4.5h overflow, per-tick allocation GC pressure, call-category guidance |
+| `physics_items.md` | `ThrowPhysically` vs manual `CreateDynamicPhysics`, `SetDynamicPhysicsLifeTime` mandatory call |
+| `json_config_migration.md` | `SCHEMA_VERSION` + forward-migration, parse-failure handling for admin-edited JSON |
 | `language_workarounds.md` | No ternary, no auto type inference, no lambdas, no exceptions, no overloading |
 
 ### integrations/
@@ -73,13 +77,54 @@ Numbered, complete working files. Reference by number when pointing the agent at
 | 12 | `12_menu_interactions.layout` | Dialog with `EditBoxWidgetClass` filter, 2-column `TextListboxWidgetClass`, `ButtonWidgetClass` |
 | 13 | `13_item_preview.layout` | Item inspect panel with `ItemPreviewWidgetClass` for live 3D model |
 
+## Quick reference — symptom → file
+
+When debugging, jump to the file that owns the symptom.
+
+| Symptom | File |
+|---|---|
+| `modded class Foo` override never runs | `patterns/modded_class.md` (no-extends rule) |
+| Server compile error `Unknown type 'IngameHud'` (or `Chat` / `UiHintPanel`) | `patterns/modded_class.md` (`#ifndef NO_GUI` guard) |
+| Can't `modded class UIScriptedMenu` / `Widget` | `patterns/modded_class.md` (Managed-rooted classes) |
+| Custom barrel missing open/close anim | `patterns/modded_class.md` (extend script class, not config parent) |
+| Strange crashes at player connect after adding `m_X` fields | `patterns/modded_class.md` (member field caveat) |
+| Action shows on client, server rejects on execute | `patterns/actions.md` (check-style mismatch) |
+| Tool-in-hand action doesn't fire | `patterns/actions.md` (`CCINonRuined` vs `CCINone`) |
+| Item placed but still draggable into inventory | `patterns/actions.md` (`RemoveAction` 4-step pattern) |
+| Long-running callback drifts after ~4.5h | `patterns/scheduler.md` (`CallLater` float overflow) |
+| Frame-time spikes every N seconds | `patterns/scheduler.md` (per-tick allocation) |
+| Item appears frozen in air after spawn | `patterns/physics_items.md` (`ThrowPhysically`) |
+| Admin's edited JSON resets / loses fields after mod update | `patterns/json_config_migration.md` (schema migration) |
+| RPC fires "wrong handler" with another mod loaded | `patterns/rpc.md` (ID-collision symptom) |
+| Crash on shutdown / mission end after `ScriptInvoker.Remove()` | `patterns/singleton.md` (null-guard) |
+| Keybind does nothing, no log error | `integrations/input_bindings.md` (3-piece setup) |
+| Dabs menu stuck open, no other menus work | `integrations/dabs_framework.md` (layout-path ghost trap) |
+| Magazine spawns with 0 rounds despite quantity set | `references/item_api.md` (`Magazine.ServerSetAmmoCount`) |
+| `SetObjectTexture` no-op, no log warn | `references/item_api.md` (case-sensitivity, index vs name) |
+| Whole script file fails to compile, no obvious cause | `references/item_api.md` (`SetObjectTextureGlobal` may not exist) |
+| `ConfigGet*` returns nothing | `references/game_api.md` (space-separated path, not dotted) |
+| HUD marker jitters at screen edges | `references/game_api.md` (`GetScreenPos` z-check) |
+| `string.ToLower()` mutates both copies | `references/types_collections.md` (force-allocate via `+ ""`) |
+| Older guide says *"write a custom Clamp"* | `references/types_collections.md` (`Math.Clamp` exists) |
+
 ## Our additions
 
 The vendored content was lightly modified to include Agentic-Z-specific gotchas:
 
-- **`patterns/modded_class.md`** — added prominent `NEVER use extends` callout at top (silent no-op, #1 cause of "my override isn't running"), plus sections on Managed-rooted engine classes that cannot be modded and the `#ifndef NO_GUI` guard rule for modded GUI classes.
+- **`patterns/modded_class.md`** — `NEVER use extends` callout, `Managed`-rooted engine classes, `#ifndef NO_GUI` guard rule, extend-script-class-not-config-parent, member field caveat
+- **`patterns/rpc.md`** — ID-collision symptom + high-base recommendation
+- **`patterns/singleton.md`** — `ScriptInvoker` shutdown null-guard
+- **`patterns/actions.md`** *(new)* — full action-system pitfalls
+- **`patterns/scheduler.md`** *(new)* — `CallLater` 4.5h overflow + per-tick allocation
+- **`patterns/physics_items.md`** *(new)* — `ThrowPhysically` pattern
+- **`patterns/json_config_migration.md`** *(new)* — forward-compatible JSON schema migration
+- **`integrations/input_bindings.md`** — silent-fail keybind 3-piece trap
+- **`integrations/dabs_framework.md`** — layout-path ghost-menu trap
+- **`references/item_api.md`** — `Magazine.ServerSetAmmoCount`, `SetObjectTexture` case-sensitivity
+- **`references/game_api.md`** — `ConfigGet*` space-separated path, `GetScreenPos` z-check
+- **`references/types_collections.md`** — `string.ToLower/ToUpper` mutation, `Math`/`string` API existence table, `int.MIN` quirk
 
-When SWARM updates upstream, re-run the import and re-apply our gotchas — they are localized to `patterns/modded_class.md` for easy re-application.
+When SWARM updates upstream, re-run the import and re-apply our additions.
 
 ## Attribution
 

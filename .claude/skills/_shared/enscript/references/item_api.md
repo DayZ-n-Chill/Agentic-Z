@@ -160,3 +160,44 @@ Magazine_Base mag = Magazine_Base.Cast(entity);
 Edible_Base food  = Edible_Base.Cast(entity);
 Container_Base ctr = Container_Base.Cast(entity);
 ```
+
+---
+
+## ⚠️ Magazines — `ServerSetAmmoCount`, NOT `SetQuantity`
+
+For magazines (`Magazine_Base` and subclasses including ammo piles), calling `ItemBase.SetQuantity(N)` does **NOT** populate the ammo count. The mag spawns with 0 rounds despite reporting `"quantity = N"`.
+
+```c
+// DWIM helper for "set quantity on whatever this is"
+void SetQuantityOrAmmo(EntityAI ent, float value)
+{
+    Magazine mag = Magazine.Cast(ent);
+    if (mag)
+    {
+        mag.ServerSetAmmoCount(value.ToInt());
+        return;
+    }
+    ItemBase ib = ItemBase.Cast(ent);
+    if (ib)
+        ib.SetQuantity(value);
+}
+```
+
+Verified `Magazine.ServerSetAmmoCount` at `P:\scripts\4_world\entities\itembase\magazine\magazine.c:70`. Vanilla uses this pattern in `weapon_base.c:805`, `cfgplayerspawnhandler.c:330,340`, and ~20 other call sites.
+
+---
+
+## ⚠️ `SetObjectTexture` quirks
+
+- **Hidden selection name is case-sensitive** vs. the named selection in the `.p3d`. Mismatch → texture silently ignored, no log warn.
+- **Index is the position in `hiddenSelections[]`** (0-based), NOT the selection name. A model with one selection at `hiddenSelections[] = {"camo1"}` uses index `0`.
+- **`GetObjectTextures()` path differs from config path.** Engine normalizes by stripping leading backslashes:
+
+  ```c
+  // config.cpp says:    "\dz\gear\camping\data\crate_co.paa"
+  // GetObjectTextures: "dz\gear\camping\data\crate_co.paa"
+  ```
+
+  When saving and restoring textures across serialization, use the result of `GetObjectTextures()` as the canonical form, NOT the hardcoded config path.
+
+- **`SetObjectTextureGlobal()` may NOT exist on your DayZ build.** Calling a method that doesn't exist makes the **entire script file fail to compile**, not just that line. Verify with `Grep` over `P:\scripts\` before using.

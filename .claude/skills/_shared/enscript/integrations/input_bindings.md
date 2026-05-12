@@ -191,3 +191,38 @@ class CfgMods
     };
 };
 ```
+
+---
+
+## ⚠️ Silent-fail traps — "my keybind does nothing"
+
+Custom keybinds require a specific 3-piece setup. Missing any one piece results in *"keybind does nothing"* with **no log error** — the engine silently drops the action.
+
+1. **`inputs.xml` root tag.** Some builds (and the `<modded_inputs>` variant for overriding existing actions) require a specific root tag. Wrong root tag = silently ignored. The simpler bindings-only form looks like:
+
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <modded_inputs>
+       <action name="UAMyModToggleHud" preset="default">
+           <key name="KC_F4"/>
+       </action>
+   </modded_inputs>
+   ```
+
+   Use this form when you only need to bind a key to an action; use the full `<Inputs>` form above when you need to declare a new action with labels and devices.
+
+2. **`config.cpp` must register the file.** The path is backslash-escaped relative to PBO prefix:
+
+   ```cpp
+   class CfgMods
+   {
+       class MyMod
+       {
+           inputs = "MyMod\\inputs.xml";   // backslash-escaped
+       };
+   };
+   ```
+
+3. **Script reads via the right call.** `LocalPress` fires once on key-down; `LocalRelease` fires once on key-up; `LocalHold` fires every frame while held. Using `LocalRelease` when you meant `LocalPress` is a silent failure with no log warning.
+
+All three pieces must align. If any are wrong: no log error, no engine warning, the keybind just doesn't fire.

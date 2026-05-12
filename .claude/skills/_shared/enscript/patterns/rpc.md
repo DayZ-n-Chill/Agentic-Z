@@ -19,6 +19,18 @@ enum MyMod_ERPCs
 }
 ```
 
+**⚠️ Collision symptom:** an RPC fires "the wrong handler" intermittently when another mod is loaded. That's the IDs colliding. Low ranges (1–200) are heavily used by vanilla; community convention is to pick a high random base (e.g. `25416533`) when you genuinely want isolation:
+
+```c
+enum eMyMod_RPC
+{
+    START          = 25416533,   // any high random base
+    SyncPowerState,
+    RequestActivate,
+    BroadcastEvent,
+}
+```
+
 ---
 
 ## 1. RPCSingleParam — Simplest Path

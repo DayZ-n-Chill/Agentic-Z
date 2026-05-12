@@ -134,3 +134,41 @@ PrintFormat("Value: %1", myVar);    // formatted
     Print("[DEBUG] " + debugInfo);
 #endif
 ```
+
+---
+
+## ⚠️ `ConfigGet*` path is space-separated, NOT dotted
+
+Config-lookup errors are silent unless you check the return; the path format is **space-separated**, not dot-notation:
+
+```c
+// CORRECT
+string out_str;
+GetGame().ConfigGetText("CfgVehicles ClassName displayName", out_str);
+float disp = GetGame().ConfigGetFloat("CfgWeapons ClassName fireMode " + i + " dispersion");
+
+// WRONG — silently returns nothing / 0.0
+GetGame().ConfigGetText("CfgVehicles.ClassName.displayName", out_str);
+```
+
+The engine returns `CONFIG_NOT_FOUND` on a bad path but doesn't raise — always check the out value or function return for success.
+
+---
+
+## ⚠️ `GetScreenPos` z-component for "behind camera" check
+
+`GetGame().GetScreenPos(worldPos)` returns valid `x`,`y` even when the world position is behind the camera. The `z` component tells you which side:
+
+```c
+vector screenPos = GetGame().GetScreenPos(targetWorldPos);
+if (screenPos[2] <= 0)
+{
+    // behind camera — hide the marker
+    m_Marker.Show(false);
+    return;
+}
+m_Marker.Show(true);
+m_Marker.SetPos(screenPos[0], screenPos[1]);
+```
+
+Without the `z` check, your compass marker / objective indicator jitters around the screen edges when you turn away from the target.

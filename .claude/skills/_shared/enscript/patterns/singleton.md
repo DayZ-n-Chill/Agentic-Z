@@ -113,3 +113,20 @@ class MyMod_SpawnConfig
 | Extra JSON keys are ignored | Safe to add new fields in config without breaking old saves |
 | Missing keys keep defaults | Rename fields = default on next load; document field renames |
 | Arrays serialize as JSON arrays | `ref array<string>` works; use `{}` not `new array<string>()` for literal init |
+
+---
+
+## ⚠️ Static `ScriptInvoker` shutdown crash
+
+A common cleanup pattern null-derefs on shutdown because static invokers don't have a stable destructor order:
+
+```c
+// CRASHES if the static invoker was already torn down
+MyClass.Event_PowerChanged.Remove(m_Callback);
+
+// CORRECT — null-check first
+if (MyClass.Event_PowerChanged)
+    MyClass.Event_PowerChanged.Remove(m_Callback);
+```
+
+Assume static invokers may already be null during your destructor or mission cleanup. The fix is always the null-guard — don't try to reorder destruction.

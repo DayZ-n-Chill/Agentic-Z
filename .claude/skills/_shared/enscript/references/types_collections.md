@@ -145,3 +145,49 @@ float s = Math.Sin(Math.DEG2RAD * 45);
 float t = Math.Sqrt(9);            // 3
 float pi = Math.PI;
 ```
+
+---
+
+## ⚠️ `string.ToLower()` / `ToUpper()` mutate in place
+
+They return nothing useful (some return self, some void depending on engine version). Always copy first if you need to preserve the original:
+
+```c
+string original = "Hello World";
+
+// WRONG — mutates original
+original.ToLower();
+
+// CORRECT — copy by concatenation, then mutate the copy
+string lower = original + "";
+lower.ToLower();
+```
+
+The `+ ""` forces an allocation; assignment alone (`string lower = original;`) shares the underlying string in some engine versions and ToLower will mutate both names.
+
+---
+
+## Existence — these vanilla helpers DO exist
+
+Counters outdated wiki/forum claims:
+
+| API | Verified location |
+|---|---|
+| `Math.Clamp(val, min, max)` | `P:\scripts\1_core\proto\enmath.c` |
+| `Math.Min`, `Math.Max`, `Math.Sqrt`, `Math.Pow` | same |
+| `string.IndexOfFrom(startPos, search)` | `P:\scripts\1_core\proto\enstring.c` |
+| `string.LastIndexOf`, `string.Hash`, `string.Replace` | same |
+
+If older modding guides say *"you need to write a custom Clamp"* — they're stale.
+
+---
+
+## ⚠️ `int.MIN` comparison quirk
+
+```c
+// int.MIN = -2147483648
+1 < int.MIN;      // Returns TRUE in EnScript!
+1 < -2147483647;  // Also returns TRUE!
+```
+
+The boundary value comparison is unreliable. Always validate inputs before relying on integer-limit checks.

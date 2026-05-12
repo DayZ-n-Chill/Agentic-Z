@@ -161,3 +161,63 @@ modded class IngameHud
 ```
 
 This applies to any class that exists only in client-side script layers. If you're not sure whether a class is server-aware, search for it under `P:\scripts\` — if it only appears under `5_mission/gui/` it's client-only and needs the guard.
+
+---
+
+## Extend the vanilla **script** class, not the config parent
+
+For mods that add custom barrels, crates, or storage containers, extending `ItemBase` directly drops vanilla behavior (e.g. open/close animation on barrels, paintable-color selection, tent weather tint). Find the vanilla **script class** that matches your config parent and extend that.
+
+```c
+// Vanilla "Barrel_ColorBase" lives at
+//   P:\scripts\4_world\entities\itembase\barrel_colorbase.c
+// — handles open/close action, paintable color, weather effects.
+
+// CORRECT — extend the vanilla script class
+class MyMod_FancyBarrel : Barrel_ColorBase
+{
+    override void EEKilled(Object killer)
+    {
+        super.EEKilled(killer);
+        // your custom death logic
+    }
+}
+
+// AVOID — drops vanilla barrel behavior
+class MyMod_FancyBarrel : ItemBase
+{
+    // ...
+}
+```
+
+The script class name often differs from the config class name. Search by config parent: if your `config.cpp` has `class MyBarrel : Barrel_ColorBase`, the script file is `barrel_colorbase.c` somewhere under `P:\scripts\4_world\`.
+
+Also remember to add the vanilla addon to your `requiredAddons[]` if the script class isn't in core:
+
+```cpp
+class CfgPatches
+{
+    class MyMod
+    {
+        requiredAddons[] = { "DZ_Data", "DZ_Gear_Containers" };
+    };
+};
+```
+
+---
+
+## ⚠️ Member field caveat on engine entity classes
+
+Adding `m_X` member fields to `modded class DayZGame` is safe — `DayZGame` is a script-side singleton with stable lifecycle.
+
+For `modded class PlayerBase` / `modded class ItemBase`, member fields are **mostly** safe, BUT some entity classes have engine-side serialization that can mis-align if many mods add fields and the order shifts. If you see strange crashes at player connect or item spawn that go away when removing a member field, consider an external static map keyed by the entity instead:
+
+```c
+// Safer for high-coverage modded fields:
+class MyMod_StateMap
+{
+    static ref map<int, ref MyState> s_StateByEntId = new map<int, ref MyState>;
+}
+```
+
+This is rare. Default to member fields; only reach for the static-map workaround if you can reproduce a serialization-related crash.

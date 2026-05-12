@@ -149,3 +149,32 @@ bool enabled = MyMod_Settings.GetBool("EnableWelcomeMessage");
 - Dabs attributes are **compile-time** — the class must be loadable from the relevant Script Module layer or the attribute has no effect.
 - Avoid mixing Dabs `[RegisterAction]` with vanilla `GetActions()` on the same type — you will get duplicate entries.
 - Dabs MVC `NotifyPropertiesChanged` uses **reflection** to match property names to widget names; misspelling a name fails silently.
+
+---
+
+## ⚠️ Layout-path mismatch → `ScriptViewMenu` ghost-menu trap
+
+A `.layout` file's path passed to `GetLayoutFile()` **MUST match the mod's `$PBOPREFIX$` exactly**. Mismatched path → engine fails to load the layout AND Dabs Framework's `ScriptViewMenu` singleton state remains set, causing the menu to appear "open" forever (no other UI menus can open).
+
+```c
+// In a Dabs ScriptViewMenu subclass:
+override string GetLayoutFile()
+{
+    // If $PBOPREFIX$ is "MyMod", the path MUST start with "MyMod\..."
+    return "MyMod/gui/layouts/main_menu.layout";
+}
+
+// Defensive guard so a layout-load failure doesn't poison the singleton:
+override void OnShow()
+{
+    super.OnShow();
+    if (!GetLayoutRoot())
+    {
+        s_Instance = null;          // free the ghost menu state
+        // log + early return
+        return;
+    }
+}
+```
+
+Symptom: menu appears blank-stuck-open, and trying to open any other menu (inventory, ESC, map) does nothing because the singleton thinks it's already showing.
