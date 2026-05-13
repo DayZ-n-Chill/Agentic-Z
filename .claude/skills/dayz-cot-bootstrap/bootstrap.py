@@ -2,9 +2,15 @@
 
 Two-pass workflow:
   1. Launch server + client with CF + COT + user mods. Wait for COT to write the
-     per-player JSON under <profiles>/PermissionsFramework/Players/*.json.
-  2. Kill the session, add "admin" role to the player JSON, flip 0 -> 2 in every
-     Roles/*.txt file. Relaunch.
+     per-player files under <profiles>/PermissionsFramework/Players/<id>.json
+     AND <profiles>/PermissionsFramework/Permissions/<id>.txt.
+  2. Kill the session. For each triggered player, add "admin" to the JSON's
+     Roles and flip ' 0' -> ' 2' in that player's Permissions/<id>.txt.
+     Relaunch.
+
+The grant is strictly per-player. Roles/everyone.txt (and the rest of
+Roles/*.txt) is NEVER modified — flipping everyone.txt would grant every
+connecting player full admin perms, which is unsafe even on a solo test box.
 
 COT does not write its perm files until a player has loaded in, which is why
 this can't be done as a one-time pre-launch edit.
@@ -187,37 +193,53 @@ def grant_admin_role(player_json: Path) -> bool:
     return True
 
 
-def flip_zeros_to_twos(role_file: Path) -> int:
-    """Replace every line ending in ' 0' with ' 2' in role_file. Returns the
-    number of lines changed. Idempotent."""
-    text = role_file.read_text(encoding="utf-8")
+def flip_zeros_to_twos(perms_file: Path) -> int:
+    """Replace every line ending in ' 0' with ' 2' in perms_file. Returns the
+    number of lines changed. Preserves the space between perm name and digit.
+    Idempotent."""
+    text = perms_file.read_text(encoding="utf-8")
     new_text, n = re.subn(r" 0(\r?\n|$)", r" 2\1", text)
     if n == 0:
         return 0
-    role_file.write_text(new_text, encoding="utf-8")
+    perms_file.write_text(new_text, encoding="utf-8")
     return n
 
 
+def wait_for_personal_perms(perms_file: Path, timeout_s: int) -> bool:
+    """COT writes Permissions/<id>.txt at roughly the same time as Players/<id>.json
+    but not guaranteed simultaneously. Block briefly so we don't try to edit a
+    file that hasn't been created yet."""
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        if perms_file.exists() and perms_file.stat().st_size > 0:
+            return True
+        time.sleep(0.5)
+    return False
+
+
 def edit_permissions(profile_dir: Path, triggered: list[Path]) -> None:
-    """Apply the two edits per SKILL.md:
-       1. Add 'admin' role to each triggered player's JSON.
-       2. Flip ' 0' -> ' 2' in every Roles/*.txt file."""
+    """Per-player grant only. For each triggered player JSON:
+       1. Add 'admin' to its Roles[].
+       2. Wait for the matching Permissions/<id>.txt to appear, then flip
+          ' 0' -> ' 2' in it.
+
+       Roles/*.txt (including everyone.txt) is intentionally NOT touched —
+       flipping everyone.txt would grant every connecting player admin and
+       defeats the per-player scope."""
     print()
-    print("[Edit] Applying COT admin permissions...")
-    for p in triggered:
-        grant_admin_role(p)
-
-    roles_dir = profile_dir / "PermissionsFramework" / "Roles"
-    if not roles_dir.exists():
-        print(f"{WARN} Roles dir missing at {roles_dir} — skipping role flip")
-        return
-
-    for role_file in sorted(roles_dir.glob("*.txt")):
-        n = flip_zeros_to_twos(role_file)
+    print("[Edit] Applying COT admin permissions (per-player only)...")
+    perms_dir = profile_dir / "PermissionsFramework" / "Permissions"
+    for json_path in triggered:
+        grant_admin_role(json_path)
+        perms_file = perms_dir / f"{json_path.stem}.txt"
+        if not wait_for_personal_perms(perms_file, timeout_s=15):
+            print(f"{WARN} Personal perms file did not appear at {perms_file} — skipping flip")
+            continue
+        n = flip_zeros_to_twos(perms_file)
         if n > 0:
-            print(f"{OK} {role_file.name}: flipped {n} line(s) from 0 -> 2")
+            print(f"{OK} {perms_file.name}: flipped {n} line(s) from 0 -> 2")
         else:
-            print(f"        {role_file.name}: no 0 entries (already permissive or empty)")
+            print(f"        {perms_file.name}: no 0 entries (already permissive or empty)")
 
 
 def launch_pair(
