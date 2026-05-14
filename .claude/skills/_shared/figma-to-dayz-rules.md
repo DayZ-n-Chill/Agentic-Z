@@ -78,9 +78,19 @@ See `enscript/references/gui_layout.md` for the full property catalog (`ignorepo
 
 ## 3. Figma to DayZ widget mapping
 
-Layer kind is the primary signal. Naming prefix breaks ties when the kind is generic. All widget names end in `Class`.
+**Naming prefix is authoritative when present. Layer kind is the fallback only when no prefix is set.**
 
-| Figma source | DayZ widget |
+This matters because designers regularly use Figma FRAMES (not rectangles) for buttons, panels, etc. — auto-layout frames with a text child are the modern button pattern in Figma. A frame named `btn_close` is a button, full stop, regardless of whether the layer kind is "frame" or "rectangle". Do not downgrade a prefixed layer to its raw kind.
+
+Decision order for every node:
+
+1. If the layer name starts with a known prefix (section 4), emit the prefix's mapped widget. Done.
+2. Otherwise, fall back to layer kind using the table below.
+3. If the layer kind alone is still ambiguous (bare frame, bare rectangle), default to `FrameWidgetClass` for containers and flag the ambiguity in the handoff.
+
+All widget names end in `Class`.
+
+| Figma source (no prefix) | DayZ widget |
 | --- | --- |
 | Top-level frame | `FrameWidgetClass` |
 | Frame with solid fill / background | `PanelWidgetClass` |
@@ -89,7 +99,7 @@ Layer kind is the primary signal. Naming prefix breaks ties when the kind is gen
 | Text layer with rich-text formatting | `RichTextWidgetClass` |
 | Multi-line read-only text block | `MultilineTextWidgetClass` |
 | Image / image fill / vector icon | `ImageWidgetClass` |
-| Rectangle named `btn_*` | `ButtonWidgetClass` |
+| Rectangle OR frame named `btn_*` | `ButtonWidgetClass` |
 | Single-line input | `EditBoxWidgetClass` |
 | Multi-line input | `MultilineEditBoxWidgetClass` |
 | Password input | `PasswordEditBoxWidgetClass` |
@@ -110,7 +120,7 @@ Layer kind is the primary signal. Naming prefix breaks ties when the kind is gen
 
 ## 4. Naming prefix taxonomy
 
-Used when the Figma layer kind is generic (a rectangle, a frame) and the type must be inferred from the name.
+**Prefixes are authoritative.** A layer named `btn_close` is a `ButtonWidgetClass` whether the Figma layer kind is rectangle, frame, group, or auto-layout container. Match the prefix on the layer name (after stripping any leading slashes or numeric IDs), case-insensitive, prefix is everything up to and including the first `_`.
 
 | Prefix | Widget |
 | --- | --- |
@@ -128,6 +138,17 @@ Used when the Figma layer kind is generic (a rectangle, a frame) and the type mu
 | `preview_` | `ItemPreviewWidgetClass` (item content) or `PlayerPreviewWidgetClass` (player content) |
 | `panel_` | `PanelWidgetClass` |
 
+### Examples
+
+| Figma layer | Layer kind | Output widget |
+| --- | --- | --- |
+| `btn_close` | Auto-layout frame with text child | `ButtonWidgetClass btn_close` (NOT FrameWidget) |
+| `btn_save` | Rectangle | `ButtonWidgetClass btn_save` |
+| `btn_confirm` | Frame with background fill | `ButtonWidgetClass btn_confirm` (NOT PanelWidget) |
+| `bar_health` | Auto-layout frame | `ProgressBarWidgetClass bar_health` |
+| `panel_inventory` | Frame with fill | `PanelWidgetClass panel_inventory` |
+| (no prefix) Frame with fill | Frame | `PanelWidgetClass` (kind-based fallback) |
+
 ---
 
 ## 5. Layout translation: anchors first, spacers only when needed
@@ -136,15 +157,52 @@ This is the section most likely to be mishandled. Read it once carefully.
 
 **The vanilla DayZ idiom is absolute pixel positioning with alignment anchors.** Every shipping vanilla `.layout` under `P:\gui\` and every example layout in this repo uses absolute `position`/`size` plus `halign`/`valign` anchors. Spacer widgets exist but are reserved for cases the anchor system genuinely cannot express.
 
-### Default: absolute + anchor
+### Default: absolute + anchor, but honor Figma sizing modes
 
 For a Figma frame with auto layout, the default translation is:
 
-- Each child becomes a widget with its own `position`/`size` derived from the Figma layer's pixel bounds.
+- Each child becomes a widget with its own `position`/`size` derived from the Figma layer's bounds AND its Figma sizing mode.
 - Use `halign` and `valign` to anchor the child against the parent's reference frame instead of computing absolute coords against the screen.
-- Set `hexactpos`/`vexactpos`/`hexactsize`/`vexactsize` based on whether each axis should be pixel-fixed (`1`) or relative to the parent (`0`).
+- Set the four `hexactpos`/`vexactpos`/`hexactsize`/`vexactsize` toggles per the Figma-sizing-mode table below. **This is what gives the layout responsiveness.**
 
-This produces output that matches vanilla style and reads cleanly in Workbench.
+### Figma sizing modes → DayZ size toggles (CRITICAL)
+
+Figma auto-layout children have three width modes and three height modes. They MUST map onto DayZ size toggles or the layout will not respond to resolution scaling.
+
+| Figma sizing mode | DayZ size value | DayZ toggle |
+| --- | --- | --- |
+| **Fill Container** (axis) | `1` (full parent fraction) | `hexactsize 0` or `vexactsize 0` (RELATIVE) |
+| **Hug Contents** (axis) | content extent in pixels | `hexactsize 1` or `vexactsize 1` (PIXEL) |
+| **Fixed** (axis) | pixel value | `hexactsize 1` or `vexactsize 1` (PIXEL) |
+
+The CRITICAL rule: any child of a Figma auto-layout frame that has **Fill Container** width must emit `hexactsize 0` with `size 1 H` (where H is its height value). Same for height: Fill Container height → `vexactsize 0` with `size W 1`. This is what makes the layout actually responsive.
+
+If you emit a child with pixel width when its Figma sizing was Fill Container, the layout is broken even though Workbench will accept the file. The user will see "no responsiveness" — that's THIS bug.
+
+### Worked sizing translation
+
+A Figma auto-layout vertical frame with:
+- Header: Fill Container width, Hug Contents height (e.g. 32px tall)
+- Body: Fill Container width, Fill Container height
+- Footer: Fill Container width, Fixed height 48px
+
+Becomes:
+```
+TextWidgetClass header { size 1 32   hexactsize 0 vexactsize 1   ... }
+PanelWidgetClass body   { size 1 1    hexactsize 0 vexactsize 0   ... }
+PanelWidgetClass footer { size 1 48   hexactsize 0 vexactsize 1   ... }
+```
+
+All three are `hexactsize 0` (responsive width) and use `1` as the size value to mean "100% of parent width." Heights vary per their own sizing mode.
+
+### When to reach for spacer widgets
+
+Use `WrapSpacerWidgetClass` or `GridSpacerWidgetClass` only when:
+
+- The Figma frame contains a **truly dynamic** repeating list or grid (N children where N is determined at runtime by data, not designed in Figma)
+- OR the design relies on children flowing and wrapping based on container width (rare in DayZ UIs)
+
+A static row of three buttons described in Figma auto-layout is NOT a spacer case. It is three `ButtonWidgetClass` widgets with `position`/`size` derived from their Figma bounds and Figma sizing modes per the table above.
 
 ### When to reach for spacer widgets
 
@@ -174,8 +232,18 @@ Figma uses absolute pixel coordinates. DayZ uses position/size pairs paired with
 | Full-area container (root frame, full-screen overlay) | `position 0 0`, `size 1 1`, all four toggles `0` (relative) |
 | Centered modal (fixed size, centered in parent) | `position 0 0`, `size W H` in pixels, `halign center_ref`, `valign center_ref`, all four toggles `1` |
 | Fixed-size button or icon | `position X Y` in pixels, `size W H` in pixels, all four toggles `1` |
-| Stretched-width element pinned to top of parent | `position 0 Y`, `size 1 H`, `hexactpos 0`, `hexactsize 0`, `vexactpos 1`, `vexactsize 1` |
+| Stretched-width element pinned to top of parent (Fill Container width, Fixed height) | `position 0 Y`, `size 1 H`, `hexactpos 0`, `hexactsize 0`, `vexactpos 1`, `vexactsize 1` |
+| Fill Container in BOTH axes (responsive panel filling its parent) | `position 0 0`, `size 1 1`, all four toggles `0` |
+| Auto-layout child with Fill Container width, Hug Contents height | `position 0 Y`, `size 1 H_content`, `hexactsize 0`, `vexactsize 1` |
 | Element anchored to right edge with fixed offset | `position X Y`, `halign right_ref`, plus pixel toggles |
+
+**The Figma sizing mode of EACH AXIS independently determines whether that axis's toggle is `0` (relative) or `1` (pixel)**:
+
+- Fill Container width → `hexactsize 0`, size value = `1`
+- Hug Contents width → `hexactsize 1`, size value = pixel width
+- Fixed width → `hexactsize 1`, size value = pixel width
+
+Same logic for the vertical axis. See section 5 for the full sizing-mode table.
 
 Always emit a position together with its matching `hexactpos`/`vexactpos` toggle. Same for size and `hexactsize`/`vexactsize`. A position without a toggle is ambiguous and Workbench may not load it as intended.
 
