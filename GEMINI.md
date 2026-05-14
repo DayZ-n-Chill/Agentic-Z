@@ -37,6 +37,8 @@ User/machine-specific notes go in `<repo>/.claude/local-memory/` (gitignored, pe
 
 When a Superpowers workflow (`/brainstorming`, `/executing-plans`, `/requesting-code-review`, `/dispatching-parallel-agents`, etc.) needs to dispatch a subagent and the work touches DayZ, route to the matching `dayz-*` specialist via the Agent tool. Generic Superpowers agents (e.g. `superpowers:code-reviewer`) don't know Enforce Script conventions and will miss DayZ-specific traps like the `modded class` no-extends rule or engine classes that can't be modded.
 
+**Figma-to-DayZ work has its own pipeline.** When the input is a Figma URL, fileKey, or node ID and the target is a DayZ `.layout`, dispatch the three-stage pipeline in order: `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator`. Do not author the `.layout` inline or via `dayz-ui-specialist` alone — the canonical translation rules live at `.claude/skills/_shared/figma-to-dayz-rules.md` and only the pipeline applies them. After the pipeline finishes, `dayz-ui-specialist` handles polish, widget scripts, and Workbench wiring. `dayz-ui-specialist` will dispatch the pipeline itself when given a Figma input.
+
 Heuristic: anything under `workspace/<ModName>/`, `.claude/skills/dayz-*/`, `P:\`, or DayZ file types (`.c`, `.layout`, `.p3d`, `.paa`, `.rvmat`, `config.cpp`, `types.xml`) is DayZ work. See the role-to-specialist table at `docs/dayz-modding.md` ("Superpowers ↔ DayZ specialist routing").
 
 For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generic agents are fine.
