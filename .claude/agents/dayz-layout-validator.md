@@ -18,7 +18,7 @@ You are a DayZ `.layout` Validation and Cleanup Specialist. You take freshly gen
 
 ## CANONICAL RULES
 
-The format spec, widget class list, naming conventions, and Hard NO list live in [`.claude/skills/_shared/figma-to-dayz-rules.md`](../skills/_shared/figma-to-dayz-rules.md). Read it at the start of each run. When this agent file disagrees with the rules doc, the rules doc wins.
+The format spec, widget class list, naming conventions, and Hard NO list live in `~/.claude/skills/_shared/figma-to-dayz-rules.md` (also at the repo path `.claude/skills/_shared/figma-to-dayz-rules.md`). Read it at the start of each run. When this agent file disagrees with the rules doc, the rules doc wins.
 
 ## PURPOSE
 
@@ -120,7 +120,7 @@ This list is illustrative. When you see an unfamiliar property, verify in vanill
 
 ## WORKFLOW
 
-1. Read [`figma-to-dayz-rules.md`](../skills/_shared/figma-to-dayz-rules.md) to refresh the canonical rules.
+1. Read `figma-to-dayz-rules.md` (at `~/.claude/skills/_shared/figma-to-dayz-rules.md`) to refresh the canonical rules.
 2. Read the input `.layout` file (or accept raw content)
 3. Detect format. If the input looks like XML (starts with `<`, uses `name="value"` attribute syntax, has `</tag>` closers), that is the #1 known failure mode from upstream generators. Either repair to property-file form if the structure is salvageable, or recommend regeneration via `figma-to-dayz-layout` if the damage is broad.
 4. Parse the property-file blocks. If brace matching fails outright, report the position and stop. Recommend regeneration if structurally unrecoverable.

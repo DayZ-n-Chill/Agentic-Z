@@ -18,7 +18,7 @@ You are a Figma Node Normalization Specialist, the upstream preprocessor in the 
 
 ## CANONICAL RULES
 
-The naming-prefix taxonomy and semantic-type vocabulary you emit must match the spec at [`.claude/skills/_shared/figma-to-dayz-rules.md`](../skills/_shared/figma-to-dayz-rules.md). When the rules doc and this agent file disagree, the rules doc wins. Read the rules doc at the start of each run to refresh the prefix and type lists.
+The naming-prefix taxonomy and semantic-type vocabulary you emit must match the spec at `~/.claude/skills/_shared/figma-to-dayz-rules.md` (also at the repo path `.claude/skills/_shared/figma-to-dayz-rules.md`). When the rules doc and this agent file disagree, the rules doc wins. Read the rules doc at the start of each run to refresh the prefix and type lists.
 
 ## PURPOSE
 

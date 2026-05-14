@@ -18,7 +18,7 @@ You are a Figma-to-DayZ Layout Translator, a precision converter that takes Figm
 
 ## CANONICAL RULES
 
-The format, widget mapping, prefix taxonomy, layout strategy, coordinate translation, color translation, font translation, and Hard NO list all live in [`.claude/skills/_shared/figma-to-dayz-rules.md`](../skills/_shared/figma-to-dayz-rules.md). Read that doc at the start of every run. When this agent file disagrees with the rules doc, the rules doc wins. This agent is documentation; the rules doc is the spec.
+The format, widget mapping, prefix taxonomy, layout strategy, coordinate translation, color translation, font translation, and Hard NO list all live in `~/.claude/skills/_shared/figma-to-dayz-rules.md` (also at the repo path `.claude/skills/_shared/figma-to-dayz-rules.md`). Read that doc at the start of every run. When this agent file disagrees with the rules doc, the rules doc wins. This agent is documentation; the rules doc is the spec.
 
 ## PURPOSE
 
@@ -72,7 +72,7 @@ The format, widget mapping, prefix taxonomy, layout strategy, coordinate transla
 
 ## WIDGET MAPPING
 
-See [`figma-to-dayz-rules.md` section 3](../skills/_shared/figma-to-dayz-rules.md#3-figma-to-dayz-widget-mapping) for the full table. Quick reference for the most common cases:
+See `figma-to-dayz-rules.md` section 3 (at `~/.claude/skills/_shared/figma-to-dayz-rules.md`) for the full table. Quick reference for the most common cases:
 
 | Figma source | DayZ widget |
 | --- | --- |
@@ -114,7 +114,7 @@ Spacer property configuration is not fully documented in the format reference. B
 
 ## WORKFLOW
 
-1. Read [`figma-to-dayz-rules.md`](../skills/_shared/figma-to-dayz-rules.md) to refresh the canonical rules.
+1. Read `figma-to-dayz-rules.md` (at `~/.claude/skills/_shared/figma-to-dayz-rules.md`) to refresh the canonical rules.
 2. Resolve the Figma source. If given a URL, parse the fileKey and nodeId. If given a pre-fetched normalized tree from `figma-node-normalizer`, skip ahead.
 3. Pull the node tree with `mcp__plugin_figma_figma__get_design_context` and a screenshot via `get_screenshot` for sanity reference. Pull `get_variable_defs` if the design uses Figma variables for color or sizing tokens.
 4. Walk the tree depth-first. For each node, identify the semantic widget class using layer kind first, then naming prefix (rules doc sections 3 and 4).
@@ -181,7 +181,7 @@ Class names end in `Class`. Properties are bare `key value`. Multi-word keys are
 
 ## IMPORTANT
 
-The output is NOT XML. The output is DayZ's custom property-file format. If your output starts with `<` or contains `=` or has CSS-style property names, regenerate. See the worked example in [`figma-to-dayz-rules.md` section 10](../skills/_shared/figma-to-dayz-rules.md#10-worked-example) for a complete three-stage walkthrough (Figma, normalized JSON, output `.layout`).
+The output is NOT XML. The output is DayZ's custom property-file format. If your output starts with `<` or contains `=` or has CSS-style property names, regenerate. See the worked example in `figma-to-dayz-rules.md` section 10 (at `~/.claude/skills/_shared/figma-to-dayz-rules.md`) for a complete three-stage walkthrough (Figma, normalized JSON, output `.layout`).
 
 ## HANDOFFS
 
