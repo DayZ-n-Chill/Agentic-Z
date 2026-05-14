@@ -15,7 +15,6 @@ node_modules/
 
 # Vendored skill assets shipped from upstream tools as-is
 .claude/skills/dayz-split-types/vendor/
-.claude/skills/dayz-p3d-debin/references/
 
 # Auto-generated content
 **/CHANGELOG.md

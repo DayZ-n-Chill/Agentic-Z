@@ -170,7 +170,6 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | Command | Purpose |
 |---|---|
 | [`/dayz-p3d-audit`](../.claude/skills/dayz-p3d-audit/SKILL.md) | Audit `.p3d` models for collision, action targeting, physics, animation issues |
-| [`/dayz-p3d-debin`](../.claude/skills/dayz-p3d-debin/SKILL.md) | Debinarize ODOL `.p3d` to MLOD format for Object Builder |
 | [`/dayz-particles`](../.claude/skills/dayz-particles/SKILL.md) | Particle effect creation (`.ptc` / `.emat`) without Workbench |
 
 ### Search / RAG

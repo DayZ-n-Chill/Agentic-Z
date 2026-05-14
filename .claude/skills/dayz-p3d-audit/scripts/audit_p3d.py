@@ -26,7 +26,7 @@ except ImportError:
 # ============================================================================
 def classify_lod(resolution):
     # LOD resolution mapping. Standard Bohemia Arma/DayZ scheme uses ~6e15 for ViewGeometry
-    # and ~7e15 for FireGeometry (see dayz-p3d-debin/references/format_notes.md). Some
+    # and ~7e15 for FireGeometry. Some
     # DayZ models in the wild also use ~7e13 (ViewGeo) and ~3e13 (FireGeo); accept both
     # ranges so the classifier matches either layout.
     if resolution < 1000:
