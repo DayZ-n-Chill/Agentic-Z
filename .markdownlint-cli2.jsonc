@@ -19,7 +19,6 @@
     ".claude/agent-memory/**",
     // Vendored skill assets that ship from upstream tools as-is
     ".claude/skills/dayz-split-types/vendor/**",
-    ".claude/skills/dayz-p3d-debin/references/**",
     // CHANGELOG-style or auto-generated content
     "**/CHANGELOG.md"
   ]
