@@ -6,7 +6,6 @@ name: dayz-pack-texture
 
 &gt;-
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-pack-texture

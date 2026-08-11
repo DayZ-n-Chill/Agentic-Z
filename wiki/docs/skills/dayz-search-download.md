@@ -6,7 +6,6 @@ name: dayz-search-download
 
 Download a prebuilt DayZ RAG vector index from the repo's GitHub releases and extract it to `~/.claude/dayz-search-index/`, so a fresh clone can use the dayz-rag MCP server without running `/dayz-search-index` (skipping the ~25-30 min build and Voyage API token cost). Idempotent — checks the existing index's manifest and skips re-download if it matches the release. Use this in place of `/dayz-search-index` on a fresh machine.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-search-download

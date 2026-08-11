@@ -6,7 +6,6 @@ name: dayz-split-types
 
 Split a monolithic DayZ types.xml into 18 categorized files (ammo, weapons, vehicles, food, clothes, etc.) and auto-update cfgeconomycore.xml with the new file references. Wraps DayZ-n-Chill/DayZ-TypeSplitterPro (vendored). Backs up types.xml first.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-split-types

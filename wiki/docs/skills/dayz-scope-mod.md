@@ -6,7 +6,6 @@ name: dayz-scope-mod
 
 Scope the agent to a single mod under workspace/&lt;ModName&gt;/. Adds deny rules to .claude/settings.local.json that block Edit/Write to OTHER mods' workspace folders, P:\&lt;other&gt;\ junctions, and P:\Mods\@&lt;other&gt;\ deploy dirs, so an agent working on Mod A can't accidentally clobber Mod B. Reads stay broad. Use --clear to lift the scope.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-scope-mod

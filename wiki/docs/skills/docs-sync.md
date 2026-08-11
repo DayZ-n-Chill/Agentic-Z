@@ -6,7 +6,6 @@ name: docs-sync
 
 Sync the Docusaurus wiki at `wiki/docs/` with the canonical sources (`.claude/agents/`, `.claude/skills/`, `docs/`, L1 files). Pure-Python: detects drift, applies the Docusaurus transform (frontmatter trim, agent badge HTML, example-block parser, MDX-tag escape), prunes orphan wiki pages whose canonical source was deleted.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\<other>\`.
 
 # /docs-sync

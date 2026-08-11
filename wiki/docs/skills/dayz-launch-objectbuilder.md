@@ -6,7 +6,6 @@ name: dayz-launch-objectbuilder
 
 Open Object Builder (DayZ Tools' .p3d model editor) from the CLI, optionally pointed at a specific .p3d file or mod folder. Spawns detached so the shell returns immediately. Requires /dayz-setup-objectbuilder to have been run once on the machine. Replaces clicking through Steam → DayZ Tools → Object Builder → File → Open.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-launch-objectbuilder

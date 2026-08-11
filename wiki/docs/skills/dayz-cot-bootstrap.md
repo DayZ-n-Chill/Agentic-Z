@@ -6,7 +6,6 @@ name: dayz-cot-bootstrap
 
 Bootstrap Community-Online-Tools (COT) admin permissions on a DayZ test server in one shot. Auto-prepends @CF + @Community-Online-Tools to the mod chain, launches the server + client, waits for your character to spawn (detected when COT writes the per-player files), kills the session, grants you the `admin` role in your Players JSON, flips every ` 0` to ` 2` in your personal `Permissions/&lt;id&gt;.txt` file, then relaunches. Per-player grant only — `Roles/everyone.txt` is never touched. Requires /dayz-init + /dayz-add-server + /dayz-build-pbo first.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-cot-bootstrap

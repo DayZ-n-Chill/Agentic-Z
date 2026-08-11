@@ -197,6 +197,36 @@ def escape_mdx_tags_in_body(body: str) -> str:
     return _MDX_TAG_PATTERN.sub(lambda m: f"&lt;{m.group(1)}&gt;", body)
 
 
+_HTML_COMMENT_PATTERN = re.compile(r"<!--.*?-->")
+
+
+def strip_html_comments_outside_fences(body: str) -> str:
+    """Remove `<!-- ... -->` comments outside fenced code blocks.
+
+    MDX has no HTML comments — a literal `<!--` fails compilation with
+    "Unexpected character `!` before name". Canonical skills carry
+    single-line marker comments (e.g. `<!-- skill-dir-note -->`) that are
+    metadata for agents, not wiki content, so they're dropped rather than
+    converted. Comments inside fences are displayed code and are kept.
+    """
+    out: list[str] = []
+    in_fence = False
+    for line in body.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            out.append(line)
+            continue
+        if in_fence:
+            out.append(line)
+            continue
+        cleaned = _HTML_COMMENT_PATTERN.sub("", line)
+        if cleaned.strip() == "" and line.strip() != "":
+            continue  # line was only a comment — drop it entirely
+        out.append(cleaned)
+    return "".join(out)
+
+
 def escape_mdx_curlies_outside_fences(body: str) -> str:
     """Escape { and } to HTML entities outside fenced code blocks.
 
@@ -241,7 +271,7 @@ def transform_skill(canonical_text: str) -> str:
     if description:
         overview = f"\n## Overview\n\n{html_escape(description)}\n\n"
 
-    safe_body = escape_mdx_curlies_outside_fences(body)
+    safe_body = escape_mdx_curlies_outside_fences(strip_html_comments_outside_fences(body))
     return render_frontmatter(trimmed_fm) + overview + safe_body.lstrip("\n")
 
 
@@ -267,7 +297,9 @@ def transform_agent(canonical_text: str) -> str:
     else:
         overview = f"\n{badges}\n\n"
 
-    safe_body = escape_mdx_curlies_outside_fences(escape_mdx_tags_in_body(body))
+    safe_body = escape_mdx_curlies_outside_fences(
+        escape_mdx_tags_in_body(strip_html_comments_outside_fences(body))
+    )
 
     return render_frontmatter(trimmed_fm, keys_quoted=_AGENT_FM_QUOTED) + overview + safe_body.lstrip("\n")
 

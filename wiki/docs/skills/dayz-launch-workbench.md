@@ -6,7 +6,6 @@ name: dayz-launch-workbench
 
 Open Enfusion Workbench (DayZ Tools' script + UI editor) from the CLI, optionally pointed at a specific mod's project file. Spawns detached with cwd=&lt;DayZ Tools&gt;\Bin\Workbench so Workbench's support files resolve. Default behavior loads the vanilla dayz.gproj shipped with DayZ Tools; --mod &lt;ModName&gt; loads the per-mod gproj scaffolded by /dayz-new-mod.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-launch-workbench

@@ -6,7 +6,6 @@ name: dayz-init
 
 Front door for all DayZ work in Agentic-Z. First run is a setup wizard (env check, intent prompts, plan, execute). Every run after drops you into a mission-control hub for the cached project. Wraps the existing /dayz-* skills, never replaces them.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-init

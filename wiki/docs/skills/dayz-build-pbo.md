@@ -6,7 +6,6 @@ name: dayz-build-pbo
 
 Pack a scaffolded mod from workspace/&lt;ModName&gt;/ into a .pbo at P:\Mods\@&lt;ModName&gt;\Addons\ via DayZ Tools AddonBuilder. Gates on /dayz-preflight, verifies the P:\&lt;ModName&gt;\ junction created by /dayz-new-mod, surfaces AddonBuilder output live. Default is binarized output; --clean wipes the target dir first.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-build-pbo

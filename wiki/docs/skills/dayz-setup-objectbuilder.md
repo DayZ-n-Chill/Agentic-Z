@@ -6,7 +6,6 @@ name: dayz-setup-objectbuilder
 
 Configure Object Builder (DayZ Tools' .p3d model editor) on a fresh machine. Imports the default registry settings shipped with DayZ Tools so Object Builder opens with sane window layouts and defaults instead of an empty config. One-time per machine; idempotent. Run before /dayz-launch-objectbuilder on a clean install.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-setup-objectbuilder

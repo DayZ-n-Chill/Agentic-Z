@@ -6,7 +6,6 @@ name: dayz-stop-test
 
 Kill any running DayZDiag_x64.exe processes (server and/or client). Use after /dayz-launch-test when you want to stop a session without manually finding the windows. Does NOT gate on /dayz-preflight — this is an emergency-stop skill that should work even if the environment is half-broken.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-stop-test

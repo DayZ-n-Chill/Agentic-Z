@@ -6,7 +6,6 @@ name: dayz-edit-types
 
 Programmatically add, update, or remove an entry in DayZ's types.xml. Upserts a `&lt;type name="..."&gt;` block with the given attrs (nominal, min, lifetime, restock, cost, category, usage, value, tag). Auto-backs up the file before modifying. Idempotent — re-running with the same args is a no-op or a clean update.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-edit-types

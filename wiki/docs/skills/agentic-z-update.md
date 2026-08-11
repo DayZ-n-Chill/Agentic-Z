@@ -6,7 +6,6 @@ name: agentic-z-update
 
 Pull the latest Agentic-Z template improvements (agents, skills, conventions, docs) from upstream into your clone, without touching your DayZ mod work in workspace/. Adds the upstream remote on first run, fetches, shows a changelog, then merges only template-managed paths. Re-runs sync-skills automatically. Refuses if your working tree is dirty unless --force is passed.
 
-<!-- skill-dir-note -->
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\<other>\`.
 
 # /agentic-z-update
