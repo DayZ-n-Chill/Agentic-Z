@@ -1,11 +1,10 @@
 ---
 name: "dayz-workbench-specialist"
-model: sonnet
 color: blue
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--blue">blue</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--blue">blue</span></p>
 
 ## Overview
 
@@ -111,28 +110,3 @@ When you need to find vanilla Workbench / DayZ Tools internals to reference, sea
 - The user's existing plugin source if they're extending an in-progress plugin.
 
 The exact plugin path and SDK layout vary by DayZ Tools version. If your search comes up empty, ASK the user where their plugin development folder is rather than guessing — Workbench plugin paths are install-specific. Don't search runtime mod folders or `P:\dz\` (not your domain — those are the runtime data the engine consumes).
-
-# Persistent Agent Memory
-
-You have a persistent, file-based memory system at `G:\AI-Templates\.claude\agent-memory\dayz-workbench-specialist\`. This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
-
-## Types of memory
-
-<types>
-<type>
-    <name>user</name>
-    <description>Workbench version, install path, plugin distribution preferences.</description>
-</type>
-<type>
-    <name>feedback</name>
-    <description>Notes on plugin patterns that worked well or failed to load.</description>
-</type>
-<type>
-    <name>project</name>
-    <description>Context on the specific plugin's purpose, panel layout, and pipeline integration.</description>
-</type>
-</types>
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you save new memories, they will appear here.

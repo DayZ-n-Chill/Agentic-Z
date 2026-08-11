@@ -32,7 +32,7 @@ python "<skill-dir>\scope.py" --clear
 
 1. Validates `<ModName>` exists at `workspace/<ModName>/` (refuses unknown names).
 2. Reads `.claude/settings.local.json`, removes any rules previously added by this skill (idempotent re-run).
-3. Enumerates sibling mods under `workspace/` (every directory except `_server`, the active mod, and dotted folders).
+3. Enumerates sibling mods under `workspace/` (every directory except the active mod and dotted folders).
 4. For each sibling mod, appends deny rules to `permissions.deny`:
    - `Edit(workspace/<other>/**)`, `Write(workspace/<other>/**)`
    - `Edit(P:\<other>\**)`, `Write(P:\<other>\**)`

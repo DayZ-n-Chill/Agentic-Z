@@ -58,6 +58,19 @@ DayZ Tools is the only per-machine install needed. There's no per-clone API key.
 - A directory junction `P:\<ProjectName>\` → `workspace/<ProjectName>/` is created at scaffold time by `/dayz-new-mod`. AddonBuilder and the engine read from `P:\<ProjectName>\`; you edit at `workspace/<ProjectName>/`. One source of truth, no copies. Build skills MUST verify this junction exists; they MUST NOT create or modify it (that's `/dayz-new-mod`'s job).
 - Built `.pbo` deploys to `P:\Mods\@<ModName>\Addons\`.
 
+## Bundle / umbrella mods (pre-compiled PBOs)
+
+Not every `workspace/<ModName>/` is buildable source. A **bundle** carries pre-compiled artifacts — third-party or purchased mods distributed as PBO-only, or an umbrella `@mod` collecting many pre-built PBOs under one container:
+
+- `workspace/<ModName>/Addons/*.pbo` (+ matching `*.bisign` signatures) — the pre-compiled payload.
+- `workspace/<ModName>/Keys/*.bikey` — public keys; deploy to `P:\Mods\@<ModName>\Keys\`.
+- Optional `meta.cpp` / `mod.cpp` at the bundle root.
+- Optional *linker* `config.cpp` + `$PBOPREFIX$` — a content-free `CfgPatches` declaring `requiredAddons[]`, built from source like any mod.
+
+**Build vs deploy are separate paths with separate gates.** The `config.cpp` + `$PBOPREFIX$` requirement (and the `P:\<ModName>\` junction) applies to the **build** path only (`/dayz-build-pbo`, which runs AddonBuilder). The **deploy** path (`/dayz-deploy-pbo`) is a pure idempotent copy of the pre-compiled payload into `P:\Mods\@<ModName>\` and requires none of them — a pure payload bundle has no buildable source. Both paths write the same `.agentic-z-scaffold` ownership marker; `/dayz-deploy-pbo` and `dayz-clean-workspace` additionally refuse to touch an existing `@<ModName>` dir that lacks it (could be a subscribed or hand-placed mod).
+
+**Umbrella pattern:** each payload PBO keeps its own prefix (baked in at its original compile time); `@<ModName>` is just the container. Never merge multiple mods into a single re-prefixed PBO — that requires a destructive config/asset merge and breaks external `requiredAddons[]` references. A full umbrella = the built linker PBO (via `/dayz-build-pbo`) + the copied payload (via `/dayz-deploy-pbo`) coexisting under one `@<ModName>\Addons\`; deploy never deletes, so order doesn't matter.
+
 ## Asset conventions
 
 - Textures are `.paa` only, with required suffixes:

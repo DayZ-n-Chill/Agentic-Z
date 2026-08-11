@@ -43,7 +43,7 @@ Embedding runs through Voyage AI's hosted API. Code-tuned model, much higher ret
 
 **Default model: `voyage-code-3`** — code-tuned, 32k context, 1024-dim. $0.18 per 1M tokens with **200M tokens free** (Series-4 free allowance, doesn't expire when payment method is added).
 
-**Cost reality:** a full vanilla rebuild is **~65M tokens** (measured, not estimated — dominated by ~34k unique rvmats and ~10k XML chunks from types.xml batches). At `voyage-code-3`'s $0.18/M that's ~$12, but the **200M free tier covers ~3 rebuilds**. After that, switch to `voyage-4-lite` ($0.02/M ≈ $1.30/rebuild) via `VOYAGE_MODEL` env var if cost matters. Live token + $ counter prints during the embed loop, and final totals are saved to `manifest.json`.
+**Cost reality:** a full vanilla rebuild is **~12.8M tokens** across ~34,322 chunks (measured — see Output below). At `voyage-code-3`'s $0.18/M that's ~$2.31, and the **200M free tier covers ~15 rebuilds**. If cost ever matters, switch to `voyage-4-lite` ($0.02/M ≈ $0.26/rebuild) via `VOYAGE_MODEL` env var. Live token + $ counter prints during the embed loop, and final totals are saved to `manifest.json`.
 
 **Free-tier projection check:** before kicking off the embed phase, the skill estimates this build's tokens (sum of chunk text lengths ÷ chars-per-token) and projects what the cumulative monthly usage would be after this run. If the projection exceeds 80% of the 200M free tier, you get a prompt to confirm. Cumulative usage is tracked locally in `~/.claude/dayz-search-index/usage.log` (one JSONL entry per build). **Caveats:** the local counter only sees builds run via these skills — it does NOT see usage by other apps sharing your `VOYAGE_API_KEY`. The authoritative usage view is at [dash.voyageai.com](https://dash.voyageai.com). Free tier resets monthly per Voyage's billing cycle. Pass `--ignore-tier-warning` to skip the prompt (CI / scripted use). Override the budget with `VOYAGE_FREE_TIER_TOKENS=<int>` env var if you're on a non-default plan.
 
@@ -110,9 +110,9 @@ Embedding 34322 chunks via Voyage (voyage-code-3, document mode)...
 
 ## Performance expectations
 
-- Full index: ~25-30 min (network-bound, ~52k chunks at ~75 chunks/s).
+- Full index: network-bound; the embed phase runs ~34,322 chunks at ~150 chunks/s (~4 min measured), plus time to walk and chunk ~38k files first.
 - Index disk size: ~200-400 MB for the vector store + manifest.
-- Tokens consumed: ~65M (covered by Voyage's 200M free tier for the first ~3 rebuilds).
+- Tokens consumed: ~12.8M (~$2.31 at voyage-code-3 rates; Voyage's 200M free tier covers ~15 rebuilds).
 
 ## Safety rails
 

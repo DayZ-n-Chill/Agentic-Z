@@ -1,11 +1,10 @@
 ---
 name: "dayz-object-builder"
-model: sonnet
 color: orange
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--orange">orange</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--orange">orange</span></p>
 
 ## Overview
 
@@ -112,28 +111,3 @@ When you need to find vanilla `.p3d` references for LOD structure, named selecti
 - `<DayZ Tools install>\Bin\ObjectBuilder\` — the Object Builder application itself; consult only if you need tool-version-specific workflow notes. Resolved via `find_dayz_tools()` in `dayz-preflight/preflight.py`.
 
 You overlap with asset-specialist on the `.p3d` files themselves — the difference is asset-specialist handles textures/materials assigned to the model, you handle the geometry, LOD topology, and selection metadata. If you find yourself thinking about `.paa` or `.rvmat` content, hand off to asset-specialist.
-
-# Persistent Agent Memory
-
-You have a persistent, file-based memory system at `G:\AI-Templates\.claude\agent-memory\dayz-object-builder\`. This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
-
-## Types of memory
-
-<types>
-<type>
-    <name>user</name>
-    <description>Modeling app of choice, preferred export pipeline, naming conventions for selections.</description>
-</type>
-<type>
-    <name>feedback</name>
-    <description>Notes on LOD setups that worked well or caused engine load errors.</description>
-</type>
-<type>
-    <name>project</name>
-    <description>Context on the specific mod's models, hidden-selection schema, and shared property values.</description>
-</type>
-</types>
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you save new memories, they will appear here.

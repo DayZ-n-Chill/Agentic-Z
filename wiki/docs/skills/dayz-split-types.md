@@ -26,7 +26,7 @@ python "<skill-dir>\split.py" <path-to-types.xml>
 Typical:
 
 ```cmd
-python "<skill-dir>\split.py" workspace\_server\missions\dayzOffline.chernarusplus\db\types.xml
+python "<skill-dir>\split.py" .server\chernarus\mission\db\types.xml
 ```
 
 ## What it does
@@ -57,14 +57,14 @@ DayZ preflight
 ... (preflight output)
 Preflight complete.
 
-[OK]    Backup: workspace\_server\missions\dayzOffline.chernarusplus\db\types.xml.bak
+[OK]    Backup: .server\chernarus\mission\db\types.xml.bak
 ... (typeSplitter logging) ...
-[OK]    Split into 14 files in workspace\_server\missions\dayzOffline.chernarusplus\db\types
+[OK]    Split into 14 files in .server\chernarus\mission\db\types
         ammo.xml
         ammo_boxes.xml
         animals.xml
         ... (more)
-[OK]    Updated workspace\_server\missions\dayzOffline.chernarusplus\cfgeconomycore.xml
+[OK]    Updated .server\chernarus\mission\cfgeconomycore.xml
 ```
 
 ## Attribution

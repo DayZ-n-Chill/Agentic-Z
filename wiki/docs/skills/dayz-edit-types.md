@@ -60,8 +60,8 @@ Add new entry:
 
 ```
 [OK]    Added <type name="MyMod_Vest"> with 1/0 lifetime 3888000 cost 100
-[OK]    Backup: workspace\_server\missions\dayzOffline.chernarusplus\db\types.xml.bak
-[OK]    Wrote workspace\_server\missions\dayzOffline.chernarusplus\db\types.xml
+[OK]    Backup: .server\chernarus\mission\db\types.xml.bak
+[OK]    Wrote .server\chernarus\mission\db\types.xml
 ```
 
 Update existing:

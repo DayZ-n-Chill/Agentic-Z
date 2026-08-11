@@ -17,9 +17,9 @@ Mount `P:\` for DayZ modding without DayZ Tools' GUI.
 
 Direct (preferred, no agent):
 ```
-scripts\workdrive.bat
-scripts\workdrive.bat --path "C:\Path\To\WorkDrive"
-scripts\workdrive.bat --unmount
+scripts\setup\workdrive.bat
+scripts\setup\workdrive.bat --path "C:\Path\To\WorkDrive"
+scripts\setup\workdrive.bat --unmount
 ```
 
 Or call Python directly:
