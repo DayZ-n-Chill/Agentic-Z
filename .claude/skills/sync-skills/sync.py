@@ -57,8 +57,16 @@ def list_repo_skills() -> list[Path]:
         sys.exit(2)
     out: list[Path] = []
     for child in sorted(base.iterdir()):
-        if not child.is_dir() or child.name.startswith("_"):
-            continue  # skip _shared/ etc — helpers, not skills
+        if not child.is_dir():
+            continue
+        if child.name == "_shared":
+            # Not a skill (no SKILL.md, so agent CLIs ignore it), but agents
+            # reference ~/.claude/skills/_shared/*.md cross-project, so it
+            # must be linked alongside the skills.
+            out.append(child)
+            continue
+        if child.name.startswith("_"):
+            continue  # other underscore dirs are helpers, not skills
         if (child / "SKILL.md").is_file():
             out.append(child)
     return out
@@ -104,7 +112,7 @@ def remove_link(p: Path) -> None:
         p.unlink()
 
 
-def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool) -> dict[str, int]:
+def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool) -> dict[str, int]:
     name = agent_cfg["name"]
     home = home_for(agent_cfg)
     target_dir = home / agent_cfg.get("skills_subdir", "skills")
@@ -134,6 +142,18 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool) -> dict[str
             if str(existing_resolved).lower() == str(src_resolved).lower():
                 print(f"  [OK]      {src.name}")
                 counts["ok"] += 1
+                continue
+            # Link points at another clone of this template. Refusing to steal
+            # it silently — that breaks the other clone's sessions. --force
+            # makes the takeover explicit.
+            try:
+                existing_resolved.relative_to(repo)
+                is_foreign = False
+            except ValueError:
+                is_foreign = True
+            if is_foreign and not force:
+                print(f"  [FOREIGN] {src.name}: points at {existing} — rerun with --force to take ownership")
+                counts["skipped"] += 1
                 continue
             if dry_run:
                 print(f"  DRY-RUN refresh {src.name} (was {existing} -> would point to {src_resolved})")
@@ -203,6 +223,8 @@ def main() -> int:
                     help="Subset of agents to sync (by name in agents.json). Default: all.")
     ap.add_argument("--dry-run", action="store_true",
                     help="Show what would happen, write nothing.")
+    ap.add_argument("--force", action="store_true",
+                    help="Take ownership of links currently pointing at a different clone of this template.")
     args = ap.parse_args()
 
     all_agents = load_agents_config()
@@ -231,7 +253,7 @@ def main() -> int:
     totals: dict[str, int] = {}
     failed_any = False
     for agent_cfg in agents:
-        c = sync_one(agent_cfg, skills, args.dry_run)
+        c = sync_one(agent_cfg, skills, args.dry_run, args.force)
         for k, v in c.items():
             totals[k] = totals.get(k, 0) + v
         if c["failed"] > 0:

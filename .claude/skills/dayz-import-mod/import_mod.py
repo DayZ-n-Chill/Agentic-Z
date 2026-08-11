@@ -239,6 +239,9 @@ def main() -> int:
     # Imported mods point P:\<X>\ at workspace/<X>/, which itself points at the
     # external source. Resolve to the real source path so the marker is useful.
     _nm.write_project_marker(p_drive_link, source.resolve())
+    # Same rule as /dayz-new-mod: importing a mod here signals this is the
+    # active project, and the build/launch/deploy skills follow the cache.
+    _nm.sync_project_cache()
 
     # Scaffolding check
     print()

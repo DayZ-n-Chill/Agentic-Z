@@ -454,6 +454,34 @@ def gate_on_preflight() -> None:
         sys.exit(result.returncode)
 
 
+def sync_project_cache() -> None:
+    """Point the /dayz-init project cache at this project.
+
+    Downstream skills (build-pbo, launch-test, deploy-pbo) resolve the project
+    from the cache, not from cwd — so scaffolding in a project the cache does
+    not point at would make the very next /dayz-build-pbo fail with
+    "workspace not found". Scaffolding here is an explicit signal that this is
+    the active project, so repoint (visibly) rather than let that happen.
+    """
+    state_py = REPO_ROOT / ".claude" / "skills" / "dayz-init" / "state.py"
+    spec = importlib.util.spec_from_file_location("dayz_init_state_module", state_py)
+    if spec is None or spec.loader is None:
+        print(f"{WARN} Could not load {state_py}; project cache not updated.")
+        return
+    state = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(state)
+
+    cached = state.cached_project_root()
+    if cached is not None and cached.resolve() == PROJECT_DIR:
+        return
+    state.write_cached_project_root(PROJECT_DIR)
+    if cached is None:
+        print(f"{OK} Project cache set: {PROJECT_DIR}")
+    else:
+        print(f"{WARN} Project cache repointed: {cached} -> {PROJECT_DIR}")
+        print("       (build/launch/deploy skills follow the cache; it now matches this scaffold)")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Scaffold a new DayZ mod project.")
     parser.add_argument("modname", help="Mod name (also folder + CfgPatches class).")
@@ -486,6 +514,7 @@ def main() -> int:
     print(f"{OK} P:\\{args.modname} {kind} -> {target.relative_to(PROJECT_DIR)}")
 
     write_project_marker(p_drive_link, target)
+    sync_project_cache()
 
     rel = target.relative_to(PROJECT_DIR)
     print()
