@@ -39,6 +39,55 @@ def _read_registry_string(hive, subkey: str, value_name: str) -> Optional[str]:
         return None
 
 
+def _steam_common_dirs() -> list[Path]:
+    """Every Steam library's steamapps/common dir on this machine.
+
+    Resolves the Steam root via the registry (falling back to the default
+    install paths), then parses steamapps/libraryfolders.vdf so games
+    installed on non-default library drives are found too (#49).
+    """
+    steam_roots: list[Path] = []
+    for hive_name, subkey, value in (
+        ("HKCU", r"Software\Valve\Steam", "SteamPath"),
+        ("HKLM", r"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
+    ):
+        if sys.platform == "win32":
+            import winreg
+            hive = winreg.HKEY_CURRENT_USER if hive_name == "HKCU" else winreg.HKEY_LOCAL_MACHINE
+            val = _read_registry_string(hive, subkey, value)
+            if val:
+                steam_roots.append(Path(val))
+    steam_roots.extend(
+        [
+            Path(r"C:\Program Files (x86)\Steam"),
+            Path(r"C:\Program Files\Steam"),
+        ]
+    )
+
+    commons: list[Path] = []
+    seen: set[str] = set()
+
+    def add_library(lib_root: Path) -> None:
+        common = lib_root / "steamapps" / "common"
+        key = os.path.normcase(str(common))
+        if key not in seen and common.is_dir():
+            seen.add(key)
+            commons.append(common)
+
+    import re
+    for root in steam_roots:
+        add_library(root)
+        vdf = root / "steamapps" / "libraryfolders.vdf"
+        if vdf.is_file():
+            try:
+                text = vdf.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            for m in re.finditer(r'"path"\s+"([^"]+)"', text):
+                add_library(Path(m.group(1).replace("\\\\", "\\")))
+    return commons
+
+
 def find_dayz_tools() -> Optional[Path]:
     """Locate the DayZ Tools install root.
 
@@ -72,12 +121,7 @@ def find_dayz_tools() -> Optional[Path]:
                     candidates.append(Path(val))
                     break
 
-    candidates.extend(
-        [
-            Path(r"C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools"),
-            Path(r"C:\Program Files\Steam\steamapps\common\DayZ Tools"),
-        ]
-    )
+    candidates.extend(common / "DayZ Tools" for common in _steam_common_dirs())
 
     for root in candidates:
         if (root / "Bin" / "AddonBuilder" / "AddonBuilder.exe").exists():
@@ -98,12 +142,7 @@ def find_dayz_game() -> Optional[Path]:
     if env_override:
         candidates.append(Path(env_override))
 
-    candidates.extend(
-        [
-            Path(r"C:\Program Files (x86)\Steam\steamapps\common\DayZ"),
-            Path(r"C:\Program Files\Steam\steamapps\common\DayZ"),
-        ]
-    )
+    candidates.extend(common / "DayZ" for common in _steam_common_dirs())
 
     for root in candidates:
         if (root / "DayZ_x64.exe").exists():
@@ -133,12 +172,7 @@ def find_dayz_diag() -> Optional[Path]:
     if game_root is not None:
         candidates.append(game_root / "DayZDiag_x64.exe")
 
-    candidates.extend(
-        [
-            Path(r"C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZDiag_x64.exe"),
-            Path(r"C:\Program Files\Steam\steamapps\common\DayZ\DayZDiag_x64.exe"),
-        ]
-    )
+    candidates.extend(common / "DayZ" / "DayZDiag_x64.exe" for common in _steam_common_dirs())
 
     for path in candidates:
         if path.exists():
@@ -162,12 +196,7 @@ def find_dayz_server() -> Optional[Path]:
     if env_override:
         candidates.append(Path(env_override))
 
-    candidates.extend(
-        [
-            Path(r"C:\Program Files (x86)\Steam\steamapps\common\DayZServer"),
-            Path(r"C:\Program Files\Steam\steamapps\common\DayZServer"),
-        ]
-    )
+    candidates.extend(common / "DayZServer" for common in _steam_common_dirs())
 
     for root in candidates:
         if (root / "DayZServer_x64.exe").exists():

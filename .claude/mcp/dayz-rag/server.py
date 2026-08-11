@@ -112,7 +112,9 @@ def _get_client():
     if _voyage_client is None:
         import voyageai
         api_key = _load_env_and_key()
-        _voyage_client = voyageai.Client(api_key=api_key)
+        # timeout is mandatory: without it a network hang never raises, so the
+        # retry loop in _embed_query never fires and searches hang forever (#51)
+        _voyage_client = voyageai.Client(api_key=api_key, timeout=30)
         _embed_model = _load_embed_model_name()
     return _voyage_client
 
