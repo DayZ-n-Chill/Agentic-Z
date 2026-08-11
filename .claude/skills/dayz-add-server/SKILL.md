@@ -1,6 +1,7 @@
 ---
 name: dayz-add-server
 description: Set up a DayZ test server instance under .server/<instance>/. Copies the mission template from DayZ Server install if missing, creates per-instance serverDZ.cfg + Profiles/ (server -profiles=) and a top-level shared .server/!ClientDiagLogs/ (client -profiles=). Each instance is isolated on the server side so you can run multiple variants of the same map (chernarus, chernarus-hardcore, etc.) without cross-contamination. Refuses if the legacy workspace/_server/ layout exists (delete it manually; that layout is no longer supported). Required before /dayz-launch-test for a given instance. Use --refresh-mission to re-copy mission content after a DayZ update.
+argument-hint: "<instance> [--map <name>] [--refresh-mission]"
 ---
 
 <!-- skill-dir-note -->

@@ -1,6 +1,7 @@
 ---
 name: dayz-build-pbo
 description: Pack a scaffolded mod from workspace/<ModName>/ into a .pbo at P:\Mods\@<ModName>\Addons\ via DayZ Tools AddonBuilder. Gates on /dayz-preflight, verifies the P:\<ModName>\ junction created by /dayz-new-mod, surfaces AddonBuilder output live. Default is binarized output; --clean wipes the target dir first.
+argument-hint: "<ModName> [--clean]"
 ---
 
 <!-- skill-dir-note -->

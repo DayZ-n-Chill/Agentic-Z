@@ -1,6 +1,8 @@
 ---
 name: dayz-clean-workspace
 description: Remove DayZ scaffolds and their deployed artifacts. For each managed mod under workspace/<ModName>/ (native /dayz-new-mod scaffold OR /dayz-import-mod link), removes the workspace folder/link, the P:\<ModName>\ junction (only if it points at our workspace), and the P:\Mods\@<ModName>\ deployed dir. For imported mods, the external source folder is NEVER touched - only the link is removed. Never touches mods you didn't scaffold (subscribed/installed mods at !Workshop are safe). --include-server also removes .server/ (refuses if legacy workspace/_server/ still exists; delete it manually first). Interactive confirmation by default; --yes skips it.
+argument-hint: "[--mod <Name>] [--include-server] [--yes] [--dry-run]"
+disable-model-invocation: true
 ---
 
 <!-- skill-dir-note -->

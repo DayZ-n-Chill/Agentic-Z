@@ -1,6 +1,7 @@
 ---
 name: dayz-launch-workbench
-description: Open Enfusion Workbench (DayZ Tools' script + UI editor) from the CLI, optionally pointed at a specific mod's project file. Spawns detached with cwd=P:\ so vanilla data resolves. Default behavior loads the vanilla dayz.gproj shipped with DayZ Tools; --mod <ModName> loads the per-mod gproj scaffolded by /dayz-new-mod.
+description: Open Enfusion Workbench (DayZ Tools' script + UI editor) from the CLI, optionally pointed at a specific mod's project file. Spawns detached with cwd=<DayZ Tools>\Bin\Workbench so Workbench's support files resolve. Default behavior loads the vanilla dayz.gproj shipped with DayZ Tools; --mod <ModName> loads the per-mod gproj scaffolded by /dayz-new-mod.
+argument-hint: "[--mod <ModName> | --gproj <path>]"
 ---
 
 <!-- skill-dir-note -->
@@ -20,7 +21,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
    - `--mod <ModName>` → uses `P:\<ModName>\workbench\dayz.gproj` (the file scaffolded by `/dayz-new-mod`). Fails fast if the mod folder or gproj isn't there.
    - `--gproj <path>` → uses an explicit `.gproj` path (escape hatch for non-scaffolded layouts).
    - Neither → no project arg; Workbench loads the default `dayz.gproj` shipped next to `workbenchApp.exe`.
-4. Spawns `workbenchApp.exe` with `cwd=P:\` (so the gproj's `Directory "./"` resolves to the work drive root) and `DETACHED_PROCESS` so the shell returns immediately.
+4. Spawns `workbenchApp.exe` with `cwd=<DayZ Tools>\Bin\Workbench` (so Workbench's support files — `dta\`, `platforms\`, `ToolAddons\`, bundled `dayz.gproj` — resolve; see "Why cwd" below) and `DETACHED_PROCESS` so the shell returns immediately.
 
 ## How to run
 
@@ -58,7 +59,7 @@ DayZ Workbench launcher
 
 [OK]    workbenchApp.exe: ...\Bin\Workbench\workbenchApp.exe
 [INFO]  Project: P:\MyMod\workbench\dayz.gproj
-[OK]    Working directory: P:\
+[OK]    Working directory: ...\Bin\Workbench
 
 [OK]    Workbench launched (PID 12345). The window may take a few seconds to appear.
 ```

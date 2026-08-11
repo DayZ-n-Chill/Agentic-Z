@@ -5,6 +5,7 @@ description: >-
   Validates the required suffix (`_co`, `_nohq`, `_smdi`) on each input filename so
   the engine assigns the correct texture role. One-to-one: every input produces a `.paa`
   next to itself.
+argument-hint: "<image_co.png|.tga> [<image2_nohq.png> ...]"
 ---
 
 <!-- skill-dir-note -->

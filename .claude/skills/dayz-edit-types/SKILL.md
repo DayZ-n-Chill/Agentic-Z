@@ -1,6 +1,7 @@
 ---
 name: dayz-edit-types
 description: Programmatically add, update, or remove an entry in DayZ's types.xml. Upserts a `<type name="...">` block with the given attrs (nominal, min, lifetime, restock, cost, category, usage, value, tag). Auto-backs up the file before modifying. Idempotent — re-running with the same args is a no-op or a clean update.
+argument-hint: "<types.xml> <ClassName> [--nominal N] [--min N] [--lifetime S] [...] | --remove"
 ---
 
 <!-- skill-dir-note -->
@@ -57,8 +58,8 @@ Add new entry:
 
 ```
 [OK]    Added <type name="MyMod_Vest"> with 1/0 lifetime 3888000 cost 100
-[OK]    Backup: workspace\_server\missions\dayzOffline.chernarusplus\db\types.xml.bak
-[OK]    Wrote workspace\_server\missions\dayzOffline.chernarusplus\db\types.xml
+[OK]    Backup: .server\chernarus\mission\db\types.xml.bak
+[OK]    Wrote .server\chernarus\mission\db\types.xml
 ```
 
 Update existing:

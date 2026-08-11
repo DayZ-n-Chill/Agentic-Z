@@ -1,6 +1,7 @@
 ---
 name: dayz-split-types
 description: Split a monolithic DayZ types.xml into 18 categorized files (ammo, weapons, vehicles, food, clothes, etc.) and auto-update cfgeconomycore.xml with the new file references. Wraps DayZ-n-Chill/DayZ-TypeSplitterPro (vendored). Backs up types.xml first.
+argument-hint: "<path-to-types.xml>"
 ---
 
 <!-- skill-dir-note -->
@@ -23,7 +24,7 @@ python "<skill-dir>\split.py" <path-to-types.xml>
 Typical:
 
 ```cmd
-python "<skill-dir>\split.py" workspace\_server\missions\dayzOffline.chernarusplus\db\types.xml
+python "<skill-dir>\split.py" .server\chernarus\mission\db\types.xml
 ```
 
 ## What it does
@@ -54,14 +55,14 @@ DayZ preflight
 ... (preflight output)
 Preflight complete.
 
-[OK]    Backup: workspace\_server\missions\dayzOffline.chernarusplus\db\types.xml.bak
+[OK]    Backup: .server\chernarus\mission\db\types.xml.bak
 ... (typeSplitter logging) ...
-[OK]    Split into 14 files in workspace\_server\missions\dayzOffline.chernarusplus\db\types
+[OK]    Split into 14 files in .server\chernarus\mission\db\types
         ammo.xml
         ammo_boxes.xml
         animals.xml
         ... (more)
-[OK]    Updated workspace\_server\missions\dayzOffline.chernarusplus\cfgeconomycore.xml
+[OK]    Updated .server\chernarus\mission\cfgeconomycore.xml
 ```
 
 ## Attribution

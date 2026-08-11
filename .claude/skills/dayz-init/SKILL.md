@@ -20,10 +20,10 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ## Step 1 — Setup-complete check
 
-Run this Bash one-liner to see if the cached project root exists and looks set up. If it prints a path, jump to **Step 6 (hub)**. If it prints nothing, fall through to Step 2.
+Run this via Bash to see if the cached project root exists and looks set up. If it prints a path, jump to **Step 6 (hub)**. If it prints nothing, fall through to Step 2.
 
 ```
-python -c "from pathlib import Path; import sys; sys.path.insert(0, r'<skill-dir>'); from state import cached_project_root, is_setup_complete; p = cached_project_root(); print(p) if (p and is_setup_complete(p)) else None"
+python "<skill-dir>\check_setup.py"
 ```
 
 ## Step 2 — Environment check
@@ -31,7 +31,7 @@ python -c "from pathlib import Path; import sys; sys.path.insert(0, r'<skill-dir
 Run the env check via Bash and capture output. The script exits 0 even on warnings; only hard-stop issues (no `P:\`, no DayZ Tools) require user action.
 
 ```
-python -c "import sys; sys.path.insert(0, r'<skill-dir>'); from env_check import run_all, classify; issues = run_all(); auto, hard = classify(issues); [print('HARD', i.name, i.message, i.fix_link or '') for i in hard]; [print('AUTO', i.name, i.message) for i in auto]; print('OK') if not issues else None"
+python "<skill-dir>\check_env.py"
 ```
 
 - If the output contains `HARD` lines: tell the user what's broken and the steam:// or doc link, then stop. No further automation until they fix it and re-run.
@@ -84,11 +84,13 @@ Mapping (step kind → command):
 | `build_pbo`       | `python "<skill-dir>\..\dayz-build-pbo\build.py" <ModName>`                                        |
 | `launch_diag`     | `python "<skill-dir>\..\dayz-launch-test\launch.py" <ModName> --server <instance>`                 |
 
-After all steps succeed, write the state file:
+After all steps succeed, write the state file (caches the project root and records the intent choices):
 
 ```
-python -c "from pathlib import Path; import sys; sys.path.insert(0, r'<skill-dir>'); from state import write_state, write_cached_project_root; write_cached_project_root(Path(r'<project_path>')); write_state(Path(r'<project_path>'), {'rag_choice': '<rag>', 'last_intent': {'mod_name': '<name>', 'is_new': <bool>, 'server_map': '<map>'}})"
+python "<skill-dir>\save_state.py" <project_path> --rag <skip|paste|pull> --mod-name <name> --is-new <true|false> --server-map <map>
 ```
+
+Omit `--server-map` if no test server was staged.
 
 Then drop into Step 6.
 
@@ -97,7 +99,7 @@ Then drop into Step 6.
 Render the status block via Bash:
 
 ```
-python -c "import sys; sys.path.insert(0, r'<skill-dir>'); from pathlib import Path; from hub import gather_status, render_status; print(render_status(gather_status(Path(r'<project_path>'))))"
+python "<skill-dir>\hub_status.py" <project_path>
 ```
 
 Then use AskUserQuestion to ask "what now?" with options matching the existing hub action list (build & launch, stop diag, tail log, open in workbench, open in objectbuilder, run mod reviewer, set voyage key, add test server, init another mod, switch project, quit). Dispatch the chosen action via Bash, then loop back to "what now?" until the user picks "quit".

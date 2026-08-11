@@ -35,7 +35,7 @@ FAIL = "[FAIL] "
 INFO = "[INFO] "
 
 # Folders under workspace/ that are NEVER mods (don't deny these).
-NON_MOD_DIRS = {"_server"}
+NON_MOD_DIRS: set[str] = set()
 
 # Per-other-mod deny templates. {} substituted with the other mod's name.
 DENY_TEMPLATES = (

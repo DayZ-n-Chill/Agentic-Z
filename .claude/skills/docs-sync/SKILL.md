@@ -1,6 +1,6 @@
 ---
 name: docs-sync
-description: Sync the Docusaurus wiki at `wiki/docs/` with the canonical sources (`.claude/agents/`, `.claude/skills/`, `docs/`, L1 files). Pure-Python: detects drift, applies the Docusaurus transform (frontmatter trim, agent badge HTML, example-block parser, MDX-tag escape), prunes orphan wiki pages whose canonical source was deleted.
+description: "Sync the Docusaurus wiki at `wiki/docs/` with the canonical sources (`.claude/agents/`, `.claude/skills/`, `docs/`, L1 files). Pure-Python: detects drift, applies the Docusaurus transform (frontmatter trim, agent badge HTML, example-block parser, MDX-tag escape), prunes orphan wiki pages whose canonical source was deleted."
 ---
 
 <!-- skill-dir-note -->

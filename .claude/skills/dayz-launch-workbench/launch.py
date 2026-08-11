@@ -1,8 +1,9 @@
 r"""dayz-launch-workbench: Open Enfusion Workbench, optionally on a mod's gproj.
 
-Verifies environment, then spawns workbenchApp.exe detached with cwd=P:\ so
-the gproj's `Directory "./"` resolves to the work drive root (where vanilla
-DayZ data is unpacked).
+Verifies environment, then spawns workbenchApp.exe detached with
+cwd=<DayZ Tools>\Bin\Workbench so Workbench's support files (dta, platforms,
+ToolAddons) and its bundled dayz.gproj resolve. Launching from anywhere else
+(including P:\) errors with "cannot find file dayz.gproj".
 
 Usage:
     python .claude/skills/dayz-launch-workbench/launch.py
