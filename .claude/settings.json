@@ -45,6 +45,10 @@
       "mcp__plugin_agentic-z_dayz-rag__list_indexed_sources"
     ],
     "deny": [
+      "Bash(format *)",
+      "Bash(diskpart *)",
+      "PowerShell(Format-Volume *)",
+      "PowerShell(Clear-Disk *)",
       "Bash(python -c *)",
       "Bash(python -m *)",
       "Bash(node -e *)",

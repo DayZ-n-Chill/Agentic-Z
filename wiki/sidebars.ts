@@ -68,6 +68,11 @@ const sidebars: SidebarsConfig = {
           id: 'model-routing',
           label: 'Model Routing',
         },
+        {
+          type: 'doc',
+          id: 'security',
+          label: 'Security Model',
+        },
       ],
     },
     {
