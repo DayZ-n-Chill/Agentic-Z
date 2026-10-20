@@ -1,0 +1,93 @@
+"""Tests for dayz-init/dispatch.py: every action maps to a real sibling entry point."""
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dispatch  # noqa: E402
+from dispatch import DispatchError, command_for  # noqa: E402
+
+SKILLS = Path(__file__).resolve().parents[1]
+
+
+def _script(argv):
+    """The entry-point path in an argv (python <script> ... or cmd /c <bat>)."""
+    return Path(argv[1]) if argv[0] == sys.executable else Path(argv[2])
+
+
+@pytest.mark.parametrize("action,kwargs,tail", [
+    ("mount-p", {}, []),
+    ("new-mod", {"mod": "MyMod"}, ["MyMod"]),
+    ("new-mod", {"mod": "MyMod", "author": "Me"}, ["MyMod", "--author", "Me"]),
+    ("import-mod", {"mod": "M", "source": "D:/src"}, ["--source", "D:/src", "--name", "M"]),
+    ("import-mod", {"mod": "M", "source": "D:/src", "scaffold": True},
+     ["--source", "D:/src", "--name", "M", "--scaffold"]),
+    ("import-mod", {"mod": "M", "source": "D:/src", "scaffold": False},
+     ["--source", "D:/src", "--name", "M", "--no-scaffold"]),
+    ("add-server", {"server": "livonia"}, ["livonia", "--map", "livonia"]),
+    ("build", {"mod": "MyMod"}, ["MyMod"]),
+    ("launch", {"mod": "MyMod", "server": "chernarus"}, ["MyMod", "--server", "chernarus"]),
+    ("workbench", {"mod": "MyMod"}, ["--mod", "MyMod"]),
+    ("objectbuilder", {"mod": "MyMod"}, ["--mod", "MyMod"]),
+    ("search-download", {}, []),
+])
+def test_python_actions_point_at_existing_scripts(action, kwargs, tail):
+    argv = command_for(action, **kwargs)
+    assert argv[0] == sys.executable
+    assert _script(argv).is_file(), f"{action} -> missing {argv[1]}"
+    assert _script(argv).parent.parent == SKILLS
+    assert argv[2:] == tail
+
+
+def test_stop_runs_the_stop_test_batch_file():
+    argv = command_for("stop")
+    assert argv[:2] == ["cmd", "/c"]
+    assert _script(argv) == SKILLS / "dayz-stop-test" / "stop_test.bat"
+    assert _script(argv).is_file()
+
+
+def test_mods_junction_targets_workshop(monkeypatch):
+    monkeypatch.setattr(dispatch.preflight, "find_dayz_game", lambda: Path("C:/Steam/DayZ"))
+    assert command_for("mods-junction") == [
+        "cmd", "/c", "mklink", "/J", "P:\\Mods", str(Path("C:/Steam/DayZ") / "!Workshop"),
+    ]
+
+
+def test_mods_junction_without_game_raises(monkeypatch):
+    monkeypatch.setattr(dispatch.preflight, "find_dayz_game", lambda: None)
+    with pytest.raises(DispatchError):
+        command_for("mods-junction")
+
+
+@pytest.mark.parametrize("action,kwargs", [
+    ("new-mod", {}),
+    ("import-mod", {"mod": "M"}),
+    ("add-server", {}),
+    ("build", {}),
+    ("launch", {"mod": "M"}),
+    ("workbench", {}),
+    ("unknown-thing", {}),
+])
+def test_missing_values_raise(action, kwargs):
+    with pytest.raises(DispatchError):
+        command_for(action, **kwargs)
+
+
+def test_hub_action_defaults_to_active_mod(monkeypatch):
+    seen = []
+
+    def fake_run(argv):
+        seen.append(argv)
+        return SimpleNamespace(returncode=7)
+
+    monkeypatch.setattr(dispatch, "active_mod", lambda project: "ActiveMod")
+    monkeypatch.setattr(dispatch.subprocess, "run", fake_run)
+    assert dispatch.main(["build"]) == 7
+    assert seen[0][-1] == "ActiveMod"
+
+
+def test_hub_action_missing_value_exits_2(monkeypatch):
+    monkeypatch.setattr(dispatch, "active_mod", lambda project: None)
+    assert dispatch.main(["build"]) == 2

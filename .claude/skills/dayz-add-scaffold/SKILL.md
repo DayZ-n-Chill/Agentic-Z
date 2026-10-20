@@ -1,6 +1,6 @@
 ---
 name: dayz-add-scaffold
-description: Add missing DayZ mod scaffolding pieces (config.cpp stub, $PBOPREFIX$, workbench/dayz.gproj + DayZSetting.xml, README, .gitkeeps) into an EXISTING workspace/<ModName>/ folder. Idempotent - never overwrites files that are already present. Used by /dayz-import-mod after symlinking an external mod, but also runnable directly when you cloned a mod into workspace/ manually and want the standard skeleton filled in.
+description: Adds the missing pieces of the standard DayZ mod scaffold (config.cpp stub, $PBOPREFIX$, workbench/dayz.gproj and DayZSetting.xml, README, skeleton folders) to a folder already under workspace/, never overwriting a file that exists. Use when a workspace mod folder exists but lacks scaffold pieces, such as a mod cloned into workspace/ by hand, an older scaffold without workbench/, or a /dayz-import-mod import.
 ---
 
 <!-- skill-dir-note -->
@@ -8,7 +8,7 @@ description: Add missing DayZ mod scaffolding pieces (config.cpp stub, $PBOPREFI
 
 # /dayz-add-scaffold
 
-Companion to `/dayz-new-mod`. Where `dayz-new-mod` creates a fresh project from nothing, `dayz-add-scaffold` fills missing scaffold pieces into a folder that already exists - without touching anything that's already there.
+Companion to `/dayz-new-mod`. Where `dayz-new-mod` creates a fresh project from nothing, `dayz-add-scaffold` fills missing scaffold pieces into a folder that already exists, without touching anything already there.
 
 Use this when:
 
@@ -41,7 +41,7 @@ python "<skill-dir>\add_scaffold.py" <ModName> [--piece config|prefix|workbench|
 | `skeleton` | `scripts/3_Game/`, `scripts/4_World/`, `scripts/5_Mission/`, `data/`, `gui/` (each with `.gitkeep`) | each subfolder only if missing |
 | `all` | runs every piece above in order | default |
 
-Whatever piece you pick, the skill is **idempotent** - running it twice on the same folder is a no-op the second time.
+Whatever piece you pick, the skill is idempotent: a second run on the same folder writes nothing.
 
 ## Refuses to run if
 
@@ -76,14 +76,14 @@ If everything is already present:
 
 ## What it does not do
 
-- Does NOT create `workspace/<ModName>/` itself. The folder must exist first.
-- Does NOT create the `P:\<ModName>\` junction. That's `/dayz-new-mod` and `/dayz-import-mod`.
-- Does NOT touch the deployed dir at `P:\Mods\@<ModName>\`. That's `/dayz-build-pbo`.
-- Does NOT overwrite existing files. If you have your own `config.cpp` or `$PBOPREFIX$`, the skill leaves them alone.
-- Does NOT git-add or commit anything. The user decides whether to track scaffold pieces.
+- It does not create `workspace/<ModName>/` itself. The folder must exist first.
+- It does not create the `P:\<ModName>\` junction. That's `/dayz-new-mod` and `/dayz-import-mod`.
+- It does not touch the deployed dir at `P:\Mods\@<ModName>\`. That's `/dayz-build-pbo`.
+- It does not overwrite existing files. If you have your own `config.cpp` or `$PBOPREFIX$`, the skill leaves them alone.
+- It does not git-add or commit anything. The user decides whether to track scaffold pieces.
 
 ## Do not
 
 - Don't add an `--overwrite` flag. Idempotency without surprise overwrites is the contract; if you want to regenerate a piece, delete it manually and re-run.
-- Don't move per-piece writers out of `dayz-new-mod`'s `new_mod.py`. We import from there to keep templates in one place; both skills must produce byte-identical output for the same inputs.
+- Don't copy the templates or gproj helpers out of `dayz-new-mod`'s `new_mod.py`. This skill imports them so both skills produce byte-identical output for the same inputs.
 - Don't bypass the preflight gate.

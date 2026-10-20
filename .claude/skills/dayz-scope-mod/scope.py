@@ -1,8 +1,8 @@
 """Scope the agent to a single DayZ mod.
 
-Adds deny rules to .claude/settings.local.json that block Edit/Write to OTHER
-mods' workspace folders, P:\\<other>\\ junctions, and P:\\Mods\\@<other>\\
-deploy dirs. Reads stay broad. Records the exact rules added in
+Adds Edit deny rules to .claude/settings.local.json for OTHER mods' workspace
+folders, P:\\<other>\\ junctions, and P:\\Mods\\@<other>\\ deploy dirs. Claude
+Code checks Edit rules for both the Edit and Write tools. Reads stay broad. Records the exact rules added in
 .claude/local-memory/dayz-active-scope.json so --clear is precise.
 
 Run:
@@ -20,31 +20,28 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-# REPO_ROOT = where this skill ships from. PROJECT_DIR = user's project,
-# where workspace/, settings.local.json, and local-memory/ all live.
-_HERE = Path(__file__).resolve().parent
-REPO_ROOT = _HERE.parent.parent.parent
+# PROJECT_DIR = user's project, where workspace/, settings.local.json, and
+# local-memory/ all live.
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 WORKSPACE = PROJECT_DIR / "workspace"
 SETTINGS_LOCAL = PROJECT_DIR / ".claude" / "settings.local.json"
 SCOPE_STATE = PROJECT_DIR / ".claude" / "local-memory" / "dayz-active-scope.json"
 
 OK = "[OK]   "
-WARN = "[WARN] "
 FAIL = "[FAIL] "
 INFO = "[INFO] "
 
-# Folders under workspace/ that are NEVER mods (don't deny these).
-NON_MOD_DIRS: set[str] = set()
-
-# Per-other-mod deny templates. {} substituted with the other mod's name.
+# Per-other-mod deny templates in Claude Code permission-rule syntax:
+# - File writes are checked against Edit(path) rules only; one Edit rule
+#   blocks both the Edit and Write tools. A Write(path) rule is never matched.
+# - "/path" in .claude/settings.local.json anchors at the primary working
+#   directory (the project root).
+# - "//path" is absolute. Windows paths are normalized to POSIX form before
+#   matching (P:\Foo becomes /p/Foo), so P:\Foo\** is written //p/Foo/**.
 DENY_TEMPLATES = (
-    "Edit(workspace/{name}/**)",
-    "Write(workspace/{name}/**)",
-    "Edit(P:\\{name}\\**)",
-    "Write(P:\\{name}\\**)",
-    "Edit(P:\\Mods\\@{name}\\**)",
-    "Write(P:\\Mods\\@{name}\\**)",
+    "Edit(/workspace/{name}/**)",
+    "Edit(//p/{name}/**)",
+    "Edit(//p/Mods/@{name}/**)",
 )
 
 
@@ -101,8 +98,6 @@ def _list_mods() -> list[str]:
         if not p.is_dir():
             continue
         if p.name.startswith("."):
-            continue
-        if p.name in NON_MOD_DIRS:
             continue
         out.append(p.name)
     return out
@@ -174,10 +169,10 @@ def cmd_scope(mod_name: str) -> int:
     _save_settings(settings)
     _save_state(mod_name, new_rules)
 
-    print(f"{OK} Added {len(new_rules)} deny rules to .claude\\settings.local.json")
+    print(f"{OK} Added {len(new_rules)} Edit deny rules to .claude\\settings.local.json")
     print(f"{OK} Active scope recorded at .claude\\local-memory\\dayz-active-scope.json")
     print()
-    print("Reads remain broad. Edit/Write to other mods is blocked.")
+    print("Reads remain broad. Edit and Write to other mods are blocked.")
     print("Run /dayz-scope-mod --clear (or scope.py --clear) to lift.")
     return 0
 
@@ -215,32 +210,20 @@ def cmd_status() -> int:
     return 0
 
 
-def main() -> int:
+def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description="Scope the agent to a single DayZ mod by adding deny rules for sibling mods."
     )
-    parser.add_argument("mod", nargs="?", help="Mod name under workspace/")
-    parser.add_argument("--clear", action="store_true", help="Remove the active scope")
-    parser.add_argument("--status", action="store_true", help="Show current scope")
-    args = parser.parse_args()
-
-    if args.clear and args.status:
-        print(f"{FAIL} --clear and --status are mutually exclusive", file=sys.stderr)
-        return 2
-    if args.clear and args.mod:
-        print(f"{FAIL} --clear takes no mod argument", file=sys.stderr)
-        return 2
-    if args.status and args.mod:
-        print(f"{FAIL} --status takes no mod argument", file=sys.stderr)
-        return 2
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("mod", nargs="?", help="Mod name under workspace/")
+    group.add_argument("--clear", action="store_true", help="Remove the active scope")
+    group.add_argument("--status", action="store_true", help="Show current scope")
+    args = parser.parse_args(argv)
 
     if args.clear:
         return cmd_clear()
     if args.status:
         return cmd_status()
-    if not args.mod:
-        parser.print_help(sys.stderr)
-        return 2
     return cmd_scope(args.mod)
 
 

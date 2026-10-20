@@ -1,7 +1,9 @@
 """Download a prebuilt dayz-rag vector index from GitHub releases.
 
-Fetches the release asset (tarball), extracts to ~/.claude/dayz-search-index/.
-Stdlib only — urllib + tarfile + json.
+Fetches the release asset (tarball), verifies its SHA-256 when GitHub publishes
+one for the asset, and installs it to ~/.claude/dayz-search-index/. The
+existing index is kept until the new one is fully extracted and swapped in.
+Stdlib only.
 
 Usage:
     python download.py                    # latest release
@@ -11,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import sys
@@ -32,6 +35,14 @@ def log(level: str, msg: str) -> None:
     print(f"[{level}]\t{msg}", flush=True)
 
 
+def _network_error(url: str, err: urllib.error.URLError) -> SystemExit:
+    reason = f"HTTP {err.code}" if isinstance(err, urllib.error.HTTPError) else err.reason
+    return SystemExit(
+        f"[ERR]\tCould not reach {url}: {reason}\n"
+        "\tCheck your internet connection (or proxy) and try again."
+    )
+
+
 def fetch_json(url: str) -> dict:
     req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -51,7 +62,9 @@ def resolve_release(tag: str | None) -> dict:
                 f"[ERR]\tRelease not found: {tag or 'latest'}.\n"
                 f"\tCheck https://github.com/{REPO}/releases."
             )
-        raise
+        raise _network_error(url, e)
+    except urllib.error.URLError as e:
+        raise _network_error(url, e)
 
 
 def find_asset(release: dict) -> dict:
@@ -66,8 +79,15 @@ def find_asset(release: dict) -> dict:
     )
 
 
-def installed_tag() -> str | None:
-    f = INDEX_ROOT / INSTALLED_TAG_FILE
+def expected_sha256(asset: dict) -> str | None:
+    """SHA-256 GitHub publishes for the asset ("digest": "sha256:<hex>"), if any."""
+    digest = asset.get("digest") or ""
+    algo, _, value = digest.partition(":")
+    return value.lower() if algo == "sha256" and value else None
+
+
+def installed_tag(index_root: Path) -> str | None:
+    f = index_root / INSTALLED_TAG_FILE
     if not f.exists():
         return None
     try:
@@ -84,93 +104,86 @@ def confirm(prompt: str) -> bool:
     return ans in ("y", "yes")
 
 
-def download_with_progress(url: str, dest: Path, expected_bytes: int) -> None:
+def download_with_progress(url: str, dest: Path, expected_bytes: int) -> str:
+    """Stream url to dest and return the SHA-256 hex digest of what was written."""
     chunk = 1 << 16  # 64K
     written = 0
+    sha = hashlib.sha256()
     mb_total = expected_bytes / (1024 * 1024) if expected_bytes else 0
-    with urllib.request.urlopen(url, timeout=60) as resp, dest.open("wb") as out:
-        while True:
-            buf = resp.read(chunk)
-            if not buf:
-                break
-            out.write(buf)
-            written += len(buf)
-            if expected_bytes:
-                mb = written / (1024 * 1024)
-                pct = (written / expected_bytes) * 100
-                print(
-                    f"\r[INFO]\tDownloading... {mb:.1f}/{mb_total:.1f} MB ({pct:.0f}%)",
-                    end="",
-                    flush=True,
-                )
+    try:
+        with urllib.request.urlopen(url, timeout=60) as resp, dest.open("wb") as out:
+            while True:
+                buf = resp.read(chunk)
+                if not buf:
+                    break
+                out.write(buf)
+                sha.update(buf)
+                written += len(buf)
+                if expected_bytes:
+                    mb = written / (1024 * 1024)
+                    pct = (written / expected_bytes) * 100
+                    print(
+                        f"\r[INFO]\tDownloading... {mb:.1f}/{mb_total:.1f} MB ({pct:.0f}%)",
+                        end="",
+                        flush=True,
+                    )
+    except urllib.error.URLError as e:
+        print()
+        raise _network_error(url, e)
     print()
+    return sha.hexdigest()
 
 
 def safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
+    """Extract tar into dest, refusing any member that would land outside dest."""
+    if hasattr(tarfile, "data_filter"):
+        # Python 3.12+ and security backports: rejects absolute paths, ".."
+        # traversal, and links that point outside dest.
+        try:
+            tar.extractall(dest, filter="data")
+        except tarfile.FilterError as e:
+            raise SystemExit(f"[ERR]\tUnsafe entry in tarball: {e}")
+        return
     dest_resolved = dest.resolve()
     for member in tar.getmembers():
         member_path = (dest / member.name).resolve()
-        if not str(member_path).startswith(str(dest_resolved)):
-            raise SystemExit(f"[ERR]\tBlocked path traversal in tarball: {member.name}")
+        inside = member_path == dest_resolved or dest_resolved in member_path.parents
+        if not inside or member.issym() or member.islnk():
+            raise SystemExit(f"[ERR]\tUnsafe entry in tarball: {member.name}")
     tar.extractall(dest)
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Download prebuilt dayz-rag vector index.")
-    parser.add_argument("--tag", help="Release tag (default: latest)")
-    parser.add_argument("--force", action="store_true", help="Overwrite existing index without prompt")
-    args = parser.parse_args()
+def install(extracted: Path, index_root: Path, tag: str) -> None:
+    """Swap extracted into index_root. The old index is removed only after the
+    new one is in place, and is restored if the swap fails."""
+    index_root.parent.mkdir(parents=True, exist_ok=True)
+    staging = index_root.with_name(index_root.name + ".new")
+    backup = index_root.with_name(index_root.name + ".old")
+    for leftover in (staging, backup):
+        if leftover.exists():
+            shutil.rmtree(leftover)
 
-    print("DayZ RAG index downloader\n")
-    log("INFO", f"Repo: {REPO}")
-    log("INFO", f"Resolving {'tag ' + args.tag if args.tag else 'latest release'}...")
+    # The temp dir may be on another drive, so copy into a sibling first and
+    # keep the final step a same-volume rename.
+    shutil.move(str(extracted), str(staging))
+    (staging / INSTALLED_TAG_FILE).write_text(tag + "\n", encoding="utf-8")
 
-    release = resolve_release(args.tag)
-    tag = release.get("tag_name", "?")
-    log("OK", f"Release: {tag}")
+    had_old = index_root.exists()
+    if had_old:
+        index_root.rename(backup)
+    try:
+        staging.rename(index_root)
+    except OSError:
+        if had_old:
+            backup.rename(index_root)
+        raise
+    if had_old:
+        shutil.rmtree(backup, ignore_errors=True)
 
-    asset = find_asset(release)
-    asset_url = asset["browser_download_url"]
-    asset_size = asset.get("size", 0)
-    log("INFO", f"Asset: {asset['name']} ({asset_size / (1024 * 1024):.0f} MB)")
-    log("INFO", f"Target: {INDEX_ROOT}")
 
-    existing_tag = installed_tag()
-    if INDEX_ROOT.exists() and any(INDEX_ROOT.iterdir()):
-        if existing_tag == tag and not args.force:
-            log("OK", f"Index for {tag} already installed. Nothing to do.")
-            return 0
-        if not args.force:
-            installed_desc = f"({existing_tag})" if existing_tag else "(unknown origin)"
-            if not confirm(f"Existing index found {installed_desc}. Overwrite with {tag}?"):
-                log("INFO", "Aborted.")
-                return 1
-
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        archive = tmp_path / asset["name"]
-        download_with_progress(asset_url, archive, asset_size)
-        log("OK", f"Downloaded {archive.stat().st_size / (1024 * 1024):.0f} MB")
-
-        log("INFO", "Extracting...")
-        with tarfile.open(archive, "r:gz") as tar:
-            safe_extract(tar, tmp_path)
-
-        extracted = tmp_path / INDEX_DIR_NAME
-        if not extracted.is_dir():
-            raise SystemExit(
-                f"[ERR]\tArchive did not contain expected '{INDEX_DIR_NAME}/' directory."
-            )
-
-        if INDEX_ROOT.exists():
-            shutil.rmtree(INDEX_ROOT)
-        INDEX_ROOT.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(extracted), str(INDEX_ROOT))
-
-    (INDEX_ROOT / INSTALLED_TAG_FILE).write_text(tag + "\n", encoding="utf-8")
-
-    manifest = INDEX_ROOT / "manifest.json"
-    config = INDEX_ROOT / "config.json"
+def report_installed(index_root: Path) -> None:
+    manifest = index_root / "manifest.json"
+    config = index_root / "config.json"
     if manifest.exists():
         try:
             m = json.loads(manifest.read_text(encoding="utf-8"))
@@ -191,6 +204,71 @@ def main() -> int:
         except (json.JSONDecodeError, OSError):
             pass
 
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Download prebuilt dayz-rag vector index.")
+    parser.add_argument("--tag", help="Release tag (default: latest)")
+    parser.add_argument("--force", action="store_true", help="Overwrite existing index without prompt")
+    args = parser.parse_args(argv)
+
+    print("DayZ RAG index downloader\n")
+    log("INFO", f"Repo: {REPO}")
+    log("INFO", f"Resolving {'tag ' + args.tag if args.tag else 'latest release'}...")
+
+    release = resolve_release(args.tag)
+    tag = release.get("tag_name", "?")
+    log("OK", f"Release: {tag}")
+
+    asset = find_asset(release)
+    asset_url = asset["browser_download_url"]
+    asset_size = asset.get("size", 0)
+    log("INFO", f"Asset: {asset['name']} ({asset_size / (1024 * 1024):.0f} MB)")
+    log("INFO", f"Target: {INDEX_ROOT}")
+
+    existing_tag = installed_tag(INDEX_ROOT)
+    if INDEX_ROOT.exists() and any(INDEX_ROOT.iterdir()):
+        if existing_tag == tag and not args.force:
+            log("OK", f"Index for {tag} already installed. Nothing to do.")
+            return 0
+        if not args.force:
+            installed_desc = f"({existing_tag})" if existing_tag else "(unknown origin)"
+            if not confirm(f"Existing index found {installed_desc}. Overwrite with {tag}?"):
+                log("INFO", "Aborted.")
+                return 1
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        archive = tmp_path / asset["name"]
+        actual_sha = download_with_progress(asset_url, archive, asset_size)
+        log("OK", f"Downloaded {archive.stat().st_size / (1024 * 1024):.0f} MB")
+
+        want_sha = expected_sha256(asset)
+        if want_sha is None:
+            log("WARN", "Release publishes no SHA-256 for this asset; skipping checksum check.")
+        elif actual_sha != want_sha:
+            raise SystemExit(
+                f"[ERR]\tSHA-256 mismatch for {asset['name']}.\n"
+                f"\tExpected {want_sha}\n\tGot      {actual_sha}\n"
+                "\tThe download is corrupt or was tampered with. Existing index left untouched."
+            )
+        else:
+            log("OK", "SHA-256 verified.")
+
+        log("INFO", "Extracting...")
+        out_dir = tmp_path / "extract"
+        out_dir.mkdir()
+        with tarfile.open(archive, "r:gz") as tar:
+            safe_extract(tar, out_dir)
+
+        extracted = out_dir / INDEX_DIR_NAME
+        if not extracted.is_dir():
+            raise SystemExit(
+                f"[ERR]\tArchive did not contain expected '{INDEX_DIR_NAME}/' directory. "
+                "Existing index left untouched."
+            )
+        install(extracted, INDEX_ROOT, tag)
+
+    report_installed(INDEX_ROOT)
     log("OK", "Done. Restart Claude Code to reconnect the dayz-rag MCP server.")
     return 0
 

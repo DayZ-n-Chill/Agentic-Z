@@ -4,13 +4,13 @@ name: dayz-edit-types
 
 ## Overview
 
-Programmatically add, update, or remove an entry in DayZ's types.xml. Upserts a `&lt;type name="..."&gt;` block with the given attrs (nominal, min, lifetime, restock, cost, category, usage, value, tag). Auto-backs up the file before modifying. Idempotent — re-running with the same args is a no-op or a clean update.
+Adds, updates, or removes one `&lt;type name="..."&gt;` entry in a DayZ Central Economy types.xml (nominal, min, lifetime, restock, cost, category, usage, value, tag), backing up the file only when the edit changes it. Use when a mod item needs a spawn entry, a loot value needs tuning, or an entry must be deleted.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-edit-types
 
-Edit a DayZ Central Economy `types.xml` file programmatically — add a new spawn entry, update an existing one, or remove one. Backs up the file to `types.xml.bak` before any change.
+Edit a DayZ Central Economy `types.xml` file programmatically: add a new spawn entry, update an existing one, or remove one. When the edit changes the file, it is backed up to `types.xml.bak` first.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -39,13 +39,15 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove
 ## What it does
 
 1. Preflight gate.
-2. Read and parse `<types.xml>`. Locate the `<type name="<ClassName>">` block (or note its absence).
-3. **Upsert mode (default):**
-   - If the block exists, update only the fields you passed. Untouched fields stay as-is.
-   - If the block doesn't exist, create one. Fields you didn't pass get DayZ defaults (see table above). Always includes the standard `<flags ... />` element.
-4. **Remove mode (`--remove`):** delete the block entirely. No-op if it didn't exist.
-5. Back up to `<types.xml>.bak` (overwriting any prior backup).
-6. Write the updated tree back to `<types.xml>`.
+2. Read and parse `<types.xml>` (comments are kept). Locate the `<type name="<ClassName>">` block.
+3. Upsert mode (default):
+   - If the block exists, update only the fields passed. Untouched fields stay as-is.
+   - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the standard `<flags .../>` element.
+4. Remove mode (`--remove`): delete the block.
+5. If nothing changed (entry already matches, or the entry to remove is absent), stop: no backup, no write.
+6. Otherwise copy the file to `<types.xml>.bak` (overwriting any prior backup) and write the updated tree back.
+
+Formatting: comments survive the round trip, but the whole file is re-indented with 4 spaces and gets an `<?xml version='1.0' encoding='utf-8'?>` declaration. Attribute order and blank lines are not preserved, so expect a whitespace diff the first time a hand-formatted file is edited.
 
 ## Refuses to run if
 
@@ -55,31 +57,29 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove
 
 ## Output
 
-Add new entry:
+Add a new entry:
 
 ```
-[OK]    Added <type name="MyMod_Vest"> with 1/0 lifetime 3888000 cost 100
+[OK]    Added <type name="MyMod_Vest"> nominal=1, min=0, lifetime=3888000, cost=100
 [OK]    Backup: .server\chernarus\mission\db\types.xml.bak
 [OK]    Wrote .server\chernarus\mission\db\types.xml
 ```
 
-Update existing:
+Update an existing entry:
 
 ```
 [OK]    Updated <type name="MyMod_Vest">: nominal 1 -> 5, lifetime 3888000 -> 7776000
-[OK]    Backup written
-[OK]    types.xml updated
+[OK]    Backup: .server\chernarus\mission\db\types.xml.bak
+[OK]    Wrote .server\chernarus\mission\db\types.xml
 ```
 
-Remove:
+Nothing to do:
 
 ```
-[OK]    Removed <type name="MyMod_Vest">
-[OK]    types.xml updated
+[OK]    <type name="MyMod_Vest"> already matches; no change
 ```
 
 ## Do not
 
-- Don't touch `<flags>` granular attributes (`count_in_cargo`, etc.) — there's no flag for that yet because most modders never edit them once defaults are set. Add flags as separate options later if real demand emerges.
-- Don't rewrite the whole file's whitespace / formatting. Edit in place via `xml.etree.ElementTree`; preserve the user's structure as much as possible.
-- Don't skip the backup. The `.bak` is cheap insurance; the user might paste in args wrong.
+- Don't edit `<flags>` granular attributes (`count_in_cargo`, etc.); there is no option for them.
+- Don't skip the backup when hand-editing around this tool; the `.bak` only holds the state before the most recent change.

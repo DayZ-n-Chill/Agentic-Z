@@ -1,6 +1,6 @@
 ---
 name: dayz-new-mod
-description: Scaffold a new DayZ mod project under workspace/<ModName>/ with the standard skeleton (config.cpp stub, $PBOPREFIX$, scripts/3_Game/4_World/5_Mission, data, gui, workbench/, README). Workbench folder gets a copy of the official dayz.gproj + DayZSetting.xml from DayZ Tools, with the mod's script paths injected so Workbench can compile vanilla + mod together. First run prompts for an author handle and caches it in .claude/local-memory/.
+description: Scaffolds a new DayZ mod under workspace/<ModName>/ (config.cpp, $PBOPREFIX$, script module folders, data, gui, and a Workbench gproj with the mod's script paths injected), links it at P:\<ModName>\, and makes this project the /dayz-init cached project. Use when starting a brand-new mod; use /dayz-import-mod for an existing folder elsewhere and /dayz-add-scaffold to fill gaps in one already in workspace/.
 argument-hint: "<ModName> [--author \"YourHandle\"]"
 ---
 
@@ -9,7 +9,7 @@ argument-hint: "<ModName> [--author \"YourHandle\"]"
 
 # /dayz-new-mod
 
-Create a new DayZ mod project workspace conforming to `.claude/skills/_shared/dayz-conventions.md`. Gates on `/dayz-preflight` first per the L2 rule that every DayZ skill MUST preflight before doing work — refuses to run if `P:\` is not mounted, even though scaffolding itself only writes under `workspace/`.
+Create a new DayZ mod project under `workspace/<ModName>/` in the current project (`CLAUDE_PROJECT_DIR`, else the working directory). Gates on `/dayz-preflight` like every DayZ skill, so it refuses to run when `P:\` is not mounted.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -78,6 +78,10 @@ DayZ Tools' AddonBuilder reads source folders from `P:\` and resolves `$PBOPREFI
 
 Junctions don't require admin; symlinks do (Windows only creates them automatically when Developer Mode is on or the process is elevated). The skill tries symlink first, falls back to junction.
 
+### Project cache
+
+After the junction is created, the skill points the `/dayz-init` project cache at this project. `/dayz-build-pbo`, `/dayz-deploy-pbo`, `/dayz-launch-test` and `/dayz-clean-workspace` follow that cache, so scaffolding here makes this the active project. When the cache pointed at a different project, the skill prints `[WARN] Project cache repointed: <old> -> <new>`.
+
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero (typically `P:\` not mounted) — preflight runs first and propagates its exit code.
@@ -101,9 +105,10 @@ If junction creation fails after scaffolding (permission error, filesystem weird
 [OK]    $PBOPREFIX$ written
 [OK]    Skeleton folders created
 [OK]    README.md written
-[OK]    workbench/dayz.gproj written (mod paths injected)
+[OK]    workbench/dayz.gproj written (mod paths + filesystem mounts injected)
 [OK]    workbench/DayZSetting.xml copied
 [OK]    P:\MyMod junction -> workspace\MyMod
+[OK]    Project cache set: C:\...\MyProject
 
 Next steps:
   - Add Enforce Script files under workspace/MyMod/scripts/3_Game (or 4_World, 5_Mission)
@@ -117,4 +122,4 @@ Next steps:
 
 - Don't pre-populate `data/` or `gui/` with sample assets — the user adds those when they have real content.
 - Don't auto-commit the new project to git. The user decides whether to track it.
-- Don't bypass the preflight gate — every DayZ skill follows the same rule, scaffolding included. (See L2 conventions.)
+- Don't bypass the preflight gate; every DayZ skill follows the same rule, scaffolding included.

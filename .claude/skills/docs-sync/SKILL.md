@@ -1,6 +1,6 @@
 ---
 name: docs-sync
-description: "Sync the Docusaurus wiki at `wiki/docs/` with the canonical sources (`.claude/agents/`, `.claude/skills/`, `docs/`, L1 files). Pure-Python: detects drift, applies the Docusaurus transform (frontmatter trim, agent badge HTML, example-block parser, MDX-tag escape), prunes orphan wiki pages whose canonical source was deleted."
+description: "Mirrors canonical agent, skill and doc files into the Docusaurus wiki at wiki/docs/: detects drift, applies the deterministic Docusaurus transform, and prunes orphan wiki pages. Use when you have edited .claude/agents/, a SKILL.md, docs/dayz-modding.md, docs/model-routing.md or the shared DayZ conventions, or when the Stop hook reports wiki drift."
 ---
 
 <!-- skill-dir-note -->
@@ -10,15 +10,13 @@ description: "Sync the Docusaurus wiki at `wiki/docs/` with the canonical source
 
 Keep `wiki/docs/` in sync with canonical sources. One pure-Python script, two modes:
 
-1. **Drift detector** (`--check`, fast, no LLM cost) — lists what's out of sync. Wired to the Stop hook.
-2. **Apply** (`--apply`) — runs the deterministic Docusaurus transform and writes every mirror; prunes orphan wiki pages.
-
-The transform used to live in a `docs-wiki-sync` agent that needed to be dispatched manually, so wiki updates rotted between dispatches. The transforms are deterministic, so they're now in `apply.py` and run from the same script as drift detection.
+1. **Drift detector** (`--check`, the default) lists what's out of sync: missing mirrors, sources newer than their mirror (by modification time), and orphan wiki pages. Wired to the Stop hook.
+2. **Apply** (`--apply`) runs the deterministic Docusaurus transform in `apply.py`, writes every mirror whose content changed, and prunes orphan agent and skill pages.
 
 ## When to run it
 
 - After editing any `.claude/agents/<name>.md` or `.claude/skills/<name>/SKILL.md`.
-- After editing `docs/*.md` or the L1 files (`CLAUDE.md` / `AGENTS.md` / `GEMINI.md`).
+- After editing `docs/dayz-modding.md`, `docs/model-routing.md` or `.claude/skills/_shared/dayz-conventions.md`.
 - After adding a new agent or skill (mirrors get created automatically).
 - Whenever the Stop hook flags drift at the end of a session.
 
@@ -36,7 +34,7 @@ python "<skill-dir>\sync.py" --check
 python "<skill-dir>\sync.py" --apply
 ```
 
-**Preview what `--apply` would do** (no writes, no deletions):
+**Preview what `--apply` would do** (changes nothing on disk, not even timestamps):
 
 ```cmd
 python "<skill-dir>\sync.py" --apply --dry-run
@@ -51,19 +49,21 @@ python "<skill-dir>\sync.py" --apply --dry-run
 | `.claude/skills/_shared/dayz-conventions.md` | `wiki/docs/dayz-conventions.md` |
 | `docs/dayz-modding.md` | `wiki/docs/dayz-modding.md` |
 | `docs/model-routing.md` | `wiki/docs/model-routing.md` |
-| Agents/skills tables in `docs/README.md` | Tables in `wiki/docs/intro.md` |
 
-The Docusaurus transform applied during sync:
-- Reduces frontmatter to fields Docusaurus uses (`name`, `model`, `color`, `memory`).
-- HTML-escapes `<example>` / `<commentary>` blocks so MDX doesn't try to render them as components.
-- Injects badge rows for agents.
+Other wiki pages (`intro.mdx`, `install.mdx`, `architecture.md` and so on) are hand-written and not touched. Within `wiki/docs/agents/` and `wiki/docs/skills/`, files starting with `_` and `about.md` are hand-written and never pruned.
+
+The Docusaurus transform (`apply.py`):
+- Skills: frontmatter trimmed to `name`; the description becomes an `## Overview` section.
+- Agents: frontmatter trimmed to `name`, `model`, `color`, `memory`; a badge row is injected; `<example>` blocks in the description become styled example cards (`<commentary>` dropped).
+- Bodies: HTML comments and literal MDX-breaking tags and curly braces outside code fences are escaped or stripped so MDX can render the page.
+- Docs: copied as is.
 
 ## Stop hook integration
 
-The drift detector (`sync.py --check`) is wired to Claude Code's Stop hook. After each session, if any canonical file changed without its wiki mirror being updated, you'll see a one-line notice:
+The drift detector (`sync.py --check`) is wired to Claude Code's Stop hook. When Claude finishes a response, if any canonical file changed without its wiki mirror being updated, you'll see a one-line notice:
 
 ```
-docs-sync: 2 file(s) need wiki sync. Run `python .claude/skills/docs-sync/sync.py --apply` to update the wiki.
+docs-sync: 2 file(s) need wiki sync. Run /docs-sync.
 ```
 
 The hook never auto-applies edits — you decide when to run the sync.

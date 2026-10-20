@@ -1,14 +1,17 @@
 """dayz-new-mod: Scaffold a new DayZ mod project under workspace/<ModName>/.
 
-Author handle resolution: --author flag -> cache file -> interactive prompt -> fail.
-The cache lives at .claude/local-memory/dayz-author.txt (gitignored, per-clone).
+Author handle resolution: the --author flag, then the cache file, then an
+interactive prompt, else fail. The cache lives at
+<project>/.claude/local-memory/dayz-author.txt (gitignored, per-clone).
+
+Besides the scaffold and the P:\\<ModName>\\ junction, a successful run points
+the /dayz-init project cache at this project.
 
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import os
 import re
 import shutil
@@ -17,14 +20,14 @@ import sys
 from pathlib import Path
 from string import Template
 
-# REPO_ROOT = where this skill ships from (plugin or template clone).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
 # PROJECT_DIR = user's project (where workspace/ and local-memory/ live).
-REPO_ROOT = Path(__file__).resolve().parents[3]
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 WORKSPACE = PROJECT_DIR / "workspace"
 LOCAL_MEMORY = PROJECT_DIR / ".claude" / "local-memory"
 AUTHOR_CACHE = LOCAL_MEMORY / "dayz-author.txt"
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
 P_DRIVE = Path("P:\\")
 
 # Module name -> vanilla path it ships with in dayz.gproj. We append the mod's
@@ -38,23 +41,10 @@ WORKBENCH_MODULE_INJECTIONS = {
 
 NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
-INFO = "[INFO] "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
-
-def _load_preflight_module():
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_preflight = _load_preflight_module()
-find_dayz_tools = _preflight.find_dayz_tools
+find_dayz_tools = h.preflight.find_dayz_tools
+gate_on_preflight = h.gate_on_preflight
 
 
 CONFIG_CPP_TEMPLATE = Template(
@@ -356,47 +346,6 @@ def make_dir_link(src: Path, dst: Path) -> str:
         raise
 
 
-# Project-discovery marker. Written at P:\<ModName>\.agentic-z-project (which
-# transparently lands inside the workspace via the junction). Contains the
-# absolute path to the workspace project root. Used by /dayz-init's hub to
-# discover ALL managed projects, not just the cached current one.
-#
-# This is a SEPARATE file from build-pbo's .agentic-z-scaffold marker (which
-# lives at P:\Mods\@<ModName>\ and contains the modname for clean-workspace's
-# ownership check). Different file, different location, different purpose.
-PROJECT_MARKER = ".agentic-z-project"
-
-
-def write_project_marker(p_drive_link: Path, project_root: Path) -> None:
-    """Write P:\\<ModName>\\.agentic-z-project containing the project root path.
-
-    Idempotent — overwrites if present (path may have moved since last run).
-    Failure is non-fatal: the project still works, just won't show up in the
-    /dayz-init hub's switch-project list.
-    """
-    marker = p_drive_link / PROJECT_MARKER
-    try:
-        marker.write_text(str(project_root.resolve()) + "\n", encoding="utf-8")
-    except OSError as e:
-        print(f"{WARN} Could not write project marker {marker}: {e}")
-        print("       /dayz-init hub's switch-project won't see this mod.")
-
-
-def _link_target(path: Path) -> Path | None:
-    """Return the link target (without \\\\?\\ prefix) or None if the path is not a link."""
-    try:
-        target = os.readlink(path)
-    except OSError:
-        return None
-    if target.startswith("\\\\?\\"):
-        target = target[4:]
-    return Path(target)
-
-
-def _paths_equal(a: Path, b: Path) -> bool:
-    return os.path.normcase(os.path.normpath(str(a))) == os.path.normcase(os.path.normpath(str(b)))
-
-
 def _remove_link(path: Path) -> None:
     """Remove a directory link without descending into the target."""
     if os.name == "nt":
@@ -418,14 +367,14 @@ def check_or_clean_p_drive_link(p_drive_link: Path, workspace_target: Path) -> N
     if not os.path.lexists(p_drive_link):
         return  # nothing there
 
-    link_target = _link_target(p_drive_link)
+    link_target = h.link_target(p_drive_link)
     if link_target is None:
         sys.exit(
             f"{FAIL} {p_drive_link} exists as a real folder, not a link.\n"
             "       Refusing to clobber. Move or remove it manually and re-run."
         )
 
-    if _paths_equal(link_target, workspace_target):
+    if h.paths_equal(link_target, workspace_target):
         try:
             _remove_link(p_drive_link)
         except subprocess.CalledProcessError as e:
@@ -442,18 +391,6 @@ def check_or_clean_p_drive_link(p_drive_link: Path, workspace_target: Path) -> N
     )
 
 
-def gate_on_preflight() -> None:
-    """Every DayZ skill runs /dayz-preflight first and halts on non-zero exit."""
-    if not PREFLIGHT.exists():
-        sys.exit(
-            f"{FAIL} dayz-preflight skill not found at "
-            f"{PREFLIGHT.relative_to(REPO_ROOT)}"
-        )
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
-
-
 def sync_project_cache() -> None:
     """Point the /dayz-init project cache at this project.
 
@@ -463,14 +400,7 @@ def sync_project_cache() -> None:
     "workspace not found". Scaffolding here is an explicit signal that this is
     the active project, so repoint (visibly) rather than let that happen.
     """
-    state_py = REPO_ROOT / ".claude" / "skills" / "dayz-init" / "state.py"
-    spec = importlib.util.spec_from_file_location("dayz_init_state_module", state_py)
-    if spec is None or spec.loader is None:
-        print(f"{WARN} Could not load {state_py}; project cache not updated.")
-        return
-    state = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(state)
-
+    state = h.load_module("dayz_init_state_module", h.DAYZ_INIT_STATE)
     cached = state.cached_project_root()
     if cached is not None and cached.resolve() == PROJECT_DIR:
         return
@@ -505,7 +435,7 @@ def main() -> int:
 
     try:
         kind = make_dir_link(target, p_drive_link)
-    except Exception as e:
+    except (OSError, subprocess.CalledProcessError) as e:
         shutil.rmtree(target, ignore_errors=True)
         sys.exit(
             f"{FAIL} Failed to create P:\\{args.modname} junction: {e}\n"
@@ -513,7 +443,6 @@ def main() -> int:
         )
     print(f"{OK} P:\\{args.modname} {kind} -> {target.relative_to(PROJECT_DIR)}")
 
-    write_project_marker(p_drive_link, target)
     sync_project_cache()
 
     rel = target.relative_to(PROJECT_DIR)

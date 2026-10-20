@@ -1,6 +1,6 @@
 ---
 name: dayz-init
-description: Front door for all DayZ work in Agentic-Z. First run is a setup wizard (env check, intent prompts, plan, execute). Every run after drops you into a mission-control hub for the cached project. Wraps the existing /dayz-* skills, never replaces them.
+description: Front door for DayZ work in an Agentic-Z clone. On first run it checks the environment, asks a few setup questions, then scaffolds or imports a mod, records it as the active mod and optionally sets up a test server, builds and launches. Later runs show a status hub and dispatch actions to the existing /dayz-* skills. Use when the user starts DayZ modding in a clone, says "init" or "set up DayZ", or wants a status overview and next action for their mod.
 ---
 
 <!-- skill-dir-note -->
@@ -8,108 +8,107 @@ description: Front door for all DayZ work in Agentic-Z. First run is a setup wiz
 
 # /dayz-init
 
-The agent IS the wizard. Don't launch a separate Python wizard or new console — Claude Code's Bash tool is non-interactive, so any `input()`-driven Python wizard would hang. Instead, the agent orchestrates by:
+The agent is the wizard: it runs the scripts below with Bash and asks the user questions with AskUserQuestion. None of the scripts prompt for input. Every action goes through the sibling skill that owns it; this skill never re-implements them.
 
-1. Running the env check via Bash (read-only, no prompts).
-2. Detecting whether setup is already complete; if so, jump straight to the hub.
-3. Asking the user intent questions via **AskUserQuestion** (chat-native, no terminal copy-paste).
-4. Running each underlying skill (`dayz-new-mod`, `dayz-add-server`, etc.) via Bash.
-5. After execution, looping in a chat-based hub: show status block, ask "what now?" via AskUserQuestion, dispatch the chosen action.
+Follow `.claude/skills/_shared/dayz-conventions.md`. This skill does not gate on `/dayz-preflight` itself, because its own environment check covers the same ground and also fixes `P:\` first. Every child skill it runs gates on preflight.
 
-Follow `.claude/skills/_shared/dayz-conventions.md`.
+State is per clone, in `.claude/local-memory/` (gitignored): `dayz-current-project.txt` (the project root other DayZ skills read) and `dayz-init-state.json` (the active mod). The project root is the clone: `$CLAUDE_PROJECT_DIR`, else the current directory. Mods live in `workspace/<ModName>/`, test servers in `.server/<instance>/`.
 
-## Step 1 — Setup-complete check
-
-Run this via Bash to see if the cached project root exists and looks set up. If it prints a path, jump to **Step 6 (hub)**. If it prints nothing, fall through to Step 2.
+## Step 1: setup check
 
 ```
 python "<skill-dir>\check_setup.py"
 ```
 
-## Step 2 — Environment check
+If it prints a path, setup is done: go to Step 6. If it prints nothing, continue.
 
-Run the env check via Bash and capture output. The script exits 0 even on warnings; only hard-stop issues (no `P:\`, no DayZ Tools) require user action.
+## Step 2: environment check
 
 ```
 python "<skill-dir>\check_env.py"
 ```
 
-- If the output contains `HARD` lines: tell the user what's broken and the steam:// or doc link, then stop. No further automation until they fix it and re-run.
-- Otherwise: continue. Note any `AUTO` items (e.g. `P:\` not mounted, `P:\Mods\` junction missing) — they get added to the plan in Step 4.
+Prints `OK`, or one line per issue (always exits 0):
 
-## Step 3 — Intent prompts (AskUserQuestion)
+- `AUTO p_drive`: `P:\` is not mounted. Mount it now without asking (non-destructive), then re-run `check_env.py`, because the `P:\` checks are skipped while it is unmounted:
+  ```
+  python "<skill-dir>\dispatch.py" mount-p
+  ```
+  If the mount fails, show its output and stop.
+- `AUTO mods_junction`: `P:\Mods` is missing. The plan in Step 4 creates the junction to `<DayZ install>\!Workshop`.
+- `HARD <name> ...`: DayZ Tools missing, vanilla data not extracted, `P:\Mods` the wrong shape, or Python too old. Tell the user what is wrong and the fix or link on the line, then stop. They re-run `/dayz-init` after fixing it.
 
-Auto-derive defaults: mod name = cwd basename (sanitized), project path = cwd. Show those as the *first* option in each AskUserQuestion call so the user can accept with one click.
+## Step 3: setup questions
 
-Batch into two calls (AskUserQuestion caps at 4 questions per call):
+Ask with one AskUserQuestion call (up to 4 questions), putting the usual choice first:
 
-**Call A:** new vs. import; build PBO now; launch diag now; test server now.
-**Call B (only if "test server now" = yes):** map (chernarus / livonia / sakhal / namalsk).
-**Call C (only if `VOYAGE_API_KEY` not set):** RAG setup (skip / paste key / pull prebuilt).
+1. New mod or import an existing mod folder?
+2. Test server: chernarus, livonia, sakhal, or none. Other maps need `/dayz-add-server` with the mission folder name.
+3. Build the PBO now? (yes / no)
+4. Launch DayZ Diag now? (yes / no; only offered when a server was picked; launching implies building)
 
-For mod name and project path: if the cwd-derived defaults are sensible, use them silently. Only ask in chat ("What should the mod be called?") if the cwd basename is empty or ambiguous (e.g. `Agentic-Z` itself — that's the template root, not a mod).
+Then ask in chat for the free-text values:
 
-If the user says "launch diag" but not "build PBO", auto-include build. State this in chat ("launch implies build, adding PBO step").
+- Mod name (letters, digits and underscores, starting with a letter). For an import, offer the source folder's name as the default.
+- Import only: the source folder path, and whether to write missing scaffold pieces into it (`--scaffold`) or only link it (`--no-scaffold`).
+- New mod only, when `.claude/local-memory/dayz-author.txt` does not exist: the author handle shown in mod descriptions.
 
-## Step 4 — Plan render
+Search (RAG): the dayz-rag MCP server needs a Voyage AI key and an installed index (Voyage `voyage-code-3` embeddings in LanceDB under `~/.claude/dayz-search-index/`). If the user wants search, they add `VOYAGE_API_KEY=pa-...` to `.env` at the project root themselves (don't ask them to paste the key into chat), then run `/dayz-search-download` for the prebuilt index or `/dayz-search-index` to build it locally. Search is optional; skip it unless they ask.
 
-Print the ordered plan in chat — one bullet per step. Format:
+## Step 4: show the plan
+
+```
+python "<skill-dir>\plan.py" --mod <ModName> [--import-from <path> --scaffold|--no-scaffold] [--author <handle>] [--server <map>] [--build] [--launch]
+```
+
+Prints the numbered plan, for example:
 
 ```
 Plan:
-  • Mount P:\ (auto-fix)
-  • Scaffold MyMod at G:\path\to\MyMod
-  • Junction P:\MyMod\
-  • Stage chernarus server
-  • Build MyMod.pbo
-  • Launch DayZDiag with MyMod on chernarus
+  1. Create the P:\Mods junction to !Workshop
+  2. Scaffold workspace\MyMod
+  3. Record MyMod as the active mod
+  4. Set up the chernarus test server
+  5. Build MyMod.pbo
+  6. Launch DayZ Diag with MyMod on chernarus
 ```
 
-No Y/N gate after this. Per `feedback_just_execute`: when the user has answered the intent questions, ship it. Confirmation is only for destructive/external actions, which scaffolding + junctioning are not.
+Scaffolding or importing is skipped when `workspace\<ModName>\` already exists, so re-running `/dayz-init` for an existing mod just makes it active. Show the plan in chat. Don't ask for a yes/no: the user already chose everything in it, and none of it is destructive.
 
-## Step 5 — Execute
+## Step 5: run the plan
 
-Run each step via Bash, in order. Stream the output. On the first non-zero exit, stop and tell the user which step failed and what the underlying skill said. Don't continue past a failure.
+Same command plus `--execute`. Each step's output streams through; the first failing step stops the run, and the script exits with that step's exit code. Tell the user which step failed and what the child skill said. Exit 2 means the environment check failed again or a value was missing.
 
-Mapping (step kind → command):
+| Step | Runs |
+|---|---|
+| mods-junction | `cmd /c mklink /J P:\Mods "<DayZ install>\!Workshop"` (install found with preflight's `find_dayz_game`) |
+| new-mod | `dayz-new-mod\new_mod.py <ModName> [--author <handle>]` |
+| import-mod | `dayz-import-mod\import_mod.py --source <path> --name <ModName> --scaffold\|--no-scaffold` |
+| record | writes the two state files above |
+| add-server | `dayz-add-server\add_server.py <map> --map <map>` |
+| build | `dayz-build-pbo\build.py <ModName>` |
+| launch | `dayz-launch-test\launch.py <ModName> --server <map>` |
 
-| Kind             | Command                                                                                          |
-|------------------|--------------------------------------------------------------------------------------------------|
-| `autofix:p_drive` | `python "<skill-dir>\..\dayz-workdrive\mount.py"`                                                   |
-| `autofix:mods_junction` | `cmd /c mklink /J P:\Mods "<DayZ install>\!Workshop"`                                       |
-| `scaffold`        | `python "<skill-dir>\..\dayz-new-mod\new_mod.py" <ModName> --path <project_path>`                  |
-| `import_mod`      | `python "<skill-dir>\..\dayz-import-mod\import_mod.py" --source <project_path> --name <ModName>`   |
-| `junction_mod`    | `cmd /c mklink /J P:\<ModName> <project_path>`                                                   |
-| `stage_server`    | `python "<skill-dir>\..\dayz-add-server\add_server.py" <instance> --map <map>`                     |
-| `build_pbo`       | `python "<skill-dir>\..\dayz-build-pbo\build.py" <ModName>`                                        |
-| `launch_diag`     | `python "<skill-dir>\..\dayz-launch-test\launch.py" <ModName> --server <instance>`                 |
+`/dayz-new-mod` creates the `P:\<ModName>` junction itself. When the plan succeeds, go to Step 6.
 
-After all steps succeed, write the state file (caches the project root and records the intent choices):
-
-```
-python "<skill-dir>\save_state.py" <project_path> --rag <skip|paste|pull> --mod-name <name> --is-new <true|false> --server-map <map>
-```
-
-Omit `--server-map` if no test server was staged.
-
-Then drop into Step 6.
-
-## Step 6 — Hub loop
-
-Render the status block via Bash:
+## Step 6: hub
 
 ```
-python "<skill-dir>\hub_status.py" <project_path>
+python "<skill-dir>\hub_status.py"
 ```
 
-Then use AskUserQuestion to ask "what now?" with options matching the existing hub action list (build & launch, stop diag, tail log, open in workbench, open in objectbuilder, run mod reviewer, set voyage key, add test server, init another mod, switch project, quit). Dispatch the chosen action via Bash, then loop back to "what now?" until the user picks "quit".
+Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and search status. Then ask "What next?" with AskUserQuestion and dispatch the choice. Repeat until the user is done.
 
-Hub-action commands match the table in Step 5. For "tail log" and "stop diag" the dispatch is the corresponding standalone skill (`dayz-stop-test`, etc.).
+| Choice | Do |
+|---|---|
+| Build and launch | `dispatch.py build`, then `dispatch.py launch --server <instance>` (ask for the instance if there are several; offer add-server if there are none) |
+| Stop DayZ Diag | `dispatch.py stop` |
+| Show the server log | Read the newest `script*.log` in `.server\<instance>\Profiles\` |
+| Open in Workbench | `dispatch.py workbench` |
+| Open in Object Builder | `dispatch.py objectbuilder` |
+| Review the mod | Hand `workspace\<ModName>\` to the dayz-mod-reviewer agent |
+| Add a test server | `dispatch.py add-server --server <map>` |
+| Set up search | Explain the `.env` key, then `dispatch.py search-download` |
+| Set up or switch to another mod | Go back to Step 3 for that mod; `plan.py` skips scaffolding for a mod that already exists |
 
-## State file
-
-`<project>/.agentic-z/state.json`. Tracks RAG decision, last build status, intent choices that disk inspection cannot derive. Setup completion is derived from disk, not the state file.
-
-## When to fall back to direct CLI
-
-Power users who want to bypass the AI orchestration can still run `python "<skill-dir>\init.py"` directly in their own terminal — the Python wizard is preserved as an escape hatch. But the agent never invokes it, because Bash subprocesses can't pass keystrokes to it.
+All `dispatch.py` actions default `--mod` to the active mod and exit with the child skill's exit code (2 when a required value is missing). `python "<skill-dir>\dispatch.py" --list` prints the actions.

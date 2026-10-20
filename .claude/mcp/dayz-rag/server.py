@@ -1,12 +1,18 @@
 """dayz-rag MCP server.
 
-Exposes semantic search over the LanceDB index built by /dayz-search-index.
-Communicates with Claude Code over stdio.
+Exposes semantic search over the LanceDB index built by /dayz-search-index
+(vanilla source) and /dayz-search-wiki-index (Bohemia wiki). Communicates with
+Claude Code over stdio.
 
-Tools:
-  - search_dayz_source(query, top_k=5, file_type=None)
+Tools (all read-only):
+  - search_dayz_source(query, top_k=5, file_type=None, max_distance=None)
+  - search_dayz_wiki(query, top_k=5, max_distance=None)
   - get_dayz_file(path, line_start=None, line_end=None)
   - list_indexed_sources()
+
+Errors: bad arguments raise ValueError, a missing index or file raises
+RuntimeError / FileNotFoundError. FastMCP turns any raised exception into a
+tool result with isError=True, so clients always see failures the same way.
 
 Embedding: Voyage AI cloud (default voyage-code-3, 1024D). Uses input_type="query"
 for asymmetric retrieval — matches the "document" mode used at index time.
@@ -49,6 +55,7 @@ def _load_default_max_distance() -> Optional[float]:
 
 DEFAULT_MAX_DISTANCE = _load_default_max_distance()
 
+# Must match EXT_TYPE_MAP in .claude/skills/dayz-search-index/index.py.
 VALID_FILE_TYPES = {"c", "cpp", "hpp", "h", "layout", "cfg", "rvmat", "xml", "json", "csv"}
 
 
@@ -150,12 +157,13 @@ def _embed_query(text: str) -> list[float]:
 def _get_table():
     global _table
     if _table is None:
-        import lancedb
         db_path = INDEX_ROOT / "lancedb"
         if not db_path.exists():
             raise RuntimeError(
                 f"No index at {INDEX_ROOT}. Run: python .claude/skills/dayz-search-index/index.py --full"
             )
+        import lancedb
+
         db = lancedb.connect(str(db_path))
         if TABLE_NAME not in db.table_names():
             raise RuntimeError(f"Index table '{TABLE_NAME}' missing. Re-run /dayz-search-index --full.")
@@ -166,12 +174,13 @@ def _get_table():
 def _get_wiki_table():
     global _wiki_table
     if _wiki_table is None:
-        import lancedb
         db_path = INDEX_ROOT / "lancedb"
         if not db_path.exists():
             raise RuntimeError(
                 f"No index at {INDEX_ROOT}. Run: python .claude/skills/dayz-search-wiki-index/index.py --full"
             )
+        import lancedb
+
         db = lancedb.connect(str(db_path))
         if WIKI_TABLE_NAME not in db.table_names():
             raise RuntimeError(
@@ -249,6 +258,27 @@ def search_dayz_source_impl(
     return [_format_hit(r) for r in results]
 
 
+def _slice_lines(path: str, text: str, line_start: Optional[int], line_end: Optional[int]) -> dict:
+    """Return the whole text, or the inclusive 1-based line range, as a result dict.
+
+    line_end past the end of the file is clamped; a start past the end or an
+    inverted range is a bad argument.
+    """
+    lines = text.splitlines()
+    if line_start is None and line_end is None:
+        return {"path": path, "line_start": 1, "line_end": len(lines), "content": text}
+    s = 1 if line_start is None else int(line_start)
+    e = len(lines) if line_end is None else int(line_end)
+    if s < 1:
+        raise ValueError(f"line_start must be >= 1 (got {s})")
+    if e < s:
+        raise ValueError(f"line_end ({e}) is before line_start ({s})")
+    if s > len(lines):
+        raise ValueError(f"line_start {s} is past the end of the file ({len(lines)} lines)")
+    e = min(e, len(lines))
+    return {"path": path, "line_start": s, "line_end": e, "content": "\n".join(lines[s - 1 : e])}
+
+
 def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Optional[int] = None) -> dict:
     """Fetch a file (or line range) from disk for follow-up after a search hit.
 
@@ -262,33 +292,21 @@ def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Op
     """
     p = Path(path)
     if not p.is_absolute():
-        return {"error": f"path must be absolute (got {path!r})"}
+        raise ValueError(f"path must be absolute (got {path!r})")
     if p.drive.upper() != "P:":
-        return {"error": f"refusing to read outside P:\\ (got {p.drive or '<no drive>'})"}
+        raise ValueError(f"refusing to read outside P:\\ (got {p.drive or '<no drive>'})")
     normalized = Path(os.path.normpath(str(p)))
     if normalized.drive.upper() != "P:":
-        return {"error": f"refusing to read outside P:\\ (normalized to {normalized})"}
-    if not normalized.exists() or not normalized.is_file():
-        return {"error": f"not a file: {normalized}"}
-    try:
-        size = normalized.stat().st_size
-        if size > MAX_FILE_BYTES and line_start is None:
-            return {
-                "error": f"file is {size} bytes (>{MAX_FILE_BYTES}); pass line_start/line_end to fetch a slice",
-                "path": str(normalized),
-                "size_bytes": size,
-            }
-        text = normalized.read_text(encoding="utf-8", errors="replace")
-    except OSError as e:
-        return {"error": f"read failed: {e}"}
-
-    lines = text.splitlines()
-    if line_start is not None or line_end is not None:
-        s = max(1, int(line_start or 1))
-        e = min(len(lines), int(line_end or len(lines)))
-        slice_text = "\n".join(lines[s - 1 : e])
-        return {"path": str(normalized), "line_start": s, "line_end": e, "content": slice_text}
-    return {"path": str(normalized), "line_start": 1, "line_end": len(lines), "content": text}
+        raise ValueError(f"refusing to read outside P:\\ (normalized to {normalized})")
+    if not normalized.is_file():
+        raise FileNotFoundError(f"not a file: {normalized}")
+    size = normalized.stat().st_size
+    if size > MAX_FILE_BYTES and line_start is None and line_end is None:
+        raise ValueError(
+            f"{normalized} is {size} bytes (>{MAX_FILE_BYTES}); pass line_start/line_end to fetch a slice"
+        )
+    text = normalized.read_text(encoding="utf-8", errors="replace")
+    return _slice_lines(str(normalized), text, line_start, line_end)
 
 
 def search_dayz_wiki_impl(
@@ -313,28 +331,24 @@ def search_dayz_wiki_impl(
     return [_format_hit(r) for r in results]
 
 
+def _read_manifest(path: Path) -> Optional[dict]:
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        raise RuntimeError(f"{path} is unreadable ({e}); rebuild that index with --full") from e
+
+
 def list_indexed_sources_impl() -> dict:
-    """Return both index manifests (source + wiki) when present."""
-    out: dict = {}
-    src_manifest = INDEX_ROOT / "manifest.json"
-    wiki_manifest = INDEX_ROOT / "wiki-manifest.json"
-    if src_manifest.exists():
-        try:
-            out["source"] = json.loads(src_manifest.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError) as e:
-            out["source"] = {"error": f"manifest unreadable: {e}"}
-    if wiki_manifest.exists():
-        try:
-            out["wiki"] = json.loads(wiki_manifest.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError) as e:
-            out["wiki"] = {"error": f"wiki manifest unreadable: {e}"}
-    if not out:
-        return {"error": f"no index at {INDEX_ROOT}", "hint": "run /dayz-search-index --full and/or /dayz-search-wiki-index --full"}
-    # Backwards compat: when only source is present, return source manifest at top level
-    # so existing callers see the same shape.
-    if "source" in out and "wiki" not in out:
-        return out["source"]
-    return out
+    """Return {"source": manifest|None, "wiki": manifest|None}.
+
+    None means that index has not been built; it is a status answer, not an error.
+    """
+    return {
+        "source": _read_manifest(INDEX_ROOT / "manifest.json"),
+        "wiki": _read_manifest(INDEX_ROOT / "wiki-manifest.json"),
+    }
 
 
 # --------------- MCP wiring ---------------
@@ -342,6 +356,7 @@ def list_indexed_sources_impl() -> dict:
 def main() -> int:
     try:
         from mcp.server.fastmcp import FastMCP
+        from mcp.types import ToolAnnotations
     except ImportError:
         print(
             "mcp SDK not installed. Run: pip install -r "
@@ -351,8 +366,9 @@ def main() -> int:
         return 1
 
     mcp = FastMCP("dayz-rag")
+    read_only = ToolAnnotations(readOnlyHint=True)
 
-    @mcp.tool()
+    @mcp.tool(annotations=read_only)
     def search_dayz_source(
         query: str,
         top_k: int = 5,
@@ -361,14 +377,16 @@ def main() -> int:
     ) -> list[dict]:
         """Semantic search over vanilla DayZ source (Enforce Script, layouts, configs, materials).
 
-        Use this INSTEAD of Grep when looking for vanilla code by meaning rather than
-        exact symbol name. e.g. "how does inventory drag-and-drop work", "what controls
-        food spoilage timing", "show me a vanilla rvmat for camo cloth".
+        Use this for questions by meaning rather than exact symbol name (Grep is
+        better for a known symbol), or after 2-3 greps found nothing. e.g. "how does
+        inventory drag-and-drop work", "what controls food spoilage timing", "show me
+        a vanilla rvmat for camo cloth".
 
         Args:
             query: natural-language question or description
             top_k: max results (1-25, default 5)
-            file_type: filter to one of "c", "layout", "config.cpp", "rvmat" (default: all)
+            file_type: filter to one of "c", "cpp", "hpp", "h", "layout", "cfg", "rvmat",
+                "xml", "json", "csv" (default: all). Use "cpp" for config.cpp blocks.
             max_distance: drop hits with `score` (LanceDB L2² distance) above this
                 threshold. Lower = closer match. Thresholds are model + corpus
                 dependent; calibrate by running unfiltered queries first.
@@ -379,24 +397,28 @@ def main() -> int:
         Returns: list of {path, file_type, parent_context, line_start, line_end,
         score, snippet, is_stale, stale_reason}. `is_stale=True` means the file's
         mtime is newer than the index build (or the file is missing); the snippet
-        may not match what's currently on disk. ALWAYS verify with get_dayz_file
+        may not match what's currently on disk. Verify with get_dayz_file or Read
         before grounding claims on a hit (see cite-then-verify rule in
         .claude/skills/_shared/dayz-conventions.md).
         """
         return search_dayz_source_impl(query, top_k, file_type, max_distance)
 
-    @mcp.tool()
+    @mcp.tool(annotations=read_only)
     def get_dayz_file(path: str, line_start: Optional[int] = None, line_end: Optional[int] = None) -> dict:
         """Fetch a vanilla DayZ source file (or line range) from P:\\ for follow-up.
+
+        Files over 200 KB need a line range.
 
         Args:
             path: a path returned by search_dayz_source (must be under P:\\)
             line_start: 1-based start line (optional)
-            line_end: 1-based end line, inclusive (optional)
+            line_end: 1-based end line, inclusive (optional; clamped to the file length)
+
+        Returns: {path, line_start, line_end, content}.
         """
         return get_dayz_file_impl(path, line_start, line_end)
 
-    @mcp.tool()
+    @mcp.tool(annotations=read_only)
     def search_dayz_wiki(
         query: str,
         top_k: int = 5,
@@ -421,10 +443,11 @@ def main() -> int:
         """
         return search_dayz_wiki_impl(query, top_k, max_distance)
 
-    @mcp.tool()
+    @mcp.tool(annotations=read_only)
     def list_indexed_sources() -> dict:
-        """Return both index manifests when present: source (vanilla DayZ files on P:\\) and
-        wiki (community.bistudio.com pages). Includes per-source-type counts, embed model,
+        """Return {"source": manifest, "wiki": manifest} for the vanilla source index
+        (P:\\) and the community.bistudio.com wiki index. A value is null when that
+        index has not been built. Manifests include per-type counts, embed model,
         indexed-at timestamp, token usage, and cost estimate.
 
         Useful to verify either index is fresh, or to confirm what was indexed.

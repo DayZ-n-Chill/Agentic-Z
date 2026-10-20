@@ -30,17 +30,15 @@ python "<skill-dir>\pack_texture.py" <input1> [<input2> ...]
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<input>` | yes (one or more) | Path to a `.png` or `.tga` file with a valid suffix in the basename. Globs work via your shell. |
+| `<input>` | yes (one or more) | Path to a `.png` or `.tga` file with a valid suffix in the basename. Pass each file explicitly; cmd.exe does not expand globs. |
 
 ## What it does
 
 1. Preflight gate.
-2. Resolve `ImageToPAA.exe` from DayZ Tools (env / registry / Steam paths) via `find_dayz_tools()`.
-3. For each input:
-   - Validate extension is `.png` or `.tga`.
-   - Validate basename ends with one of `_co`, `_nohq`, `_smdi` (before the extension).
-   - Invoke `ImageToPAA.exe <input> <output.paa>`. Streams the tool's output live.
-4. Report a summary of successes and failures. Exit non-zero if any failed.
+2. Validate every input before converting any: the file exists, the extension is `.png` or `.tga` (any case), and the basename ends with `_co`, `_nohq`, or `_smdi` (any case) before the extension.
+3. Resolve `ImageToPAA.exe` from DayZ Tools (env / registry / Steam paths) via `find_dayz_tools()`.
+4. For each input, invoke `ImageToPAA.exe <input> <output.paa>`. Streams the tool's output live.
+5. Report a summary of successes and failures. Exit non-zero if any failed.
 
 ## Refuses to run if
 

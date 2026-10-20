@@ -13,7 +13,6 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import socket
 import subprocess
@@ -21,13 +20,9 @@ import sys
 import time
 from pathlib import Path
 
-# REPO_ROOT = where this skill ships from (plugin or template clone).
-# Project dir (where .server/ lives) is resolved at runtime from the
-# /dayz-init project cache; see resolve_project_dir().
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
-PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
-DAYZ_INIT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-init"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
 
@@ -42,55 +37,12 @@ DEFAULT_CLIENT_DISPLAY: dict = {
     "height": 1080,
 }
 
-# Friendly map name -> mission template folder. Used by verify_instance_environment
-# for display purposes; instance layout is flat so no template resolution needed.
-KNOWN_MAPS: dict[str, str] = {
-    "chernarus": "dayzOffline.chernarusplus",
-    "livonia": "dayzOffline.enoch",
-    "sakhal": "dayzOffline.sakhal",
-}
 DEFAULT_INSTANCE = "chernarus"
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
+SERVER_BIND_TIMEOUT_S = 180
 
-
-def _load_module_from_path(name: str, path: Path):
-    """Load a sibling-skill .py as a module by file path so static analyzers don't
-    choke on a sys.path-based sibling import."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load module at {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_preflight = _load_module_from_path("dayz_preflight_module", PREFLIGHT)
-find_dayz_diag = _preflight.find_dayz_diag
-
-# Reuse the project-root cache reader from /dayz-init so launch follows the same source of truth.
-_dayz_init_state = _load_module_from_path("dayz_init_state_module", DAYZ_INIT_DIR / "state.py")
-cached_project_root = _dayz_init_state.cached_project_root
-
-
-def resolve_project_dir() -> Path:
-    """Return the cached project root, or bail out pointing the user at /dayz-init."""
-    project = cached_project_root()
-    if project is None:
-        print("error: no project cached.", file=sys.stderr)
-        print("  Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
-        sys.exit(2)
-    return project.resolve()
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight skill not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
+find_dayz_diag = h.preflight.find_dayz_diag
 
 
 def gate_on_old_layout(project_dir: Path) -> None:
@@ -365,8 +317,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    project_dir = resolve_project_dir()
-    gate_on_preflight()
+    project_dir = h.resolve_project_dir()
+    h.gate_on_preflight()
     print()
     print(f"{OK} Project: {project_dir}")
     gate_on_old_layout(project_dir)
@@ -398,9 +350,9 @@ def main() -> int:
     server_proc = subprocess.Popen(server_cmd)
     print(f"{OK} Server PID: {server_proc.pid}")
     sys.stdout.flush()
-    if not wait_for_server_port(args.port, server_proc, timeout_s=180):
-        print(f"{FAIL} Server did not bind to port {args.port} within 180s.")
-        print(f"       Check the server RPT in {profile_dir}\\ for errors.")
+    if not wait_for_server_port(args.port, server_proc, timeout_s=SERVER_BIND_TIMEOUT_S):
+        print(f"{FAIL} Server did not bind to port {args.port} within {SERVER_BIND_TIMEOUT_S}s.")
+        print(f"       Check the server RPT in {server_profile_dir}\\ for errors.")
         return 1
 
     print()

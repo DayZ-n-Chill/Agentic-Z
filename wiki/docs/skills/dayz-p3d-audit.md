@@ -14,11 +14,9 @@ Validates .p3d model files, config.cpp, model.cfg, and .rvmat materials against
 DayZ engine requirements — targeting the failure modes that produce zero engine
 errors but break collision, targeting, animation, or textures.
 
-## Preflight gate
+Follow `.claude/skills/_shared/dayz-conventions.md`. The script runs `/dayz-preflight` first and stops if it fails.
 
-Per the L2 rule (`.claude/skills/_shared/dayz-conventions.md`), every DayZ skill that does work gates on `/dayz-preflight` first. The audit reads `.p3d` files which can live anywhere, but the moment you point it at `P:\` paths or a built mod, an unmounted P-drive silently produces wrong results. Run `/dayz-preflight` before this skill.
-
-## Quick start
+## How to run
 
 ```bash
 # Requires py3d:
@@ -34,8 +32,11 @@ python <skill-dir>/scripts/audit_p3d.py model.p3d --config path/to/config.cpp --
 python <skill-dir>/scripts/audit_p3d.py --scan-dir path/to/mod/
 ```
 
-Exit 0 = no CRITICAL/WARNING findings. The script covers the P3D structural checks
-plus `P:\` path detection in text files; interpret findings with the references below.
+Exit 1 if any .p3d has a CRITICAL finding, any text file has a `P:\` path, or a file
+is missing or unreadable; otherwise exit 0 (WARNING and NOTE findings on .p3d files are
+printed but don't fail the run). Only MLOD source files can be audited; binarized ODOL
+files are rejected. When a model has several Visual LODs, LOD0 is the one checked.
+Interpret findings with the references below.
 
 ## Diagnostic decision tree
 

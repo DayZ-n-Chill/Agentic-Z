@@ -1,34 +1,35 @@
 ---
 name: dayz-particles
 description: >
-  Create and play custom DayZ particle effects WITHOUT Workbench. Covers .ptc
-  particle files, .emat materials, .edds textures, the GUID reference system,
-  and the script API (Particle, ParticleSource, ParticleManager, SEffectManager,
-  ParticleList). Includes .ptc/.emat property references, vanilla material GUIDs,
-  the 277-effect catalog, and device patterns (OnVarSync toggle, cleanup,
-  EmitorParam tuning, Wiggle API). Consult BEFORE writing ANY particle code.
+  Reference for creating and playing custom DayZ particle effects without Workbench:
+  plain-text .ptc and .emat files, .edds sprites, {GUID}path resource references, the
+  script API (Particle, ParticleSource, ParticleManager, SEffectManager, ParticleList),
+  the vanilla particle catalog, and device patterns (OnVarSync toggle, cleanup,
+  EmitorParam tuning). Use when writing or debugging any particle effect code or file.
 ---
 
-# DayZ Particle Effects — Complete Modding Reference
+# DayZ particle effects
 
-## CRITICAL: .ptc AND .emat ARE PLAIN TEXT
+Follow `.claude/skills/_shared/dayz-conventions.md`. This skill is reference only; it runs no scripts, so there is no preflight gate.
+
+## .ptc and .emat are plain text
 
 DayZ particle files (.ptc) and material files (.emat) are plain text configs,
 not binary. Custom particles can be created programmatically without Workbench.
 
 | Layer | Format | Creatable? | Purpose |
 |---|---|---|---|
-| `.ptc` | Plain text config | YES | Particle effect (emitters, physics, curves) |
-| `.emat` | Plain text config | YES | Material (texture ref, blend mode, color) |
-| `.edds` | Standard DDS renamed | YES | Billboard sprite texture |
-| `.meta` | Plain text (GUIDs) | Workbench only | NOT needed for mod runtime |
+| `.ptc` | Plain text config | Yes | Particle effect (emitters, physics, curves) |
+| `.emat` | Plain text config | Yes | Material (texture ref, blend mode, color) |
+| `.edds` | Standard DDS renamed | Yes | Billboard sprite texture |
+| `.meta` | Plain text (GUIDs) | Workbench only | Not needed for mod runtime |
 
-All particles are CLIENT-ONLY. Server controls state via SyncVars; client
+All particles are client-only. Server controls state via SyncVars; client
 creates/destroys particles in response.
 
 ---
 
-## .ptc FILE FORMAT (verified from 9 vanilla files)
+## .ptc file format
 
 One EffectDef with one or more EmitorDef blocks. Each emitter is an independent
 particle stream. Simplest particle (debug_dot): 1 emitter, 478 bytes. Complex
@@ -57,7 +58,7 @@ EffectDef {
 }
 ```
 
-### Property categories (56 total — full list in references/ptc-format-reference.md)
+### Property categories (full list in `references/ptc-format-reference.md`)
 
 **Shape & emission:** ShapeType (Point/Box/Ellipse), ShapeSize (x y z),
 ConeAngle (yaw pitch roll deg), MaxNum, BirthRate, BirthRateRND, Offset (x y z)
@@ -70,7 +71,7 @@ GravityMultiply, GravityMultiplyRND, Wind (0-1), Spring, Restitution,
 VelAngle (0/1), VelAffect (0-1)
 
 **Lifetime:** LifeTime (seconds), LifeTimeRND, EffectTime (cycle duration),
-Repeat (0=one-shot auto-deletes, 1=loop MUST stop manually)
+Repeat (0 = one-shot, auto-deletes; 1 = loop, must be stopped manually)
 
 **Animation:** AnimOnce, AnimFPS, LifetimeByAnim, RandomFrame
 
@@ -85,7 +86,7 @@ ColorMast, AlphaMast, SizeMast, BRateMast, VelocityMast, AirResistanceMast
 
 ---
 
-## .emat MATERIAL FORMAT (verified from 8 vanilla materials)
+## .emat material format
 
 ### Shader: `Particle` (fire, sparks, water, most particles)
 ```
@@ -112,7 +113,7 @@ ParticleSprite {
 }
 ```
 
-### All .emat properties (12)
+### .emat properties
 AlbedoMap (texture GUID+path), Color (RGBA 0-1), Diffuse (RGBA),
 Ambient (RGBA), Emissive (RGBA, self-glow), BlendMode (Additive_AlphaModulate
 or numeric), Sort (translucent/overlay/0), Softness (0-2, edge blending),
@@ -123,19 +124,21 @@ Full reference with examples: `references/emat-format-reference.md`
 
 ---
 
-## GUID REFERENCE SYSTEM
+## GUID references
 
 Resources reference each other via `{HEXGUID}relative/path.ext`.
 
-- **Vanilla→vanilla**: GUIDs embedded, engine resolves by GUID first
-- **Mod .ptc→vanilla .emat**: USE vanilla GUID+path (mandatory, verified)
-- **Mod .emat→vanilla .edds**: USE vanilla GUID+path (safe)
-- **Mod .ptc→mod .emat**: path-only may work (needs in-game testing)
-- **.meta files NOT needed** for mod runtime loading
+- **Vanilla to vanilla**: GUIDs embedded in the files.
+- **Mod .ptc to vanilla .emat**: use the vanilla GUID plus path, exactly as vanilla files do.
+- **Mod .emat to vanilla .edds**: use the vanilla GUID plus path.
+- **Mod .ptc to mod .emat**: path only. Mod runtime loading resolves mod-owned resources by PBO path (`references/emat-format-reference.md`).
+- `.meta` files are not needed for mod runtime loading.
+
+Unverified: whether the engine resolves by GUID first or by path, and whether a mod .ptc that references a vanilla .emat by path only (no GUID) fails. Copying the GUID plus path is the safe default; test in-game before relying on either behavior.
 
 ---
 
-## VANILLA MATERIAL LIBRARY (11 GUIDs mapped)
+## Vanilla material library
 
 Reference these in custom .ptc to reuse vanilla visuals:
 
@@ -157,7 +160,7 @@ All paths prefixed with `Graphics/Particles/materials/`.
 
 ---
 
-## THREE SCRIPT API LAYERS
+## Script API layers
 
 ### 1. Legacy `Particle` (scripts/3_Game/Particles/Particle.c)
 Creates `#particlesourceenf` child entity. EOnFrame lifetime tracking.
@@ -181,13 +184,13 @@ Full API signatures: `references/script-api-reference.md`
 
 ---
 
-## API QUICK REFERENCE
+## API quick reference
 
 ```
 // Static create+play
 Particle p = Particle.PlayOnObject(ID, parent, localPos, localOri, forceWorldRot);
 Particle p = Particle.PlayInWorld(ID, worldPos);
-// ParticleManager.GetInstance() returns null on dedicated server — always guard.
+// ParticleManager.GetInstance() returns null on a dedicated server; guard it.
 ParticleManager pm = ParticleManager.GetInstance();
 ParticleSource ps;
 if (pm) ps = pm.PlayOnObject(ID, parent, localPos);
@@ -212,7 +215,7 @@ p.StopWiggle();
 
 ---
 
-## REGISTERING CUSTOM PARTICLES
+## Registering custom particles
 
 ### Mod file structure
 ```
@@ -244,7 +247,7 @@ modded class ParticleList
 
 ---
 
-## INTEGRATION PATTERNS — example mod (summary)
+## Integration patterns (summary)
 
 Full code: `references/integration-patterns.md`
 
@@ -258,39 +261,39 @@ creates/destroys in MyMod_OnVarSync.
 no cleanup needed. Use for overload events.
 
 **Pattern D** — SEffectManager wrapper: for combining particle+sound. Cleanup
-ONLY via SEffectManager.DestroyEffect().
+only via SEffectManager.DestroyEffect().
 
 **Pattern E** — Runtime parameter tuning: SetParameter for AIR_RESISTANCE,
 ScaleParticleParamFromOriginal for SIZE.
 
-**Cleanup contract**: EVERY device with looping particles MUST clean up in
-EEDelete + MyMod_OnPowerCut + destructor.
+**Cleanup contract**: every device with looping particles cleans them up in
+EEDelete, MyMod_OnPowerCut and the destructor.
 
 ---
 
-## PITFALLS AND HARD RULES
+## Pitfalls and rules
 
-1. **Particles are CLIENT-ONLY.** Wrap in `#ifndef SERVER`.
-2. **Looping particles (Repeat 1) NEVER end.** MUST Stop() + null ref.
+1. **Particles are client-only.** Wrap in `#ifndef SERVER`.
+2. **Looping particles (Repeat 1) NEVER end on their own.** Stop() them and null the ref.
 3. **Stop() is gradual.** Use StopParticleFlags.IMMEDIATE for instant removal.
 4. **ObjectDelete(particle)** valid for ParticleSource with DisableAutoDestroy().
 5. **Render distance ~200m.** Engine limit, no workaround.
 6. **Duplicate filenames** across mods: use unique prefixes (e.g. `mymod_`).
 7. **ParticleManager.GetInstance()** returns null on server. Always null-check.
-8. **SEffectManager.DestroyEffect()** is the ONLY safe Effect cleanup.
+8. **SEffectManager.DestroyEffect()** is the only safe Effect cleanup.
 9. **AIR_RESISTANCE** controls smoke rise. FireplaceBase adjusts for ceilings.
 10. **force_world_rotation=true** for smoke/steam that should always rise up.
-11. **.meta files NOT needed** for mod runtime.
-12. **GUIDs mandatory** when referencing vanilla .emat/.edds from mod .ptc.
-13. **.ptc is PLAIN TEXT.** Can be generated by Python scripts, no Workbench needed.
+11. **.meta files are not needed** for mod runtime.
+12. **Copy the vanilla GUID plus path** when referencing vanilla .emat/.edds from a mod .ptc (whether path-only fails is unverified; see GUID references).
+13. **.ptc is plain text.** Can be generated by Python scripts, no Workbench needed.
 14. **EffectTime + Repeat** interact: EffectTime is the master curve cycle, Repeat
     loops the entire effect. One-shot (Repeat 0) plays once for EffectTime duration.
 
 ---
 
-## VANILLA PARTICLE CATALOG — KEY CATEGORIES
+## Vanilla particle catalog: key categories
 
-Full catalog: `references/vanilla-particle-catalog.md` (277 entries).
+Full catalog: `references/vanilla-particle-catalog.md`.
 
 ### Electricity
 `POWER_GENERATOR_SMOKE` (1 emitter, loop), `BARBED_WIRE_SPARKS` (1 emitter, one-shot)
@@ -311,10 +314,10 @@ Full catalog: `references/vanilla-particle-catalog.md` (277 entries).
 
 ---
 
-## REFERENCE FILES
+## Reference files
 
-- `references/vanilla-particle-catalog.md` — 277 vanilla particles by category
-- `references/integration-patterns.md` — 5 device-integration code patterns
-- `references/ptc-format-reference.md` — 56-property .ptc reference with vanilla examples
-- `references/emat-format-reference.md` — .emat format, both shader types, all 12 properties
+- `references/vanilla-particle-catalog.md` — every registered vanilla particle by category
+- `references/integration-patterns.md` — device-integration code patterns A to E
+- `references/ptc-format-reference.md` — full .ptc property reference with vanilla examples
+- `references/emat-format-reference.md` — .emat format, both shader types, all properties
 - `references/script-api-reference.md` — Particle/ParticleSource/ParticleManager signatures

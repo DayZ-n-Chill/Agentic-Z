@@ -4,7 +4,7 @@ Why agent and skill files in this repo look the way they do. Read this before wr
 
 ## TL;DR
 
-- **Uppercase section headers** (`## NAME`, `## ROLE`, `## CONSTRAINTS`) are structural — for tooling and scannability, not for the model.
+- **Agent file shape** follows the lean standard in `.claude/agents/agent-creator.md` ("What a good agent file looks like"): frontmatter, a role sentence, then only the sections the role needs, with plain sentence-case headings.
 - **Inline caps directives** (`MUST`, `NEVER`, `ALWAYS`, `DO NOT`, `CRITICAL`) are behavioral — they measurably increase model compliance, but only when used sparingly.
 - **Lowercase prose for everything else.** Caps are a finite signal; spending them on decoration burns the budget you need for real rules.
 
@@ -46,15 +46,21 @@ Examples that would *fail* the test (and should stay lowercase):
 - `you should always be helpful` — vague, not actionable, no specific failure mode
 - `IMPORTANT: this is a tip about formatting` — decoration; the word "tip" already framed it
 
-## Section headers — different rule
+## Agent file shape
 
-Section headers (`## NAME`, `## ROLE`, `## CAPABILITIES`, `## CONSTRAINTS`, `## EXAMPLES`) are uppercase by convention but for a different reason: the `agent-creator` skill validates the template structure, and consistent caps make sections greppable and visually distinct from inline content. Doesn't change model behavior — could be lowercase and nothing would break.
+The structure of an agent file is set by `agent-creator` (`.claude/agents/agent-creator.md`, section "What a good agent file looks like"). In short:
 
-If you're authoring a new agent, follow the existing template exactly (uppercase headers, no trailing colons, blank line after each heading). The structural rules are enforced by `agent-creator`; deviating from them just makes the file fail validation.
+- Frontmatter: `name` and a third-person `description` that works as the delegation contract, with 1 to 3 short `<example>` blocks. Descriptions load into every session, so keep them short.
+- Minimal `tools`; `memory: project` with no memory section in the body.
+- Body: a role sentence, then only load-bearing sections (workflow, domain rules, constraints, handoffs, report), usually 10 to 60 lines.
+- No `## NAME` heading and no PURPOSE / CAPABILITIES / INPUT / OUTPUT scaffolding. Use plain sentence-case headings such as `## Workflow` or `## Report`.
+- Point at shared docs (`.claude/skills/_shared/...`) instead of pasting their rules.
+
+Headings are for the reader, not the model; their case doesn't change behavior. The caps budget above applies to inline directives only.
 
 ## Quick checklist for writing a new agent or skill
 
-1. Section headers: uppercase `## NAME`, `## ROLE`, etc. — match the existing template.
+1. Shape: match the `agent-creator` standard (role sentence, load-bearing sections only, references over inlining).
 2. Inline caps: reserve `MUST` / `NEVER` / `ALWAYS` / `DO NOT` for actual hard rules. Apply the "remove the caps and re-read" test.
 3. Default to lowercase prose. Trust the grammar.
 4. If half the bullets in a section are capped, you've over-spent the signal — demote some to lowercase.

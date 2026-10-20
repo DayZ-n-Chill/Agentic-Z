@@ -1,6 +1,6 @@
 ---
 name: dayz-build-pbo
-description: Pack a scaffolded mod from workspace/<ModName>/ into a .pbo at P:\Mods\@<ModName>\Addons\ via DayZ Tools AddonBuilder. Gates on /dayz-preflight, verifies the P:\<ModName>\ junction created by /dayz-new-mod, surfaces AddonBuilder output live. Default is binarized output; --clean wipes the target dir first.
+description: Packs a scaffolded mod from workspace/<ModName>/ into a binarized .pbo at P:\Mods\@<ModName>\Addons\ with DayZ Tools AddonBuilder, streaming its output live. Gates on /dayz-preflight, the P:\<ModName>\ junction and the deploy-dir ownership marker. Use when a mod's source changed and you need a fresh PBO before /dayz-launch-test, or with --clean to chase a stale-asset bug.
 argument-hint: "<ModName> [--clean]"
 ---
 
@@ -9,7 +9,7 @@ argument-hint: "<ModName> [--clean]"
 
 # /dayz-build-pbo
 
-Package a DayZ mod scaffold into a deployable `.pbo` and place it under `P:\Mods\@<ModName>\Addons\` so the engine can load it. Gates on `/dayz-preflight` and the `P:\<ModName>\` junction created by `/dayz-new-mod`. Reuses `find_dayz_tools()` from preflight per the L2 rule — no copy-paste path discovery.
+Package a mod scaffold into a deployable `.pbo` under `P:\Mods\@<ModName>\Addons\`, where the engine loads it. Path discovery comes from `dayz-preflight/preflight.py`; the preflight gate, project cache and ownership-marker rules come from `.claude/skills/_shared/skill_helpers.py`.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -21,45 +21,48 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<ModName>` | yes | Must match an existing scaffold under `workspace/<ModName>/` with the `P:\<ModName>\` junction in place. |
+| `<ModName>` | yes | Must match a scaffold under `workspace/<ModName>/` in the project cached by `/dayz-init`, with the `P:\<ModName>\` junction in place. |
 | `--clean` | no | Passes `-clear` to AddonBuilder, wiping `P:\Mods\@<ModName>\Addons\` before building. Use after large refactors or when chasing a stale-asset bug. |
 
 ## What it does
 
-1. **Preflight gate** — runs `/dayz-preflight`; halts on non-zero.
-2. **Workspace check** — verifies `workspace/<ModName>/` exists and contains `config.cpp` + `$PBOPREFIX$`.
-3. **Junction check** — verifies `P:\<ModName>\` is a link pointing at `workspace/<ModName>/` (created by `/dayz-new-mod`). If the link is missing or points elsewhere, halts with a clear message.
-4. **Tools check** — resolves `AddonBuilder.exe` via `find_dayz_tools()` (env var → registry → Steam paths). Halts if not found.
-5. **Prepare paths** — ensures `P:\Mods\@<ModName>\Addons\` and `P:\temp\<ModName>\` exist.
-6. **Build** — invokes `AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> [-clear]`. AddonBuilder's stdout/stderr stream live so you see binarization progress and config errors as they happen.
-7. **Verify output** — confirms `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and is newer than the build start.
-8. **Drop ownership marker** — writes `P:\Mods\@<ModName>\.agentic-z-scaffold` (single line: the modname). `dayz-clean-workspace` requires this file before it will remove the deployed dir, so we never delete a deployed mod we didn't produce. Sits one level above `Addons/` so `--clean`'s `-clear` doesn't wipe it.
-9. **Cleanup** — removes `P:\temp\<ModName>\` on success (kept on failure for debugging).
+1. **Project** - reads the project root cached by `/dayz-init`.
+2. **Preflight gate** - runs `/dayz-preflight`; halts on non-zero. Then confirms `P:\Mods\` is a junction to the DayZ `!Workshop` folder.
+3. **Workspace check** - `workspace/<ModName>/` exists and contains `config.cpp` and `$PBOPREFIX$`.
+4. **Junction check** - `P:\<ModName>\` is a link pointing at `workspace/<ModName>/` (created by `/dayz-new-mod` or `/dayz-import-mod`).
+5. **Tools check** - resolves `AddonBuilder.exe` through `find_dayz_tools()` (env var, registry, Steam libraries).
+6. **Ownership gate** - if `P:\Mods\@<ModName>\` already exists, it must contain `.agentic-z-scaffold` with content `<ModName>`. An unmarked folder could be a subscribed or hand-placed mod, so the build refuses to write into it or `-clear` it. This is the same rule `/dayz-deploy-pbo` uses.
+7. **Build** - runs `AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill-dir>\include.lst [-clear]`. Binarization is on.
+8. **Verify output** - `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and is newer than the build start. AddonBuilder can exit 0 while leaving an old PBO in place; that case fails as a stale PBO.
+9. **Ownership marker** - writes `P:\Mods\@<ModName>\.agentic-z-scaffold`. It sits above `Addons\`, so `-clear` keeps it. `/dayz-clean-workspace` only removes deployed folders that carry it.
+10. **Cleanup** - removes `P:\temp\<ModName>\` on success; keeps it on failure for debugging.
+
+## include.lst
+
+`include.lst` (next to `build.py`) is passed to AddonBuilder as `-include=`. It is one line of `;`-separated wildcard patterns naming the file types AddonBuilder copies into the PBO: scripts, configs, layouts, models, textures, materials, sounds, and data files such as `.json`, `.xml`, `.csv` and `.txt`. A file whose extension is not listed is silently left out of the PBO. If your mod ships another file type, add its pattern to that line.
 
 ## Refuses to run if
 
-- `/dayz-preflight` returns non-zero.
-- `workspace/<ModName>/` is missing.
-- `workspace/<ModName>/config.cpp` or `$PBOPREFIX$` is missing.
-- `P:\<ModName>\` doesn't exist, isn't a link, or points somewhere other than `workspace/<ModName>/`. (Run `/dayz-new-mod <ModName>` to scaffold and create the junction.)
-- `AddonBuilder.exe` isn't found (set `DAYZ_TOOLS_PATH` or install via Steam).
-- AddonBuilder exits non-zero — exit code propagates and the temp dir is preserved for inspection.
+- No project is cached (run `/dayz-init`).
+- `/dayz-preflight` fails, or `P:\Mods\` is not a valid junction to `!Workshop`.
+- `workspace/<ModName>/`, its `config.cpp`, or its `$PBOPREFIX$` is missing (`/dayz-add-scaffold` adds the files).
+- `P:\<ModName>\` is missing, is a real folder, or points somewhere other than `workspace/<ModName>/`.
+- `AddonBuilder.exe` is not found (set `DAYZ_TOOLS_PATH` or install DayZ Tools).
+- `P:\Mods\@<ModName>\` exists without a matching ownership marker. If it is yours, remove it: `cmd /c rmdir /s /q P:\Mods\@<ModName>`.
+- AddonBuilder exits non-zero (its exit code propagates), or produces no fresh PBO. The temp dir is kept for inspection.
 
 ## Output
-
-Success:
 
 ```
 DayZ preflight
 [OK]    P:\ is mounted
-[OK]    DayZ Tools found: C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools
-[OK]    Vanilla data found: P:\dz
-[OK]    Workshop deploy folder exists: P:\Mods
-
+...
 Preflight complete.
+[OK]    P:\Mods junction valid
 [OK]    workspace\MyMod\ found
 [OK]    P:\MyMod junction valid
-[OK]    AddonBuilder: C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\AddonBuilder\AddonBuilder.exe
+[OK]    AddonBuilder: C:\...\DayZ Tools\Bin\AddonBuilder\AddonBuilder.exe
+[OK]    P:\Mods\@MyMod\ ownership marker valid
 
 [AddonBuilder] ... live output ...
 
@@ -67,16 +70,10 @@ Preflight complete.
 [OK]    Cleaned temp dir
 ```
 
-Failure (any step):
-
-```
-[FAIL] <reason>
-       <hint or next step>
-```
+The ownership line appears only when `@MyMod` already exists. Failures print `[FAIL] <reason>` followed by an indented hint.
 
 ## Do not
 
-- Don't try to write the PBO outside `P:\Mods\@<ModName>\Addons\`. The engine only loads from `P:\Mods\` for in-development mods.
-- Don't manage the `P:\<ModName>\` junction here — that's `/dayz-new-mod`'s job. If the junction is missing or wrong, fail and direct the user to scaffold first.
-- Don't re-implement Tools path discovery — import `find_dayz_tools` from `dayz-preflight/preflight.py`.
-- Don't auto-binarize off — keep binarization on by default. (A `--no-binarize` flag can be added later if iteration speed becomes a problem.)
+- Don't write the PBO anywhere except `P:\Mods\@<ModName>\Addons\`; that is where the engine loads in-development mods.
+- Don't create or repair the `P:\<ModName>\` junction here; that is `/dayz-new-mod` and `/dayz-import-mod`'s job.
+- Don't pass `--clean` to a build that runs after `/dayz-deploy-pbo` into the same `@<ModName>`; `-clear` wipes the deployed payload PBOs too.

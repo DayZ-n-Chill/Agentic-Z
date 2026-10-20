@@ -11,52 +11,45 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import os
 import subprocess
 import sys
 from pathlib import Path
 
-# .../.claude/skills/dayz-import-mod/import_mod.py -> plugin/repo root is parents[3]
-# REPO_ROOT is for finding sibling skill scripts (always shipped together).
-# PROJECT_DIR is the USER's project (where workspace/ and .claude/local-memory/ live).
-# In template mode they're equal; in plugin mode they're different.
-REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
+# PROJECT_DIR is the user's project (where workspace/ and .claude/local-memory/ live).
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 WORKSPACE = PROJECT_DIR / "workspace"
-NEW_MOD = REPO_ROOT / ".claude" / "skills" / "dayz-new-mod" / "new_mod.py"
-ADD_SCAFFOLD = REPO_ROOT / ".claude" / "skills" / "dayz-add-scaffold" / "add_scaffold.py"
+NEW_MOD = h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py"
+ADD_SCAFFOLD = h.SKILLS_DIR / "dayz-add-scaffold" / "add_scaffold.py"
 P_DRIVE = Path("P:\\")
 
-OK = "[OK]   "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 INFO = "[INFO] "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
 
-# Pieces we check at import time. Each tuple: (key, relative-path-in-mod, why-it-matters).
-# Keep this short - only the pieces the rest of the toolchain explicitly needs.
-# /dayz-add-scaffold can add the rest (skeleton, README) later if the user wants.
+# Pieces checked at import time: (add-scaffold piece, path in mod, why it matters).
+# Only what the rest of the toolchain needs; /dayz-add-scaffold can add the
+# skeleton and README later.
 SCAFFOLD_CHECKS = (
     ("config", "config.cpp", "needed for /dayz-build-pbo"),
     ("prefix", "$PBOPREFIX$", "needed for /dayz-build-pbo"),
     ("workbench", "workbench/dayz.gproj", "needed for /dayz-launch-workbench --mod"),
 )
 
-
-def _load_new_mod_module():
-    spec = importlib.util.spec_from_file_location("dayz_new_mod_module", NEW_MOD)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load dayz-new-mod module at {NEW_MOD}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+_nm = h.load_module("dayz_new_mod_module", NEW_MOD)
 
 
-_nm = _load_new_mod_module()
+def _display(path: Path) -> Path:
+    try:
+        return path.relative_to(PROJECT_DIR)
+    except ValueError:
+        return path
 
 
 def resolve_source(cli_value: str | None) -> Path:
-    """Resolve source path from CLI flag or interactive prompt."""
+    """Resolve the source path from the CLI flag or an interactive prompt."""
     raw = cli_value
     if not raw:
         if not sys.stdin.isatty():
@@ -71,59 +64,50 @@ def resolve_source(cli_value: str | None) -> Path:
         if not raw:
             sys.exit(f"{FAIL} No source path provided.")
 
-    # Refuse UNC paths up-front: junctions can't target them on Windows.
+    # Junctions can't target UNC paths on Windows.
     if raw.startswith("\\\\") or raw.startswith("//"):
         sys.exit(
             f"{FAIL} UNC path not supported: {raw}\n"
             "       Junctions can only target local paths on Windows."
         )
 
-    expanded = os.path.expanduser(raw)
-    source = Path(expanded).resolve()
+    source = Path(os.path.expanduser(raw)).resolve()
     if not source.exists():
         sys.exit(f"{FAIL} Source path does not exist: {source}")
     if not source.is_dir():
         sys.exit(f"{FAIL} Source path is not a directory: {source}")
 
-    workspace_resolved = WORKSPACE.resolve()
     try:
-        source.relative_to(workspace_resolved)
+        source.relative_to(WORKSPACE.resolve())
     except ValueError:
-        pass  # not inside workspace - good
-    else:
-        sys.exit(
-            f"{FAIL} Source path is inside this repo's workspace/: {source}\n"
-            "       Imports must come from outside workspace/. If your mod is\n"
-            "       already there, the toolchain can use it directly - no import needed."
-        )
-
-    return source
+        return source  # outside workspace: good
+    sys.exit(
+        f"{FAIL} Source path is inside this project's workspace/: {source}\n"
+        "       Imports must come from outside workspace/. If your mod is\n"
+        "       already there, the toolchain can use it directly; no import needed."
+    )
 
 
 def derive_modname(source: Path, name_override: str | None) -> str:
     """Use --name if given, else the source folder's basename. Validate either way."""
     name = name_override or source.name
-    if not _nm.NAME_PATTERN.match(name):
-        if name_override:
-            sys.exit(
-                f"{FAIL} Invalid mod name: {name!r}\n"
-                "       Must start with a letter; letters, digits, underscores only; max 64 chars."
-            )
+    if _nm.NAME_PATTERN.match(name):
+        return name
+    if name_override:
         sys.exit(
-            f"{FAIL} Could not derive a valid mod name from source folder {source.name!r}\n"
-            "       Pass --name <ValidName> (must match [A-Za-z][A-Za-z0-9_]{0,63})."
+            f"{FAIL} Invalid mod name: {name!r}\n"
+            "       Must start with a letter; letters, digits, underscores only; max 64 chars."
         )
-    return name
+    sys.exit(
+        f"{FAIL} Could not derive a valid mod name from source folder {source.name!r}\n"
+        "       Pass --name <ValidName> (must match [A-Za-z][A-Za-z0-9_]{0,63})."
+    )
 
 
 def check_workspace_target(workspace_target: Path) -> None:
     if os.path.lexists(workspace_target):
-        try:
-            rel = workspace_target.relative_to(PROJECT_DIR)
-        except ValueError:
-            rel = workspace_target
         sys.exit(
-            f"{FAIL} {rel} already exists. Refusing to clobber.\n"
+            f"{FAIL} {_display(workspace_target)} already exists. Refusing to clobber.\n"
             "       Pick a different name with --name <NewName>, or remove the\n"
             "       existing entry first via /dayz-clean-workspace --mod <Name>."
         )
@@ -131,16 +115,23 @@ def check_workspace_target(workspace_target: Path) -> None:
 
 def detect_missing_pieces(source: Path) -> list[tuple[str, str, str]]:
     """Return the SCAFFOLD_CHECKS entries whose files are missing in source."""
-    missing = []
-    for key, rel, why in SCAFFOLD_CHECKS:
-        if not (source / rel).exists():
-            missing.append((key, rel, why))
-    return missing
+    return [check for check in SCAFFOLD_CHECKS if not (source / check[1]).exists()]
+
+
+def require_scaffold_decision(
+    missing: list[tuple[str, str, str]], scaffold: bool, no_scaffold: bool, interactive: bool
+) -> None:
+    """Exit before anything is linked when pieces are missing, nobody can be
+    asked, and neither --scaffold nor --no-scaffold says what to do."""
+    if missing and not (scaffold or no_scaffold or interactive):
+        names = ", ".join(rel for _key, rel, _why in missing)
+        sys.exit(
+            f"{FAIL} Missing scaffold pieces ({names}) and stdin is not a TTY.\n"
+            "       Re-run with --scaffold (write all missing) or --no-scaffold (link only)."
+        )
 
 
 def prompt_yn(prompt: str) -> bool:
-    if not sys.stdin.isatty():
-        return False
     try:
         return input(prompt).strip().lower() in ("y", "yes")
     except EOFError:
@@ -148,9 +139,8 @@ def prompt_yn(prompt: str) -> bool:
 
 
 def run_add_scaffold(modname: str, piece: str) -> int:
-    """Shell out to /dayz-add-scaffold for the named piece. Inherits stdio."""
-    # Flush so the parent's lines are committed before the subprocess writes,
-    # otherwise Windows interleaves them in unhelpful order.
+    """Run /dayz-add-scaffold for one piece, inheriting stdio."""
+    # Flush first, or Windows interleaves our lines with the child's.
     sys.stdout.flush()
     return subprocess.run(
         [sys.executable, str(ADD_SCAFFOLD), modname, "--piece", piece]
@@ -176,7 +166,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    _nm.gate_on_preflight()
+    h.gate_on_preflight()
     print()
 
     source = resolve_source(args.source)
@@ -189,86 +179,51 @@ def main() -> int:
     p_drive_link = P_DRIVE / modname
 
     check_workspace_target(workspace_target)
-    # Reuses dayz-new-mod's stale-junction auto-clean / refuse-on-mismatch logic,
-    # comparing the existing P:\<Name>\ target against our workspace path.
+    missing = detect_missing_pieces(source)
+    require_scaffold_decision(missing, args.scaffold, args.no_scaffold, sys.stdin.isatty())
+    # Reuses dayz-new-mod's stale-junction auto-clean / refuse-on-mismatch logic.
     _nm.check_or_clean_p_drive_link(p_drive_link, workspace_target)
 
     WORKSPACE.mkdir(exist_ok=True)
 
-    # workspace/<Name> -> source
     try:
         kind_ws = _nm.make_dir_link(source, workspace_target)
-    except Exception as e:
-        sys.exit(
-            f"{FAIL} Failed to create workspace link {workspace_target} -> {source}: {e}"
-        )
-    try:
-        rel_ws = workspace_target.relative_to(PROJECT_DIR)
-    except ValueError:
-        rel_ws = workspace_target
-    print(f"{OK} {rel_ws} -> {source} ({kind_ws})")
+    except (OSError, subprocess.CalledProcessError) as e:
+        sys.exit(f"{FAIL} Failed to create workspace link {workspace_target} -> {source}: {e}")
+    print(f"{OK} {_display(workspace_target)} -> {source} ({kind_ws})")
 
-    # P:\<Name> -> workspace/<Name>
-    # Matching dayz-new-mod's pattern: P:\ junction goes through workspace, so
-    # /dayz-clean-workspace's existing junction-target check works unchanged.
+    # P:\<Name> -> workspace/<Name>, the same shape /dayz-new-mod creates, so
+    # /dayz-clean-workspace's junction-target check works unchanged.
     try:
         kind_p = _nm.make_dir_link(workspace_target, p_drive_link)
-    except Exception as e:
-        # Roll back the workspace link so the next attempt is clean.
+    except (OSError, subprocess.CalledProcessError) as e:
         try:
-            if os.name == "nt":
-                subprocess.run(
-                    ["cmd", "/c", "rmdir", str(workspace_target)],
-                    check=False, capture_output=True, text=True,
-                )
-            else:
-                workspace_target.unlink()
-        except Exception:
-            pass
-        sys.exit(
-            f"{FAIL} Failed to create P:\\{modname} junction: {e}\n"
-            "       Workspace link rolled back."
-        )
-    try:
-        target_disp = workspace_target.relative_to(PROJECT_DIR)
-    except ValueError:
-        target_disp = workspace_target
-    print(f"{OK} P:\\{modname} -> {target_disp} ({kind_p})")
+            _nm._remove_link(workspace_target)
+            rollback = "Workspace link rolled back."
+        except (OSError, subprocess.CalledProcessError):
+            rollback = f"Could not roll back {workspace_target}; remove it with: cmd /c rmdir \"{workspace_target}\""
+        sys.exit(f"{FAIL} Failed to create {p_drive_link} junction: {e}\n       {rollback}")
+    print(f"{OK} {p_drive_link} -> {_display(workspace_target)} ({kind_p})")
 
-    # Marker so /dayz-init's hub can discover this project under switch-project.
-    # Imported mods point P:\<X>\ at workspace/<X>/, which itself points at the
-    # external source. Resolve to the real source path so the marker is useful.
-    _nm.write_project_marker(p_drive_link, source.resolve())
-    # Same rule as /dayz-new-mod: importing a mod here signals this is the
-    # active project, and the build/launch/deploy skills follow the cache.
+    # Same rule as /dayz-new-mod: importing here makes this the active project.
     _nm.sync_project_cache()
 
-    # Scaffolding check
     print()
     print("Scaffolding check:")
-    for key, rel, why in SCAFFOLD_CHECKS:
+    for _key, rel, why in SCAFFOLD_CHECKS:
         if (source / rel).exists():
             print(f"  {OK} {rel} present")
         else:
             print(f"  {WARN} {rel} missing ({why})")
 
-    missing = detect_missing_pieces(source)
     if missing:
         print()
         for key, rel, _why in missing:
             if args.no_scaffold:
                 print(f"  {INFO} skipping {rel} (--no-scaffold)")
                 continue
-            if args.scaffold:
-                add_yn = True
-            elif sys.stdin.isatty():
-                add_yn = prompt_yn(f"  Add {rel} to your source folder? [y/N]: ")
-            else:
-                sys.exit(
-                    f"\n{FAIL} Missing scaffold pieces and stdin is not a TTY.\n"
-                    "       Re-run with --scaffold (write all missing) or --no-scaffold (link only)."
-                )
-            if add_yn:
+            # require_scaffold_decision guaranteed a TTY when neither flag is set.
+            if args.scaffold or prompt_yn(f"  Add {rel} to your source folder? [y/N]: "):
                 rc = run_add_scaffold(modname, key)
                 if rc != 0:
                     return rc

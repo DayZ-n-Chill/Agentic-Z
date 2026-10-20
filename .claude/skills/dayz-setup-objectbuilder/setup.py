@@ -1,9 +1,10 @@
 """dayz-setup-objectbuilder: One-time Object Builder configuration.
 
-Imports the default registry settings shipped with DayZ Tools and verifies
-Buldozer (the 3D preview engine Object Builder spawns) is present. Idempotent —
-re-running on a configured machine reports status without changing anything.
-Pass --force to re-import the .reg and reset Object Builder to factory defaults.
+Imports the default registry settings shipped with DayZ Tools when Object
+Builder's registry tree is missing, then on every run sets four preferred
+Object Builder flags (PREFERRED_FLAGS_ON) under HKCU, writing only the ones
+that differ. Pass --force to re-import the .reg and reset Object Builder to
+factory defaults.
 
 See SKILL.md for full usage.
 """
@@ -80,8 +81,9 @@ def registry_has_objectbuilder_settings() -> bool:
 
 
 def apply_preferences() -> int:
-    """Force PREFERRED_FLAGS_ON to "1" under CConfig. Returns count of values
-    actually changed (others were already correct or absent)."""
+    """Set each PREFERRED_FLAGS_ON value to its "on" string under CConfig
+    ("1" for most flags, "On" for the Direct3D one). Values already on are left
+    alone; missing or different values are written. Returns how many were written."""
     if sys.platform != "win32":
         return 0
     try:

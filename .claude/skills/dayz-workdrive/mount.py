@@ -4,7 +4,7 @@ Resolves the work-drive folder (env var, cache, settings.ini, registry, fallback
 and mounts it via DayZ Tools' WorkDrive.exe /Mount, falling back to Windows'
 built-in subst command. Idempotent: exits OK if already mounted.
 
-This skill does NOT gate on /dayz-preflight — chicken-and-egg: preflight checks
+This skill does not gate on /dayz-preflight: preflight checks
 that P:\ is mounted, this skill mounts it.
 
 Usage:
@@ -45,10 +45,13 @@ def _load_preflight_module():
     return module
 
 
-# Reuse preflight's find_dayz_tools (env DAYZ_TOOLS_PATH -> 3 registry keys ->
-# common Steam paths, validated by AddonBuilder.exe presence). Importing the
-# module here does NOT run preflight's gate — it just exposes the helper.
-find_dayz_tools = _load_preflight_module().find_dayz_tools
+# Reuse preflight's resolvers: find_dayz_tools (env DAYZ_TOOLS_PATH -> 3 registry
+# keys -> common Steam paths, validated by AddonBuilder.exe presence) and
+# read_registry_string. Importing the module here does NOT run preflight's
+# gate; it just exposes the helpers.
+_preflight = _load_preflight_module()
+find_dayz_tools = _preflight.find_dayz_tools
+read_registry_string = _preflight.read_registry_string
 
 
 def is_p_mounted() -> bool:
@@ -96,21 +99,6 @@ def read_settings_ini_path(tools_root: Path) -> Optional[Path]:
     return None
 
 
-def _read_registry_string(hive, subkey: str, value_name: str) -> Optional[str]:
-    if sys.platform != "win32":
-        return None
-    try:
-        import winreg
-    except ImportError:
-        return None
-    try:
-        with winreg.OpenKey(hive, subkey) as key:
-            val, _ = winreg.QueryValueEx(key, value_name)
-            return str(val) if val else None
-    except OSError:
-        return None
-
-
 def find_work_drive() -> Optional[Path]:
     """Resolve the work-drive folder. Returns the first candidate that exists.
 
@@ -151,7 +139,7 @@ def find_work_drive() -> Optional[Path]:
             ]
             for hive, subkey in registry_keys:
                 for value_name in ("WorkDrive", "WorkDrivePath", "P_Drive", "PDrive"):
-                    val = _read_registry_string(hive, subkey, value_name)
+                    val = read_registry_string(hive, subkey, value_name)
                     if val:
                         candidates.append(Path(val))
 
@@ -203,8 +191,11 @@ def invoke_mount(target: Path) -> bool:
         print(f"{WARN}WorkDrive.exe not found; falling back to subst")
 
     print(f'{CMD}subst P: "{target}"')
-    subprocess.run(["subst", "P:", str(target)], shell=True)
-    return is_p_mounted()
+    rc = subprocess.run(["subst", "P:", str(target)], shell=True).returncode
+    if is_p_mounted():
+        return True
+    print(f"{FAIL}subst P: exited with code {rc}; P:\\ is not mounted", file=sys.stderr)
+    return False
 
 
 def invoke_unmount() -> int:
@@ -275,10 +266,6 @@ def main() -> int:
 
     print(f"{INFO}Mounting P: -> {work}")
     if not invoke_mount(work):
-        return 1
-
-    if not is_p_mounted():
-        print(f"{FAIL}Mount returned 0 but P:\\ still isn't visible", file=sys.stderr)
         return 1
 
     set_cached_path(work)

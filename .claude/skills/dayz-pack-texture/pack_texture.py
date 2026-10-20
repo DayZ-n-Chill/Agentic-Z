@@ -19,7 +19,6 @@ PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
 PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 
 OK = "[OK]   "
-WARN = "[WARN] "
 FAIL = "[FAIL] "
 
 ALLOWED_EXTS = {".png", ".tga"}
@@ -36,9 +35,6 @@ def _load_preflight_module():
     return module
 
 
-find_dayz_tools = _load_preflight_module().find_dayz_tools
-
-
 def gate_on_preflight() -> None:
     if not PREFLIGHT.exists():
         sys.exit(f"{FAIL} dayz-preflight not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
@@ -48,7 +44,8 @@ def gate_on_preflight() -> None:
 
 
 def resolve_image_to_paa() -> Path:
-    tools_root = find_dayz_tools()
+    # Loaded here, after gate_on_preflight() has confirmed preflight.py exists.
+    tools_root = _load_preflight_module().find_dayz_tools()
     if tools_root is None:
         sys.exit(
             f"{FAIL} DayZ Tools not found.\n"

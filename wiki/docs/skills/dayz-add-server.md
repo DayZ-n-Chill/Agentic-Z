@@ -4,7 +4,7 @@ name: dayz-add-server
 
 ## Overview
 
-Set up a DayZ test server instance under .server/&lt;instance&gt;/. Copies the mission template from DayZ Server install if missing, creates per-instance serverDZ.cfg + Profiles/ (server -profiles=) and a top-level shared .server/!ClientDiagLogs/ (client -profiles=). Each instance is isolated on the server side so you can run multiple variants of the same map (chernarus, chernarus-hardcore, etc.) without cross-contamination. Refuses if the legacy workspace/_server/ layout exists (delete it manually; that layout is no longer supported). Required before /dayz-launch-test for a given instance. Use --refresh-mission to re-copy mission content after a DayZ update.
+Sets up an isolated DayZ test server instance under .server/&lt;instance&gt;/ - a mission copy from the DayZ Server install, serverDZ.cfg with file patching on, and per-instance server profiles - plus the shared client log dir. Use when you need a new test instance before /dayz-launch-test (for example chernarus, or a variant like chernarus-hardcore), or with --refresh-mission after a DayZ update.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
@@ -26,22 +26,24 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 |---|---|---|
 | `<instance>` | yes | Free-form instance name. Becomes the folder name under `.server/`. Examples: `chernarus`, `chernarus-hardcore`, `loot-test`, `livonia-pvp`. |
 | `--map` | no | Map alias (`chernarus`, `livonia`, `sakhal`) or full mission template folder name (e.g. `dayzOffline.namalsk`). When omitted, `<instance>` is used as the map alias if it matches a known one; otherwise the skill fails and asks for `--map`. |
-| `--refresh-mission` | no | Re-copy the mission folder from DayZ Server install, **overwriting any local edits**. Use after a DayZ update brings new mission content. Without this flag, an existing mission folder is left alone. |
+| `--refresh-mission` | no | Re-copy the mission folder from the DayZ Server install. The current `mission/` is first renamed to `mission.bak-<YYYYMMDD-HHMMSS>/` so your edits stay recoverable. Use after a DayZ update brings new mission content. Without this flag, an existing mission folder is left alone. |
 
 ## What it does
 
 1. **Preflight gate**: runs `/dayz-preflight`; halts on non-zero.
 2. **Old-layout gate**: refuses if `workspace/_server/` still exists. Delete the folder manually; that layout is no longer supported.
 3. **Resolve map and mission template**: turns the instance name and `--map` flag into the canonical mission folder name via the alias table.
-4. **Mission copy**: if `.server/<instance>/mission/` doesn't exist (or `--refresh-mission` was passed), copies it from `<DayZServer>/mpmissions/<template>/`. Folder is renamed to `mission/` regardless of template (the launcher pins the path explicitly).
+4. **Mission copy**: if `.server/<instance>/mission/` doesn't exist (or `--refresh-mission` was passed), copies it from `<DayZServer>/mpmissions/<template>/`. With `--refresh-mission`, the existing folder is renamed to `mission.bak-<timestamp>/` first; nothing is deleted. The copy is always named `mission/`.
 5. **Instance directory**: ensures `.server/<instance>/` exists with:
    - `serverDZ.cfg`: default config pointing at the right mission template, with `allowFilePatching = 1;`
    - `Profiles/`: server-side `-profiles=` dir (RPT, script.log, BattlEye state). Per-instance.
    Also ensures the shared `.server/!ClientDiagLogs/` dir at the project root exists; this is the client-side `-profiles=` dir, shared across all instances.
+   - `<template>/` (for example `dayzOffline.chernarusplus/`): a junction to `mission/`. The engine looks the mission up by template name during the client connect handshake; without it the client connects but never spawns.
    If `serverDZ.cfg` already exists, the existing config is preserved; only `allowFilePatching = 1;` is auto-appended if missing.
 
 ## Refuses to run if
 
+- No project is cached (run `/dayz-init`).
 - `/dayz-preflight` returns non-zero.
 - `workspace/_server/` still exists. Delete it manually; the legacy layout is no longer supported.
 - DayZ Server install isn't found AND the mission isn't already in `.server/<instance>/mission/`. (Install DayZ Server free from Steam appid 223350 for the initial copy. Once the mission is local, DayZ Server is no longer required.)
@@ -58,6 +60,7 @@ Preflight complete.
 [OK]    Instance: chernarus-hardcore  (map: chernarus, mission: dayzOffline.chernarusplus)
 [OK]    Copied .server\chernarus-hardcore\mission  (from DayZ Server install)
 [OK]    Wrote default .server\chernarus-hardcore\serverDZ.cfg
+[OK]    Junction dayzOffline.chernarusplus/ -> mission/ (template handshake)
 [OK]    .server\chernarus-hardcore\Profiles ready
 [OK]    .server\!ClientDiagLogs ready
 

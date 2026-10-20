@@ -1,7 +1,7 @@
 r"""dayz-launch-objectbuilder: Open Object Builder, optionally on a specific .p3d.
 
-Verifies environment + that /dayz-setup-objectbuilder has run, then spawns
-ObjectBuilder.exe detached so the shell returns immediately.
+Verifies the environment and that /dayz-setup-objectbuilder has run, then
+spawns ObjectBuilder.exe detached so the shell returns immediately.
 
 Usage:
     python .claude/skills/dayz-launch-objectbuilder/launch.py
@@ -13,62 +13,36 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import os
 import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
 
-# REPO_ROOT = where this skill ships from. PROJECT_DIR = user's project,
-# used to resolve user-supplied relative paths (--file <relative>).
-REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
+# PROJECT_DIR = user's project, used to resolve a relative --file path.
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
-PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
-PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
 P_DRIVE = Path("P:\\")
 
 REG_KEY = r"Software\Bohemia Interactive\DayZ Tools\Object Builder"
 REG_SUBKEY_CCONFIG = REG_KEY + r"\CConfig"
 
-# Windows process creation flag: detach the child so it survives the parent shell
+# Windows process creation flags: detach the child so it survives the parent shell.
 DETACHED_PROCESS = 0x00000008
 CREATE_NEW_PROCESS_GROUP = 0x00000200
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 INFO = "[INFO] "
 
-
-def _load_preflight_module():
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_preflight = _load_preflight_module()
-find_dayz_tools = _preflight.find_dayz_tools
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight skill not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
+find_dayz_tools = h.preflight.find_dayz_tools
 
 
 def registry_has_objectbuilder_settings() -> bool:
     if sys.platform != "win32":
         return False
-    try:
-        import winreg
-    except ImportError:
-        return False
+    import winreg
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_SUBKEY_CCONFIG):
             return True
@@ -76,11 +50,25 @@ def registry_has_objectbuilder_settings() -> bool:
         return False
 
 
-def resolve_target(file_arg: Optional[str], mod_arg: Optional[str]) -> Optional[Path]:
-    """Decide which file/folder to pass to ObjectBuilder.exe.
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Launch Object Builder")
+    target = parser.add_mutually_exclusive_group()
+    target.add_argument(
+        "--file",
+        help=r"Path to a .p3d to open (e.g. P:\MyMod\data\model.p3d); a relative path resolves against the project",
+    )
+    target.add_argument(
+        "--mod",
+        help=r"Mod name; passes P:\<ModName>\ to Object Builder so you start inside your mod",
+    )
+    return parser
 
-    --file beats --mod. Without either, no argument — Object Builder opens with
-    its last-used file (or empty).
+
+def resolve_target(file_arg: Optional[str], mod_arg: Optional[str]) -> Optional[Path]:
+    """Decide which file or folder to pass to ObjectBuilder.exe.
+
+    The parser makes --file and --mod mutually exclusive. With neither there is
+    no argument, and Object Builder opens its last-used file (or nothing).
     """
     if file_arg:
         p = Path(file_arg)
@@ -97,7 +85,7 @@ def resolve_target(file_arg: Optional[str], mod_arg: Optional[str]) -> Optional[
         if not mod_root.exists():
             sys.exit(
                 f"{FAIL} --mod path does not exist: {mod_root}\n"
-                f"        Did you run /dayz-new-mod {mod_arg}?"
+                f"       Did you run /dayz-new-mod {mod_arg}?"
             )
         return mod_root
 
@@ -105,28 +93,16 @@ def resolve_target(file_arg: Optional[str], mod_arg: Optional[str]) -> Optional[
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Launch Object Builder")
-    parser.add_argument(
-        "--file",
-        help="Absolute path to a .p3d to open (e.g. P:\\MyMod\\data\\model.p3d)",
-    )
-    parser.add_argument(
-        "--mod",
-        help="Mod name — opens P:\\<ModName>\\ as the working folder so the open-dialog lands inside your mod",
-    )
-    args = parser.parse_args()
-
-    if args.file and args.mod:
-        sys.exit(f"{FAIL} Pass --file OR --mod, not both.")
+    args = build_parser().parse_args()
 
     print("DayZ Object Builder launcher\n")
 
-    gate_on_preflight()
+    h.gate_on_preflight()
     print()
 
     tools_root = find_dayz_tools()
     if not tools_root:
-        print(f"{FAIL} DayZ Tools not found. Install via Steam first.", file=sys.stderr)
+        print(f"{FAIL} DayZ Tools not found. Install it via Steam first.", file=sys.stderr)
         return 1
 
     ob_exe = tools_root / "Bin" / "ObjectBuilder" / "ObjectBuilder.exe"
@@ -138,8 +114,8 @@ def main() -> int:
     if not registry_has_objectbuilder_settings():
         print(
             f"{FAIL} Object Builder is not configured (registry empty).\n"
-            f"        Run: /dayz-setup-objectbuilder\n"
-            f"        (one-time per machine; populates HKCU\\{REG_KEY})",
+            f"       Run: /dayz-setup-objectbuilder\n"
+            f"       (one-time per machine; populates HKCU\\{REG_KEY})",
             file=sys.stderr,
         )
         return 1
@@ -159,7 +135,7 @@ def main() -> int:
             cmd,
             close_fds=True,
             creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
-            cwd=str(tools_root / "Bin" / "ObjectBuilder"),
+            cwd=str(ob_exe.parent),
         )
     except OSError as exc:
         print(f"{FAIL} Failed to spawn ObjectBuilder.exe: {exc}", file=sys.stderr)

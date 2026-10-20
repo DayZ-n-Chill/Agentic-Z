@@ -1,12 +1,14 @@
 """DayZ preflight checks.
 
 Verify the DayZ modding environment before any DayZ work. Hard-fails if P:\\ is
-not mounted; warns on Tools / vanilla data / workshop folder.
+not mounted; warns on DayZ Tools, vanilla data and the P:\\Mods junction. The one
+thing it changes on disk is creating the P:\\Mods -> <game>\\!Workshop junction
+when P:\\Mods is absent (see validate_p_mods).
 
 Path resolution order (DayZ Tools, vanilla data):
     1. Environment variable override
     2. Windows registry (DayZ Tools only)
-    3. Hard-coded common-default fallbacks
+    3. Steam libraries (registry Steam root + libraryfolders.vdf), then defaults
 
 Run:
     python .claude/skills/dayz-preflight/preflight.py
@@ -14,6 +16,8 @@ Run:
 from __future__ import annotations
 
 import os
+import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
@@ -22,8 +26,13 @@ OK = "[OK]   "
 WARN = "[WARN] "
 FAIL = "[FAIL] "
 
+# Fixed by DayZ engine convention. Module-level so tests can point them at tmp dirs.
+P_DRIVE = Path("P:\\")
+MODS_LINK = P_DRIVE / "Mods"
+VANILLA_DIR_NAMES = ("dz", "DZ", "dta")
 
-def _read_registry_string(hive, subkey: str, value_name: str) -> Optional[str]:
+
+def read_registry_string(hive, subkey: str, value_name: str) -> Optional[str]:
     """Read a REG_SZ value from the Windows registry. Returns None if unavailable."""
     if sys.platform != "win32":
         return None
@@ -39,6 +48,21 @@ def _read_registry_string(hive, subkey: str, value_name: str) -> Optional[str]:
         return None
 
 
+# Older name, kept so existing importers keep working.
+_read_registry_string = read_registry_string
+
+
+def parse_library_folders(text: str) -> list[Path]:
+    """Library roots listed in a Steam steamapps/libraryfolders.vdf file.
+
+    VDF escapes backslashes, so "D:\\\\SteamLibrary" in the file is D:\\SteamLibrary.
+    """
+    return [
+        Path(m.group(1).replace("\\\\", "\\"))
+        for m in re.finditer(r'"path"\s+"([^"]+)"', text)
+    ]
+
+
 def _steam_common_dirs() -> list[Path]:
     """Every Steam library's steamapps/common dir on this machine.
 
@@ -47,14 +71,14 @@ def _steam_common_dirs() -> list[Path]:
     installed on non-default library drives are found too (#49).
     """
     steam_roots: list[Path] = []
-    for hive_name, subkey, value in (
-        ("HKCU", r"Software\Valve\Steam", "SteamPath"),
-        ("HKLM", r"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
-    ):
-        if sys.platform == "win32":
-            import winreg
-            hive = winreg.HKEY_CURRENT_USER if hive_name == "HKCU" else winreg.HKEY_LOCAL_MACHINE
-            val = _read_registry_string(hive, subkey, value)
+    if sys.platform == "win32":
+        import winreg
+
+        for hive, subkey, value in (
+            (winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam", "SteamPath"),
+            (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
+        ):
+            val = read_registry_string(hive, subkey, value)
             if val:
                 steam_roots.append(Path(val))
     steam_roots.extend(
@@ -74,7 +98,6 @@ def _steam_common_dirs() -> list[Path]:
             seen.add(key)
             commons.append(common)
 
-    import re
     for root in steam_roots:
         add_library(root)
         vdf = root / "steamapps" / "libraryfolders.vdf"
@@ -83,8 +106,8 @@ def _steam_common_dirs() -> list[Path]:
                 text = vdf.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 continue
-            for m in re.finditer(r'"path"\s+"([^"]+)"', text):
-                add_library(Path(m.group(1).replace("\\\\", "\\")))
+            for lib in parse_library_folders(text):
+                add_library(lib)
     return commons
 
 
@@ -94,7 +117,7 @@ def find_dayz_tools() -> Optional[Path]:
     Resolution order:
       1. $DAYZ_TOOLS_PATH env var (explicit override)
       2. Windows registry (HKLM/HKCU under Bohemia Interactive\\DayZ Tools)
-      3. Common Steam install paths
+      3. Steam libraries
 
     Returns the install root (parent of Bin/) if AddonBuilder.exe is found, else None.
     """
@@ -105,21 +128,18 @@ def find_dayz_tools() -> Optional[Path]:
         candidates.append(Path(env_override))
 
     if sys.platform == "win32":
-        try:
-            import winreg
-        except ImportError:
-            winreg = None  # type: ignore[assignment]
-        if winreg is not None:
-            registry_locations = [
-                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\bohemia interactive\dayz tools"),
-                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\bohemia interactive\dayz tools"),
-                (winreg.HKEY_CURRENT_USER, r"SOFTWARE\bohemia interactive\dayz tools"),
-            ]
-            for hive, subkey in registry_locations:
-                val = _read_registry_string(hive, subkey, "Path")
-                if val:
-                    candidates.append(Path(val))
-                    break
+        import winreg
+
+        registry_locations = [
+            (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\bohemia interactive\dayz tools"),
+            (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\bohemia interactive\dayz tools"),
+            (winreg.HKEY_CURRENT_USER, r"SOFTWARE\bohemia interactive\dayz tools"),
+        ]
+        for hive, subkey in registry_locations:
+            val = read_registry_string(hive, subkey, "Path")
+            if val:
+                candidates.append(Path(val))
+                break
 
     candidates.extend(common / "DayZ Tools" for common in _steam_common_dirs())
 
@@ -134,7 +154,7 @@ def find_dayz_game() -> Optional[Path]:
 
     Resolution order:
       1. $DAYZ_GAME_PATH env var
-      2. Common Steam install paths
+      2. Steam libraries
     """
     candidates: list[Path] = []
 
@@ -151,7 +171,7 @@ def find_dayz_game() -> Optional[Path]:
 
 
 def find_dayz_diag() -> Optional[Path]:
-    """Locate DayZDiag_x64.exe — the diagnostic client required for mod development.
+    """Locate DayZDiag_x64.exe, the diagnostic client required for mod development.
 
     Required because retail DayZ_x64.exe blocks past the loading screen with
     -filePatching enabled, and -filePatching is needed for live source iteration.
@@ -160,7 +180,7 @@ def find_dayz_diag() -> Optional[Path]:
     Resolution order:
       1. $DAYZ_DIAG_PATH env var
       2. Inside the DayZ game install (DayZDiag_x64.exe next to DayZ_x64.exe)
-      3. Common Steam install paths
+      3. Steam libraries
     """
     candidates: list[Path] = []
 
@@ -183,12 +203,12 @@ def find_dayz_diag() -> Optional[Path]:
 def find_dayz_server() -> Optional[Path]:
     """Locate the DayZ Server install root containing DayZServer_x64.exe.
 
-    DayZ Server is a separate free Steam download (appid 223350) — not bundled
+    DayZ Server is a separate free Steam download (appid 223350), not bundled
     with the game.
 
     Resolution order:
       1. $DAYZ_SERVER_PATH env var
-      2. Common Steam install paths
+      2. Steam libraries
     """
     candidates: list[Path] = []
 
@@ -210,6 +230,8 @@ def find_vanilla_data() -> Optional[Path]:
     Resolution order:
       1. $DAYZ_VANILLA_DATA_PATH env var
       2. Canonical names: P:\\dz, P:\\DZ, P:\\dta
+
+    A candidate counts only if it exists and is non-empty.
     """
     candidates: list[Path] = []
 
@@ -217,7 +239,7 @@ def find_vanilla_data() -> Optional[Path]:
     if env_override:
         candidates.append(Path(env_override))
 
-    candidates.extend([Path(r"P:\dz"), Path(r"P:\DZ"), Path(r"P:\dta")])
+    candidates.extend(P_DRIVE / name for name in VANILLA_DIR_NAMES)
 
     for path in candidates:
         try:
@@ -230,27 +252,26 @@ def find_vanilla_data() -> Optional[Path]:
 
 def check_p_drive() -> bool:
     """P:\\ is mandatory. Hard fail if not mounted."""
-    p = Path("P:\\")
-    if p.exists() and p.is_dir():
+    if P_DRIVE.is_dir():
         print(f"{OK} P:\\ is mounted")
         return True
     print(f"{FAIL} P:\\ is NOT mounted", file=sys.stderr)
     print(
         "        Open DayZ Tools and mount the P drive "
-        "(Tools menu > Mount P drive).",
+        "(Tools menu > Mount P drive), or run /dayz-workdrive.",
         file=sys.stderr,
     )
     return False
 
 
 def check_dayz_tools() -> None:
-    """Look for AddonBuilder.exe via env / registry / Steam paths. Warn only."""
+    """Look for AddonBuilder.exe via env / registry / Steam libraries. Warn only."""
     root = find_dayz_tools()
     if root:
         print(f"{OK} DayZ Tools found: {root}")
         return
     print(f"{WARN} DayZ Tools not detected")
-    print("        Tried: $DAYZ_TOOLS_PATH, Windows registry, common Steam paths.")
+    print("        Tried: $DAYZ_TOOLS_PATH, Windows registry, Steam libraries.")
     print("        Set DAYZ_TOOLS_PATH if your install is elsewhere.")
 
 
@@ -265,50 +286,83 @@ def check_vanilla_data() -> None:
     print("        Unpack vanilla PBOs via DayZ Tools 'Extract Game Data'.")
 
 
+def _read_link(path: Path) -> Optional[str]:
+    """Target of a junction or symlink without the \\\\?\\ prefix; None if `path` is not a link."""
+    try:
+        target = os.readlink(path)
+    except (OSError, ValueError):
+        return None
+    return target[4:] if target.startswith("\\\\?\\") else target
+
+
+def _create_junction(link: Path, target: Path) -> None:
+    """Create a directory junction (mklink /J needs no admin rights). Raises OSError on failure."""
+    result = subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(link), str(target)],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout).strip()
+        raise OSError(detail or f"mklink exited {result.returncode}")
+
+
+def _same_path(a: Path, b: Path) -> bool:
+    return os.path.normcase(os.path.normpath(str(a))) == os.path.normcase(os.path.normpath(str(b)))
+
+
 def validate_p_mods() -> Optional[str]:
-    """Verify P:\\Mods\\ is a directory junction (or symlink) to the DayZ
-    `!Workshop` folder, so built PBOs deployed under P:\\Mods\\@<Mod>\\Addons\\
-    actually land where the engine can load them.
+    """Make sure P:\\Mods\\ is a junction to <DayZ install>\\!Workshop\\.
 
-    Read-only: inspects state and returns a description of any problem.
-    Never mutates the filesystem — preflight is for reporting, fixes belong
-    to dedicated setup skills.
+    Built PBOs deploy under P:\\Mods\\@<Mod>\\Addons\\; the junction makes them land
+    in the folder the engine and Launcher actually load mods from.
 
-    Returns None on success, or a multi-line error message describing the issue
-    and the exact fix command. Used by preflight (warn) and build-pbo (hard fail).
+    - P:\\Mods absent and the game's !Workshop folder found: create the junction
+      (mklink /J is non-destructive and the target is canonical), return None.
+    - P:\\Mods is a real folder, a dangling link, or a link to anywhere other
+      than <game>\\!Workshop: return an error. An existing path is never changed.
+    - Game install not locatable: a live link whose target folder is named
+      !Workshop is accepted, since the exact target can't be checked.
+
+    Returns None when the junction is valid, else a multi-line error with the fix.
+    Preflight prints it as a warning; build and deploy skills hard-fail on it.
     """
-    import os
-    mods = Path(r"P:\Mods")
+    mods = MODS_LINK
     game_root = find_dayz_game()
     workshop = game_root / "!Workshop" if game_root else None
-    if workshop:
-        fix_cmd = f'cmd /c mklink /J P:\\Mods "{workshop}"'
-    else:
-        fix_cmd = 'cmd /c mklink /J P:\\Mods "<DayZ install>\\!Workshop"'
+    expected = str(workshop) if workshop else "<DayZ install>\\!Workshop"
+    fix_cmd = f'cmd /c mklink /J P:\\Mods "{expected}"'
 
     if not os.path.lexists(mods):
-        return (
-            "P:\\Mods\\ does not exist. It MUST be a junction to\n"
-            "       <DayZ install>\\!Workshop\\ so built PBOs deploy where the\n"
-            "       engine actually loads them.\n"
-            f"       Fix: {fix_cmd}"
-        )
+        if workshop is None or not workshop.is_dir():
+            return (
+                "P:\\Mods\\ does not exist and was not created: the DayZ install's\n"
+                "       !Workshop folder was not found (set DAYZ_GAME_PATH if DayZ is\n"
+                "       installed somewhere unusual).\n"
+                f"       Fix: {fix_cmd}"
+            )
+        try:
+            _create_junction(mods, workshop)
+        except OSError as e:
+            return (
+                f"P:\\Mods\\ does not exist and creating the junction failed: {e}\n"
+                f"       Fix: {fix_cmd}"
+            )
+        print(f"{OK} Created junction P:\\Mods -> {workshop}")
+        return None
 
-    try:
-        target_str = os.readlink(mods)
-    except OSError:
+    target = _read_link(mods)
+    if target is None:
         return (
             "P:\\Mods\\ exists as a regular folder, not a junction.\n"
             "       Built PBOs deployed under P:\\Mods\\@<Mod>\\Addons\\ will be\n"
             "       invisible to the engine.\n"
-            "       Fix: remove the folder and create a junction:\n"
+            "       Fix: move its contents out, remove the folder and create a junction:\n"
             "         cmd /c rmdir P:\\Mods\n"
             f"         {fix_cmd}"
         )
 
-    if target_str.startswith("\\\\?\\"):
-        target_str = target_str[4:]
-    target_path = Path(target_str)
+    target_path = Path(target)
     if not target_path.exists():
         return (
             f"P:\\Mods\\ junction is dangling (target {target_path} is missing).\n"
@@ -317,22 +371,31 @@ def validate_p_mods() -> Optional[str]:
             f"         {fix_cmd}"
         )
 
-    return None  # all good
+    if workshop is not None:
+        wrong_target = not _same_path(target_path, workshop)
+    else:
+        wrong_target = target_path.name.lower() != "!workshop"
+    if wrong_target:
+        return (
+            f"P:\\Mods\\ points to {target_path}, not {expected}.\n"
+            "       Built PBOs would not land where the engine loads mods.\n"
+            "       Fix: remove and recreate the junction:\n"
+            "         cmd /c rmdir P:\\Mods\n"
+            f"         {fix_cmd}"
+        )
+
+    return None
 
 
 def check_workshop_deploy() -> None:
-    """P:\\Mods\\ must be a junction to the DayZ `!Workshop` folder. Warn only.
+    """Check (or create) the P:\\Mods junction. Warn only here.
 
-    Build skills should hard-fail on the same condition by calling validate_p_mods()
-    directly.
+    Build and deploy skills hard-fail on the same condition by calling
+    validate_p_mods() directly.
     """
     err = validate_p_mods()
     if err is None:
-        import os
-        target = os.readlink(Path(r"P:\Mods"))
-        if target.startswith("\\\\?\\"):
-            target = target[4:]
-        print(f"{OK} P:\\Mods -> {target}")
+        print(f"{OK} P:\\Mods -> {_read_link(MODS_LINK)}")
         return
     print(f"{WARN} {err}")
 

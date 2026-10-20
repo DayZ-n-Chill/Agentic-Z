@@ -1,0 +1,127 @@
+"""Repo-wide checks that keep the agent team and the plugin manifest in step.
+
+Run with: python -m pytest scripts/dev/test_repo_integrity.py
+"""
+from __future__ import annotations
+
+import json
+import re
+from pathlib import Path
+
+import pytest
+
+REPO = Path(__file__).resolve().parents[2]
+AGENTS_DIR = REPO / ".claude" / "agents"
+SKILLS_DIR = REPO / ".claude" / "skills"
+PLUGIN = json.loads((REPO / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+
+# Skills that maintain the template repo itself; plugin installs don't need them.
+TEMPLATE_ONLY_SKILLS = {"agentic-z-update", "clean-repo", "docs-sync", "sync-skills"}
+
+AGENT_FILES = sorted(AGENTS_DIR.glob("*.md"))
+AGENT_NAMES = {p.stem for p in AGENT_FILES}
+
+
+def _frontmatter(path: Path) -> dict[str, str]:
+    text = path.read_text(encoding="utf-8")
+    block = text.split("---", 2)[1]
+    out = {}
+    for line in block.splitlines():
+        if ":" in line and not line.startswith(" "):
+            key, value = line.split(":", 1)
+            out[key.strip()] = value.strip().strip('"')
+    return out
+
+
+def _tools(path: Path) -> list[str]:
+    raw = _frontmatter(path).get("tools", "")
+    return [t.strip() for t in raw.split(",") if t.strip()]
+
+
+def test_every_agent_is_registered_in_the_plugin():
+    registered = {Path(p).stem for p in PLUGIN["agents"]}
+    assert registered == AGENT_NAMES
+
+
+def test_every_user_skill_is_registered_in_the_plugin():
+    registered = {Path(p).name for p in PLUGIN["skills"]}
+    on_disk = {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
+    assert registered == on_disk - TEMPLATE_ONLY_SKILLS
+
+
+def test_registered_paths_exist():
+    for rel in PLUGIN["agents"] + PLUGIN["skills"]:
+        assert (REPO / rel).exists(), rel
+
+
+@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+def test_agent_name_matches_filename(path):
+    assert _frontmatter(path)["name"] == path.stem
+
+
+@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+def test_search_tools_work_in_clones_and_plugin_installs(path):
+    # A clone exposes the server as mcp__dayz-rag__*, a plugin install as
+    # mcp__plugin_agentic-z_dayz-rag__*. Unknown names are dropped silently,
+    # so an agent needs both to reach search in either setup.
+    tools = set(_tools(path))
+    for tool in tools:
+        if tool.startswith("mcp__dayz-rag__"):
+            assert tool.replace("mcp__dayz-rag__", "mcp__plugin_agentic-z_dayz-rag__") in tools
+        if tool.startswith("mcp__plugin_agentic-z_dayz-rag__"):
+            assert tool.replace("mcp__plugin_agentic-z_dayz-rag__", "mcp__dayz-rag__") in tools
+
+
+@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+def test_agents_have_no_machine_specific_paths(path):
+    # P:\ is the DayZ Tools work drive every user mounts; any other drive letter
+    # is one person's machine.
+    text = path.read_text(encoding="utf-8")
+    assert not re.findall(r"\b[A-OQ-Z]:\\", text)
+
+
+@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+def test_referenced_repo_files_exist(path):
+    text = path.read_text(encoding="utf-8")
+    for ref in re.findall(r"(?:\.claude/(?:skills|agents|mcp)|scripts)/[\w./-]+\.(?:md|py|bat)", text):
+        assert (REPO / ref).exists(), f"{path.name} points at missing {ref}"
+
+
+@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+def test_referenced_agents_exist(path):
+    text = path.read_text(encoding="utf-8")
+    for ref in re.findall(r"`((?:dayz|figma)-[a-z-]+)`", text):
+        if ref == "dayz-rag":
+            continue
+        assert ref in AGENT_NAMES or (SKILLS_DIR / ref).exists(), f"{path.name} names unknown agent {ref}"
+
+
+@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+def test_referenced_slash_skills_exist(path):
+    text = path.read_text(encoding="utf-8")
+    for ref in re.findall(r"(?<![\w/.])/((?:dayz|agentic|docs|sync|clean)-[a-z0-9-]+)", text):
+        assert (SKILLS_DIR / ref / "SKILL.md").exists(), f"{path.name} names unknown skill /{ref}"
+
+
+def test_lead_workers_are_agents():
+    text = (AGENTS_DIR / "dayz-lead.md").read_text(encoding="utf-8")
+    section = text.split("## Your workers", 1)[1].split("\n## ", 1)[0]
+    table = "\n".join(line for line in section.splitlines() if line.startswith("|"))
+    assert table
+    for ref in re.findall(r"`([a-z-]+)`", table):
+        assert ref in AGENT_NAMES, f"lead lists unknown worker {ref}"
+
+
+# Gatekeepers check and report; they must not be able to change what they judge.
+READ_ONLY_GATES = {"dayz-mod-reviewer", "dayz-mod-debugger", "dayz-build-checker", "dayz-ingame-tester"}
+
+
+@pytest.mark.parametrize("name", sorted(READ_ONLY_GATES))
+def test_gates_cannot_edit(name):
+    tools = set(_tools(AGENTS_DIR / f"{name}.md"))
+    assert not tools & {"Edit", "Write", "NotebookEdit"}
+
+
+def test_tier_one_files_match():
+    texts = {name: (REPO / name).read_text(encoding="utf-8") for name in ("CLAUDE.md", "AGENTS.md", "GEMINI.md")}
+    assert len(set(texts.values())) == 1

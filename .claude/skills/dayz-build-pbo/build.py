@@ -1,13 +1,13 @@
 """dayz-build-pbo: Pack workspace/<ModName>/ into P:\\Mods\\@<ModName>\\Addons\\<ModName>.pbo.
 
-Imports find_dayz_tools() from dayz-preflight to keep path discovery consistent.
+Path discovery comes from dayz-preflight; the preflight gate, project cache and
+ownership-marker rules come from .claude/skills/_shared/skill_helpers.py.
 
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import os
 import shutil
 import subprocess
@@ -16,97 +16,35 @@ import time
 from pathlib import Path
 from typing import Optional
 
-# REPO_ROOT = where this skill ships from (plugin or template clone).
-# Project dir (where workspace/ lives) is resolved at runtime from the
-# /dayz-init project cache; see resolve_project_dir().
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
-PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
-DAYZ_INIT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-init"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
 INCLUDE_LIST = Path(__file__).resolve().parent / "include.lst"
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
 TEMP_ROOT = P_DRIVE / "temp"
 
-# Ownership marker dropped at P:\Mods\@<ModName>\<MARKER> on successful build.
-# dayz-clean-workspace gates deployed-dir removal on this so it can never
-# delete a deployed mod it didn't produce. Located one level above Addons/
-# so AddonBuilder's -clear (which wipes Addons/) doesn't remove it.
-SCAFFOLD_MARKER = ".agentic-z-scaffold"
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
-
-
-def _load_module_from_path(name: str, path: Path):
-    """Load a sibling-skill .py as a module by file path so static analyzers don't
-    choke on a sys.path-based sibling import."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load module at {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-# Reuse path resolution + validation from preflight per L2 conventions (single source of truth).
-_preflight = _load_module_from_path("dayz_preflight_module", PREFLIGHT)
-find_dayz_tools = _preflight.find_dayz_tools
-validate_p_mods = _preflight.validate_p_mods
-
-# Reuse the project-root cache reader from /dayz-init so build follows the same source of truth.
-_dayz_init_state = _load_module_from_path("dayz_init_state_module", DAYZ_INIT_DIR / "state.py")
-cached_project_root = _dayz_init_state.cached_project_root
-
-
-def resolve_project_dir() -> Path:
-    """Return the cached project root, or bail out pointing the user at /dayz-init."""
-    project = cached_project_root()
-    if project is None:
-        print("error: no project cached.", file=sys.stderr)
-        print("  Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
-        sys.exit(2)
-    return project.resolve()
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(
-            f"{FAIL} dayz-preflight skill not found at "
-            f"{PREFLIGHT.relative_to(REPO_ROOT)}"
-        )
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
-
-
-def _link_target(path: Path) -> Optional[Path]:
-    try:
-        target = os.readlink(path)
-    except OSError:
-        return None
-    if target.startswith("\\\\?\\"):
-        target = target[4:]
-    return Path(target)
-
-
-def _paths_equal(a: Path, b: Path) -> bool:
-    return os.path.normcase(os.path.normpath(str(a))) == os.path.normcase(os.path.normpath(str(b)))
+find_dayz_tools = h.preflight.find_dayz_tools
+validate_p_mods = h.preflight.validate_p_mods
 
 
 def verify_workspace(modname: str, project_dir: Path) -> Path:
     target = project_dir / "workspace" / modname
+    rel = target.relative_to(project_dir)
     if not target.exists():
         sys.exit(
-            f"{FAIL} {target.relative_to(project_dir)} not found.\n"
-            f"       Run: python .claude/skills/dayz-new-mod/new_mod.py {modname}"
+            f"{FAIL} {rel} not found.\n"
+            f"       Run /dayz-new-mod {modname} (or /dayz-import-mod) first."
         )
-    if not (target / "config.cpp").exists():
-        sys.exit(f"{FAIL} {target.relative_to(project_dir)}/config.cpp missing.")
-    if not (target / "$PBOPREFIX$").exists():
-        sys.exit(f"{FAIL} {target.relative_to(project_dir)}/$PBOPREFIX$ missing.")
-    print(f"{OK} {target.relative_to(project_dir)}\\ found")
+    for required in ("config.cpp", "$PBOPREFIX$"):
+        if not (target / required).exists():
+            sys.exit(
+                f"{FAIL} {rel}\\{required} missing.\n"
+                f"       Add it with /dayz-add-scaffold {modname}."
+            )
+    print(f"{OK} {rel}\\ found")
     return target
 
 
@@ -114,50 +52,40 @@ def verify_junction(modname: str, workspace_target: Path) -> Path:
     p_drive_link = P_DRIVE / modname
     if not os.path.lexists(p_drive_link):
         sys.exit(
-            f"{FAIL} P:\\{modname} junction is missing.\n"
-            f"       Run: python .claude/skills/dayz-new-mod/new_mod.py {modname}\n"
-            f"       (or re-create the junction manually)."
+            f"{FAIL} {p_drive_link} junction is missing.\n"
+            f"       Run /dayz-new-mod {modname} (or /dayz-import-mod) to create it."
         )
-    link_target = _link_target(p_drive_link)
-    if link_target is None:
+    target = h.link_target(p_drive_link)
+    if target is None:
         sys.exit(
-            f"{FAIL} P:\\{modname} exists as a real folder, not a link.\n"
-            "       Build expects the /dayz-new-mod junction. Move it aside and re-scaffold."
+            f"{FAIL} {p_drive_link} exists as a real folder, not a link.\n"
+            "       Build expects the /dayz-new-mod junction. Move the folder aside and re-scaffold."
         )
-    if not _paths_equal(link_target, workspace_target):
+    if not h.paths_equal(target, workspace_target):
         sys.exit(
-            f"{FAIL} P:\\{modname} points at {link_target}, expected {workspace_target}\n"
+            f"{FAIL} {p_drive_link} points at {target}, expected {workspace_target}\n"
             "       Remove the wrong link and re-run /dayz-new-mod."
         )
-    print(f"{OK} P:\\{modname} junction valid")
+    print(f"{OK} {p_drive_link} junction valid")
     return p_drive_link
 
 
 def resolve_addon_builder() -> Path:
+    # find_dayz_tools only returns a root that contains Bin\AddonBuilder\AddonBuilder.exe.
     tools_root = find_dayz_tools()
     if tools_root is None:
         sys.exit(
             f"{FAIL} DayZ Tools not found.\n"
-            "       Set DAYZ_TOOLS_PATH or install via Steam (Tools section)."
+            "       Set DAYZ_TOOLS_PATH or install DayZ Tools via Steam."
         )
     addon_builder = tools_root / "Bin" / "AddonBuilder" / "AddonBuilder.exe"
-    if not addon_builder.exists():
-        sys.exit(
-            f"{FAIL} AddonBuilder.exe not under {tools_root}\\Bin\\AddonBuilder\\\n"
-            "       DayZ Tools install may be incomplete."
-        )
     print(f"{OK} AddonBuilder: {addon_builder}")
     return addon_builder
 
 
-def run_addon_builder(
-    addon_builder: Path,
-    source: Path,
-    target_dir: Path,
-    modname: str,
-    temp_dir: Path,
-    clean: bool,
-) -> int:
+def build_addon_builder_cmd(
+    addon_builder: Path, source: Path, target_dir: Path, modname: str, temp_dir: Path, clean: bool
+) -> list[str]:
     cmd = [
         str(addon_builder),
         str(source),
@@ -168,13 +96,25 @@ def run_addon_builder(
     ]
     if clean:
         cmd.append("-clear")
+    return cmd
 
-    print()
-    print(f"[AddonBuilder] {' '.join(cmd)}")
-    print()
-    sys.stdout.flush()  # ensure our prints land before AddonBuilder takes over stdout
-    result = subprocess.run(cmd)
-    return result.returncode
+
+def check_pbo_output(pbo_path: Path, build_started: float) -> Optional[str]:
+    """Return a failure message if the build did not produce a fresh PBO, else None.
+
+    AddonBuilder can exit 0 when its sync step fails (no files matched,
+    malformed include.lst), leaving the previous build's PBO in place. A PBO
+    older than the build start is that stale file. The 1 s slack covers
+    filesystems that round mtimes.
+    """
+    if not pbo_path.exists():
+        return f"AddonBuilder reported success but {pbo_path} is missing."
+    if pbo_path.stat().st_mtime < build_started - 1:
+        return (
+            f"{pbo_path} was not updated by this build (stale PBO from a prior run).\n"
+            "       Scroll up and look for [ERROR] lines in the AddonBuilder output."
+        )
+    return None
 
 
 def main() -> int:
@@ -183,12 +123,12 @@ def main() -> int:
     parser.add_argument(
         "--clean",
         action="store_true",
-        help="Wipe P:\\Mods\\@<ModName>\\Addons\\ before building (-clear).",
+        help="Wipe P:\\Mods\\@<ModName>\\Addons\\ before building (AddonBuilder -clear).",
     )
     args = parser.parse_args()
 
-    project_dir = resolve_project_dir()
-    gate_on_preflight()
+    project_dir = h.resolve_project_dir()
+    h.gate_on_preflight()
     p_mods_err = validate_p_mods()
     if p_mods_err is not None:
         sys.exit(f"{FAIL} {p_mods_err}")
@@ -197,55 +137,41 @@ def main() -> int:
     verify_junction(args.modname, workspace_target)
     addon_builder = resolve_addon_builder()
 
-    target_dir = MODS_ROOT / f"@{args.modname}" / "Addons"
+    deploy_root = MODS_ROOT / f"@{args.modname}"
+    # Same rule as /dayz-deploy-pbo: never build into (or -clear) an @<ModName>
+    # that we did not create.
+    h.gate_on_marker(args.modname, deploy_root)
+
+    target_dir = deploy_root / "Addons"
     temp_dir = TEMP_ROOT / args.modname
     target_dir.mkdir(parents=True, exist_ok=True)
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    pbo_path = target_dir / f"{args.modname}.pbo"
-    build_started = time.time()
-
-    rc = run_addon_builder(
-        addon_builder,
-        source=P_DRIVE / args.modname,
-        target_dir=target_dir,
-        modname=args.modname,
-        temp_dir=temp_dir,
-        clean=args.clean,
+    cmd = build_addon_builder_cmd(
+        addon_builder, P_DRIVE / args.modname, target_dir, args.modname, temp_dir, args.clean
     )
+    print()
+    print(f"[AddonBuilder] {' '.join(cmd)}")
+    print()
+    sys.stdout.flush()  # our lines land before AddonBuilder takes over stdout
+    build_started = time.time()
+    rc = subprocess.run(cmd).returncode
 
+    print()
     if rc != 0:
-        print()
         print(f"{FAIL} AddonBuilder exited {rc}")
         print(f"       Temp dir kept for debugging: {temp_dir}")
         return rc
 
-    if not pbo_path.exists():
-        print()
-        print(f"{FAIL} AddonBuilder reported success but {pbo_path} is missing.")
+    pbo_path = target_dir / f"{args.modname}.pbo"
+    error = check_pbo_output(pbo_path, build_started)
+    if error is not None:
+        print(f"{FAIL} {error}")
         print(f"       Temp dir kept for inspection: {temp_dir}")
         return 1
 
-    if pbo_path.stat().st_mtime < build_started - 1:
-        # PBO exists but wasn't refreshed by this build. AddonBuilder can exit 0
-        # even when the sync step fails (no files matched, malformed include.lst,
-        # etc.), leaving the prior build's PBO in place. Fail loudly.
-        print()
-        print(f"{FAIL} {pbo_path} was not updated by this build (stale PBO from a prior run).")
-        print("       AddonBuilder reported success but produced no new PBO.")
-        print("       Scroll up and look for [ERROR] lines in the AddonBuilder output.")
-        return 1
-
-    size = pbo_path.stat().st_size
-    print()
-    print(f"{OK} Built: {pbo_path} ({size:,} bytes)")
-
-    marker_path = target_dir.parent / SCAFFOLD_MARKER
-    try:
-        marker_path.write_text(args.modname + "\n", encoding="utf-8")
-    except OSError as e:
-        print(f"{WARN} Could not write ownership marker {marker_path}: {e}")
-        print("       dayz-clean-workspace will refuse to remove this deployed dir.")
+    print(f"{OK} Built: {pbo_path} ({pbo_path.stat().st_size:,} bytes)")
+    h.write_marker(deploy_root, args.modname)
 
     try:
         shutil.rmtree(temp_dir)

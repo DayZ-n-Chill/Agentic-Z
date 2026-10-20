@@ -1,0 +1,126 @@
+"""Tests for import_mod.py: source validation, mod naming, non-TTY refusals."""
+from __future__ import annotations
+
+import importlib.util
+import io
+from pathlib import Path
+
+import pytest
+
+HERE = Path(__file__).resolve().parent
+_spec = importlib.util.spec_from_file_location("dayz_import_mod_under_test", HERE / "import_mod.py")
+imp = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(imp)
+
+
+class _NoTTY(io.StringIO):
+    def isatty(self):
+        return False
+
+
+@pytest.fixture
+def workspace(monkeypatch, tmp_path):
+    ws = tmp_path / "project" / "workspace"
+    ws.mkdir(parents=True)
+    monkeypatch.setattr(imp, "WORKSPACE", ws)
+    return ws
+
+
+# --- resolve_source -----------------------------------------------------------
+
+@pytest.mark.parametrize("raw", ["\\\\server\\share\\MyMod", "//server/share/MyMod"])
+def test_unc_paths_refused(raw, workspace):
+    with pytest.raises(SystemExit) as exc:
+        imp.resolve_source(raw)
+    assert "UNC" in str(exc.value.code)
+
+
+def test_missing_source_refused(tmp_path, workspace):
+    with pytest.raises(SystemExit) as exc:
+        imp.resolve_source(str(tmp_path / "nope"))
+    assert "does not exist" in str(exc.value.code)
+
+
+def test_file_source_refused(tmp_path, workspace):
+    f = tmp_path / "mod.zip"
+    f.write_bytes(b"")
+    with pytest.raises(SystemExit) as exc:
+        imp.resolve_source(str(f))
+    assert "not a directory" in str(exc.value.code)
+
+
+def test_source_inside_workspace_refused(workspace):
+    inside = workspace / "Already"
+    inside.mkdir()
+    with pytest.raises(SystemExit) as exc:
+        imp.resolve_source(str(inside))
+    assert "inside this project's workspace" in str(exc.value.code)
+
+
+def test_outside_source_accepted(tmp_path, workspace):
+    src = tmp_path / "repos" / "MyMod"
+    src.mkdir(parents=True)
+    assert imp.resolve_source(str(src)) == src.resolve()
+
+
+def test_missing_source_flag_refused_without_tty(monkeypatch, workspace):
+    monkeypatch.setattr(imp.sys, "stdin", _NoTTY())
+    with pytest.raises(SystemExit) as exc:
+        imp.resolve_source(None)
+    assert "--source is required" in str(exc.value.code)
+
+
+# --- derive_modname -------------------------------------------------------------
+
+def test_basename_used_when_valid():
+    assert imp.derive_modname(Path("C:/repos/MyMod"), None) == "MyMod"
+
+
+@pytest.mark.parametrize("basename", ["My Mod", "my-mod", "1stMod", "Mod.v2"])
+def test_invalid_basename_asks_for_name(basename):
+    with pytest.raises(SystemExit) as exc:
+        imp.derive_modname(Path("C:/repos") / basename, None)
+    assert "--name" in str(exc.value.code)
+
+
+def test_override_wins_over_basename():
+    assert imp.derive_modname(Path("C:/repos/my-mod"), "MyMod") == "MyMod"
+
+
+def test_invalid_override_refused():
+    with pytest.raises(SystemExit) as exc:
+        imp.derive_modname(Path("C:/repos/MyMod"), "bad name")
+    assert "Invalid mod name" in str(exc.value.code)
+
+
+# --- missing pieces and the scaffold decision ------------------------------------
+
+def test_detect_missing_pieces(tmp_path):
+    (tmp_path / "config.cpp").write_text("", encoding="utf-8")
+    assert [key for key, _rel, _why in imp.detect_missing_pieces(tmp_path)] == ["prefix", "workbench"]
+
+
+def test_non_tty_without_flag_refused():
+    missing = [("prefix", "$PBOPREFIX$", "why")]
+    with pytest.raises(SystemExit) as exc:
+        imp.require_scaffold_decision(missing, scaffold=False, no_scaffold=False, interactive=False)
+    assert "--scaffold" in str(exc.value.code) and "$PBOPREFIX$" in str(exc.value.code)
+
+
+@pytest.mark.parametrize(
+    "scaffold, no_scaffold, interactive",
+    [(True, False, False), (False, True, False), (False, False, True)],
+)
+def test_explicit_decision_or_tty_passes(scaffold, no_scaffold, interactive):
+    imp.require_scaffold_decision([("prefix", "$PBOPREFIX$", "why")], scaffold, no_scaffold, interactive)
+
+
+def test_nothing_missing_never_refuses():
+    imp.require_scaffold_decision([], scaffold=False, no_scaffold=False, interactive=False)
+
+
+def test_existing_workspace_entry_refused(workspace):
+    (workspace / "MyMod").mkdir()
+    with pytest.raises(SystemExit) as exc:
+        imp.check_workspace_target(workspace / "MyMod")
+    assert "already exists" in str(exc.value.code)

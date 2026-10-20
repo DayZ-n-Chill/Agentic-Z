@@ -33,6 +33,14 @@ Layout convention:
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
+## Requirements
+
+Pillow composes the atlas. If it is missing the script exits 1 with an install hint:
+
+```cmd
+python -m pip install -r "<skill-dir>\requirements.txt"
+```
+
 ## How to run
 
 ```cmd
@@ -52,7 +60,7 @@ python "<skill-dir>\build_imageset.py" [<mod-root>] [--mod-name <name>]
    - Collect all `.png` files in that subfolder. Each file becomes one named sprite (the file's stem becomes the `ImageSetDefClass` name).
    - Sort sprites by height descending and shelf-pack into the smallest power-of-two atlas that fits (each dimension picked from 256 / 512 / 1024 / 2048 / 4096; rectangular atlases allowed; ordered by area, square preferred at equal area), with a 10px gutter on all sides of every sprite.
    - If everything fits in one atlas: emit `<setname>.&#123;paa,imageset&#125;`.
-   - If sprites won't fit in a single 4096x4096 atlas: greedily split into multiple atlases and emit `<setname>_1.&#123;paa,imageset&#125;`, `<setname>_2.&#123;paa,imageset&#125;`, etc. Each part is its own self-contained imageset.
+   - If sprites won't fit in a single 4096x4096 atlas: split, first-fit in height order, into multiple atlases and emit `<setname>_1.&#123;paa,imageset&#125;`, `<setname>_2.&#123;paa,imageset&#125;`, etc. Each part is its own self-contained imageset.
    - Compose each atlas as PNG via Pillow, convert to `.paa` via `ImageToPAA.exe`.
    - Each `.imageset`'s `path` references its own `.paa` via `<mod-name>\gui\imagesets\<stem>.paa`.
 4. Report a summary; exit non-zero if any imageset failed.
@@ -87,6 +95,7 @@ ImageSetClass {
 
 ## Refuses to run if
 
+- Pillow is not installed.
 - `/dayz-preflight` returns non-zero.
 - `<mod-root>` isn't a directory.
 - `<mod-root>/.gui-sources/` doesn't exist or has no subfolders.

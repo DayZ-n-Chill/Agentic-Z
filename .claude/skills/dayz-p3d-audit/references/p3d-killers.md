@@ -37,7 +37,7 @@ For items with `autocenter=0` in config.cpp, the Geometry LOD MUST ALSO carry
 `autocenter=0` as a named property. Config property controls the visual mesh;
 LOD property controls the collision mesh. Without both, collision is displaced.
 
-**Where**: Named property on Geometry (1e13), GeoPhys (2e13), FireGeo (3e13) LODs.
+**Where**: Named property on Geometry (1e13), GeoPhys (2e13), FireGeo (7e15) LODs.
 In py3d: `lod.properties['autocenter'] = '0'`
 
 ## 4. Missing Memory LOD or Geometry LOD (CRITICAL)
@@ -55,7 +55,7 @@ collision and zero action targeting.
 **Recommended additional LODs:**
 
 - GeoPhys (res ~2e13) — physics collision (player walking, vehicles)
-- FireGeo (res ~3e13) — ballistic damage zones
+- FireGeo (res ~7e15) — ballistic damage zones
 
 ## 5. Missing `pos center` Memory Point
 

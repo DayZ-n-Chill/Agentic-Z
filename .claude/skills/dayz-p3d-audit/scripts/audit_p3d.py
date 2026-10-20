@@ -1,34 +1,54 @@
 #!/usr/bin/env python3
 """
-DayZ P3D Audit Script — Complete model validator.
-Catches all known silent killers for collision, targeting, animation, and paths.
+DayZ P3D audit: validates MLOD .p3d models and scans config.cpp, model.cfg and
+.rvmat files for absolute P-drive paths. Reports findings; never modifies files.
 
 Usage:
     python audit_p3d.py model.p3d [model2.p3d ...]
     python audit_p3d.py model.p3d --config path/to/config.cpp
     python audit_p3d.py model.p3d --model-cfg path/to/model.cfg
-    python audit_p3d.py --scan-dir path/to/mod/  (scans all .p3d, config.cpp, .rvmat)
+    python audit_p3d.py --scan-dir path/to/mod/  (scans all .p3d, config.cpp, .rvmat, model.cfg)
 
-Requires: py3d (pip install git+https://github.com/KoffeinFlummi/py3d.git)
+Gates on /dayz-preflight. Requires py3d
+(pip install git+https://github.com/KoffeinFlummi/py3d.git) for .p3d parsing.
 """
 
-import sys, os, re, glob, argparse
+import sys, os, re, glob, argparse, subprocess
+from pathlib import Path
 
-try:
-    import py3d
-except ImportError:
-    print("ERROR: py3d not installed.")
-    print("Run: pip install git+https://github.com/KoffeinFlummi/py3d.git")
-    sys.exit(1)
+REPO_ROOT = Path(__file__).resolve().parents[4]
+PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
+
+
+def gate_on_preflight():
+    """Run /dayz-preflight and stop with its exit code if it fails."""
+    if not PREFLIGHT.exists():
+        print(f"ERROR: dayz-preflight not found at {PREFLIGHT}")
+        sys.exit(1)
+    rc = subprocess.run([sys.executable, str(PREFLIGHT)]).returncode
+    if rc != 0:
+        sys.exit(rc)
+
+
+def load_py3d():
+    """Import py3d, exiting with an install hint if it is missing."""
+    try:
+        import py3d
+    except ImportError:
+        print("ERROR: py3d not installed.")
+        print("Run: pip install git+https://github.com/KoffeinFlummi/py3d.git")
+        sys.exit(1)
+    return py3d
 
 # ============================================================================
 # LOD classification
 # ============================================================================
 def classify_lod(resolution):
-    # LOD resolution mapping. Standard Bohemia Arma/DayZ scheme uses ~6e15 for ViewGeometry
-    # and ~7e15 for FireGeometry. Some
-    # DayZ models in the wild also use ~7e13 (ViewGeo) and ~3e13 (FireGeo); accept both
-    # ranges so the classifier matches either layout.
+    """Map an MLOD resolution value to a LOD type name.
+
+    DayZ scheme (references/winding-methodology.md): Visual < 1000, Geometry 1e13,
+    GeoPhys 2e13, Memory 1e15, LandContact 2e15, ViewGeo 6e15, FireGeo 7e15.
+    """
     if resolution < 1000:
         return "Visual"
     if 9e9 <= resolution <= 1.1e10:
@@ -37,9 +57,9 @@ def classify_lod(resolution):
         return "Geometry"
     if 1.9e13 <= resolution <= 2.1e13:
         return "GeoPhys"
-    if (2.9e13 <= resolution <= 3.1e13) or (6.9e15 <= resolution <= 7.1e15):
+    if 6.9e15 <= resolution <= 7.1e15:
         return "FireGeo"
-    if (6.9e13 <= resolution <= 7.1e13) or (5.9e15 <= resolution <= 6.1e15):
+    if 5.9e15 <= resolution <= 6.1e15:
         return "ViewGeo"
     if 9.9e14 <= resolution <= 1.1e15:
         return "Memory"
@@ -63,41 +83,7 @@ def check_required_lods(lod_map):
     if "GeoPhys" not in lod_map:
         issues.append(("WARNING", "Missing GeoPhys LOD (res ~2e13). Player/vehicle physics collision may not work."))
     if "FireGeo" not in lod_map:
-        issues.append(("NOTE", "Missing FireGeo LOD (res ~3e13). No ballistic damage zones."))
-    return issues
-
-
-def check_face_winding(lod):
-    """Check all faces have outward-pointing normals."""
-    issues = []
-    if len(lod.points) == 0 or len(lod.faces) == 0:
-        return issues
-    n = len(lod.points)
-    cx = sum(pt.coords[0] for pt in lod.points) / n
-    cy = sum(pt.coords[1] for pt in lod.points) / n
-    cz = sum(pt.coords[2] for pt in lod.points) / n
-    inverted = 0
-    for face in lod.faces:
-        verts = face.vertices
-        if len(verts) < 3:
-            continue
-        v = [v.point.coords for v in verts]
-        e1 = (v[1][0]-v[0][0], v[1][1]-v[0][1], v[1][2]-v[0][2])
-        e2 = (v[2][0]-v[0][0], v[2][1]-v[0][1], v[2][2]-v[0][2])
-        nx = e1[1]*e2[2] - e1[2]*e2[1]
-        ny = e1[2]*e2[0] - e1[0]*e2[2]
-        nz = e1[0]*e2[1] - e1[1]*e2[0]
-        fcx = sum(c[0] for c in v) / len(v)
-        fcy = sum(c[1] for c in v) / len(v)
-        fcz = sum(c[2] for c in v) / len(v)
-        dot = nx*(fcx-cx) + ny*(fcy-cy) + nz*(fcz-cz)
-        if dot < 0:
-            inverted += 1
-    if inverted > 0:
-        issues.append(("CRITICAL",
-            f"{inverted}/{len(lod.faces)} faces have INVERTED winding (normals point inward). "
-            f"Raycasts from outside pass through — zero collision. "
-            f"Fix: swap vertices[1] and vertices[2] on each face."))
+        issues.append(("NOTE", "Missing FireGeo LOD (res ~7e15). No ballistic damage zones."))
     return issues
 
 
@@ -318,7 +304,7 @@ def audit_p3d(filepath):
                 print(f"  ERROR: Not MLOD format (sig={sig}). Cannot audit ODOL. Provide source MLOD.")
                 return False
             f.seek(0)
-            p = py3d.P3D(f)
+            p = load_py3d().P3D(f)
     except Exception as e:
         print(f"  ERROR: Failed to read: {e}")
         return False
@@ -329,10 +315,11 @@ def audit_p3d(filepath):
     all_issues = []
     lod_map = {}
 
-    # Classify LODs
+    # Classify LODs. The first LOD of each type wins, so with several Visual
+    # LODs (resolutions 0, 1, 2, ...) the audited one is LOD0, the highest detail.
     for i, lod in enumerate(p.lods):
         lt = classify_lod(lod.resolution)
-        lod_map[lt] = (i, lod)
+        lod_map.setdefault(lt, (i, lod))
         pts, fcs = len(lod.points), len(lod.faces)
         sels = list(lod.selections.keys())
         props = dict(lod.properties) if lod.properties else {}
@@ -354,9 +341,9 @@ def audit_p3d(filepath):
             print(f"  BBox: X=[{min(xs):.3f}..{max(xs):.3f}] Y=[{min(ys):.3f}..{max(ys):.3f}] Z=[{min(zs):.3f}..{max(zs):.3f}]")
 
         # Component01 is required only on Geometry LOD; running it on GeoPhys/FireGeo
-        # produces false CRITICALs on valid vanilla models. face_winding removed entirely:
-        # the centroid heuristic flags every Blender export (left-handed transform) per
-        # SKILL.md "WINDING DIAGNOSTICS" section.
+        # produces false CRITICALs on valid vanilla models. There is no winding check:
+        # the centroid heuristic flags every Blender export (left-handed transform);
+        # see references/winding-methodology.md for the manual method.
         if lt == "Geometry":
             check_fns = [check_component_naming, check_component_coverage,
                          check_autocenter_prop, check_watertight, check_degenerate_faces]
@@ -453,6 +440,7 @@ def main():
     parser.add_argument('--rvmat', nargs='*', help='.rvmat files to check')
     args = parser.parse_args()
 
+    gate_on_preflight()
     all_pass = True
 
     if args.scan_dir:

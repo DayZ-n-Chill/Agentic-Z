@@ -1,12 +1,12 @@
 """DayZ RAG indexer.
 
 Walk vanilla DayZ source on P:\\, chunk per file type, embed via Voyage AI
-(`voyage-code-3` by default — code-tuned, 1024-dim), store in LanceDB at
-~/.claude/dayz-search-index/.
+(`voyage-code-3` by default, 1024-dim), store in LanceDB at
+~/.claude/dayz-search-index/ for the dayz-rag MCP server.
 
-Cost reality: a full vanilla rebuild is ~5-20M tokens. Voyage gives 200M tokens
-free per Series-4 model. You'd have to rebuild ~10x before paying anything.
-Live token + $ telemetry prints during the embed loop so there are no surprises.
+The live vanilla index is about 52,000 chunks from about 38,000 files
+(roughly 66M tokens). A live token and cost estimate prints during the embed
+loop; see reference/cost-and-free-tier.md for the free-tier check.
 
 Run:
     python .claude/skills/dayz-search-index/index.py --full   # first time / rebuild
@@ -19,9 +19,9 @@ import hashlib
 import json
 import os
 import re
-import subprocess
 import sys
 import time
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Iterator
 
@@ -32,10 +32,10 @@ from preflight import find_vanilla_data  # noqa: E402
 
 INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
 TABLE_NAME = "chunks"
+P_ROOT = Path("P:\\")
 
-# Voyage model. Override via VOYAGE_MODEL env var (e.g. "voyage-4-lite" for
-# cheaper, "voyage-4-large" for top general quality). All current Series-4
-# models output 1024-dim embeddings.
+# Voyage model. Override via the VOYAGE_MODEL env var. The LanceDB table is
+# fixed at EMBED_DIM, so only choose models that emit 1024-dim vectors.
 DEFAULT_EMBED_MODEL = "voyage-code-3"
 EMBED_DIM = 1024
 
@@ -52,7 +52,8 @@ TOKEN_BUDGET_PER_BATCH = 75_000
 CHARS_PER_TOKEN_EST = 1.8
 EMBED_MAX_CHARS = 6000  # voyage-code-3 has 32k context — plenty of headroom
 
-# Rough $ per 1M input tokens, used for the live cost estimate. Source:
+# Approximate $ per 1M input tokens, used only for the live cost estimate and
+# the manifest's cost_estimate_usd. Rates change; the authoritative source is
 # https://docs.voyageai.com/docs/pricing
 COST_PER_MTOKEN = {
     "voyage-code-3": 0.18,
@@ -69,9 +70,8 @@ WARN = "[WARN] "
 FAIL = "[FAIL] "
 INFO = "[INFO] "
 
-# Voyage Series-4 free tier (default for new accounts as of late 2025).
-# If the user is on a different plan, they can override via VOYAGE_FREE_TIER_TOKENS
-# env var or just pass --ignore-tier-warning.
+# Default free-tier budget for the pre-build projection check. Plans differ;
+# override with the VOYAGE_FREE_TIER_TOKENS env var or pass --ignore-tier-warning.
 VOYAGE_FREE_TIER_BUDGET = 200_000_000
 TIER_WARN_THRESHOLD = 0.80  # warn when projected usage hits 80%
 USAGE_LOG_NAME = "usage.log"
@@ -124,8 +124,8 @@ def _append_usage_entry(tokens: int, cost_usd: float, skill: str) -> None:
 def _check_voyage_tier(estimated_tokens: int, ignore_warning: bool) -> bool:
     """Pre-build tier check. Returns True if user wants to proceed.
 
-    Uses local cumulative tracking only — Voyage doesn't expose a public
-    usage API. See README of dayz-search-index for caveats.
+    Uses local cumulative tracking only; Voyage doesn't expose a public
+    usage API. See reference/cost-and-free-tier.md for caveats.
     """
     budget = int(os.environ.get("VOYAGE_FREE_TIER_TOKENS", VOYAGE_FREE_TIER_BUDGET))
     used = _read_monthly_usage_tokens()
@@ -164,25 +164,21 @@ def _check_voyage_tier(estimated_tokens: int, ignore_warning: bool) -> bool:
     return answer in ("y", "yes")
 
 
-def _ensure_deps() -> None:
-    """Install lancedb + tqdm + voyageai + python-dotenv if missing. Re-execs after install."""
+def _require_deps() -> None:
+    """Exit with a clear message if the indexer's Python deps are missing."""
     try:
         import lancedb  # noqa: F401
         import tqdm  # noqa: F401
         import voyageai  # noqa: F401
         import dotenv  # noqa: F401
-        return
-    except ImportError:
-        pass
-    req = _HERE / "requirements.txt"
-    print(f"{INFO} Installing index dependencies (one-time)...")
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-r", str(req)],
-        check=True,
-    )
-    print(f"{INFO} Restarting indexer to pick up newly installed deps...", flush=True)
-    result = subprocess.run([sys.executable, *sys.argv], check=False)
-    sys.exit(result.returncode)
+    except ImportError as exc:
+        print(
+            f"{FAIL} Missing Python dependency: {exc.name}\n"
+            f"        Install the indexer's requirements first:\n"
+            f"            pip install -r \"{_HERE / 'requirements.txt'}\"",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 def _load_env_and_key() -> str:
@@ -337,7 +333,6 @@ def chunk_xml(path: Path, file_type: str = "xml", batch_size: int = XML_BATCH_SI
             }
         ]
     try:
-        import xml.etree.ElementTree as ET
         root = ET.fromstring(text)
         children = list(root)
         if len(children) >= 5:
@@ -445,7 +440,7 @@ def _pack_batches(texts: list[str]) -> Iterator[list[str]]:
         yield batch
 
 
-def _embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[float]], int]:
+def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[float]], int]:
     """Embed all texts via Voyage in dynamically-packed batches. Returns
     (vectors, total_tokens).
 
@@ -492,6 +487,10 @@ def _embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[fl
     return vectors, total_tokens
 
 
+# dayz-search-wiki-index imports the old private name; keep it working.
+_embed_all = embed_all
+
+
 # --------------- main ---------------
 
 
@@ -499,7 +498,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="DayZ RAG indexer")
     parser.add_argument("--full", action="store_true", help="Drop existing index and rebuild")
     parser.add_argument("--status", action="store_true", help="Print manifest and exit")
-    parser.add_argument("--force", action="store_true", help="Override the chunk-count safety ceiling (only if you know your RAM headroom is fine)")
+    parser.add_argument("--force", action="store_true", help="Override the 150k chunk-count cost ceiling")
     parser.add_argument("--ignore-tier-warning", action="store_true", help="Skip the Voyage free-tier prompt (CI / scripted use)")
     args = parser.parse_args()
 
@@ -517,7 +516,7 @@ def main() -> int:
 
     print("DayZ RAG indexer\n")
 
-    if not Path(r"P:\\").exists():
+    if not P_ROOT.exists():
         print(f"{FAIL} P:\\ not mounted. Run /dayz-preflight first.", file=sys.stderr)
         return 1
     print(f"{OK} P:\\ mounted")
@@ -528,16 +527,16 @@ def main() -> int:
     else:
         print(f"{WARN} vanilla data not detected — config.cpp scope will be empty")
 
-    _ensure_deps()
+    _require_deps()
     api_key = _load_env_and_key()
     embed_model = os.environ.get("VOYAGE_MODEL", DEFAULT_EMBED_MODEL).strip() or DEFAULT_EMBED_MODEL
 
     print(f"{OK} VOYAGE_API_KEY loaded ({api_key[:6]}...{api_key[-4:]})")
     print(f"{INFO} Index: {INDEX_ROOT}")
-    print(f"{INFO} Embedding model: {embed_model} (1024D, via Voyage cloud)")
+    print(f"{INFO} Embedding model: {embed_model} ({EMBED_DIM}D, via Voyage cloud)")
     cost_per_m = COST_PER_MTOKEN.get(embed_model)
     if cost_per_m is not None:
-        print(f"{INFO} Pricing: ${cost_per_m:.2f} per 1M tokens (Series-4 includes 200M free)")
+        print(f"{INFO} Estimate rate: ${cost_per_m:.2f} per 1M tokens (Voyage pricing page is authoritative)")
     print()
 
     if manifest_path.exists() and not args.full:
@@ -561,7 +560,7 @@ def main() -> int:
     counts_by_folder: dict[str, dict[str, dict[str, int]]] = {}
 
     for folder in VANILLA_FOLDERS:
-        root = Path(r"P:\\") / folder
+        root = P_ROOT / folder
         if not root.exists():
             print(f"  {folder}/  (skipped — not present)")
             counts_by_folder[folder] = {}
@@ -625,14 +624,14 @@ def main() -> int:
         print(f"\n{FAIL} No chunks produced. Check P:\\ has the vanilla folders.", file=sys.stderr)
         return 1
 
-    # Cost-runaway safety: refuse to embed more than CHUNK_CEILING without --force.
-    # At ~1500 tokens/chunk avg, 150k chunks ≈ 225M tokens — past the 200M free tier.
+    # Cost-runaway backstop: refuse to embed more than CHUNK_CEILING without --force.
+    # The live vanilla index is ~52k chunks, so hitting this means the walk scope grew.
     CHUNK_CEILING = 150_000
     if len(chunks) > CHUNK_CEILING and not args.force:
         print(
             f"\n{FAIL} {len(chunks)} chunks exceeds the safety ceiling ({CHUNK_CEILING}).\n"
             f"        At ~1500 tokens/chunk this is ~{len(chunks) * 1500 / 1_000_000:.0f}M tokens —\n"
-            f"        likely past the 200M Voyage free tier (~${len(chunks) * 1500 / 1_000_000 * (cost_per_m or 0.18):.0f} if billed).\n"
+            f"        likely past the Voyage free tier (~${len(chunks) * 1500 / 1_000_000 * (cost_per_m or 0.18):.0f} if billed).\n"
             f"        Either narrow the indexing scope or re-run with --force to override.",
             file=sys.stderr,
         )
@@ -658,7 +657,7 @@ def main() -> int:
 
     print(f"\nEmbedding {len(chunks)} chunks via Voyage ({embed_model}, document mode)...")
     started = time.time()
-    embeddings, total_tokens = _embed_all(texts, embed_model, api_key)
+    embeddings, total_tokens = embed_all(texts, embed_model, api_key)
     elapsed = time.time() - started
 
     if len(embeddings) != len(chunks):

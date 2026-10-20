@@ -4,7 +4,7 @@ name: dayz-cot-bootstrap
 
 ## Overview
 
-Bootstrap Community-Online-Tools (COT) admin permissions on a DayZ test server in one shot. Auto-prepends @CF + @Community-Online-Tools to the mod chain, launches the server + client, waits for your character to spawn (detected when COT writes the per-player files), kills the session, grants you the `admin` role in your Players JSON, flips every ` 0` to ` 2` in your personal `Permissions/&lt;id&gt;.txt` file, then relaunches. Per-player grant only — `Roles/everyone.txt` is never touched. Requires /dayz-init + /dayz-add-server + /dayz-build-pbo first.
+Grants the developer Community-Online-Tools (COT) admin on a local DayZ test server in one run - launches with @CF and @Community-Online-Tools prepended, waits for COT to write the player's permission files, stops that session, adds the admin role and sets every permission in the player's own file, then relaunches. Never edits Roles/everyone.txt. Use when you need COT admin on a test instance set up with /dayz-init, /dayz-add-server and /dayz-build-pbo.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
@@ -36,12 +36,12 @@ python "<skill-dir>\bootstrap.py" <ModName> [<ModName2> ...] [--server <instance
 ## What it does
 
 1. **Preflight gate** — runs `/dayz-preflight`; halts on non-zero.
-2. **Project root** — reads `~/.claude/local-memory/dayz-current-project.txt`.
+2. **Project root** — reads the project root `/dayz-init` cached in `.claude/local-memory/dayz-current-project.txt` inside the project (per clone, gitignored).
 3. **Mod check** — verifies `@CF` + `@Community-Online-Tools` are subscribed at `P:\Mods\` and that each user-passed mod has at least one PBO. Prepends CF + COT to the mod chain (dedup).
 4. **Instance check** — confirms `<project>/.server/<instance>/serverDZ.cfg` and the mission folder exist; auto-appends `allowFilePatching = 1;` if missing.
 5. **First pass: launch** — spawns server, waits for it to bind UDP port, spawns client.
 6. **Wait for COT registration** — polls `<project>/.server/<instance>/Profiles/PermissionsFramework/Players/*.json` for new files appearing. The first JSON written is COT registering your character. (Files present before launch are ignored, only newly-created or newly-modified files count.) On a solo test box there's normally exactly one player and exactly one new file.
-7. **Kill session** — `taskkill /IM DayZDiag_x64.exe /F` on both server and client.
+7. **Stop session** — terminates only the server and client processes this run started (by their PIDs, waiting up to 30 s each). Any other `DayZDiag_x64.exe` on the machine is left alone.
 8. **Edit perms (per-player only)**:
    - For each triggered Players JSON file: insert `"admin"` into its `Roles[]` array (idempotent — skips if already present).
    - For each triggered player's `Permissions/<id>.txt`: replace every line ending in ` 0` with ` 2`. The script waits up to 15s for that file to appear (COT writes the JSON and the personal perms file close together but not always simultaneously). Space between perm name and digit is preserved.
@@ -51,7 +51,7 @@ python "<skill-dir>\bootstrap.py" <ModName> [<ModName2> ...] [--server <instance
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero.
-- No project is cached (run `/dayz-init` first to set up the wizard cache).
+- `.claude/local-memory/dayz-current-project.txt` is missing or empty (run `/dayz-init` first).
 - `@CF` or `@Community-Online-Tools` is not subscribed in Steam Workshop. (Check `P:\Mods\@CF\Addons\` and `P:\Mods\@Community-Online-Tools\Addons\`.)
 - Any user-passed mod has no PBO (run `/dayz-build-pbo <ModName>` first).
 - `DayZDiag_x64.exe` is not found.
@@ -70,22 +70,31 @@ Re-running on the same instance:
 ## Output (success)
 
 ```
-[Pass 1/2] Launching server + client to generate COT permission files...
-[OK]    Server PID: 12345    Client PID: 67890
+[Pass 1/2] Booting so COT can generate permission files for your character.
+[Pass 1] Launching server + client...
+[OK]    Server PID: 12345
+[OK]    Server has bound UDP port 2302
+[OK]    Client PID: 67890
         Waiting up to 600s for COT to register your character...
-        (watching <project>/.server/<instance>/Profiles/PermissionsFramework/Players/)
-[OK]    Detected new player file: flFK...HTY.json
+        (watching <project>/.server/<instance>/Profiles/PermissionsFramework/Players)
+[OK]    Detected player file: flFK...HTY.json
 
-[OK]    Killed 2 DayZDiag_x64.exe process(es).
+[Stop] Stopping the pass-1 server and client before editing perm files...
+[OK]    Stopped PID 12345
+[OK]    Stopped PID 67890
 
 [Edit] Applying COT admin permissions (per-player only)...
 [OK]    Granted admin to flFK...HTY
 [OK]    flFK...HTY.txt: flipped 156 line(s) from 0 -> 2
 
-[Pass 2/2] Relaunching with admin permissions...
-[OK]    Server PID: 13579    Client PID: 24680
+[Pass 2/2] Relaunching with admin permissions applied.
+[Pass 2] Launching server + client...
+[OK]    Server PID: 13579
+[OK]    Server has bound UDP port 2302
+[OK]    Client PID: 24680
 
 You are now COT admin on '<instance>'. Open the COT menu in-game (default keybind: BACKSPACE).
+  Server PID: 13579    Client PID: 24680
   Server logs: <project>/.server/<instance>/Profiles
   Client logs: <project>/.server/!ClientDiagLogs
 ```

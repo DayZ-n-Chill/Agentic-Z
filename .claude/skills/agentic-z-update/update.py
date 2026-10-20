@@ -8,8 +8,11 @@ What it touches:
 What it leaves alone:
     workspace/, output/, .claude/local-memory/, .claude/settings.local.json, .env
 
+Applied changes are committed automatically as
+"chore: pull Agentic-Z upstream (<sha8>)".
+
 Usage:
-    python update.py [--force] [--dry-run] [--no-sync]
+    python update.py [--check [--quiet]] [--yes] [--per-file] [--force] [--dry-run] [--no-sync]
 """
 from __future__ import annotations
 
@@ -728,10 +731,6 @@ def main() -> int:
             print("Up to date.")
         return 0
 
-    if args.dry_run:
-        log("INFO", "--dry-run: stopping before merge.")
-        return 0
-
     # Default flow: preview, prompt, apply.
     drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")
     if not drift:
@@ -739,6 +738,10 @@ def main() -> int:
         return 0
 
     print(format_preview(drift, baseline_sha, upstream_sha, quiet=False))
+
+    if args.dry_run:
+        log("INFO", "--dry-run: stopping before merge.")
+        return 0
 
     if not args.yes:
         try:

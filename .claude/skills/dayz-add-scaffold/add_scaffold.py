@@ -12,37 +12,25 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import os
 import shutil
 import sys
 from pathlib import Path
 
-# REPO_ROOT = where this skill ships from (plugin or template clone).
-# PROJECT_DIR = user's project (where workspace/ lives). Differ in plugin mode.
-REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
+# PROJECT_DIR = user's project (where workspace/ lives).
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 WORKSPACE = PROJECT_DIR / "workspace"
-NEW_MOD = REPO_ROOT / ".claude" / "skills" / "dayz-new-mod" / "new_mod.py"
+NEW_MOD = h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py"
 
-OK = "[OK]   "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 SKIP = "[SKIP] "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
 
 PIECES = ("config", "prefix", "workbench", "readme", "skeleton")
 
-
-def _load_new_mod_module():
-    spec = importlib.util.spec_from_file_location("dayz_new_mod_module", NEW_MOD)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load dayz-new-mod module at {NEW_MOD}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_nm = _load_new_mod_module()
+_nm = h.load_module("dayz_new_mod_module", NEW_MOD)
 
 
 def add_config(target: Path, modname: str, get_author) -> bool:
@@ -93,9 +81,7 @@ def add_skeleton(target: Path) -> bool:
             present += 1
             continue
         folder.mkdir(parents=True)
-        gitkeep = folder / ".gitkeep"
-        if not gitkeep.exists():
-            gitkeep.write_text("", encoding="utf-8")
+        (folder / ".gitkeep").write_text("", encoding="utf-8")
         added += 1
     if added == 0:
         print(f"{SKIP} Skeleton folders all present")

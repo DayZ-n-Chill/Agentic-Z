@@ -1,6 +1,6 @@
 # Agentic-Z
 
-**An AI Agent Stack for DayZ Modding**, with first-class support for Claude Code, Codex, and Gemini. Clone it to start a new DayZ mod, import a 3D model, set up a server, or tune the economy. Every project inherits opinionated rules, specialist agents, slash-command skills, and a local RAG over the vanilla engine source. Your AI shows up DayZ-fluent on day one.
+**An AI Agent Stack for DayZ Modding**, with first-class support for Claude Code, Codex, and Gemini. Clone it to start a new DayZ mod, import a 3D model, set up a server, or tune the economy. Every project inherits opinionated rules, specialist agents, slash-command skills, and a semantic-search RAG over the vanilla engine source and the Bohemia wiki (Voyage AI `voyage-code-3` embeddings stored locally in LanceDB). Your AI shows up DayZ-fluent on day one.
 
 ## Quick start
 
@@ -49,15 +49,16 @@ When invoked on a task, an agent should:
 │   │   └── dayz-*/                     # one folder per DayZ skill
 │   │       ├── SKILL.md
 │   │       └── *.py
-│   ├── agent-memory/                   # per-agent memory (committed)
-│   ├── local-memory/                   # gitignored, per-clone, user/machine notes only
-│   └── settings.local.json             # per-clone Claude Code settings
+│   ├── agent-memory/                   # gitignored, per-agent memory written at runtime
+│   ├── local-memory/                   # gitignored, per-clone: user/machine notes and skill state
+│   └── settings.local.json             # gitignored, per-clone Claude Code settings
 ├── CLAUDE.md                           # L1 rules (Claude Code reads this)
 ├── AGENTS.md                           # L1 rules (Codex reads this)
 ├── GEMINI.md                           # L1 rules (Gemini reads this)
 ├── docs/                               # this folder
 ├── scripts/                            # ad-hoc helper scripts
 ├── workspace/                          # in-progress mods (workspace/<ModName>/)
+├── .server/                            # local test-server instances (.server/<instance>/)
 └── output/                             # one-shot deliverables
 ```
 
@@ -92,7 +93,7 @@ Run `/sync-skills` — the new agent's home gets links for every existing skill.
 | **Path** | `<repo>/.claude/local-memory/` |
 | **Committed?** | No (gitignored) |
 | **Scope** | Per-clone — each project has its own; nothing leaks across clones |
-| **Used for** | User/machine-specific notes only — paths peculiar to your box, email addresses, anything that doesn't belong in the repo |
+| **Used for** | User/machine-specific notes and skill state: paths peculiar to your box, the cached author handle, and `/dayz-init`'s `dayz-current-project.txt` (the project root other DayZ skills read) and `dayz-init-state.json` (the active mod) |
 | **Never used for** | Rules, conventions, project knowledge — those go in the repo at L1 (template-wide) or L2 (DayZ-specific) so they travel with every clone |
 
 ## Default rules in this template (L1)
@@ -109,13 +110,13 @@ The exact text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`. Summary:
 
 ## DayZ Modding workflow
 
-Slash commands cover the complete mod lifecycle: setup wizard, env preflight, project scaffold + `P:\` junction, PBO build via DayZ Tools' AddonBuilder, server instance setup, local server+client launch, COT admin bootstrap, asset/types editing, and cleanup. Most skills gate on `/dayz-preflight` first per L2 conventions.
+Slash commands cover the complete mod lifecycle: setup wizard, env preflight, project scaffold + `P:\` junction, PBO build via DayZ Tools' AddonBuilder, server instance setup, local server+client launch, COT admin bootstrap, asset/types editing, and cleanup. Most skills gate on `/dayz-preflight` first per L2 conventions; the exceptions and their reasons are listed there.
 
 ### Front door
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-init`](../.claude/skills/dayz-init/SKILL.md) | Setup wizard on first run; mission-control hub on every run after. Wraps every other skill. |
+| [`/dayz-init`](../.claude/skills/dayz-init/SKILL.md) | Setup wizard on first run; status hub for the active mod on every run after. Dispatches to the other skills, never replaces them. |
 
 ### Bootstrap (one-time per machine)
 
@@ -139,6 +140,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | Command | Purpose |
 |---|---|
 | [`/dayz-build-pbo`](../.claude/skills/dayz-build-pbo/SKILL.md) | Pack and deploy to `P:\Mods\@<ModName>\Addons\<ModName>.pbo` |
+| [`/dayz-deploy-pbo`](../.claude/skills/dayz-deploy-pbo/SKILL.md) | Copy prebuilt PBOs and keys from a workspace bundle to `P:\Mods\@<ModName>\` without AddonBuilder |
 | [`/dayz-pack-texture`](../.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates `_co` / `_nohq` / `_smdi` suffix |
 | [`/dayz-build-imageset`](../.claude/skills/dayz-build-imageset/SKILL.md) | Pack `.gui-sources/<setname>/*.png` into a DayZ `.imageset` + `.paa` atlas with a 10px gutter; auto-splits into multiple parts when sprites won't fit in 4096x4096 |
 
@@ -163,7 +165,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | Command | Purpose |
 |---|---|
 | [`/dayz-edit-types`](../.claude/skills/dayz-edit-types/SKILL.md) | Programmatically upsert a single `<type>` in `types.xml` |
-| [`/dayz-split-types`](../.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into 18 categorized files |
+| [`/dayz-split-types`](../.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into per-category files and point `cfgeconomycore.xml` at them |
 
 ### Specialist tools (deep)
 
@@ -177,8 +179,14 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | Command | Purpose |
 |---|---|
 | [`/dayz-search-download`](../.claude/skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases (recommended fast path) |
-| [`/dayz-search-index`](../.claude/skills/dayz-search-index/SKILL.md) | Build the semantic-search index yourself (~25 min, requires Voyage API key) |
+| [`/dayz-search-index`](../.claude/skills/dayz-search-index/SKILL.md) | Build the semantic-search index yourself (requires `VOYAGE_API_KEY`) |
 | [`/dayz-search-wiki-index`](../.claude/skills/dayz-search-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB |
+
+### Team rules
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-record-correction`](../.claude/skills/dayz-record-correction/SKILL.md) | Turn your correction of the mod team into a written rule in the right tier |
 
 ### Cleanup
 
@@ -195,14 +203,14 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the Docusaurus wiki; `--apply` writes mirrors |
 | [`/clean-repo`](../.claude/skills/clean-repo/SKILL.md) | Orchestrator — run every domain's cleanup skill |
 
-**MCP server:** [`dayz-rag`](../.claude/mcp/dayz-rag/README.md) — exposes `search_dayz_source`, `get_dayz_file`, `list_indexed_sources` to every DayZ specialist agent. Backed by the index built via `/dayz-search-index`.
+**MCP server:** [`dayz-rag`](../.claude/mcp/dayz-rag/README.md) — exposes `search_dayz_source`, `search_dayz_wiki`, `get_dayz_file` and `list_indexed_sources` to the DayZ agents. Reads the LanceDB index under `~/.claude/dayz-search-index/`, built with `/dayz-search-index` and `/dayz-search-wiki-index` or installed with `/dayz-search-download`.
 
-**Native prereqs** (per-clone, one-time install):
+**Native prereqs** (per machine, one-time install):
 
 - **DayZ Tools** (Steam) — for AddonBuilder, WorkDrive, ImageToPAA
 - **DayZ game** (Steam) — for the diag client used in `/dayz-launch-test`
 - **DayZ Server** (Steam appid 223350) — only for the initial mission bootstrap; can be uninstalled after
-- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3` (200M-token free tier covers ~3 full rebuilds). Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
+- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3`. A full source build embeds roughly 66M tokens, so check Voyage's pricing first. Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
 
 L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](../.claude/skills/_shared/dayz-conventions.md).
 
@@ -210,10 +218,17 @@ L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](../.claude/skills
 
 ## DayZ agents
 
-Specialist agents live under `.claude/agents/` and cover the major DayZ surfaces:
+The 21 agents live under `.claude/agents/`. The mod team runs a whole mod; the specialists also take single tasks directly.
 
 | Agent | Focus |
 |---|---|
+| `dayz-orchestrator` | Plans the build with you, splits it into tasks, tracks it to a test build |
+| `dayz-mod-architect` | Designs the mod's classes, files and task list before work starts |
+| `dayz-lead` | Runs one team's workers and its review gates |
+| `dayz-build-checker` | Gate: the PBO builds with no AddonBuilder errors |
+| `dayz-ingame-tester` | Gate: the mod loads on a diag server and client with clean logs |
+| `dayz-build-engineer` | Builds, launches test sessions and deploys after your yes |
+| `dayz-docs-writer` | Keeps the mod's README, changelog and classname list current |
 | `dayz-asset-specialist` | `.p3d` / `.paa` / `.rvmat` and Workbench asset integration |
 | `dayz-config-specialist` | `config.cpp`, CfgPatches, CfgVehicles, CfgWeapons, hidden selections |
 | `dayz-map-specialist` | Terrain Builder, DayZ Editor, map objects, clutter, surfaces |
@@ -224,5 +239,8 @@ Specialist agents live under `.claude/agents/` and cover the major DayZ surfaces
 | `dayz-server-admin` | `types.xml`, `init.c`, `cfggameplay.json`, server performance |
 | `dayz-ui-specialist` | `.layout` files, widget scripting, HUD/menu, UI theme/color |
 | `dayz-workbench-specialist` | Workbench plugin development (editor-time tooling) |
+| `figma-node-normalizer` | Cleans a Figma frame so it can be converted |
+| `figma-to-dayz-layout` | Turns a cleaned Figma frame into a DayZ `.layout` |
+| `dayz-layout-validator` | Checks and cleans generated `.layout` files; the UI gate |
 
 Plus `agent-creator` for scaffolding new agent definitions to the standard template.

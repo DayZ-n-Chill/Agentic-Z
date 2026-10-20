@@ -1,7 +1,8 @@
 """dayz-build-imageset: Pack PNG sprites into a DayZ .imageset + .paa atlas.
 
-Reads `<mod>/.gui-sources/<setname>/*.png`, shelf-packs into a square POT atlas
-with a 10px gutter, converts to .paa via ImageToPAA.exe, and writes a matching
+Reads `<mod>/.gui-sources/<setname>/*.png`, shelf-packs into the smallest
+power-of-two atlas (rectangular allowed) with a 10px gutter, splitting across
+several atlases when one 4096x4096 atlas is not enough, converts to .paa via ImageToPAA.exe, and writes a matching
 .imageset definition file under `<mod>/gui/imagesets/`.
 
 See SKILL.md for full usage.
@@ -15,7 +16,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:  # reported with an install hint in main(); packing logic doesn't need it
+    Image = None
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
@@ -33,6 +37,9 @@ ATLAS_SIZES = sorted(
 )
 
 
+REQUIREMENTS = Path(__file__).resolve().parent / "requirements.txt"
+
+
 def _load_preflight_module():
     spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
     if spec is None or spec.loader is None:
@@ -40,9 +47,6 @@ def _load_preflight_module():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
-
-find_dayz_tools = _load_preflight_module().find_dayz_tools
 
 
 def gate_on_preflight() -> None:
@@ -54,7 +58,8 @@ def gate_on_preflight() -> None:
 
 
 def resolve_image_to_paa() -> Path:
-    tools_root = find_dayz_tools()
+    # Loaded here, after gate_on_preflight() has confirmed preflight.py exists.
+    tools_root = _load_preflight_module().find_dayz_tools()
     if tools_root is None:
         sys.exit(
             f"{FAIL} DayZ Tools not found.\n"
@@ -107,6 +112,9 @@ def pack_split(metas, gap=GAP):
     Returns list of (dims, placed) tuples, or None if a single sprite is too big
     for the largest allowed atlas.
     """
+    max_dim = POT_DIMS[-1]
+    if any(w + 2 * gap > max_dim or h + 2 * gap > max_dim for _, w, h in metas):
+        return None  # a sprite doesn't fit even in the largest atlas
     sorted_metas = sorted(metas, key=lambda m: (-m[2], -m[1]))
     atlases = []
     current: list = []
@@ -116,8 +124,6 @@ def pack_split(metas, gap=GAP):
         if dims is not None:
             current = trial
             continue
-        if not current:
-            return None  # single sprite doesn't fit even in the largest atlas
         dims_final, placed_final = shelf_pack(current, gap)
         atlases.append((dims_final, placed_final))
         current = [sprite]
@@ -253,6 +259,12 @@ def main() -> int:
         help="Mod name used in the path field of the .imageset (default: basename of mod_root).",
     )
     args = parser.parse_args()
+
+    if Image is None:
+        sys.exit(
+            f"{FAIL} Pillow is not installed (needed to compose the atlas).\n"
+            f'       Install it: python -m pip install -r "{REQUIREMENTS}"'
+        )
 
     mod_root = Path(args.mod_root).resolve()
     if not mod_root.is_dir():

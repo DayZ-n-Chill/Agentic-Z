@@ -4,13 +4,13 @@ name: dayz-launch-workbench
 
 ## Overview
 
-Open Enfusion Workbench (DayZ Tools' script + UI editor) from the CLI, optionally pointed at a specific mod's project file. Spawns detached with cwd=&lt;DayZ Tools&gt;\Bin\Workbench so Workbench's support files resolve. Default behavior loads the vanilla dayz.gproj shipped with DayZ Tools; --mod &lt;ModName&gt; loads the per-mod gproj scaffolded by /dayz-new-mod.
+Opens Enfusion Workbench (DayZ Tools' script and UI editor) from the command line, detached, either on vanilla DayZ or on a mod's workbench/dayz.gproj so vanilla and mod scripts compile together. Use when you want to write or debug a mod's Enforce Script or .layout files with Workbench's compiler and code completion.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-launch-workbench
 
-Open Workbench without leaving the terminal. Default loads vanilla DayZ; `--mod <ModName>` loads the customized `dayz.gproj` that `/dayz-new-mod` writes into `workspace/<ModName>/workbench/`, so Workbench compiles and lints vanilla + your mod together.
+Open Workbench without leaving the terminal. Default loads vanilla DayZ; `--mod <ModName>` loads the customized `dayz.gproj` that `/dayz-new-mod` (or `/dayz-add-scaffold --piece workbench`) writes into `workspace/<ModName>/workbench/`, so Workbench compiles and lints vanilla + your mod together.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -19,7 +19,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 1. Gates on `/dayz-preflight`.
 2. Locates `workbenchApp.exe` via DayZ Tools (`Bin\Workbench\workbenchApp.exe`).
 3. Resolves the project file:
-   - `--mod <ModName>` → uses `P:\<ModName>\workbench\dayz.gproj` (the file scaffolded by `/dayz-new-mod`). Fails fast if the mod folder or gproj isn't there.
+   - `--mod <ModName>` → uses `P:\<ModName>\workbench\dayz.gproj`. Fails fast if the mod folder or gproj isn't there; a missing gproj is added with `/dayz-add-scaffold <ModName> --piece workbench`.
    - `--gproj <path>` → uses an explicit `.gproj` path (escape hatch for non-scaffolded layouts).
    - Neither → no project arg; Workbench loads the default `dayz.gproj` shipped next to `workbenchApp.exe`.
 4. Spawns `workbenchApp.exe` with `cwd=<DayZ Tools>\Bin\Workbench` (so Workbench's support files — `dta\`, `platforms\`, `ToolAddons\`, bundled `dayz.gproj` — resolve; see "Why cwd" below) and `DETACHED_PROCESS` so the shell returns immediately.
@@ -35,7 +35,7 @@ python "<skill-dir>\launch.py"
 ```cmd
 python "<skill-dir>\launch.py" --mod MyMod
 ```
-(Requires `P:\MyMod\workbench\dayz.gproj` to exist — created automatically by `/dayz-new-mod MyMod`.)
+(Requires `P:\MyMod\workbench\dayz.gproj`, created by `/dayz-new-mod MyMod`. For an imported or older mod without it, run `/dayz-add-scaffold MyMod --piece workbench` first.)
 
 **Open with an arbitrary gproj:**
 ```cmd
@@ -67,9 +67,9 @@ DayZ Workbench launcher
 
 ## Flag rules
 
-- `--mod` and `--gproj` are mutually exclusive.
+- `--mod` and `--gproj` are mutually exclusive (argparse rejects both together).
 - `--mod` is just the mod name; the skill expands to `P:\<ModName>\workbench\dayz.gproj`. Fails fast if either the mod folder or the gproj is missing.
-- `--gproj` accepts an absolute path (relative paths resolve against repo root). Warns if the extension isn't `.gproj`.
+- `--gproj` accepts an absolute path; a relative path resolves against the project (`CLAUDE_PROJECT_DIR`, else the working directory). Warns if the extension isn't `.gproj`.
 
 ## Why cwd=`<DayZ Tools>\Bin\Workbench`
 
@@ -85,8 +85,11 @@ Running Workbench under the parent shell would block the terminal until you clos
 - The skill exits immediately after the spawn.
 - The PID is printed so you can find/kill it later if needed.
 
+## Editing the gproj
+
+`workbench/dayz.gproj` is yours to edit (for example to add modules beyond the injected `game`/`world`/`mission` paths). No skill rewrites it: `/dayz-new-mod` refuses to run on an existing mod folder and `/dayz-add-scaffold` never overwrites a file. To regenerate it, delete it and run `/dayz-add-scaffold <ModName> --piece workbench`.
+
 ## Do not
 
-- Don't pass `--mod` for a mod that wasn't scaffolded by `/dayz-new-mod` — the workbench/dayz.gproj won't exist. Run `/dayz-new-mod <ModName>` first.
-- Don't edit the workbench/dayz.gproj manually expecting `/dayz-new-mod` re-runs to preserve your changes — the scaffolder writes a fresh copy each time. If you need custom modules beyond the auto-injected `game`/`world`/`mission`, keep your edits in a side file or accept that re-running scaffolding will overwrite.
-- Don't spam-launch — Workbench isn't designed to run multiple instances against the same project.
+- Don't pass `--mod` for a mod without `workbench/dayz.gproj`; add it first with `/dayz-add-scaffold <ModName> --piece workbench`.
+- Don't spam-launch; Workbench isn't designed to run multiple instances against the same project.

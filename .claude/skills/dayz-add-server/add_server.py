@@ -15,20 +15,15 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from textwrap import dedent
 
-# REPO_ROOT = where this skill ships from (plugin or template clone).
-# Project dir (where .server/ lives) is resolved at runtime from the
-# /dayz-init project cache; see resolve_project_dir().
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
-PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
-DAYZ_INIT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-init"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
 
 KNOWN_MAPS: dict[str, str] = {
     "chernarus": "dayzOffline.chernarusplus",
@@ -36,46 +31,9 @@ KNOWN_MAPS: dict[str, str] = {
     "sakhal": "dayzOffline.sakhal",
 }
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
-
-def _load_module_from_path(name: str, path: Path):
-    """Load a sibling-skill .py as a module by file path so static analyzers don't
-    choke on a sys.path-based sibling import."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load module at {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_preflight = _load_module_from_path("dayz_preflight_module", PREFLIGHT)
-find_dayz_server = _preflight.find_dayz_server
-
-# Reuse the project-root cache reader from /dayz-init so add-server follows the same source of truth.
-_dayz_init_state = _load_module_from_path("dayz_init_state_module", DAYZ_INIT_DIR / "state.py")
-cached_project_root = _dayz_init_state.cached_project_root
-
-
-def resolve_project_dir() -> Path:
-    """Return the cached project root, or bail out pointing the user at /dayz-init."""
-    project = cached_project_root()
-    if project is None:
-        print("error: no project cached.", file=sys.stderr)
-        print("  Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
-        sys.exit(2)
-    return project.resolve()
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight skill not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
+find_dayz_server = h.preflight.find_dayz_server
 
 
 def gate_on_old_layout(project_dir: Path) -> None:
@@ -147,13 +105,26 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir:
         )
 
     mission_dir.parent.mkdir(parents=True, exist_ok=True)
+    action = "Copied"
     if mission_dir.exists():
-        shutil.rmtree(mission_dir)
+        backup = backup_mission(mission_dir)
+        print(f"{OK} Kept previous mission as {backup.relative_to(project_dir)}")
         action = "Refreshed"
-    else:
-        action = "Copied"
     shutil.copytree(src, mission_dir)
     print(f"{OK} {action} {mission_dir.relative_to(project_dir)}  (from DayZ Server install)")
+
+
+def backup_mission(mission_dir: Path) -> Path:
+    """Rename mission/ to mission.bak-<timestamp>/ so --refresh-mission never
+    destroys local edits. Returns the backup path."""
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    backup = mission_dir.with_name(f"{mission_dir.name}.bak-{stamp}")
+    n = 1
+    while backup.exists():
+        backup = mission_dir.with_name(f"{mission_dir.name}.bak-{stamp}-{n}")
+        n += 1
+    mission_dir.rename(backup)
+    return backup
 
 
 def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
@@ -198,7 +169,6 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
     mission_dir = inst_dir / "mission"
     template_junction = inst_dir / template
     if mission_dir.exists() and not template_junction.exists():
-        import subprocess
         result = subprocess.run(
             ["cmd", "/c", "mklink", "/J", str(template_junction), str(mission_dir)],
             capture_output=True, text=True
@@ -292,12 +262,12 @@ def main() -> int:
     parser.add_argument(
         "--refresh-mission",
         action="store_true",
-        help="Re-copy the mission folder from DayZ Server install, overwriting local edits.",
+        help="Re-copy the mission folder from DayZ Server install; the old copy is kept as mission.bak-<timestamp>.",
     )
     args = parser.parse_args()
 
-    project_dir = resolve_project_dir()
-    gate_on_preflight()
+    project_dir = h.resolve_project_dir()
+    h.gate_on_preflight()
     print()
     print(f"{OK} Project: {project_dir}")
     gate_on_old_layout(project_dir)

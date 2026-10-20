@@ -5,7 +5,7 @@ description: Layered conventions and full workflow for every DayZ-related agent 
 
 # DayZ Modding Conventions (L2)
 
-These rules apply to every DayZ-related agent and skill in this repo. They sit *below* the L1 default rules in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` and *above* any individual agent or skill. When a DayZ agent or skill is invoked, it should read this file in addition to L1.
+These are the Tier 2 (L2) rules. They apply to every DayZ-related agent and skill in this repo. They sit *below* the L1 default rules in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` and *above* any individual agent or skill. When a DayZ agent or skill is invoked, it should read this file in addition to L1.
 
 ## EnScript code style
 
@@ -14,7 +14,13 @@ For all Enforce Script (`.c`) work, follow these conventions: naming (`m_`/`s_` 
 ## Environment
 
 - **`P:\` drive must be mounted** by DayZ Tools before any DayZ work. **Every DayZ skill that *does* work MUST gate on `/dayz-preflight`** at the start of execution and halt if preflight returns non-zero — including offline-only skills like scaffolding. The discipline of "preflight first" keeps the workflow uniform and catches a dismounted drive at the first action of a session, not the third.
-- **Abort-skill exception.** Skills that *only abort* in-flight work (currently `/dayz-stop-test` killing diag processes) do NOT gate on preflight — they're emergency escape hatches that must work even when the environment is half-broken. This is the only documented exception to the gating rule.
+- **Exceptions to the preflight gate.** These skills do not gate on preflight up front, each for a stated reason:
+  - `/dayz-stop-test` only aborts in-flight work (kills diag processes). It is an emergency escape hatch that must work even when the environment is half-broken.
+  - `/dayz-scope-mod` and `/dayz-record-correction` are meta-skills that edit settings and rule files, not `P:\` content.
+  - `/dayz-init` runs preflight inside its own steps (the environment check and the plan it executes), so it does not gate before the wizard starts.
+  - `/dayz-workdrive` mounts `P:\`, which is the very thing preflight checks.
+
+  Every other skill that does work gates on preflight. A new exception needs a stated reason here.
 - DayZ Tools must be installed via Steam (Tools section).
 - Vanilla DayZ data must be unpacked under `P:\` so configs can inherit from base classes.
 - Workshop deploy folder for in-development mods: `P:\Mods\@<ModName>\Addons\`.
@@ -35,15 +41,14 @@ Skills resolve paths in this order: env var → Windows registry (Tools only) �
 
 Skills MUST use the shared resolver helpers (`find_dayz_tools`, `find_vanilla_data` in `dayz-preflight/preflight.py`) rather than re-implementing path discovery. This keeps the resolution order consistent across the whole DayZ skill set.
 
-## RAG embedding (local)
+## RAG index (Voyage + LanceDB)
 
-The RAG layer (`/dayz-search-index` + the `dayz-rag` MCP server) runs **fully locally** with `nomic-ai/CodeRankEmbed` (137M-param code-specialised model, 768-dim, top of CoIR). No API keys, no network calls, no per-query cost.
+The RAG layer (`/dayz-search-index` plus the `dayz-rag` MCP server) embeds vanilla source with Voyage AI's `voyage-code-3` model (1024 dimensions) and stores the vectors in LanceDB under `~/.claude/dayz-search-index/`. Embedding is a hosted API call, not a local model:
 
-- First indexer run downloads ~280MB of model weights to the HuggingFace cache (`~/.cache/huggingface/`). After that, indexing and queries are entirely offline.
-- Full index: ~7,000 chunks, builds in ~90s on a typical CPU.
-- Per-query latency: ~50-150ms (local embed + numpy cosine).
-
-DayZ Tools is the only per-machine install needed. There's no per-clone API key.
+- It needs `VOYAGE_API_KEY=...` in `.env` at the repo root. Without it, searches fail with a "VOYAGE_API_KEY not set" error.
+- Indexed file types: `.c`, `.cpp`, `.hpp`, `.h`, `.cfg`, `.layout`, `.rvmat`, `.xml`, `.json`, `.csv`. Binary formats (`.p3d`, `.paa`) are not indexed.
+- The live index holds about 52,000 chunks from about 38,000 files (roughly 66M tokens).
+- The wiki index is separate and built by `/dayz-search-wiki-index --full`.
 
 ## Project layout
 
@@ -93,7 +98,7 @@ Not every `workspace/<ModName>/` is buildable source. A **bundle** carries pre-c
   - `scripts/3_Game/` — base game logic
   - `scripts/4_World/` — world-level logic
   - `scripts/5_Mission/` — mission / server scripts
-- Use `modded class Foo extends Foo { ... }` for non-destructive overrides.
+- Use `modded class Foo { ... }` for non-destructive overrides, with NO `extends` clause. `modded class Foo extends Foo` compiles but is a silent no-op.
 
 ## Server / economy
 
@@ -138,40 +143,39 @@ When the user requests a color/theme change: ask for scope FIRST (single element
 - The launch skill passes `-mission=<absolute path to .server/<instance>/mission>` to pin the mission folder explicitly (the engine otherwise looks in the diag binary's local `mpmissions/`, which doesn't exist in the DayZ game install).
 - DayZ Server install (Steam appid 223350) is **only required for the initial mission bootstrap**. After missions are copied into `.server/<instance>/mission/`, DayZ Server can be uninstalled; the workspace copy is the source of truth.
 
-## Vanilla source recall — `search_dayz_source` MCP tool
+## Vanilla source search (the search rule)
 
-The `dayz-rag` MCP server exposes semantic search over indexed vanilla DayZ source: `.c` (Enforce Script under `P:\scripts\`), `.layout` (GUI under `P:\gui\`), and `.cpp`/`.cfg`/`.hpp`/`.h` config blocks (under `P:\dz\` and friends). Backed by a per-user numpy + sqlite index at `~/.claude/dayz-search-index/`, built and rebuilt by `/dayz-search-index --full`. Embedding runs locally via `nomic-ai/CodeRankEmbed` — no API keys, no network calls.
+This is the single search rule for every DayZ agent and skill. Agents state it in one line and point here.
 
-**Default to Grep for code-shaped questions** (class names, symbol lookups, exact strings, inheritance trees via `class X extends Y` patterns). `Grep` over `P:\scripts\` is sub-second and exhaustive.
+1. **Grep first** when you know the symbol or exact string (class names, method names, `class X extends Y`, a `<type name="...">` entry). `Grep` over the relevant `P:\` folder is fast and exhaustive.
+2. **RAG search** (`search_dayz_source`, or `search_dayz_wiki` for the community wiki) when the question is by meaning ("how does vanilla handle X?"), when you are hunting for an example to mirror, or after two or three greps came up empty.
+3. **Cite, then verify** every hit before you rely on it (below).
 
-**When to reach for `search_dayz_source` instead:**
+Scope searches to your domain's folders (`P:\scripts\`, `P:\dz\<category>\`, `P:\gui\`, mission templates). Do not fan out across all of `P:\`; if a scoped search is empty, ask before widening.
 
-- "How does vanilla handle X?" questions where you don't already know the symbol name. The semantic index returns chunks ranked by *meaning*, not keyword match.
-- Two or three Grep guesses already came up empty — that's the signal you don't know the right term and semantic similarity earns its slot.
-- Browsing for vanilla examples to mirror (e.g. "find a vanilla layout that uses scrollbars").
+### Tools
 
-**When NOT to use it:**
+Each tool is exposed under two names depending on how the server is loaded: `mcp__dayz-rag__<tool>` (project server) and `mcp__plugin_agentic-z_dayz-rag__<tool>` (plugin). Agents that search list both in `tools:`.
 
-- You already know the exact class/symbol name and want a literal match — that's `Grep` territory.
-- You need binary content (`.p3d`, `.paa`) — only text formats are indexed.
-- You need files outside the indexed set (`.rvmat` materials, `types.xml`, `events.xml`, `layers.cfg`, `.json`, `.csv`) — those are excluded by design and stay `Grep` territory.
+- `search_dayz_source(query, top_k=5, file_type=None, max_distance=None)` returns chunks with `path`, `parent_context`, `line_start`/`line_end`, `score`, `is_stale`, and a truncated snippet. `file_type` is one of `c`, `cpp`, `hpp`, `h`, `layout`, `cfg`, `rvmat`, `xml`, `json`, `csv`, or omitted.
+- `search_dayz_wiki(query, top_k=5)` searches the Bohemia community wiki (DayZ categories).
+- `get_dayz_file(path, line_start=None, line_end=None)` fetches a file or range under `P:\` to verify a hit.
+- `list_indexed_sources()` returns `{source, wiki}`: the manifest of the vanilla source index and of the wiki index (what was indexed and when), with `null` for an index that has not been built.
 
-**Tool surface (from the agent's perspective):**
+### Cite, then verify (required)
 
-- `search_dayz_source(query, top_k=5, file_type=None)` — semantic search, returns chunks with `path`, `parent_context`, `line_start`/`line_end`, score, and a 1500-char snippet. `file_type` filter: `"c"` | `"cpp"` | `"hpp"` | `"h"` | `"layout"` | `"cfg"` | `None`.
-- `get_dayz_file(path, line_start=None, line_end=None)` — fetch full or partial file content for follow-up after a search hit. Sandboxed to paths under `P:\`.
-- `list_indexed_sources()` — manifest summary; useful to confirm what was indexed and when.
+A search hit is a hint, not a fact. Before grounding a claim on one:
 
-**Cite-then-verify (REQUIRED).** A `search_dayz_source` or `search_dayz_wiki` hit is a hint, not a fact. Before grounding any claim on a returned chunk:
+1. Fetch the cited range with `get_dayz_file` (or `Read` the `P:\` path). The snippet is truncated and the index can lag the files on disk; `is_stale=True` says so explicitly.
+2. Check the code says what you think, in the form you think. Retrieval returns near-misses: a similar class on another inheritance branch, a constant nothing references.
+3. If the file disagrees with the snippet, trust the file and suggest re-running `/dayz-search-index --full` (or `/dayz-search-wiki-index --full` for the wiki).
+4. Cite vanilla as `path:line_start-line_end` so the user can check it.
 
-1. Call `get_dayz_file(path, line_start, line_end)` (or use the `Read` tool directly for paths under `P:\`) to fetch the cited file at the cited range. The 1500-char snippet returned by search is truncated and the index can lag the current state on disk.
-2. Verify the chunk says what you think it says, in the form you think it does. Retrieval can return results that are semantically near but functionally wrong (e.g. a similar-looking class from a different inheritance branch, or a constant that's never actually referenced anywhere).
-3. If verification disagrees with the snippet, trust the file on disk. Flag the index as possibly stale and suggest the user re-run `/dayz-search-index --full` (or `/dayz-search-wiki-index --full` for wiki drift).
-4. When you cite vanilla in your output, include `path:line_start-line_end` so the user can independently verify.
+A single search used only to navigate does not need verifying. A single chunk treated as ground truth is the most common RAG failure.
 
-Skip this only when a single search call is being used for navigation/exploration, not for an authoritative answer. A single chunk treated as ground truth without follow-up is the most common RAG failure mode; two cheap calls (search + verify) prevent it.
+### When the index is unavailable
 
-**Setup gate:** Each DayZ specialist agent assumes the index has been built. If `search_dayz_source` returns `"no index"`, instruct the user to run `/dayz-search-index --full` first. After a DayZ update, the index goes stale — rerun with `--full` to refresh.
+If a search returns "no index", a missing-table error, or a missing `VOYAGE_API_KEY`, say so, fall back to scoped `Grep`, and tell the user which fix applies (`/dayz-search-index --full`, `/dayz-search-wiki-index --full`, or adding the key to `.env`). After a DayZ update the index goes stale; rebuild with `--full`.
 
 ## Formatting answers grounded in vanilla source
 
@@ -401,8 +405,10 @@ Reference: vanilla `WoodenCrate` in `DZ\gear\camping\config.cpp` lines
 
 ## How agents and skills reference this file
 
-Each DayZ agent or skill should include a one-line reference near the top of its definition:
+Each DayZ agent or skill includes a one-line reference near the top of its definition:
 
-> Follow `.claude/skills/_shared/dayz-conventions.md`.
+> Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 
-That single line is enough — the agent/skill is expected to read this file when invoked.
+Agents that search vanilla add one line for the search rule instead of restating it, for example:
+
+> Search: Grep for known names, RAG for questions by meaning, then verify every hit (Tier 2, "Vanilla source search").

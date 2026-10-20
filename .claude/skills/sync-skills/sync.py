@@ -35,11 +35,23 @@ def repo_skills_dir() -> Path:
 
 
 def load_agents_config() -> list[dict]:
+    """Read agents.json. Exits 2 with a clear message if it is missing or malformed."""
     cfg_path = script_dir() / "agents.json"
     if not cfg_path.is_file():
         print(f"ERROR: agents config not found at {cfg_path}", file=sys.stderr)
         sys.exit(2)
-    return json.loads(cfg_path.read_text(encoding="utf-8")).get("agents", [])
+    try:
+        data = json.loads(cfg_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"ERROR: {cfg_path} is not valid JSON (line {e.lineno}, column {e.colno}): {e.msg}",
+              file=sys.stderr)
+        sys.exit(2)
+    agents = data.get("agents") if isinstance(data, dict) else None
+    if not isinstance(agents, list) or not all(isinstance(a, dict) and a.get("name") for a in agents):
+        print(f'ERROR: {cfg_path} must be {{"agents": [{{"name": ..., ...}}, ...]}}; '
+              "every entry needs a \"name\".", file=sys.stderr)
+        sys.exit(2)
+    return agents
 
 
 def home_for(agent_cfg: dict) -> Path:
@@ -152,7 +164,7 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
             except ValueError:
                 is_foreign = True
             if is_foreign and not force:
-                print(f"  [FOREIGN] {src.name}: points at {existing} — rerun with --force to take ownership")
+                print(f"  [FOREIGN] {src.name}: points at {existing}; rerun with --force to take ownership")
                 counts["skipped"] += 1
                 continue
             if dry_run:

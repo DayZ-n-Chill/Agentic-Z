@@ -6,9 +6,21 @@ This file provides foundational guidance for agents working in this repository.
 
 This repo is **Agentic-Z** — an AI Agent Stack for DayZ Modding, with first-class support for Claude Code, Codex, and Gemini. Cloning it starts a new DayZ mod project. Every clone inherits the same scaffolding: rules, agents, skills, helper scripts.
 
+## The three tiers
+
+Every agent works from three tiers. When two disagree, the more specific tier wins, and no tier repeats another.
+
+| Tier | What it holds | Where it lives | Loads |
+|---|---|---|---|
+| 1 · Repo rules (L1) | How every agent works here: communication, tooling, memory, routing, file locations. | This file (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) | Every agent, every task |
+| 2 · DayZ rules (L2) | Enforce Script style, config patterns, asset rules, environment, vanilla search. | `.claude/skills/_shared/dayz-conventions.md` | All DayZ work |
+| 3 · Agents and knowledge packs | The agents in `.claude/agents/`, the skills, and the packs under `.claude/skills/_shared/` (EnScript patterns, Figma-to-DayZ rules). | Their own files | Only what the task needs |
+
+Corrections from the user go into the right tier through `/dayz-record-correction`.
+
 ## Default rules (apply to every clone)
 
-These are the L1 rules of the template. They apply to every clone of this repo, every agent, every skill. DayZ-specific rules live separately at `.claude/skills/_shared/dayz-conventions.md` and are referenced from the individual agent/skill files that need them.
+These are the L1 (Tier 1) rules of the template. They apply to every clone of this repo, every agent, every skill. DayZ-specific rules live separately at `.claude/skills/_shared/dayz-conventions.md` and are referenced from the individual agent/skill files that need them.
 
 **Skim summary:**
 
