@@ -27,10 +27,10 @@ No arguments. Runs `taskkill /IM DayZDiag_x64.exe /F`. A thin `.bat` is enough b
 | taskkill result | Output | Exit |
 |---|---|---|
 | Processes killed | One `SUCCESS:` line per process | 0 |
-| No process running (errorlevel 128) | taskkill's "not found" line, then `[OK]   No DayZDiag_x64.exe processes running.` | 0 |
+| No process running (errorlevel 128) | `[OK]   No DayZDiag_x64.exe processes running.` only | 0 |
 | Any other failure (e.g. access denied) | taskkill's error, then `[FAIL] taskkill failed with errorlevel N.` | N |
 
-taskkill's error stream is not suppressed, so real failures stay visible.
+taskkill's error output is captured and dropped only for errorlevel 128 (its "process not found" line); for every other result it is re-printed on stderr, so real failures stay visible.
 
 ## Scope
 

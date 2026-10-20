@@ -1,10 +1,10 @@
 """Environment checks for /dayz-init.
 
 Each check returns None (fine) or an EnvIssue:
-  AUTOFIX    /dayz-init fixes it itself (mount P:\\, create the P:\\Mods junction)
+  AUTOFIX    /dayz-init fixes it itself (mount P:\\)
   HARD_STOP  the user has to act (install DayZ Tools, extract game data, ...)
 
-Paths are resolved with the shared dayz-preflight resolvers so this check and
+Every check is read-only. Paths are resolved with the shared dayz-preflight resolvers so this check and
 every other DayZ skill agree on where things live. Checks that read P:\\ are
 skipped while P:\\ is unmounted; re-run after mounting to see them.
 """
@@ -87,23 +87,31 @@ def check_vanilla_data() -> EnvIssue | None:
 
 
 def check_mods_junction() -> EnvIssue | None:
-    """P:\\Mods\\ must be a junction to <DayZ install>\\!Workshop\\.
+    """P:\\Mods\\ must be a junction to <DayZ install>\\!Workshop\\. Read-only.
 
-    Missing and the game is found: AUTOFIX (mklink /J is non-destructive).
-    Any other problem (real folder, dangling junction, no game install):
-    HARD_STOP with preflight's own explanation and fix command.
+    Missing while the game's !Workshop folder exists: fine. /dayz-preflight,
+    which every child skill runs first, creates the junction (mklink /J is
+    non-destructive). Missing without a locatable game, or present in the wrong
+    shape (real folder, dangling link, wrong target): HARD_STOP.
+
+    preflight.validate_p_mods() is only called when P:\\Mods exists, because on
+    an absent path it creates the junction; on an existing path it only inspects.
     """
     if not p_drive_mounted():
         return None
+    if not os.path.lexists(P_MODS):
+        game = preflight.find_dayz_game()
+        if game is not None and (game / "!Workshop").is_dir():
+            return None
+        return EnvIssue(
+            name="mods_junction",
+            severity=Severity.HARD_STOP,
+            message="P:\\Mods\\ is missing and the DayZ install's !Workshop folder was not found "
+                    "(install DayZ, or set DAYZ_GAME_PATH if it is installed somewhere unusual)",
+        )
     problem = preflight.validate_p_mods()
     if problem is None:
         return None
-    if not os.path.lexists(P_MODS) and preflight.find_dayz_game() is not None:
-        return EnvIssue(
-            name="mods_junction",
-            severity=Severity.AUTOFIX,
-            message="P:\\Mods\\ junction to !Workshop is missing (will create)",
-        )
     return EnvIssue(name="mods_junction", severity=Severity.HARD_STOP, message=problem)
 
 

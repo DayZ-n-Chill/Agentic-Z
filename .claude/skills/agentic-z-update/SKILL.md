@@ -14,7 +14,7 @@ Pull template improvements (agents, skills, conventions, docs) from upstream `Da
 2. **Local customizations to template files are not overwritten silently.** A per-file three-way merge detects when both the clone and upstream edited the same file and leaves it alone unless the user picks "take" in `--per-file` mode.
 3. **No two updates can run at once.** A PID-based lock prevents concurrent invocations.
 
-The first run in a clone records a baseline (the SHA of upstream `main` at that moment). Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file.
+The first applying run in a clone records a baseline (the SHA of upstream `main` at that moment) and changes nothing else. Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file. The script works from the repo root (`git rev-parse --show-toplevel`), so it can be started from any subfolder.
 
 ## How to run
 
@@ -27,12 +27,12 @@ python "<skill-dir>\update.py" [--check] [--quiet] [--yes] [--per-file] [--force
 | Flag | Behavior |
 |---|---|
 | (default) | Preview drift, prompt y/N, apply safe changes (conflicts left alone) |
-| `--check` | Preview only; exits 1 if changes pending, 0 if up to date |
+| `--check` | Preview only and writes nothing; exits 1 if changes are pending or no baseline exists yet, 0 if up to date |
 | `--quiet` | With `--check`: single-line output for hooks |
 | `--yes` | Skip the confirmation prompt (CI / scripted use) |
 | `--per-file` | Walk each conflict interactively: keep / take / diff / skip |
 | `--force` | Override the dirty-tree check |
-| `--dry-run` | Show preview, do not apply |
+| `--dry-run` | Show preview, do not apply (and do not record a first baseline) |
 | `--no-sync` | Skip the post-merge `sync-skills` run (useful when Claude Code is the only agent CLI in use) |
 
 ## Automatic commit
@@ -43,7 +43,7 @@ When at least one file is applied, the skill stages exactly the applied paths an
 chore: pull Agentic-Z upstream (<first 8 chars of upstream SHA>)
 ```
 
-It then records the upstream SHA in `.claude/.upstream-baseline`. If `git commit` fails (for example, a pre-commit hook rejects it), the changes stay staged and the skill prints a warning; nothing is rolled back. Unresolved conflicts are never part of the commit. Tell the user about this commit when reporting results.
+It then records the upstream SHA in `.claude/.upstream-baseline`, but only when the commit succeeded and nothing upstream changed is still unapplied (an unresolved `conflict` or `deleted-conflict`, or a file whose checkout or delete failed). Otherwise the baseline stays put and the next run offers those files again. If `git commit` fails (for example, a pre-commit hook rejects it), the changes stay staged and the skill prints a warning; nothing is rolled back. Unresolved conflicts are never part of the commit. Tell the user about this commit when reporting results.
 
 ## Per-file status meanings
 
@@ -103,7 +103,7 @@ output/                     # one-shot deliverables
 
 ## SessionStart hook
 
-A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead OR if a newer prebuilt search index is available. Silent on no-change. Configured in `.claude/settings.json`.
+A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead, if a newer prebuilt search index is available, or if no baseline has been recorded yet (run `/agentic-z-update` once to record it). Silent on no-change. Configured in `.claude/settings.json`.
 
 To disable temporarily: comment out the `SessionStart` block in `.claude/settings.json`.
 

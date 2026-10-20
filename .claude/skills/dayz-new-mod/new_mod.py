@@ -43,8 +43,10 @@ NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
 
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
-find_dayz_tools = h.preflight.find_dayz_tools
-gate_on_preflight = h.gate_on_preflight
+
+def find_dayz_tools() -> Path | None:
+    """DayZ Tools root via /dayz-preflight's resolver (a seam tests can patch)."""
+    return h.preflight.find_dayz_tools()
 
 
 CONFIG_CPP_TEMPLATE = Template(
@@ -208,7 +210,8 @@ def scaffold_workbench(target: Path, modname: str) -> None:
     injects the mod's script paths into the gproj so Workbench compiles
     vanilla + mod scripts together. If DayZ Tools can't be located, scaffolds
     the folder with a placeholder note and warns — the rest of the mod is
-    still usable; the user can re-copy the files later.
+    still usable; /dayz-add-scaffold <ModName> --piece workbench adds the
+    files once Tools is installed.
     """
     workbench_dir = target / "workbench"
     workbench_dir.mkdir(parents=True)
@@ -219,12 +222,12 @@ def scaffold_workbench(target: Path, modname: str) -> None:
             "# Workbench files missing\n\n"
             "DayZ Tools was not detected when this mod was scaffolded, so the official\n"
             "`dayz.gproj` and `DayZSetting.xml` couldn't be copied here.\n\n"
-            "Once DayZ Tools is installed, copy them manually from:\n"
-            "  <DayZ Tools>\\Bin\\Workbench\\dayz.gproj\n"
-            "  <DayZ Tools>\\Bin\\Workbench\\DayZSetting.xml\n",
+            "Once DayZ Tools is installed, add them with:\n"
+            f"  /dayz-add-scaffold {modname} --piece workbench\n",
             encoding="utf-8",
         )
         print(f"{WARN} workbench/ created without official files (DayZ Tools not detected)")
+        print(f"       Once DayZ Tools is installed: /dayz-add-scaffold {modname} --piece workbench")
         return
 
     src_workbench = tools_root / "Bin" / "Workbench"
@@ -418,20 +421,29 @@ def main() -> int:
     parser.add_argument("--author", help="Author handle (cached for future runs).")
     args = parser.parse_args()
 
-    gate_on_preflight()
+    h.gate_on_preflight()
     validate_name(args.modname)
     author = resolve_author(args.author)
 
     workspace_target = WORKSPACE / args.modname
     p_drive_link = P_DRIVE / args.modname
 
-    if workspace_target.exists():
+    # lexists, so a dangling link also counts: the rollbacks below may then
+    # only ever remove a folder this run created.
+    if os.path.lexists(workspace_target):
         sys.exit(
             f"{FAIL} {workspace_target.relative_to(PROJECT_DIR)} already exists. Refusing to clobber."
         )
     check_or_clean_p_drive_link(p_drive_link, workspace_target)
 
-    target = scaffold(args.modname, author)
+    try:
+        target = scaffold(args.modname, author)
+    except Exception as e:
+        shutil.rmtree(workspace_target, ignore_errors=True)
+        sys.exit(
+            f"{FAIL} Scaffold failed: {e}\n"
+            f"       Partial {workspace_target.relative_to(PROJECT_DIR)}/ rolled back."
+        )
 
     try:
         kind = make_dir_link(target, p_drive_link)

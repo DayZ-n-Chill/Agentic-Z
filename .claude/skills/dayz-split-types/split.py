@@ -8,46 +8,46 @@ so we copy it next to the user's types.xml at runtime, run it, then clean up.
 The upstream script only logs its errors (it always exits 0), so the wrapper
 verifies the result itself before reporting success.
 
+Every run first makes timestamped backups of types.xml, cfgeconomycore.xml and
+any existing types/ folder (which upstream deletes and regenerates).
+
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
 import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
 VENDORED_SCRIPT = Path(__file__).resolve().parent / "vendor" / "typeSplitter.py"
 
-OK = "[OK]   "
 INFO = "[INFO] "
-FAIL = "[FAIL] "
 
 
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
+def backup(path: Path, stamp: str) -> Path:
+    """Copy a file or folder to <name>.<stamp>.bak beside it and return the copy.
 
-
-def backup_once(path: Path) -> None:
-    """Copy path to path.bak unless a backup already exists.
-
-    Keeping the first backup means a rerun can't replace the original file's
-    backup with an already-split (or already-rewritten) version.
+    A counter is appended if that name is taken, so a rerun within the same
+    second still gets its own backup.
     """
-    backup = path.with_name(path.name + ".bak")
-    if backup.exists():
-        print(f"{INFO} Kept existing backup: {backup}")
-        return
-    shutil.copy2(path, backup)
-    print(f"{OK} Backup: {backup}")
+    dest = path.with_name(f"{path.name}.{stamp}.bak")
+    n = 2
+    while dest.exists():
+        dest = path.with_name(f"{path.name}.{stamp}-{n}.bak")
+        n += 1
+    if path.is_dir():
+        shutil.copytree(path, dest)
+    else:
+        shutil.copy2(path, dest)
+    print(f"{h.OK} Backup: {dest}")
+    return dest
 
 
 def non_empty_category_files(types_subdir: Path) -> list[str]:
@@ -77,30 +77,34 @@ def main() -> int:
     parser.add_argument("types_xml", type=Path, help="Path to types.xml (typically <mission>/db/types.xml).")
     args = parser.parse_args()
 
-    gate_on_preflight()
+    h.gate_on_preflight()
     print()
 
     types_xml = args.types_xml.resolve()
     if not types_xml.exists():
-        sys.exit(f"{FAIL} {types_xml} not found.")
+        sys.exit(f"{h.FAIL} {types_xml} not found.")
     if types_xml.name != "types.xml":
-        sys.exit(f"{FAIL} Expected a file named 'types.xml', got {types_xml.name}")
+        sys.exit(f"{h.FAIL} Expected a file named 'types.xml', got {types_xml.name}")
 
     db_dir = types_xml.parent  # upstream script uses os.path.dirname(__file__) for the working dir
     mission_dir = db_dir.parent  # upstream script looks for cfgeconomycore.xml in parent of script_dir
     cfgeconomycore = mission_dir / "cfgeconomycore.xml"
     if not cfgeconomycore.exists():
         sys.exit(
-            f"{FAIL} cfgeconomycore.xml not found at {cfgeconomycore}\n"
+            f"{h.FAIL} cfgeconomycore.xml not found at {cfgeconomycore}\n"
             "       The splitter needs cfgeconomycore.xml in the parent of types.xml's dir.\n"
             "       Standard DayZ layout: <mission>/cfgeconomycore.xml + <mission>/db/types.xml"
         )
 
     if not VENDORED_SCRIPT.exists():
-        sys.exit(f"{FAIL} Vendored splitter missing at {VENDORED_SCRIPT}")
+        sys.exit(f"{h.FAIL} Vendored splitter missing at {VENDORED_SCRIPT}")
 
-    backup_once(types_xml)
-    backup_once(cfgeconomycore)
+    types_subdir = db_dir / "types"
+    stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup(types_xml, stamp)
+    core_backup = backup(cfgeconomycore, stamp)
+    if types_subdir.is_dir():
+        backup(types_subdir, stamp)
 
     # Copy the vendored splitter next to types.xml so its __file__ resolves into db_dir.
     runtime_copy = db_dir / "_typeSplitter_runtime.py"
@@ -110,34 +114,33 @@ def main() -> int:
     finally:
         runtime_copy.unlink(missing_ok=True)
     if result.returncode != 0:
-        print(f"{FAIL} typeSplitter exited {result.returncode}", file=sys.stderr)
+        print(f"{h.FAIL} typeSplitter exited {result.returncode}", file=sys.stderr)
         return 1
 
-    types_subdir = db_dir / "types"
     if not types_subdir.is_dir():
-        print(f"{FAIL} Splitter ran but {types_subdir} was not created.", file=sys.stderr)
+        print(f"{h.FAIL} Splitter ran but {types_subdir} was not created.", file=sys.stderr)
         return 1
 
     expected = non_empty_category_files(types_subdir)
     print()
-    print(f"{OK} Split into {len(expected)} non-empty category files in {types_subdir}")
+    print(f"{h.OK} Split into {len(expected)} non-empty category files in {types_subdir}")
     for name in expected:
         print(f"        {name}")
 
     try:
         listed = cfgeconomycore_type_files(cfgeconomycore)
     except ET.ParseError as e:
-        print(f"{FAIL} {cfgeconomycore} is not valid XML after the split: {e}", file=sys.stderr)
+        print(f"{h.FAIL} {cfgeconomycore} is not valid XML after the split: {e}", file=sys.stderr)
         return 1
     missing = sorted(set(expected) - listed)
     if missing:
         print(
-            f"{FAIL} {cfgeconomycore} does not reference: {', '.join(missing)}\n"
-            "       See the typeSplitter log above. The original is in cfgeconomycore.xml.bak.",
+            f"{h.FAIL} {cfgeconomycore} does not reference: {', '.join(missing)}\n"
+            f"       See the typeSplitter log above. The original is in {core_backup.name}.",
             file=sys.stderr,
         )
         return 1
-    print(f"{OK} Updated {cfgeconomycore}")
+    print(f"{h.OK} Updated {cfgeconomycore}")
     return 0
 
 

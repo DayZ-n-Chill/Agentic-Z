@@ -6,6 +6,7 @@ helpers are replaced with fakes.
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
 
 import pytest
@@ -46,10 +47,6 @@ def test_parse_library_folders_unescapes_backslashes():
 
 def test_parse_library_folders_ignores_other_keys():
     assert preflight.parse_library_folders('"label" "x"\n"contentid" "123"') == []
-
-
-def test_registry_alias_kept():
-    assert preflight._read_registry_string is preflight.read_registry_string
 
 
 # --- find_vanilla_data -----------------------------------------------------
@@ -109,7 +106,9 @@ def fake_junctions(monkeypatch):
         links[str(link)] = str(target)
 
     monkeypatch.setattr(preflight, "_create_junction", create)
-    monkeypatch.setattr(preflight, "_read_link", lambda p: links.get(str(p)))
+    monkeypatch.setattr(
+        preflight, "link_target", lambda p: Path(links[str(p)]) if str(p) in links else None
+    )
     return links, created
 
 
@@ -194,3 +193,12 @@ def test_check_workshop_deploy_prints_target(p_drive, game, fake_junctions, caps
 def test_main_fails_without_p_drive(monkeypatch, tmp_path):
     monkeypatch.setattr(preflight, "P_DRIVE", tmp_path / "missing")
     assert preflight.main() == 1
+
+
+def test_link_target_of_plain_folder_is_none(tmp_path):
+    assert preflight.link_target(tmp_path) is None
+
+
+def test_paths_equal_ignores_case_and_trailing_separator(tmp_path):
+    assert preflight.paths_equal(tmp_path / "A" / "", tmp_path / "a") is (os.name == "nt")
+    assert preflight.paths_equal(tmp_path / "x" / ".." / "y", tmp_path / "y")

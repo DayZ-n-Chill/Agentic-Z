@@ -15,7 +15,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import os
 import subprocess
@@ -23,35 +22,22 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 CACHE = PROJECT_DIR / ".claude" / "local-memory" / "dayz-work-drive.json"
 P_DRIVE = Path("P:\\")
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
 
-OK = "[OK]   "
+OK = h.OK
 INFO = "[INFO] "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+WARN = h.WARN
+FAIL = h.FAIL
 CMD = "[CMD]  "
 
-
-def _load_preflight_module():
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-# Reuse preflight's resolvers: find_dayz_tools (env DAYZ_TOOLS_PATH -> 3 registry
-# keys -> common Steam paths, validated by AddonBuilder.exe presence) and
-# read_registry_string. Importing the module here does NOT run preflight's
-# gate; it just exposes the helpers.
-_preflight = _load_preflight_module()
-find_dayz_tools = _preflight.find_dayz_tools
-read_registry_string = _preflight.read_registry_string
+# Reuse preflight's resolvers (loading the module does not run its checks).
+find_dayz_tools = h.preflight.find_dayz_tools
+read_registry_string = h.preflight.read_registry_string
 
 
 def is_p_mounted() -> bool:
@@ -191,7 +177,7 @@ def invoke_mount(target: Path) -> bool:
         print(f"{WARN}WorkDrive.exe not found; falling back to subst")
 
     print(f'{CMD}subst P: "{target}"')
-    rc = subprocess.run(["subst", "P:", str(target)], shell=True).returncode
+    rc = subprocess.run(["subst", "P:", str(target)]).returncode
     if is_p_mounted():
         return True
     print(f"{FAIL}subst P: exited with code {rc}; P:\\ is not mounted", file=sys.stderr)
@@ -215,7 +201,7 @@ def invoke_unmount() -> int:
             print(stderr.rstrip(), file=sys.stderr)
 
     print(f"{CMD}subst P: /D")
-    rc = subprocess.run(["subst", "P:", "/D"], shell=True).returncode
+    rc = subprocess.run(["subst", "P:", "/D"]).returncode
     if rc != 0 or is_p_mounted():
         print(f"{FAIL}subst /D returned {rc}; P:\\ still mounted={is_p_mounted()}", file=sys.stderr)
         return 1

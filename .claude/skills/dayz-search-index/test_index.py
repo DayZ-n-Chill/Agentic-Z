@@ -7,6 +7,8 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 _spec = importlib.util.spec_from_file_location("dayz_search_index", Path(__file__).parent / "index.py")
 index = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(index)
@@ -153,3 +155,128 @@ def test_pack_batches_empty_input():
 
 def test_private_embed_alias_kept_for_wiki_indexer():
     assert index._embed_all is index.embed_all
+
+
+def test_large_xml_batches_record_real_line_ranges(tmp_path):
+    # _types_xml puts the root on line 1 and item i on line i + 2.
+    chunks = index.chunk_xml(_write(tmp_path, "types.xml", _types_xml(120)))
+    assert [(c["line_start"], c["line_end"]) for c in chunks] == [(2, 51), (52, 101), (102, 121)]
+
+
+def test_xml_line_ranges_cover_multiline_elements(tmp_path):
+    items = "\n".join(
+        f'  <type name="Item{i:03d}">\n    <nominal>{i}</nominal>\n    <lifetime>3600</lifetime>\n  </type>'
+        for i in range(60)
+    )
+    text = f'<?xml version="1.0" encoding="UTF-8"?>\n<types>\n{items}\n</types>\n'
+    chunks = index.chunk_xml(_write(tmp_path, "types.xml", text), batch_size=50)
+    # Item i spans lines 3 + 4i .. 6 + 4i.
+    assert (chunks[0]["line_start"], chunks[0]["line_end"]) == (3, 6 + 4 * 49)
+    assert (chunks[1]["line_start"], chunks[1]["line_end"]) == (3 + 4 * 50, 6 + 4 * 59)
+
+
+# --------------- --status, gate, ceiling ---------------
+
+
+def test_status_without_index_creates_nothing(tmp_path, monkeypatch, capsys):
+    root = tmp_path / "no-index-here"
+    monkeypatch.setattr(index, "INDEX_ROOT", root)
+    monkeypatch.setattr(index.h, "gate_on_preflight", lambda: (_ for _ in ()).throw(AssertionError("no gate for --status")))
+    assert index.main(["--status"]) == 1
+    assert not root.exists()
+    assert "No index" in capsys.readouterr().err
+
+
+def test_status_prints_manifest(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(index, "INDEX_ROOT", tmp_path)
+    (tmp_path / "manifest.json").write_text('{"total_chunks": 3}', encoding="utf-8")
+    assert index.main(["--status"]) == 0
+    assert '"total_chunks": 3' in capsys.readouterr().out
+
+
+def test_build_gates_on_preflight(tmp_path, monkeypatch):
+    monkeypatch.setattr(index, "INDEX_ROOT", tmp_path / "idx")
+
+    def failing_gate():
+        raise SystemExit(1)
+
+    monkeypatch.setattr(index.h, "gate_on_preflight", failing_gate)
+    with pytest.raises(SystemExit) as exc:
+        index.main(["--full"])
+    assert exc.value.code == 1
+    assert not (tmp_path / "idx").exists()
+
+
+def test_chunk_ceiling_is_a_module_constant():
+    assert index.CHUNK_CEILING == 150_000
+
+
+# --------------- tier check overage uses the model rate ---------------
+
+
+def test_tier_overage_uses_model_rate(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(index, "INDEX_ROOT", tmp_path)
+    monkeypatch.setenv("VOYAGE_FREE_TIER_TOKENS", "1000000")
+    # 2M tokens past a 1M budget = 1M over.
+    assert index._check_voyage_tier(2_000_000, True, "voyage-4-lite")
+    assert "estimated overage: $0.02" in capsys.readouterr().out
+    assert index._check_voyage_tier(2_000_000, True, "voyage-code-3")
+    assert "estimated overage: $0.18" in capsys.readouterr().out
+    assert index._check_voyage_tier(2_000_000, True, "some-new-model")
+    assert "no local rate for some-new-model" in capsys.readouterr().out
+
+
+# --------------- staged table write ---------------
+
+
+class _FakeTable:
+    def __init__(self, rows):
+        self.rows = list(rows)
+
+    def to_arrow(self):
+        return list(self.rows)
+
+
+class _FakeDb:
+    def __init__(self, tables=None, fail_on=None):
+        self.tables = {k: _FakeTable(v) for k, v in (tables or {}).items()}
+        self.fail_on = fail_on
+        self.log = []
+
+    def table_names(self):
+        return list(self.tables)
+
+    def drop_table(self, name):
+        self.log.append(("drop", name))
+        del self.tables[name]
+
+    def create_table(self, name, data, mode="create"):
+        self.log.append(("create", name, mode))
+        if name == self.fail_on:
+            raise OSError("disk full")
+        if name in self.tables and mode != "overwrite":
+            raise ValueError(f"table {name} exists")
+        self.tables[name] = _FakeTable(data)
+        return self.tables[name]
+
+
+def test_write_table_swaps_new_rows_in_and_drops_staging():
+    db = _FakeDb({index.TABLE_NAME: [{"v": "old"}]})
+    index.write_table(db, [{"v": "new"}])
+    assert db.tables[index.TABLE_NAME].rows == [{"v": "new"}]
+    assert index.STAGING_TABLE_NAME not in db.tables
+
+
+def test_write_table_failed_staging_leaves_live_table():
+    db = _FakeDb({index.TABLE_NAME: [{"v": "old"}]}, fail_on=index.STAGING_TABLE_NAME)
+    with pytest.raises(OSError):
+        index.write_table(db, [{"v": "new"}])
+    assert db.tables[index.TABLE_NAME].rows == [{"v": "old"}]
+    assert ("drop", index.TABLE_NAME) not in db.log
+
+
+def test_write_table_clears_leftover_staging_and_works_on_empty_db():
+    db = _FakeDb({index.STAGING_TABLE_NAME: [{"v": "stale"}]})
+    index.write_table(db, [{"v": "new"}])
+    assert db.tables == {index.TABLE_NAME: db.tables[index.TABLE_NAME]}
+    assert db.tables[index.TABLE_NAME].rows == [{"v": "new"}]

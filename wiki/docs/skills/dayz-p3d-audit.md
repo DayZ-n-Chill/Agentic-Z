@@ -4,7 +4,7 @@ name: dayz-p3d-audit
 
 ## Overview
 
-&gt;
+Audits DayZ MLOD .p3d models for collision, action-targeting, physics, animation and structural problems, and scans config.cpp, model.cfg and .rvmat files for absolute P:\ paths. Reports findings only. Use when a mod object has no collision, actions don't appear, players walk through placed objects, a Blender-exported model fails in-game, textures are missing, animations don't play, or the user asks to review, check or audit a p3d or mod.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
@@ -28,13 +28,17 @@ python <skill-dir>/scripts/audit_p3d.py path/to/model.p3d [more.p3d ...]
 # Include config/model.cfg path checks:
 python <skill-dir>/scripts/audit_p3d.py model.p3d --config path/to/config.cpp --model-cfg path/to/model.cfg
 
-# Full mod sweep (all .p3d, config.cpp, .rvmat, model.cfg):
+# Check .rvmat materials for P:\ paths:
+python <skill-dir>/scripts/audit_p3d.py --rvmat path/to/a.rvmat path/to/b.rvmat
+
+# Full mod sweep (all .p3d, config.cpp, .rvmat, model.cfg; other inputs are ignored):
 python <skill-dir>/scripts/audit_p3d.py --scan-dir path/to/mod/
 ```
 
-Exit 1 if any .p3d has a CRITICAL finding, any text file has a `P:\` path, or a file
-is missing or unreadable; otherwise exit 0 (WARNING and NOTE findings on .p3d files are
-printed but don't fail the run). Only MLOD source files can be audited; binarized ODOL
+Exit 2 if no input is given. Exit 1 if any .p3d has a CRITICAL finding, any text file
+has a `P:\` path, or a file or the `--scan-dir` folder is missing or unreadable;
+otherwise exit 0 (WARNING and NOTE findings on .p3d files are printed but don't fail
+the run). Only MLOD source files can be audited; binarized ODOL
 files are rejected. When a model has several Visual LODs, LOD0 is the one checked.
 Interpret findings with the references below.
 

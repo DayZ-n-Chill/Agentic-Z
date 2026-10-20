@@ -24,7 +24,7 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<instance>` | yes | Free-form instance name. Becomes the folder name under `.server/`. Examples: `chernarus`, `chernarus-hardcore`, `loot-test`, `livonia-pvp`. |
+| `<instance>` | yes | Free-form instance name. Becomes the folder name under `.server/`, so it must be a single folder name (no `/`, `\`, `:` or `..`). Examples: `chernarus`, `chernarus-hardcore`, `loot-test`, `livonia-pvp`. |
 | `--map` | no | Map alias (`chernarus`, `livonia`, `sakhal`) or full mission template folder name (e.g. `dayzOffline.namalsk`). When omitted, `<instance>` is used as the map alias if it matches a known one; otherwise the skill fails and asks for `--map`. |
 | `--refresh-mission` | no | Re-copy the mission folder from the DayZ Server install. The current `mission/` is first renamed to `mission.bak-<YYYYMMDD-HHMMSS>/` so your edits stay recoverable. Use after a DayZ update brings new mission content. Without this flag, an existing mission folder is left alone. |
 
@@ -35,11 +35,10 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 3. **Resolve map and mission template**: turns the instance name and `--map` flag into the canonical mission folder name via the alias table.
 4. **Mission copy**: if `.server/<instance>/mission/` doesn't exist (or `--refresh-mission` was passed), copies it from `<DayZServer>/mpmissions/<template>/`. With `--refresh-mission`, the existing folder is renamed to `mission.bak-<timestamp>/` first; nothing is deleted. The copy is always named `mission/`.
 5. **Instance directory**: ensures `.server/<instance>/` exists with:
-   - `serverDZ.cfg`: default config pointing at the right mission template, with `allowFilePatching = 1;`
+   - `serverDZ.cfg`: default config pointing at the right mission template, with `allowFilePatching = 1;` and a `shardId` made of the first six letters and digits of the instance name (padded with `shard`). An existing config is preserved, except that `allowFilePatching` is appended if missing or set back to `1` if it holds any other value.
    - `Profiles/`: server-side `-profiles=` dir (RPT, script.log, BattlEye state). Per-instance.
-   Also ensures the shared `.server/!ClientDiagLogs/` dir at the project root exists; this is the client-side `-profiles=` dir, shared across all instances.
-   - `<template>/` (for example `dayzOffline.chernarusplus/`): a junction to `mission/`. The engine looks the mission up by template name during the client connect handshake; without it the client connects but never spawns.
-   If `serverDZ.cfg` already exists, the existing config is preserved; only `allowFilePatching = 1;` is auto-appended if missing.
+   - `<template>/` (for example `dayzOffline.chernarusplus/`): a junction to `mission/`. The engine looks the mission up by template name during the client connect handshake; without it the client connects but never spawns. If `mklink` fails, the skill exits non-zero.
+6. **Shared client log dir**: ensures `.server/!ClientDiagLogs/` exists; this is the client-side `-profiles=` dir, shared across all instances.
 
 ## Refuses to run if
 
@@ -47,8 +46,10 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 - `/dayz-preflight` returns non-zero.
 - `workspace/_server/` still exists. Delete it manually; the legacy layout is no longer supported.
 - DayZ Server install isn't found AND the mission isn't already in `.server/<instance>/mission/`. (Install DayZ Server free from Steam appid 223350 for the initial copy. Once the mission is local, DayZ Server is no longer required.)
+- `<instance>` contains a path separator, a drive colon, or is `.`/`..` (argparse rejects it, exit 2).
 - `<instance>` isn't a known map alias and `--map` wasn't given. (We have no way to guess the mission template from a free-form name.)
 - DayZ Server install lacks the requested mission template (e.g. `--map dayzOffline.namalsk` but DayZ Server doesn't ship namalsk; either provide the mission manually under `.server/<instance>/mission/` or correct the name).
+- The `<template>/` junction to `mission/` cannot be created (the `mklink` error is printed).
 
 ## Output
 
@@ -57,6 +58,7 @@ DayZ preflight
 ... (preflight output)
 Preflight complete.
 
+[OK]    Project: C:\Projects\MyDayZProject
 [OK]    Instance: chernarus-hardcore  (map: chernarus, mission: dayzOffline.chernarusplus)
 [OK]    Copied .server\chernarus-hardcore\mission  (from DayZ Server install)
 [OK]    Wrote default .server\chernarus-hardcore\serverDZ.cfg
@@ -74,7 +76,7 @@ If everything is already set up, the skill no-ops the relevant steps and reports
 ## Editing what this skill creates
 
 - **Mission folder** at `.server/<instance>/mission/` is yours to edit. The server runs with `-filePatching` so edits to `init.c`, `cfggameplay.json`, `db/types.xml`, etc. are live on the next launch.
-- **`serverDZ.cfg`** at `.server/<instance>/serverDZ.cfg` is yours to tune (max players, persistence, etc.). The skill never overwrites your edits, but it WILL re-add `allowFilePatching = 1;` if you remove it (without that, clients with `-filePatching` can't connect).
+- **`serverDZ.cfg`** at `.server/<instance>/serverDZ.cfg` is yours to tune (max players, persistence, etc.). The skill never overwrites your edits, except `allowFilePatching`: it is re-added if you remove it and set back to `1` if you change it (without it, clients launched with `-filePatching` can't connect).
 
 ## Do not
 

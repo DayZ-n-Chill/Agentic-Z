@@ -22,6 +22,7 @@ def scope(tmp_path, monkeypatch):
     monkeypatch.setattr(
         mod, "SCOPE_STATE", tmp_path / ".claude" / "local-memory" / "dayz-active-scope.json"
     )
+    monkeypatch.setattr(mod, "_game_workshop_dir", lambda: None)
     for name in ("ModA", "ModB", "ModC", ".hidden"):
         (tmp_path / "workspace" / name).mkdir(parents=True)
     return mod
@@ -99,3 +100,33 @@ def test_arguments_are_mutually_exclusive_and_required(scope, argv):
     with pytest.raises(SystemExit) as exc:
         scope.main(argv)
     assert exc.value.code == 2
+
+
+@pytest.mark.parametrize("name", ["Mod*", "Mod?", "Mod[1]", "!Mod", "#Mod"])
+def test_mod_name_with_gitignore_metacharacter_is_refused(scope, capsys, name):
+    assert scope.main([name]) == 1
+    assert "pattern syntax" in capsys.readouterr().err
+    assert not scope.SETTINGS_LOCAL.exists()
+
+
+def test_sibling_with_metacharacter_is_refused(scope, tmp_path, capsys):
+    (tmp_path / "workspace" / "Mod[old]").mkdir()
+    assert scope.main(["ModA"]) == 1
+    assert "Mod[old]" in capsys.readouterr().err
+    assert not scope.SETTINGS_LOCAL.exists()
+
+
+def test_real_workshop_folder_is_denied_in_posix_form(scope, monkeypatch):
+    workshop = Path(r"C:\Program Files (x86)\Steam\steamapps\common\DayZ\!Workshop")
+    monkeypatch.setattr(scope, "_game_workshop_dir", lambda: workshop)
+    assert scope.main(["ModA"]) == 0
+    deny = _deny(scope)
+    assert "Edit(//c/Program Files (x86)/Steam/steamapps/common/DayZ/!Workshop/@ModB/**)" in deny
+    assert "Edit(//c/Program Files (x86)/Steam/steamapps/common/DayZ/!Workshop/@ModC/**)" in deny
+    assert len(deny) == 8
+    assert scope.main(["--clear"]) == 0
+    assert _deny(scope) == []
+
+
+def test_posix_rule_path(scope):
+    assert scope._posix_rule_path(Path(r"D:\Games\DayZ\!Workshop")) == "//d/Games/DayZ/!Workshop"

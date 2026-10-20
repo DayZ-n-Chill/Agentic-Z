@@ -16,7 +16,7 @@ If you only need the index and don't want to spend Voyage tokens, `/dayz-search-
 
 ## Before you run
 
-1. `P:\` must be mounted. The indexer checks this itself and fails if it isn't; preflight warnings (Tools, Workshop) don't block it.
+1. The indexer runs `/dayz-preflight` first and stops if it fails (`P:\` not mounted). Preflight warnings (Tools, Workshop) don't block it. `--status` skips the gate.
 2. Install the dependencies once: `pip install -r "<skill-dir>\requirements.txt"` (`lancedb`, `tqdm`, `voyageai`, `python-dotenv`). The indexer exits with that command if any are missing.
 3. Put a Voyage key in `.env` at the repo root (gitignored): `VOYAGE_API_KEY=pa-...`. Get one at [dash.voyageai.com](https://dash.voyageai.com).
 
@@ -32,21 +32,21 @@ Builds (or rebuilds) the whole index. Without `--full` it refuses to overwrite a
 python "<skill-dir>\index.py" --status
 ```
 
-Prints `manifest.json` and exits; exits 1 if there is no index.
+Prints `manifest.json` and exits; exits 1 if there is no index. It creates nothing on disk.
 
-Other flags: `--ignore-tier-warning` skips the free-tier prompt (needed in non-interactive shells), `--force` overrides the 150k-chunk ceiling. Both are explained in [reference/cost-and-free-tier.md](reference/cost-and-free-tier.md).
+Other flags: `--ignore-tier-warning` skips the free-tier prompt (needed in non-interactive shells), `--force` overrides the 150,000-chunk ceiling (`CHUNK_CEILING`). Both are explained in [reference/cost-and-free-tier.md](reference/cost-and-free-tier.md).
 
 After a build, restart Claude Code so the MCP server opens the new index.
 
 ## What it indexes
 
-The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. The live index is about 52,000 chunks from about 38,000 files (roughly 66M tokens).
+The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. The 2026-08-10 build produced 52,048 chunks (about 66M tokens); `--status` shows the current numbers.
 
 | File type | Chunking |
 |---|---|
-| `.c .cpp .hpp .h .cfg .layout` | one chunk per top-level `class X &#123; ... &#125;` block, whole file if there are none |
+| `.c .cpp .hpp .h .cfg .layout` | one chunk per top-level `class X { ... }` block, whole file if there are none |
 | `.rvmat` | whole file, deduplicated by SHA-256 of the content |
-| `.xml` | whole file under 4 KB, otherwise batches of 50 top-level elements |
+| `.xml` | whole file under 4 KB, otherwise batches of 50 top-level elements (line range = first to last element in the batch) |
 | `.json .csv` | whole file |
 
 Each chunk stores path, file type, parent context (class name, XML range, or rvmat hash), line range and content.
@@ -65,7 +65,13 @@ Each chunk stores path, file type, parent context (class name, XML range, or rvm
 ```
 DayZ RAG indexer
 
-[OK]    P:\ mounted
+DayZ preflight
+
+[OK]    P:\ is mounted
+...     (rest of the /dayz-preflight report)
+
+Preflight complete.
+
 [OK]    Vanilla data: P:\dz
 [OK]    VOYAGE_API_KEY loaded (pa-abc...wxyz)
 [INFO]  Index: C:\Users\you\.claude\dayz-search-index
@@ -91,7 +97,7 @@ Embedding <n> chunks via Voyage (voyage-code-3, document mode)...
 ## Failure modes
 
 - Missing dependency, missing `VOYAGE_API_KEY`, `P:\` not mounted, or no chunks produced: exits 1 before any tokens are spent.
-- Rate limits and transient network errors are retried with exponential backoff (5 attempts per batch). Any other embed failure aborts the run before the old table is dropped, so the previous index stays usable.
+- Rate limits and transient network errors are retried with exponential backoff (5 attempts per batch). Any other embed failure aborts the run before LanceDB is touched. The new rows are written to a `chunks_staging` table first and only then swapped into `chunks`, so a failed write also leaves the previous index usable.
 
 ## Do not
 

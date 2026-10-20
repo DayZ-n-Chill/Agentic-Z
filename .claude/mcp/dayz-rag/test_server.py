@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -18,9 +20,22 @@ _spec.loader.exec_module(server)
 
 
 class _FakeQuery:
+    """Mimics LanceDB's vector query builder: rows come back nearest first."""
+
+    _WHERE = re.compile(r"^file_type = '(\w+)'$")
+
     def __init__(self, rows):
-        self._rows = rows
+        self._rows = sorted(rows, key=lambda r: r["_distance"])
         self.limit_value = None
+        self.where_clause = None
+        self.prefilter = None
+
+    def where(self, clause, prefilter=None):
+        m = self._WHERE.match(clause)
+        assert m, f"unexpected where clause {clause!r}"
+        self.where_clause, self.prefilter = clause, prefilter
+        self._rows = [r for r in self._rows if r["file_type"] == m.group(1)]
+        return self
 
     def limit(self, n):
         self.limit_value = n
@@ -72,15 +87,30 @@ def test_unknown_file_type_is_rejected():
         server.search_dayz_source_impl("vest", file_type="config.cpp")
 
 
-def test_file_type_filter_keeps_only_matching_rows(fake_table):
-    hits = server.search_dayz_source_impl("vest", top_k=5, file_type="cpp")
-    assert [h["file_type"] for h in hits] == ["cpp", "cpp"]
-    assert fake_table.last_query.limit_value == 20  # over-fetches 4x when filtering
+def test_file_type_filter_is_a_lancedb_prefilter(fake_table):
+    hits = server.search_dayz_source_impl("vest", top_k=1, file_type="cpp")
+    # The nearest row overall is a "c" row; the prefilter still yields a cpp hit.
+    assert [h["path"] for h in hits] == ["https://wiki/b"]
+    q = fake_table.last_query
+    assert (q.where_clause, q.prefilter, q.limit_value) == ("file_type = 'cpp'", True, 1)
+
+
+def test_no_where_clause_without_file_type(fake_table):
+    server.search_dayz_source_impl("vest", top_k=3)
+    assert fake_table.last_query.where_clause is None
+    assert fake_table.last_query.limit_value == 3
+
+
+def test_hits_report_distance(fake_table):
+    hit = server.search_dayz_source_impl("vest", top_k=1)[0]
+    assert hit["distance"] == 0.5
+    assert "score" not in hit
 
 
 def test_max_distance_drops_far_hits(fake_table):
     hits = server.search_dayz_source_impl("vest", top_k=5, max_distance=0.7)
     assert [h["path"] for h in hits] == ["https://wiki/a", "https://wiki/b"]
+    assert fake_table.last_query.limit_value == 5  # no over-fetch: farther rows can't pass
 
 
 def test_top_k_is_clamped(fake_table):
@@ -216,13 +246,13 @@ def test_wiki_search_returns_formatted_hits(fake_wiki_table):
     ]
     assert hits[0]["parent_context"] == "A > Intro"
     assert all(h["is_stale"] is False and "stale_reason" not in h for h in hits)
-    assert fake_wiki_table.last_query.limit_value == 2  # no over-fetch without a threshold
+    assert fake_wiki_table.last_query.limit_value == 2
 
 
-def test_wiki_search_max_distance_overfetches_and_filters(fake_wiki_table):
+def test_wiki_search_max_distance_filters(fake_wiki_table):
     hits = server.search_dayz_wiki_impl("rpc", top_k=3, max_distance=0.9)
     assert len(hits) == 2
-    assert fake_wiki_table.last_query.limit_value == 12
+    assert fake_wiki_table.last_query.limit_value == 3
 
 
 def test_wiki_blank_query_returns_nothing(monkeypatch):
@@ -263,3 +293,40 @@ def test_list_sources_raises_on_corrupt_manifest(monkeypatch, tmp_path):
     monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
     with pytest.raises(RuntimeError, match="unreadable"):
         server.list_indexed_sources_impl()
+
+
+# --------------- .env discovery ---------------
+
+
+def test_dotenv_paths_finds_cwd_parent_then_repo_root(monkeypatch, tmp_path):
+    work = tmp_path / "work"
+    (work / "sub").mkdir(parents=True)
+    (work / ".env").write_text("A=1\n", encoding="utf-8")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".env").write_text("B=2\n", encoding="utf-8")
+    monkeypatch.chdir(work / "sub")
+    monkeypatch.setattr(server, "REPO_ROOT", repo)
+    assert server._dotenv_paths() == [work / ".env", repo / ".env"]
+
+
+def test_dotenv_paths_uses_repo_root_when_cwd_has_none(monkeypatch, tmp_path):
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".env").write_text("B=2\n", encoding="utf-8")
+    monkeypatch.chdir(elsewhere)
+    monkeypatch.setattr(server, "REPO_ROOT", repo)
+    assert server._dotenv_paths() == [repo / ".env"]
+
+
+def test_dotenv_paths_no_duplicate_when_cwd_is_repo_root(monkeypatch, tmp_path):
+    (tmp_path / ".env").write_text("B=2\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(server, "REPO_ROOT", tmp_path)
+    assert server._dotenv_paths() == [tmp_path / ".env"]
+
+
+def test_repo_root_is_three_levels_above_server_dir():
+    assert (server.REPO_ROOT / ".claude" / "mcp" / "dayz-rag" / "server.py").is_file()

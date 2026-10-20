@@ -16,6 +16,7 @@ A workspace entry is managed when it is either:
 
 - **a native scaffold**: a real folder containing `config.cpp` and `$PBOPREFIX$`; it is removed recursively.
 - **an imported link** made by `/dayz-import-mod`: only the link is removed (`cmd /c rmdir`). The external source folder it points at is never touched.
+- **a payload bundle** deployed by `/dayz-deploy-pbo`: a real folder (no `config.cpp` needed) whose `P:\Mods\@<ModName>\` carries the ownership marker for `<ModName>`; it is removed recursively.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -31,6 +32,14 @@ python "<skill-dir>\clean.py" [--mod <Name>] [--include-server] [--yes] [--dry-r
 | `--include-server` | no | Also remove `.server/` at the project root (all instances: missions, configs, profiles, client logs). Refuses if legacy `workspace/_server/` still exists. |
 | `--yes` | no | Skip the confirmation prompt. Required when stdin isn't a TTY. |
 | `--dry-run` | no | Print the plan and exit 0 without removing anything. |
+
+### From an agent (non-TTY shell)
+
+The agent's shell has no TTY, so the `Proceed? [y/N]` prompt can't be answered there and the script refuses without `--yes`. Run it in three steps:
+
+1. Run with `--dry-run` (plus the same `--mod` / `--include-server` flags) and show the user the printed plan and any `[WARN]` lines.
+2. Ask the user in chat to confirm that exact plan.
+3. Only after an explicit yes, rerun the same command with `--yes`. If the user declines, stop.
 
 ## What it removes (per managed mod)
 
@@ -57,7 +66,7 @@ With `--include-server`, `.server/` is removed too. Leave it out to keep server 
 
 - No project is cached (run `/dayz-init`).
 - `/dayz-preflight` returns non-zero.
-- `--mod <Name>` names a workspace entry that is neither an imported link nor a folder with `config.cpp` and `$PBOPREFIX$`.
+- `--mod <Name>` names a workspace entry that is not an imported link, a folder with `config.cpp` and `$PBOPREFIX$`, or a bundle whose `P:\Mods\@<Name>\` carries the ownership marker.
 - `--include-server` is given while legacy `workspace/_server/` exists. Delete that folder by hand; the layout is no longer supported.
 - Stdin isn't a TTY and `--yes` wasn't passed.
 

@@ -4,6 +4,14 @@ Complete list of all 277 registered particles from `ParticleList.c`.
 Access via `ParticleList.CONSTANT_NAME` in Enforce Script.
 All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 
+## Key categories for device mods
+
+- Electricity: `POWER_GENERATOR_SMOKE` (1 emitter, loop), `BARBED_WIRE_SPARKS` (1 emitter, one-shot)
+- Water: `WATER_JET` (2 emitters, loop), `WATER_JET_WEAK` (2 emitters, loop), `WATER_SPILLING`, `DROWNING_BUBBLES`
+- Fire: `CAMP_SMALL_FIRE` (6 emitters), `CAMP_STOVE_FIRE`, `BONFIRE_FIRE`
+- Smoke/steam: `CAMP_SMALL_SMOKE` (1 emitter), `CAMP_STEAM_2END`, `EVAPORATION`, `SPOOKY_MIST`
+- Environment: `ENV_SWARMING_FLIES`, `SMOKING_HELI_WRECK`, `HOTPSRING_WATERVAPOR`, `GEYSER_NORMAL`, `GEYSER_STRONG`, `VOLCANO`
+
 ## Example how to register particles from a mod
 
 | Constant | .ptc filename |

@@ -1,7 +1,8 @@
 """Download a prebuilt dayz-rag vector index from GitHub releases.
 
-Fetches the release asset (tarball), verifies its SHA-256 when GitHub publishes
-one for the asset, and installs it to ~/.claude/dayz-search-index/. The
+Fetches the release asset (tarball), verifies the SHA-256 GitHub publishes for
+the asset, and installs it to ~/.claude/dayz-search-index/. An asset with no
+published digest is refused unless --allow-unverified is passed. The
 existing index is kept until the new one is fully extracted and swapped in.
 Stdlib only.
 
@@ -9,6 +10,7 @@ Usage:
     python download.py                    # latest release
     python download.py --tag v0.1.0       # specific tag
     python download.py --force            # overwrite existing index
+    python download.py --allow-unverified # accept an asset with no published SHA-256
 """
 from __future__ import annotations
 
@@ -209,6 +211,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Download prebuilt dayz-rag vector index.")
     parser.add_argument("--tag", help="Release tag (default: latest)")
     parser.add_argument("--force", action="store_true", help="Overwrite existing index without prompt")
+    parser.add_argument(
+        "--allow-unverified",
+        action="store_true",
+        help="Install an asset even when the release publishes no SHA-256 digest for it",
+    )
     args = parser.parse_args(argv)
 
     print("DayZ RAG index downloader\n")
@@ -226,15 +233,24 @@ def main(argv: list[str] | None = None) -> int:
     log("INFO", f"Target: {INDEX_ROOT}")
 
     existing_tag = installed_tag(INDEX_ROOT)
-    if INDEX_ROOT.exists() and any(INDEX_ROOT.iterdir()):
-        if existing_tag == tag and not args.force:
-            log("OK", f"Index for {tag} already installed. Nothing to do.")
-            return 0
-        if not args.force:
-            installed_desc = f"({existing_tag})" if existing_tag else "(unknown origin)"
-            if not confirm(f"Existing index found {installed_desc}. Overwrite with {tag}?"):
-                log("INFO", "Aborted.")
-                return 1
+    has_index = INDEX_ROOT.exists() and any(INDEX_ROOT.iterdir())
+    if has_index and existing_tag == tag and not args.force:
+        log("OK", f"Index for {tag} already installed. Nothing to do.")
+        return 0
+
+    want_sha = expected_sha256(asset)
+    if want_sha is None and not args.allow_unverified:
+        raise SystemExit(
+            f"[ERR]\tRelease {tag} publishes no SHA-256 digest for {asset['name']}, "
+            "so the download cannot be verified.\n"
+            "\tRe-run with --allow-unverified to install it anyway."
+        )
+
+    if has_index and not args.force:
+        installed_desc = f"({existing_tag})" if existing_tag else "(unknown origin)"
+        if not confirm(f"Existing index found {installed_desc}. Overwrite with {tag}?"):
+            log("INFO", "Aborted.")
+            return 1
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -242,9 +258,8 @@ def main(argv: list[str] | None = None) -> int:
         actual_sha = download_with_progress(asset_url, archive, asset_size)
         log("OK", f"Downloaded {archive.stat().st_size / (1024 * 1024):.0f} MB")
 
-        want_sha = expected_sha256(asset)
         if want_sha is None:
-            log("WARN", "Release publishes no SHA-256 for this asset; skipping checksum check.")
+            log("WARN", "No SHA-256 published for this asset; installing unverified (--allow-unverified).")
         elif actual_sha != want_sha:
             raise SystemExit(
                 f"[ERR]\tSHA-256 mismatch for {asset['name']}.\n"

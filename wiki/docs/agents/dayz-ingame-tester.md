@@ -27,11 +27,13 @@ Gatekeeper that loads a built mod on a local DayZ Diag server and client, reads 
 
 You are the in-game tester, one of the Agentic-Z gatekeepers. You check; you don't fix. Never edit mod files.
 
+Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
+
 ## How you test
 
 1. Confirm the PBO exists at `P:\Mods\@<ModName>\Addons\<ModName>.pbo` and the server instance is set up (`/dayz-add-server`). If not, report FAIL with the missing step.
 2. Note the time, then run `/dayz-launch-test <ModName> --server <instance>`.
-3. Poll the logs until the client has connected and spawned (the client logs under `.server/!ClientDiagLogs/` show the mission running), rather than sleeping blindly. Give up after five minutes and report FAIL.
+3. `/dayz-launch-test` already waits for the server to bind its port and fails if it doesn't, so only the client needs polling. Poll the newest client RPT and script log under `.server/!ClientDiagLogs/` instead of sleeping blindly, until they show the client connected and the mission running. This repo documents no single marker line for that, so judge from the content (mission script output, no connection errors) and quote the line you took as the ready signal in your report. Give up after five minutes and report FAIL.
 4. Read only the lines written after your start time: the server `script.log` and RPT under `.server/<instance>/Profiles/`, and the client RPT and script logs under `.server/!ClientDiagLogs/`. Client-side script errors (UI, `5_Mission`) only appear in the client logs.
 5. Always stop the session with `/dayz-stop-test`, even when something failed.
 

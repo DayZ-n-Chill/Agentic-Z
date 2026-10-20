@@ -15,7 +15,7 @@ Companion to `/dayz-new-mod`. Where `dayz-new-mod` creates a fresh project from 
 Use this when:
 
 - You cloned someone else's mod into `workspace/<ModName>/` and need `workbench/dayz.gproj` to open it in Workbench, or `$PBOPREFIX$` to build it.
-- You used `/dayz-import-mod` to symlink an external repo and answered yes to the "scaffold this missing piece?" prompt - the import skill calls this skill to do the actual writing.
+- You used `/dayz-import-mod` to symlink an external repo and answered yes to a "scaffold this missing piece?" prompt - the import skill calls this skill's writer in-process to do the actual writing.
 - You're upgrading an older scaffold that pre-dates the workbench-folder convention.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
@@ -28,7 +28,7 @@ python "<skill-dir>\add_scaffold.py" <ModName> [--piece config|prefix|workbench|
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<ModName>` | yes | Folder name under `workspace/`. The folder must already exist (real or a link). Same `[A-Za-z][A-Za-z0-9_]&#123;0,63&#125;` pattern as `/dayz-new-mod`. |
+| `<ModName>` | yes | Folder name under `workspace/`. The folder must already exist (real or a link). Same `[A-Za-z][A-Za-z0-9_]{0,63}` pattern as `/dayz-new-mod`. |
 | `--piece` | no | Default `all` = scan and add only missing pieces. Pick one to scaffold a single piece even if others are missing. |
 | `--author` | no | Author handle for `config.cpp`. Same resolution chain as `/dayz-new-mod`: flag → cache → interactive prompt → fail. Skipped if config.cpp already exists. |
 
@@ -38,7 +38,7 @@ python "<skill-dir>\add_scaffold.py" <ModName> [--piece config|prefix|workbench|
 |---|---|---|
 | `config` | `config.cpp` (CfgPatches + CfgMods stub) | only if missing |
 | `prefix` | `$PBOPREFIX$` (contains `<ModName>`) | only if missing |
-| `workbench` | `workbench/dayz.gproj` (vanilla copy + injected mod paths + dual FileSystem mounts) and `workbench/DayZSetting.xml` | gproj only if missing; xml only if missing. Skips with warning if DayZ Tools not detected. |
+| `workbench` | `workbench/dayz.gproj` (vanilla copy + injected mod paths + dual FileSystem mounts) and `workbench/DayZSetting.xml` | gproj only if missing; xml only if missing. Skipped with a warning (and counted as skipped) if DayZ Tools is not detected. |
 | `readme` | `README.md` (light onboarding notes) | only if missing |
 | `skeleton` | `scripts/3_Game/`, `scripts/4_World/`, `scripts/5_Mission/`, `data/`, `gui/` (each with `.gitkeep`) | each subfolder only if missing |
 | `all` | runs every piece above in order | default |
@@ -53,6 +53,8 @@ Whatever piece you pick, the skill is idempotent: a second run on the same folde
 
 ## Output
 
+Pieces run in the order config, prefix, workbench, readme, skeleton. Example on a folder that already has `config.cpp` and `README.md`:
+
 ```
 DayZ preflight
 ... (preflight output)
@@ -60,15 +62,17 @@ Preflight complete.
 
 Scaffolding workspace/MyMod/
 
-  [SKIP]  config.cpp present
-  [OK]    $PBOPREFIX$ written
-  [SKIP]  README.md present
-  [OK]    Skeleton folders created (3 added, 2 already present)
-  [OK]    workbench/dayz.gproj written (mod paths + filesystem mounts injected)
-  [OK]    workbench/DayZSetting.xml copied
+[SKIP]  config.cpp present
+[OK]    $PBOPREFIX$ written
+[OK]    workbench/dayz.gproj written (mod paths + filesystem mounts injected)
+[OK]    workbench/DayZSetting.xml copied
+[SKIP]  README.md present
+[OK]    Skeleton folders created (3 added, 2 already present)
 
-[OK]    2 piece(s) added, 2 piece(s) already present.
+[OK]    3 piece(s) added, 2 already present, 0 skipped.
 ```
+
+A piece counts as skipped when it is missing but cannot be written, such as `workbench` when DayZ Tools is not detected (no empty `workbench/` folder is created in that case).
 
 If everything is already present:
 

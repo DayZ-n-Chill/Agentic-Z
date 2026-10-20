@@ -15,30 +15,30 @@ def _actions(steps):
 
 
 def test_new_mod_minimal():
-    assert _actions(build_steps(Intent("MyMod"), [], False)) == ["new-mod", "record"]
+    assert _actions(build_steps(Intent("MyMod"), False)) == ["new-mod", "record"]
 
 
 def test_existing_mod_skips_scaffold():
-    assert _actions(build_steps(Intent("MyMod"), [], True)) == ["record"]
+    assert _actions(build_steps(Intent("MyMod"), True)) == ["record"]
 
 
 def test_import_uses_import_step():
-    steps = build_steps(Intent("M", source="D:/src", scaffold=False), [], False)
+    steps = build_steps(Intent("M", source="D:/src", scaffold=False), False)
     assert _actions(steps) == ["import-mod", "record"]
     assert steps[0].params == {"mod": "M", "source": "D:/src", "scaffold": False}
 
 
 def test_full_plan_order_and_launch_implies_build():
     intent = Intent("MyMod", author="Me", server_map="chernarus", launch=True)
-    steps = build_steps(intent, ["mods_junction"], False)
-    assert _actions(steps) == ["mods-junction", "new-mod", "record", "add-server", "build", "launch"]
-    assert steps[1].params == {"mod": "MyMod", "author": "Me"}
+    steps = build_steps(intent, False)
+    assert _actions(steps) == ["new-mod", "record", "add-server", "build", "launch"]
+    assert steps[0].params == {"mod": "MyMod", "author": "Me"}
     assert steps[-1].params == {"mod": "MyMod", "server": "chernarus"}
 
 
 def test_record_precedes_server_and_build():
     # add-server, build and launch read the project cache written by "record".
-    actions = _actions(build_steps(Intent("M", server_map="sakhal", build=True), [], False))
+    actions = _actions(build_steps(Intent("M", server_map="sakhal", build=True), False))
     assert actions.index("record") < actions.index("add-server") < actions.index("build")
 
 
@@ -108,3 +108,11 @@ def test_launch_without_server_is_a_usage_error():
 def test_scaffold_flag_requires_import():
     with pytest.raises(SystemExit):
         plan.parse_args(["--mod", "M", "--scaffold"])
+
+
+def test_rerun_after_no_scaffold_import_skips_the_import(monkeypatch, runs, tmp_path):
+    monkeypatch.setattr(plan, "run_all", lambda: [])
+    (tmp_path / "workspace" / "Linked").mkdir(parents=True)  # linked source, no config.cpp
+    rc = plan.main(["--mod", "Linked", "--import-from", "D:/src", "--no-scaffold", "--execute"], project=tmp_path)
+    assert rc == 0
+    assert runs["argv"] == []

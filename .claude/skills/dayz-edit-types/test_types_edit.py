@@ -115,7 +115,7 @@ def test_comments_survive_round_trip(types_file):
 
 
 def _run_main(monkeypatch, argv):
-    monkeypatch.setattr(te, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(te.h, "gate_on_preflight", lambda: None)
     monkeypatch.setattr("sys.argv", ["types_edit.py", *argv])
     return te.main()
 
@@ -133,3 +133,20 @@ def test_main_change_writes_backup_of_original(types_file, monkeypatch):
     assert types_file.with_suffix(".xml.bak").read_bytes() == before
     ET.parse(types_file)  # still valid XML
     assert "AKM" not in types_file.read_text(encoding="utf-8")
+
+
+def test_main_remove_ignores_field_flags(types_file, monkeypatch):
+    assert _run_main(monkeypatch, [str(types_file), "AKM", "--remove", "--nominal", "99"]) == 0
+    assert "AKM" not in types_file.read_text(encoding="utf-8")
+
+
+def test_main_gates_on_shared_preflight(types_file, monkeypatch):
+    def fail_gate():
+        raise SystemExit(1)
+
+    monkeypatch.setattr(te.h, "gate_on_preflight", fail_gate)
+    monkeypatch.setattr("sys.argv", ["types_edit.py", str(types_file), "AKM", "--nominal", "3"])
+    before = types_file.read_bytes()
+    with pytest.raises(SystemExit):
+        te.main()
+    assert types_file.read_bytes() == before

@@ -30,6 +30,10 @@ from pathlib import Path
 from typing import Optional
 
 INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
+# Repo root in a clone, plugin root when installed as a plugin (this file is
+# <root>/.claude/mcp/dayz-rag/server.py). Its .env is read as well as the
+# working directory's, since a plugin's server may not start in the repo.
+REPO_ROOT = Path(__file__).resolve().parents[3]
 TABLE_NAME = "chunks"
 WIKI_TABLE_NAME = "wiki_chunks"
 DEFAULT_EMBED_MODEL = "voyage-code-3"
@@ -37,12 +41,11 @@ MAX_TOP_K = 25
 MAX_FILE_BYTES = 200_000
 
 # Optional distance ceiling for search results. LanceDB returns L2² distance
-# (lower = closer match). Absolute thresholds depend on the embed model and
-# corpus — voyage-code-3 + vanilla DayZ source clusters on-topic hits in the
-# 0.7-0.85 range, with noise creeping in past ~1.0. Calibrate by running
-# representative queries with no filter, then setting a threshold just above
-# the worst on-topic hit you saw. Default OFF (None) so callers see everything
-# ranked; opt in via DAYZ_RAG_MAX_DISTANCE env var or per-call arg.
+# (lower = closer match). Useful thresholds depend on the embed model and the
+# corpus, so calibrate by running representative queries with no filter, then
+# set a threshold just above the worst on-topic hit you saw. Default OFF (None)
+# so callers see everything ranked; opt in via the DAYZ_RAG_MAX_DISTANCE env
+# var or the per-call max_distance argument.
 def _load_default_max_distance() -> Optional[float]:
     raw = os.environ.get("DAYZ_RAG_MAX_DISTANCE", "").strip()
     if not raw:
@@ -59,12 +62,31 @@ DEFAULT_MAX_DISTANCE = _load_default_max_distance()
 VALID_FILE_TYPES = {"c", "cpp", "hpp", "h", "layout", "cfg", "rvmat", "xml", "json", "csv"}
 
 
+def _dotenv_paths() -> list[Path]:
+    """.env files to load, in priority order: the nearest one at or above the
+    working directory, then the one at REPO_ROOT. Duplicates are dropped."""
+    paths: list[Path] = []
+    cwd = Path.cwd()
+    for d in (cwd, *cwd.parents):
+        if (d / ".env").is_file():
+            paths.append(d / ".env")
+            break
+    root_env = REPO_ROOT / ".env"
+    if root_env.is_file() and all(os.path.normcase(str(p)) != os.path.normcase(str(root_env)) for p in paths):
+        paths.append(root_env)
+    return paths
+
+
 def _load_env_and_key() -> str:
-    """Find repo .env, load it, return the Voyage API key. Hard-fail if missing."""
+    """Load .env files (see _dotenv_paths), return the Voyage API key. Hard-fail if missing.
+
+    load_dotenv never overrides a variable that is already set, so the
+    process environment wins, then the working-directory .env, then REPO_ROOT's.
+    """
     try:
-        from dotenv import find_dotenv, load_dotenv
-        env_path = find_dotenv(usecwd=True)
-        if env_path:
+        from dotenv import load_dotenv
+
+        for env_path in _dotenv_paths():
             load_dotenv(env_path)
     except ImportError:
         pass
@@ -219,7 +241,7 @@ def _format_hit(row: dict) -> dict:
         "parent_context": row.get("parent_context", ""),
         "line_start": int(row.get("line_start", 0)),
         "line_end": int(row.get("line_end", 0)),
-        "score": float(row.get("_distance", 0.0)),
+        "distance": float(row.get("_distance", 0.0)),
         "snippet": (row.get("content", "") or "")[:1500],
         "is_stale": is_stale,
     }
@@ -246,15 +268,21 @@ def search_dayz_source_impl(
     table = _get_table()
     vec = _embed_query(query)
 
-    # Over-fetch when filtering so we can drop noise without underdelivering.
-    overfetch_factor = 4 if (file_type or threshold is not None) else 1
-    q = table.search(vec).limit(top_k * overfetch_factor)
-    results = q.to_list()
+    q = table.search(vec)
     if file_type:
-        results = [r for r in results if r.get("file_type") == file_type]
+        # file_type is checked against VALID_FILE_TYPES above, so quoting it is safe.
+        q = q.where(f"file_type = '{file_type}'", prefilter=True)
+    return _finish(q.limit(top_k).to_list(), threshold)
+
+
+def _finish(results: list[dict], threshold: Optional[float]) -> list[dict]:
+    """Drop hits farther than threshold and format the rest.
+
+    Results arrive nearest first, so anything past the top_k fetched is
+    farther still: no over-fetch is needed for the threshold.
+    """
     if threshold is not None:
         results = [r for r in results if float(r.get("_distance", 0.0)) <= threshold]
-    results = results[:top_k]
     return [_format_hit(r) for r in results]
 
 
@@ -322,13 +350,7 @@ def search_dayz_wiki_impl(
 
     table = _get_wiki_table()
     vec = _embed_query(query)
-
-    overfetch_factor = 4 if threshold is not None else 1
-    results = table.search(vec).limit(top_k * overfetch_factor).to_list()
-    if threshold is not None:
-        results = [r for r in results if float(r.get("_distance", 0.0)) <= threshold]
-    results = results[:top_k]
-    return [_format_hit(r) for r in results]
+    return _finish(table.search(vec).limit(top_k).to_list(), threshold)
 
 
 def _read_manifest(path: Path) -> Optional[dict]:
@@ -387,15 +409,14 @@ def main() -> int:
             top_k: max results (1-25, default 5)
             file_type: filter to one of "c", "cpp", "hpp", "h", "layout", "cfg", "rvmat",
                 "xml", "json", "csv" (default: all). Use "cpp" for config.cpp blocks.
-            max_distance: drop hits with `score` (LanceDB L2² distance) above this
-                threshold. Lower = closer match. Thresholds are model + corpus
-                dependent; calibrate by running unfiltered queries first.
-                voyage-code-3 + vanilla DayZ clusters on-topic hits around
-                0.7-0.85, with noise past ~1.0. Default None = no filter
-                (or env var DAYZ_RAG_MAX_DISTANCE if set).
+            max_distance: drop hits whose `distance` (LanceDB L2² distance) is
+                above this threshold. Lower = closer match. Thresholds are model
+                and corpus dependent; calibrate by running unfiltered queries
+                first. Default None = no filter (or env var DAYZ_RAG_MAX_DISTANCE
+                if set).
 
         Returns: list of {path, file_type, parent_context, line_start, line_end,
-        score, snippet, is_stale, stale_reason}. `is_stale=True` means the file's
+        distance, snippet, is_stale, stale_reason}. `is_stale=True` means the file's
         mtime is newer than the index build (or the file is missing); the snippet
         may not match what's currently on disk. Verify with get_dayz_file or Read
         before grounding claims on a hit (see cite-then-verify rule in
@@ -433,11 +454,11 @@ def main() -> int:
         Args:
             query: natural-language question or description
             top_k: max results (1-25, default 5)
-            max_distance: drop hits with `score` above this threshold. See
+            max_distance: drop hits whose `distance` is above this threshold. See
                 search_dayz_source for guidance.
 
         Returns: list of {path, file_type, parent_context, line_start, line_end,
-        score, snippet, is_stale} where `path` is the wiki page URL and
+        distance, snippet, is_stale} where `path` is the wiki page URL and
         `parent_context` is "Page Title > Section > Subsection". `is_stale` is
         always False for wiki hits (no local mtime to compare).
         """

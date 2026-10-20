@@ -51,10 +51,35 @@ def test_validate_input_rejects_missing_file(tmp_path):
     assert "Input not found" in str(exc.value)
 
 
-def test_gate_reports_missing_preflight(monkeypatch, tmp_path):
-    # Importing the module must not need preflight.py, so this check can fire.
-    monkeypatch.setattr(pt, "PREFLIGHT", tmp_path / "preflight.py")
-    monkeypatch.setattr(pt, "REPO_ROOT", tmp_path)
+class _FakePreflight:
+    def __init__(self, root):
+        self.root = root
+
+    def find_dayz_tools(self):
+        return self.root
+
+
+def test_resolve_image_to_paa_uses_preflight_resolver(monkeypatch, tmp_path):
+    exe = tmp_path / "Bin" / "ImageToPAA" / "ImageToPAA.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_bytes(b"")
+    monkeypatch.setattr(pt.h, "preflight", _FakePreflight(tmp_path), raising=False)
+    assert pt.resolve_image_to_paa() == exe
+
+
+def test_resolve_image_to_paa_without_tools_exits(monkeypatch):
+    monkeypatch.setattr(pt.h, "preflight", _FakePreflight(None), raising=False)
     with pytest.raises(SystemExit) as exc:
-        pt.gate_on_preflight()
-    assert "dayz-preflight not found" in str(exc.value)
+        pt.resolve_image_to_paa()
+    assert "DayZ Tools not found" in str(exc.value)
+
+
+def test_main_gates_before_validating(monkeypatch, tmp_path):
+    def gate():
+        raise SystemExit(1)
+
+    monkeypatch.setattr(pt.h, "gate_on_preflight", gate)
+    monkeypatch.setattr("sys.argv", ["pack_texture.py", str(tmp_path / "missing_co.png")])
+    with pytest.raises(SystemExit) as exc:
+        pt.main()
+    assert exc.value.code == 1

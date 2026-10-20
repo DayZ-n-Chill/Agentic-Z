@@ -4,7 +4,7 @@ name: dayz-pack-texture
 
 ## Overview
 
-&gt;-
+Converts PNG or TGA images to DayZ `.paa` textures with DayZ Tools' ImageToPAA.exe, writing each `.paa` next to its source (replacing any existing one), after checking that every filename ends in a texture-role suffix (`_co`, `_nohq`, `_smdi`). Use when a mod's textures need packing for config.cpp, .rvmat, or hiddenSelectionsTextures references.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
@@ -18,7 +18,7 @@ Convert one or more PNG/TGA images to `.paa` (DayZ's texture format) using DayZ 
 | `_nohq` | Normal map |
 | `_smdi` | Specular / mask |
 
-A file like `vest_camo_co.png` becomes `vest_camo_co.paa` next to it.
+A file like `vest_camo_co.png` becomes `vest_camo_co.paa` next to it. An existing `.paa` of that name is overwritten without asking.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -37,7 +37,7 @@ python "<skill-dir>\pack_texture.py" <input1> [<input2> ...]
 1. Preflight gate.
 2. Validate every input before converting any: the file exists, the extension is `.png` or `.tga` (any case), and the basename ends with `_co`, `_nohq`, or `_smdi` (any case) before the extension.
 3. Resolve `ImageToPAA.exe` from DayZ Tools (env / registry / Steam paths) via `find_dayz_tools()`.
-4. For each input, invoke `ImageToPAA.exe <input> <output.paa>`. Streams the tool's output live.
+4. For each input, invoke `ImageToPAA.exe <input> <output.paa>`, overwriting any existing `.paa`. Streams the tool's output live.
 5. Report a summary of successes and failures. Exit non-zero if any failed.
 
 ## Refuses to run if
@@ -70,6 +70,4 @@ Preflight complete.
 
 ## Do not
 
-- Don't accept inputs without a recognized suffix. Silently producing a wrongly-named `.paa` masks an engine-side bug that's painful to diagnose later.
-- Don't auto-rename inputs. If the user has `vest_camo.png` (no suffix), they need to rename it themselves so they're explicit about what role it plays.
-- Don't re-implement DayZ Tools path discovery — import `find_dayz_tools` from `dayz-preflight/preflight.py`.
+- Don't auto-rename inputs. If the user has `vest_camo.png` (no suffix), they rename it themselves so they're explicit about what role it plays.

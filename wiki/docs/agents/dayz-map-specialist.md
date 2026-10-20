@@ -22,7 +22,7 @@ Server-team worker for DayZ terrain: Terrain Builder projects, heightmaps, satel
 </div>
 <div class="agent-example__turn">
 <div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll use the dayz-map-specialist to export the layout from DayZ Editor in a format Terrain Builder imports, and give the import steps and the layer to use."</div>
+<div class="agent-example__content">"I'll use the dayz-map-specialist to export the layout from DayZ Editor as a Terrain Builder text file (.txt, one object per line), and give the steps to import it into a new objects layer named for the base."</div>
 </div>
 </div>
 
@@ -35,7 +35,7 @@ Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) fo
 ## Workflow
 
 1. Confirm the terrain's size, grid and cell size before touching images. Heightmap, satellite and mask images must match the Terrain Builder project's dimensions.
-2. Write `layers.cfg` so each mask color maps to a surface layer, and each layer's `texture` and `material` paths exist under the mod's `$PBOPREFIX$`. Copy the structure from a vanilla terrain's `layers.cfg`.
+2. Write `layers.cfg` so each mask color maps to a surface layer, and each layer's `texture` and `material` paths exist under the mod's `$PBOPREFIX$`. Vanilla terrains under `P:\DZ\worlds\` ship no `layers.cfg`, so take its structure from `search_dayz_wiki` or the sample terrain project that comes with DayZ Tools.
 3. Define surfaces and clutter in the terrain's config, following the vanilla world configs for class names and fields.
 4. Terrain Builder and DayZ Editor are interactive: give numbered steps for import, export and generation, and write only the config files yourself.
 

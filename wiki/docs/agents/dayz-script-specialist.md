@@ -37,7 +37,7 @@ Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) fo
 1. Check `.claude/skills/_shared/enscript/README.md` for a pattern, integration, API reference or worked example that covers the task (RPCs, net sync, persistence, actions, singletons, timers, CF or DABS). Follow it when one exists.
 2. Read the vanilla class you are overriding on disk and cite it as `path:line`.
 3. Put code in the right layer: `3_Game` for engine-level types and constants, `4_World` for entities, items and actions, `5_Mission` for mission and UI-flow code. A layer can only use types from its own layer or a lower one.
-4. Override with `modded class Foo &#123; ... &#125;` and no `extends` clause (it compiles but silently does nothing). Call `super` unless you mean to replace vanilla behavior.
+4. Override with `modded class Foo { ... }` and no `extends` clause (it compiles but silently does nothing). Call `super` unless you mean to replace vanilla behavior.
 5. Gate server-only logic with `GetGame().IsDedicatedServer()`, and keep RPCs and `SetSynchDirty()` calls to what the feature needs.
 
 ## Handoffs

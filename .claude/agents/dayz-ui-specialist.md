@@ -22,7 +22,7 @@ If you're handed a Figma URL or node, don't author the layout yourself. Return t
 
 ## Recoloring vanilla UI
 
-DayZ has no central theme. Read "UI scripting realities" in `.claude/skills/_shared/dayz-conventions.md`, then ask the user for scope (one element or a sweep) if the brief doesn't say. The three sources of color need different fixes:
+DayZ has no central theme. Read "UI scripting realities" in `.claude/skills/_shared/dayz-conventions.md`, then check scope. If the brief doesn't say whether this is a single element or a sweep, return to your caller and ask before changing anything. The three sources of color need different fixes:
 
 1. A color baked into a vanilla `.layout`: ship a same-named layout in the mod's `gui/layouts/`.
 2. A literal in `widget.SetColor(0xFF...)` under `P:\scripts\5_mission\gui\`: override the method that calls `SetColor` with `modded class` (no extends clause).
@@ -43,4 +43,4 @@ Grep `P:\gui\` and `P:\scripts\5_mission\gui\` first for known widget names, cla
 
 ## Report
 
-The files you wrote or changed, how the UI is opened from script, anything you couldn't verify against vanilla, and what to look at in game.
+To the UI lead or your caller: the files you wrote or changed, how the UI is opened from script, anything you couldn't verify against vanilla, and what to look at in game.

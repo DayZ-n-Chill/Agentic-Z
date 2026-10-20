@@ -99,6 +99,32 @@ def build_addon_builder_cmd(
     return cmd
 
 
+def other_pbos(addons_dir: Path, modname: str) -> list[str]:
+    """Names of .pbo files in addons_dir other than <modname>.pbo (sorted).
+
+    These are the payload PBOs /dayz-deploy-pbo copies in. AddonBuilder -clear
+    would wipe them, so --clean refuses while any exist.
+    """
+    if not addons_dir.is_dir():
+        return []
+    own = f"{modname}.pbo".lower()
+    return sorted(
+        f.name for f in addons_dir.iterdir()
+        if f.is_file() and f.suffix.lower() == ".pbo" and f.name.lower() != own
+    )
+
+
+def gate_clean(addons_dir: Path, modname: str) -> None:
+    """Exit if --clean would wipe PBOs other than <modname>.pbo."""
+    others = other_pbos(addons_dir, modname)
+    if others:
+        sys.exit(
+            f"{FAIL} --clean would wipe other PBOs in {addons_dir}\\: {', '.join(others)}\n"
+            "       They are deployed payload (/dayz-deploy-pbo). Build without --clean,\n"
+            "       or remove them yourself first and re-deploy afterwards."
+        )
+
+
 def check_pbo_output(pbo_path: Path, build_started: float) -> Optional[str]:
     """Return a failure message if the build did not produce a fresh PBO, else None.
 
@@ -123,7 +149,8 @@ def main() -> int:
     parser.add_argument(
         "--clean",
         action="store_true",
-        help="Wipe P:\\Mods\\@<ModName>\\Addons\\ before building (AddonBuilder -clear).",
+        help="Wipe P:\\Mods\\@<ModName>\\Addons\\ before building (AddonBuilder -clear). "
+        "Refused while Addons\\ holds PBOs other than <ModName>.pbo.",
     )
     args = parser.parse_args()
 
@@ -143,6 +170,8 @@ def main() -> int:
     h.gate_on_marker(args.modname, deploy_root)
 
     target_dir = deploy_root / "Addons"
+    if args.clean:
+        gate_clean(target_dir, args.modname)
     temp_dir = TEMP_ROOT / args.modname
     target_dir.mkdir(parents=True, exist_ok=True)
     temp_dir.mkdir(parents=True, exist_ok=True)

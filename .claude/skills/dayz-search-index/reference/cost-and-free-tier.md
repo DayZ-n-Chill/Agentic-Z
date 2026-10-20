@@ -4,7 +4,7 @@ Embedding goes through Voyage AI's hosted API, so a rebuild consumes tokens on y
 
 ## How big a rebuild is
 
-The live vanilla index is about 52,000 chunks from about 38,000 files, roughly 66M tokens. Most of that comes from unique `.rvmat` files and XML. A search query costs a few hundred tokens.
+The 2026-08-10 vanilla build was 52,048 chunks, about 66M tokens (`--status` shows the latest). Most of that comes from unique `.rvmat` files and XML. A search query costs a few hundred tokens.
 
 ## What the indexer reports
 
@@ -14,14 +14,14 @@ The live vanilla index is about 52,000 chunks from about 38,000 files, roughly 6
 
 ## The pre-build projection check
 
-Before embedding, the indexer estimates this build's tokens (total characters divided by `CHARS_PER_TOKEN_EST`) and adds this calendar month's total from `usage.log`. If the projection reaches 80% of the budget, it shows the numbers and asks to continue. In a non-interactive shell it refuses unless you pass `--ignore-tier-warning`.
+Before embedding, the indexer estimates this build's tokens (total characters divided by `CHARS_PER_TOKEN_EST`) and adds this calendar month's total from `usage.log`. If the projection reaches 80% of the budget, it shows the numbers (with an overage estimate at the selected model's rate from `COST_PER_MTOKEN`) and asks to continue. In a non-interactive shell it refuses unless you pass `--ignore-tier-warning`.
 
 - Override the budget with `VOYAGE_FREE_TIER_TOKENS=<int>` if your plan differs from the default.
 - The counter is local: it only sees builds run through `/dayz-search-index` and `/dayz-search-wiki-index`, not other apps sharing the same key.
 
 ## The chunk ceiling
 
-The indexer refuses to embed more than 150,000 chunks without `--force`. A normal vanilla build is well under that, so hitting it means the walk scope grew unexpectedly.
+The indexer refuses to embed more than `CHUNK_CEILING` (150,000) chunks without `--force`. A normal vanilla build is well under that, so hitting it means the walk scope grew unexpectedly.
 
 ## Choosing a model
 

@@ -16,8 +16,9 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 - Server: `.server/<instance>/Profiles/` (`script*.log`, `*.RPT`, `crash*.log`, BattlEye state).
 - Client: `.server/!ClientDiagLogs/` (client RPT and script logs). UI and `5_Mission` errors only appear here.
 - Build failures: the AddonBuilder lines quoted in the `dayz-build-checker` report.
+- Review-gate failures: there are no engine logs; diagnose from the `dayz-mod-reviewer` gate report and the files the task changed.
 
-Read the newest files yourself; use the caller's report to know which session and time window to look at. Don't diagnose from a symptom without a log line behind it.
+Read the newest files yourself; use the caller's report to know which session and time window to look at. Don't diagnose from a symptom without a log line (or, for a review-gate failure, a report finding) behind it.
 
 ## How you diagnose
 
@@ -26,13 +27,13 @@ Read the newest files yourself; use the caller's report to know which session an
 3. Check the usual causes first:
    - A modded class that never runs: an extends clause on `modded class` makes it a silent no-op (Script conventions in the Tier 2 doc), or the file is in the wrong `scripts/` layer.
    - `Can't find` or missing class errors: a typo, a missing `CfgPatches` `requiredAddons` entry, or a path that doesn't match `$PBOPREFIX$`.
-   - BattlEye kicks on a local server: check `allowFilePatching = 1;` in the instance's `serverDZ.cfg`.
+   - Connection refused with `0x00020005`: check `allowFilePatching = 1;` in the instance's `serverDZ.cfg`.
 4. To understand a vanilla class in a stack trace, Grep `P:\scripts\` for the exact name first; use `search_dayz_source` for questions by meaning or after two or three failed greps, and verify each hit with `get_dayz_file` or Read.
 5. If the cause is in vanilla or another mod, say so and suggest a workaround the mod can carry.
 
 ## Who fixes what
 
-Name the owner in full: `dayz-script-specialist` for `.c` files, `dayz-config-specialist` for `config.cpp`, `dayz-asset-specialist` for textures and materials, `dayz-object-builder` for `.p3d` models, `dayz-ui-specialist` for layouts and widget scripts, `dayz-server-admin` for `types.xml` and server files.
+Name the owner in full: `dayz-script-specialist` for `.c` files, `dayz-config-specialist` for `config.cpp`, `dayz-asset-specialist` for textures and materials, `dayz-object-builder` for `.p3d` models, `dayz-ui-specialist` for layouts and widget scripts, `dayz-server-admin` for `types.xml` and server files, `dayz-map-specialist` for terrain files under `worlds/`, `dayz-workbench-specialist` for Workbench plugins, `dayz-docs-writer` for the README and changelog.
 
 ## Report
 

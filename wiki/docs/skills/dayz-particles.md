@@ -4,318 +4,79 @@ name: dayz-particles
 
 ## Overview
 
-&gt;
+Documents how to create and play custom DayZ particle effects without Workbench: plain-text .ptc and .emat files, .edds sprites, &#123;GUID&#125;path references, the script API (Particle, ParticleSource, ParticleManager, SEffectManager, ParticleList), the vanilla particle catalog and device integration patterns. Use when writing or debugging any particle effect code or file.
 
 # DayZ particle effects
 
 Follow `.claude/skills/_shared/dayz-conventions.md`. This skill is reference only; it runs no scripts, so there is no preflight gate.
 
-## .ptc and .emat are plain text
+## What to read
 
-DayZ particle files (.ptc) and material files (.emat) are plain text configs,
-not binary. Custom particles can be created programmatically without Workbench.
+| Task | Read |
+|---|---|
+| Write or edit a `.ptc` (emitters, curves, every property) | `references/ptc-format-reference.md` |
+| Write or edit an `.emat`, pick a vanilla material or sprite GUID | `references/emat-format-reference.md` |
+| Play, stop or tune particles from script | `references/script-api-reference.md` |
+| Wire particles into a device (toggle, one-shot, cleanup) | `references/integration-patterns.md` |
+| Find a vanilla particle to reuse | `references/vanilla-particle-catalog.md` |
 
-| Layer | Format | Creatable? | Purpose |
-|---|---|---|---|
-| `.ptc` | Plain text config | Yes | Particle effect (emitters, physics, curves) |
-| `.emat` | Plain text config | Yes | Material (texture ref, blend mode, color) |
-| `.edds` | Standard DDS renamed | Yes | Billboard sprite texture |
-| `.meta` | Plain text (GUIDs) | Workbench only | Not needed for mod runtime |
+## File layers
 
-All particles are client-only. Server controls state via SyncVars; client
-creates/destroys particles in response.
+| Layer | Format | Purpose |
+|---|---|---|
+| `.ptc` | Plain text | Effect: one `EffectDef` with one or more `EmitorDef` blocks |
+| `.emat` | Plain text | Material: texture ref, shader (`Particle` or `ParticleSprite`), blend mode |
+| `.edds` | DDS renamed | Billboard sprite texture |
+| `.meta` | Plain text | Written by Workbench; not needed at mod runtime |
 
----
-
-## .ptc file format
-
-One EffectDef with one or more EmitorDef blocks. Each emitter is an independent
-particle stream. Simplest particle (debug_dot): 1 emitter, 478 bytes. Complex
-fire (fire_small_camp_01): 6 emitters (glow + flames + burst + short + sparks + smoke).
-
-```
-EffectDef {
- Emitors {
-  EmitorDef <name> {
-   ShapeType Point
-   MaxNum 10
-   BirthRate 5
-   Material "{GUID}path/to/material.emat"
-   SizeMultiplier 0.5
-   Velocity 2
-   LifeTime 1.5
-   Color {
-    0 1 0.8 0.3 1 0.7 0.5 0.25
-   }
-   Alpha {
-    0 0 0.2 1 1 0
-   }
-   Repeat 1
-  }
- }
-}
-```
-
-### Property categories (full list in `references/ptc-format-reference.md`)
-
-**Shape & emission:** ShapeType (Point/Box/Ellipse), ShapeSize (x y z),
-ConeAngle (yaw pitch roll deg), MaxNum, BirthRate, BirthRateRND, Offset (x y z)
-
-**Visual:** Material ("&#123;GUID&#125;path.emat"), SizeMultiplier, SizeRND,
-BillboardingType (Full), CenterY (-1=bottom, 0=center), StretchMultiplier
-
-**Motion:** Velocity, VelocityRND, AirResistance, AirResistanceRND,
-GravityMultiply, GravityMultiplyRND, Wind (0-1), Spring, Restitution,
-VelAngle (0/1), VelAffect (0-1)
-
-**Lifetime:** LifeTime (seconds), LifeTimeRND, EffectTime (cycle duration),
-Repeat (0 = one-shot, auto-deletes; 1 = loop, must be stopped manually)
-
-**Animation:** AnimOnce, AnimFPS, LifetimeByAnim, RandomFrame
-
-**Rotation:** RandomRotDir, RotMultiplier, RandomAngle
-
-**Curves (keyframe pairs: time value time value ...):**
-`Color &#123; t r g b t r g b &#125;`, `Alpha &#123; t a t a &#125;`,
-`Size &#123; t s t s &#125;`, `RotationSpeed &#123; t s t s &#125;`
-
-**Master curves (modulate over EffectTime):**
-ColorMast, AlphaMast, SizeMast, BRateMast, VelocityMast, AirResistanceMast
-
----
-
-## .emat material format
-
-### Shader: `Particle` (fire, sparks, water, most particles)
-```
-Particle {
- AlbedoMap "{GUID}Graphics/Particles/sprites/texture.edds"
- Color 0 0 0 1
- Emissive 1 1 1 0
- BlendMode Additive_AlphaModulate
- Sort translucent
- Softness 2
- TileU 4
- TileV 2
-}
-```
-
-### Shader: `ParticleSprite` (steam, flares, glow billboards)
-```
-ParticleSprite {
- AlbedoMap "{GUID}Graphics/Particles/sprites/texture.edds"
- Color 0.95 0.95 0.95 1
- Diffuse 0.95 0.95 0.95 1
- Ambient 0.59 0.59 0.59 1
- Softness 2
-}
-```
-
-### .emat properties
-AlbedoMap (texture GUID+path), Color (RGBA 0-1), Diffuse (RGBA),
-Ambient (RGBA), Emissive (RGBA, self-glow), BlendMode (Additive_AlphaModulate
-or numeric), Sort (translucent/overlay/0), Softness (0-2, edge blending),
-TileU/TileV (sprite sheet cols/rows), CameraBlendFar (distance fade),
-BidirLightScale (bidirectional lighting)
-
-Full reference with examples: `references/emat-format-reference.md`
-
----
+Because `.ptc` and `.emat` are plain text, they can be written by hand or generated by a script.
 
 ## GUID references
 
-Resources reference each other via `&#123;HEXGUID&#125;relative/path.ext`.
+Resources reference each other as `{HEXGUID}relative/path.ext`.
 
-- **Vanilla to vanilla**: GUIDs embedded in the files.
-- **Mod .ptc to vanilla .emat**: use the vanilla GUID plus path, exactly as vanilla files do.
-- **Mod .emat to vanilla .edds**: use the vanilla GUID plus path.
-- **Mod .ptc to mod .emat**: path only. Mod runtime loading resolves mod-owned resources by PBO path (`references/emat-format-reference.md`).
-- `.meta` files are not needed for mod runtime loading.
+- Mod `.ptc` to vanilla `.emat`, or mod `.emat` to vanilla `.edds`: copy the vanilla GUID plus path, exactly as vanilla files do.
+- Mod `.ptc` to mod `.emat`: path only; mod-owned resources resolve by PBO path.
 
-Unverified: whether the engine resolves by GUID first or by path, and whether a mod .ptc that references a vanilla .emat by path only (no GUID) fails. Copying the GUID plus path is the safe default; test in-game before relying on either behavior.
+Unverified: whether the engine resolves by GUID or by path first, and whether a path-only reference to a vanilla `.emat` fails. Copying GUID plus path is the safe default; test in game before relying on either behavior.
 
----
+## Script API in one screen
 
-## Vanilla material library
-
-Reference these in custom .ptc to reuse vanilla visuals:
-
-| GUID | Short name | Visual type |
-|---|---|---|
-| `&#123;CB7AF4FD8ACBFDFC&#125;` | glow/glow1.emat | Soft glow dot |
-| `&#123;009C2EBAACD2D72A&#125;` | fire/sparks1.emat | Bright spark point |
-| `&#123;0B829A150C6A13E5&#125;` | fire/sparks_06.emat | Spark strip (8-tile) |
-| `&#123;853257EDA4B1E35D&#125;` | fire/fire_flame_01.emat | Fire flame billboard |
-| `&#123;3E6CE4D61F8AC71F&#125;` | fire/fire_medium_camp_02.emat | Medium fire anim |
-| `&#123;83BCB6516091DB01&#125;` | fire/fire_medium_camp_04.emat | Fire burst anim |
-| `&#123;62F13B8B540EBC80&#125;` | fire/fireball_1.emat | Fireball |
-| `&#123;00BEA27443975BEB&#125;` | smoke/smoke_anim_02.emat | Animated smoke puff |
-| `&#123;008E25684854DAB8&#125;` | smoke/steam_small_cook_01.emat | Steam/vapor cloud |
-| `&#123;8FE2383D6913E098&#125;` | enviroment/water_splash_01_NoEm.emat | Water splash |
-| `&#123;D29B53088A5A3911&#125;` | smoke/smoke_dust_01_W.emat | White dust/mist |
-
-All paths prefixed with `Graphics/Particles/materials/`.
-
----
-
-## Script API layers
-
-### 1. Legacy `Particle` (scripts/3_Game/Particles/Particle.c)
-Creates `#particlesourceenf` child entity. EOnFrame lifetime tracking.
-Auto-deletes non-looping particles. Used by FireplaceBase, torches, cooking.
-
-### 2. `ParticleSource` extends Particle (ParticleSource.c)
-Native C++ backed. No EOnFrame. Auto-destroy flags: ON_END, ON_STOP, ALL, NONE.
-StopParticleFlags: `NONE = 0` (no-op; default `StopParticle()` already does gradual fade), IMMEDIATE, PAUSE (freeze visible).
-
-### 3. `ParticleManager` pool (ParticleManager.c)
-Global instance via `ParticleManager.GetInstance()` — 10000 pool, client only,
-returns null on dedicated server. Pre-allocates+reuses ParticleSource objects.
-Mods can also `new ParticleManager(settings)` to instantiate their own pools
-(the test framework does this); GetInstance() is the global, not a hard singleton.
-
-### Wrapper: `SEffectManager`
-PowerGenerator pattern: `SEffectManager.PlayOnObject(effect, parent, pos, ori)`.
-Cleanup: `SEffectManager.DestroyEffect(m_Smoke)`.
-
-Full API signatures: `references/script-api-reference.md`
-
----
-
-## API quick reference
-
-```
-// Static create+play
-Particle p = Particle.PlayOnObject(ID, parent, localPos, localOri, forceWorldRot);
-Particle p = Particle.PlayInWorld(ID, worldPos);
-// ParticleManager.GetInstance() returns null on a dedicated server; guard it.
-ParticleManager pm = ParticleManager.GetInstance();
-ParticleSource ps;
-if (pm) ps = pm.PlayOnObject(ID, parent, localPos);
-
-// Instance control
-p.PlayParticle(optionalNewId);
-p.StopParticle(flags);  // StopParticleFlags: NONE, IMMEDIATE, PAUSE
-p.Stop();               // legacy alias
-p.IsParticlePlaying();
-p.ResetParticle();      // ParticleSource only
-p.RestartParticle();    // reset+play
-p.DisableAutoDestroy(); // ParticleSource only
-
-// Parameter tuning (-1 = all emitters)
-p.SetParameter(emitter, EmitorParam.AIR_RESISTANCE, 3.0);
-p.ScaleParticleParamFromOriginal(EmitorParam.SIZE, 0.5);
-
-// Wiggle
-p.SetWiggle(randomAngle, randomInterval);
-p.StopWiggle();
-```
-
----
+- `Particle` (legacy): `Particle.PlayOnObject(id, parent, localPos, localOri, forceWorldRot)`, `Particle.PlayInWorld(id, worldPos)`. Non-looping particles delete themselves.
+- `ParticleSource` extends `Particle`: native-backed, auto-destroy flags (`ON_END`, `ON_STOP`, `ALL`, `NONE`), `DisableAutoDestroy()`, `ResetParticle()`.
+- `ParticleManager.GetInstance()`: global pool of 10000 `ParticleSource` objects, created only when not on a headless or dedicated server, so it returns null there (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:25` and `:63-65`). Null-check it.
+- `SEffectManager.PlayOnObject(effect, parent, pos, ori)` for particle plus sound; clean up only with `SEffectManager.DestroyEffect(effect)`.
+- Control: `StopParticle(flags)` fades out by default (`StopParticleFlags.IMMEDIATE` removes at once, `PAUSE` freezes), `SetParameter(emitter, EmitorParam.X, value)` with `-1` for all emitters, `ScaleParticleParamFromOriginal(EmitorParam.SIZE, 0.5)`.
 
 ## Registering custom particles
 
-### Mod file structure
 ```
 MyMod/
-  data/particles/
-    mymod_water_spray.ptc
-    mymod_overload_sparks.ptc
-  data/particles/materials/         ← optional custom materials
-    mymod_blue_water.emat
-  scripts/3_Game/
-    MyMod_ParticleList.c
+  data/particles/mymod_water_spray.ptc
+  data/particles/materials/mymod_blue_water.emat   (optional)
+  scripts/3_Game/MyMod_ParticleList.c
 ```
 
-### Registration (3_Game layer)
 ```
 modded class ParticleList
 {
-    static const int MYMOD_WATER_SPRAY = RegisterParticle(
-        "MyMod/data/particles/", "mymod_water_spray");
-    static const int MYMOD_OVERLOAD_SPARKS = RegisterParticle(
-        "MyMod/data/particles/", "mymod_overload_sparks");
+    static const int MYMOD_WATER_SPRAY = RegisterParticle("MyMod/data/particles/", "mymod_water_spray");
 };
 ```
 
-### AddonBuilder filter (include .ptc .emat .edds)
+AddonBuilder include filter must keep the particle files:
+
 ```
-*.emat;*.edds;*.meta;*.ptc;*.c;*.imageset;*.layout;*.ogg;*.json;*.xml;*.paa;*.rvmat
+*.emat;*.edds;*.ptc;*.c;*.imageset;*.layout;*.ogg;*.json;*.xml;*.paa;*.rvmat
 ```
 
----
+## Pitfalls
 
-## Integration patterns (summary)
-
-Full code: `references/integration-patterns.md`
-
-**Pattern A** — FireplaceBase helpers: `MyMod_PlayParticle(out Particle, id, pos)` /
-`MyMod_StopParticle(out Particle)` with null-safety and server guard.
-
-**Pattern B** — SyncVar toggle: server sets state→SetSynchDirty, client
-creates/destroys in MyMod_OnVarSync.
-
-**Pattern C** — One-shot sparks: non-looping (Repeat 0) particles auto-delete,
-no cleanup needed. Use for overload events.
-
-**Pattern D** — SEffectManager wrapper: for combining particle+sound. Cleanup
-only via SEffectManager.DestroyEffect().
-
-**Pattern E** — Runtime parameter tuning: SetParameter for AIR_RESISTANCE,
-ScaleParticleParamFromOriginal for SIZE.
-
-**Cleanup contract**: every device with looping particles cleans them up in
-EEDelete, MyMod_OnPowerCut and the destructor.
-
----
-
-## Pitfalls and rules
-
-1. **Particles are client-only.** Wrap in `#ifndef SERVER`.
-2. **Looping particles (Repeat 1) NEVER end on their own.** Stop() them and null the ref.
-3. **Stop() is gradual.** Use StopParticleFlags.IMMEDIATE for instant removal.
-4. **ObjectDelete(particle)** valid for ParticleSource with DisableAutoDestroy().
-5. **Render distance ~200m.** Engine limit, no workaround.
-6. **Duplicate filenames** across mods: use unique prefixes (e.g. `mymod_`).
-7. **ParticleManager.GetInstance()** returns null on server. Always null-check.
-8. **SEffectManager.DestroyEffect()** is the only safe Effect cleanup.
-9. **AIR_RESISTANCE** controls smoke rise. FireplaceBase adjusts for ceilings.
-10. **force_world_rotation=true** for smoke/steam that should always rise up.
-11. **.meta files are not needed** for mod runtime.
-12. **Copy the vanilla GUID plus path** when referencing vanilla .emat/.edds from a mod .ptc (whether path-only fails is unverified; see GUID references).
-13. **.ptc is plain text.** Can be generated by Python scripts, no Workbench needed.
-14. **EffectTime + Repeat** interact: EffectTime is the master curve cycle, Repeat
-    loops the entire effect. One-shot (Repeat 0) plays once for EffectTime duration.
-
----
-
-## Vanilla particle catalog: key categories
-
-Full catalog: `references/vanilla-particle-catalog.md`.
-
-### Electricity
-`POWER_GENERATOR_SMOKE` (1 emitter, loop), `BARBED_WIRE_SPARKS` (1 emitter, one-shot)
-
-### Water
-`WATER_JET` (2 emitters, loop), `WATER_JET_WEAK` (2 emitters, loop),
-`WATER_SPILLING`, `DROWNING_BUBBLES`
-
-### Fire
-`CAMP_SMALL_FIRE` (6 emitters), `CAMP_STOVE_FIRE`, `BONFIRE_FIRE`
-
-### Smoke/Steam
-`CAMP_SMALL_SMOKE` (1 emitter), `CAMP_STEAM_2END`, `EVAPORATION`, `SPOOKY_MIST`
-
-### Environment
-`ENV_SWARMING_FLIES`, `SMOKING_HELI_WRECK`, `HOTPSRING_WATERVAPOR`,
-`GEYSER_NORMAL`, `GEYSER_STRONG`, `VOLCANO`
-
----
-
-## Reference files
-
-- `references/vanilla-particle-catalog.md` — every registered vanilla particle by category
-- `references/integration-patterns.md` — device-integration code patterns A to E
-- `references/ptc-format-reference.md` — full .ptc property reference with vanilla examples
-- `references/emat-format-reference.md` — .emat format, both shader types, all properties
-- `references/script-api-reference.md` — Particle/ParticleSource/ParticleManager signatures
+1. Particles are client-only. Guard with a runtime `GetGame().IsDedicatedServer()` check (Pattern A and Tier 2), not `#ifndef SERVER`: testing runs `DayZDiag_x64.exe` for both ends, and a compile-time define does not separate them.
+2. Looping particles (`Repeat 1`) never end on their own. Stop them and null the reference; clean up in `EEDelete`, power-off and the destructor.
+3. `Stop()` fades out gradually; use `StopParticleFlags.IMMEDIATE` for instant removal.
+4. `ObjectDelete(particle)` is valid only for a `ParticleSource` with `DisableAutoDestroy()`.
+5. Unverified: particles are said to stop rendering beyond about 200 m. No engine constant for this was found in `P:\scripts`; test in game before designing around it.
+6. Give `.ptc` files a mod prefix (`mymod_`) so filenames don't collide across mods.
+7. `AIR_RESISTANCE` controls how fast smoke rises; use `forceWorldRot = true` for smoke and steam that should always rise straight up.
+8. `EffectTime` is the master-curve cycle; `Repeat` loops the whole effect. A one-shot (`Repeat 0`) plays once for `EffectTime`.

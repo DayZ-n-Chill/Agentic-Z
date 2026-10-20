@@ -7,6 +7,10 @@ build a combined plan, asks for confirmation, then runs each with
 
 Each domain owns its own cleanup logic; this skill just runs them all.
 
+Maintainer rules: keep domain-specific knowledge out of this file (it belongs
+in each <domain>-clean-workspace skill), and pass children nothing beyond
+--include-server plus --dry-run or --yes, the contract every child accepts.
+
 See SKILL.md for full usage.
 """
 from __future__ import annotations

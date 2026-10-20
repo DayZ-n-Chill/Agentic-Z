@@ -66,9 +66,13 @@ def active_mod(project: Path) -> str | None:
 
 
 def mod_exists(project: Path, mod_name: str) -> bool:
-    """workspace/<mod> has the two files every scaffolded or imported mod has."""
-    mod_dir = project / "workspace" / mod_name
-    return (mod_dir / "config.cpp").is_file() and (mod_dir / "$PBOPREFIX$").is_file()
+    """workspace/<mod> exists as a folder or a link (even a dangling one).
+
+    Not a file check: a --no-scaffold import links a source folder that may lack
+    config.cpp or $PBOPREFIX$, and it is still set up. Any existing path also
+    makes /dayz-new-mod and /dayz-import-mod refuse, so the plan must skip them.
+    """
+    return os.path.lexists(project / "workspace" / mod_name)
 
 
 def is_setup_complete(project: Path) -> bool:

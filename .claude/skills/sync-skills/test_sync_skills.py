@@ -135,3 +135,33 @@ def test_malformed_agents_json_exits_2(tmp_path, monkeypatch, capsys, content):
 def test_shipped_agents_json_is_valid():
     names = [a["name"] for a in sync.load_agents_config()]
     assert names == ["claude", "codex", "gemini"]
+
+
+def _run_main(monkeypatch, env, argv):
+    """Run main() with sync_one stubbed out; return the agent names it was called for."""
+    called = []
+    monkeypatch.setattr(sync, "load_agents_config", lambda: [{"name": n} for n in ("claude", "codex", "gemini")])
+    monkeypatch.setattr(sync, "sync_one", lambda cfg, *a: called.append(cfg["name"]) or {"failed": 0})
+    monkeypatch.setattr(sync.sys, "argv", ["sync.py", *argv])
+    return sync.main(), called
+
+
+def test_default_syncs_every_agent_including_claude(monkeypatch, env):
+    rc, called = _run_main(monkeypatch, env, [])
+    assert rc == 0 and called == ["claude", "codex", "gemini"]
+
+
+def test_skip_claude_leaves_claude_out(monkeypatch, env):
+    rc, called = _run_main(monkeypatch, env, ["--skip", "claude"])
+    assert rc == 0 and called == ["codex", "gemini"]
+
+
+def test_skip_combines_with_agents(monkeypatch, env):
+    rc, called = _run_main(monkeypatch, env, ["--agents", "claude", "codex", "--skip", "claude"])
+    assert rc == 0 and called == ["codex"]
+
+
+def test_skip_unknown_agent_exits_2(monkeypatch, env, capsys):
+    rc, called = _run_main(monkeypatch, env, ["--skip", "claud"])
+    assert rc == 2 and called == []
+    assert "unknown agent" in capsys.readouterr().err

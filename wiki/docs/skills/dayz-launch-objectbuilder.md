@@ -16,14 +16,14 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ## What it does
 
-1. Gates on `/dayz-preflight`.
-2. Locates `ObjectBuilder.exe` via DayZ Tools.
-3. Verifies the registry has been populated by `/dayz-setup-objectbuilder` — fails with a clear hint if not.
-4. Resolves the open target:
-   - `--file <path>` → opens that `.p3d` directly.
-   - `--mod <ModName>` → passes `P:\<ModName>\` to Object Builder.
-   - Neither → no argument; Object Builder opens its last-used file.
-5. Spawns `ObjectBuilder.exe` with `DETACHED_PROCESS`, working directory `<DayZ Tools>\Bin\ObjectBuilder\`, so the shell returns immediately. The window may take a few seconds to appear.
+1. Resolves the open target first, so a bad flag fails before the slower checks:
+   - `--file <path>`: that `.p3d`. Fails if the path is missing; warns if the extension isn't `.p3d`.
+   - `--mod <ModName>`: `P:\<ModName>\`. Fails if the folder is missing.
+   - Neither: no argument; Object Builder opens its last-used file.
+2. Gates on `/dayz-preflight`.
+3. Locates `ObjectBuilder.exe` via DayZ Tools.
+4. Verifies the registry has been populated by `/dayz-setup-objectbuilder`, and fails with a hint if not.
+5. Spawns `ObjectBuilder.exe` detached, with working directory `<DayZ Tools>\Bin\ObjectBuilder\`, so the shell returns immediately. The window may take a few seconds to appear.
 
 ## How to run
 
@@ -74,11 +74,7 @@ DayZ Object Builder launcher
 
 ## Why detached
 
-Running Object Builder under the parent shell would block the terminal until you close the editor. We spawn with `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP` so:
-
-- Closing this terminal doesn't kill Object Builder.
-- The skill exits immediately after the spawn.
-- The PID is printed so you can find/kill it later if needed.
+The editor is spawned detached (shared `DETACH_FLAGS` in `_shared/skill_helpers.py`) so the terminal returns at once and closing it doesn't kill Object Builder; the printed PID identifies the process.
 
 ## Do not
 

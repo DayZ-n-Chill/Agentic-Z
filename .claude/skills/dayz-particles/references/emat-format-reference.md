@@ -183,6 +183,25 @@ This creates blue electric sparks using vanilla spark texture.
 | `{612031817F136DE0}` | Graphics/Particles/sprites/water_splash_01.edds | Water splash (4x2 sheet) |
 | `{856E111BF3EA99A3}` | Graphics/Particles/sprites/flare_light_ca.edds | Light flare |
 
+
+### Vanilla material GUIDs (reference from a custom .ptc)
+
+All paths are prefixed with `Graphics/Particles/materials/`.
+
+| GUID | Short name | Visual type |
+|---|---|---|
+| `{CB7AF4FD8ACBFDFC}` | glow/glow1.emat | Soft glow dot |
+| `{009C2EBAACD2D72A}` | fire/sparks1.emat | Bright spark point |
+| `{0B829A150C6A13E5}` | fire/sparks_06.emat | Spark strip (8-tile) |
+| `{853257EDA4B1E35D}` | fire/fire_flame_01.emat | Fire flame billboard |
+| `{3E6CE4D61F8AC71F}` | fire/fire_medium_camp_02.emat | Medium fire anim |
+| `{83BCB6516091DB01}` | fire/fire_medium_camp_04.emat | Fire burst anim |
+| `{62F13B8B540EBC80}` | fire/fireball_1.emat | Fireball |
+| `{00BEA27443975BEB}` | smoke/smoke_anim_02.emat | Animated smoke puff |
+| `{008E25684854DAB8}` | smoke/steam_small_cook_01.emat | Steam/vapor cloud |
+| `{8FE2383D6913E098}` | enviroment/water_splash_01_NoEm.emat | Water splash |
+| `{D29B53088A5A3911}` | smoke/smoke_dust_01_W.emat | White dust/mist |
+
 ---
 
 ## .meta FILES (for reference only — not needed for mods)

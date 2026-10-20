@@ -123,15 +123,62 @@ def test_allow_file_patching_appended_to_existing_cfg(tmp_path):
     assert text.endswith("allowFilePatching = 1;\n")
 
 
-def test_existing_cfg_with_setting_unchanged(tmp_path):
+def test_existing_cfg_with_setting_on_unchanged(tmp_path):
     cfg_path = tmp_path / ".server" / "test" / "serverDZ.cfg"
     cfg_path.parent.mkdir(parents=True)
-    original = "allowFilePatching = 0;\n"
+    original = 'hostname = "mine";\nallowFilePatching = 1;   // keep\n'
     cfg_path.write_text(original, encoding="utf-8")
     srv.setup_instance_dir("test", "dayzOffline.chernarusplus", tmp_path)
     assert cfg_path.read_text(encoding="utf-8") == original
 
 
+def test_explicit_allow_file_patching_zero_is_turned_back_on(tmp_path):
+    cfg_path = tmp_path / ".server" / "test" / "serverDZ.cfg"
+    cfg_path.parent.mkdir(parents=True)
+    cfg_path.write_text('hostname = "mine";\nallowFilePatching = 0;   // mine\n', encoding="utf-8")
+    srv.setup_instance_dir("test", "dayzOffline.chernarusplus", tmp_path)
+    assert cfg_path.read_text(encoding="utf-8") == 'hostname = "mine";\nallowFilePatching = 1;   // mine\n'
+
+
+def test_template_junction_failure_exits_non_zero(monkeypatch, tmp_path):
+    (tmp_path / ".server" / "test" / "mission").mkdir(parents=True)
+    monkeypatch.setattr(
+        srv.subprocess, "run",
+        lambda cmd, **k: srv.subprocess.CompletedProcess(cmd, 1, stdout="", stderr="Access is denied."),
+    )
+    with pytest.raises(SystemExit) as exc:
+        srv.setup_instance_dir("test", "dayzOffline.chernarusplus", tmp_path)
+    assert "Access is denied." in str(exc.value.code)
+
+
+def test_template_junction_created_when_mission_present(monkeypatch, tmp_path):
+    (tmp_path / ".server" / "test" / "mission").mkdir(parents=True)
+    calls = []
+    monkeypatch.setattr(
+        srv.subprocess, "run",
+        lambda cmd, **k: calls.append(cmd) or srv.subprocess.CompletedProcess(cmd, 0, stdout="", stderr=""),
+    )
+    srv.setup_instance_dir("test", "dayzOffline.chernarusplus", tmp_path)
+    assert calls[0][:4] == ["cmd", "/c", "mklink", "/J"]
+    assert calls[0][4].endswith("dayzOffline.chernarusplus")
+
+
+@pytest.mark.parametrize("bad", ["", ".", "..", "../x", "a/b", "a\\b", "C:x"])
+def test_instance_name_rejects_paths(bad):
+    with pytest.raises(srv.argparse.ArgumentTypeError):
+        srv.validate_instance(bad)
+
+
+@pytest.mark.parametrize("good", ["chernarus", "chernarus-hardcore", "loot_test.2"])
+def test_instance_name_accepts_folder_names(good):
+    assert srv.validate_instance(good) == good
+
+
 def test_shard_id_is_six_chars():
     cfg = srv.default_server_cfg("ab", "t")
     assert 'shardId = "abshar";' in cfg
+
+
+def test_shard_id_keeps_only_alphanumerics():
+    cfg = srv.default_server_cfg("a-b_c.d", "t")
+    assert 'shardId = "abcdsh";' in cfg

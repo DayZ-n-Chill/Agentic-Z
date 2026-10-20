@@ -9,6 +9,7 @@ to its own location):
     python .claude/skills/sync-skills/sync.py
     python .claude/skills/sync-skills/sync.py --agents claude codex
     python .claude/skills/sync-skills/sync.py --dry-run
+    python .claude/skills/sync-skills/sync.py --skip claude
 """
 from __future__ import annotations
 
@@ -233,6 +234,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--agents", nargs="+", default=None,
                     help="Subset of agents to sync (by name in agents.json). Default: all.")
+    ap.add_argument("--skip", nargs="+", default=[],
+                    help="Agents to leave out (by name in agents.json), e.g. --skip claude.")
     ap.add_argument("--dry-run", action="store_true",
                     help="Show what would happen, write nothing.")
     ap.add_argument("--force", action="store_true",
@@ -243,15 +246,18 @@ def main() -> int:
     if not all_agents:
         print("ERROR: no agents configured in agents.json", file=sys.stderr)
         return 2
-    if args.agents:
-        valid = {a["name"] for a in all_agents}
-        bad = [a for a in args.agents if a not in valid]
-        if bad:
-            print(f"ERROR: unknown agent(s): {bad}. Valid: {sorted(valid)}", file=sys.stderr)
-            return 2
-        agents = [a for a in all_agents if a["name"] in args.agents]
-    else:
-        agents = all_agents
+    valid = {a["name"] for a in all_agents}
+    bad = [a for a in (args.agents or []) + args.skip if a not in valid]
+    if bad:
+        print(f"ERROR: unknown agent(s): {bad}. Valid: {sorted(valid)}", file=sys.stderr)
+        return 2
+    agents = [
+        a for a in all_agents
+        if (not args.agents or a["name"] in args.agents) and a["name"] not in args.skip
+    ]
+    if not agents:
+        print("Nothing to do: every agent was excluded by --agents/--skip.")
+        return 0
 
     skills = list_repo_skills()
     if not skills:

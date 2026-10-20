@@ -120,7 +120,7 @@ def test_skips_when_installed_tag_matches(dl, monkeypatch):
 def test_different_tag_without_force_declined_keeps_index(dl, monkeypatch):
     dl.INDEX_ROOT.mkdir(parents=True)
     (dl.INDEX_ROOT / dl.INSTALLED_TAG_FILE).write_text("v0.9.0\n", encoding="utf-8")
-    monkeypatch.setattr(dl, "resolve_release", lambda tag: _release())
+    monkeypatch.setattr(dl, "resolve_release", lambda tag: _release(digest="sha256:" + "a" * 64))
     monkeypatch.setattr(dl, "confirm", lambda prompt: False)
     assert dl.main([]) == 1
     assert dl.installed_tag(dl.INDEX_ROOT) == "v0.9.0"
@@ -161,12 +161,26 @@ def test_checksum_mismatch_keeps_old_index(dl, monkeypatch):
     assert (dl.INDEX_ROOT / "old.txt").exists()
 
 
-def test_missing_checksum_warns_and_installs(dl, monkeypatch, capsys):
+def test_missing_checksum_refused_without_flag(dl, monkeypatch):
+    monkeypatch.setattr(dl, "resolve_release", lambda tag: _release())
+
+    def no_download(*a, **k):
+        raise AssertionError("must not download an unverifiable asset")
+
+    monkeypatch.setattr(dl, "download_with_progress", no_download)
+    with pytest.raises(SystemExit) as exc:
+        dl.main([])
+    assert "--allow-unverified" in str(exc.value)
+    assert not dl.INDEX_ROOT.exists()
+
+
+def test_missing_checksum_installs_with_allow_unverified(dl, monkeypatch, capsys):
     data = _tar_bytes([_file("dayz-search-index/manifest.json")])
     monkeypatch.setattr(dl, "resolve_release", lambda tag: _release())
     monkeypatch.setattr(dl, "download_with_progress", _fake_download(data))
-    assert dl.main([]) == 0
-    assert "skipping checksum check" in capsys.readouterr().out
+    assert dl.main(["--allow-unverified"]) == 0
+    assert "installing unverified" in capsys.readouterr().out
+    assert (dl.INDEX_ROOT / "manifest.json").exists()
 
 
 def test_install_restores_old_index_when_swap_fails(dl, tmp_path, monkeypatch):

@@ -15,6 +15,7 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
@@ -34,6 +35,16 @@ KNOWN_MAPS: dict[str, str] = {
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
 find_dayz_server = h.preflight.find_dayz_server
+
+
+def validate_instance(instance: str) -> str:
+    """argparse type for <instance>: one folder name directly under .server/."""
+    if instance in ("", ".", "..") or any(c in instance for c in "/\\:"):
+        raise argparse.ArgumentTypeError(
+            f"'{instance}' is not a valid instance name: use a single folder name "
+            "(no path separators, drive letters, or '..')."
+        )
+    return instance
 
 
 def gate_on_old_layout(project_dir: Path) -> None:
@@ -155,10 +166,16 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
         print(f"{OK} Wrote default {cfg_path.relative_to(project_dir)}")
     else:
         cfg = cfg_path.read_text(encoding="utf-8")
-        if "allowFilePatching" not in cfg:
+        setting = re.search(r"^\s*allowFilePatching\s*=\s*(\d+)", cfg, re.MULTILINE)
+        if setting is None:
             cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
             cfg_path.write_text(cfg, encoding="utf-8")
             print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(project_dir)}")
+        elif setting.group(1) != "1":
+            # Clients launch with -filePatching and cannot join a server without it.
+            cfg = cfg[: setting.start(1)] + "1" + cfg[setting.end(1):]
+            cfg_path.write_text(cfg, encoding="utf-8")
+            print(f"{OK} Set allowFilePatching = 1 in {cfg_path.relative_to(project_dir)} (was {setting.group(1)})")
         else:
             print(f"{OK} {cfg_path.relative_to(project_dir)} unchanged (already configured)")
 
@@ -173,18 +190,22 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
             ["cmd", "/c", "mklink", "/J", str(template_junction), str(mission_dir)],
             capture_output=True, text=True
         )
-        if result.returncode == 0:
-            print(f"{OK} Junction {template_junction.name}/ -> mission/ (template handshake)")
-        else:
-            print(f"{FAIL} Could not create template junction: {result.stderr.strip()}")
+        if result.returncode != 0:
+            sys.exit(
+                f"{FAIL} Could not create template junction {template_junction}: "
+                f"{(result.stderr or result.stdout).strip()}\n"
+                "       Without it the client connects but never spawns. Fix the cause and rerun."
+            )
+        print(f"{OK} Junction {template_junction.name}/ -> mission/ (template handshake)")
 
     print(f"{OK} {server_profiles.relative_to(project_dir)} ready")
     print(f"{OK} {client_diag_logs.relative_to(project_dir)} ready")
 
 
 def default_server_cfg(instance: str, template: str) -> str:
-    # Six-char shardId required by engine; truncate/pad instance name.
-    shard = (instance + "shard")[:6].lower()
+    # The engine needs a six-char alphanumeric shardId: keep only the instance
+    # name's letters and digits, pad with "shard", truncate to six.
+    shard = (re.sub(r"[^A-Za-z0-9]", "", instance) + "shard")[:6].lower()
     return dedent(
         f"""\
         hostname = "Local Test ({instance})";   // Server name
@@ -243,6 +264,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Set up a DayZ test server instance under .server/<instance>/.")
     parser.add_argument(
         "instance",
+        type=validate_instance,
         help=(
             "Free-form instance name (becomes .server/<instance>/). If the name "
             f"matches a known map alias ({', '.join(KNOWN_MAPS)}), --map defaults "

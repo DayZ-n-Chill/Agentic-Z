@@ -1,14 +1,11 @@
 """Pure-function transforms for canonical -> wiki mirrors.
 
-Replaces what the deprecated `docs-wiki-sync` agent used to do via LLM
-intelligence: deterministic Python transforms covering every variation
-the agent applied.
-
 Three transform kinds, mirroring docs-sync's `find_canonical_targets`:
 
   - skill (.claude/skills/<name>/SKILL.md -> wiki/docs/skills/<name>.md)
         Trim frontmatter to just `name:`. Insert `## Overview` heading +
-        the (HTML-escaped) description between frontmatter and body.
+        the description between frontmatter and body, with &, <, >, { and }
+        escaped in prose but not inside inline code.
 
   - agent (.claude/agents/<name>.md -> wiki/docs/agents/<name>.md)
         Trim frontmatter to `name/model/color/memory`. Inject badge HTML.
@@ -19,7 +16,11 @@ Three transform kinds, mirroring docs-sync's `find_canonical_targets`:
         treating them as components).
 
   - doc (docs/*.md, .claude/skills/_shared/*.md -> wiki/docs/<name>.md)
-        Identity copy.
+        Frontmatter copied verbatim; body gets the same MDX-safety pass as
+        skills (HTML comments dropped, curly braces escaped outside code).
+
+Frontmatter is parsed with PyYAML, so folded (`>`, `>-`), literal and
+quoted descriptions all come out as plain text.
 
 All functions are pure: input string in, output string out. The hooks
 that wrap these (drift detect, file I/O) live in sync.py.
@@ -29,6 +30,8 @@ from __future__ import annotations
 import re
 from typing import Iterable
 
+import yaml
+
 # --- frontmatter -------------------------------------------------------
 
 _FM_PATTERN = re.compile(r"^---\s*\n(.*?)\n---\s*\n?", re.DOTALL)
@@ -37,23 +40,22 @@ _FM_PATTERN = re.compile(r"^---\s*\n(.*?)\n---\s*\n?", re.DOTALL)
 def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
     """Return (frontmatter dict, body). If no frontmatter, returns ({}, text).
 
-    Frontmatter values are read raw (one-line YAML-ish). Multiline values
-    that span lines via leading whitespace continuation are NOT supported,
-    but agent descriptions are always single-line quoted strings with `\\n`
-    escape sequences, so this is fine for our inputs.
+    Values are parsed as YAML and stringified. Raises ValueError when the
+    frontmatter is not a valid YAML mapping.
     """
     m = _FM_PATTERN.match(text)
     if not m:
         return {}, text
-    fm_block = m.group(1)
-    body = text[m.end():]
-    fm: dict[str, str] = {}
-    for line in fm_block.splitlines():
-        if ":" not in line:
-            continue
-        key, _, val = line.partition(":")
-        fm[key.strip()] = val.strip().strip('"').strip("'")
-    return fm, body
+    try:
+        data = yaml.safe_load(m.group(1))
+    except yaml.YAMLError as e:
+        raise ValueError(f"invalid YAML frontmatter: {e}") from e
+    if data is None:
+        data = {}
+    if not isinstance(data, dict):
+        raise ValueError("frontmatter is not a YAML mapping")
+    fm = {str(k): "" if v is None else str(v).strip() for k, v in data.items()}
+    return fm, text[m.end():]
 
 
 def render_frontmatter(fm: dict[str, str], keys_quoted: Iterable[str] = ()) -> str:
@@ -82,30 +84,7 @@ def html_escape(text: str) -> str:
 
 # --- agent description parser -----------------------------------------
 
-# Agent descriptions are JSON-ish quoted strings with literal `\n` escapes
-# (because YAML quoted-string mode). Decode those before parsing.
-_DECODE_MAP = {
-    "\\n": "\n",
-    '\\"': '"',
-    "\\\\": "\\",
-}
-
-
-def decode_yaml_quoted(s: str) -> str:
-    """Decode the `\\n`/`\\"` escapes used inside an agent's description string.
-
-    Agent frontmatter looks like `description: "...\\n\\n<example>...\\n</example>..."`.
-    We need real newlines so the example parser can find tag boundaries.
-    """
-    # Use re.sub with a replacement function for stable order.
-    pattern = re.compile(r"\\[n\"\\]")
-    return pattern.sub(lambda m: _DECODE_MAP.get(m.group(0), m.group(0)), s)
-
-
 _EXAMPLE_BLOCK = re.compile(r"<example>(.*?)</example>", re.DOTALL)
-_CONTEXT_LINE = re.compile(r"^\s*Context:\s*(.+?)\s*$", re.MULTILINE)
-_USER_LINE = re.compile(r"^\s*user:\s*(.+?)\s*$", re.MULTILINE | re.DOTALL)
-_ASSISTANT_LINE = re.compile(r"^\s*assistant:\s*(.+?)\s*$", re.MULTILINE | re.DOTALL)
 _COMMENTARY_BLOCK = re.compile(r"<commentary>.*?</commentary>", re.DOTALL)
 
 
@@ -126,12 +105,7 @@ def parse_example_block(block_inner: str) -> dict[str, str]:
 
     block = _COMMENTARY_BLOCK.sub("", block_inner)
 
-    if (m := _CONTEXT_LINE.search(block)):
-        out["context"] = _normalize_turn_text(m.group(1))
-
-    # `user:` and `assistant:` lines greedily eat to the next "label:" line or
-    # end of block. We use a more careful pattern: capture until the next
-    # known-label line or end.
+    # Each label captures until the next known-label line or end of block.
     label_split = re.compile(
         r"^\s*(Context|user|assistant):\s*(.*?)(?=^\s*(?:Context|user|assistant):|\Z)",
         re.MULTILINE | re.DOTALL,
@@ -165,11 +139,10 @@ def render_example_div(example: dict[str, str]) -> str:
     return "\n".join(lines)
 
 
-def render_description(description_raw: str) -> str:
-    """Turn an agent description (decoded) into the body content for the
-    Overview section: prose + zero-or-more example divs.
+def render_description(decoded: str) -> str:
+    """Turn an agent description (already YAML-decoded) into the body content
+    for the Overview section: prose + zero-or-more example divs.
     """
-    decoded = decode_yaml_quoted(description_raw)
     parts: list[str] = []
     last_end = 0
     for m in _EXAMPLE_BLOCK.finditer(decoded):
@@ -227,18 +200,44 @@ def strip_html_comments_outside_fences(body: str) -> str:
     return "".join(out)
 
 
+_CODE_SPAN = re.compile(r"(`+).*?\1")
+
+
+def _outside_code_spans(text: str, fn) -> str:
+    """Apply fn to the prose parts of text, leaving inline code spans untouched."""
+    out: list[str] = []
+    last = 0
+    for m in _CODE_SPAN.finditer(text):
+        out.append(fn(text[last:m.start()]))
+        out.append(m.group(0))
+        last = m.end()
+    out.append(fn(text[last:]))
+    return "".join(out)
+
+
+def _curlies(text: str) -> str:
+    return text.replace("{", "&#123;").replace("}", "&#125;")
+
+
+def _escape_curlies(text: str) -> str:
+    """Escape { and } in prose, leaving inline code spans untouched."""
+    return _outside_code_spans(text, _curlies)
+
+
+def escape_description(text: str) -> str:
+    """MDX-safe skill description: &, <, >, { and } escaped in prose only.
+
+    Inline code is literal in MDX 3, so an entity there would show as raw text.
+    """
+    return _outside_code_spans(text, lambda s: _curlies(html_escape(s)))
+
+
 def escape_mdx_curlies_outside_fences(body: str) -> str:
-    """Escape { and } to HTML entities outside fenced code blocks.
+    """Escape { and } to HTML entities outside fenced code and inline code.
 
-    MDX parses `{expr}` as a JavaScript expression even when the curly
-    braces appear in plain prose OR inline code (`code` spans). Fenced
-    code blocks (```...```) are preserved as-is by MDX, so we only
-    escape outside them. The HTML entities render visually as { and }
-    in the output (browsers decode entities inside <code> too) but
-    don't trip MDX's expression parser.
-
-    Triggered by skills like dayz-particles that document GUID syntax
-    like {HEXGUID}path/to/file.emat in prose and tables.
+    MDX parses `{expr}` in prose as a JavaScript expression. Code (fenced
+    blocks and inline spans) is literal in MDX 3, and an entity written
+    there would render as the raw text `&#123;`, so code is left alone.
     """
     out: list[str] = []
     in_fence = False
@@ -251,7 +250,7 @@ def escape_mdx_curlies_outside_fences(body: str) -> str:
         if in_fence:
             out.append(line)
             continue
-        out.append(line.replace("{", "&#123;").replace("}", "&#125;"))
+        out.append(_escape_curlies(line))
     return "".join(out)
 
 
@@ -269,7 +268,7 @@ def transform_skill(canonical_text: str) -> str:
 
     overview = ""
     if description:
-        overview = f"\n## Overview\n\n{html_escape(description)}\n\n"
+        overview = f"\n## Overview\n\n{escape_description(description)}\n\n"
 
     safe_body = escape_mdx_curlies_outside_fences(strip_html_comments_outside_fences(body))
     return render_frontmatter(trimmed_fm) + overview + safe_body.lstrip("\n")
@@ -305,5 +304,7 @@ def transform_agent(canonical_text: str) -> str:
 
 
 def transform_doc(canonical_text: str) -> str:
-    """Doc files (docs/*.md, _shared/*.md) get an identity copy."""
-    return canonical_text
+    """Doc files (docs/*.md, _shared/*.md): frontmatter verbatim, MDX-safe body."""
+    m = _FM_PATTERN.match(canonical_text)
+    head, body = (canonical_text[:m.end()], canonical_text[m.end():]) if m else ("", canonical_text)
+    return head + escape_mdx_curlies_outside_fences(strip_html_comments_outside_fences(body))

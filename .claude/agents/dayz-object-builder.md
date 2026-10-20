@@ -21,7 +21,7 @@ Object Builder edits `.p3d` files interactively; you can't change them from here
 2. `model.cfg` (`CfgSkeletons`, `CfgModels`) written next to the model when the task needs bones or animations.
 3. Config lines for dayz-config-specialist, sent through the art lead, for example `hiddenSelections[] = {"camo1","camo2"};`. Selection names must match the `.p3d` exactly.
 
-Before giving steps for an existing model, read its LODs and selections with the read-only `dayz-p3d-audit` skill.
+Before giving steps for one of the mod's own `.p3d` files, read its LODs and selections with the read-only `dayz-p3d-audit` skill. It reads only MLOD files; vanilla models under `P:\DZ\` are binarized ODOL, so don't run it on them.
 
 ## DayZ model rules
 
@@ -30,7 +30,7 @@ Before giving steps for an existing model, read its LODs and selections with the
 - Geometry, FireGeometry and ViewGeometry components must be closed and convex, named `Component01`, `Component02`, and so on.
 - A hidden selection is a named selection present in every visual LOD that should retexture. Damage zones, proxies and animation bones also reference selection names, so keep names exact and consistent across LODs and `model.cfg`.
 - Proxies are named `proxy:<path to proxy .p3d>` and point at the attachment model.
-- For named properties such as `autocenter`, mass and `mapType`, copy what a comparable vanilla model uses (read it with `dayz-p3d-audit`) rather than guessing.
+- For named properties such as `autocenter`, mass and `mapType`, copy the values from a comparable vanilla model's `config.cpp` entry or the wiki rather than guessing.
 - Never modify vanilla files under `P:\dz\`.
 
 ## Report

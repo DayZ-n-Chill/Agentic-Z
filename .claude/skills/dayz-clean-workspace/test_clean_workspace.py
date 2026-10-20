@@ -13,7 +13,7 @@ _spec.loader.exec_module(clean)
 h = clean.h
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def p_drive(monkeypatch, tmp_path):
     drive = tmp_path / "P"
     (drive / "Mods").mkdir(parents=True)
@@ -30,26 +30,26 @@ def _native(workspace: Path, name: str) -> Path:
     return mod
 
 
-# --- is_scaffolded_mod / link detection --------------------------------------
+# --- is_managed_mod / link detection --------------------------------------
 
 def test_native_scaffold_is_managed(tmp_path):
-    assert clean.is_scaffolded_mod(_native(tmp_path, "MyMod"))
+    assert clean.is_managed_mod(_native(tmp_path, "MyMod"))
 
 
 def test_folder_without_scaffold_files_is_not_managed(tmp_path):
     (tmp_path / "Random").mkdir()
-    assert not clean.is_scaffolded_mod(tmp_path / "Random")
+    assert not clean.is_managed_mod(tmp_path / "Random")
 
 
 def test_file_is_not_managed(tmp_path):
     (tmp_path / "notes.txt").write_text("", encoding="utf-8")
-    assert not clean.is_scaffolded_mod(tmp_path / "notes.txt")
+    assert not clean.is_managed_mod(tmp_path / "notes.txt")
 
 
 def test_link_without_scaffold_files_is_managed(tmp_path, monkeypatch):
     (tmp_path / "Imported").mkdir()
     monkeypatch.setattr(h, "is_link", lambda p: True)
-    assert clean.is_scaffolded_mod(tmp_path / "Imported")
+    assert clean.is_managed_mod(tmp_path / "Imported")
 
 
 def test_discover_mods_skips_unmanaged(tmp_path):
@@ -58,6 +58,30 @@ def test_discover_mods_skips_unmanaged(tmp_path):
     _native(ws, "A")
     (ws / "Junk").mkdir()
     assert [p.name for p in clean.discover_mods(ws, None)] == ["A", "B"]
+
+
+def test_payload_bundle_with_matching_marker_is_managed(p_drive, tmp_path):
+    bundle = tmp_path / "workspace" / "Bundle"
+    (bundle / "Addons").mkdir(parents=True)
+    assert not clean.is_managed_mod(bundle)
+    deployed = p_drive / "Mods" / "@Bundle"
+    deployed.mkdir()
+    h.write_marker(deployed, "OtherName")
+    assert not clean.is_managed_mod(bundle)
+    h.write_marker(deployed, "Bundle")
+    assert clean.is_managed_mod(bundle)
+    assert [p.name for p in clean.discover_mods(tmp_path / "workspace", None)] == ["Bundle"]
+
+
+def test_payload_bundle_plan_removes_deployed_and_workspace(p_drive, tmp_path):
+    bundle = tmp_path / "workspace" / "Bundle"
+    (bundle / "Addons").mkdir(parents=True)
+    deployed = p_drive / "Mods" / "@Bundle"
+    deployed.mkdir()
+    h.write_marker(deployed, "Bundle")
+    plan, warnings = clean.find_artifacts(bundle)
+    assert plan == [("deployed", deployed), ("workspace", bundle)]
+    assert warnings == []
 
 
 def test_discover_mods_missing_workspace(tmp_path):
@@ -69,7 +93,7 @@ def test_discover_mods_target_not_managed_names_both_kinds(tmp_path):
     with pytest.raises(SystemExit) as exc:
         clean.discover_mods(tmp_path / "workspace", "Junk")
     msg = str(exc.value.code)
-    assert "imported mod link" in msg and "config.cpp" in msg
+    assert "imported mod link" in msg and "config.cpp" in msg and "ownership marker" in msg
 
 
 # --- find_artifacts: ownership + order ------------------------------------------

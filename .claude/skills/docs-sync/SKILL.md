@@ -10,7 +10,7 @@ description: "Mirrors canonical agent, skill and doc files into the Docusaurus w
 
 Keep `wiki/docs/` in sync with canonical sources. One pure-Python script, two modes:
 
-1. **Drift detector** (`--check`, the default) lists what's out of sync: missing mirrors, sources newer than their mirror (by modification time), and orphan wiki pages. Wired to the Stop hook.
+1. **Drift detector** (`--check`, the default) lists what's out of sync: missing mirrors, mirrors whose content differs from the freshly transformed source, and orphan wiki pages. Wired to the Stop hook.
 2. **Apply** (`--apply`) runs the deterministic Docusaurus transform in `apply.py`, writes every mirror whose content changed, and prunes orphan agent and skill pages.
 
 ## When to run it
@@ -21,6 +21,8 @@ Keep `wiki/docs/` in sync with canonical sources. One pure-Python script, two mo
 - Whenever the Stop hook flags drift at the end of a session.
 
 ## How to run
+
+Requires PyYAML (`pip install pyyaml`).
 
 **Just check what's out of sync** (no writes):
 
@@ -34,7 +36,7 @@ python "<skill-dir>\sync.py" --check
 python "<skill-dir>\sync.py" --apply
 ```
 
-**Preview what `--apply` would do** (changes nothing on disk, not even timestamps):
+**Preview what `--apply` would do** (changes nothing on disk):
 
 ```cmd
 python "<skill-dir>\sync.py" --apply --dry-run
@@ -53,10 +55,11 @@ python "<skill-dir>\sync.py" --apply --dry-run
 Other wiki pages (`intro.mdx`, `install.mdx`, `architecture.md` and so on) are hand-written and not touched. Within `wiki/docs/agents/` and `wiki/docs/skills/`, files starting with `_` and `about.md` are hand-written and never pruned.
 
 The Docusaurus transform (`apply.py`):
+- Frontmatter is parsed as YAML (PyYAML), so folded `>` / `>-` descriptions render as plain text.
 - Skills: frontmatter trimmed to `name`; the description becomes an `## Overview` section.
 - Agents: frontmatter trimmed to `name`, `model`, `color`, `memory`; a badge row is injected; `<example>` blocks in the description become styled example cards (`<commentary>` dropped).
-- Bodies: HTML comments and literal MDX-breaking tags and curly braces outside code fences are escaped or stripped so MDX can render the page.
-- Docs: copied as is.
+- Bodies: HTML comments are stripped and curly braces in prose (outside fenced and inline code) are escaped so MDX can render the page; agent bodies also escape literal `<example>`/`<commentary>` tags.
+- Docs: frontmatter kept verbatim; the body gets the same HTML-comment and curly-brace pass.
 
 ## Stop hook integration
 

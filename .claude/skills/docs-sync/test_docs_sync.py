@@ -35,22 +35,36 @@ def _set_mtime(path: Path, t: float) -> None:
 def test_detect_drift_missing_mirror(repo):
     drift = sync.detect_drift()
     assert drift["missing_mirror"] == [repo / ".claude" / "skills" / "foo" / "SKILL.md"]
-    assert drift["src_newer"] == [] and drift["orphan"] == []
+    assert drift["stale"] == [] and drift["orphan"] == []
 
 
-def test_detect_drift_src_newer_and_in_sync(repo):
+def test_detect_drift_compares_content_not_mtime(repo):
     src = repo / ".claude" / "skills" / "foo" / "SKILL.md"
     mirror = repo / "wiki" / "docs" / "skills" / "foo.md"
+
+    # Hand-edited mirror that is NEWER than its source is still stale.
     mirror.write_text("x", encoding="utf-8")
+    _set_mtime(src, 1_000_000)
+    _set_mtime(mirror, 2_000_000)
+    assert sync.detect_drift()["stale"] == [src]
 
+    # Correct content with an OLDER mtime (fresh checkout, touch) is in sync.
+    sync.apply_all()
     _set_mtime(mirror, 1_000_000)
-    _set_mtime(src, 1_000_100)
-    assert sync.detect_drift()["src_newer"] == [src]
+    _set_mtime(src, 2_000_000)
+    assert sync.detect_drift() == {"missing_mirror": [], "stale": [], "orphan": []}
 
-    # Within the 1-second tolerance counts as in sync.
-    _set_mtime(src, 1_000_000.5)
-    drift = sync.detect_drift()
-    assert drift == {"missing_mirror": [], "src_newer": [], "orphan": []}
+
+def test_detect_drift_folded_description_regression(repo):
+    """A mirror written by the old line parser (description rendered as '&gt;') is stale."""
+    src = repo / ".claude" / "skills" / "foo" / "SKILL.md"
+    src.write_text("---\nname: foo\ndescription: >\n  Does foo.\n---\n\n# /foo\n", encoding="utf-8")
+    mirror = repo / "wiki" / "docs" / "skills" / "foo.md"
+    mirror.write_text("---\nname: foo\n---\n\n## Overview\n\n&gt;\n\n# /foo\n", encoding="utf-8")
+    assert sync.detect_drift()["stale"] == [src]
+    sync.apply_all()
+    text = mirror.read_text(encoding="utf-8")
+    assert "&gt;" not in text and "Does foo." in text
 
 
 def test_detect_drift_orphans_skip_hand_written_pages(repo):
@@ -86,7 +100,7 @@ def test_apply_writes_mirror_and_prunes_orphan(repo):
     assert "## Overview" in mirror.read_text(encoding="utf-8")
     assert not orphan.exists()
     assert keep.exists()
-    assert sync.detect_drift() == {"missing_mirror": [], "src_newer": [], "orphan": []}
+    assert sync.detect_drift() == {"missing_mirror": [], "stale": [], "orphan": []}
 
 
 def test_apply_dry_run_changes_nothing(repo):
@@ -99,17 +113,9 @@ def test_apply_dry_run_changes_nothing(repo):
     assert not (repo / "wiki" / "docs" / "skills" / "foo.md").exists()
 
 
-def test_apply_dry_run_leaves_unchanged_mirror_timestamp(repo):
-    sync.apply_all()
+def test_apply_reports_invalid_frontmatter(repo):
     src = repo / ".claude" / "skills" / "foo" / "SKILL.md"
-    mirror = repo / "wiki" / "docs" / "skills" / "foo.md"
-    _set_mtime(mirror, 1_000_000)
-    _set_mtime(src, 2_000_000)
-
-    sync.apply_all(dry_run=True)
-    assert mirror.stat().st_mtime == 1_000_000
-
-    # A real apply aligns the timestamp so the drift detector stops flagging it.
-    sync.apply_all()
-    assert mirror.stat().st_mtime == 2_000_000
-    assert sync.detect_drift()["src_newer"] == []
+    src.write_text("---\nname: [unclosed\n---\nbody\n", encoding="utf-8")
+    assert sync.apply_all() == 1
+    assert not (repo / "wiki" / "docs" / "skills" / "foo.md").exists()
+    assert sync.detect_drift()["missing_mirror"] == [src]

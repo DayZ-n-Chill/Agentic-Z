@@ -31,7 +31,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 - No Hard NO items (rules doc section 9): no XML, no `=`, no semicolons, no CSS properties such as `borderRadius`, `flex`, `padding` or `opacity`.
 - Spacer widgets have at least one child. Widget names are unique within their parent, and property keys don't repeat on a widget.
 
-Verify an unfamiliar class or property against vanilla before calling it wrong: Grep `P:\gui\` first for the exact name, use `search_dayz_source` with `file_type="layout"` if Grep finds nothing, and confirm the hit with `get_dayz_file` or Read. If you still can't confirm it, flag it for review rather than delete it.
+Search: Grep `P:\gui\` for known names, RAG (`search_dayz_source` with `file_type="layout"`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Flag an unfamiliar class or property you can't confirm for review; don't delete it.
 
 ## Rules
 
@@ -41,4 +41,6 @@ Verify an unfamiliar class or property against vanilla before calling it wrong: 
 
 ## Report
 
-Gate mode: `PASS` or `FAIL` on the first line, then each problem with its line number, the rule it breaks, and the fix the worker should make. Cleanup mode: the file you wrote, then a list of what you removed, repaired and flagged.
+Gate mode, to `dayz-lead`: `PASS` or `FAIL` on the first line, then each problem with its line number, the rule it breaks, and the fix the worker should make.
+
+Cleanup mode, to your caller: the file you wrote, then a list of what you removed, repaired and flagged.

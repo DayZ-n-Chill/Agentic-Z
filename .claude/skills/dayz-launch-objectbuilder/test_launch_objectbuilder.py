@@ -65,3 +65,42 @@ def test_missing_mod_folder_exits(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         ob.resolve_target(None, "MyMod")
     assert "/dayz-new-mod MyMod" in str(exc.value.code)
+
+
+def test_bad_file_fails_before_preflight(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(ob.h, "gate_on_preflight", lambda: calls.append("preflight"))
+    monkeypatch.setattr(ob, "registry_has_objectbuilder_settings", lambda: calls.append("registry") or True)
+    monkeypatch.setattr("sys.argv", ["launch.py", "--file", str(tmp_path / "missing.p3d")])
+    with pytest.raises(SystemExit) as exc:
+        ob.main()
+    assert "does not exist" in str(exc.value.code)
+    assert calls == []
+
+
+def test_launch_uses_shared_detach_flags(tmp_path, monkeypatch):
+    exe = tmp_path / "Bin" / "ObjectBuilder" / "ObjectBuilder.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    spawned = {}
+
+    class FakePopen:
+        pid = 4242
+
+        def __init__(self, cmd, **kwargs):
+            spawned.update(cmd=cmd, **kwargs)
+
+    class FakePreflight:
+        @staticmethod
+        def find_dayz_tools():
+            return tmp_path
+
+    monkeypatch.setattr(ob.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(ob.h, "preflight", FakePreflight, raising=False)
+    monkeypatch.setattr(ob, "registry_has_objectbuilder_settings", lambda: True)
+    monkeypatch.setattr(ob.subprocess, "Popen", FakePopen)
+    monkeypatch.setattr("sys.argv", ["launch.py"])
+    assert ob.main() == 0
+    assert spawned["cmd"] == [str(exe)]
+    assert spawned["creationflags"] == ob.h.DETACH_FLAGS
+    assert spawned["cwd"] == str(exe.parent)

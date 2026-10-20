@@ -28,14 +28,8 @@ import skill_helpers as h  # noqa: E402
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 P_DRIVE = Path("P:\\")
 
-# Windows process creation flags: detach the child so it survives the parent shell.
-DETACHED_PROCESS = 0x00000008
-CREATE_NEW_PROCESS_GROUP = 0x00000200
-
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 INFO = "[INFO] "
-
-find_dayz_tools = h.preflight.find_dayz_tools
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -92,7 +86,7 @@ def main() -> int:
     h.gate_on_preflight()
     print()
 
-    tools_root = find_dayz_tools()
+    tools_root = h.preflight.find_dayz_tools()
     if not tools_root:
         print(f"{FAIL} DayZ Tools not found. Install it via Steam first.", file=sys.stderr)
         return 1
@@ -123,7 +117,7 @@ def main() -> int:
         proc = subprocess.Popen(
             cmd,
             close_fds=True,
-            creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+            creationflags=h.DETACH_FLAGS,
             cwd=str(workbench_dir),
         )
     except OSError as exc:

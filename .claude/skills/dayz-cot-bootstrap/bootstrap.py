@@ -133,14 +133,15 @@ def stop_session(procs: list[subprocess.Popen]) -> None:
             print(f"{WARN} PID {proc.pid} did not exit within {STOP_TIMEOUT_S}s; close it manually.")
 
 
-def grant_admin_role(player_json: Path) -> bool:
+def grant_admin_role(player_json: Path) -> bool | None:
     """Add 'admin' to the player's Roles list. Returns True if the file was
-    modified, False if it already had the role or could not be parsed."""
+    modified, False if it already had the role, None if it could not be read
+    or parsed (the grant failed)."""
     try:
         data = json.loads(player_json.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as e:
-        print(f"{WARN} Could not parse {player_json.name}: {e} - skipping")
-        return False
+        print(f"{FAIL} Could not parse {player_json.name}: {e}")
+        return None
     roles = data.get("Roles")
     if not isinstance(roles, list):
         roles = []
@@ -177,24 +178,30 @@ def wait_for_personal_perms(perms_file: Path, timeout_s: int) -> bool:
     return False
 
 
-def edit_permissions(profile_dir: Path, triggered: list[Path]) -> None:
+def edit_permissions(profile_dir: Path, triggered: list[Path]) -> bool:
     """Per-player grant only. For each triggered player JSON, add 'admin' to
     its Roles[], then flip ' 0' -> ' 2' in the matching Permissions/<id>.txt.
-    Roles/*.txt (including everyone.txt) is intentionally not touched."""
+    Roles/*.txt (including everyone.txt) is intentionally not touched.
+
+    Returns True only when every player got both edits (or already had them)."""
     print()
     print("[Edit] Applying COT admin permissions (per-player only)...")
     perms_dir = profile_dir / "PermissionsFramework" / "Permissions"
+    ok = True
     for json_path in triggered:
-        grant_admin_role(json_path)
+        if grant_admin_role(json_path) is None:
+            ok = False
         perms_file = perms_dir / f"{json_path.stem}.txt"
         if not wait_for_personal_perms(perms_file, timeout_s=15):
-            print(f"{WARN} Personal perms file did not appear at {perms_file} - skipping flip")
+            print(f"{FAIL} Personal perms file did not appear at {perms_file}")
+            ok = False
             continue
         n = flip_zeros_to_twos(perms_file)
         if n > 0:
             print(f"{OK} {perms_file.name}: flipped {n} line(s) from 0 -> 2")
         else:
             print(f"        {perms_file.name}: no 0 entries (already permissive or empty)")
+    return ok
 
 
 def launch_pair(
@@ -303,7 +310,10 @@ def main() -> int:
     # Give Windows a moment to release file handles on the JSON we're about to rewrite.
     time.sleep(2)
 
-    edit_permissions(profile_dir, triggered)
+    if not edit_permissions(profile_dir, triggered):
+        print(f"{FAIL} The admin grant did not complete, so pass 2 was skipped.")
+        print(f"       Fix the files under {profile_dir / 'PermissionsFramework'} and rerun this skill.")
+        return 1
 
     print()
     print("[Pass 2/2] Relaunching with admin permissions applied.")

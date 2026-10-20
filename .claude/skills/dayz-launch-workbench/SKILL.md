@@ -21,7 +21,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
    - `--mod <ModName>` → uses `P:\<ModName>\workbench\dayz.gproj`. Fails fast if the mod folder or gproj isn't there; a missing gproj is added with `/dayz-add-scaffold <ModName> --piece workbench`.
    - `--gproj <path>` → uses an explicit `.gproj` path (escape hatch for non-scaffolded layouts).
    - Neither → no project arg; Workbench loads the default `dayz.gproj` shipped next to `workbenchApp.exe`.
-4. Spawns `workbenchApp.exe` with `cwd=<DayZ Tools>\Bin\Workbench` (so Workbench's support files — `dta\`, `platforms\`, `ToolAddons\`, bundled `dayz.gproj` — resolve; see "Why cwd" below) and `DETACHED_PROCESS` so the shell returns immediately.
+4. Spawns `workbenchApp.exe` with `cwd=<DayZ Tools>\Bin\Workbench` (so Workbench's support files resolve; see "Why cwd" below), detached so the shell returns immediately.
 
 ## How to run
 
@@ -72,17 +72,11 @@ DayZ Workbench launcher
 
 ## Why cwd=`<DayZ Tools>\Bin\Workbench`
 
-Workbench loads its support files (`dta\`, `platforms\`, `ToolAddons\`) and its bundled `dayz.gproj` relative to cwd, not relative to `workbenchApp.exe`. Launching from anywhere else (including `P:\`) triggers a "cannot find file dayz.gproj" error even when a valid project file is passed as an argument. We always launch with `cwd = <DayZ Tools>\Bin\Workbench\`. The project file we pass as an arg is then loaded as the active project, while the support files resolve from the install dir as Workbench expects.
-
-Vanilla data paths inside the gproj (e.g. `DZ/Anims/cfg/...`, `gui/imagesets/...`) are resolved by Workbench relative to the gproj file's location, NOT cwd — so as long as your mod's `dayz.gproj` lives next to its sibling `<ModName>/` source tree on the work drive (the layout `/dayz-new-mod` produces), vanilla imports keep resolving via the `P:\` junction the engine and Workbench share.
+Workbench resolves its own support files (`dta\`, `platforms\`, `ToolAddons\`) from the working directory, and the scaffolded `dayz.gproj` mounts `P:/` and `P:/<ModName>/` explicitly, so vanilla and mod sources resolve no matter where the gproj lives.
 
 ## Why detached
 
-Running Workbench under the parent shell would block the terminal until you close the editor. We spawn with `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP` so:
-
-- Closing this terminal doesn't kill Workbench.
-- The skill exits immediately after the spawn.
-- The PID is printed so you can find/kill it later if needed.
+The editor is spawned detached (shared `DETACH_FLAGS` in `_shared/skill_helpers.py`) so the terminal returns at once and closing it doesn't kill Workbench; the printed PID identifies the process.
 
 ## Editing the gproj
 

@@ -109,3 +109,56 @@ def test_missing_pillow_exits_nonzero_with_hint(monkeypatch, tmp_path):
     with pytest.raises(SystemExit) as exc:
         bi.main()
     assert "pip install -r" in str(exc.value)
+
+
+def _touch_outputs(out_dir, *stems):
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for stem in stems:
+        for ext in (".paa", ".imageset"):
+            (out_dir / f"{stem}{ext}").write_text("x", encoding="utf-8")
+
+
+def test_remove_stale_outputs_single_atlas_drops_old_parts(tmp_path):
+    _touch_outputs(tmp_path, "icons", "icons_1", "icons_2", "other")
+    removed = bi.remove_stale_outputs(tmp_path, "icons", 1)
+    assert sorted(p.name for p in removed) == [
+        "icons_1.imageset", "icons_1.paa", "icons_2.imageset", "icons_2.paa",
+    ]
+    assert (tmp_path / "icons.paa").exists() and (tmp_path / "other.paa").exists()
+
+
+def test_remove_stale_outputs_split_drops_unsplit_and_extra_parts(tmp_path):
+    _touch_outputs(tmp_path, "icons", "icons_1", "icons_2", "icons_3")
+    bi.remove_stale_outputs(tmp_path, "icons", 2)
+    left = sorted(p.stem for p in tmp_path.iterdir())
+    assert left == ["icons_1", "icons_1", "icons_2", "icons_2"]
+
+
+def test_remove_stale_outputs_spares_other_sets_and_lookalikes(tmp_path):
+    _touch_outputs(tmp_path, "icons_2", "icons_extra", "icons_1")
+    bi.remove_stale_outputs(tmp_path, "icons", 1, frozenset({"icons_2"}))
+    left = {p.stem for p in tmp_path.iterdir()}
+    assert left == {"icons_2", "icons_extra"}
+
+
+def test_remove_stale_outputs_missing_dir(tmp_path):
+    assert bi.remove_stale_outputs(tmp_path / "nope", "icons", 1) == []
+
+
+def test_resolve_image_to_paa_uses_shared_preflight(monkeypatch, tmp_path):
+    exe = tmp_path / "Bin" / "ImageToPAA" / "ImageToPAA.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("", encoding="utf-8")
+
+    class FakePreflight:
+        @staticmethod
+        def find_dayz_tools():
+            return tmp_path
+
+    monkeypatch.setattr(bi.h, "preflight", FakePreflight, raising=False)
+    assert bi.resolve_image_to_paa() == exe
+
+
+def test_no_local_preflight_copies():
+    assert not hasattr(bi, "gate_on_preflight")
+    assert not hasattr(bi, "_load_preflight_module")

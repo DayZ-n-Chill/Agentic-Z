@@ -22,7 +22,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 7. **types.xml** (if shipped): every entry is well-formed, has its `<flags>`, and `min` is not above `nominal`.
 8. **Conflict risks.** Broad mission overrides, global state, RPC handlers that don't check the sender.
 
-To check a vanilla class or parent, Grep `P:\scripts\` or `P:\dz\` for the exact name first; use `search_dayz_source` for questions by meaning or after two or three failed greps, and verify each hit with `get_dayz_file` or Read. A finding about vanilla or another mod is out of scope: list it as "external" with no severity.
+Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). A finding about vanilla or another mod is out of scope: list it as "external" with no severity.
 
 ## Severity
 
@@ -36,4 +36,4 @@ First line: `PASS` or `FAIL`. Then one line per finding:
 
 `<SEVERITY> path:line: what is wrong, and the fix -> <owning worker>`
 
-The owner is the worker agent's full name: `dayz-script-specialist`, `dayz-config-specialist`, `dayz-asset-specialist`, `dayz-object-builder`, `dayz-ui-specialist` or `dayz-server-admin`. End with what you checked and anything you couldn't verify.
+The owner is the worker agent's full name: `dayz-script-specialist`, `dayz-config-specialist`, `dayz-asset-specialist`, `dayz-object-builder`, `dayz-ui-specialist`, `dayz-server-admin`, `dayz-map-specialist`, `dayz-workbench-specialist` or `dayz-docs-writer`. End with what you checked and anything you couldn't verify.

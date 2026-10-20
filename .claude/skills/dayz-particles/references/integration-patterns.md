@@ -74,7 +74,9 @@ class MyMod_Sprinkler : MyMod_DeviceBase
     // ---- VarSync: toggle particle on client ----
     override void MyMod_OnVarSync()
     {
-        #ifndef SERVER
+        if (GetGame().IsDedicatedServer())
+            return;
+
         if (m_SprinklerActive && !m_SprayEffect)
         {
             // Option A: Use vanilla water particle as placeholder
@@ -90,15 +92,13 @@ class MyMod_Sprinkler : MyMod_DeviceBase
         {
             MyMod_StopParticle(m_SprayEffect);
         }
-        #endif
     }
 
     // ---- Cleanup: device removed ----
     override void EEDelete(EntityAI parent)
     {
-        #ifndef SERVER
+        // MyMod_StopParticle is a no-op on a dedicated server.
         MyMod_StopParticle(m_SprayEffect);
-        #endif
 
         super.EEDelete(parent);
     }
@@ -106,13 +106,14 @@ class MyMod_Sprinkler : MyMod_DeviceBase
     // ---- Cleanup: wires cut ----
     override void MyMod_OnPowerCut()
     {
-        #ifdef SERVER
+        if (!GetGame().IsServer())
+            return;
+
         if (m_SprinklerActive)
         {
             m_SprinklerActive = false;
             SetSynchDirty();
         }
-        #endif
     }
 };
 ```
@@ -132,7 +133,9 @@ class MyMod_SomeDevice : MyMod_DeviceBase
 
     override void MyMod_OnVarSync()
     {
-        #ifndef SERVER
+        if (GetGame().IsDedicatedServer())
+            return;
+
         // Detect transition to overloaded
         if (m_Overloaded && !m_OverloadedPrev)
         {
@@ -142,7 +145,6 @@ class MyMod_SomeDevice : MyMod_DeviceBase
             Particle.PlayOnObject(sparkId, this, sparkPos);
         }
         m_OverloadedPrev = m_Overloaded;
-        #endif
     }
 };
 ```
@@ -188,7 +190,9 @@ class MyMod_Furnace : MyMod_DeviceBase
 
     override void MyMod_OnVarSync()
     {
-        #ifndef SERVER
+        if (GetGame().IsDedicatedServer())
+            return;
+
         if (m_SourceOn && !m_SmokeEffect)
         {
             m_SmokeEffect = new EffMyModSmoke();
@@ -200,7 +204,6 @@ class MyMod_Furnace : MyMod_DeviceBase
         {
             SEffectManager.DestroyEffect(m_SmokeEffect);
         }
-        #endif
     }
 
     void ~MyMod_Furnace()
@@ -254,7 +257,9 @@ if (m_SmokeEffect)
 ```
 protected void MyMod_CleanupClientFX()
 {
-    #ifndef SERVER
+    if (GetGame().IsDedicatedServer())
+        return;
+
     MyMod_StopParticle(m_EffectA);
     MyMod_StopParticle(m_EffectB);
     // SEffectManager effects:
@@ -265,7 +270,6 @@ protected void MyMod_CleanupClientFX()
         m_LoopSound.SoundStop();
         m_LoopSound = null;
     }
-    #endif
 }
 ```
 

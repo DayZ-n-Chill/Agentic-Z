@@ -5,20 +5,20 @@ Compares canonical source files (.claude/agents/, .claude/skills/, docs/,
 under wiki/docs/.
 
 Modes:
-  --check (default)    Detect drift (missing mirror, source newer than mirror,
-                       orphan mirror) and print a report. Always exits 0.
+  --check (default)    Detect drift (missing mirror, mirror content differs
+                       from the transformed source, orphan mirror) and print a
+                       report. Always exits 0.
                        The Stop hook runs this with --quiet.
   --apply              Run the canonical->wiki transforms in apply.py, write
                        every changed mirror, and prune orphan wiki pages.
   --apply --dry-run    Print what --apply would write or prune; changes nothing
-                       on disk (not even mirror timestamps).
+                       on disk.
   --map                Print the canonical->mirror map and exit.
 """
 from __future__ import annotations
 
 import argparse
 import importlib.util
-import os
 import sys
 from pathlib import Path
 
@@ -33,7 +33,12 @@ def _load_apply_module():
     if spec is None or spec.loader is None:
         raise RuntimeError("Could not load apply.py")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except ModuleNotFoundError as e:
+        if e.name != "yaml":
+            raise
+        sys.exit("docs-sync: PyYAML is required. Install it with: python -m pip install pyyaml")
     return module
 
 
@@ -88,35 +93,49 @@ def find_orphans(seen_mirrors: set[Path]) -> list[Path]:
     return orphans
 
 
-def detect_drift() -> dict[str, list[Path]]:
-    targets = find_canonical_targets()
-    out: dict[str, list[Path]] = {"missing_mirror": [], "src_newer": [], "orphan": []}
+def _transformers() -> dict:
+    apply_mod = _load_apply_module()
+    return {
+        "skill": apply_mod.transform_skill,
+        "agent": apply_mod.transform_agent,
+        "doc": apply_mod.transform_doc,
+    }
 
+
+def detect_drift() -> dict[str, list[Path]]:
+    """Compare each mirror's content with its freshly transformed source.
+
+    Content comparison (not modification times) so a checkout, copy or touch
+    never reports false drift, and an edited mirror is always caught. A source
+    whose frontmatter fails to parse is reported as stale; --apply shows the error.
+    """
+    transform_for = _transformers()
+    out: dict[str, list[Path]] = {"missing_mirror": [], "stale": [], "orphan": []}
     seen_mirrors: set[Path] = set()
 
-    for src, mirror, kind in targets:
+    for src, mirror, kind in find_canonical_targets():
         seen_mirrors.add(mirror)
         if not mirror.is_file():
             out["missing_mirror"].append(src)
             continue
         try:
-            src_mtime = src.stat().st_mtime
-            mirror_mtime = mirror.stat().st_mtime
-        except OSError:
+            expected = transform_for[kind](src.read_text(encoding="utf-8"))
+            current = mirror.read_text(encoding="utf-8")
+        except (OSError, ValueError):
+            out["stale"].append(src)
             continue
-        if src_mtime > mirror_mtime + 1.0:
-            out["src_newer"].append(src)
+        if expected != current:
+            out["stale"].append(src)
 
     out["orphan"] = find_orphans(seen_mirrors)
-
     return out
 
 
 def report(drift: dict[str, list[Path]], quiet: bool) -> int:
     n_missing = len(drift["missing_mirror"])
-    n_newer = len(drift["src_newer"])
+    n_stale = len(drift["stale"])
     n_orphan = len(drift["orphan"])
-    total = n_missing + n_newer + n_orphan
+    total = n_missing + n_stale + n_orphan
 
     if total == 0:
         if not quiet:
@@ -132,9 +151,9 @@ def report(drift: dict[str, list[Path]], quiet: bool) -> int:
         print(f"  Missing wiki mirror ({n_missing}):")
         for p in drift["missing_mirror"]:
             print(f"    - {p.relative_to(REPO_ROOT)}")
-    if n_newer:
-        print(f"  Source newer than mirror ({n_newer}):")
-        for p in drift["src_newer"]:
+    if n_stale:
+        print(f"  Mirror out of date ({n_stale}):")
+        for p in drift["stale"]:
             print(f"    - {p.relative_to(REPO_ROOT)}")
     if n_orphan:
         print(f"  Orphan wiki page (canonical source missing) ({n_orphan}):")
@@ -159,17 +178,10 @@ def print_map() -> int:
 def apply_all(dry_run: bool = False) -> int:
     """Run every transform and write mirror files. Prune orphan wiki pages.
 
-    Returns 0 on success, non-zero on any IO error.
+    Returns 0 on success, 1 on any read, parse or write error.
     """
-    apply_mod = _load_apply_module()
+    transform_for = _transformers()
     targets = find_canonical_targets()
-
-    # Build (canonical, mirror, kind, transform_fn) tuples
-    transform_for = {
-        "skill": apply_mod.transform_skill,
-        "agent": apply_mod.transform_agent,
-        "doc": apply_mod.transform_doc,
-    }
 
     written = 0
     unchanged = 0
@@ -186,7 +198,12 @@ def apply_all(dry_run: bool = False) -> int:
             errors += 1
             continue
 
-        new_text = transform_for[kind](canonical_text)
+        try:
+            new_text = transform_for[kind](canonical_text)
+        except ValueError as e:
+            print(f"[FAIL] {src}: {e}", file=sys.stderr)
+            errors += 1
+            continue
 
         existing_text: str | None = None
         if mirror.exists():
@@ -198,16 +215,6 @@ def apply_all(dry_run: bool = False) -> int:
                 continue
 
         if existing_text == new_text:
-            # Content already matches, but the canonical's mtime may be newer
-            # than the mirror's. Align the mirror's mtime so the mtime-based
-            # drift detector stops flagging it. Skipped on --dry-run, which
-            # must not change anything on disk.
-            if not dry_run:
-                try:
-                    src_mtime = src.stat().st_mtime
-                    os.utime(mirror, (src_mtime, src_mtime))
-                except OSError:
-                    pass
             unchanged += 1
             continue
 
@@ -240,8 +247,8 @@ def apply_all(dry_run: bool = False) -> int:
         pruned += 1
 
     print()
-    verb = "would " if dry_run else ""
-    print(f"docs-sync apply: {verb}wrote {written}, {verb}pruned {pruned}, unchanged {unchanged}, errors {errors}")
+    wrote_word, pruned_word = ("would write", "would prune") if dry_run else ("wrote", "pruned")
+    print(f"docs-sync apply: {wrote_word} {written}, {pruned_word} {pruned}, unchanged {unchanged}, errors {errors}")
     return 1 if errors else 0
 
 

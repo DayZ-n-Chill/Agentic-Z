@@ -29,14 +29,8 @@ P_DRIVE = Path("P:\\")
 REG_KEY = r"Software\Bohemia Interactive\DayZ Tools\Object Builder"
 REG_SUBKEY_CCONFIG = REG_KEY + r"\CConfig"
 
-# Windows process creation flags: detach the child so it survives the parent shell.
-DETACHED_PROCESS = 0x00000008
-CREATE_NEW_PROCESS_GROUP = 0x00000200
-
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 INFO = "[INFO] "
-
-find_dayz_tools = h.preflight.find_dayz_tools
 
 
 def registry_has_objectbuilder_settings() -> bool:
@@ -97,10 +91,13 @@ def main() -> int:
 
     print("DayZ Object Builder launcher\n")
 
+    # Bad flags fail before the slower preflight and registry checks.
+    target = resolve_target(args.file, args.mod)
+
     h.gate_on_preflight()
     print()
 
-    tools_root = find_dayz_tools()
+    tools_root = h.preflight.find_dayz_tools()
     if not tools_root:
         print(f"{FAIL} DayZ Tools not found. Install it via Steam first.", file=sys.stderr)
         return 1
@@ -121,8 +118,6 @@ def main() -> int:
         return 1
     print(f"{OK} Registry configured")
 
-    target = resolve_target(args.file, args.mod)
-
     cmd: list[str] = [str(ob_exe)]
     if target is not None:
         cmd.append(str(target))
@@ -134,7 +129,7 @@ def main() -> int:
         proc = subprocess.Popen(
             cmd,
             close_fds=True,
-            creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+            creationflags=h.DETACH_FLAGS,
             cwd=str(ob_exe.parent),
         )
     except OSError as exc:

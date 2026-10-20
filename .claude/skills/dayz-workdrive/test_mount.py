@@ -147,3 +147,95 @@ def test_subst_success_returns_true(monkeypatch, tmp_path):
     monkeypatch.setattr(mount, "is_p_mounted", lambda: state["mounted"])
     monkeypatch.setattr(mount.subprocess, "run", fake_run)
     assert mount.invoke_mount(tmp_path) is True
+
+
+# ---------- WorkDrive.exe and --unmount ----------
+
+@pytest.fixture
+def fake_drive(monkeypatch, tmp_path):
+    """Fake P:\\ state plus a recorder for every command run.
+
+    `effects` maps the first argument of a command (the exe path, or "subst")
+    to the mounted state it leaves behind; commands not listed change nothing.
+    """
+    exe = tmp_path / "WorkDrive.exe"
+    state = {"mounted": False, "calls": [], "effects": {}}
+
+    def fake_run(args, **kwargs):
+        assert "shell" not in kwargs
+        state["calls"].append(list(args))
+        if args[0] in state["effects"]:
+            state["mounted"] = state["effects"][args[0]]
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(mount, "find_workdrive_exe", lambda: exe)
+    monkeypatch.setattr(mount, "is_p_mounted", lambda: state["mounted"])
+    monkeypatch.setattr(mount.subprocess, "run", fake_run)
+    return exe, state
+
+
+def test_workdrive_exe_success_skips_subst(fake_drive, tmp_path):
+    exe, state = fake_drive
+    state["effects"][str(exe)] = True
+    assert mount.invoke_mount(tmp_path) is True
+    assert state["calls"] == [[str(exe), "/Mount", str(tmp_path)]]
+
+
+def test_workdrive_exe_no_mount_falls_back_to_subst(fake_drive, tmp_path, capsys):
+    exe, state = fake_drive
+    state["effects"]["subst"] = True
+    assert mount.invoke_mount(tmp_path) is True
+    assert state["calls"] == [[str(exe), "/Mount", str(tmp_path)], ["subst", "P:", str(tmp_path)]]
+    assert "falling back to subst" in capsys.readouterr().out
+
+
+def test_main_success_caches_folder(fake_drive, monkeypatch, tmp_path):
+    exe, state = fake_drive
+    state["effects"][str(exe)] = True
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.setattr(mount, "CACHE", tmp_path / "cache.json")
+    monkeypatch.setattr("sys.argv", ["mount.py", "--path", str(work)])
+    assert mount.main() == 0
+    assert mount.get_cached_path() == work
+
+
+def test_main_already_mounted_runs_nothing(fake_drive, monkeypatch):
+    _, state = fake_drive
+    state["mounted"] = True
+    monkeypatch.setattr("sys.argv", ["mount.py"])
+    assert mount.main() == 0
+    assert state["calls"] == []
+
+
+def test_unmount_when_not_mounted_is_noop(fake_drive, monkeypatch):
+    _, state = fake_drive
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 0
+    assert state["calls"] == []
+
+
+def test_unmount_via_workdrive_exe(fake_drive, monkeypatch):
+    exe, state = fake_drive
+    state["mounted"] = True
+    state["effects"][str(exe)] = False
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 0
+    assert state["calls"] == [[str(exe), "/Dismount"]]
+
+
+def test_unmount_falls_back_to_subst_d(fake_drive, monkeypatch):
+    exe, state = fake_drive
+    state["mounted"] = True
+    state["effects"]["subst"] = False
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 0
+    assert state["calls"] == [[str(exe), "/Dismount"], ["subst", "P:", "/D"]]
+
+
+def test_unmount_fails_when_drive_stays(fake_drive, monkeypatch, capsys):
+    _, state = fake_drive
+    state["mounted"] = True
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 1
+    assert "still mounted=True" in capsys.readouterr().err

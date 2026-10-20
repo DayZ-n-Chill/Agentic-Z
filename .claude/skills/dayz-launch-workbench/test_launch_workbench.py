@@ -67,3 +67,30 @@ def test_wrong_extension_warns(tmp_path, capsys):
     other.write_text("", encoding="utf-8")
     assert wb.resolve_gproj(None, str(other)) == other
     assert "not a .gproj" in capsys.readouterr().out
+
+
+def test_launch_uses_shared_detach_flags_and_workbench_cwd(tmp_path, monkeypatch):
+    exe = tmp_path / "Bin" / "Workbench" / "workbenchApp.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    spawned = {}
+
+    class FakePopen:
+        pid = 4242
+
+        def __init__(self, cmd, **kwargs):
+            spawned.update(cmd=cmd, **kwargs)
+
+    class FakePreflight:
+        @staticmethod
+        def find_dayz_tools():
+            return tmp_path
+
+    monkeypatch.setattr(wb.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(wb.h, "preflight", FakePreflight, raising=False)
+    monkeypatch.setattr(wb.subprocess, "Popen", FakePopen)
+    monkeypatch.setattr("sys.argv", ["launch.py"])
+    assert wb.main() == 0
+    assert spawned["cmd"] == [str(exe)]
+    assert spawned["creationflags"] == wb.h.DETACH_FLAGS
+    assert spawned["cwd"] == str(exe.parent)

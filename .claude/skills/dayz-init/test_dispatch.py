@@ -48,15 +48,8 @@ def test_stop_runs_the_stop_test_batch_file():
     assert _script(argv).is_file()
 
 
-def test_mods_junction_targets_workshop(monkeypatch):
-    monkeypatch.setattr(dispatch.preflight, "find_dayz_game", lambda: Path("C:/Steam/DayZ"))
-    assert command_for("mods-junction") == [
-        "cmd", "/c", "mklink", "/J", "P:\\Mods", str(Path("C:/Steam/DayZ") / "!Workshop"),
-    ]
-
-
-def test_mods_junction_without_game_raises(monkeypatch):
-    monkeypatch.setattr(dispatch.preflight, "find_dayz_game", lambda: None)
+def test_mods_junction_is_not_an_action():
+    # /dayz-preflight creates P:\Mods; dayz-init has no action of its own for it.
     with pytest.raises(DispatchError):
         command_for("mods-junction")
 

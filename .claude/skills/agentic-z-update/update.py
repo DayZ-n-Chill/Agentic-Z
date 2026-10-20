@@ -128,12 +128,14 @@ def run(cmd: list[str], check: bool = True, capture: bool = False) -> subprocess
     )
 
 
-def is_git_repo() -> bool:
+def repo_root() -> Optional[Path]:
+    """Top level of the enclosing git work tree, or None outside a repo (or without git)."""
     try:
-        r = run(["git", "rev-parse", "--is-inside-work-tree"], check=False, capture=True)
-        return r.returncode == 0 and r.stdout.strip() == "true"
+        r = run(["git", "rev-parse", "--show-toplevel"], check=False, capture=True)
     except FileNotFoundError:
-        return False
+        return None
+    top = r.stdout.strip()
+    return Path(top) if r.returncode == 0 and top else None
 
 
 def working_tree_clean_for(paths: list[str]) -> tuple[bool, list[str]]:
@@ -150,19 +152,21 @@ def remote_url(name: str) -> str | None:
     return r.stdout.strip() if r.returncode == 0 else None
 
 
+def normalize_remote_url(url: str) -> str:
+    """Compare-ready form of a GitHub https URL: case-folded, no trailing '/' or '.git'."""
+    return url.strip().rstrip("/").casefold().removesuffix(".git")
+
+
 def ensure_upstream() -> bool:
     existing = remote_url(UPSTREAM_REMOTE)
     if existing is None:
         log("INFO", f"Adding {UPSTREAM_REMOTE} remote = {UPSTREAM_URL}")
         run(["git", "remote", "add", UPSTREAM_REMOTE, UPSTREAM_URL])
         return True
-    if existing.rstrip("/") != UPSTREAM_URL.rstrip("/").replace(".git", "").rstrip("/") and \
-       existing.rstrip("/") != UPSTREAM_URL.rstrip("/"):
-        # Allow .git vs no-.git but not a different repo
-        if not existing.startswith(UPSTREAM_URL.rstrip(".git")):
-            log("ERR", f"upstream remote points to {existing}, expected {UPSTREAM_URL}")
-            log("ERR", f"Fix: git remote set-url {UPSTREAM_REMOTE} {UPSTREAM_URL}")
-            return False
+    if normalize_remote_url(existing) != normalize_remote_url(UPSTREAM_URL):
+        log("ERR", f"upstream remote points to {existing}, expected {UPSTREAM_URL}")
+        log("ERR", f"Fix: git remote set-url {UPSTREAM_REMOTE} {UPSTREAM_URL}")
+        return False
     log("OK", f"upstream remote already set: {existing}")
     return True
 
@@ -331,7 +335,6 @@ def read_baseline() -> Optional[str]:
 def write_baseline(sha: str) -> None:
     """Atomically write the baseline SHA. Temp file + rename to avoid partial writes."""
     BASELINE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    # Use NamedTemporaryFile in same dir so rename is on the same filesystem.
     tmp = BASELINE_FILE.with_suffix(".tmp")
     tmp.write_text(sha.strip() + "\n", encoding="utf-8")
     tmp.replace(BASELINE_FILE)
@@ -438,7 +441,11 @@ def search_index_update_available() -> Optional[tuple[str, str]]:
 
 
 def _is_newer(latest: str, installed: str) -> bool:
-    """Naive tag comparison. Strips leading 'v' and compares dotted ints; falls back to string."""
+    """Naive tag comparison: strip a leading 'v', compare dot-separated parts.
+
+    Numeric parts compare as ints and sort before non-numeric parts, which
+    compare as strings, so an int is never compared against a str.
+    """
     def parse(t: str) -> tuple:
         t = t.lstrip("v")
         parts = []
@@ -448,10 +455,7 @@ def _is_newer(latest: str, installed: str) -> bool:
             except ValueError:
                 parts.append((1, p))
         return tuple(parts)
-    try:
-        return parse(latest) > parse(installed)
-    except Exception:
-        return latest != installed
+    return parse(latest) > parse(installed)
 
 
 def format_preview(drift: dict[str, FileStatus], baseline_sha: Optional[str], upstream_sha: str, quiet: bool = False) -> str:
@@ -626,6 +630,30 @@ def resolve_conflicts_per_file(drift: dict[str, FileStatus], upstream_ref: str) 
     return choices
 
 
+def finish_apply(
+    drift: dict[str, FileStatus], applied: list[str], skipped: list[str], upstream_sha: str
+) -> bool:
+    """Commit the applied paths, then advance the baseline only when that is safe.
+
+    The baseline moves to upstream_sha only when the commit succeeded (or there
+    was nothing to commit) and no path that still needs upstream's version was
+    left behind: an unresolved conflict, or a safe/new/deleted path whose apply
+    failed. Advancing past such a path would make the next run misclassify it
+    and silently drop upstream's change. Returns True when the baseline moved.
+    """
+    committed = stage_and_commit(applied, upstream_sha) if applied else True
+    pending = [p for p in skipped if drift.get(p) != FileStatus.LOCAL_ONLY_EDIT]
+    if not committed:
+        log("WARN", "Baseline not updated: the commit failed. Commit the staged files, then rerun.")
+        return False
+    if pending:
+        log("WARN", "Baseline not updated: some upstream changes are still unapplied; rerun after resolving them.")
+        return False
+    write_baseline(upstream_sha)
+    log("OK", "Baseline updated.")
+    return True
+
+
 def acquire_lock() -> bool:
     """Acquire the update lock. Returns True if acquired, False if another live process holds it.
 
@@ -652,7 +680,7 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Preview drift only; do not apply. Exits 1 if changes pending, 0 if up to date.",
+        help="Preview drift only; writes nothing. Exits 1 if changes are pending or no baseline exists yet, 0 if up to date.",
     )
     parser.add_argument(
         "--quiet",
@@ -681,9 +709,12 @@ def main() -> int:
         print("Agentic-Z update")
         print()
 
-    if not is_git_repo():
+    root = repo_root()
+    if root is None:
         log("ERR", "Not a git repo. Run from inside an Agentic-Z clone.")
         return 1
+    # Template paths, the baseline and the lock are all relative to the repo root.
+    os.chdir(root)
 
     if not args.force and not args.check:
         clean, dirty = working_tree_clean_for(TEMPLATE_PATHS)
@@ -707,21 +738,12 @@ def main() -> int:
     upstream_sha = upstream_head_sha()
     baseline_sha = read_baseline()
 
-    # First-run bootstrap: if no baseline file exists, persist one immediately
-    # at the current upstream HEAD. Without this, every subsequent run would
-    # also see baseline=None, re-bootstrap to upstream, and silently report
-    # "Up to date" forever — masking real drift. Safe to do even from --check
-    # because it's idempotent and a one-time initialization.
-    if baseline_sha is None:
-        try:
-            write_baseline(upstream_sha)
-            baseline_sha = upstream_sha
-        except OSError:
-            # Read-only FS or permission issue — fall through; compute_drift's
-            # in-memory bootstrap still produces correct first-run output.
-            pass
-
     if args.check:
+        # Read-only: --check never writes the baseline. Without one there is
+        # nothing to compare against, so say so instead of reporting "Up to date".
+        if baseline_sha is None:
+            print("agentic-z: no update baseline recorded yet. Run /agentic-z-update once to initialize it.")
+            return 1
         drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")
         output = format_preview(drift, baseline_sha, upstream_sha, quiet=args.quiet)
         if output:
@@ -730,6 +752,13 @@ def main() -> int:
         if not args.quiet:
             print("Up to date.")
         return 0
+
+    # First run: record the current upstream HEAD as the baseline. Files are
+    # then compared against it, so nothing is overwritten on this run.
+    if baseline_sha is None and not args.dry_run:
+        write_baseline(upstream_sha)
+        baseline_sha = upstream_sha
+        log("OK", f"Baseline initialized at upstream {upstream_sha[:7]}.")
 
     # Default flow: preview, prompt, apply.
     drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")
@@ -767,13 +796,9 @@ def main() -> int:
             if drift.get(p) in (FileStatus.CONFLICT, FileStatus.DELETED_CONFLICT)
         ]
 
-        if applied:
-            stage_and_commit(applied, upstream_sha)
-            # Record the upstream SHA as the new baseline so the next run starts fresh.
-            write_baseline(upstream_head_sha())
-            log("OK", "Baseline updated.")
-        else:
+        if not applied:
             log("OK", "No template paths needed updating.")
+        finish_apply(drift, applied, skipped, upstream_sha)
 
         if conflicted:
             print()

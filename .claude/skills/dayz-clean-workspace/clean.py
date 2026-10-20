@@ -2,7 +2,8 @@
 
 The project is the one cached by /dayz-init (same as build and deploy). For each
 managed mod under <project>/workspace/<ModName>/ (a native scaffold with
-config.cpp + $PBOPREFIX$, or a /dayz-import-mod link):
+config.cpp + $PBOPREFIX$, a /dayz-import-mod link, or a payload bundle whose
+deployed dir carries the ownership marker):
   - P:\\<ModName>\\           removed only if it is a link whose target is workspace/<ModName>/
   - P:\\Mods\\@<ModName>\\     removed only if its ownership marker matches <ModName>
   - workspace/<ModName>/     folder removed recursively; a link is removed without
@@ -30,32 +31,37 @@ MODS_ROOT = P_DRIVE / "Mods"
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
 
-def is_scaffolded_mod(path: Path) -> bool:
-    """A workspace entry is managed if EITHER:
-      - it is a directory link (symlink/junction): only /dayz-new-mod and
-        /dayz-import-mod create links under workspace/, so the link itself is
-        the ownership signal. Covers bare imports made with --no-scaffold.
+def is_managed_mod(path: Path) -> bool:
+    """A workspace entry is managed if ANY of these holds:
+      - it is a directory link (symlink/junction): only /dayz-import-mod creates
+        links under workspace/, so the link itself is the ownership signal.
+        Covers bare imports made with --no-scaffold.
       - it is a real directory with config.cpp + $PBOPREFIX$ (native scaffold).
+      - it is a real directory whose P:\\Mods\\@<Name>\\ carries our ownership
+        marker for <Name>: a pure payload bundle deployed by /dayz-deploy-pbo.
     """
     if not path.is_dir():
         return False
     if h.is_link(path):
         return True
-    return (path / "config.cpp").exists() and (path / "$PBOPREFIX$").exists()
+    if (path / "config.cpp").exists() and (path / "$PBOPREFIX$").exists():
+        return True
+    return h.owns_deploy_dir(MODS_ROOT / f"@{path.name}", path.name)
 
 
 def discover_mods(workspace: Path, target: str | None) -> list[Path]:
     if target:
         path = workspace / target
-        if not is_scaffolded_mod(path):
+        if not is_managed_mod(path):
             sys.exit(
                 f"{FAIL} workspace\\{target} is not a managed mod.\n"
-                "       Expected an imported mod link, or a folder with config.cpp and $PBOPREFIX$."
+                "       Expected an imported mod link, a folder with config.cpp and $PBOPREFIX$,\n"
+                "       or a bundle whose P:\\Mods\\@<Name>\\ carries the ownership marker."
             )
         return [path]
     if not workspace.exists():
         return []
-    return sorted(p for p in workspace.iterdir() if is_scaffolded_mod(p))
+    return sorted(p for p in workspace.iterdir() if is_managed_mod(p))
 
 
 def find_artifacts(mod_path: Path) -> tuple[list[tuple[str, Path]], list[str]]:

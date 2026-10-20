@@ -3,8 +3,9 @@
 Creates a directory link at workspace/<ModName> pointing at the source folder
 (no copy, no move) and a matching P:\\<ModName>\\ junction so the rest of the
 DayZ skills work on it. Then scans for missing scaffold pieces (config.cpp,
-$PBOPREFIX$, workbench/dayz.gproj) and prompts y/N per piece, delegating
-writes to dayz-add-scaffold.
+$PBOPREFIX$, workbench/dayz.gproj) and prompts y/N per piece, writing each
+accepted piece with dayz-add-scaffold's writer, called in-process so
+/dayz-preflight runs once.
 
 See SKILL.md for full usage.
 """
@@ -39,6 +40,7 @@ SCAFFOLD_CHECKS = (
 )
 
 _nm = h.load_module("dayz_new_mod_module", NEW_MOD)
+_scaffold = h.load_module("dayz_add_scaffold_module", ADD_SCAFFOLD)
 
 
 def _display(path: Path) -> Path:
@@ -138,13 +140,37 @@ def prompt_yn(prompt: str) -> bool:
         return False
 
 
-def run_add_scaffold(modname: str, piece: str) -> int:
-    """Run /dayz-add-scaffold for one piece, inheriting stdio."""
-    # Flush first, or Windows interleaves our lines with the child's.
-    sys.stdout.flush()
-    return subprocess.run(
-        [sys.executable, str(ADD_SCAFFOLD), modname, "--piece", piece]
-    ).returncode
+def add_missing_pieces(
+    target: Path, modname: str, missing: list[tuple[str, str, str]], scaffold: bool, no_scaffold: bool
+) -> int:
+    """Offer each missing piece and write the accepted ones with /dayz-add-scaffold's writer.
+
+    Runs after both links exist. A failed write leaves the links in place (the
+    import itself succeeded), names what failed and how to retry, and returns 1.
+    """
+    get_author = _scaffold.lazy_author(None)
+    failed: list[str] = []
+    for key, rel, _why in missing:
+        if no_scaffold:
+            print(f"  {INFO} skipping {rel} (--no-scaffold)")
+            continue
+        # require_scaffold_decision guaranteed a TTY when neither flag is set.
+        if not (scaffold or prompt_yn(f"  Add {rel} to your source folder? [y/N]: ")):
+            continue
+        try:
+            _scaffold.add_piece(key, target, modname, get_author)
+        except (OSError, SystemExit) as e:
+            # SystemExit: resolve_author found no author handle (non-TTY, nothing cached).
+            print(f"  {FAIL} Could not add {rel}: {e.code if isinstance(e, SystemExit) else e}")
+            failed.append(key)
+    if not failed:
+        return 0
+    print()
+    print(f"{FAIL} The import links are in place, but {len(failed)} scaffold piece(s) were not written.")
+    for key in failed:
+        print(f"       Retry: /dayz-add-scaffold {modname} --piece {key}")
+    print(f"       Or undo the import (keeps your source intact): /dayz-clean-workspace --mod {modname}")
+    return 1
 
 
 def main() -> int:
@@ -218,15 +244,9 @@ def main() -> int:
 
     if missing:
         print()
-        for key, rel, _why in missing:
-            if args.no_scaffold:
-                print(f"  {INFO} skipping {rel} (--no-scaffold)")
-                continue
-            # require_scaffold_decision guaranteed a TTY when neither flag is set.
-            if args.scaffold or prompt_yn(f"  Add {rel} to your source folder? [y/N]: "):
-                rc = run_add_scaffold(modname, key)
-                if rc != 0:
-                    return rc
+        rc = add_missing_pieces(workspace_target, modname, missing, args.scaffold, args.no_scaffold)
+        if rc != 0:
+            return rc
 
     print()
     print("Next steps:")

@@ -1,6 +1,6 @@
 ---
 name: dayz-record-correction
-description: Turn the user's correction of how the mod team built something into a written rule with a good and bad example, get their yes, and save it in the right tier so every agent follows it from then on. Use whenever the user corrects the team's code, config, structure or behavior, or says "remember this" or "always/never do X".
+description: Turns the user's correction of how the mod team built something into a written rule with a good and bad example, gets their yes, and saves it in the right tier so every agent follows it from then on. Use whenever the user corrects the team's code, config, structure or behavior, or says "remember this" or "always/never do X".
 argument-hint: "[what the user corrected]"
 ---
 

@@ -60,3 +60,18 @@ def test_setup_complete_when_active_mod_scaffolded(tmp_path):
     state.write_state(tmp_path, {"last_intent": {"mod_name": "MyMod"}})
     assert state.active_mod(tmp_path) == "MyMod"
     assert state.is_setup_complete(tmp_path)
+
+
+def test_linked_import_without_scaffold_files_counts_as_set_up(tmp_path):
+    # A --no-scaffold import links a source that may lack config.cpp / $PBOPREFIX$.
+    (tmp_path / "workspace" / "Linked").mkdir(parents=True)
+    state.write_state(tmp_path, {"last_intent": {"mod_name": "Linked"}})
+    assert state.mod_exists(tmp_path, "Linked")
+    assert state.is_setup_complete(tmp_path)
+
+
+def test_mod_exists_counts_a_dangling_link(tmp_path, monkeypatch):
+    # new-mod and import-mod refuse any existing path, so the plan must skip them.
+    monkeypatch.setattr(state.os.path, "lexists", lambda p: Path(p).name == "Gone")
+    assert state.mod_exists(tmp_path, "Gone")
+    assert not state.mod_exists(tmp_path, "Other")

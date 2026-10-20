@@ -10,17 +10,16 @@ from __future__ import annotations
 
 import argparse
 import shutil
-import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
 
-OK = "[OK]   "
-FAIL = "[FAIL] "
+OK = h.OK
+FAIL = h.FAIL
 
 # DayZ defaults for a new <type> entry. 3888000s = 45 days (vanilla typical).
 DEFAULTS = {
@@ -38,14 +37,6 @@ DEFAULT_FLAGS = {
     "crafted": "0",
     "deloot": "0",
 }
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
 
 
 def _set_int_child(parent: ET.Element, tag: str, value: int) -> Optional[tuple[str, str]]:
@@ -178,7 +169,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Upsert / remove an entry in DayZ types.xml.")
     parser.add_argument("path", type=Path, help="Path to types.xml.")
     parser.add_argument("classname", help="Class name (the `name` attribute of the <type> block).")
-    parser.add_argument("--remove", action="store_true", help="Remove the entry instead of upserting.")
+    parser.add_argument(
+        "--remove", action="store_true",
+        help="Remove the entry instead of upserting. Field flags (--nominal, --usage, ...) are ignored.",
+    )
     parser.add_argument("--nominal", type=int)
     parser.add_argument("--min", type=int)
     parser.add_argument("--lifetime", type=int)
@@ -190,7 +184,7 @@ def main() -> int:
     parser.add_argument("--tag", action="append", help="Repeatable. Replaces all existing tags.")
     args = parser.parse_args()
 
-    gate_on_preflight()
+    h.gate_on_preflight()
     print()
 
     if not args.path.exists():

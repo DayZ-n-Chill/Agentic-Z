@@ -2,15 +2,17 @@
 
 Reads `<mod>/.gui-sources/<setname>/*.png`, shelf-packs into the smallest
 power-of-two atlas (rectangular allowed) with a 10px gutter, splitting across
-several atlases when one 4096x4096 atlas is not enough, converts to .paa via ImageToPAA.exe, and writes a matching
-.imageset definition file under `<mod>/gui/imagesets/`.
+several atlases (next-fit) when one 4096x4096 atlas is not enough, converts to
+.paa via ImageToPAA.exe, and writes a matching .imageset definition file under
+`<mod>/gui/imagesets/`. Outputs left over from a previous run with a different
+split count are removed.
 
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
-import importlib.util
+import re
 import subprocess
 import sys
 import tempfile
@@ -21,12 +23,12 @@ try:
 except ImportError:  # reported with an install hint in main(); packing logic doesn't need it
     Image = None
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+OK = h.OK
+WARN = h.WARN
+FAIL = h.FAIL
 INFO = "[INFO] "
 
 GAP = 10
@@ -40,26 +42,8 @@ ATLAS_SIZES = sorted(
 REQUIREMENTS = Path(__file__).resolve().parent / "requirements.txt"
 
 
-def _load_preflight_module():
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
-
-
 def resolve_image_to_paa() -> Path:
-    # Loaded here, after gate_on_preflight() has confirmed preflight.py exists.
-    tools_root = _load_preflight_module().find_dayz_tools()
+    tools_root = h.preflight.find_dayz_tools()
     if tools_root is None:
         sys.exit(
             f"{FAIL} DayZ Tools not found.\n"
@@ -107,8 +91,9 @@ def shelf_pack(metas, gap=GAP):
 def pack_split(metas, gap=GAP):
     """Pack sprites across one or more atlases when a single atlas can't hold them all.
 
-    Greedy first-fit-decreasing: sort sprites by height desc, then for each sprite
-    try to add it to the current atlas; if it overflows, start a new atlas.
+    Greedy next-fit-decreasing: sort sprites by height desc, then for each sprite
+    try to add it to the current atlas; if it overflows, close that atlas and
+    start a new one (earlier atlases are never revisited).
     Returns list of (dims, placed) tuples, or None if a single sprite is too big
     for the largest allowed atlas.
     """
@@ -197,7 +182,37 @@ def write_one_atlas(stem: str, atlas_w: int, atlas_h: int, placed,
     return True
 
 
-def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path) -> bool:
+def remove_stale_outputs(out_dir: Path, set_name: str, part_count: int,
+                         other_sets: frozenset = frozenset()) -> list:
+    """Delete <set>.{paa,imageset} / <set>_N.{paa,imageset} this run won't rewrite.
+
+    part_count == 1 keeps <set>.*; part_count > 1 keeps <set>_1 .. <set>_<part_count>.
+    Stems that are the name of another source set are never touched.
+    Returns the removed paths.
+    """
+    if not out_dir.is_dir():
+        return []
+    if part_count == 1:
+        keep = {set_name}
+    else:
+        keep = {f"{set_name}_{i}" for i in range(1, part_count + 1)}
+    part_re = re.compile(re.escape(set_name) + r"_\d+")
+    removed = []
+    for f in sorted(out_dir.iterdir()):
+        if not f.is_file() or f.suffix.lower() not in (".paa", ".imageset"):
+            continue
+        stem = f.stem
+        if stem in keep or stem in other_sets:
+            continue
+        if stem == set_name or part_re.fullmatch(stem):
+            f.unlink()
+            removed.append(f)
+            print(f"{INFO} Removed stale {f.name}")
+    return removed
+
+
+def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path,
+              other_sets: frozenset = frozenset()) -> bool:
     set_name = set_dir.name
     pngs = sorted(p for p in set_dir.iterdir() if p.is_file() and p.suffix.lower() == ".png")
 
@@ -224,6 +239,7 @@ def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path) -
         return False
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    remove_stale_outputs(out_dir, set_name, len(atlases), other_sets)
 
     if len(atlases) == 1:
         (atlas_w, atlas_h), placed = atlases[0]
@@ -287,7 +303,7 @@ def main() -> int:
     mod_name = args.mod_name or mod_root.name
     out_dir = mod_root / "gui" / "imagesets"
 
-    gate_on_preflight()
+    h.gate_on_preflight()
     print()
     image_to_paa = resolve_image_to_paa()
     print(f"{OK} ImageToPAA: {image_to_paa}")
@@ -297,9 +313,10 @@ def main() -> int:
     print(f"{INFO} output dir: {out_dir}")
     print(f"{INFO} {len(set_dirs)} imageset(s): {', '.join(d.name for d in set_dirs)}")
 
+    set_names = frozenset(d.name for d in set_dirs)
     success = 0
     for set_dir in set_dirs:
-        if build_one(set_dir, mod_name, out_dir, image_to_paa):
+        if build_one(set_dir, mod_name, out_dir, image_to_paa, set_names - {set_dir.name}):
             success += 1
 
     total = len(set_dirs)

@@ -56,10 +56,10 @@ def test_missing_or_bad_roles_replaced_with_admin(tmp_path):
     assert json.loads(f.read_text(encoding="utf-8"))["Roles"] == ["admin"]
 
 
-def test_unparseable_json_skipped(tmp_path):
+def test_unparseable_json_reports_failure(tmp_path):
     f = tmp_path / "abc.json"
     f.write_text("{not json", encoding="utf-8")
-    assert cot.grant_admin_role(f) is False
+    assert cot.grant_admin_role(f) is None
     assert f.read_text(encoding="utf-8") == "{not json"
 
 
@@ -103,10 +103,75 @@ def test_edit_permissions_never_touches_roles(tmp_path):
     (fw / "Permissions" / "abc.txt").write_text("A 0\n", encoding="utf-8")
     (fw / "Roles" / "everyone.txt").write_text("A 0\n", encoding="utf-8")
 
-    cot.edit_permissions(tmp_path, [player])
+    assert cot.edit_permissions(tmp_path, [player]) is True
 
     assert (fw / "Permissions" / "abc.txt").read_text(encoding="utf-8") == "A 2\n"
     assert (fw / "Roles" / "everyone.txt").read_text(encoding="utf-8") == "A 0\n"
+
+
+def _framework(tmp_path):
+    fw = tmp_path / "PermissionsFramework"
+    (fw / "Players").mkdir(parents=True)
+    (fw / "Permissions").mkdir()
+    return fw
+
+
+def test_edit_permissions_fails_when_player_json_unreadable(tmp_path):
+    fw = _framework(tmp_path)
+    player = fw / "Players" / "abc.json"
+    player.write_text("{not json", encoding="utf-8")
+    (fw / "Permissions" / "abc.txt").write_text("A 0\n", encoding="utf-8")
+    assert cot.edit_permissions(tmp_path, [player]) is False
+
+
+def test_edit_permissions_fails_when_perms_file_missing(monkeypatch, tmp_path):
+    fw = _framework(tmp_path)
+    player = fw / "Players" / "abc.json"
+    player.write_text(json.dumps({"Roles": []}), encoding="utf-8")
+    monkeypatch.setattr(cot, "wait_for_personal_perms", lambda f, timeout_s: False)
+    assert cot.edit_permissions(tmp_path, [player]) is False
+
+
+def test_edit_permissions_already_admin_counts_as_success(tmp_path):
+    fw = _framework(tmp_path)
+    player = fw / "Players" / "abc.json"
+    player.write_text(json.dumps({"Roles": ["admin"]}), encoding="utf-8")
+    (fw / "Permissions" / "abc.txt").write_text("A 2\n", encoding="utf-8")
+    assert cot.edit_permissions(tmp_path, [player]) is True
+
+
+# --- main: pass 2 only after a successful edit ---------------------------------------
+
+@pytest.mark.parametrize("edit_ok, expected_rc, expected_launches", [(False, 1, 1), (True, 0, 2)])
+def test_main_runs_pass_two_only_after_successful_edit(
+    monkeypatch, tmp_path, edit_ok, expected_rc, expected_launches
+):
+    profile = tmp_path / "Profiles"
+    monkeypatch.setattr(cot.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(cot.h, "resolve_project_dir", lambda: tmp_path)
+    monkeypatch.setattr(cot, "verify_cf_cot_subscribed", lambda: None)
+    monkeypatch.setattr(cot, "verify_built_mods", lambda mods: None)
+    monkeypatch.setattr(cot, "resolve_diag_client", lambda: Path("C:/DayZ/DayZDiag_x64.exe"))
+    monkeypatch.setattr(
+        cot, "verify_instance_environment",
+        lambda inst, proj: (tmp_path / "serverDZ.cfg", profile, tmp_path / "m", tmp_path / "logs"),
+    )
+    monkeypatch.setattr(cot, "read_client_display_prefs", lambda proj: {})
+    launches = []
+
+    def fake_launch_pair(*args):
+        launches.append(args[-1])
+        return [FakeProc(1), FakeProc(2)]
+
+    monkeypatch.setattr(cot, "launch_pair", fake_launch_pair)
+    monkeypatch.setattr(cot, "wait_for_cot_player", lambda d, b, t: [profile / "abc.json"])
+    monkeypatch.setattr(cot, "stop_session", lambda procs: None)
+    monkeypatch.setattr(cot.time, "sleep", lambda s: None)
+    monkeypatch.setattr(cot, "edit_permissions", lambda p, t: edit_ok)
+    monkeypatch.setattr(cot.sys, "argv", ["bootstrap.py", "MyMod"])
+
+    assert cot.main() == expected_rc
+    assert len(launches) == expected_launches
 
 
 # --- stop_session only touches our own processes --------------------------------

@@ -81,4 +81,4 @@ Nothing to do:
 ## Do not
 
 - Don't edit `<flags>` granular attributes (`count_in_cargo`, etc.); there is no option for them.
-- Don't skip the backup when hand-editing around this tool; the `.bak` only holds the state before the most recent change.
+- Don't rely on `types.xml.bak` as history: each changing run overwrites it, so it only holds the file as it was before the most recent edit. Commit or copy the file yourself before a series of edits you may want to undo.

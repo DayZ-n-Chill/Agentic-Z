@@ -48,10 +48,6 @@ def read_registry_string(hive, subkey: str, value_name: str) -> Optional[str]:
         return None
 
 
-# Older name, kept so existing importers keep working.
-_read_registry_string = read_registry_string
-
-
 def parse_library_folders(text: str) -> list[Path]:
     """Library roots listed in a Steam steamapps/libraryfolders.vdf file.
 
@@ -286,13 +282,13 @@ def check_vanilla_data() -> None:
     print("        Unpack vanilla PBOs via DayZ Tools 'Extract Game Data'.")
 
 
-def _read_link(path: Path) -> Optional[str]:
+def link_target(path: Path) -> Optional[Path]:
     """Target of a junction or symlink without the \\\\?\\ prefix; None if `path` is not a link."""
     try:
         target = os.readlink(path)
     except (OSError, ValueError):
         return None
-    return target[4:] if target.startswith("\\\\?\\") else target
+    return Path(target[4:] if target.startswith("\\\\?\\") else target)
 
 
 def _create_junction(link: Path, target: Path) -> None:
@@ -307,7 +303,8 @@ def _create_junction(link: Path, target: Path) -> None:
         raise OSError(detail or f"mklink exited {result.returncode}")
 
 
-def _same_path(a: Path, b: Path) -> bool:
+def paths_equal(a: Path, b: Path) -> bool:
+    """True when two paths name the same location (case and separator insensitive)."""
     return os.path.normcase(os.path.normpath(str(a))) == os.path.normcase(os.path.normpath(str(b)))
 
 
@@ -351,8 +348,8 @@ def validate_p_mods() -> Optional[str]:
         print(f"{OK} Created junction P:\\Mods -> {workshop}")
         return None
 
-    target = _read_link(mods)
-    if target is None:
+    target_path = link_target(mods)
+    if target_path is None:
         return (
             "P:\\Mods\\ exists as a regular folder, not a junction.\n"
             "       Built PBOs deployed under P:\\Mods\\@<Mod>\\Addons\\ will be\n"
@@ -362,7 +359,6 @@ def validate_p_mods() -> Optional[str]:
             f"         {fix_cmd}"
         )
 
-    target_path = Path(target)
     if not target_path.exists():
         return (
             f"P:\\Mods\\ junction is dangling (target {target_path} is missing).\n"
@@ -372,7 +368,7 @@ def validate_p_mods() -> Optional[str]:
         )
 
     if workshop is not None:
-        wrong_target = not _same_path(target_path, workshop)
+        wrong_target = not paths_equal(target_path, workshop)
     else:
         wrong_target = target_path.name.lower() != "!workshop"
     if wrong_target:
@@ -395,7 +391,7 @@ def check_workshop_deploy() -> None:
     """
     err = validate_p_mods()
     if err is None:
-        print(f"{OK} P:\\Mods -> {_read_link(MODS_LINK)}")
+        print(f"{OK} P:\\Mods -> {link_target(MODS_LINK)}")
         return
     print(f"{WARN} {err}")
 

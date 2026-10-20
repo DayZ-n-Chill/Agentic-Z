@@ -7,27 +7,18 @@ Usage:
     python audit_p3d.py model.p3d [model2.p3d ...]
     python audit_p3d.py model.p3d --config path/to/config.cpp
     python audit_p3d.py model.p3d --model-cfg path/to/model.cfg
+    python audit_p3d.py --rvmat a.rvmat b.rvmat
     python audit_p3d.py --scan-dir path/to/mod/  (scans all .p3d, config.cpp, .rvmat, model.cfg)
 
 Gates on /dayz-preflight. Requires py3d
 (pip install git+https://github.com/KoffeinFlummi/py3d.git) for .p3d parsing.
 """
 
-import sys, os, re, glob, argparse, subprocess
+import sys, os, re, glob, argparse
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
-
-
-def gate_on_preflight():
-    """Run /dayz-preflight and stop with its exit code if it fails."""
-    if not PREFLIGHT.exists():
-        print(f"ERROR: dayz-preflight not found at {PREFLIGHT}")
-        sys.exit(1)
-    rc = subprocess.run([sys.executable, str(PREFLIGHT)]).returncode
-    if rc != 0:
-        sys.exit(rc)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
+import skill_helpers as h  # noqa: E402
 
 
 def load_py3d():
@@ -46,12 +37,13 @@ def load_py3d():
 def classify_lod(resolution):
     """Map an MLOD resolution value to a LOD type name.
 
-    DayZ scheme (references/winding-methodology.md): Visual < 1000, Geometry 1e13,
+    DayZ scheme (references/winding-methodology.md): Visual < 1000, ShadowVolume
+    10000-19999 (10000 shadow volume, 11000 shadow buffer), Geometry 1e13,
     GeoPhys 2e13, Memory 1e15, LandContact 2e15, ViewGeo 6e15, FireGeo 7e15.
     """
     if resolution < 1000:
         return "Visual"
-    if 9e9 <= resolution <= 1.1e10:
+    if 1e4 <= resolution < 2e4:
         return "ShadowVolume"
     if 9.9e12 <= resolution <= 1.1e13:
         return "Geometry"
@@ -395,7 +387,7 @@ def audit_text_file(filepath, label="file"):
         print(f"  {sev}: {msg}")
     if not issues:
         print(f"  OK: No P:\\ paths found.")
-    return len([s for s, _ in issues if s in ("CRITICAL", "WARNING")]) == 0
+    return not any(sev in ("CRITICAL", "WARNING", "ERROR") for sev, _ in issues)
 
 
 def scan_directory(dirpath):
@@ -405,7 +397,6 @@ def scan_directory(dirpath):
 
     # P3D files
     p3d_files = glob.glob(os.path.join(dirpath, '**', '*.p3d'), recursive=True)
-    p3d_files = [f for f in p3d_files if not f.endswith('.bak') and '.bak' not in f]
     for f in sorted(p3d_files):
         if not audit_p3d(f):
             all_pass = False
@@ -431,44 +422,43 @@ def scan_directory(dirpath):
     return all_pass
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description="DayZ P3D Audit — Complete Model Validator")
-    parser.add_argument('files', nargs='*', help='.p3d files to audit')
-    parser.add_argument('--config', help='config.cpp to check for path issues')
-    parser.add_argument('--model-cfg', help='model.cfg to check')
-    parser.add_argument('--scan-dir', help='Scan entire mod directory')
-    parser.add_argument('--rvmat', nargs='*', help='.rvmat files to check')
-    args = parser.parse_args()
+    parser.add_argument('files', nargs='*', help='.p3d files (or text files) to audit')
+    parser.add_argument('--config', help='config.cpp to check for absolute P-drive paths')
+    parser.add_argument('--model-cfg', help='model.cfg to check for absolute P-drive paths')
+    parser.add_argument('--rvmat', nargs='*', default=[], help='.rvmat files to check for absolute P-drive paths')
+    parser.add_argument('--scan-dir', help='Scan a whole mod directory (ignores the other inputs)')
+    args = parser.parse_args(argv)
 
-    gate_on_preflight()
+    if not (args.files or args.config or args.model_cfg or args.rvmat or args.scan_dir):
+        parser.error("nothing to audit: give .p3d files, --config, --model-cfg, --rvmat or --scan-dir")
+
+    if args.scan_dir and not os.path.isdir(args.scan_dir):
+        print(f"ERROR: Directory not found: {args.scan_dir}")
+        sys.exit(1)
+
+    h.gate_on_preflight()
     all_pass = True
 
     if args.scan_dir:
         if not scan_directory(args.scan_dir):
             all_pass = False
     else:
-        for f in (args.files or []):
-            if not os.path.exists(f):
+        targets = [(f, None) for f in args.files]
+        if args.config:
+            targets.append((args.config, "config.cpp"))
+        if args.model_cfg:
+            targets.append((args.model_cfg, "model.cfg"))
+        targets.extend((rv, ".rvmat") for rv in args.rvmat)
+        for f, label in targets:
+            if not os.path.isfile(f):
                 print(f"ERROR: File not found: {f}")
                 all_pass = False
-                continue
-            if f.endswith('.p3d'):
+            elif label is None and f.lower().endswith('.p3d'):
                 if not audit_p3d(f):
                     all_pass = False
-            else:
-                if not audit_text_file(f):
-                    all_pass = False
-
-        if args.config:
-            if not audit_text_file(args.config, "config.cpp"):
-                all_pass = False
-
-        if args.model_cfg:
-            if not audit_text_file(args.model_cfg, "model.cfg"):
-                all_pass = False
-
-        for rv in (args.rvmat or []):
-            if not audit_text_file(rv, ".rvmat"):
+            elif not audit_text_file(f, label or "file"):
                 all_pass = False
 
     print(f"\n{'='*70}")

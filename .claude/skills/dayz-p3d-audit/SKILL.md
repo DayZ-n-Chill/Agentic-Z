@@ -32,13 +32,17 @@ python <skill-dir>/scripts/audit_p3d.py path/to/model.p3d [more.p3d ...]
 # Include config/model.cfg path checks:
 python <skill-dir>/scripts/audit_p3d.py model.p3d --config path/to/config.cpp --model-cfg path/to/model.cfg
 
-# Full mod sweep (all .p3d, config.cpp, .rvmat, model.cfg):
+# Check .rvmat materials for P:\ paths:
+python <skill-dir>/scripts/audit_p3d.py --rvmat path/to/a.rvmat path/to/b.rvmat
+
+# Full mod sweep (all .p3d, config.cpp, .rvmat, model.cfg; other inputs are ignored):
 python <skill-dir>/scripts/audit_p3d.py --scan-dir path/to/mod/
 ```
 
-Exit 1 if any .p3d has a CRITICAL finding, any text file has a `P:\` path, or a file
-is missing or unreadable; otherwise exit 0 (WARNING and NOTE findings on .p3d files are
-printed but don't fail the run). Only MLOD source files can be audited; binarized ODOL
+Exit 2 if no input is given. Exit 1 if any .p3d has a CRITICAL finding, any text file
+has a `P:\` path, or a file or the `--scan-dir` folder is missing or unreadable;
+otherwise exit 0 (WARNING and NOTE findings on .p3d files are printed but don't fail
+the run). Only MLOD source files can be audited; binarized ODOL
 files are rejected. When a model has several Visual LODs, LOD0 is the one checked.
 Interpret findings with the references below.
 

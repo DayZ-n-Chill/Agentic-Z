@@ -124,3 +124,53 @@ def test_existing_workspace_entry_refused(workspace):
     with pytest.raises(SystemExit) as exc:
         imp.check_workspace_target(workspace / "MyMod")
     assert "already exists" in str(exc.value.code)
+
+
+# --- add_missing_pieces (runs after the links exist) ---------------------------------
+
+ALL_MISSING = list(imp.SCAFFOLD_CHECKS)
+
+
+def test_scaffold_writes_in_process_without_rerunning_preflight(tmp_path, monkeypatch):
+    monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: pytest.fail("preflight must not re-run"))
+    monkeypatch.setattr(imp._scaffold._nm, "find_dayz_tools", lambda: None)
+    monkeypatch.setattr(imp._scaffold._nm, "resolve_author", lambda cli: "Tester")
+    rc = imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING, scaffold=True, no_scaffold=False)
+    assert rc == 0
+    assert (tmp_path / "config.cpp").is_file() and (tmp_path / "$PBOPREFIX$").is_file()
+
+
+def test_no_scaffold_writes_nothing(tmp_path, monkeypatch):
+    monkeypatch.setattr(imp._scaffold, "add_piece", lambda *a: pytest.fail("must not write"))
+    assert imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING, scaffold=False, no_scaffold=True) == 0
+
+
+def test_declined_prompt_writes_nothing(tmp_path, monkeypatch):
+    monkeypatch.setattr(imp, "prompt_yn", lambda prompt: False)
+    monkeypatch.setattr(imp._scaffold, "add_piece", lambda *a: pytest.fail("must not write"))
+    assert imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING, scaffold=False, no_scaffold=False) == 0
+
+
+def test_failed_piece_reports_retry_and_keeps_going(tmp_path, monkeypatch, capsys):
+    def no_author(cli):
+        raise SystemExit("[FAIL] No author handle available.")
+
+    monkeypatch.setattr(imp._scaffold._nm, "resolve_author", no_author)
+    monkeypatch.setattr(imp._scaffold._nm, "find_dayz_tools", lambda: None)
+    rc = imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING, scaffold=True, no_scaffold=False)
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "No author handle available" in out
+    assert "Retry: /dayz-add-scaffold MyMod --piece config" in out
+    assert "/dayz-clean-workspace --mod MyMod" in out
+    assert (tmp_path / "$PBOPREFIX$").is_file()  # later pieces still written
+
+
+def test_os_error_while_writing_is_reported(tmp_path, monkeypatch, capsys):
+    def boom(*a):
+        raise PermissionError("Access is denied")
+
+    monkeypatch.setattr(imp._scaffold, "add_piece", boom)
+    rc = imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING[1:2], scaffold=True, no_scaffold=False)
+    assert rc == 1
+    assert "Access is denied" in capsys.readouterr().out

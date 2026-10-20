@@ -7,16 +7,16 @@ Semantic search over vanilla DayZ source and the Bohemia community wiki, for any
 - `get_dayz_file(path, line_start=None, line_end=None)`: fetch a file or line range for follow-up. Paths must live under `P:\`; files over 200 KB need a range.
 - `list_indexed_sources()`: returns `{"source": <manifest or null>, "wiki": <manifest or null>}`; null means that index hasn't been built.
 
-Agents use these after Grep, per the search rule in `.claude/skills/_shared/dayz-conventions.md`: Grep for known symbols, `search_dayz_source` for questions by meaning, then verify a hit with `get_dayz_file` or Read before relying on it. Search hits carry `is_stale: true` (with `stale_reason` of `modified` or `missing`) when the file on `P:\` changed after the index was built.
+Agents use these after Grep, per the search rule in `.claude/skills/_shared/dayz-conventions.md`: Grep for known symbols, `search_dayz_source` for questions by meaning, then verify a hit with `get_dayz_file` or Read before relying on it. Each search hit has `path`, `file_type`, `parent_context`, `line_start`, `line_end`, `distance` (LanceDB L2² distance, lower is closer), `snippet` and `is_stale`. Hits carry `is_stale: true` (with `stale_reason` of `modified` or `missing`) when the file on `P:\` changed after the index was built.
 
 Installed as a plugin, the tools appear as `mcp__plugin_agentic-z_dayz-rag__<tool>`; from a clone via `.mcp.json`, as `mcp__dayz-rag__<tool>`.
 
 ## How it works
 
 1. The indexers walk the sources, chunk them, embed each chunk with Voyage AI `voyage-code-3` (1024-dim) using `input_type="document"`, and store them in LanceDB at `~/.claude/dayz-search-index/` (table `chunks` for source, `wiki_chunks` for the wiki).
-2. This server opens LanceDB lazily, embeds each query with the same model using `input_type="query"`, and returns the nearest chunks. The model comes from `config.json` written by the indexer.
+2. This server opens LanceDB lazily, embeds each query with the same model using `input_type="query"`, and returns the nearest chunks. A `file_type` filter is a LanceDB prefilter (`where`), so `top_k` hits of that type come back even when other types rank nearer. The model comes from `config.json` written by the indexer.
 
-The live source index is about 52,000 chunks from about 38,000 files (roughly 66M tokens to build). Indexed types: `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`, which are also the accepted `file_type` filter values.
+`list_indexed_sources` reports the current chunk and token counts. Indexed types: `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`, which are also the accepted `file_type` filter values.
 
 ## Errors
 
@@ -24,7 +24,7 @@ Every tool reports failures the same way: it raises, and the MCP client receives
 
 ## Setup
 
-1. Add a Voyage key to `.env` at the repo root (gitignored): `VOYAGE_API_KEY=pa-...`. Get one at <https://dash.voyageai.com>.
+1. Add a Voyage key to `.env` at the repo root (gitignored): `VOYAGE_API_KEY=pa-...`. The server reads the nearest `.env` at or above its working directory, then the one at the repo (or plugin) root; a variable already set in the environment wins. Get one at <https://dash.voyageai.com>.
 2. Install the server's dependencies (`mcp`, `lancedb`, `voyageai`, `python-dotenv`):
    ```cmd
    pip install -r .claude\mcp\dayz-rag\requirements.txt
@@ -49,9 +49,9 @@ After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index
 
 | Variable | Default | What it does |
 |---|---|---|
-| `VOYAGE_API_KEY` | required | Voyage key, read from `.env` at the repo root. |
+| `VOYAGE_API_KEY` | required | Voyage key, read from the environment or `.env` (working directory, then repo/plugin root). |
 | `VOYAGE_MODEL` | `voyage-code-3` | Query model if the index has no `config.json`; normally the indexer's choice wins. |
-| `DAYZ_RAG_MAX_DISTANCE` | unset | Default `max_distance` cutoff for both search tools. Calibrate by running unfiltered queries first. |
+| `DAYZ_RAG_MAX_DISTANCE` | unset | Default `max_distance` cutoff (on each hit's `distance`) for both search tools. Calibrate by running unfiltered queries first. |
 
 ## Troubleshooting
 

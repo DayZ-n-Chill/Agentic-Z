@@ -39,9 +39,24 @@ python "<skill-dir>\mount.py" --unmount
 
 DayZ Tools is located with the shared `find_dayz_tools()` resolver from `dayz-preflight/preflight.py`.
 
+`--unmount` runs `WorkDrive.exe /Dismount`, falling back to `subst P: /D` if `P:\` is still visible; it is a no-op when `P:\` is not mounted.
+
+## Output
+
+```
+DayZ P:\ mount
+
+[INFO] Mounting P: -> C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\WorkDrive
+[CMD]  "C:\...\DayZ Tools\Bin\WorkDrive\WorkDrive.exe" /Mount "C:\...\DayZ Tools\Bin\WorkDrive"
+[OK]   P:\ mounted -> C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\WorkDrive
+[INFO] Cached for future runs at <project>\.claude\local-memory\dayz-work-drive.json
+```
+
+When already mounted it prints `[OK]   P:\ already mounted` and runs nothing.
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
 | 0 | `P:\` is mounted (or, with `--unmount`, unmounted or already absent) |
-| 1 | No work-drive folder could be resolved, `--path` is not a directory, or both WorkDrive.exe and `subst` failed (the `subst` exit code is printed) |
+| 1 | No work-drive folder could be resolved, `--path` is not a directory, both WorkDrive.exe and `subst` failed (the `subst` exit code is printed), or `--unmount` left `P:\` mounted |

@@ -4,7 +4,7 @@ name: dayz-edit-types
 
 ## Overview
 
-Adds, updates, or removes one `&lt;type name="..."&gt;` entry in a DayZ Central Economy types.xml (nominal, min, lifetime, restock, cost, category, usage, value, tag), backing up the file only when the edit changes it. Use when a mod item needs a spawn entry, a loot value needs tuning, or an entry must be deleted.
+Adds, updates, or removes one `<type name="...">` entry in a DayZ Central Economy types.xml (nominal, min, lifetime, restock, cost, category, usage, value, tag), backing up the file only when the edit changes it. Use when a mod item needs a spawn entry, a loot value needs tuning, or an entry must be deleted.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
@@ -82,4 +82,4 @@ Nothing to do:
 ## Do not
 
 - Don't edit `<flags>` granular attributes (`count_in_cargo`, etc.); there is no option for them.
-- Don't skip the backup when hand-editing around this tool; the `.bak` only holds the state before the most recent change.
+- Don't rely on `types.xml.bak` as history: each changing run overwrites it, so it only holds the file as it was before the most recent edit. Commit or copy the file yourself before a series of edits you may want to undo.

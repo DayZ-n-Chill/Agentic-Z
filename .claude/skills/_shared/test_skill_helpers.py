@@ -60,6 +60,28 @@ def test_resolve_project_dir_exits_2_without_cache(monkeypatch):
     assert exc.value.code == 2
 
 
+def test_resolve_project_dir_exits_2_when_cached_dir_is_gone(monkeypatch, tmp_path, capsys):
+    _fake_state(monkeypatch, tmp_path / "moved-away")
+    with pytest.raises(SystemExit) as exc:
+        h.resolve_project_dir()
+    assert exc.value.code == 2
+    assert "no longer exists" in capsys.readouterr().err
+
+
+def test_preflight_is_loaded_lazily():
+    fresh_spec = importlib.util.spec_from_file_location("skill_helpers_lazy_probe", HERE / "skill_helpers.py")
+    fresh = importlib.util.module_from_spec(fresh_spec)
+    fresh_spec.loader.exec_module(fresh)
+    assert "preflight" not in vars(fresh)
+    assert hasattr(fresh.preflight, "find_dayz_tools")
+    assert "preflight" in vars(fresh)
+
+
+def test_unknown_attribute_still_raises():
+    with pytest.raises(AttributeError):
+        h.not_a_real_helper
+
+
 def test_resolve_project_dir_reads_dayz_init_state():
     assert h.DAYZ_INIT_STATE.is_file()
     assert hasattr(h.load_module("state_probe", h.DAYZ_INIT_STATE), "cached_project_root")

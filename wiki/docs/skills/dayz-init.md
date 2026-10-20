@@ -30,15 +30,16 @@ If it prints a path, setup is done: go to Step 6. If it prints nothing, continue
 python "<skill-dir>\check_env.py"
 ```
 
-Prints `OK`, or one line per issue (always exits 0):
+Read-only. Prints `OK`, or one line per issue (always exits 0):
 
 - `AUTO p_drive`: `P:\` is not mounted. Mount it now without asking (non-destructive), then re-run `check_env.py`, because the `P:\` checks are skipped while it is unmounted:
   ```
   python "<skill-dir>\dispatch.py" mount-p
   ```
   If the mount fails, show its output and stop.
-- `AUTO mods_junction`: `P:\Mods` is missing. The plan in Step 4 creates the junction to `<DayZ install>\!Workshop`.
-- `HARD <name> ...`: DayZ Tools missing, vanilla data not extracted, `P:\Mods` the wrong shape, or Python too old. Tell the user what is wrong and the fix or link on the line, then stop. They re-run `/dayz-init` after fixing it.
+- `HARD <name> ...`: DayZ Tools missing, vanilla data not extracted, `P:\Mods` the wrong shape (or missing with no DayZ install found), or Python too old. Tell the user what is wrong and the fix or link on the line, then stop. They re-run `/dayz-init` after fixing it.
+
+A missing `P:\Mods` is not an issue when the DayZ install's `!Workshop` folder exists: `/dayz-preflight`, which the first child skill in Step 5 runs, creates the junction.
 
 ## Step 3: setup questions
 
@@ -55,8 +56,6 @@ Then ask in chat for the free-text values:
 - Import only: the source folder path, and whether to write missing scaffold pieces into it (`--scaffold`) or only link it (`--no-scaffold`).
 - New mod only, when `.claude/local-memory/dayz-author.txt` does not exist: the author handle shown in mod descriptions.
 
-Search (RAG): the dayz-rag MCP server needs a Voyage AI key and an installed index (Voyage `voyage-code-3` embeddings in LanceDB under `~/.claude/dayz-search-index/`). If the user wants search, they add `VOYAGE_API_KEY=pa-...` to `.env` at the project root themselves (don't ask them to paste the key into chat), then run `/dayz-search-download` for the prebuilt index or `/dayz-search-index` to build it locally. Search is optional; skip it unless they ask.
-
 ## Step 4: show the plan
 
 ```
@@ -67,15 +66,14 @@ Prints the numbered plan, for example:
 
 ```
 Plan:
-  1. Create the P:\Mods junction to !Workshop
-  2. Scaffold workspace\MyMod
-  3. Record MyMod as the active mod
-  4. Set up the chernarus test server
-  5. Build MyMod.pbo
-  6. Launch DayZ Diag with MyMod on chernarus
+  1. Scaffold workspace\MyMod
+  2. Record MyMod as the active mod
+  3. Set up the chernarus test server
+  4. Build MyMod.pbo
+  5. Launch DayZ Diag with MyMod on chernarus
 ```
 
-Scaffolding or importing is skipped when `workspace\<ModName>\` already exists, so re-running `/dayz-init` for an existing mod just makes it active. Show the plan in chat. Don't ask for a yes/no: the user already chose everything in it, and none of it is destructive.
+Scaffolding or importing is skipped when `workspace\<ModName>\` already exists (a folder or a link, including a `--no-scaffold` import that has no `config.cpp` yet), so re-running `/dayz-init` for an existing mod just makes it active. Show the plan in chat. Don't ask for a yes/no: the user already chose everything in it, and none of it is destructive.
 
 ## Step 5: run the plan
 
@@ -83,7 +81,6 @@ Same command plus `--execute`. Each step's output streams through; the first fai
 
 | Step | Runs |
 |---|---|
-| mods-junction | `cmd /c mklink /J P:\Mods "<DayZ install>\!Workshop"` (install found with preflight's `find_dayz_game`) |
 | new-mod | `dayz-new-mod\new_mod.py <ModName> [--author <handle>]` |
 | import-mod | `dayz-import-mod\import_mod.py --source <path> --name <ModName> --scaffold\|--no-scaffold` |
 | record | writes the two state files above |
@@ -110,7 +107,11 @@ Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and s
 | Open in Object Builder | `dispatch.py objectbuilder` |
 | Review the mod | Hand `workspace\<ModName>\` to the dayz-mod-reviewer agent |
 | Add a test server | `dispatch.py add-server --server <map>` |
-| Set up search | Explain the `.env` key, then `dispatch.py search-download` |
+| Set up search | See "Search (optional)" below, then `dispatch.py search-download` |
 | Set up or switch to another mod | Go back to Step 3 for that mod; `plan.py` skips scaffolding for a mod that already exists |
 
 All `dispatch.py` actions default `--mod` to the active mod and exit with the child skill's exit code (2 when a required value is missing). `python "<skill-dir>\dispatch.py" --list` prints the actions.
+
+## Search (optional)
+
+Only when the user asks for it. The dayz-rag MCP server needs a Voyage AI key and an installed index (Voyage `voyage-code-3` embeddings in LanceDB under `~/.claude/dayz-search-index/`). The user adds `VOYAGE_API_KEY=pa-...` to `.env` at the project root themselves (don't ask them to paste the key into chat), then runs `/dayz-search-download` for the prebuilt index or `/dayz-search-index` to build it locally.

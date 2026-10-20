@@ -20,7 +20,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
    - `Bin\ObjectBuilder\ObjectBuilder.exe`
    - `Bin\ObjectBuilder\ObjectBuilder_defaultSettings.reg`
 4. Checks `HKCU\Software\Bohemia Interactive\DayZ Tools\Object Builder\CConfig` for an existing config.
-5. If empty (or with `--force`): runs `reg import` on the default `.reg` file and verifies the key now exists.
+5. If empty (or with `--force`, after confirmation): checks that every key the `.reg` touches is under `HKEY_CURRENT_USER` (refuses otherwise), runs `reg import` on it, and verifies the key now exists.
 6. On every run, sets four preferred flags under `CConfig`, writing only the ones not already on: View background LOD, background LOD in the 3D preview, background LOD in the UV editor (all `"1"`), and Direct3D renderer by default (`"On"`).
 
 ## How to run
@@ -34,6 +34,10 @@ python "<skill-dir>\setup.py"
 ```cmd
 python "<skill-dir>\setup.py" --force
 ```
+
+On an already-configured machine `--force` asks `[y/N]` before importing. Without a terminal (an agent's Bash call) it refuses unless `--yes` is also given, so get the user's go-ahead first and then run `--force --yes`.
+
+Exits 1 if DayZ Tools, `ObjectBuilder.exe` or the `.reg` is missing, the `.reg` touches a key outside `HKEY_CURRENT_USER`, the reset is not confirmed, or the keys are still missing after import; a failed `reg import` returns its own exit code.
 
 ## When to run
 
@@ -65,7 +69,7 @@ On an already-configured machine the import is skipped (`[OK] Registry already c
 
 ## Why a registry import (and why it's safe)
 
-Object Builder is an old MFC-based Windows tool — its config lives entirely under `HKEY_CURRENT_USER\Software\Bohemia Interactive\DayZ Tools\Object Builder`. The shipped `.reg` file writes window/panel/toolbar defaults into that tree. It's **HKCU-only**, so:
+Object Builder is an old MFC-based Windows tool — its config lives entirely under `HKEY_CURRENT_USER\Software\Bohemia Interactive\DayZ Tools\Object Builder`. The shipped `.reg` file writes window/panel/toolbar defaults into that tree. It's **HKCU-only** (the script verifies this before every import), so:
 
 - No Administrator elevation needed.
 - Only affects the current Windows user.

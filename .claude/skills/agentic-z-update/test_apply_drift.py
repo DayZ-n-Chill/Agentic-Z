@@ -126,7 +126,7 @@ def test_deleted_conflict_take_deletes_file(repo):
 
 def test_dirty_tree_refuses_before_touching_remote(monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", ["update.py", "--yes"])
-    monkeypatch.setattr(update, "is_git_repo", lambda: True)
+    monkeypatch.setattr(update, "repo_root", lambda: Path.cwd())
     monkeypatch.setattr(update, "working_tree_clean_for", lambda paths: (False, [".claude/skills/x/SKILL.md"]))
 
     def must_not_run():
@@ -141,7 +141,7 @@ def test_dirty_tree_refuses_before_touching_remote(monkeypatch, capsys):
 
 def test_force_skips_dirty_tree_check(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["update.py", "--force", "--yes"])
-    monkeypatch.setattr(update, "is_git_repo", lambda: True)
+    monkeypatch.setattr(update, "repo_root", lambda: Path.cwd())
 
     def must_not_check(paths):
         raise AssertionError("--force should skip the dirty-tree check")
@@ -160,3 +160,119 @@ def test_working_tree_clean_for_parses_porcelain(monkeypatch):
     )
     monkeypatch.setattr(update, "run", lambda *a, **k: SimpleNamespace(stdout="", returncode=0))
     assert update.working_tree_clean_for(update.TEMPLATE_PATHS) == (True, [])
+
+
+# ---------- baseline advance after apply ----------
+
+@pytest.fixture
+def in_tmp(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+def test_baseline_advances_when_commit_succeeds_and_nothing_pending(in_tmp, monkeypatch):
+    monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: True)
+    drift = {"docs/a.md": S.SAFE_OVERWRITE, "docs/mine.md": S.LOCAL_ONLY_EDIT}
+    assert update.finish_apply(drift, ["docs/a.md"], ["docs/mine.md"], "a" * 40) is True
+    assert update.read_baseline() == "a" * 40
+
+
+@pytest.mark.parametrize("status", [S.CONFLICT, S.DELETED_CONFLICT, S.SAFE_OVERWRITE])
+def test_baseline_kept_when_upstream_change_left_unapplied(in_tmp, monkeypatch, status):
+    monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: True)
+    update.write_baseline("b" * 40)
+    drift = {"docs/a.md": S.NEW, "docs/c.md": status}
+    assert update.finish_apply(drift, ["docs/a.md"], ["docs/c.md"], "a" * 40) is False
+    assert update.read_baseline() == "b" * 40
+
+
+def test_baseline_kept_when_commit_fails(in_tmp, monkeypatch):
+    monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: False)
+    update.write_baseline("b" * 40)
+    assert update.finish_apply({"docs/a.md": S.NEW}, ["docs/a.md"], [], "a" * 40) is False
+    assert update.read_baseline() == "b" * 40
+
+
+def test_nothing_applied_skips_commit_but_advances(in_tmp, monkeypatch):
+    def must_not_commit(applied, sha):
+        raise AssertionError("no commit without applied paths")
+
+    monkeypatch.setattr(update, "stage_and_commit", must_not_commit)
+    assert update.finish_apply({"docs/m.md": S.LOCAL_ONLY_EDIT}, [], ["docs/m.md"], "a" * 40) is True
+    assert update.read_baseline() == "a" * 40
+
+
+# ---------- --check is read-only; main() runs from the repo root ----------
+
+def _stub_remote(monkeypatch, root):
+    monkeypatch.setattr(update, "repo_root", lambda: root)
+    monkeypatch.setattr(update, "ensure_upstream", lambda: True)
+    monkeypatch.setattr(update, "fetch_upstream", lambda: True)
+    monkeypatch.setattr(update, "upstream_head_sha", lambda: "c" * 40)
+    monkeypatch.setattr(update, "search_index_update_available", lambda: None)
+
+
+def test_check_without_baseline_writes_nothing(in_tmp, monkeypatch, capsys):
+    _stub_remote(monkeypatch, in_tmp)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check", "--quiet"])
+    assert update.main() == 1
+    assert "no update baseline" in capsys.readouterr().out
+    assert not (in_tmp / update.BASELINE_FILE).exists()
+
+
+def test_check_with_baseline_leaves_it_unchanged(in_tmp, monkeypatch, capsys):
+    _stub_remote(monkeypatch, in_tmp)
+    update.write_baseline("b" * 40)
+    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: {})
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check"])
+    assert update.main() == 0
+    assert "Up to date." in capsys.readouterr().out
+    assert update.read_baseline() == "b" * 40
+
+
+def test_main_chdirs_to_repo_root(tmp_path, monkeypatch):
+    root = tmp_path / "clone"
+    sub = root / "workspace" / "MyMod"
+    sub.mkdir(parents=True)
+    monkeypatch.chdir(sub)
+    seen = []
+    monkeypatch.setattr(update, "repo_root", lambda: root)
+    monkeypatch.setattr(update, "ensure_upstream", lambda: seen.append(Path.cwd()) or False)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check"])
+    assert update.main() == 1
+    assert seen == [root]
+
+
+def test_not_a_repo_exits_1(monkeypatch):
+    monkeypatch.setattr(update, "repo_root", lambda: None)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check"])
+    assert update.main() == 1
+
+
+# ---------- upstream remote check ----------
+
+@pytest.mark.parametrize("url", [
+    "https://github.com/DayZ-n-Chill/Agentic-Z.git",
+    "https://github.com/DayZ-n-Chill/Agentic-Z",
+    "https://github.com/DayZ-n-Chill/Agentic-Z/",
+    "https://github.com/dayz-n-chill/agentic-z.git",
+])
+def test_ensure_upstream_accepts_equivalent_urls(monkeypatch, url):
+    monkeypatch.setattr(update, "remote_url", lambda name: url)
+    assert update.ensure_upstream() is True
+
+
+@pytest.mark.parametrize("url", [
+    "https://github.com/DayZ-n-Chill/Agentic-Z-fork.git",
+    "https://github.com/someone/Agentic-Z.git",
+    "https://github.com/DayZ-n-Chill/Agentic",
+])
+def test_ensure_upstream_rejects_other_repos(monkeypatch, url):
+    monkeypatch.setattr(update, "remote_url", lambda name: url)
+    assert update.ensure_upstream() is False
+
+
+def test_is_newer_handles_mixed_tags():
+    assert update._is_newer("v1.10", "v1.9")
+    assert not update._is_newer("v1.2", "v1.2")
+    assert update._is_newer("v1.2.rc", "v1.2.1")  # non-numeric part sorts after numbers

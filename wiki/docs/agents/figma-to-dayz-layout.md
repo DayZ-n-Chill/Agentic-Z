@@ -51,7 +51,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 1. **Check the input.** You need the normalizer's JSON. If you're given a raw Figma URL or node instead, return to your caller and ask for `figma-node-normalizer` to run first.
 2. **Pick each widget class, prefix first.** If the node name has a rules-doc prefix (`btn_`, `bar_`, `panel_`, `txt_` and the rest of section 4), that prefix decides the class, whatever the node's type or Figma kind: `btn_close` is a `ButtonWidgetClass` even when it was a frame. Only unprefixed nodes fall back to the section 3 mapping by type.
 3. **Size and place each widget per axis** from `sizing`: `fill` becomes `1` with the exact-size toggle `0` (relative); `hug` and `fixed` become the pixel size with the toggle `1`. Compute `position` from the node's bounds, set `halign`/`valign` anchors, and always emit all four toggles (`hexactpos`, `vexactpos`, `hexactsize`, `vexactsize`). Translate colors and fonts per sections 7 and 8.
-4. **Build the tree** in the JSON's order and shape: properties first, then one child `&#123; &#125;` block inside the parent's braces. Use absolute positions with anchors; use `WrapSpacerWidgetClass` or `GridSpacerWidgetClass` only for runtime-dynamic content (section 5).
+4. **Build the tree** in the JSON's order and shape: properties first, then one child `{ }` block inside the parent's braces. Use absolute positions with anchors; use `WrapSpacerWidgetClass` or `GridSpacerWidgetClass` only for runtime-dynamic content (section 5).
 5. **Self-check** against the Hard NO list before writing: no `<`, no `=`, no semicolons, no CSS properties, every class ends in `Class`, braces match.
 6. **Write** the file to the path in your brief (normally `workspace/<ModName>/gui/layouts/`).
 
@@ -62,55 +62,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 - Keep node names exactly as the JSON gives them; script finds widgets by name.
 - If the design is too loose to translate without guessing, ask one short question instead of guessing.
 - Indent one space per level, as vanilla does, and don't mix styles in a file.
-
-## Bad: XML
-
-Workbench rejects this outright: angle brackets, no `Class` suffix, `name="value"` attributes, an invented `orientation` attribute, and no exact-size toggles.
-
-```
-<WrapSpacerWidget orientation="vertical">
-    <TextWidget x="0" y="0" width="200" height="24" text="Hello" />
-    <ButtonWidget x="0" y="32" width="100" height="28" text="Go" />
-</WrapSpacerWidget>
-```
-
-## Good: property-file format
-
-```
-FrameWidgetClass Root {
- position 0 0
- size 1 1
- hexactpos 0
- vexactpos 0
- hexactsize 0
- vexactsize 0
- {
-  TextWidgetClass txt_title {
-   position 0 0
-   size 200 24
-   hexactpos 1
-   vexactpos 1
-   hexactsize 1
-   vexactsize 1
-   text "Hello"
-   font "gui/fonts/sdf_MetronBook24"
-   "exact text" 1
-   "exact text size" 16
-  }
-  ButtonWidgetClass btn_go {
-   position 0 32
-   size 100 28
-   hexactpos 1
-   vexactpos 1
-   hexactsize 1
-   vexactsize 1
-   style Default
-   text "Go"
-   font "gui/fonts/sdf_MetronBook24"
-  }
- }
-}
-```
+- For the XML anti-pattern Workbench rejects, see rules doc section 1; for a full Figma-to-`.layout` translation, see section 10.
 
 ## Report
 

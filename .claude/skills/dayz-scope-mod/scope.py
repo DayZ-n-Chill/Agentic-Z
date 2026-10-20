@@ -20,6 +20,9 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
 # PROJECT_DIR = user's project, where workspace/, settings.local.json, and
 # local-memory/ all live.
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
@@ -43,6 +46,26 @@ DENY_TEMPLATES = (
     "Edit(//p/{name}/**)",
     "Edit(//p/Mods/@{name}/**)",
 )
+
+# Rule paths use gitignore syntax. A mod name containing one of these would
+# turn its deny rule into a wildcard, negation or comment, so such names are refused.
+GITIGNORE_META = frozenset("*?[!#")
+
+
+def _has_meta(name: str) -> bool:
+    return any(c in GITIGNORE_META for c in name)
+
+
+def _posix_rule_path(path: Path) -> str:
+    """C:\\Games\\DayZ -> //c/Games/DayZ (the absolute form Claude Code matches)."""
+    drive, rest = os.path.splitdrive(str(path))
+    return "//" + drive.rstrip(":").lower() + rest.replace("\\", "/")
+
+
+def _game_workshop_dir() -> Optional[Path]:
+    """<DayZ game>\\!Workshop, the real folder behind the P:\\Mods junction, or None."""
+    game = h.preflight.find_dayz_game()
+    return game / "!Workshop" if game is not None else None
 
 
 def _load_settings() -> dict:
@@ -120,6 +143,13 @@ def _remove_prior_rules(settings: dict) -> int:
 
 
 def cmd_scope(mod_name: str) -> int:
+    if _has_meta(mod_name):
+        print(
+            f"{FAIL} Mod name {mod_name!r} contains one of * ? [ ! # , which permission "
+            "rules treat as pattern syntax. Rename the mod folder.",
+            file=sys.stderr,
+        )
+        return 1
     target = WORKSPACE / mod_name
     if not target.exists() or not target.is_dir():
         known = _list_mods()
@@ -153,12 +183,28 @@ def cmd_scope(mod_name: str) -> int:
         print(f"{INFO} No sibling mods to deny. Scope is set, but no rules were needed.")
         return 0
 
+    bad = [m for m in siblings if _has_meta(m)]
+    if bad:
+        print(
+            f"{FAIL} Sibling mod folder(s) {', '.join(bad)} contain one of * ? [ ! # ,\n"
+            "        so no exact deny rule can be written for them. Rename them first.",
+            file=sys.stderr,
+        )
+        return 1
+
     print(f"{INFO} Sibling mods detected: {len(siblings)} ({', '.join(siblings)})")
+
+    # P:\Mods is a junction, so also deny the real folder it points at.
+    workshop = _game_workshop_dir()
+    if workshop is None:
+        print(f"{INFO} DayZ game install not found: no rule for <game>\\!Workshop\\@<other>")
 
     new_rules: list[str] = []
     for other in siblings:
         for tmpl in DENY_TEMPLATES:
             new_rules.append(tmpl.format(name=other))
+        if workshop is not None:
+            new_rules.append(f"Edit({_posix_rule_path(workshop)}/@{other}/**)")
 
     perms = settings.setdefault("permissions", {})
     deny = perms.setdefault("deny", [])

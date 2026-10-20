@@ -28,7 +28,8 @@ audit = _load_audit()
     [
         (0.0, "Visual"),
         (1.0, "Visual"),
-        (1e10, "ShadowVolume"),
+        (1e4, "ShadowVolume"),
+        (11000.0, "ShadowVolume"),
         (1e13, "Geometry"),
         (2e13, "GeoPhys"),
         (1e15, "Memory"),
@@ -41,7 +42,7 @@ def test_classify_lod_dayz_scheme(resolution, expected):
     assert audit.classify_lod(resolution) == expected
 
 
-@pytest.mark.parametrize("resolution", [3e13, 7e13])
+@pytest.mark.parametrize("resolution", [3e13, 7e13, 1e10])
 def test_classify_lod_rejects_arma3_ranges(resolution):
     assert audit.classify_lod(resolution).startswith("Other(")
 
@@ -197,3 +198,81 @@ def test_audit_p3d_rejects_odol(tmp_path, capsys):
     model.write_bytes(b"ODOL" + b"\0" * 16)
     assert audit.audit_p3d(str(model)) is False
     assert "Not MLOD" in capsys.readouterr().out
+
+
+
+# --- text files ----------------------------------------------------------------
+
+def test_audit_text_file_clean(tmp_path):
+    cfg = tmp_path / "config.cpp"
+    cfg.write_text('model = "MyMod/data/box.p3d";', encoding="utf-8")
+    assert audit.audit_text_file(str(cfg), "config.cpp") is True
+
+
+def test_audit_text_file_flags_p_drive_path(tmp_path, capsys):
+    cfg = tmp_path / "config.cpp"
+    cfg.write_text(r'model = "P:\MyMod\data\box.p3d";', encoding="utf-8")
+    assert audit.audit_text_file(str(cfg), "config.cpp") is False
+    assert "Line 1: Absolute P:" in capsys.readouterr().out
+
+
+def test_audit_text_file_read_error_fails(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        audit, "check_p_drive_paths_in_file", lambda path: [("ERROR", f"Cannot read {path}: boom")]
+    )
+    assert audit.audit_text_file(str(tmp_path / "x.rvmat"), ".rvmat") is False
+
+
+# --- CLI exit paths --------------------------------------------------------------
+
+@pytest.fixture
+def no_gate(monkeypatch):
+    calls = []
+    monkeypatch.setattr(audit.h, "gate_on_preflight", lambda: calls.append(1))
+    return calls
+
+
+def _run_main(argv):
+    with pytest.raises(SystemExit) as exc:
+        audit.main(argv)
+    return exc.value.code
+
+
+def test_main_without_inputs_exits_2_before_gate(no_gate, capsys):
+    assert _run_main([]) == 2
+    assert no_gate == []
+    assert "nothing to audit" in capsys.readouterr().err
+
+
+def test_main_missing_scan_dir_exits_1(no_gate, tmp_path, capsys):
+    assert _run_main(["--scan-dir", str(tmp_path / "nope")]) == 1
+    assert no_gate == []
+    assert "Directory not found" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("flag", ["--config", "--model-cfg", "--rvmat"])
+def test_main_missing_option_file_exits_1(no_gate, tmp_path, capsys, flag):
+    assert _run_main([flag, str(tmp_path / "missing.txt")]) == 1
+    assert "File not found" in capsys.readouterr().out
+
+
+def test_main_clean_text_files_exit_0(no_gate, tmp_path):
+    cfg = tmp_path / "config.cpp"
+    cfg.write_text("class CfgPatches {};\n", encoding="utf-8")
+    mat = tmp_path / "box.rvmat"
+    mat.write_text('texture = "MyMod/data/box_co.paa";', encoding="utf-8")
+    assert _run_main(["--config", str(cfg), "--rvmat", str(mat)]) == 0
+    assert no_gate == [1]
+
+
+def test_main_p_drive_path_exits_1(no_gate, tmp_path):
+    mat = tmp_path / "box.rvmat"
+    mat.write_text(r'texture = "P:\MyMod\data\box_co.paa";', encoding="utf-8")
+    assert _run_main(["--rvmat", str(mat)]) == 1
+
+
+def test_scan_dir_audits_text_files(no_gate, tmp_path):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "config.cpp").write_text("class CfgPatches {};\n", encoding="utf-8")
+    (tmp_path / "data" / "box.rvmat").write_text(r'texture = "P:\x.paa";', encoding="utf-8")
+    assert _run_main(["--scan-dir", str(tmp_path)]) == 1

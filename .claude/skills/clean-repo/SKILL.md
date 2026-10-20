@@ -1,6 +1,6 @@
 ---
 name: clean-repo
-description: Removes every template-managed artifact across all domains so the repo is clean to push. Discovers each `<domain>-clean-workspace` skill (currently dayz-clean-workspace), shows their combined dry-run plan, asks once, then runs them. Use when the user wants a full pre-push reset of everything the template's skills created; for one domain or one mod, use that domain's cleanup skill instead.
+description: Removes every template-managed artifact across all domains so the repo is clean to push. Discovers each `<domain>-clean-workspace` skill, shows their combined dry-run plan, asks once, then runs them. Use when the user wants a full pre-push reset of everything the template's skills created; for one domain or one mod, use that domain's cleanup skill instead.
 argument-hint: "[--yes] [--dry-run]"
 disable-model-invocation: true
 ---
@@ -24,6 +24,15 @@ python "<skill-dir>\clean.py" [--yes] [--dry-run]
 |---|---|
 | `--yes` | Skip the confirmation prompt. Required when stdin isn't a TTY. |
 | `--dry-run` | Show the combined plan and stop without removing anything. |
+
+### From an agent shell
+
+The agent's shell is not a TTY, so the script cannot prompt there. Ask in chat instead:
+
+1. Run `python "<skill-dir>\clean.py" --dry-run`.
+2. Show the user the combined plan it printed.
+3. Ask in chat whether to remove everything listed. Stop if they do not clearly say yes.
+4. On a yes, run `python "<skill-dir>\clean.py" --yes`.
 
 ## What it does
 
@@ -54,8 +63,3 @@ Any folder in `.claude/skills/` whose name ends in `-clean-workspace` and contai
 | Remove one mod's DayZ artifacts | `/dayz-clean-workspace --mod <Name>` |
 | Remove all DayZ artifacts (mods and server staging) | `/dayz-clean-workspace --include-server` |
 | Remove everything across every domain before a push | `/clean-repo` |
-
-## Do not
-
-- Add domain-specific knowledge here. Domain rules live in each `<domain>-clean-workspace` skill.
-- Pass child skills flags beyond `--include-server` plus `--dry-run` or `--yes`.

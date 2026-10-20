@@ -17,10 +17,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
-from skill_helpers import preflight  # noqa: E402
-
-from state import PROJECT_DIR, active_mod  # noqa: E402
+from state import PROJECT_DIR, active_mod
 
 SKILLS_DIR = Path(__file__).resolve().parents[1]
 KNOWN_MAPS = ("chernarus", "livonia", "sakhal")  # /dayz-add-server's map aliases
@@ -51,11 +48,6 @@ def command_for(
     """Return the argv that performs `action`. Raises DispatchError on missing values."""
     if action == "mount-p":
         return _py("dayz-workdrive", "mount.py")
-    if action == "mods-junction":
-        game = preflight.find_dayz_game()
-        if game is None:
-            raise DispatchError("'mods-junction' needs the DayZ game install (set DAYZ_GAME_PATH)")
-        return ["cmd", "/c", "mklink", "/J", "P:\\Mods", str(game / "!Workshop")]
     if action == "new-mod":
         argv = _py("dayz-new-mod", "new_mod.py", _need(mod, "--mod", action))
         return argv + ["--author", author] if author else argv

@@ -36,13 +36,13 @@ Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) fo
 
 Workbench plugin APIs are thinly documented and change between DayZ Tools versions. Don't write a call, base class, attribute or file location from memory.
 
-1. Find real plugin code first: `Grep` the Workbench scripts under `<DayZ Tools install>\Bin\Workbench\` (the install is resolved by `find_dayz_tools()` in `.claude/skills/dayz-preflight/preflight.py`), then use RAG and `search_dayz_wiki` for Workbench plugin pages.
+1. Find real plugin code first: Grep the vanilla Workbench scripts in `P:\scripts\editor\plugins\`, `P:\scripts\editor\workbench\` and `P:\scripts\1_core\workbenchapi.c`, then use RAG and `search_dayz_wiki` for Workbench plugin pages.
 2. Use only classes, methods and attributes you found there, and cite each as `path:line` or a wiki URL.
 3. If you can't find how something is done (plugin registration, where plugins load from, spawning a process), say so and ask the script lead. Don't invent a manifest format, a C++ SDK or an install folder.
 
 ## Rules
 
-- Resolve tool paths (AddonBuilder, ImageToPAA) the same way the skills do; never hardcode Steam paths.
+- Plugins resolve tool paths (AddonBuilder, ImageToPAA) at runtime; never hardcode Steam paths. Read `find_dayz_tools()` in `.claude/skills/dayz-preflight/preflight.py` only for the resolution order to mirror.
 - Batch actions must be safe to re-run: skip files that are already correct and show what changed.
 - Show tool output to the user instead of swallowing it.
 

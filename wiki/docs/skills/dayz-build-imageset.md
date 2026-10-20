@@ -4,7 +4,7 @@ name: dayz-build-imageset
 
 ## Overview
 
-&gt;-
+Packs the PNG sprites in each `<mod>/.gui-sources/<setname>/` folder into a DayZ imageset (`.imageset` definition + `.paa` atlas) under `<mod>/gui/imagesets/`, with a 10px gutter around every sprite and power-of-two atlas sizes. Use when a mod's HUD or menu icons need to become an imageset that `.layout` files can reference.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
@@ -59,8 +59,9 @@ python "<skill-dir>\build_imageset.py" [<mod-root>] [--mod-name <name>]
 3. For each subfolder of `<mod-root>/.gui-sources/`:
    - Collect all `.png` files in that subfolder. Each file becomes one named sprite (the file's stem becomes the `ImageSetDefClass` name).
    - Sort sprites by height descending and shelf-pack into the smallest power-of-two atlas that fits (each dimension picked from 256 / 512 / 1024 / 2048 / 4096; rectangular atlases allowed; ordered by area, square preferred at equal area), with a 10px gutter on all sides of every sprite.
-   - If everything fits in one atlas: emit `<setname>.&#123;paa,imageset&#125;`.
-   - If sprites won't fit in a single 4096x4096 atlas: split, first-fit in height order, into multiple atlases and emit `<setname>_1.&#123;paa,imageset&#125;`, `<setname>_2.&#123;paa,imageset&#125;`, etc. Each part is its own self-contained imageset.
+   - If everything fits in one atlas: emit `<setname>.{paa,imageset}`.
+   - If sprites won't fit in a single 4096x4096 atlas: split, next-fit in height order (a new atlas starts when the current one overflows), into multiple atlases and emit `<setname>_1.{paa,imageset}`, `<setname>_2.{paa,imageset}`, etc. Each part is its own self-contained imageset.
+   - Delete this set's outputs from an earlier run that this run won't rewrite (`<setname>.*` after a split, extra `<setname>_N.*` when the part count drops), so no orphan atlas is left behind. Stems matching another source set's name are left alone.
    - Compose each atlas as PNG via Pillow, convert to `.paa` via `ImageToPAA.exe`.
    - Each `.imageset`'s `path` references its own `.paa` via `<mod-name>\gui\imagesets\<stem>.paa`.
 4. Report a summary; exit non-zero if any imageset failed.

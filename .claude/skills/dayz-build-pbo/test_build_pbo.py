@@ -137,3 +137,46 @@ def test_check_pbo_output_fresh(tmp_path):
     pbo = tmp_path / "MyMod.pbo"
     pbo.write_bytes(b"new")
     assert build.check_pbo_output(pbo, started) is None
+
+
+# --- --clean safety ----------------------------------------------------------
+
+def test_other_pbos_lists_only_foreign_pbos(tmp_path):
+    addons = tmp_path / "Addons"
+    addons.mkdir()
+    for name in ("MyMod.pbo", "mymod.pbo.bisign", "Payload.pbo", "Extra.PBO", "readme.txt"):
+        (addons / name).write_text("x", encoding="utf-8")
+    assert build.other_pbos(addons, "MyMod") == ["Extra.PBO", "Payload.pbo"]
+    assert build.other_pbos(tmp_path / "missing", "MyMod") == []
+
+
+def test_gate_clean_refuses_when_payload_pbos_present(tmp_path):
+    addons = tmp_path / "Addons"
+    addons.mkdir()
+    (addons / "MyMod.pbo").write_text("x", encoding="utf-8")
+    build.gate_clean(addons, "MyMod")  # only our own PBO: allowed
+    (addons / "Payload.pbo").write_text("x", encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        build.gate_clean(addons, "MyMod")
+    assert "Payload.pbo" in str(exc.value.code)
+
+
+def test_main_clean_refuses_before_running_addonbuilder(p_drive, tmp_path, monkeypatch):
+    project = tmp_path / "proj"
+    _scaffold(project)
+    deploy = p_drive / "Mods" / "@MyMod"
+    (deploy / "Addons").mkdir(parents=True)
+    h.write_marker(deploy, "MyMod")
+    (deploy / "Addons" / "Payload.pbo").write_text("x", encoding="utf-8")
+    ran = []
+    monkeypatch.setattr(build.h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(build.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(build, "validate_p_mods", lambda: None)
+    monkeypatch.setattr(build, "verify_junction", lambda m, w: None)
+    monkeypatch.setattr(build, "resolve_addon_builder", lambda: Path("AB.exe"))
+    monkeypatch.setattr(build.subprocess, "run", lambda *a, **k: ran.append(a))
+    monkeypatch.setattr("sys.argv", ["build.py", "MyMod", "--clean"])
+    with pytest.raises(SystemExit) as exc:
+        build.main()
+    assert "--clean would wipe" in str(exc.value.code)
+    assert ran == []

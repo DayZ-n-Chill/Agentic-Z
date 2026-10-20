@@ -2,10 +2,12 @@
 
 One copy of the logic every pipeline script needs:
   - load a sibling skill's .py by file path (load_module)
+  - the /dayz-preflight resolvers, loaded on first use (h.preflight.find_dayz_tools, ...)
   - the /dayz-preflight gate (gate_on_preflight)
   - the cached project root written by /dayz-init (resolve_project_dir)
   - link inspection that never follows a junction (is_link, link_target, paths_equal)
   - the P:\\Mods\\@<ModName>\\ ownership marker (owns_deploy_dir, gate_on_marker, write_marker)
+  - creation flags that detach a launched GUI tool from the console (DETACH_FLAGS)
 
 Import from a skill script with:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
@@ -33,6 +35,10 @@ DAYZ_INIT_STATE = SKILLS_DIR / "dayz-init" / "state.py"
 # above Addons\ so AddonBuilder's -clear (which wipes Addons\) keeps it.
 SCAFFOLD_MARKER = ".agentic-z-scaffold"
 
+# Popen creationflags for a GUI tool that must outlive this script and the
+# console it ran in: DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP.
+DETACH_FLAGS = 0x00000008 | 0x00000200
+
 OK = "[OK]   "
 WARN = "[WARN] "
 FAIL = "[FAIL] "
@@ -48,7 +54,17 @@ def load_module(name: str, path: Path) -> ModuleType:
     return module
 
 
-preflight = load_module("dayz_preflight_module", PREFLIGHT)
+def __getattr__(name: str):
+    """Load dayz-preflight/preflight.py on first access of h.preflight.
+
+    Lazy so importing skill_helpers never executes preflight.py (and a missing
+    preflight.py only fails the callers that need it).
+    """
+    if name == "preflight":
+        module = load_module("dayz_preflight_module", PREFLIGHT)
+        globals()["preflight"] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def gate_on_preflight() -> None:
@@ -61,12 +77,20 @@ def gate_on_preflight() -> None:
 
 
 def resolve_project_dir() -> Path:
-    """Return the project root cached by /dayz-init, or exit 2 pointing at /dayz-init."""
+    """Return the project root cached by /dayz-init.
+
+    Exits 2 pointing at /dayz-init when nothing is cached or the cached
+    directory no longer exists (moved or deleted clone).
+    """
     state = load_module("dayz_init_state_module", DAYZ_INIT_STATE)
     project = state.cached_project_root()
     if project is None:
         print(f"{FAIL} No project cached.", file=sys.stderr)
         print("       Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
+        sys.exit(2)
+    if not project.is_dir():
+        print(f"{FAIL} Cached project directory no longer exists: {project}", file=sys.stderr)
+        print("       Run /dayz-init again to re-cache the project root.", file=sys.stderr)
         sys.exit(2)
     return project.resolve()
 
@@ -89,19 +113,18 @@ def is_link(path: Path) -> bool:
     return False
 
 
+def _preflight() -> ModuleType:
+    return globals().get("preflight") or __getattr__("preflight")
+
+
 def link_target(path: Path) -> Optional[Path]:
-    """The target of a symlink or junction (without the \\\\?\\ prefix), or None if not a link."""
-    try:
-        target = os.readlink(path)
-    except OSError:
-        return None
-    if target.startswith("\\\\?\\"):
-        target = target[4:]
-    return Path(target)
+    """The target of a symlink or junction, or None if not a link (preflight's resolver)."""
+    return _preflight().link_target(path)
 
 
 def paths_equal(a: Path, b: Path) -> bool:
-    return os.path.normcase(os.path.normpath(str(a))) == os.path.normcase(os.path.normpath(str(b)))
+    """True when two paths name the same location (preflight's resolver)."""
+    return _preflight().paths_equal(a, b)
 
 
 def owns_deploy_dir(deploy_root: Path, modname: str) -> bool:

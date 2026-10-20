@@ -10,12 +10,13 @@ exiting with that step's exit code. Refuses (exit 2) while the environment
 check reports a hard stop or P:\\ is not mounted.
 
 Steps, in order (each skipped when not needed):
-  1. mods-junction   create P:\\Mods -> <DayZ>\\!Workshop when it is missing
-  2. new-mod / import-mod   skipped when workspace/<mod> already exists
-  3. record          write the per-clone project cache and the active mod
-  4. add-server      --server
-  5. build           --build, or implied by --launch
-  6. launch          --launch (needs --server)
+  1. new-mod / import-mod   skipped when workspace/<mod> already exists
+  2. record          write the per-clone project cache and the active mod
+  3. add-server      --server
+  4. build           --build, or implied by --launch
+  5. launch          --launch (needs --server)
+The P:\\Mods junction is not a step: /dayz-preflight, which every child skill
+runs first, creates it when it is missing.
 """
 from __future__ import annotations
 
@@ -47,12 +48,9 @@ class Step:
     params: dict = field(default_factory=dict)
 
 
-def build_steps(intent: Intent, autofix: list[str], already_exists: bool) -> list[Step]:
-    """Ordered steps for this intent. `autofix` holds env issue names (only mods_junction is planned)."""
+def build_steps(intent: Intent, already_exists: bool) -> list[Step]:
+    """Ordered steps for this intent."""
     steps: list[Step] = []
-    if "mods_junction" in autofix:
-        steps.append(Step("mods-junction", "Create the P:\\Mods junction to !Workshop"))
-
     mod = intent.mod_name
     if already_exists:
         pass
@@ -145,7 +143,7 @@ def main(argv: list[str] | None = None, project: Path | None = None) -> int:
             print(f"       {issue.message}", file=sys.stderr)
         return 2
 
-    steps = build_steps(intent, [i.name for i in autofix], mod_exists(project, args.mod))
+    steps = build_steps(intent, mod_exists(project, args.mod))
     print(render_plan(steps))
     if not args.execute:
         return 0

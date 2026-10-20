@@ -48,11 +48,13 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
    - `--scaffold` → write it
    - `--no-scaffold` → skip
    - TTY default → prompt `Add to your source folder? [y/N]:`
-9. Each "yes" delegates to `/dayz-add-scaffold --piece <name> <ModName>` so the writer logic stays in one place.
+9. Each "yes" is written by `/dayz-add-scaffold`'s writer, called in-process (one writer for both skills, and preflight runs only once). If a write fails (for example `config.cpp` needs an author handle and none is cached on a non-TTY run), the links stay in place, the skill names each failed piece with its retry command (`/dayz-add-scaffold <ModName> --piece <piece>`) and exits 1.
 
 ## Output
 
 ```
+... (preflight output)
+
 Path to existing mod folder: C:\Users\me\repos\MyMod
 [OK]    Source validated: C:\Users\me\repos\MyMod
 [INFO]  Derived mod name: MyMod
@@ -65,10 +67,10 @@ Scaffolding check:
   [WARN]  workbench/dayz.gproj missing (needed for /dayz-launch-workbench --mod)
 
   Add $PBOPREFIX$ to your source folder? [y/N]: y
-  [OK]    $PBOPREFIX$ written
+[OK]    $PBOPREFIX$ written
   Add workbench/dayz.gproj to your source folder? [y/N]: y
-  [OK]    workbench/dayz.gproj written (mod paths + filesystem mounts injected)
-  [OK]    workbench/DayZSetting.xml copied
+[OK]    workbench/dayz.gproj written (mod paths + filesystem mounts injected)
+[OK]    workbench/DayZSetting.xml copied
 
 Next steps:
   - Open in Workbench: /dayz-launch-workbench --mod MyMod

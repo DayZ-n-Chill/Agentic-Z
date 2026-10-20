@@ -13,6 +13,7 @@ launch = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(launch)
 
 DIAG = Path("C:/DayZ/DayZDiag_x64.exe")
+CFG = 'class Missions { class DayZ { template = "dayzOffline.chernarusplus"; }; };\n'
 
 
 # --- command builders -----------------------------------------------------------
@@ -61,7 +62,7 @@ def _instance(project: Path, name: str = "chernarus") -> Path:
     inst = project / ".server" / name
     (inst / "mission").mkdir(parents=True)
     (inst / "dayzOffline.chernarusplus").mkdir()  # stands in for the junction
-    (inst / "serverDZ.cfg").write_text("allowFilePatching = 1;\n", encoding="utf-8")
+    (inst / "serverDZ.cfg").write_text(CFG + "allowFilePatching = 1;\n", encoding="utf-8")
     return inst
 
 
@@ -78,7 +79,7 @@ def test_verify_instance_missing_entirely(tmp_path):
     with pytest.raises(SystemExit) as exc:
         launch.verify_instance_environment("livonia", tmp_path)
     msg = str(exc.value.code)
-    assert "serverDZ.cfg" in msg and "mission folder" in msg and "add_server.py livonia" in msg
+    assert "serverDZ.cfg" in msg and "mission folder" in msg and "/dayz-add-server livonia" in msg
 
 
 def test_verify_instance_missing_template_junction(tmp_path):
@@ -91,9 +92,95 @@ def test_verify_instance_missing_template_junction(tmp_path):
 
 def test_verify_instance_appends_allow_file_patching(tmp_path):
     inst = _instance(tmp_path)
-    (inst / "serverDZ.cfg").write_text('hostname = "x";\n', encoding="utf-8")
+    (inst / "serverDZ.cfg").write_text(CFG, encoding="utf-8")
     launch.verify_instance_environment("chernarus", tmp_path)
     assert (inst / "serverDZ.cfg").read_text(encoding="utf-8").endswith("allowFilePatching = 1;\n")
+
+
+def test_mission_path_follows_cfg_template_not_glob(tmp_path):
+    inst = _instance(tmp_path)
+    (inst / "dayzOffline.enoch").mkdir()  # sorts first; the cfg must still decide
+    (inst / "serverDZ.cfg").write_text(CFG.replace("chernarusplus", "enoch"), encoding="utf-8")
+    _, _, mission, _ = launch.verify_instance_environment("chernarus", tmp_path)
+    assert mission == inst / "dayzOffline.enoch"
+    (inst / "serverDZ.cfg").write_text(CFG, encoding="utf-8")
+    _, _, mission, _ = launch.verify_instance_environment("chernarus", tmp_path)
+    assert mission == inst / "dayzOffline.chernarusplus"
+
+
+def test_custom_template_junction_is_found(tmp_path):
+    inst = _instance(tmp_path)
+    (inst / "namalsk.custom").mkdir()
+    (inst / "serverDZ.cfg").write_text(CFG.replace("dayzOffline.chernarusplus", "namalsk.custom"), encoding="utf-8")
+    assert launch.verify_instance_environment("chernarus", tmp_path)[2] == inst / "namalsk.custom"
+
+
+def test_cfg_without_template_line_refuses(tmp_path):
+    inst = _instance(tmp_path)
+    (inst / "serverDZ.cfg").write_text("allowFilePatching = 1;\n", encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        launch.verify_instance_environment("chernarus", tmp_path)
+    assert "template" in str(exc.value.code)
+
+
+def test_read_cfg_template():
+    assert launch.read_cfg_template('  template = "dayzOffline.sakhal";   // map\n') == "dayzOffline.sakhal"
+    assert launch.read_cfg_template('hostname = "x";\n') is None
+
+
+def test_verify_instance_dry_run_changes_nothing(tmp_path):
+    inst = _instance(tmp_path)
+    (inst / "serverDZ.cfg").write_text(CFG, encoding="utf-8")
+    launch.verify_instance_environment("chernarus", tmp_path, dry_run=True)
+    assert (inst / "serverDZ.cfg").read_text(encoding="utf-8") == CFG
+    assert not (inst / "Profiles").exists()
+    assert not (tmp_path / ".server" / "!ClientDiagLogs").exists()
+
+
+# --- main ---------------------------------------------------------------------------
+
+def _patch_main(monkeypatch, tmp_path, argv):
+    monkeypatch.setattr(launch.h, "resolve_project_dir", lambda: tmp_path)
+    monkeypatch.setattr(launch.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(launch, "verify_built_mods", lambda names: None)
+    monkeypatch.setattr(launch, "resolve_diag_client", lambda: DIAG)
+    monkeypatch.setattr(launch.sys, "argv", ["launch.py", *argv])
+
+
+def _snapshot(root: Path) -> dict:
+    return {str(p.relative_to(root)): (p.read_bytes() if p.is_file() else None) for p in root.rglob("*")}
+
+
+def test_dry_run_is_side_effect_free(monkeypatch, tmp_path):
+    inst = _instance(tmp_path)
+    (inst / "serverDZ.cfg").write_text(CFG, encoding="utf-8")  # lacks allowFilePatching
+    before = _snapshot(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "--dry-run"])
+    monkeypatch.setattr(launch.subprocess, "Popen", lambda *a, **k: pytest.fail("dry run spawned a process"))
+    assert launch.main() == 0
+    assert _snapshot(tmp_path) == before  # no cfg edit, no Profiles/, no prefs file
+
+
+class _FakeProc:
+    def __init__(self):
+        self.pid = 4242
+        self.killed = False
+
+    def poll(self):
+        return -9 if self.killed else None
+
+    def kill(self):
+        self.killed = True
+
+
+def test_server_killed_on_bind_timeout(monkeypatch, tmp_path):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod"])
+    procs = []
+    monkeypatch.setattr(launch.subprocess, "Popen", lambda cmd: procs.append(_FakeProc()) or procs[-1])
+    monkeypatch.setattr(launch, "wait_for_server_port", lambda port, proc, timeout_s: False)
+    assert launch.main() == 1
+    assert len(procs) == 1 and procs[0].killed  # server killed, client never started
 
 
 # --- built mods and display prefs -------------------------------------------------

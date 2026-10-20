@@ -30,7 +30,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 | Argument | Required? | Notes |
 |---|---|---|
 | `--source <path>` | yes (or interactive) | Path to the existing mod folder (absolute or relative, `~` expanded). If omitted on a TTY, the skill prompts for it. |
-| `--name <ModName>` | no | Override the name the mod is imported under. Defaults to the source folder's basename, validated against `[A-Za-z][A-Za-z0-9_]&#123;0,63&#125;`. Required if the basename has spaces or other invalid characters. |
+| `--name <ModName>` | no | Override the name the mod is imported under. Defaults to the source folder's basename, validated against `[A-Za-z][A-Za-z0-9_]{0,63}`. Required if the basename has spaces or other invalid characters. |
 | `--scaffold` | no | Auto-yes for every "scaffold this missing piece?" prompt. Required for non-TTY use when missing pieces would otherwise prompt. |
 | `--no-scaffold` | no | Auto-no - link only, never write into the source folder. |
 
@@ -49,11 +49,13 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
    - `--scaffold` → write it
    - `--no-scaffold` → skip
    - TTY default → prompt `Add to your source folder? [y/N]:`
-9. Each "yes" delegates to `/dayz-add-scaffold --piece <name> <ModName>` so the writer logic stays in one place.
+9. Each "yes" is written by `/dayz-add-scaffold`'s writer, called in-process (one writer for both skills, and preflight runs only once). If a write fails (for example `config.cpp` needs an author handle and none is cached on a non-TTY run), the links stay in place, the skill names each failed piece with its retry command (`/dayz-add-scaffold <ModName> --piece <piece>`) and exits 1.
 
 ## Output
 
 ```
+... (preflight output)
+
 Path to existing mod folder: C:\Users\me\repos\MyMod
 [OK]    Source validated: C:\Users\me\repos\MyMod
 [INFO]  Derived mod name: MyMod
@@ -66,10 +68,10 @@ Scaffolding check:
   [WARN]  workbench/dayz.gproj missing (needed for /dayz-launch-workbench --mod)
 
   Add $PBOPREFIX$ to your source folder? [y/N]: y
-  [OK]    $PBOPREFIX$ written
+[OK]    $PBOPREFIX$ written
   Add workbench/dayz.gproj to your source folder? [y/N]: y
-  [OK]    workbench/dayz.gproj written (mod paths + filesystem mounts injected)
-  [OK]    workbench/DayZSetting.xml copied
+[OK]    workbench/dayz.gproj written (mod paths + filesystem mounts injected)
+[OK]    workbench/DayZSetting.xml copied
 
 Next steps:
   - Open in Workbench: /dayz-launch-workbench --mod MyMod
@@ -83,7 +85,7 @@ Next steps:
 - `--source` missing and stdin isn't a TTY.
 - Source path doesn't exist, isn't a directory, or is a UNC path (`\\server\share\...` - junctions can't target them on Windows).
 - Source path is inside `<repo>/workspace/` (avoids self-referential / circular links - the mod is already in workspace, no import needed).
-- Derived/given mod name fails the pattern (`[A-Za-z][A-Za-z0-9_]&#123;0,63&#125;`).
+- Derived/given mod name fails the pattern (`[A-Za-z][A-Za-z0-9_]{0,63}`).
 - `workspace/<Name>/` already exists (won't clobber).
 - `P:\<Name>\` exists as a real folder, or as a link pointing somewhere other than the new `workspace/<Name>/`.
 - Non-TTY run with missing scaffold pieces and neither `--scaffold` nor `--no-scaffold` was passed. This check runs before any link is created, so nothing is left half-done.
