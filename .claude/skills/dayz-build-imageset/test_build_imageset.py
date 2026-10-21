@@ -259,3 +259,47 @@ def test_write_one_atlas_accepts_rewritten_paa(monkeypatch, tmp_path):
     _age(stale)
     assert _convert(monkeypatch, tmp_path, writes=True) is True
     assert (tmp_path / "icons.imageset").is_file()
+
+
+def _split_set(monkeypatch, tmp_path, convert_ok):
+    """A set that packs into two atlases, with a single-atlas output left from an earlier run."""
+    set_dir = tmp_path / ".gui-sources" / "icons"
+    set_dir.mkdir(parents=True)
+    (set_dir / "a.png").write_bytes(b"x")
+    out_dir = tmp_path / "gui" / "imagesets"
+    _touch_outputs(out_dir, "icons")
+
+    class _Img:
+        width = height = 64
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(bi, "Image", type("I", (), {"open": staticmethod(lambda p: _Img())}))
+    monkeypatch.setattr(bi, "pack_split", lambda metas: [((256, 256), []), ((256, 256), [])])
+    monkeypatch.setattr(bi, "write_one_atlas", lambda stem, *a: convert_ok)
+    return bi.build_one(set_dir, "MyMod", out_dir, Path("ImageToPAA.exe")), out_dir
+
+
+def test_build_one_keeps_old_outputs_when_conversion_fails(monkeypatch, tmp_path):
+    ok, out_dir = _split_set(monkeypatch, tmp_path, convert_ok=False)
+    assert ok is False
+    assert (out_dir / "icons.paa").is_file() and (out_dir / "icons.imageset").is_file()
+
+
+def test_build_one_removes_old_outputs_after_success(monkeypatch, tmp_path):
+    ok, out_dir = _split_set(monkeypatch, tmp_path, convert_ok=True)
+    assert ok is True
+    assert not (out_dir / "icons.paa").exists()
+
+
+def test_install_hint_uses_py_launcher():
+    """.claude/settings.json denies `python -m`, so the hint must use `py -m pip`."""
+    here = Path(__file__).resolve().parent
+    for text in ((here / "SKILL.md").read_text(encoding="utf-8"),
+                 (here / "build_imageset.py").read_text(encoding="utf-8")):
+        assert "python -m pip" not in text
+        assert "py -m pip install -r" in text

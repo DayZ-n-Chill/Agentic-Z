@@ -5,7 +5,7 @@ skill's own entry point. The plan executor (plan.py) and the hub both go
 through command_for(), so SKILL.md, the plan and the hub cannot drift apart.
 
 Usage (hub actions):
-    python dispatch.py <action> [--mod NAME] [--server MAP]
+    python dispatch.py <action> [--mod NAME] [--server MAP] [--deps CF ...]
     python dispatch.py --list
 --mod defaults to the active mod recorded by /dayz-init. Exits with the
 child skill's exit code, or 2 if the action is missing a required value.
@@ -56,6 +56,7 @@ def command_for(
     source: str | None = None,
     author: str | None = None,
     scaffold: bool | None = None,
+    deps: list[str] | None = None,
 ) -> list[str]:
     """Return the argv that performs `action`. Raises DispatchError on missing values."""
     if action == "mount-p":
@@ -80,10 +81,22 @@ def command_for(
     if action == "build":
         return _py("dayz-build-pbo", "build.py", _need(mod, "--mod", action))
     if action == "launch":
+        # /dayz-launch-test loads its mod names in order, so dependencies go first.
+        names = [d.lstrip("@") for d in deps or []]
         return _py(
             "dayz-launch-test", "launch.py",
-            _need(mod, "--mod", action), "--server", _need(server, "--server", action),
+            *names, _need(mod, "--mod", action), "--server", _need(server, "--server", action),
         )
+    if action == "gate-build":
+        return _py("dayz-gate", "gate.py", "build", _need(mod, "--mod", action))
+    if action == "gate-ingame":
+        argv = _py("dayz-gate", "gate.py", "ingame", _need(mod, "--mod", action),
+                   "--server", _need(server, "--server", action))
+        return argv + ["--deps", *deps] if deps else argv
+    if action == "lint":
+        return _py("dayz-lint", "lint.py", _need(mod, "--mod", action))
+    if action == "health":
+        return _py("dayz-health", "health.py", _need(mod, "--mod", action))
     if action == "stop":
         return ["cmd", "/c", str(SKILLS_DIR / "dayz-stop-test" / "stop_test.bat")]
     if action == "workbench":
@@ -97,6 +110,7 @@ def command_for(
 
 HUB_ACTIONS = (
     "add-server", "build", "launch", "stop", "workbench", "objectbuilder", "search-download", "mount-p",
+    "lint", "gate-build", "gate-ingame", "health",
 )
 
 
@@ -110,6 +124,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("action", nargs="?", choices=HUB_ACTIONS)
     parser.add_argument("--mod", help="Mod name (default: the active mod)")
     parser.add_argument("--server", help=f"Server instance / map alias ({', '.join(KNOWN_MAPS)})")
+    parser.add_argument("--deps", nargs="+", default=[], metavar="MOD",
+                        help="launch and gate-ingame: dependency mods in load order (CF or @CF)")
     parser.add_argument("--list", action="store_true", help="Print the hub actions and exit")
     args = parser.parse_args(argv)
 
@@ -117,7 +133,7 @@ def main(argv: list[str] | None = None) -> int:
         print("\n".join(HUB_ACTIONS))
         return 0
     try:
-        cmd = command_for(args.action, mod=args.mod or active_mod(PROJECT_DIR), server=args.server)
+        cmd = command_for(args.action, mod=args.mod or active_mod(PROJECT_DIR), server=args.server, deps=args.deps)
     except DispatchError as exc:
         print(f"[FAIL] {exc}", file=sys.stderr)
         return 2

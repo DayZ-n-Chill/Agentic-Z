@@ -1,6 +1,6 @@
 ---
 name: dayz-balance
-description: "Compares a DayZ mod's item stats with similar vanilla items and flags outliers. Reads weight, health, damage, protection, cargo capacity and maximum quantity from the mod's config.cpp, finds the vanilla items under the same vanilla parent class on P:\\DZ\\, and lists every stat far outside them with file:line, the vanilla median and the closest vanilla items. Use it after writing item configs, or when the user asks whether an item is overpowered, too heavy or balanced."
+description: "Compares a DayZ mod's item stats with similar vanilla items and flags outliers with file:line and the vanilla median. Use it after writing item configs, or when the user asks whether an item is overpowered, too heavy or balanced."
 argument-hint: "<ModName> [--json] [--ratio 1.5] [--min-peers 3] | --mod-dir <folder> [--vanilla-root P:\\]"
 ---
 
@@ -9,7 +9,7 @@ argument-hint: "<ModName> [--json] [--ratio 1.5] [--min-peers 3] | --mod-dir <fo
 
 # /dayz-balance
 
-A script reads the mod's `config.cpp` files and the unpacked vanilla configs on `P:\DZ\`, and measures each mod item against the vanilla items that share its parent class. It starts no process and needs no DayZ Tools. Reading all of `P:\DZ\` takes about five seconds. The script only measures. The AI reads the outliers and asks whether each one is intended; a mod may want a tougher vest on purpose.
+A script reads the mod's `config.cpp` files and the unpacked vanilla configs on `P:\DZ\`, and measures each mod item against the vanilla items that share its parent class. It checks weight, health, damage, protection, cargo capacity and maximum quantity, and lists every stat far outside vanilla with file:line, the vanilla median and the closest vanilla items. It starts no process and needs no DayZ Tools. Reading all of `P:\DZ\` takes about five seconds. The script only measures. The AI reads the outliers and asks whether each one is intended; a mod may want a tougher vest on purpose.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -41,7 +41,7 @@ Only stats the mod sets itself, on the item or on a mod base class above it. A s
 | `health` | `DamageSystem > GlobalHealth > Health > hitpoints` |
 | `damage.health`, `damage.blood`, `damage.shock` | `DamageApplied > Health, Blood, Shock > damage` in `CfgAmmo`, the damage a bullet or melee hit deals |
 | `protection.<kind>.<type>` | `DamageSystem > GlobalArmor > <kind> > <type> > damage`, for example `protection.projectile.health`. These are multipliers on damage taken, so a low value means more protection. |
-| `protection.<name>` | `Protection > <name>`, for example `protection.biological` on masks |
+| `protection.<name>` | `Protection > <name>`, for example `protection.biological` on masks. These are coverage, so a high value means more protection: the best vanilla mask has `biological=1` and weaker ones `0.25`. |
 | `capacity` | `itemsCargoSize[]`, as width times height in cells |
 | `quantity` | `varQuantityMax` |
 

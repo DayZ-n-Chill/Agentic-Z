@@ -1,6 +1,6 @@
 ---
 name: dayz-conflict-check
-description: "Compares a mod with other mods under P:\\Mods (CF, COT and Expansion by default, when present) and reports $PBOPREFIX$ and path collisions, shared CfgPatches and config class names, script classes declared twice and modded classes both mods override. Reads only unpacked configs and scripts and PBO headers; never extracts or copies another mod. Prints PASS or FAIL with file:line findings, each with an owner and a fix. --ingame then runs /dayz-gate ingame with those mods loaded. Use before releasing a mod that runs beside CF, COT or Expansion."
+description: "Compares a mod with other mods under P:\\Mods (CF, COT and Expansion by default) and reports prefix, path and class name collisions with file:line, owner and fix. Use before releasing a mod that runs beside CF, COT or Expansion."
 argument-hint: "<ModName> [--against MOD ... | --all] [--ingame [--server <instance>]] [--json] | --mod-dir <folder> [--json]"
 ---
 
@@ -9,7 +9,7 @@ argument-hint: "<ModName> [--against MOD ... | --all] [--ingame [--server <insta
 
 # /dayz-conflict-check
 
-A script reads your mod and the other mods and lists every name and path you share with them. It starts no process unless you add `--ingame`, and takes about a second even against the whole Expansion bundle. The AI only reads the findings and hands each one to its owner.
+A script reads your mod and the other mods and lists every name and path you share with them: `$PBOPREFIX$` and path collisions, shared `CfgPatches` and config class names, script classes declared twice, and modded classes both mods override (see Rules). It reads only unpacked configs and scripts and PBO headers, and never extracts or copies another mod. `--ingame` then runs `/dayz-gate ingame` with those mods loaded. It starts no process unless you add `--ingame`, and takes about a second even against the whole Expansion bundle. The AI only reads the findings and hands each one to its owner.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -28,7 +28,7 @@ python "<skill-dir>\conflict_check.py" <ModName> --ingame [--server <instance>] 
 | `--against` | The mods to compare with, in load order: names under the mods folder (`CF` or `@CF`) or folder paths, such as an unpacked mod source on `P:\`. |
 | `--all` | Compare with every `@mod` under the mods folder. |
 | `--mods-root` | The folder that holds the `@mods`. Default `P:\Mods`. |
-| `--ingame` | After the scan, run `/dayz-gate ingame <ModName> --deps <the same mods>`. Needs a built PBO and a server from `/dayz-add-server`. |
+| `--ingame` | After the scan, run `/dayz-gate ingame <ModName> --deps <the same mods>`. Needs a built PBO and a server from `/dayz-add-server`. Every compared mod must be an `@mod` under the mods folder, so a source folder in `--against` is refused with `ERROR`. |
 | `--server`, `--port` | `--ingame` only: the test instance (default `chernarus`) and port (default `2302`). |
 | `--json` | Print the full report as JSON after the verdict line. |
 
@@ -62,14 +62,15 @@ Names are compared without case. Comments, strings and preprocessor lines are sk
 
 ## Output and exit codes
 
-The first line is the verdict: `PASS` (exit 0, warnings allowed), `FAIL` (exit 1, at least one error, or the in-game gate did not pass) or `ERROR` (exit 2: bad arguments, no cached project, no mod folder, an `--against` mod that is not there, or no mods to compare with). Then one block per finding:
+The first line is the verdict: `PASS` (exit 0, warnings allowed), `FAIL` (exit 1, at least one error, or the in-game gate did not pass) or `ERROR` (exit 2: bad arguments, no cached project, no mod folder, an `--against` mod that is not there, an `--against` source folder with `--ingame`, or no mods to compare with). Then one block per finding:
 
 ```
 FAIL
-- workspace/MyVest/$PBOPREFIX$  error prefix-same: $PBOPREFIX$ JM\CF\Scripts is also the prefix of @CF.
-    theirs: @CF/Addons/scripts.pbo
-    -> dayz-config-specialist: Give $PBOPREFIX$ a folder only your mod uses, usually the mod name, and move the files with it.
+- workspace/MyVest/config.cpp:3  error cfgpatches-collision: CfgPatches class DayZExpansion_Core is also declared by @DayZ-Expansion-Core.
+    theirs: @DayZ-Expansion-Core/Addons/core/config.cpp:1
+    -> dayz-config-specialist: Rename the CfgPatches class to a name only your mod uses, such as <ModName>_<Part>.
   scanned @CF: 3 PBO header(s), 0 unpacked addon(s)
+  scanned @DayZ-Expansion-Core: 0 PBO header(s), 1 unpacked addon(s)
   1 error(s), 0 warning(s)
 ```
 

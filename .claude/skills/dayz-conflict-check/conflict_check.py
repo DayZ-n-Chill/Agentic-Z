@@ -443,6 +443,21 @@ def check_mod(
     return report
 
 
+def check_ingame_targets(targets: list[Path], mods_root: Path) -> None:
+    """--ingame loads each target as a --deps @mod, so each must be an @mod under mods_root.
+
+    A source folder passed to --against has no PBO the game could load, and
+    /dayz-gate would look its name up under the mods folder and fail.
+    """
+    root = mods_root.resolve()
+    bad = [t for t in targets if not t.name.startswith("@") or t.resolve().parent != root]
+    if bad:
+        raise ConflictError(
+            "--ingame loads the compared mods, so each --against entry must be an @mod under "
+            f"{mods_root}: {', '.join(str(t) for t in bad)}. Run the scan without --ingame for source folders."
+        )
+
+
 def gate_command(mod: str, deps: list[str], server: str, port: int) -> list[str]:
     return [sys.executable, str(GATE), "ingame", mod, "--deps", *deps, "--server", server, "--port", str(port), "--json"]
 
@@ -523,6 +538,8 @@ def main(argv: Optional[list[str]] = None, run: Callable[[list[str]], tuple[int,
             mod_dir = args.mod_dir.resolve() if args.mod_dir else project_dir / "workspace" / mod
             display_root = project_dir
         targets = resolve_targets(args.against, args.all, args.mods_root, mod)
+        if args.ingame:
+            check_ingame_targets(targets, args.mods_root)
         report = check_mod(mod, mod_dir, targets, display_root)
         if args.ingame:
             add_ingame(report, mod, targets, args.server, args.port, run)

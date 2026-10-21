@@ -76,6 +76,10 @@ def test_findings_carry_line_peers_and_meaning():
 def test_protection_wording_follows_the_damage_multiplier():
     assert balance.meaning("protection.projectile.health", "low") == "more protection than vanilla"
     assert balance.meaning("protection.melee.shock", "high") == "less protection than vanilla"
+    # Protection class values are coverage, so higher means more protection.
+    assert balance.meaning("protection.biological", "high") == "more protection than vanilla"
+    assert balance.meaning("protection.biological", "low") == "less protection than vanilla"
+    assert balance.meaning("protection.dust_particle_inhalation", "high") == "more protection than vanilla"
     assert balance.meaning("weight", "low") == "lighter than vanilla"
     assert balance.meaning("damage.health", "high") == "hits harder than vanilla"
 

@@ -30,6 +30,7 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove
 | `--lifetime S` | Despawn timeout in seconds. Default for new entries: 3888000 (45 days). |
 | `--restock S` | Restock interval in seconds. Default for new entries: 0. |
 | `--cost N` | Spawn cost / weight. Default for new entries: 100. |
+| (no flag) | New entries also get `<quantmin>-1</quantmin>` and `<quantmax>-1</quantmax>` (not a quantity item), as every vanilla `<type>` has. Existing entries keep their values. |
 | `--category CAT` | Sets `<category name="CAT"/>`. Single value (replaces any existing). |
 | `--usage TAG` | Add a `<usage name="TAG"/>`. Repeatable. Replaces all existing usages on the entry. |
 | `--value TAG` | Add a `<value name="TAG"/>`. Repeatable. Replaces all existing values on the entry. |

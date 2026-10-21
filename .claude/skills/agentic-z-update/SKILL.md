@@ -1,6 +1,7 @@
 ---
 name: agentic-z-update
 description: "Pulls the latest Agentic-Z template files (agents, skills, docs) from upstream into this clone and commits them, leaving workspace/ mod work untouched. Use when the user asks to update Agentic-Z or pull template improvements, or when the SessionStart nudge says upstream is ahead."
+argument-hint: "[--check [--quiet]] [--yes] [--per-file] [--force] [--dry-run] [--no-sync]"
 ---
 
 <!-- skill-dir-note -->
@@ -12,7 +13,7 @@ Pull template improvements (agents, skills, conventions, docs) from upstream `Da
 
 1. **`workspace/` mod work is never touched.** All changes are limited to template-managed paths.
 2. **Local customizations to template files are not overwritten silently.** A three-way per-file classification (local file, file at the baseline, upstream file) detects when both the clone and upstream edited the same file and leaves it alone unless the user picks "take" in `--per-file` mode. File contents are never merged: each file is either kept or replaced whole.
-3. **No two updates can apply at once.** A PID-based lock covers the apply phase (checkout, delete, commit, baseline write); previews and `--check` do not take it.
+3. **No two updates can apply at once.** A PID-based lock covers the first-run baseline write and the apply phase (checkout, delete, commit, baseline write); previews and `--check` do not take it. The lock file is created atomically, so two runs that start together cannot both get it. A lock left by a dead process is taken over.
 
 The first applying run in a clone records a baseline (the SHA of upstream `main` at that moment) and adds or overwrites nothing. A template file that is in the baseline but missing locally is treated as one you deleted on purpose (`locally-deleted`): it is left alone and offered for restore in `--per-file`. Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file. The comparison uses git blob ids, with the local file hashed through the clone's line-ending settings (`git hash-object --path`), so a CRLF checkout under `core.autocrlf=true` is not mistaken for a local edit. The script works from the repo root (`git rev-parse --show-toplevel`), so it can be started from any subfolder.
 
@@ -28,7 +29,7 @@ python "<skill-dir>\update.py" [--check] [--quiet] [--yes] [--per-file] [--force
 |---|---|
 | (default) | Preview drift, prompt y/N, apply safe changes (conflicts left alone) |
 | `--check` | Preview only and writes nothing; exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (`local-only-edit` and `locally-deleted` files do not count) |
-| `--quiet` | With `--check`: single-line output for hooks |
+| `--quiet` | With `--check`: single-line output for hooks, and always exits 0 so the hook shows the line |
 | `--yes` | Skip the confirmation prompt (CI / scripted use) |
 | `--per-file` | Walk each conflict and `locally-deleted` file interactively: keep / take / diff / skip |
 | `--force` | Override the dirty-tree check |
@@ -66,6 +67,12 @@ Template-managed paths only:
 .claude/agents/
 .claude/skills/
 .claude/mcp/
+.claude/settings.json
+.claude-plugin/
+.mcp.json
+hooks/
+mods/
+evals/
 docs/
 wiki/
 scripts/
@@ -104,7 +111,7 @@ output/                     # one-shot deliverables
 
 ## SessionStart hook
 
-A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead, if a newer prebuilt search index is available, or if no baseline has been recorded yet (run `/agentic-z-update` once to record it). Silent on no-change. Configured in `.claude/settings.json`.
+A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead, if a newer prebuilt search index is available, or if no baseline has been recorded yet (run `/agentic-z-update` once to record it). Silent on no-change. It always exits 0: Claude Code drops plain output from a hook that exits non-zero, so a failing exit code would hide the nudge. Configured in `.claude/settings.json`.
 
 To disable temporarily: comment out the `SessionStart` block in `.claude/settings.json`.
 

@@ -6,10 +6,11 @@ Usage:
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from state import PROJECT_DIR, active_mod
@@ -26,6 +27,34 @@ class Status:
     diag_running: bool
     voyage_key: bool
     search_index: bool
+    # requiredAddons entries of the active mod that vanilla (DZ_*) does not provide.
+    needs: list[str] = field(default_factory=list)
+
+
+def _test_servers(server_dir: Path) -> list[str]:
+    """Instances made by /dayz-add-server. The `<instance>-behavior` copies that
+    /dayz-gate behavior rebuilds on every run, folders without a serverDZ.cfg and
+    the shared `!` folders are not test servers."""
+    if not server_dir.is_dir():
+        return []
+    return sorted(
+        p.name for p in server_dir.iterdir()
+        if p.is_dir() and not p.name.startswith("!") and not p.name.endswith("-behavior")
+        and (p / "serverDZ.cfg").is_file()
+    )
+
+
+def _non_vanilla_addons(config: Path) -> list[str]:
+    """requiredAddons[] names in config.cpp that are not vanilla DZ_* patches."""
+    if not config.is_file():
+        return []
+    text = re.sub(r"//[^\n]*|/\*.*?\*/", "", config.read_text(encoding="utf-8", errors="replace"), flags=re.DOTALL)
+    names: list[str] = []
+    for block in re.findall(r"requiredAddons\s*\[\]\s*=\s*\{([^}]*)\}", text):
+        for name in re.findall(r'"([^"]+)"', block):
+            if not name.lower().startswith("dz_") and name not in names:
+                names.append(name)
+    return names
 
 
 def _voyage_key_set(env_file: Path) -> bool:
@@ -58,18 +87,15 @@ def gather_status(project: Path, mods_root: Path = Path("P:\\Mods")) -> Status:
         pbo = mods_root / f"@{mod}" / "Addons" / f"{mod}.pbo"
         if pbo.is_file():
             pbo_age = int((time.time() - pbo.stat().st_mtime) / 60)
-    server_dir = project / ".server"
-    servers = sorted(
-        p.name for p in server_dir.iterdir() if p.is_dir() and not p.name.startswith("!")
-    ) if server_dir.is_dir() else []
     return Status(
         project=project,
         mod=mod,
         pbo_age_minutes=pbo_age,
-        servers=servers,
+        servers=_test_servers(project / ".server"),
         diag_running=_diag_running(),
         voyage_key=_voyage_key_set(project / ".env"),
         search_index=SEARCH_INDEX.is_dir(),
+        needs=_non_vanilla_addons(project / "workspace" / mod / "config.cpp") if mod else [],
     )
 
 
@@ -82,14 +108,17 @@ def render_status(s: Status) -> str:
         search = "VOYAGE_API_KEY set, index not installed"
     else:
         search = "not set up"
-    return "\n".join([
+    lines = [
         f"/dayz-init: {s.mod or '(no active mod)'}",
         f"Project: {s.project}",
         f"PBO:     {'built ' + str(s.pbo_age_minutes) + 'm ago' if s.pbo_age_minutes is not None else 'not built yet'}",
         f"Servers: {', '.join(s.servers) if s.servers else 'none'}",
         f"Diag:    {'running' if s.diag_running else 'not running'}",
         f"Search:  {search}",
-    ])
+    ]
+    if s.needs:
+        lines.append(f"Needs:   {', '.join(s.needs)} (not vanilla; pass the @mods that provide them as --deps)")
+    return "\n".join(lines)
 
 
 def main() -> int:

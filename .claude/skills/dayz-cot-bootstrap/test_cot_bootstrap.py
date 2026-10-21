@@ -166,6 +166,7 @@ def _patch_main(monkeypatch, tmp_path, triggered, edit_ok=True):
     monkeypatch.setattr(cot, "stop_session", lambda procs: None)
     monkeypatch.setattr(cot.time, "sleep", lambda s: None)
     monkeypatch.setattr(cot, "edit_permissions", lambda p, t: edit_ok)
+    monkeypatch.setattr(cot, "wait_for_perms_files", lambda p, t: None)
     monkeypatch.setattr(cot.sys, "argv", ["bootstrap.py", "MyMod"])
     return launches
 
@@ -276,3 +277,39 @@ def test_launch_pair_spawns_server_after_free_port_check(monkeypatch, tmp_path):
         tmp_path / "Profiles", tmp_path / "m", tmp_path / "logs", {}, "Pass 1",
     )
     assert order == ["check", "spawn", "spawn"] and len(procs) == 2
+
+
+def test_perms_file_written_after_the_json_is_waited_for_before_stop(monkeypatch, tmp_path):
+    """COT writes Permissions/<id>.txt a little after the JSON; the wait must run while the server is up."""
+    profile = tmp_path / "Profiles"
+    fw = profile / "PermissionsFramework"
+    (fw / "Players").mkdir(parents=True)
+    (fw / "Permissions").mkdir()
+    player = fw / "Players" / "abc.json"
+    player.write_text(json.dumps({"Roles": []}), encoding="utf-8")
+    perms = fw / "Permissions" / "abc.txt"
+    real_edit, real_wait = cot.edit_permissions, cot.wait_for_perms_files
+    launches = _patch_main(monkeypatch, tmp_path, [player])
+    monkeypatch.setattr(cot, "edit_permissions", real_edit)
+    monkeypatch.setattr(cot, "wait_for_perms_files", real_wait)
+    events = []
+    server_up = {"running": True}
+
+    def fake_sleep(s):
+        # The running server writes the perms file on the second poll.
+        if server_up["running"] and len(events) >= 1 and not perms.exists():
+            perms.write_text("A 0\n", encoding="utf-8")
+        events.append("sleep")
+
+    def fake_stop(procs):
+        events.append("stop")
+        server_up["running"] = False
+
+    monkeypatch.setattr(cot.time, "sleep", fake_sleep)
+    monkeypatch.setattr(cot, "stop_session", fake_stop)
+    assert cot.main() == 0
+    assert launches == ["Pass 1", "Pass 2"]
+    assert "stop" in events and events.index("stop") > 0  # waited before the stop
+    assert perms.read_text(encoding="utf-8") == "A 2\n"
+    assert "admin" in json.loads(player.read_text(encoding="utf-8"))["Roles"]
+

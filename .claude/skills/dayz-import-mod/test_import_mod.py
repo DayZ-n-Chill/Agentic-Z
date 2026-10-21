@@ -328,3 +328,29 @@ def test_clone_repo_runs_git_and_failed_clone_leaves_nothing(tmp_path):
         imp.clone_repo(imp.GitSource(str(tmp_path / "missing"), "MyMod", None), target)
     assert "git clone failed" in str(exc.value.code)
     assert not target.exists()
+
+
+# --- finish: an existing $PBOPREFIX$ must be the mod name ----------------------------
+
+def _finish(tmp_path, prefix):
+    import argparse
+    (tmp_path / "config.cpp").write_text("class CfgPatches {};", encoding="utf-8")
+    (tmp_path / "$PBOPREFIX$").write_text(prefix, encoding="utf-8")
+    (tmp_path / "workbench").mkdir()
+    (tmp_path / "workbench" / "dayz.gproj").write_text("x", encoding="utf-8")
+    args = argparse.Namespace(scaffold=False, no_scaffold=True, author=None)
+    return imp.finish(tmp_path, tmp_path, "MyMod", [], args, "Remove: /dayz-clean-workspace --mod MyMod")
+
+
+def test_finish_warns_when_prefix_is_not_the_mod_name(tmp_path, capsys):
+    assert _finish(tmp_path, "Author\\MyMod\n") == 0
+    out = capsys.readouterr().out
+    assert "$PBOPREFIX$ is 'Author\\\\MyMod', not 'MyMod', so /dayz-build-pbo will refuse it." in out
+    assert "Build: set $PBOPREFIX$ to MyMod, then /dayz-build-pbo MyMod" in out
+
+
+def test_finish_accepts_prefix_equal_to_the_mod_name(tmp_path, capsys):
+    assert _finish(tmp_path, "﻿MyMod\r\n") == 0
+    out = capsys.readouterr().out
+    assert "will refuse" not in out
+    assert "  - Build: /dayz-build-pbo MyMod" in out
