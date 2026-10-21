@@ -98,7 +98,13 @@
       "route": "dayz-server-admin",
       "confidence": 0.9,
       "absorbs": true,
-      "patterns": ["\\btypes\\.xml\\b", "\\bspawn(?:s|ing|ed)?\\b", "\\bloot\\b", "\\bcfgeconomycore\\b", "\\bcfggameplay\\b", "\\binit\\.c\\b", "\\bserverdz\\.cfg\\b", "\\bnominal\\b"]
+      "patterns": ["\\btypes\\.xml\\b", "\\bloot\\b", "\\bcfgeconomycore\\b", "\\bcfggameplay\\b", "\\binit\\.c\\b", "\\bserverdz\\.cfg\\b", "\\bnominal\\b"]
+    },
+    {
+      "route": "dayz-server-admin",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bspawns?\\s+(?:rarely|more|less|too\\s+(?:much|often)|rates?|chance)\\b"]
     },
     {
       "route": "dayz-config-specialist",
@@ -114,6 +120,18 @@
       "route": "dayz-object-builder",
       "confidence": 0.85,
       "patterns": ["\\.p3d\\b", "\\bobject\\s+builder\\b", "\\blods?\\b"]
+    },
+    {
+      "route": "dayz-persistence-specialist",
+      "confidence": 0.85,
+      "absorbs": true,
+      "patterns": ["\\bpersist(?:s|ed|ence|ent)?\\b", "\\bonstore(?:save|load)\\b", "\\b(?:after|across|survives?|through)\\s+(?:a\\s+|the\\s+)?(?:server\\s+)?restarts?\\b", "\\bsave\\s+(?:data|versions?|format)\\b", "\\bdata\\s+(?:loss|audit)\\b"]
+    },
+    {
+      "route": "dayz-ai-specialist",
+      "confidence": 0.85,
+      "absorbs": true,
+      "patterns": ["\\binfected\\b", "\\bzombies?\\b", "\\bguards?\\b", "\\bpatrols?\\b", "\\bnpcs?\\b", "\\bai\\s+(?:patrols?|guards?|behaviou?r|bots?)\\b", "\\b(?:animal|wildlife)\\s+(?:ai|behaviou?r)\\b"]
     },
     {
       "route": "dayz-script-specialist",
@@ -147,16 +165,6 @@
       "confidence": 0.85,
       "absorbs": true,
       "patterns": ["\\b(?:review|audit|sanity[- ]check)\\b"]
-    },
-    {
-      "route": "dayz-persistence-specialist",
-      "confidence": 0.85,
-      "patterns": ["\\bpersist(?:s|ed|ence|ent)?\\b", "\\bonstore(?:save|load)\\b", "\\b(?:after|across|survives?|through)\\s+(?:a\\s+|the\\s+)?(?:server\\s+)?restarts?\\b", "\\bsave\\s+(?:data|versions?|format)\\b", "\\bdata\\s+(?:loss|audit)\\b"]
-    },
-    {
-      "route": "dayz-ai-specialist",
-      "confidence": 0.85,
-      "patterns": ["\\binfected\\b", "\\bzombies?\\b", "\\bguards?\\b", "\\bpatrols?\\b", "\\bnpcs?\\b", "\\bai\\s+(?:patrols?|guards?|behaviou?r|bots?)\\b", "\\b(?:animal|wildlife)\\s+(?:ai|behaviou?r)\\b"]
     },
     {
       "route": "dayz-vehicle-specialist",

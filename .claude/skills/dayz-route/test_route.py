@@ -58,6 +58,9 @@ def decide(text, env=NO_KEY):
         ("zombies spawn too much in types.xml", "dayz-server-admin", None),
         ("launch a test with my car", "dayz-launch-test", None),
         ("write a modded class for my rifle", "dayz-script-specialist", None),
+        # Saved data and AI belong to their own specialists even when the request says modded class.
+        ("write a modded class so my safe keeps its code after a restart", "dayz-persistence-specialist", None),
+        ("write a modded class so my zombies patrol the town", "dayz-ai-specialist", None),
         ("review my vehicle mod", "dayz-mod-reviewer", None),
     ],
 )
@@ -100,6 +103,14 @@ def test_guide_samples_reach_their_specialist(text, expected):
     assert d["route"] == expected
     assert d["kind"] == "agent"
     assert d["confidence"] >= CFG["threshold"]
+
+
+@pytest.mark.parametrize("text", ["add guards that spawn at my base and patrol it",
+                                  "add a helicopter that spawns at the airfield"])
+def test_spawn_alone_is_not_server_admin(text):
+    d = decide(text)
+    assert d["route"] != "dayz-server-admin"
+    assert d["route"] in {"dayz-ai-specialist", "dayz-vehicle-specialist", None}
 
 
 def test_orchestrator_is_a_team():
