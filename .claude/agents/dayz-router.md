@@ -20,6 +20,7 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-new-mod` (skill): scaffold an empty mod folder.
 - `dayz-recipe` (skill): start a mod plan from a recipe, a new weapon, new vest or new craftable. Put the recipe in `args.recipe` when it is named. A crafting recipe inside a mod is script work, not this.
 - `dayz-layout-preview` (skill): draw a `.layout` as PNG previews at several screen sizes, to see how it holds up at other resolutions.
+- `dayz-ask` (skill): answer a question about how vanilla DayZ does something or where it lives, with `path:line` citations. Changing anything goes to the matching specialist instead.
 - `dayz-server-admin` (agent): types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json.
 - `dayz-config-specialist` (agent): config.cpp, CfgPatches, CfgVehicles, hidden selections.
 - `dayz-script-specialist` (agent): Enforce Script code, modded classes, RPCs.
