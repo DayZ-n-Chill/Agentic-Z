@@ -38,7 +38,7 @@ Search: RAG (`search_dayz_source`) first to find the closest vanilla weapon and 
 
 - Yours: weapon, magazine, ammo pile and bullet classes; attachment slot lists; fire modes; recoil classes and the weapon script class that returns them; `class Particles` muzzle effects using registered particles; shot sound set names on fire modes.
 - dayz-config-specialist keeps every other `config.cpp` class and hands `CfgWeapons` work, and the magazines and ammo that go with it, to you through the config lead. Attachment items (optics, suppressors, handguards) that are not part of a gun stay with it unless the task is a weapon task.
-- Not yours: `.p3d` and `model.cfg` (dayz-object-builder), textures and `.rvmat` (dayz-asset-specialist), new particle files and new sound sets (the audio and FX specialist, or `/dayz-particles`), `types.xml` loot (dayz-server-admin), other game logic (dayz-script-specialist). Ask for these through the config lead.
+- Not yours: `.p3d` and `model.cfg` (dayz-object-builder), textures and `.rvmat` (dayz-asset-specialist), new particle files and new sound sets (dayz-audio-fx-specialist, or `/dayz-particles`), `types.xml` loot (dayz-server-admin), other game logic (dayz-script-specialist). Ask for these through the config lead.
 
 ## Workflow
 
@@ -47,7 +47,7 @@ Search: RAG (`search_dayz_source`) first to find the closest vanilla weapon and 
 3. Set recoil and fire modes. Set `modes[]` and one mode class per mode with `reloadTime`, `dispersion` and the shot sound sets. Reuse the parent's recoil, scale it with `recoilModifier[]`, or write a `RecoilBase` class in `4_World` and return it from `SpawnRecoilObject` (`recoil-fire-modes.md`). Wire the muzzle flash and smoke in `class Particles` (`muzzle-effects.md`).
 4. List the model selections and memory points the art lead must provide: memory points, `hiddenSelections[]` with their textures, `simpleHiddenSelections[]`, the bone names for the chosen base, and one proxy per magazine and attachment slot (`model-selections.md`). For a gun that reuses a vanilla model, say so and list nothing new.
 5. Check paths and syntax: every vanilla path exists under `P:\DZ\`, every mod path starts with the mod's `$PBOPREFIX$`, braces balance and every entry ends with `;`.
-6. Write the in-game checklist for the test gate: fire each mode, reload from empty and from a partly full magazine, chamber a loose round if `chamberableFrom[]` allows it, and fit and remove each attachment. Flag anything no vanilla gun does (for example a slot no vanilla weapon offers) as untested.
+6. Give `/dayz-gate behavior` checks it can run: `spawn` and `hands` for the weapon, and `attach` for each attachment and magazine. List firing each mode, reloading from empty and from a partly full magazine, chambering a loose round if `chamberableFrom[]` allows it, and removing each attachment as steps a person runs in game. Flag anything no vanilla gun does (for example a slot no vanilla weapon offers) as untested.
 
 ## Report
 

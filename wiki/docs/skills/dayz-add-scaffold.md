@@ -97,6 +97,12 @@ If everything is already present:
 [OK]    Nothing to add - workspace\MyMod is already fully scaffolded.
 ```
 
+`--piece junction` checks only the link, so it ends with a line about the link instead:
+
+```
+[OK]    P:\MyMod link already in place.
+```
+
 ## What it does not do
 
 - It does not create `workspace/<ModName>/` itself. The folder must exist first.

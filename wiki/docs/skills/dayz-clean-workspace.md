@@ -30,7 +30,7 @@ python "<skill-dir>\clean.py" [--mod <Name>] [--include-server] [--yes] [--dry-r
 | Argument | Required? | Notes |
 |---|---|---|
 | `--mod <Name>` | no | Target one mod. Default: every managed mod under `workspace/`. |
-| `--include-server` | no | Also remove `.server/` at the project root (all instances: missions, configs, profiles, client logs). Refuses if legacy `workspace/_server/` still exists. |
+| `--include-server` | no | Also remove `.server/` at the project root (all instances: missions, configs, profiles, client logs, and `.server/!Health/` with every `/dayz-health` result and page). Refuses if legacy `workspace/_server/` still exists. |
 | `--yes` | no | Skip the confirmation prompt. Required when stdin isn't a TTY. |
 | `--dry-run` | no | Print the plan and exit 0 without removing anything. |
 
@@ -50,11 +50,12 @@ Removal runs in this order, so the junction is broken before its target goes:
 |---|---|
 | `P:\<ModName>\` junction | It is a link pointing at `workspace/<ModName>/`. A link pointing elsewhere, or a real folder, is left alone. |
 | `P:\Mods\@<ModName>\` deployed dir | It contains `.agentic-z-scaffold` with content `<ModName>`. `/dayz-build-pbo` and `/dayz-deploy-pbo` write this marker on every successful run. Without it the dir is skipped with a `[WARN]` and a manual `rmdir` hint. |
+| `.server/!Health/<ModName>/` | It exists. These are the mod's `/dayz-health` gate results and page, so `/dayz-health --all` stops listing the removed mod. |
 | `workspace/<ModName>/` | Always, for a managed mod. Shown as `workspace` (folder removed with its contents) or `workspace-link` (link removed, source kept). |
 
 A deployed dir from before the marker existed is skipped. Rebuild with `/dayz-build-pbo <ModName>` to write the marker, or remove it yourself with `cmd /c rmdir /s /q P:\Mods\@<ModName>` once you have confirmed it is yours.
 
-With `--include-server`, `.server/` is removed too. Leave it out to keep server staging, so the next `/dayz-launch-test` doesn't need `/dayz-add-server` again.
+With `--include-server`, `.server/` is removed too, including `.server/!Health/` (the gate history of every mod, not only the removed ones). Leave it out to keep server staging, so the next `/dayz-launch-test` doesn't need `/dayz-add-server` again.
 
 ## What it will not touch
 
@@ -76,9 +77,10 @@ With `--include-server`, `.server/` is removed too. Leave it out to keep server 
 
 ```
 [OK]    Project: C:\...\MyProject
-Plan: 4 item(s) to remove
+Plan: 5 item(s) to remove
   (junction) P:\NativeMod
   (deployed) P:\Mods\@NativeMod
+  (health) .server\!Health\NativeMod
   (workspace) workspace\NativeMod
   (workspace-link) workspace\ImportedMod
 
@@ -86,10 +88,11 @@ Proceed? [y/N]: y
 
 [OK]    removed (junction): P:\NativeMod
 [OK]    removed (deployed): P:\Mods\@NativeMod
+[OK]    removed (health): .server\!Health\NativeMod
 [OK]    removed (workspace): workspace\NativeMod
 [OK]    removed (workspace-link): workspace\ImportedMod
 
-[OK]    Cleaned 4 item(s).
+[OK]    Cleaned 5 item(s).
 ```
 
 `--dry-run` prints the plan, then `(--dry-run) nothing removed.`
