@@ -61,6 +61,16 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/file_paths.md` | `$profile` and `$saves` paths, file and JSON helpers. |
 | `_shared/enscript/references/gui_layout.md` | `.layout` format and every widget type. |
 
+### Audio and effects pack (`_shared/audio-fx`)
+
+Front index: `_shared/audio-fx/README.md`. Used by `dayz-audio-fx-specialist` and any lead that needs a sound or an effect.
+
+| File | Purpose |
+|---|---|
+| `_shared/audio-fx/sound-config.md` | `CfgSoundShaders` and `CfgSoundSets`: samples, volume, range, curves, looping, `CfgPatches`. |
+| `_shared/audio-fx/sound-script.md` | Playing, looping, fading and stopping sound sets from script; cleanup; server triggers. |
+| `_shared/audio-fx/effects-wiring.md` | Sound plus particle on one device, and config hooks for weapon and item sounds and particles. |
+
 ### Skill packs (`references/`)
 
 | Folder or file | Purpose |
