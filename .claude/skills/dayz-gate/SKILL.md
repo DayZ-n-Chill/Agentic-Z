@@ -1,6 +1,6 @@
 ---
 name: dayz-gate
-description: "Runs the orchestrator's build, in-game and behavior gates as scripts instead of agent turns: build packs the mod and checks AddonBuilder output; ingame runs a test session and checks the new log lines; behavior runs a test mission that spawns and uses each new item and gives PASS or FAIL per check; visual captures the game window at set points and compares each screenshot with its baseline. Failures are triaged against known errors. Use when gating a finished wave."
+description: "Runs the orchestrator's build, in-game and behavior gates as scripts instead of agent turns: build packs the mod and checks AddonBuilder output; ingame runs a test session and checks the new log lines; behavior runs a test mission that spawns and uses each new item and gives PASS or FAIL per check; visual captures the game window at set points and compares each screenshot with its baseline. Failures are triaged against known errors, and every result is stored for /dayz-health. Use when gating a finished wave."
 argument-hint: "build <ModName> [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--prepare-only | --logs FILE ...] [--json] | visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--threshold R] [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--json]"
 ---
 
@@ -68,6 +68,8 @@ The first line is the verdict: `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit
 ```
 
 Each failure carries `triage`: `known` (with `id`, `meaning`, `fix` and `owner_agent`) or `new` (send it to `dayz-mod-debugger`). Owner `user` means the user has to act (mount `P:`, install tools); owner `dayz-orchestrator` means a skill run fixes it. On a FAIL, `source_findings` lists known defects found in the mod's source (a `modded class` with an extends clause, a `config.cpp` without `CfgPatches`); they don't change the verdict. Warnings and noise are deduplicated and capped at 30 entries each.
+
+Every `PASS` or `FAIL` is stored for `/dayz-health` under `.server/!Health/<ModName>/results/` (a `build` run stores its lint step too), and the mod's health page is rebuilt. The report then gains `"health"`, the path of the page's Markdown file. If storing fails, the report gains `"health_error"` instead and the verdict stays the same. An `ERROR` and `--prepare-only` store nothing.
 
 ## What `build` does
 
@@ -180,6 +182,17 @@ The first run of a shot is always `NEW`. Look at its capture, accept it, and lat
 ```cmd
 python "<skill-dir>\triage.py" <log-file> [...] [--mod <ModName>] [--mod-dir workspace\<ModName>] [--json]
 ```
+
+### Pasted logs
+
+When the user pastes a crash log or RPT instead of naming a file, triage the pasted text. Pipe it on stdin, or pass it with `--text`:
+
+```cmd
+python "<skill-dir>\triage.py" --stdin --json < pasted.txt
+python "<skill-dir>\triage.py" --text "<pasted log>" --json
+```
+
+Results look the same as for a file, with `file` set to `<pasted>` and `line` counted within the paste. Give the user the cause and fix of each `known` result and hand it to its `owner_agent`. Dispatch `dayz-mod-debugger` with only the `new` lines and the log around them. The paste-in hook (`hooks/paste_router.py`) already runs this triage on every prompt that holds DayZ error lines and adds the result to the conversation, so for a pasted log you usually only act on its list.
 
 After a reviewer has diagnosed a `new` result, record it so the next run sees it as known:
 

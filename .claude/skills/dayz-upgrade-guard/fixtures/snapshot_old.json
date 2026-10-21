@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "created": "2026-10-01T12:00:00",
+  "label": "before",
+  "p_root": "P:\\",
+  "script": {
+    "Clothing": {"parent": "Clothing_Base", "file": "scripts/4_world/entities/itembase/clothing_base.c", "line": 4, "methods": {"CanPutInCargo": "bool CanPutInCargo(EntityAI parent)"}},
+    "Clothing_Base": {"parent": "ItemBase", "file": "scripts/4_world/entities/core/inherited/inventoryitem.c", "line": 977, "methods": {}},
+    "EntityAI": {"parent": "Managed", "file": "scripts/3_game/entities/entityai.c", "line": 1, "methods": {"EEInit": "void EEInit()", "EEItemAttached": "void EEItemAttached(EntityAI item, string slot_name)"}},
+    "Hologram": {"parent": "Managed", "file": "scripts/4_world/classes/hologram.c", "line": 1, "methods": {}},
+    "InventoryItem": {"parent": "EntityAI", "file": "scripts/4_world/entities/core/inherited/inventoryitem.c", "line": 1, "methods": {}},
+    "ItemBase": {"parent": "InventoryItem", "file": "scripts/4_world/entities/itembase.c", "line": 1, "methods": {"GetQuickBarBonus": "int GetQuickBarBonus()", "OnWasAttached": "void OnWasAttached(EntityAI parent, int slot_id)", "SetActions": "void SetActions()"}},
+    "Managed": {"parent": null, "file": "scripts/1_core/proto/enscript.c", "line": 1, "methods": {}},
+    "PlayerBase": {"parent": "EntityAI", "file": "scripts/4_world/entities/manbase/playerbase.c", "line": 1, "methods": {"OnConnect": "void OnConnect()"}}
+  },
+  "config": {
+    "CfgVehicles/Bandana_ColorBase": {"parent": "Clothing", "file": "DZ/characters/headgear/config.cpp", "line": 900, "members": ["displayName", "model"]},
+    "CfgVehicles/Clothing": {"parent": "Clothing_Base", "file": "DZ/characters/config.cpp", "line": 20, "members": ["inventorySlot", "itemInfo", "itemSize"]},
+    "CfgVehicles/Clothing_Base": {"parent": "Inventory_Base", "file": "DZ/characters/config.cpp", "line": 10, "members": []},
+    "CfgVehicles/Inventory_Base": {"parent": null, "file": "DZ/data/config.cpp", "line": 1, "members": ["scope"]},
+    "CfgVehicles/PlateCarrierVest": {"parent": "Clothing", "file": "DZ/characters/vests/config.cpp", "line": 300, "members": ["displayName", "hiddenSelections", "itemSize", "model"]}
+  },
+  "skipped": []
+}

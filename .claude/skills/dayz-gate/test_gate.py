@@ -200,6 +200,42 @@ def test_build_runs_lint_first_and_stops_on_errors(project, capsys):
     assert [w["rule"] for w in data["warnings"]] == ["p-not-mounted"]
 
 
+def test_build_stores_lint_and_build_results_for_health(project, capsys):
+    fake = FakeRuntime({"build.py": (0, BUILD_OK)})
+    rc, _, data = run_main(["build", "MyMod", "--json"], fake, capsys)
+    assert rc == 0
+    folder = project / ".server" / "!Health" / "MyMod"
+    assert data["health"] == str(Path(".server") / "!Health" / "MyMod" / "health.md")
+    kinds = sorted(json.loads(p.read_text(encoding="utf-8"))["kind"] for p in (folder / "results").glob("*.json"))
+    assert kinds == ["build", "lint"]
+    assert "* Last build: PASS" in (folder / "health.md").read_text(encoding="utf-8")
+    assert (folder / "health.html").is_file()
+
+
+def test_failed_lint_stop_is_stored_as_a_failed_build(project, capsys):
+    cfg = project / "workspace" / "MyMod" / "config.cpp"
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace("\t\tunits[] = {};\n", ""), encoding="utf-8")
+    run_main(["build", "MyMod", "--json"], FakeRuntime(), capsys)
+    data = gate.health.health(project, "MyMod")
+    assert data["last_build"]["verdict"] == "FAIL"
+    assert data["latest"]["lint"]["verdict"] == "FAIL"
+    assert any("cfgpatches" in f["text"].lower() for f in data["open_findings"])
+
+
+def test_health_store_failure_keeps_the_verdict(project, capsys, monkeypatch):
+    def broken(*_):
+        raise OSError("disk full")
+    monkeypatch.setattr(gate.health, "record_gate", broken)
+    rc, first, data = run_main(["build", "MyMod", "--json"], FakeRuntime({"build.py": (0, BUILD_OK)}), capsys)
+    assert (rc, first) == (0, "PASS")
+    assert data["health_error"] == "disk full" and "health" not in data
+
+
+def test_gate_error_is_not_stored(project, capsys):
+    run_main(["build", "NoSuchMod", "--json"], FakeRuntime(), capsys)
+    assert not (project / ".server" / "!Health").exists()
+
+
 def test_build_lint_pass_is_reported_in_text(project, capsys):
     fake = FakeRuntime({"build.py": (0, BUILD_OK)})
     assert gate.main(["build", "MyMod"], rt=fake.runtime()) == 0
@@ -391,6 +427,14 @@ def test_ingame_pass_stops_session_and_reports_ready(project, capsys):
     assert fake.running == []
     launch_cmd = next(c for c in fake.calls if "launch.py" in " ".join(c))
     assert launch_cmd[2:] == ["MyMod", "--server", "chernarus", "--port", "2302"]
+
+
+def test_ingame_result_is_the_last_test_on_the_health_page(project, capsys):
+    fake = FakeRuntime({"launch.py": launch_ok()})
+    session(fake, project)
+    ingame(fake, capsys)
+    data = gate.health.health(project, "MyMod")
+    assert (data["last_test"]["kind"], data["last_test"]["verdict"]) == ("ingame", "PASS")
 
 
 def test_ingame_reads_only_lines_written_after_start(project, capsys):

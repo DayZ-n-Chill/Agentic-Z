@@ -96,6 +96,7 @@ class Node:
     def __init__(self, name: str, line: int):
         self.name = name
         self.line = line
+        self.parent: Optional[str] = None  # the class after ':', when there is one
         self.classes: list[Node] = []
         # lower name -> (name, line, is_array, values: list[(text, line)])
         self.props: dict[str, tuple[str, int, bool, list[tuple[str, int]]]] = {}
@@ -122,10 +123,13 @@ def parse_tree(toks: list) -> Node:
         elif tok.kind == "ident" and tok.text == "class" and i + 1 < n:
             name = toks[i + 1]
             j = i + 2
+            parent = None
             if punct(j, ":"):
+                parent = toks[j + 1].text if j + 1 < n else None
                 j += 2
             if punct(j, "{"):
                 node = Node(name.text, name.line)
+                node.parent = parent
                 stack[-1].classes.append(node)
                 stack.append(node)
             i = j + 1

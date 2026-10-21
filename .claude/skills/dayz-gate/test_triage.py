@@ -272,3 +272,49 @@ def test_cli_text_output(tmp_path, monkeypatch, capsys):
     assert "known missing-model -> dayz-config-specialist" in out
     assert "workspace/MyMod/" in out
     assert "new " in out
+
+
+# --- pasted text -------------------------------------------------------------------
+
+PASTE = (
+    "Here is my RPT:\n"
+    "10:01:02.123 SCRIPT    (E): NULL pointer to instance\n"
+    "10:01:03.456 SCRIPT    (E): NULL pointer to instance\n"
+    "10:01:04 Unhandled exception\n"
+    "just some chat\n"
+)
+
+
+def test_triage_text_matches_file_triage(tmp_path):
+    log = tmp_path / "x.log"
+    log.write_text(PASTE, encoding="utf-8")
+    from_text = triage.triage_text(PASTE, KNOWN)
+    from_file = triage.triage_files([log], KNOWN)
+    assert [r["file"] for r in from_text] == [triage.PASTED, triage.PASTED]
+    strip = lambda rows: [{k: v for k, v in r.items() if k != "file"} for r in rows]  # noqa: E731
+    assert strip(from_text) == strip(from_file)
+    assert [r["status"] for r in from_text] == ["known", "new"]
+    assert from_text[0]["count"] == 2
+
+
+def test_cli_reads_pasted_log_from_stdin(monkeypatch, capsys):
+    import io
+    monkeypatch.setattr(triage, "cached_project_dir", lambda: None)
+    monkeypatch.setattr("sys.stdin", io.StringIO(PASTE))
+    assert triage.main(["--stdin", "--json"]) == 0
+    lines = json.loads(capsys.readouterr().out)["lines"]
+    assert [(r["status"], r["file"]) for r in lines] == [("known", "<pasted>"), ("new", "<pasted>")]
+
+
+def test_cli_reads_pasted_log_from_text(monkeypatch, capsys):
+    monkeypatch.setattr(triage, "cached_project_dir", lambda: None)
+    assert triage.main(["--text", PASTE]) == 0
+    out = capsys.readouterr().out
+    assert "known null-pointer" in out and "new   <pasted>:4" in out
+
+
+def test_cli_without_input_is_a_usage_error(monkeypatch):
+    monkeypatch.setattr(triage, "cached_project_dir", lambda: None)
+    with pytest.raises(SystemExit) as exc:
+        triage.main([])
+    assert exc.value.code == 2

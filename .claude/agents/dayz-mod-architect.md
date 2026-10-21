@@ -13,6 +13,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 ## How you plan
 
 1. Read `workspace/<ModName>/spec.md` first if it exists. `/dayz-init` writes it from the user's own words: the goal, the items, the behaviors and the done checks. Plan to it, and list anything the request adds or changes as an open question. Then read the request and the rest of `workspace/<ModName>/`.
+   If `output/<ModName>-plan/plan.md` starts with `<!-- dayz-recipe draft -->`, `/dayz-recipe` wrote it. Start from it: keep its vanilla classes, which it checked on `P:\`, unless the request needs others, and verify any class you change. Answer its open questions from the request or the spec, or pass them to the user. Then rewrite `plan.md` and `behavior-checks.json` as the final plan, without the draft line.
 2. Find the vanilla classes to build on under `P:\scripts\` and `P:\dz\`. Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 3. Decide the pieces: `CfgPatches` dependencies, config classes, script files and which script layer (`3_Game`, `4_World`, `5_Mission`) each belongs in, models, textures, layouts, and server files such as `types.xml`.
 4. Split the work into tasks one worker can finish in one sitting. Give each task a team (script, config, art, UI, server, release), the files it touches, and a done check that a gatekeeper can verify.

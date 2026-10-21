@@ -31,7 +31,8 @@ def load_rules(path: Path = RULES) -> dict:
 def match_rules(request: str, cfg: dict) -> Optional[dict]:
     """Best rule match, or None. Matches for several different routes usually mean a
     multi-step request, so the winner's confidence is cut by conflict_factor unless
-    its rule absorbs the others (a whole-mod request covers its parts)."""
+    its rule absorbs the others (a whole-mod request covers its parts). A rule's
+    fixed "args" (such as the triage mode) join the args its pattern captures."""
     hits: dict = {}  # route -> (confidence, args, absorbs), first rule in file order wins ties
     for rule in cfg["rules"]:
         for pattern in rule["patterns"]:
@@ -39,7 +40,7 @@ def match_rules(request: str, cfg: dict) -> Optional[dict]:
             if m:
                 prev = hits.get(rule["route"])
                 if prev is None or rule["confidence"] > prev[0]:
-                    args = {k: v for k, v in m.groupdict().items() if v}
+                    args = {**rule.get("args", {}), **{k: v for k, v in m.groupdict().items() if v}}
                     hits[rule["route"]] = (rule["confidence"], args, rule.get("absorbs", False))
                 break
     if not hits:
