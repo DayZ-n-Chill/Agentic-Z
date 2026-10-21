@@ -72,7 +72,7 @@ def _stub_lod(face_indices=TETRA_FACES, selections=None, properties=None):
             points={points[i]: 1 for i in pt_idx},
             faces={faces[i]: 1 for i in face_idx},
         )
-    return _Obj(points=points, faces=faces, selections=sels, properties=properties or {})
+    return _Obj(points=points, faces=faces, selections=sels, properties=properties or {}, mass=None)
 
 
 FULL = ([0, 1, 2, 3], [0, 1, 2, 3])
@@ -103,6 +103,13 @@ def test_component_coverage_partial_warns():
 def test_autocenter_property():
     assert audit.check_autocenter_prop(_stub_lod(properties={"autocenter": "0"})) == []
     assert _severities(audit.check_autocenter_prop(_stub_lod())) == ["WARNING"]
+
+
+def test_geometry_mass_reported():
+    lod = _stub_lod()
+    assert audit.check_geometry_mass(lod)[0][1].startswith("Geometry LOD has no mass")
+    lod.mass = 12.5
+    assert audit.check_geometry_mass(lod) == [("NOTE", "Geometry LOD mass: 12.500")]
 
 
 def test_watertight_closed_and_open():
@@ -190,7 +197,7 @@ def _asciiz(text: str) -> bytes:
     return text.encode("utf-8") + b"\0"
 
 
-def _write_lod(resolution, points, faces, selections=(), properties=()):
+def _write_lod(resolution, points, faces, selections=(), properties=(), masses=()):
     out = bytearray(b"P3DM")
     out += struct.pack("<LL", 28, 256)
     out += struct.pack("<LLL", len(points), 0, len(faces))
@@ -212,6 +219,9 @@ def _write_lod(resolution, points, faces, selections=(), properties=()):
     for key, value in properties:
         out += b"\x01" + _asciiz("#Property#") + struct.pack("<L", 128)
         out += struct.pack("64s64s", key.encode(), value.encode())
+    if masses:
+        out += b"" + _asciiz("#Mass#") + struct.pack("<L", 4 * len(masses))
+        out += b"".join(struct.pack("f", m) for m in masses)
     out += b"\x01" + _asciiz("#EndOfFile#") + struct.pack("<L", 0)
     out += struct.pack("f", resolution)
     return bytes(out)
@@ -238,6 +248,21 @@ def test_audit_p3d_end_to_end(tmp_path, capsys):
     assert "--- Geometry LOD[2] ---" in out
     assert "--- Visual LOD[0] ---" in out  # LOD0 kept when several Visual LODs exist
     assert "RESULT: 0 CRITICAL" in out or "ALL CHECKS PASSED" in out
+
+
+def test_audit_p3d_reports_geometry_mass(tmp_path, capsys):
+    pytest.importorskip("py3d")
+    geometry = _write_lod(
+        1e13, TETRA_POINTS, TETRA_FACES,
+        selections=[("Component01", FULL)], masses=[2.5, 2.5, 2.5, 2.5],
+    )
+    memory = _write_lod(1e15, [(0.0, 0.0, 0.0)], [])
+    visual = _write_lod(0.0, TETRA_POINTS, TETRA_FACES)
+    model = tmp_path / "heavy.p3d"
+    _write_mlod(model, [visual, geometry, memory])
+
+    audit.audit_p3d(str(model))
+    assert "NOTE: Geometry LOD mass: 10.000" in capsys.readouterr().out
 
 
 def test_audit_p3d_flags_lowercase_component(tmp_path, capsys):

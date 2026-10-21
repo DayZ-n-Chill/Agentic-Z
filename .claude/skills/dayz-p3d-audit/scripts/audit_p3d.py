@@ -133,6 +133,13 @@ def check_autocenter_prop(lod):
     return issues
 
 
+def check_geometry_mass(lod):
+    """Report the Geometry LOD mass (sum of point masses), the mass physics uses."""
+    if not lod.mass:
+        return [("NOTE", "Geometry LOD has no mass. Physics needs a mass on the Geometry LOD points.")]
+    return [("NOTE", f"Geometry LOD mass: {lod.mass:.3f}")]
+
+
 def check_watertight(lod):
     """Check mesh is closed."""
     issues = []
@@ -344,7 +351,8 @@ def audit_p3d(filepath):
         # see references/winding-methodology.md for the manual method.
         if lt == "Geometry":
             check_fns = [check_component_naming, check_component_coverage,
-                         check_autocenter_prop, check_watertight, check_degenerate_faces]
+                         check_autocenter_prop, check_geometry_mass, check_watertight,
+                         check_degenerate_faces]
         else:
             check_fns = [check_watertight, check_degenerate_faces]
         for check_fn in check_fns:
