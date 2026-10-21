@@ -75,6 +75,32 @@ Front index: `_shared/wearables/README.md`. Written for `dayz-wearables-speciali
 | `_shared/wearables/references/models-and-proxies.md` | Ground and worn models, body and gear proxies, head hiding, notes for Object Builder. |
 | `_shared/wearables/references/characters.md` | Survivor classes, body parts and heads, how a character reaches the list. |
 
+### Weapons pack (`_shared/weapons`)
+
+Front index: `_shared/weapons/README.md`. Written for `dayz-weapon-specialist`.
+
+| File | Purpose |
+|---|---|
+| `_shared/weapons/weapon-classes.md` | Config and script parents by mechanism, how the script class is found, hand animation profiles. |
+| `_shared/weapons/weapon-config.md` | `CfgWeapons` keys, `CfgPatches`, jamming, damage, changing a vanilla gun. |
+| `_shared/weapons/magazines-ammo.md` | Magazine, ammo pile and bullet classes and how they name each other. |
+| `_shared/weapons/attachments.md` | Slot names, optics, suppressors, and how attachments change recoil and sway. |
+| `_shared/weapons/recoil-fire-modes.md` | `RecoilBase` classes, recoil modifiers, fire mode classes and keys. |
+| `_shared/weapons/muzzle-effects.md` | Muzzle flash, smoke and overheating particles, shot sounds, AI hearing. |
+| `_shared/weapons/model-selections.md` | Memory points, selections and bones the weapon model must have. |
+
+### Persistence pack (`_shared/persistence`)
+
+Front index: `_shared/persistence/README.md`. Written for `dayz-persistence-specialist`.
+
+| Folder or file | Purpose |
+|---|---|
+| `_shared/persistence` | Saving data across server restarts. |
+| `_shared/persistence/save-load-contract.md` | The `OnStoreSave` and `OnStoreLoad` chain, what vanilla already saves, load hook order, persistent IDs. |
+| `_shared/persistence/versioning-and-migration.md` | Your own save version, adding and removing fields, modded vanilla class risks, data kept in files. |
+| `_shared/persistence/base-building.md` | Part ID bit masks, the `Construction` config, territory flag and lock saves. |
+| `_shared/persistence/data-audit.md` | The pre release data loss audit and its report format for the server lead. |
+
 ### Skill packs (`references/`)
 
 | Folder or file | Purpose |
