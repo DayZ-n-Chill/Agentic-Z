@@ -120,6 +120,16 @@ def test_empty_file_produces_no_chunks(tmp_path):
     assert index.chunk_whole_file(_write(tmp_path, "e.json", ""), "json") == []
 
 
+def test_file_hash_is_the_content_sha256(tmp_path):
+    """The server compares this hash to tell a changed file from a re-extracted one."""
+    import hashlib
+
+    p = tmp_path / "a.c"
+    p.write_bytes(b"class A {};")
+    assert index.file_sha256(p) == hashlib.sha256(b"class A {};").hexdigest()
+    assert index.file_sha256(tmp_path / "gone.c") is None
+
+
 # --------------- rvmat dedup ---------------
 
 

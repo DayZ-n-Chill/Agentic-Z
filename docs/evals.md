@@ -7,7 +7,7 @@ Answer tests check what an agent actually says. Each agent has a set of question
 | Path | What it holds |
 |---|---|
 | `evals/questions/<agent>.json` | The questions for one agent. The file name is the agent name. |
-| `evals/baseline.json` | The last accepted score for each agent. It is committed. |
+| `evals/baseline.json` | The last accepted score for each agent that has a question file. It is committed, and a test fails when a question file has no entry. |
 | `scripts/dev/run_evals.py` | The runner. |
 | `scripts/dev/evals.bat` | The no-token wrapper for the runner. |
 | `output/evals/` | Results files, one per run. Not committed. |
@@ -52,7 +52,7 @@ scripts\dev\evals.bat --agent dayz-config-specialist
 scripts\dev\evals.bat --baseline
 ```
 
-`--dry-run` checks every question file and lists the calls without asking anything. A real run sends each question to `claude -p --agent <name>` with read-only tools (`Read`, `Glob`, `Grep` and the search tools), so the agent can look things up on `P:\` but cannot edit. It writes the answers and scores to `output/evals/results-<time>.json` (or `--out`). A run costs tokens: one agent session per question.
+`--dry-run` checks every question file and lists the calls without asking anything. A real run sends each question to `claude -p --agent <name>` with read-only tools (`Read`, `Glob`, `Grep` and the search tools). `--allowedTools` only grants tools, so the runner also removes `Edit`, `Write`, `MultiEdit`, `NotebookEdit`, `Bash` and `PowerShell` with `--disallowedTools`. The agent can look things up on `P:\` but cannot edit or run commands. It writes the answers and scores to `output/evals/results-<time>.json` (or `--out`). A run costs tokens: one agent session per question.
 
 Exit codes: `0` passed, `1` a score went below the baseline, `2` a question file is invalid or an agent name is unknown.
 
@@ -60,11 +60,11 @@ Exit codes: `0` passed, `1` a score went below the baseline, `2` a question file
 
 1. Before the change, the baseline in `evals/baseline.json` holds each agent's last accepted score.
 2. Make the change, then run `scripts\dev\evals.bat --baseline` for the agents it touches (or all of them).
-3. If any agent scored lower, the run exits `1` and lists the agent. The change is not finished: fix it, or fix the question if the question was wrong, and run again.
+3. If any agent scored lower, or has no baseline entry yet, the run exits `1` and lists the agent. The change is not finished: fix it, or fix the question if the question was wrong, and run again.
 4. If every score held or went up, record the new scores with `--update-baseline` and commit `evals/baseline.json` with the change. `--update-baseline` refuses to write when a score went down, so the baseline can only rise.
 
 Answers vary a little from run to run. When a question fails once and passes on a rerun, look at the answer in the results file: if the agent was right but phrased it differently, widen the check; if it was wrong, treat it as a real failure.
 
 ## Adding questions
 
-Every agent should get its own question file, and every new specialist ships with one. Add five questions at a time, each checked on `P:\` first and recorded in `verified`. Run the new questions, then record the baseline. The unit tests in `scripts/dev/test_run_evals.py` check that every question file is valid; they never call `claude`.
+Every agent should get its own question file, and every new specialist ships with one. Add five questions at a time, each checked on `P:\` first and recorded in `verified`. Run the new questions, then record the baseline with `--agent <name> --update-baseline` and commit it with the question file. The unit tests in `scripts/dev/test_run_evals.py` check that every question file is valid; they never call `claude`.

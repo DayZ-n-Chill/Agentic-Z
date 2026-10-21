@@ -147,6 +147,29 @@ def test_github_link_goes_to_import(tmp_path):
     assert "/dayz-import-mod --source https://github.com/Owner/MyVest" in context
 
 
+def test_github_tree_link_keeps_the_branch(tmp_path):
+    context = _context(_run("import github.com/Owner/MyVest/tree/dev please", tmp_path))
+    assert "--source github.com/Owner/MyVest/tree/dev" in context
+
+
+@pytest.mark.parametrize("link", ["https://github.com/DayZ-n-Chill/Agentic-Z/pull/86",
+                                  "https://github.com/Owner/MyVest/issues/3",
+                                  "https://github.com/Owner/MyVest/blob/main/config.cpp",
+                                  "https://github.com/Owner/My.Vest/commit/abc123",
+                                  "https://github.com/Owner/MyVest/releases"])
+def test_github_link_that_is_not_a_repo_adds_no_context(tmp_path, link):
+    assert _context(_run(f"review {link}", tmp_path)) is None
+
+
+def test_one_failing_detector_keeps_the_others(monkeypatch):
+    def boom(*a):
+        raise RuntimeError("bug")
+
+    monkeypatch.setattr(pr, "types_context", boom)
+    context = pr.build_context(f"[Image #1]\n{RPT}\n<type name=\"X\"></type>", Path("."))
+    assert "DayZ log lines" in context and "screenshot" in context
+
+
 @pytest.mark.parametrize("link", ["https://steamcommunity.com/sharedfiles/filedetails/?id=1559212036",
                                   "steam://url/CommunityFilePage/1559212036"])
 def test_workshop_link_is_refused(tmp_path, link):

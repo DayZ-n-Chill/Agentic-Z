@@ -6,7 +6,7 @@ Semantic search over vanilla DayZ source, for any DayZ specialist agent. Three r
 - `get_dayz_file(path, line_start=None, line_end=None)`: fetch a file or line range for follow-up. Paths must be on `P:\`; files over 200 KB need a range. The check is lexical (the path is normalised, not resolved), so a junction or symlink under `P:\`, such as `P:\Mods` or a `P:\<ModName>` junction into `workspace/`, can still lead to a file stored elsewhere.
 - `list_indexed_sources()`: returns `{"source": <manifest or null>}`; null means the index hasn't been built.
 
-Agents use these after Grep, per the search rule in `.claude/skills/_shared/dayz-conventions.md`: Grep for known symbols, `search_dayz_source` for questions by meaning, then verify a hit with `get_dayz_file` or Read before relying on it. Each search hit has `path`, `file_type`, `parent_context`, `line_start`, `line_end`, `distance` (LanceDB L2² distance, lower is closer), `snippet` and `is_stale`. Hits carry `is_stale: true` (with `stale_reason` of `modified` or `missing`) when the file on `P:\` changed after the index was built.
+Agents use these after Grep, per the search rule in `.claude/skills/_shared/dayz-conventions.md`: Grep for known symbols, `search_dayz_source` for questions by meaning, then verify a hit with `get_dayz_file` or Read before relying on it. Each search hit has `path`, `file_type`, `parent_context`, `line_start`, `line_end`, `distance` (LanceDB L2² distance, lower is closer), `snippet` and `is_stale`. Hits carry `is_stale: true` (with `stale_reason` of `modified` or `missing`) when the file on `P:\` changed after the index was built. A file counts as modified only when its mtime is newer than the build and its content hash differs from the one in `file_hashes.json`, so re-extracting `P:\` or downloading the index does not flag unchanged files. An index built before `file_hashes.json` existed compares mtime alone, and then every hit on a re-extracted drive reads stale until the index is rebuilt.
 
 Installed as a plugin, the tools appear as `mcp__plugin_agentic-z_dayz-rag__<tool>`; from a clone via `.mcp.json`, as `mcp__dayz-rag__<tool>`.
 
@@ -29,7 +29,7 @@ Every tool reports failures the same way: it raises, and the MCP client receives
    pip install -r .claude\mcp\dayz-rag\requirements.txt
    ```
 3. Install the prebuilt index with `/dayz-search-download`, or build it against your own DayZ install with `/dayz-search-index`.
-4. Wiring: in a clone, `.mcp.json` at the repo root declares the server and `.claude/settings.local.json` opts in with `"enabledMcpjsonServers": ["dayz-rag"]`. The plugin registers it in `.claude-plugin/plugin.json`.
+4. Wiring: in a clone, `.mcp.json` at the repo root declares the server, and the committed `.claude/settings.json` already sets `"enabledMcpjsonServers": ["dayz-rag"]`, so a clone needs no local opt in. The plugin registers it in `.claude-plugin/plugin.json`.
 5. Restart Claude Code and check `/mcp` shows `dayz-rag` connected.
 
 If it fails to start, run it directly to see the error:
@@ -42,7 +42,7 @@ It waits silently for MCP traffic on stdin when healthy; a missing `mcp` package
 
 ## Rebuilding
 
-After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index.py --full`. The server sees the new `manifest.json` on its next search and reopens the index, so no restart is needed. Changing `VOYAGE_MODEL` also needs a `--full` rebuild. Token costs and the free-tier check are covered in `.claude/skills/dayz-search-index/reference/cost-and-free-tier.md`.
+After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index.py --full`. The server sees the new `manifest.json` on its next search and reopens the index, so no restart is needed. Changing `VOYAGE_MODEL` also needs a `--full` rebuild. Token costs and the free-tier check are covered in `.claude/skills/dayz-search-index/references/cost-and-free-tier.md`.
 
 ## Environment variables
 
@@ -65,7 +65,7 @@ After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index
 ## Tests
 
 ```cmd
-python -m pytest -q .claude\mcp\dayz-rag
+py -m pytest -q .claude\mcp\dayz-rag
 ```
 
 The tests stub LanceDB and Voyage, so they need no index, key or `P:\` drive.

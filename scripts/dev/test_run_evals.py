@@ -121,6 +121,17 @@ def test_ask_builds_read_only_claude_command(monkeypatch):
     assert seen["input"] == "Q?"
 
 
+def test_command_removes_editing_and_shell_tools():
+    """--allowedTools alone does not take an agent's own Edit and Write away."""
+    cmd = run_evals.build_command("claude", "dayz-config-specialist", model="opus")
+    denied = cmd[cmd.index("--disallowedTools") + 1].split(",")
+    for tool in ("Edit", "Write", "MultiEdit", "NotebookEdit", "Bash", "PowerShell"):
+        assert tool in denied
+    allowed = cmd[cmd.index("--allowedTools") + 1].split(",")
+    assert not set(allowed) & set(denied)
+    assert cmd[-2:] == ["--model", "opus"]
+
+
 def test_ask_raises_on_nonzero_exit(monkeypatch):
     monkeypatch.setattr(run_evals.shutil, "which", lambda name: "claude")
     monkeypatch.setattr(run_evals.subprocess, "run",
@@ -198,6 +209,24 @@ def test_compare_flags_only_drops():
     assert run_evals.compare(results, baseline) == ["a: 4/5 is below the baseline 5"]
 
 
+def test_baseline_check_fails_for_an_agent_with_no_baseline():
+    results = {"agents": {"a": {"score": 5, "total": 5}, "c": {"score": 1, "total": 1}}}
+    baseline = {"a": {"score": 5}}
+    assert run_evals.compare(results, baseline, require_baseline=True) == [
+        "c: no baseline entry; record one with --update-baseline"]
+
+
+def test_baseline_gate_fails_without_an_entry_but_update_records_it(monkeypatch, tmp_path):
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(run_evals, "BASELINE", baseline)
+    monkeypatch.setattr(run_evals, "ask", lambda agent, q, timeout, model=None: "")
+    args = ["--agent", "dayz-script-specialist", "--out", str(tmp_path / "r.json")]
+    assert run_evals.main(args + ["--baseline"]) == 1
+    assert run_evals.main(args + ["--update-baseline"]) == 0
+    assert run_evals.main(args + ["--baseline"]) == 0
+
+
 def test_baseline_gate_exit_codes(monkeypatch, tmp_path):
     baseline = tmp_path / "baseline.json"
     monkeypatch.setattr(run_evals, "BASELINE", baseline)
@@ -228,3 +257,9 @@ def test_shipped_baseline_covers_known_agents():
     for agent, entry in baseline.items():
         assert (run_evals.QUESTIONS_DIR / f"{agent}.json").exists()
         assert 0 <= entry["score"] <= entry["total"]
+
+
+def test_shipped_baseline_has_every_question_file():
+    baseline = json.loads(run_evals.BASELINE.read_text(encoding="utf-8"))
+    missing = [p.stem for p in sorted(run_evals.QUESTIONS_DIR.glob("*.json")) if p.stem not in baseline]
+    assert not missing, f"no baseline for {missing}; run scripts\\dev\\evals.bat --agent <name> --update-baseline"

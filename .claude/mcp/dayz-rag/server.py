@@ -24,6 +24,7 @@ Run (manually, for debugging):
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -80,6 +81,7 @@ _voyage_client = None
 _embed_model: Optional[str] = None
 _table = None
 _index_built_at: Optional[float] = None  # epoch seconds; set on first manifest load
+_file_hashes: Optional[dict] = None  # path -> sha256 the indexer recorded; set on first load
 # Raw rows per (query, top_k, file_type, build time), most recently used last.
 # Rows are cached before the distance filter and formatting, so a hit's
 # is_stale flag is still checked against the file on every answer.
@@ -117,13 +119,26 @@ def _sync_with_index() -> None:
     The indexer writes manifest.json last, so a changed manifest mtime means a
     new index. Checking it costs one stat per search.
     """
-    global _manifest_stamp, _table, _index_built_at
+    global _manifest_stamp, _table, _index_built_at, _file_hashes
     stamp = _manifest_mtime()
     if stamp != _manifest_stamp:
         _search_cache.clear()
         _table = None
         _index_built_at = None
+        _file_hashes = None
         _manifest_stamp = stamp
+
+
+def _get_file_hashes() -> dict:
+    """Return the {path: sha256} map the indexer wrote, or {} for an index built without one."""
+    global _file_hashes
+    if _file_hashes is None:
+        try:
+            data = json.loads((INDEX_ROOT / "file_hashes.json").read_text(encoding="utf-8"))
+            _file_hashes = data if isinstance(data, dict) else {}
+        except (json.JSONDecodeError, OSError, ValueError):
+            _file_hashes = {}
+    return _file_hashes
 
 
 def _get_client():
@@ -170,7 +185,8 @@ def _get_table():
         db_path = INDEX_ROOT / "lancedb"
         if not db_path.exists():
             raise RuntimeError(
-                f"No index at {INDEX_ROOT}. Run: python .claude/skills/dayz-search-index/index.py --full"
+                f"No index at {INDEX_ROOT}. Download the prebuilt one with /dayz-search-download, "
+                "or build it with: python .claude/skills/dayz-search-index/index.py --full"
             )
         import lancedb
 
@@ -182,10 +198,16 @@ def _get_table():
 
 
 def _check_stale(path_str: str) -> tuple[bool, Optional[str]]:
-    """For local file paths under P:\\, compare mtime to index build time.
+    """For local file paths under P:\\, check the file against the index.
+
+    A file newer than the index build counts as modified only when its content
+    hash also differs from the one the indexer recorded. Re-extracting P:\\ or
+    downloading the index gives every file a newer mtime, so mtime alone would
+    flag every hit. An index built without file_hashes.json falls back to
+    mtime alone.
 
     Returns (is_stale, reason). For paths not on P:\\, returns (False, None):
-    there's no local mtime to check against.
+    there's no local file to check against.
     """
     if not path_str or not path_str.startswith(("P:\\", "P:/")):
         return False, None
@@ -196,9 +218,16 @@ def _check_stale(path_str: str) -> tuple[bool, Optional[str]]:
         st = Path(path_str).stat()
     except OSError:
         return True, "missing"
-    if st.st_mtime > built:
-        return True, "modified"
-    return False, None
+    if st.st_mtime <= built:
+        return False, None
+    recorded = _get_file_hashes().get(path_str)
+    if recorded:
+        try:
+            if hashlib.sha256(Path(path_str).read_bytes()).hexdigest() == recorded:
+                return False, None
+        except OSError:
+            return True, "missing"
+    return True, "modified"
 
 
 def _format_hit(row: dict) -> dict:
@@ -381,10 +410,13 @@ def main() -> int:
                 if set).
 
         Returns: list of {path, file_type, parent_context, line_start, line_end,
-        distance, snippet, is_stale, stale_reason}. `is_stale=True` means the file's
-        mtime is newer than the index build (or the file is missing); the snippet
-        may not match what's currently on disk. Verify with get_dayz_file or Read
-        before grounding claims on a hit (see cite-then-verify rule in
+        distance, snippet, is_stale, stale_reason}. `is_stale=True` means the file
+        changed since the index was built (newer mtime and a different content
+        hash) or is missing; the snippet may not match what's currently on disk.
+        An index built without content hashes compares mtime only, so after
+        re-extracting P:\\ every hit reads stale until the index is rebuilt.
+        Verify with get_dayz_file or Read before grounding claims on a hit
+        (see cite-then-verify rule in
         .claude/skills/_shared/dayz-conventions.md). A repeated search is
         answered from a cache until the index is rebuilt.
         """

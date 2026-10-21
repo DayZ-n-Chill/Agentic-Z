@@ -200,7 +200,7 @@ Each run shows a toast when it finishes and keeps the result line (the first `[F
 
 **Where it finds Agentic-Z:** the project itself when it is a clone, otherwise the newest version in the plugin cache.
 
-**Limits:** Windows only, like the rest of Agentic-Z. Launch uses the default server instance; pick another with `/dayz-launch-test --server`. Checked with `claude plugin validate` and a test (`claude plugin test mods/agentic-z-panel`) that draws the panel on all four surfaces and presses Build. A second test presses the two check buttons, a third the logs, health and release pack buttons, and a fourth types a question into the ask field.
+**Limits:** Windows only, like the rest of Agentic-Z. Launch uses the default server instance; pick another with `/dayz-launch-test --server`. Checked with `claude plugin validate` and a test (`claude plugin test mods/agentic-z-panel`) that draws the panel on all four surfaces and presses Build. A second test presses the two check buttons, a third the logs, health and release pack buttons, and a fourth types a question into the ask field. The other tests press every remaining button, check that a second press while an action runs starts nothing, that the mod buttons only show a toast when there is no active mod, that the panel picks the newest plugin cache version by number, and that it says so when Agentic-Z is not found.
 
 **Version 0.2.0** adds three buttons: Check build (`c`, `/dayz-gate build`), Check in game (`g`, `/dayz-gate ingame`) and Deploy prebuilt PBOs (`d`, `/dayz-deploy-pbo`).
 

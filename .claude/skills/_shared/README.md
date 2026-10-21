@@ -6,7 +6,7 @@ This file is the one index of every pack. Paths are relative to `.claude/skills/
 
 ## Pack layout
 
-- **Where a pack lives.** A pack shared by several agents lives under `_shared/`, either as one file (`_shared/<topic>.md`) or as a folder (`_shared/<topic>/`). A pack that belongs to one skill or one specialist lives in that skill's own `references/` folder (`<skill>/references/`). Use the plural `references/`. One older folder, `dayz-search-index/reference`, predates this rule.
+- **Where a pack lives.** A pack shared by several agents lives under `_shared/`, either as one file (`_shared/<topic>.md`) or as a folder (`_shared/<topic>/`). A pack that belongs to one skill or one specialist lives in that skill's own `references/` folder (`<skill>/references/`). Use the plural `references/`.
 - **File naming.** Lowercase, words joined with `-` or `_` to match the neighbouring files, ending in `.md`. Name the file after its subject (`ptc-format-reference.md`, `singleton.md`), not after a ticket or a date.
 - **Front index.** Every pack folder has one front index that says which file to open for which question. For a `_shared/` folder it is the folder's `README.md`; for a skill's `references/` folder it is the table in that skill's `SKILL.md`. Each pack file opens with a title and one line saying what it covers.
 - **Loaded only when needed.** Agents and skills name the pack file they need at the step that needs it. They never tell a worker to read a whole pack up front.
@@ -44,7 +44,7 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/patterns/rpc.md` | RPC IDs, `ScriptRPC`, the `OnRPC` template, client to server validation. |
 | `_shared/enscript/patterns/singleton.md` | Static instance with lazy init, `GetInstance()`, the `ScriptInvoker` shutdown null guard. |
 | `_shared/enscript/patterns/actions.md` | Action classes, condition components, stopping pickup, client and server check mismatch. |
-| `_shared/enscript/patterns/scheduler.md` | `CallLater` overflow after about 4.5 hours, per tick allocation, call categories. |
+| `_shared/enscript/patterns/scheduler.md` | The unverified `CallLater` drift report and the `Timer` alternative, per tick allocation, call categories. |
 | `_shared/enscript/patterns/physics_items.md` | Making spawned items physics active: `ThrowPhysically` or manual dynamic physics. |
 | `_shared/enscript/patterns/json_config_migration.md` | JSON config schema versions and forward migration. |
 | `_shared/enscript/patterns/language_workarounds.md` | Missing language features (ternary, lambdas, exceptions, overloading) and their workarounds; `auto` type inference. |
@@ -61,13 +61,11 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/api_network.md` | Checked on `P:`: RPC calls, `ScriptRPC`, `OnRPC` dispatch, net sync. |
 | `_shared/enscript/references/api_entities_inventory.md` | Checked on `P:`: spawning and `ECE_*` flags, inventory create, read and move. |
 | `_shared/enscript/references/api_player.md` | Checked on `P:`: finding players, identities, connect hooks, health, stats. |
-| `_shared/enscript/references/types_collections.md` | Primitive types, strings, arrays, maps, sets, vectors, `Math`. |
-| `_shared/enscript/references/player_api.md` | `PlayerBase` stats, vitals, agents, modifiers, inventory. |
-| `_shared/enscript/references/item_api.md` | `ItemBase` quantity, health, actions, spawning, config properties. |
-| `_shared/enscript/references/game_api.md` | `GetGame()`, world, mission, object creation, logging. |
+| `_shared/enscript/references/types_collections.md` | Checked on `P:`: primitive types, strings, arrays, maps, sets, vectors, `Math`. |
+| `_shared/enscript/references/item_api.md` | Checked on `P:`: `ItemBase` quantity, health, actions, spawning, config properties. |
 | `_shared/enscript/references/erpc_defines.md` | Vanilla RPC, agent and modifier ID tables; custom ID ranges. |
 | `_shared/enscript/references/file_paths.md` | `$profile` and `$saves` paths, file and JSON helpers. |
-| `_shared/enscript/references/gui_layout.md` | `.layout` format and every widget type. |
+| `_shared/enscript/references/gui_layout.md` | Checked on `P:`: `.layout` format and every widget type. |
 | `_shared/enscript/references/widget_api.md` | Widget script classes and methods, events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu`, imagesets. |
 
 ### Physics pack (`_shared/physics`)
@@ -207,8 +205,8 @@ Front index: `_shared/textures/README.md`, which also has a symptom to cause tab
 | `dayz-p3d-audit/references/p3d-killers.md` | Model faults that break a `.p3d` with no engine error. |
 | `dayz-p3d-audit/references/winding-methodology.md` | How to verify face winding. |
 | `dayz-p3d-audit/references/config-rvmat-checks.md` | `config.cpp` and `.rvmat` checks for models. |
-| `dayz-search-index/reference` | Search index notes. Front index: `dayz-search-index/SKILL.md`. |
-| `dayz-search-index/reference/cost-and-free-tier.md` | Voyage embedding cost and the free tier check. |
+| `dayz-search-index/references` | Search index notes. Front index: `dayz-search-index/SKILL.md`. |
+| `dayz-search-index/references/cost-and-free-tier.md` | Voyage embedding cost and the free tier check. |
 
 ### Not file packs
 

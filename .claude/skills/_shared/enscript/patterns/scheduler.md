@@ -1,26 +1,27 @@
 # Pattern: scheduler & periodic ticks
 
-`CallLater`, `Timer`, and `OnUpdate`-style callbacks are the engine's three ways to run code on a schedule. Two non-obvious traps bite production mods: the `CallLater` long-run precision loss, and per-tick allocation GC pressure.
+`CallLater`, `Timer`, and `OnUpdate`-style callbacks are the engine's three ways to run code on a schedule. Two traps are reported for long running mods: `CallLater` drifting after hours, which is not verified, and per tick allocation, which is.
 
 See also: `examples/09_scheduler_timer.c` for full `CallLater`/`Timer`/`OnScheduledTick` patterns with frame-skip guards.
 
 ---
 
-## ⚠️ `CallLater` loses precision after ~4.5 hours of game time
+## Unverified: `CallLater` drifting after about 4.5 hours
 
-The engine's `CallLater` uses a 32-bit float for the absolute due time. Beyond ~4.5h of elapsed game time, that float saturates and callback timing drifts or stalls entirely.
+Some modders report that a repeating `CallLater` drifts or stalls after about 4.5 hours of uptime, and blame a 32 bit float due time. This cannot be checked on `P:\`: `ScriptCallQueue.CallLater` is `proto` (engine code) and takes its delay as an `int` of milliseconds (`P:\scripts\2_gamelib\tools.c:61`). Treat it as a rumour, not a rule.
+
+For long lived recurring work, a `Timer` is the scripted alternative. `TimerBase` (`P:\scripts\3_game\tools\tools.c:219`) keeps its own elapsed time, and `Timer` (`:576`) adds `Run(duration, obj, fn_name, params, loop)` (`:595`).
 
 ```c
 // AVOID for long-lived recurring work
 GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.Tick, 1000, true);
 
-// PREFER — Timer class plus periodic resync, or a Manager singleton driving
-// timestamps off SystemTime / DateTime to escape the float-window.
+// A Timer is scripted, so its timing can be read in tools.c
 ref Timer m_Tick = new Timer(CALL_CATEGORY_GAMEPLAY);
 m_Tick.Run(1.0, this, "Tick", null, true);
 ```
 
-Symptom in logs: callbacks that fired correctly for hours suddenly skip or fire many times back-to-back as the float resaturates. Verified via long-run production server logs.
+The reported symptom is callbacks that fired correctly for hours and then skip, or fire many times back to back. If you see it, compare a `Timer` before you change anything else.
 
 ---
 

@@ -5,7 +5,7 @@ Walk vanilla DayZ source on P:\\, chunk per file type, embed via Voyage AI
 ~/.claude/dayz-search-index/ for the dayz-rag MCP server.
 
 Gates on /dayz-preflight (it reads vanilla data on P:\\). A live token and cost
-estimate prints during the embed loop; see reference/cost-and-free-tier.md for
+estimate prints during the embed loop; see references/cost-and-free-tier.md for
 the free-tier check.
 
 Run:
@@ -147,7 +147,7 @@ def _check_voyage_tier(
 
     Uses local cumulative tracking only; Voyage doesn't expose a public
     usage API. The overage estimate uses `model`'s rate from COST_PER_MTOKEN.
-    See reference/cost-and-free-tier.md for caveats.
+    See references/cost-and-free-tier.md for caveats.
     """
     budget = int(os.environ.get("VOYAGE_FREE_TIER_TOKENS", VOYAGE_FREE_TIER_BUDGET))
     used = _read_monthly_usage_tokens()
@@ -257,6 +257,14 @@ def _walk_class_blocks(text: str) -> Iterator[tuple[str, int, int, str]]:
         end_line = text.count("\n", 0, block_end) + 1
         yield name, start_line, end_line, text[block_start:block_end]
         pos = block_end
+
+
+def file_sha256(path: Path) -> Optional[str]:
+    """sha256 of the file's bytes, or None when it cannot be read."""
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
 
 
 def _read_text(path: Path) -> str:
@@ -698,6 +706,9 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     # Per-folder, per-type stats for the manifest
     counts_by_folder: dict[str, dict[str, dict[str, int]]] = {}
+    # Content hash of every indexed file, so the server can tell a changed file
+    # from one that only got a newer mtime (a re-extracted P:\ drive).
+    file_hashes: dict[str, str] = {}
 
     for folder in VANILLA_FOLDERS:
         root = P_ROOT / folder
@@ -720,6 +731,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         folder_counts: dict[str, dict[str, int]] = {}
         for f in tqdm(candidates, desc=f"  {folder}/", unit="f"):
             ft = EXT_TYPE_MAP[f.suffix.lower()]
+            digest = file_sha256(f)
+            if digest:
+                file_hashes[str(f)] = digest
             if ft == "rvmat":
                 result = chunk_rvmat(f, seen_rvmat)
                 if result is None:
@@ -813,6 +827,9 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     INDEX_ROOT.mkdir(parents=True, exist_ok=True)
     write_table(lancedb.connect(str(db_path)), chunks)
+
+    # file_hashes.json goes before the manifest, which is written last.
+    (INDEX_ROOT / "file_hashes.json").write_text(json.dumps(file_hashes), encoding="utf-8")
 
     # Manifest
     manifest = {

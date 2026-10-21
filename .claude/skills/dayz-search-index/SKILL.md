@@ -32,7 +32,7 @@ python "<skill-dir>\index.py" --status
 
 Prints `manifest.json` and exits; exits 1 if there is no index. It creates nothing on disk.
 
-Other flags: `--ignore-tier-warning` skips the free-tier prompt (needed in non-interactive shells), `--force` overrides the 150,000-chunk ceiling (`CHUNK_CEILING`). Both are explained in [reference/cost-and-free-tier.md](reference/cost-and-free-tier.md).
+Other flags: `--ignore-tier-warning` skips the free-tier prompt (needed in non-interactive shells), `--force` overrides the 150,000-chunk ceiling (`CHUNK_CEILING`). Both are explained in [references/cost-and-free-tier.md](references/cost-and-free-tier.md).
 
 After a build, restart Claude Code so the MCP server opens the new index.
 
@@ -59,6 +59,7 @@ Each chunk stores path, file type, parent context (class name, XML range, or rvm
 
 - `lancedb/` holds the `chunks` table (1024-dim vectors).
 - `manifest.json` records model, per-folder counts, rvmat duplicates skipped, total chunks, tokens used and estimated cost.
+- `file_hashes.json` records the sha256 of every indexed file, so the MCP server flags a hit stale only when the file's content changed.
 - `config.json` tells the MCP server which model to embed queries with.
 - `usage.log` is the local token ledger used by the free-tier check.
 
