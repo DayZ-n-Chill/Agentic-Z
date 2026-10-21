@@ -327,7 +327,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Launch local DayZ server + client with one or more built mods."
     )
-    parser.add_argument("modnames", nargs="+", help="Mod names already built (PBO must exist).")
+    parser.add_argument(
+        "modnames", nargs="+", help="Mod names loaded on both client and server (PBO must exist)."
+    )
+    parser.add_argument(
+        "--server-only",
+        nargs="+",
+        default=[],
+        metavar="MODNAME",
+        help=(
+            "Mod names loaded on the server only, never the client (PBO must exist). "
+            "For server-side mods that exit on purpose when loaded client-side."
+        ),
+    )
     parser.add_argument(
         "--server",
         default=DEFAULT_INSTANCE,
@@ -349,7 +361,7 @@ def main() -> int:
     print()
     print(f"{OK} Project: {project_dir}")
     gate_on_old_layout(project_dir)
-    verify_built_mods(args.modnames)
+    verify_built_mods(args.modnames + args.server_only)
     diag_exe = resolve_diag_client()
     cfg_path, server_profile_dir, mission_path, client_profile_dir = verify_instance_environment(
         args.server, project_dir, dry_run=args.dry_run
@@ -358,12 +370,16 @@ def main() -> int:
     display = read_client_display_prefs(project_dir, create=not args.dry_run)
 
     # Absolute mod paths so the engine resolves -mod=<arg> correctly regardless
-    # of the working directory the subprocess inherits.
-    mod_arg = ";".join(str(MODS_ROOT / f"@{name}") for name in args.modnames)
-    server_cmd = build_server_cmd(
-        diag_exe, mod_arg, args.port, cfg_path, server_profile_dir, mission_path
+    # of the working directory the subprocess inherits. Server-only mods stay off
+    # the client: some call RequestExit when they find themselves client-side.
+    client_mod_arg = ";".join(str(MODS_ROOT / f"@{name}") for name in args.modnames)
+    server_mod_arg = ";".join(
+        str(MODS_ROOT / f"@{name}") for name in args.modnames + args.server_only
     )
-    client_cmd = build_client_cmd(diag_exe, mod_arg, args.port, client_profile_dir, display)
+    server_cmd = build_server_cmd(
+        diag_exe, server_mod_arg, args.port, cfg_path, server_profile_dir, mission_path
+    )
+    client_cmd = build_client_cmd(diag_exe, client_mod_arg, args.port, client_profile_dir, display)
 
     if args.dry_run:
         print()
