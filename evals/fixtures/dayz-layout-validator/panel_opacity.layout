@@ -1,0 +1,8 @@
+PanelWidgetClass panel_status {
+ size 300 80
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ opacity 0.5
+}

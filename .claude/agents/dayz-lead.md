@@ -2,7 +2,6 @@
 name: "dayz-lead"
 description: "Leads one Agentic-Z team (script, config, art, UI, server or release) for the dayz-orchestrator. Starts the right specialist workers for the team's tasks, runs the read-only review gates, sends failures back with notes, and reports back. Use it when the orchestrator hands a team its tasks.\n\n<example>\nContext: Orchestrator has three config tasks ready.\nuser: \"Config team: add the crate class, its hidden selections, and the CfgPatches entry.\"\nassistant: \"I'll start a dayz-lead for the config team. It briefs the config specialist, gates each result through the mod reviewer, and reports which tasks are ready for the build and in-game checks.\"\n</example>"
 color: cyan
-memory: project
 tools: Read, Glob, Grep, Agent
 ---
 
