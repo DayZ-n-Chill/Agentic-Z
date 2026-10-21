@@ -35,7 +35,7 @@ Each vanilla wearable has a script class with the same name as its config class.
 ## Picking the parent
 
 1. Find the vanilla item that is closest in slot, shape and behavior. Grep `inventorySlot` and the item name in the matching folder under `P:\DZ\characters\` (`tops`, `pants`, `shoes`, `gloves`, `headgear`, `masks`, `glasses`, `vests`, `backpacks`, `belts`).
-2. Prefer the `_ColorBase` class when vanilla has one (`UKAssVest_ColorBase` at `P:\DZ\characters\vests\config.cpp:866`). It holds the shared values, has no `scope=2`, and each color only sets `scope=2` and its textures (`:1011` onward).
+2. Prefer the `_ColorBase` class when vanilla has one (`UKAssVest_ColorBase` at `P:\DZ\characters\vests\config.cpp:866`). It holds the shared values, has no `scope=2`, and each color sets `scope=2` and its textures, plus any value that differs for that color, such as `visibilityModifier` on `UKAssVest_Black` (`:1011` to `:1037`).
 3. Read the parent's whole config class before inheriting, and cite it as `path:line`.
 4. Check the parent's script class too. Special behavior, such as the plate carrier changing its health when an infected wears it (`P:\scripts\4_world\entities\itembase\clothing\platecarriervest.c:3`), comes with the parent.
 

@@ -17,7 +17,7 @@ The selection names were read from the vanilla models with a byte scan, since th
 In config, the color base lists the selections once and each color lists one texture per selection, in the same order:
 
 - `PlateCarrierVest_Black` sets `hiddenSelections[]` at `P:\DZ\characters\vests\config.cpp:197` and three copies of `BallisticVest_black_co.paa` at `:203` to `:207`.
-- `UKAssVest_ColorBase` sets `hiddenSelections[]` once (`P:\DZ\characters\vests\config.cpp:896`), and each color such as `UKAssVest_Black` sets only `scope=2` and `hiddenSelectionsTextures[]` (`:1011` to `:1019`).
+- `UKAssVest_ColorBase` sets `hiddenSelections[]` once (`P:\DZ\characters\vests\config.cpp:896`), and each color such as `UKAssVest_Black` sets `scope=2` and its `hiddenSelectionsTextures[]` (`:1013` and `:1015` to `:1020`). A color may also change other values. `UKAssVest_Black` sets `visibilityModifier` (`:1014`) and its own `AnimEvents` (`:1021`).
 - The ground texture may differ from the worn one. `SmershVest` uses `smersh_g_co.paa` for `camoGround` and `smersh_co.paa` for the two worn selections (`P:\DZ\characters\vests\config.cpp:578` to `:582`).
 
 `hiddenSelectionsMaterials[]` swaps the `.rvmat` the same way, one entry per selection. Vanilla uses it on body parts, for example `MaleAdamTorso` at `P:\DZ\characters\tops\config.cpp:52`.
