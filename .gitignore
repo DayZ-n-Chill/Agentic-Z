@@ -48,6 +48,8 @@ workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/
 .server/*/mission/storage_*/
 # /dayz-gate behavior rebuilds .server/<instance>-behavior/ from <instance>/ on every run.
 .server/*-behavior/
+# /dayz-gate visual captures, one folder per run. The baselines next to them stay tracked.
+output/*-visual/runs/
 
 # Private working docs: never pushed
 docs/.updates/

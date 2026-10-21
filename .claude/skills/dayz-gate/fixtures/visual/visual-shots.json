@@ -1,0 +1,8 @@
+{
+  "mod": "MyMod",
+  "threshold": 0.01,
+  "shots": [
+    {"id": "hud", "feature": "The HUD shows the mod's icon next to the health bar", "at": 20},
+    {"id": "menu", "feature": "The welcome menu the mod opens on join shows four buttons", "at": 30, "ignore": [[250, 10, 60, 12]]}
+  ]
+}

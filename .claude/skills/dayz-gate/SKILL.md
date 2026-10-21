@@ -1,7 +1,7 @@
 ---
 name: dayz-gate
-description: "Runs the orchestrator's build, in-game and behavior gates as scripts instead of agent turns: build packs the mod and checks AddonBuilder output; ingame runs a test session and checks the new log lines; behavior runs a test mission that spawns and uses each new item and gives PASS or FAIL per check. Failures are triaged against known errors, and every result is stored for /dayz-health. Use when gating a finished wave."
-argument-hint: "build <ModName> [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--prepare-only | --logs FILE ...] [--json]"
+description: "Runs the orchestrator's build, in-game and behavior gates as scripts instead of agent turns: build packs the mod and checks AddonBuilder output; ingame runs a test session and checks the new log lines; behavior runs a test mission that spawns and uses each new item and gives PASS or FAIL per check; visual captures the game window at set points and compares each screenshot with its baseline. Failures are triaged against known errors, and every result is stored for /dayz-health. Use when gating a finished wave."
+argument-hint: "build <ModName> [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--prepare-only | --logs FILE ...] [--json] | visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--threshold R] [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--json]"
 ---
 
 <!-- skill-dir-note -->
@@ -9,7 +9,7 @@ argument-hint: "build <ModName> [--json] | ingame <ModName> [--deps CF ...] [--s
 
 # /dayz-gate
 
-Script versions of the `dayz-build-checker` and `dayz-ingame-tester` gates, plus a behavior gate that tests what each new item does. They run the existing skill scripts as subprocesses and apply the same rules those agents follow, so a wave costs one command and a short report instead of two agent runs. The gates gate on `/dayz-preflight` through the scripts they call.
+Script versions of the `dayz-build-checker` and `dayz-ingame-tester` gates, plus a behavior gate that tests what each new item does and a visual gate that compares screenshots of the game with the expected look. They run the existing skill scripts as subprocesses and apply the same rules those agents follow, so a wave costs one command and a short report instead of two agent runs. The gates gate on `/dayz-preflight` through the scripts they call.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -21,6 +21,9 @@ python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instanc
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --prepare-only
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --logs [FILE ...] [--json]
+python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--json]
+python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--threshold R] --compare [DIR] [--json]
+python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] --accept [DIR] [--shot ID ...] [--json]
 ```
 
 | Argument | Notes |
@@ -34,9 +37,15 @@ python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <insta
 | `--checks` | `behavior`: the checks file. Default `output/<ModName>-plan/behavior-checks.json`, which `dayz-mod-architect` writes with the plan. |
 | `--prepare-only` | `behavior`: write the instance copy and stop. The first line is `PREPARED` (exit 0). |
 | `--logs` | `behavior`: judge the logs of a session that already ran instead of launching one. With no files it reads the copy's server script logs. |
+| `--shots` | `visual`: the shots file. Default `output/<ModName>-plan/visual-shots.json`. |
+| `--threshold` | `visual`: the share of pixels, 0 to 1, that may differ for a shot that sets no threshold of its own. It beats the shots file's `threshold`; the default is 0.01. |
+| `--compare` | `visual`: compare captures already taken instead of launching. With no folder it uses the newest run. |
+| `--accept` | `visual`: copy captures into the baselines. With no folder it uses the newest run; `--shot` limits it to some shots. The first line is `ACCEPTED` (exit 0). |
 | `--json` | Print the full report as JSON after the verdict line. |
 
 `behavior` takes `--deps`, `--server`, `--port` and `--timeout` like `ingame`. Its `--settle` is the most seconds to wait for the test mission's `DONE` line after the client joins (default 600); the gate stops as soon as that line appears.
+
+`visual` takes `--deps`, `--server`, `--port` and `--timeout` like `ingame`. It reads until its last shot is taken, so it has no `--settle`.
 
 ## Output and exit codes
 
@@ -125,6 +134,47 @@ Every check first needs `item` (and `with`) to exist in `CfgVehicles`, `CfgWeapo
 
 `--prepare-only` writes the copy. Launch it with `/dayz-launch-test <ModName> --server <instance>-behavior`, stop it with `/dayz-stop-test`, then judge it with `behavior <ModName> --logs`.
 
+## What `visual` does
+
+1. Reads the shots file and refuses a bad one (exit 2) before touching anything.
+2. Runs the `ingame` flow on your instance, so every `ingame` rule still applies. At each shot's `at` second after the client joins, it brings the client window to the front and saves its picture to `output/<ModName>-visual/runs/<date_time>/<id>.png`. The session stops two seconds after the last shot.
+3. Compares each capture with `output/<ModName>-visual/baseline/<id>.png`. Both images are shrunk to 640 pixels wide, which averages away single pixel noise. A pixel counts as changed when its colour distance, weighted toward brightness the way the eye sees it (the pixelmatch measure), is above a tenth of the largest possible. A shot fails when the share of changed pixels is above its threshold. Areas in its `ignore` list are left out.
+4. Writes `<id>.diff.png` next to each capture: the baseline in pale grey, changed pixels in red and ignored areas in blue.
+
+Each shot ends as one of these:
+
+| Status | Means | Failure text |
+|---|---|---|
+| `PASS` | the share of changed pixels is at or under the threshold | |
+| `FAIL` | too many pixels changed, or the capture is a different size from the baseline | `[visual:diff] <id>: ...` |
+| `NEW` | the shot has no baseline yet | `[visual:no-baseline] <id>: ...` |
+| `MISSING` | no capture: the window was hidden or minimized, or the session ended first | `[visual:no-capture] <id>: ...` |
+
+Every status but `PASS` fails the gate. The report adds `shots` (one entry per shot with `status`, `ratio`, `threshold`, `capture`, `baseline`, `diff` and `reason`) and `visual` (the run and baseline folders). Triage marks each failure `known` with owner `user`, because only a person can say whether a new look is right: look at the capture and the diff, then accept it with `--accept --shot <id>` or send it to the specialist who owns that part of the screen.
+
+The first run of a shot is always `NEW`. Look at its capture, accept it, and later runs compare against it. Keep the baselines with the project; the runs folder is ignored by git.
+
+### Shots file
+
+```json
+{
+  "mod": "MyVest",
+  "threshold": 0.01,
+  "shots": [
+    {"id": "hud-icon", "feature": "The vest icon shows on the HUD", "at": 20},
+    {"id": "hud-clock", "feature": "The HUD with the clock left out", "at": 25, "threshold": 0.02, "ignore": [[1700, 20, 200, 40]]}
+  ]
+}
+```
+
+| Key | Notes |
+|---|---|
+| `id` | Letters, digits, `_`, `.` or `-` with no spaces. It names the capture, baseline and diff files. |
+| `feature` | Says in words what the shot shows. |
+| `at` | Seconds after the client joins the mission, 0 or more. |
+| `threshold` | Optional. The share of pixels, 0 to 1, that may change. File level is the default for every shot. |
+| `ignore` | Optional. Areas to leave out, each `[x, y, width, height]` in capture pixels: clocks, chat, anything that changes on its own. |
+
 ## Triage
 
 `triage.py` fingerprints each line (timestamps, absolute paths, hex addresses and numbers normalized, lowercased) and matches it against `known-errors.json` (regex entries shipped with the repo) and the project's learned file `.claude/local-memory/dayz-gate-known-errors.json`. Run it on its own for any log:
@@ -160,8 +210,12 @@ An existing `<id>` lends its meaning, fix and owner; a new id needs all three. L
 - The behavior test mission only knows the five actions above. A feature that needs more (driving, firing, eating) has no check yet; say so in the plan.
 - The test player is stripped once before the checks and each check deletes what it made, so no check can prove two items work together on the player.
 - The test mission's engine calls are checked against vanilla `P:\scripts`, and the injector and parser are tested on fixture missions and logs, but the mission has not yet run in a live session.
+- The visual compare and baselines are tested on fixture images. The window capture is Windows only and has not yet run against a live client. It copies what is on screen, so the client must run windowed (the `/dayz-launch-test` default) and stay uncovered while the gate runs.
+- A shot is taken at a time, not at a game event, and the test player stands where the server spawns it. Shots that need the player in one place or a menu open need the mod (or a future test mission) to put them there; screens that move on their own need a higher threshold or `ignore` areas.
+- The visual gate needs Pillow: `py -m pip install -r "<skill-dir>\requirements.txt"`.
 
 ## Do not
 
 - Don't use the gate while the user is playing a test session: it stops every `DayZDiag_x64.exe` first.
 - Don't edit `known-errors.json` from `--learn`; learned fingerprints are per project.
+- Don't `--accept` a capture nobody has looked at; the baseline is the expected look.

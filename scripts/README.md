@@ -18,7 +18,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `conflict-check.bat` | Find class name and path collisions with CF, COT and Expansion, with PASS or FAIL | `conflict-check.bat MyVest` |
 | `balance.bat` | Compare item stats with similar vanilla items and flag outliers | `balance.bat MyVest` |
 | `build-pbo.bat` | Pack a mod into a PBO | `build-pbo.bat MyVest` |
-| `gate.bat` | Build, in-game or behavior check with PASS or FAIL | `gate.bat build MyVest` |
+| `gate.bat` | Build, in-game, behavior or visual check with PASS or FAIL | `gate.bat build MyVest` |
 | `health.bat` | Write a mod's health page: last build, last test, open findings, history | `health.bat MyVest` |
 | `triage.bat` | Match log lines against known errors (`--stdin` for a pasted log) | `triage.bat .server\chernarus\Profiles\script.log` |
 | `deploy-pbo.bat` | Copy a bundle's prebuilt PBOs into place | `deploy-pbo.bat MyBundle` |

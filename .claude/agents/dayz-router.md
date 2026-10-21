@@ -19,7 +19,7 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-logwatch` (skill): watch a running test session's logs and triage each new error line as it appears.
 - `dayz-stop-test` (skill): stop a running test session.
 - `dayz-preflight` (skill): check the modding environment.
-- `dayz-gate` (skill): run the behavior test, a test mission that spawns and uses each new item and gives PASS or FAIL per check. Put the mod name in `args.mod` when it is given. For pasted crash log or RPT lines, set `args.mode` to `triage`: triage matches them against known errors first, and only the new ones go on to `dayz-mod-debugger`.
+- `dayz-gate` (skill): run the behavior test, a test mission that spawns and uses each new item and gives PASS or FAIL per check, or the visual test, which compares screenshots of the game with stored baselines. Put the mod name in `args.mod` when it is given. For pasted crash log or RPT lines, set `args.mode` to `triage`: triage matches them against known errors first, and only the new ones go on to `dayz-mod-debugger`.
 - `dayz-edit-types` (skill): add, change or remove a `types.xml` entry. For a pasted chunk of `<type>` entries, set `args.mode` to `merge`.
 - `dayz-import-mod` (skill): bring an existing mod into `workspace\`, from a folder or a GitHub link. Put the link or path in `args.source`. A Steam Workshop link also goes here, and the skill refuses it.
 - `dayz-new-mod` (skill): scaffold an empty mod folder.

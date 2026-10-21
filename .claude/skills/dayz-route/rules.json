@@ -9,7 +9,7 @@
     "dayz-logwatch": {"kind": "skill", "description": "Watch a running test session's logs and triage each new error line as it appears"},
     "dayz-stop-test": {"kind": "skill", "description": "Stop a running local DayZ test session"},
     "dayz-preflight": {"kind": "skill", "description": "Check the DayZ modding environment (P: drive, DayZ Tools)"},
-    "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check; with args.mode triage, match a pasted crash log or RPT against known errors"},
+    "dayz-gate": {"kind": "skill", "description": "Behavior or visual test: a test mission spawns and uses each new item, or screenshots of the game are compared with stored baselines; PASS or FAIL per check; with args.mode triage, match a pasted crash log or RPT against known errors"},
     "dayz-edit-types": {"kind": "skill", "description": "Add, change or remove a types.xml entry; with args.mode merge, check a pasted chunk of <type> entries and merge them"},
     "dayz-import-mod": {"kind": "skill", "description": "Bring an existing mod into workspace\\: a folder elsewhere on disk or a GitHub link to clone; refuses Steam Workshop links"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
@@ -94,6 +94,16 @@
       "confidence": 0.9,
       "absorbs": true,
       "patterns": ["\\bbehaviou?r\\s+(?:tests?|checks?|gate)\\b(?:\\s+(?:for|on|of)\\s+(?P<mod>[A-Za-z][\\w-]*))?"]
+    },
+    {
+      "route": "dayz-gate",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": [
+        "\\b(?:visual|screenshot)\\s+(?:tests?|checks?|gate|compare|comparison|diff)\\b(?:\\s+(?:for|on|of)\\s+(?P<mod>[A-Za-z][\\w-]*))?",
+        "\\bcompare\\s+(?:the\\s+)?screenshots?\\b",
+        "\\bscreenshot\\s+baselines?\\b"
+      ]
     },
     {
       "route": "dayz-health",
