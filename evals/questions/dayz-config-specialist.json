@@ -1,0 +1,54 @@
+{
+  "agent": "dayz-config-specialist",
+  "questions": [
+    {
+      "id": "inventoryslot-append",
+      "question": "Answer only, do not edit any file. My config.cpp has:\n\nclass MyMod_GlowPlug: GlowPlug\n{\n    inventorySlot[] += {\"MyMod_CustomSlot\"};\n};\n\nThe item will not go into my slot and there is no error in the RPT. Why, and what should the line be?",
+      "must_include": [
+        "re:inventorySlot\\[\\]\\s*=\\s*\\{\\s*\"GlowPlug\"",
+        "re:string"
+      ],
+      "verified": "P:/DZ/vehicles/parts/config.cpp:822 (class GlowPlug: Inventory_Base) and :831 (inventorySlot=\"GlowPlug\", string form)"
+    },
+    {
+      "id": "cfgpatches-parent-addon",
+      "question": "Answer only, do not edit any file. I'm adding class MyMod_PlateCarrier that inherits from vanilla PlateCarrierVest. What goes in my CfgPatches class, and which vanilla addon must it require?",
+      "must_include": [
+        "requiredAddons",
+        "DZ_Characters_Vests",
+        "re:units\\[\\]"
+      ],
+      "verified": "P:/DZ/characters/vests/config.cpp:3 (class DZ_Characters_Vests) and :24 (class PlateCarrierVest: Clothing)"
+    },
+    {
+      "id": "forward-declaration",
+      "question": "Answer only, do not edit any file. Inside CfgVehicles I wrote:\n\nclass MyMod_Vest: PlateCarrierVest\n{\n    scope = 2;\n};\n\nThe build fails saying the base class is undefined. What line is missing from CfgVehicles?",
+      "must_include": [
+        "re:class\\s+PlateCarrierVest\\s*;"
+      ],
+      "verified": "P:/DZ/characters/vests/config.cpp:24 (PlateCarrierVest is declared in CfgVehicles of DZ_Characters_Vests)"
+    },
+    {
+      "id": "change-vanilla-class",
+      "question": "Answer only, do not edit any file. In my mod I want vanilla Apple to hold 200 quantity instead of 125 (varQuantityMax). Show the config.cpp change, including CfgPatches, without copying the whole vanilla class.",
+      "must_include": [
+        "re:class\\s+Apple\\s*:\\s*Edible_Base",
+        "re:varQuantityMax\\s*=\\s*200",
+        "DZ_Gear_Food"
+      ],
+      "must_not_include": [
+        "re:class\\s+\\w+_Apple\\s*:"
+      ],
+      "verified": "P:/DZ/gear/food/config.cpp:3 (class DZ_Gear_Food), :4586 (class Apple: Edible_Base) and :4599 (varQuantityMax=125)"
+    },
+    {
+      "id": "hidden-selection-count",
+      "question": "Answer only, do not edit any file. My jacket class sets hiddenSelections[] = {\"camoGround\", \"camoMale\", \"camoFemale\"};. How many hiddenSelectionsTextures[] entries do I need, and how do they line up with the selections?",
+      "must_include": [
+        "re:\\bthree\\b|\\b3\\b",
+        "re:order|same position|same index|one (entry |texture )?(per|for each)"
+      ],
+      "verified": "P:/DZ/characters/tops/config.cpp:2506-2508 (vanilla tops use camoGround, camoMale, camoFemale)"
+    }
+  ]
+}

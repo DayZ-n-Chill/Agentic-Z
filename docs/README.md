@@ -57,6 +57,7 @@ When invoked on a task, an agent should:
 ├── AGENTS.md                           # L1 rules (Codex reads this)
 ├── GEMINI.md                           # L1 rules (Gemini reads this)
 ├── docs/                               # this folder
+├── evals/                              # answer tests per agent (see docs/evals.md)
 ├── mods/agentic-z-panel/               # Claude Code panel plugin (one-click DayZ buttons)
 ├── scripts/                            # ad-hoc helper scripts
 ├── workspace/                          # in-progress mods (workspace/<ModName>/)
