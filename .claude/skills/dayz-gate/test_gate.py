@@ -187,14 +187,14 @@ def test_build_pass(project, capsys):
 
 def test_build_runs_lint_first_and_stops_on_errors(project, capsys):
     cfg = project / "workspace" / "MyMod" / "config.cpp"
-    cfg.write_text(cfg.read_text(encoding="utf-8").replace("\t\tunits[] = {};\n", ""), encoding="utf-8")
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace("\t\tunits[] = {};\n", "\t\tunits = \"\";\n"), encoding="utf-8")
     fake = FakeRuntime({"build.py": (0, BUILD_OK)}, running=[42])
     rc, first, data = run_main(["build", "MyMod", "--json"], fake, capsys)
     assert (rc, first) == (1, "FAIL")
     assert fake.calls == []  # no stop, no build: a running session is left alone
     assert data["lint"] == {"verdict": "FAIL", "errors": 1, "warnings": 1}
     [f] = data["failures"]
-    assert (f["category"], f["rule"], f["file"], f["line"]) == ("lint", "cfgpatches-field", "workspace/MyMod/config.cpp", 3)
+    assert (f["category"], f["rule"], f["file"], f["line"]) == ("lint", "cfgpatches-field", "workspace/MyMod/config.cpp", 5)
     assert f["triage"]["id"] == "lint-cfgpatches-field"
     assert f["triage"]["owner_agent"] == "dayz-config-specialist"
     assert [w["rule"] for w in data["warnings"]] == ["p-not-mounted"]
@@ -214,7 +214,7 @@ def test_build_stores_lint_and_build_results_for_health(project, capsys):
 
 def test_failed_lint_stop_is_stored_as_a_failed_build(project, capsys):
     cfg = project / "workspace" / "MyMod" / "config.cpp"
-    cfg.write_text(cfg.read_text(encoding="utf-8").replace("\t\tunits[] = {};\n", ""), encoding="utf-8")
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace("\t\tunits[] = {};\n", "\t\tunits = \"\";\n"), encoding="utf-8")
     run_main(["build", "MyMod", "--json"], FakeRuntime(), capsys)
     data = gate.health.health(project, "MyMod")
     assert data["last_build"]["verdict"] == "FAIL"

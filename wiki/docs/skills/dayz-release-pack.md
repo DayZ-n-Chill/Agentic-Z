@@ -26,7 +26,7 @@ python "<skill-dir>\release_pack.py" --mod-dir <folder> [options]
 | `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. |
 | `--mod-dir` | Use any folder instead. Its name is the mod name unless `<ModName>` is given too. |
 | `--version` | The version for the changelog heading and the Workshop text. Default `Unreleased`. |
-| `--since` | Git ref the changelog starts after. Default: the latest tag when the mod folder is its own repository, otherwise the whole history of the folder. |
+| `--since` | Git ref the changelog starts after. Default: the latest tag when the mod folder is its own repository. Inside a bigger repository (an Agentic-Z clone) it is the newest `chore(release)` commit that touched the mod folder, and the script prints which one. With no such commit the entry lists the folder's whole history and warns `changelog-full-history`. |
 | `--deps` | Dependency mods in load order, with or without `@` (`--deps CF`). Map each non vanilla `requiredAddons` entry to the Workshop mod that ships it. |
 | `--out` | Output folder. Default `output\<ModName>-release\`. |
 | `--json` | Print the report as JSON. |
@@ -54,6 +54,8 @@ The script exits 0 with `[WARN]` lines when something needs a person or the AI:
 | `no-bikey` | No `.bikey` in `Keys\` or `P:\Mods\@<ModName>\Keys\`. Sign the PBO before release. |
 | `private-key-in-mod` | A `.biprivatekey` sits inside the mod folder. It is never written anywhere, but move it out of the mod so it can never ship. |
 | `no-git` | The mod folder is not in a git repository, so the changelog entry is empty. |
+| `changelog-full-history` | The mod sits inside a bigger repository and no `chore(release)` commit touched its folder, so the entry lists every change it ever had. Rerun with `--since <ref>` to limit the entry, or commit the release as `chore(release): <version>` so the next run starts after it. |
+| `changelog-empty` | No commits touched the mod folder since the start ref, so the entry lists no changes. Commit the changes first, or pass an earlier `--since`. |
 
 Exit 2 means it could not run: bad arguments, no cached project, no mod folder, no `config.cpp`, a `config.cpp` that does not parse (run `/dayz-lint`), or a `--since` ref that is not in the history.
 

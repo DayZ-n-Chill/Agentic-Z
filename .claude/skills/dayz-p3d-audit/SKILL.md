@@ -16,14 +16,17 @@ Follow `.claude/skills/_shared/dayz-conventions.md`. The script runs `/dayz-pref
 
 ## How to run
 
-```bash
-# Requires py3d:
-pip install git+https://github.com/KoffeinFlummi/py3d.git
+The script reads .p3d files with py3d. Install it once:
 
+```cmd
+python -m pip install -r "<skill-dir>\requirements.txt"
+```
+
+```bash
 # Audit one or more models (MLOD source, not binarized ODOL):
 python <skill-dir>/scripts/audit_p3d.py path/to/model.p3d [more.p3d ...]
 
-# Include config/model.cfg path checks:
+# Include config/model.cfg path checks and the model.cfg animation check:
 python <skill-dir>/scripts/audit_p3d.py model.p3d --config path/to/config.cpp --model-cfg path/to/model.cfg
 
 # Check .rvmat materials for P:\ paths:
@@ -33,12 +36,26 @@ python <skill-dir>/scripts/audit_p3d.py --rvmat path/to/a.rvmat path/to/b.rvmat
 python <skill-dir>/scripts/audit_p3d.py --scan-dir path/to/mod/
 ```
 
-Exit 2 if no input is given. Exit 1 if any .p3d has a CRITICAL finding, any text file
-has a `P:\` path, or a file or the `--scan-dir` folder is missing or unreadable;
-otherwise exit 0 (WARNING and NOTE findings on .p3d files are printed but don't fail
-the run). Only MLOD source files can be audited; binarized ODOL
-files are rejected. When a model has several Visual LODs, LOD0 is the one checked.
-Interpret findings with the references below.
+Animations are checked from model.cfg. The script finds the `CfgModels` class named
+after the model file (inherited from its parent class when it has no `Animations` of
+its own) and, for each animation, checks that its `selection` exists in the Visual LOD,
+that its `axis` has exactly 2 points in the Memory LOD, and that any `begin` and `end`
+points exist there. The model.cfg comes from `--model-cfg`, or under `--scan-dir` from
+the model's folder or the nearest parent folder. Without a model.cfg, animations are
+not checked.
+
+Exit codes:
+
+- **0**: no CRITICAL finding and no `P:\` path. WARNING and NOTE findings on .p3d files
+  are printed but don't fail the run.
+- **1**: any .p3d has a CRITICAL finding, any text file has a `P:\` path, or a file or
+  the `--scan-dir` folder is missing or unreadable.
+- **2**: no input was given, or py3d is not installed. The second case prints the
+  `python -m pip install -r` line above.
+
+Only MLOD source files can be audited; binarized ODOL files are rejected. When a model
+has several Visual LODs, LOD0 is the one checked. Interpret findings with the
+references below.
 
 ## Diagnostic decision tree
 
@@ -74,9 +91,11 @@ Interpret findings with the references below.
                                     the LOD has none
 
 6. Animations not playing?
-   → Check flag_mast selection in Visual LOD
-   → Check flag_mast_axis (2 points) in Memory LOD
-   → Check AnimationSources in config.cpp matches model.cfg
+   → Run audit_p3d.py with --model-cfg: the selection each model.cfg
+     animation names must exist in the Visual LOD, and its axis must
+     exist in the Memory LOD with exactly 2 points
+   → Check that config.cpp AnimationSources match the source names
+     in model.cfg
 
 7. Textures missing/white?
    → Check P:\ paths in config.cpp hiddenSelectionsTextures

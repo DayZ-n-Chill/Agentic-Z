@@ -6,6 +6,8 @@ name: dayz-record-correction
 
 Turns the user's correction of how the mod team built something into a written rule with good and bad examples, confirms it, and saves it where every agent follows it. Use whenever the user corrects the team's code, config, structure or behavior, or says "remember this" or "always/never do X".
 
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # /dayz-record-correction
 
 The user's corrections are how the team learns. Nothing is written without their yes.
@@ -52,8 +54,9 @@ python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "<skill-dir>"
 - Ending in `\.claude\skills\dayz-record-correction`: a clone. The Agentic-Z repo root is three levels up from it (the folder that holds `.claude\`), and every file the tiers name (`CLAUDE.md`, `.claude\skills\_shared\dayz-conventions.md`, `.claude\agents\...`) is relative to that root, not to the current project.
 
 - In a clone, edit the file the tier names under that repo root, even when the session was started in another project. Keep the edit small and in the file's existing style.
+- In a clone, if the edited file is under `.claude\agents\` or `.claude\skills\` (a `SKILL.md` or the shared conventions in `.claude\skills\_shared\dayz-conventions.md`), run `/docs-sync` so the wiki mirror under `wiki\docs\` stays in sync. Otherwise the Stop hook reports wiki drift at the end of the session.
 - In a plugin install, the plugin's files are replaced on every update. Write the rule to the user's project `CLAUDE.md` under a `## Agentic-Z rules` heading instead, and say that's why.
 
 ## 4. Say what changed
 
-One line: the rule and the file it went into.
+One line: the rule and the file it went into. When `/docs-sync` ran, also name the wiki page it updated, for example `wiki\docs\agents\dayz-config-specialist.md`.

@@ -39,10 +39,19 @@
     "id": "lint-cfgpatches-field",
     "scope": "lint",
     "pattern": "^\\[lint:cfgpatches-field\\] ",
-    "meaning": "A CfgPatches class lacks units[], weapons[] or requiredAddons[], or declares one of them without [].",
-    "fix": "Give every CfgPatches class units[] = {...}; weapons[] = {...}; and requiredAddons[] = {...}; as vanilla does (P:\\scripts\\config.cpp, class DZ_Scripts).",
+    "meaning": "A CfgPatches class writes units, weapons or requiredAddons without [], so the value is not an array.",
+    "fix": "Write it as an array: units[] = {...}; weapons[] = {...}; requiredAddons[] = {...}; as vanilla does (P:\\scripts\\config.cpp, class DZ_Scripts).",
     "owner_agent": "dayz-config-specialist",
     "source": "vanilla P:\\scripts\\config.cpp CfgPatches; dayz-new-mod config.cpp template"
+  },
+  {
+    "id": "lint-cfgpatches-field-missing",
+    "scope": "lint",
+    "pattern": "^\\[lint:cfgpatches-field-missing\\] ",
+    "meaning": "A CfgPatches class has no units[], weapons[] or requiredAddons[]. The mod still loads (vanilla DZ_data_aiconfigs has none), but without requiredAddons[] its load order is not guaranteed.",
+    "fix": "Add the missing array, for example units[] = {}; weapons[] = {}; requiredAddons[] = {\"DZ_Data\"};, as the dayz-new-mod template does.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "vanilla P:\\DZ\\data\\aiconfigs\\config.cpp (class DZ_data_aiconfigs, empty body); dayz-new-mod config.cpp template"
   },
   {
     "id": "lint-required-addon-name",
