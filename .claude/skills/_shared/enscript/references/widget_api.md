@@ -151,7 +151,7 @@ Widget part = ws.CreateWidgets("MyMod/gui/layouts/row.layout", listParent);  // 
 
 ## UIScriptedMenu: full screen menus
 
-`UIScriptedMenu` (`P:\scripts\3_game\tools\uiscriptedmenu.c`) is the vanilla base for menus that take the mouse and keyboard. It extends `UIMenuPanel`, so it already has the handler events above.
+`UIScriptedMenu` (`P:\scripts\3_game\tools\uiscriptedmenu.c`) is the vanilla base for menus that take the mouse and keyboard. It extends `UIMenuPanel`, a `Managed` class, and declares the same handler events as `ScriptedWidgetEventHandler` itself (from line 238), so override `OnClick` and the others directly on the menu.
 
 | Member | Use |
 |---|---|
