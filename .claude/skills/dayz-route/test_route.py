@@ -62,6 +62,9 @@ def decide(text, env=NO_KEY):
         ("write a modded class so my safe keeps its code after a restart", "dayz-persistence-specialist", None),
         ("write a modded class so my zombies patrol the town", "dayz-ai-specialist", None),
         ("review my vehicle mod", "dayz-mod-reviewer", None),
+        # UI icons and the Dabs Framework MVC layer go to the UI specialist.
+        ("pack my menu icons into an imageset", "dayz-ui-specialist", None),
+        ("make a Dabs ScriptView for my trader panel", "dayz-ui-specialist", None),
     ],
 )
 def test_rules_route_confidently(text, expected, args):

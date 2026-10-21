@@ -13,3 +13,12 @@ DayZ's UI has no central theme system; no `PrimaryAccentColor` constant flows th
 So "change all the red UI to blue" is not a one-file task: it means sweeping `.layout` files per widget and overriding every class method that calls `SetColor(<red ARGB>)` in `5_mission/gui/`. That is hours of work. For new mods that need theming, build on CUI (Community UI Framework), which supplies the theme layer the engine lacks; for one-off recolors, scope the task to one element.
 
 When the user asks for a color or theme change, ask for scope first (single element or sweep) and warn about the layout/script split before invoking any agent.
+
+## Reference packs for UI work
+
+Load these at the step that needs them, not up front:
+
+- `.claude/skills/_shared/enscript/references/gui_layout.md`: the `.layout` format.
+- `.claude/skills/_shared/enscript/references/widget_api.md`: widget script classes, events, loading layouts, menus and imagesets.
+- `.claude/skills/_shared/enscript/integrations/dabs_framework.md`: Dabs Framework, only for mods that depend on it. Its facts are framework facts, not vanilla.
+- `/dayz-build-imageset`: turns PNG icons into an imageset.
