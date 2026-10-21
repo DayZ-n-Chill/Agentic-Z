@@ -35,7 +35,7 @@ Vanilla values to compare with: `TShirt_ColorBase` 0.1 (`P:\DZ\characters\tops\c
 ## Armor: `DamageSystem`
 
 - `GlobalHealth` `Health` holds `hitpoints` and `healthLevels[]`. Each level pairs a health fraction with the `.rvmat` files to show at that level, one per visual material. The plate carrier has 225 hitpoints (`P:\DZ\characters\vests\config.cpp:67`); a T-shirt has 50 and lists a worn and a ground material per level (`P:\DZ\characters\tops\config.cpp:2276` onward).
-- `GlobalArmor` holds one class per damage source (`Projectile`, `Melee`, `Infected`, `FragGrenade`), each with `Health`, `Blood` and `Shock` `damage` values. `Clothing_Base` sets them all to 1 (`P:\DZ\data\config.cpp:3442` onward). The plate carrier lowers `Projectile` `Health` to 0.3 and `Shock` to 0.6 (`P:\DZ\characters\vests\config.cpp:114` to `:130`).
+- `GlobalArmor` holds one class per damage source, each with `Health`, `Blood` and `Shock` `damage` values. `Clothing_Base` sets `Projectile`, `Melee` and `FragGrenade` to 1 (`P:\DZ\data\config.cpp:3463` to `:3510`). Armored items add an `Infected` class as well, as the plate carrier does (`P:\DZ\characters\vests\config.cpp:146`). The plate carrier lowers `Projectile` `Health` to 0.3 and `Shock` to 0.6 (`P:\DZ\characters\vests\config.cpp:114` to `:130`).
 - **Engine:** an armor value multiplies the damage of that type that reaches the wearer, so lower means more protection. Confirm a new value in game.
 - A color variant that redeclares `DamageSystem` must inherit each level (`class DamageSystem: DamageSystem`, `class GlobalHealth: GlobalHealth`, `class Health: Health`), as `PlateCarrierVest_Black` does at `P:\DZ\characters\vests\config.cpp:209` to `:213`. Leave it out when the color only changes textures.
 
