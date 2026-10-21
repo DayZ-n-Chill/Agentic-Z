@@ -65,6 +65,7 @@
     "./.claude/agents/dayz-mod-reviewer.md",
     "./.claude/agents/dayz-object-builder.md",
     "./.claude/agents/dayz-orchestrator.md",
+    "./.claude/agents/dayz-persistence-specialist.md",
     "./.claude/agents/dayz-router.md",
     "./.claude/agents/dayz-script-specialist.md",
     "./.claude/agents/dayz-server-admin.md",
