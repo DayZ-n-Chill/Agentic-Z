@@ -196,6 +196,20 @@ def test_existing_spec_is_never_overwritten(monkeypatch, runs, tmp_path):
     assert spec.read_text(encoding="utf-8") == "hand edited\n"
 
 
+def test_rerun_on_linked_import_never_writes_spec(monkeypatch, runs, tmp_path):
+    # Re-running /dayz-init for a link-only import passes no --import-from, so
+    # the plan must spot the link itself and keep out of the user's source.
+    monkeypatch.setattr(plan, "run_all", lambda: [])
+    monkeypatch.setattr(plan, "mod_exists", lambda project, mod: True)
+    monkeypatch.setattr(plan, "is_link", lambda path: True)
+    assert plan.main(["--mod", "MyMod", "--goal", "x", "--execute"], project=tmp_path) == 0
+    assert not (tmp_path / "workspace" / "MyMod" / "spec.md").exists()
+    assert "spec" not in _actions(build_steps(Intent("MyMod", spec=plan.Spec("x")), True, linked=True))
+    # A --scaffold import may still write into its linked folder.
+    scaffold = Intent("MyMod", source="C:/src", scaffold=True, spec=plan.Spec("x"))
+    assert "spec" in _actions(build_steps(scaffold, True, linked=True))
+
+
 def test_render_spec_keeps_entries_on_one_line_and_marks_empty_sections():
     text = plan.render_spec("M", plan.Spec("Adds\n a radio", items=["Radio\nwith  dial"]))
     assert "Adds a radio\n" in text

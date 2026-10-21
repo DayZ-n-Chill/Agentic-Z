@@ -31,6 +31,7 @@ from pathlib import Path
 from dispatch import KNOWN_MAPS, DispatchError, command_for, run
 from env_check import classify, run_all
 from state import PROJECT_DIR, mod_exists, write_cached_project_root, write_state
+from skill_helpers import is_link  # on sys.path via env_check
 
 SPEC_FILENAME = "spec.md"
 
@@ -67,8 +68,14 @@ def spec_path(project: Path, mod_name: str) -> Path:
     return project / "workspace" / mod_name / SPEC_FILENAME
 
 
-def build_steps(intent: Intent, already_exists: bool, spec_exists: bool = False) -> list[Step]:
-    """Ordered steps for this intent."""
+def build_steps(
+    intent: Intent, already_exists: bool, spec_exists: bool = False, linked: bool = False,
+) -> list[Step]:
+    """Ordered steps for this intent.
+
+    linked: workspace/<mod> is a link to the user's source folder. Only a
+    --scaffold import may write into it, so a re-run never adds spec.md there.
+    """
     steps: list[Step] = []
     mod = intent.mod_name
     if already_exists:
@@ -82,7 +89,7 @@ def build_steps(intent: Intent, already_exists: bool, spec_exists: bool = False)
     else:
         steps.append(Step("new-mod", f"Scaffold workspace\\{mod}", {"mod": mod, "author": intent.author}))
 
-    if intent.spec and not spec_exists:
+    if intent.spec and not spec_exists and not (linked and intent.scaffold is not True):
         steps.append(Step("spec", f"Write workspace\\{mod}\\{SPEC_FILENAME}"))
 
     steps.append(Step("record", f"Record {mod} as the active mod"))
@@ -206,7 +213,10 @@ def main(argv: list[str] | None = None, project: Path | None = None) -> int:
             print(f"       {issue.message}", file=sys.stderr)
         return 2
 
-    steps = build_steps(intent, mod_exists(project, args.mod), spec_path(project, args.mod).is_file())
+    steps = build_steps(
+        intent, mod_exists(project, args.mod), spec_path(project, args.mod).is_file(),
+        linked=is_link(project / "workspace" / args.mod),
+    )
     print(render_plan(steps))
     if not args.execute:
         return 0
