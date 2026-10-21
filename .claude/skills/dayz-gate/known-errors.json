@@ -1,5 +1,212 @@
 [
   {
+    "id": "lint-config-missing",
+    "scope": "lint",
+    "pattern": "^\\[lint:config-missing\\] ",
+    "meaning": "The mod folder has no config.cpp, so there is nothing for the engine to load.",
+    "fix": "Run /dayz-add-scaffold <ModName> to add config.cpp, or mark the folder as a payload bundle by putting its prebuilt PBOs in workspace/<ModName>/Addons/.",
+    "owner_agent": "dayz-orchestrator",
+    "source": "dayz-build-pbo SKILL.md (workspace check); Tier 2 conventions/config.md (bundles)"
+  },
+  {
+    "id": "lint-config-syntax",
+    "scope": "lint",
+    "pattern": "^\\[lint:config-syntax\\] ",
+    "meaning": "config.cpp has a syntax error, so CfgConvert stops and the PBO never builds.",
+    "fix": "Open config.cpp at the line given and fix the brace, ';' or array syntax the message names.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "hooks/edit_check.py config grammar"
+  },
+  {
+    "id": "lint-cfgpatches-missing",
+    "scope": "lint",
+    "pattern": "^\\[lint:cfgpatches-missing\\] ",
+    "meaning": "config.cpp declares no CfgPatches class, so the engine does not load the mod's config.",
+    "fix": "Add class CfgPatches { class <ModName> { units[] = {}; weapons[] = {}; requiredVersion = 0.1; requiredAddons[] = {\"DZ_Data\"}; }; }; to workspace/<ModName>/config.cpp.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "docs/dayz-modding.md Troubleshooting (Mod doesn't load in-game)"
+  },
+  {
+    "id": "lint-cfgpatches-empty",
+    "scope": "lint",
+    "pattern": "^\\[lint:cfgpatches-empty\\] ",
+    "meaning": "class CfgPatches is there but declares no patch class, so the mod registers nothing.",
+    "fix": "Add class <ModName> { units[] = {}; weapons[] = {}; requiredVersion = 0.1; requiredAddons[] = {\"DZ_Data\"}; }; inside CfgPatches.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "dayz-new-mod config.cpp template; vanilla P:\\scripts\\config.cpp"
+  },
+  {
+    "id": "lint-cfgpatches-field",
+    "scope": "lint",
+    "pattern": "^\\[lint:cfgpatches-field\\] ",
+    "meaning": "A CfgPatches class lacks units[], weapons[] or requiredAddons[], or declares one of them without [].",
+    "fix": "Give every CfgPatches class units[] = {...}; weapons[] = {...}; and requiredAddons[] = {...}; as vanilla does (P:\\scripts\\config.cpp, class DZ_Scripts).",
+    "owner_agent": "dayz-config-specialist",
+    "source": "vanilla P:\\scripts\\config.cpp CfgPatches; dayz-new-mod config.cpp template"
+  },
+  {
+    "id": "lint-required-addon-name",
+    "scope": "lint",
+    "pattern": "^\\[lint:required-addon-name\\] ",
+    "meaning": "A requiredAddons entry is not a CfgPatches class the engine can find: a path, a .pbo or @mod name, the mod's own patch, or a misspelled vanilla DZ_ name.",
+    "fix": "Use the CfgPatches class name of the addon this mod needs, spelled as in its config.cpp (vanilla ones are under P:\\DZ\\, for example DZ_Data or DZ_Gear_Camping).",
+    "owner_agent": "dayz-config-specialist",
+    "source": "Tier 2 conventions/config.md; vanilla CfgPatches under P:\\DZ"
+  },
+  {
+    "id": "lint-required-addon-duplicate",
+    "scope": "lint",
+    "pattern": "^\\[lint:required-addon-duplicate\\] ",
+    "meaning": "The same requiredAddons entry is listed twice.",
+    "fix": "Remove the second copy from requiredAddons.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "Tier 2 conventions/config.md; dayz-lint SKILL.md"
+  },
+  {
+    "id": "lint-pboprefix-missing",
+    "scope": "lint",
+    "pattern": "^\\[lint:pboprefix-missing\\] ",
+    "meaning": "The mod folder has no $PBOPREFIX$, so the PBO has no root for its <ModName>\\ paths.",
+    "fix": "Run /dayz-add-scaffold <ModName> to add $PBOPREFIX$ with the single line <ModName>.",
+    "owner_agent": "dayz-orchestrator",
+    "source": "dayz-build-pbo SKILL.md (workspace check)"
+  },
+  {
+    "id": "lint-pboprefix-mismatch",
+    "scope": "lint",
+    "pattern": "^\\[lint:pboprefix-mismatch\\] ",
+    "meaning": "$PBOPREFIX$ does not hold exactly the mod name, so the PBO's paths would not resolve.",
+    "fix": "Set workspace/<ModName>/$PBOPREFIX$ to the single line <ModName> and make config.cpp paths start at <ModName>\\.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "dayz-build-pbo SKILL.md (workspace check)"
+  },
+  {
+    "id": "lint-p-link",
+    "scope": "lint",
+    "pattern": "^\\[lint:p-link\\] ",
+    "meaning": "The P:\\<ModName>\\ link is missing, is a real folder, or points away from workspace/<ModName>/, so AddonBuilder cannot read the source.",
+    "fix": "Run /dayz-add-scaffold <ModName> --piece junction.",
+    "owner_agent": "dayz-orchestrator",
+    "source": "dayz-build-pbo SKILL.md (junction check)"
+  },
+  {
+    "id": "lint-p-not-mounted",
+    "scope": "lint",
+    "pattern": "^\\[lint:p-not-mounted\\] ",
+    "meaning": "P:\\ is not mounted, so the P:\\<ModName>\\ link and the vanilla requiredAddons names could not be checked.",
+    "fix": "Mount P: with /dayz-workdrive, then lint again.",
+    "owner_agent": "user",
+    "source": "dayz-preflight SKILL.md"
+  },
+  {
+    "id": "lint-script-module-path",
+    "scope": "lint",
+    "pattern": "^\\[lint:script-module-path\\] ",
+    "meaning": "A CfgMods script module lists a folder that is outside the mod or does not exist, so that module fails to compile.",
+    "fix": "Point files[] at <ModName>/scripts/<layer> and make sure that folder exists under workspace/<ModName>/.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "Tier 2 conventions/scripts.md (folder modules); vanilla P:\\DZ\\data_sakhal\\config.cpp CfgMods"
+  },
+  {
+    "id": "lint-script-module-layer",
+    "scope": "lint",
+    "pattern": "^\\[lint:script-module-layer\\] ",
+    "meaning": "A script module lists the folder of another layer (for example worldScriptModule pointing at 3_Game), so classes compile in the wrong module.",
+    "fix": "List 3_Game under gameScriptModule, 4_World under worldScriptModule and 5_Mission under missionScriptModule.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "Tier 2 conventions/scripts.md (folder modules)"
+  },
+  {
+    "id": "lint-script-module-unlisted",
+    "scope": "lint",
+    "pattern": "^\\[lint:script-module-unlisted\\] ",
+    "meaning": "A scripts/ folder holds .c files that no CfgMods script module lists, so the engine never compiles them.",
+    "fix": "Add the folder to the matching module's files[] in CfgMods > <ModName> > defs, as /dayz-new-mod writes it.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "Tier 2 conventions/scripts.md (folder modules); dayz-new-mod config.cpp template"
+  },
+  {
+    "id": "lint-modded-class-extends",
+    "scope": "lint",
+    "pattern": "^\\[lint:modded-class-extends\\] ",
+    "meaning": "A modded class with an extends clause compiles but is a silent no-op, so the override never runs.",
+    "fix": "Drop the extends clause: modded class Foo { ... }.",
+    "owner_agent": "dayz-script-specialist",
+    "source": "Tier 2 conventions/scripts.md"
+  },
+  {
+    "id": "lint-script-suffix",
+    "scope": "lint",
+    "pattern": "^\\[lint:script-suffix\\] ",
+    "meaning": "A file under scripts/ is not a .c file, so it is never compiled.",
+    "fix": "Rename it to .c if it is script code, or move it out of scripts/.",
+    "owner_agent": "dayz-script-specialist",
+    "source": "Tier 2 conventions/scripts.md"
+  },
+  {
+    "id": "lint-missing-model",
+    "scope": "lint",
+    "pattern": "^\\[lint:missing-model\\] ",
+    "meaning": "A config path points at a .p3d inside the mod that does not exist.",
+    "fix": "Fix the path in config.cpp or add the .p3d under workspace/<ModName>/ (paths start at <ModName>\\).",
+    "owner_agent": "dayz-config-specialist",
+    "source": "dayz-ingame-tester fail rules (missing models)"
+  },
+  {
+    "id": "lint-missing-texture",
+    "scope": "lint",
+    "pattern": "^\\[lint:missing-texture\\] ",
+    "meaning": "A config or .rvmat path points at a texture or material inside the mod that does not exist.",
+    "fix": "Fix the path, or add the file under workspace/<ModName>/ (paths start at <ModName>\\); pack images with /dayz-pack-texture.",
+    "owner_agent": "dayz-asset-specialist",
+    "source": "dayz-ingame-tester fail rules (missing textures); Tier 2 conventions/assets.md"
+  },
+  {
+    "id": "lint-missing-file",
+    "scope": "lint",
+    "pattern": "^\\[lint:missing-file\\] ",
+    "meaning": "A config path points at a file inside the mod that does not exist.",
+    "fix": "Fix the path in config.cpp or add the file under workspace/<ModName>/ (paths start at <ModName>\\).",
+    "owner_agent": "dayz-config-specialist",
+    "source": "Tier 2 conventions/config.md; dayz-lint SKILL.md"
+  },
+  {
+    "id": "lint-absolute-path",
+    "scope": "lint",
+    "pattern": "^\\[lint:absolute-path\\] ",
+    "meaning": "A config or .rvmat path is a disk path (P:\\..., workspace\\...), which does not exist inside the PBO.",
+    "fix": "Write the path from the PBO prefix: <ModName>\\data\\file.paa.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "dayz-build-pbo SKILL.md (-prefix=<ModName>)"
+  },
+  {
+    "id": "lint-texture-format",
+    "scope": "lint",
+    "pattern": "^\\[lint:texture-format\\] ",
+    "meaning": "A config or .rvmat path names a .png, .tga, .jpg or .dds image; the game loads textures as .paa.",
+    "fix": "Pack the image with /dayz-pack-texture and point the path at the .paa.",
+    "owner_agent": "dayz-asset-specialist",
+    "source": "Tier 2 conventions/assets.md"
+  },
+  {
+    "id": "lint-texture-suffix",
+    "scope": "lint",
+    "pattern": "^\\[lint:texture-suffix\\] ",
+    "meaning": "A texture has no role suffix such as _co, _nohq or _smdi, so ImageToPAA cannot pick its format.",
+    "fix": "Rename the texture with its role suffix (full list in Tier 2 conventions/assets.md) and update the path.",
+    "owner_agent": "dayz-asset-specialist",
+    "source": "Tier 2 conventions/assets.md"
+  },
+  {
+    "id": "lint-rvmat-syntax",
+    "scope": "lint",
+    "pattern": "^\\[lint:rvmat-syntax\\] ",
+    "meaning": "A .rvmat material cannot be read (an unclosed string or comment), so it fails to load.",
+    "fix": "Open the .rvmat at the line given and close the string or comment.",
+    "owner_agent": "dayz-asset-specialist",
+    "source": "hooks/edit_check.py tokenizer"
+  },
+  {
     "id": "filepatching-0x00020005",
     "pattern": "0x00020005|does not support the client's current filePatching setting",
     "meaning": "The server refused the -filePatching client because its serverDZ.cfg has no active allowFilePatching = 1; line.",

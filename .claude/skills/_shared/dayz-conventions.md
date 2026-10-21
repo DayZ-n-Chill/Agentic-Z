@@ -5,7 +5,7 @@ description: Layered conventions and full workflow for every DayZ-related agent 
 
 # DayZ Modding Conventions (L2)
 
-These are the Tier 2 (L2) rules. They apply to every DayZ-related agent and skill in this repo. They sit below the L1 default rules in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` and above any individual agent or skill. When a DayZ agent or skill is invoked, it reads this core file in addition to L1, plus the topic files under `conventions/` that its work touches (index at the end). Tier 3 packs for narrower work live next to this file in `.claude/skills/_shared/`.
+These are the Tier 2 (L2) rules. They apply to every DayZ-related agent and skill in this repo. They sit below the L1 default rules in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` and above any individual agent or skill. When a DayZ agent or skill is invoked, it reads this core file in addition to L1, plus the topic files under `conventions/` that its work touches (index at the end). Tier 3 packs for narrower work live next to this file in `.claude/skills/_shared/` and in skills' `references/` folders; `.claude/skills/_shared/README.md` indexes every pack and sets the pack layout.
 
 ## EnScript code style
 
@@ -115,7 +115,7 @@ The core above is what every DayZ agent and skill reads. Topic rules live in `.c
 |---|---|---|
 | `conventions/config.md` | Config conventions, `inventorySlot` string vs array (`T148506`), Bundle / umbrella mods | config-specialist, build-checker, build-engineer, mod-reviewer |
 | `conventions/assets.md` | Asset conventions (texture suffixes, `.rvmat`, `.p3d`), LOD canonical resolutions | asset-specialist, object-builder, mod-reviewer, mod-architect |
-| `conventions/scripts.md` | Script conventions (`scripts/` layers, `modded class` with no `extends`) | script-specialist, workbench-specialist, mod-debugger, mod-reviewer, mod-architect |
+| `conventions/scripts.md` | Script conventions (`scripts/` layers, `modded class` with no `extends`), Client and server ownership (which side runs what, who owns state, RPC direction, server validation) | script-specialist, workbench-specialist, mod-debugger, mod-reviewer, mod-architect |
 | `conventions/ui.md` | UI scripting realities (read before any "change the X color" task) | ui-specialist, figma-to-dayz-layout, layout-validator |
 | `conventions/server.md` | Server / economy, Test server instances (`.server/`), Mission and DayZ Server install notes | server-admin, map-specialist, ingame-tester, mod-debugger |
 

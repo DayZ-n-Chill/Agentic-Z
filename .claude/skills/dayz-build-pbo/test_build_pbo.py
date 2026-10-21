@@ -21,13 +21,17 @@ def p_drive(monkeypatch, tmp_path):
     drive.mkdir()
     monkeypatch.setattr(build, "P_DRIVE", drive)
     monkeypatch.setattr(build, "MODS_ROOT", drive / "Mods")
+    monkeypatch.setattr(build.lint, "P_DRIVE", drive)
     return drive
 
 
 def _scaffold(project: Path, name: str = "MyMod") -> Path:
     mod = project / "workspace" / name
     mod.mkdir(parents=True)
-    (mod / "config.cpp").write_text("class CfgPatches {};", encoding="utf-8")
+    (mod / "config.cpp").write_text(
+        f"class CfgPatches {{ class {name} {{ units[] = {{}}; weapons[] = {{}}; requiredAddons[] = {{\"DZ_Data\"}}; }}; }};",
+        encoding="utf-8",
+    )
     (mod / "$PBOPREFIX$").write_text(name, encoding="utf-8")
     return mod
 
@@ -238,3 +242,30 @@ def test_failed_first_build_does_not_block_the_rebuild(p_drive, tmp_path, monkey
     monkeypatch.setattr(build.subprocess, "run", good_build)
     assert build.main() == 0
     assert (deploy / "Addons" / "MyMod.pbo").is_file()
+
+
+# --- /dayz-lint gate -------------------------------------------------------
+
+def test_lint_gate_passes_a_clean_scaffold(p_drive, tmp_path, capsys):
+    project = tmp_path / "proj"
+    _scaffold(project)
+    build.gate_on_lint("MyMod", project)
+    assert "/dayz-lint passed" in capsys.readouterr().out
+
+
+def test_main_stops_on_lint_errors_before_preflight(p_drive, tmp_path, monkeypatch):
+    project = tmp_path / "proj"
+    mod = _scaffold(project)
+    (mod / "scripts" / "4_World").mkdir(parents=True)
+    (mod / "scripts" / "4_World" / "x.c").write_text("modded class PlayerBase extends PlayerBase {}\n", encoding="utf-8")
+    called = []
+    monkeypatch.setattr(build.h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(build.h, "gate_on_preflight", lambda: called.append("preflight"))
+    monkeypatch.setattr("sys.argv", ["build.py", "MyMod"])
+    with pytest.raises(SystemExit) as exc:
+        build.main()
+    message = str(exc.value.code)
+    assert "/dayz-lint found 2 error(s)" in message
+    assert "workspace/MyMod/scripts/4_World/x.c:1" in message
+    assert "no CfgMods defs entry" in message
+    assert called == []

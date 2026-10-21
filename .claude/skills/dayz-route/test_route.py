@@ -27,6 +27,8 @@ def decide(text, env=NO_KEY):
     [
         ("build MyVest", "dayz-build-pbo", {"mod": "MyVest"}),
         ("rebuild the pbo for Tactical_Gear", "dayz-build-pbo", {"mod": "Tactical_Gear"}),
+        ("lint MyVest", "dayz-lint", {"mod": "MyVest"}),
+        ("run the linter on my mod", "dayz-lint", None),
         ("launch the test server", "dayz-launch-test", None),
         ("test it in-game", "dayz-launch-test", None),
         ("stop", "dayz-stop-test", None),

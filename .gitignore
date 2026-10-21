@@ -30,6 +30,9 @@ __pycache__/
 
 # Release assets — uploaded to GitHub Releases, not committed (too big for git)
 output/release/
+
+# Answer test (evals) results, one file per run
+output/evals/
 *.tar.gz
 
 workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/
@@ -45,3 +48,7 @@ workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/
 .server/*/mission/storage_*/
 # /dayz-gate behavior rebuilds .server/<instance>-behavior/ from <instance>/ on every run.
 .server/*-behavior/
+
+# Private working docs: never pushed
+docs/.updates/
+docs/superpowers/
