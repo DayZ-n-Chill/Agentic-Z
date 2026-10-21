@@ -33,6 +33,7 @@ sys.path.insert(0, str(SKILLS_DIR / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 triage = h.load_module("dayz_gate_triage", HERE / "triage.py")
+lint = h.load_module("dayz_gate_lint", SKILLS_DIR / "dayz-lint" / "lint.py")
 
 BUILD_PY = SKILLS_DIR / "dayz-build-pbo" / "build.py"
 DEPLOY_PY = SKILLS_DIR / "dayz-deploy-pbo" / "deploy.py"
@@ -215,10 +216,26 @@ def bundle_layout(mod_dir: Path) -> tuple[bool, bool]:
     return (mod_dir / "config.cpp").is_file(), has_payload
 
 
+def run_lint(report: dict, mod: str, mod_dir: Path, project_dir: Path) -> bool:
+    """/dayz-lint first: its errors become failures, its warnings warnings. True when it passed."""
+    try:
+        result = lint.lint_mod(mod, mod_dir, project_dir, project_dir=project_dir)
+    except lint.LintError as e:
+        raise GateError(str(e)) from e
+    report["lint"] = {key: result[key] for key in ("verdict", "errors", "warnings")}
+    for f in result["findings"]:
+        finding = {**_finding("lint", f["text"], f["file"], f["line"]), "rule": f["rule"]}
+        report["failures" if f["severity"] == lint.ERROR else "warnings"].append(finding)
+    return result["verdict"] == "PASS"
+
+
 def gate_build(mod: str, project_dir: Path, rt: Runtime) -> dict:
     report = new_report("build", mod)
-    report["steps"].append(stop_session(rt))
     mod_dir = project_dir / "workspace" / mod
+    # /dayz-lint first: a mod that would not load is not packed (and a running session is left alone).
+    if not run_lint(report, mod, mod_dir, project_dir):
+        return finish(report, project_dir)
+    report["steps"].append(stop_session(rt))
     has_cfg, has_payload = bundle_layout(mod_dir)
     # Tier 2 conventions/config.md, "Bundle / umbrella mods": a payload-only bundle has nothing to build;
     # a bundle with a linker config.cpp is built, then its payload deployed.
@@ -583,6 +600,8 @@ def finish(report: dict, project_dir: Path, extra_context: Optional[dict] = None
 def render_text(report: dict) -> str:
     """The human summary printed under the verdict line without --json."""
     out = []
+    if report.get("lint"):
+        out.append(f"  dayz-lint: {report['lint']['verdict']}, {report['lint']['errors']} error(s), {report['lint']['warnings']} warning(s)")
     for step in report["steps"]:
         out.append(f"  {step['step']}: " + (f"exit {step['rc']}" if "rc" in step else step["result"]))
     if report.get("ready"):

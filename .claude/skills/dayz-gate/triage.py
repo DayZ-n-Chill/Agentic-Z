@@ -121,7 +121,8 @@ def match_line(line: str, known: list[dict], context: Optional[dict] = None) -> 
     """Triage one line: {"status": "known", id, meaning, fix, owner_agent, fingerprint} or "new"."""
     fp = fingerprint(line)
     for entry in known:
-        if entry.get("scope", "log") != "log":
+        # "lint" entries match the "[lint:<rule>] ..." text of /dayz-lint findings.
+        if entry.get("scope", "log") not in ("log", "lint"):
             continue
         regex = entry.get("_re")
         hit = regex.search(line) if regex is not None else entry.get("fingerprint") == fp
