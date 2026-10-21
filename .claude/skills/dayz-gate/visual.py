@@ -87,7 +87,7 @@ def latest_run_dir(project_dir: Path, mod: str) -> Path:
 
 def load_shots(path: Path) -> dict:
     if not path.is_file():
-        raise VisualError(f"no shots file at {path}; write one (see the dayz-gate skill, Shots file) or pass --shots")
+        raise VisualError(f"no shots file at {path}; write one (see shots-file.md in the dayz-gate skill) or pass --shots")
     try:
         data = json.loads(path.read_text(encoding="utf-8-sig"))
     except json.JSONDecodeError as e:

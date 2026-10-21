@@ -97,6 +97,19 @@ Next steps:
   - Remove the import (keeps your source intact): /dayz-clean-workspace --mod MyMod
 ```
 
+An existing `$PBOPREFIX$` must hold exactly the mod name, because `/dayz-build-pbo` packs under that prefix and refuses anything else. Many published mods use a prefix such as `Author\MyMod`. The import still finishes, but the check prints a warning and the build step names the fix:
+
+```
+Scaffolding check:
+  [OK]    config.cpp present
+  [OK]    $PBOPREFIX$ present
+  [WARN]  $PBOPREFIX$ is 'Author\\MyMod', not 'MyMod', so /dayz-build-pbo will refuse it.
+          Set the file to the single line MyMod and make config.cpp paths start with MyMod\.
+...
+Next steps:
+  - Build: set $PBOPREFIX$ to MyMod, then /dayz-build-pbo MyMod
+```
+
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero (typically `P:\` not mounted).

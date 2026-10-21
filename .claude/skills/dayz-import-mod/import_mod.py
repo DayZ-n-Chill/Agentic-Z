@@ -350,9 +350,12 @@ def finish(source: Path, workspace_target: Path, modname: str, missing: list, ar
     """Report the scaffold check, write the accepted pieces, print next steps."""
     print()
     print("Scaffolding check:")
-    for _key, rel, why in SCAFFOLD_CHECKS:
+    prefix_ok = True
+    for key, rel, why in SCAFFOLD_CHECKS:
         if (source / rel).exists():
             print(f"  {OK} {rel} present")
+            if key == "prefix":
+                prefix_ok = check_prefix(source / rel, modname)
         else:
             print(f"  {WARN} {rel} missing ({why})")
 
@@ -367,9 +370,28 @@ def finish(source: Path, workspace_target: Path, modname: str, missing: list, ar
     print()
     print("Next steps:")
     print(f"  - Open in Workbench: /dayz-launch-workbench --mod {modname}")
-    print(f"  - Build: /dayz-build-pbo {modname}")
+    if prefix_ok:
+        print(f"  - Build: /dayz-build-pbo {modname}")
+    else:
+        print(f"  - Build: set $PBOPREFIX$ to {modname}, then /dayz-build-pbo {modname}")
     print(f"  - {remove_hint}")
     return 0
+
+
+def check_prefix(prefix_file: Path, modname: str) -> bool:
+    """Warn when an existing $PBOPREFIX$ is not exactly <ModName>.
+
+    /dayz-build-pbo packs under the prefix <ModName> and refuses any other
+    content, which real-world mods often have (for example Author\\MyMod).
+    """
+    prefix = prefix_file.read_text(encoding="utf-8-sig", errors="replace").strip()
+    if prefix == modname:
+        return True
+    print(
+        f"  {WARN} $PBOPREFIX$ is {prefix!r}, not {modname!r}, so /dayz-build-pbo will refuse it.\n"
+        f"          Set the file to the single line {modname} and make config.cpp paths start with {modname}\\."
+    )
+    return False
 
 
 def import_from_git(src: GitSource, args: argparse.Namespace) -> int:

@@ -269,3 +269,45 @@ def test_cli_no_project_exits_2(monkeypatch, capsys):
     monkeypatch.setattr(health.h, "resolve_project_dir", refuse)
     assert health.main(["MyVest"]) == 2
     assert capsys.readouterr().out.startswith("ERROR")
+
+
+# --- visual runs from /dayz-gate visual -----------------------------------------
+
+def visual_report(verdict="FAIL"):
+    fails = [failure("[visual:diff] hud: 4.10% of pixels differ", file="output/x/hud.png", line=None,
+                     category="visual")] if verdict == "FAIL" else []
+    report = gate_report("visual", verdict, fails)
+    report["shots"] = [
+        {"id": "inventory", "status": "PASS", "reason": "", "ratio": 0.001, "capture": "c", "baseline": "b", "diff": None},
+        {"id": "hud", "status": verdict, "reason": "", "ratio": 0.041, "capture": "c", "baseline": "b", "diff": "d"},
+    ]
+    return report
+
+
+def test_record_gate_visual_is_stored_and_loaded(project):
+    paths = health.record_gate(project, visual_report(), T0)
+    assert len(paths) == 1 and paths[0].name.endswith("-visual.json")
+    results = health.load_results(project, "MyVest")
+    assert [r["kind"] for r in results] == ["visual"]
+    assert results[0]["summary"] == "1 of 2 shots passed"
+    assert [s["id"] for s in results[0]["shots"]] == ["inventory", "hud"]
+
+
+def test_visual_run_counts_as_last_test_and_shows_its_shots(project):
+    fixture_history(project)
+    health.record_gate(project, visual_report(), T0 + timedelta(hours=4))
+    data, md, page = health.render(project, "MyVest")
+    assert data["last_test"]["kind"] == "visual"
+    text = md.read_text(encoding="utf-8")
+    assert "* Last test: FAIL (Visual test, 2026-10-20 16:00:00 UTC, 1 of 2 shots passed)" in text
+    assert "## Visual shots (latest run)" in text
+    assert "| hud | FAIL | 4.10% of pixels differ |" in text
+    assert "| Visual test | FAIL |" in text
+    assert "Visual shots (latest run)" in page.read_text(encoding="utf-8")
+
+
+def test_cli_record_visual(project, tmp_path, capsys):
+    report = tmp_path / "visual.json"
+    report.write_text("PASS\n" + json.dumps(visual_report("PASS")), encoding="utf-8")
+    assert health.main(["record", "MyVest", "visual", str(report)]) == 0
+    assert health.load_results(project, "MyVest")[0]["kind"] == "visual"

@@ -192,6 +192,20 @@ class TestAcquireLock(unittest.TestCase):
         self.assertEqual(read_lock()["pid"], os.getpid())
         release_lock()
 
+    def test_lock_create_is_exclusive(self):
+        # A second create while the file exists must fail, not overwrite (no check-then-write race).
+        write_lock()
+        with self.assertRaises(FileExistsError):
+            write_lock()
+        release_lock()
+
+    def test_acquire_takes_over_unreadable_lock(self):
+        LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+        LOCK_FILE.write_text("not json")
+        self.assertTrue(acquire_lock())
+        self.assertEqual(read_lock()["pid"], os.getpid())
+        release_lock()
+
 
 class TestComputeDriftSmoke(unittest.TestCase):
     """Single smoke test for compute_drift — full integration is covered by manual smoke later."""

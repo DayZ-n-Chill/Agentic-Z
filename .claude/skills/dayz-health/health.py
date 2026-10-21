@@ -5,7 +5,7 @@
   health.py record <ModName> <kind> [FILE] [--json]
 
 Every result is one JSON file under .server/!Health/<ModName>/results/, named
-by its UTC time and kind (build, lint, ingame, behavior or review). /dayz-gate
+by its UTC time and kind (build, lint, ingame, behavior, visual or review). /dayz-gate
 writes one per run (and a lint result for each build run). `record` stores
 any other result: the JSON output of /dayz-lint or /dayz-gate, or a
 dayz-mod-reviewer report as text. FILE defaults to standard input.
@@ -33,9 +33,10 @@ sys.path.insert(0, str(HERE.parent / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 SCHEMA = 1
-KINDS = ("build", "lint", "ingame", "behavior", "review")
-KIND_LABELS = {"build": "Build", "lint": "Lint", "ingame": "In-game test", "behavior": "Behavior test", "review": "Review"}
-TEST_KINDS = ("ingame", "behavior")
+KINDS = ("build", "lint", "ingame", "behavior", "visual", "review")
+KIND_LABELS = {"build": "Build", "lint": "Lint", "ingame": "In-game test", "behavior": "Behavior test",
+               "visual": "Visual test", "review": "Review"}
+TEST_KINDS = ("ingame", "behavior", "visual")
 HEALTH_DIR = Path(".server") / "!Health"
 KEEP = 200          # results kept per mod; older ones are deleted when a new one is stored
 HISTORY_ROWS = 50   # rows in the page's history table
@@ -75,7 +76,7 @@ def _triaged(f: dict) -> tuple[str, str]:
 
 
 def from_gate(report: dict) -> dict:
-    """A /dayz-gate report (build, ingame or behavior) as a stored result."""
+    """A /dayz-gate report (build, ingame, behavior or visual) as a stored result."""
     findings = []
     for f in report.get("failures", []):
         owner, fix = _triaged(f)
@@ -85,12 +86,18 @@ def from_gate(report: dict) -> dict:
     result = {"kind": report["mode"], "verdict": report["verdict"], "findings": findings, "warnings": warnings}
     if report.get("checks"):
         result["checks"] = [{"id": c["id"], "status": c["status"], "reason": c.get("reason", "")} for c in report["checks"]]
+    if report.get("shots"):
+        result["shots"] = [{"id": s["id"], "status": s["status"], "reason": s.get("reason") or "",
+                            "ratio": s.get("ratio")} for s in report["shots"]]
     lint = report.get("lint")
     if report["mode"] == "build" and lint and lint["verdict"] != "PASS":
         result["summary"] = "stopped at lint, nothing was packed"
     elif report.get("checks"):
         passed = sum(c["status"] == "PASS" for c in report["checks"])
         result["summary"] = f"{passed} of {len(report['checks'])} checks passed"
+    elif report.get("shots"):
+        passed = sum(s["status"] == "PASS" for s in report["shots"])
+        result["summary"] = f"{passed} of {len(report['shots'])} shots passed"
     return result
 
 
@@ -251,6 +258,13 @@ def _md(text) -> str:
     return str(text).replace("|", "\\|").replace("\n", " ")
 
 
+def _shot_reason(shot: dict) -> str:
+    """A shot's reason, or how much of it differed when the gate gave no reason."""
+    if shot.get("reason"):
+        return shot["reason"]
+    return f"{shot['ratio']:.2%} of pixels differ" if shot.get("ratio") is not None else ""
+
+
 def render_markdown(data: dict) -> str:
     out = [f"# {data['mod']} health", ""]
     if not data["history"]:
@@ -280,6 +294,10 @@ def render_markdown(data: dict) -> str:
     if behavior and behavior.get("checks"):
         out += ["", "## Behavior checks (latest run)", "", "| Check | Result | Reason |", "| --- | --- | --- |"]
         out += [f"| {_md(c['id'])} | {c['status']} | {_md(c.get('reason', ''))} |" for c in behavior["checks"]]
+    visual_run = data["latest"].get("visual")
+    if visual_run and visual_run.get("shots"):
+        out += ["", "## Visual shots (latest run)", "", "| Shot | Result | Reason |", "| --- | --- | --- |"]
+        out += [f"| {_md(s['id'])} | {s['status']} | {_md(_shot_reason(s))} |" for s in visual_run["shots"]]
     out += ["", "## History", "", "| When | Gate | Result | Failures | Warnings |", "| --- | --- | --- | --- | --- |"]
     for r in data["history"][:HISTORY_ROWS]:
         fails, warns = _counts(r)
@@ -360,6 +378,10 @@ def render_html(data: dict) -> str:
         if behavior and behavior.get("checks"):
             rows = [[_e(c["id"]), _badge(c["status"]), _e(c.get("reason", ""))] for c in behavior["checks"]]
             parts += ["<h2>Behavior checks (latest run)</h2>", _table("One row per check", ["Check", "Result", "Reason"], rows)]
+        visual_run = data["latest"].get("visual")
+        if visual_run and visual_run.get("shots"):
+            rows = [[_e(s["id"]), _badge(s["status"]), _e(_shot_reason(s))] for s in visual_run["shots"]]
+            parts += ["<h2>Visual shots (latest run)</h2>", _table("One row per shot", ["Shot", "Result", "Reason"], rows)]
         rows = []
         for r in data["history"][:HISTORY_ROWS]:
             fails, warns = _counts(r)

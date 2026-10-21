@@ -236,7 +236,8 @@ def test_cli_none_exits_1(p_drive, capsys):
     assert capsys.readouterr().out.startswith("NONE")
 
 
-@pytest.mark.parametrize("argv", [["  "], ["--top-k", "0", "q"], ["--top-k", "99", "q"]])
+@pytest.mark.parametrize("argv", [["  "], ["--top-k", "0", "q"], ["--top-k", "99", "q"],
+                                  ["--file-type", "bogus", "q"], ["--top-k", "x", "q"], []])
 def test_cli_bad_arguments(p_drive, argv, capsys):
     assert ask.main(argv) == 2
     assert capsys.readouterr().out.startswith("ERROR")

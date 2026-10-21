@@ -222,6 +222,25 @@ def test_failed_lint_stop_is_stored_as_a_failed_build(project, capsys):
     assert any("cfgpatches" in f["text"].lower() for f in data["open_findings"])
 
 
+def test_visual_result_is_stored_for_health(project):
+    run = project / "output" / "MyMod-visual" / "runs" / "2026-10-21_12-00-00"
+    results = [
+        {"id": "hud", "status": gate.visual.FAIL, "ratio": 0.0156, "threshold": 0.01, "reason": "1.56% of pixels differ",
+         "capture": run / "hud.png", "baseline": None, "diff": None},
+        {"id": "menu", "status": gate.visual.PASS, "ratio": 0.0, "threshold": 0.01, "reason": "",
+         "capture": run / "menu.png", "baseline": None, "diff": None},
+    ]
+    report = gate.new_report("visual", "MyMod")
+    gate.add_visual_results(report, results, run, project)
+    gate.finish(report, project)
+    gate.save_health(report, project)
+    assert "health" in report and "health_error" not in report
+    [stored] = gate.health.load_results(project, "MyMod")
+    assert (stored["kind"], stored["verdict"]) == ("visual", "FAIL")
+    assert [s["status"] for s in stored["shots"]] == ["FAIL", "PASS"]
+    assert gate.health.health(project, "MyMod")["last_test"]["kind"] == "visual"
+
+
 def test_health_store_failure_keeps_the_verdict(project, capsys, monkeypatch):
     def broken(*_):
         raise OSError("disk full")

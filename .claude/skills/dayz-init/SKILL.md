@@ -100,11 +100,15 @@ Same command plus `--execute`. Each step's output streams through; the first fai
 python "<skill-dir>\hub_status.py"
 ```
 
-Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and search status. Then ask "What next?" with AskUserQuestion and dispatch the choice. Repeat until the user is done.
+Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and search status. Test servers are the `.server\<instance>\` folders with a `serverDZ.cfg`; the `<instance>-behavior` copies that `/dayz-gate behavior` rebuilds are not listed. A `Needs:` line lists the active mod's `requiredAddons` that vanilla does not provide, such as `JM_CF_Scripts`. Then ask "What next?" with AskUserQuestion and dispatch the choice. Repeat until the user is done.
 
 | Choice | Do |
 |---|---|
-| Build and launch | `dispatch.py build`, then `dispatch.py launch --server <instance>` (ask for the instance if there are several; offer add-server if there are none) |
+| Build and launch | `dispatch.py build`, then `dispatch.py launch --server <instance> [--deps CF ...]` (ask for the instance if there are several; offer add-server if there are none). When the status has a `Needs:` line, ask which `@mods` provide those addons, in load order, and pass them as `--deps` |
+| Lint the mod | `dispatch.py lint` (`/dayz-lint`) |
+| Gate the build | `dispatch.py gate-build` (`/dayz-gate build`: lint, build and a stored result) |
+| Gate in game | `dispatch.py gate-ingame --server <instance> [--deps CF ...]` (`/dayz-gate ingame`; ask for `--deps` as for launch) |
+| Show mod health | `dispatch.py health` (`/dayz-health`: last build, last test and open findings) |
 | Stop DayZ Diag | `dispatch.py stop` |
 | Show the server log | Read the newest `script*.log` in `.server\<instance>\Profiles\` |
 | Open in Workbench | `dispatch.py workbench` |
@@ -114,7 +118,7 @@ Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and s
 | Set up search | See "Search (optional)" below, then `dispatch.py search-download` |
 | Set up or switch to another mod | Go back to Step 3 for that mod; `plan.py` skips scaffolding for a mod that already exists |
 
-All `dispatch.py` actions default `--mod` to the active mod and exit with the child skill's exit code (2 when a required value is missing). `python "<skill-dir>\dispatch.py" --list` prints the actions.
+All `dispatch.py` actions default `--mod` to the active mod (`launch` and `gate-ingame` also take `--deps`) and exit with the child skill's exit code (2 when a required value is missing). `python "<skill-dir>\dispatch.py" --list` prints the actions.
 
 ## Search (optional)
 
