@@ -59,7 +59,7 @@ For movement vanilla does not have, write your own command class and start it wi
 
 `DayZAnimal.CommandHandler` (`dayzanimal.c:722`) has the same three mod hooks around `HandleDeath` (`:791`), `HandleDamageHit`, then jump and attack from the input controller.
 
-The three hooks are declared on `DayZCreature` (`dayzanimal.c:175`, `:180`, `:185`) and return false by default. Override them in a `modded class ZombieBase` or your own subclass; call `super` unless you mean to replace vanilla handling. Vanilla `DayZAnimal` already overrides `ModCommandHandlerBefore` for its cinematic controller (`dayzanimal.c:433`), so always call `super` there.
+The three hooks are declared on `DayZCreature` (`dayzanimal.c:175`, `:180`, `:185`) and return false by default. Override them in a `modded class ZombieBase` or your own subclass; call `super` unless you mean to replace vanilla handling. Vanilla `DayZCreatureAI` already overrides `ModCommandHandlerBefore` for its cinematic controller (`dayzanimal.c:433`), so both infected and animals inherit it; always call `super` there.
 
 ## Input controllers: what the AI wants
 
