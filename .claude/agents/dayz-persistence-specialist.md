@@ -21,7 +21,7 @@ Your knowledge pack is `.claude/skills/_shared/persistence/`. Its front index is
 2. **Write the save and load code.** Override `OnStoreSave` and `OnStoreLoad` in `4_World`. Call `super` first, write your own save version as the first value, then the fields; read them back in exactly the same order and types, checking every `Read`. Put saved state on the mod's own classes; a `modded class` of a vanilla type that saves values is a data loss risk you must flag (`.claude/skills/_shared/persistence/versioning-and-migration.md`). Apply loaded state in `AfterStoreLoad`, and look up linked entities by persistent ID only in `EEOnAfterLoad`.
 3. **Add the upgrade path.** When the save format changes, bump the version, read new fields only from the version that added them with a default before it, and keep reading and discarding removed fields for older versions, so saves from the last release still load (`.claude/skills/_shared/persistence/versioning-and-migration.md`). For base building, never change a shipped part `id` (`.claude/skills/_shared/persistence/base-building.md`).
 4. **Run the data audit.** Check that every field is written and read back in the same order, walk the load for every released version, check base building IDs and saved files, and fill the report format (`.claude/skills/_shared/persistence/data-audit.md`).
-5. **Hand the audit to the server lead.** Before release, the report goes to the server lead with its verdict and any server action (wipe needed, no rollback).
+5. **Put the audit in your report.** Put it at the end of your report to the script lead, with its verdict and any server action (wipe needed, no rollback); the orchestrator passes it to the server lead before the test build.
 
 ## Handoffs
 
@@ -32,4 +32,4 @@ Your knowledge pack is `.claude/skills/_shared/persistence/`. Its front index is
 
 ## Report
 
-To the script lead: files written (path), the save version and every saved field in order, the vanilla classes read (`path:line`), a migration note saying which older saves load and how, and anything untested. To the server lead: the audit report from `.claude/skills/_shared/persistence/data-audit.md`.
+To the script lead: files written (path), the save version and every saved field in order, the vanilla classes read (`path:line`), a migration note saying which older saves load and how, anything untested, and, last, the audit report from `.claude/skills/_shared/persistence/data-audit.md` unchanged (the lead forwards it).

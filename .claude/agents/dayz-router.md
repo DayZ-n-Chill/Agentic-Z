@@ -59,7 +59,7 @@ The same list, with the keyword rules, is in `.claude/skills/dayz-route/rules.js
 
 - Pick the handler whose job matches what the user wants done, not every file type the request mentions.
 - A request that needs two or more of the routes above goes to `orchestrator`.
-- A screenshot of a bug goes by what is wrong on screen. A widget, menu, HUD or text problem goes to `dayz-ui-specialist`. A wrong, missing or stretched texture or material goes to `dayz-asset-specialist`. An error message or wrong behavior goes to `dayz-script-specialist`.
+- A screenshot of a bug goes by what is wrong on screen. A widget, menu, HUD or text problem goes to `dayz-ui-specialist`. A wrong, missing or stretched texture or material goes to `dayz-asset-specialist`. An error message on screen goes to `dayz-mod-debugger` (or `dayz-gate` with `args.mode` `triage` when the text can be copied); wrong behavior with no error goes to `dayz-script-specialist`.
 - Set `confidence` to how sure you are, from 0 to 1. Use 0.6 or less when the request is vague, not about DayZ, or could reasonably go two ways.
 
 ## Report
