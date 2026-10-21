@@ -49,7 +49,7 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/patterns/json_config_migration.md` | JSON config schema versions and forward migration. |
 | `_shared/enscript/patterns/language_workarounds.md` | Missing language features (ternary, type inference, lambdas, exceptions, overloading) and their workarounds. |
 | `_shared/enscript/integrations/community_framework.md` | Community Framework modules, storage, event bus. |
-| `_shared/enscript/integrations/dabs_framework.md` | DABS attribute actions and MVC layouts. |
+| `_shared/enscript/integrations/dabs_framework.md` | Dabs Framework (third party): attributes, `ScriptView` and `ViewController` MVC, layout bindings, `ScriptViewMenu`. Checked against the mod's own scripts. |
 | `_shared/enscript/integrations/vanilla_plugins.md` | Vanilla `PluginBase` lifecycle and `GetPlugin()`. |
 | `_shared/enscript/integrations/central_economy.md` | Central Economy XML and runtime spawning. |
 | `_shared/enscript/integrations/input_bindings.md` | `inputs.xml`, `UAInput`, context guards. |
@@ -60,6 +60,7 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/erpc_defines.md` | Vanilla RPC, agent and modifier ID tables; custom ID ranges. |
 | `_shared/enscript/references/file_paths.md` | `$profile` and `$saves` paths, file and JSON helpers. |
 | `_shared/enscript/references/gui_layout.md` | `.layout` format and every widget type. |
+| `_shared/enscript/references/widget_api.md` | Widget script classes and methods, events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu`, imagesets. |
 
 ### Physics pack (`_shared/physics`)
 

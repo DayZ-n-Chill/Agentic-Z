@@ -40,7 +40,7 @@ enscript/
 | File | Topic |
 |---|---|
 | `community_framework.md` | CF module system, `ModStorage` persistence, event bus, inter-mod events |
-| `dabs_framework.md` | Attribute-based action system, `CF_ModAttribute`, MVC layout |
+| `dabs_framework.md` | Dabs Framework (third party): attributes, `ScriptView` MVC, layout bindings, `ScriptViewMenu` |
 | `vanilla_plugins.md` | `PluginBase` lifecycle, `GetPlugin()`, service-locator isolation |
 | `central_economy.md` | CE XML format, runtime CE with `SpawnObject`/`DeleteObject`, `cfgeconomycore.xml` |
 | `input_bindings.md` | `inputs.xml`, `UAInput` API, `GetUApi()`, context guards |
@@ -56,6 +56,7 @@ enscript/
 | `erpc_defines.md` | Vanilla `eRPCs`/`eAgents`/`eModifiers` tables, custom ID range convention |
 | `file_paths.md` | `$profile`/`$saves` path tokens, `FileExist`, `MakeDirectory`, `JsonFileLoader`, `FileMode` |
 | `gui_layout.md` | `.layout` file format, RGBA colors, coords, all widget types, `ItemPreviewWidget`/`PlayerPreviewWidget` |
+| `widget_api.md` | Widget script classes and methods, events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu`, imagesets |
 
 ### examples/
 
@@ -98,7 +99,9 @@ When debugging, jump to the file that owns the symptom.
 | RPC fires "wrong handler" with another mod loaded | `patterns/rpc.md` (ID-collision symptom) |
 | Crash on shutdown / mission end after `ScriptInvoker.Remove()` | `patterns/singleton.md` (null-guard) |
 | Keybind does nothing, no log error | `integrations/input_bindings.md` (3-piece setup) |
-| Dabs menu stuck open, no other menus work | `integrations/dabs_framework.md` (layout-path ghost trap) |
+| Dabs menu stuck open, no other menus work | `integrations/dabs_framework.md` (wrong layout path trap) |
+| Button `OnClick` never fires | `references/widget_api.md` (`ignorepointer`, handler not set) |
+| Icon from an imageset is blank | `references/widget_api.md` (imageset not registered in `CfgMods`) |
 | Magazine spawns with 0 rounds despite quantity set | `references/item_api.md` (`Magazine.ServerSetAmmoCount`) |
 | `SetObjectTexture` no-op, no log warn | `references/item_api.md` (case-sensitivity, index vs name) |
 | Whole script file fails to compile, no obvious cause | `references/item_api.md` (`SetObjectTextureGlobal` may not exist) |
@@ -120,7 +123,8 @@ The vendored content was lightly modified to include Agentic-Z-specific gotchas:
 - **`patterns/physics_items.md`** *(new)* — `ThrowPhysically` pattern
 - **`patterns/json_config_migration.md`** *(new)* — forward-compatible JSON schema migration
 - **`integrations/input_bindings.md`** — silent-fail keybind 3-piece trap
-- **`integrations/dabs_framework.md`** — layout-path ghost-menu trap
+- **`integrations/dabs_framework.md`**: rewritten against the Dabs Framework scripts; wrong layout path trap
+- **`references/widget_api.md`** *(new)*: widget script API checked against vanilla
 - **`references/item_api.md`** — `Magazine.ServerSetAmmoCount`, `SetObjectTexture` case-sensitivity
 - **`references/game_api.md`** — `ConfigGet*` space-separated path, `GetScreenPos` z-check
 - **`references/types_collections.md`** — `string.ToLower/ToUpper` mutation, `Math`/`string` API existence table, `int.MIN` quirk
