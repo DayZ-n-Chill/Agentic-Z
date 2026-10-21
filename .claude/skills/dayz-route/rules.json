@@ -4,6 +4,7 @@
   "targets": {
     "dayz-build-pbo": {"kind": "skill", "description": "Pack an existing mod from workspace/<ModName>/ into a PBO"},
     "dayz-lint": {"kind": "skill", "description": "Check a mod for errors that would stop it loading, before packing"},
+    "dayz-conflict-check": {"kind": "skill", "description": "Find class name and path collisions between a mod and CF, COT, Expansion or other mods"},
     "dayz-launch-test": {"kind": "skill", "description": "Launch the local DayZ Diag test server and client"},
     "dayz-logwatch": {"kind": "skill", "description": "Watch a running test session's logs and triage each new error line as it appears"},
     "dayz-stop-test": {"kind": "skill", "description": "Stop a running local DayZ test session"},
@@ -75,6 +76,17 @@
       "route": "dayz-build-pbo",
       "confidence": 0.9,
       "patterns": ["\\b(?:build|pack|rebuild|repack)\\s+(?:the\\s+)?(?:pbo\\s+(?:for\\s+)?)?(?!(?:me|a|an|it|the|my|this|pbo|and|mod|again|all|everything|config|script|scripts|ui|layout|hud|types|server)\\b)(?P<mod>[A-Za-z][\\w-]*)"]
+    },
+    {
+      "route": "dayz-conflict-check",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": [
+        "\\bconflict[\\s-]?check\\s+(?!(?:the|my|this|it|mod|against|with|for|on)\\b)(?P<mod>[A-Za-z][\\w-]*)",
+        "\\bconflict[\\s-]?check\\b",
+        "\\b(?:conflicts?|collisions?|clash(?:es)?|collide)\\b[\\w\\s,'-]{0,40}?\\b(?:cf|cot|community[\\s-]online[\\s-]tools|expansion|other\\s+mods)\\b",
+        "\\b(?:cf|cot|expansion)\\b[\\w\\s,'-]{0,40}?\\b(?:conflicts?|collisions?|clash(?:es)?|collide)\\b"
+      ]
     },
     {
       "route": "dayz-lint",
