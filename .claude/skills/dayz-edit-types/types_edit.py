@@ -32,6 +32,9 @@ DEFAULTS = {
     "min": 0,
     "lifetime": 3888000,
     "restock": 0,
+    # -1 means "not a quantity item"; every vanilla <type> carries both tags.
+    "quantmin": -1,
+    "quantmax": -1,
     "cost": 100,
 }
 DEFAULT_FLAGS = {

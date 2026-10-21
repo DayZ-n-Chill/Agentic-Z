@@ -62,6 +62,8 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 ## Output
 
 ```
+[WARN]  lint config.cpp:9: requiredAddons lists DZ_Data twice in MyMod.
+[OK]    /dayz-lint passed
 DayZ preflight
 
 [OK]    P:\ is mounted
@@ -83,7 +85,7 @@ Preflight complete.
 [OK]    Cleaned temp dir
 ```
 
-The ownership line appears only when `@MyMod` already exists. Failures print `[FAIL]  <reason>` followed by an indented hint.
+The lint gate runs first. Each `/dayz-lint` warning prints as a `[WARN]  lint` line and does not stop the build; any lint error stops it before preflight. The ownership line appears only when `@MyMod` already exists. Failures print `[FAIL]  <reason>` followed by an indented hint.
 
 ## Do not
 

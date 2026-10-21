@@ -245,7 +245,7 @@ def default_server_cfg(instance: str, template: str) -> str:
 
         maxPlayers = 4;                         // Maximum amount of players (local test)
 
-        verifySignatures = 0;                   // Verifies .pbos against .bisign files (only 2 is supported)
+        verifySignatures = 0;                   // 0 = off for local diag testing (2 = full .bisign check)
         forceSameBuild = 0;                     // 0 for diag-mode mod testing (client/server diag may mismatch)
         allowFilePatching = 1;                  // Required; clients launch with -filePatching
 

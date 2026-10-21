@@ -289,3 +289,26 @@ def test_main_never_removes_hand_placed_mod(project, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "skipping workspace\\HandPlaced" in out and "Nothing to clean." in out
     assert mod.is_dir()
+
+
+def test_main_plans_health_results_before_the_workspace(project, monkeypatch, capsys, junctions):
+    mod = _native(project / "workspace", "MyMod", junctions)
+    health = project / ".server" / "!Health" / "MyMod"
+    health.mkdir(parents=True)
+    other = project / ".server" / "!Health" / "OtherMod"
+    other.mkdir()
+    removed = []
+    monkeypatch.setattr(clean, "remove_artifact", lambda kind, path: removed.append((kind, path)))
+    assert _main(monkeypatch, "--yes") == 0
+    kinds = [k for k, _ in removed]
+    assert ("health", health) in removed
+    assert kinds.index("health") < kinds.index("workspace")
+    assert all(path != other for _, path in removed)
+
+
+def test_main_include_server_does_not_list_health_twice(project, monkeypatch, capsys, junctions):
+    _native(project / "workspace", "MyMod", junctions)
+    (project / ".server" / "!Health" / "MyMod").mkdir(parents=True)
+    assert _main(monkeypatch, "--include-server", "--dry-run") == 0
+    out = capsys.readouterr().out
+    assert "(health)" not in out and "(server staging)" in out

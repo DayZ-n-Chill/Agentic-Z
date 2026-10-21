@@ -325,7 +325,17 @@ def main(argv: Optional[list[str]] = None) -> int:
                    help="vanilla folder for the Grep fallback (repeatable; default scripts and dz)")
     p.add_argument("--grep", action="store_true", help="skip RAG and use the Grep fallback")
     p.add_argument("--json", action="store_true", help="print the report as JSON after the verdict line")
-    args = p.parse_args(argv)
+
+    def arg_error(message: str) -> None:
+        # Bad arguments get the same ERROR first line as every other refusal.
+        print(f"ERROR\n  {message}")
+        raise SystemExit(2)
+
+    p.error = arg_error
+    try:
+        args = p.parse_args(argv)
+    except SystemExit as e:
+        return 0 if e.code == 0 else 2
 
     question = " ".join(" ".join(args.question).split())
     if not question:

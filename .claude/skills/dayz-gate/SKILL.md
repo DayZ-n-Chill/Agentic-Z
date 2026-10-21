@@ -1,6 +1,6 @@
 ---
 name: dayz-gate
-description: "Runs the orchestrator's build, in-game and behavior gates as scripts instead of agent turns: build packs the mod and checks AddonBuilder output; ingame runs a test session and checks the new log lines; behavior runs a test mission that spawns and uses each new item and gives PASS or FAIL per check; visual captures the game window at set points and compares each screenshot with its baseline. Failures are triaged against known errors, and every result is stored for /dayz-health. Use when gating a finished wave."
+description: "Runs the build, in-game, behavior and visual gates as scripts, with PASS or FAIL, triaged failures and a stored result for each. Use when gating a finished wave or checking a mod builds, loads, works and looks right in game."
 argument-hint: "build <ModName> [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--prepare-only | --logs FILE ...] [--json] | visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--threshold R] [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--json]"
 ---
 
@@ -107,28 +107,7 @@ The report adds `checks` (one entry per check with `status`, `reason`, `file` an
 
 ### Checks file
 
-`dayz-mod-architect` writes one check per feature:
-
-```json
-{
-  "mod": "MyVest",
-  "checks": [
-    {"id": "vest-spawns", "feature": "The vest exists in the world", "item": "MyVest_Carrier", "action": "spawn"},
-    {"id": "vest-wear", "feature": "A player can wear the vest", "item": "MyVest_Carrier", "action": "wear"},
-    {"id": "vest-pouch", "feature": "The pouch attaches to the vest", "item": "MyVest_Carrier", "action": "attach", "with": "MyVest_Pouch"}
-  ]
-}
-```
-
-| Action | What the test mission does | Passes when |
-|---|---|---|
-| `spawn` | Creates `item` on the ground next to the player. | the object is created |
-| `hands` | Creates `item` in the player's hands. | the item is in hands |
-| `wear` | Finds a slot of `item` that the player has and creates `item` in it. | the player wears it |
-| `attach` | Spawns `item`, then creates `with` as its attachment. | the attachment is created |
-| `cargo` | Spawns `item`, then creates `with` in its cargo. | `with` fits in the cargo |
-
-Every check first needs `item` (and `with`) to exist in `CfgVehicles`, `CfgWeapons` or `CfgMagazines`. Each check deletes what it created. An `id` is letters, digits, `_`, `.` or `-` with no spaces; `item` and `with` are config class names. `feature` says in words what the check proves.
+`dayz-mod-architect` writes one check per feature, each with an `id`, a `feature`, an `item` and one of the actions `spawn`, `hands`, `wear`, `attach` or `cargo`. The format and what each action does are in [checks-file.md](checks-file.md); read it before writing or fixing a checks file.
 
 ### Running it by hand
 
@@ -156,24 +135,7 @@ The first run of a shot is always `NEW`. Look at its capture, accept it, and lat
 
 ### Shots file
 
-```json
-{
-  "mod": "MyVest",
-  "threshold": 0.01,
-  "shots": [
-    {"id": "hud-icon", "feature": "The vest icon shows on the HUD", "at": 20},
-    {"id": "hud-clock", "feature": "The HUD with the clock left out", "at": 25, "threshold": 0.02, "ignore": [[1700, 20, 200, 40]]}
-  ]
-}
-```
-
-| Key | Notes |
-|---|---|
-| `id` | Letters, digits, `_`, `.` or `-` with no spaces. It names the capture, baseline and diff files. |
-| `feature` | Says in words what the shot shows. |
-| `at` | Seconds after the client joins the mission, 0 or more. |
-| `threshold` | Optional. The share of pixels, 0 to 1, that may change. File level is the default for every shot. |
-| `ignore` | Optional. Areas to leave out, each `[x, y, width, height]` in capture pixels: clocks, chat, anything that changes on its own. |
+Each shot has an `id`, a `feature` and an `at` second, with an optional `threshold` and `ignore` areas. The format is in [shots-file.md](shots-file.md); read it before writing or fixing a shots file.
 
 ## Triage
 

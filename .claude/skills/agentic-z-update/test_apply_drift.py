@@ -217,10 +217,38 @@ def _stub_remote(monkeypatch, root):
 
 def test_check_without_baseline_writes_nothing(in_tmp, monkeypatch, capsys):
     _stub_remote(monkeypatch, in_tmp)
-    monkeypatch.setattr(sys, "argv", ["update.py", "--check", "--quiet"])
+    monkeypatch.setattr(update, "_QUIET", False)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check"])
     assert update.main() == 1
     assert "no update baseline" in capsys.readouterr().out
     assert not (in_tmp / update.BASELINE_FILE).exists()
+
+
+def test_quiet_check_without_baseline_prints_nudge_and_exits_0(in_tmp, monkeypatch, capsys):
+    """The SessionStart hook output is dropped on a non-zero exit, so quiet mode exits 0."""
+    _stub_remote(monkeypatch, in_tmp)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check", "--quiet"])
+    assert update.main() == 0
+    assert "no update baseline" in capsys.readouterr().out
+    assert not (in_tmp / update.BASELINE_FILE).exists()
+
+
+def test_quiet_check_with_drift_prints_nudge_and_exits_0(in_tmp, monkeypatch, capsys):
+    _stub_remote(monkeypatch, in_tmp)
+    update.write_baseline("b" * 40)
+    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: {"docs/a.md": S.SAFE_OVERWRITE})
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check", "--quiet"])
+    assert update.main() == 0
+    assert capsys.readouterr().out.strip()
+
+
+def test_check_with_drift_exits_1_without_quiet(in_tmp, monkeypatch, capsys):
+    _stub_remote(monkeypatch, in_tmp)
+    update.write_baseline("b" * 40)
+    monkeypatch.setattr(update, "_QUIET", False)
+    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: {"docs/a.md": S.SAFE_OVERWRITE})
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check"])
+    assert update.main() == 1
 
 
 def test_check_with_baseline_leaves_it_unchanged(in_tmp, monkeypatch, capsys):
@@ -257,6 +285,56 @@ def test_first_run_records_baseline_and_restores_no_missing_files(in_tmp, monkey
     assert update.read_baseline() == "c" * 40
     assert not (in_tmp / "docs/missing.md").exists()
     assert "deleted in this clone" in capsys.readouterr().out
+
+
+def test_first_run_baseline_write_happens_under_the_lock(in_tmp, monkeypatch):
+    _stub_apply_flow(monkeypatch, in_tmp)
+    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: {})
+    real_write = update.write_baseline
+
+    def checked_write(sha):
+        assert (in_tmp / update.LOCK_FILE).exists(), "baseline written without the lock"
+        real_write(sha)
+
+    monkeypatch.setattr(update, "write_baseline", checked_write)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--yes"])
+    assert update.main() == 0
+    assert update.read_baseline() == "c" * 40
+    assert not (in_tmp / update.LOCK_FILE).exists()
+
+
+def test_first_run_refused_while_another_update_holds_the_lock(in_tmp, monkeypatch):
+    _stub_apply_flow(monkeypatch, in_tmp)
+    update.write_lock()
+    monkeypatch.setattr(update, "_pid_alive", lambda pid: True)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--yes"])
+    assert update.main() == 1
+    assert update.read_baseline() is None
+    update.release_lock()
+
+
+# ---------- the template path list covers every tracked template folder ----------
+
+# Tracked top-level folders that belong to the upstream repo itself, not the template.
+NOT_TEMPLATE = {".github"}
+
+
+def test_template_paths_cover_every_tracked_top_level_folder():
+    root = Path(__file__).resolve().parents[3]
+    files = subprocess.run(
+        ["git", "ls-files"], cwd=root, check=True, capture_output=True, text=True
+    ).stdout.splitlines()
+    folders = {f.split("/", 1)[0] for f in files if "/" in f}
+    folders |= {"/".join(f.split("/", 2)[:2]) for f in files if f.startswith(".claude/")}
+    folders.discard(".claude")
+
+    def covered(path):
+        return any(path == t or path.startswith(t + "/") for t in update.TEMPLATE_PATHS)
+
+    missing = sorted(f for f in folders if f not in NOT_TEMPLATE and not covered(f))
+    assert not missing, f"tracked template folders missing from TEMPLATE_PATHS: {missing}"
+    for f in ("hooks", ".claude/settings.json", "mods", "evals", ".claude-plugin", ".mcp.json"):
+        assert f in update.TEMPLATE_PATHS
 
 
 # ---------- locally-deleted ----------
