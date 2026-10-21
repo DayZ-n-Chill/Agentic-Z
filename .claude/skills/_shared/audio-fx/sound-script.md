@@ -36,7 +36,7 @@ Two rules hidden in `PlaySoundSet` (lines 1251 to 1260):
 | 153 | `static EffectSound CreateSound(string sound_set, vector position, ...)` | Creates and registers without playing. Call `SoundPlay()` on it later. |
 | 280 | `static void DestroyEffect(Effect effect)` | Stops, unregisters and frees. If a fade out is still running, it lets the sound finish and then frees it. |
 
-The manager keeps a strong reference to every effect it registers (warning at line 3, and at line 40 for `PlayInWorld`). An effect is freed only when it has autodestroy set and stops, or when you call `DestroyEffect`. A sound you play through `SEffectManager` directly and never destroy stays in memory. `PlaySoundSet` and `PlaySoundSetLoop` set autodestroy for you (object.c line 1264). The memory point helpers do not, so free their sound with `StopSoundSet` or `SEffectManager.DestroyEffect`.
+The manager keeps a strong reference to every effect it registers (warning at line 3, and at line 40 for `PlayInWorld`). An effect is freed only when it has autodestroy set and stops, or when you call `DestroyEffect`. A sound you play through `SEffectManager` directly and never destroy stays in memory. `PlaySoundSet` and `PlaySoundSetLoop` set autodestroy for you (object.c line 1264). The memory point helpers do not set autodestroy. `StopSoundSet` only stops their sound and sets your variable to null, and the manager still holds it. Free their sound with `SEffectManager.DestroyEffect(sound)`, which stops it and frees it once any fade out ends (effectmanager.c:280), or call `sound.SetAutodestroy(true)` right after the helper returns true so the sound frees itself when it stops (`P:\scripts\3_game\effect.c:336`).
 
 ## EffectSound
 
