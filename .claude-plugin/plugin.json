@@ -51,6 +51,7 @@
   ],
   "agents": [
     "./.claude/agents/agent-creator.md",
+    "./.claude/agents/dayz-ai-specialist.md",
     "./.claude/agents/dayz-animation-specialist.md",
     "./.claude/agents/dayz-asset-specialist.md",
     "./.claude/agents/dayz-audio-fx-specialist.md",

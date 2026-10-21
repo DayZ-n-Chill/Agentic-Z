@@ -148,6 +148,18 @@ Front index: `_shared/audio-fx/README.md`. Used by `dayz-audio-fx-specialist` an
 | `_shared/audio-fx/sound-script.md` | Playing, looping, fading and stopping sound sets from script; cleanup; server triggers. |
 | `_shared/audio-fx/effects-wiring.md` | Sound plus particle on one device, and config hooks for weapon and item sounds and particles. |
 
+### AI pack (`_shared/ai`)
+
+Front index: `_shared/ai/README.md`. Main user: `dayz-ai-specialist`.
+
+| File | Purpose |
+|---|---|
+| `_shared/ai/creatures.md` | Infected and animal classes, commands, the command handler order, mod hooks, input controllers, mind states, attacks. |
+| `_shared/ai/behaviour-config.md` | `CfgAIBehaviours` templates, `aiAgentTemplate`, alert, vision and noise tuning, making a variant. |
+| `_shared/ai/perception.md` | Noise system, player visibility, reacting to gunfire. |
+| `_shared/ai/patrols-and-guards.md` | AI world, groups, navmesh paths, waypoint patrols, steering, and the limits of human AI. |
+| `_shared/ai/spawning-and-performance.md` | Spawn flags, Central Economy handoff to the server lead, server performance rules. |
+
 ### Skill packs (`references/`)
 
 | Folder or file | Purpose |
