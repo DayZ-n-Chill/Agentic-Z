@@ -15,6 +15,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `recipe.bat` | Start a mod plan from a recipe: weapon, vest or craftable | `recipe.bat vest MyVest` |
 | `scope-mod.bat` | Lock editing to one mod | `scope-mod.bat MyVest` |
 | `lint.bat` | Find errors that would stop a mod loading, with PASS or FAIL | `lint.bat MyVest` |
+| `balance.bat` | Compare item stats with similar vanilla items and flag outliers | `balance.bat MyVest` |
 | `build-pbo.bat` | Pack a mod into a PBO | `build-pbo.bat MyVest` |
 | `gate.bat` | Build, in-game or behavior check with PASS or FAIL | `gate.bat build MyVest` |
 | `triage.bat` | Match log lines against known errors | `triage.bat .server\chernarus\Profiles\script.log` |
