@@ -10,6 +10,7 @@
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
+    "dayz-balance": {"kind": "skill", "description": "Compare a mod's item stats with similar vanilla items and flag outliers"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
     "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, inheritance, hidden selections"},
     "dayz-script-specialist": {"kind": "agent", "description": "Write or change Enforce Script (.c) code, modded classes, RPCs"},
@@ -67,6 +68,12 @@
       "route": "dayz-lint",
       "confidence": 0.9,
       "patterns": ["\\blint\\s+(?!(?:the|my|this|it|mod|config|all|everything)\\b)(?P<mod>[A-Za-z][\\w-]*)", "\\blint(?:er|ing)?\\b"]
+    },
+    {
+      "route": "dayz-balance",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bbalance\\s+(?:check\\s+)?(?!(?:the|my|this|it|of|for|on|all|everything|check|items?|stats?|mod)\\b)(?P<mod>[A-Za-z][\\w-]*)", "\\b(?:balanced?|balancing|imbalanced?|unbalanced)\\b", "\\b(?:over|under)powered\\b", "\\bcompared?\\b[\\w\\s']{0,40}?\\b(?:with|to|against)\\s+vanilla\\b"]
     },
     {
       "route": "dayz-stop-test",
