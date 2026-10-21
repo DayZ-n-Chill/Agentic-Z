@@ -136,6 +136,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/dayz-new-mod`](../.claude/skills/dayz-new-mod/SKILL.md) | Scaffold `workspace/<ModName>/` + create `P:\<ModName>\` junction |
 | [`/dayz-import-mod`](../.claude/skills/dayz-import-mod/SKILL.md) | Symlink an existing mod folder into the workspace + create the junction |
 | [`/dayz-add-scaffold`](../.claude/skills/dayz-add-scaffold/SKILL.md) | Add missing scaffold pieces (config.cpp stub, gproj, etc.) to an existing mod folder; `--piece junction` repairs a missing `P:\<ModName>\` link |
+| [`/dayz-recipe`](../.claude/skills/dayz-recipe/SKILL.md) | Start a plan from a recipe (new weapon, new vest, new craftable): classes, vanilla parents checked on `P:\`, files, tasks per team and behavior checks, for `dayz-mod-architect` to finish |
 | [`/dayz-scope-mod`](../.claude/skills/dayz-scope-mod/SKILL.md) | Lock the agent to one mod via deny rules so it can't clobber siblings |
 
 ### Build
@@ -163,6 +164,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/dayz-gate`](../.claude/skills/dayz-gate/SKILL.md) | Run the build, in-game and behavior gates as scripts: build or deploy, launch, read the new log lines, run a test mission that spawns and uses each new item, triage failures against known errors |
 | [`/dayz-lint`](../.claude/skills/dayz-lint/SKILL.md) | Find errors that would stop a mod loading, before packing, with `file:line` and an owner for each; runs first inside `/dayz-gate build` and `/dayz-build-pbo` |
 | [`/dayz-upgrade-guard`](../.claude/skills/dayz-upgrade-guard/SKILL.md) | Snapshot vanilla classes before a DayZ update, then list the mod classes whose vanilla parents changed and optionally rebuild the search index |
+| [`/dayz-balance`](../.claude/skills/dayz-balance/SKILL.md) | Compare item stats (weight, health, damage, protection, capacity, quantity) with similar vanilla items on `P:\DZ\` and flag outliers with `file:line` |
 | [`/dayz-route`](../.claude/skills/dayz-route/SKILL.md) | Pick the skill, agent or team for a request with keyword rules first; prints one JSON decision and says when the `dayz-router` agent is needed |
 | [`/dayz-statusline`](../.claude/skills/dayz-statusline/SKILL.md) | Install a status line showing `P:\` mount, active mod, running diag session and search-index age; `--remove` undoes it |
 
@@ -179,6 +181,13 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 |---|---|
 | [`/dayz-edit-types`](../.claude/skills/dayz-edit-types/SKILL.md) | Programmatically upsert a single `<type>` in `types.xml` |
 | [`/dayz-split-types`](../.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into per-category files and point `cfgeconomycore.xml` at them |
+
+### Release
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-release-pack`](../.claude/skills/dayz-release-pack/SKILL.md) | Write the Workshop description, a changelog entry from the mod's history, the classname list and server owner install notes in one go |
+| [`/dayz-server-kit`](../.claude/skills/dayz-server-kit/SKILL.md) | Zip the `types.xml` entries, `cfgeconomycore.xml` lines, load order and the public `.bikey` for server owners; never packs a `.biprivatekey` |
 
 ### Specialist tools (deep)
 
@@ -247,7 +256,7 @@ The 30 agents live under `.claude/agents/`. The mod team runs a whole mod; the s
 | `dayz-build-checker` | Gate: the PBO builds with no AddonBuilder errors |
 | `dayz-ingame-tester` | Gate: the mod loads on a diag server and client with clean logs |
 | `dayz-build-engineer` | Builds, launches test sessions and deploys after your yes |
-| `dayz-docs-writer` | Keeps the mod's README, changelog and classname list current |
+| `dayz-docs-writer` | Keeps the mod's README, changelog and classname list current, and writes the Workshop text and server kit with `/dayz-release-pack` and `/dayz-server-kit` |
 | `dayz-asset-specialist` | `.p3d` / `.paa` / `.rvmat` and Workbench asset integration |
 | `dayz-config-specialist` | `config.cpp`, CfgPatches, CfgVehicles, inheritance, hidden selections |
 | `dayz-map-specialist` | Terrain Builder, DayZ Editor, map objects, clutter, surfaces |
