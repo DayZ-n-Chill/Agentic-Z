@@ -51,6 +51,14 @@ def decide(text, env=NO_KEY):
         ("update the README and changelog for MyVest", "dayz-docs-writer", None),
         ("turn https://www.figma.com/design/abc123/Trader?node-id=10-42 into a .layout", "figma-node-normalizer", None),
         ("build this Figma frame as my HUD", "figma-node-normalizer", None),
+        ("add a CfgWeapons class", "dayz-weapon-specialist", None),
+        # A rule that names a file, a log or a tool keeps winning when the request also names an object.
+        ("My car crashes the server, here is the RPT.", "dayz-mod-debugger", None),
+        ("Make my rifle spawn rarely in military zones.", "dayz-server-admin", None),
+        ("zombies spawn too much in types.xml", "dayz-server-admin", None),
+        ("launch a test with my car", "dayz-launch-test", None),
+        ("write a modded class for my rifle", "dayz-script-specialist", None),
+        ("review my vehicle mod", "dayz-mod-reviewer", None),
     ],
 )
 def test_rules_route_confidently(text, expected, args):
@@ -103,7 +111,8 @@ def test_build_me_is_not_a_pbo_build(text):
     assert decide(text)["route"] != "dayz-build-pbo"
 
 
-@pytest.mark.parametrize("text", ["build MyVest and then launch the test server", "what should I do next?"])
+@pytest.mark.parametrize("text", ["build MyVest and then launch the test server", "what should I do next?",
+                                  "fix the throw action script"])
 def test_multi_step_or_unknown_falls_through(text):
     d = decide(text)
     assert d == {"route": None, "next": "dayz-router", "note": d["note"]}

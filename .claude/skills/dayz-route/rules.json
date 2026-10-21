@@ -10,7 +10,7 @@
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
-    "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, CfgWeapons, inheritance, hidden selections"},
+    "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, inheritance, hidden selections"},
     "dayz-script-specialist": {"kind": "agent", "description": "Write or change Enforce Script (.c) code, modded classes, RPCs"},
     "dayz-ui-specialist": {"kind": "agent", "description": "UI work: .layout files, HUD, menus, widgets"},
     "dayz-object-builder": {"kind": "agent", "description": "Model work in Object Builder: .p3d LODs, named selections, proxies"},
@@ -24,7 +24,7 @@
     "dayz-persistence-specialist": {"kind": "agent", "description": "Data that must survive a server restart: OnStoreSave and OnStoreLoad, save versions, base building saves, data loss audit"},
     "dayz-ai-specialist": {"kind": "agent", "description": "Infected, animals and human AI such as patrols and guards"},
     "dayz-vehicle-specialist": {"kind": "agent", "description": "Cars, boats and helicopters: engine, gearbox, wheels, doors, fluids, seats and damage"},
-    "dayz-weapon-specialist": {"kind": "agent", "description": "Firearms: weapons, magazines, ammo, attachments, recoil and fire modes"},
+    "dayz-weapon-specialist": {"kind": "agent", "description": "Firearms: weapons, CfgWeapons, magazines, ammo, attachments, recoil and fire modes"},
     "dayz-wearables-specialist": {"kind": "agent", "description": "Clothing, gear and characters: inventory slots, protection, insulation, color variants and proxies"},
     "dayz-animation-specialist": {"kind": "agent", "description": "Moving parts: model.cfg bones and animations, RTM files, doors and lids that open, Blender handoff"},
     "dayz-audio-fx-specialist": {"kind": "agent", "description": "Sound shaders, sound sets and particle effects such as smoke and sparks"},
@@ -75,6 +75,7 @@
     {
       "route": "dayz-launch-test",
       "confidence": 0.9,
+      "absorbs": true,
       "patterns": ["\\b(?:launch|start|run|boot)\\b[\\w\\s]{0,30}?\\b(?:test|server|game|dayz|client|diag)\\b", "\\btest\\s+(?:it|this)?\\s*in[- ]game\\b", "^\\s*(?:launch|test)\\s*(?:it)?\\s*$"]
     },
     {
@@ -90,17 +91,19 @@
     {
       "route": "dayz-mod-debugger",
       "confidence": 0.95,
+      "absorbs": true,
       "patterns": ["access violation", "unhandled exception", "exception code", "\\bSCRIPT\\s+\\(E\\)", "can't compile", "null pointer", "\\bcrash(?:es|ed|ing|\\.log)?\\b", "\\bscript\\.log\\b", "\\.rpt\\b", "\\bstack trace\\b"]
     },
     {
       "route": "dayz-server-admin",
       "confidence": 0.9,
+      "absorbs": true,
       "patterns": ["\\btypes\\.xml\\b", "\\bspawn(?:s|ing|ed)?\\b", "\\bloot\\b", "\\bcfgeconomycore\\b", "\\bcfggameplay\\b", "\\binit\\.c\\b", "\\bserverdz\\.cfg\\b", "\\bnominal\\b"]
     },
     {
       "route": "dayz-config-specialist",
       "confidence": 0.9,
-      "patterns": ["\\bconfig\\.cpp\\b", "\\bcfgpatches\\b", "\\bcfgvehicles\\b", "\\bcfgweapons\\b", "\\bhiddenselections"]
+      "patterns": ["\\bconfig\\.cpp\\b", "\\bcfgpatches\\b", "\\bcfgvehicles\\b", "\\bhiddenselections"]
     },
     {
       "route": "dayz-ui-specialist",
@@ -115,6 +118,7 @@
     {
       "route": "dayz-script-specialist",
       "confidence": 0.85,
+      "absorbs": true,
       "patterns": ["\\bmodded\\s+class\\b", "\\benforce\\s*script\\b", "\\brpc\\b"]
     },
     {
@@ -139,6 +143,12 @@
       "patterns": ["\\breadme\\b", "\\bchangelog\\b", "\\binstall\\s+notes\\b", "\\bdocs\\b", "\\bdocumentation\\b"]
     },
     {
+      "route": "dayz-mod-reviewer",
+      "confidence": 0.85,
+      "absorbs": true,
+      "patterns": ["\\b(?:review|audit|sanity[- ]check)\\b"]
+    },
+    {
       "route": "dayz-persistence-specialist",
       "confidence": 0.85,
       "patterns": ["\\bpersist(?:s|ed|ence|ent)?\\b", "\\bonstore(?:save|load)\\b", "\\b(?:after|across|survives?|through)\\s+(?:a\\s+|the\\s+)?(?:server\\s+)?restarts?\\b", "\\bsave\\s+(?:data|versions?|format)\\b", "\\bdata\\s+(?:loss|audit)\\b"]
@@ -156,7 +166,7 @@
     {
       "route": "dayz-weapon-specialist",
       "confidence": 0.85,
-      "patterns": ["\\b(?:rifles?|pistols?|shotguns?|smgs?|firearms?|guns?|weapons?)\\b", "\\bmagazines?\\b", "\\bammo\\b", "\\brecoil\\b", "\\bfire\\s*modes?\\b", "\\bsuppressors?\\b", "\\bcfg(?:magazines|ammo)\\b"]
+      "patterns": ["\\b(?:rifles?|pistols?|shotguns?|smgs?|firearms?|guns?|weapons?)\\b", "\\bmagazines?\\b", "\\bammo\\b", "\\brecoil\\b", "\\bfire\\s*modes?\\b", "\\bsuppressors?\\b", "\\bcfg(?:weapons|magazines|ammo)\\b"]
     },
     {
       "route": "dayz-wearables-specialist",
@@ -176,12 +186,7 @@
     {
       "route": "dayz-physics-specialist",
       "confidence": 0.85,
-      "patterns": ["\\bfalls?\\s+through\\b", "\\bfalling\\s+through\\b", "\\bcollisions?\\b", "\\bfire\\s*geometry\\b", "\\bgeometry\\s+lod\\b", "\\bmass\\b", "\\bthrow(?:s|n|ing)?\\b", "\\bphysics\\b"]
-    },
-    {
-      "route": "dayz-mod-reviewer",
-      "confidence": 0.85,
-      "patterns": ["\\b(?:review|audit|sanity[- ]check)\\b"]
+      "patterns": ["\\bfalls?\\s+through\\b", "\\bfalling\\s+through\\b", "\\bcollisions?\\b", "\\bfire\\s*geometry\\b", "\\bgeometry\\s+lod\\b", "\\bmass\\b", "\\bthrown\\b", "\\b(?:when|after|if)\\s+(?:i\\s+|you\\s+)?throw\\b", "\\bphysics\\b"]
     }
   ]
 }
