@@ -10,6 +10,7 @@
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
+    "dayz-ask": {"kind": "skill", "description": "Answer a question about how vanilla DayZ works, with path:line citations"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
     "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, inheritance, hidden selections"},
     "dayz-script-specialist": {"kind": "agent", "description": "Write or change Enforce Script (.c) code, modded classes, RPCs"},
@@ -67,6 +68,12 @@
       "route": "dayz-lint",
       "confidence": 0.9,
       "patterns": ["\\blint\\s+(?!(?:the|my|this|it|mod|config|all|everything)\\b)(?P<mod>[A-Za-z][\\w-]*)", "\\blint(?:er|ing)?\\b"]
+    },
+    {
+      "route": "dayz-ask",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["^\\s*(?:how|where|what|which|why|when)\\b[^?]{0,80}?\\bvanilla\\b", "^\\s*how\\s+does\\s+(?:dayz|the\\s+game)\\b"]
     },
     {
       "route": "dayz-stop-test",
