@@ -122,6 +122,26 @@ def test_gates_cannot_edit(name):
     assert not tools & {"Edit", "Write", "NotebookEdit"}
 
 
+# Roles that run others and write nothing themselves. Setting `memory` auto-enables
+# Read, Write and Edit, so these must also carry no memory.
+NO_WRITE_ROLES = {"dayz-lead"}
+
+
+@pytest.mark.parametrize("name", sorted(NO_WRITE_ROLES))
+def test_no_write_roles_have_no_write_tools_or_memory(name):
+    path = AGENTS_DIR / f"{name}.md"
+    assert not set(_tools(path)) & {"Edit", "Write", "NotebookEdit"}
+    assert "memory" not in _frontmatter(path)
+
+
+def test_layout_validator_keeps_its_gate_mode_no_edit_rule():
+    # The validator holds Write and Edit for cleanup mode, so only this sentence
+    # keeps it from changing a file it gates.
+    text = (AGENTS_DIR / "dayz-layout-validator.md").read_text(encoding="utf-8")
+    assert "gate mode" in text
+    assert "report only and never write or edit any file" in text
+
+
 BAT_FILES = sorted((REPO / "scripts").glob("*/*.bat"))
 
 
