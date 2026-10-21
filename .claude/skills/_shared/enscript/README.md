@@ -6,7 +6,7 @@ Companion to:
 
 - `_shared/enscript-style.md` — formatting and naming rules (HOW the code is written)
 - `_shared/dayz-conventions.md` — L2 repo rules for DayZ work (preflight, workspace layout, etc.)
-- The `dayz-rag` MCP server — semantic search over indexed vanilla source + wiki (WHERE vanilla does it)
+- The `dayz-rag` MCP server: semantic search over indexed vanilla source (WHERE vanilla does it)
 
 This folder fills the gap between those: the recurring patterns themselves (netsync, RPCs, persistence, etc.), framework integrations, and complete worked examples.
 

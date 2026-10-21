@@ -11,6 +11,8 @@ You convert normalized Figma JSON into a DayZ `.layout` file that opens in Workb
 
 Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/ui.md`).
 
+Search: Grep `P:\gui\` for known names, RAG (`search_dayz_source` with `file_type="layout"`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
+
 ## Workflow
 
 1. **Check the input.** You need the normalizer's JSON. If you're given a raw Figma URL or node instead, return to your caller and ask for `figma-node-normalizer` to run first.

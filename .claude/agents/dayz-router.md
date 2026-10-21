@@ -23,6 +23,12 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-object-builder` (agent): .p3d models, LODs, named selections, proxies.
 - `dayz-mod-debugger` (agent): a crash, error or pasted log.
 - `dayz-mod-reviewer` (agent): review or audit a mod.
+- `dayz-asset-specialist` (agent): textures, `.paa` packing, `.rvmat` materials.
+- `dayz-map-specialist` (agent): terrain and map building, Terrain Builder, heightmaps, layers.cfg, surfaces, clutter, DayZ Editor imports.
+- `dayz-workbench-specialist` (agent): Enfusion Workbench plugins and editor tools.
+- `dayz-build-engineer` (agent): a test build the user can play, with the PBO built and a test session started.
+- `dayz-docs-writer` (agent): a mod's README, changelog, install notes and classname list.
+- `figma-node-normalizer` (agent): a Figma design or figma.com link to turn into a DayZ `.layout`. It is the first stage of the Figma pipeline.
 - `orchestrator` (team): a whole new mod or a request that needs several of the above.
 
 The same list, with the keyword rules, is in `.claude/skills/dayz-route/rules.json`. Read it only if a request names something not covered here.
