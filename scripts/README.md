@@ -20,6 +20,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `deploy-pbo.bat` | Copy a bundle's prebuilt PBOs into place | `deploy-pbo.bat MyBundle` |
 | `add-server.bat` | Set up a local test server | `add-server.bat chernarus` |
 | `launch-test.bat` | Start a diag server and client with your mod | `launch-test.bat MyVest --server chernarus` |
+| `logwatch.bat` | Watch a test session's logs and triage each new error line | `logwatch.bat --server chernarus` |
 | `stop-test.bat` | Stop the test session | `stop-test.bat` |
 | `cot-bootstrap.bat` | Give yourself COT admin on the test server | `cot-bootstrap.bat MyVest` |
 | `pack-texture.bat` | Convert PNG or TGA to `.paa` | `pack-texture.bat vest_co.png` |
