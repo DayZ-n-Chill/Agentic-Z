@@ -6,7 +6,7 @@
 
 ## What you get
 
-- **A 22-agent mod team**: an orchestrator that plans and tracks a whole mod, a Haiku router that picks the handler for a request, team leads, specialists for scripts, configs, models, textures, UI, Figma, maps, server admin and Workbench plugins, and gatekeepers that review, build and test every task in game before you see it.
+- **A 30-agent mod team**: an orchestrator that plans and tracks a whole mod, a Haiku router that picks the handler for a request, team leads, specialists for scripts, configs, models, textures, UI, Figma, maps, server admin, Workbench plugins, saving data, AI, vehicles, weapons, wearables, animation, audio and effects, and physics, and gatekeepers that review, build and test every task in game before you see it.
 - **33 slash-command skills** (29 in the plugin, plus 4 clone-only template-maintenance skills) that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
 - **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials), exposed to every agent through the `dayz-rag` MCP server. Embeddings via Voyage AI (`voyage-code-3`) stored in LanceDB; needs `VOYAGE_API_KEY` in `.env`. Skip the build with `/dayz-search-download`, which pulls the prebuilt index from GitHub releases.
 - **Three-CLI support out of the box.** The same agents and skills work in Claude Code, Codex CLI, and Gemini CLI. One `sync-skills` run wires them all up.
@@ -83,7 +83,7 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 ```
 <repo>/
 ├── .claude/
-│   ├── agents/             # 22 agents: mod team, router, specialists, agent-creator (L3)
+│   ├── agents/             # 30 agents: mod team, router, specialists, agent-creator (L3)
 │   ├── skills/             # 33 slash-command skills (L3) + L2 shared conventions
 │   │   ├── _shared/dayz-conventions.md   # L2 core
 │   │   ├── _shared/conventions/          # L2 topic files (config, assets, scripts, ui, server)
@@ -237,7 +237,7 @@ You can still call any specialist below directly for a single task.
 | Agent | Focus |
 |---|---|
 | [`dayz-script-specialist`](.claude/agents/dayz-script-specialist.md) | Enforce Script — modded classes, RPCs, replication, gameplay logic. |
-| [`dayz-config-specialist`](.claude/agents/dayz-config-specialist.md) | `config.cpp`, CfgPatches, CfgVehicles, CfgWeapons, hidden selections. |
+| [`dayz-config-specialist`](.claude/agents/dayz-config-specialist.md) | `config.cpp`, CfgPatches, CfgVehicles, inheritance, hidden selections. |
 | [`dayz-asset-specialist`](.claude/agents/dayz-asset-specialist.md) | `.p3d` / `.paa` / `.rvmat` and Workbench asset integration. |
 | [`dayz-object-builder`](.claude/agents/dayz-object-builder.md) | `.p3d` LODs, named selections, geometry, damage zones. |
 | [`dayz-map-specialist`](.claude/agents/dayz-map-specialist.md) | Terrain Builder, DayZ Editor, map objects, clutter, surfaces. |
@@ -246,6 +246,14 @@ You can still call any specialist below directly for a single task.
 | [`dayz-mod-debugger`](.claude/agents/dayz-mod-debugger.md) | Log/RPT/crash analysis, BattlEye diagnosis, performance profiling. |
 | [`dayz-mod-reviewer`](.claude/agents/dayz-mod-reviewer.md) | Audit `workspace/<ModName>/` for convention compliance; routes findings. |
 | [`dayz-workbench-specialist`](.claude/agents/dayz-workbench-specialist.md) | Workbench plugin development (editor-time tooling). |
+| [`dayz-persistence-specialist`](.claude/agents/dayz-persistence-specialist.md) | Data that survives a server restart: `OnStoreSave` and `OnStoreLoad`, save versions, base building, the data audit before release. Script lead. |
+| [`dayz-ai-specialist`](.claude/agents/dayz-ai-specialist.md) | Infected, animals and human AI such as patrols and guards, written from scratch. Script lead. |
+| [`dayz-vehicle-specialist`](.claude/agents/dayz-vehicle-specialist.md) | Cars, boats and helicopters: engine, gearbox, wheels, doors, fluids, seats and damage. Config lead. |
+| [`dayz-weapon-specialist`](.claude/agents/dayz-weapon-specialist.md) | Weapons, magazines, ammo, attachments, recoil and fire modes. Config lead. |
+| [`dayz-wearables-specialist`](.claude/agents/dayz-wearables-specialist.md) | Clothing, characters, inventory slots, protection, color variants and proxies. Art lead. |
+| [`dayz-animation-specialist`](.claude/agents/dayz-animation-specialist.md) | `model.cfg` animations, RTM files and the Blender handoff. Art lead. |
+| [`dayz-audio-fx-specialist`](.claude/agents/dayz-audio-fx-specialist.md) | Sound shaders, sound sets and particle effects. Any lead. |
+| [`dayz-physics-specialist`](.claude/agents/dayz-physics-specialist.md) | Weight, collision LODs, dropping, throwing and contact. Any lead. |
 | [`figma-node-normalizer`](.claude/agents/figma-node-normalizer.md) | Cleans a Figma frame so it can be converted. |
 | [`figma-to-dayz-layout`](.claude/agents/figma-to-dayz-layout.md) | Turns a cleaned Figma frame into a DayZ `.layout`. |
 | [`dayz-layout-validator`](.claude/agents/dayz-layout-validator.md) | Checks and cleans generated `.layout` files; the UI gate. |

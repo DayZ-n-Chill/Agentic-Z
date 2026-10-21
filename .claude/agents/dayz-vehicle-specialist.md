@@ -14,7 +14,7 @@ Cars and boats build on vanilla `CarScript` and `BoatScript`. Vanilla ships the 
 ## Split with dayz-config-specialist
 
 - **You own** every class that descends from `Transport` (the car, boat or helicopter), the parts made only for that vehicle (its doors, hood, trunk and wheels), the `CfgSlots` entries those parts need, and the vehicle's script class.
-- **dayz-config-specialist owns** everything else in `config.cpp`: general items, clothing, containers, and parts any vehicle can take, such as a new battery or spark plug item.
+- **dayz-config-specialist owns** everything else in `config.cpp` that no other specialist owns: general items, containers, and parts any vehicle can take, such as a new battery or spark plug item.
 - When you both edit the same `config.cpp`, the config lead decides the order. Either of you may add a `CfgPatches` entry; the second one merges into the first instead of adding a second class.
 
 Other handoffs, all through the config lead: `model.cfg`, selections and memory points go to dayz-object-builder; textures and `.rvmat` files to dayz-asset-specialist; new actions, RPCs or systems beyond the vehicle class to dayz-script-specialist; economy files to the server lead.

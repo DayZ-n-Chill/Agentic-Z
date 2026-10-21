@@ -62,6 +62,38 @@ def test_rules_route_confidently(text, expected, args):
     assert d.get("args") == args
 
 
+# The sample requests the Agentic-Z guide gives for each specialist, short and long forms.
+GUIDE_SAMPLES = [
+    ("Make my safe keep its code and contents after a restart.", "dayz-persistence-specialist"),
+    ("Make my safe keep its code and contents after a restart, and do not break saves from the last version.",
+     "dayz-persistence-specialist"),
+    ("Add guards that patrol my base and react to gunfire.", "dayz-ai-specialist"),
+    ("Add a patrol of guards that walk a route around my military base and react to gunfire.", "dayz-ai-specialist"),
+    ("Add a four door pickup with a bigger fuel tank.", "dayz-vehicle-specialist"),
+    ("Add a four door pickup with its own doors and a bigger fuel tank.", "dayz-vehicle-specialist"),
+    ("Add a hunting rifle that takes a five round magazine.", "dayz-weapon-specialist"),
+    ("Add a scoped hunting rifle that takes a five round magazine and the vanilla long range optics.",
+     "dayz-weapon-specialist"),
+    ("Make a plate carrier in three colors.", "dayz-wearables-specialist"),
+    ("Make a plate carrier with three colors that fits the vest slot and holds six items.", "dayz-wearables-specialist"),
+    ("Make my bunker doors open and close.", "dayz-animation-specialist"),
+    ("Make the doors on my bunker open and close when a player uses them.", "dayz-animation-specialist"),
+    ("Give my generator a running sound and exhaust smoke.", "dayz-audio-fx-specialist"),
+    ("Give my generator a running sound that fades with distance and a puff of exhaust smoke.",
+     "dayz-audio-fx-specialist"),
+    ("My crate falls through the floor. Fix it.", "dayz-physics-specialist"),
+    ("My crate falls through the floor when I drop it. Fix it.", "dayz-physics-specialist"),
+]
+
+
+@pytest.mark.parametrize("text, expected", GUIDE_SAMPLES)
+def test_guide_samples_reach_their_specialist(text, expected):
+    d = decide(text)
+    assert d["route"] == expected
+    assert d["kind"] == "agent"
+    assert d["confidence"] >= CFG["threshold"]
+
+
 def test_orchestrator_is_a_team():
     assert decide("build me a vest mod")["kind"] == "team"
 

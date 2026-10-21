@@ -21,6 +21,14 @@
     "dayz-workbench-specialist": {"kind": "agent", "description": "Enfusion Workbench plugins: editor-time tools and batch automation for DayZ Tools"},
     "dayz-build-engineer": {"kind": "agent", "description": "Turn a finished mod into a test build the user can play: build the PBO, set up the server, launch a session"},
     "dayz-docs-writer": {"kind": "agent", "description": "A mod's README, changelog, install notes and classname list for server owners"},
+    "dayz-persistence-specialist": {"kind": "agent", "description": "Data that must survive a server restart: OnStoreSave and OnStoreLoad, save versions, base building saves, data loss audit"},
+    "dayz-ai-specialist": {"kind": "agent", "description": "Infected, animals and human AI such as patrols and guards"},
+    "dayz-vehicle-specialist": {"kind": "agent", "description": "Cars, boats and helicopters: engine, gearbox, wheels, doors, fluids, seats and damage"},
+    "dayz-weapon-specialist": {"kind": "agent", "description": "Firearms: weapons, magazines, ammo, attachments, recoil and fire modes"},
+    "dayz-wearables-specialist": {"kind": "agent", "description": "Clothing, gear and characters: inventory slots, protection, insulation, color variants and proxies"},
+    "dayz-animation-specialist": {"kind": "agent", "description": "Moving parts: model.cfg bones and animations, RTM files, doors and lids that open, Blender handoff"},
+    "dayz-audio-fx-specialist": {"kind": "agent", "description": "Sound shaders, sound sets and particle effects such as smoke and sparks"},
+    "dayz-physics-specialist": {"kind": "agent", "description": "Weight, collision LODs, dropping, throwing and contact: items falling through floors or bullets passing through walls"},
     "orchestrator": {"kind": "team", "agent": "dayz-orchestrator", "description": "Build a whole new mod with many parts (plan, team, build, test)"},
     "figma-node-normalizer": {"kind": "agent", "description": "Start the Figma pipeline: turn a Figma design or figma.com link into a checked DayZ .layout"}
   },
@@ -129,6 +137,46 @@
       "route": "dayz-docs-writer",
       "confidence": 0.85,
       "patterns": ["\\breadme\\b", "\\bchangelog\\b", "\\binstall\\s+notes\\b", "\\bdocs\\b", "\\bdocumentation\\b"]
+    },
+    {
+      "route": "dayz-persistence-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\bpersist(?:s|ed|ence|ent)?\\b", "\\bonstore(?:save|load)\\b", "\\b(?:after|across|survives?|through)\\s+(?:a\\s+|the\\s+)?(?:server\\s+)?restarts?\\b", "\\bsave\\s+(?:data|versions?|format)\\b", "\\bdata\\s+(?:loss|audit)\\b"]
+    },
+    {
+      "route": "dayz-ai-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\binfected\\b", "\\bzombies?\\b", "\\bguards?\\b", "\\bpatrols?\\b", "\\bnpcs?\\b", "\\bai\\s+(?:patrols?|guards?|behaviou?r|bots?)\\b", "\\b(?:animal|wildlife)\\s+(?:ai|behaviou?r)\\b"]
+    },
+    {
+      "route": "dayz-vehicle-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\b(?:cars?|trucks?|pickups?|sedans?|hatchbacks?|vans?|boats?|helicopters?|helis?|vehicles?)\\b", "\\b(?:car|boat|helicopter)script\\b", "\\bfuel\\s+tank\\b", "\\bgearbox\\b", "\\bsimulationmodule\\b"]
+    },
+    {
+      "route": "dayz-weapon-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\b(?:rifles?|pistols?|shotguns?|smgs?|firearms?|guns?|weapons?)\\b", "\\bmagazines?\\b", "\\bammo\\b", "\\brecoil\\b", "\\bfire\\s*modes?\\b", "\\bsuppressors?\\b", "\\bcfg(?:magazines|ammo)\\b"]
+    },
+    {
+      "route": "dayz-wearables-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\bplate\\s+carriers?\\b", "\\bclothing\\b", "\\bclothes\\b", "\\bwearables?\\b", "\\binventory\\s+slots?\\b", "\\bvest\\s+slot\\b", "\\binsulation\\b", "\\bheatisolation\\b", "\\bsurvivor\\s+characters?\\b", "\\bcolou?r\\s+variants?\\b"]
+    },
+    {
+      "route": "dayz-animation-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\bopens?\\s+and\\s+closes?\\b", "\\bmodel\\.cfg\\b", "\\.rtm\\b", "\\brtm\\b", "\\banimat(?:e|es|ed|ing|ion|ions)\\b", "\\bskeleton(?:bones)?\\b", "\\bblender\\b"]
+    },
+    {
+      "route": "dayz-audio-fx-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\bsounds?\\b", "\\bsound\\s*(?:shaders?|sets?)\\b", "\\bcfgsound(?:shaders|sets)\\b", "\\bparticles?\\b", "\\bsmoke\\b", "\\bsparks?\\b", "\\bsfx\\b"]
+    },
+    {
+      "route": "dayz-physics-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\bfalls?\\s+through\\b", "\\bfalling\\s+through\\b", "\\bcollisions?\\b", "\\bfire\\s*geometry\\b", "\\bgeometry\\s+lod\\b", "\\bmass\\b", "\\bthrow(?:s|n|ing)?\\b", "\\bphysics\\b"]
     },
     {
       "route": "dayz-mod-reviewer",
