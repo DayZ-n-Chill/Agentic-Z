@@ -15,3 +15,4 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install pytest pyyaml  # pyyaml: docs-sync parses SKILL.md frontmatter
       - run: python -m pytest -q .claude scripts/dev hooks
+      - run: python .claude/skills/docs-sync/sync.py --check  # fails when wiki/docs/ is out of date

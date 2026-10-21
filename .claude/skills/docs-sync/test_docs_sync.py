@@ -166,3 +166,12 @@ def test_quiet_check_in_sync_is_silent(repo, capsys):
     capsys.readouterr()
     assert sync.main(["--quiet"]) == 0
     assert capsys.readouterr().out == ""
+
+
+def test_check_with_drift_exits_1(repo, capsys):
+    # The repo fixture has a skill with no wiki mirror yet.
+    assert sync.main(["--check"]) == 1
+    assert "1 file(s) need wiki sync" in capsys.readouterr().out
+    sync.apply_all()
+    capsys.readouterr()
+    assert sync.main(["--check"]) == 0

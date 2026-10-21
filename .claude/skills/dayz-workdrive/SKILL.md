@@ -28,7 +28,7 @@ python "<skill-dir>\mount.py" --unmount
 2. Resolves the work-drive folder, taking the first candidate that exists:
    1. `--path` (fails if it is not a directory)
    2. `$DAYZ_WORK_DRIVE`
-   3. The path cached by a previous successful run in `<project>\.claude\local-memory\dayz-work-drive.json`, where `<project>` is `$CLAUDE_PROJECT_DIR` or else the current directory (the same rule `/dayz-init` uses, so a plugin install caches per project)
+   3. The path cached by a previous successful run in `<project>\.claude\local-memory\dayz-work-drive.json`, where `<project>` is `$CLAUDE_PROJECT_DIR`, else the nearest folder at or above the current directory whose `.claude\local-memory\` holds the `/dayz-init` project cache, else the current directory (the same rule `/dayz-init` uses, so a plugin install caches per project and a run from `scripts\setup\` or `workspace\<mod>\` still finds the project)
    4. `[ProjectDrive] path=` in `<DayZ Tools>\settings.ini`
    5. Registry values `WorkDrive`, `WorkDrivePath`, `P_Drive` or `PDrive` under the DayZ Tools keys (HKCU, then HKLM 64-bit and 32-bit)
 

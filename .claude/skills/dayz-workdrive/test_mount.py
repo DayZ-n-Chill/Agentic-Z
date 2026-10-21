@@ -288,3 +288,18 @@ def test_cache_follows_claude_project_dir(monkeypatch, tmp_path):
     fresh = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(fresh)
     assert fresh.CACHE == tmp_path.resolve() / ".claude" / "local-memory" / "dayz-work-drive.json"
+
+
+def test_cache_from_a_subfolder_goes_to_the_project_root(monkeypatch, tmp_path):
+    project = tmp_path / "project"
+    memory = project / ".claude" / "local-memory"
+    memory.mkdir(parents=True)
+    (memory / "dayz-current-project.txt").write_text(str(project), encoding="utf-8")
+    sub = project / "scripts" / "setup"
+    sub.mkdir(parents=True)
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(sub)
+    spec = importlib.util.spec_from_file_location("dayz_workdrive_mount_sub", Path(mount.__file__))
+    fresh = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fresh)
+    assert fresh.CACHE == project.resolve() / ".claude" / "local-memory" / "dayz-work-drive.json"

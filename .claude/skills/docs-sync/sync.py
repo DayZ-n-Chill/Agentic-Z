@@ -141,6 +141,10 @@ def detect_drift() -> dict[str, list[Path]]:
 
 
 def report(drift: dict[str, list[Path]], quiet: bool) -> int:
+    """Print the drift. Returns 1 when drift is found, so CI can gate on it.
+
+    --quiet (the Stop hook) always returns 0 so it never fails a session.
+    """
     n_missing = len(drift["missing_mirror"])
     n_stale = len(drift["stale"])
     n_orphan = len(drift["orphan"])
@@ -170,7 +174,7 @@ def report(drift: dict[str, list[Path]], quiet: bool) -> int:
             print(f"    - {p.relative_to(REPO_ROOT)}")
     print()
     print("Run `python .claude/skills/docs-sync/sync.py --apply` to update the wiki.")
-    return 0
+    return 1
 
 
 def print_map() -> int:

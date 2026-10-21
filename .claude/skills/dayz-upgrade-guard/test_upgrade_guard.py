@@ -222,6 +222,54 @@ def test_check_before_and_after_an_update(tmp_path, capsys, monkeypatch):
     assert "MyVest_Base" in capsys.readouterr().out
 
 
+class _FakeRun:
+    """Stands in for subprocess.run so --reindex never starts the real indexer."""
+
+    def __init__(self, returncode: int):
+        self.returncode = returncode
+        self.calls: list[list[str]] = []
+
+    def __call__(self, cmd, *args, **kwargs):
+        self.calls.append([str(c) for c in cmd])
+        return type("Done", (), {"returncode": self.returncode})()
+
+
+def test_reindex_runs_the_indexer_only_when_vanilla_changed(tmp_path, capsys, monkeypatch):
+    fake = _FakeRun(0)
+    monkeypatch.setattr(guard.subprocess, "run", fake)
+    store = tmp_path / "store"
+    before = _fake_p(tmp_path / "before", "Clothing_Base", True)
+    after = _fake_p(tmp_path / "after", "ItemBase", False)
+    common = ["--store", str(store), "--mod-dir", str(MOD), "--reindex"]
+
+    assert guard.main(["check", "--p-root", str(before), *common]) == 0  # baseline
+    assert guard.main(["check", "--p-root", str(before), *common]) == 0  # nothing changed
+    assert fake.calls == []
+    capsys.readouterr()
+
+    guard.main(["check", "--p-root", str(after), *common])
+    assert len(fake.calls) == 1
+    assert fake.calls[0][1] == str(guard.INDEXER) and fake.calls[0][2:] == ["--full"]
+    assert "old index is still in place" not in capsys.readouterr().out
+
+
+def test_a_failed_reindex_keeps_the_verdict_exit_code(tmp_path, capsys, monkeypatch):
+    fake = _FakeRun(3)
+    monkeypatch.setattr(guard.subprocess, "run", fake)
+    store = tmp_path / "store"
+    mod = tmp_path / "MyVest"
+    shutil.copytree(MOD, mod)
+    common = ["--store", str(store), "--mod-dir", str(mod), "--reindex"]
+
+    assert guard.main(["check", "--p-root", str(_fake_p(tmp_path / "before", "Clothing_Base", True)), *common]) == 0
+    capsys.readouterr()
+    assert guard.main(["check", "--p-root", str(_fake_p(tmp_path / "after", "ItemBase", False)), *common]) == 1
+    out = capsys.readouterr().out
+    assert out.startswith("FAIL")
+    assert "The search index rebuild exited with 3; the old index is still in place." in out
+    assert len(fake.calls) == 1
+
+
 def test_diff_with_the_fixture_snapshots_from_the_cli(capsys):
     args = ["diff", "--old", str(FIXTURES / "snapshot_old.json"), "--new", str(FIXTURES / "snapshot_new.json"),
             "--mod-dir", str(MOD)]
