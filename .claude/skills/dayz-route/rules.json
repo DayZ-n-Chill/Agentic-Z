@@ -9,6 +9,7 @@
     "dayz-preflight": {"kind": "skill", "description": "Check the DayZ modding environment (P: drive, DayZ Tools)"},
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
+    "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
     "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, inheritance, hidden selections"},
     "dayz-script-specialist": {"kind": "agent", "description": "Write or change Enforce Script (.c) code, modded classes, RPCs"},
@@ -110,6 +111,12 @@
       "route": "dayz-config-specialist",
       "confidence": 0.9,
       "patterns": ["\\bconfig\\.cpp\\b", "\\bcfgpatches\\b", "\\bcfgvehicles\\b", "\\bhiddenselections"]
+    },
+    {
+      "route": "dayz-layout-preview",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bpreview\\b[\\w\\s.\\\\/-]{0,40}?\\.layout\\b","\\b(?:layout|hud|menu|ui)\\s+preview\\b", "\\b(?:render|draw)\\b[\\w\\s.\\\\/-]{0,40}?\\.layout\\b", "\\b(?:screen\\s+sizes|resolutions)\\b[\\w\\s]{0,30}?\\.layout\\b"]
     },
     {
       "route": "dayz-ui-specialist",

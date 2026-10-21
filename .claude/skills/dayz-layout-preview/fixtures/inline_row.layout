@@ -1,0 +1,26 @@
+// Hand-written style: whole widgets on one line, a wrap spacer, and a widget that leaves the screen.
+FrameWidgetClass rootFrame {
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ {
+  WrapSpacerWidgetClass wrap_slots {
+   position 0 0
+   size 250 200
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   Margin 10
+   {
+    ImageWidgetClass img_slot0 { position 0 0 size 100 50 hexactpos 1 vexactpos 1 hexactsize 1 vexactsize 1 image0 "set:dayz_gui image:slot" }
+    ImageWidgetClass img_slot1 { size 100 50 hexactpos 1 vexactpos 1 hexactsize 1 vexactsize 1 }
+    ImageWidgetClass img_slot2 { size 100 50 hexactpos 1 vexactpos 1 hexactsize 1 vexactsize 1 }
+   }
+  }
+  TextWidgetClass txt_far { text "Far" halign right_ref size 300 30 position -100 0 hexactpos 1 vexactpos 1 hexactsize 1 vexactsize 1 }
+  PanelWidgetClass panel_loose { size 0.5 0.5 }
+ }
+}

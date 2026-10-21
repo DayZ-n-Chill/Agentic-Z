@@ -37,6 +37,7 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-preflight` (skill): check the modding environment.
 - `dayz-gate` (skill): run the behavior test, a test mission that spawns and uses each new item and gives PASS or FAIL per check. Put the mod name in `args.mod` when it is given.
 - `dayz-new-mod` (skill): scaffold an empty mod folder.
+- `dayz-layout-preview` (skill): draw a `.layout` as PNG previews at several screen sizes, to see how it holds up at other resolutions.
 - `dayz-server-admin` (agent): types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json.
 - `dayz-config-specialist` (agent): config.cpp, CfgPatches, CfgVehicles, hidden selections.
 - `dayz-script-specialist` (agent): Enforce Script code, modded classes, RPCs.

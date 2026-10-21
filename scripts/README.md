@@ -24,6 +24,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `cot-bootstrap.bat` | Give yourself COT admin on the test server | `cot-bootstrap.bat MyVest` |
 | `pack-texture.bat` | Convert PNG or TGA to `.paa` | `pack-texture.bat vest_co.png` |
 | `build-imageset.bat` | Pack UI sprites into an imageset | `build-imageset.bat --help` |
+| `layout-preview.bat` | Draw a `.layout` as PNGs at several screen sizes | `layout-preview.bat gui\layouts\hud.layout` |
 | `p3d-audit.bat` | Audit a `.p3d` model and its config | `p3d-audit.bat --help` |
 | `types-edit.bat` | Add, change or remove a `types.xml` entry | `types-edit.bat --help` |
 | `types-split.bat` | Split one big `types.xml` into category files | `types-split.bat --help` |

@@ -3,7 +3,7 @@ name: "dayz-layout-validator"
 description: "Checks DayZ `.layout` files (property-file format, not XML) against the Figma-to-DayZ rules. Gate mode: `dayz-lead` or the main session calls it on any `.layout` change, including after `figma-to-dayz-layout`, and it reports PASS or FAIL without editing. Cleanup mode, only on direct request: repairs the file in place.\n\n<example>\nContext: A UI task changed a layout and the lead is gating it.\nuser: \"Gate check workspace/MyHud/gui/layouts/compass.layout.\"\nassistant: \"I'll use the dayz-layout-validator in gate mode. It reads the file, checks it against the rules doc, and returns PASS or FAIL with each problem's line, without changing the file.\"\n</example>"
 color: yellow
 memory: project
-tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
+tools: Read, Write, Edit, Glob, Grep, Bash, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
 maxTurns: 50
 ---
 
@@ -30,6 +30,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills
 - **Fill Container stays relative.** Siblings in a stacked container that all share the container's inner pixel width with `hexactsize 1` are almost always mis-translated Fill Container children; the correct form is `size 1 H` with `hexactsize 0` (rules doc section 5). You can't recover the Figma sizing from the file alone, so flag it and recommend regenerating from the Figma node.
 - No Hard NO items (rules doc section 9): no XML, no `=`, no semicolons, no CSS properties such as `borderRadius`, `flex`, `padding` or `opacity`.
 - Widget names are unique within their parent, and property keys don't repeat on a widget. An empty spacer widget is fine (vanilla layouts ship many that script fills at runtime); at most mention it as a note, never a FAIL.
+- **Screen sizes.** Once the braces match, run `/dayz-layout-preview` on the file (`python .claude/skills/dayz-layout-preview/layout_preview.py <file.layout> --json`). It writes PNGs to `output/layout-preview/`, never into the mod, so gate mode may run it. Report each `off-screen`, `no-area` and `missing-toggle` finding as a note with its line. The preview is approximate, so a finding alone is never a FAIL; it becomes one only when the file also breaks a rule above.
 
 Search: Grep `P:\gui\` for known names, RAG (`search_dayz_source` with `file_type="layout"`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Flag an unfamiliar class or property you can't confirm for review; don't delete it.
 
