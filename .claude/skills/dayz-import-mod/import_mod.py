@@ -341,7 +341,8 @@ def main() -> int:
 
     # Same rule as /dayz-new-mod: importing here makes this the active project.
     _nm.sync_project_cache()
-    return finish(source, workspace_target, modname, missing, args, "Remove the import (keeps your source intact)")
+    return finish(source, workspace_target, modname, missing, args,
+                  f"Remove the import (keeps your source intact): /dayz-clean-workspace --mod {modname}")
 
 
 def finish(source: Path, workspace_target: Path, modname: str, missing: list, args: argparse.Namespace,
@@ -367,7 +368,7 @@ def finish(source: Path, workspace_target: Path, modname: str, missing: list, ar
     print("Next steps:")
     print(f"  - Open in Workbench: /dayz-launch-workbench --mod {modname}")
     print(f"  - Build: /dayz-build-pbo {modname}")
-    print(f"  - {remove_hint}: /dayz-clean-workspace --mod {modname}")
+    print(f"  - {remove_hint}")
     return 0
 
 
@@ -403,7 +404,10 @@ def import_from_git(src: GitSource, args: argparse.Namespace) -> int:
 
     _nm.sync_project_cache()
     return finish(workspace_target, workspace_target, modname, missing, args,
-                  "Remove the clone and its P: link (deletes the cloned folder)")
+                  "Remove the clone: it holds .git, so /dayz-clean-workspace refuses it. Push anything\n"
+                  "    worth keeping, then delete it by hand:\n"
+                  f"    cmd /c rmdir \"{p_drive_link}\"\n"
+                  f"    cmd /c rmdir /s /q \"{_display(workspace_target)}\"")
 
 
 if __name__ == "__main__":

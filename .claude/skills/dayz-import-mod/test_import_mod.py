@@ -271,6 +271,10 @@ def test_github_link_clones_into_workspace_and_links_p(git_project, monkeypatch,
     assert (git_project["p"] / "MyMod").exists()
     assert "workbench/dayz.gproj missing" in out
     assert "skipping workbench/dayz.gproj (--no-scaffold)" in out
+    # clean-workspace refuses folders that hold .git, so the hint must not send the user there.
+    assert "/dayz-clean-workspace --mod MyMod" not in out
+    assert "holds .git, so /dayz-clean-workspace refuses it" in out
+    assert "cmd /c rmdir /s /q" in out
 
 
 def test_github_link_with_invalid_repo_name_needs_name(git_project, monkeypatch):

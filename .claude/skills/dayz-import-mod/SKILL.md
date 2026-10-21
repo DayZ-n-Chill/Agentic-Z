@@ -63,7 +63,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 
 The mod name comes from the repo name (or `--name`). The repo is cloned with `git` straight into `workspace/<ModName>/` as a real folder, because a clone has no other home on disk. It then gets the same `P:\<ModName>\` junction, project cache update and scaffold check as a folder import, and accepted pieces are written into the clone. The same refusals apply before anything is cloned (the name, an existing `workspace/<Name>/`, a `P:\<Name>\` that points elsewhere). If a later step refuses (a non-TTY run with missing pieces and no `--scaffold` or `--no-scaffold`, or the junction fails), the clone is deleted again so a retry starts clean. `git` must be on `PATH`, and a private repo needs your usual git credentials. The scaffold check looks at the repo root, so a repo that keeps the mod in a subfolder needs a folder import of that subfolder instead.
 
-`/dayz-clean-workspace --mod <Name>` treats a clone like a native scaffold: it deletes the cloned folder. Push anything you want to keep first.
+`/dayz-clean-workspace --mod <Name>` never deletes a folder that holds `.git`, so it refuses a clone and prints the `rmdir` command. Push anything you want to keep, then delete the folder by hand (`cmd /c rmdir /s /q workspace\<Name>`) and remove the `P:\<Name>\` junction (`cmd /c rmdir P:\<Name>`). The import prints both commands at the end.
 
 ## Workshop links
 
