@@ -12,7 +12,7 @@ Reference: `OffroadHatchback` (`P:\DZ\vehicles\wheeled\config.cpp:1540` to `:228
 | Key | Meaning |
 |---|---|
 | `displayName` | Name shown to players. |
-| `fatalInjuryCoef` | `-1` on car zones. |
+| `fatalInjuryCoef` | `-1` on most car zones (`Chassis`, `Front`, `FuelTank`); the `Engine` zone uses `0.001` (`:2173`). |
 | `componentNames[]` | Components in the model's fire geometry that belong to the zone (`"dmgZone_front"`). |
 | `memoryPoints[]` | Memory points for the zone. |
 | `class Health` | `hitpoints`, `transferToGlobalCoef`, optional `healthLevels[]` with per zone materials. |
