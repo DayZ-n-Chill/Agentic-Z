@@ -46,7 +46,7 @@ Nothing is copied from another mod. You may study how other modders solve a prob
 - Nothing slow inside `ModCommandHandlerBefore`, `Inside` or `After`: no allocation, config reads, world searches or `Print` there. Path planning and target scans go on a timer.
 - Hand control back to the engine AI when a fight starts: clear every input controller override once the mind state reaches alerted.
 - Add a net sync variable only when clients must see the value, and say why in a comment.
-- Mark anything that vanilla does not show working (a new template name, a group behaviour cast, human characters with no client) as unverified until the in-game test passes.
+- Mark anything that vanilla does not show working (a new template name, driving DZInfectedPackBeh waypoints from script, human characters with no client) as unverified until the in-game test passes.
 
 ## Handoffs
 
@@ -57,5 +57,3 @@ Nothing is copied from another mod. You may study how other modders solve a prob
 ## Report
 
 To the script lead: script classes written (path), the vanilla classes and templates they build on (`path:line`), the spawn setup for the server lead, notes on server performance (what runs per step, what runs on a timer, the spawn cap, the sync variables added), and anything untested or unverified.
-</content>
-</invoke>

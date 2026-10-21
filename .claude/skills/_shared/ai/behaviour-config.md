@@ -26,7 +26,7 @@ Templates by family, all in `P:\DZ\AI\config.cpp`:
 - Wolf: `Predators_Wolf` (`:5420`), `teamName="Predator"`.
 - Infected: `Infected` (`:6214`), `teamName="Zombies"`, with children from `InfectedFemale` (`:6397`) to `InfectedMMummy` (`:6861`), for example `InfectedMSoldier` (`:6477`) and `InfectedRunner` (`:6797`).
 
-Animal templates also name a group behaviour with `defaultGroupTemplateName`, for example `DZDeerGroupBeh` (`:589`) and `DZWolfGroupBeh` (`:5424`). The infected template has none.
+Animal templates also name a group behaviour with `defaultGroupTemplateName`, for example `DZDeerGroupBeh` (`:589`) and `DZWolfGroupBeh` (`:5424`). The infected template has none. The group templates themselves, including the infected pack template `DZInfectedPackBeh`, are defined in `P:\DZ\data\aiconfigs\config.cpp` (see `patrols-and-guards.md`).
 
 ## Infected template layout
 
@@ -96,5 +96,3 @@ On `ZombieBase` (`P:\DZ\characters\zombies\config.cpp:24`):
 ## Noise classes
 
 `CfgNoises` (`P:\DZ\AI\config.cpp:6903`) holds named noises such as `ZombieRoarNoise` and `WolfStepNoise`, each with `type`, `continuousRange` and `strength`. Weapons carry their own `NoiseShoot` class, for example strength 80 and type `shot` in `P:\DZ\weapons\firearms\akm\config.cpp:82`. Script loads any of these with `NoiseParams` (see `perception.md`).
-</content>
-</invoke>

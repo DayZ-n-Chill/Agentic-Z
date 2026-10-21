@@ -33,5 +33,3 @@ What you hand the server lead for a new creature: the class name, which event or
 - Give every scripted spawner its own cap. Do not assume the economy caps in `globals.xml` also limit what your script creates.
 - `AIAgent.SetKeepInIdle(true)` stops the AI simulating; vanilla uses it while a stealth kill plays (`zombiebase.c:1067`, `:1068`) and turns it back off in `OnRecoverFromDeath` (`:1099`). Pausing distant guards this way is an idea to test, not a vanilla pattern.
 - In the in game test, compare the server with and without your AI loaded, with the same number of creatures, and report the difference with the behaviour result.
-</content>
-</invoke>

@@ -11,7 +11,3 @@ Reference for computer controlled characters: infected, animals, and patrols or 
 | How do I spawn AI from script, what does the server lead need for the economy, and how do I keep it cheap? | `spawning-and-performance.md` |
 
 Code from other mods is never copied into this pack or into a user's mod. Where a community approach is described, it is described in our own words only.
-</content>
-</invoke>
-<invoke name="Bash">
-<parameter name="command">cd /h/Projects/Agentic-Z/.claude/worktrees/wf_4ebf8f33-3c5-36/.claude/skills/_shared/ai && head -3 creatures.md

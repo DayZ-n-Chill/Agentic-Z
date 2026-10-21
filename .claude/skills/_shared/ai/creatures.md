@@ -93,5 +93,3 @@ Script never creates or destroys a controller (`dayzcreatureaiinputcontroller.c:
 ## Classes you cannot mod
 
 `AIWorld`, `AIGroup`, `AIAgent` and `AIGroupBehaviour` are rooted at `Managed` with private constructors (`P:\scripts\3_game\ai\aiworld.c:70`, `aigroup.c:1`, `aiagent.c:1`, `aigroupbehaviour.c:1`). Use them; do not `modded class` them (see `_shared/enscript/patterns/modded_class.md`).
-</content>
-</invoke>

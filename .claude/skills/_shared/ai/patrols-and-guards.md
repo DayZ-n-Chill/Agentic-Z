@@ -15,7 +15,8 @@ What vanilla gives you for creatures that walk a route or hold a post, and what 
 - `AIGroup` (`P:\scripts\3_game\ai\aigroup.c:1`): `AddAgent`, `RemoveAgent` and `GetBehaviour()`. The vanilla note says to remove an agent from its old group before adding it to a new one, and that an empty group is deleted on the next frame (`aigroup.c:6` to `:10`).
 - `AIAgent` (`P:\scripts\3_game\ai\aiagent.c:1`): `SetKeepInIdle(bool enable)` and `GetGroup()`. Get the agent with `DayZCreatureAI.GetAIAgent()` (`P:\scripts\3_game\entities\dayzanimal.c:193`).
 - `DayZCreatureAI.InitAIAgent(AIGroup group)` (`dayzanimal.c:207`) starts the AI of a creature created without it, so you choose its group. `DestroyAIAgent()` (`:208`) removes it.
-- Known group template names in vanilla are the animal ones: `DZDeerGroupBeh`, `DZdomesticGroupBeh`, `DZSheepGroupBeh`, `DZWolfGroupBeh` and `DZAmbientLifeGroupBeh`, named by `defaultGroupTemplateName` in `P:\DZ\AI\config.cpp` (for example `:589`, `:5424`). No vanilla file names an infected group template, and no vanilla script calls `CreateGroup`.
+- Group templates are defined in `class GroupBehaviourTemplates` (`P:\DZ\data\aiconfigs\config.cpp:77`, addon `DZ_data_aiconfigs`). The animal ones are `DZAmbientLifeGroupBeh` (`:79`), `DZWolfGroupBeh` (`:87`), `DZDeerGroupBeh` (`:151`), `DZdomesticGroupBeh` (`:201`) and `DZSheepGroupBeh` (`:252`). Animal templates in `P:\DZ\AI\config.cpp` point at them with `defaultGroupTemplateName`, for example `DZDeerGroupBeh` (`:589`) and `DZWolfGroupBeh` (`:5424`).
+- The infected pack template is `DZInfectedPackBeh` with `type="InfectedPack"` (`P:\DZ\data\aiconfigs\config.cpp:304`). Its keys include `groupRadius=10` (`:311`) and `agentPathLength=100` (`:313`). No vanilla script calls `CreateGroup` with it.
 
 ## Waypoint patrols for infected
 
@@ -23,7 +24,7 @@ What vanilla gives you for creatures that walk a route or hold a post, and what 
 
 - `SetWaypoints(array<ref BehaviourGroupInfectedPackWaypointParams> waypointParams, int waypointDefaultIndex, bool forwardDirection, bool loop)` (`:27`). Each waypoint is a centre and a radius (`BehaviourGroupInfectedPackWaypointParams`, `:7`). The vanilla note says `loop` true cycles the waypoints and false patrols them (`:25`); watch the in game test to see how a patrol walks after the last point.
 - `SetWaypointsTraverseDirection`, `SetWaypointsLoop` and `SetCurrentWaypoint` (`:29` to `:31`) change the route while it runs.
-- To use it you cast `group.GetBehaviour()` to `BehaviourGroupInfectedPack`. Because no vanilla file names the template that creates this behaviour, the cast can return null. Check for null, log it, and fall back to the steering pattern below. The in game test must prove the route works before you report it as done.
+- To use it, create the group with `GetGame().GetWorld().GetAIWorld().CreateGroup("DZInfectedPackBeh")`, then cast `group.GetBehaviour()` to `BehaviourGroupInfectedPack`. No vanilla script does this, so check the cast for null, log it, and fall back to the steering pattern below. The in game test must prove the route works before you report it as done.
 
 ## Steering pattern (our own design)
 
@@ -49,5 +50,3 @@ Large community AI mods build human NPCs by spawning a player class character th
 1. Say plainly that vanilla has no human AI and that a from scratch human AI is a large project.
 2. Offer the infected or animal based guard first (a custom infected with its own template and a patrol route), which runs on the vanilla engine AI.
 3. If the user still wants humans, plan it as its own milestone with the script lead and the architect, and write every class fresh against the vanilla hooks above. Whether a player class character can be created and simulated without a client must be proven in the in game test first; no vanilla file shows it.
-</content>
-</invoke>

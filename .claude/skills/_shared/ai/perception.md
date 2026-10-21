@@ -50,5 +50,3 @@ The engine AI already reacts to shot noise for infected and animals. For your ow
 - `EntityAI.EEFired(int muzzleType, int mode, string ammoType)` (`P:\scripts\3_game\entities\entityai.c:4927`) is called when a weapon fires; `Weapon_Base` overrides it (`P:\scripts\4_world\entities\firearms\weapon_base.c:341`). Vanilla wraps its muzzle effects in `!g_Game.IsHeadlessOrDedicatedServer()`, which shows the event reaches the server too. Confirm which side your code runs on in the in game test before relying on it.
 - In a `modded class Weapon_Base`, call `super.EEFired(...)` first, then on the server hand the shooter and position to your own manager. Do not search for nearby guards inside `EEFired`; that runs for every shot on the server. Let the manager hold a list of guards and check distance squared against it.
 - For a cheaper signal, reuse the fake noise above: let the engine AI do the hearing and read the result from the input controller (`GetMindState()`, `GetTargetEntity()`).
-</content>
-</invoke>
