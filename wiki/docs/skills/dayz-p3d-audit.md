@@ -72,6 +72,8 @@ Interpret findings with the references below.
    e. Component01 covers all?    → If partial: extend selection
    f. Mesh watertight?           → If open: close gaps
    g. Geometry LOD exists?       → If missing: create one
+   h. Geometry LOD mass set?     → The audit prints the mass as a NOTE, or says
+                                    the LOD has none
 
 6. Animations not playing?
    → Check flag_mast selection in Visual LOD

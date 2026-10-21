@@ -61,6 +61,17 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/file_paths.md` | `$profile` and `$saves` paths, file and JSON helpers. |
 | `_shared/enscript/references/gui_layout.md` | `.layout` format and every widget type. |
 
+### Physics pack (`_shared/physics`)
+
+Front index: `_shared/physics/README.md`, which also has a symptom to cause table. Written for `dayz-physics-specialist`, the specialist every lead can call.
+
+| File | Purpose |
+|---|---|
+| `_shared/physics/mass-and-weight.md` | Config `weight` against body mass, reading each, and the config keys that change handling. |
+| `_shared/physics/collision-lods.md` | Which LOD stops players, items and bullets, its rules, and probing each LOD from script. |
+| `_shared/physics/drop-and-throw.md` | Static and dynamic bodies, spawn flags, how vanilla drops and throws, falling through floors. |
+| `_shared/physics/contact.md` | `EOnContact` and `Contact`, impact sounds, players and vehicles, character collisions, pushing. |
+
 ### Skill packs (`references/`)
 
 | Folder or file | Purpose |

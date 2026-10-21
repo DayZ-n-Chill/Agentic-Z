@@ -1,0 +1,48 @@
+{
+  "agent": "dayz-physics-specialist",
+  "questions": [
+    {
+      "id": "config-weight-is-not-body-mass",
+      "question": "Answer only, do not edit any file. I raised weight in my crate's config.cpp from 10000 to 50000, but players push it around just as easily as before. Why did nothing change, and where does the mass that physics uses come from?",
+      "must_include": [
+        "re:\\bgrams?\\b",
+        "re:Geometry"
+      ],
+      "verified": "P:/scripts/3_game/entities/entityaitype.c:49 (m_ConfigWeight = ConfigGetInt(\"weight\")), P:/scripts/5_mission/gui/inventorynew/vicinityitemmanager.c:13 (weight in grams), P:/scripts/4_world/classes/useractionscomponent/actions/continuous/actionpushobject.c:100 (push uses dBodyGetMass); Geometry LOD mass per .claude/agents/dayz-object-builder.md"
+    },
+    {
+      "id": "heavy-crate-cannot-be-thrown",
+      "question": "Answer only, do not edit any file. My class MyMod_Crate inherits from vanilla WoodenCrate. Players can drop it but can never throw it. Is that a bug in my mod?",
+      "must_include": [
+        "re:heavy",
+        "re:\\bnot a bug\\b|expected|by design|intended|normal|\\bno\\b"
+      ],
+      "verified": "P:/scripts/4_world/entities/dayzplayerimplementthrowing.c:187 and :231 (no throw with a HEAVY hand profile), P:/scripts/4_world/entities/manbase/dayzplayer/dayzplayercfgbase.c:854 (WoodenCrate uses heavyItemBehaviour), P:/DZ/gear/camping/config.cpp:10176 (itemBehaviour=0)"
+    },
+    {
+      "id": "spawn-without-physics",
+      "question": "Answer only, do not edit any file. I spawn my item with GetGame().CreateObjectEx(\"MyMod_Ball\", pos, ECE_NONE); and nothing collides with it. Which spawn flag is missing?",
+      "must_include": [
+        "re:ECE_CREATEPHYSICS|ECE_PLACE_ON_SURFACE"
+      ],
+      "verified": "P:/scripts/3_game/ce/centraleconomy.c:17 (ECE_CREATEPHYSICS = 1024, creates the collision envelope) and :38 (ECE_PLACE_ON_SURFACE includes it)"
+    },
+    {
+      "id": "make-resting-item-fall",
+      "question": "Answer only, do not edit any file. My script deletes a shelf, and the items that were resting on it stay hanging in the air. Which vanilla call makes such an item drop to the ground, and with what arguments?",
+      "must_include": [
+        "re:ThrowPhysically\\s*\\(\\s*null\\s*,\\s*vector\\.Zero"
+      ],
+      "verified": "P:/scripts/4_world/classes/constructionbase.c:300 and P:/scripts/4_world/entities/itembase/tentbase/shelter.c:65 (item.ThrowPhysically(null, vector.Zero)); signature at P:/scripts/3_game/entities/inventoryitem.c:26"
+    },
+    {
+      "id": "bullets-pass-through",
+      "question": "Answer only, do not edit any file. Players can't walk through my mod's wall model, but bullets pass straight through it. Which LOD is at fault, and what is its resolution value in DayZ?",
+      "must_include": [
+        "re:Fire\\s?Geo",
+        "re:7(\\.0+)?e\\+?15"
+      ],
+      "verified": ".claude/skills/_shared/conventions/assets.md LOD table (FireGeometry 7.0e+15, Geometry 1.0e+13); .claude/skills/dayz-p3d-audit/scripts/audit_p3d.py check_required_lods (missing FireGeo note)"
+    }
+  ]
+}
