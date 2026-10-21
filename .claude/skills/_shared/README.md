@@ -138,6 +138,16 @@ Front index: `_shared/vehicles/README.md`. Loaded by dayz-vehicle-specialist and
 | `_shared/vehicles/damage.md` | `DamageSystem` zones, zone names script reads, crash and crew damage. |
 | `_shared/vehicles/helicopters.md` | What vanilla ships for helicopters and what a mod must write. |
 
+### Audio and effects pack (`_shared/audio-fx`)
+
+Front index: `_shared/audio-fx/README.md`. Used by `dayz-audio-fx-specialist` and any lead that needs a sound or an effect.
+
+| File | Purpose |
+|---|---|
+| `_shared/audio-fx/sound-config.md` | `CfgSoundShaders` and `CfgSoundSets`: samples, volume, range, curves, looping, `CfgPatches`. |
+| `_shared/audio-fx/sound-script.md` | Playing, looping, fading and stopping sound sets from script; cleanup; server triggers. |
+| `_shared/audio-fx/effects-wiring.md` | Sound plus particle on one device, and config hooks for weapon and item sounds and particles. |
+
 ### Skill packs (`references/`)
 
 | Folder or file | Purpose |
