@@ -145,3 +145,71 @@ def test_import_requires_a_scaffold_choice(capsys):
 def test_record_project_stores_only_the_active_mod(tmp_path):
     plan.record_project(tmp_path, Intent("MyMod", source="D:/src", scaffold=False, server_map="chernarus"))
     assert read_state(tmp_path) == {"last_intent": {"mod_name": "MyMod"}}
+
+
+SPEC_ARGS = [
+    "--goal", "Adds a craftable radio",
+    "--item", "MyMod_Radio",
+    "--behavior", "A player can hold the radio",
+    "--behavior", "Using it plays a sound",
+    "--done-check", "The radio spawns on the server",
+]
+
+
+def test_spec_step_follows_scaffold_and_precedes_record():
+    intent = Intent("MyMod", spec=plan.Spec("Adds a radio"), server_map="chernarus")
+    assert _actions(build_steps(intent, False)) == ["new-mod", "spec", "record", "add-server"]
+
+
+def test_spec_step_skipped_without_goal_or_when_spec_exists():
+    assert "spec" not in _actions(build_steps(Intent("MyMod"), False))
+    assert "spec" not in _actions(build_steps(Intent("MyMod", spec=plan.Spec("x")), True, spec_exists=True))
+    # An existing mod with no spec.md yet still gets one.
+    assert _actions(build_steps(Intent("MyMod", spec=plan.Spec("x")), True)) == ["spec", "record"]
+
+
+def test_execute_writes_spec_for_the_architect(env_ok, runs, tmp_path):
+    rc = plan.main(["--mod", "MyMod", *SPEC_ARGS, "--execute"], project=tmp_path)
+    assert rc == 0
+    assert _skills_run(runs) == ["dayz-new-mod"]
+    assert (tmp_path / "workspace" / "MyMod" / "spec.md").read_text(encoding="utf-8") == (
+        "# MyMod spec\n\n"
+        "## Goal\n\nAdds a craftable radio\n\n"
+        "## Items\n\n- MyMod_Radio\n\n"
+        "## Behaviors\n\n- A player can hold the radio\n- Using it plays a sound\n\n"
+        "## Done checks\n\n- The radio spawns on the server\n"
+    )
+
+
+def test_print_only_shows_spec_step_but_writes_nothing(env_ok, runs, tmp_path, capsys):
+    assert plan.main(["--mod", "MyMod", "--goal", "Adds a radio"], project=tmp_path) == 0
+    assert r"Write workspace\MyMod\spec.md" in capsys.readouterr().out
+    assert not (tmp_path / "workspace").exists()
+
+
+def test_existing_spec_is_never_overwritten(monkeypatch, runs, tmp_path):
+    monkeypatch.setattr(plan, "run_all", lambda: [])
+    spec = tmp_path / "workspace" / "MyMod" / "spec.md"
+    spec.parent.mkdir(parents=True)
+    spec.write_text("hand edited\n", encoding="utf-8")
+    assert plan.main(["--mod", "MyMod", "--goal", "Something else", "--execute"], project=tmp_path) == 0
+    assert spec.read_text(encoding="utf-8") == "hand edited\n"
+
+
+def test_render_spec_keeps_entries_on_one_line_and_marks_empty_sections():
+    text = plan.render_spec("M", plan.Spec("Adds\n a radio", items=["Radio\nwith  dial"]))
+    assert "Adds a radio\n" in text
+    assert "- Radio with dial\n" in text
+    assert text.count("- None yet.") == 2
+
+
+@pytest.mark.parametrize("argv, message", [
+    (["--item", "Radio"], "--item, --behavior and --done-check need --goal"),
+    (["--goal", "  "], "--goal is empty"),
+    (["--import-from", "D:/src", "--no-scaffold", "--goal", "x"], "--goal does not apply with --no-scaffold"),
+])
+def test_spec_usage_errors(argv, message, capsys):
+    with pytest.raises(SystemExit) as exc:
+        plan.parse_args(["--mod", "M", *argv])
+    assert exc.value.code == 2
+    assert message in capsys.readouterr().err

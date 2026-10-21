@@ -2,7 +2,8 @@
 
 Usage:
     python plan.py --mod NAME [--import-from PATH [--scaffold | --no-scaffold]]
-                   [--author HANDLE] [--server MAP] [--build] [--launch] [--execute]
+                   [--author HANDLE] [--goal TEXT [--item TEXT]... [--behavior TEXT]...
+                   [--done-check TEXT]...] [--server MAP] [--build] [--launch] [--execute]
 
 Without --execute: prints the plan and exits 0.
 With --execute: runs each step in order and stops at the first failure,
@@ -11,10 +12,12 @@ check reports a hard stop or P:\\ is not mounted.
 
 Steps, in order (each skipped when not needed):
   1. new-mod / import-mod   skipped when workspace/<mod> already exists
-  2. record          write the per-clone project cache and the active mod
-  3. add-server      --server
-  4. build           --build, or implied by --launch
-  5. launch          --launch (needs --server)
+  2. spec            --goal; writes workspace/<mod>/spec.md for the
+                     dayz-mod-architect, skipped when spec.md already exists
+  3. record          write the per-clone project cache and the active mod
+  4. add-server      --server
+  5. build           --build, or implied by --launch
+  6. launch          --launch (needs --server)
 The P:\\Mods junction is not a step: /dayz-preflight, which every child skill
 runs first, creates it when it is missing.
 """
@@ -29,6 +32,17 @@ from dispatch import KNOWN_MAPS, DispatchError, command_for, run
 from env_check import classify, run_all
 from state import PROJECT_DIR, mod_exists, write_cached_project_root, write_state
 
+SPEC_FILENAME = "spec.md"
+
+
+@dataclass
+class Spec:
+    """What the mod should do, in the user's words. dayz-mod-architect reads it first."""
+    goal: str
+    items: list[str] = field(default_factory=list)
+    behaviors: list[str] = field(default_factory=list)
+    done_checks: list[str] = field(default_factory=list)
+
 
 @dataclass
 class Intent:
@@ -39,6 +53,7 @@ class Intent:
     server_map: str | None = None
     build: bool = False
     launch: bool = False
+    spec: Spec | None = None
 
 
 @dataclass
@@ -48,7 +63,11 @@ class Step:
     params: dict = field(default_factory=dict)
 
 
-def build_steps(intent: Intent, already_exists: bool) -> list[Step]:
+def spec_path(project: Path, mod_name: str) -> Path:
+    return project / "workspace" / mod_name / SPEC_FILENAME
+
+
+def build_steps(intent: Intent, already_exists: bool, spec_exists: bool = False) -> list[Step]:
     """Ordered steps for this intent."""
     steps: list[Step] = []
     mod = intent.mod_name
@@ -62,6 +81,9 @@ def build_steps(intent: Intent, already_exists: bool) -> list[Step]:
         steps.append(Step("import-mod", f"Import {intent.source} as {mod}", params))
     else:
         steps.append(Step("new-mod", f"Scaffold workspace\\{mod}", {"mod": mod, "author": intent.author}))
+
+    if intent.spec and not spec_exists:
+        steps.append(Step("spec", f"Write workspace\\{mod}\\{SPEC_FILENAME}"))
 
     steps.append(Step("record", f"Record {mod} as the active mod"))
 
@@ -81,6 +103,28 @@ def render_plan(steps: list[Step]) -> str:
     return "\n".join(["Plan:"] + [f"  {i}. {s.label}" for i, s in enumerate(steps, start=1)])
 
 
+def _one_line(text: str) -> str:
+    return " ".join(text.split())
+
+
+def render_spec(mod_name: str, spec: Spec) -> str:
+    def section(title: str, entries: list[str]) -> list[str]:
+        lines = [f"- {_one_line(e)}" for e in entries if e.strip()] or ["- None yet."]
+        return ["", f"## {title}", ""] + lines
+
+    lines = [f"# {mod_name} spec", "", "## Goal", "", _one_line(spec.goal)]
+    lines += section("Items", spec.items)
+    lines += section("Behaviors", spec.behaviors)
+    lines += section("Done checks", spec.done_checks)
+    return "\n".join(lines) + "\n"
+
+
+def write_spec(project: Path, intent: Intent) -> None:
+    path = spec_path(project, intent.mod_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render_spec(intent.mod_name, intent.spec), encoding="utf-8")
+
+
 def record_project(project: Path, intent: Intent) -> None:
     write_cached_project_root(project, project / ".claude" / "local-memory")
     write_state(project, {
@@ -94,6 +138,9 @@ def execute(steps: list[Step], intent: Intent, project: Path) -> int:
         print(f"\n[{i}/{len(steps)}] {step.label}", flush=True)
         if step.action == "record":
             record_project(project, intent)
+            continue
+        if step.action == "spec":
+            write_spec(project, intent)
             continue
         rc = run(command_for(step.action, **step.params))
         if rc != 0:
@@ -113,6 +160,13 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     scaffold.add_argument("--no-scaffold", dest="scaffold", action="store_false",
                           help="Import: link only, never write into the source folder")
     parser.add_argument("--author", help="New mod or --scaffold import: author handle (cached for future runs)")
+    parser.add_argument("--goal", help="Spec: what the mod should do (writes workspace/<mod>/spec.md)")
+    parser.add_argument("--item", dest="items", action="append", default=[],
+                        help="Spec: an item the mod adds (repeatable)")
+    parser.add_argument("--behavior", dest="behaviors", action="append", default=[],
+                        help="Spec: something a player can do or see in game (repeatable)")
+    parser.add_argument("--done-check", dest="done_checks", action="append", default=[],
+                        help="Spec: a check that proves the mod is done (repeatable)")
     parser.add_argument("--server", choices=KNOWN_MAPS, help="Set up a test server on this map")
     parser.add_argument("--build", action="store_true", help="Build the PBO")
     parser.add_argument("--launch", action="store_true", help="Launch DayZ Diag (implies --build)")
@@ -126,6 +180,13 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         # import_mod.py would otherwise prompt per piece, and the wizard's
         # scripts never prompt.
         parser.error("--import-from needs --scaffold or --no-scaffold")
+    if args.goal is not None and not args.goal.strip():
+        parser.error("--goal is empty")
+    if (args.items or args.behaviors or args.done_checks) and not args.goal:
+        parser.error("--item, --behavior and --done-check need --goal")
+    if args.goal and args.scaffold is False:
+        # A link-only import never writes into the user's source folder.
+        parser.error("--goal does not apply with --no-scaffold")
     return args
 
 
@@ -135,6 +196,7 @@ def main(argv: list[str] | None = None, project: Path | None = None) -> int:
     intent = Intent(
         mod_name=args.mod, source=args.source, scaffold=args.scaffold, author=args.author,
         server_map=args.server, build=args.build, launch=args.launch,
+        spec=Spec(args.goal, args.items, args.behaviors, args.done_checks) if args.goal else None,
     )
 
     autofix, hard = classify(run_all())
@@ -144,7 +206,7 @@ def main(argv: list[str] | None = None, project: Path | None = None) -> int:
             print(f"       {issue.message}", file=sys.stderr)
         return 2
 
-    steps = build_steps(intent, mod_exists(project, args.mod))
+    steps = build_steps(intent, mod_exists(project, args.mod), spec_path(project, args.mod).is_file())
     print(render_plan(steps))
     if not args.execute:
         return 0
