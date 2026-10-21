@@ -71,6 +71,10 @@ def decide(text, env=NO_KEY):
         # UI icons and the Dabs Framework MVC layer go to the UI specialist.
         ("pack my menu icons into an imageset", "dayz-ui-specialist", None),
         ("make a Dabs ScriptView for my trader panel", "dayz-ui-specialist", None),
+        ("start MyRifle from the new weapon recipe", "dayz-recipe", {"recipe": "weapon"}),
+        ("use the vest recipe for my plate carrier mod", "dayz-recipe", {"recipe": "vest"}),
+        ("run /dayz-recipe craftable MyKit", "dayz-recipe", None),
+        ("build me a weapon mod from a recipe for a new weapon", "dayz-recipe", {"recipe": "weapon"}),
         # Questions about how vanilla works get a cited answer, whatever they are about.
         ("how does vanilla handle food spoilage?", "dayz-ask", None),
         ("Where is bleeding started in vanilla?", "dayz-ask", None),
@@ -125,6 +129,12 @@ def test_spawn_alone_is_not_server_admin(text):
     d = decide(text)
     assert d["route"] != "dayz-server-admin"
     assert d["route"] in {"dayz-ai-specialist", "dayz-vehicle-specialist", None}
+
+
+@pytest.mark.parametrize("text", ["add a crafting recipe for a new vest", "write a craft recipe that makes a new weapon",
+                                  "add a recipe so players can craft rope"])
+def test_crafting_recipes_are_not_mod_recipes(text):
+    assert decide(text)["route"] != "dayz-recipe"
 
 
 def test_orchestrator_is_a_team():

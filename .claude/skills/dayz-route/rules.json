@@ -10,6 +10,7 @@
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
+    "dayz-recipe": {"kind": "skill", "description": "Start a mod plan from a recipe: new weapon, new vest or new craftable"},
     "dayz-ask": {"kind": "skill", "description": "Answer a question about how vanilla DayZ works, with path:line citations"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
     "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, inheritance, hidden selections"},
@@ -35,6 +36,12 @@
     "figma-node-normalizer": {"kind": "agent", "description": "Start the Figma pipeline: turn a Figma design or figma.com link into a checked DayZ .layout"}
   },
   "rules": [
+    {
+      "route": "dayz-recipe",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bdayz-recipe\\b", "(?<!craft )(?<!crafting )\\brecipes?\\b[\\w\\s]{0,20}?\\bnew\\s+(?P<recipe>weapon|vest|craftable)\\b", "(?<!craft )(?<!crafting )\\b(?:new\\s+)?(?P<recipe>weapon|vest|craftable)\\s+recipe\\b", "\\b(?:mod|plan)\\s+recipes?\\b"]
+    },
     {
       "route": "orchestrator",
       "confidence": 0.95,
