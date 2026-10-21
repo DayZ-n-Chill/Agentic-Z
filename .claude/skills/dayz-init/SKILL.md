@@ -53,11 +53,13 @@ Then ask in chat for the free-text values:
 - Mod name (letters, digits and underscores, starting with a letter). For an import, offer the source folder's name as the default.
 - Import only: the source folder path, and whether to write missing scaffold pieces into it (`--scaffold`) or only link it (`--no-scaffold`).
 - New mod, or import with `--scaffold`, when `.claude/local-memory/dayz-author.txt` does not exist: the author handle shown in mod descriptions (a scaffolded import writes it into `config.cpp`). Pass it as `--author`.
+- Optional spec, only when `workspace\<ModName>\spec.md` does not exist and the mod is not a `--no-scaffold` import: "What should the mod do? Say skip to leave it for later." This is the only spec question. If the user skips, pass no spec flags. Otherwise turn the answer into one `--goal` sentence plus `--item` (each item or class the mod adds), `--behavior` (each thing a player can do or see in game) and `--done-check` (each check that proves it works), all repeatable. Use the user's own words and don't invent features they did not ask for. The plan writes these to `spec.md`, and dayz-mod-architect reads it first when it plans the mod.
+- The spec question is not asked when `workspace\<ModName>` is a linked import, because `plan.py` never writes into a linked source folder on a re-run.
 
 ## Step 4: show the plan
 
 ```
-python "<skill-dir>\plan.py" --mod <ModName> [--import-from <path> --scaffold|--no-scaffold] [--author <handle>] [--server <map>] [--build] [--launch]
+python "<skill-dir>\plan.py" --mod <ModName> [--import-from <path> --scaffold|--no-scaffold] [--author <handle>] [--goal <text> [--item <text>]... [--behavior <text>]... [--done-check <text>]...] [--server <map>] [--build] [--launch]
 ```
 
 Prints the numbered plan, for example:
@@ -65,11 +67,14 @@ Prints the numbered plan, for example:
 ```
 Plan:
   1. Scaffold workspace\MyMod
-  2. Record MyMod as the active mod
-  3. Set up the chernarus test server
-  4. Build MyMod.pbo
-  5. Launch DayZ Diag with MyMod on chernarus
+  2. Write workspace\MyMod\spec.md
+  3. Record MyMod as the active mod
+  4. Set up the chernarus test server
+  5. Build MyMod.pbo
+  6. Launch DayZ Diag with MyMod on chernarus
 ```
+
+The spec step appears only with `--goal`, and is skipped when `spec.md` already exists, so a spec the user edited is never overwritten.
 
 Scaffolding or importing is skipped when `workspace\<ModName>\` already exists (a folder or a link, including a `--no-scaffold` import that has no `config.cpp` yet), so re-running `/dayz-init` for an existing mod just makes it active. Show the plan in chat. Don't ask for a yes/no: the user already chose everything in it, and none of it is destructive.
 
@@ -81,6 +86,7 @@ Same command plus `--execute`. Each step's output streams through; the first fai
 |---|---|
 | new-mod | `dayz-new-mod\new_mod.py <ModName> [--author <handle>]` |
 | import-mod | `dayz-import-mod\import_mod.py --source <path> --name <ModName> --scaffold\|--no-scaffold [--author <handle>]` (author only with `--scaffold`) |
+| spec | writes `workspace\<ModName>\spec.md` with Goal, Items, Behaviors and Done checks sections |
 | record | writes the two state files above |
 | add-server | `dayz-add-server\add_server.py <map> --map <map>` |
 | build | `dayz-build-pbo\build.py <ModName>` |
