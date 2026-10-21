@@ -74,6 +74,15 @@ def decide(text, env=NO_KEY):
         # UI icons and the Dabs Framework MVC layer go to the UI specialist.
         ("pack my menu icons into an imageset", "dayz-ui-specialist", None),
         ("make a Dabs ScriptView for my trader panel", "dayz-ui-specialist", None),
+        ("start MyRifle from the new weapon recipe", "dayz-recipe", {"recipe": "weapon"}),
+        ("use the vest recipe for my plate carrier mod", "dayz-recipe", {"recipe": "vest"}),
+        ("run /dayz-recipe craftable MyKit", "dayz-recipe", None),
+        ("build me a weapon mod from a recipe for a new weapon", "dayz-recipe", {"recipe": "weapon"}),
+        # Questions about how vanilla works get a cited answer, whatever they are about.
+        ("how does vanilla handle food spoilage?", "dayz-ask", None),
+        ("Where is bleeding started in vanilla?", "dayz-ask", None),
+        ("what does vanilla use for the AKM recoil?", "dayz-ask", None),
+        ("How does DayZ decide when food goes bad?", "dayz-ask", None),
     ],
 )
 def test_rules_route_confidently(text, expected, args):
@@ -125,8 +134,19 @@ def test_spawn_alone_is_not_server_admin(text):
     assert d["route"] in {"dayz-ai-specialist", "dayz-vehicle-specialist", None}
 
 
+@pytest.mark.parametrize("text", ["add a crafting recipe for a new vest", "write a craft recipe that makes a new weapon",
+                                  "add a recipe so players can craft rope"])
+def test_crafting_recipes_are_not_mod_recipes(text):
+    assert decide(text)["route"] != "dayz-recipe"
+
+
 def test_orchestrator_is_a_team():
     assert decide("build me a vest mod")["kind"] == "team"
+
+
+@pytest.mark.parametrize("text", ["make my vest work like the vanilla one", "add a vanilla style rifle"])
+def test_vanilla_in_a_change_request_is_not_a_question(text):
+    assert decide(text)["route"] != "dayz-ask"
 
 
 @pytest.mark.parametrize("text", ["build me a mod", "build a pbo", "build the config", "build it"])
