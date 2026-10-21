@@ -65,6 +65,9 @@ def decide(text, env=NO_KEY):
         ("preview gui/layouts/compass.layout at 4k", "dayz-layout-preview", None),
         ("show me a layout preview of my HUD", "dayz-layout-preview", None),
         ("render trader_menu.layout at different screen sizes", "dayz-layout-preview", None),
+        # Real preview widgets in a HUD or menu are UI work, not a layout preview.
+        ("make a player preview panel in the hud", "dayz-ui-specialist", None),
+        ("add an item preview widget to my inventory menu", "dayz-ui-specialist", None),
     ],
 )
 def test_rules_route_confidently(text, expected, args):

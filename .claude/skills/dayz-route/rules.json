@@ -116,7 +116,7 @@
       "route": "dayz-layout-preview",
       "confidence": 0.9,
       "absorbs": true,
-      "patterns": ["\\bpreview\\b[\\w\\s.\\\\/-]{0,40}?\\b(?:layout|hud|menu|ui)\\b", "\\b(?:layout|hud|menu|ui)\\s+preview\\b", "\\b(?:render|draw)\\b[\\w\\s.\\\\/-]{0,40}?\\.layout\\b", "\\b(?:screen\\s+sizes|resolutions)\\b[\\w\\s]{0,30}?\\.layout\\b"]
+      "patterns": ["\\bpreview\\b[\\w\\s.\\\\/-]{0,40}?\\.layout\\b","\\b(?:layout|hud|menu|ui)\\s+preview\\b", "\\b(?:render|draw)\\b[\\w\\s.\\\\/-]{0,40}?\\.layout\\b", "\\b(?:screen\\s+sizes|resolutions)\\b[\\w\\s]{0,30}?\\.layout\\b"]
     },
     {
       "route": "dayz-ui-specialist",
