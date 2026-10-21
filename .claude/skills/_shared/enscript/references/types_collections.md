@@ -1,13 +1,15 @@
 # Reference: Core Types and Collections
 
+Quick examples. The checked reference with vanilla line citations is `language_types.md`.
+
 ## Primitive Types
 
 | Type | Default | Notes |
 |---|---|---|
 | `int` | `0` | 32-bit signed integer |
-| `float` | `0.0` | 32-bit float; use `f` suffix on literals: `1.5f` |
+| `float` | `0.0` | 32-bit float; an `f` suffix on literals (`1.5f`) is allowed but optional |
 | `bool` | `false` | `true` / `false` |
-| `string` | `""` | Immutable value type; use `+` to concat |
+| `string` | `""` | Value type; use `+` to concat. `ToLower`, `ToUpper` and `Replace` change it in place |
 | `vector` | `"0 0 0"` | 3-component float; literal syntax: `"1.5 0 -3"` |
 
 Primitives are **never null**. Checking `if (myInt == null)` is either a no-op or a compile error.
@@ -20,11 +22,10 @@ Primitives are **never null**. Checking `if (myInt == null)` is either a no-op o
 string s = "Hello, World!";
 
 int    len     = s.Length();              // 13
-string upper   = s.ToUppercase();
-string lower   = s.ToLowercase();
-bool   starts  = s.StartsWith("Hello");
-bool   ends    = s.EndsWith("!");
+bool   has     = s.Contains("World");
 int    idx     = s.IndexOf(",");          // 5; -1 if not found
+// No StartsWith/EndsWith: use s.IndexOf("Hello") == 0
+// ToUpper()/ToLower() change s in place (see below)
 string sub     = s.Substring(7, 5);      // "World"
 string trimmed = s.Trim();
 int    asInt   = "42".ToInt();
@@ -53,11 +54,12 @@ arr.InsertAt("b", 0);       // insert at index
 int cnt = arr.Count();
 string val = arr[0];
 arr.Set(0, "z");
-arr.Remove(0);              // remove by index
-arr.RemoveItem("z");        // remove by value (linear scan)
+arr.Remove(0);              // remove by index; moves the last element into the gap
+arr.RemoveOrdered(0);       // remove by index, keeping order
+arr.RemoveItem("z");        // remove by value, keeping order (linear scan)
 arr.Clear();
-arr.Copy(otherArr);         // shallow copy into otherArr
-arr.Sort(true);             // true = ascending
+arr.Copy(otherArr);         // replace arr's contents with otherArr's
+arr.Sort();                 // ascending; Sort(true) = descending
 
 // Iteration
 foreach (string item : arr)
@@ -99,8 +101,8 @@ for (int i = 0; i < scores.Count(); i++)
 ref set<string> seen = new set<string>();
 
 seen.Insert("item_a");
-bool has = seen.Contains("item_a");
-seen.Remove("item_a");
+bool has = seen.Find("item_a") != -1;   // set has no Contains
+seen.RemoveItem("item_a");              // Remove(i) takes an index
 int cnt = seen.Count();
 ```
 
@@ -110,20 +112,18 @@ int cnt = seen.Count();
 
 ```c
 vector pos = "1 2 3";
-float x = pos[0];    // or pos.GetX()
-float y = pos[1];    // or pos.GetY()
-float z = pos[2];    // or pos.GetZ()
+float x = pos[0];
+float y = pos[1];
+float z = pos[2];
 
 float dist   = vector.Distance(pos1, pos2);
 float distSq = vector.DistanceSq(pos1, pos2);   // cheaper, no sqrt
 vector dir   = vector.Direction(from, to);       // not normalized
 vector norm  = dir.Normalized();
 float dot    = vector.Dot(a, b);
-vector cross = vector.Cross(a, b);
+vector cross = a.Cross(b);                       // instance method
 float len    = pos.Length();
-
-// Angle between two vectors (degrees)
-float ang = vector.AngleBetween(dir1, dir2);
+float yaw    = dir.VectorToYaw();
 ```
 
 ---
@@ -150,7 +150,7 @@ float pi = Math.PI;
 
 ## ⚠️ `string.ToLower()` / `ToUpper()` mutate in place
 
-They return nothing useful (some return self, some void depending on engine version). Always copy first if you need to preserve the original:
+They change the string in place and return its new length (`P:\scripts\1_core\proto\enstring.c:171`, `:186`). Always copy first if you need to preserve the original:
 
 ```c
 string original = "Hello World";
