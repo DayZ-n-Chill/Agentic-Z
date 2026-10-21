@@ -1,0 +1,62 @@
+{
+  "agent": "dayz-persistence-specialist",
+  "questions": [
+    {
+      "id": "version-param-is-game",
+      "question": "Answer only, do not edit any file. In my item's override bool OnStoreLoad(ParamsReadContext ctx, int version), can I use the version argument as my mod's own save version? Start with yes or no, say what that number is, and cite the vanilla file that sets it.",
+      "must_include": [
+        "re:\\A\\W*no\\b",
+        "re:GAME_STORAGE_VERSION|storage version|game('s)? version"
+      ],
+      "cite": "3_game/global/game.c",
+      "verified": "P:/scripts/3_game/global/game.c:5 (static int GAME_STORAGE_VERSION = 144) and :50 (StorageVersion(GAME_STORAGE_VERSION))"
+    },
+    {
+      "id": "cargo-saved-by-engine",
+      "question": "Answer only, do not edit any file. My safe inherits from Container_Base. To keep the items inside it after a server restart, do I have to write each cargo item in OnStoreSave? Start with yes or no and explain, citing the vanilla file that shows children are loaded for you.",
+      "must_include": [
+        "re:\\A\\W*no\\b",
+        "AfterStoreLoad"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "cite": "3_game/entities/entityai.c",
+      "verified": "P:/scripts/3_game/entities/entityai.c:1418 (AfterStoreLoad: called after all children loaded) and :1423 (OnBinLoadItemsDropped)"
+    },
+    {
+      "id": "base-part-id-renumber",
+      "question": "Answer only, do not edit any file. My mod ships a wall that inherits from BaseBuildingBase, with Construction parts id=1 to id=5. For the next release I want to renumber the parts so they read in a nicer order. Is that safe for walls already built on live servers? Start with yes or no and explain how built parts are saved, citing the vanilla file.",
+      "must_include": [
+        "re:\\A\\W*no\\b",
+        "re:m_SyncParts0[123]|bit ?mask|bitmask"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "cite": "4_world/entities/itembase/basebuildingbase.c",
+      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase.c:420 (writes m_SyncParts01 to 03 and m_HasBase) and :143 (part_id 1 to 31 maps to a bit in m_SyncParts01); id read from config at P:/scripts/4_world/classes/basebuilding/typeconstructiondata/constructionparttyped.c:83"
+    },
+    {
+      "id": "removed-field-read-and-discard",
+      "question": "Answer only, do not edit any file. Version 1 of my item saved, after super and my version int, an int m_MyMod_Charges and then a float m_MyMod_Heat. Version 2 no longer needs m_MyMod_Charges and stops writing it. In OnStoreLoad, what must happen when the saved version is 1? Name a vanilla class that does the same thing.",
+      "must_include": [
+        "re:read.{0,80}(discard|throw|ignore|skip|unused|dummy|local|temp)|(discard|throw away|ignore).{0,80}read",
+        "CombinationLock"
+      ],
+      "must_not_include": [
+        "re:return false.{0,40}(old|version 1|v1)"
+      ],
+      "verified": "P:/scripts/4_world/entities/itembase/combinationlock.c:160 (if (version < 105) reads isLockAttached into a local and drops it)"
+    },
+    {
+      "id": "persistent-id-lookup-event",
+      "question": "Answer only, do not edit any file. My generator item saves the persistent ID of the lamp it powers. In which event may I call GetGame().GetEntityByPersitentID to find the lamp again after a restart, and why not in OnStoreLoad? Cite the vanilla file.",
+      "must_include": [
+        "EEOnAfterLoad"
+      ],
+      "cite": "3_game/entities/entityai.c",
+      "verified": "P:/scripts/3_game/entities/entityai.c:1393 (available only in this event, inside EEOnAfterLoad at :1381) and :3041 (cannot be called in OnStoreLoad); native at P:/scripts/3_game/global/game.c:1420"
+    }
+  ]
+}
