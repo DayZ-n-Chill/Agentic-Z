@@ -27,16 +27,17 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 ## What it does
 
 1. **Project** - reads the project root cached by `/dayz-init`.
-2. **Preflight gate** - runs `/dayz-preflight`; halts on non-zero. Then confirms `P:\Mods\` is a junction to the DayZ `!Workshop` folder.
-3. **Workspace check** - `workspace/<ModName>/` exists and contains `config.cpp` and `$PBOPREFIX$`, and `$PBOPREFIX$` holds exactly `<ModName>` (surrounding whitespace and a BOM are ignored; case must match). The build always packs with `-prefix=<ModName>` through the `P:\<ModName>\` junction, so a different prefix means the mod's config paths expect another root; it refuses rather than build a PBO whose paths do not resolve.
-4. **Junction check** - `P:\<ModName>\` is a link pointing at `workspace/<ModName>/` (created by `/dayz-new-mod` or `/dayz-import-mod`).
-5. **Tools check** - resolves `AddonBuilder.exe` through `find_dayz_tools()` (env var, registry, Steam libraries).
-6. **Ownership gate** - if `P:\Mods\@<ModName>\` already exists, it must contain `.agentic-z-scaffold` with content `<ModName>`. An unmarked folder could be a subscribed or hand-placed mod, so the build refuses to write into it or `-clear` it. This is the same rule `/dayz-deploy-pbo` uses.
-7. **Clean gate** (`--clean` only) - refuses if `P:\Mods\@<ModName>\Addons\` holds any `.pbo` other than `<ModName>.pbo`, since `-clear` would wipe that deployed payload.
-8. **Ownership marker** - when this run creates `P:\Mods\@<ModName>\`, it writes `.agentic-z-scaffold` there before AddonBuilder starts, so a failed first build leaves a marked folder that the next build accepts. The marker sits above `Addons\`, so `-clear` keeps it. `/dayz-clean-workspace` only removes deployed folders that carry it. If the marker cannot be written, the build prints `[FAIL]` and exits 1 without running AddonBuilder.
-9. **Build** - runs `AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill-dir>\include.lst -exclude=<skill-dir>\exclude.lst [-clear]`. Binarization is on.
-10. **Verify output** - `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and is newer than the build start. AddonBuilder can exit 0 while leaving an old PBO in place; that case fails as a stale PBO.
-11. **Cleanup** - removes `P:\temp\<ModName>\` on success; keeps it on failure for debugging.
+2. **Lint gate**: runs `/dayz-lint <ModName>` and stops with `[FAIL]` and each `file:line` if it finds an error, since the mod would not load. Lint warnings print as `[WARN]` and the build goes on. The `P:\<ModName>\` link is left to step 5, the junction check.
+3. **Preflight gate** - runs `/dayz-preflight`; halts on non-zero. Then confirms `P:\Mods\` is a junction to the DayZ `!Workshop` folder.
+4. **Workspace check** - `workspace/<ModName>/` exists and contains `config.cpp` and `$PBOPREFIX$`, and `$PBOPREFIX$` holds exactly `<ModName>` (surrounding whitespace and a BOM are ignored; case must match). The build always packs with `-prefix=<ModName>` through the `P:\<ModName>\` junction, so a different prefix means the mod's config paths expect another root; it refuses rather than build a PBO whose paths do not resolve.
+5. **Junction check** - `P:\<ModName>\` is a link pointing at `workspace/<ModName>/` (created by `/dayz-new-mod` or `/dayz-import-mod`).
+6. **Tools check** - resolves `AddonBuilder.exe` through `find_dayz_tools()` (env var, registry, Steam libraries).
+7. **Ownership gate** - if `P:\Mods\@<ModName>\` already exists, it must contain `.agentic-z-scaffold` with content `<ModName>`. An unmarked folder could be a subscribed or hand-placed mod, so the build refuses to write into it or `-clear` it. This is the same rule `/dayz-deploy-pbo` uses.
+8. **Clean gate** (`--clean` only) - refuses if `P:\Mods\@<ModName>\Addons\` holds any `.pbo` other than `<ModName>.pbo`, since `-clear` would wipe that deployed payload.
+9. **Ownership marker** - when this run creates `P:\Mods\@<ModName>\`, it writes `.agentic-z-scaffold` there before AddonBuilder starts, so a failed first build leaves a marked folder that the next build accepts. The marker sits above `Addons\`, so `-clear` keeps it. `/dayz-clean-workspace` only removes deployed folders that carry it. If the marker cannot be written, the build prints `[FAIL]` and exits 1 without running AddonBuilder.
+10. **Build** - runs `AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill-dir>\include.lst -exclude=<skill-dir>\exclude.lst [-clear]`. Binarization is on.
+11. **Verify output** - `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and is newer than the build start. AddonBuilder can exit 0 while leaving an old PBO in place; that case fails as a stale PBO.
+12. **Cleanup** - removes `P:\temp\<ModName>\` on success; keeps it on failure for debugging.
 
 ## include.lst
 

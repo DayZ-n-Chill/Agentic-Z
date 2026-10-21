@@ -13,6 +13,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `import-mod.bat` | Bring an existing mod folder in | `import-mod.bat --source D:\Mods\MyVest` |
 | `add-scaffold.bat` | Add missing standard pieces to a mod | `add-scaffold.bat MyVest --piece junction` |
 | `scope-mod.bat` | Lock editing to one mod | `scope-mod.bat MyVest` |
+| `lint.bat` | Find errors that would stop a mod loading, with PASS or FAIL | `lint.bat MyVest` |
 | `build-pbo.bat` | Pack a mod into a PBO | `build-pbo.bat MyVest` |
 | `gate.bat` | Build or in-game check with PASS or FAIL | `gate.bat build MyVest` |
 | `triage.bat` | Match log lines against known errors | `triage.bat .server\chernarus\Profiles\script.log` |

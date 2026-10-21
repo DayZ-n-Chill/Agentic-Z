@@ -3,6 +3,7 @@
   "conflict_factor": 0.5,
   "targets": {
     "dayz-build-pbo": {"kind": "skill", "description": "Pack an existing mod from workspace/<ModName>/ into a PBO"},
+    "dayz-lint": {"kind": "skill", "description": "Check a mod for errors that would stop it loading, before packing"},
     "dayz-launch-test": {"kind": "skill", "description": "Launch the local DayZ Diag test server and client"},
     "dayz-stop-test": {"kind": "skill", "description": "Stop a running local DayZ test session"},
     "dayz-preflight": {"kind": "skill", "description": "Check the DayZ modding environment (P: drive, DayZ Tools)"},
@@ -45,6 +46,11 @@
       "route": "dayz-build-pbo",
       "confidence": 0.9,
       "patterns": ["\\b(?:build|pack|rebuild|repack)\\s+(?:the\\s+)?(?:pbo\\s+(?:for\\s+)?)?(?!(?:me|a|an|it|the|my|this|pbo|and|mod|again|all|everything|config|script|scripts|ui|layout|hud|types|server)\\b)(?P<mod>[A-Za-z][\\w-]*)"]
+    },
+    {
+      "route": "dayz-lint",
+      "confidence": 0.9,
+      "patterns": ["\\blint\\s+(?!(?:the|my|this|it|mod|config|all|everything)\\b)(?P<mod>[A-Za-z][\\w-]*)", "\\blint(?:er|ing)?\\b"]
     },
     {
       "route": "dayz-stop-test",

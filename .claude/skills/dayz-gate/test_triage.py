@@ -50,7 +50,7 @@ def test_catalog_entries_are_complete_and_unique():
         for key in ("id", "pattern", "meaning", "fix", "owner_agent", "source"):
             assert e.get(key), f"{e.get('id')} lacks {key}"
         re.compile(e["pattern"])
-        assert e.get("scope", "log") in {"log", "scripts", "config"}
+        assert e.get("scope", "log") in {"log", "scripts", "config", "lint"}
 
 
 def test_catalog_owners_are_real_agents_or_the_user():

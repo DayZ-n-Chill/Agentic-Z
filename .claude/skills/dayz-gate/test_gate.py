@@ -81,7 +81,11 @@ def project(tmp_path, monkeypatch):
     mod = proj / "workspace" / "MyMod"
     (mod / "scripts" / "4_World").mkdir(parents=True)
     (mod / "config.cpp").write_text(
-        "class CfgPatches\n{\n\tclass MyMod\n\t{\n\t\trequiredAddons[] = {\"DZ_Data\"};\n\t};\n};\n"
+        "class CfgPatches\n{\n\tclass MyMod\n\t{\n\t\tunits[] = {};\n\t\tweapons[] = {};\n"
+        "\t\trequiredAddons[] = {\"DZ_Data\"};\n\t};\n};\n"
+        "class CfgMods\n{\n\tclass MyMod\n\t{\n\t\ttype = \"mod\";\n\t\tclass defs\n\t\t{\n"
+        "\t\t\tclass worldScriptModule\n\t\t\t{\n\t\t\t\tvalue = \"\";\n\t\t\t\tfiles[] = {\"MyMod/scripts/4_World\"};\n"
+        "\t\t\t};\n\t\t};\n\t};\n};\n"
         "class CfgVehicles\n{\n\tclass Vest_Base;\n\tclass MyMod_Vest: Vest_Base\n\t{\n"
         "\t\tclass DamageSystem {};\n\t};\n};\n",
         encoding="utf-8",
@@ -93,6 +97,8 @@ def project(tmp_path, monkeypatch):
     (proj / ".server" / "chernarus" / "Profiles").mkdir(parents=True)
     (proj / ".server" / "!ClientDiagLogs").mkdir(parents=True)
     monkeypatch.setattr(gate.h, "resolve_project_dir", lambda: proj)
+    # No P:\ in tests: lint then skips the link and vanilla-name checks with a warning.
+    monkeypatch.setattr(gate.lint, "P_DRIVE", tmp_path / "no-P")
     return proj
 
 
@@ -177,6 +183,32 @@ def test_build_pass(project, capsys):
     build_cmd = next(c for c in fake.calls if "build.py" in " ".join(c))
     assert build_cmd[0] == sys.executable and build_cmd[-1] == "MyMod"
     assert not fake.ran("deploy.py")
+
+
+def test_build_runs_lint_first_and_stops_on_errors(project, capsys):
+    cfg = project / "workspace" / "MyMod" / "config.cpp"
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace("\t\tunits[] = {};\n", ""), encoding="utf-8")
+    fake = FakeRuntime({"build.py": (0, BUILD_OK)}, running=[42])
+    rc, first, data = run_main(["build", "MyMod", "--json"], fake, capsys)
+    assert (rc, first) == (1, "FAIL")
+    assert fake.calls == []  # no stop, no build: a running session is left alone
+    assert data["lint"] == {"verdict": "FAIL", "errors": 1, "warnings": 1}
+    [f] = data["failures"]
+    assert (f["category"], f["rule"], f["file"], f["line"]) == ("lint", "cfgpatches-field", "workspace/MyMod/config.cpp", 3)
+    assert f["triage"]["id"] == "lint-cfgpatches-field"
+    assert f["triage"]["owner_agent"] == "dayz-config-specialist"
+    assert [w["rule"] for w in data["warnings"]] == ["p-not-mounted"]
+
+
+def test_build_lint_pass_is_reported_in_text(project, capsys):
+    fake = FakeRuntime({"build.py": (0, BUILD_OK)})
+    assert gate.main(["build", "MyMod"], rt=fake.runtime()) == 0
+    assert "  dayz-lint: PASS, 0 error(s), 1 warning(s)" in capsys.readouterr().out.splitlines()
+
+
+def test_build_missing_mod_folder_is_a_gate_error(project, capsys):
+    rc, first, _ = run_main(["build", "NoSuchMod", "--json"], FakeRuntime(), capsys)
+    assert (rc, first) == (2, "ERROR")
 
 
 def test_build_stops_running_session_first(project, capsys):

@@ -19,6 +19,8 @@ from typing import Optional
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
+lint = h.load_module("dayz_build_pbo_lint", Path(__file__).resolve().parents[1] / "dayz-lint" / "lint.py")
+
 INCLUDE_LIST = Path(__file__).resolve().parent / "include.lst"
 # Patterns left out of the PBO, including .gui-sources/ (imageset sprite sources).
 EXCLUDE_LIST = Path(__file__).resolve().parent / "exclude.lst"
@@ -92,6 +94,31 @@ def verify_junction(modname: str, workspace_target: Path) -> Path:
         )
     print(f"{OK} {p_drive_link} junction valid")
     return p_drive_link
+
+
+def gate_on_lint(modname: str, project_dir: Path) -> None:
+    """Exit unless /dayz-lint finds no errors: a mod that would not load is not packed.
+
+    The P:\\<ModName>\\ link is left to verify_junction, which gives the repair hint.
+    """
+    target = project_dir / "workspace" / modname
+    if not target.is_dir():
+        return  # verify_workspace reports the missing folder
+    report = lint.lint_mod(modname, target, project_dir, check_link=False, project_dir=project_dir)
+    errors = []
+    for f in report["findings"]:
+        where = f"{f['file']}:{f['line']}" if f["line"] else f["file"]
+        if f["severity"] == lint.ERROR:
+            errors.append(f"       {where}: {f['message']}")
+        else:
+            print(f"{WARN} lint {where}: {f['message']}")
+    if errors:
+        sys.exit("\n".join([
+            f"{FAIL} /dayz-lint found {len(errors)} error(s); the mod would not load, so it is not packed.",
+            *errors,
+            f"       Run /dayz-lint {modname} for the fix and owner of each one.",
+        ]))
+    print(f"{OK} /dayz-lint passed")
 
 
 def resolve_addon_builder() -> Path:
@@ -180,6 +207,7 @@ def main() -> int:
     args = parser.parse_args()
 
     project_dir = h.resolve_project_dir()
+    gate_on_lint(args.modname, project_dir)
     h.gate_on_preflight()
     p_mods_err = validate_p_mods()
     if p_mods_err is not None:
