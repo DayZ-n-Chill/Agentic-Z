@@ -67,3 +67,33 @@ test('the gate buttons run /dayz-gate build and ingame for the active mod', asyn
   expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-gate\\gate.py build MyVest')
   expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-gate\\gate.py ingame MyVest')
 })
+
+test('the workflow buttons run logwatch, the health page and the release pack for the active mod', async ($, on) => {
+  const runs: string[][] = []
+  engine(on, runs)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await ui.press({ key: 'logwatch' })
+  await ui.press({ key: 'health' })
+  await ui.press({ key: 'releasepack' })
+  await ui.unmount()
+  const lines = runs.map(argv => argv.join(' '))
+  expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-logwatch\\logwatch.py --since 30 --duration 3 --mod MyVest')
+  expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-health\\health.py MyVest')
+  expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-release-pack\\release_pack.py MyVest')
+})
+
+test('the ask field runs /dayz-ask with the question and skips an empty one', async ($, on) => {
+  const runs: string[][] = []
+  engine(on, runs)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  const asked = () => runs.filter(argv => argv.some(a => a.endsWith('ask.py')))
+  await ui.input({ key: 'ask', text: '   ' })
+  expect(asked().length).toBe(0)
+  await ui.input({ key: 'ask', text: 'how does food spoil' })
+  await ui.unmount()
+  expect(asked().map(argv => argv.join(' '))).toEqual(['python C:\\proj\\.claude\\skills\\dayz-ask\\ask.py how does food spoil'])
+})

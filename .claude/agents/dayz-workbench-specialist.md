@@ -26,7 +26,8 @@ Workbench plugin APIs are thinly documented and change between DayZ Tools versio
 - Plugins resolve tool paths (AddonBuilder, ImageToPAA) at runtime; never hardcode Steam paths. Read `find_dayz_tools()` in `.claude/skills/dayz-preflight/preflight.py` only for the resolution order to mirror.
 - Batch actions must be safe to re-run: skip files that are already correct and show what changed.
 - Show tool output to the user instead of swallowing it.
+- Never open Workbench yourself. Only one DayZ tool session runs at a time, and the orchestrator and the user own it. Tell the user how to open it instead: `/dayz-launch-workbench --mod <ModName>`, `scripts\dayz\workbench.bat --mod <ModName>`, or the panel's Open Workbench button. If the mod has no `workbench\dayz.gproj` yet, tell them to run `/dayz-add-scaffold <ModName> --piece workbench` first.
 
 ## Report
 
-To the script lead: files written (path), every API used with its source (`path:line` or URL), how to load the plugin in Workbench, and what is unverified.
+To the script lead: files written (path), every API used with its source (`path:line` or URL), the command that opens Workbench on the mod and the steps to load and run the plugin there, and what is unverified.

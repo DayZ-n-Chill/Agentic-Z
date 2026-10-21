@@ -147,6 +147,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/dayz-deploy-pbo`](../.claude/skills/dayz-deploy-pbo/SKILL.md) | Copy prebuilt PBOs and keys from a workspace bundle to `P:\Mods\@<ModName>\` without AddonBuilder |
 | [`/dayz-pack-texture`](../.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates the suffix against the vanilla set (`_co`, `_ca`, `_nohq`, `_smdi`, `_as`, `_mc` and more) |
 | [`/dayz-build-imageset`](../.claude/skills/dayz-build-imageset/SKILL.md) | Pack `.gui-sources/<setname>/*.png` into a DayZ `.imageset` + `.paa` atlas with a 10px gutter; auto-splits into multiple parts when sprites won't fit in 4096x4096 |
+| [`/dayz-layout-preview`](../.claude/skills/dayz-layout-preview/SKILL.md) | Draw a `.layout` as PNGs at several screen sizes and flag widgets that fall off screen or have no area |
 
 ### Test loop
 
@@ -156,6 +157,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/dayz-launch-test`](../.claude/skills/dayz-launch-test/SKILL.md) | Start local Diag server + client with the mod loaded |
 | [`/dayz-stop-test`](../.claude/skills/dayz-stop-test/SKILL.md) | Kill running DayZDiag_x64.exe processes (escape hatch, no preflight gate) |
 | [`/dayz-cot-bootstrap`](../.claude/skills/dayz-cot-bootstrap/SKILL.md) | Two-pass workflow to grant COT admin perms on a fresh test instance |
+| [`/dayz-logwatch`](../.claude/skills/dayz-logwatch/SKILL.md) | Watch a test session's server and client logs and triage each new error line as it appears: a known error prints its fix and owner, a new one goes to `dayz-mod-debugger` |
 
 ### Gates, routing and status
 
@@ -168,6 +170,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/dayz-balance`](../.claude/skills/dayz-balance/SKILL.md) | Compare item stats (weight, health, damage, protection, capacity, quantity) with similar vanilla items on `P:\DZ\` and flag outliers with `file:line` |
 | [`/dayz-route`](../.claude/skills/dayz-route/SKILL.md) | Pick the skill, agent or team for a request with keyword rules first; prints one JSON decision and says when the `dayz-router` agent is needed |
 | [`/dayz-statusline`](../.claude/skills/dayz-statusline/SKILL.md) | Install a status line showing `P:\` mount, active mod, running diag session and search-index age; `--remove` undoes it |
+| [`/dayz-health`](../.claude/skills/dayz-health/SKILL.md) | Write a mod's health page from the stored gate results: last build, last test, open findings and the history of every gate run |
 
 ### Editors
 
@@ -203,6 +206,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 |---|---|
 | [`/dayz-search-download`](../.claude/skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases (recommended fast path) |
 | [`/dayz-search-index`](../.claude/skills/dayz-search-index/SKILL.md) | Build the semantic-search index yourself (requires `VOYAGE_API_KEY`) |
+| [`/dayz-ask`](../.claude/skills/dayz-ask/SKILL.md) | Answer a plain English question about vanilla DayZ with `path:line` citations checked against `P:\`; falls back to a keyword search when there is no index or key |
 
 ### Team rules
 
@@ -220,7 +224,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 
 | Plugin | Purpose |
 |---|---|
-| [`agentic-z-panel`](../mods/agentic-z-panel/) | Panel beside the chat with DayZ state and one-click Mount, Build, Launch, Stop, Workbench and Object Builder buttons that run the skill scripts directly. Install with `/plugin install agentic-z-panel@dayz-n-chill`, open with `/dayz-panel` |
+| [`agentic-z-panel`](../mods/agentic-z-panel/) | Panel beside the chat with DayZ state and one-click Mount, Build, Check, Deploy, Launch, Stop, Workbench, Object Builder, test logs, health page and release pack buttons, plus an ask field for vanilla questions, that run the skill scripts directly. Install with `/plugin install agentic-z-panel@dayz-n-chill`, open with `/dayz-panel` |
 
 ### Template maintenance (clone-only, not in plugin marketplace)
 

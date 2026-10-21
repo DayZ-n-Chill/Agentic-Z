@@ -140,6 +140,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 | [`/dayz-deploy-pbo`](.claude/skills/dayz-deploy-pbo/SKILL.md) | Copy prebuilt PBOs and keys from a workspace bundle to `P:\Mods\@<ModName>\` without AddonBuilder. |
 | [`/dayz-pack-texture`](.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates the suffix against the vanilla set (`_co`, `_ca`, `_nohq`, `_smdi`, `_as`, `_mc` and more). |
 | [`/dayz-build-imageset`](.claude/skills/dayz-build-imageset/SKILL.md) | Pack `.gui-sources/<setname>/*.png` into a DayZ `.imageset` + `.paa` atlas with a 10px gutter; auto-splits into multiple parts when sprites won't fit in 4096x4096. |
+| [`/dayz-layout-preview`](.claude/skills/dayz-layout-preview/SKILL.md) | Draw a `.layout` as PNGs at several screen sizes and flag widgets that fall off screen or have no area. |
 
 ### Test loop
 
@@ -149,6 +150,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 | [`/dayz-launch-test`](.claude/skills/dayz-launch-test/SKILL.md) | Local diag server + client with mod loaded. |
 | [`/dayz-stop-test`](.claude/skills/dayz-stop-test/SKILL.md) | Kill running `DayZDiag_x64.exe` processes. Escape hatch (no preflight gate). |
 | [`/dayz-cot-bootstrap`](.claude/skills/dayz-cot-bootstrap/SKILL.md) | Two-pass workflow to grant COT admin perms on a fresh test instance. |
+| [`/dayz-logwatch`](.claude/skills/dayz-logwatch/SKILL.md) | Watch a test session's server and client logs and triage each new error line as it appears: a known error prints its fix and owner, a new one goes to `dayz-mod-debugger`. |
 
 ### Gates, routing and status
 
@@ -161,6 +163,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 | [`/dayz-balance`](.claude/skills/dayz-balance/SKILL.md) | Compare item stats (weight, health, damage, protection, capacity, quantity) with similar vanilla items on `P:\DZ\` and flag outliers with `file:line`. |
 | [`/dayz-route`](.claude/skills/dayz-route/SKILL.md) | Pick the skill, agent or team for a request with keyword rules first; prints one JSON decision and says when the `dayz-router` agent is needed. |
 | [`/dayz-statusline`](.claude/skills/dayz-statusline/SKILL.md) | Install a status line showing `P:\` mount, active mod, running diag session and search-index age; `--remove` undoes it. |
+| [`/dayz-health`](.claude/skills/dayz-health/SKILL.md) | Write a mod's health page from the stored gate results: last build, last test, open findings and the history of every gate run. |
 
 ### Editors
 
@@ -196,6 +199,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 |---|---|
 | [`/dayz-search-download`](.claude/skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases (recommended fast path). |
 | [`/dayz-search-index`](.claude/skills/dayz-search-index/SKILL.md) | Build the vanilla-source semantic-search index yourself (requires `VOYAGE_API_KEY`). |
+| [`/dayz-ask`](.claude/skills/dayz-ask/SKILL.md) | Answer a plain English question about vanilla DayZ with `path:line` citations checked against `P:\`; falls back to a keyword search when there is no index or key. |
 
 ### Team rules
 
@@ -213,7 +217,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 
 | Plugin | Purpose |
 |---|---|
-| [`agentic-z-panel`](mods/agentic-z-panel/) | Panel beside the chat with DayZ state and one-click Mount, Build, Launch, Stop, Workbench and Object Builder buttons that run the skill scripts directly. Install with `/plugin install agentic-z-panel@dayz-n-chill`, open with `/dayz-panel`. |
+| [`agentic-z-panel`](mods/agentic-z-panel/) | Panel beside the chat with DayZ state and one-click Mount, Build, Check, Deploy, Launch, Stop, Workbench, Object Builder, test logs, health page and release pack buttons, plus an ask field for vanilla questions, that run the skill scripts directly. Install with `/plugin install agentic-z-panel@dayz-n-chill`, open with `/dayz-panel`. |
 
 ### Template maintenance (clone-only, not in plugin marketplace)
 
@@ -329,7 +333,7 @@ The shipped configuration is the security baseline. **Tighten it for your enviro
 
 - **`.claude/settings.json`** (committed) — narrow Bash allowlist limited to running this repo's own skills (`Bash(python .claude/skills/*)`, `Bash(npm list *)`, etc.) plus an explicit deny list that blocks the dangerous escape hatches: `Bash(python -c *)`, `Bash(python -m *)`, `Bash(node -e *)`, `Bash(node -p *)`, `Bash(npm install *)`, `Bash(npx *)`. Editing this file affects every clone — keep allows narrow and prefer deny rules over removing them.
 - **`.claude/settings.local.json`** (gitignored, per-clone) — your machine-specific overrides. **Never set `dangerouslySkipPermissions: true` in a long-lived clone**; it bypasses every prompt including the deny list. Use `/fewer-permission-prompts` to build a real allowlist incrementally as you hit prompts.
-- **`.claude/agents/*.md`** — every agent declares an explicit `tools:` allowlist. Auditor/diagnostic agents (`dayz-mod-reviewer`, `dayz-mod-debugger`) cannot Edit/Write/Bash. The two run-only gates (`dayz-build-checker`, `dayz-ingame-tester`) and `dayz-build-engineer` get Bash and Skill to run the build and test skills but no Edit/Write. `dayz-layout-validator` keeps Edit/Write for the Figma pipeline but only reports when used as a gate. `dayz-lead` can only read and start agents; `dayz-orchestrator` has the broadest list (including Bash and Agent) because it runs as your main session. Authoring specialists get Read/Write/Edit/Glob/Grep plus the `dayz-rag` MCP tools; only `dayz-asset-specialist`, `dayz-object-builder` and `dayz-server-admin` also get Bash and Skill, to run the texture, model and types.xml skills. None has network tools. Subagents inherit only what's listed — no implicit full-toolset escalation.
+- **`.claude/agents/*.md`** — every agent declares an explicit `tools:` allowlist. Auditor/diagnostic agents (`dayz-mod-reviewer`, `dayz-mod-debugger`) cannot Edit/Write/Bash. The two run-only gates (`dayz-build-checker`, `dayz-ingame-tester`) and `dayz-build-engineer` get Bash and Skill to run the build and test skills but no Edit/Write. `dayz-layout-validator` keeps Edit/Write for the Figma pipeline but only reports when used as a gate. `dayz-lead` can only read and start agents; `dayz-orchestrator` has the broadest list (including Bash and Agent) because it runs as your main session. Authoring specialists get Read/Write/Edit/Glob/Grep plus the `dayz-rag` MCP tools; `dayz-asset-specialist`, `dayz-object-builder`, `dayz-server-admin` and `dayz-ui-specialist` also get Bash and Skill, to run the texture, model, types.xml, imageset and layout preview skills. `dayz-physics-specialist` gets Bash and Skill without Edit or Write, to run the model audit. `dayz-docs-writer` gets Bash for the release scripts and a read only git log. None has network tools. Subagents inherit only what's listed — no implicit full-toolset escalation.
 
 If you fork the repo to publish a downstream variant, run `git diff main -- .claude/settings.json .claude/agents/` before pushing and convince yourself any widened permissions are intentional.
 
