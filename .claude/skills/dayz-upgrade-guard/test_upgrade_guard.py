@@ -82,6 +82,22 @@ def test_config_redeclared_with_an_old_parent(tmp_path):
     assert _reasons(report)["CfgVehicles/Clothing"][0] == "redeclared-parent"
 
 
+def test_override_in_a_class_two_steps_below_vanilla(tmp_path):
+    # MyVest extends MyVest_Base extends Clothing: the override is checked against Clothing's chain.
+    (tmp_path / "MyVest.c").write_text(
+        "class MyVest_Base extends Clothing {}\n"
+        "class MyVest extends MyVest_Base { override void OnWear(int a) {} }\n",
+        encoding="utf-8")
+    old = {"script": {"Clothing": {"parent": None, "file": "c.c", "line": 1,
+                                   "methods": {"OnWear": "void OnWear(int a)"}}}, "config": {}}
+    new = json.loads(json.dumps(old))
+    new["script"]["Clothing"]["methods"]["OnWear"] = "void OnWear(float a)"
+    report = guard.check_mod("MyVest", tmp_path, old, new)
+    assert _reasons(report) == {"MyVest": ["override-changed"]}
+    assert report["findings"][0]["vanilla"] == "Clothing"
+    assert report["classes_checked"] == 2
+
+
 def test_missing_mod_folder_is_an_error(tmp_path):
     with pytest.raises(guard.GuardError):
         guard.check_mod("Gone", tmp_path / "Gone", OLD, NEW)
@@ -220,6 +236,46 @@ def test_check_before_and_after_an_update(tmp_path, capsys, monkeypatch):
     # diff shows the same report again from the two saved snapshots.
     assert guard.main(["diff", *common]) == 1
     assert "MyVest_Base" in capsys.readouterr().out
+
+
+def test_a_mistyped_mod_name_saves_no_snapshot(tmp_path, capsys):
+    store = tmp_path / "store"
+    before = _fake_p(tmp_path / "before", "Clothing_Base", True)
+    after = _fake_p(tmp_path / "after", "ItemBase", False)
+    assert guard.main(["check", "--p-root", str(before), "--store", str(store), "--mod-dir", str(MOD)]) == 0
+    baseline = guard.stored_snapshots(store)
+    capsys.readouterr()
+
+    args = ["check", "--p-root", str(after), "--store", str(store), "--mod-dir", str(tmp_path / "MyVst")]
+    assert guard.main(args) == 2
+    assert capsys.readouterr().out.startswith("ERROR")
+    assert guard.stored_snapshots(store) == baseline
+
+    # The corrected run still sees the update.
+    assert guard.main(["check", "--p-root", str(after), "--store", str(store), "--mod-dir", str(MOD)]) == 1
+    assert "Vanilla classes did not change" not in capsys.readouterr().out
+
+
+def test_snapshots_from_the_same_second_sort_in_order(tmp_path, monkeypatch):
+    fixed = guard.datetime(2026, 10, 21, 5, 22, 57)
+    monkeypatch.setattr(guard, "datetime", type("FixedClock", (), {"now": staticmethod(lambda: fixed)}))
+    store = tmp_path / "store"
+    saved = [guard.save_snapshot({"label": label}, store) for label in ("b", "", "a", "")]
+    assert len(set(saved)) == 4
+    assert guard.stored_snapshots(store) == saved
+    assert [p.name for p in saved] == [
+        "20261021-052257-b.json", "20261021-052257_02.json", "20261021-052257_03-a.json", "20261021-052257_04.json"]
+
+
+def test_check_json_on_the_first_run_prints_the_baseline(tmp_path, capsys):
+    store = tmp_path / "store"
+    args = ["check", "--p-root", str(_fake_p(tmp_path / "p", "Clothing_Base", True)), "--store", str(store),
+            "--mod-dir", str(MOD), "--json"]
+    assert guard.main(args) == 0
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "PASS"
+    data = json.loads(out[out.index("{"):])
+    assert data == {"verdict": "PASS", "baseline": str(guard.stored_snapshots(store)[0])}
 
 
 class _FakeRun:

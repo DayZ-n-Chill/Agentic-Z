@@ -374,18 +374,25 @@ def same_classes(a: dict, b: dict) -> bool:
 
 
 def stored_snapshots(store: Path) -> list[Path]:
+    """Saved snapshots, oldest first. File names sort in time order (see save_snapshot)."""
     return sorted(store.glob("*.json")) if store.is_dir() else []
 
 
 def save_snapshot(snap: dict, store: Path) -> Path:
+    """Save as <stamp>[_NN][-<label>].json.
+
+    A second snapshot in the same second gets a counter right after the
+    stamp. '_' sorts after both '.' and '-', so the names still sort in the
+    order the snapshots were taken, whatever their labels.
+    """
     store.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     label = re.sub(r"[^\w.-]+", "-", snap.get("label") or "").strip("-")
-    path = store / (f"{stamp}-{label}.json" if label else f"{stamp}.json")
-    k = 2
-    while path.exists():
-        path = path.with_name(f"{path.stem}-{k}.json")
+    k, head = 1, stamp
+    while any(store.glob(f"{head}.json")) or any(store.glob(f"{head}-*.json")):
         k += 1
+        head = f"{stamp}_{k:02d}"
+    path = store / (f"{head}-{label}.json" if label else f"{head}.json")
     path.write_text(json.dumps(snap, separators=(",", ":")), encoding="utf-8")
     return path
 
@@ -494,6 +501,16 @@ def check_mod(name: str, mod_dir: Path, old: dict, new: dict, display_root: Opti
     mod = scan_mod(mod_dir)
     old_s, new_s, old_c, new_c = old["script"], new["script"], old["config"], new["config"]
     findings, checked = [], 0
+    # The mod's own (not modded) classes, so a class two or more steps below vanilla
+    # (MyVest extends MyVest_Base extends Clothing) is still checked against Clothing.
+    own_classes = {d["name"]: d for d in mod["script"] if not d["modded"]}
+
+    def first_vanilla(name: Optional[str]) -> Optional[str]:
+        seen = set()
+        while name and name not in old_s and name in own_classes and name not in seen:
+            seen.add(name)
+            name = own_classes[name]["parent"]
+        return name
 
     def where(d: dict) -> str:
         path = d["file"]
@@ -506,7 +523,7 @@ def check_mod(name: str, mod_dir: Path, old: dict, new: dict, display_root: Opti
 
     for d in mod["script"]:
         # modded class X depends on X itself; class Y extends X depends on X.
-        start = d["name"] if d["modded"] else d["parent"]
+        start = first_vanilla(d["name"] if d["modded"] else d["parent"])
         if not start or start not in old_s:
             continue
         checked += 1
@@ -676,6 +693,10 @@ def main(argv: Optional[list[str]] = None) -> int:
             return 0
 
         mods, project = resolve_mods(args.mods, args.mod_dir)
+        # Before any snapshot is saved, so a mistyped mod name never leaves a new snapshot behind.
+        for _, mod_dir in mods:
+            if not mod_dir.is_dir():
+                raise GuardError(f"Mod folder {mod_dir} does not exist.")
         if args.command == "diff":
             saved = stored_snapshots(args.store)
             if args.old and args.new:
@@ -694,8 +715,11 @@ def main(argv: Optional[list[str]] = None) -> int:
             if not saved:
                 path = save_snapshot(new, args.store)
                 print("PASS")
-                print(f"  No earlier snapshot, so this one is the baseline: {path}")
-                print("  Run check again after the next DayZ update.")
+                if as_json:
+                    print(json.dumps({"verdict": "PASS", "baseline": str(path)}, indent=2))
+                else:
+                    print(f"  No earlier snapshot, so this one is the baseline: {path}")
+                    print("  Run check again after the next DayZ update.")
                 return 0
             old, old_path = load_snapshot(str(saved[-1]), args.store)
             if same_classes(old, new):

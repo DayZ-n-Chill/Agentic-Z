@@ -24,7 +24,7 @@ python "<skill-dir>\mount.py" --unmount
 
 ## What it does
 
-1. If `P:\` is already mounted, prints `[OK]` with the folder it points to and exits 0. If `--path` names a different folder, it also prints a `[WARN]`: the mount is left alone, so run `--unmount` first to switch folders.
+1. If `P:\` is already mounted, prints `[OK]` with the folder it points to and exits 0. If `--path` names a different folder, it also prints a `[WARN]`: the mount is left alone, so run `--unmount` first to switch folders. When `P:\` is a volume or network drive rather than a folder mapping, any `--path` gets the same `[WARN]`, because the skill cannot tell where `P:\` points.
 2. Resolves the work-drive folder, taking the first candidate that exists:
    1. `--path` (fails if it is not a directory)
    2. `$DAYZ_WORK_DRIVE`
@@ -67,3 +67,4 @@ When already mounted it prints `[OK]   P:\ already mounted -> <folder>` and runs
 |---|---|
 | 0 | `P:\` is mounted (or, with `--unmount`, unmounted or already absent) |
 | 1 | No work-drive folder could be resolved, `--path` is not a directory, both WorkDrive.exe and `subst` failed (the `subst` exit code is printed), or `--unmount` left `P:\` mounted |
+| 2 | Bad argument, such as an unknown option or `--path` with no folder (argparse prints the usage) |

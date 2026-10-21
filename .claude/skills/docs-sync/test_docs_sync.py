@@ -88,6 +88,40 @@ def test_shared_folder_is_not_a_skill(repo):
     assert kinds == [("foo.md", "skill")]
 
 
+def test_tier2_topic_files_are_mirrored(repo):
+    topics = repo / ".claude" / "skills" / "_shared" / "conventions"
+    topics.mkdir(parents=True)
+    (topics / "config.md").write_text("# Config\n\nUse {braces}.\n", encoding="utf-8")
+    targets = [(m.relative_to(repo).as_posix(), k) for _, m, k in sync.find_canonical_targets()]
+    assert ("wiki/docs/conventions/config.md", "doc") in targets
+
+    assert sync.apply_all() == 0
+    mirror = repo / "wiki" / "docs" / "conventions" / "config.md"
+    assert mirror.read_text(encoding="utf-8") == "# Config\n\nUse &#123;braces&#125;.\n"
+    assert sync.detect_drift() == {"missing_mirror": [], "stale": [], "orphan": []}
+
+    # A topic file that is removed leaves an orphan that --apply prunes.
+    (topics / "config.md").unlink()
+    assert sync.detect_drift()["orphan"] == [mirror]
+    assert sync.apply_all() == 0
+    assert not mirror.exists()
+
+
+def test_fixed_doc_mirror_without_its_source_is_an_orphan(repo):
+    src = repo / "docs" / "model-routing.md"
+    src.parent.mkdir()
+    src.write_text("# Model routing\n", encoding="utf-8")
+    assert sync.apply_all() == 0
+    mirror = repo / "wiki" / "docs" / "model-routing.md"
+    assert mirror.is_file()
+
+    src.unlink()
+    assert sync.detect_drift()["orphan"] == [mirror]
+    assert sync.main(["--check"]) == 1
+    assert sync.apply_all() == 0
+    assert not mirror.exists()
+
+
 def test_apply_writes_mirror_and_prunes_orphan(repo):
     orphan = repo / "wiki" / "docs" / "skills" / "gone.md"
     orphan.write_text("x", encoding="utf-8")

@@ -150,14 +150,21 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
     print()
     print(f"[{name}] {target_dir}")
 
+    counts = {"linked": 0, "ok": 0, "refreshed": 0, "skipped": 0, "pruned": 0, "failed": 0}
     if not target_dir.exists():
         if dry_run:
             print(f"  DRY-RUN mkdir {target_dir}")
         else:
-            target_dir.mkdir(parents=True, exist_ok=True)
+            try:
+                target_dir.mkdir(parents=True, exist_ok=True)
+            except OSError as e:
+                print(f"  [FAILED]  cannot create {target_dir}: {e}")
+                counts["failed"] += 1
+                return counts
 
-    counts = {"linked": 0, "ok": 0, "refreshed": 0, "skipped": 0, "pruned": 0, "failed": 0}
-    repo = repo_root().resolve()
+    # Ownership is decided against this checkout's skills folder, not the repo
+    # root: git worktrees under <repo>/.claude/worktrees/ are other checkouts.
+    own = repo_skills_dir().resolve()
     expected_names = {s.name for s in skills}
 
     # Pass 1: link/refresh each repo skill
@@ -177,7 +184,7 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
             # Link points at another clone of this template. Refusing to steal
             # it silently — that breaks the other clone's sessions. --force
             # makes the takeover explicit.
-            if not is_under(existing_resolved, repo) and not force:
+            if not is_under(existing_resolved, own) and not force:
                 print(f"  [FOREIGN] {src.name}: points at {existing}; rerun with --force to take ownership")
                 counts["skipped"] += 1
                 continue
@@ -210,7 +217,7 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
             print(f"  [FAILED]  {src.name}: {e}")
             counts["failed"] += 1
 
-    # Pass 2: prune orphan links pointing back into this repo at gone paths
+    # Pass 2: prune orphan links pointing into this checkout's skills folder at gone paths
     if target_dir.exists():
         for child in target_dir.iterdir():
             if child.name in expected_names:
@@ -222,7 +229,7 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
                 t_resolved = t.resolve() if t.is_absolute() else (child.parent / t).resolve()
             except OSError:
                 continue
-            if not is_under(t_resolved, repo):
+            if not is_under(t_resolved, own):
                 continue  # not pointing back into our repo, leave it alone
             if t_resolved.exists():
                 continue  # repo target still exists; not an orphan

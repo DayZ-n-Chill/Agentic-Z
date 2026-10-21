@@ -259,6 +259,10 @@ def main() -> int:
         if args.path and current and not paths_equal(current, Path(args.path)):
             print(f"{WARN}--path was not used: P:\\ already points to {current}, not {args.path}.")
             print("       Run with --unmount first, then mount again with --path.")
+        elif args.path and current is None:
+            print(f"{WARN}--path was not used: P:\\ is mounted to something that is not a folder mapping "
+                  f"(a volume or network drive), not {args.path}.")
+            print("       Run with --unmount first, then mount again with --path.")
         return 0
 
     if args.path:

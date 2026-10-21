@@ -277,6 +277,17 @@ def test_main_no_warning_when_path_matches_ignoring_case(fake_drive, monkeypatch
     assert "--path was not used" not in capsys.readouterr().out
 
 
+def test_main_warns_when_p_is_not_a_folder_mapping(fake_drive, monkeypatch, tmp_path, capsys):
+    _, state = fake_drive
+    state["mounted"] = True
+    monkeypatch.setattr(mount, "current_p_target", lambda: None)
+    monkeypatch.setattr("sys.argv", ["mount.py", "--path", str(tmp_path / "other")])
+    assert mount.main() == 0
+    out = capsys.readouterr().out
+    assert "--path was not used" in out and "not a folder mapping" in out and "--unmount" in out
+    assert state["calls"] == []
+
+
 def test_current_p_target_none_off_windows(monkeypatch):
     monkeypatch.setattr(mount.sys, "platform", "linux")
     assert mount.current_p_target() is None
