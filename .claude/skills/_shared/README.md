@@ -61,6 +61,20 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/file_paths.md` | `$profile` and `$saves` paths, file and JSON helpers. |
 | `_shared/enscript/references/gui_layout.md` | `.layout` format and every widget type. |
 
+### Wearables pack (`_shared/wearables`)
+
+Front index: `_shared/wearables/README.md`. Written for `dayz-wearables-specialist`.
+
+| Folder or file | Purpose |
+|---|---|
+| `_shared/wearables/references` | Clothing, gear and character reference, checked against vanilla. |
+| `_shared/wearables/references/classes-and-parents.md` | Config and script class trees, picking the vanilla parent, `requiredAddons[]` per folder. |
+| `_shared/wearables/references/slots-and-cargo.md` | Player slots, `inventorySlot[]`, cargo against attachments, exclusion flags, visibility. |
+| `_shared/wearables/references/protection-and-insulation.md` | `heatIsolation` factors, `varWetMax`, armor, filter protection, repair kit types. |
+| `_shared/wearables/references/color-variants.md` | Hidden selections per model, one texture per selection, `personality`, script texture calls. |
+| `_shared/wearables/references/models-and-proxies.md` | Ground and worn models, body and gear proxies, head hiding, notes for Object Builder. |
+| `_shared/wearables/references/characters.md` | Survivor classes, body parts and heads, how a character reaches the list. |
+
 ### Skill packs (`references/`)
 
 | Folder or file | Purpose |
