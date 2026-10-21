@@ -24,7 +24,7 @@ class AnimationSources
 | `initPhase` | Phase when the object spawns. | `Lid` 0 and `Lid2` 1 (`P:\DZ\gear\containers\config.cpp:104`, `:110`); `AnimSourceHidden` 1 (`P:\DZ\gear\camping\config.cpp:4430`) |
 | `animPeriod` | How long the move takes. | 0.01 for the barrel lids (near instant); 0.018 for the fence gate (`P:\DZ\gear\camping\config.cpp:4435`) |
 
-The class name is the source name: the `model.cfg` animation uses it as `source`, and script passes it to `SetAnimationPhase` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:148` uses `"Lid"`, declared at `P:\DZ\gear\containers\config.cpp:101`).
+The class name is the source name: the `model.cfg` animation uses it as `source`, or as the animation's own name when the model source is `user` (fence), and script passes it to `SetAnimationPhase` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:148` uses `"Lid"`, declared at `P:\DZ\gear\containers\config.cpp:101`).
 
 `animPeriod` is time per unit of phase. The fence gate runs 0 to 100 with `animPeriod = 0.018`, so a full swing takes about 1.8 seconds, and script expects it to finish in about 2000 ms (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:13`, `GATE_ROTATION_TIME_APPROX`). With a 0 to 1 range, `animPeriod` is simply the duration in seconds.
 
@@ -58,7 +58,7 @@ Taken from `Land_HouseBlock_3F_Corner1`, `P:\DZ\structures\residential\config.cp
 | Key | Must match |
 |---|---|
 | Class name (`Doors5`) | The `source` of the door's `model.cfg` animation. The shipped house model uses source `doors5` for it. |
-| `component` | The door's named component in the Geometry LOD, so the player can aim at it (`Building.GetDoorIndex(componentIndex)`, `P:\scripts\3_game\entities\building.c:28`). |
+| `component` | The door's named component in the View Geometry LOD, so the player can aim at it (`Building.GetDoorIndex(componentIndex)` works from the view geometry component index, `P:\scripts\3_game\entities\building.c:27` to `:28`). |
 | `soundPos` | A Memory LOD point; the shipped model has `doors5_action`. |
 | `animPeriod` | Seconds to open, with the usual 0 to 1 range. |
 | `initOpened` | Vanilla uses 0.3 and 0.7. The name suggests the chance the door spawns open; script does not show it, so treat that as unconfirmed. |

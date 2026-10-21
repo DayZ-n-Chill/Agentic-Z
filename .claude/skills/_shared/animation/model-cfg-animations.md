@@ -80,13 +80,14 @@ What this shows:
 - **A negative angle opens the other way.** Mirror a door by changing the sign, not the bone.
 - **Hide works on a threshold.** The barrel lids hide at 0.6, so phase 1 hides and phase 0 shows; `Lid2` starts at phase 1 (hidden) in `P:\DZ\gear\containers\config.cpp:110`.
 - **Names are stored in lower case.** The model holds `lid` while `config.cpp` says `class Lid` (`P:\DZ\gear\containers\config.cpp:101`), so matching ignores case. Keep the case identical anyway so a reviewer can grep it.
+- **A model source of `user` means the animation's own name is the source.** Fence stores `Wall_Gate_Rotate` with source `user`, and its config class `Wall_Gate_Rotate` (`P:\DZ\gear\camping\config.cpp:4450`) is the name script passes (`fence.c:498`). The barrel and house doors name the source directly instead (`lid`, `doors5`).
 - **Animation name and source can differ.** The house model's `Doors1` animation uses source `doorstwin1`, the config door class `DoorsTwin1` (`P:\DZ\structures\residential\config.cpp:7359`). Script and doors find animations by source; `SetAnimationPhase` takes the source name.
 
 ## Naming checklist
 
 1. Every bone in `skeletonBones[]` is a named selection in every visual LOD that moves, and in the Geometry, FireGeometry and ViewGeometry LODs where those parts should move with it.
 2. Every `axis` is a selection of exactly two points in the Memory LOD.
-3. Every `source` other than an engine source matches a class in the item's `AnimationSources` or the building's `Doors` (see `animation-sources.md`).
+3. Every `source` matches a class in the item's `AnimationSources` or the building's `Doors`. If the source is `user`, the animation's class name must match that class instead (see `animation-sources.md`).
 4. The `CfgModels` class name matches the `.p3d` file name, and `skeletonName` matches the `CfgSkeletons` class.
 5. One moving part, one bone. A part that moves with another part is a child bone of it.
 
