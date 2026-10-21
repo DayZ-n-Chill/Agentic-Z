@@ -211,6 +211,15 @@ class Resolver:
             seen.add(id(node))
             out.append((node, is_mod))
             parent = node.parent
+            if is_mod:
+                # The engine merges a mod class into the vanilla class of the same name, so
+                # that class comes next and supplies what the mod does not restate, like scope.
+                twin = self.vanilla.get(section, node.name)
+                if twin is not None and id(twin) not in seen:
+                    seen.add(id(twin))
+                    out.append((twin, False))
+                    if parent and parent.lower() == node.name.lower():
+                        parent = twin.parent  # class Foo: Foo
             nxt = self.mod.get(section, parent) if mod_first else None
             # A mod class that reuses its parent's name (class Foo: Foo) points at vanilla.
             if nxt is None or nxt is node:

@@ -175,6 +175,23 @@ class CfgVehicles
     assert f["peer_count"] == 3
 
 
+def test_mod_override_without_scope_inherits_it_from_the_vanilla_class(tmp_path):
+    # The engine merges the block into vanilla MountainPack, so its scope = 2 still applies.
+    mod = make_mod(tmp_path, """
+class CfgVehicles
+{
+    class Backpack_Base;
+    class MountainPack: Backpack_Base { itemsCargoSize[] = {20, 20}; };
+};
+""")
+    result = run(mod)
+    assert result["items"] == 1
+    f = result["findings"][0]
+    assert f["item"] == "MountainPack"
+    assert "MountainPack" not in {p["class"] for p in f["peers"]}
+    assert f["peer_count"] == 3
+
+
 # --- parser ------------------------------------------------------------------------
 
 def test_parser_reads_parents_arrays_and_signed_numbers():
