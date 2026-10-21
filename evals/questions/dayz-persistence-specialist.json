@@ -45,7 +45,7 @@
         "CombinationLock"
       ],
       "must_not_include": [
-        "re:return false.{0,40}(old|version 1|v1)"
+        "re:if\\s*\\(\\s*\\w*[vV]ersion\\s*(<|==)\\s*[12]\\s*\\)\\s*\\{?\\s*return false"
       ],
       "verified": "P:/scripts/4_world/entities/itembase/combinationlock.c:160 (if (version < 105) reads isLockAttached into a local and drops it)"
     },
