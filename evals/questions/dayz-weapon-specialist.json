@@ -1,0 +1,53 @@
+{
+  "agent": "dayz-weapon-specialist",
+  "questions": [
+    {
+      "id": "cz527-parents",
+      "question": "Answer only, do not edit any file. I'm adding MyMod_HuntingRifle, a bolt action rifle with a detachable five round magazine, built on the vanilla CZ527. Which script base class does vanilla CZ527_Base extend, and which vanilla addon must my CfgPatches list in requiredAddons[] so my class can inherit CZ527?",
+      "must_include": [
+        "BoltActionRifle_ExternalMagazine_Base",
+        "DZ_Weapons_Firearms_CZ527",
+        "requiredAddons"
+      ],
+      "verified": "P:/scripts/4_world/entities/firearms/rifle/cz527.c:1 (class CZ527_Base : BoltActionRifle_ExternalMagazine_Base) and P:/DZ/weapons/firearms/cz527/config.cpp:3 (class DZ_Weapons_Firearms_CZ527), :180 (class CZ527: CZ527_Base)"
+    },
+    {
+      "id": "magazine-ammo-keys",
+      "question": "Answer only, do not edit any file. On a CfgMagazines magazine such as vanilla Mag_CZ527_5rnd, which key lists the loose ammo piles that can be loaded into it, which key names the bullet it is filled with, and what are their values on Mag_CZ527_5rnd?",
+      "must_include": [
+        "ammoItems",
+        "Ammo_762x39",
+        "Bullet_762x39"
+      ],
+      "verified": "P:/DZ/weapons/attachments/magazine/config.cpp:4044 (class Mag_CZ527_5rnd), :4054 (ammo=\"Bullet_762x39\"), :4055 to :4059 (ammoItems[] Ammo_762x39, Ammo_762x39Tracer)"
+    },
+    {
+      "id": "recoil-is-script",
+      "question": "Answer only, do not edit any file. In my copy of the CZ527 I changed recoil=\"recoil_cz527\" in the Single fire mode to a new name and the recoil in game did not change at all. Where is the CZ527's recoil really defined, and how do I give my rifle its own recoil?",
+      "must_include": [
+        "RecoilBase",
+        "SpawnRecoilObject",
+        "CZ527Recoil"
+      ],
+      "verified": "P:/scripts/4_world/entities/firearms/rifle/cz527.c:3 to :6 (SpawnRecoilObject returns new CZ527Recoil), P:/scripts/4_world/classes/recoilbase/recoils/cz527recoil.c:1 (class CZ527Recoil: RecoilBase), P:/DZ/weapons/firearms/cz527/config.cpp:105 (recoil string); no CfgRecoils or recoil_cz527 class exists under P:/DZ or P:/scripts"
+    },
+    {
+      "id": "long-range-optic-slot",
+      "question": "Answer only, do not edit any file. Which slot name must my rifle list in attachments[] so it accepts the vanilla LongrangeOptic, and does any vanilla weapon already offer that slot?",
+      "must_include": [
+        "weaponOpticsLRS",
+        "re:\\bno\\b|\\bnone\\b|\\bnot\\b|n't"
+      ],
+      "verified": "P:/DZ/weapons/attachments/optics/config.cpp:1326 (class LongrangeOptic) and :1338 to :1340 (inventorySlot[] weaponOpticsLRS); P:/scripts/config.cpp:399 (Slot_weaponOpticsLRS); grep of P:/DZ/weapons/firearms finds no weapon listing weaponOpticsLRS"
+    },
+    {
+      "id": "barrel-memory-points",
+      "question": "Answer only, do not edit any file. My weapon's MuzzleFlash entry under Particles OnFire has no overridePoint. At which memory point does the flash spawn, and which two memory points does script use to measure the barrel length?",
+      "must_include": [
+        "usti hlavne",
+        "konec hlavne"
+      ],
+      "verified": "P:/scripts/4_world/entities/weaponparticles.c:112 to :113 (default overridePoint \"Usti hlavne\") and P:/scripts/4_world/classes/propertymodifiers.c:30 to :31 (usti hlavne and konec hlavne)"
+    }
+  ]
+}

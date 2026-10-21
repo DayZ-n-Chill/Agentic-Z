@@ -66,10 +66,13 @@
     "./.claude/agents/dayz-mod-reviewer.md",
     "./.claude/agents/dayz-object-builder.md",
     "./.claude/agents/dayz-orchestrator.md",
+    "./.claude/agents/dayz-persistence-specialist.md",
     "./.claude/agents/dayz-router.md",
     "./.claude/agents/dayz-script-specialist.md",
     "./.claude/agents/dayz-server-admin.md",
     "./.claude/agents/dayz-ui-specialist.md",
+    "./.claude/agents/dayz-weapon-specialist.md",
+    "./.claude/agents/dayz-wearables-specialist.md",
     "./.claude/agents/dayz-workbench-specialist.md",
     "./.claude/agents/figma-node-normalizer.md",
     "./.claude/agents/figma-to-dayz-layout.md"
