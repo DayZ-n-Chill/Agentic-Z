@@ -85,6 +85,19 @@ Front index: `_shared/animation/README.md`. Used by `dayz-animation-specialist`.
 | `_shared/animation/rtm-and-character-animation.md` | Where vanilla uses `.rtm`, and why player and infected animation is out of scope. |
 | `_shared/animation/blender-handoff.md` | Naming and export notes for parts modelled in Blender. |
 
+### Model and LOD pack (`_shared/models`)
+
+Front index: `_shared/models/README.md`. Written for `dayz-object-builder`.
+
+| Folder or file | Purpose |
+|---|---|
+| `_shared/models` | What a `.p3d` needs inside, LOD by LOD, and the model side of animated doors. |
+| `_shared/models/lods.md` | LOD types vanilla uses, their order, visual LOD numbering, and the Geometry, Fire Geometry and View Geometry rules. |
+| `_shared/models/memory-points.md` | Memory LOD rules, axes, and the point names vanilla script looks up. |
+| `_shared/models/named-properties.md` | Named properties vanilla sets, mass, and the `autocenter` rule. |
+| `_shared/models/proxies.md` | Proxy names, indexes and paths, and the config class an attachment proxy needs. |
+| `_shared/models/doors.md` | Door bones, axes, components and action points; the door actions; who writes each part. |
+
 ### Wearables pack (`_shared/wearables`)
 
 Front index: `_shared/wearables/README.md`. Written for `dayz-wearables-specialist`.
