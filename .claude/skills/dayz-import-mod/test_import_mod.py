@@ -196,3 +196,131 @@ def test_author_flag_reaches_resolve_author(tmp_path, monkeypatch):
     assert rc == 0
     assert seen == ["Handle"]
     assert 'author = "Handle"' in (tmp_path / "config.cpp").read_text(encoding="utf-8")
+
+
+# --- GitHub links and Workshop links ------------------------------------------------
+
+@pytest.mark.parametrize("raw, expected", [
+    ("https://github.com/Owner/MyMod", ("https://github.com/Owner/MyMod.git", "MyMod", None)),
+    ("https://github.com/Owner/MyMod.git", ("https://github.com/Owner/MyMod.git", "MyMod", None)),
+    ("github.com/Owner/MyMod/", ("https://github.com/Owner/MyMod.git", "MyMod", None)),
+    ("https://www.github.com/Owner/MyMod/tree/dev", ("https://github.com/Owner/MyMod.git", "MyMod", "dev")),
+    ("https://github.com/Owner/MyMod?tab=readme", ("https://github.com/Owner/MyMod.git", "MyMod", None)),
+    ("https://gitlab.com/group/sub/MyMod.git", ("https://gitlab.com/group/sub/MyMod.git", "MyMod", None)),
+    ("git@github.com:Owner/MyMod.git", ("git@github.com:Owner/MyMod.git", "MyMod", None)),
+])
+def test_parse_git_source(raw, expected):
+    assert tuple(imp.parse_git_source(raw)) == expected
+
+
+@pytest.mark.parametrize("raw", [r"C:\repos\MyMod", "D:/mods/MyMod", "~/MyMod", "MyMod", "https://example.com/MyMod"])
+def test_local_paths_are_not_git_sources(raw):
+    assert imp.parse_git_source(raw) is None
+
+
+@pytest.mark.parametrize("raw", [
+    "https://steamcommunity.com/sharedfiles/filedetails/?id=1559212036",
+    "steamcommunity.com/workshop/filedetails/?id=1559212036",
+    "steam://url/CommunityFilePage/1559212036",
+])
+def test_workshop_link_is_refused_before_preflight(raw, monkeypatch):
+    monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: pytest.fail("refuse before preflight"))
+    monkeypatch.setattr("sys.argv", ["import_mod.py", "--source", raw])
+    with pytest.raises(SystemExit) as exc:
+        imp.main()
+    message = str(exc.value.code)
+    assert "Steam Workshop links are not imported" in message
+    assert "binarized" in message and "protected" in message
+    assert "--source <path>" in message
+
+
+@pytest.fixture
+def git_project(monkeypatch, tmp_path, workspace):
+    """main() with preflight, the P: drive and the project cache pointed at tmp_path."""
+    p_drive = tmp_path / "P"
+    p_drive.mkdir()
+    monkeypatch.setattr(imp, "P_DRIVE", p_drive)
+    monkeypatch.setattr(imp, "PROJECT_DIR", workspace.parent)
+    monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(imp._nm, "sync_project_cache", lambda: None)
+    monkeypatch.setattr(imp.sys, "stdin", _NoTTY())
+    clones = []
+
+    def fake_clone(src, target, files=("config.cpp", "$PBOPREFIX$")):
+        clones.append((src, target))
+        target.mkdir()
+        for name in files:
+            (target / name).write_text("x", encoding="utf-8")
+
+    monkeypatch.setattr(imp, "clone_repo", fake_clone)
+    return {"workspace": workspace, "p": p_drive, "clones": clones}
+
+
+def _main(monkeypatch, *argv):
+    monkeypatch.setattr("sys.argv", ["import_mod.py", *argv])
+    return imp.main()
+
+
+def test_github_link_clones_into_workspace_and_links_p(git_project, monkeypatch, capsys):
+    rc = _main(monkeypatch, "--source", "https://github.com/Owner/MyMod/tree/dev", "--no-scaffold")
+    out = capsys.readouterr().out
+    target = git_project["workspace"] / "MyMod"
+    assert rc == 0
+    assert git_project["clones"] == [(imp.GitSource("https://github.com/Owner/MyMod.git", "MyMod", "dev"), target)]
+    assert (target / "config.cpp").is_file()
+    assert (git_project["p"] / "MyMod").exists()
+    assert "workbench/dayz.gproj missing" in out
+    assert "skipping workbench/dayz.gproj (--no-scaffold)" in out
+
+
+def test_github_link_with_invalid_repo_name_needs_name(git_project, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/my-mod", "--no-scaffold")
+    assert "--name" in str(exc.value.code)
+    assert git_project["clones"] == []
+    assert _main(monkeypatch, "--source", "https://github.com/Owner/my-mod", "--name", "MyMod", "--no-scaffold") == 0
+    assert (git_project["workspace"] / "MyMod").is_dir()
+
+
+def test_github_link_refuses_existing_workspace_folder_before_cloning(git_project, monkeypatch):
+    (git_project["workspace"] / "MyMod").mkdir()
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/MyMod", "--no-scaffold")
+    assert "already exists" in str(exc.value.code)
+    assert git_project["clones"] == []
+
+
+def test_non_tty_git_import_without_decision_removes_the_clone(git_project, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/MyMod")
+    assert "--scaffold" in str(exc.value.code)
+    assert not (git_project["workspace"] / "MyMod").exists()
+    assert not (git_project["p"] / "MyMod").exists()
+
+
+def test_clone_repo_runs_git_and_failed_clone_leaves_nothing(tmp_path):
+    import shutil
+    import subprocess
+    if shutil.which("git") is None:
+        pytest.skip("git not installed")
+    origin = tmp_path / "origin"
+    origin.mkdir()
+    (origin / "config.cpp").write_text("class CfgPatches {};", encoding="utf-8")
+    env = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}
+    run = lambda *a: subprocess.run(["git", *a], cwd=origin, check=True, capture_output=True,  # noqa: E731
+                                    env={**__import__("os").environ, **env})
+    run("init", "-q")
+    run("add", ".")
+    run("commit", "-q", "-m", "init")
+
+    target = tmp_path / "ws" / "MyMod"
+    target.parent.mkdir()
+    imp.clone_repo(imp.GitSource(str(origin), "MyMod", None), target)
+    assert (target / "config.cpp").is_file() and (target / ".git").is_dir()
+    imp.remove_clone(target)  # read-only git objects are removed too
+    assert not target.exists()
+
+    with pytest.raises(SystemExit) as exc:
+        imp.clone_repo(imp.GitSource(str(tmp_path / "missing"), "MyMod", None), target)
+    assert "git clone failed" in str(exc.value.code)
+    assert not target.exists()

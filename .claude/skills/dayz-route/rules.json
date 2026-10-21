@@ -7,7 +7,9 @@
     "dayz-launch-test": {"kind": "skill", "description": "Launch the local DayZ Diag test server and client"},
     "dayz-stop-test": {"kind": "skill", "description": "Stop a running local DayZ test session"},
     "dayz-preflight": {"kind": "skill", "description": "Check the DayZ modding environment (P: drive, DayZ Tools)"},
-    "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
+    "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check; with args.mode triage, match a pasted crash log or RPT against known errors"},
+    "dayz-edit-types": {"kind": "skill", "description": "Add, change or remove a types.xml entry; with args.mode merge, check a pasted chunk of <type> entries and merge them"},
+    "dayz-import-mod": {"kind": "skill", "description": "Bring an existing mod into workspace\\: a folder elsewhere on disk or a GitHub link to clone; refuses Steam Workshop links"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
@@ -34,6 +36,26 @@
     "figma-node-normalizer": {"kind": "agent", "description": "Start the Figma pipeline: turn a Figma design or figma.com link into a checked DayZ .layout"}
   },
   "rules": [
+    {
+      "route": "dayz-import-mod",
+      "confidence": 0.97,
+      "absorbs": true,
+      "patterns": ["(?P<source>(?:https?://)?steamcommunity\\.com/(?:sharedfiles|workshop)/filedetails/?\\?\\S*|steam://url/CommunityFilePage/\\d+)", "(?P<source>(?:https?://)?(?:www\\.)?github\\.com/[\\w.-]+/[\\w.-]*[\\w-](?:/tree/[\\w.-]*[\\w-])?)"]
+    },
+    {
+      "route": "dayz-edit-types",
+      "confidence": 0.97,
+      "absorbs": true,
+      "args": {"mode": "merge"},
+      "patterns": ["<type\\s+name\\s*="]
+    },
+    {
+      "route": "dayz-gate",
+      "confidence": 0.97,
+      "absorbs": true,
+      "args": {"mode": "triage"},
+      "patterns": ["access violation", "unhandled exception", "exception code", "\\bSCRIPT\\s+\\(E\\)", "can't compile \"\\w+\" script module", "NULL pointer to instance", "\\.c\\(\\d+\\):", "cannot load texture", "cannot open object", "\\bNo entry '", "0x00020005", "mission script has no main function"]
+    },
     {
       "route": "orchestrator",
       "confidence": 0.95,
@@ -93,7 +115,7 @@
       "route": "dayz-mod-debugger",
       "confidence": 0.95,
       "absorbs": true,
-      "patterns": ["access violation", "unhandled exception", "exception code", "\\bSCRIPT\\s+\\(E\\)", "can't compile", "null pointer", "\\bcrash(?:es|ed|ing|\\.log)?\\b", "\\bscript\\.log\\b", "\\.rpt\\b", "\\bstack trace\\b"]
+      "patterns": ["can't compile", "null pointer", "\\bcrash(?:es|ed|ing|\\.log)?\\b", "\\bscript\\.log\\b", "\\.rpt\\b", "\\bstack trace\\b"]
     },
     {
       "route": "dayz-server-admin",

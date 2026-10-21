@@ -7,14 +7,23 @@ $PBOPREFIX$, workbench/dayz.gproj) and prompts y/N per piece, writing each
 accepted piece with dayz-add-scaffold's writer, called in-process so
 /dayz-preflight runs once.
 
+--source can also be a GitHub (or other git) link: the repo is cloned straight
+into workspace/<ModName>/ and gets the same P: junction and scaffold check.
+Steam Workshop links are refused: Workshop items hold packed, binarized and
+often protected content, not source to work on.
+
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
 import os
+import re
+import shutil
+import stat
 import subprocess
 import sys
+from typing import NamedTuple, Optional
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
@@ -39,8 +48,82 @@ SCAFFOLD_CHECKS = (
     ("workbench", "workbench/dayz.gproj", "needed for /dayz-launch-workbench --mod"),
 )
 
+# steamcommunity.com/sharedfiles/filedetails/?id=N, /workshop/filedetails/..., steam://url/CommunityFilePage/N
+_WORKSHOP_RE = re.compile(
+    r"(?i)(?:steamcommunity\.com/(?:sharedfiles|workshop)/filedetails|steam://url/CommunityFilePage/\d)"
+)
+# github.com/<owner>/<repo>[.git][/tree/<branch>], with or without https://
+_GITHUB_RE = re.compile(
+    r"(?i)^(?:https?://)?(?:www\.)?github\.com/([\w.-]+)/([\w.-]+?)(?:\.git)?(?:/tree/([^/\s?#]+))?/?(?:[?#]\S*)?$"
+)
+# Any other git remote: https://host/path/repo.git or git@host:path/repo.git
+_GIT_URL_RE = re.compile(r"(?i)^(?:https://\S+?|git@[\w.-]+:\S+?)/?([\w.-]+?)\.git$")
+
 _nm = h.load_module("dayz_new_mod_module", NEW_MOD)
 _scaffold = h.load_module("dayz_add_scaffold_module", ADD_SCAFFOLD)
+
+
+class GitSource(NamedTuple):
+    url: str
+    repo: str
+    branch: Optional[str]
+
+
+def is_workshop_link(raw: str) -> bool:
+    return bool(_WORKSHOP_RE.search(raw))
+
+
+def refuse_workshop(raw: str) -> None:
+    sys.exit(
+        f"{FAIL} Steam Workshop links are not imported: {raw}\n"
+        "       A Workshop item holds the packed mod: PBOs with binarized models and configs,\n"
+        "       often signed or protected by its author. There is no source in it to work on.\n"
+        "       If the mod is yours, import its source folder (--source <path>) or its repo\n"
+        "       (--source https://github.com/<owner>/<repo>). If it is someone else's, ask the\n"
+        "       author for the source and their permission."
+    )
+
+
+def parse_git_source(raw: str) -> Optional[GitSource]:
+    """A GitHub link (a repo page, a .git URL or a /tree/<branch> link) or any
+    other .git remote, as (clone url, repo name, branch); None for a local path."""
+    raw = raw.strip()
+    m = _GITHUB_RE.match(raw)
+    if m:
+        owner, repo, branch = m.groups()
+        return GitSource(f"https://github.com/{owner}/{repo}.git", repo, branch)
+    m = _GIT_URL_RE.match(raw)
+    if m:
+        return GitSource(raw, m.group(1), None)
+    return None
+
+
+def clone_repo(src: GitSource, target: Path) -> None:
+    """git clone the repo into target, or exit with git's own message."""
+    git = shutil.which("git")
+    if git is None:
+        sys.exit(f"{FAIL} git was not found on PATH. Install Git for Windows (https://git-scm.com) and re-run.")
+    cmd = [git, "clone"] + (["--branch", src.branch] if src.branch else []) + [src.url, str(target)]
+    print(f"{INFO} Cloning {src.url}{f' (branch {src.branch})' if src.branch else ''} ...")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        remove_clone(target)
+        tail = "\n".join(f"       {line}" for line in (result.stderr or "").strip().splitlines()[-5:])
+        sys.exit(f"{FAIL} git clone failed for {src.url}\n{tail}")
+
+
+def remove_clone(target: Path) -> None:
+    """Delete a clone this run made (git marks its object files read-only)."""
+    def _force(func, path, _exc):
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+
+    if not target.exists():
+        return
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(target, onexc=_force)
+    else:
+        shutil.rmtree(target, onerror=_force)
 
 
 def _display(path: Path) -> Path:
@@ -191,7 +274,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Import an existing DayZ mod folder by linking it into workspace/."
     )
-    parser.add_argument("--source", help="Path to existing mod folder.")
+    parser.add_argument("--source", help="Path to existing mod folder, or a GitHub link to clone into workspace/.")
     parser.add_argument("--name", help="Override the mod name (defaults to source basename).")
     scaffold_group = parser.add_mutually_exclusive_group()
     scaffold_group.add_argument(
@@ -210,8 +293,15 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    if args.source and is_workshop_link(args.source):
+        refuse_workshop(args.source)
+
     h.gate_on_preflight()
     print()
+
+    git_source = parse_git_source(args.source) if args.source else None
+    if git_source is not None:
+        return import_from_git(git_source, args)
 
     source = resolve_source(args.source)
     print(f"{OK} Source validated: {source}")
@@ -251,7 +341,12 @@ def main() -> int:
 
     # Same rule as /dayz-new-mod: importing here makes this the active project.
     _nm.sync_project_cache()
+    return finish(source, workspace_target, modname, missing, args, "Remove the import (keeps your source intact)")
 
+
+def finish(source: Path, workspace_target: Path, modname: str, missing: list, args: argparse.Namespace,
+           remove_hint: str) -> int:
+    """Report the scaffold check, write the accepted pieces, print next steps."""
     print()
     print("Scaffolding check:")
     for _key, rel, why in SCAFFOLD_CHECKS:
@@ -272,8 +367,43 @@ def main() -> int:
     print("Next steps:")
     print(f"  - Open in Workbench: /dayz-launch-workbench --mod {modname}")
     print(f"  - Build: /dayz-build-pbo {modname}")
-    print(f"  - Remove the import (keeps your source intact): /dayz-clean-workspace --mod {modname}")
+    print(f"  - {remove_hint}: /dayz-clean-workspace --mod {modname}")
     return 0
+
+
+def import_from_git(src: GitSource, args: argparse.Namespace) -> int:
+    """Clone the repo into workspace/<ModName>/, link P:\\<ModName>\\ to it and
+    check the scaffold. Anything this run made is removed again if a later step
+    refuses, so a retry starts clean."""
+    modname = derive_modname(Path(src.repo), args.name)
+    print(f"{INFO} {'Mod name (override)' if args.name else 'Derived mod name'}: {modname}")
+    workspace_target = WORKSPACE / modname
+    p_drive_link = P_DRIVE / modname
+    check_workspace_target(workspace_target)
+    _nm.check_or_clean_p_drive_link(p_drive_link, workspace_target)
+
+    WORKSPACE.mkdir(exist_ok=True)
+    clone_repo(src, workspace_target)
+    print(f"{OK} Cloned into {_display(workspace_target)}")
+
+    missing = detect_missing_pieces(workspace_target)
+    try:
+        require_scaffold_decision(missing, args.scaffold, args.no_scaffold, sys.stdin.isatty())
+    except SystemExit:
+        remove_clone(workspace_target)
+        print(f"{INFO} Removed the clone so the retry starts clean.")
+        raise
+
+    try:
+        kind_p = _nm.make_dir_link(workspace_target, p_drive_link)
+    except (OSError, subprocess.CalledProcessError) as e:
+        remove_clone(workspace_target)
+        sys.exit(f"{FAIL} Failed to create {p_drive_link} junction: {e}\n       The clone was removed.")
+    print(f"{OK} {p_drive_link} -> {_display(workspace_target)} ({kind_p})")
+
+    _nm.sync_project_cache()
+    return finish(workspace_target, workspace_target, modname, missing, args,
+                  "Remove the clone and its P: link (deletes the cloned folder)")
 
 
 if __name__ == "__main__":

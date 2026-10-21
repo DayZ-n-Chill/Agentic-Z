@@ -36,7 +36,9 @@ def decide(text, env=NO_KEY):
         ("add my jacket to types.xml", "dayz-server-admin", None),
         ("make the AK spawn less often", "dayz-server-admin", None),
         ("fix the CfgPatches in config.cpp", "dayz-config-specialist", None),
-        ("here's my log: 12:01 SCRIPT (E): NULL pointer to instance", "dayz-mod-debugger", None),
+        # Pasted log lines go to triage first; a crash described in words goes to the debugger.
+        ("here's my log: 12:01 SCRIPT (E): NULL pointer to instance", "dayz-gate", {"mode": "triage"}),
+        ("my server crashes on startup", "dayz-mod-debugger", None),
         ("run preflight", "dayz-preflight", None),
         ("run the behavior tests for MyVest", "dayz-gate", {"mod": "MyVest"}),
         ("behaviour check", "dayz-gate", None),
@@ -120,6 +122,30 @@ def test_spawn_alone_is_not_server_admin(text):
     d = decide(text)
     assert d["route"] != "dayz-server-admin"
     assert d["route"] in {"dayz-ai-specialist", "dayz-vehicle-specialist", None}
+
+
+# Paste-in: what the user pastes decides the route, whatever else the message says.
+PASTES = [
+    ("My car crashes the server, here is the RPT:\n10:01:02 Unhandled exception\n10:01:02 Access violation",
+     "dayz-gate", {"mode": "triage"}),
+    ('SCRIPT    (E): @"MyMod/scripts/4_World/Vest.c,12": Unknown type \'Foo\'', "dayz-gate", {"mode": "triage"}),
+    ('add these to types.xml:\n<type name="MyMod_Vest"><nominal>5</nominal></type>', "dayz-edit-types",
+     {"mode": "merge"}),
+    ("import https://github.com/Owner/MyVest please", "dayz-import-mod",
+     {"source": "https://github.com/Owner/MyVest"}),
+    ("work on github.com/Owner/MyVest/tree/dev.", "dayz-import-mod", {"source": "github.com/Owner/MyVest/tree/dev"}),
+    ("build me a mod from https://steamcommunity.com/sharedfiles/filedetails/?id=1559212036", "dayz-import-mod",
+     {"source": "https://steamcommunity.com/sharedfiles/filedetails/?id=1559212036"}),
+    ("https://www.figma.com/design/abc123/Trader?node-id=10-42", "figma-node-normalizer", None),
+]
+
+
+@pytest.mark.parametrize("text, expected, args", PASTES)
+def test_pastes_route_to_their_workflow(text, expected, args):
+    d = decide(text)
+    assert d["route"] == expected
+    assert d["confidence"] >= CFG["threshold"]
+    assert d.get("args") == args
 
 
 def test_orchestrator_is_a_team():

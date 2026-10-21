@@ -14,7 +14,7 @@ Most of what the mod team does between "the user asks" and "the user sees a resu
 | 1 | Script-only gates (`/dayz-gate`) | `dayz-build-checker` and `dayz-ingame-tester` agent runs | built |
 | 2 | Log triage with known-error fingerprints | Debugger runs for errors seen before | built |
 | 3 | Router: keyword rules, then a Haiku `dayz-router`, Jev when a TypeSafe key exists | Big-model routing of every request | built |
-| 4 | Edit hooks: syntax check for `config.cpp` and `.layout`, other-mod guard | Failed review rounds caused by typos | built |
+| 4 | Edit hooks: syntax check for `config.cpp` and `.layout`, other-mod guard; paste-in prompt hook | Failed review rounds caused by typos; model turns spent working out what was pasted | built |
 | 5 | Status line | Agents and users running preflight just to check state | built |
 | 6 | Cheaper models for simple roles | Top-model runs for mechanical agents | built |
 | 7 | Smaller rules loading (Tier 2 split by topic) | Every DayZ agent loading the whole 239-line rules file | built |
@@ -64,7 +64,7 @@ python .claude\skills\dayz-gate\triage.py --learn my-new-id --fingerprint "<line
 
 **What it is.** `/dayz-route` decides who handles a new DayZ request (a skill, an agent, or the whole team) in up to three stages, cheapest first. Every stage returns the same JSON: `{"route", "kind": "skill|agent|team", "confidence": 0-1, "source": "rules|jev|router", "args"}`.
 
-1. **Keyword rules** (`.claude/skills/dayz-route/rules.json`, free). Regex patterns per route: "build MyVest" goes to `/dayz-build-pbo` with `args.mod`, "launch the test" to `/dayz-launch-test`, "stop" to `/dayz-stop-test`, types.xml or spawn questions to `dayz-server-admin`, config.cpp to `dayz-config-specialist`, a pasted crash log to `dayz-mod-debugger`, and "build me a ... mod" to the orchestrator. A request that matches two different routes counts as multi-step and is not trusted.
+1. **Keyword rules** (`.claude/skills/dayz-route/rules.json`, free). Regex patterns per route: "build MyVest" goes to `/dayz-build-pbo` with `args.mod`, "launch the test" to `/dayz-launch-test`, "stop" to `/dayz-stop-test`, types.xml or spawn questions to `dayz-server-admin`, config.cpp to `dayz-config-specialist`, pasted crash log lines to `/dayz-gate` triage (then only the new ones to `dayz-mod-debugger`), a pasted `<type>` chunk to `/dayz-edit-types` merge, a GitHub or Workshop link to `/dayz-import-mod`, and "build me a ... mod" to the orchestrator. A request that matches two different routes counts as multi-step and is not trusted.
 2. **Jev** (`jev.py`), only when `TYPESAFE_API_KEY` is set. One TypeSafe Choice question over the same targets plus `other`, with a 5 second timeout. Any failure falls through quietly, with the reason in `note`.
 3. **`dayz-router` agent**, pinned to Haiku, with only `Read`. It returns the same JSON line.
 
@@ -90,6 +90,15 @@ Two Python hooks in `hooks/` run on every `Edit`, `Write` and `MultiEdit`. The p
 
   A clean file produces no output. On a problem, Claude gets each `file:line` and its fix next to the edit result and corrects it in the same turn. The check passes all 1,090 vanilla and community `config.cpp`, `.hpp` and `.layout` files on a mounted P:\ with no false alarms.
 - **Scope guard** (`hooks/scope_guard.py`, PreToolUse). While `/dayz-scope-mod <Mod>` is active (it writes `.claude/local-memory/dayz-active-scope.json`), any edit to another mod's `workspace/<Other>/`, `P:\<Other>\` or `P:\Mods\@<Other>\` is denied with a reason that names the active mod and how to change scope. It backs up the deny rules `/dayz-scope-mod` writes, and also covers mod folders created after the scope was set.
+
+A third hook, the **paste-in router** (`hooks/paste_router.py`, UserPromptSubmit), runs on every prompt and only adds context; it never blocks one. It looks at what was pasted:
+
+- DayZ error lines (a crash log, RPT or `script.log`) are triaged right in the hook against `/dayz-gate`'s known errors and the project's learned ones. The context lists each known error with its fix and owner, and the new lines, which are the only ones for `dayz-mod-debugger`.
+- `<type name=...>` blocks are parsed and checked, and the context points at `/dayz-edit-types --merge` with any problems listed.
+- A Figma link starts the Figma pipeline, a GitHub link points at `/dayz-import-mod --source <link>`, and a Steam Workshop link is refused with the reason (packed, binarized and often protected content).
+- A screenshot (`[Image #n]`) gets the short rule: a UI problem to `dayz-ui-specialist`, a texture or material problem to `dayz-asset-specialist`, an error or wrong behavior to `dayz-script-specialist`.
+
+Cheap regexes run first and the triage and `types.xml` code loads only for a matching paste, so a normal prompt costs about 0.1 s (mostly Python starting) and a 20,000 line log under a second. Any error inside the hook is swallowed.
 
 Check a file by hand: `python hooks/edit_check.py --file workspace/MyMod/config.cpp` (prints problems, exits 1 when it finds any).
 

@@ -1,7 +1,7 @@
 ---
 name: dayz-edit-types
-description: "Adds, updates or removes one <type> entry in a DayZ Central Economy types.xml (nominal, min, lifetime, restock, category, usage, value), backing the file up first. Use when a mod item needs a spawn entry, a loot value needs tuning, or an entry must be deleted."
-argument-hint: "<types.xml> <ClassName> [--nominal N] [--min N] [--lifetime S] [...] | --remove"
+description: "Adds, updates or removes one <type> entry in a DayZ Central Economy types.xml (nominal, min, lifetime, restock, category, usage, value), or checks a pasted chunk of many <type> entries and merges them all, backing the file up first. Use when a mod item needs a spawn entry, a loot value needs tuning, an entry must be deleted, or the user pastes types.xml entries."
+argument-hint: "<types.xml> <ClassName> [--nominal N] [--min N] [--lifetime S] [...] | --remove | --merge <chunk|-> [--dry-run]"
 ---
 
 <!-- skill-dir-note -->
@@ -46,11 +46,43 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove
 5. If nothing changed (entry already matches, or the entry to remove is absent), stop: no backup, no write.
 6. Otherwise copy the file to `<types.xml>.bak` (overwriting any prior backup) and write the updated tree back.
 
+## Merge a pasted chunk
+
+When the user pastes `types.xml` entries, save the text to a file (or pipe it on stdin with `-`) and merge it:
+
+```cmd
+python "<skill-dir>\types_edit.py" <types.xml> --merge <chunk.xml> [--dry-run]
+python "<skill-dir>\types_edit.py" <types.xml> --merge - < chunk.xml
+```
+
+The chunk can be bare `<type>` blocks or a whole `<types>` file, with or without the XML declaration. Every entry is checked before anything is written. These are errors, and any one of them stops the whole merge with the file unchanged:
+
+- a `<type>` without a name, or a name listed twice in the chunk
+- a count, lifetime, restock or cost that is not a whole number or is negative
+- `min` greater than `nominal`
+- `quantmin` or `quantmax` outside -1 and 0 to 100, or `quantmin` greater than `quantmax`
+- a `<flags>` value other than 0 or 1
+- a `<category>`, `<usage>`, `<value>` or `<tag>` without a name
+- a name the target file already lists twice
+
+A missing standard child (`nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`), an unknown element or an unknown flag is a `[WARN]` and does not stop the merge.
+
+Then each entry is merged: a new name is added at the end, a name already in the file has its whole block replaced where it stands, and an identical block is left alone. The file is backed up to `types.xml.bak` once and written once. `--dry-run` checks and reports the same lines and writes nothing.
+
+```
+[OK]    Checked 2 <type> entries
+[OK]    Added <type name="MyMod_Vest">
+[OK]    Replaced <type name="AKM">: nominal 10 -> 12, min 5 -> 6
+[OK]    Backup: .server\chernarus\mission\db\types.xml.bak
+[OK]    Wrote .server\chernarus\mission\db\types.xml
+```
+
 Formatting: comments survive the round trip, but the whole file is re-indented with 4 spaces and gets an `<?xml version='1.0' encoding='utf-8'?>` declaration. Attribute order and blank lines are not preserved, so expect a whitespace diff the first time a hand-formatted file is edited.
 
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero.
+- Neither `<ClassName>` nor `--merge` is given, or both are (argparse usage error, exit 2).
 - `<types.xml>` doesn't exist.
 - `<types.xml>` isn't valid XML.
 - The root element is not `<types>` (for example `events.xml` or `globals.xml` passed by mistake).
