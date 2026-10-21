@@ -12,6 +12,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `new-mod.bat` | Create a new mod in `workspace\` | `new-mod.bat MyVest --author Me` |
 | `import-mod.bat` | Bring an existing mod folder in | `import-mod.bat --source D:\Mods\MyVest` |
 | `add-scaffold.bat` | Add missing standard pieces to a mod | `add-scaffold.bat MyVest --piece junction` |
+| `recipe.bat` | Start a mod plan from a recipe: weapon, vest or craftable | `recipe.bat vest MyVest` |
 | `scope-mod.bat` | Lock editing to one mod | `scope-mod.bat MyVest` |
 | `lint.bat` | Find errors that would stop a mod loading, with PASS or FAIL | `lint.bat MyVest` |
 | `build-pbo.bat` | Pack a mod into a PBO | `build-pbo.bat MyVest` |
@@ -20,6 +21,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `deploy-pbo.bat` | Copy a bundle's prebuilt PBOs into place | `deploy-pbo.bat MyBundle` |
 | `add-server.bat` | Set up a local test server | `add-server.bat chernarus` |
 | `launch-test.bat` | Start a diag server and client with your mod | `launch-test.bat MyVest --server chernarus` |
+| `logwatch.bat` | Watch a test session's logs and triage each new error line | `logwatch.bat --server chernarus` |
 | `stop-test.bat` | Stop the test session | `stop-test.bat` |
 | `cot-bootstrap.bat` | Give yourself COT admin on the test server | `cot-bootstrap.bat MyVest` |
 | `pack-texture.bat` | Convert PNG or TGA to `.paa` | `pack-texture.bat vest_co.png` |
@@ -33,6 +35,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `workbench.bat` | Open Workbench | `workbench.bat --mod MyVest` |
 | `objectbuilder.bat` | Open Object Builder | `objectbuilder.bat` |
 | `route.bat` | Show who should handle a request | `route.bat "build MyVest"` |
+| `ask.bat` | Answer a vanilla DayZ question with checked `path:line` citations | `ask.bat "how does food spoil"` |
 | `dayz-search.bat` | Search the vanilla RAG index from the terminal | `dayz-search.bat "food spoilage"` |
 | `search-download.bat` | Install the prebuilt search index | `search-download.bat` |
 | `search-index.bat` | Build the search index yourself | `search-index.bat --full` |
