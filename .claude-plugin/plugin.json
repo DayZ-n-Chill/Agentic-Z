@@ -70,6 +70,7 @@
     "./.claude/agents/dayz-script-specialist.md",
     "./.claude/agents/dayz-server-admin.md",
     "./.claude/agents/dayz-ui-specialist.md",
+    "./.claude/agents/dayz-weapon-specialist.md",
     "./.claude/agents/dayz-workbench-specialist.md",
     "./.claude/agents/figma-node-normalizer.md",
     "./.claude/agents/figma-to-dayz-layout.md"

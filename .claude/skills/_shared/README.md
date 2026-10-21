@@ -61,6 +61,20 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/file_paths.md` | `$profile` and `$saves` paths, file and JSON helpers. |
 | `_shared/enscript/references/gui_layout.md` | `.layout` format and every widget type. |
 
+### Weapons pack (`_shared/weapons`)
+
+Front index: `_shared/weapons/README.md`. Written for `dayz-weapon-specialist`.
+
+| File | Purpose |
+|---|---|
+| `_shared/weapons/weapon-classes.md` | Config and script parents by mechanism, how the script class is found, hand animation profiles. |
+| `_shared/weapons/weapon-config.md` | `CfgWeapons` keys, `CfgPatches`, jamming, damage, changing a vanilla gun. |
+| `_shared/weapons/magazines-ammo.md` | Magazine, ammo pile and bullet classes and how they name each other. |
+| `_shared/weapons/attachments.md` | Slot names, optics, suppressors, and how attachments change recoil and sway. |
+| `_shared/weapons/recoil-fire-modes.md` | `RecoilBase` classes, recoil modifiers, fire mode classes and keys. |
+| `_shared/weapons/muzzle-effects.md` | Muzzle flash, smoke and overheating particles, shot sounds, AI hearing. |
+| `_shared/weapons/model-selections.md` | Memory points, selections and bones the weapon model must have. |
+
 ### Persistence pack (`_shared/persistence`)
 
 Front index: `_shared/persistence/README.md`. Written for `dayz-persistence-specialist`.
