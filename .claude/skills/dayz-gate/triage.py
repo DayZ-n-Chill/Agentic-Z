@@ -14,6 +14,8 @@ else is "new" and goes to dayz-mod-debugger. Entries with "scope": "scripts" or
 
 Usage:
   python triage.py <log-file> [<log-file> ...] [--mod <ModName>] [--mod-dir DIR] [--json]
+  python triage.py --stdin [--json]          pasted log text on stdin
+  python triage.py --text "<pasted log>" [--json]
   python triage.py --learn <id> --fingerprint "<fp>" [--meaning ... --fix ... --owner ...]
 
 See SKILL.md for details.
@@ -212,6 +214,24 @@ def learn(
     return entry
 
 
+PASTED = "<pasted>"
+
+
+def _triage_lines(source: str, lines: Iterable[str], known: list[dict], context: Optional[dict],
+                  seen: dict[str, dict]) -> None:
+    for number, text in enumerate(lines, 1):
+        category = classify(text)
+        result = match_line(text, known, context)
+        if category is None and result["status"] == "new":
+            continue
+        result["category"] = category
+        fp = result["fingerprint"]
+        if fp in seen:
+            seen[fp]["count"] += 1
+            continue
+        seen[fp] = {"file": source, "line": number, "text": text.strip(), "count": 1, **result}
+
+
 def triage_files(paths: Iterable[Path], known: list[dict], context: Optional[dict] = None) -> list[dict]:
     """Triage the error lines of the given files, deduplicated by fingerprint.
 
@@ -219,18 +239,14 @@ def triage_files(paths: Iterable[Path], known: list[dict], context: Optional[dic
     """
     seen: dict[str, dict] = {}
     for path in paths:
-        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-        for number, text in enumerate(lines, 1):
-            category = classify(text)
-            result = match_line(text, known, context)
-            if category is None and result["status"] == "new":
-                continue
-            result["category"] = category
-            fp = result["fingerprint"]
-            if fp in seen:
-                seen[fp]["count"] += 1
-                continue
-            seen[fp] = {"file": str(path), "line": number, "text": text.strip(), "count": 1, **result}
+        _triage_lines(str(path), path.read_text(encoding="utf-8", errors="replace").splitlines(), known, context, seen)
+    return list(seen.values())
+
+
+def triage_text(text: str, known: list[dict], context: Optional[dict] = None) -> list[dict]:
+    """Triage pasted log text the same way; each result's file is "<pasted>"."""
+    seen: dict[str, dict] = {}
+    _triage_lines(PASTED, text.splitlines(), known, context, seen)
     return list(seen.values())
 
 
@@ -240,6 +256,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--mod", help="Mod name, filled into fixes that mention <ModName>.")
     parser.add_argument("--mod-dir", type=Path, help="workspace/<ModName>/ to run the source checks on.")
     parser.add_argument("--json", action="store_true", help="Print JSON instead of text.")
+    parser.add_argument("--stdin", action="store_true", help="Triage pasted log text read from stdin.")
+    parser.add_argument("--text", help="Triage this pasted log text.")
     parser.add_argument("--learn", metavar="ID", help="Record --fingerprint under ID in the project's learned file.")
     parser.add_argument("--fingerprint", help="With --learn: the fingerprint (or raw log line) to record.")
     parser.add_argument("--meaning", help="With --learn on a new id: what the error means.")
@@ -270,8 +288,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"       Written to {learned}")
         return 0
 
-    if not args.files and not args.mod_dir:
-        parser.error("give log files to triage, --mod-dir, or --learn")
+    if not args.files and not args.mod_dir and not args.stdin and args.text is None:
+        parser.error("give log files to triage, --stdin, --text, --mod-dir, or --learn")
     missing = [str(p) for p in args.files if not p.is_file()]
     if missing:
         print(f"{h.FAIL} Not found: {', '.join(missing)}", file=sys.stderr)
@@ -279,6 +297,10 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     context = {"ModName": args.mod}
     results = triage_files(args.files, known, context)
+    if args.stdin:
+        results += triage_text(sys.stdin.read(), known, context)
+    if args.text is not None:
+        results += triage_text(args.text, known, context)
     sources = check_sources(args.mod_dir, known, context) if args.mod_dir else []
     if args.json:
         print(json.dumps({"lines": results, "source_findings": sources}, indent=2))

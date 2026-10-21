@@ -10,7 +10,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 |---|---|---|
 | `status.bat` | Active mod, PBO age, test servers, DayZ Diag and search status | `status.bat` |
 | `new-mod.bat` | Create a new mod in `workspace\` | `new-mod.bat MyVest --author Me` |
-| `import-mod.bat` | Bring an existing mod folder in | `import-mod.bat --source D:\Mods\MyVest` |
+| `import-mod.bat` | Bring an existing mod folder in, or clone a GitHub link | `import-mod.bat --source D:\Mods\MyVest` |
 | `add-scaffold.bat` | Add missing standard pieces to a mod | `add-scaffold.bat MyVest --piece junction` |
 | `recipe.bat` | Start a mod plan from a recipe: weapon, vest or craftable | `recipe.bat vest MyVest` |
 | `scope-mod.bat` | Lock editing to one mod | `scope-mod.bat MyVest` |
@@ -20,7 +20,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `build-pbo.bat` | Pack a mod into a PBO | `build-pbo.bat MyVest` |
 | `gate.bat` | Build, in-game or behavior check with PASS or FAIL | `gate.bat build MyVest` |
 | `health.bat` | Write a mod's health page: last build, last test, open findings, history | `health.bat MyVest` |
-| `triage.bat` | Match log lines against known errors | `triage.bat .server\chernarus\Profiles\script.log` |
+| `triage.bat` | Match log lines against known errors (`--stdin` for a pasted log) | `triage.bat .server\chernarus\Profiles\script.log` |
 | `deploy-pbo.bat` | Copy a bundle's prebuilt PBOs into place | `deploy-pbo.bat MyBundle` |
 | `add-server.bat` | Set up a local test server | `add-server.bat chernarus` |
 | `launch-test.bat` | Start a diag server and client with your mod | `launch-test.bat MyVest --server chernarus` |
@@ -32,7 +32,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `layout-preview.bat` | Draw a `.layout` as PNGs at several screen sizes | `layout-preview.bat gui\layouts\hud.layout` |
 | `upgrade-guard.bat` | Snapshot vanilla classes before a DayZ update, then list the mod classes it affects | `upgrade-guard.bat check MyVest` |
 | `p3d-audit.bat` | Audit a `.p3d` model and its config | `p3d-audit.bat --help` |
-| `types-edit.bat` | Add, change or remove a `types.xml` entry | `types-edit.bat --help` |
+| `types-edit.bat` | Add, change or remove a `types.xml` entry, or merge a pasted chunk (`--merge`) | `types-edit.bat --help` |
 | `types-split.bat` | Split one big `types.xml` into category files | `types-split.bat --help` |
 | `release-pack.bat` | Write the Workshop text, changelog, classname list and install notes | `release-pack.bat MyVest --version 1.0.0` |
 | `server-kit.bat` | Zip the types entries, `cfgeconomycore.xml` lines, load order and public key | `server-kit.bat MyVest --mission chernarus` |

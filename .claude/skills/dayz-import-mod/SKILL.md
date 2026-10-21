@@ -1,7 +1,7 @@
 ---
 name: dayz-import-mod
-description: "Links a DayZ mod folder kept elsewhere on disk into workspace/<ModName>/ and creates its P:\\<ModName>\\ junction, so build, launch and clean skills work on it without moving the source, offering to add missing scaffold files. Use when you want to work on a mod repo kept outside the workspace."
-argument-hint: "--source <path> [--name <ModName>] [--author <handle>] [--scaffold | --no-scaffold]"
+description: "Links a DayZ mod folder kept elsewhere on disk into workspace/<ModName>/, or clones a GitHub link there, and creates its P:\\<ModName>\\ junction, so build, launch and clean skills work on it, offering to add missing scaffold files. Refuses Steam Workshop links. Use when you want to work on a mod repo kept outside the workspace or the user pastes a GitHub link to a mod."
+argument-hint: "--source <path|github-link> [--name <ModName>] [--author <handle>] [--scaffold | --no-scaffold]"
 ---
 
 <!-- skill-dir-note -->
@@ -16,6 +16,8 @@ Use this when:
 - You have an existing mod repo somewhere on disk (`C:\Users\you\repos\MyMod`, `D:\dayz-stuff\MyMod`, etc.) and don't want to move or duplicate it inside the Agentic-Z workspace.
 - You're collaborating on a mod whose canonical location is somewhere else (a separate git repo, a shared drive) and just need it visible to the toolchain.
 
+Paste a GitHub link instead of a path and the repo is cloned straight into `workspace/<ModName>/` (see "GitHub links" below). A Steam Workshop link is refused.
+
 Alternative: clone your mod directly into `workspace/<ModName>/`. It then still needs the `P:\<ModName>\` link that build and launch skills check for: run `/dayz-add-scaffold <ModName> --piece junction`, then `/dayz-add-scaffold <ModName>` for any missing scaffold files.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
@@ -28,7 +30,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `--source <path>` | yes (or interactive) | Path to the existing mod folder (absolute or relative, `~` expanded). If omitted on a TTY, the skill prompts for it. |
+| `--source <path>` | yes (or interactive) | Path to the existing mod folder (absolute or relative, `~` expanded), or a GitHub link to clone. If omitted on a TTY, the skill prompts for a path. |
 | `--name <ModName>` | no | Override the name the mod is imported under. Defaults to the source folder's basename, validated against `[A-Za-z][A-Za-z0-9_]{0,63}`. Required if the basename has spaces or other invalid characters. |
 | `--scaffold` | no | Auto-yes for every "scaffold this missing piece?" prompt. Required for non-TTY use when missing pieces would otherwise prompt. |
 | `--no-scaffold` | no | Auto-no - link only, never write into the source folder. |
@@ -50,6 +52,22 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
    - `--no-scaffold` → skip
    - TTY default → prompt `Add to your source folder? [y/N]:`
 9. Each "yes" is written by `/dayz-add-scaffold`'s writer, called in-process (one writer for both skills, and preflight runs only once). If a write fails or the writer skips the piece (for example `config.cpp` needs an author handle, none is cached and `--author` was not passed on a non-TTY run, or `workbench/` is skipped because DayZ Tools is not detected), the links stay in place, the skill names each failed piece with its retry command (`/dayz-add-scaffold <ModName> --piece <piece>`) and exits 1.
+
+## GitHub links
+
+`--source` also takes a git link:
+
+- `https://github.com/<owner>/<repo>`, with or without `.git` or `https://`
+- `https://github.com/<owner>/<repo>/tree/<branch>` clones that branch
+- any other `https://.../<repo>.git` or `git@host:.../<repo>.git` remote
+
+The mod name comes from the repo name (or `--name`). The repo is cloned with `git` straight into `workspace/<ModName>/` as a real folder, because a clone has no other home on disk. It then gets the same `P:\<ModName>\` junction, project cache update and scaffold check as a folder import, and accepted pieces are written into the clone. The same refusals apply before anything is cloned (the name, an existing `workspace/<Name>/`, a `P:\<Name>\` that points elsewhere). If a later step refuses (a non-TTY run with missing pieces and no `--scaffold` or `--no-scaffold`, or the junction fails), the clone is deleted again so a retry starts clean. `git` must be on `PATH`, and a private repo needs your usual git credentials. The scaffold check looks at the repo root, so a repo that keeps the mod in a subfolder needs a folder import of that subfolder instead.
+
+`/dayz-clean-workspace --mod <Name>` never deletes a folder that holds `.git`, so it refuses a clone and prints the `rmdir` command. Push anything you want to keep, then delete the folder by hand (`cmd /c rmdir /s /q workspace\<Name>`) and remove the `P:\<Name>\` junction (`cmd /c rmdir P:\<Name>`). The import prints both commands at the end.
+
+## Workshop links
+
+A Steam Workshop link (`steamcommunity.com/sharedfiles/filedetails/?id=...` or `steam://url/CommunityFilePage/...`) is refused before preflight runs. A Workshop item holds the packed mod: PBOs with binarized models and configs, often signed or protected by its author, so there is no source in it to work on. The message says to import your own source folder or repo instead, or to ask the author for the source and their permission.
 
 ## Output
 
@@ -82,11 +100,13 @@ Next steps:
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero (typically `P:\` not mounted).
+- `--source` is a Steam Workshop link.
 - `--source` missing and stdin isn't a TTY.
 - Source path doesn't exist, isn't a directory, or is a UNC path (`\\server\share\...` - junctions can't target them on Windows).
 - Source path is inside `<repo>/workspace/` (avoids self-referential / circular links). The error points at `/dayz-add-scaffold <Name> --piece junction`, which links a mod that is already in `workspace/`.
 - Derived/given mod name fails the pattern (`[A-Za-z][A-Za-z0-9_]{0,63}`).
 - `workspace/<Name>/` already exists (won't clobber).
+- A git link is given and `git` is not on `PATH`, or `git clone` fails (its last lines are shown).
 - `P:\<Name>\` exists as a real folder, or as a link pointing somewhere other than the new `workspace/<Name>/`.
 - Non-TTY run with missing scaffold pieces and neither `--scaffold` nor `--no-scaffold` was passed. This check runs before any link is created, so nothing is left half-done.
 

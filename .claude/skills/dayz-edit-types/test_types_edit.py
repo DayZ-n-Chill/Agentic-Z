@@ -213,3 +213,120 @@ def test_main_warns_on_other_duplicates_and_still_edits(types_file, monkeypatch,
     assert _run_main(monkeypatch, [str(types_file), "AKM", "--nominal", "12"]) == 0
     assert "lists these types more than once: Apple" in capsys.readouterr().out
     assert _find(_roundtrip(types_file)[1], "AKM").findtext("nominal") == "12"
+
+
+# --- --merge: a pasted chunk of many <type> blocks ----------------------------------
+
+def _entry(name, nominal=5, min_=2, extra=""):
+    return (f'<type name="{name}"><nominal>{nominal}</nominal><lifetime>7200</lifetime><restock>0</restock>'
+            f'<min>{min_}</min><quantmin>-1</quantmin><quantmax>-1</quantmax><cost>100</cost>'
+            f'<flags count_in_cargo="0" count_in_hoarder="0" count_in_map="1" count_in_player="0" crafted="0" deloot="0"/>'
+            f'<category name="clothes"/><usage name="Military"/>{extra}</type>')
+
+
+CHUNK = _entry("MyMod_Vest") + "\n" + _entry("AKM", nominal=12, min_=6)
+
+
+def _chunk_file(tmp_path, text):
+    path = tmp_path / "chunk.xml"
+    path.write_text(text, encoding="utf-8")
+    return str(path)
+
+
+@pytest.mark.parametrize("wrap", [
+    lambda c: c,
+    lambda c: f"<types>\n{c}\n</types>",
+    lambda c: f'<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n<types>{c}</types>',
+])
+def test_parse_chunk_accepts_bare_blocks_or_a_whole_file(wrap):
+    assert [t.get("name") for t in te.parse_chunk(wrap(CHUNK))] == ["MyMod_Vest", "AKM"]
+
+
+def test_parse_chunk_refuses_other_elements():
+    with pytest.raises(ET.ParseError):
+        te.parse_chunk('<event name="x"/>')
+
+
+def test_vanilla_shaped_entry_is_clean():
+    assert te.validate_type(te.parse_chunk(_entry("X"))[0]) == ([], [])
+
+
+@pytest.mark.parametrize("entry, problem", [
+    ('<type><nominal>1</nominal></type>', "no name attribute"),
+    (_entry("X", nominal=1, min_=3), "min (3) is greater than nominal (1)"),
+    (_entry("X").replace("<cost>100", "<cost>-5"), "<cost> is negative"),
+    (_entry("X").replace("<lifetime>7200", "<lifetime>soon"), "not a whole number"),
+    (_entry("X").replace("<quantmin>-1", "<quantmin>150"), "-1 or 0 to 100"),
+    (_entry("X").replace("<quantmin>-1</quantmin><quantmax>-1", "<quantmin>80</quantmin><quantmax>20"),
+     "quantmin (80) is greater than quantmax (20)"),
+    (_entry("X").replace('crafted="0"', 'crafted="yes"'), "flag crafted must be 0 or 1"),
+    (_entry("X", extra="<usage/>"), "<usage> has no name"),
+])
+def test_validate_type_errors(entry, problem):
+    errors, _ = te.validate_type(te.parse_chunk(entry)[0])
+    assert any(problem in e for e in errors), errors
+
+
+def test_validate_type_warns_on_missing_and_unknown_children():
+    _, warnings = te.validate_type(te.parse_chunk('<type name="X"><nominal>1</nominal><colour>red</colour></type>')[0])
+    assert "no <lifetime>" in warnings and "unknown element <colour>" in warnings
+
+
+def test_main_merge_adds_replaces_and_backs_up_once(types_file, tmp_path, monkeypatch, capsys):
+    before = types_file.read_bytes()
+    assert _run_main(monkeypatch, [str(types_file), "--merge", _chunk_file(tmp_path, CHUNK)]) == 0
+    out = capsys.readouterr().out
+    assert "Checked 2 <type> entries" in out
+    assert 'Added <type name="MyMod_Vest">' in out
+    assert 'Replaced <type name="AKM">: nominal 10 -> 12' in out
+    assert types_file.with_suffix(".xml.bak").read_bytes() == before
+    tree, root = _roundtrip(types_file)
+    assert [t.get("name") for t in root.findall("type")] == ["AKM", "MyMod_Vest"]  # AKM replaced in place
+    assert _find(root, "AKM").findtext("nominal") == "12"
+    assert "<!-- Vanilla weapons -->" in types_file.read_text(encoding="utf-8")
+
+
+def test_main_merge_same_chunk_twice_changes_nothing(types_file, tmp_path, monkeypatch, capsys):
+    chunk = _chunk_file(tmp_path, CHUNK)
+    assert _run_main(monkeypatch, [str(types_file), "--merge", chunk]) == 0
+    after_first = types_file.read_bytes()
+    types_file.with_suffix(".xml.bak").unlink()
+    capsys.readouterr()
+    assert _run_main(monkeypatch, [str(types_file), "--merge", chunk]) == 0
+    assert "already matches" in capsys.readouterr().out
+    assert types_file.read_bytes() == after_first
+    assert not types_file.with_suffix(".xml.bak").exists()
+
+
+def test_main_merge_refuses_whole_chunk_when_one_entry_is_bad(types_file, tmp_path, monkeypatch):
+    before = types_file.read_bytes()
+    bad = CHUNK + _entry("Broken", nominal=1, min_=4) + _entry("MyMod_Vest")
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "--merge", _chunk_file(tmp_path, bad)])
+    message = str(exc.value.code)
+    assert "Broken: min (4) is greater than nominal (1)" in message
+    assert "MyMod_Vest: listed 2 times in the chunk" in message
+    assert types_file.read_bytes() == before
+    assert not types_file.with_suffix(".xml.bak").exists()
+
+
+def test_main_merge_reads_stdin_and_dry_run_writes_nothing(types_file, monkeypatch, capsys):
+    import io
+    before = types_file.read_bytes()
+    monkeypatch.setattr("sys.stdin", io.StringIO(CHUNK))
+    assert _run_main(monkeypatch, [str(types_file), "--merge", "-", "--dry-run"]) == 0
+    assert "Dry run" in capsys.readouterr().out
+    assert types_file.read_bytes() == before
+
+
+def test_main_merge_refuses_unparseable_chunk(types_file, tmp_path, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "--merge", _chunk_file(tmp_path, "<type name='x'>")])
+    assert "Could not parse the chunk" in str(exc.value.code)
+
+
+@pytest.mark.parametrize("argv", [[], ["AKM", "--merge", "-"], ["AKM", "--dry-run"]])
+def test_main_needs_exactly_one_of_classname_or_merge(types_file, monkeypatch, argv):
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), *argv])
+    assert exc.value.code == 2

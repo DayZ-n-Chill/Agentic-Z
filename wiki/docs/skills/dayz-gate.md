@@ -134,6 +134,17 @@ Every check first needs `item` (and `with`) to exist in `CfgVehicles`, `CfgWeapo
 python "<skill-dir>\triage.py" <log-file> [...] [--mod <ModName>] [--mod-dir workspace\<ModName>] [--json]
 ```
 
+### Pasted logs
+
+When the user pastes a crash log or RPT instead of naming a file, triage the pasted text. Pipe it on stdin, or pass it with `--text`:
+
+```cmd
+python "<skill-dir>\triage.py" --stdin --json < pasted.txt
+python "<skill-dir>\triage.py" --text "<pasted log>" --json
+```
+
+Results look the same as for a file, with `file` set to `<pasted>` and `line` counted within the paste. Give the user the cause and fix of each `known` result and hand it to its `owner_agent`. Dispatch `dayz-mod-debugger` with only the `new` lines and the log around them. The paste-in hook (`hooks/paste_router.py`) already runs this triage on every prompt that holds DayZ error lines and adds the result to the conversation, so for a pasted log you usually only act on its list.
+
 After a reviewer has diagnosed a `new` result, record it so the next run sees it as known:
 
 ```cmd
