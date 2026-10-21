@@ -47,12 +47,20 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/patterns/scheduler.md` | `CallLater` overflow after about 4.5 hours, per tick allocation, call categories. |
 | `_shared/enscript/patterns/physics_items.md` | Making spawned items physics active: `ThrowPhysically` or manual dynamic physics. |
 | `_shared/enscript/patterns/json_config_migration.md` | JSON config schema versions and forward migration. |
-| `_shared/enscript/patterns/language_workarounds.md` | Missing language features (ternary, type inference, lambdas, exceptions, overloading) and their workarounds. |
+| `_shared/enscript/patterns/language_workarounds.md` | Missing language features (ternary, lambdas, exceptions, overloading) and their workarounds; `auto` type inference. |
 | `_shared/enscript/integrations/community_framework.md` | Community Framework modules, storage, event bus. |
-| `_shared/enscript/integrations/dabs_framework.md` | DABS attribute actions and MVC layouts. |
+| `_shared/enscript/integrations/dabs_framework.md` | Dabs Framework (third party): attributes, `ScriptView` and `ViewController` MVC, layout bindings, `ScriptViewMenu`. Checked against the mod's own scripts. |
 | `_shared/enscript/integrations/vanilla_plugins.md` | Vanilla `PluginBase` lifecycle and `GetPlugin()`. |
 | `_shared/enscript/integrations/central_economy.md` | Central Economy XML and runtime spawning. |
 | `_shared/enscript/integrations/input_bindings.md` | `inputs.xml`, `UAInput`, context guards. |
+| `_shared/enscript/references/language_types.md` | Checked on `P:`: built in types, `auto`, classes, enums, casting, parameters, containers, templates, strings. |
+| `_shared/enscript/references/language_memory.md` | Checked on `P:`: `Managed`, `ref` and weak references, `autoptr`, `delete`, deleting entities. |
+| `_shared/enscript/references/language_compile.md` | Checked on `P:`: script layers, `modded class`, attributes, preprocessor defines. |
+| `_shared/enscript/references/api_game.md` | Checked on `P:`: `GetGame()`, side checks, time, mission, world, config reads, logging. |
+| `_shared/enscript/references/api_scheduling.md` | Checked on `P:`: call categories, `CallLater`, `Timer`, update queues, `ScriptInvoker`. |
+| `_shared/enscript/references/api_network.md` | Checked on `P:`: RPC calls, `ScriptRPC`, `OnRPC` dispatch, net sync. |
+| `_shared/enscript/references/api_entities_inventory.md` | Checked on `P:`: spawning and `ECE_*` flags, inventory create, read and move. |
+| `_shared/enscript/references/api_player.md` | Checked on `P:`: finding players, identities, connect hooks, health, stats. |
 | `_shared/enscript/references/types_collections.md` | Primitive types, strings, arrays, maps, sets, vectors, `Math`. |
 | `_shared/enscript/references/player_api.md` | `PlayerBase` stats, vitals, agents, modifiers, inventory. |
 | `_shared/enscript/references/item_api.md` | `ItemBase` quantity, health, actions, spawning, config properties. |
@@ -60,6 +68,7 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/erpc_defines.md` | Vanilla RPC, agent and modifier ID tables; custom ID ranges. |
 | `_shared/enscript/references/file_paths.md` | `$profile` and `$saves` paths, file and JSON helpers. |
 | `_shared/enscript/references/gui_layout.md` | `.layout` format and every widget type. |
+| `_shared/enscript/references/widget_api.md` | Widget script classes and methods, events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu`, imagesets. |
 
 ### Physics pack (`_shared/physics`)
 
