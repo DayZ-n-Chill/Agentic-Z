@@ -4,7 +4,7 @@ name: dayz-search-download
 
 ## Overview
 
-Downloads the prebuilt DayZ RAG vector index (Voyage voyage-code-3 embeddings in LanceDB) from the repo's GitHub releases, verifies the SHA-256 digest GitHub publishes for it, and installs it to ~/.claude/dayz-search-index/ for the dayz-rag MCP server. Skips the download when the installed release tag already matches. Use when setting up a fresh machine instead of building the index locally with /dayz-search-index.
+Downloads the prebuilt DayZ RAG vector index (Voyage voyage-code-3 embeddings in LanceDB) from the repo's GitHub releases, verifies the SHA-256 digest GitHub publishes for it, and installs it to ~/.claude/dayz-search-index/ for the dayz-rag MCP server. Skips the download when the installed release tag already matches, unless --force. Use when setting up a fresh machine instead of building the index locally with /dayz-search-index.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
@@ -48,7 +48,7 @@ Specific version:
 python "<skill-dir>\download.py" --tag v0.1.0
 ```
 
-Overwrite an existing index without the prompt:
+Overwrite an existing index without the prompt (this also reinstalls when the installed tag already matches):
 ```cmd
 python "<skill-dir>\download.py" --force
 ```
@@ -81,13 +81,13 @@ DayZ RAG index downloader
 
 ## Idempotency
 
-- After each install the skill writes `release-tag.txt` into the index folder. If that file names the same release tag, the skill skips the download and exits 0.
+- After each install the skill writes `release-tag.txt` into the index folder. If that file names the same release tag, the skill skips the download and exits 0, unless `--force` is passed, which downloads and reinstalls the same tag (useful to repair a damaged index).
 - Otherwise, if an index already exists, it asks before overwriting (after the checksum-availability check below, so an unverifiable asset is refused without a prompt). `--force` skips the prompt; a declined or non-interactive prompt exits 1.
 - The download lands in a temp folder. The existing index is replaced only after the checksum passes and the archive extracts cleanly, and it is restored if the final swap fails.
 
 ## Integrity checks
 
-- **Checksum:** GitHub publishes a SHA-256 `digest` for release assets it stores. The download must match it, or the skill exits non-zero and leaves the existing index untouched. An asset with no digest (older releases) is refused before downloading unless you pass `--allow-unverified`, which installs it with a warning.
+- **Checksum:** GitHub publishes a SHA-256 `digest` for release assets it stores. The download must match it, or the skill exits non-zero and leaves the existing index untouched. This catches corrupted or truncated downloads only: the digest comes from the same GitHub release as the file, so it does not prove who published the asset. An asset with no digest (older releases) is refused before downloading unless you pass `--allow-unverified`, which installs it with a warning.
 - **Safe extraction:** archive entries that would land outside the extract folder (absolute paths, `..` traversal, links pointing outside) are refused. On Python 3.12+ this uses the `tarfile` `data` filter.
 - **Network errors** (offline, DNS, proxy, HTTP errors) exit non-zero with the URL and the reason.
 

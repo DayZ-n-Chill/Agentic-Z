@@ -86,10 +86,13 @@ Proceed? [y/N]: y
 [OK]    removed (deployed): P:\Mods\@NativeMod
 [OK]    removed (workspace): workspace\NativeMod
 [OK]    removed (workspace-link): workspace\ImportedMod
+
 [OK]    Cleaned 4 item(s).
 ```
 
 `--dry-run` prints the plan, then `(--dry-run) nothing removed.`
+
+If a removal fails, the skill prints `[FAIL]  could not remove (<kind>) <path>: <error>`, stops without trying the remaining items, and exits 1. Fix the cause (often a file held open by DayZ or Workbench) and rerun; already-removed items are simply no longer in the plan.
 
 ## Do not
 

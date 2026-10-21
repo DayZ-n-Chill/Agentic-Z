@@ -65,7 +65,7 @@ Before giving steps for one of the mod's own `.p3d` files, read its LODs and sel
 - Geometry, FireGeometry and ViewGeometry components must be closed and convex, named `Component01`, `Component02`, and so on.
 - A hidden selection is a named selection present in every visual LOD that should retexture. Damage zones, proxies and animation bones also reference selection names, so keep names exact and consistent across LODs and `model.cfg`.
 - Proxies are named `proxy:<path to proxy .p3d>` and point at the attachment model.
-- For named properties such as `autocenter`, mass and `mapType`, copy the values from a comparable vanilla model's `config.cpp` entry or the wiki rather than guessing.
+- `autocenter`, mass and `mapType` are set on the `.p3d`'s Geometry LOD in Object Builder (named properties), not in `config.cpp`. Take values from the wiki (`search_dayz_wiki`) or an MLOD sample model rather than guessing; vanilla `.p3d` files are ODOL, which `dayz-p3d-audit` can't read.
 - Never modify vanilla files under `P:\dz\`.
 
 ## Report

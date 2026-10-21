@@ -1,8 +1,10 @@
-# Vanilla Particle Catalog — DayZ (v1.24+)
+# Vanilla particle catalog
 
-Complete list of all 277 registered particles from `ParticleList.c`.
-Access via `ParticleList.CONSTANT_NAME` in Enforce Script.
-All .ptc files live under `graphics/particles/` unless a subfolder is shown.
+All 304 particles registered in vanilla `ParticleList.c` (`P:\scripts\3_game\particles\particlelist.c`), grouped under the section comments used in that file.
+Access each one as `ParticleList.CONSTANT_NAME` in Enforce Script.
+Paths are relative to `graphics/particles/` and omit the `.ptc` extension. After a game update, check `particlelist.c` for additions.
+
+To register a particle from your own mod, use the two-argument form shown at the top of `particlelist.c`: `static const int MY_PARTICLE = RegisterParticle("mod_folder/", "my_particle");` inside a `modded class ParticleList`.
 
 ## Key categories for device mods
 
@@ -12,27 +14,19 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 - Smoke/steam: `CAMP_SMALL_SMOKE` (1 emitter), `CAMP_STEAM_2END`, `EVAPORATION`, `SPOOKY_MIST`
 - Environment: `ENV_SWARMING_FLIES`, `SMOKING_HELI_WRECK`, `HOTPSRING_WATERVAPOR`, `GEYSER_NORMAL`, `GEYSER_STRONG`, `VOLCANO`
 
-## Example how to register particles from a mod
+## Debug
 
-| Constant | .ptc filename |
-|---|---|
-
-## REGISTER ALL PARTICLES BELOW
-
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `PARTICLE_TEST` | _test_orientation |
 | `DEBUG_DOT` | debug_dot |
 | `DEBUG_DOT5M` | debug_dot5m |
 
-## FIREPLACE
+## Fireplace
 
-| Constant | .ptc filename |
-|---|---|
+### Normal fireplace
 
-## Normal fireplace
-
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `CAMP_FIRE_START` | fire_small_camp_01_start |
 | `CAMP_SMALL_FIRE` | fire_small_camp_01 |
@@ -47,9 +41,9 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `CAMP_STOVE_FIRE_END` | fire_small_stove_01_end |
 | `CAMP_NO_IGNITE_WIND` | fire_extinguish_wind |
 
-## Fireplace indoor
+### Fireplace indoor
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `HOUSE_FIRE_START` | fire_small_house_01_start |
 | `HOUSE_SMALL_FIRE` | fire_small_house_01 |
@@ -59,9 +53,20 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `HOUSE_FIRE_END` | fire_small_house_01_end |
 | `HOUSE_FIRE_STEAM_2END` | steam_medium_house_2end |
 
-## Fireplace in barrel with holes
+### Fireplace tandoor
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
+|---|---|
+| `TANDOOR_HOUSE_SMALL_FIRE` | tandoor_fire_small_house_01_start |
+| `TANDOOR_HOUSE_SMALL_SMOKE` | tandoor_smoke_small_house_01 |
+| `TANDOOR_HOUSE_NORMAL_FIRE` | tandoor_fire_small_house_01 |
+| `TANDOOR_HOUSE_NORMAL_SMOKE` | tandoor_smoke_medium_house_01 |
+| `TANDOOR_HOUSE_FIRE_END` | tandoor_fire_small_house_01_end |
+| `TANDOOR_HOUSE_FIRE_STEAM_2END` | tandoor_steam_medium_house_2end |
+
+### Fireplace in barrel with holes
+
+| Constant | .ptc path |
 |---|---|
 | `BARREL_FIRE_START` | fire_small_barrel_01_start |
 | `BARREL_SMALL_FIRE` | fire_small_barrel_01 |
@@ -71,18 +76,18 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `BARREL_FIRE_END` | fire_small_barrel_01_end |
 | `BARREL_FIRE_STEAM_2END` | steam_medium_camp_2end |
 
-## Fireplace in indoor oven
+### Fireplace in indoor oven
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `OVEN_FIRE_START` | fire_small_oven_01_start |
 | `OVEN_SMALL_FIRE` | fire_small_oven_01 |
 | `OVEN_NORMAL_FIRE` | fire_medium_oven_01 |
 | `OVEN_FIRE_END` | fire_small_ovenl_01_end |
 
-## COOKING
+## Cooking
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `COOKING_BOILING_EMPTY` | cooking_boiling_empty |
 | `COOKING_BOILING_START` | cooking_boiling_start |
@@ -94,34 +99,34 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `COOKING_BURNING_DONE` | cooking_burning_done |
 | `ITEM_HOT_VAPOR` | item_hot_vapor |
 
-## TORCH
+## Torch
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `TORCH_T3` | fire_small_torch_01 |
 | `TORCH_T1` | fire_small_torch_02 |
 | `TORCH_T2` | fire_small_torch_03 |
 
-## BROOM TORCH
+## Broom torch
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `BROOM_TORCH_T1` | fire_small_broom_torch_01 |
 | `BROOM_TORCH_T2` | fire_small_broom_torch_02 |
 | `BROOM_TORCH_T3` | fire_small_broom_torch_03 |
 
-## ROADFLARE
+## Roadflare
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `ROADFLARE_BURNING_INIT` | fire_small_roadflare_red_04 |
 | `ROADFLARE_BURNING_MAIN` | fire_small_roadflare_red_01 |
 | `ROADFLARE_BURNING_ENDING` | fire_small_roadflare_red_02 |
 | `ROADFLARE_BURNING_SMOKE` | fire_small_roadflare_red_03 |
 
-## FLARE PROJECTILE
+## Flare projectile
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `FLAREPROJ_FIRE` | fire_small_roadflare_red_04 |
 | `FLAREPROJ_ACTIVATE` | fire_small_flare_yellow_01 |
@@ -129,20 +134,17 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `FLAREPROJ_ACTIVATE_GREEN` | fire_small_flare_green_01 |
 | `FLAREPROJ_ACTIVATE_BLUE` | fire_small_flare_blue_01 |
 
-## DIGGING
+## Digging
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `DIGGING_STASH` | digging_ground |
 
-## SMOKE GRENADES
+## Smoke grenades
 
-| Constant | .ptc filename |
-|---|---|
+### RDG2
 
-## ! RDG2
-
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `GRENADE_RDG2_BLACK_START` | smoke_RDG2_black_01 |
 | `GRENADE_RDG2_BLACK_LOOP` | smoke_RDG2_black_02 |
@@ -151,9 +153,9 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `GRENADE_RDG2_WHITE_LOOP` | smoke_RDG2_white_02 |
 | `GRENADE_RDG2_WHITE_END` | smoke_RDG2_white_03 |
 
-## ! M18
+### M18
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `GRENADE_M18_GREEN_START` | smoke_M18_green_01 |
 | `GRENADE_M18_GREEN_LOOP` | smoke_M18_green_02 |
@@ -174,43 +176,40 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `GRENADE_M18_BLACK_LOOP` | smoke_M18_black_02 |
 | `GRENADE_M18_BLACK_END` | smoke_M18_black_03 |
 
-## ! FLASH GRENADE
+## Flash grenade (M84)
 
-| Constant | .ptc filename |
-|---|---|
-
-## ! M84
-
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `GRENADE_M84` | explosion_M84_01 |
 
-## FRAGMENTATION GRENADES
+## Fragmentation grenades
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `RGD5` | explosion_RGD5_01 |
 | `M67` | explosion_M67_01 |
 
-## GRENADE EXPLOSION BY SURFACE
+## Grenade explosion by surface
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `EXPLOSION_GRENADE_SNOW` | explosion_grenade_snow |
 | `EXPLOSION_GRENADE_ICE` | explosion_grenade_ice |
+| `EXPLOSION_GRENADE_SAND` | explosion_grenade_sand |
+| `EXPLOSION_GRENADE_DESERT_SAND` | explosion_grenade_desert_sand |
 
-## ELECTRICITY
+## Electricity
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `POWER_GENERATOR_SMOKE` | smoke_small_generator_01 |
 | `BARBED_WIRE_SPARKS` | electro_shortc2 |
 | `LEVER_SPARKS` | electro_sparks |
 | `EASTER_EGG_ACTIVATE` | easter_egg_activate |
 
-## PLAYER
+## Player
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `BLEEDING_SOURCE` | blood_bleeding_01 |
 | `BLEEDING_SOURCE_LIGHT` | blood_bleeding_02 |
@@ -222,9 +221,9 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `BREATH_VAPOUR_HEAVY` | breath_vapour_heavy |
 | `VOMIT_CHUNKS` | character_vomit_puddle |
 
-## GUNS
+## Guns
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `GUN_MUZZLE_FLASH_SVD_STAR` | weapon_shot_Flame_3D_4star |
 | `GUN_SOLO_MUZZLE_FLASH` | weapon_shot_Flame_3D |
@@ -265,9 +264,9 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `SMOKING_BARREL_STEAM_SMALL` | smoking_barrel_steam_small |
 | `SMARKS_CHAMBER` | weapon_shot_chamber_spark |
 
-## BULLET & MELEE IMPACTS
+## Bullet and melee impacts
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `IMPACT_TEST` | impacts/bullet_impact_placeholder |
 | `IMPACT_DISTANT_DUST` | impacts/distant_dust |
@@ -327,6 +326,12 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `IMPACT_SAND_ENTER` | impacts/hit_sand_ent_01 |
 | `IMPACT_SAND_RICOCHET` | impacts/hit_sand_ric_01 |
 | `IMPACT_SAND_EXIT` | impacts/hit_sand_ext_01 |
+| `IMPACT_DESERT_SAND_ENTER` | impacts/hit_desert_sand_ent_01 |
+| `IMPACT_DESERT_SAND_RICOCHET` | impacts/hit_desert_sand_ric_01 |
+| `IMPACT_DESERT_SAND_EXIT` | impacts/hit_desert_sand_ext_01 |
+| `IMPACT_MUD_BRICK_ENTER` | impacts/hit_mud_brick_ent_01 |
+| `IMPACT_MUD_BRICK_RICOCHET` | impacts/hit_mud_brick_ric_01 |
+| `IMPACT_MUD_BRICK_EXIT` | impacts/hit_mud_brick_ext_01 |
 | `IMPACT_PLASTIC_ENTER` | impacts/hit_plastic_ent_01 |
 | `IMPACT_PLASTIC_RICOCHET` | impacts/hit_plastic_ric_01 |
 | `IMPACT_PLASTIC_EXIT` | impacts/hit_plastic_ext_01 |
@@ -337,17 +342,17 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `IMPACT_ICE_RICOCHET` | impacts/hit_ice_ric_01 |
 | `IMPACT_ICE_EXIT` | impacts/hit_ice_ext_01 |
 
-## EXPLOSIONS
+## Explosions
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `EXPLOSION_LANDMINE` | explosion_landmine_01 |
 | `EXPLOSION_TEST` | explosion_placeholder |
 | `EXPLOSION_GOAT` | explosion_goat |
 
-## ENVIRO EFX
+## Environment effects
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `SMOKING_HELI_WRECK` | smoke_heli_wreck_01 |
 | `AURORA_SANTA_WRECK` | smoke_santa_wreck |
@@ -355,9 +360,9 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `SMOKING_CAR_ENGINE` | menu_engine_fire |
 | `EVAPORATION` | menu_evaporation |
 
-## VEHICLES
+## Vehicles
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `HATCHBACK_COOLANT_OVERHEATING` | Hatchback_coolant_overheating |
 | `HATCHBACK_COOLANT_OVERHEATED` | Hatchback_coolant_overheated |
@@ -368,15 +373,15 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `BOAT_WATER_BACK` | vehicles/boat/boat_water_back |
 | `BOAT_WATER_SIDE` | vehicles/boat/boat_water_side |
 
-## CORPSE DECAY
+## Corpse decay
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `ENV_SWARMING_FLIES` | env_fly_swarm_01 |
 
-## BONFIRE
+## Bonfire
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `BONFIRE_FIRE` | fire_bonfire |
 | `BONFIRE_SMOKE` | smoke_bonfire |
@@ -384,9 +389,9 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `SPOOKY_MIST` | spooky_mist |
 | `VOMIT_BLOOD` | character_vomitBlood_01 |
 
-## CONTAMINATED AREAS
+## Contaminated areas
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `CONTAMINATED_AREA_GAS_TINY` | contaminated_area_gas_around_tiny |
 | `CONTAMINATED_AREA_GAS_AROUND` | contaminated_area_gas_around |
@@ -397,7 +402,7 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 
 ## Fireworks
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `FIREWORKS_SHOT` | fireworks_small_01 |
 | `FIREWORKS_EXPLOSION_RED` | fireworks_large_01_Red |
@@ -411,7 +416,7 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 
 ## Fireworks anniversary
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `FIREWORKS_EXPLOSION_THANKS1` | fireworks_ThankYou_anim |
 | `FIREWORKS_EXPLOSION_THANKS2` | fireworks_For10_anim |
@@ -419,22 +424,22 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `FIREWORKS_EXPLOSION_THANKS4` | fireworks_Years_anim |
 | `FIREWORKS_EXPLOSION_THANKS5` | fireworks_Dayz_anim |
 
-## pox grenade
+## Pox grenade
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `GRENADE_CHEM_BREAK` | contaminated_area_gas_grenade |
 
 ## Claymore
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `CLAYMORE_EXPLOSION` | explosion_claymore_01 |
 | `PLASTIC_EXPLOSION` | explosion_plastic_01 |
 
 ## Water jet/spilling
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `WATER_JET` | water_jet |
 | `WATER_JET_WEAK` | water_jet_weak |
@@ -442,20 +447,20 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 
 ## Drowning bubbles
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `DROWNING_BUBBLES` | breath_bubbles |
 
-## ! Cupid's bolt
+## Cupid's bolt
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `BOLT_CUPID_TAIL` | cupid_bolt |
 | `BOLT_CUPID_HIT` | cupid_hit |
 
-## VOLCANIC
+## Volcanic
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `HOTPSRING_WATERVAPOR` | hotspring_watervapor |
 | `GEYSER_NORMAL` | geyser_normal |
@@ -464,29 +469,47 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `GEYSER_BUBBLES` | geyser_bubbles |
 | `VOLCANO` | volcano_smoke |
 
-## FISHING
+## Fishing
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `FISHING_SIGNAL_SPLASH` | fishing_signal_splash |
 
-## STEPS
+## Steps
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `STEP_SNOW` | step_snow |
+| `STEP_DESERT` | step_desert |
+| `STEP_SOIL` | step_soil |
 
-## STEPS
+## Ceiling dust
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
+|---|---|
+| `CEILING_WOOD` | dust/dust_ceiling_wood |
+
+## Part destruction
+
+| Constant | .ptc path |
+|---|---|
+| `BUILDNG_DESTRUCT_WOOD` | building_destruction_wood |
+| `BUILDNG_DESTRUCT_BRICK` | building_destruction_brick |
+| `BUILDNG_DESTRUCT_METAL` | building_destruction_metal |
+
+## Vehicle wheels
+
+| Constant | .ptc path |
 |---|---|
 | `VEHICLE_WHEEL_SNOW` | vehicle_wheel_snow |
 | `VEHICLE_WHEEL_GRAVEL` | vehicle_wheel_gravel |
 | `VEHICLE_WHEEL_ASPHALT` | vehicle_wheel_asphalt |
+| `VEHICLE_WHEEL_SOIL` | vehicle_wheel_soil |
+| `VEHICLE_WHEEL_DESERT` | vehicle_wheel_desert |
 
-## TREE FALLING PARTICLES
+## Tree falling particles
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `TREE_FALLING_SNOW` | tree_falling_snow |
 | `TREE_SOFT_FALLING_SNOW` | tree_soft_falling_snow |
@@ -496,79 +519,21 @@ All .ptc files live under `graphics/particles/` unless a subfolder is shown.
 | `TREE_FALLING_LEAF` | tree_falling_leaf |
 | `BUSH_FALLING_SNOW` | bush_falling_snow |
 
-## TREE PASSING ParticleSource
+## Tree passing (ParticleSource)
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
 | `TREE_PASSING_SNOW` | tree_passing_snow |
 | `BUSH_PASSING_SNOW` | bush_passing_snow |
 
-## ! Splits the full path into name of particle and it's directory path, then registers the particle with the name and returns its ID
+## Dust and oil fire (no heading in source)
 
-| Constant | .ptc filename |
+| Constant | .ptc path |
 |---|---|
+| `DUST_GROUND` | dust/dust_grnd_01 |
+| `DUST_CLOUD` | dust/dust_effect_01 |
+| `DUST_VEHICLE` | dust_vehicle |
+| `DUST_VEHICLE_SOFT` | dust_vehicle_soft |
+| `OIL_FIRE1` | fire_oil1 |
+| `OIL_FIRE2` | fire_oil2 |
 
-## ! Called by C++
-
-| Constant | .ptc filename |
-|---|---|
-
-## ! Silently fail on retail, game already takes too long to boot, lets not make it longer
-
-| Constant | .ptc filename |
-|---|---|
-
-## ! TODO(kumarjac): bake in this error
-
-| Constant | .ptc filename |
-|---|---|
-
-## 'graphics/particles/vehicle_wheel_snow' becomes 'graphics/particles/' and 'vehicle_wheel_snow'
-
-| Constant | .ptc filename |
-|---|---|
-
-## ! Registers a particle and returns its ID
-
-| Constant | .ptc filename |
-|---|---|
-
-## return ParticleList.INVALID
-
-| Constant | .ptc filename |
-|---|---|
-
-## ! Purely checks for an invalid number, does NOT mean it is actually registered
-
-| Constant | .ptc filename |
-|---|---|
-
-## ! Returns particle's full path (without .ptc suffix) based on its ID
-
-| Constant | .ptc filename |
-|---|---|
-
-## ! Returns particle's full path (with .ptc suffix) based on its ID
-
-| Constant | .ptc filename |
-|---|---|
-
-## ! Returns particle's ID based on the path (without .ptc suffix)
-
-| Constant | .ptc filename |
-|---|---|
-
-## ! Returns particle's ID based on the filename (without .ptc suffix)
-
-| Constant | .ptc filename |
-|---|---|
-
-## ! Returns base path to all particles
-
-| Constant | .ptc filename |
-|---|---|
-
-## ! Preloads all particles
-
-| Constant | .ptc filename |
-|---|---|

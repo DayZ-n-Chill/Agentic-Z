@@ -29,18 +29,18 @@ python "<skill-dir>\scope.py" --clear
 
 ## What it does
 
-1. Validates `<ModName>` exists at `workspace/<ModName>/` (refuses unknown names, and names containing `*`, `?`, `[`, `!` or `#`, which permission rules read as pattern syntax).
+1. Validates `<ModName>` exists at `workspace/<ModName>/` (refuses unknown names, and names that permission rules would read as pattern syntax: `*`, `?` or `[` anywhere, or a leading `!` or `#`; `!` and `#` mid-name are fine because gitignore syntax treats them specially only at the start of a pattern).
 2. Reads `.claude/settings.local.json`, removes any rules previously added by this skill (idempotent re-run).
-3. Enumerates sibling mods under `workspace/` (every directory except the active mod and dotted folders). Refuses if a sibling's name contains one of those characters.
+3. Enumerates sibling mods under `workspace/` (every directory except the active mod and dotted folders). Refuses if a sibling's name breaks the same rule.
 4. For each sibling mod, appends deny rules to `permissions.deny`:
-   - `Edit(/workspace/<other>/**)` (the leading `/` anchors at the project root)
+   - `Edit(/workspace/<other>/**)` (a leading `/` anchors at Claude Code's primary working directory, so start Claude Code from the project root)
    - `Edit(//p/<other>/**)` (`//` is absolute; Claude Code normalizes `P:\` to `/p/` before matching)
    - `Edit(//p/Mods/@<other>/**)`
    - `Edit(//<drive>/<DayZ game>/!Workshop/@<other>/**)`, the real folder behind the `P:\Mods` junction, e.g. `Edit(//c/Program Files (x86)/Steam/steamapps/common/DayZ/!Workshop/@OtherMod/**)`. The game is located with `find_dayz_game()` from `/dayz-preflight`; if it is not found this rule is skipped with an `[INFO]` line.
 
    Claude Code checks file writes against `Edit(...)` rules only, so one `Edit` rule blocks both the Edit and Write tools. `Write(path)` rules are accepted but never matched, which is why the skill does not write them.
 5. Writes back `.claude/settings.local.json`.
-6. Records the active mod and the exact rules that were added in `.claude/local-memory/dayz-active-scope.json` so `--clear` can undo precisely what was set.
+6. Records the active mod and the rules this run actually appended (a matching rule you already had is skipped, left in place and not recorded, so `--clear` never removes it) in `.claude/local-memory/dayz-active-scope.json` so `--clear` can undo precisely what was set.
 
 ## What it does not do
 
@@ -86,7 +86,8 @@ DayZ scope: SuperMedKit
 If `<ModName>` does not exist:
 
 ```
-[FAIL]  workspace\NoSuchMod does not exist. Known mods:
+[FAIL]  workspace\NoSuchMod does not exist.
+        Known mods:
           - SuperMedKit
         Scaffold first: /dayz-new-mod NoSuchMod  or  /dayz-import-mod --source <path>
 ```

@@ -16,7 +16,7 @@ If you only need the index and don't want to spend Voyage tokens, `/dayz-search-
 
 1. The indexer runs `/dayz-preflight` first and stops if it fails (`P:\` not mounted). Preflight warnings (Tools, Workshop) don't block it. `--status` skips the gate.
 2. Install the dependencies once: `pip install -r "<skill-dir>\requirements.txt"` (`lancedb`, `tqdm`, `voyageai`, `python-dotenv`). The indexer exits with that command if any are missing.
-3. Put a Voyage key in `.env` at the repo root (gitignored): `VOYAGE_API_KEY=pa-...`. Get one at [dash.voyageai.com](https://dash.voyageai.com).
+3. Put a Voyage key in `.env` at the repo root (gitignored): `VOYAGE_API_KEY=pa-...`. Get one at [dash.voyageai.com](https://dash.voyageai.com). The key is found the same way the `dayz-rag` MCP server finds it (both use `.claude/mcp/dayz-rag/voyage_common.py`): a variable already set in the environment wins, then the nearest `.env` at or above the working directory, then the one at the repo (or plugin) root.
 
 ## How to run
 
@@ -95,7 +95,7 @@ Embedding <n> chunks via Voyage (voyage-code-3, document mode)...
 ## Failure modes
 
 - Missing dependency, missing `VOYAGE_API_KEY`, `P:\` not mounted, or no chunks produced: exits 1 before any tokens are spent.
-- Rate limits and transient network errors are retried with exponential backoff (5 attempts per batch). Any other embed failure aborts the run before LanceDB is touched. The new rows are written to a `chunks_staging` table first and only then swapped into `chunks`, so a failed write also leaves the previous index usable.
+- Transient Voyage errors (the SDK's `RateLimitError`, `Timeout`, `APIConnectionError`, `TryAgain`, `ServiceUnavailableError` and `ServerError`) are retried with exponential backoff, 5 attempts per batch. Any other embed failure, such as a bad key aborts the run before LanceDB is touched. The new rows are written to a `chunks_staging` table first and only then swapped into `chunks`, so a failed write also leaves the previous index usable.
 
 ## Do not
 

@@ -113,11 +113,11 @@ EntityAI temp = GetGame().CreateObject("MyMod_CustomCanteen", spawnPos, false, t
 
 ## Custom CE XML Tables
 
-CE data is driven by XML files placed in `env/` inside your mod's `.pbo`:
+CE data is read from the server's mission folder, not from mod `.pbo`s. Put a custom table in its own folder under the mission (here `<mission>/mymod/`):
 
 ```xml
-<!-- MyMod/env/MyMod_Canteen.xml -->
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- <mission>/mymod/MyMod_Canteen.xml -->
 <types>
     <type name="MyMod_CustomCanteen">
         <nominal>20</nominal>
@@ -128,7 +128,7 @@ CE data is driven by XML files placed in `env/` inside your mod's `.pbo`:
         <quantmax>-1</quantmax>
         <cost>100</cost>
         <flags count_in_cargo="0" count_in_hoarder="0" count_in_map="1" count_in_player="0" crafted="0" deloot="0"/>
-        <category name="Military"/>
+        <category name="tools"/>
         <usage name="Military"/>
         <value name="Tier3"/>
     </type>
@@ -137,13 +137,12 @@ CE data is driven by XML files placed in `env/` inside your mod's `.pbo`:
 
 ### Attaching to vanilla types.xml
 
-Use `cfgeconomycore.xml` to merge your table without overriding vanilla:
+Register it in the mission's `cfgeconomycore.xml`, next to the existing `<classes>` and `<defaults>`. The `folder` attribute is relative to the mission root, and the server keeps loading `db/types.xml` as well:
 
 ```xml
-<!-- MyMod/cfgeconomycore.xml -->
-<?xml version="1.0" encoding="UTF-8"?>
+<!-- <mission>/cfgeconomycore.xml (excerpt) -->
 <economycore>
-    <ce folder="env">
+    <ce folder="mymod">
         <file name="MyMod_Canteen.xml" type="types"/>
     </ce>
 </economycore>

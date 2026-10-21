@@ -1,10 +1,10 @@
-# .emat Material Format Reference
+# .emat material format reference
 
 Verified from 8 vanilla particle material files. Plain text format.
 
 ---
 
-## TWO SHADER TYPES
+## Two shader types
 
 ### `Particle` — Most common (fire, sparks, water, smoke with blending)
 
@@ -18,7 +18,7 @@ No BlendMode property available.
 
 ---
 
-## COMPLETE PROPERTY TABLE
+## Complete property table
 
 | Property | Available in | Type | Description |
 |---|---|---|---|
@@ -37,7 +37,7 @@ No BlendMode property available.
 
 ---
 
-## BlendMode VALUES
+## BlendMode values
 
 | Value | Visual effect | Use case |
 |---|---|---|
@@ -47,7 +47,7 @@ No BlendMode property available.
 
 ---
 
-## Sort VALUES
+## Sort values
 
 | Value | Render order | Use case |
 |---|---|---|
@@ -57,7 +57,7 @@ No BlendMode property available.
 
 ---
 
-## VANILLA EXAMPLES (annotated)
+## Vanilla examples (annotated)
 
 ### Glow dot (simplest material — ParticleSprite-like but Particle shader)
 
@@ -147,7 +147,7 @@ ParticleSprite {
 
 ---
 
-## CREATING CUSTOM MATERIALS
+## Creating custom materials
 
 ### Approach 1: Reference vanilla .edds textures (safest)
 
@@ -204,7 +204,7 @@ All paths are prefixed with `Graphics/Particles/materials/`.
 
 ---
 
-## .meta FILES (for reference only — not needed for mods)
+## .meta files (for reference only, not needed for mods)
 
 ```
 MetaFileClass {

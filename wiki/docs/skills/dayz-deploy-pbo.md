@@ -33,7 +33,7 @@ python "<skill-dir>\deploy.py" <ModName>
 5. **Copy Keys** — mirrors `Keys/*.bikey` into `P:\Mods\@<ModName>\Keys\` (skipped entirely if the bundle has no keys).
 6. **Copy metadata** — `meta.cpp` / `mod.cpp` from the bundle root, if present.
 7. **Verify** — reports copied vs. unchanged counts per run, and `[WARN]`s for every `.pbo` lacking a matching `<name>.pbo.<key>.bisign` (signature-checking clients will reject unsigned PBOs).
-8. **Drop ownership marker** — writes `P:\Mods\@<ModName>\.agentic-z-scaffold` (single line: the modname), exactly as `/dayz-build-pbo` does, so `/dayz-clean-workspace` treats the bundle as managed and can remove both `workspace/<ModName>/` and the deployed dir (a pure payload bundle has no `config.cpp`, so the marker is what marks it as ours).
+8. **Drop ownership marker** — writes `P:\Mods\@<ModName>\.agentic-z-scaffold` (single line: the modname), exactly as `/dayz-build-pbo` does, so `/dayz-clean-workspace` treats the bundle as managed and can remove both `workspace/<ModName>/` and the deployed dir (a pure payload bundle has no `config.cpp`, so the marker is what marks it as ours). If the marker cannot be written, deploy prints `[FAIL]` and exits 1 even though the files were copied, because the next build, deploy and clean would all refuse that folder.
 
 ## Composing with /dayz-build-pbo (umbrella bundles)
 
@@ -59,12 +59,14 @@ Success:
 
 ```
 DayZ preflight
+
 [OK]    P:\ is mounted
-...
+...     (rest of the /dayz-preflight report)
+
 Preflight complete.
 [OK]    P:\Mods junction valid
 [OK]    workspace\MyBundle\Addons\ found (with .pbo payload)
-[WARN] extras.pbo has no matching .bisign - clients with signature verification enabled will reject it.
+[WARN]  extras.pbo has no matching .bisign - clients with signature verification enabled will reject it.
 
 [OK]    Deployed to P:\Mods\@MyBundle\ - 6 copied, 0 unchanged (3 .pbo, 2 .bisign, 1 .bikey)
 ```
@@ -74,7 +76,7 @@ Re-run with nothing changed: same shape, `0 copied, 6 unchanged`.
 Failure (any step):
 
 ```
-[FAIL] <reason>
+[FAIL]  <reason>
        <hint or next step>
 ```
 

@@ -19,7 +19,9 @@ import skill_helpers as h  # noqa: E402
 
 ALLOWED_EXTS = {".png", ".tga"}
 ALLOWED_SUFFIXES = ("_co", "_nohq", "_smdi")
-SUFFIX_RE = re.compile(r"_(co|nohq|smdi)$", re.IGNORECASE)
+SUFFIX_RE = re.compile(
+    "(" + "|".join(re.escape(s) for s in ALLOWED_SUFFIXES) + ")$", re.IGNORECASE
+)
 
 
 def resolve_image_to_paa() -> Path:

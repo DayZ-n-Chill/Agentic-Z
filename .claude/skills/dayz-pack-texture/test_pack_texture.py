@@ -83,3 +83,49 @@ def test_main_gates_before_validating(monkeypatch, tmp_path):
     with pytest.raises(SystemExit) as exc:
         pt.main()
     assert exc.value.code == 1
+
+
+class _Result:
+    def __init__(self, returncode):
+        self.returncode = returncode
+
+
+def test_pack_one_nonzero_exit_returns_false(monkeypatch, tmp_path, capsys):
+    src = tmp_path / "vest_co.png"
+    src.write_bytes(b"")
+    monkeypatch.setattr(pt.subprocess, "run", lambda cmd: _Result(3))
+    assert pt.pack_one(tmp_path / "ImageToPAA.exe", src) is False
+    assert "ImageToPAA exited 3 on vest_co.png" in capsys.readouterr().err
+
+
+def test_pack_one_success_without_output_returns_false(monkeypatch, tmp_path, capsys):
+    src = tmp_path / "vest_co.png"
+    src.write_bytes(b"")
+    monkeypatch.setattr(pt.subprocess, "run", lambda cmd: _Result(0))
+    assert pt.pack_one(tmp_path / "ImageToPAA.exe", src) is False
+    assert "reported success but" in capsys.readouterr().err
+
+
+def test_pack_one_success_writes_paa(monkeypatch, tmp_path):
+    src = tmp_path / "vest_co.png"
+    src.write_bytes(b"")
+
+    def run(cmd):
+        Path(cmd[2]).write_bytes(b"paa")
+        return _Result(0)
+
+    monkeypatch.setattr(pt.subprocess, "run", run)
+    assert pt.pack_one(tmp_path / "ImageToPAA.exe", src) is True
+
+
+def test_main_exits_1_on_partial_failure(monkeypatch, tmp_path, capsys):
+    good = tmp_path / "good_co.png"
+    bad = tmp_path / "bad_nohq.png"
+    for p in (good, bad):
+        p.write_bytes(b"")
+    monkeypatch.setattr(pt.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(pt, "resolve_image_to_paa", lambda: tmp_path / "ImageToPAA.exe")
+    monkeypatch.setattr(pt, "pack_one", lambda exe, src: src == good)
+    monkeypatch.setattr("sys.argv", ["pack_texture.py", str(good), str(bad)])
+    assert pt.main() == 1
+    assert "1 of 2 textures packed." in capsys.readouterr().out

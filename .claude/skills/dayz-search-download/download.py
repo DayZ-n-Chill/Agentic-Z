@@ -9,7 +9,7 @@ Stdlib only.
 Usage:
     python download.py                    # latest release
     python download.py --tag v0.1.0       # specific tag
-    python download.py --force            # overwrite existing index
+    python download.py --force            # overwrite existing index, even the same tag
     python download.py --allow-unverified # accept an asset with no published SHA-256
 """
 from __future__ import annotations
@@ -210,7 +210,7 @@ def report_installed(index_root: Path) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Download prebuilt dayz-rag vector index.")
     parser.add_argument("--tag", help="Release tag (default: latest)")
-    parser.add_argument("--force", action="store_true", help="Overwrite existing index without prompt")
+    parser.add_argument("--force", action="store_true", help="Overwrite an existing index without the prompt; reinstalls even when the tag already matches")
     parser.add_argument(
         "--allow-unverified",
         action="store_true",

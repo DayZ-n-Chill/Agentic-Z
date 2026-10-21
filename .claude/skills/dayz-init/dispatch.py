@@ -13,6 +13,7 @@ child skill's exit code, or 2 if the action is missing a required value.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -20,7 +21,18 @@ from pathlib import Path
 from state import PROJECT_DIR, active_mod
 
 SKILLS_DIR = Path(__file__).resolve().parents[1]
-KNOWN_MAPS = ("chernarus", "livonia", "sakhal")  # /dayz-add-server's map aliases
+ADD_SERVER = SKILLS_DIR / "dayz-add-server" / "add_server.py"
+
+
+def _load_known_maps() -> tuple[str, ...]:
+    """The map aliases /dayz-add-server accepts, read from its own table."""
+    spec = importlib.util.spec_from_file_location("dayz_add_server_module", ADD_SERVER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return tuple(module.KNOWN_MAPS)
+
+
+KNOWN_MAPS = _load_known_maps()
 
 
 class DispatchError(ValueError):

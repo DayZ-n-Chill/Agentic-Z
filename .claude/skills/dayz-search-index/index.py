@@ -30,6 +30,11 @@ _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE.parent / "_shared"))
 import skill_helpers as h  # noqa: E402
 
+# .env/API-key loading and the Voyage retry rule live next to the MCP server so
+# indexing and searching read the same key the same way.
+sys.path.insert(0, str(_HERE.parents[1] / "mcp" / "dayz-rag"))
+import voyage_common  # noqa: E402
+
 INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
 TABLE_NAME = "chunks"
 # The new index is written here first and only swapped into TABLE_NAME once
@@ -201,26 +206,15 @@ def _require_deps() -> None:
 
 
 def _load_env_and_key() -> str:
-    """Find repo .env, load it, return the Voyage API key. Hard-fail if missing."""
-    from dotenv import find_dotenv, load_dotenv
-    env_path = find_dotenv(usecwd=True)
-    if env_path:
-        load_dotenv(env_path)
-    key = os.environ.get("VOYAGE_API_KEY", "").strip()
-    # Accept `export VOYAGE_API_KEY="..."` form too — strip leading "export "
-    # if a literal value with that prefix snuck in.
-    if key.startswith("export "):
-        key = key.split("=", 1)[-1].strip().strip('"').strip("'")
-    if not key:
-        print(
-            f"{FAIL} VOYAGE_API_KEY not set.\n"
-            f"        Add it to .env at the repo root:\n"
-            f"            VOYAGE_API_KEY=pa-xxxxxxxx\n"
-            f"        Get a key at: https://dash.voyageai.com",
-            file=sys.stderr,
-        )
+    """Return the Voyage API key (see voyage_common.load_api_key). Exit 1 if missing.
+
+    dayz-search-wiki-index calls this too, so keep the name.
+    """
+    try:
+        return voyage_common.load_api_key()
+    except RuntimeError as exc:
+        print(f"{FAIL} {exc}", file=sys.stderr)
         sys.exit(1)
-    return key
 
 
 # --------------- chunkers ---------------
@@ -309,16 +303,16 @@ def chunk_rvmat(path: Path, seen_hashes: set[str]) -> list[dict] | None:
         raw = path.read_bytes()
     except OSError:
         return None
-    h = hashlib.sha256(raw).hexdigest()
-    if h in seen_hashes:
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest in seen_hashes:
         return None
-    seen_hashes.add(h)
+    seen_hashes.add(digest)
     text = raw.decode("utf-8", errors="replace")
     return [
         {
             "path": str(path),
             "file_type": "rvmat",
-            "parent_context": h[:12],
+            "parent_context": digest[:12],
             "line_start": 1,
             "line_end": text.count("\n") + 1,
             "content": text[:4000],
@@ -475,6 +469,11 @@ WHOLE_FILE_TYPES = {"json", "csv"}
 # --------------- Voyage embedding ---------------
 
 
+def _estimate_tokens(text: str) -> int:
+    """Local token estimate for one text: len / CHARS_PER_TOKEN_EST, at least 1."""
+    return max(1, int(len(text) / CHARS_PER_TOKEN_EST))
+
+
 def _pack_batches(texts: list[str]) -> Iterator[list[str]]:
     """Yield batches that respect both Voyage limits: max TEXT_LIMIT_PER_BATCH
     items AND max ~TOKEN_BUDGET_PER_BATCH tokens (estimated locally as
@@ -483,7 +482,7 @@ def _pack_batches(texts: list[str]) -> Iterator[list[str]]:
     batch: list[str] = []
     batch_tokens = 0
     for t in texts:
-        est = max(1, len(t) // CHARS_PER_TOKEN_EST)
+        est = _estimate_tokens(t)
         if batch and (
             batch_tokens + est > TOKEN_BUDGET_PER_BATCH
             or len(batch) >= TEXT_LIMIT_PER_BATCH
@@ -497,13 +496,17 @@ def _pack_batches(texts: list[str]) -> Iterator[list[str]]:
         yield batch
 
 
+EMBED_ATTEMPTS = 5
+
+
 def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[float]], int]:
     """Embed all texts via Voyage in dynamically-packed batches. Returns
     (vectors, total_tokens).
 
     - Uses input_type="document" (asymmetric retrieval — matches "query" at search time)
     - truncation=True so over-context single inputs don't 400
-    - Retries on 429 / transient errors with exponential backoff
+    - Retries transient Voyage errors (voyage_common.is_transient: rate limit,
+      timeout, connection, server) with exponential backoff, EMBED_ATTEMPTS per batch
     """
     import voyageai
     from tqdm import tqdm
@@ -516,7 +519,7 @@ def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[flo
     pbar = tqdm(total=len(texts), desc="  embedding", unit="chunk")
     for batch in _pack_batches(texts):
         delay = 2.0
-        for attempt in range(5):
+        for attempt in range(EMBED_ATTEMPTS):
             try:
                 resp = client.embed(
                     texts=batch,
@@ -527,13 +530,11 @@ def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[flo
                 vectors.extend(resp.embeddings)
                 total_tokens += int(resp.total_tokens or 0)
                 break
-            except Exception as exc:  # voyageai.error.RateLimitError + transient network
-                msg = str(exc).lower()
-                is_rate_limit = "rate" in msg or "429" in msg or "quota" in msg
-                if attempt == 4 or not (is_rate_limit or "timeout" in msg or "connection" in msg):
+            except Exception as exc:
+                if attempt == EMBED_ATTEMPTS - 1 or not voyage_common.is_transient(exc):
                     pbar.close()
                     raise
-                pbar.write(f"{WARN} {exc} — retry in {delay:.0f}s (attempt {attempt + 1}/5)")
+                pbar.write(f"{WARN} {exc} — retry in {delay:.0f}s (attempt {attempt + 1}/{EMBED_ATTEMPTS})")
                 time.sleep(delay)
                 delay *= 2
         if cost_per_m is None:
@@ -696,11 +697,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 1
 
     if len(chunks) > CHUNK_CEILING and not args.force:
-        est_mtokens = len(chunks) * 1500 / 1_000_000
+        est_mtokens = sum(_estimate_tokens(c["content"][:EMBED_MAX_CHARS]) for c in chunks) / 1_000_000
         cost_note = f" (~${est_mtokens * cost_per_m:.0f} if billed)" if cost_per_m is not None else ""
         print(
             f"\n{FAIL} {len(chunks)} chunks exceeds the safety ceiling ({CHUNK_CEILING}).\n"
-            f"        At ~1500 tokens/chunk this is ~{est_mtokens:.0f}M tokens{cost_note}.\n"
+            f"        At ~{CHARS_PER_TOKEN_EST} chars/token that is ~{est_mtokens:.0f}M tokens{cost_note}.\n"
             f"        Either narrow the indexing scope or re-run with --force to override.",
             file=sys.stderr,
         )
@@ -718,8 +719,7 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     # Voyage free-tier projection check. Estimate this build's tokens from
     # local char-per-token ratio so we can warn before committing to the embed.
-    estimated_tokens = sum(max(1, len(t) // CHARS_PER_TOKEN_EST) for t in texts)
-    estimated_tokens = int(estimated_tokens)
+    estimated_tokens = sum(_estimate_tokens(t) for t in texts)
     if not _check_voyage_tier(estimated_tokens, args.ignore_tier_warning, embed_model):
         print(f"{FAIL} Cancelled by user. No tokens consumed.", file=sys.stderr)
         return 1

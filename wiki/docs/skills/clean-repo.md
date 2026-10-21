@@ -37,10 +37,10 @@ The agent's shell is not a TTY, so the script cannot prompt there. Ask in chat i
 ## What it does
 
 1. Without `--dry-run` or `--yes`, refuses (exit 2) if stdin isn't a TTY, before running anything.
-2. Runs each child with `--include-server --dry-run` and prints the output under a `=== /<skill> ===` header. That output is the combined plan. If any child's dry run fails, stops with exit 1 and removes nothing.
+2. Runs each child with `--include-server --dry-run` and prints the output under a `=== /<skill> (--dry-run) ===` header. That output is the combined plan. If any child's dry run fails, stops with exit 1 and removes nothing.
 3. With `--dry-run`, stops here with exit 0.
-4. Asks once, `Remove everything listed above? [y/N]`, unless `--yes` was passed. Any answer other than `y` aborts with exit 0.
-5. Runs each child with `--include-server --yes`. Exits 1 if any child failed, 0 otherwise.
+4. Asks once, `Remove everything listed above? [y/N]`, unless `--yes` was passed. Any answer other than `y` or `yes` aborts with exit 0.
+5. Runs each child with `--include-server --yes` under a `=== /<skill> (--yes) ===` header. Exits 1 if any child failed, 0 otherwise.
 
 It does not gate on `/dayz-preflight`, because it is domain-agnostic. Each child gates on its own preflight.
 

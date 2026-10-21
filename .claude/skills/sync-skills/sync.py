@@ -90,7 +90,7 @@ def link_target(path: Path) -> Path | None:
 
     Strips Windows `\\\\?\\` long-path prefix so the returned Path compares
     equal to other Path representations of the same target. Without this,
-    pass-2 prune logic would never fire (relative_to() fails on the prefixed
+    pass-2 prune logic would never fire (is_under() fails on the prefixed
     form) and pass-1 would treat every junction as "needs refresh".
     """
     try:
@@ -100,6 +100,24 @@ def link_target(path: Path) -> Path | None:
     if target.startswith("\\\\?\\"):
         target = target[4:]
     return Path(target)
+
+
+def _norm(p: Path) -> str:
+    return os.path.normcase(os.path.normpath(str(p)))
+
+
+def paths_equal(a: Path, b: Path) -> bool:
+    """True when two paths name the same location: case-insensitive on Windows
+    (os.path.normcase), separators and `..` normalised. Same rule as
+    dayz-preflight's paths_equal, kept local so this generic skill does not
+    depend on a DayZ one."""
+    return _norm(a) == _norm(b)
+
+
+def is_under(path: Path, root: Path) -> bool:
+    """True when path is root or inside it, compared the same way as paths_equal."""
+    p, r = _norm(path), _norm(root)
+    return p == r or p.startswith(r.rstrip(os.sep) + os.sep)
 
 
 def make_link(src: Path, dst: Path) -> str:
@@ -152,19 +170,14 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
                 existing_resolved = existing.resolve() if existing.is_absolute() else (dst.parent / existing).resolve()
             except OSError:
                 existing_resolved = existing
-            if str(existing_resolved).lower() == str(src_resolved).lower():
+            if paths_equal(existing_resolved, src_resolved):
                 print(f"  [OK]      {src.name}")
                 counts["ok"] += 1
                 continue
             # Link points at another clone of this template. Refusing to steal
             # it silently — that breaks the other clone's sessions. --force
             # makes the takeover explicit.
-            try:
-                existing_resolved.relative_to(repo)
-                is_foreign = False
-            except ValueError:
-                is_foreign = True
-            if is_foreign and not force:
+            if not is_under(existing_resolved, repo) and not force:
                 print(f"  [FOREIGN] {src.name}: points at {existing}; rerun with --force to take ownership")
                 counts["skipped"] += 1
                 continue
@@ -209,9 +222,7 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
                 t_resolved = t.resolve() if t.is_absolute() else (child.parent / t).resolve()
             except OSError:
                 continue
-            try:
-                t_resolved.relative_to(repo)
-            except ValueError:
+            if not is_under(t_resolved, repo):
                 continue  # not pointing back into our repo, leave it alone
             if t_resolved.exists():
                 continue  # repo target still exists; not an orphan

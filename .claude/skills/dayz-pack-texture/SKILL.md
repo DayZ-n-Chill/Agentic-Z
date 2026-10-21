@@ -58,17 +58,17 @@ DayZ preflight
 ... (preflight output)
 Preflight complete.
 
-[OK]    ImageToPAA: C:\...\DayZ Tools\Bin\ImageToPAA\ImageToPAA.exe
+[OK]   ImageToPAA: C:\...\DayZ Tools\Bin\ImageToPAA\ImageToPAA.exe
 
 [Pack] vest_camo_co.png  ->  vest_camo_co.paa
 ... (ImageToPAA output) ...
-[OK]    Wrote vest_camo_co.paa (123,456 bytes)
+[OK]   Wrote vest_camo_co.paa (123,456 bytes)
 
 [Pack] vest_camo_nohq.png  ->  vest_camo_nohq.paa
 ... (ImageToPAA output) ...
-[OK]    Wrote vest_camo_nohq.paa (98,765 bytes)
+[OK]   Wrote vest_camo_nohq.paa (98,765 bytes)
 
-[OK]    2 of 2 textures packed.
+[OK]   2 of 2 textures packed.
 ```
 
 ## Do not

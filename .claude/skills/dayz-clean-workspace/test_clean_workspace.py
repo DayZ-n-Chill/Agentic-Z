@@ -163,3 +163,72 @@ def test_remove_artifact_rmtree_for_folders(tmp_path):
     mod = _native(tmp_path, "MyMod")
     clean.remove_artifact("workspace", mod)
     assert not mod.exists()
+
+
+# --- main() -------------------------------------------------------------------
+
+class _Stdin:
+    def __init__(self, tty: bool):
+        self._tty = tty
+
+    def isatty(self):
+        return self._tty
+
+
+@pytest.fixture
+def project(monkeypatch, tmp_path):
+    root = tmp_path / "project"
+    (root / "workspace").mkdir(parents=True)
+    monkeypatch.setattr(h, "resolve_project_dir", lambda: root)
+    monkeypatch.setattr(h, "gate_on_preflight", lambda: None)
+    return root
+
+
+def _main(monkeypatch, *argv):
+    monkeypatch.setattr(clean.sys, "argv", ["clean.py", *argv])
+    return clean.main()
+
+
+def test_main_refuses_without_yes_when_not_a_tty(project, monkeypatch):
+    mod = _native(project / "workspace", "MyMod")
+    monkeypatch.setattr(clean.sys, "stdin", _Stdin(False))
+    monkeypatch.setattr(clean, "remove_artifact", lambda *a: pytest.fail("removed without consent"))
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch)
+    assert "--yes" in str(exc.value.code)
+    assert mod.is_dir()
+
+
+def test_main_dry_run_removes_nothing(project, monkeypatch, capsys):
+    mod = _native(project / "workspace", "MyMod")
+    (project / ".server").mkdir()
+    monkeypatch.setattr(clean, "remove_artifact", lambda *a: pytest.fail("dry run removed something"))
+    assert _main(monkeypatch, "--include-server", "--dry-run") == 0
+    out = capsys.readouterr().out
+    assert "(--dry-run) nothing removed." in out and "(server staging)" in out
+    assert mod.is_dir() and (project / ".server").is_dir()
+
+
+def test_main_include_server_refuses_legacy_layout(project, monkeypatch):
+    (project / "workspace" / "_server").mkdir()
+    (project / ".server").mkdir()
+    monkeypatch.setattr(clean, "remove_artifact", lambda *a: pytest.fail("removed despite legacy layout"))
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--include-server", "--yes")
+    assert "Legacy layout" in str(exc.value.code)
+    assert (project / ".server").is_dir()
+
+
+def test_main_stops_at_first_failed_removal(project, monkeypatch, capsys):
+    _native(project / "workspace", "AMod")
+    _native(project / "workspace", "BMod")
+    calls = []
+
+    def fail_first(kind, path):
+        calls.append(path)
+        raise OSError("in use")
+
+    monkeypatch.setattr(clean, "remove_artifact", fail_first)
+    assert _main(monkeypatch, "--yes") == 1
+    assert len(calls) == 1
+    assert "could not remove" in capsys.readouterr().out

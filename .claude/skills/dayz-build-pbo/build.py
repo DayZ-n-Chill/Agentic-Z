@@ -53,18 +53,20 @@ def verify_junction(modname: str, workspace_target: Path) -> Path:
     if not os.path.lexists(p_drive_link):
         sys.exit(
             f"{FAIL} {p_drive_link} junction is missing.\n"
-            f"       Run /dayz-new-mod {modname} (or /dayz-import-mod) to create it."
+            f"       Create it with /dayz-add-scaffold {modname} --piece junction."
         )
     target = h.link_target(p_drive_link)
     if target is None:
         sys.exit(
             f"{FAIL} {p_drive_link} exists as a real folder, not a link.\n"
-            "       Build expects the /dayz-new-mod junction. Move the folder aside and re-scaffold."
+            "       Build expects a link to the workspace folder. Move the real folder aside,\n"
+            f"       then run /dayz-add-scaffold {modname} --piece junction."
         )
     if not h.paths_equal(target, workspace_target):
         sys.exit(
             f"{FAIL} {p_drive_link} points at {target}, expected {workspace_target}\n"
-            "       Remove the wrong link and re-run /dayz-new-mod."
+            f"       Remove the wrong link (cmd /c rmdir \"{p_drive_link}\"), then run\n"
+            f"       /dayz-add-scaffold {modname} --piece junction."
         )
     print(f"{OK} {p_drive_link} junction valid")
     return p_drive_link
@@ -200,7 +202,7 @@ def main() -> int:
         return 1
 
     print(f"{OK} Built: {pbo_path} ({pbo_path.stat().st_size:,} bytes)")
-    h.write_marker(deploy_root, args.modname)
+    marker_ok = h.write_marker(deploy_root, args.modname)
 
     try:
         shutil.rmtree(temp_dir)
@@ -208,7 +210,7 @@ def main() -> int:
     except OSError as e:
         print(f"{WARN} Could not remove {temp_dir}: {e}")
 
-    return 0
+    return 0 if marker_ok else 1
 
 
 if __name__ == "__main__":

@@ -18,28 +18,22 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 
 ## Figma input
 
-If you're handed a Figma URL or node, don't author the layout yourself. Return to your caller and say it needs the Figma pipeline: `figma-node-normalizer`, then `figma-to-dayz-layout`, then `dayz-layout-validator`. The caller (`dayz-lead` on the team, or the main session) runs it. Once the `.layout` exists, you tune anchors and write the widget script.
+If you're handed a Figma URL or node, don't author the layout yourself. Return to your caller and say it needs the Figma pipeline: `figma-node-normalizer`, then `figma-to-dayz-layout`, then `dayz-layout-validator` in gate mode. The caller (`dayz-lead` on the team, or the main session) runs it. Once the `.layout` exists, you tune anchors and write the widget script.
 
 ## Recoloring vanilla UI
 
-DayZ has no central theme. Read "UI scripting realities" in `.claude/skills/_shared/dayz-conventions.md`, then check scope. If the brief doesn't say whether this is a single element or a sweep, return to your caller and ask before changing anything. The three sources of color need different fixes:
-
-1. A color baked into a vanilla `.layout`: ship a same-named layout in the mod's `gui/layouts/`.
-2. A literal in `widget.SetColor(0xFF...)` under `P:\scripts\5_mission\gui\`: override the method that calls `SetColor` with `modded class` (no extends clause).
-3. `Colors` constants in `P:\scripts\3_game\colors.c`: redeclaring them in `modded class Colors` is a no-op, because callers baked the values in at compile time. Don't do it.
-
-For a new mod that needs a real theme, build on CUI (Community UI Framework) instead of fighting vanilla.
+DayZ has no central theme; a color lives in a `.layout`, a `SetColor` literal or a `Colors` constant, and each needs a different fix. Follow "UI scripting realities" in `.claude/skills/_shared/dayz-conventions.md`. If the brief doesn't say whether the recolor is a single element or a sweep, return to your caller and ask before changing anything.
 
 ## Searching vanilla
 
-Grep `P:\gui\` and `P:\scripts\5_mission\gui\` first for known widget names, classes and color literals. Use `search_dayz_source` (with `file_type="layout"` or `"c"`) for questions by meaning or after two or three failed greps, then verify each hit with `get_dayz_file` or Read before relying on it.
+Grep `P:\gui\` and `P:\scripts\5_mission\gui\` for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 
 ## Rules
 
 - Anchor with `halign`/`valign` and the exact-size toggles so the UI works at any resolution.
 - Give widgets unique, prefixed names. Script finds them with `FindAnyWidget`, so never rename one without updating the script.
 - Release widgets and handlers when a menu closes, and keep work out of `OnUpdate` unless it must run every frame.
-- Game logic outside the UI layer belongs to `dayz-script-specialist`; models and textures to `dayz-asset-specialist`.
+- Game logic outside the UI layer belongs to `dayz-script-specialist`; models to `dayz-object-builder`; textures and materials to `dayz-asset-specialist`.
 
 ## Report
 

@@ -21,7 +21,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 | Server | `dayz-server-admin`, `dayz-map-specialist` |
 | Release | `dayz-build-engineer`, `dayz-docs-writer` |
 
-For a Figma design, run the UI workers in order: `figma-node-normalizer` returns JSON, `figma-to-dayz-layout` writes the `.layout`, then `dayz-ui-specialist` adds the widget script.
+For a Figma design, run the UI steps in order: `figma-node-normalizer` returns JSON, `figma-to-dayz-layout` writes the `.layout`, `dayz-layout-validator` gates it in gate mode, then `dayz-ui-specialist` adds the widget script.
 
 Your gates are `dayz-mod-reviewer` for every task and `dayz-layout-validator` in gate mode for any task that changes a `.layout`. They check files without running the game. The orchestrator runs the build and in-game gates after the whole wave reports, so never start `dayz-build-checker`, `dayz-ingame-tester` or `/dayz-launch-test` yourself.
 

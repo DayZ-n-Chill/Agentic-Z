@@ -60,6 +60,7 @@ def test_verify_junction_missing(p_drive, tmp_path):
     with pytest.raises(SystemExit) as exc:
         build.verify_junction("MyMod", tmp_path / "workspace" / "MyMod")
     assert "junction is missing" in str(exc.value.code)
+    assert "/dayz-add-scaffold MyMod --piece junction" in str(exc.value.code)
 
 
 def test_verify_junction_real_folder(p_drive, tmp_path):

@@ -47,13 +47,17 @@ DENY_TEMPLATES = (
     "Edit(//p/Mods/@{name}/**)",
 )
 
-# Rule paths use gitignore syntax. A mod name containing one of these would
-# turn its deny rule into a wildcard, negation or comment, so such names are refused.
-GITIGNORE_META = frozenset("*?[!#")
+# Rule paths use gitignore syntax. * ? [ are wildcards anywhere in a name.
+# ! (negation) and # (comment) are special only at the start of a pattern, so
+# they are fine mid-name (the real <game>\!Workshop rule relies on that); they
+# are refused only as a name's first character, to stay clear of that edge.
+GITIGNORE_WILDCARDS = frozenset("*?[")
+GITIGNORE_LEADING = frozenset("!#")
+META_HINT = "* ? [ anywhere, or a leading ! or #"
 
 
 def _has_meta(name: str) -> bool:
-    return any(c in GITIGNORE_META for c in name)
+    return any(c in GITIGNORE_WILDCARDS for c in name) or name[:1] in GITIGNORE_LEADING
 
 
 def _posix_rule_path(path: Path) -> str:
@@ -145,7 +149,7 @@ def _remove_prior_rules(settings: dict) -> int:
 def cmd_scope(mod_name: str) -> int:
     if _has_meta(mod_name):
         print(
-            f"{FAIL} Mod name {mod_name!r} contains one of * ? [ ! # , which permission "
+            f"{FAIL} Mod name {mod_name!r} contains {META_HINT}, which permission "
             "rules treat as pattern syntax. Rename the mod folder.",
             file=sys.stderr,
         )
@@ -186,7 +190,7 @@ def cmd_scope(mod_name: str) -> int:
     bad = [m for m in siblings if _has_meta(m)]
     if bad:
         print(
-            f"{FAIL} Sibling mod folder(s) {', '.join(bad)} contain one of * ? [ ! # ,\n"
+            f"{FAIL} Sibling mod folder(s) {', '.join(bad)} contain {META_HINT},\n"
             "        so no exact deny rule can be written for them. Rename them first.",
             file=sys.stderr,
         )
@@ -208,14 +212,18 @@ def cmd_scope(mod_name: str) -> int:
 
     perms = settings.setdefault("permissions", {})
     deny = perms.setdefault("deny", [])
-    for r in new_rules:
-        if r not in deny:
-            deny.append(r)
+    # Record only the rules this run appended: a rule the user already had stays
+    # theirs, so --clear must not remove it.
+    added = [r for r in new_rules if r not in deny]
+    deny.extend(added)
 
     _save_settings(settings)
-    _save_state(mod_name, new_rules)
+    _save_state(mod_name, added)
 
-    print(f"{OK} Added {len(new_rules)} Edit deny rules to .claude\\settings.local.json")
+    print(f"{OK} Added {len(added)} Edit deny rules to .claude\\settings.local.json")
+    skipped = len(new_rules) - len(added)
+    if skipped:
+        print(f"{INFO} {skipped} matching rule(s) were already present; they stay yours and --clear keeps them")
     print(f"{OK} Active scope recorded at .claude\\local-memory\\dayz-active-scope.json")
     print()
     print("Reads remain broad. Edit and Write to other mods are blocked.")

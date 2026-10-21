@@ -28,7 +28,11 @@ Pick the tier by scope:
 - **Tier 2**: true for all DayZ work (Enforce Script style, config patterns, asset rules). Goes in `.claude/skills/_shared/dayz-conventions.md`.
 - **Tier 3**: about one kind of work. Goes in that agent's file under `.claude/agents/` or the matching knowledge pack under `.claude/skills/_shared/`.
 
-If an existing rule already covers it, propose an edit to that rule instead of a new one.
+Once you have picked a tier, search all three tiers for a rule that overlaps (Grep the key words across `CLAUDE.md`, `.claude/skills/_shared/dayz-conventions.md`, `.claude/agents/*.md` and `.claude/skills/_shared/*.md`):
+
+- An overlapping rule in the right tier: propose an edit to that rule instead of a new one.
+- An overlapping rule in the wrong tier (for example a DayZ-wide rule sitting in one agent's file): propose moving it to the right tier and merging the correction into it, so the rule lives in one place.
+- Overlapping rules in two tiers: propose merging them into the one tier that fits.
 
 ## 2. Ask the user
 

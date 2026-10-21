@@ -23,6 +23,7 @@ from apply import (
     render_example_div,
     render_frontmatter,
     split_frontmatter,
+    strip_html_comments_outside_fences,
     transform_agent,
     transform_doc,
     transform_skill,
@@ -124,6 +125,45 @@ def test_curly_escape_skips_inline_code_and_fences():
     assert "Prose &#123;a&#125;" in out
     assert "`code {b}`" in out
     assert "\n{c}\n" in out
+
+
+def test_curly_escape_skips_tilde_fences():
+    body = "~~~\n{c}\n~~~\n{d}\n"
+    assert escape_mdx_curlies_outside_fences(body) == "~~~\n{c}\n~~~\n&#123;d&#125;\n"
+
+
+def test_fence_closes_only_on_same_marker():
+    # A ``` line inside a ~~~ fence is code, not a closing fence.
+    body = "~~~\n```\n{c}\n~~~\n{d}\n"
+    out = escape_mdx_curlies_outside_fences(body)
+    assert "\n{c}\n" in out and "&#123;d&#125;" in out
+
+
+# ---------- HTML comment stripping ----------
+
+def test_strip_single_line_comment_drops_line():
+    assert strip_html_comments_outside_fences("a\n<!-- note -->\nb\n") == "a\nb\n"
+
+
+def test_strip_multi_line_comment():
+    body = "a\n<!--\nhidden {x}\nmore\n-->\nb\n"
+    assert strip_html_comments_outside_fences(body) == "a\nb\n"
+
+
+def test_strip_inline_comment_keeps_text():
+    assert strip_html_comments_outside_fences("keep <!-- x --> this\n") == "keep  this\n"
+
+
+def test_strip_does_not_join_two_comments_across_text():
+    body = "<!-- a --> keep\n<!-- b -->\n"
+    assert strip_html_comments_outside_fences(body) == " keep\n"
+
+
+def test_comments_in_backtick_and_tilde_fences_are_kept():
+    body = "```\n<!-- c1 -->\n```\n~~~html\n<!--\nc2\n-->\n~~~\n<!-- gone -->\n"
+    assert strip_html_comments_outside_fences(body) == (
+        "```\n<!-- c1 -->\n```\n~~~html\n<!--\nc2\n-->\n~~~\n"
+    )
 
 
 # ---------- example block parser ----------

@@ -632,26 +632,29 @@ def resolve_conflicts_per_file(drift: dict[str, FileStatus], upstream_ref: str) 
 
 def finish_apply(
     drift: dict[str, FileStatus], applied: list[str], skipped: list[str], upstream_sha: str
-) -> bool:
+) -> str:
     """Commit the applied paths, then advance the baseline only when that is safe.
 
     The baseline moves to upstream_sha only when the commit succeeded (or there
     was nothing to commit) and no path that still needs upstream's version was
     left behind: an unresolved conflict, or a safe/new/deleted path whose apply
     failed. Advancing past such a path would make the next run misclassify it
-    and silently drop upstream's change. Returns True when the baseline moved.
+    and silently drop upstream's change.
+
+    Returns "advanced" (baseline moved), "pending" (unapplied upstream changes
+    remain) or "commit-failed" (git commit failed; changes left staged).
     """
     committed = stage_and_commit(applied, upstream_sha) if applied else True
     pending = [p for p in skipped if drift.get(p) != FileStatus.LOCAL_ONLY_EDIT]
     if not committed:
         log("WARN", "Baseline not updated: the commit failed. Commit the staged files, then rerun.")
-        return False
+        return "commit-failed"
     if pending:
         log("WARN", "Baseline not updated: some upstream changes are still unapplied; rerun after resolving them.")
-        return False
+        return "pending"
     write_baseline(upstream_sha)
     log("OK", "Baseline updated.")
-    return True
+    return "advanced"
 
 
 def acquire_lock() -> bool:
@@ -675,8 +678,8 @@ def acquire_lock() -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Pull Agentic-Z upstream template updates.")
     parser.add_argument("--force", action="store_true", help="Skip the dirty-tree check.")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would change; don't merge.")
-    parser.add_argument("--no-sync", action="store_true", help="Skip the post-merge sync-skills run.")
+    parser.add_argument("--dry-run", action="store_true", help="Show what would change; apply nothing.")
+    parser.add_argument("--no-sync", action="store_true", help="Skip the post-update sync-skills run.")
     parser.add_argument(
         "--check",
         action="store_true",
@@ -755,13 +758,22 @@ def main() -> int:
 
     # First run: record the current upstream HEAD as the baseline. Files are
     # then compared against it, so nothing is overwritten on this run.
-    if baseline_sha is None and not args.dry_run:
+    first_run = baseline_sha is None
+    if first_run and not args.dry_run:
         write_baseline(upstream_sha)
         baseline_sha = upstream_sha
         log("OK", f"Baseline initialized at upstream {upstream_sha[:7]}.")
 
     # Default flow: preview, prompt, apply.
     drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")
+    if first_run:
+        # With a brand-new baseline, a template file missing locally cannot be
+        # told apart from one the user deleted on purpose, so the first run adds
+        # nothing. Those files show up as `new` on the next run for review.
+        held = [p for p, st in drift.items() if st == FileStatus.NEW]
+        if held:
+            drift = {p: st for p, st in drift.items() if st != FileStatus.NEW}
+            log("INFO", f"First run: {len(held)} new upstream file(s) not added; rerun to review them.")
     if not drift:
         log("INFO", "Up to date.")
         return 0
@@ -798,7 +810,7 @@ def main() -> int:
 
         if not applied:
             log("OK", "No template paths needed updating.")
-        finish_apply(drift, applied, skipped, upstream_sha)
+        outcome = finish_apply(drift, applied, skipped, upstream_sha)
 
         if conflicted:
             print()
@@ -816,6 +828,8 @@ def main() -> int:
     finally:
         release_lock()
 
+    if outcome == "commit-failed":
+        return 1
     print()
     log("OK", "done. Restart your agent CLIs so they pick up new agents/skills.")
     return 0

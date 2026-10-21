@@ -84,3 +84,11 @@ def test_hub_action_defaults_to_active_mod(monkeypatch):
 def test_hub_action_missing_value_exits_2(monkeypatch):
     monkeypatch.setattr(dispatch, "active_mod", lambda project: None)
     assert dispatch.main(["build"]) == 2
+
+
+def test_known_maps_come_from_add_server():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("add_server_for_test", SKILLS / "dayz-add-server" / "add_server.py")
+    add_server = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(add_server)
+    assert dispatch.KNOWN_MAPS == tuple(add_server.KNOWN_MAPS)

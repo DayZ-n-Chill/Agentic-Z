@@ -126,7 +126,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 |---|---|
 | [`/dayz-new-mod`](.claude/skills/dayz-new-mod/SKILL.md) | Scaffold `workspace/<ModName>/` + `P:\<ModName>\` junction. |
 | [`/dayz-import-mod`](.claude/skills/dayz-import-mod/SKILL.md) | Symlink an existing mod folder into the workspace + create the junction. Source folder is never moved. |
-| [`/dayz-add-scaffold`](.claude/skills/dayz-add-scaffold/SKILL.md) | Add missing scaffold pieces (config.cpp stub, gproj, etc.) to an existing mod folder. |
+| [`/dayz-add-scaffold`](.claude/skills/dayz-add-scaffold/SKILL.md) | Add missing scaffold pieces (config.cpp stub, gproj, etc.) to an existing mod folder; `--piece junction` repairs a missing `P:\<ModName>\` link. |
 | [`/dayz-scope-mod`](.claude/skills/dayz-scope-mod/SKILL.md) | Lock the agent to one mod via deny rules so it can't clobber siblings. |
 
 ### Build

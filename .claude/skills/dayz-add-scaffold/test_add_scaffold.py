@@ -178,3 +178,111 @@ def test_output_matches_new_mod_templates(tmp_path):
     scaf.add_config(target, "MyMod", _author)
     expected = scaf._nm.CONFIG_CPP_TEMPLATE.substitute(modname="MyMod", author="Tester")
     assert (target / "config.cpp").read_text(encoding="utf-8") == expected
+
+
+# --- junction piece ---------------------------------------------------------------
+
+@pytest.fixture
+def p_drive(monkeypatch, tmp_path):
+    """A fake P:\\ plus a recorder in place of new-mod's make_dir_link."""
+    drive = tmp_path / "P"
+    drive.mkdir()
+    monkeypatch.setattr(scaf, "P_DRIVE", drive)
+    made = []
+
+    def fake_link(src, dst):
+        made.append((src, dst))
+        return "junction"
+
+    monkeypatch.setattr(scaf._nm, "make_dir_link", fake_link)
+    return drive, made
+
+
+def test_junction_created_when_absent(tmp_path, p_drive, capsys):
+    drive, made = p_drive
+    target = tmp_path / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    assert _run_piece("junction", target) == scaf.ADDED
+    assert made == [(target, drive / "MyMod")]
+    assert "junction ->" in capsys.readouterr().out
+
+
+def test_junction_present_when_link_already_points_here(tmp_path, p_drive, monkeypatch):
+    drive, made = p_drive
+    target = tmp_path / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    (drive / "MyMod").mkdir()
+    monkeypatch.setattr(scaf.h, "link_target", lambda p: target)
+    monkeypatch.setattr(scaf.h, "paths_equal", lambda a, b: a == b)
+    assert _run_piece("junction", target) == scaf.PRESENT
+    assert made == []
+
+
+def test_junction_refuses_real_folder(tmp_path, p_drive, monkeypatch):
+    drive, made = p_drive
+    (drive / "MyMod").mkdir()
+    monkeypatch.setattr(scaf.h, "link_target", lambda p: None)
+    with pytest.raises(SystemExit) as exc:
+        _run_piece("junction", tmp_path / "workspace" / "MyMod")
+    assert "real folder" in str(exc.value.code)
+    assert made == []
+
+
+def test_junction_refuses_link_to_elsewhere(tmp_path, p_drive, monkeypatch):
+    drive, made = p_drive
+    (drive / "MyMod").mkdir()
+    monkeypatch.setattr(scaf.h, "link_target", lambda p: tmp_path / "other")
+    monkeypatch.setattr(scaf.h, "paths_equal", lambda a, b: a == b)
+    with pytest.raises(SystemExit) as exc:
+        _run_piece("junction", tmp_path / "workspace" / "MyMod")
+    assert "pointing at" in str(exc.value.code)
+    assert made == []
+
+
+def test_junction_creation_failure_exits(tmp_path, p_drive, monkeypatch):
+    def boom(src, dst):
+        raise OSError("access denied")
+
+    monkeypatch.setattr(scaf._nm, "make_dir_link", boom)
+    with pytest.raises(SystemExit) as exc:
+        _run_piece("junction", tmp_path / "workspace" / "MyMod")
+    assert "access denied" in str(exc.value.code)
+
+
+def test_junction_not_part_of_all(monkeypatch, tmp_path, p_drive, fake_tools):
+    _drive, made = p_drive
+    (tmp_path / "project" / "workspace" / "MyMod").mkdir(parents=True)
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--author", "Tester"]) == 0
+    assert made == []
+
+
+def test_main_junction_piece_is_preflight_gated(monkeypatch, tmp_path, p_drive):
+    (tmp_path / "project" / "workspace" / "MyMod").mkdir(parents=True)
+
+    def gate():
+        raise SystemExit(1)
+
+    project = tmp_path / "project"
+    monkeypatch.setattr(scaf, "PROJECT_DIR", project)
+    monkeypatch.setattr(scaf, "WORKSPACE", project / "workspace")
+    monkeypatch.setattr(scaf.h, "gate_on_preflight", gate)
+    monkeypatch.setattr(scaf.sys, "argv", ["add_scaffold.py", "MyMod", "--piece", "junction"])
+    with pytest.raises(SystemExit):
+        scaf.main()
+    assert p_drive[1] == []
+
+
+def test_main_refuses_author_with_quote(monkeypatch, tmp_path):
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "config", "--author", 'Bad"Name'])
+    assert "double quote" in str(exc.value.code)
+    assert not (target / "config.cpp").exists()
+
+
+def test_main_prints_native_separators(monkeypatch, tmp_path, capsys, fake_tools):
+    (tmp_path / "project" / "workspace" / "MyMod").mkdir(parents=True)
+    _run_main(monkeypatch, tmp_path, ["MyMod", "--author", "Tester"])
+    sep = scaf.os.sep
+    assert f"Scaffolding workspace{sep}MyMod{sep}\n" in capsys.readouterr().out

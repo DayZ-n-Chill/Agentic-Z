@@ -119,3 +119,40 @@ def test_apply_reports_invalid_frontmatter(repo):
     assert sync.apply_all() == 1
     assert not (repo / "wiki" / "docs" / "skills" / "foo.md").exists()
     assert sync.detect_drift()["missing_mirror"] == [src]
+
+
+# ---------- command line ----------
+
+def test_dry_run_without_apply_is_usage_error(capsys):
+    with pytest.raises(SystemExit) as exc:
+        sync.main(["--dry-run"])
+    assert exc.value.code == 2
+    assert "--dry-run only works with --apply" in capsys.readouterr().err
+
+
+def _hide_yaml(monkeypatch):
+    real = sync.importlib.util.find_spec
+    monkeypatch.setattr(
+        sync.importlib.util, "find_spec", lambda name, *a: None if name == "yaml" else real(name, *a)
+    )
+
+
+def test_quiet_without_pyyaml_prints_one_line_and_exits_0(repo, monkeypatch, capsys):
+    _hide_yaml(monkeypatch)
+    assert sync.main(["--check", "--quiet"]) == 0
+    out, err = capsys.readouterr()
+    assert out.count("\n") == 1 and "PyYAML is required" in out
+    assert err == ""
+
+
+def test_check_without_pyyaml_fails_loudly(repo, monkeypatch, capsys):
+    _hide_yaml(monkeypatch)
+    assert sync.main(["--check"]) == 1
+    assert "PyYAML is required" in capsys.readouterr().err
+
+
+def test_quiet_check_in_sync_is_silent(repo, capsys):
+    sync.apply_all()
+    capsys.readouterr()
+    assert sync.main(["--quiet"]) == 0
+    assert capsys.readouterr().out == ""

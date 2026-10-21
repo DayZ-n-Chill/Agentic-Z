@@ -44,6 +44,8 @@ python "<skill-dir>\sync.py" --apply
 python "<skill-dir>\sync.py" --apply --dry-run
 ```
 
+`--dry-run` only works together with `--apply`; on its own it is a usage error (exit 2).
+
 ## What gets synced
 
 | Canonical | Wiki mirror |
@@ -60,7 +62,7 @@ The Docusaurus transform (`apply.py`):
 - Frontmatter is parsed as YAML (PyYAML), so folded `>` / `>-` descriptions render as plain text.
 - Skills: frontmatter trimmed to `name`; the description becomes an `## Overview` section.
 - Agents: frontmatter trimmed to `name`, `model`, `color`, `memory`; a badge row is injected; `<example>` blocks in the description become styled example cards (`<commentary>` dropped).
-- Bodies: HTML comments are stripped and curly braces in prose (outside fenced and inline code) are escaped so MDX can render the page; agent bodies also escape literal `<example>`/`<commentary>` tags.
+- Bodies: HTML comments, including ones spanning several lines, are stripped and curly braces in prose are escaped so MDX can render the page. Fenced code (backtick or `~~~` fences) and inline code are left as written. Agent bodies also escape literal `<example>`/`<commentary>` tags.
 - Docs: frontmatter kept verbatim; the body gets the same HTML-comment and curly-brace pass.
 
 ## Stop hook integration
@@ -71,4 +73,4 @@ The drift detector (`sync.py --check`) is wired to Claude Code's Stop hook. When
 docs-sync: 2 file(s) need wiki sync. Run /docs-sync.
 ```
 
-The hook never auto-applies edits — you decide when to run the sync.
+The hook never auto-applies edits — you decide when to run the sync. If PyYAML is missing, the hook prints one line saying the check was skipped and still exits 0, so it never fails a session; a manual `--check` or `--apply` without PyYAML exits 1.

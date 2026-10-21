@@ -104,6 +104,7 @@ def test_write_imageset_file_format(tmp_path):
 
 
 def test_missing_pillow_exits_nonzero_with_hint(monkeypatch, tmp_path):
+    monkeypatch.setattr(bi.h, "gate_on_preflight", lambda: None)
     monkeypatch.setattr(bi, "Image", None)
     monkeypatch.setattr("sys.argv", ["build_imageset.py", str(tmp_path)])
     with pytest.raises(SystemExit) as exc:
@@ -162,3 +163,31 @@ def test_resolve_image_to_paa_uses_shared_preflight(monkeypatch, tmp_path):
 def test_no_local_preflight_copies():
     assert not hasattr(bi, "gate_on_preflight")
     assert not hasattr(bi, "_load_preflight_module")
+
+
+def test_preflight_gate_runs_before_any_other_check(monkeypatch, tmp_path):
+    def gate():
+        raise SystemExit(7)
+
+    monkeypatch.setattr(bi.h, "gate_on_preflight", gate)
+    monkeypatch.setattr(bi, "Image", None)  # would fail next if the gate passed
+    monkeypatch.setattr("sys.argv", ["build_imageset.py", str(tmp_path / "missing")])
+    with pytest.raises(SystemExit) as exc:
+        bi.main()
+    assert exc.value.code == 7
+
+
+@pytest.mark.parametrize("name", ["hud health.png", "2icon.png", "hud-health.png", "icône.png"])
+def test_bad_sprite_names_flagged(name):
+    assert bi.bad_sprite_names([Path(name), Path("hud_ok.png")]) == [name]
+
+
+def test_build_one_rejects_bad_sprite_name_before_reading_images(tmp_path, capsys):
+    set_dir = tmp_path / "icons"
+    set_dir.mkdir()
+    (set_dir / "hud health.png").write_bytes(b"not read")
+    (set_dir / "hud_ok.png").write_bytes(b"not read")
+    assert bi.build_one(set_dir, "MyMod", tmp_path / "out", Path("ImageToPAA.exe")) is False
+    err = capsys.readouterr().err
+    assert "hud health.png" in err and "hud_ok.png" not in err
+    assert not (tmp_path / "out").exists()

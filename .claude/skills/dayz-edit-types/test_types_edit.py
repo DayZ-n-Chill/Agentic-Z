@@ -150,3 +150,32 @@ def test_main_gates_on_shared_preflight(types_file, monkeypatch):
     with pytest.raises(SystemExit):
         te.main()
     assert types_file.read_bytes() == before
+
+
+@pytest.mark.parametrize("flag", ["--nominal", "--min", "--lifetime", "--restock", "--cost"])
+def test_main_rejects_negative_numbers(types_file, monkeypatch, flag):
+    before = types_file.read_bytes()
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "AKM", flag, "-1"])
+    assert exc.value.code == 2  # argparse usage error
+    assert types_file.read_bytes() == before
+
+
+@pytest.mark.parametrize("argv", [
+    ["AKM", "--min", "11"],                      # existing nominal is 10
+    ["AKM", "--nominal", "4"],                   # existing min is 5
+    ["NewItem", "--min", "3", "--nominal", "2"],
+    ["NewItem", "--min", "2"],                   # default nominal is 1
+])
+def test_main_rejects_min_above_nominal(types_file, monkeypatch, argv):
+    before = types_file.read_bytes()
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), *argv])
+    assert "greater than nominal" in str(exc.value.code)
+    assert types_file.read_bytes() == before
+    assert not types_file.with_suffix(".xml.bak").exists()
+
+
+def test_main_accepts_min_equal_to_nominal(types_file, monkeypatch):
+    assert _run_main(monkeypatch, [str(types_file), "AKM", "--min", "10"]) == 0
+    assert _find(_roundtrip(types_file)[1], "AKM").findtext("min") == "10"

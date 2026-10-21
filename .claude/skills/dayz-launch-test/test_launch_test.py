@@ -58,11 +58,14 @@ def test_build_client_cmd_fullscreen_without_size():
 
 # --- verify_instance_environment ------------------------------------------------
 
+FP = "allowFilePatching = 1;\n"
+
+
 def _instance(project: Path, name: str = "chernarus") -> Path:
     inst = project / ".server" / name
     (inst / "mission").mkdir(parents=True)
     (inst / "dayzOffline.chernarusplus").mkdir()  # stands in for the junction
-    (inst / "serverDZ.cfg").write_text(CFG + "allowFilePatching = 1;\n", encoding="utf-8")
+    (inst / "serverDZ.cfg").write_text(CFG + FP, encoding="utf-8")
     return inst
 
 
@@ -90,20 +93,24 @@ def test_verify_instance_missing_template_junction(tmp_path):
     assert "template junction" in str(exc.value.code)
 
 
-def test_verify_instance_appends_allow_file_patching(tmp_path):
+@pytest.mark.parametrize("tail", ["", "allowFilePatching = 0;\n", "// allowFilePatching = 1;\n"])
+def test_verify_instance_refuses_without_active_file_patching(tmp_path, tail):
     inst = _instance(tmp_path)
-    (inst / "serverDZ.cfg").write_text(CFG, encoding="utf-8")
-    launch.verify_instance_environment("chernarus", tmp_path)
-    assert (inst / "serverDZ.cfg").read_text(encoding="utf-8").endswith("allowFilePatching = 1;\n")
+    (inst / "serverDZ.cfg").write_text(CFG + tail, encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        launch.verify_instance_environment("chernarus", tmp_path)
+    msg = str(exc.value.code)
+    assert "allowFilePatching = 1;" in msg and "/dayz-add-server chernarus" in msg
+    assert (inst / "serverDZ.cfg").read_text(encoding="utf-8") == CFG + tail  # never rewritten
 
 
 def test_mission_path_follows_cfg_template_not_glob(tmp_path):
     inst = _instance(tmp_path)
     (inst / "dayzOffline.enoch").mkdir()  # sorts first; the cfg must still decide
-    (inst / "serverDZ.cfg").write_text(CFG.replace("chernarusplus", "enoch"), encoding="utf-8")
+    (inst / "serverDZ.cfg").write_text(CFG.replace("chernarusplus", "enoch") + FP, encoding="utf-8")
     _, _, mission, _ = launch.verify_instance_environment("chernarus", tmp_path)
     assert mission == inst / "dayzOffline.enoch"
-    (inst / "serverDZ.cfg").write_text(CFG, encoding="utf-8")
+    (inst / "serverDZ.cfg").write_text(CFG + FP, encoding="utf-8")
     _, _, mission, _ = launch.verify_instance_environment("chernarus", tmp_path)
     assert mission == inst / "dayzOffline.chernarusplus"
 
@@ -111,7 +118,7 @@ def test_mission_path_follows_cfg_template_not_glob(tmp_path):
 def test_custom_template_junction_is_found(tmp_path):
     inst = _instance(tmp_path)
     (inst / "namalsk.custom").mkdir()
-    (inst / "serverDZ.cfg").write_text(CFG.replace("dayzOffline.chernarusplus", "namalsk.custom"), encoding="utf-8")
+    (inst / "serverDZ.cfg").write_text(CFG.replace("dayzOffline.chernarusplus", "namalsk.custom") + FP, encoding="utf-8")
     assert launch.verify_instance_environment("chernarus", tmp_path)[2] == inst / "namalsk.custom"
 
 
@@ -130,9 +137,7 @@ def test_read_cfg_template():
 
 def test_verify_instance_dry_run_changes_nothing(tmp_path):
     inst = _instance(tmp_path)
-    (inst / "serverDZ.cfg").write_text(CFG, encoding="utf-8")
     launch.verify_instance_environment("chernarus", tmp_path, dry_run=True)
-    assert (inst / "serverDZ.cfg").read_text(encoding="utf-8") == CFG
     assert not (inst / "Profiles").exists()
     assert not (tmp_path / ".server" / "!ClientDiagLogs").exists()
 
@@ -152,13 +157,12 @@ def _snapshot(root: Path) -> dict:
 
 
 def test_dry_run_is_side_effect_free(monkeypatch, tmp_path):
-    inst = _instance(tmp_path)
-    (inst / "serverDZ.cfg").write_text(CFG, encoding="utf-8")  # lacks allowFilePatching
+    _instance(tmp_path)
     before = _snapshot(tmp_path)
     _patch_main(monkeypatch, tmp_path, ["MyMod", "--dry-run"])
     monkeypatch.setattr(launch.subprocess, "Popen", lambda *a, **k: pytest.fail("dry run spawned a process"))
     assert launch.main() == 0
-    assert _snapshot(tmp_path) == before  # no cfg edit, no Profiles/, no prefs file
+    assert _snapshot(tmp_path) == before  # no Profiles/, no prefs file
 
 
 class _FakeProc:

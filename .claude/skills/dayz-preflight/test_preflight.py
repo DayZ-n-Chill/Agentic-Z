@@ -202,3 +202,84 @@ def test_link_target_of_plain_folder_is_none(tmp_path):
 def test_paths_equal_ignores_case_and_trailing_separator(tmp_path):
     assert preflight.paths_equal(tmp_path / "A" / "", tmp_path / "a") is (os.name == "nt")
     assert preflight.paths_equal(tmp_path / "x" / ".." / "y", tmp_path / "y")
+
+
+# --- install resolution order ----------------------------------------------
+
+
+def _make_tools(root: Path) -> Path:
+    exe = root / "Bin" / "AddonBuilder" / "AddonBuilder.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_bytes(b"")
+    return root
+
+
+@pytest.fixture
+def no_installs(monkeypatch):
+    for var in ("DAYZ_TOOLS_PATH", "DAYZ_GAME_PATH", "DAYZ_DIAG_PATH"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setattr(preflight, "read_registry_string", lambda *a: None)
+    monkeypatch.setattr(preflight, "_steam_common_dirs", lambda: [])
+
+
+def test_find_dayz_tools_env_beats_steam(no_installs, monkeypatch, tmp_path):
+    env_root = _make_tools(tmp_path / "env")
+    common = tmp_path / "common"
+    _make_tools(common / "DayZ Tools")
+    monkeypatch.setenv("DAYZ_TOOLS_PATH", str(env_root))
+    monkeypatch.setattr(preflight, "_steam_common_dirs", lambda: [common])
+    assert preflight.find_dayz_tools() == env_root
+
+
+def test_find_dayz_tools_falls_back_to_steam_when_env_is_invalid(no_installs, monkeypatch, tmp_path):
+    common = tmp_path / "common"
+    steam_root = _make_tools(common / "DayZ Tools")
+    monkeypatch.setenv("DAYZ_TOOLS_PATH", str(tmp_path / "missing"))
+    monkeypatch.setattr(preflight, "_steam_common_dirs", lambda: [common])
+    assert preflight.find_dayz_tools() == steam_root
+
+
+def test_find_dayz_tools_none_when_nothing_matches(no_installs):
+    assert preflight.find_dayz_tools() is None
+
+
+@pytest.mark.skipif(os.name != "nt", reason="registry lookup only runs on Windows")
+def test_find_dayz_tools_tries_every_registry_key(no_installs, monkeypatch, tmp_path):
+    """A stale first registry entry must not stop later registry entries being tried."""
+    good = _make_tools(tmp_path / "good")
+    values = iter([str(tmp_path / "stale"), str(good), None])
+    monkeypatch.setattr(preflight, "read_registry_string", lambda *a: next(values))
+    assert preflight.find_dayz_tools() == good
+
+
+def test_find_dayz_game_env_then_steam(no_installs, monkeypatch, tmp_path):
+    env_root = tmp_path / "env"
+    env_root.mkdir()
+    (env_root / "DayZ_x64.exe").write_bytes(b"")
+    common = tmp_path / "common"
+    (common / "DayZ").mkdir(parents=True)
+    (common / "DayZ" / "DayZ_x64.exe").write_bytes(b"")
+    monkeypatch.setattr(preflight, "_steam_common_dirs", lambda: [common])
+
+    assert preflight.find_dayz_game() == common / "DayZ"
+    monkeypatch.setenv("DAYZ_GAME_PATH", str(env_root))
+    assert preflight.find_dayz_game() == env_root
+
+
+def test_find_dayz_diag_order(no_installs, monkeypatch, tmp_path):
+    env_exe = tmp_path / "env" / "DayZDiag_x64.exe"
+    game = tmp_path / "game"
+    common = tmp_path / "common"
+    for exe in (env_exe, game / "DayZDiag_x64.exe", common / "DayZ" / "DayZDiag_x64.exe"):
+        exe.parent.mkdir(parents=True, exist_ok=True)
+        exe.write_bytes(b"")
+    monkeypatch.setattr(preflight, "_steam_common_dirs", lambda: [common])
+
+    monkeypatch.setattr(preflight, "find_dayz_game", lambda: None)
+    assert preflight.find_dayz_diag() == common / "DayZ" / "DayZDiag_x64.exe"
+
+    monkeypatch.setattr(preflight, "find_dayz_game", lambda: game)
+    assert preflight.find_dayz_diag() == game / "DayZDiag_x64.exe"
+
+    monkeypatch.setenv("DAYZ_DIAG_PATH", str(env_exe))
+    assert preflight.find_dayz_diag() == env_exe

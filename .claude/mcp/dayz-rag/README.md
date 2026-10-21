@@ -4,7 +4,7 @@ Semantic search over vanilla DayZ source and the Bohemia community wiki, for any
 
 - `search_dayz_source(query, top_k=5, file_type=None, max_distance=None)`: vector search over the index built by `/dayz-search-index`.
 - `search_dayz_wiki(query, top_k=5, max_distance=None)`: vector search over the wiki index built by `/dayz-search-wiki-index` (`path` is the page URL, `parent_context` is "Page > Section").
-- `get_dayz_file(path, line_start=None, line_end=None)`: fetch a file or line range for follow-up. Paths must live under `P:\`; files over 200 KB need a range.
+- `get_dayz_file(path, line_start=None, line_end=None)`: fetch a file or line range for follow-up. Paths must be on `P:\`; files over 200 KB need a range. The check is lexical (the path is normalised, not resolved), so a junction or symlink under `P:\`, such as `P:\Mods` or a `P:\<ModName>` junction into `workspace/`, can still lead to a file stored elsewhere.
 - `list_indexed_sources()`: returns `{"source": <manifest or null>, "wiki": <manifest or null>}`; null means that index hasn't been built.
 
 Agents use these after Grep, per the search rule in `.claude/skills/_shared/dayz-conventions.md`: Grep for known symbols, `search_dayz_source` for questions by meaning, then verify a hit with `get_dayz_file` or Read before relying on it. Each search hit has `path`, `file_type`, `parent_context`, `line_start`, `line_end`, `distance` (LanceDB L2² distance, lower is closer), `snippet` and `is_stale`. Hits carry `is_stale: true` (with `stale_reason` of `modified` or `missing`) when the file on `P:\` changed after the index was built.
@@ -24,7 +24,7 @@ Every tool reports failures the same way: it raises, and the MCP client receives
 
 ## Setup
 
-1. Add a Voyage key to `.env` at the repo root (gitignored): `VOYAGE_API_KEY=pa-...`. The server reads the nearest `.env` at or above its working directory, then the one at the repo (or plugin) root; a variable already set in the environment wins. Get one at <https://dash.voyageai.com>.
+1. Add a Voyage key to `.env` at the repo root (gitignored): `VOYAGE_API_KEY=pa-...`. The server reads the nearest `.env` at or above its working directory, then the one at the repo (or plugin) root; a variable already set in the environment wins. The indexer uses the same lookup: both import `voyage_common.py` from this folder. Get one at <https://dash.voyageai.com>.
 2. Install the server's dependencies (`mcp`, `lancedb`, `voyageai`, `python-dotenv`):
    ```cmd
    pip install -r .claude\mcp\dayz-rag\requirements.txt
@@ -62,7 +62,7 @@ After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index
 | `VOYAGE_API_KEY not set` | Key missing from `.env` | Add `VOYAGE_API_KEY=pa-...` at the repo root |
 | `mcp SDK not installed` | Missing dependencies | `pip install -r .claude\mcp\dayz-rag\requirements.txt` |
 | Results look unrelated | Query model differs from index model | Check `~/.claude/dayz-search-index/config.json`; rebuild with `--full` if you changed models |
-| 429 rate-limit errors | Burst beyond your Voyage limits | Queries retry with backoff; if it persists, check your Voyage dashboard |
+| 429 rate-limit errors | Burst beyond your Voyage limits | Queries retry transient Voyage errors (rate limit, timeout, connection, server) up to 4 times with backoff; if it persists, check your Voyage dashboard |
 
 ## Tests
 

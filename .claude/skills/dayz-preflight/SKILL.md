@@ -37,7 +37,8 @@ First hit wins:
 
 | What | Order |
 |---|---|
-| **DayZ Tools** | `DAYZ_TOOLS_PATH` env var, then the registry (`Path` under `HKLM\SOFTWARE\WOW6432Node\Bohemia Interactive\DayZ Tools`, its non-WOW6432 and `HKCU` siblings), then `DayZ Tools` in each Steam library. |
+| **DayZ Tools** | `DAYZ_TOOLS_PATH` env var, then the registry (`Path` under `HKLM\SOFTWARE\WOW6432Node\Bohemia Interactive\DayZ Tools`, its non-WOW6432 and `HKCU` siblings, each tried in turn), then `DayZ Tools` in each Steam library. The first candidate containing `Bin\AddonBuilder\AddonBuilder.exe` wins. |
+| **DayZ Diag** | `DAYZ_DIAG_PATH` env var, then `DayZDiag_x64.exe` next to the resolved game, then `DayZ\DayZDiag_x64.exe` in each Steam library. |
 | **DayZ game** (for `!Workshop`) | `DAYZ_GAME_PATH` env var, then `DayZ` in each Steam library (must contain `DayZ_x64.exe`). |
 | **Vanilla data** | `DAYZ_VANILLA_DATA_PATH` env var, then `P:\dz`, `P:\DZ`, `P:\dta`. Must exist and be non-empty. |
 | **`P:\` and `P:\Mods\`** | Fixed by DayZ convention, not configurable. |

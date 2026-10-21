@@ -4,7 +4,9 @@ Imports the default registry settings shipped with DayZ Tools when Object
 Builder's registry tree is missing, then on every run sets four preferred
 Object Builder flags (PREFERRED_FLAGS_ON) under HKCU, writing only the ones
 that differ. Pass --force to re-import the .reg and reset Object Builder to
-factory defaults (asks first; --yes skips the question).
+factory defaults (asks first; --yes skips the question). A forced reset first
+exports the current Object Builder key with `reg export` to a timestamped .reg
+under .claude/local-memory/ so it can be restored.
 
 The .reg is imported only if every key it touches is under HKEY_CURRENT_USER.
 
@@ -13,8 +15,10 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -38,6 +42,10 @@ PREFERRED_FLAGS_ON: dict[str, tuple[str, str]] = {
 }
 
 INFO = "[INFO] "
+# Same project-root rule as dayz-init/state.py: the clone or user project, not
+# the plugin install this script may live in.
+PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+BACKUP_DIR = PROJECT_DIR / ".claude" / "local-memory"
 HKCU_PREFIX = "HKEY_CURRENT_USER\\"
 
 
@@ -125,6 +133,23 @@ def import_reg_file(reg_path: Path) -> int:
     return result.returncode
 
 
+def backup_registry(backup_dir: Path) -> Optional[Path]:
+    """`reg export` the HKCU Object Builder key to a timestamped .reg in backup_dir.
+
+    Returns the backup path, or None if the export failed (its error is printed).
+    """
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    dest = backup_dir / f"objectbuilder-backup-{datetime.now():%Y%m%d-%H%M%S}.reg"
+    cmd = ["reg", "export", f"HKCU\\{REG_KEY}", str(dest), "/y"]
+    print(f"{INFO} Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0 or not dest.is_file():
+        if result.stderr.strip():
+            print(result.stderr.strip(), file=sys.stderr)
+        return None
+    return dest
+
+
 def confirm_reset(assume_yes: bool) -> bool:
     """Ask before --force wipes an existing Object Builder configuration."""
     if assume_yes:
@@ -191,6 +216,12 @@ def main(argv: Optional[list[str]] = None) -> int:
             if not confirm_reset(args.yes):
                 print(f"{INFO} Reset cancelled. Registry left unchanged.")
                 return 1
+            backup = backup_registry(BACKUP_DIR)
+            if backup is None:
+                print(f"{h.FAIL} Could not back up HKCU\\{REG_KEY}; reset not attempted.", file=sys.stderr)
+                return 1
+            print(f"{h.OK} Current settings backed up to {backup}")
+            print(f"{INFO} Restore them with: reg import \"{backup}\"")
         else:
             print(f"{INFO} Registry empty — importing defaults.")
         foreign = foreign_reg_keys(ob_reg)

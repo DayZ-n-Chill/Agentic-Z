@@ -239,3 +239,38 @@ def test_unmount_fails_when_drive_stays(fake_drive, monkeypatch, capsys):
     monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
     assert mount.main() == 1
     assert "still mounted=True" in capsys.readouterr().err
+
+
+# ---------- --path while already mounted ----------
+
+def test_main_warns_when_path_differs_from_current_target(fake_drive, monkeypatch, tmp_path, capsys):
+    _, state = fake_drive
+    state["mounted"] = True
+    monkeypatch.setattr(mount, "current_p_target", lambda: tmp_path / "current")
+    monkeypatch.setattr("sys.argv", ["mount.py", "--path", str(tmp_path / "other")])
+    assert mount.main() == 0
+    out = capsys.readouterr().out
+    assert "--path was not used" in out and str(tmp_path / "current") in out
+    assert state["calls"] == []
+
+
+def test_main_no_warning_when_path_matches_ignoring_case(fake_drive, monkeypatch, tmp_path, capsys):
+    _, state = fake_drive
+    state["mounted"] = True
+    monkeypatch.setattr(mount, "current_p_target", lambda: Path(r"C:\Work\Drive"))
+    monkeypatch.setattr("sys.argv", ["mount.py", "--path", "c:\\work\\drive\\"])
+    assert mount.main() == 0
+    assert "--path was not used" not in capsys.readouterr().out
+
+
+def test_current_p_target_none_off_windows(monkeypatch):
+    monkeypatch.setattr(mount.sys, "platform", "linux")
+    assert mount.current_p_target() is None
+
+
+def test_cache_follows_claude_project_dir(monkeypatch, tmp_path):
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    spec = importlib.util.spec_from_file_location("dayz_workdrive_mount_env", Path(mount.__file__))
+    fresh = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fresh)
+    assert fresh.CACHE == tmp_path.resolve() / ".claude" / "local-memory" / "dayz-work-drive.json"

@@ -53,10 +53,14 @@ python "<skill-dir>\launch.py" --gproj P:\Custom\path\to\my.gproj
 ```
 DayZ Workbench launcher
 
-[OK]    P:\ mounted
-[OK]    DayZ Tools: ...
-[OK]    Vanilla data: P:\dz
-[OK]    P:\Mods junction valid
+DayZ preflight
+
+[OK]    P:\ is mounted
+[OK]    DayZ Tools found: C:\...\steamapps\common\DayZ Tools
+[OK]    Vanilla data found: P:\dz
+[OK]    P:\Mods -> C:\...\steamapps\common\DayZ\!Workshop
+
+Preflight complete.
 
 [OK]    workbenchApp.exe: ...\Bin\Workbench\workbenchApp.exe
 [INFO]  Project: P:\MyMod\workbench\dayz.gproj

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import importlib.util
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -165,3 +166,22 @@ def test_skip_unknown_agent_exits_2(monkeypatch, env, capsys):
     rc, called = _run_main(monkeypatch, env, ["--skip", "claud"])
     assert rc == 2 and called == []
     assert "unknown agent" in capsys.readouterr().err
+
+
+# ---------- path comparison ----------
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows paths are case-insensitive")
+def test_paths_differing_only_in_case_are_equal():
+    assert sync.paths_equal(Path("C:/Repo/.claude/skills/Alpha"), Path("c:/repo/.CLAUDE/skills/alpha"))
+    assert sync.is_under(Path("C:/REPO/.claude/skills/x"), Path("c:/repo"))
+
+
+def test_paths_equal_normalises_separators_and_dotdot(tmp_path):
+    assert sync.paths_equal(tmp_path / "a" / ".." / "b", tmp_path / "b")
+    assert not sync.paths_equal(tmp_path / "a", tmp_path / "b")
+
+
+def test_is_under_needs_a_separator_boundary(tmp_path):
+    assert sync.is_under(tmp_path / "repo" / "x", tmp_path / "repo")
+    assert sync.is_under(tmp_path / "repo", tmp_path / "repo")
+    assert not sync.is_under(tmp_path / "repo-other" / "x", tmp_path / "repo")

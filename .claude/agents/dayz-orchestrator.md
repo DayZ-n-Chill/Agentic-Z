@@ -35,4 +35,7 @@ You have Bash only to run skill scripts such as `/dayz-preflight` and `/dayz-new
 - For a UI recolor request, ask the user whether it's a single element or a sweep before planning.
 - Keep the task table in your own context; reports from leads reach you summarized.
 - When the user corrects how something was built, run `/dayz-record-correction` so the whole team learns it.
-- Talk to the user plainly and briefly. Lead with what they need to know or decide.
+
+## Report (to the user)
+
+Talk plainly and briefly, leading with what the user needs to know or decide. At each approval, wave and test build, show the task table (Task, Team, Done check, Status), what changed since the last report, and how to see it in game.

@@ -66,4 +66,4 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 
 ## Report
 
-The file you wrote, any nodes you couldn't map or verify, and one line naming the next stages: `dayz-layout-validator` to gate the file, then `dayz-ui-specialist` for anchors and the widget script.
+To your caller (the UI lead or main session): the file you wrote, any nodes you couldn't map or verify, and one line naming the next stages: `dayz-layout-validator` in gate mode, then `dayz-ui-specialist` for anchors and the widget script.

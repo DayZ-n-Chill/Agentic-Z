@@ -21,7 +21,7 @@ Before embedding, the indexer estimates this build's tokens (total characters di
 
 ## The chunk ceiling
 
-The indexer refuses to embed more than `CHUNK_CEILING` (150,000) chunks without `--force`. A normal vanilla build is well under that, so hitting it means the walk scope grew unexpectedly.
+The indexer refuses to embed more than `CHUNK_CEILING` (150,000) chunks without `--force`. A normal vanilla build is well under that, so hitting it means the walk scope grew unexpectedly. The refusal message estimates the tokens and cost the same way as the projection check, from the chunk text at `CHARS_PER_TOKEN_EST` characters per token.
 
 ## Choosing a model
 

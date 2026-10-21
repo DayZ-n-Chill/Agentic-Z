@@ -144,6 +144,29 @@ def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> tuple[
     return True, f"Updated <type name=\"{classname}\">: " + ", ".join(changes)
 
 
+def min_exceeds_nominal(root: ET.Element, classname: str) -> Optional[tuple[int, int]]:
+    """(min, nominal) when the entry's min is above its nominal, else None."""
+    type_el = next((t for t in root.findall("type") if t.get("name") == classname), None)
+    if type_el is None:
+        return None
+    try:
+        lo, hi = int(type_el.findtext("min", "0")), int(type_el.findtext("nominal", "0"))
+    except ValueError:
+        return None  # a hand-edited non-number is left for the user to fix
+    return (lo, hi) if lo > hi else None
+
+
+def non_negative_int(text: str) -> int:
+    """argparse type: an int >= 0 (counts, seconds and cost are never negative)."""
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid int value: {text!r}")
+    if value < 0:
+        raise argparse.ArgumentTypeError(f"must be 0 or more, got {value}")
+    return value
+
+
 def remove(root: ET.Element, classname: str) -> tuple[bool, str]:
     """Delete the <type name="classname"> block. Returns (changed, summary)."""
     type_el = next((t for t in root.findall("type") if t.get("name") == classname), None)
@@ -173,11 +196,11 @@ def main() -> int:
         "--remove", action="store_true",
         help="Remove the entry instead of upserting. Field flags (--nominal, --usage, ...) are ignored.",
     )
-    parser.add_argument("--nominal", type=int)
-    parser.add_argument("--min", type=int)
-    parser.add_argument("--lifetime", type=int)
-    parser.add_argument("--restock", type=int)
-    parser.add_argument("--cost", type=int)
+    parser.add_argument("--nominal", type=non_negative_int)
+    parser.add_argument("--min", type=non_negative_int)
+    parser.add_argument("--lifetime", type=non_negative_int)
+    parser.add_argument("--restock", type=non_negative_int)
+    parser.add_argument("--cost", type=non_negative_int)
     parser.add_argument("--category")
     parser.add_argument("--usage", action="append", help="Repeatable. Replaces all existing usages.")
     parser.add_argument("--value", action="append", help="Repeatable. Replaces all existing values.")
@@ -199,6 +222,13 @@ def main() -> int:
         changed, msg = remove(root, args.classname)
     else:
         changed, msg = upsert(root, args.classname, args)
+        if args.min is not None or args.nominal is not None:
+            bad = min_exceeds_nominal(root, args.classname)
+            if bad:
+                sys.exit(
+                    f"{FAIL} min ({bad[0]}) would be greater than nominal ({bad[1]}) for {args.classname}.\n"
+                    f"       Pass values with min <= nominal. {args.path} was not changed."
+                )
     print(f"{OK} {msg}")
     if not changed:
         return 0

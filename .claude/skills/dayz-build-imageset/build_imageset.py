@@ -41,6 +41,15 @@ ATLAS_SIZES = sorted(
 
 REQUIREMENTS = Path(__file__).resolve().parent / "requirements.txt"
 
+# A sprite's file stem becomes its ImageSetDefClass name, an unquoted
+# identifier in the .imageset file, so it must be a plain identifier.
+SPRITE_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
+
+def bad_sprite_names(pngs) -> list[str]:
+    """File names whose stem cannot be an ImageSetDefClass name."""
+    return [p.name for p in pngs if not SPRITE_NAME_RE.fullmatch(p.stem)]
+
 
 def resolve_image_to_paa() -> Path:
     tools_root = h.preflight.find_dayz_tools()
@@ -223,6 +232,16 @@ def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path,
         print(f"{WARN} {set_name}: no .png files in {set_dir}, skipping")
         return True
 
+    bad = bad_sprite_names(pngs)
+    if bad:
+        print(
+            f"{FAIL} {set_name}: sprite file names must be identifiers (letters, digits,\n"
+            "       underscores; not starting with a digit), because each name becomes an\n"
+            f"       ImageSetDefClass name. Rename: {', '.join(bad)}",
+            file=sys.stderr,
+        )
+        return False
+
     metas = []
     for p in pngs:
         with Image.open(p) as im:
@@ -276,6 +295,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    h.gate_on_preflight()
+
     if Image is None:
         sys.exit(
             f"{FAIL} Pillow is not installed (needed to compose the atlas).\n"
@@ -303,7 +324,6 @@ def main() -> int:
     mod_name = args.mod_name or mod_root.name
     out_dir = mod_root / "gui" / "imagesets"
 
-    h.gate_on_preflight()
     print()
     image_to_paa = resolve_image_to_paa()
     print(f"{OK} ImageToPAA: {image_to_paa}")

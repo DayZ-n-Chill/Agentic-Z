@@ -137,11 +137,23 @@ def validate_name(name: str) -> None:
         )
 
 
+def check_author(author: str, source: str) -> str:
+    """Refuse a handle that would break the quoted config.cpp strings it lands in."""
+    if '"' in author or not author.isprintable():
+        sys.exit(
+            f"{FAIL} Author handle from {source} contains a double quote, line break or other\n"
+            "       control character; it is written inside quoted strings in config.cpp.\n"
+            "       Use a plain handle, for example --author \"YourHandle\"."
+        )
+    return author
+
+
 def resolve_author(cli_value: str | None) -> str:
-    if cli_value:
+    if cli_value is not None:
         author = cli_value.strip()
         if not author:
             sys.exit(f"{FAIL} --author cannot be empty.")
+        check_author(author, "--author")
         AUTHOR_CACHE.parent.mkdir(parents=True, exist_ok=True)
         AUTHOR_CACHE.write_text(author + "\n", encoding="utf-8")
         return author
@@ -149,7 +161,7 @@ def resolve_author(cli_value: str | None) -> str:
     if AUTHOR_CACHE.exists():
         cached = AUTHOR_CACHE.read_text(encoding="utf-8").strip()
         if cached:
-            return cached
+            return check_author(cached, str(AUTHOR_CACHE.relative_to(PROJECT_DIR)))
 
     if sys.stdin.isatty():
         print("First-time setup: what author handle should appear in your DayZ mods?")
@@ -160,6 +172,7 @@ def resolve_author(cli_value: str | None) -> str:
             value = ""
         if not value:
             sys.exit(f"{FAIL} No author handle provided.")
+        check_author(value, "the prompt")
         AUTHOR_CACHE.parent.mkdir(parents=True, exist_ok=True)
         AUTHOR_CACHE.write_text(value + "\n", encoding="utf-8")
         return value
@@ -175,7 +188,7 @@ def resolve_author(cli_value: str | None) -> str:
 def scaffold(modname: str, author: str) -> Path:
     target = WORKSPACE / modname
     target.mkdir(parents=True)
-    print(f"{OK} Created {target.relative_to(PROJECT_DIR)}/")
+    print(f"{OK} Created {target.relative_to(PROJECT_DIR)}{os.sep}")
 
     (target / "config.cpp").write_text(
         CONFIG_CPP_TEMPLATE.substitute(modname=modname, author=author),
@@ -460,9 +473,9 @@ def main() -> int:
     rel = target.relative_to(PROJECT_DIR)
     print()
     print("Next steps:")
-    print(f"  - Add Enforce Script files under {rel}/scripts/3_Game (or 4_World, 5_Mission)")
-    print(f"  - Add models/textures/materials under {rel}/data")
-    print(f"  - Add UI layouts under {rel}/gui")
+    print(f"  - Add Enforce Script files under {rel / 'scripts' / '3_Game'} (or 4_World, 5_Mission)")
+    print(f"  - Add models/textures/materials under {rel / 'data'}")
+    print(f"  - Add UI layouts under {rel / 'gui'}")
     print(f"  - Open in Workbench: /dayz-launch-workbench --mod {args.modname}")
     print(f"  - When ready, /dayz-build-pbo to pack and deploy to P:\\Mods\\@{args.modname}\\Addons\\")
     return 0

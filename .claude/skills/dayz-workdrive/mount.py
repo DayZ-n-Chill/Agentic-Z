@@ -25,6 +25,9 @@ from typing import Optional
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
+# The cache is per project, resolved like dayz-init/state.py: $CLAUDE_PROJECT_DIR,
+# else the current directory. Not the script's own folder, which is the shared
+# plugin cache on a plugin install.
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 CACHE = PROJECT_DIR / ".claude" / "local-memory" / "dayz-work-drive.json"
 P_DRIVE = Path("P:\\")
@@ -38,10 +41,30 @@ CMD = "[CMD]  "
 # Reuse preflight's resolvers (loading the module does not run its checks).
 find_dayz_tools = h.preflight.find_dayz_tools
 read_registry_string = h.preflight.read_registry_string
+paths_equal = h.preflight.paths_equal
 
 
 def is_p_mounted() -> bool:
     return P_DRIVE.is_dir()
+
+
+def current_p_target() -> Optional[Path]:
+    r"""Folder P: is mapped to, or None if it is not a folder mapping.
+
+    WorkDrive.exe and subst both create a DOS device mapping, which
+    QueryDosDeviceW reports as "\??\C:\folder".
+    """
+    if sys.platform != "win32":
+        return None
+    import ctypes
+
+    buf = ctypes.create_unicode_buffer(1024)
+    if not ctypes.windll.kernel32.QueryDosDeviceW("P:", buf, len(buf)):
+        return None
+    prefix = "\\??\\"
+    if not buf.value.startswith(prefix):
+        return None  # a volume or network device, not a folder mapping
+    return Path(buf.value[len(prefix):])
 
 
 def get_cached_path() -> Optional[Path]:
@@ -230,7 +253,11 @@ def main() -> int:
         return invoke_unmount()
 
     if is_p_mounted():
-        print(f"{OK}P:\\ already mounted")
+        current = current_p_target()
+        print(f"{OK}P:\\ already mounted" + (f" -> {current}" if current else ""))
+        if args.path and current and not paths_equal(current, Path(args.path)):
+            print(f"{WARN}--path was not used: P:\\ already points to {current}, not {args.path}.")
+            print("       Run with --unmount first, then mount again with --path.")
         return 0
 
     if args.path:

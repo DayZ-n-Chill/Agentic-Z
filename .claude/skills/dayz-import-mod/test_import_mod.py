@@ -55,6 +55,7 @@ def test_source_inside_workspace_refused(workspace):
     with pytest.raises(SystemExit) as exc:
         imp.resolve_source(str(inside))
     assert "inside this project's workspace" in str(exc.value.code)
+    assert "--piece junction" in str(exc.value.code)
 
 
 def test_outside_source_accepted(tmp_path, workspace):

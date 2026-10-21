@@ -26,7 +26,7 @@ python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server <instance>] 
 | `<ModName> ...` | yes | One or more mod names already built. Each must have at least one `.pbo` at `P:\Mods\@<ModName>\Addons\` (build with `/dayz-build-pbo` first). |
 | `--server` | no | Server instance to launch on. Default `chernarus`. Must have been added via `/dayz-add-server`. |
 | `--port` | no | Server port. Default `2302`. |
-| `--dry-run` | no | Run every check, print the resolved server and client commands, then exit 0. Writes nothing: no cfg edit, no profile dirs, no display-prefs file, no processes. |
+| `--dry-run` | no | Run every check, print the resolved server and client commands, then exit 0. Writes nothing: no profile dirs, no display-prefs file, no processes. |
 
 ## What it does
 
@@ -34,7 +34,7 @@ python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server <instance>] 
 2. **Old-layout gate**: refuses if `workspace/_server/` still exists. Delete the folder manually; that layout is no longer supported.
 3. **Built-mod check**: for each mod, verifies at least one `.pbo` exists in `P:\Mods\@<ModName>\Addons\`. Fails fast with a hint to run `/dayz-build-pbo` if missing.
 4. **Diag client resolution**: finds `DayZDiag_x64.exe` via `find_dayz_diag()` (env var, DayZ game install, Steam paths). Both client and server run from this binary; the server adds `-server`. Retail `DayZ_x64.exe` and `DayZServer_x64.exe` are not used; both block past the loading screen with `-filePatching` enabled.
-5. **Instance check**: reads the mission template from the `template = "...";` line in `.server/<instance>/serverDZ.cfg` and confirms `mission/` and the `<template>/` junction to it exist. The server's `-mission=` points at that junction (the engine resolves the template name during the connect handshake; without it the client connects but never spawns). Anything missing fails with a hint to run `/dayz-add-server <instance>`. Outside `--dry-run` it appends `allowFilePatching = 1;` to a cfg that lacks it and creates the two profile dirs if absent.
+5. **Instance check**: reads the mission template from the `template = "...";` line in `.server/<instance>/serverDZ.cfg`, confirms the cfg has an active `allowFilePatching = 1;` line (without it the server refuses `-filePatching` clients with error `0x00020005`; a missing line, a commented-out line or any other value counts as missing), and confirms `mission/` and the `<template>/` junction to it exist. The server's `-mission=` points at that junction (the engine resolves the template name during the connect handshake; without it the client connects but never spawns). Anything missing fails with a hint to run `/dayz-add-server <instance>`, which also sets `allowFilePatching = 1;`. This skill never edits the cfg. Outside `--dry-run` it creates the two profile dirs if absent.
 6. **Launch server**: spawns `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/<template> -mod=P:\Mods\@Mod1;P:\Mods\@Mod2 -filePatching -port=<port>`.
 7. **Wait for the port**: polls once a second, for up to 180 s, until the server has bound UDP `<port>` (a DayZ server can take 30 s or more to load the mission and mods). If the server exits, or the wait times out (the server is then killed), the skill exits 1 without starting the client.
 8. **Launch client**: spawns `DayZDiag_x64.exe -profiles=.server/!ClientDiagLogs -mod=... -connect=127.0.0.1 -port=<port> -filePatching` plus the display flags from the per-clone preferences.
@@ -47,7 +47,7 @@ python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server <instance>] 
 - `workspace/_server/` still exists.
 - Any named mod has no `.pbo` at `P:\Mods\@<ModName>\Addons\`.
 - `DayZDiag_x64.exe` is not found.
-- The `--server` instance is not set up: `serverDZ.cfg` missing or without a `template = "...";` line, `mission/` missing, or the `<template>/` junction missing. Run `/dayz-add-server <instance>`.
+- The `--server` instance is not set up: `serverDZ.cfg` missing, without a `template = "...";` line, or without an active `allowFilePatching = 1;` line; `mission/` missing; or the `<template>/` junction missing. Run `/dayz-add-server <instance>`.
 
 ## Output (success)
 
@@ -77,7 +77,7 @@ Both running. Close the windows manually to stop.
   Client logs: .server\!ClientDiagLogs
 ```
 
-With `--dry-run`, the output is the same through the instance check (plus a `[DRY-RUN] Would append allowFilePatching = 1 ...` line if the cfg lacks it), then the two `[DRY-RUN] Server cmd:` / `[DRY-RUN] Client cmd:` lines, and exit 0.
+With `--dry-run`, the output is the same through the instance check, then the two `[DRY-RUN] Server cmd:` / `[DRY-RUN] Client cmd:` lines, and exit 0.
 
 ## Client display preferences
 

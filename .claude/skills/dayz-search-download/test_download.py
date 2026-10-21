@@ -237,3 +237,16 @@ def test_download_url_error_exits(dl, tmp_path, monkeypatch):
 )
 def test_expected_sha256(dl, asset, expected):
     assert dl.expected_sha256(asset) == expected
+
+
+def test_force_reinstalls_same_tag(dl, monkeypatch):
+    dl.INDEX_ROOT.mkdir(parents=True)
+    (dl.INDEX_ROOT / dl.INSTALLED_TAG_FILE).write_text("v1.0.0\n", encoding="utf-8")
+    (dl.INDEX_ROOT / "old.txt").write_text("old", encoding="utf-8")
+    data = _tar_bytes([_file("dayz-search-index/manifest.json")])
+    digest = "sha256:" + hashlib.sha256(data).hexdigest()
+    monkeypatch.setattr(dl, "resolve_release", lambda tag: _release(digest=digest))
+    monkeypatch.setattr(dl, "download_with_progress", _fake_download(data))
+    assert dl.main(["--force"]) == 0
+    assert not (dl.INDEX_ROOT / "old.txt").exists()
+    assert dl.installed_tag(dl.INDEX_ROOT) == "v1.0.0"

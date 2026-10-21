@@ -20,7 +20,7 @@ The wizard wraps the lower-level skills below, never replaces them. Use it for n
 
 1. **`/dayz-preflight`** — verifies your DayZ modding environment is ready.
 2. **`/dayz-new-mod`** / **`/dayz-import-mod`** — scaffold a new mod project (or symlink an existing one) with the required `P:\<ModName>\` junction.
-3. **`/dayz-add-scaffold`** — fill in missing scaffold pieces (config.cpp stub, gproj, etc.) on a mod folder that lacks them.
+3. **`/dayz-add-scaffold`** — fill in missing scaffold pieces (config.cpp stub, gproj, etc.) on a mod folder that lacks them; `--piece junction` repairs a missing `P:\<ModName>\` link.
 4. **`/dayz-add-server`** — sets up a test server instance under `.server/<instance>/`: copies the mission template, creates per-instance `serverDZ.cfg` + `Profiles/` (server `-profiles=` dir), and ensures the shared `.server/!ClientDiagLogs/` (client `-profiles=` dir) exists. One-time per instance. Multiple variants of the same map allowed.
 5. **`/dayz-build-pbo`** — packs the mod into a deployable `.pbo` via DayZ Tools' AddonBuilder.
 6. **`/dayz-launch-test`** — spins up a local DayZ server with your mod loaded on the chosen instance, then connects the client. Run-only; refuses if the instance hasn't been added.
@@ -225,7 +225,7 @@ python .claude\skills\dayz-launch-test\launch.py <ModName> [<ModName2> ...] [--p
 2. For each mod, verify `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists. Fails with a hint to run `/dayz-build-pbo` if missing.
 3. Resolve `DayZDiag_x64.exe` (env `DAYZ_DIAG_PATH` → DayZ game install → Steam fallbacks). **Hard-fail if missing.** Both server and client run from the same diag binary.
 4. **First-run only:** the instance must have been added via `/dayz-add-server <instance>`, which copies the mission template from DayZ Server's `mpmissions/<template>/` into `.server/<instance>/mission/`. After this initial copy, DayZ Server can be uninstalled.
-5. Verify `.server/<instance>/serverDZ.cfg` and `.server/<instance>/mission/` exist for the selected instance (default `chernarus`). Existing cfgs are preserved but `allowFilePatching = 1;` is auto-appended if missing.
+5. Verify `.server/<instance>/serverDZ.cfg` and `.server/<instance>/mission/` exist for the selected instance (default `chernarus`). The skill never edits the cfg: if it lacks an active `allowFilePatching = 1;` (missing, commented out or another value) the launch is refused with a hint to run `/dayz-add-server <instance>`, which sets it.
 6. Spawn the server: `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/mission -mod=@Mod1;@Mod2 -filePatching -port=<port>`. The `-mission=<absolute path>` flag pins the mission folder explicitly.
 7. Wait (up to 180 seconds) until the server has bound its UDP port.
 8. Spawn the client: `DayZDiag_x64.exe -profiles=.server/!ClientDiagLogs -mod=@Mod1;@Mod2 -connect=127.0.0.1 -port=<port> -filePatching`. **The client must be DayZ Diag, not retail.** Retail `DayZ_x64.exe` blocks past the loading screen with `-filePatching`. The client `-profiles=` points at the shared top-level `.server/!ClientDiagLogs/` (vanilla naming convention; client diag artifacts don't need per-instance isolation).
@@ -273,6 +273,8 @@ DayZ Tools' AddonBuilder reads source folders from `P:\` and resolves `$PBOPREFI
 - No copies, no de-sync.
 
 The skill creates the junction at scaffold time. Junctions don't require admin; symlinks do. The skill tries `os.symlink` first and falls back to `mklink /J` (junction) on Windows when symlinks need elevation.
+
+If the link is missing later (for example a mod cloned straight into `workspace/`, or the link was removed), repair it with `/dayz-add-scaffold <ModName> --piece junction`. It creates only the link, never touches files in the mod, and refuses if `P:\<ModName>\` is a real folder or points somewhere else.
 
 ---
 
@@ -357,7 +359,7 @@ When a Superpowers workflow (`/brainstorming`, `/writing-plans`, `/executing-pla
 | server / Central Economy / `types.xml` / `init.c` | `dayz-server-admin` |
 | Workbench plugin (editor-time tooling) | `dayz-workbench-specialist` |
 | log / crash forensics (RPT, script.log, BattlEye) | `dayz-mod-debugger` |
-| Figma → `.layout` conversion | `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator` (three-stage pipeline, in order) |
+| Figma → `.layout` conversion | `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator` (gate mode), then `dayz-ui-specialist` for the widget script (in order) |
 
 How to apply: when a Superpowers skill says "dispatch a code reviewer" while you're working on DayZ files, call `Agent(subagent_type="dayz-mod-reviewer", ...)` instead of the default. Same idea for the other roles. For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generic agents are fine.
 
@@ -395,7 +397,7 @@ Adjust the target path if your DayZ install is elsewhere. Preflight warns; build
 
 ### `Connection failed 0x00020005` / "The server does not support the client's current filePatching setting"
 
-The server's `serverDZ.cfg` is missing `allowFilePatching = 1;`. The client connects with `-filePatching` enabled, and the server refuses unless the cfg explicitly allows it. `/dayz-launch-test` auto-appends `allowFilePatching = 1;` to existing `serverDZ.cfg` files that don't have it — re-running the skill should fix it. If you've manually set `allowFilePatching = 0;`, the skill leaves your value alone (you have to know what you're doing); change it to `1` yourself for diag-mode testing.
+The server's `serverDZ.cfg` is missing `allowFilePatching = 1;`. The client connects with `-filePatching` enabled, and the server refuses unless the cfg explicitly allows it. `/dayz-launch-test` refuses to launch an instance whose cfg lacks an active `allowFilePatching = 1;`, so you normally see this only with a hand-edited cfg or a server started outside the skill. Fix: re-run `/dayz-add-server <instance>`, which sets the line to `allowFilePatching = 1;` whether it was missing, commented out or set to another value.
 
 ### "Mission script has no main function. PlayerConnect will stay disabled"
 
@@ -436,9 +438,9 @@ Checklist:
 - Server log (newest `script*.log` in `.server\<instance>\Profiles\`) shows the mod loading?
 - Client launch line includes `-mod=@<ModName>`?
 
-### Junction got corrupted / `P:\<ModName>\` lost track
+### `[FAIL] P:\<ModName> junction is missing` / junction got corrupted
 
-Quickest fix: `rm -rf workspace/<ModName>/` (back up first if there's local work), then re-run `/dayz-new-mod <ModName>`. The stale-junction auto-clean handles the orphaned junction on the re-scaffold.
+The mod folder is fine but the `P:\<ModName>\` link to it is gone. Run `/dayz-add-scaffold <ModName> --piece junction` to recreate it; your files in `workspace/<ModName>/` are not touched. If `P:\<ModName>\` still exists as a link pointing somewhere else, remove it first with `cmd /c rmdir P:\<ModName>` (this removes only the link, not the target), then run the same command.
 
 ---
 

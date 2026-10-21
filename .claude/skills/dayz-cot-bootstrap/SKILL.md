@@ -38,7 +38,7 @@ python "<skill-dir>\bootstrap.py" [<ModName> ...] [--server <instance>] [--port 
 1. **Preflight gate**: runs `/dayz-preflight`; halts on non-zero.
 2. **Project root**: reads the root `/dayz-init` cached in `.claude/local-memory/dayz-current-project.txt`.
 3. **Mod check**: verifies `@CF` and `@Community-Online-Tools` have PBOs under `P:\Mods\`, prepends them to the chain (dropping duplicates), and checks every mod in the chain has at least one PBO.
-4. **Instance check**: the same check `/dayz-launch-test` runs (cfg `template = "...";` line, `mission/`, and the template junction); appends `allowFilePatching = 1;` if the cfg lacks it.
+4. **Instance check**: the same check `/dayz-launch-test` runs (cfg `template = "...";` line, an active `allowFilePatching = 1;` line, `mission/`, and the template junction). Anything missing, including a commented-out or `0` `allowFilePatching`, refuses with a hint to run `/dayz-add-server <instance>`, which fixes the cfg.
 5. **First pass**: spawns the server, waits for it to bind its UDP port, spawns the client.
 6. **Wait for COT**: polls `.server/<instance>/Profiles/PermissionsFramework/Players/*.json` for a file that is new or newer than before the launch. On timeout it stops the session and exits 1.
 7. **Stop session**: kills only the two processes this run started (waiting up to 30 s each); other `DayZDiag_x64.exe` processes are left alone.

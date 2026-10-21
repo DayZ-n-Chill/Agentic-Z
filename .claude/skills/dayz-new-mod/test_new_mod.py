@@ -208,6 +208,31 @@ def test_no_author_without_tty_fails(author_cache, monkeypatch):
     assert not author_cache.exists()
 
 
+@pytest.mark.parametrize("bad", ['Say "hi"', "Two\nLines", "Tab\there"])
+def test_author_flag_with_quote_or_control_char_refused(author_cache, bad):
+    with pytest.raises(SystemExit) as exc:
+        nm.resolve_author(bad)
+    assert "double quote, line break" in str(exc.value.code)
+    assert not author_cache.exists()
+
+
+def test_prompted_author_with_quote_refused(author_cache, monkeypatch):
+    monkeypatch.setattr(nm.sys, "stdin", _TTY(True))
+    monkeypatch.setattr("builtins.input", lambda _p: 'Evil"Handle')
+    with pytest.raises(SystemExit):
+        nm.resolve_author(None)
+    assert not author_cache.exists()
+
+
+def test_cached_author_with_quote_refused(author_cache, monkeypatch):
+    author_cache.parent.mkdir(parents=True)
+    author_cache.write_text('Bad"Cache\n', encoding="utf-8")
+    monkeypatch.setattr(nm.sys, "stdin", _TTY(False))
+    with pytest.raises(SystemExit) as exc:
+        nm.resolve_author(None)
+    assert "dayz-author.txt" in str(exc.value.code)
+
+
 # --- sync_project_cache ----------------------------------------------------------------
 
 def _fake_state(monkeypatch, cached):

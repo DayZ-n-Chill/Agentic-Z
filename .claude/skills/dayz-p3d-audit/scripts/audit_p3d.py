@@ -37,9 +37,10 @@ def load_py3d():
 def classify_lod(resolution):
     """Map an MLOD resolution value to a LOD type name.
 
-    DayZ scheme (references/winding-methodology.md): Visual < 1000, ShadowVolume
-    10000-19999 (10000 shadow volume, 11000 shadow buffer), Geometry 1e13,
-    GeoPhys 2e13, Memory 1e15, LandContact 2e15, ViewGeo 6e15, FireGeo 7e15.
+    DayZ scheme (Tier 2, .claude/skills/_shared/dayz-conventions.md, "LOD
+    canonical resolutions"): Visual < 1000, ShadowVolume 10000-19999 (10000
+    shadow volume, 11000 shadow buffer), Geometry 1e13, GeoPhys 2e13, Memory
+    1e15, LandContact 2e15, ViewGeo 6e15, FireGeo 7e15.
     """
     if resolution < 1000:
         return "Visual"
@@ -64,7 +65,11 @@ def classify_lod(resolution):
 # ============================================================================
 
 def check_required_lods(lod_map):
-    """Check that required LODs exist."""
+    """Check that required LODs exist and note missing recommended ones.
+
+    GeoPhys (2e13) is not checked: vanilla DayZ models don't ship one (see the
+    Tier 2 LOD table), so its absence is normal.
+    """
     issues = []
     if "Geometry" not in lod_map:
         issues.append(("CRITICAL", "Missing Geometry LOD (res ~1e13). No collision or action targeting possible."))
@@ -72,8 +77,9 @@ def check_required_lods(lod_map):
         issues.append(("CRITICAL", "Missing Memory LOD (res ~1e15). No animation axes, no bounding data."))
     if "Visual" not in lod_map:
         issues.append(("CRITICAL", "Missing Visual LOD (res 0.0). Object will be invisible."))
-    if "GeoPhys" not in lod_map:
-        issues.append(("WARNING", "Missing GeoPhys LOD (res ~2e13). Player/vehicle physics collision may not work."))
+    if "ViewGeo" not in lod_map:
+        issues.append(("NOTE", "Missing ViewGeo LOD (res ~6e15). Vanilla interactive items carry one for "
+                               "cursor/action raycasts; add it if actions don't appear on this object."))
     if "FireGeo" not in lod_map:
         issues.append(("NOTE", "Missing FireGeo LOD (res ~7e15). No ballistic damage zones."))
     return issues

@@ -215,3 +215,7 @@ def test_snapshot_and_detection_of_new_player(tmp_path):
     (players / "new.json").write_text("{}", encoding="utf-8")
     triggered = cot.wait_for_cot_player(players, baseline, timeout_s=5)
     assert [p.name for p in triggered] == ["new.json"]
+
+
+def test_server_bind_timeout_comes_from_launch_test():
+    assert cot.SERVER_BIND_TIMEOUT_S == cot._launch.SERVER_BIND_TIMEOUT_S

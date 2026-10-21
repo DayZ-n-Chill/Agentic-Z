@@ -166,7 +166,18 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(setup.h, "preflight", _FakePreflight(tmp_path), raising=False)
     monkeypatch.setattr(setup, "registry_has_objectbuilder_settings", lambda: state["configured"])
     monkeypatch.setattr(setup, "import_reg_file", fake_import)
-    monkeypatch.setattr(setup, "apply_preferences", lambda: state.__setitem__("prefs", state["prefs"] + 1))
+    def fake_prefs():
+        state["prefs"] += 1
+        return 0
+
+    def fake_backup(backup_dir):
+        state["backups"] += 1
+        return None if state["backup_fails"] else backup_dir / "objectbuilder-backup.reg"
+
+    state.update(backups=0, backup_fails=False)
+    monkeypatch.setattr(setup, "apply_preferences", fake_prefs)
+    monkeypatch.setattr(setup, "backup_registry", fake_backup)
+    monkeypatch.setattr(setup, "BACKUP_DIR", tmp_path / "local-memory")
     return ob, state
 
 
@@ -249,3 +260,53 @@ def test_main_force_prompts_on_tty(env, monkeypatch, answer, rc, imports):
     monkeypatch.setattr("builtins.input", lambda prompt: answer)
     assert setup.main(["--force"]) == rc
     assert state["imports"] == imports
+
+
+def test_main_force_backs_up_before_import(env, capsys):
+    _, state = env
+    state["configured"] = True
+    assert setup.main(["--force", "--yes"]) == 0
+    assert state["backups"] == 1 and state["imports"] == 1
+    assert "backed up to" in capsys.readouterr().out
+
+
+def test_main_force_aborts_when_backup_fails(env, capsys):
+    _, state = env
+    state["configured"] = True
+    state["backup_fails"] = True
+    assert setup.main(["--force", "--yes"]) == 1
+    assert "reset not attempted" in capsys.readouterr().err
+    assert state["imports"] == 0
+
+
+def test_main_fresh_machine_skips_backup(env):
+    _, state = env
+    assert setup.main([]) == 0
+    assert state["backups"] == 0
+
+
+# --- backup_registry with a mocked reg export ----------------------------------
+
+def test_backup_registry_runs_reg_export(tmp_path, monkeypatch):
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        Path(cmd[3]).write_text("exported", encoding="utf-8")
+        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(setup.subprocess, "run", fake_run)
+    dest = setup.backup_registry(tmp_path / "mem")
+    assert dest is not None and dest.is_file()
+    assert dest.parent == tmp_path / "mem"
+    assert dest.name.startswith("objectbuilder-backup-") and dest.suffix == ".reg"
+    assert calls == [["reg", "export", "HKCU\\" + setup.REG_KEY, str(dest), "/y"]]
+
+
+def test_backup_registry_failure_returns_none(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(
+        setup.subprocess, "run",
+        lambda cmd, **k: types.SimpleNamespace(returncode=1, stdout="", stderr="ERROR: access denied"),
+    )
+    assert setup.backup_registry(tmp_path) is None
+    assert "access denied" in capsys.readouterr().err

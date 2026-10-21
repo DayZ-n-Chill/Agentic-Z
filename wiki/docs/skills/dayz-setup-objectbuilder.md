@@ -22,7 +22,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
    - `Bin\ObjectBuilder\ObjectBuilder.exe`
    - `Bin\ObjectBuilder\ObjectBuilder_defaultSettings.reg`
 4. Checks `HKCU\Software\Bohemia Interactive\DayZ Tools\Object Builder\CConfig` for an existing config.
-5. If empty (or with `--force`, after confirmation): checks that every key the `.reg` touches is under `HKEY_CURRENT_USER` (refuses otherwise), runs `reg import` on it, and verifies the key now exists.
+5. If empty (or with `--force`, after confirmation): on a forced reset, first runs `reg export` on the existing Object Builder key to `.claude/local-memory/objectbuilder-backup-<YYYYMMDD-HHMMSS>.reg` in the project and prints that path (the reset is abandoned if the export fails). Then checks that every key the `.reg` touches is under `HKEY_CURRENT_USER` (refuses otherwise), runs `reg import` on it, and verifies the key now exists.
 6. On every run, sets four preferred flags under `CConfig`, writing only the ones not already on: View background LOD, background LOD in the 3D preview, background LOD in the UV editor (all `"1"`), and Direct3D renderer by default (`"On"`).
 
 ## How to run
@@ -37,9 +37,9 @@ python "<skill-dir>\setup.py"
 python "<skill-dir>\setup.py" --force
 ```
 
-On an already-configured machine `--force` asks `[y/N]` before importing. Without a terminal (an agent's Bash call) it refuses unless `--yes` is also given, so get the user's go-ahead first and then run `--force --yes`.
+On an already-configured machine `--force` asks `[y/N]`, then backs up the current settings before importing. To undo the reset, run `reg import` on the backup file it printed. Without a terminal (an agent's Bash call) it refuses unless `--yes` is also given, so get the user's go-ahead first and then run `--force --yes`.
 
-Exits 1 if DayZ Tools, `ObjectBuilder.exe` or the `.reg` is missing, the `.reg` touches a key outside `HKEY_CURRENT_USER`, the reset is not confirmed, or the keys are still missing after import; a failed `reg import` returns its own exit code.
+Exits 1 if DayZ Tools, `ObjectBuilder.exe` or the `.reg` is missing, the `.reg` touches a key outside `HKEY_CURRENT_USER`, the reset is not confirmed, the backup export fails, or the keys are still missing after import; a failed `reg import` returns its own exit code.
 
 ## When to run
 
@@ -63,6 +63,7 @@ DayZ Object Builder setup
 [INFO]  View > Background LOD: turned on
 [OK]    Background LOD shown in 3D preview pane: already on
 ...
+[INFO]  1 of 4 preferences changed.
 
 [OK]    Object Builder is ready. Launch with: /dayz-launch-objectbuilder
 ```
@@ -75,7 +76,7 @@ Object Builder is an old MFC-based Windows tool — its config lives entirely un
 
 - No Administrator elevation needed.
 - Only affects the current Windows user.
-- Reversible via `--force` re-import or by deleting the registry tree. Note that the four preferred flags are re-applied on every run, so turning one off in Object Builder only lasts until this skill runs again.
+- Reversible: `--force` saves a backup `.reg` before resetting, and you can `reg import` it to get your layout back. Note that the four preferred flags are re-applied on every run, so turning one off in Object Builder only lasts until this skill runs again.
 
 ## Do not
 

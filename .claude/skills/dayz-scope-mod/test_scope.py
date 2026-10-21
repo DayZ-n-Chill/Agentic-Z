@@ -130,3 +130,44 @@ def test_real_workshop_folder_is_denied_in_posix_form(scope, monkeypatch):
 
 def test_posix_rule_path(scope):
     assert scope._posix_rule_path(Path(r"D:\Games\DayZ\!Workshop")) == "//d/Games/DayZ/!Workshop"
+
+
+@pytest.mark.parametrize("name", ["Mod!Fix", "Mod#2"])
+def test_bang_and_hash_mid_name_are_allowed(scope, tmp_path, name):
+    (tmp_path / "workspace" / name).mkdir()
+    assert scope.main([name]) == 0
+    assert scope.main(["ModA"]) == 0
+    assert f"Edit(/workspace/{name}/**)" in _deny(scope)
+
+
+def test_preexisting_rule_is_not_recorded_and_survives_clear(scope):
+    scope.SETTINGS_LOCAL.parent.mkdir(parents=True, exist_ok=True)
+    mine = "Edit(//p/ModB/**)"
+    scope.SETTINGS_LOCAL.write_text(json.dumps({"permissions": {"deny": [mine]}}), encoding="utf-8")
+    assert scope.main(["ModA"]) == 0
+    state = json.loads(scope.SCOPE_STATE.read_text(encoding="utf-8"))
+    assert mine not in state["denied_rules"]
+    assert len(state["denied_rules"]) == 5
+    assert _deny(scope).count(mine) == 1
+    assert scope.main(["--clear"]) == 0
+    assert _deny(scope) == [mine]
+
+
+def test_status_reports_scope_and_rules(scope, capsys):
+    assert scope.main(["--status"]) == 0
+    assert "No active scope" in capsys.readouterr().out
+    assert scope.main(["ModA"]) == 0
+    capsys.readouterr()
+    assert scope.main(["--status"]) == 0
+    out = capsys.readouterr().out
+    assert "Active scope: ModA" in out
+    assert "Deny rules:   6" in out
+    assert "  - Edit(/workspace/ModB/**)" in out
+
+
+def test_unknown_mod_lists_known_mods_on_their_own_lines(scope, capsys):
+    assert scope.main(["NoSuchMod"]) == 1
+    lines = capsys.readouterr().err.splitlines()
+    assert lines[0].endswith("NoSuchMod does not exist.")
+    assert lines[1].strip() == "Known mods:"
+    assert lines[2].strip() == "- ModA"

@@ -34,6 +34,8 @@ First hit wins:
 3. Interactive prompt if stdin is a TTY — written to cache after.
 4. Hard fail with instructions otherwise.
 
+The handle is written inside quoted strings in `config.cpp`, so a handle containing `"` or a line break is refused wherever it comes from (flag, cache or prompt).
+
 To change your handle later: re-run with `--author "NewHandle"`, or edit / delete `.claude/local-memory/dayz-author.txt`.
 
 ## What it creates
@@ -91,6 +93,7 @@ After the junction is created, the skill points the `/dayz-init` project cache a
 - `P:\<ModName>\` exists as a real folder (won't clobber non-link content).
 - `P:\<ModName>\` exists as a link pointing somewhere other than `workspace/<ModName>/` (won't redirect a junction the user set up for a different project).
 - No author handle is available and stdin is not a TTY.
+- The author handle contains `"` or a line break.
 
 ### Stale-junction auto-clean
 
@@ -101,7 +104,13 @@ If writing the scaffold fails partway, or junction creation fails afterwards (pe
 ## Output
 
 ```
-[OK]    Created workspace/MyMod/
+DayZ preflight
+
+[OK]    P:\ is mounted
+...     (rest of the /dayz-preflight report)
+
+Preflight complete.
+[OK]    Created workspace\MyMod\
 [OK]    config.cpp written (author: YourHandle)
 [OK]    $PBOPREFIX$ written
 [OK]    Skeleton folders created
@@ -112,12 +121,14 @@ If writing the scaffold fails partway, or junction creation fails afterwards (pe
 [OK]    Project cache set: C:\...\MyProject
 
 Next steps:
-  - Add Enforce Script files under workspace/MyMod/scripts/3_Game (or 4_World, 5_Mission)
-  - Add models/textures/materials under workspace/MyMod/data
-  - Add UI layouts under workspace/MyMod/gui
+  - Add Enforce Script files under workspace\MyMod\scripts\3_Game (or 4_World, 5_Mission)
+  - Add models/textures/materials under workspace\MyMod\data
+  - Add UI layouts under workspace\MyMod\gui
   - Open in Workbench: /dayz-launch-workbench --mod MyMod
   - When ready, /dayz-build-pbo to pack and deploy to P:\Mods\@MyMod\Addons\
 ```
+
+The link line says `symlink` instead of `junction` when Windows allows symlinks (Developer Mode or an elevated shell).
 
 ## Do not
 

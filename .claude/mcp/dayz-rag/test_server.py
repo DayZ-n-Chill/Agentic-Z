@@ -9,6 +9,7 @@ import importlib.util
 import json
 import os
 import re
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -295,38 +296,60 @@ def test_list_sources_raises_on_corrupt_manifest(monkeypatch, tmp_path):
         server.list_indexed_sources_impl()
 
 
-# --------------- .env discovery ---------------
+# --------------- query retry ---------------
 
 
-def test_dotenv_paths_finds_cwd_parent_then_repo_root(monkeypatch, tmp_path):
-    work = tmp_path / "work"
-    (work / "sub").mkdir(parents=True)
-    (work / ".env").write_text("A=1\n", encoding="utf-8")
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    (repo / ".env").write_text("B=2\n", encoding="utf-8")
-    monkeypatch.chdir(work / "sub")
-    monkeypatch.setattr(server, "REPO_ROOT", repo)
-    assert server._dotenv_paths() == [work / ".env", repo / ".env"]
+def _fake_voyage_errors(monkeypatch):
+    """Install a stand-in voyageai.error module so the retry rule needs no real SDK."""
+    errors = SimpleNamespace(
+        **{name: type(name, (Exception,), {}) for name in server.voyage_common.TRANSIENT_ERROR_NAMES},
+        AuthenticationError=type("AuthenticationError", (Exception,), {}),
+    )
+    monkeypatch.setitem(sys.modules, "voyageai.error", errors)
+    return errors
 
 
-def test_dotenv_paths_uses_repo_root_when_cwd_has_none(monkeypatch, tmp_path):
-    elsewhere = tmp_path / "elsewhere"
-    elsewhere.mkdir()
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    (repo / ".env").write_text("B=2\n", encoding="utf-8")
-    monkeypatch.chdir(elsewhere)
-    monkeypatch.setattr(server, "REPO_ROOT", repo)
-    assert server._dotenv_paths() == [repo / ".env"]
+class _FlakyClient:
+    def __init__(self, failures):
+        self.failures = list(failures)
+        self.calls = 0
+
+    def embed(self, **_kwargs):
+        self.calls += 1
+        if self.failures:
+            raise self.failures.pop(0)
+        return SimpleNamespace(embeddings=[[0.5, 0.5]])
 
 
-def test_dotenv_paths_no_duplicate_when_cwd_is_repo_root(monkeypatch, tmp_path):
-    (tmp_path / ".env").write_text("B=2\n", encoding="utf-8")
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(server, "REPO_ROOT", tmp_path)
-    assert server._dotenv_paths() == [tmp_path / ".env"]
+@pytest.fixture
+def no_sleep(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(server.time, "sleep", sleeps.append)
+    return sleeps
 
 
-def test_repo_root_is_three_levels_above_server_dir():
-    assert (server.REPO_ROOT / ".claude" / "mcp" / "dayz-rag" / "server.py").is_file()
+def test_query_retries_transient_voyage_errors(monkeypatch, no_sleep):
+    errors = _fake_voyage_errors(monkeypatch)
+    client = _FlakyClient([errors.RateLimitError("429"), errors.Timeout("slow")])
+    monkeypatch.setattr(server, "_get_client", lambda: client)
+    assert server._embed_query("q") == [0.5, 0.5]
+    assert client.calls == 3
+    assert no_sleep == [1.0, 2.0]
+
+
+def test_query_does_not_retry_auth_errors(monkeypatch, no_sleep):
+    errors = _fake_voyage_errors(monkeypatch)
+    client = _FlakyClient([errors.AuthenticationError("bad key")])
+    monkeypatch.setattr(server, "_get_client", lambda: client)
+    with pytest.raises(errors.AuthenticationError):
+        server._embed_query("q")
+    assert client.calls == 1 and no_sleep == []
+
+
+def test_query_gives_up_after_last_attempt(monkeypatch, no_sleep):
+    errors = _fake_voyage_errors(monkeypatch)
+    client = _FlakyClient([errors.APIConnectionError("down")] * server.QUERY_ATTEMPTS)
+    monkeypatch.setattr(server, "_get_client", lambda: client)
+    with pytest.raises(errors.APIConnectionError):
+        server._embed_query("q")
+    assert client.calls == server.QUERY_ATTEMPTS

@@ -34,9 +34,9 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 3. **Resolve map and mission template**: turns the instance name and `--map` flag into the canonical mission folder name via the alias table.
 4. **Mission copy**: if `.server/<instance>/mission/` doesn't exist (or `--refresh-mission` was passed), copies it from `<DayZServer>/mpmissions/<template>/`. With `--refresh-mission`, the existing folder is renamed to `mission.bak-<timestamp>/` first; nothing is deleted. The copy is always named `mission/`.
 5. **Instance directory**: ensures `.server/<instance>/` exists with:
-   - `serverDZ.cfg`: default config pointing at the right mission template, with `allowFilePatching = 1;` and a `shardId` made of the first six letters and digits of the instance name (padded with `shard`). An existing config is preserved, except that `allowFilePatching` is appended if missing or set back to `1` if it holds any other value.
+   - `serverDZ.cfg`: default config pointing at the right mission template, with `allowFilePatching = 1;` and a `shardId` made of the first six letters and digits of the instance name (padded with `shard`). An existing config is preserved, except that `allowFilePatching = 1;` is appended if no active line exists (a commented-out line does not count) or set back to `1` if it holds any other value. `/dayz-launch-test` refuses to start without that line, so rerunning this skill is the fix.
    - `Profiles/`: server-side `-profiles=` dir (RPT, script.log, BattlEye state). Per-instance.
-   - `<template>/` (for example `dayzOffline.chernarusplus/`): a junction to `mission/`. The engine looks the mission up by template name during the client connect handshake; without it the client connects but never spawns. If `mklink` fails, the skill exits non-zero.
+   - `<template>/` (for example `dayzOffline.chernarusplus/`): a junction to `mission/`. The engine looks the mission up by template name during the client connect handshake; without it the client connects but never spawns. If `mklink` fails, the skill exits non-zero. An existing junction is reported as `[OK]    Junction <template>/ -> mission/ already present`.
 6. **Shared client log dir**: ensures `.server/!ClientDiagLogs/` exists; this is the client-side `-profiles=` dir, shared across all instances.
 
 ## Refuses to run if
@@ -70,7 +70,13 @@ Instance 'chernarus-hardcore' is ready. Next:
   /dayz-launch-test <ModName> --server chernarus-hardcore
 ```
 
-If everything is already set up, the skill no-ops the relevant steps and reports them as `[OK]` (already present).
+On a rerun with everything already set up, the changed lines read:
+
+```
+[OK]    Mission already present: .server\chernarus-hardcore\mission
+[OK]    .server\chernarus-hardcore\serverDZ.cfg unchanged (already configured)
+[OK]    Junction dayzOffline.chernarusplus/ -> mission/ already present
+```
 
 ## Editing what this skill creates
 
@@ -79,5 +85,5 @@ If everything is already set up, the skill no-ops the relevant steps and reports
 
 ## Do not
 
-- Don't edit missions inside the DayZ Server Steam install; edit the workspace copy.
+- Don't edit missions inside the DayZ Server Steam install; edit the instance copy at `.server/<instance>/mission/`.
 - Don't move `.server/` into `workspace/`. The split is deliberate: `workspace/` is for active mod sources, `.server/` is for runtime artifacts.

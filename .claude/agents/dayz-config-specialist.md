@@ -18,7 +18,7 @@ Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) fo
 1. Find the closest vanilla parent class and read its definition on disk before inheriting. Cite it as `path:line`.
 2. Add or update the `CfgPatches` class: `units[]` / `weapons[]` list every new class, and `requiredAddons[]` names the addon that defines each parent class, so the mod loads after it.
 3. Write the classes. Prefix every new class with the mod name (`MyMod_`). Declare parents with forward references (`class Parent;`). To change a vanilla class, redeclare it with its original parent and only the entries you change, and add its addon to `requiredAddons[]`; never copy its whole body.
-4. Check paths: every `model`, texture and material path starts with the mod's `$PBOPREFIX$` and the file exists under `workspace/<ModName>/`. Every `hiddenSelections[]` name matches the selection names the art team reported, and `hiddenSelectionsTextures[]` has one entry per selection.
+4. Check paths: a `model`, texture or material path that references vanilla (`\DZ\...`) is valid when the file exists under `P:\DZ\`; a path to a mod-owned file starts with the mod's `$PBOPREFIX$` and the file exists under `workspace/<ModName>/`. Every `hiddenSelections[]` name matches the selection names the art team reported, and `hiddenSelectionsTextures[]` has one entry per selection.
 5. Check that braces balance and every entry ends with `;`; one syntax error stops the whole PBO from loading.
 
 ## Report

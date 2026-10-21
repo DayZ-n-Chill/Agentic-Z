@@ -14,6 +14,17 @@ h = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(h)
 
 
+@pytest.mark.parametrize("cfg, value", [
+    ("allowFilePatching = 1;\n", "1"),
+    ("hostname = \"x\";\n   allowFilePatching=0; // off\n", "0"),
+    ("// allowFilePatching = 1;\n", None),
+    ("hostname = \"x\";\n", None),
+])
+def test_file_patching_setting(cfg, value):
+    match = h.file_patching_setting(cfg)
+    assert (match.group(1) if match else None) == value
+
+
 def test_load_module_loads_by_path(tmp_path):
     src = tmp_path / "thing.py"
     src.write_text("VALUE = 42\n", encoding="utf-8")
@@ -150,6 +161,13 @@ def test_gate_on_marker_passes_marked_dir(tmp_path):
     assert (deploy / h.SCAFFOLD_MARKER).read_text(encoding="utf-8") == "MyMod\n"
 
 
-def test_write_marker_failure_only_warns(tmp_path, capsys):
-    h.write_marker(tmp_path / "missing-dir", "MyMod")
-    assert "Could not write ownership marker" in capsys.readouterr().out
+def test_write_marker_failure_returns_false_and_names_all_refusers(tmp_path, capsys):
+    assert h.write_marker(tmp_path / "missing-dir", "MyMod") is False
+    out = capsys.readouterr().out
+    assert "Could not write ownership marker" in out
+    for skill in ("/dayz-build-pbo", "/dayz-deploy-pbo", "/dayz-clean-workspace"):
+        assert skill in out
+
+
+def test_write_marker_success_returns_true(tmp_path):
+    assert h.write_marker(tmp_path, "MyMod") is True

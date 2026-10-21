@@ -50,7 +50,7 @@ The RAG layer (`/dayz-search-index` plus the `dayz-rag` MCP server) embeds vanil
 - It needs `VOYAGE_API_KEY=...` in `.env` at the repo root. Without it, searches fail with a "VOYAGE_API_KEY not set" error.
 - Indexed file types: `.c`, `.cpp`, `.hpp`, `.h`, `.cfg`, `.layout`, `.rvmat`, `.xml`, `.json`, `.csv`. Binary formats (`.p3d`, `.paa`) are not indexed.
 - `list_indexed_sources()` reports what the live index holds and when it was built.
-- The wiki index is separate and built by `/dayz-search-wiki-index --full`.
+- The wiki index is separate and built by `/dayz-search-wiki-index --full`. That skill is on hold, so the wiki index may not exist; `search_dayz_wiki` then returns a missing-table error.
 
 ## Project layout
 
@@ -141,14 +141,14 @@ Bohemia ticket: `T148506`. The bug is "won't fix"; the workaround is mandatory. 
 - DayZ mods cannot be tested client-only. Every test or launch skill MUST start a local server with the same mod set alongside the client.
 - Both client and server MUST be `DayZDiag_x64.exe`, not the retail binaries. Retail `DayZ_x64.exe` and `DayZServer_x64.exe` both block past the loading screen when `-filePatching` is on, and `-filePatching` is what lets the engine read raw `.cpp`/`.c` from the `P:\<ModName>\` junction. The same `DayZDiag_x64.exe` runs either end; pass `-server` for server mode.
 - DayZ Diag lives in the DayZ game install next to the retail exe; resolve it with `find_dayz_diag()` in `dayz-preflight/preflight.py`. The DayZ Server Steam install (appid 223350) is only needed to copy mission templates.
-- The server's `serverDZ.cfg` needs `allowFilePatching = 1;` for `-filePatching` clients to connect. Without it the connection fails with `0x00020005` ("The server does not support the client's current filePatching setting"). `/dayz-launch-test` writes it into the default cfg and appends it to existing cfgs that lack it.
+- The server's `serverDZ.cfg` needs `allowFilePatching = 1;` for `-filePatching` clients to connect. Without it the connection fails with `0x00020005` ("The server does not support the client's current filePatching setting"). `/dayz-add-server` writes it into the default cfg. `/dayz-add-server` treats a missing, commented-out or non-1 `allowFilePatching` as missing and sets it to `allowFilePatching = 1;`. `/dayz-launch-test` and `/dayz-cot-bootstrap` refuse to launch without it.
 - Server runtime lives at `.server/<instance>/` at the project root (not under `workspace/`). Each instance is self-contained:
   - `.server/<instance>/mission/`: editable copy of the mission folder, created by `/dayz-add-server` from DayZ Server's `mpmissions/<template>/` and edited by the user after that (the server runs with `-filePatching`, so edits are live). Never edit the original DayZ Server install. The folder is named `mission/` whatever the template; the launcher passes `-mission=<abspath>`.
   - `.server/<instance>/serverDZ.cfg`: per-instance server config. Its `template = "..."` line links the instance to its mission base, so instances can differ in player count, persistence or time of day.
   - `.server/<instance>/Profiles/`: server `-profiles=` dir (RPT, script.log, BattlEye state).
   - `.server/!ClientDiagLogs/`: client `-profiles=` dir, shared by all instances.
 - The instance, not the map, is the unit of identity: two instances can run variants of the same map (chernarus and chernarus-hardcore).
-- Setup and run are separate skills. `/dayz-add-server <instance>` copies the mission, writes the cfg and creates the profile dirs. `/dayz-launch-test <mod> --server <instance>` verifies and launches; it never copies missions or writes cfgs from scratch, and refuses with a hint to run `/dayz-add-server` when state is missing. Its only write is appending `allowFilePatching = 1;` to a cfg that lacks it.
+- Setup and run are separate skills. `/dayz-add-server <instance>` copies the mission, writes the cfg and creates the profile dirs. `/dayz-launch-test <mod> --server <instance>` verifies and launches; it never copies missions or writes cfgs from scratch, and refuses with a hint to run `/dayz-add-server` when state is missing. It never edits the cfg: a cfg without an active `allowFilePatching = 1;` is refused with the `/dayz-add-server <instance>` hint.
 - The legacy `workspace/_server/` layout is not supported. `/dayz-add-server`, `/dayz-launch-test` and `/dayz-clean-workspace --include-server` refuse to run while it exists; the user deletes it manually.
 - `.server/` is gitignored except the user-edited `serverDZ.cfg` and `mission/` contents, which `.gitignore` negation patterns keep tracked.
 
@@ -184,7 +184,7 @@ Scope searches to your domain's folders (`P:\scripts\`, `P:\dz\<category>\`, `P:
 Each tool is exposed under two names depending on how the server is loaded: `mcp__dayz-rag__<tool>` (project server) and `mcp__plugin_agentic-z_dayz-rag__<tool>` (plugin). Agents that search list both in `tools:`.
 
 - `search_dayz_source(query, top_k=5, file_type=None, max_distance=None)` returns chunks with `path`, `parent_context`, `line_start`/`line_end`, `distance` (lower is closer), `is_stale`, and a truncated snippet. `file_type` is one of `c`, `cpp`, `hpp`, `h`, `layout`, `cfg`, `rvmat`, `xml`, `json`, `csv`, or omitted.
-- `search_dayz_wiki(query, top_k=5)` searches the Bohemia community wiki (DayZ categories).
+- `search_dayz_wiki(query, top_k=5)` searches the Bohemia community wiki (DayZ categories). It needs the wiki index, whose build skill is on hold, so expect a missing-table error until that index exists.
 - `get_dayz_file(path, line_start=None, line_end=None)` fetches a file or range under `P:\` to verify a hit.
 - `list_indexed_sources()` returns `{source, wiki}`: the manifest of the vanilla source index and of the wiki index (what was indexed and when), with `null` for an index that has not been built.
 
@@ -194,17 +194,16 @@ A search hit is a hint, not a fact. Before grounding a claim on one:
 
 1. Fetch the cited range with `get_dayz_file` (or `Read` the `P:\` path). The snippet is truncated and the index can lag the files on disk; `is_stale=True` says so explicitly.
 2. Check the code says what you think, in the form you think. Retrieval returns near-misses: a similar class on another inheritance branch, a constant nothing references.
-3. If the file disagrees with the snippet, trust the file and suggest re-running `/dayz-search-index --full` (or `/dayz-search-wiki-index --full` for the wiki).
+3. If the file disagrees with the snippet, trust the file and suggest re-running `/dayz-search-index --full`. For a wiki hit, say the wiki index is out of date; its rebuild skill `/dayz-search-wiki-index` is on hold, so don't offer it as a fix.
 4. Cite vanilla as `path:line_start-line_end` so the user can check it.
 
 A single search used only to navigate does not need verifying. A single chunk treated as ground truth is the most common RAG failure.
 
+Format answers grounded in vanilla source per `.claude/skills/_shared/answer-formatting.md`.
+
 ### When the index is unavailable
 
-If a search returns "no index", a missing-table error, or a missing `VOYAGE_API_KEY`, say so, fall back to scoped `Grep`, and tell the user which fix applies (`/dayz-search-index --full`, `/dayz-search-wiki-index --full`, or adding the key to `.env`). After a DayZ update the index goes stale; rebuild with `--full`.
-
-
-Format answers grounded in vanilla source per `.claude/skills/_shared/answer-formatting.md`.
+If a search returns "no index", a missing-table error, or a missing `VOYAGE_API_KEY`, say so, fall back to scoped `Grep`, and tell the user which fix applies (`/dayz-search-index --full`, or adding the key to `.env`). For the wiki index the rebuild skill `/dayz-search-wiki-index` is on hold: say the wiki index is unavailable rather than offering it as a fix. After a DayZ update the index goes stale; rebuild with `--full`.
 
 ## LOD canonical resolutions (DayZ-specific)
 
@@ -216,13 +215,14 @@ DayZ inherits Bohemia's `.p3d` scheme where a LOD's resolution value is its type
 | ShadowVolume | `10000`, `11000` (range 10000 to 19999) | same | Shadow casters |
 | Geometry | `1.0e+13` | same | Physics collision |
 | Memory | `1.0e+15` | same | Named memory points |
+| GeoPhys | `2.0e+13` | same | Not used by vanilla DayZ models; the audit classifies it but never asks for it |
 | LandContact | `2.0e+15` | same | Foot/wheel contact |
-| ViewGeometry | `6.0e+15` | `7.0e+13` (wrong for DayZ) | Cursor / action raycast |
+| ViewGeometry | `6.0e+15` | `7.0e+13` (wrong for DayZ) | Cursor / action raycast. Recommended: vanilla interactive gear carries one; proxies and clutter cutters don't |
 | FireGeometry | `7.0e+15` | `3.0e+13` (wrong for DayZ) | Bullet / projectile collision |
 
-Verified against vanilla `DZ\gear\camping\wooden_case.p3d` (debinarized): 9 LODs, with Visual(1..4), Geometry(`1e13`), Memory(`1e15`), LandContact(`2e15`), ViewGeo(`6e15`), FireGeo(`7e15`). `classify_lod()` in `.claude/skills/dayz-p3d-audit/scripts/audit_p3d.py` uses these values.
+Verified against vanilla `DZ\gear\camping\wooden_case.p3d` (debinarized): 9 LODs, with Visual(1..4), Geometry(`1e13`), Memory(`1e15`), LandContact(`2e15`), ViewGeo(`6e15`), FireGeo(`7e15`). `classify_lod()` in `.claude/skills/dayz-p3d-audit/scripts/audit_p3d.py` uses these values. A header scan of 4,000 vanilla binarized models under `P:\DZ\` found `1e13` in 3,758, `6e15` in 2,569, `7e15` in 2,627 and `2e13` in none; among `gear\` models with a Geometry LOD, 531 also have ViewGeo and 32 (proxies, clutter cutters, a bonfire) don't. The audit therefore treats Visual, Geometry and Memory as required (CRITICAL when missing), ViewGeo and FireGeo as recommended (NOTE when missing), and GeoPhys as optional (not reported).
 
-A `classify_lod()` that uses Arma 3 ranges (a grep for `7e13` or `3e13` finds them) reports ViewGeo and FireGeo as unknown. Symptoms in game: bullets pass through the model (FireGeometry not recognized), the cursor does not detect the model and actions do not appear (ViewGeometry not recognized), and audits report "missing FireGeo / ViewGeo" on models that have them.
+A `classify_lod()` that uses Arma 3 ranges (a grep for `7e13` or `3e13` finds them) reports ViewGeo and FireGeo as unknown. The engine is unaffected, but the audit then reports "missing FireGeo / ViewGeo" on models that have them and skips its FireGeo checks, so real collision problems (bullets passing through, no action cursor) go undiagnosed.
 
 ## How agents and skills reference this file
 

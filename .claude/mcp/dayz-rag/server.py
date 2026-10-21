@@ -29,11 +29,10 @@ import time
 from pathlib import Path
 from typing import Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import voyage_common  # noqa: E402  .env/API-key loading and the retry rule, shared with the indexer
+
 INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
-# Repo root in a clone, plugin root when installed as a plugin (this file is
-# <root>/.claude/mcp/dayz-rag/server.py). Its .env is read as well as the
-# working directory's, since a plugin's server may not start in the repo.
-REPO_ROOT = Path(__file__).resolve().parents[3]
 TABLE_NAME = "chunks"
 WIKI_TABLE_NAME = "wiki_chunks"
 DEFAULT_EMBED_MODEL = "voyage-code-3"
@@ -60,44 +59,6 @@ DEFAULT_MAX_DISTANCE = _load_default_max_distance()
 
 # Must match EXT_TYPE_MAP in .claude/skills/dayz-search-index/index.py.
 VALID_FILE_TYPES = {"c", "cpp", "hpp", "h", "layout", "cfg", "rvmat", "xml", "json", "csv"}
-
-
-def _dotenv_paths() -> list[Path]:
-    """.env files to load, in priority order: the nearest one at or above the
-    working directory, then the one at REPO_ROOT. Duplicates are dropped."""
-    paths: list[Path] = []
-    cwd = Path.cwd()
-    for d in (cwd, *cwd.parents):
-        if (d / ".env").is_file():
-            paths.append(d / ".env")
-            break
-    root_env = REPO_ROOT / ".env"
-    if root_env.is_file() and all(os.path.normcase(str(p)) != os.path.normcase(str(root_env)) for p in paths):
-        paths.append(root_env)
-    return paths
-
-
-def _load_env_and_key() -> str:
-    """Load .env files (see _dotenv_paths), return the Voyage API key. Hard-fail if missing.
-
-    load_dotenv never overrides a variable that is already set, so the
-    process environment wins, then the working-directory .env, then REPO_ROOT's.
-    """
-    try:
-        from dotenv import load_dotenv
-
-        for env_path in _dotenv_paths():
-            load_dotenv(env_path)
-    except ImportError:
-        pass
-    key = os.environ.get("VOYAGE_API_KEY", "").strip()
-    if key.startswith("export "):
-        key = key.split("=", 1)[-1].strip().strip('"').strip("'")
-    if not key:
-        raise RuntimeError(
-            "VOYAGE_API_KEY not set. Add it to .env at the repo root: VOYAGE_API_KEY=pa-xxxxxxxx"
-        )
-    return key
 
 
 def _load_embed_model_name() -> str:
@@ -140,7 +101,7 @@ def _get_client():
     global _voyage_client, _embed_model
     if _voyage_client is None:
         import voyageai
-        api_key = _load_env_and_key()
+        api_key = voyage_common.load_api_key()
         # timeout is mandatory: without it a network hang never raises, so the
         # retry loop in _embed_query never fires and searches hang forever (#51)
         _voyage_client = voyageai.Client(api_key=api_key, timeout=30)
@@ -148,13 +109,15 @@ def _get_client():
     return _voyage_client
 
 
+QUERY_ATTEMPTS = 4
+
+
 def _embed_query(text: str) -> list[float]:
-    """Embed a search query via Voyage. Retries on transient errors."""
+    """Embed a search query via Voyage, retrying transient Voyage errors with backoff."""
     client = _get_client()
     text = text or " "
     delay = 1.0
-    last_exc: Optional[Exception] = None
-    for attempt in range(4):
+    for attempt in range(QUERY_ATTEMPTS):
         try:
             resp = client.embed(
                 texts=[text],
@@ -166,14 +129,10 @@ def _embed_query(text: str) -> list[float]:
                 raise RuntimeError("Voyage returned empty embeddings")
             return resp.embeddings[0]
         except Exception as exc:
-            last_exc = exc
-            msg = str(exc).lower()
-            transient = any(s in msg for s in ("rate", "429", "quota", "timeout", "connection"))
-            if attempt == 3 or not transient:
+            if attempt == QUERY_ATTEMPTS - 1 or not voyage_common.is_transient(exc):
                 raise
             time.sleep(delay)
             delay *= 2
-    raise last_exc  # type: ignore[misc]
 
 
 def _get_table():
@@ -310,13 +269,16 @@ def _slice_lines(path: str, text: str, line_start: Optional[int], line_end: Opti
 def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Optional[int] = None) -> dict:
     """Fetch a file (or line range) from disk for follow-up after a search hit.
 
-    `path` should be one returned by search_dayz_source. Limited to paths under P:\\
-    to prevent arbitrary file read.
+    `path` should be one returned by search_dayz_source. Only paths on the P:
+    drive are accepted, to stop arbitrary file reads.
 
-    Note: P:\\ is typically a Windows `subst` drive (or junction) pointing at a host
-    folder. Don't use Path.resolve() for the sandbox check — resolve() follows the
-    subst back to the host drive and breaks the check. Use os.path.normpath instead,
-    which collapses `..` and `.` lexically without touching the filesystem.
+    The check is lexical: os.path.normpath collapses `..` and `.` without
+    touching the filesystem, and the drive must still be P: afterwards.
+    Path.resolve() is deliberately not used because P:\\ is usually a `subst`
+    drive and resolve() would map it back to the host folder. The flip side is
+    that junctions and symlinks under P:\\ (for example P:\\Mods or the
+    P:\\<ModName> junctions to workspace/) are followed when the file is opened,
+    so a path under P:\\ can read a file that physically lives elsewhere.
     """
     p = Path(path)
     if not p.is_absolute():

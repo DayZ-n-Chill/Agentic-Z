@@ -50,10 +50,10 @@ Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) fo
 
 ## Workflow
 
-1. Check each source image's filename suffix: `_co` (color), `_nohq` (normal), `_smdi` (specular/mask). Rename before packing if one is wrong or missing; the suffix decides how the engine treats the texture.
+1. Check each source image's filename suffix; it decides how the engine treats the texture. Rename only when the texture's role is clear and its suffix is missing or wrong: `_co` (color), `_nohq` (normal), `_smdi` (specular/mask). If an image uses `_ca`, `_as` or another vanilla suffix (`P:\dz\` ships many valid ones), or its role is unclear, ask the art lead instead of renaming.
 2. Pack with `/dayz-pack-texture <image> [...]`; it runs ImageToPAA and writes each `.paa` next to its source. Dimensions must be powers of two.
 3. Write the `.rvmat` by copying a vanilla material for the same surface type (find one with `Grep` under `P:\dz\<category>\`, or RAG with `file_type="rvmat"`) and changing only the texture stages and values you need.
-4. Use full in-game paths from the mod's `$PBOPREFIX$` (for example `MyMod\data\vest_co.paa`), never drive or relative paths.
+4. Write in-game paths. Mod-owned files start with the mod's `$PBOPREFIX$` (for example `MyMod\data\vest_co.paa`); vanilla files keep their `dz\...` path (for example `dz\characters\vests\data\ballisticvest_as.paa`); procedural textures such as `#(argb,8,8,3)color(1,1,1,1,co)` are valid as written. Never use drive-letter (`P:\...`) or relative paths.
 
 ## Handoffs
 

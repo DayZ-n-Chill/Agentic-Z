@@ -112,10 +112,11 @@ def find_dayz_tools() -> Optional[Path]:
 
     Resolution order:
       1. $DAYZ_TOOLS_PATH env var (explicit override)
-      2. Windows registry (HKLM/HKCU under Bohemia Interactive\\DayZ Tools)
+      2. Windows registry (HKLM/HKCU under Bohemia Interactive\\DayZ Tools); every key
+         with a Path value is tried, so a stale first entry cannot hide a valid later one
       3. Steam libraries
 
-    Returns the install root (parent of Bin/) if AddonBuilder.exe is found, else None.
+    Returns the first candidate root (parent of Bin/) holding AddonBuilder.exe, else None.
     """
     candidates: list[Path] = []
 
@@ -135,7 +136,6 @@ def find_dayz_tools() -> Optional[Path]:
             val = read_registry_string(hive, subkey, "Path")
             if val:
                 candidates.append(Path(val))
-                break
 
     candidates.extend(common / "DayZ Tools" for common in _steam_common_dirs())
 

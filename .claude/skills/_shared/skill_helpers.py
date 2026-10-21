@@ -8,6 +8,7 @@ One copy of the logic every pipeline script needs:
   - link inspection that never follows a junction (is_link, link_target, paths_equal)
   - the P:\\Mods\\@<ModName>\\ ownership marker (owns_deploy_dir, gate_on_marker, write_marker)
   - creation flags that detach a launched GUI tool from the console (DETACH_FLAGS)
+  - the active allowFilePatching setting in a serverDZ.cfg (file_patching_setting)
 
 Import from a skill script with:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
@@ -17,6 +18,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -38,6 +40,10 @@ SCAFFOLD_MARKER = ".agentic-z-scaffold"
 # Popen creationflags for a GUI tool that must outlive this script and the
 # console it ran in: DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP.
 DETACH_FLAGS = 0x00000008 | 0x00000200
+
+# An active `allowFilePatching = N` line in serverDZ.cfg. Anchored at the start
+# of a line, so a commented-out `// allowFilePatching = 1;` does not count.
+ALLOW_FILE_PATCHING_RE = re.compile(r"^\s*allowFilePatching\s*=\s*(\d+)", re.MULTILINE)
 
 OK = "[OK]   "
 WARN = "[WARN] "
@@ -127,6 +133,15 @@ def paths_equal(a: Path, b: Path) -> bool:
     return _preflight().paths_equal(a, b)
 
 
+def file_patching_setting(cfg_text: str) -> Optional[re.Match]:
+    """The first active allowFilePatching assignment in a serverDZ.cfg, or None.
+
+    Group 1 is the value. /dayz-add-server uses it to set the value to 1;
+    /dayz-launch-test and /dayz-cot-bootstrap refuse unless it is 1.
+    """
+    return ALLOW_FILE_PATCHING_RE.search(cfg_text)
+
+
 def owns_deploy_dir(deploy_root: Path, modname: str) -> bool:
     """True when deploy_root holds the ownership marker with content == modname."""
     marker = deploy_root / SCAFFOLD_MARKER
@@ -152,11 +167,21 @@ def gate_on_marker(modname: str, deploy_root: Path) -> None:
     print(f"{OK} {deploy_root}\\ ownership marker valid")
 
 
-def write_marker(deploy_root: Path, modname: str) -> None:
-    """Write the ownership marker. A failure only warns: the deploy itself succeeded."""
+def write_marker(deploy_root: Path, modname: str) -> bool:
+    """Write the ownership marker; returns False (after printing why) on failure.
+
+    The deploy itself succeeded, but without the marker the next
+    /dayz-build-pbo and /dayz-deploy-pbo refuse to write into this dir and
+    /dayz-clean-workspace refuses to remove it, so callers exit non-zero.
+    """
     marker = deploy_root / SCAFFOLD_MARKER
     try:
         marker.write_text(modname + "\n", encoding="utf-8")
     except OSError as e:
-        print(f"{WARN} Could not write ownership marker {marker}: {e}")
-        print("       /dayz-clean-workspace will refuse to remove this deployed dir.")
+        print(f"{FAIL} Could not write ownership marker {marker}: {e}")
+        print("       The files were deployed, but without the marker /dayz-build-pbo and")
+        print("       /dayz-deploy-pbo will refuse to write into this dir and")
+        print("       /dayz-clean-workspace will refuse to remove it.")
+        print(f"       Fix: write the single line {modname} to {marker}")
+        return False
+    return True

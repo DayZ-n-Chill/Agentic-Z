@@ -173,7 +173,7 @@ def in_tmp(tmp_path, monkeypatch):
 def test_baseline_advances_when_commit_succeeds_and_nothing_pending(in_tmp, monkeypatch):
     monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: True)
     drift = {"docs/a.md": S.SAFE_OVERWRITE, "docs/mine.md": S.LOCAL_ONLY_EDIT}
-    assert update.finish_apply(drift, ["docs/a.md"], ["docs/mine.md"], "a" * 40) is True
+    assert update.finish_apply(drift, ["docs/a.md"], ["docs/mine.md"], "a" * 40) == "advanced"
     assert update.read_baseline() == "a" * 40
 
 
@@ -182,14 +182,14 @@ def test_baseline_kept_when_upstream_change_left_unapplied(in_tmp, monkeypatch, 
     monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: True)
     update.write_baseline("b" * 40)
     drift = {"docs/a.md": S.NEW, "docs/c.md": status}
-    assert update.finish_apply(drift, ["docs/a.md"], ["docs/c.md"], "a" * 40) is False
+    assert update.finish_apply(drift, ["docs/a.md"], ["docs/c.md"], "a" * 40) == "pending"
     assert update.read_baseline() == "b" * 40
 
 
 def test_baseline_kept_when_commit_fails(in_tmp, monkeypatch):
     monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: False)
     update.write_baseline("b" * 40)
-    assert update.finish_apply({"docs/a.md": S.NEW}, ["docs/a.md"], [], "a" * 40) is False
+    assert update.finish_apply({"docs/a.md": S.NEW}, ["docs/a.md"], [], "a" * 40) == "commit-failed"
     assert update.read_baseline() == "b" * 40
 
 
@@ -198,7 +198,7 @@ def test_nothing_applied_skips_commit_but_advances(in_tmp, monkeypatch):
         raise AssertionError("no commit without applied paths")
 
     monkeypatch.setattr(update, "stage_and_commit", must_not_commit)
-    assert update.finish_apply({"docs/m.md": S.LOCAL_ONLY_EDIT}, [], ["docs/m.md"], "a" * 40) is True
+    assert update.finish_apply({"docs/m.md": S.LOCAL_ONLY_EDIT}, [], ["docs/m.md"], "a" * 40) == "advanced"
     assert update.read_baseline() == "a" * 40
 
 
@@ -228,6 +228,51 @@ def test_check_with_baseline_leaves_it_unchanged(in_tmp, monkeypatch, capsys):
     assert update.main() == 0
     assert "Up to date." in capsys.readouterr().out
     assert update.read_baseline() == "b" * 40
+
+
+def _stub_apply_flow(monkeypatch, root):
+    _stub_remote(monkeypatch, root)
+    monkeypatch.setattr(update, "_QUIET", False)  # an earlier --quiet test sets the global
+    monkeypatch.setattr(update, "working_tree_clean_for", lambda paths: (True, []))
+    monkeypatch.setattr(update, "run_sync_skills", lambda: None)
+
+
+def test_first_run_records_baseline_and_adds_no_new_files(in_tmp, monkeypatch, capsys):
+    _stub_apply_flow(monkeypatch, in_tmp)
+    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: {"docs/new.md": S.NEW})
+
+    def must_not_apply(*a, **k):
+        raise AssertionError("first run must not apply new files")
+
+    monkeypatch.setattr(update, "apply_drift", must_not_apply)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--yes"])
+    assert update.main() == 0
+    assert update.read_baseline() == "c" * 40
+    assert "1 new upstream file(s) not added" in capsys.readouterr().out
+
+
+def test_later_run_applies_new_files(in_tmp, monkeypatch):
+    _stub_apply_flow(monkeypatch, in_tmp)
+    update.write_baseline("b" * 40)
+    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: {"docs/new.md": S.NEW})
+    seen = []
+    monkeypatch.setattr(update, "apply_drift", lambda drift, ref, conflict_choices=None: (seen.extend(drift) or (list(drift), [])))
+    monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: True)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--yes"])
+    assert update.main() == 0
+    assert seen == ["docs/new.md"]
+
+
+def test_main_exits_1_when_commit_fails(in_tmp, monkeypatch):
+    _stub_apply_flow(monkeypatch, in_tmp)
+    update.write_baseline("b" * 40)
+    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: {"docs/a.md": S.SAFE_OVERWRITE})
+    monkeypatch.setattr(update, "apply_drift", lambda drift, ref, conflict_choices=None: (["docs/a.md"], []))
+    monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: False)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--yes"])
+    assert update.main() == 1
+    assert update.read_baseline() == "b" * 40
+    assert not (in_tmp / update.LOCK_FILE).exists()
 
 
 def test_main_chdirs_to_repo_root(tmp_path, monkeypatch):

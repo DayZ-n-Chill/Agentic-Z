@@ -117,8 +117,67 @@ def test_degenerate_face_detected():
 
 
 def test_required_lods_firegeo_note_uses_7e15():
-    issues = audit.check_required_lods({"Visual": 0, "Geometry": 0, "Memory": 0, "GeoPhys": 0})
+    issues = audit.check_required_lods({"Visual": 0, "Geometry": 0, "Memory": 0, "ViewGeo": 0})
     assert issues == [("NOTE", "Missing FireGeo LOD (res ~7e15). No ballistic damage zones.")]
+
+
+def test_required_lods_geophys_absence_is_not_reported():
+    # Vanilla DayZ models carry no 2e13 LOD; its absence must not raise anything.
+    lods = {"Visual": 0, "Geometry": 0, "Memory": 0, "ViewGeo": 0, "FireGeo": 0}
+    assert audit.check_required_lods(lods) == []
+
+
+def test_required_lods_missing_viewgeo_is_a_note():
+    issues = audit.check_required_lods({"Visual": 0, "Geometry": 0, "Memory": 0, "FireGeo": 0})
+    assert _severities(issues) == ["NOTE"]
+    assert "ViewGeo LOD (res ~6e15)" in issues[0][1]
+
+
+# --- Memory and Visual LOD animation checks -------------------------------------
+
+def _points_lod(coords, selections, faces=()):
+    """LOD stub whose selections map names to lists of point indices."""
+    points = [_Obj(coords=c) for c in coords]
+    sels = {name: _Obj(points={points[i]: 1 for i in idx}, faces={}) for name, idx in selections.items()}
+    return _Obj(points=points, faces=list(faces), selections=sels, properties={})
+
+
+def _memory(selections, coords=((0.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 2.0, 0.0))):
+    base = {"pos center": [0], "box_placing_min": [0], "box_placing_max": [0]}
+    return _points_lod(coords, {**base, **selections})
+
+
+@pytest.mark.parametrize("indices", [[1], [0, 1, 2]])
+def test_flag_mast_axis_needs_exactly_two_points(indices):
+    issues = audit.check_memory_lod(_memory({"flag_mast_axis": indices}))
+    assert _severities(issues) == ["CRITICAL"]
+    assert f"flag_mast_axis has {len(indices)} points" in issues[0][1]
+
+
+def test_flag_mast_axis_two_points_ok_and_short_travel_warns():
+    assert audit.check_memory_lod(_memory({"flag_mast_axis": [1, 2]})) == []
+    flat = _memory({"flag_mast_axis": [0, 1]}, coords=((0.0, 0.0, 0.0), (1.0, 0.05, 0.0)))
+    assert _severities(audit.check_memory_lod(flat)) == ["WARNING"]
+
+
+def test_memory_axis_without_visual_selection_is_critical():
+    memory = _memory({"door_axis": [1, 2]})
+    visual = _points_lod(TETRA_POINTS, {})
+    issues = audit.check_visual_lod(visual, {"Memory": (1, memory)})
+    assert _severities(issues) == ["CRITICAL"]
+    assert "missing 'door' selection" in issues[0][1]
+
+
+def test_memory_axis_with_empty_visual_selection_warns():
+    memory = _memory({"door_axis": [1, 2]})
+    visual = _points_lod(TETRA_POINTS, {"door": []})
+    assert _severities(audit.check_visual_lod(visual, {"Memory": (1, memory)})) == ["WARNING"]
+
+
+def test_memory_axis_with_matching_visual_selection_passes():
+    memory = _memory({"door_axis": [1, 2]})
+    visual = _points_lod(TETRA_POINTS, {"door": [0, 1]})
+    assert audit.check_visual_lod(visual, {"Memory": (1, memory)}) == []
 
 
 def test_face_winding_check_removed():

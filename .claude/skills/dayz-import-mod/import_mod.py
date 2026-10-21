@@ -85,8 +85,10 @@ def resolve_source(cli_value: str | None) -> Path:
         return source  # outside workspace: good
     sys.exit(
         f"{FAIL} Source path is inside this project's workspace/: {source}\n"
-        "       Imports must come from outside workspace/. If your mod is\n"
-        "       already there, the toolchain can use it directly; no import needed."
+        "       Imports must come from outside workspace/. For a mod already in\n"
+        "       workspace/<Name>/, create its P:\\<Name> link and any missing pieces with:\n"
+        "         /dayz-add-scaffold <Name> --piece junction\n"
+        "         /dayz-add-scaffold <Name>"
     )
 
 

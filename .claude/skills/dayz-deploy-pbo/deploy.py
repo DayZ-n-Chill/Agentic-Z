@@ -113,8 +113,7 @@ def main() -> int:
           f"({len(pbos)} .pbo, {len(bisigns)} .bisign, {len(bikeys)} .bikey"
           f"{', ' + str(len(metas)) + ' meta' if metas else ''})")
 
-    h.write_marker(deploy_root, args.modname)
-    return 0
+    return 0 if h.write_marker(deploy_root, args.modname) else 1
 
 
 if __name__ == "__main__":

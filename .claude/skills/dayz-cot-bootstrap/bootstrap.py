@@ -41,7 +41,6 @@ COT_MOD = "Community-Online-Tools"
 DEFAULT_INSTANCE = "chernarus"
 DEFAULT_PORT = 2302
 DEFAULT_TIMEOUT = 600  # 10 minutes
-SERVER_BIND_TIMEOUT_S = 180
 STOP_TIMEOUT_S = 30
 
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
@@ -54,6 +53,7 @@ build_server_cmd = _launch.build_server_cmd
 build_client_cmd = _launch.build_client_cmd
 read_client_display_prefs = _launch.read_client_display_prefs
 wait_for_server_port = _launch.wait_for_server_port
+SERVER_BIND_TIMEOUT_S = _launch.SERVER_BIND_TIMEOUT_S
 
 
 def verify_cf_cot_subscribed() -> None:

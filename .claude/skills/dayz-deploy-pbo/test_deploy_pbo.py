@@ -103,3 +103,32 @@ def test_gate_on_marker_accepts_owned_dir(tmp_path):
     root.mkdir()
     h.write_marker(root, "Bundle")
     h.gate_on_marker("Bundle", root)
+
+
+# --- main() --------------------------------------------------------------------
+
+@pytest.fixture
+def deploy_env(tmp_path, monkeypatch):
+    project = tmp_path / "project"
+    addons = project / "workspace" / "Bundle" / "Addons"
+    addons.mkdir(parents=True)
+    (addons / "extras.pbo").write_bytes(b"pbo")
+    mods = tmp_path / "Mods"
+    monkeypatch.setattr(deploy, "MODS_ROOT", mods)
+    monkeypatch.setattr(deploy, "validate_p_mods", lambda: None)
+    monkeypatch.setattr(h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr("sys.argv", ["deploy.py", "Bundle"])
+    return mods
+
+
+def test_main_warns_unsigned_pbo_with_single_space(deploy_env, capsys):
+    assert deploy.main() == 0
+    out = capsys.readouterr().out
+    assert "[WARN]  extras.pbo has no matching .bisign" in out
+    assert (deploy_env / "@Bundle" / h.SCAFFOLD_MARKER).read_text(encoding="utf-8") == "Bundle\n"
+
+
+def test_main_exits_1_when_marker_cannot_be_written(deploy_env, monkeypatch):
+    monkeypatch.setattr(h, "write_marker", lambda root, name: False)
+    assert deploy.main() == 1

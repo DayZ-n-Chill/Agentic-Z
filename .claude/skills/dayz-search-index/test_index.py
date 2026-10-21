@@ -5,7 +5,9 @@ Pure functions only: no P:\\ drive, no Voyage key, no LanceDB.
 from __future__ import annotations
 
 import importlib.util
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -280,3 +282,93 @@ def test_write_table_clears_leftover_staging_and_works_on_empty_db():
     index.write_table(db, [{"v": "new"}])
     assert db.tables == {index.TABLE_NAME: db.tables[index.TABLE_NAME]}
     assert db.tables[index.TABLE_NAME].rows == [{"v": "new"}]
+
+
+# --------------- token estimate ---------------
+
+
+def test_estimate_tokens_uses_chars_per_token_constant():
+    text = "x" * int(index.CHARS_PER_TOKEN_EST * 1000)
+    assert index._estimate_tokens(text) == 1000
+    assert index._estimate_tokens("") == 1
+
+
+# --------------- embed retry ---------------
+
+
+class _FakeBar:
+    def __init__(self, *args, **kwargs):
+        self.lines = []
+
+    def write(self, line):
+        self.lines.append(line)
+
+    def set_postfix_str(self, _s):
+        pass
+
+    def update(self, _n):
+        pass
+
+    def close(self):
+        pass
+
+
+@pytest.fixture
+def fake_voyage(monkeypatch):
+    """Stand-in voyageai + tqdm modules; returns (errors, scripted failures list, call log)."""
+    names = index.voyage_common.TRANSIENT_ERROR_NAMES + ("AuthenticationError",)
+    errors = SimpleNamespace(**{n: type(n, (Exception,), {}) for n in names})
+    failures: list[Exception] = []
+    calls: list[list[str]] = []
+
+    class Client:
+        def __init__(self, **_kwargs):
+            pass
+
+        def embed(self, texts, **_kwargs):
+            calls.append(texts)
+            if failures:
+                raise failures.pop(0)
+            return SimpleNamespace(embeddings=[[0.0] for _ in texts], total_tokens=len(texts))
+
+    monkeypatch.setitem(sys.modules, "voyageai", SimpleNamespace(Client=Client, error=errors))
+    monkeypatch.setitem(sys.modules, "voyageai.error", errors)
+    monkeypatch.setitem(sys.modules, "tqdm", SimpleNamespace(tqdm=_FakeBar))
+    monkeypatch.setattr(index.time, "sleep", lambda _s: None)
+    return errors, failures, calls
+
+
+def test_embed_all_retries_transient_errors(fake_voyage):
+    errors, failures, calls = fake_voyage
+    failures += [errors.RateLimitError("429"), errors.ServiceUnavailableError("503")]
+    vectors, tokens = index.embed_all(["a", "b"], "voyage-code-3", "pa-test")
+    assert len(vectors) == 2 and tokens == 2
+    assert len(calls) == 3
+
+
+def test_embed_all_does_not_retry_auth_errors(fake_voyage):
+    errors, failures, calls = fake_voyage
+    failures.append(errors.AuthenticationError("bad key"))
+    with pytest.raises(errors.AuthenticationError):
+        index.embed_all(["a"], "voyage-code-3", "pa-test")
+    assert len(calls) == 1
+
+
+def test_embed_all_gives_up_after_last_attempt(fake_voyage):
+    errors, failures, calls = fake_voyage
+    failures += [errors.Timeout("slow")] * index.EMBED_ATTEMPTS
+    with pytest.raises(errors.Timeout):
+        index.embed_all(["a"], "voyage-code-3", "pa-test")
+    assert len(calls) == index.EMBED_ATTEMPTS
+
+
+# --------------- API key ---------------
+
+
+def test_missing_key_exits_1_with_fail_line(monkeypatch, capsys):
+    monkeypatch.setattr(index.voyage_common, "dotenv_paths", lambda: [])
+    monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+    with pytest.raises(SystemExit) as exc:
+        index._load_env_and_key()
+    assert exc.value.code == 1
+    assert "VOYAGE_API_KEY not set" in capsys.readouterr().err

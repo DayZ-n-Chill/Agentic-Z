@@ -166,7 +166,7 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
         print(f"{OK} Wrote default {cfg_path.relative_to(project_dir)}")
     else:
         cfg = cfg_path.read_text(encoding="utf-8")
-        setting = re.search(r"^\s*allowFilePatching\s*=\s*(\d+)", cfg, re.MULTILINE)
+        setting = h.file_patching_setting(cfg)
         if setting is None:
             cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
             cfg_path.write_text(cfg, encoding="utf-8")
@@ -197,6 +197,8 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
                 "       Without it the client connects but never spawns. Fix the cause and rerun."
             )
         print(f"{OK} Junction {template_junction.name}/ -> mission/ (template handshake)")
+    elif template_junction.exists():
+        print(f"{OK} Junction {template_junction.name}/ -> mission/ already present")
 
     print(f"{OK} {server_profiles.relative_to(project_dir)} ready")
     print(f"{OK} {client_diag_logs.relative_to(project_dir)} ready")

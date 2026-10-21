@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -24,11 +25,15 @@ import skill_helpers as h  # noqa: E402
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 WORKSPACE = PROJECT_DIR / "workspace"
 NEW_MOD = h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py"
+P_DRIVE = Path("P:\\")
 
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 SKIP = "[SKIP] "
 
+# Pieces written into the mod folder; `all` runs these in order. The P:\ link
+# is not part of `all`: it changes P:\ itself, so it runs only when asked for.
 PIECES = ("config", "prefix", "workbench", "readme", "skeleton")
+JUNCTION = "junction"
 
 # What each piece function returns.
 ADDED = "added"      # wrote at least one file or folder
@@ -150,6 +155,38 @@ def add_workbench(target: Path, modname: str) -> str:
     return ADDED if wrote_anything else SKIPPED
 
 
+def add_junction(target: Path, modname: str) -> str:
+    """Create the P:\\<ModName>\\ link to workspace/<ModName>/, as /dayz-new-mod does.
+
+    A link that already points at this workspace folder counts as present. A
+    real folder, or a link pointing anywhere else, is refused: it may belong to
+    another project, so the user removes it by hand.
+    """
+    p_link = P_DRIVE / modname
+    shown = _display(target)
+    if os.path.lexists(p_link):
+        current = h.link_target(p_link)
+        if current is None:
+            sys.exit(
+                f"{FAIL} {p_link} exists as a real folder, not a link.\n"
+                "       Refusing to clobber. Move or remove it manually and re-run."
+            )
+        if not h.paths_equal(current, target):
+            sys.exit(
+                f"{FAIL} {p_link} is a link pointing at {current}\n"
+                f"       Remove it (cmd /c rmdir \"{p_link}\") and re-run."
+            )
+        print(f"{SKIP} {p_link} present (links to {shown})")
+        return PRESENT
+    try:
+        kind = _nm.make_dir_link(target, p_link)
+    except (OSError, subprocess.CalledProcessError) as e:
+        detail = (getattr(e, "stderr", "") or str(e)).strip()
+        sys.exit(f"{FAIL} Could not create {p_link}: {detail}")
+    print(f"{OK} {p_link} {kind} -> {shown}")
+    return ADDED
+
+
 def add_piece(piece: str, target: Path, modname: str, get_author) -> str:
     """Add one piece; returns ADDED, PRESENT or SKIPPED. Used by /dayz-import-mod too."""
     if piece == "config":
@@ -162,6 +199,8 @@ def add_piece(piece: str, target: Path, modname: str, get_author) -> str:
         return add_readme(target, modname, get_author)
     if piece == "skeleton":
         return add_skeleton(target)
+    if piece == JUNCTION:
+        return add_junction(target, modname)
     raise ValueError(f"unknown scaffold piece: {piece}")
 
 
@@ -180,6 +219,14 @@ def lazy_author(cli_value: str | None):
     return get_author
 
 
+def _display(path: Path) -> Path:
+    """The path relative to the project when it is inside it, as printed in output."""
+    try:
+        return path.relative_to(PROJECT_DIR)
+    except ValueError:
+        return path
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Add missing DayZ scaffold pieces into existing workspace/<ModName>/.",
@@ -187,9 +234,10 @@ def main() -> int:
     parser.add_argument("modname", help="Mod name (folder under workspace/).")
     parser.add_argument(
         "--piece",
-        choices=(*PIECES, "all"),
+        choices=(*PIECES, JUNCTION, "all"),
         default="all",
-        help="Which piece to add. Default 'all' adds every missing piece.",
+        help="Which piece to add. Default 'all' adds every missing file piece; "
+             "'junction' creates the P:\\<ModName> link (never part of 'all').",
     )
     parser.add_argument("--author", help="Author handle (cached for future runs).")
     args = parser.parse_args()
@@ -198,10 +246,7 @@ def main() -> int:
     _nm.validate_name(args.modname)
 
     target = WORKSPACE / args.modname
-    try:
-        rel = target.relative_to(PROJECT_DIR)
-    except ValueError:
-        rel = target
+    rel = _display(target)
     if not target.exists():
         sys.exit(
             f"{FAIL} {rel} does not exist.\n"
@@ -212,7 +257,8 @@ def main() -> int:
         sys.exit(f"{FAIL} {rel} is not a directory.")
 
     print()
-    print(f"Scaffolding {rel}/\n")
+    print(f"Scaffolding {rel}{os.sep}")
+    print()
 
     get_author = lazy_author(args.author)
     pieces = PIECES if args.piece == "all" else (args.piece,)

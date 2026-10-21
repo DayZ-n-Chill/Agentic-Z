@@ -16,7 +16,7 @@ Use this when:
 - You have an existing mod repo somewhere on disk (`C:\Users\you\repos\MyMod`, `D:\dayz-stuff\MyMod`, etc.) and don't want to move or duplicate it inside the Agentic-Z workspace.
 - You're collaborating on a mod whose canonical location is somewhere else (a separate git repo, a shared drive) and just need it visible to the toolchain.
 
-Alternative: clone your mod directly into `workspace/<ModName>/` - no import needed.
+Alternative: clone your mod directly into `workspace/<ModName>/`. It then still needs the `P:\<ModName>\` link that build and launch skills check for: run `/dayz-add-scaffold <ModName> --piece junction`, then `/dayz-add-scaffold <ModName>` for any missing scaffold files.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -83,7 +83,7 @@ Next steps:
 - `/dayz-preflight` returns non-zero (typically `P:\` not mounted).
 - `--source` missing and stdin isn't a TTY.
 - Source path doesn't exist, isn't a directory, or is a UNC path (`\\server\share\...` - junctions can't target them on Windows).
-- Source path is inside `<repo>/workspace/` (avoids self-referential / circular links - the mod is already in workspace, no import needed).
+- Source path is inside `<repo>/workspace/` (avoids self-referential / circular links). The error points at `/dayz-add-scaffold <Name> --piece junction`, which links a mod that is already in `workspace/`.
 - Derived/given mod name fails the pattern (`[A-Za-z][A-Za-z0-9_]{0,63}`).
 - `workspace/<Name>/` already exists (won't clobber).
 - `P:\<Name>\` exists as a real folder, or as a link pointing somewhere other than the new `workspace/<Name>/`.

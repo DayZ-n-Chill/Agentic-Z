@@ -182,3 +182,20 @@ def test_shard_id_is_six_chars():
 def test_shard_id_keeps_only_alphanumerics():
     cfg = srv.default_server_cfg("a-b_c.d", "t")
     assert 'shardId = "abcdsh";' in cfg
+
+
+def test_commented_out_allow_file_patching_counts_as_missing(tmp_path):
+    cfg_path = tmp_path / ".server" / "test" / "serverDZ.cfg"
+    cfg_path.parent.mkdir(parents=True)
+    cfg_path.write_text("// allowFilePatching = 1;\n", encoding="utf-8")
+    srv.setup_instance_dir("test", "dayzOffline.chernarusplus", tmp_path)
+    assert cfg_path.read_text(encoding="utf-8") == "// allowFilePatching = 1;\nallowFilePatching = 1;\n"
+
+
+def test_existing_template_junction_reported_present(monkeypatch, tmp_path, capsys):
+    inst = tmp_path / ".server" / "test"
+    (inst / "mission").mkdir(parents=True)
+    (inst / "dayzOffline.chernarusplus").mkdir()  # stands in for the junction
+    monkeypatch.setattr(srv.subprocess, "run", lambda *a, **k: pytest.fail("must not recreate the junction"))
+    srv.setup_instance_dir("test", "dayzOffline.chernarusplus", tmp_path)
+    assert "Junction dayzOffline.chernarusplus/ -> mission/ already present" in capsys.readouterr().out

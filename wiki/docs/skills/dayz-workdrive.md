@@ -26,11 +26,11 @@ python "<skill-dir>\mount.py" --unmount
 
 ## What it does
 
-1. If `P:\` is already mounted, prints `[OK]` and exits 0.
+1. If `P:\` is already mounted, prints `[OK]` with the folder it points to and exits 0. If `--path` names a different folder, it also prints a `[WARN]`: the mount is left alone, so run `--unmount` first to switch folders.
 2. Resolves the work-drive folder, taking the first candidate that exists:
    1. `--path` (fails if it is not a directory)
    2. `$DAYZ_WORK_DRIVE`
-   3. The path cached by a previous successful run in `.claude/local-memory/dayz-work-drive.json`
+   3. The path cached by a previous successful run in `<project>\.claude\local-memory\dayz-work-drive.json`, where `<project>` is `$CLAUDE_PROJECT_DIR` or else the current directory (the same rule `/dayz-init` uses, so a plugin install caches per project)
    4. `[ProjectDrive] path=` in `<DayZ Tools>\settings.ini`
    5. Registry values `WorkDrive`, `WorkDrivePath`, `P_Drive` or `PDrive` under the DayZ Tools keys (HKCU, then HKLM 64-bit and 32-bit)
    6. `<DayZ Tools>\Bin\WorkDrive`
@@ -52,7 +52,7 @@ DayZ P:\ mount
 [INFO] Cached for future runs at <project>\.claude\local-memory\dayz-work-drive.json
 ```
 
-When already mounted it prints `[OK]   P:\ already mounted` and runs nothing.
+When already mounted it prints `[OK]   P:\ already mounted -> <folder>` and runs nothing.
 
 ## Exit codes
 

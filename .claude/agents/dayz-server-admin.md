@@ -17,7 +17,7 @@ Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) fo
 
 | Task | How | Done when |
 | --- | --- | --- |
-| Add, change or remove a loot entry | `/dayz-edit-types <types.xml> <ClassName> ...` (it backs up first) | The entry reads back as intended and the file parses. |
+| Add, change or remove a loot entry | `/dayz-edit-types <types.xml> <ClassName> ...` (it backs up to `types.xml.bak` only when the edit changes the file) | The entry reads back as intended and the file parses. |
 | Split a large `types.xml` | `/dayz-split-types <types.xml>` | Each new file is listed in `cfgeconomycore.xml` and parses. |
 | Add a dynamic event | Edit `db/events.xml` and `cfgeventspawns.xml` | The event name matches in both files, every child type exists, and both parse. |
 | Register custom economy files | Edit the `<ce folder="...">` entries in `cfgeconomycore.xml` | Every listed file exists at that path. |
@@ -29,7 +29,8 @@ After any edit, parse every XML or JSON file you touched (for example with Pytho
 ## Rules
 
 - Every `types.xml` class name must exist in a vanilla or mod config; check with `Grep` before adding.
-- `usage`, `value`, `category` and `tag` names must exist in the mission's `cfglimitsdefinition.xml`.
+- `usage`, `value`, `category` and `tag` names must exist in the mission's `cfglimitsdefinition.xml`, or as a user group in its `cfglimitsdefinitionuser.xml`.
+- A `<ce folder="...">` path in `cfgeconomycore.xml` is relative to the mission root (for example `db/types`), not to `cfgeconomycore.xml` or `db/`; `/dayz-split-types` writes it that way.
 - Never edit the DayZ Server install's original `mpmissions`; work in the instance copy.
 
 ## Report

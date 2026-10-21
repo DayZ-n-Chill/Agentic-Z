@@ -28,7 +28,7 @@ Read the newest files yourself; use the caller's report to know which session an
    - A modded class that never runs: an extends clause on `modded class` makes it a silent no-op (Script conventions in the Tier 2 doc), or the file is in the wrong `scripts/` layer.
    - `Can't find` or missing class errors: a typo, a missing `CfgPatches` `requiredAddons` entry, or a path that doesn't match `$PBOPREFIX$`.
    - Connection refused with `0x00020005`: check `allowFilePatching = 1;` in the instance's `serverDZ.cfg`.
-4. To understand a vanilla class in a stack trace, Grep `P:\scripts\` for the exact name first; use `search_dayz_source` for questions by meaning or after two or three failed greps, and verify each hit with `get_dayz_file` or Read.
+4. To understand a vanilla class in a stack trace: Grep `P:\scripts\` for the exact name, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 5. If the cause is in vanilla or another mod, say so and suggest a workaround the mod can carry.
 
 ## Who fixes what

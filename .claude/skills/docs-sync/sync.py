@@ -7,12 +7,13 @@ under wiki/docs/.
 Modes:
   --check (default)    Detect drift (missing mirror, mirror content differs
                        from the transformed source, orphan mirror) and print a
-                       report. Always exits 0.
+                       report. Exits 0, also when PyYAML is missing under
+                       --quiet (one line), so the Stop hook never fails.
                        The Stop hook runs this with --quiet.
   --apply              Run the canonical->wiki transforms in apply.py, write
                        every changed mirror, and prune orphan wiki pages.
   --apply --dry-run    Print what --apply would write or prune; changes nothing
-                       on disk.
+                       on disk. --dry-run without --apply is a usage error.
   --map                Print the canonical->mirror map and exit.
 """
 from __future__ import annotations
@@ -23,6 +24,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+YAML_HINT = "PyYAML is required. Install it with: python -m pip install pyyaml"
 
 
 def _load_apply_module():
@@ -33,12 +35,7 @@ def _load_apply_module():
     if spec is None or spec.loader is None:
         raise RuntimeError("Could not load apply.py")
     module = importlib.util.module_from_spec(spec)
-    try:
-        spec.loader.exec_module(module)
-    except ModuleNotFoundError as e:
-        if e.name != "yaml":
-            raise
-        sys.exit("docs-sync: PyYAML is required. Install it with: python -m pip install pyyaml")
+    spec.loader.exec_module(module)
     return module
 
 
@@ -252,17 +249,27 @@ def apply_all(dry_run: bool = False) -> int:
     return 1 if errors else 0
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--check", action="store_true", help="Report drift (default)")
     p.add_argument("--quiet", action="store_true", help="Silent on success, single-line on drift (for hooks)")
     p.add_argument("--map", action="store_true", help="Print canonical->mirror map and exit")
     p.add_argument("--apply", action="store_true", help="Apply Docusaurus transform and write all mirrors")
-    p.add_argument("--dry-run", action="store_true", help="With --apply: preview what would change without writing")
-    args = p.parse_args()
+    p.add_argument("--dry-run", action="store_true", help="With --apply: preview what would change without writing (requires --apply)")
+    args = p.parse_args(argv)
+    if args.dry_run and not args.apply:
+        p.error("--dry-run only works with --apply")
 
     if args.map:
         return print_map()
+
+    if importlib.util.find_spec("yaml") is None:
+        if args.quiet:
+            # The Stop hook runs --check --quiet; it must never fail a session.
+            print(f"docs-sync: drift check skipped. {YAML_HINT}")
+            return 0
+        print(f"docs-sync: {YAML_HINT}", file=sys.stderr)
+        return 1
 
     if args.apply:
         return apply_all(dry_run=args.dry_run)

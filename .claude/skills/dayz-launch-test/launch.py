@@ -114,12 +114,13 @@ def verify_instance_environment(
 ) -> tuple[Path, Path, Path, Path]:
     """Verify .server/<instance>/ was set up by /dayz-add-server.
 
-    Checks serverDZ.cfg exists and names a mission template, and that the
-    <template>/ junction to mission/ exists. Hard-fails with a hint to run
-    /dayz-add-server if anything is missing.
+    Checks serverDZ.cfg exists, names a mission template and has an active
+    `allowFilePatching = 1;` line (missing, commented out or any other value
+    counts as missing), and that the <template>/ junction to mission/ exists.
+    Hard-fails with a hint to run /dayz-add-server if anything is missing.
 
-    Outside --dry-run it also appends allowFilePatching = 1 to a cfg that lacks
-    it and ensures the two profile dirs exist; with dry_run it changes nothing.
+    Outside --dry-run it ensures the two profile dirs exist; with dry_run it
+    changes nothing.
 
     Returns (cfg_path, server_profile_dir, mission_path, client_profile_dir).
     server_profile_dir is per-instance .server/<instance>/Profiles/.
@@ -137,8 +138,14 @@ def verify_instance_environment(
     template = read_cfg_template(cfg) if cfg is not None else None
     if cfg is None:
         missing.append(f"server cfg: {cfg_path.relative_to(project_dir)}")
-    elif template is None:
-        missing.append(f'template = "..."; line in {cfg_path.relative_to(project_dir)}')
+    else:
+        if template is None:
+            missing.append(f'template = "..."; line in {cfg_path.relative_to(project_dir)}')
+        # Clients launch with -filePatching; without allowFilePatching = 1 the
+        # server refuses the connection (error 0x00020005).
+        setting = h.file_patching_setting(cfg)
+        if setting is None or setting.group(1) != "1":
+            missing.append(f"allowFilePatching = 1; in {cfg_path.relative_to(project_dir)}")
     if not mission_dir.exists():
         missing.append(f"mission folder: {mission_dir.relative_to(project_dir)}")
 
@@ -159,15 +166,6 @@ def verify_instance_environment(
             f"{FAIL} Instance '{instance}' is not set up. Missing:\n{details}\n"
             f"       Run: /dayz-add-server {instance}"
         )
-
-    # Clients launch with -filePatching; without allowFilePatching the server
-    # refuses the connection (error 0x00020005).
-    if "allowFilePatching" not in cfg:
-        if dry_run:
-            print(f"[DRY-RUN] Would append allowFilePatching = 1 to {cfg_path.relative_to(project_dir)}")
-        else:
-            cfg_path.write_text(cfg.rstrip() + "\nallowFilePatching = 1;\n", encoding="utf-8")
-            print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(project_dir)}")
 
     if not dry_run:
         server_profile_dir.mkdir(parents=True, exist_ok=True)

@@ -17,8 +17,8 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 2. **Script layers.** Each `.c` file sits in the right layer (`3_Game`, `4_World`, `5_Mission`) and only uses classes visible from that layer.
 3. **Config.** `config.cpp` parents exist in vanilla, `CfgPatches` lists every `requiredAddons` entry it depends on and the right `units[]` / `weapons[]`.
 4. **Hidden selections.** Every `hiddenSelections[]` entry has a matching `hiddenSelectionsTextures[]` entry, and the reverse.
-5. **Paths.** Asset paths in config and scripts start with the mod's `$PBOPREFIX$` and point at files that exist.
-6. **Assets.** Textures are `.paa` with the `_co`, `_nohq` or `_smdi` suffix; each `.rvmat` references textures that exist.
+5. **Paths.** A path to a mod-owned file starts with the mod's `$PBOPREFIX$` and the file exists under `workspace/<ModName>/`. A vanilla path (`\DZ\...` or `dz\...`) needs no prefix but must exist under `P:\DZ\`.
+6. **Assets.** The mod's textures are `.paa` with `_co`, `_nohq`, `_smdi` or another vanilla suffix such as `_ca` or `_as`; a missing or unrecognized suffix is a WARN. Skip procedural textures (`#(argb,...)` and other `#(...)` values); they are not files. Each `.rvmat` references textures that exist.
 7. **types.xml** (if shipped): every entry is well-formed, has its `<flags>`, and `min` is not above `nominal`.
 8. **Conflict risks.** Broad mission overrides, global state, RPC handlers that don't check the sender.
 

@@ -70,6 +70,8 @@ For every folder under `.claude/skills/<name>/` containing `SKILL.md`, plus `_sh
 | Real folder, not a link | `[SKIP]` warn — don't clobber user-installed skills |
 | Orphan link in target dir, points back into this repo at a path that's gone | `[PRUNE]` remove the link |
 
+Link targets are compared after normalising separators and, on Windows, case (`os.path.normcase`), so `C:\Repo` and `c:\repo` count as the same place.
+
 ## Output
 
 One line per skill per agent, then a summary. Example (trimmed):

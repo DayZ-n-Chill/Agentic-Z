@@ -50,4 +50,4 @@ Every node has these fields:
 
 ## Report
 
-A short bullet summary (removed, flattened, types inferred, anything ambiguous), then the JSON in one fenced block, then one line naming `figma-to-dayz-layout` as the next stage.
+To your caller (the UI lead or main session): a short bullet summary (removed, flattened, types inferred, anything ambiguous), then the JSON in one fenced block, then one line naming `figma-to-dayz-layout` as the next stage.

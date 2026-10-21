@@ -11,6 +11,13 @@ verifies the result itself before reporting success.
 Every run first makes timestamped backups of types.xml, cfgeconomycore.xml and
 any existing types/ folder (which upstream deletes and regenerates).
 
+Upstream writes <ce folder="types">, but the CE resolves the folder attribute
+relative to the mission root, while the files land in <mission>/db/types/. The
+wrapper rewrites the attribute to the real relative path (db/types), restores
+any other <ce> blocks the formatter dropped, and replaces db/types.xml with an
+empty <types/> stub so the server (which always loads db/types.xml) does not
+load every type twice.
+
 See SKILL.md for full usage.
 """
 from __future__ import annotations
@@ -50,6 +57,11 @@ def backup(path: Path, stamp: str) -> Path:
     return dest
 
 
+def type_count(types_xml: Path) -> int:
+    """Number of <type> entries in a types file."""
+    return len(ET.parse(types_xml).getroot().findall("type"))
+
+
 def non_empty_category_files(types_subdir: Path) -> list[str]:
     """Names of category files that contain at least one <type> entry."""
     names = []
@@ -59,15 +71,46 @@ def non_empty_category_files(types_subdir: Path) -> list[str]:
     return names
 
 
-def cfgeconomycore_type_files(cfgeconomycore: Path) -> set[str]:
-    """File names listed under <ce folder="types"> in cfgeconomycore.xml."""
+def cfgeconomycore_type_files(cfgeconomycore: Path, folder: str) -> set[str]:
+    """File names listed under <ce folder="<folder>"> in cfgeconomycore.xml."""
     root = ET.parse(cfgeconomycore).getroot()
     return {
         f.get("name", "")
         for ce in root.findall("ce")
-        if ce.get("folder") == "types"
+        if ce.get("folder") == folder
         for f in ce.findall("file")
     }
+
+
+def fix_cfgeconomycore(cfgeconomycore: Path, original: Path, folder: str) -> None:
+    """Point the splitter's <ce> blocks at `folder` and restore other <ce> blocks.
+
+    Upstream writes folder="types" (wrong: the CE reads the folder relative to
+    the mission root) and its formatter keeps only <classes>/<rootclass> and
+    <defaults>, so any <ce> block the user had is gone. Those are copied back
+    from the pre-split backup, except ones for `folder` itself.
+    """
+    tree = ET.parse(cfgeconomycore)
+    root = tree.getroot()
+    for ce in root.findall("ce"):
+        if ce.get("folder") == "types":
+            ce.set("folder", folder)
+    for ce in ET.parse(original).getroot().findall("ce"):
+        if ce.get("folder") != folder:
+            root.append(ce)
+    ET.indent(root, space="\t")
+    tree.write(cfgeconomycore, encoding="UTF-8", xml_declaration=True)
+
+
+def missing_listed_files(cfgeconomycore: Path, mission_dir: Path) -> list[str]:
+    """<ce> file entries whose file does not exist at <mission>/<folder>/<name>."""
+    root = ET.parse(cfgeconomycore).getroot()
+    return [
+        f"{ce.get('folder')}/{f.get('name')}"
+        for ce in root.findall("ce")
+        for f in ce.findall("file")
+        if not (mission_dir / ce.get("folder", "") / f.get("name", "")).is_file()
+    ]
 
 
 def main() -> int:
@@ -96,12 +139,23 @@ def main() -> int:
             "       Standard DayZ layout: <mission>/cfgeconomycore.xml + <mission>/db/types.xml"
         )
 
+    try:
+        entries = type_count(types_xml)
+    except ET.ParseError as e:
+        sys.exit(f"{h.FAIL} {types_xml} is not valid XML: {e}")
+    if entries == 0:
+        sys.exit(
+            f"{h.FAIL} {types_xml} has no <type> entries; it looks already split.\n"
+            "       Restore it from a types.xml.<stamp>.bak backup to split again."
+        )
+
     if not VENDORED_SCRIPT.exists():
         sys.exit(f"{h.FAIL} Vendored splitter missing at {VENDORED_SCRIPT}")
 
     types_subdir = db_dir / "types"
+    folder = types_subdir.relative_to(mission_dir).as_posix()  # "db/types"
     stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    backup(types_xml, stamp)
+    types_backup = backup(types_xml, stamp)
     core_backup = backup(cfgeconomycore, stamp)
     if types_subdir.is_dir():
         backup(types_subdir, stamp)
@@ -128,7 +182,9 @@ def main() -> int:
         print(f"        {name}")
 
     try:
-        listed = cfgeconomycore_type_files(cfgeconomycore)
+        fix_cfgeconomycore(cfgeconomycore, core_backup, folder)
+        listed = cfgeconomycore_type_files(cfgeconomycore, folder)
+        dangling = missing_listed_files(cfgeconomycore, mission_dir)
     except ET.ParseError as e:
         print(f"{h.FAIL} {cfgeconomycore} is not valid XML after the split: {e}", file=sys.stderr)
         return 1
@@ -140,7 +196,20 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    print(f"{h.OK} Updated {cfgeconomycore}")
+    print(f'{h.OK} Updated {cfgeconomycore} (<ce folder="{folder}">)')
+    for entry in dangling:
+        print(f"{h.WARN} {cfgeconomycore.name} lists {entry}, which does not exist")
+
+    # The server always loads db/types.xml; leaving the full file would load every
+    # type twice. An empty stub keeps the file valid; the original is in the backup.
+    types_xml.write_text(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n<types>\n</types>\n',
+        encoding="utf-8",
+    )
+    print(
+        f"{h.OK} Emptied {types_xml.name}: its {entries} entries now load from {folder}/ "
+        f"(original kept in {types_backup.name})"
+    )
     return 0
 
 

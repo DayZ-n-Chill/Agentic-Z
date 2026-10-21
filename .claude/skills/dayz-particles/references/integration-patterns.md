@@ -1,4 +1,4 @@
-# Device Particle Integration Patterns
+# Device particle integration patterns
 
 Complete code examples for integrating particles into modded devices.
 All code follows Enforce Script hard rules (no ternary, no ++, no foreach,
@@ -6,7 +6,7 @@ no string literals as params, explicit typing, m_ prefix on members).
 
 ---
 
-## Pattern A: FireplaceBase-style helpers (RECOMMENDED)
+## Pattern A: FireplaceBase-style helpers (recommended)
 
 The vanilla FireplaceBase has the cleanest particle lifecycle pattern.
 Adapt it as a pair of helper methods on your device class.
@@ -244,7 +244,7 @@ if (m_SmokeEffect)
 
 ---
 
-## Cleanup Checklist (apply to EVERY device with particles)
+## Cleanup checklist (apply to every device with particles)
 
 1. **MyMod_OnVarSync** — stop particle when powered off
 2. **EEDelete** — stop particle when device removed from world
@@ -275,7 +275,7 @@ protected void MyMod_CleanupClientFX()
 
 ---
 
-## Vanilla Particles Recommended for a placed-device mod Devices
+## Vanilla particles for placed devices
 
 | Device | Recommended particle | Constant | Looping? |
 |---|---|---|---|

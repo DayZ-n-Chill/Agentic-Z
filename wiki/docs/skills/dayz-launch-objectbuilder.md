@@ -54,10 +54,14 @@ python "<skill-dir>\launch.py" --mod MyMod
 ```
 DayZ Object Builder launcher
 
-[OK]    P:\ mounted
-[OK]    DayZ Tools: ...
-[OK]    Vanilla data: P:\dz
-[OK]    P:\Mods junction valid
+DayZ preflight
+
+[OK]    P:\ is mounted
+[OK]    DayZ Tools found: C:\...\steamapps\common\DayZ Tools
+[OK]    Vanilla data found: P:\dz
+[OK]    P:\Mods -> C:\...\steamapps\common\DayZ\!Workshop
+
+Preflight complete.
 
 [OK]    ObjectBuilder.exe: ...\Bin\ObjectBuilder\ObjectBuilder.exe
 [OK]    Registry configured

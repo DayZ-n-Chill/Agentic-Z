@@ -170,34 +170,67 @@ def escape_mdx_tags_in_body(body: str) -> str:
     return _MDX_TAG_PATTERN.sub(lambda m: f"&lt;{m.group(1)}&gt;", body)
 
 
-_HTML_COMMENT_PATTERN = re.compile(r"<!--.*?-->")
+_FENCE_OPEN = re.compile(r"(`{3,}|~{3,})")
+# (?:(?!-->).)*? stops at the first -->, so a match never spans two comments.
+_HTML_COMMENT_LINES = re.compile(
+    r"^[ \t]*<!--(?:(?!-->).)*?-->[ \t]*(?:\r?\n|\Z)", re.DOTALL | re.MULTILINE
+)
+_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+
+
+def _split_fences(body: str) -> list[tuple[str, bool]]:
+    """Split body into (text, is_fenced_code) runs.
+
+    Fences open with three or more backticks or tildes; a fence closes only on
+    a line of the same character at least as long, as in CommonMark. Fence
+    lines themselves belong to the code run. An unclosed fence runs to the end.
+    """
+    runs: list[tuple[str, bool]] = []
+    buf: list[str] = []
+    fence: str | None = None
+    for line in body.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if fence is None:
+            m = _FENCE_OPEN.match(stripped)
+            if m:
+                if buf:
+                    runs.append(("".join(buf), False))
+                buf, fence = [line], m.group(1)
+                continue
+        else:
+            closing = stripped.rstrip()
+            if closing and set(closing) == {fence[0]} and len(closing) >= len(fence):
+                buf.append(line)
+                runs.append(("".join(buf), True))
+                buf, fence = [], None
+                continue
+        buf.append(line)
+    if buf:
+        runs.append(("".join(buf), fence is not None))
+    return runs
+
+
+def _map_prose(body: str, fn) -> str:
+    """Apply fn to every run of body outside fenced code."""
+    return "".join(text if code else fn(text) for text, code in _split_fences(body))
+
+
+def _strip_comments(prose: str) -> str:
+    # Lines that hold only a comment (one line or several) are dropped whole;
+    # comments sharing a line with text are cut out of it.
+    return _HTML_COMMENT.sub("", _HTML_COMMENT_LINES.sub("", prose))
 
 
 def strip_html_comments_outside_fences(body: str) -> str:
-    """Remove `<!-- ... -->` comments outside fenced code blocks.
+    """Remove `<!-- ... -->` comments, including multi-line ones, outside fenced code.
 
     MDX has no HTML comments — a literal `<!--` fails compilation with
-    "Unexpected character `!` before name". Canonical skills carry
-    single-line marker comments (e.g. `<!-- skill-dir-note -->`) that are
-    metadata for agents, not wiki content, so they're dropped rather than
-    converted. Comments inside fences are displayed code and are kept.
+    "Unexpected character `!` before name". Canonical skills carry marker
+    comments (e.g. `<!-- skill-dir-note -->`) that are metadata for agents,
+    not wiki content, so they're dropped rather than converted. Comments
+    inside ``` or ~~~ fences are displayed code and are kept.
     """
-    out: list[str] = []
-    in_fence = False
-    for line in body.splitlines(keepends=True):
-        stripped = line.lstrip()
-        if stripped.startswith("```"):
-            in_fence = not in_fence
-            out.append(line)
-            continue
-        if in_fence:
-            out.append(line)
-            continue
-        cleaned = _HTML_COMMENT_PATTERN.sub("", line)
-        if cleaned.strip() == "" and line.strip() != "":
-            continue  # line was only a comment — drop it entirely
-        out.append(cleaned)
-    return "".join(out)
+    return _map_prose(body, _strip_comments)
 
 
 _CODE_SPAN = re.compile(r"(`+).*?\1")
@@ -239,19 +272,9 @@ def escape_mdx_curlies_outside_fences(body: str) -> str:
     blocks and inline spans) is literal in MDX 3, and an entity written
     there would render as the raw text `&#123;`, so code is left alone.
     """
-    out: list[str] = []
-    in_fence = False
-    for line in body.splitlines(keepends=True):
-        stripped = line.lstrip()
-        if stripped.startswith("```"):
-            in_fence = not in_fence
-            out.append(line)
-            continue
-        if in_fence:
-            out.append(line)
-            continue
-        out.append(_escape_curlies(line))
-    return "".join(out)
+    return _map_prose(body, lambda prose: "".join(
+        _escape_curlies(line) for line in prose.splitlines(keepends=True)
+    ))
 
 
 # --- transforms --------------------------------------------------------
