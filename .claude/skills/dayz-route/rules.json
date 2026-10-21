@@ -1,0 +1,87 @@
+{
+  "threshold": 0.8,
+  "conflict_factor": 0.5,
+  "targets": {
+    "dayz-build-pbo": {"kind": "skill", "description": "Pack an existing mod from workspace/<ModName>/ into a PBO"},
+    "dayz-launch-test": {"kind": "skill", "description": "Launch the local DayZ Diag test server and client"},
+    "dayz-stop-test": {"kind": "skill", "description": "Stop a running local DayZ test session"},
+    "dayz-preflight": {"kind": "skill", "description": "Check the DayZ modding environment (P: drive, DayZ Tools)"},
+    "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
+    "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
+    "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, CfgWeapons, inheritance, hidden selections"},
+    "dayz-script-specialist": {"kind": "agent", "description": "Write or change Enforce Script (.c) code, modded classes, RPCs"},
+    "dayz-ui-specialist": {"kind": "agent", "description": "UI work: .layout files, HUD, menus, widgets"},
+    "dayz-object-builder": {"kind": "agent", "description": "Model work in Object Builder: .p3d LODs, named selections, proxies"},
+    "dayz-mod-debugger": {"kind": "agent", "description": "Diagnose a crash, error or log: script.log, RPT, crash.log"},
+    "dayz-mod-reviewer": {"kind": "agent", "description": "Review or audit a mod for convention problems before building or release"},
+    "orchestrator": {"kind": "team", "agent": "dayz-orchestrator", "description": "Build a whole new mod with many parts (plan, team, build, test)"}
+  },
+  "rules": [
+    {
+      "route": "orchestrator",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\b(?:build|make|create|write)\\s+(?:me\\s+)?(?:a|an)\\s+(?:new\\s+)?[\\w\\s,'-]{0,60}?\\bmod\\b"]
+    },
+    {
+      "route": "dayz-build-pbo",
+      "confidence": 0.9,
+      "patterns": ["\\b(?:build|pack|rebuild|repack)\\s+(?:the\\s+)?(?:pbo\\s+(?:for\\s+)?)?(?!(?:me|a|an|it|the|my|this|pbo|and|mod|again|all|everything|config|script|scripts|ui|layout|hud|types|server)\\b)(?P<mod>[A-Za-z][\\w-]*)"]
+    },
+    {
+      "route": "dayz-stop-test",
+      "confidence": 0.9,
+      "patterns": ["^\\s*(?:please\\s+)?(?:stop|kill)\\b", "\\b(?:stop|kill|shut\\s*down|close)\\s+(?:the\\s+)?(?:test|server|client|game|dayz|session)"]
+    },
+    {
+      "route": "dayz-launch-test",
+      "confidence": 0.9,
+      "patterns": ["\\b(?:launch|start|run|boot)\\b[\\w\\s]{0,30}?\\b(?:test|server|game|dayz|client|diag)\\b", "\\btest\\s+(?:it|this)?\\s*in[- ]game\\b", "^\\s*(?:launch|test)\\s*(?:it)?\\s*$"]
+    },
+    {
+      "route": "dayz-preflight",
+      "confidence": 0.9,
+      "patterns": ["\\bpreflight\\b", "\\bis\\s+p:?\\s+(?:drive\\s+)?mounted\\b", "\\bcheck\\s+(?:my\\s+|the\\s+)?(?:environment|setup)\\b"]
+    },
+    {
+      "route": "dayz-new-mod",
+      "confidence": 0.85,
+      "patterns": ["\\bscaffold\\b"]
+    },
+    {
+      "route": "dayz-mod-debugger",
+      "confidence": 0.95,
+      "patterns": ["access violation", "unhandled exception", "exception code", "\\bSCRIPT\\s+\\(E\\)", "can't compile", "null pointer", "\\bcrash(?:es|ed|ing|\\.log)?\\b", "\\bscript\\.log\\b", "\\.rpt\\b", "\\bstack trace\\b"]
+    },
+    {
+      "route": "dayz-server-admin",
+      "confidence": 0.9,
+      "patterns": ["\\btypes\\.xml\\b", "\\bspawn(?:s|ing|ed)?\\b", "\\bloot\\b", "\\bcfgeconomycore\\b", "\\bcfggameplay\\b", "\\binit\\.c\\b", "\\bserverdz\\.cfg\\b", "\\bnominal\\b"]
+    },
+    {
+      "route": "dayz-config-specialist",
+      "confidence": 0.9,
+      "patterns": ["\\bconfig\\.cpp\\b", "\\bcfgpatches\\b", "\\bcfgvehicles\\b", "\\bcfgweapons\\b", "\\bhiddenselections"]
+    },
+    {
+      "route": "dayz-ui-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\.layout\\b", "\\bhud\\b", "\\bwidget"]
+    },
+    {
+      "route": "dayz-object-builder",
+      "confidence": 0.85,
+      "patterns": ["\\.p3d\\b", "\\bobject\\s+builder\\b", "\\blods?\\b"]
+    },
+    {
+      "route": "dayz-script-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\bmodded\\s+class\\b", "\\benforce\\s*script\\b", "\\brpc\\b"]
+    },
+    {
+      "route": "dayz-mod-reviewer",
+      "confidence": 0.85,
+      "patterns": ["\\b(?:review|audit|sanity[- ]check)\\b"]
+    }
+  ]
+}

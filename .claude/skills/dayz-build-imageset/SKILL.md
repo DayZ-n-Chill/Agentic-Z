@@ -1,10 +1,6 @@
 ---
 name: dayz-build-imageset
-description: >-
-  Packs the PNG sprites in each `<mod>/.gui-sources/<setname>/` folder into a DayZ
-  imageset (`.imageset` definition + `.paa` atlas) under `<mod>/gui/imagesets/`,
-  with a 10px gutter around every sprite and power-of-two atlas sizes. Use when a
-  mod's HUD or menu icons need to become an imageset that `.layout` files can reference.
+description: "Packs PNG sprites from a mod's .gui-sources/<setname>/ folders into a DayZ .imageset definition and .paa atlas under gui/imagesets/. Use when a mod's HUD or menu icons need to become an imageset that .layout files can reference."
 argument-hint: "[<mod-root>] [--mod-name <name>]"
 ---
 

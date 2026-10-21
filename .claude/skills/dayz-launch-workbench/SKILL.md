@@ -1,6 +1,6 @@
 ---
 name: dayz-launch-workbench
-description: Opens Enfusion Workbench (DayZ Tools' script and UI editor) from the command line, detached, either on vanilla DayZ or on a mod's workbench/dayz.gproj so vanilla and mod scripts compile together. Use when you want to write or debug a mod's Enforce Script or .layout files with Workbench's compiler and code completion.
+description: "Opens Enfusion Workbench (DayZ Tools' script and UI editor) on vanilla DayZ or on a mod's gproj so vanilla and mod scripts compile together. Use when you want to write or debug a mod's Enforce Script or .layout files with Workbench's compiler and code completion."
 argument-hint: "[--mod <ModName> | --gproj <path>]"
 ---
 

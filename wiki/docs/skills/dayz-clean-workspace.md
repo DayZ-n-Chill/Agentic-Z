@@ -4,7 +4,7 @@ name: dayz-clean-workspace
 
 ## Overview
 
-Removes Agentic-Z mod scaffolds and their artifacts from the cached project - an import link, or a workspace folder the toolkit provably created (its P:\&lt;ModName&gt;\ junction or deploy ownership marker), plus that junction and the P:\Mods\@&lt;ModName&gt;\ deploy dir when its marker matches. Never deletes a folder containing .git, a hand-placed mod, or an imported mod's external source. Use when you want to delete a mod from the workspace or reset the project; --include-server also removes .server/.
+Removes mod scaffolds the toolkit created, with their P:\ junction and deploy folder, and optionally .server/. Never deletes a git repo, a hand-placed mod or an imported mod's source. Use when you want to delete a mod from the workspace or reset the project.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

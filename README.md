@@ -6,8 +6,8 @@
 
 ## What you get
 
-- **A 21-agent mod team**: an orchestrator that plans and tracks a whole mod, team leads, specialists for scripts, configs, models, textures, UI, Figma, maps, server admin and Workbench plugins, and gatekeepers that review, build and test every task in game before you see it.
-- **31 slash-command skills** that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
+- **A 22-agent mod team**: an orchestrator that plans and tracks a whole mod, a Haiku router that picks the handler for a request, team leads, specialists for scripts, configs, models, textures, UI, Figma, maps, server admin and Workbench plugins, and gatekeepers that review, build and test every task in game before you see it.
+- **34 slash-command skills** (30 in the plugin, plus 4 clone-only template-maintenance skills) that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
 - **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials) plus the Bohemia community wiki, exposed to every agent through the `dayz-rag` MCP server. Embeddings via Voyage AI (`voyage-code-3`) stored in LanceDB; needs `VOYAGE_API_KEY` in `.env`. Skip the build with `/dayz-search-download`, which pulls the prebuilt index from GitHub releases.
 - **Three-CLI support out of the box.** The same agents and skills work in Claude Code, Codex CLI, and Gemini CLI. One `sync-skills` run wires them all up.
 
@@ -71,7 +71,7 @@ Search (optional) embeds through Voyage AI's hosted API (`voyage-code-3`, code-t
 | Tier | Scope | Where it lives |
 |---|---|---|
 | **L1 — Default rules** | Every clone, every agent, every skill. | `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (same content; one filename per CLI) |
-| **L2 — DayZ conventions** | When working inside the DayZ domain. | `.claude/skills/_shared/dayz-conventions.md` |
+| **L2 — DayZ conventions** | When working inside the DayZ domain. | `.claude/skills/_shared/dayz-conventions.md` (core, read by every DayZ agent) plus topic files in `.claude/skills/_shared/conventions/` (config, assets, scripts, ui, server) loaded per task |
 | **L3 — Specific agent / skill** | The unit of work. | `.claude/agents/<name>.md` or `.claude/skills/<name>/SKILL.md` |
 
 L3 files reference L2 in one line. The more specific tier wins ties. Corrections you give the team go into the right tier through `/dayz-record-correction`.
@@ -83,9 +83,10 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 ```
 <repo>/
 ├── .claude/
-│   ├── agents/             # 21 agents: mod team, specialists, agent-creator (L3)
-│   ├── skills/             # 31 slash-command skills (L3) + L2 shared conventions
-│   │   ├── _shared/dayz-conventions.md
+│   ├── agents/             # 22 agents: mod team, router, specialists, agent-creator (L3)
+│   ├── skills/             # 34 slash-command skills (L3) + L2 shared conventions
+│   │   ├── _shared/dayz-conventions.md   # L2 core
+│   │   ├── _shared/conventions/          # L2 topic files (config, assets, scripts, ui, server)
 │   │   ├── sync-skills/    # bootstrap: link skills into Claude/Codex/Gemini home dirs
 │   │   └── dayz-*/         # one folder per DayZ skill
 │   ├── mcp/dayz-rag/       # local RAG MCP server (search_dayz_source, get_dayz_file, ...)
@@ -94,6 +95,7 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 │   └── settings.local.json # gitignored, per-clone Claude Code settings
 ├── CLAUDE.md / AGENTS.md / GEMINI.md   # L1 rules (one per CLI, same content)
 ├── docs/                   # deep docs (DayZ workflow, model routing)
+├── mods/agentic-z-panel/   # Claude Code panel plugin (one-click DayZ buttons)
 ├── wiki/                   # Docusaurus mirror of docs/agents/skills
 ├── workspace/              # in-progress mods (workspace/<ModName>/)
 ├── .server/                # local test-server instances (.server/<instance>/)
@@ -147,6 +149,14 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 | [`/dayz-stop-test`](.claude/skills/dayz-stop-test/SKILL.md) | Kill running `DayZDiag_x64.exe` processes. Escape hatch (no preflight gate). |
 | [`/dayz-cot-bootstrap`](.claude/skills/dayz-cot-bootstrap/SKILL.md) | Two-pass workflow to grant COT admin perms on a fresh test instance. |
 
+### Gates, routing and status
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-gate`](.claude/skills/dayz-gate/SKILL.md) | Run the build and in-game gates as scripts: build or deploy, launch, read the new log lines, triage failures against known errors. |
+| [`/dayz-route`](.claude/skills/dayz-route/SKILL.md) | Pick the skill, agent or team for a request with keyword rules first; prints one JSON decision and says when the `dayz-router` agent is needed. |
+| [`/dayz-statusline`](.claude/skills/dayz-statusline/SKILL.md) | Install a status line showing `P:\` mount, active mod, running diag session and search-index age; `--remove` undoes it. |
+
 ### Editors
 
 | Command | Purpose |
@@ -188,6 +198,12 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 |---|---|
 | [`/dayz-clean-workspace`](.claude/skills/dayz-clean-workspace/SKILL.md) | Remove DayZ scaffolds and their deployed artifacts. |
 
+### Claude Code panel (separate plugin)
+
+| Plugin | Purpose |
+|---|---|
+| [`agentic-z-panel`](mods/agentic-z-panel/) | Panel beside the chat with DayZ state and one-click Mount, Build, Launch, Stop, Workbench and Object Builder buttons that run the skill scripts directly. Install with `/plugin install agentic-z-panel@dayz-n-chill`, open with `/dayz-panel`. |
+
 ### Template maintenance (clone-only, not in plugin marketplace)
 
 | Command | Purpose |
@@ -206,6 +222,7 @@ For a whole mod, start the orchestrator as your main session: `claude --agent ag
 | Agent | Role |
 |---|---|
 | [`dayz-orchestrator`](.claude/agents/dayz-orchestrator.md) | Plans the build with you, splits it into tasks, tracks it to a test build. |
+| [`dayz-router`](.claude/agents/dayz-router.md) | Haiku agent that picks one handler for a request when `/dayz-route` has no confident match. |
 | [`dayz-mod-architect`](.claude/agents/dayz-mod-architect.md) | Designs the mod's classes, files and task list before work starts. |
 | [`dayz-lead`](.claude/agents/dayz-lead.md) | Runs one team (script, config, art, UI, server, release) and its gates. |
 | [`dayz-build-checker`](.claude/agents/dayz-build-checker.md) | Gate: the PBO builds with no AddonBuilder errors. |

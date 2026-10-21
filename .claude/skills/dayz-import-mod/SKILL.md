@@ -1,6 +1,6 @@
 ---
 name: dayz-import-mod
-description: Links an existing DayZ mod folder that lives outside the workspace into workspace/<ModName>/ and creates the matching P:\<ModName>\ junction, so build, launch and clean skills work on it without moving or copying the source. Offers to add missing config.cpp, $PBOPREFIX$ or workbench/dayz.gproj, one y/N prompt per piece. Use when you want to work on a mod repo kept elsewhere on disk.
+description: "Links a DayZ mod folder kept elsewhere on disk into workspace/<ModName>/ and creates its P:\\<ModName>\\ junction, so build, launch and clean skills work on it without moving the source, offering to add missing scaffold files. Use when you want to work on a mod repo kept outside the workspace."
 argument-hint: "--source <path> [--name <ModName>] [--author <handle>] [--scaffold | --no-scaffold]"
 ---
 

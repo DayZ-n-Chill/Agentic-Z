@@ -4,7 +4,7 @@ name: dayz-new-mod
 
 ## Overview
 
-Scaffolds a new DayZ mod under workspace/&lt;ModName&gt;/ (config.cpp, $PBOPREFIX$, script module folders, data, gui, and a Workbench gproj with the mod's script paths injected), links it at P:\&lt;ModName&gt;\, and makes this project the /dayz-init cached project. Use when starting a brand-new mod; use /dayz-import-mod for an existing folder elsewhere and /dayz-add-scaffold to fill gaps in one already in workspace/.
+Scaffolds a brand-new DayZ mod under workspace/&lt;ModName&gt;/ (config.cpp, $PBOPREFIX$, script folders, Workbench gproj), links it at P:\&lt;ModName&gt;\ and makes it the active /dayz-init project. Use when starting a new mod; use /dayz-import-mod for a folder elsewhere and /dayz-add-scaffold to fill gaps.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

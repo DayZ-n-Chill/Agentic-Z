@@ -1,0 +1,197 @@
+[
+  {
+    "id": "filepatching-0x00020005",
+    "pattern": "0x00020005|does not support the client's current filePatching setting",
+    "meaning": "The server refused the -filePatching client because its serverDZ.cfg has no active allowFilePatching = 1; line.",
+    "fix": "Re-run /dayz-add-server <instance>; it sets allowFilePatching = 1; in .server/<instance>/serverDZ.cfg.",
+    "owner_agent": "dayz-orchestrator",
+    "source": "docs/dayz-modding.md Troubleshooting; Tier 2 Testing"
+  },
+  {
+    "id": "mission-no-main",
+    "pattern": "Mission script has no main function",
+    "meaning": "The server loaded an empty or broken mission folder, so players can never spawn.",
+    "fix": "Check that .server/<instance>/mission/init.c defines main(); re-copy it with /dayz-add-server <instance> --refresh-mission.",
+    "owner_agent": "dayz-server-admin",
+    "source": "docs/dayz-modding.md Troubleshooting"
+  },
+  {
+    "id": "script-module-compile",
+    "pattern": "Can't compile \"\\w+\" script module",
+    "meaning": "A script error earlier in the same log stopped this script module from compiling; nothing in it runs.",
+    "fix": "Fix the first SCRIPT (E) line with an @\"file,line\" location above this one; this line is fallout from it.",
+    "owner_agent": "dayz-script-specialist",
+    "source": "dayz-ingame-tester fail rules (script compile errors); dayz-mod-debugger (first error, not the loudest)"
+  },
+  {
+    "id": "script-unknown-type",
+    "pattern": "Unknown type '",
+    "meaning": "The script names a class the compiler cannot see: a typo, a class from a higher scripts layer (3_Game cannot see 4_World or 5_Mission), or a class from another mod whose CfgPatches is not in requiredAddons.",
+    "fix": "Check the spelling and the scripts/ layer of the file named on the line. If the class comes from another mod, add that mod's CfgPatches class to requiredAddons and pass the mod to the gate with --deps.",
+    "owner_agent": "dayz-script-specialist",
+    "source": "dayz-mod-debugger usual causes (Can't find or missing class errors)"
+  },
+  {
+    "id": "script-cant-find",
+    "pattern": "Can't find (?:class|variable|function|member)",
+    "meaning": "The script refers to a class, variable or function that is not declared where the compiler looks: a typo, a missing declaration, or a missing CfgPatches requiredAddons entry.",
+    "fix": "Open the file and line named on the error, fix the name or declare it; if it lives in another mod, add that mod to requiredAddons and to --deps.",
+    "owner_agent": "dayz-script-specialist",
+    "source": "dayz-mod-debugger usual causes (Can't find or missing class errors)"
+  },
+  {
+    "id": "script-undefined-function",
+    "pattern": "Undefined function '",
+    "meaning": "The script calls a method that does not exist on that class (a typo, or a vanilla API that changed).",
+    "fix": "Grep P:\\scripts\\ for the class named on the line and call a method it really has.",
+    "owner_agent": "dayz-script-specialist",
+    "source": "dayz-lead example (a method that doesn't exist on ItemBase); Tier 2 Vanilla source search"
+  },
+  {
+    "id": "null-pointer",
+    "pattern": "NULL pointer to instance",
+    "meaning": "Script code used an object reference that was null at run time.",
+    "fix": "Open the first mod file in the stack trace (points_to) and null-check the object before using it (enscript-style.md, null checks).",
+    "owner_agent": "dayz-script-specialist",
+    "source": "dayz-ingame-tester fail rules; .claude/skills/_shared/enscript-style.md"
+  },
+  {
+    "id": "missing-texture",
+    "pattern": "Cannot load texture '",
+    "meaning": "A config or material points at a .paa that is not in the loaded data.",
+    "fix": "Check the path in config.cpp hiddenSelectionsTextures or the .rvmat against the file under workspace/<ModName>/ (paths start at <ModName>\\), and that the .paa exists with a role suffix such as _co.",
+    "owner_agent": "dayz-asset-specialist",
+    "source": "dayz-ingame-tester fail rules (missing textures); Tier 2 conventions/assets.md"
+  },
+  {
+    "id": "missing-model",
+    "pattern": "Cannot open object ",
+    "meaning": "A config model= path points at a .p3d that is not in the loaded data.",
+    "fix": "Check the model= path in config.cpp against the .p3d under workspace/<ModName>/ (paths start at <ModName>\\).",
+    "owner_agent": "dayz-config-specialist",
+    "source": "dayz-ingame-tester fail rules (missing models)"
+  },
+  {
+    "id": "missing-config-entry",
+    "pattern": "No entry '[^']*'",
+    "meaning": "A config lookup failed: the class or property is missing from the loaded config, often a misspelled class or a parent that loads after the mod because CfgPatches requiredAddons does not list it.",
+    "fix": "Find the class path on the line in workspace/<ModName>/config.cpp; fix the name, add the missing property, or add the parent's CfgPatches class to requiredAddons.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "dayz-ingame-tester fail rules (missing config classes); dayz-mod-debugger usual causes"
+  },
+  {
+    "id": "modded-class-extends",
+    "scope": "scripts",
+    "pattern": "^\\s*modded\\s+class\\s+\\w+\\s*(?:extends|:)\\s*\\w+",
+    "meaning": "A modded class with an extends clause compiles but is a silent no-op, so the override never runs.",
+    "fix": "Drop the extends clause: modded class Foo { ... }.",
+    "owner_agent": "dayz-script-specialist",
+    "source": "Tier 2 conventions/scripts.md; dayz-mod-debugger usual causes"
+  },
+  {
+    "id": "missing-cfgpatches",
+    "scope": "config",
+    "match": "absent",
+    "pattern": "\\bclass\\s+CfgPatches\\b",
+    "meaning": "config.cpp declares no CfgPatches class, so the engine does not load the mod's config.",
+    "fix": "Add class CfgPatches { class <ModName> { units[] = {}; weapons[] = {}; requiredVersion = 0.1; requiredAddons[] = {}; }; }; to workspace/<ModName>/config.cpp.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "docs/dayz-modding.md Troubleshooting (Mod doesn't load in-game)"
+  },
+  {
+    "id": "p-drive-not-mounted",
+    "pattern": "P:\\\\ is NOT mounted",
+    "meaning": "The DayZ Tools work drive is not mounted, so nothing can build or launch.",
+    "fix": "Mount P: from DayZ Tools (Tools menu, Mount P drive), then gate again.",
+    "owner_agent": "user",
+    "source": "docs/dayz-modding.md Troubleshooting"
+  },
+  {
+    "id": "dayz-tools-missing",
+    "pattern": "DayZ Tools not (?:detected|found)",
+    "meaning": "AddonBuilder cannot be found.",
+    "fix": "Install DayZ Tools from Steam, or set DAYZ_TOOLS_PATH to its install root.",
+    "owner_agent": "user",
+    "source": "docs/dayz-modding.md Troubleshooting"
+  },
+  {
+    "id": "p-mods-junction",
+    "pattern": "P:\\\\Mods\\\\? (?:does not exist|is a regular folder|junction is dangling)",
+    "meaning": "P:\\Mods\\ is not a junction to the DayZ !Workshop folder, so built PBOs would not land where the engine loads them.",
+    "fix": "Recreate the junction: cmd /c mklink /J P:\\Mods \"<DayZ install>\\!Workshop\" (remove a regular P:\\Mods folder first).",
+    "owner_agent": "user",
+    "source": "docs/dayz-modding.md Troubleshooting"
+  },
+  {
+    "id": "deploy-dir-not-owned",
+    "pattern": "no Agentic-Z ownership marker",
+    "meaning": "P:\\Mods\\@<ModName>\\ exists but was not created by this pipeline; it could be a subscribed or hand-placed mod.",
+    "fix": "If the folder is yours, remove it (cmd /c rmdir /s /q P:\\Mods\\@<ModName>) and gate again; otherwise rename the mod.",
+    "owner_agent": "user",
+    "source": "dayz-build-pbo SKILL.md (ownership gate)"
+  },
+  {
+    "id": "mod-junction-missing",
+    "pattern": "P:\\\\\\w+ junction is missing|exists as a real folder, not a link",
+    "meaning": "The P:\\<ModName>\\ link to workspace/<ModName>/ is missing or wrong, so AddonBuilder cannot read the source.",
+    "fix": "Run /dayz-add-scaffold <ModName> --piece junction.",
+    "owner_agent": "dayz-orchestrator",
+    "source": "docs/dayz-modding.md Troubleshooting"
+  },
+  {
+    "id": "pboprefix-mismatch",
+    "pattern": "\\$PBOPREFIX\\$ is '",
+    "meaning": "$PBOPREFIX$ does not hold exactly the mod name, so the PBO's paths would not resolve.",
+    "fix": "Set workspace/<ModName>/$PBOPREFIX$ to the single line <ModName> and make config.cpp paths start at <ModName>\\.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "dayz-build-pbo SKILL.md (workspace check)"
+  },
+  {
+    "id": "scaffold-file-missing",
+    "pattern": "\\\\(?:config\\.cpp|\\$PBOPREFIX\\$) missing",
+    "meaning": "The mod folder lacks config.cpp or $PBOPREFIX$, which the build needs.",
+    "fix": "Run /dayz-add-scaffold <ModName> to add the missing file.",
+    "owner_agent": "dayz-orchestrator",
+    "source": "dayz-build-pbo SKILL.md (refuses to run if)"
+  },
+  {
+    "id": "pbo-not-built",
+    "pattern": "has no (?:Addons folder|\\.pbo files)",
+    "meaning": "/dayz-launch-test found no PBO for a mod on the launch line.",
+    "fix": "For the mod under test run /dayz-gate build <ModName>; for a dependency, put its @mod under P:\\Mods\\ first.",
+    "owner_agent": "dayz-orchestrator",
+    "source": "docs/dayz-modding.md Troubleshooting (Mod has no built PBO)"
+  },
+  {
+    "id": "instance-not-set-up",
+    "pattern": "Instance '[^']+' is not set up",
+    "meaning": "The server instance has no serverDZ.cfg, mission folder or template junction.",
+    "fix": "Run /dayz-add-server <instance>.",
+    "owner_agent": "dayz-orchestrator",
+    "source": "dayz-launch-test SKILL.md (refuses to run if)"
+  },
+  {
+    "id": "diag-exe-missing",
+    "pattern": "DayZDiag_x64\\.exe not found",
+    "meaning": "The DayZ Diag binary that both server and client need is missing.",
+    "fix": "Verify the DayZ install in Steam, or set DAYZ_DIAG_PATH to DayZDiag_x64.exe.",
+    "owner_agent": "user",
+    "source": "docs/dayz-modding.md Troubleshooting"
+  },
+  {
+    "id": "port-in-use",
+    "pattern": "UDP port \\d+ in use",
+    "meaning": "Something still holds the server port after the gate stopped DayZDiag.",
+    "fix": "Close the program holding the port, or run the gate with another --port.",
+    "owner_agent": "user",
+    "source": "dayz-launch-test SKILL.md (port check)"
+  },
+  {
+    "id": "unsigned-payload",
+    "pattern": "has no matching \\.bisign",
+    "meaning": "A bundle PBO ships without its signature; clients that verify signatures reject it.",
+    "fix": "Put the PBO's .bisign (from the mod's author) next to it in workspace/<ModName>/Addons/ and gate again.",
+    "owner_agent": "user",
+    "source": "dayz-build-checker bundle rule; dayz-deploy-pbo SKILL.md"
+  }
+]

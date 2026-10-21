@@ -19,7 +19,7 @@ Then walk through [`docs/dayz-modding.md`](dayz-modding.md) for prerequisites (D
 | Layer | Scope | Where it lives |
 |---|---|---|
 | **L1 — Default rules** | Apply to every clone, every agent, every skill. | `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (three filenames so each CLI finds its own; same content in each) |
-| **L2 — DayZ conventions** | Apply when working inside the DayZ domain. | `.claude/skills/_shared/dayz-conventions.md` |
+| **L2 — DayZ conventions** | Apply when working inside the DayZ domain. | `.claude/skills/_shared/dayz-conventions.md` (core, read by every DayZ agent) plus topic files in `.claude/skills/_shared/conventions/` (config, assets, scripts, ui, server) loaded per task |
 | **L3 — Specific agent or skill** | The actual unit of work. | `.claude/agents/<name>.md` or `.claude/skills/<name>/SKILL.md`, plus its scripts |
 
 L3 files include a one-line reference to L2: *"Follow `.claude/skills/_shared/dayz-conventions.md`."*
@@ -30,7 +30,7 @@ When invoked on a task, an agent should:
 
 1. Read the L1 file for the CLI in use (`CLAUDE.md` / `AGENTS.md` / `GEMINI.md`).
 2. Read the specific agent or skill being run (L3).
-3. If L3 references the DayZ conventions file (L2), read it.
+3. If L3 references the DayZ conventions file (L2), read the core file and any topic files under `.claude/skills/_shared/conventions/` that L3 names.
 4. Obey all three layers; the more specific layer wins ties.
 
 ## File structure
@@ -41,7 +41,8 @@ When invoked on a task, an agent should:
 │   ├── agents/                         # DayZ agent definitions (L3)
 │   ├── skills/                         # skill definitions (L3) + L2 shared
 │   │   ├── _shared/
-│   │   │   └── dayz-conventions.md     # L2 rules for the DayZ domain
+│   │   │   ├── dayz-conventions.md     # L2 core rules for the DayZ domain
+│   │   │   └── conventions/            # L2 topic files (config, assets, scripts, ui, server)
 │   │   ├── sync-skills/                # bootstrap skill
 │   │   │   ├── SKILL.md
 │   │   │   ├── sync.py
@@ -56,6 +57,7 @@ When invoked on a task, an agent should:
 ├── AGENTS.md                           # L1 rules (Codex reads this)
 ├── GEMINI.md                           # L1 rules (Gemini reads this)
 ├── docs/                               # this folder
+├── mods/agentic-z-panel/               # Claude Code panel plugin (one-click DayZ buttons)
 ├── scripts/                            # ad-hoc helper scripts
 ├── workspace/                          # in-progress mods (workspace/<ModName>/)
 ├── .server/                            # local test-server instances (.server/<instance>/)
@@ -153,6 +155,14 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/dayz-stop-test`](../.claude/skills/dayz-stop-test/SKILL.md) | Kill running DayZDiag_x64.exe processes (escape hatch, no preflight gate) |
 | [`/dayz-cot-bootstrap`](../.claude/skills/dayz-cot-bootstrap/SKILL.md) | Two-pass workflow to grant COT admin perms on a fresh test instance |
 
+### Gates, routing and status
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-gate`](../.claude/skills/dayz-gate/SKILL.md) | Run the build and in-game gates as scripts: build or deploy, launch, read the new log lines, triage failures against known errors |
+| [`/dayz-route`](../.claude/skills/dayz-route/SKILL.md) | Pick the skill, agent or team for a request with keyword rules first; prints one JSON decision and says when the `dayz-router` agent is needed |
+| [`/dayz-statusline`](../.claude/skills/dayz-statusline/SKILL.md) | Install a status line showing `P:\` mount, active mod, running diag session and search-index age; `--remove` undoes it |
+
 ### Editors
 
 | Command | Purpose |
@@ -194,6 +204,12 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 |---|---|
 | [`/dayz-clean-workspace`](../.claude/skills/dayz-clean-workspace/SKILL.md) | Remove DayZ scaffolds and their deployed artifacts |
 
+### Claude Code panel (separate plugin)
+
+| Plugin | Purpose |
+|---|---|
+| [`agentic-z-panel`](../mods/agentic-z-panel/) | Panel beside the chat with DayZ state and one-click Mount, Build, Launch, Stop, Workbench and Object Builder buttons that run the skill scripts directly. Install with `/plugin install agentic-z-panel@dayz-n-chill`, open with `/dayz-panel` |
+
 ### Template maintenance (clone-only, not in plugin marketplace)
 
 | Command | Purpose |
@@ -212,17 +228,18 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 - **DayZ Server** (Steam appid 223350) — only for the initial mission bootstrap; can be uninstalled after
 - **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3`. A full source build embeds roughly 66M tokens, so check Voyage's pricing first. Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
 
-L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](../.claude/skills/_shared/dayz-conventions.md).
+L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](../.claude/skills/_shared/dayz-conventions.md) (core) and the topic files in [`.claude/skills/_shared/conventions/`](../.claude/skills/_shared/conventions/).
 
 **Full walkthrough — prerequisites, quick start, env vars, troubleshooting:** [`docs/dayz-modding.md`](dayz-modding.md).
 
 ## DayZ agents
 
-The 21 agents live under `.claude/agents/`. The mod team runs a whole mod; the specialists also take single tasks directly.
+The 22 agents live under `.claude/agents/`. The mod team runs a whole mod; the specialists also take single tasks directly.
 
 | Agent | Focus |
 |---|---|
 | `dayz-orchestrator` | Plans the build with you, splits it into tasks, tracks it to a test build |
+| `dayz-router` | Haiku agent that picks one handler for a request when `/dayz-route` has no confident match |
 | `dayz-mod-architect` | Designs the mod's classes, files and task list before work starts |
 | `dayz-lead` | Runs one team's workers and its review gates |
 | `dayz-build-checker` | Gate: the PBO builds with no AddonBuilder errors |

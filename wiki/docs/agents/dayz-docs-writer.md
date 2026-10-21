@@ -1,9 +1,10 @@
 ---
 name: "dayz-docs-writer"
+model: sonnet
 color: green
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--green">green</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">sonnet</span><span class="agent-color-badge agent-color-badge--green">green</span></p>
 
 ## Overview
 

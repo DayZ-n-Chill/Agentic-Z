@@ -4,7 +4,7 @@ name: dayz-split-types
 
 ## Overview
 
-Splits a monolithic DayZ types.xml into per-category files under db/types/, registers them in cfgeconomycore.xml as &lt;ce folder="db/types"&gt; and empties the original so no type loads twice, backing up every file it changes first. Wraps the vendored DayZ-TypeSplitterPro script. Use when a mission's types.xml has grown too large to edit by hand or a server owner wants categorized economy files.
+Splits a monolithic DayZ types.xml into per-category files under db/types/ and registers them in cfgeconomycore.xml, backing up every changed file. Use when a mission's types.xml has grown too large to edit by hand or a server owner wants categorized economy files.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

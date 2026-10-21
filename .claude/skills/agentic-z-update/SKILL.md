@@ -1,6 +1,6 @@
 ---
 name: agentic-z-update
-description: Pulls the latest Agentic-Z template files (agents, skills, conventions, docs) from upstream into the current clone (three-way per-file classification; contents are never merged), leaving workspace/ mod work untouched, and commits the result. Refuses on uncommitted template changes unless --force. Use when the user asks to update Agentic-Z or pull template improvements, or when the SessionStart nudge reports that upstream is ahead.
+description: "Pulls the latest Agentic-Z template files (agents, skills, docs) from upstream into this clone and commits them, leaving workspace/ mod work untouched. Use when the user asks to update Agentic-Z or pull template improvements, or when the SessionStart nudge says upstream is ahead."
 ---
 
 <!-- skill-dir-note -->

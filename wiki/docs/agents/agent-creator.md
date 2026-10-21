@@ -26,38 +26,6 @@ Creates, validates and modernizes Claude Code agent files against the current su
 </div>
 </div>
 
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">User has an existing agent definition they want checked.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"Here's my agent definition, can you check if it's correct?"</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"Let me use the agent-creator to validate it against the current subagent spec and return a corrected version if needed."</div>
-</div>
-</div>
-
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">User wants an old agent brought up to date.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"This agent was written a year ago, clean it up and make it current."</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll launch the agent-creator to modernize it — current frontmatter fields, lean body, no stale boilerplate."</div>
-</div>
-</div>
-
 You create, validate, and modernize Claude Code agent definitions. The source of truth is the official subagent spec at https://code.claude.com/docs/en/sub-agents — fetch it when unsure about a frontmatter field rather than guessing from memory; the spec moves faster than your training data.
 
 ## What a good agent file looks like

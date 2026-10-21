@@ -1,6 +1,6 @@
 ---
 name: dayz-deploy-pbo
-description: Copies pre-compiled PBOs from a workspace bundle (workspace/<ModName>/Addons/*.pbo, Keys/*.bikey) to P:\Mods\@<ModName>\ without AddonBuilder. Skips unchanged files, warns on missing .bisign files, and refuses to touch a deploy dir it does not own. Use when a mod ships only PBOs (third-party or umbrella bundles), or after /dayz-build-pbo builds a bundle's linker PBO.
+description: "Copies prebuilt PBOs and keys from a workspace bundle (workspace/<ModName>/Addons and Keys) to P:\\Mods\\@<ModName>\\ without AddonBuilder. Use when a mod ships only PBOs (third-party or umbrella bundles), or after /dayz-build-pbo builds a bundle's linker PBO."
 ---
 
 <!-- skill-dir-note -->
@@ -10,7 +10,7 @@ description: Copies pre-compiled PBOs from a workspace bundle (workspace/<ModNam
 
 Mirror pre-compiled artifacts from a workspace bundle folder to the deploy tree: `workspace/<ModName>/Addons/*.pbo` (+ `*.bisign`) to `P:\Mods\@<ModName>\Addons\`, `Keys/*.bikey` to `P:\Mods\@<ModName>\Keys\`, plus optional `meta.cpp`/`mod.cpp`. Pure copy: no AddonBuilder, no binarization, no buildable source required (`config.cpp` and `$PBOPREFIX$` are the build path's gate, not this one). The preflight gate, project cache and ownership-marker rules come from `.claude/skills/_shared/skill_helpers.py`, shared with `/dayz-build-pbo` and `/dayz-clean-workspace`.
 
-Follow `.claude/skills/_shared/dayz-conventions.md` (see "Bundle / umbrella mods").
+Follow `.claude/skills/_shared/dayz-conventions.md` and "Bundle / umbrella mods" in `.claude/skills/_shared/conventions/config.md`.
 
 ## How to run
 

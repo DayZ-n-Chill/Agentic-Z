@@ -1,0 +1,29 @@
+{
+  "description": "Agentic-Z: syntax check for config.cpp and .layout edits, and the /dayz-scope-mod guard against editing other mods.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/scope_guard.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/edit_check.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

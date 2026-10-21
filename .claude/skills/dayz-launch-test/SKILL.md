@@ -1,6 +1,6 @@
 ---
 name: dayz-launch-test
-description: Launches a local DayZ Diag server for an instance added with /dayz-add-server, waits for it to bind its port, then starts the diag client connected to it, with the given built mods loaded and file patching on. Run-only; it does no setup. Use when you want to test built mods in game, or to check the exact launch commands with --dry-run.
+description: "Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run."
 argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName> ...] [--server <instance>] [--port N] [--dry-run]"
 ---
 

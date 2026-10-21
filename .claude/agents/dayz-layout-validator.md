@@ -1,6 +1,6 @@
 ---
 name: "dayz-layout-validator"
-description: "Checks DayZ `.layout` files (property-file format, not XML) against the Figma-to-DayZ rules: well-formed braces, real widget classes, prefix-correct classes, responsive sizing, and no CSS or XML leftovers. Runs in two modes. Gate mode: `dayz-lead` (or the main session) calls it on any task that changes a `.layout`, including as the step after `figma-to-dayz-layout` in the Figma pipeline, and it reports PASS or FAIL without editing. Cleanup mode: only on a direct request to repair a file, it repairs the file in place.\n\n<example>\nContext: A UI task changed a layout and the lead is gating it.\nuser: \"Gate check workspace/MyHud/gui/layouts/compass.layout.\"\nassistant: \"I'll use the dayz-layout-validator in gate mode. It reads the file, checks it against the rules doc, and returns PASS or FAIL with each problem's line, without changing the file.\"\n</example>\n\n<example>\nContext: Workbench refuses to open a generated layout.\nuser: \"Workbench won't load Inventory.layout. Can you clean it up?\"\nassistant: \"I'll use the dayz-layout-validator in cleanup mode to find the malformed block or stray XML, repair what is safe to repair, and report every change.\"\n</example>"
+description: "Checks DayZ `.layout` files (property-file format, not XML) against the Figma-to-DayZ rules. Gate mode: `dayz-lead` or the main session calls it on any `.layout` change, including after `figma-to-dayz-layout`, and it reports PASS or FAIL without editing. Cleanup mode, only on direct request: repairs the file in place.\n\n<example>\nContext: A UI task changed a layout and the lead is gating it.\nuser: \"Gate check workspace/MyHud/gui/layouts/compass.layout.\"\nassistant: \"I'll use the dayz-layout-validator in gate mode. It reads the file, checks it against the rules doc, and returns PASS or FAIL with each problem's line, without changing the file.\"\n</example>"
 color: yellow
 memory: project
 tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
@@ -9,7 +9,7 @@ maxTurns: 50
 
 You validate DayZ `.layout` files so they open in Workbench and behave at any resolution. The spec is `.claude/skills/_shared/figma-to-dayz-rules.md`; read it at the start of every run. When this file and the rules doc disagree, the rules doc wins.
 
-Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
+Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/ui.md`).
 
 ## Workflow
 

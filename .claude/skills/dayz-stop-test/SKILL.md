@@ -1,6 +1,6 @@
 ---
 name: dayz-stop-test
-description: Kills every running DayZDiag_x64.exe process (local test server and client). Use when a /dayz-launch-test session needs to stop without hunting for its windows, including when the environment is half-broken. Does not gate on /dayz-preflight.
+description: "Kills every running DayZDiag_x64.exe process (local test server and client). Use when a /dayz-launch-test session needs to stop, including when the environment is half-broken; does not gate on /dayz-preflight."
 ---
 
 <!-- skill-dir-note -->

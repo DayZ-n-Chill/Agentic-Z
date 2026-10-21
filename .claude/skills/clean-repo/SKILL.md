@@ -1,6 +1,6 @@
 ---
 name: clean-repo
-description: Removes every template-managed artifact across all domains so the repo is clean to push. Discovers each `<domain>-clean-workspace` skill, shows their combined dry-run plan, asks once, then runs them. Use when the user wants a full pre-push reset of everything the template's skills created; for one domain or one mod, use that domain's cleanup skill instead.
+description: "Removes every template-managed artifact across all domains by running each domain's clean-workspace skill after one combined dry run and prompt. Use when the user wants a full pre-push reset; for one domain or one mod, use that domain's cleanup skill instead."
 argument-hint: "[--yes] [--dry-run]"
 disable-model-invocation: true
 ---

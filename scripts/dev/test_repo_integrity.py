@@ -122,6 +122,29 @@ def test_gates_cannot_edit(name):
     assert not tools & {"Edit", "Write", "NotebookEdit"}
 
 
+BAT_FILES = sorted((REPO / "scripts").glob("*/*.bat"))
+
+
+@pytest.mark.parametrize("path", BAT_FILES, ids=lambda p: f"{p.parent.name}/{p.name}")
+def test_bat_wrapper_targets_exist(path):
+    # Each wrapper runs a script relative to its own folder (%~dp0); a moved or
+    # renamed script would break the no-token path silently.
+    text = path.read_text(encoding="utf-8", errors="replace")
+    for target in re.findall(r'%~dp0([^"\s]+\.(?:py|bat))', text):
+        assert (path.parent / target.replace("\\", "/")).resolve().exists(), f"{path.name} runs missing {target}"
+
+
+RUNNABLE_WITHOUT_BAT = {"dayz-particles", "dayz-record-correction"}  # reference-only skills, no script
+
+
+def test_every_runnable_skill_has_a_bat_wrapper():
+    wrapped = set()
+    for bat in BAT_FILES:
+        wrapped.update(re.findall(r"skills\\([a-z0-9-]+)\\", bat.read_text(encoding="utf-8", errors="replace")))
+    skills = {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
+    assert skills - wrapped - RUNNABLE_WITHOUT_BAT == set()
+
+
 def test_tier_one_files_match():
     texts = {name: (REPO / name).read_text(encoding="utf-8") for name in ("CLAUDE.md", "AGENTS.md", "GEMINI.md")}
     assert len(set(texts.values())) == 1

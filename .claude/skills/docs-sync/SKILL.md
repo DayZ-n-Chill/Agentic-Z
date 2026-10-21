@@ -1,6 +1,6 @@
 ---
 name: docs-sync
-description: "Mirrors canonical agent, skill and doc files into the Docusaurus wiki at wiki/docs/: detects drift, applies the deterministic Docusaurus transform, and prunes orphan wiki pages. Use when you have edited .claude/agents/, a SKILL.md, docs/dayz-modding.md, docs/model-routing.md or the shared DayZ conventions, or when the Stop hook reports wiki drift."
+description: "Mirrors agent, skill and doc files into the Docusaurus wiki at wiki/docs/: detects drift, applies the transform and prunes orphan pages. Use when you have edited .claude/agents/, a SKILL.md, docs/dayz-modding.md, docs/model-routing.md or the shared DayZ conventions, or when the Stop hook reports wiki drift."
 ---
 
 <!-- skill-dir-note -->

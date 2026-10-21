@@ -1,12 +1,6 @@
 ---
 name: dayz-p3d-audit
-description: >
-  Audits DayZ MLOD .p3d models for collision, action-targeting, physics, animation and
-  structural problems, and scans config.cpp, model.cfg and .rvmat files for absolute
-  P:\ paths. Reports findings only. Use when a mod object has no collision, actions
-  don't appear, players walk through placed objects, a Blender-exported model fails
-  in-game, textures are missing, animations don't play, or the user asks to review,
-  check or audit a p3d or mod.
+description: "Audits DayZ .p3d models and their config.cpp, model.cfg and .rvmat for collision, action, physics, animation and path problems (report only). Use when an object has no collision or actions, players walk through it, a Blender export fails, textures are missing, animations don't play, or the user asks to review, check or audit a p3d or mod."
 ---
 
 <!-- skill-dir-note -->

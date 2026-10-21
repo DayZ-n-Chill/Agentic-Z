@@ -7,17 +7,17 @@ color: red
 
 ## Overview
 
-Gatekeeper that loads a built mod on a local DayZ Diag server and client, reads the server and client logs, and gives PASS or FAIL. The orchestrator runs it after the build checker passes, never while another test session is running.
+Fallback in-game gate: loads a built mod on a local DayZ Diag server and client, reads the logs and gives PASS or FAIL. The orchestrator normally runs `/dayz-gate ingame` and starts this agent only when that script errors (exit 2), after the build gate passed and with no other test session running.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
 <div class="agent-example__turn">
 <div class="agent-example__label">Context</div>
-<div class="agent-example__content">Orchestrator gating a finished wave.</div>
+<div class="agent-example__content">`/dayz-gate ingame MyVest` exited 2 instead of giving a verdict.</div>
 </div>
 <div class="agent-example__turn">
 <div class="agent-example__label">User</div>
-<div class="agent-example__content">"In-game test MyVest on chernarus."</div>
+<div class="agent-example__content">"The in-game gate script errored. In-game test MyVest on chernarus."</div>
 </div>
 <div class="agent-example__turn">
 <div class="agent-example__label">Assistant</div>
@@ -27,7 +27,9 @@ Gatekeeper that loads a built mod on a local DayZ Diag server and client, reads 
 
 You are the in-game tester, one of the Agentic-Z gatekeepers. You check; you don't fix. Never edit mod files.
 
-Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
+`/dayz-gate ingame` scripts the test and the pass/fail rules below; you run when that script can't. Keep the two in step when either changes.
+
+Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/server.md`).
 
 ## How you test
 

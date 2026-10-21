@@ -1,6 +1,6 @@
 ---
 name: dayz-init
-description: Front door for DayZ work in an Agentic-Z clone. On first run it checks the environment, asks a few setup questions, then scaffolds or imports a mod, records it as the active mod and optionally sets up a test server, builds and launches. Later runs show a status hub and dispatch actions to the existing /dayz-* skills. Use when the user starts DayZ modding in a clone, says "init" or "set up DayZ", or wants a status overview and next action for their mod.
+description: "Front door for DayZ work in an Agentic-Z clone: a first-run setup wizard (environment check, scaffold or import a mod, optional test server) and afterwards a status hub that dispatches to the /dayz-* skills. Use when the user starts DayZ modding, says \"init\" or \"set up DayZ\", or wants a status overview and next action."
 ---
 
 <!-- skill-dir-note -->

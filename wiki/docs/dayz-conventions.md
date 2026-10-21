@@ -5,7 +5,7 @@ description: Layered conventions and full workflow for every DayZ-related agent 
 
 # DayZ Modding Conventions (L2)
 
-These are the Tier 2 (L2) rules. They apply to every DayZ-related agent and skill in this repo. They sit below the L1 default rules in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` and above any individual agent or skill. When a DayZ agent or skill is invoked, it reads this file in addition to L1. Tier 3 packs for narrower work live next to this file in `.claude/skills/_shared/`.
+These are the Tier 2 (L2) rules. They apply to every DayZ-related agent and skill in this repo. They sit below the L1 default rules in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` and above any individual agent or skill. When a DayZ agent or skill is invoked, it reads this core file in addition to L1, plus the topic files under `conventions/` that its work touches (index at the end). Tier 3 packs for narrower work live next to this file in `.claude/skills/_shared/`.
 
 ## EnScript code style
 
@@ -65,113 +65,14 @@ The RAG layer (`/dayz-search-index` plus the `dayz-rag` MCP server) embeds vanil
 - `/dayz-new-mod` creates a directory junction `P:\<ProjectName>\` to `workspace/<ProjectName>/` at scaffold time. AddonBuilder and the engine read from `P:\<ProjectName>\`; you edit in `workspace/<ProjectName>/`. One source of truth, no copies. Build skills verify the junction exists and never create or modify it (that is `/dayz-new-mod`'s job).
 - Built `.pbo` files deploy to `P:\Mods\@<ModName>\Addons\`.
 
-## Bundle / umbrella mods (pre-compiled PBOs)
-
-Not every `workspace/<ModName>/` is buildable source. A bundle carries pre-compiled artifacts: third-party or purchased mods distributed as PBO-only, or an umbrella `@mod` collecting many pre-built PBOs under one container.
-
-- `workspace/<ModName>/Addons/*.pbo` (+ matching `*.bisign` signatures): the pre-compiled payload.
-- `workspace/<ModName>/Keys/*.bikey`: public keys; deploy to `P:\Mods\@<ModName>\Keys\`.
-- Optional `meta.cpp` / `mod.cpp` at the bundle root.
-- Optional linker `config.cpp` + `$PBOPREFIX$`: a content-free `CfgPatches` declaring `requiredAddons[]`, built from source like any mod.
-
-Build and deploy are separate paths with separate gates. The `config.cpp` + `$PBOPREFIX$` requirement (and the `P:\<ModName>\` junction) applies to the build path only (`/dayz-build-pbo`, which runs AddonBuilder). The deploy path (`/dayz-deploy-pbo`) is an idempotent copy of the pre-compiled payload into `P:\Mods\@<ModName>\` and requires none of them. Both paths write the same `.agentic-z-scaffold` ownership marker; `/dayz-deploy-pbo` and `/dayz-clean-workspace` refuse to touch an existing `@<ModName>` dir that lacks it (it could be a subscribed or hand-placed mod).
-
-Umbrella pattern: each payload PBO keeps its own prefix (baked in when it was compiled); `@<ModName>` is just the container. Never merge several mods into one re-prefixed PBO: that needs a destructive config and asset merge and breaks external `requiredAddons[]` references. A full umbrella is the built linker PBO (via `/dayz-build-pbo`) plus the copied payload (via `/dayz-deploy-pbo`) side by side under one `@<ModName>\Addons\`; deploy never deletes, so order does not matter.
-
-## Asset conventions
-
-- Textures are `.paa` only, and every texture name ends in a role suffix. ImageToPAA picks compression and color space from the suffix (rules in `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg`). Vanilla gear uses three:
-  - `_co`: color (diffuse); `_ca` when it carries alpha
-  - `_nohq`: normal map
-  - `_smdi`: specular
-- The other suffixes vanilla ships under `P:\DZ` (all with TexConvert rules): `_lco`, `_lca` (terrain layer color), `_no`, `_non`, `_nopx` (other normal maps), `_sm` (specular), `_as`, `_ads`, `_adshq` (ambient shadow), `_mc`, `_mco` (macro, multiply color), `_dt`, `_detail`, `_cdt`, `_dtsmdi` (detail), `_mask` and `_sky`. `/dayz-pack-texture` accepts exactly this set.
-- Materials are `.rvmat` files referencing the textures and assigning shaders.
-- Models are `.p3d` files exported from Object Builder. Code that reads `.p3d` with py3d follows `.claude/skills/_shared/py3d-mlod-notes.md`.
-
-## Config conventions
-
-- `config.cpp` is the canonical declaration entry point.
-- Use `hiddenSelections` + `hiddenSelectionsTextures` for retextures rather than duplicating models.
-- Inherit from vanilla classes (requires vanilla data on `P:\`).
-- Custom containers: see `.claude/skills/_shared/container-base.md` (the `class Cargo`, `GlobalArmor` and `healthLevels[]` requirements).
-
-## `inventorySlot`: string vs array (`T148506`)
-
-Vanilla declares `inventorySlot` in two forms: a string for a single slot, and an array for several.
-
-```cpp
-// String form (DZ\vehicles\parts\config.cpp:822-831):
-class GlowPlug : Inventory_Base
-{
-    inventorySlot = "GlowPlug";
-};
-
-// Array form (DZ\gear\camping\config.cpp:10157-10173):
-class WoodenCrate : Container_Base
-{
-    inventorySlot[] = {"Truck_01_WoodenCrate1", "Truck_01_WoodenCrate2", "Truck_01_WoodenCrate3", "Truck_01_WoodenCrate4"};
-};
-```
-
-Appending with `inventorySlot[] += {...}` to a class whose parent uses the string form fails silently: the mod's slot is dropped at parse time, and the slot just refuses the item with no RPT or script error (Bohemia tracker `T148506`). So whenever a mod class changes a parent's `inventorySlot`, redeclare the whole array with `=` and keep the parent's existing entries:
-
-```cpp
-class MyMod_GlowPlug : GlowPlug
-{
-    inventorySlot[] = {"GlowPlug", "MyMod_CustomSlot"};   // not += {"MyMod_CustomSlot"}
-};
-```
-
-Check the parent's declaration on `P:\` first (Grep for the class name) so the copied entries match what vanilla ships.
-
-## Script conventions
-
-- Enforce Script (DayZ's C#-like language), styled per `enscript-style.md`.
-- Folder modules:
-  - `scripts/3_Game/`: base game logic
-  - `scripts/4_World/`: world-level logic
-  - `scripts/5_Mission/`: mission / server scripts
-- Use `modded class Foo { ... }` for non-destructive overrides, with NO `extends` clause. `modded class Foo extends Foo` compiles but is a silent no-op.
-
-## Server / economy
-
-- `types.xml`: Central Economy spawn rates, lifetimes, locations.
-- `cfgeconomycore.xml`, `cfgspawnabletypes.xml`, `events.xml`: economy structure.
-- `cfggameplay.json`: runtime tuning.
-- `mission/init.c`: server-side world init logic.
-
 ## Testing
 
 - DayZ mods cannot be tested client-only. Every test or launch skill MUST start a local server with the same mod set alongside the client.
 - Both client and server MUST be `DayZDiag_x64.exe`, not the retail binaries. Retail `DayZ_x64.exe` and `DayZServer_x64.exe` both block past the loading screen when `-filePatching` is on, and `-filePatching` is what lets the engine read raw `.cpp`/`.c` from the `P:\<ModName>\` junction. The same `DayZDiag_x64.exe` runs either end; pass `-server` for server mode.
 - DayZ Diag lives in the DayZ game install next to the retail exe; resolve it with `find_dayz_diag()` in `dayz-preflight/preflight.py`. The DayZ Server Steam install (appid 223350) is only needed to copy mission templates.
 - The server's `serverDZ.cfg` needs `allowFilePatching = 1;` for `-filePatching` clients to connect. Without it the connection fails with `0x00020005` ("The server does not support the client's current filePatching setting"). `/dayz-add-server` writes it into the default cfg, treating a missing, commented-out or non-1 `allowFilePatching` as missing and setting it to `allowFilePatching = 1;`. `/dayz-launch-test` and `/dayz-cot-bootstrap` refuse to launch without it.
-- Server runtime lives at `.server/<instance>/` at the project root (not under `workspace/`). Each instance is self-contained:
-  - `.server/<instance>/mission/`: editable copy of the mission folder, created by `/dayz-add-server` from DayZ Server's `mpmissions/<template>/` and edited by the user after that (the server runs with `-filePatching`, so edits are live). Never edit the original DayZ Server install. The folder is named `mission/` whatever the template; the launcher passes `-mission=<abspath>`.
-  - `.server/<instance>/serverDZ.cfg`: per-instance server config. Its `template = "..."` line links the instance to its mission base, so instances can differ in player count, persistence or time of day.
-  - `.server/<instance>/Profiles/`: server `-profiles=` dir (RPT, script.log, BattlEye state).
-  - `.server/!ClientDiagLogs/`: client `-profiles=` dir, shared by all instances.
-- The instance, not the map, is the unit of identity: two instances can run variants of the same map (chernarus and chernarus-hardcore).
-- Setup and run are separate skills. `/dayz-add-server <instance>` copies the mission, writes the cfg and creates the profile dirs. `/dayz-launch-test <mod> --server <instance>` verifies and launches; it never copies missions or writes cfgs from scratch, and refuses with a hint to run `/dayz-add-server` when state is missing. It never edits the cfg: a cfg without an active `allowFilePatching = 1;` is refused with the `/dayz-add-server <instance>` hint.
-- The legacy `workspace/_server/` layout is not supported. `/dayz-add-server`, `/dayz-launch-test` and `/dayz-clean-workspace --include-server` refuse to run while it exists; the user deletes it manually.
-- `.server/` is gitignored except the user-edited `serverDZ.cfg` and `mission/` contents, which `.gitignore` negation patterns keep tracked.
 
-## UI scripting realities (read before any "change the X color" task)
-
-DayZ's UI has no central theme system; no `PrimaryAccentColor` constant flows through every widget. A color comes from three independent places, each overridden differently:
-
-1. `.layout` files in `P:\gui\layouts\` (100+ files). Colors are baked per widget as RGBA values. `modded class` does not apply; overriding means shipping a same-named layout in your mod's `gui/layouts/`, which replaces the whole layout and is brittle across DayZ updates.
-2. Inline ARGB literals in `P:\scripts\5_mission\gui\` (10+ files), such as `w.SetColor(0xFFFFEC44)` in `actionmenu.c:74`. Override the containing class's method with `modded class`, not the constant.
-3. `Colors` / `FadeColors` constants in `P:\scripts\3_game\colors.c`. `modded class Colors { const int X = ...; }` is a no-op for compile-time constants, because callers baked the original value at compile time. `COLOR_DAYZ_RED` is referenced in one place across vanilla scripts (`P:\scripts\5_mission\gui\newui\mainmenu\mainmenupromo.c:157`), so even a working override would only recolor the main-menu promo banner.
-
-So "change all the red UI to blue" is not a one-file task: it means sweeping `.layout` files per widget and overriding every class method that calls `SetColor(<red ARGB>)` in `5_mission/gui/`. That is hours of work. For new mods that need theming, build on CUI (Community UI Framework), which supplies the theme layer the engine lacks; for one-off recolors, scope the task to one element.
-
-When the user asks for a color or theme change, ask for scope first (single element or sweep) and warn about the layout/script split before invoking any agent.
-
-## Mission and DayZ Server install notes
-
-- The launch skill passes `-mission=<absolute path to .server/<instance>/mission>` to pin the mission folder (otherwise the engine looks in the diag binary's local `mpmissions/`, which does not exist in the game install).
-- DayZ Server (Steam appid 223350) is only needed for the initial mission copy. After that it can be uninstalled; the `.server/<instance>/mission/` copy is the source of truth.
+The `.server/<instance>/` layout and setup/run split are in `conventions/server.md`.
 
 ## Vanilla source search (the search rule)
 
@@ -209,24 +110,17 @@ Format answers grounded in vanilla source per `.claude/skills/_shared/answer-for
 
 If a search returns "no index", a missing-table error, or a missing `VOYAGE_API_KEY`, say so, fall back to scoped `Grep`, and tell the user which fix applies (`/dayz-search-index --full`, or adding the key to `.env`). For the wiki index the rebuild skill `/dayz-search-wiki-index` is on hold: say the wiki index is unavailable rather than offering it as a fix. After a DayZ update the index goes stale; rebuild with `--full`.
 
-## LOD canonical resolutions (DayZ-specific)
+## Topic files
 
-DayZ inherits Bohemia's `.p3d` scheme where a LOD's resolution value is its type tag, but some engine-system LODs use different numbers than Arma 3. Many online guides quote Arma 3 values; those misclassify DayZ LODs.
+The core above is what every DayZ agent and skill reads. Topic rules live in `.claude/skills/_shared/conventions/`; load only the ones your task touches.
 
-| LOD | DayZ resolution | Arma 3 | Purpose |
-|---|---|---|---|
-| Visual | `0.0`, `1.0`, `2.0`, ... | same | LOD0 = base, then progressively simplified |
-| ShadowVolume | `10000`, `11000` (range 10000 to 19999) | same | Shadow casters |
-| Geometry | `1.0e+13` | same | Physics collision |
-| Memory | `1.0e+15` | same | Named memory points |
-| GeoPhys | `2.0e+13` | same | Not used by vanilla DayZ models; the audit classifies it but never asks for it |
-| LandContact | `2.0e+15` | same | Foot/wheel contact |
-| ViewGeometry | `6.0e+15` | `7.0e+13` (wrong for DayZ) | Cursor / action raycast. Recommended: vanilla interactive gear carries one; proxies and clutter cutters don't |
-| FireGeometry | `7.0e+15` | `3.0e+13` (wrong for DayZ) | Bullet / projectile collision |
-
-Verified against vanilla `DZ\gear\camping\wooden_case.p3d` (debinarized): 9 LODs, with Visual(1..4), Geometry(`1e13`), Memory(`1e15`), LandContact(`2e15`), ViewGeo(`6e15`), FireGeo(`7e15`). `classify_lod()` in `.claude/skills/dayz-p3d-audit/scripts/audit_p3d.py` uses these values. A header scan of 4,000 vanilla binarized models under `P:\DZ\` found `1e13` in 3,758, `6e15` in 2,569, `7e15` in 2,627 and `2e13` in none; among `gear\` models with a Geometry LOD, 531 also have ViewGeo and 32 (proxies, clutter cutters, a bonfire) don't. The audit therefore treats Visual, Geometry and Memory as required (CRITICAL when missing), ViewGeo and FireGeo as recommended (NOTE when missing), and GeoPhys as optional (not reported).
-
-A `classify_lod()` that uses Arma 3 ranges (a grep for `7e13` or `3e13` finds them) reports ViewGeo and FireGeo as unknown. The engine is unaffected, but the audit then reports "missing FireGeo / ViewGeo" on models that have them and skips its FireGeo checks, so real collision problems (bullets passing through, no action cursor) go undiagnosed.
+| Topic file | Sections | Read by |
+|---|---|---|
+| `conventions/config.md` | Config conventions, `inventorySlot` string vs array (`T148506`), Bundle / umbrella mods | config-specialist, build-checker, build-engineer, mod-reviewer |
+| `conventions/assets.md` | Asset conventions (texture suffixes, `.rvmat`, `.p3d`), LOD canonical resolutions | asset-specialist, object-builder, mod-reviewer, mod-architect |
+| `conventions/scripts.md` | Script conventions (`scripts/` layers, `modded class` with no `extends`) | script-specialist, workbench-specialist, mod-debugger, mod-reviewer, mod-architect |
+| `conventions/ui.md` | UI scripting realities (read before any "change the X color" task) | ui-specialist, figma-to-dayz-layout, layout-validator |
+| `conventions/server.md` | Server / economy, Test server instances (`.server/`), Mission and DayZ Server install notes | server-admin, map-specialist, ingame-tester, mod-debugger |
 
 ## How agents and skills reference this file
 
@@ -237,3 +131,7 @@ Each DayZ agent or skill includes a one-line reference near the top of its defin
 Agents that search vanilla add one line for the search rule instead of restating it, for example:
 
 > Search: Grep for known names, RAG for questions by meaning, then verify every hit (Tier 2, "Vanilla source search").
+
+Agents that need a topic file name it on the same line, for example:
+
+> Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` and `conventions/config.md`).

@@ -4,7 +4,7 @@ name: dayz-particles
 
 ## Overview
 
-Documents how to create and play custom DayZ particle effects without Workbench: plain-text .ptc and .emat files, .edds sprites, &#123;GUID&#125;path references, the script API (Particle, ParticleSource, ParticleManager, SEffectManager, ParticleList), the vanilla particle catalog and device integration patterns. Use when writing or debugging any particle effect code or file.
+Reference for creating and playing custom DayZ particle effects without Workbench: .ptc and .emat files, .edds sprites, the Particle, ParticleManager and SEffectManager script API, and the vanilla particle catalog. Use when writing or debugging any particle effect code or file.
 
 # DayZ particle effects
 

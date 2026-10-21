@@ -58,7 +58,7 @@ collision and zero action targeting.
 - FireGeo (res ~7e15) — ballistic damage zones
 
 The audit reports a missing ViewGeo or FireGeo as a NOTE. It does not ask for a
-GeoPhys LOD (res 2e13): vanilla DayZ models don't use one (see the Tier 2 LOD table).
+GeoPhys LOD (res 2e13): vanilla DayZ models don't use one (see the LOD table in `.claude/skills/_shared/conventions/assets.md`).
 
 ## 5. Missing `pos center` Memory Point
 

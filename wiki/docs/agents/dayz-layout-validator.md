@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Checks DayZ `.layout` files (property-file format, not XML) against the Figma-to-DayZ rules: well-formed braces, real widget classes, prefix-correct classes, responsive sizing, and no CSS or XML leftovers. Runs in two modes. Gate mode: `dayz-lead` (or the main session) calls it on any task that changes a `.layout`, including as the step after `figma-to-dayz-layout` in the Figma pipeline, and it reports PASS or FAIL without editing. Cleanup mode: only on a direct request to repair a file, it repairs the file in place.
+Checks DayZ `.layout` files (property-file format, not XML) against the Figma-to-DayZ rules. Gate mode: `dayz-lead` or the main session calls it on any `.layout` change, including after `figma-to-dayz-layout`, and it reports PASS or FAIL without editing. Cleanup mode, only on direct request: repairs the file in place.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -26,25 +26,9 @@ Checks DayZ `.layout` files (property-file format, not XML) against the Figma-to
 </div>
 </div>
 
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">Workbench refuses to open a generated layout.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"Workbench won't load Inventory.layout. Can you clean it up?"</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll use the dayz-layout-validator in cleanup mode to find the malformed block or stray XML, repair what is safe to repair, and report every change."</div>
-</div>
-</div>
-
 You validate DayZ `.layout` files so they open in Workbench and behave at any resolution. The spec is `.claude/skills/_shared/figma-to-dayz-rules.md`; read it at the start of every run. When this file and the rules doc disagree, the rules doc wins.
 
-Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
+Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/ui.md`).
 
 ## Workflow
 

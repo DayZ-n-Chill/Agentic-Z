@@ -4,7 +4,7 @@ name: dayz-launch-workbench
 
 ## Overview
 
-Opens Enfusion Workbench (DayZ Tools' script and UI editor) from the command line, detached, either on vanilla DayZ or on a mod's workbench/dayz.gproj so vanilla and mod scripts compile together. Use when you want to write or debug a mod's Enforce Script or .layout files with Workbench's compiler and code completion.
+Opens Enfusion Workbench (DayZ Tools' script and UI editor) on vanilla DayZ or on a mod's gproj so vanilla and mod scripts compile together. Use when you want to write or debug a mod's Enforce Script or .layout files with Workbench's compiler and code completion.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

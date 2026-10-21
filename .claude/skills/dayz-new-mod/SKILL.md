@@ -1,6 +1,6 @@
 ---
 name: dayz-new-mod
-description: Scaffolds a new DayZ mod under workspace/<ModName>/ (config.cpp, $PBOPREFIX$, script module folders, data, gui, and a Workbench gproj with the mod's script paths injected), links it at P:\<ModName>\, and makes this project the /dayz-init cached project. Use when starting a brand-new mod; use /dayz-import-mod for an existing folder elsewhere and /dayz-add-scaffold to fill gaps in one already in workspace/.
+description: "Scaffolds a brand-new DayZ mod under workspace/<ModName>/ (config.cpp, $PBOPREFIX$, script folders, Workbench gproj), links it at P:\\<ModName>\\ and makes it the active /dayz-init project. Use when starting a new mod; use /dayz-import-mod for a folder elsewhere and /dayz-add-scaffold to fill gaps."
 argument-hint: "<ModName> [--author \"YourHandle\"]"
 ---
 

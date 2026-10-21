@@ -37,7 +37,7 @@ def load_py3d():
 def classify_lod(resolution):
     """Map an MLOD resolution value to a LOD type name.
 
-    DayZ scheme (Tier 2, .claude/skills/_shared/dayz-conventions.md, "LOD
+    DayZ scheme (Tier 2, .claude/skills/_shared/conventions/assets.md, "LOD
     canonical resolutions"): Visual < 1000, ShadowVolume 10000-19999 (10000
     shadow volume, 11000 shadow buffer), Geometry 1e13, GeoPhys 2e13, Memory
     1e15, LandContact 2e15, ViewGeo 6e15, FireGeo 7e15.
@@ -68,7 +68,7 @@ def check_required_lods(lod_map):
     """Check that required LODs exist and note missing recommended ones.
 
     GeoPhys (2e13) is not checked: vanilla DayZ models don't ship one (see the
-    Tier 2 LOD table), so its absence is normal.
+    LOD table in .claude/skills/_shared/conventions/assets.md), so its absence is normal.
     """
     issues = []
     if "Geometry" not in lod_map:

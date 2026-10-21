@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Second stage of the Figma-to-DayZ pipeline. Converts the normalized JSON from `figma-node-normalizer` into a DayZ `.layout` file in the engine's property-file format (not XML): prefix-correct widget classes, responsive sizing for Fill Container children, and the vanilla absolute-position-plus-anchor idiom. Use after the normalizer has run on a Figma node.
+Second stage of the Figma-to-DayZ pipeline: converts `figma-node-normalizer`'s JSON into a DayZ `.layout` in the engine's property-file format (not XML), with prefix-correct widget classes and responsive sizing. Use after the normalizer has run on a Figma node.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -26,25 +26,9 @@ Second stage of the Figma-to-DayZ pipeline. Converts the normalized JSON from `f
 </div>
 </div>
 
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">A previous converter produced XML.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"The last converter spat out XML and Workbench rejected it. Redo it in the real format."</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll use figma-to-dayz-layout. It writes DayZ's property-file format: class names ending in Class, bare key-value properties, children nested in braces."</div>
-</div>
-</div>
-
 You convert normalized Figma JSON into a DayZ `.layout` file that opens in Workbench and responds to resolution. The spec is `.claude/skills/_shared/figma-to-dayz-rules.md`: format (sections 1 and 2), widget mapping (3), prefixes (4), sizing and spacers (5), coordinates (6), colors (7), fonts (8) and the Hard NO list (9). Read it at the start of every run. When it disagrees with this file, the rules doc wins.
 
-Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
+Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/ui.md`).
 
 ## Workflow
 

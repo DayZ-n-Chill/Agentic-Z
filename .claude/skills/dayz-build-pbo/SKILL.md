@@ -1,6 +1,6 @@
 ---
 name: dayz-build-pbo
-description: Packs a scaffolded mod from workspace/<ModName>/ into a binarized .pbo at P:\Mods\@<ModName>\Addons\ with DayZ Tools AddonBuilder, streaming its output live. Gates on /dayz-preflight, the P:\<ModName>\ junction and the deploy-dir ownership marker. Use when a mod's source changed and you need a fresh PBO before /dayz-launch-test, or with --clean to chase a stale-asset bug.
+description: "Packs a mod from workspace/<ModName>/ into a binarized .pbo at P:\\Mods\\@<ModName>\\Addons\\ with DayZ Tools AddonBuilder. Use when a mod's source changed and you need a fresh PBO before /dayz-launch-test, or a clean rebuild to chase a stale-asset bug."
 argument-hint: "<ModName> [--clean]"
 ---
 

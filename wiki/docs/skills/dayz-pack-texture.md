@@ -4,7 +4,7 @@ name: dayz-pack-texture
 
 ## Overview
 
-Converts PNG or TGA images to DayZ `.paa` textures with DayZ Tools' ImageToPAA.exe, writing each `.paa` next to its source (replacing any existing one), after checking that every filename ends in a vanilla texture-role suffix such as `_co`, `_ca`, `_nohq` or `_smdi`. Use when a mod's textures need packing for config.cpp, .rvmat, or hiddenSelectionsTextures references.
+Converts PNG or TGA images to DayZ .paa textures with ImageToPAA, after checking each filename has a texture-role suffix such as _co, _ca, _nohq or _smdi. Use when a mod's textures need packing for config.cpp, .rvmat or hiddenSelectionsTextures references.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

@@ -13,7 +13,7 @@ Every agent works from three tiers. When two disagree, the more specific tier wi
 | Tier | What it holds | Where it lives | Loads |
 |---|---|---|---|
 | 1 · Repo rules (L1) | How every agent works here: communication, tooling, memory, routing, file locations. | This file (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) | Every agent, every task |
-| 2 · DayZ rules (L2) | Enforce Script style, config patterns, asset rules, environment, vanilla search. | `.claude/skills/_shared/dayz-conventions.md` | All DayZ work |
+| 2 · DayZ rules (L2) | Enforce Script style, config patterns, asset rules, environment, vanilla search. | `.claude/skills/_shared/dayz-conventions.md` (core) + `.claude/skills/_shared/conventions/*.md` (topics) | All DayZ work |
 | 3 · Agents and knowledge packs | The agents in `.claude/agents/`, the skills, and the packs under `.claude/skills/_shared/` (EnScript patterns, Figma-to-DayZ rules). | Their own files | Only what the task needs |
 
 Corrections from the user go into the right tier through `/dayz-record-correction`.
@@ -46,6 +46,8 @@ When asked for something an agent can't literally do (read a UI pane, see the sc
 User/machine-specific notes go in `<repo>/.claude/local-memory/` (gitignored, per-clone). Never store rules or conventions there — those go in the repo so they travel with every clone. L1 rules live in this file; L2 DayZ rules live at `.claude/skills/_shared/dayz-conventions.md`.
 
 ### Subagent routing for DayZ work
+
+**Route new DayZ requests cheaply first.** For a new DayZ request, run `/dayz-route` before picking a handler and follow its result when it names a route (it is confident only at 0.8 or more). When it returns `"next": "dayz-router"`, ask the `dayz-router` agent (Haiku) and follow its JSON. Jev, TypeSafe's routing model, is used automatically between the two when `TYPESAFE_API_KEY` is set.
 
 When a Superpowers workflow (`/brainstorming`, `/executing-plans`, `/requesting-code-review`, `/dispatching-parallel-agents`, etc.) needs to dispatch a subagent and the work touches DayZ, route to the matching `dayz-*` specialist via the Agent tool. Generic Superpowers agents (e.g. `superpowers:code-reviewer`) don't know Enforce Script conventions and will miss DayZ-specific traps like the `modded class` no-extends rule or engine classes that can't be modded.
 

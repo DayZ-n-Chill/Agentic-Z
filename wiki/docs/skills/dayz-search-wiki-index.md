@@ -4,7 +4,7 @@ name: dayz-search-wiki-index
 
 ## Overview
 
-Index the Bohemia community wiki (community.bistudio.com Category:DayZ + sub-categories) into the same vector DB as /dayz-search-index, so DayZ agents can semantic-search official docs alongside vanilla source. One-time setup per cookie cycle; rerun with --full when content drifts.
+Indexes the Bohemia community wiki's DayZ pages into the same vector DB as /dayz-search-index so agents can semantic-search official docs alongside vanilla source. Use when setting up wiki search, after refreshing the wiki cookie, or when wiki content has drifted.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

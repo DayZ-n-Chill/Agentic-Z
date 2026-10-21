@@ -1,6 +1,6 @@
 ---
 name: dayz-search-index
-description: Builds the semantic-search index over vanilla DayZ source on P:\ (Enforce Script, configs, layouts, rvmats, XML, JSON, CSV) by embedding chunks with Voyage AI voyage-code-3 into LanceDB, which the dayz-rag MCP server queries. Use when setting up a new machine, after a DayZ update or re-extraction of vanilla data, or when search_dayz_source reports no index.
+description: "Builds the semantic-search index over vanilla DayZ source on P:\\ (scripts, configs, layouts, rvmats, XML, JSON) with Voyage AI embeddings in LanceDB for the dayz-rag MCP server. Use when setting up a new machine, after a DayZ update or re-extraction, or when search_dayz_source reports no index."
 ---
 
 <!-- skill-dir-note -->
