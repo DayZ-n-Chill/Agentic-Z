@@ -219,3 +219,30 @@ def test_snapshot_and_detection_of_new_player(tmp_path):
 
 def test_server_bind_timeout_comes_from_launch_test():
     assert cot.SERVER_BIND_TIMEOUT_S == cot._launch.SERVER_BIND_TIMEOUT_S
+
+
+# --- the port is checked before each server spawn ---------------------------------
+
+def test_launch_pair_refuses_taken_port_before_spawning(monkeypatch, tmp_path):
+    checked = []
+    monkeypatch.setattr(cot.h, "udp_port_free", lambda port: checked.append(port) or False)
+    monkeypatch.setattr(cot.subprocess, "Popen", lambda *a, **k: pytest.fail("spawned despite a taken port"))
+    with pytest.raises(SystemExit) as exc:
+        cot.launch_pair(
+            Path("C:/DayZ/DayZDiag_x64.exe"), "P:/Mods/@CF", 2402, tmp_path / "serverDZ.cfg",
+            tmp_path / "Profiles", tmp_path / "m", tmp_path / "logs", {}, "Pass 1",
+        )
+    assert checked == [2402]
+    assert "port 2402 in use; run /dayz-stop-test or pass --port" in str(exc.value.code)
+
+
+def test_launch_pair_spawns_server_after_free_port_check(monkeypatch, tmp_path):
+    order = []
+    monkeypatch.setattr(cot.h, "udp_port_free", lambda port: order.append("check") or True)
+    monkeypatch.setattr(cot.subprocess, "Popen", lambda cmd, cwd=None: order.append("spawn") or FakeProc(len(order)))
+    monkeypatch.setattr(cot, "wait_for_server_port", lambda port, proc, timeout_s: True)
+    procs = cot.launch_pair(
+        Path("C:/DayZ/DayZDiag_x64.exe"), "P:/Mods/@CF", 2302, tmp_path / "serverDZ.cfg",
+        tmp_path / "Profiles", tmp_path / "m", tmp_path / "logs", {}, "Pass 1",
+    )
+    assert order == ["check", "spawn", "spawn"] and len(procs) == 2

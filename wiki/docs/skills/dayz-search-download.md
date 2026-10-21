@@ -10,7 +10,7 @@ Downloads the prebuilt DayZ RAG vector index (Voyage voyage-code-3 embeddings in
 
 # /dayz-search-download
 
-Pull the prebuilt vanilla-source + wiki vector index from the repo's GitHub releases instead of building it locally. Same on-disk result as `/dayz-search-index` + `/dayz-search-wiki-index`, without the local build or its Voyage API embedding cost.
+Pull the prebuilt vanilla-source vector index from the repo's GitHub releases instead of building it locally with `/dayz-search-index`, skipping the local build and its Voyage API embedding cost.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -21,7 +21,6 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 | Fresh clone, just want DayZ agents to work | `/dayz-search-download` |
 | You re-extracted vanilla data after a DayZ update | `/dayz-search-index --full` (rebuild against your local data) |
 | You changed embed model in `.env` | `/dayz-search-index --full` |
-| You want the wiki index too | This skill (release bundles both) |
 
 The downloaded index is built against vanilla DayZ at the release-tagged version. If your local DayZ install is on a newer patch and you need precise recall against your installed source, rebuild locally.
 
@@ -29,12 +28,9 @@ The downloaded index is built against vanilla DayZ at the release-tagged version
 
 `~/.claude/dayz-search-index/`, the same path `/dayz-search-index` writes to. Per-user, outside the repo, survives clones.
 
-After download:
-- `lancedb/`: vector store
-- `manifest.json`: source corpus manifest
-- `wiki-manifest.json`: wiki corpus manifest
-- `config.json`: embed model the MCP server should use at query time
-- `release-tag.txt`: the release tag that was installed (written by this skill)
+Releases have published the index under two asset names, `dayz-rag-index-v0.1.0.tar.gz` (most releases, including the latest, 1.4.0) and `dayz-search-index-<version>.tar.gz` (1.2.0 and 1.2.1). The skill accepts either, and either top-level folder name inside the archive (`dayz-rag-index/` or `dayz-search-index/`), and always installs to `~/.claude/dayz-search-index/`. A release with neither asset (1.2.2, for example) exits non-zero.
+
+After download the folder holds what `/dayz-search-index` writes (`lancedb/`, `manifest.json`, `config.json`), plus `release-tag.txt`, the release tag that was installed (written by this skill). The release index was built before oversize class blocks were split into windows, so very long classes are only partly searchable; run `/dayz-search-index --full` if you need full coverage.
 
 ## How to run
 
@@ -45,7 +41,7 @@ python "<skill-dir>\download.py"
 
 Specific version:
 ```cmd
-python "<skill-dir>\download.py" --tag v0.1.0
+python "<skill-dir>\download.py" --tag 1.2.1
 ```
 
 Overwrite an existing index without the prompt (this also reinstalls when the installed tag already matches):
@@ -53,7 +49,7 @@ Overwrite an existing index without the prompt (this also reinstalls when the in
 python "<skill-dir>\download.py" --force
 ```
 
-Install an asset that has no published SHA-256 digest (older releases):
+Install an asset that has no published SHA-256 digest (every current release asset has one, so this is only for an asset uploaded without it):
 ```cmd
 python "<skill-dir>\download.py" --allow-unverified
 ```
@@ -67,11 +63,11 @@ DayZ RAG index downloader
 
 [INFO]	Repo: DayZ-n-Chill/Agentic-Z
 [INFO]	Resolving latest release...
-[OK]	Release: v0.1.0
-[INFO]	Asset: dayz-search-index-v0.1.0.tar.gz (<size> MB)
+[OK]	Release: 1.4.0
+[INFO]	Asset: dayz-rag-index-v0.1.0.tar.gz (206 MB)
 [INFO]	Target: C:\Users\you\.claude\dayz-search-index
-[INFO]	Downloading... <size>/<size> MB (100%)
-[OK]	Downloaded <size> MB
+[INFO]	Downloading... 206.3/206.3 MB (100%)
+[OK]	Downloaded 206 MB
 [OK]	SHA-256 verified.
 [INFO]	Extracting...
 [OK]	Indexed source chunks: <count>
@@ -87,7 +83,7 @@ DayZ RAG index downloader
 
 ## Integrity checks
 
-- **Checksum:** GitHub publishes a SHA-256 `digest` for release assets it stores. The download must match it, or the skill exits non-zero and leaves the existing index untouched. This catches corrupted or truncated downloads only: the digest comes from the same GitHub release as the file, so it does not prove who published the asset. An asset with no digest (older releases) is refused before downloading unless you pass `--allow-unverified`, which installs it with a warning.
+- **Checksum:** GitHub publishes a SHA-256 `digest` for release assets it stores. The download must match it, or the skill exits non-zero and leaves the existing index untouched. This catches corrupted or truncated downloads only: the digest comes from the same GitHub release as the file, so it does not prove who published the asset. An asset with no digest is refused before downloading unless you pass `--allow-unverified`, which installs it with a warning.
 - **Safe extraction:** archive entries that would land outside the extract folder (absolute paths, `..` traversal, links pointing outside) are refused. On Python 3.12+ this uses the `tarfile` `data` filter.
 - **Network errors** (offline, DNS, proxy, HTTP errors) exit non-zero with the URL and the reason.
 

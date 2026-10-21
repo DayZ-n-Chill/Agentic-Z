@@ -35,6 +35,9 @@ SKIP = "[SKIP] "
 PIECES = ("config", "prefix", "workbench", "readme", "skeleton")
 JUNCTION = "junction"
 
+# Pieces whose template needs the author handle, and the file each writes.
+AUTHOR_PIECES = {"config": "config.cpp", "readme": "README.md"}
+
 # What each piece function returns.
 ADDED = "added"      # wrote at least one file or folder
 PRESENT = "present"  # everything the piece covers already exists
@@ -256,12 +259,18 @@ def main() -> int:
     if not target.is_dir():
         sys.exit(f"{FAIL} {rel} is not a directory.")
 
+    get_author = lazy_author(args.author)
+    pieces = PIECES if args.piece == "all" else (args.piece,)
+    # Resolve the author before writing anything, so a missing handle (no
+    # flag, no cache, no TTY) exits with the folder untouched rather than
+    # after some pieces were already written.
+    if any(p in AUTHOR_PIECES and not (target / AUTHOR_PIECES[p]).exists() for p in pieces):
+        get_author()
+
     print()
     print(f"Scaffolding {rel}{os.sep}")
     print()
 
-    get_author = lazy_author(args.author)
-    pieces = PIECES if args.piece == "all" else (args.piece,)
     results = [add_piece(piece, target, args.modname, get_author) for piece in pieces]
     added, present, skipped = (results.count(s) for s in (ADDED, PRESENT, SKIPPED))
 

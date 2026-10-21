@@ -29,7 +29,7 @@ python "<skill-dir>\add_scaffold.py" <ModName> [--piece config|prefix|workbench|
 |---|---|---|
 | `<ModName>` | yes | Folder name under `workspace/`. The folder must already exist (real or a link). Same `[A-Za-z][A-Za-z0-9_]{0,63}` pattern as `/dayz-new-mod`. |
 | `--piece` | no | Default `all` = scan and add only missing file pieces. Pick one to scaffold a single piece even if others are missing. `junction` is never part of `all`. |
-| `--author` | no | Author handle for `config.cpp`. Same resolution chain as `/dayz-new-mod`: flag → cache → interactive prompt → fail. Skipped if config.cpp already exists. A handle containing `"` or a line break is refused, since it is written inside a quoted `config.cpp` string. |
+| `--author` | no | Author handle for `config.cpp` and `README.md`. Same resolution chain as `/dayz-new-mod`: flag → cache → interactive prompt → fail. Resolved once, before any piece is written, and only when `config.cpp` or `README.md` is about to be written; if no handle is available (no flag, no cache, no TTY) the skill exits 1 with the folder untouched. A handle containing `"` or a line break is refused, since it is written inside a quoted `config.cpp` string. |
 
 ### Pieces
 
@@ -61,6 +61,7 @@ The first line says `symlink` instead of `junction` when Windows allows symlinks
 - `workspace/<ModName>/` does not exist. This skill never creates the top-level mod folder - that's `/dayz-new-mod` (for fresh) or `/dayz-import-mod` (for external).
 - `--piece junction` and `P:\<ModName>\` exists as a real folder or as a link to somewhere other than `workspace/<ModName>/`. Remove it by hand first; the skill never deletes anything on `P:\`.
 - The author handle (flag, cache or prompt) contains `"` or a line break.
+- `config.cpp` or `README.md` would be written and no author handle is available (no `--author`, no cache, stdin not a TTY). Nothing is written.
 
 ## Output
 

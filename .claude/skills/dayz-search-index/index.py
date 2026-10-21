@@ -53,16 +53,18 @@ EMBED_DIM = 1024
 
 # Voyage API limits per request (voyage-code-3): 128 texts max, 120k tokens max.
 # We pack batches dynamically up to TOKEN_BUDGET_PER_BATCH (under the 120k cap)
-# OR TEXT_LIMIT_PER_BATCH, whichever hits first. CHARS_PER_TOKEN_EST is a
-# conservative local estimate (real code ratio is ~3.5-4 chars/token).
+# OR TEXT_LIMIT_PER_BATCH, whichever hits first.
 TEXT_LIMIT_PER_BATCH = 128
-# Code tokenizes denser than prose (punctuation, brackets, short identifiers).
-# Empirically Voyage tokenizer hit ~1.8 chars/token on Enforce Script. Using
-# 1.8 with a 75k token budget keeps real batch tokens well under the 120k cap
-# even with surprise-heavy content.
+# Code tokenizes denser than prose (punctuation, brackets, short identifiers):
+# the Voyage tokenizer measured ~1.8 chars/token on Enforce Script. Estimating
+# at 1.8 with a 75k token budget keeps real batch tokens well under the 120k cap.
 TOKEN_BUDGET_PER_BATCH = 75_000
 CHARS_PER_TOKEN_EST = 1.8
-EMBED_MAX_CHARS = 6000  # voyage-code-3 has 32k context — plenty of headroom
+# Largest text sent to the embedder (~3.3k tokens at 1.8 chars/token, far under
+# voyage-code-3's 32k context). Class-style files are split into windows of at
+# most this size, so their text is never cut; the embed step still clips other
+# chunk types to it.
+EMBED_MAX_CHARS = 6000
 
 # Approximate $ per 1M input tokens, used only for the live cost estimate and
 # the manifest's cost_estimate_usd. Rates change; the authoritative source is
@@ -267,33 +269,70 @@ def _read_text(path: Path) -> str:
         return ""
 
 
-def _block_chunks(path: Path, file_type: str, max_chars: int = 8000) -> list[dict]:
-    """Chunk a class-style file. Falls back to whole-file if no class blocks."""
+def _split_windows(body: str, first_line: int, max_chars: int) -> list[tuple[int, int, str]]:
+    """Split body into (line_start, line_end, text) windows of at most max_chars.
+
+    A body that fits is returned whole. Otherwise each window ends at the last
+    member boundary that fits (a line that starts at brace depth 1 and is not
+    itself a brace, i.e. where a method or field of the class begins); with no
+    boundary in reach it ends at the last whole line that fits. A single line
+    longer than max_chars is sliced, each slice keeping that line's number.
+    Nothing is dropped.
+    """
+    if len(body) <= max_chars:
+        return [(first_line, first_line + body.count("\n"), body)]
+    lines = body.splitlines(keepends=True)
+    boundaries: set[int] = set()
+    depth = 0
+    for i, line in enumerate(lines):
+        if i > 0 and depth == 1 and not line.lstrip().startswith(("{", "}")):
+            boundaries.add(i)
+        depth += line.count("{") - line.count("}")
+
+    windows: list[tuple[int, int, str]] = []
+    start = 0
+    while start < len(lines):
+        if len(lines[start]) > max_chars:
+            line_no = first_line + start
+            text = lines[start]
+            windows.extend(
+                (line_no, line_no, text[k : k + max_chars]) for k in range(0, len(text), max_chars)
+            )
+            start += 1
+            continue
+        size = 0
+        end = start  # exclusive
+        while end < len(lines) and size + len(lines[end]) <= max_chars:
+            size += len(lines[end])
+            end += 1
+        if end < len(lines):
+            cut = max((b for b in boundaries if start < b <= end), default=None)
+            if cut is not None:
+                end = cut
+        windows.append((first_line + start, first_line + end - 1, "".join(lines[start:end])))
+        start = end
+    return windows
+
+
+def _block_chunks(path: Path, file_type: str, max_chars: int = EMBED_MAX_CHARS) -> list[dict]:
+    """Chunk a class-style file: one chunk per top-level class block, or the
+    whole file if there are none. Anything over max_chars is split into
+    windows (see _split_windows) that keep the class name as parent_context."""
     text = _read_text(path)
     if not text:
         return []
-    blocks = list(_walk_class_blocks(text))
-    if blocks:
-        return [
-            {
-                "path": str(path),
-                "file_type": file_type,
-                "parent_context": name,
-                "line_start": s,
-                "line_end": e,
-                "content": body[:max_chars],
-            }
-            for name, s, e, body in blocks
-        ]
+    blocks = list(_walk_class_blocks(text)) or [("", 1, text.count("\n") + 1, text)]
     return [
         {
             "path": str(path),
             "file_type": file_type,
-            "parent_context": "",
-            "line_start": 1,
-            "line_end": text.count("\n") + 1,
-            "content": text[:max_chars],
+            "parent_context": name,
+            "line_start": ws,
+            "line_end": we,
+            "content": window,
         }
+        for name, s, _e, body in blocks
+        for ws, we, window in _split_windows(body, s, max_chars)
     ]
 
 

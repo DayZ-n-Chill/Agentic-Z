@@ -3,7 +3,7 @@
 Semantic search over vanilla DayZ source and the Bohemia community wiki, for any DayZ specialist agent. Four read-only tools (each carries the MCP `readOnlyHint` annotation):
 
 - `search_dayz_source(query, top_k=5, file_type=None, max_distance=None)`: vector search over the index built by `/dayz-search-index`.
-- `search_dayz_wiki(query, top_k=5, max_distance=None)`: vector search over the wiki index built by `/dayz-search-wiki-index` (`path` is the page URL, `parent_context` is "Page > Section").
+- `search_dayz_wiki(query, top_k=5, max_distance=None)`: on hold. Vector search over the wiki table (`path` is the page URL, `parent_context` is "Page > Section"). Its build skill, `/dayz-search-wiki-index`, is on hold, so unless a wiki table is already installed the tool raises "Wiki index unavailable".
 - `get_dayz_file(path, line_start=None, line_end=None)`: fetch a file or line range for follow-up. Paths must be on `P:\`; files over 200 KB need a range. The check is lexical (the path is normalised, not resolved), so a junction or symlink under `P:\`, such as `P:\Mods` or a `P:\<ModName>` junction into `workspace/`, can still lead to a file stored elsewhere.
 - `list_indexed_sources()`: returns `{"source": <manifest or null>, "wiki": <manifest or null>}`; null means that index hasn't been built.
 
@@ -20,7 +20,7 @@ Installed as a plugin, the tools appear as `mcp__plugin_agentic-z_dayz-rag__<too
 
 ## Errors
 
-Every tool reports failures the same way: it raises, and the MCP client receives a result with `isError: true` and the message. Bad arguments (unknown `file_type`, a path outside `P:\`, an invalid line range, a large file without a range) raise `ValueError`; a missing index, table or file raises with a hint naming the skill that builds it. A blank query returns an empty list.
+Every tool reports failures the same way: it raises, and the MCP client receives a result with `isError: true` and the message. Bad arguments (unknown `file_type`, a path outside `P:\`, an invalid line range, a large file without a range) raise `ValueError`; a missing source index, table or file raises with a hint naming the skill that builds it, and a missing wiki index raises "Wiki index unavailable" (its build skill is on hold). A blank query returns an empty list.
 
 ## Setup
 
@@ -29,7 +29,7 @@ Every tool reports failures the same way: it raises, and the MCP client receives
    ```cmd
    pip install -r .claude\mcp\dayz-rag\requirements.txt
    ```
-3. Build the index with `/dayz-search-index` (or install a prebuilt one with `/dayz-search-download`), and optionally the wiki index with `/dayz-search-wiki-index`.
+3. Install the prebuilt index with `/dayz-search-download`, or build it against your own DayZ install with `/dayz-search-index`.
 4. Wiring: in a clone, `.mcp.json` at the repo root declares the server and `.claude/settings.local.json` opts in with `"enabledMcpjsonServers": ["dayz-rag"]`. The plugin registers it in `.claude-plugin/plugin.json`.
 5. Restart Claude Code and check `/mcp` shows `dayz-rag` connected.
 
@@ -58,7 +58,7 @@ After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `No index at ~/.claude/dayz-search-index` | Index not built | Run `/dayz-search-index` or `/dayz-search-download` |
-| `Wiki index table 'wiki_chunks' missing` | Wiki index not built | Run `/dayz-search-wiki-index` |
+| `Wiki index unavailable` | No wiki table installed | The wiki index's build skill is on hold; use `search_dayz_source` |
 | `VOYAGE_API_KEY not set` | Key missing from `.env` | Add `VOYAGE_API_KEY=pa-...` at the repo root |
 | `mcp SDK not installed` | Missing dependencies | `pip install -r .claude\mcp\dayz-rag\requirements.txt` |
 | Results look unrelated | Query model differs from index model | Check `~/.claude/dayz-search-index/config.json`; rebuild with `--full` if you changed models |

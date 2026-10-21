@@ -171,3 +171,22 @@ def test_write_marker_failure_returns_false_and_names_all_refusers(tmp_path, cap
 
 def test_write_marker_success_returns_true(tmp_path):
     assert h.write_marker(tmp_path, "MyMod") is True
+
+
+# --- free UDP port check before a server launch -----------------------------
+
+def test_udp_port_free_detects_a_held_port():
+    import socket
+
+    holder = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    holder.bind(("0.0.0.0", 0))
+    port = holder.getsockname()[1]
+    try:
+        assert h.udp_port_free(port) is False
+        with pytest.raises(SystemExit) as exc:
+            h.gate_on_free_port(port)
+        assert str(exc.value.code) == f"{h.FAIL} UDP port {port} in use; run /dayz-stop-test or pass --port."
+    finally:
+        holder.close()
+    assert h.udp_port_free(port) is True
+    h.gate_on_free_port(port)  # free again: passes

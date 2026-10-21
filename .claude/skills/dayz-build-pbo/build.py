@@ -20,6 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 INCLUDE_LIST = Path(__file__).resolve().parent / "include.lst"
+# Patterns left out of the PBO, including .gui-sources/ (imageset sprite sources).
+EXCLUDE_LIST = Path(__file__).resolve().parent / "exclude.lst"
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
 TEMP_ROOT = P_DRIVE / "temp"
@@ -45,7 +47,27 @@ def verify_workspace(modname: str, project_dir: Path) -> Path:
                 f"       Add it with /dayz-add-scaffold {modname}."
             )
     print(f"{OK} {rel}\\ found")
+    gate_on_prefix(target / "$PBOPREFIX$", modname, rel)
     return target
+
+
+def gate_on_prefix(prefix_file: Path, modname: str, rel: Path) -> None:
+    """Exit unless $PBOPREFIX$ holds exactly <ModName>.
+
+    The build passes -prefix=<ModName> and packs through the P:\\<ModName>\\
+    junction, so the PBO's internal paths are <ModName>\\... A different
+    $PBOPREFIX$ means the mod's own config paths expect another root; packing
+    under <ModName> anyway would build a PBO whose paths do not resolve.
+    """
+    prefix = prefix_file.read_text(encoding="utf-8-sig").strip()
+    if prefix != modname:
+        sys.exit(
+            f"{FAIL} {rel}\\$PBOPREFIX$ is {prefix!r}, expected {modname!r}.\n"
+            "       This build packs the mod under the prefix <ModName> (the P:\\<ModName>\\ junction),\n"
+            "       so the PBO prefix must match. Set the file's content to the single line\n"
+            f"       {modname}, and check that config.cpp paths use {modname}\\ as their root."
+        )
+    print(f"{OK} $PBOPREFIX$ matches {modname}")
 
 
 def verify_junction(modname: str, workspace_target: Path) -> Path:
@@ -95,6 +117,7 @@ def build_addon_builder_cmd(
         f"-prefix={modname}",
         f"-temp={temp_dir}",
         f"-include={INCLUDE_LIST}",
+        f"-exclude={EXCLUDE_LIST}",
     ]
     if clean:
         cmd.append("-clear")

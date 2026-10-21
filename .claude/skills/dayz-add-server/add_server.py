@@ -81,6 +81,30 @@ def resolve_mission_template(map_name: str) -> str:
     return KNOWN_MAPS.get(map_name, map_name)
 
 
+# The active `template = "..."` line in serverDZ.cfg (a commented-out line does not count).
+TEMPLATE_RE = re.compile(r'^\s*template\s*=\s*"([^"]*)"', re.MULTILINE)
+
+
+def gate_on_template_mismatch(cfg_path: Path, template: str, instance: str) -> None:
+    """Refuse when an existing instance was set up for a different mission template.
+
+    Rerunning with another --map would otherwise leave the old mission/ and
+    cfg in place while reporting the new map, so the server loads the old one.
+    """
+    if not cfg_path.exists():
+        return
+    match = TEMPLATE_RE.search(cfg_path.read_text(encoding="utf-8"))
+    if match is None or match.group(1) == template:
+        return
+    sys.exit(
+        f"{FAIL} Instance '{instance}' is set up for mission template '{match.group(1)}',\n"
+        f"       not '{template}' (from {cfg_path.name}'s template = line).\n"
+        f"       For a different map, add a new instance: /dayz-add-server <new-name> --map <map>\n"
+        f"       To switch this instance, set template = \"{template}\"; in {cfg_path}\n"
+        "       and rerun with --refresh-mission (the old mission/ is kept as a backup)."
+    )
+
+
 def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir: Path) -> None:
     """Ensure <instance>/mission/ exists, copied from DayZ Server install.
 
@@ -304,6 +328,7 @@ def main() -> int:
     inst_dir = server_root / args.instance
     mission_dir = inst_dir / "mission"
 
+    gate_on_template_mismatch(inst_dir / "serverDZ.cfg", template, args.instance)
     ensure_mission(template, mission_dir, refresh=args.refresh_mission, project_dir=project_dir)
     setup_instance_dir(args.instance, template, project_dir)
 

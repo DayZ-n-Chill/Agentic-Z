@@ -1,7 +1,8 @@
 """dayz-rag MCP server.
 
 Exposes semantic search over the LanceDB index built by /dayz-search-index
-(vanilla source) and /dayz-search-wiki-index (Bohemia wiki). Communicates with
+(vanilla source) and, when present, the Bohemia wiki table (its build skill,
+/dayz-search-wiki-index, is on hold). Communicates with
 Claude Code over stdio.
 
 Tools (all read-only):
@@ -158,14 +159,16 @@ def _get_wiki_table():
         db_path = INDEX_ROOT / "lancedb"
         if not db_path.exists():
             raise RuntimeError(
-                f"No index at {INDEX_ROOT}. Run: python .claude/skills/dayz-search-wiki-index/index.py --full"
+                f"Wiki index unavailable: no index at {INDEX_ROOT} (its build skill is on hold). "
+                "Use search_dayz_source instead."
             )
         import lancedb
 
         db = lancedb.connect(str(db_path))
         if WIKI_TABLE_NAME not in db.table_names():
             raise RuntimeError(
-                f"Wiki index table '{WIKI_TABLE_NAME}' missing. Run /dayz-search-wiki-index --full."
+                f"Wiki index unavailable: table '{WIKI_TABLE_NAME}' missing (its build skill is on hold). "
+                "Use search_dayz_source instead."
             )
         _wiki_table = db.open_table(WIKI_TABLE_NAME)
     return _wiki_table
@@ -411,7 +414,9 @@ def main() -> int:
 
         Use this for questions about the official DayZ docs / tutorials / class references —
         engine API explanations, modding how-tos, scripting tutorials. Complements
-        search_dayz_source (which queries vanilla source code on P:\\).
+        search_dayz_source (which queries vanilla source code on P:\\). The wiki
+        index's build skill is on hold, so this raises "Wiki index unavailable"
+        unless a wiki table is already installed.
 
         Args:
             query: natural-language question or description

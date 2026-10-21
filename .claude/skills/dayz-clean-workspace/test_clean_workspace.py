@@ -22,55 +22,82 @@ def p_drive(monkeypatch, tmp_path):
     return drive
 
 
-def _native(workspace: Path, name: str) -> Path:
+@pytest.fixture(autouse=True)
+def junctions(monkeypatch):
+    """Fake P:\\<Name> links: {link path: target}. Empty means no links exist."""
+    links: dict[Path, Path] = {}
+    monkeypatch.setattr(h, "link_target", lambda p: links.get(p))
+    monkeypatch.setattr(h, "paths_equal", lambda a, b: Path(a).resolve() == Path(b).resolve())
+    return links
+
+
+def _native(workspace: Path, name: str, junctions: dict | None = None) -> Path:
+    """A /dayz-new-mod scaffold; pass `junctions` to also fake its P:\\<Name> junction."""
     mod = workspace / name
     mod.mkdir(parents=True)
     (mod / "config.cpp").write_text("", encoding="utf-8")
     (mod / "$PBOPREFIX$").write_text(name, encoding="utf-8")
+    if junctions is not None:
+        junctions[clean.P_DRIVE / name] = mod
     return mod
 
 
-# --- is_managed_mod / link detection --------------------------------------
+# --- unmanaged_reason / link detection --------------------------------------
 
-def test_native_scaffold_is_managed(tmp_path):
-    assert clean.is_managed_mod(_native(tmp_path, "MyMod"))
+def test_scaffold_with_junction_is_managed(tmp_path, junctions):
+    assert clean.unmanaged_reason(_native(tmp_path, "MyMod", junctions)) is None
 
 
-def test_folder_without_scaffold_files_is_not_managed(tmp_path):
-    (tmp_path / "Random").mkdir()
-    assert not clean.is_managed_mod(tmp_path / "Random")
+def test_hand_placed_mod_without_proof_is_not_managed(tmp_path):
+    """config.cpp + $PBOPREFIX$ alone do not prove the toolkit made it."""
+    reason = clean.unmanaged_reason(_native(tmp_path, "HandPlaced"))
+    assert reason and "no proof" in reason
+
+
+def test_folder_with_git_is_never_managed(p_drive, tmp_path, junctions):
+    mod = _native(tmp_path, "MyMod", junctions)
+    (mod / ".git").mkdir()
+    deployed = p_drive / "Mods" / "@MyMod"
+    deployed.mkdir()
+    h.write_marker(deployed, "MyMod")
+    reason = clean.unmanaged_reason(mod)
+    assert reason and ".git" in reason
 
 
 def test_file_is_not_managed(tmp_path):
     (tmp_path / "notes.txt").write_text("", encoding="utf-8")
-    assert not clean.is_managed_mod(tmp_path / "notes.txt")
+    assert clean.unmanaged_reason(tmp_path / "notes.txt") is not None
 
 
 def test_link_without_scaffold_files_is_managed(tmp_path, monkeypatch):
     (tmp_path / "Imported").mkdir()
     monkeypatch.setattr(h, "is_link", lambda p: True)
-    assert clean.is_managed_mod(tmp_path / "Imported")
+    assert clean.unmanaged_reason(tmp_path / "Imported") is None
 
 
-def test_discover_mods_skips_unmanaged(tmp_path):
+def test_discover_mods_skips_unmanaged_and_warns_on_mod_folders(tmp_path, junctions):
     ws = tmp_path / "workspace"
-    _native(ws, "B")
-    _native(ws, "A")
+    _native(ws, "B", junctions)
+    _native(ws, "A", junctions)
+    _native(ws, "HandPlaced")
     (ws / "Junk").mkdir()
-    assert [p.name for p in clean.discover_mods(ws, None)] == ["A", "B"]
+    mods, warnings = clean.discover_mods(ws, None)
+    assert [p.name for p in mods] == ["A", "B"]
+    assert len(warnings) == 1
+    assert "workspace\\HandPlaced" in warnings[0] and "rmdir /s /q" in warnings[0]
 
 
 def test_payload_bundle_with_matching_marker_is_managed(p_drive, tmp_path):
     bundle = tmp_path / "workspace" / "Bundle"
     (bundle / "Addons").mkdir(parents=True)
-    assert not clean.is_managed_mod(bundle)
+    assert clean.unmanaged_reason(bundle) is not None
     deployed = p_drive / "Mods" / "@Bundle"
     deployed.mkdir()
     h.write_marker(deployed, "OtherName")
-    assert not clean.is_managed_mod(bundle)
+    assert clean.unmanaged_reason(bundle) is not None
     h.write_marker(deployed, "Bundle")
-    assert clean.is_managed_mod(bundle)
-    assert [p.name for p in clean.discover_mods(tmp_path / "workspace", None)] == ["Bundle"]
+    assert clean.unmanaged_reason(bundle) is None
+    assert [p.name for p in clean.discover_mods(tmp_path / "workspace", None)[0]] == ["Bundle"]
 
 
 def test_payload_bundle_plan_removes_deployed_and_workspace(p_drive, tmp_path):
@@ -85,15 +112,24 @@ def test_payload_bundle_plan_removes_deployed_and_workspace(p_drive, tmp_path):
 
 
 def test_discover_mods_missing_workspace(tmp_path):
-    assert clean.discover_mods(tmp_path / "workspace", None) == []
+    assert clean.discover_mods(tmp_path / "workspace", None) == ([], [])
 
 
-def test_discover_mods_target_not_managed_names_both_kinds(tmp_path):
-    (tmp_path / "workspace" / "Junk").mkdir(parents=True)
+def test_discover_mods_target_not_managed_explains_and_hints(tmp_path):
+    _native(tmp_path / "workspace", "HandPlaced")
     with pytest.raises(SystemExit) as exc:
-        clean.discover_mods(tmp_path / "workspace", "Junk")
+        clean.discover_mods(tmp_path / "workspace", "HandPlaced")
     msg = str(exc.value.code)
-    assert "imported mod link" in msg and "config.cpp" in msg and "ownership marker" in msg
+    assert "no proof" in msg and "imported mod link" in msg and "ownership marker" in msg
+    assert "rmdir /s /q" in msg
+
+
+def test_discover_mods_target_with_git_refuses(tmp_path, junctions):
+    mod = _native(tmp_path / "workspace", "MyMod", junctions)
+    (mod / ".git").mkdir()
+    with pytest.raises(SystemExit) as exc:
+        clean.discover_mods(tmp_path / "workspace", "MyMod")
+    assert ".git" in str(exc.value.code)
 
 
 # --- find_artifacts: ownership + order ------------------------------------------
@@ -189,8 +225,8 @@ def _main(monkeypatch, *argv):
     return clean.main()
 
 
-def test_main_refuses_without_yes_when_not_a_tty(project, monkeypatch):
-    mod = _native(project / "workspace", "MyMod")
+def test_main_refuses_without_yes_when_not_a_tty(project, monkeypatch, junctions):
+    mod = _native(project / "workspace", "MyMod", junctions)
     monkeypatch.setattr(clean.sys, "stdin", _Stdin(False))
     monkeypatch.setattr(clean, "remove_artifact", lambda *a: pytest.fail("removed without consent"))
     with pytest.raises(SystemExit) as exc:
@@ -199,8 +235,8 @@ def test_main_refuses_without_yes_when_not_a_tty(project, monkeypatch):
     assert mod.is_dir()
 
 
-def test_main_dry_run_removes_nothing(project, monkeypatch, capsys):
-    mod = _native(project / "workspace", "MyMod")
+def test_main_dry_run_removes_nothing(project, monkeypatch, capsys, junctions):
+    mod = _native(project / "workspace", "MyMod", junctions)
     (project / ".server").mkdir()
     monkeypatch.setattr(clean, "remove_artifact", lambda *a: pytest.fail("dry run removed something"))
     assert _main(monkeypatch, "--include-server", "--dry-run") == 0
@@ -219,9 +255,9 @@ def test_main_include_server_refuses_legacy_layout(project, monkeypatch):
     assert (project / ".server").is_dir()
 
 
-def test_main_stops_at_first_failed_removal(project, monkeypatch, capsys):
-    _native(project / "workspace", "AMod")
-    _native(project / "workspace", "BMod")
+def test_main_stops_at_first_failed_removal(project, monkeypatch, capsys, junctions):
+    _native(project / "workspace", "AMod", junctions)
+    _native(project / "workspace", "BMod", junctions)
     calls = []
 
     def fail_first(kind, path):
@@ -232,3 +268,12 @@ def test_main_stops_at_first_failed_removal(project, monkeypatch, capsys):
     assert _main(monkeypatch, "--yes") == 1
     assert len(calls) == 1
     assert "could not remove" in capsys.readouterr().out
+
+
+def test_main_never_removes_hand_placed_mod(project, monkeypatch, capsys):
+    mod = _native(project / "workspace", "HandPlaced")
+    monkeypatch.setattr(clean, "remove_artifact", lambda *a: pytest.fail("removed a hand-placed mod"))
+    assert _main(monkeypatch, "--yes") == 0
+    out = capsys.readouterr().out
+    assert "skipping workspace\\HandPlaced" in out and "Nothing to clean." in out
+    assert mod.is_dir()

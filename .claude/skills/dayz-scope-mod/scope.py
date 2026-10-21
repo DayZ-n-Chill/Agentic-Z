@@ -154,9 +154,13 @@ def cmd_scope(mod_name: str) -> int:
             file=sys.stderr,
         )
         return 1
-    target = WORKSPACE / mod_name
-    if not target.exists() or not target.is_dir():
-        known = _list_mods()
+    # Match the folder on disk case-insensitively (Windows paths are), then use
+    # its real name everywhere, so the active mod is never listed as its own sibling.
+    known = _list_mods()
+    on_disk = mod_name if mod_name in known else next(
+        (m for m in known if m.lower() == mod_name.lower()), None
+    )
+    if on_disk is None:
         print(f"{FAIL} workspace\\{mod_name} does not exist.", file=sys.stderr)
         if known:
             print("        Known mods:", file=sys.stderr)
@@ -170,6 +174,7 @@ def cmd_scope(mod_name: str) -> int:
             file=sys.stderr,
         )
         return 1
+    mod_name = on_disk
 
     print(f"DayZ scope: {mod_name}\n")
     print(f"{OK} Mod found: workspace\\{mod_name}")

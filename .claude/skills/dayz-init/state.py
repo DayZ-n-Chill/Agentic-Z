@@ -4,8 +4,11 @@ Two files (both gitignored with the rest of local-memory/):
   dayz-current-project.txt  the cached project root. Other DayZ skills read it
                             through cached_project_root() and refuse to run
                             until /dayz-init has written it.
-  dayz-init-state.json      the setup choices disk inspection cannot derive
-                            (active mod, server map, RAG choice).
+  dayz-init-state.json      the setup choices disk inspection cannot derive:
+                            {"last_intent": {"mod_name", "is_new", "server_map"}},
+                            i.e. the active mod, whether it was scaffolded new
+                            (False for an import) and the test server map
+                            ("" when none was picked).
 
 The project root is the clone (or user project) that holds workspace/ and
 .server/: $CLAUDE_PROJECT_DIR when set, else the current directory.

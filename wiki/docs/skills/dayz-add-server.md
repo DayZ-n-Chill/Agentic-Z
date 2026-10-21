@@ -32,7 +32,7 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 
 1. **Preflight gate**: runs `/dayz-preflight`; halts on non-zero.
 2. **Old-layout gate**: refuses if `workspace/_server/` still exists. Delete the folder manually; that layout is no longer supported.
-3. **Resolve map and mission template**: turns the instance name and `--map` flag into the canonical mission folder name via the alias table.
+3. **Resolve map and mission template**: turns the instance name and `--map` flag into the canonical mission folder name via the alias table. If the instance already has a `serverDZ.cfg` whose active `template = "..."` line names a different template, the skill refuses before copying anything (see Refuses to run if).
 4. **Mission copy**: if `.server/<instance>/mission/` doesn't exist (or `--refresh-mission` was passed), copies it from `<DayZServer>/mpmissions/<template>/`. With `--refresh-mission`, the existing folder is renamed to `mission.bak-<timestamp>/` first; nothing is deleted. The copy is always named `mission/`.
 5. **Instance directory**: ensures `.server/<instance>/` exists with:
    - `serverDZ.cfg`: default config pointing at the right mission template, with `allowFilePatching = 1;` and a `shardId` made of the first six letters and digits of the instance name (padded with `shard`). An existing config is preserved, except that `allowFilePatching = 1;` is appended if no active line exists (a commented-out line does not count) or set back to `1` if it holds any other value. `/dayz-launch-test` refuses to start without that line, so rerunning this skill is the fix.
@@ -47,6 +47,7 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 - `workspace/_server/` still exists. Delete it manually; the legacy layout is no longer supported.
 - DayZ Server install isn't found AND the mission isn't already in `.server/<instance>/mission/`. (Install DayZ Server free from Steam appid 223350 for the initial copy. Once the mission is local, DayZ Server is no longer required.)
 - `<instance>` contains a path separator, a drive colon, or is `.`/`..` (argparse rejects it, exit 2).
+- The instance already exists and its `serverDZ.cfg` `template = "..."` line names a different mission template than this run resolved (for example `chernarus` rerun with `--map livonia`). Add a new instance for the other map, or set the `template =` line yourself and rerun with `--refresh-mission` to swap the mission (the old one is kept as a backup).
 - `<instance>` isn't a known map alias and `--map` wasn't given. (We have no way to guess the mission template from a free-form name.)
 - DayZ Server install lacks the requested mission template (e.g. `--map dayzOffline.namalsk` but DayZ Server doesn't ship namalsk; either provide the mission manually under `.server/<instance>/mission/` or correct the name).
 - The `<template>/` junction to `mission/` cannot be created (the `mklink` error is printed).

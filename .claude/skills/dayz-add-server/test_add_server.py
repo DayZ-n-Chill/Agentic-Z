@@ -140,6 +140,39 @@ def test_explicit_allow_file_patching_zero_is_turned_back_on(tmp_path):
     assert cfg_path.read_text(encoding="utf-8") == 'hostname = "mine";\nallowFilePatching = 1;   // mine\n'
 
 
+def test_rerun_with_different_template_refuses(tmp_path):
+    srv.setup_instance_dir("test", "dayzOffline.chernarusplus", tmp_path)
+    cfg_path = tmp_path / ".server" / "test" / "serverDZ.cfg"
+    with pytest.raises(SystemExit) as exc:
+        srv.gate_on_template_mismatch(cfg_path, "dayzOffline.enoch", "test")
+    msg = str(exc.value.code)
+    assert "dayzOffline.chernarusplus" in msg and "--refresh-mission" in msg and "new instance" in msg
+
+
+def test_rerun_with_same_template_or_no_cfg_passes(tmp_path):
+    cfg_path = tmp_path / ".server" / "test" / "serverDZ.cfg"
+    srv.gate_on_template_mismatch(cfg_path, "dayzOffline.enoch", "test")  # no cfg yet
+    srv.setup_instance_dir("test", "dayzOffline.chernarusplus", tmp_path)
+    srv.gate_on_template_mismatch(cfg_path, "dayzOffline.chernarusplus", "test")
+
+
+def test_commented_template_line_is_ignored(tmp_path):
+    cfg_path = tmp_path / "serverDZ.cfg"
+    cfg_path.write_text('// template = "dayzOffline.enoch";\ntemplate = "dayzOffline.chernarusplus";\n', encoding="utf-8")
+    srv.gate_on_template_mismatch(cfg_path, "dayzOffline.chernarusplus", "test")
+
+
+def test_main_refuses_mismatch_before_copying(monkeypatch, tmp_path):
+    srv.setup_instance_dir("chernarus", "dayzOffline.chernarusplus", tmp_path)
+    monkeypatch.setattr(srv.h, "resolve_project_dir", lambda: tmp_path)
+    monkeypatch.setattr(srv.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(srv, "ensure_mission", lambda *a, **k: pytest.fail("mission copied despite mismatch"))
+    monkeypatch.setattr(srv.sys, "argv", ["add_server.py", "chernarus", "--map", "livonia"])
+    with pytest.raises(SystemExit) as exc:
+        srv.main()
+    assert "dayzOffline.enoch" in str(exc.value.code)
+
+
 def test_template_junction_failure_exits_non_zero(monkeypatch, tmp_path):
     (tmp_path / ".server" / "test" / "mission").mkdir(parents=True)
     monkeypatch.setattr(

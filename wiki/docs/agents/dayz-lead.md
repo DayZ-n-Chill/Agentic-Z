@@ -48,6 +48,8 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 
 ## Your workers
 
+In a plugin install the agents are registered as `agentic-z:<name>`; start each worker under that name.
+
 | Team | Workers you start |
 | --- | --- |
 | Script | `dayz-script-specialist`, `dayz-workbench-specialist` |

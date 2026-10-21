@@ -1,9 +1,9 @@
 """dayz-clean-workspace: Remove DayZ scaffolds and their deployed artifacts.
 
 The project is the one cached by /dayz-init (same as build and deploy). For each
-managed mod under <project>/workspace/<ModName>/ (a native scaffold with
-config.cpp + $PBOPREFIX$, a /dayz-import-mod link, or a payload bundle whose
-deployed dir carries the ownership marker):
+managed mod under <project>/workspace/<ModName>/ (a /dayz-import-mod link, or a
+real folder without .git that P:\\<ModName>\\ links to or whose deployed dir
+carries the ownership marker; see unmanaged_reason):
   - P:\\<ModName>\\           removed only if it is a link whose target is workspace/<ModName>/
   - P:\\Mods\\@<ModName>\\     removed only if its ownership marker matches <ModName>
   - workspace/<ModName>/     folder removed recursively; a link is removed without
@@ -31,37 +31,66 @@ MODS_ROOT = P_DRIVE / "Mods"
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
 
-def is_managed_mod(path: Path) -> bool:
-    """A workspace entry is managed if ANY of these holds:
-      - it is a directory link (symlink/junction): only /dayz-import-mod creates
-        links under workspace/, so the link itself is the ownership signal.
-        Covers bare imports made with --no-scaffold.
-      - it is a real directory with config.cpp + $PBOPREFIX$ (native scaffold).
-      - it is a real directory whose P:\\Mods\\@<Name>\\ carries our ownership
-        marker for <Name>: a pure payload bundle deployed by /dayz-deploy-pbo.
+def has_junction_to(path: Path) -> bool:
+    """True when P:\\<Name>\\ is a link pointing at this workspace folder (made by /dayz-new-mod)."""
+    target = h.link_target(P_DRIVE / path.name)
+    return target is not None and h.paths_equal(target, path)
+
+
+def unmanaged_reason(path: Path) -> str | None:
+    """None when the workspace entry is managed (safe to remove), else why it is not.
+
+    Managed means one of:
+      - a directory link (symlink/junction): only /dayz-import-mod creates links
+        under workspace/, and removing one never touches its target.
+      - a real directory with no .git inside that the toolkit demonstrably
+        created: P:\\<Name>\\ is a junction to it (/dayz-new-mod), or
+        P:\\Mods\\@<Name>\\ carries the ownership marker for <Name>
+        (/dayz-build-pbo or /dayz-deploy-pbo).
+    config.cpp + $PBOPREFIX$ alone are not proof: a hand-placed mod has them too.
     """
     if not path.is_dir():
-        return False
+        return "not a folder"
     if h.is_link(path):
-        return True
-    if (path / "config.cpp").exists() and (path / "$PBOPREFIX$").exists():
-        return True
-    return h.owns_deploy_dir(MODS_ROOT / f"@{path.name}", path.name)
+        return None
+    if (path / ".git").exists():
+        return "it contains .git (a repository; its history would be lost)"
+    if has_junction_to(path) or h.owns_deploy_dir(MODS_ROOT / f"@{path.name}", path.name):
+        return None
+    return (
+        f"no proof the toolkit created it (no P:\\{path.name} junction pointing at it\n"
+        f"        and no ownership marker in P:\\Mods\\@{path.name})"
+    )
 
 
-def discover_mods(workspace: Path, target: str | None) -> list[Path]:
+def _manual_hint(path: Path) -> str:
+    return f"If you are sure it can go, remove it by hand: cmd /c rmdir /s /q \"{path}\""
+
+
+def discover_mods(workspace: Path, target: str | None) -> tuple[list[Path], list[str]]:
+    """Return (managed mods, warnings for real mod folders that were skipped)."""
     if target:
         path = workspace / target
-        if not is_managed_mod(path):
+        reason = unmanaged_reason(path)
+        if reason is not None:
             sys.exit(
-                f"{FAIL} workspace\\{target} is not a managed mod.\n"
-                "       Expected an imported mod link, a folder with config.cpp and $PBOPREFIX$,\n"
-                "       or a bundle whose P:\\Mods\\@<Name>\\ carries the ownership marker."
+                f"{FAIL} workspace\\{target} is not a managed mod: {reason}.\n"
+                "       Managed means an imported mod link, or a folder without .git that has a\n"
+                "       P:\\<Name> junction to it or a P:\\Mods\\@<Name>\\ ownership marker.\n"
+                f"       {_manual_hint(path)}"
             )
-        return [path]
+        return [path], []
     if not workspace.exists():
-        return []
-    return sorted(p for p in workspace.iterdir() if is_managed_mod(p))
+        return [], []
+    mods: list[Path] = []
+    warnings: list[str] = []
+    for p in sorted(workspace.iterdir()):
+        reason = unmanaged_reason(p)
+        if reason is None:
+            mods.append(p)
+        elif p.is_dir() and (p / "config.cpp").exists():
+            warnings.append(f"skipping workspace\\{p.name}: {reason}.\n        {_manual_hint(p)}")
+    return mods, warnings
 
 
 def find_artifacts(mod_path: Path) -> tuple[list[tuple[str, Path]], list[str]]:
@@ -75,10 +104,8 @@ def find_artifacts(mod_path: Path) -> tuple[list[tuple[str, Path]], list[str]]:
     warnings: list[str] = []
     name = mod_path.name
 
-    p_junction = P_DRIVE / name
-    target = h.link_target(p_junction)
-    if target is not None and h.paths_equal(target, mod_path):
-        artifacts.append(("junction", p_junction))
+    if has_junction_to(mod_path):
+        artifacts.append(("junction", P_DRIVE / name))
 
     deployed = MODS_ROOT / f"@{name}"
     if deployed.exists():
@@ -143,8 +170,8 @@ def main() -> int:
     workspace = project_dir / "workspace"
 
     plan: list[tuple[str, Path]] = []
-    warnings: list[str] = []
-    for mod in discover_mods(workspace, args.mod):
+    mods, warnings = discover_mods(workspace, args.mod)
+    for mod in mods:
         mod_plan, mod_warnings = find_artifacts(mod)
         plan.extend(mod_plan)
         warnings.extend(mod_warnings)

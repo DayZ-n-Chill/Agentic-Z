@@ -171,3 +171,16 @@ def test_unknown_mod_lists_known_mods_on_their_own_lines(scope, capsys):
     assert lines[0].endswith("NoSuchMod does not exist.")
     assert lines[1].strip() == "Known mods:"
     assert lines[2].strip() == "- ModA"
+
+
+@pytest.mark.parametrize("typed", ["moda", "MODA", "modA"])
+def test_mod_name_matches_folder_case_insensitively(scope, capsys, typed):
+    assert scope.main([typed]) == 0
+    deny = _deny(scope)
+    assert not any("ModA" in r or typed in r for r in deny)
+    assert "Edit(/workspace/ModB/**)" in deny and "Edit(/workspace/ModC/**)" in deny
+    state = json.loads(scope.SCOPE_STATE.read_text(encoding="utf-8"))
+    assert state["active_mod"] == "ModA"
+    out = capsys.readouterr().out
+    assert "DayZ scope: ModA" in out
+    assert "Sibling mods detected: 2 (ModB, ModC)" in out

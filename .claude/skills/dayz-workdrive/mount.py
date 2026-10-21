@@ -1,6 +1,6 @@
 r"""dayz-workdrive: Mount P:\ as the DayZ work drive without DayZ Tools' GUI.
 
-Resolves the work-drive folder (env var, cache, settings.ini, registry, fallback)
+Resolves the work-drive folder (env var, cache, settings.ini, registry)
 and mounts it via DayZ Tools' WorkDrive.exe /Mount, falling back to Windows'
 built-in subst command. Idempotent: exits OK if already mounted.
 
@@ -117,7 +117,10 @@ def find_work_drive() -> Optional[Path]:
       3. <DayZ Tools>/settings.ini [ProjectDrive] path=
       4. Registry values WorkDrive / WorkDrivePath / P_Drive / PDrive under
          3 well-known DayZ Tools keys (HKCU + HKLM 64-bit + HKLM 32-bit)
-      5. <DayZ Tools>/Bin/WorkDrive (default location DayZ Tools creates)
+
+    There is no default: <DayZ Tools>/Bin/WorkDrive holds WorkDrive.exe itself,
+    not a project drive, so mounting it would be wrong. Returns None instead and
+    the caller asks for --path.
     """
     candidates: list[Path] = []
 
@@ -151,9 +154,6 @@ def find_work_drive() -> Optional[Path]:
                     val = read_registry_string(hive, subkey, value_name)
                     if val:
                         candidates.append(Path(val))
-
-    if tools:
-        candidates.append(tools / "Bin" / "WorkDrive")
 
     for c in candidates:
         if c and c.is_dir():
@@ -270,11 +270,14 @@ def main() -> int:
         if not work:
             print(f"{FAIL}Could not resolve a work drive folder.", file=sys.stderr)
             print(
-                "       Tried: $DAYZ_WORK_DRIVE, cached path, settings.ini, registry, "
-                "DayZ Tools\\Bin\\WorkDrive\\.",
+                "       Tried: $DAYZ_WORK_DRIVE, cached path, settings.ini, registry.",
                 file=sys.stderr,
             )
-            print('       Pass --path "C:\\path\\to\\workdrive" to specify explicitly.', file=sys.stderr)
+            print(
+                '       Pass --path "C:\\path\\to\\workdrive" with the folder P:\\ should show '
+                "(it is cached for later runs).",
+                file=sys.stderr,
+            )
             return 1
 
     print(f"{INFO}Mounting P: -> {work}")

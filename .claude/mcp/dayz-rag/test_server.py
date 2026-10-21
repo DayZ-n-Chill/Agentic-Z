@@ -261,11 +261,23 @@ def test_wiki_blank_query_returns_nothing(monkeypatch):
     assert server.search_dayz_wiki_impl("") == []
 
 
-def test_missing_wiki_table_raises(monkeypatch, tmp_path):
+def test_missing_wiki_index_says_unavailable(monkeypatch, tmp_path):
     monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
     monkeypatch.setattr(server, "_wiki_table", None)
-    with pytest.raises(RuntimeError, match="dayz-search-wiki-index"):
+    with pytest.raises(RuntimeError, match="Wiki index unavailable.*on hold") as exc:
         server._get_wiki_table()
+    assert "dayz-search-wiki-index" not in str(exc.value)
+
+
+def test_missing_wiki_table_says_unavailable(monkeypatch, tmp_path):
+    (tmp_path / "lancedb").mkdir()
+    fake_lancedb = SimpleNamespace(connect=lambda path: SimpleNamespace(table_names=lambda: ["chunks"]))
+    monkeypatch.setitem(sys.modules, "lancedb", fake_lancedb)
+    monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
+    monkeypatch.setattr(server, "_wiki_table", None)
+    with pytest.raises(RuntimeError, match="Wiki index unavailable: table 'wiki_chunks' missing.*on hold") as exc:
+        server._get_wiki_table()
+    assert "dayz-search-wiki-index" not in str(exc.value)
 
 
 # --------------- list_indexed_sources ---------------

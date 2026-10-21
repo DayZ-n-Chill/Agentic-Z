@@ -32,6 +32,8 @@ python "<skill-dir>\deploy.py" <ModName>
 4. **Copy Addons** — mirrors `Addons/*.pbo` + `Addons/*.bisign` into `P:\Mods\@<ModName>\Addons\`. Idempotent: a file already present with identical size + mtime is skipped. Purely additive: nothing in the deploy dir is ever deleted, so a linker PBO placed there by `/dayz-build-pbo` survives.
 5. **Copy Keys** — mirrors `Keys/*.bikey` into `P:\Mods\@<ModName>\Keys\` (skipped entirely if the bundle has no keys).
 6. **Copy metadata** — `meta.cpp` / `mod.cpp` from the bundle root, if present.
+
+   If any copy in steps 4-6 fails (typically a PBO held open by a running DayZ client or server), deploy prints `[FAIL] could not copy <file>: <error>` with the hint "Close DayZ or run /dayz-stop-test", writes the ownership marker so the rerun is not refused, and exits 1. Files copied before the failure stay; the rerun skips them as unchanged.
 7. **Verify** — reports copied vs. unchanged counts per run, and `[WARN]`s for every `.pbo` lacking a matching `<name>.pbo.<key>.bisign` (signature-checking clients will reject unsigned PBOs).
 8. **Drop ownership marker** — writes `P:\Mods\@<ModName>\.agentic-z-scaffold` (single line: the modname), exactly as `/dayz-build-pbo` does, so `/dayz-clean-workspace` treats the bundle as managed and can remove both `workspace/<ModName>/` and the deployed dir (a pure payload bundle has no `config.cpp`, so the marker is what marks it as ours). If the marker cannot be written, deploy prints `[FAIL]` and exits 1 even though the files were copied, because the next build, deploy and clean would all refuse that folder.
 

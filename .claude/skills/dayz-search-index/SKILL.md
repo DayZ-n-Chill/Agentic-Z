@@ -38,14 +38,18 @@ After a build, restart Claude Code so the MCP server opens the new index.
 
 ## What it indexes
 
-The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. The 2026-08-10 build produced 52,048 chunks (about 66M tokens); `--status` shows the current numbers.
+The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. The live index holds about 52,000 chunks from about 38,000 files (about 66M tokens); `--status` shows the current numbers.
+
+Indexes built before oversize class blocks were split into windows stored only the first 8,000 characters of each block. Run `--full` once to rebuild with windowing; expect the chunk count to rise.
 
 | File type | Chunking |
 |---|---|
-| `.c .cpp .hpp .h .cfg .layout` | one chunk per top-level `class X { ... }` block, whole file if there are none |
+| `.c .cpp .hpp .h .cfg .layout` | one chunk per top-level `class X { ... }` block, whole file if there are none. A block or file over 6,000 characters (`EMBED_MAX_CHARS`) is split into windows of at most that size, cut at member boundaries (a method or field starting at the class's top level) where possible, otherwise at the last whole line that fits. Each window keeps the class name as parent context and its own real line range, so no script text is dropped |
 | `.rvmat` | whole file, deduplicated by SHA-256 of the content |
 | `.xml` | whole file under 4 KB, otherwise batches of 50 top-level elements (line range = first to last element in the batch) |
 | `.json .csv` | whole file |
+
+The other types are not windowed: an `.rvmat` chunk stores at most 4,000 characters, and `.xml .json .csv` chunks store at most 8,000 characters, of which the first 6,000 are embedded.
 
 Each chunk stores path, file type, parent context (class name, XML range, or rvmat hash), line range and content.
 

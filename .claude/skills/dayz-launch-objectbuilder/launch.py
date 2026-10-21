@@ -91,11 +91,12 @@ def main() -> int:
 
     print("DayZ Object Builder launcher\n")
 
-    # Bad flags fail before the slower preflight and registry checks.
-    target = resolve_target(args.file, args.mod)
-
+    # Preflight first (as /dayz-launch-workbench does): --mod resolves under
+    # P:\, so an unmounted P: must fail with preflight's fix, not "folder missing".
     h.gate_on_preflight()
     print()
+
+    target = resolve_target(args.file, args.mod)
 
     tools_root = h.preflight.find_dayz_tools()
     if not tools_root:

@@ -168,7 +168,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(setup, "import_reg_file", fake_import)
     def fake_prefs():
         state["prefs"] += 1
-        return 0
+        return 1
 
     def fake_backup(backup_dir):
         state["backups"] += 1
@@ -181,10 +181,11 @@ def env(tmp_path, monkeypatch):
     return ob, state
 
 
-def test_main_fresh_machine_imports_and_applies(env):
+def test_main_fresh_machine_imports_and_applies(env, capsys):
     _, state = env
     assert setup.main([]) == 0
     assert state["imports"] == 1 and state["prefs"] == 1
+    assert "[INFO]  1 of 4 preferences changed." in capsys.readouterr().out
 
 
 def test_main_already_configured_skips_import(env):

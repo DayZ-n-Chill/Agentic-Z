@@ -71,6 +71,8 @@ def command_for(
         )
         if scaffold is not None:
             argv.append("--scaffold" if scaffold else "--no-scaffold")
+        if author:
+            argv += ["--author", author]
         return argv
     if action == "add-server":
         server = _need(server, "--server", action)

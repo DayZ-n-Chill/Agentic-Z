@@ -215,9 +215,10 @@ def launch_pair(
     display: dict,
     label: str,
 ) -> list[subprocess.Popen]:
-    """Spawn server, wait for its port, then spawn the client. Returns both
-    handles. Mirrors the /dayz-launch-test contract."""
+    """Check the port is free, spawn server, wait for its port, then spawn the
+    client. Returns both handles. Mirrors the /dayz-launch-test contract."""
     print(f"[{label}] Launching server + client...")
+    h.gate_on_free_port(port)
     server_cmd = build_server_cmd(diag_exe, mod_arg, port, cfg_path, profile_dir, mission_path)
     client_cmd = build_client_cmd(diag_exe, mod_arg, port, client_diag_dir, display)
 

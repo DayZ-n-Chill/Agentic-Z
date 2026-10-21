@@ -35,7 +35,7 @@ class Intent:
     mod_name: str
     source: str | None = None        # set for an import, None for a new mod
     scaffold: bool | None = None     # import only: write missing pieces into the source?
-    author: str | None = None        # new mod only: passed to /dayz-new-mod --author
+    author: str | None = None        # new mod or --scaffold import: passed as --author
     server_map: str | None = None
     build: bool = False
     launch: bool = False
@@ -55,10 +55,11 @@ def build_steps(intent: Intent, already_exists: bool) -> list[Step]:
     if already_exists:
         pass
     elif intent.source:
-        steps.append(Step(
-            "import-mod", f"Import {intent.source} as {mod}",
-            {"mod": mod, "source": intent.source, "scaffold": intent.scaffold},
-        ))
+        params = {"mod": mod, "source": intent.source, "scaffold": intent.scaffold}
+        if intent.scaffold:
+            # A scaffolded config.cpp needs the author handle.
+            params["author"] = intent.author
+        steps.append(Step("import-mod", f"Import {intent.source} as {mod}", params))
     else:
         steps.append(Step("new-mod", f"Scaffold workspace\\{mod}", {"mod": mod, "author": intent.author}))
 
@@ -115,7 +116,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
                           help="Import: write missing pieces into the source folder")
     scaffold.add_argument("--no-scaffold", dest="scaffold", action="store_false",
                           help="Import: link only, never write into the source folder")
-    parser.add_argument("--author", help="New mod: author handle (cached by /dayz-new-mod)")
+    parser.add_argument("--author", help="New mod or --scaffold import: author handle (cached for future runs)")
     parser.add_argument("--server", choices=KNOWN_MAPS, help="Set up a test server on this map")
     parser.add_argument("--build", action="store_true", help="Build the PBO")
     parser.add_argument("--launch", action="store_true", help="Launch DayZ Diag (implies --build)")

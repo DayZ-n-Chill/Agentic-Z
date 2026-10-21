@@ -39,7 +39,7 @@ Skills resolve paths in this order: env var, then Windows registry (DayZ Tools o
 | `DAYZ_DIAG_PATH` | Direct path to `DayZDiag_x64.exe` (override for non-standard installs). | `/dayz-launch-test`. |
 | `DAYZ_SERVER_PATH` | DayZ Server install root (containing `DayZServer_x64.exe`). Only its mission templates are read; testing runs diag for both ends. | `/dayz-add-server` (mission copy). |
 | `DAYZ_VANILLA_DATA_PATH` | Folder on `P:\` containing the unpacked vanilla DayZ PBOs (default candidates: `P:\dz`, `P:\DZ`, `P:\dta`). | Preflight. |
-| `DAYZ_WORK_DRIVE` | Folder to mount as `P:\`. Read from DayZ Tools' `settings.ini` `[ProjectDrive] path` if not set. | `/dayz-workdrive`. |
+| `DAYZ_WORK_DRIVE` | Folder to mount as `P:\`; else the cached path from the last mount, then DayZ Tools' `settings.ini` `[ProjectDrive] path`, then the DayZ Tools registry values. No default: with none of these, `/dayz-workdrive` fails and asks for `--path`. | `/dayz-workdrive`. |
 
 Skills use the shared resolvers in `dayz-preflight/preflight.py` (`find_dayz_tools`, `find_dayz_game`, `find_dayz_diag`, `find_dayz_server`, `find_vanilla_data`) rather than re-implementing path discovery, so the resolution order stays the same across every skill.
 
@@ -50,7 +50,7 @@ The RAG layer (`/dayz-search-index` plus the `dayz-rag` MCP server) embeds vanil
 - It needs `VOYAGE_API_KEY=...` in `.env` at the repo root. Without it, searches fail with a "VOYAGE_API_KEY not set" error.
 - Indexed file types: `.c`, `.cpp`, `.hpp`, `.h`, `.cfg`, `.layout`, `.rvmat`, `.xml`, `.json`, `.csv`. Binary formats (`.p3d`, `.paa`) are not indexed.
 - `list_indexed_sources()` reports what the live index holds and when it was built.
-- The wiki index is separate and built by `/dayz-search-wiki-index --full`. That skill is on hold, so the wiki index may not exist; `search_dayz_wiki` then returns a missing-table error.
+- The wiki index is separate and built by `/dayz-search-wiki-index --full`. That skill is on hold, so the wiki index may not exist; `search_dayz_wiki` then raises a "Wiki index unavailable" error.
 
 ## Project layout
 
@@ -141,7 +141,7 @@ Bohemia ticket: `T148506`. The bug is "won't fix"; the workaround is mandatory. 
 - DayZ mods cannot be tested client-only. Every test or launch skill MUST start a local server with the same mod set alongside the client.
 - Both client and server MUST be `DayZDiag_x64.exe`, not the retail binaries. Retail `DayZ_x64.exe` and `DayZServer_x64.exe` both block past the loading screen when `-filePatching` is on, and `-filePatching` is what lets the engine read raw `.cpp`/`.c` from the `P:\<ModName>\` junction. The same `DayZDiag_x64.exe` runs either end; pass `-server` for server mode.
 - DayZ Diag lives in the DayZ game install next to the retail exe; resolve it with `find_dayz_diag()` in `dayz-preflight/preflight.py`. The DayZ Server Steam install (appid 223350) is only needed to copy mission templates.
-- The server's `serverDZ.cfg` needs `allowFilePatching = 1;` for `-filePatching` clients to connect. Without it the connection fails with `0x00020005` ("The server does not support the client's current filePatching setting"). `/dayz-add-server` writes it into the default cfg. `/dayz-add-server` treats a missing, commented-out or non-1 `allowFilePatching` as missing and sets it to `allowFilePatching = 1;`. `/dayz-launch-test` and `/dayz-cot-bootstrap` refuse to launch without it.
+- The server's `serverDZ.cfg` needs `allowFilePatching = 1;` for `-filePatching` clients to connect. Without it the connection fails with `0x00020005` ("The server does not support the client's current filePatching setting"). `/dayz-add-server` writes it into the default cfg, treating a missing, commented-out or non-1 `allowFilePatching` as missing and setting it to `allowFilePatching = 1;`. `/dayz-launch-test` and `/dayz-cot-bootstrap` refuse to launch without it.
 - Server runtime lives at `.server/<instance>/` at the project root (not under `workspace/`). Each instance is self-contained:
   - `.server/<instance>/mission/`: editable copy of the mission folder, created by `/dayz-add-server` from DayZ Server's `mpmissions/<template>/` and edited by the user after that (the server runs with `-filePatching`, so edits are live). Never edit the original DayZ Server install. The folder is named `mission/` whatever the template; the launcher passes `-mission=<abspath>`.
   - `.server/<instance>/serverDZ.cfg`: per-instance server config. Its `template = "..."` line links the instance to its mission base, so instances can differ in player count, persistence or time of day.

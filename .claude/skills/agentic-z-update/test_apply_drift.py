@@ -1,9 +1,12 @@
 """Tests for apply_drift (overwrite, delete, keep/take on conflicts) and the dirty-tree refusal.
 
-git is never called: subprocess.run is replaced with a fake that records each
-`git checkout <ref> -- <path>` and writes the "upstream" bytes to disk.
+git is not called by the apply tests: subprocess.run is replaced with a fake that
+records each `git checkout <ref> -- <path>` and writes the "upstream" bytes to disk.
+The commit test uses a throwaway git repo under tmp_path.
 """
 import importlib.util
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -237,18 +240,97 @@ def _stub_apply_flow(monkeypatch, root):
     monkeypatch.setattr(update, "run_sync_skills", lambda: None)
 
 
-def test_first_run_records_baseline_and_adds_no_new_files(in_tmp, monkeypatch, capsys):
+def test_first_run_records_baseline_and_restores_no_missing_files(in_tmp, monkeypatch, capsys):
+    """On the first run the baseline is upstream, so a missing template file is locally-deleted."""
     _stub_apply_flow(monkeypatch, in_tmp)
-    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: {"docs/new.md": S.NEW})
+    seen = {}
 
-    def must_not_apply(*a, **k):
-        raise AssertionError("first run must not apply new files")
+    def fake_drift(baseline, ref):
+        seen["baseline"] = baseline
+        return {"docs/missing.md": update.classify_per_file(b"x", None, b"x")}
 
-    monkeypatch.setattr(update, "apply_drift", must_not_apply)
+    monkeypatch.setattr(update, "compute_drift", fake_drift)
+    monkeypatch.setattr(update.subprocess, "run", lambda *a, **k: pytest.fail("nothing may be checked out"))
     monkeypatch.setattr(sys, "argv", ["update.py", "--yes"])
     assert update.main() == 0
+    assert seen["baseline"] == "c" * 40
     assert update.read_baseline() == "c" * 40
-    assert "1 new upstream file(s) not added" in capsys.readouterr().out
+    assert not (in_tmp / "docs/missing.md").exists()
+    assert "deleted in this clone" in capsys.readouterr().out
+
+
+# ---------- locally-deleted ----------
+
+def test_locally_deleted_classification():
+    assert update.classify_per_file(baseline=b"v1", local=None, upstream=b"v1") == S.LOCALLY_DELETED
+    assert update.classify_per_file(baseline=b"v1", local=None, upstream=b"v2") == S.LOCALLY_DELETED
+    assert update.classify_per_file(baseline=None, local=None, upstream=b"v1") == S.NEW
+
+
+def test_locally_deleted_left_alone_by_default(repo):
+    applied, skipped = update.apply_drift({"docs/gone.md": S.LOCALLY_DELETED}, REF)
+    assert (applied, skipped) == ([], ["docs/gone.md"])
+    assert not Path("docs/gone.md").exists()
+    assert repo["checkouts"] == []
+
+
+def test_locally_deleted_take_restores_upstream(repo):
+    applied, _ = update.apply_drift({"docs/gone.md": S.LOCALLY_DELETED}, REF, {"docs/gone.md": "take"})
+    assert applied == ["docs/gone.md"]
+    assert _read("docs/gone.md") == "UPSTREAM:docs/gone.md"
+
+
+def test_per_file_offers_locally_deleted(monkeypatch):
+    answers = iter(["t", "k"])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(answers))
+    drift = {"docs/gone.md": S.LOCALLY_DELETED, "docs/c.md": S.CONFLICT, "docs/x.md": S.SAFE_OVERWRITE}
+    assert update.resolve_conflicts_per_file(drift, REF) == {"docs/gone.md": "take", "docs/c.md": "keep"}
+
+
+def test_locally_deleted_does_not_hold_baseline(in_tmp, monkeypatch):
+    monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: True)
+    drift = {"docs/gone.md": S.LOCALLY_DELETED}
+    assert update.finish_apply(drift, [], ["docs/gone.md"], "a" * 40) == "advanced"
+
+
+def test_check_ignores_local_choices(in_tmp, monkeypatch, capsys):
+    _stub_remote(monkeypatch, in_tmp)
+    update.write_baseline("b" * 40)
+    drift = {"docs/gone.md": S.LOCALLY_DELETED, "docs/mine.md": S.LOCAL_ONLY_EDIT}
+    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: dict(drift))
+    monkeypatch.setattr(update, "_QUIET", False)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check"])
+    assert update.main() == 0
+    assert "Up to date." in capsys.readouterr().out
+
+
+# ---------- the update commit contains only the applied paths ----------
+
+def _git(cwd, *args):
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
+def test_commit_excludes_other_staged_changes(tmp_path, monkeypatch):
+    _git(tmp_path, "init", "-q")
+    for key, val in [("user.name", "t"), ("user.email", "t@example.com"),
+                     ("commit.gpgsign", "false"), ("core.hooksPath", ".no-hooks")]:
+        _git(tmp_path, "config", key, val)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs/a.md").write_text("old", encoding="utf-8")
+    (tmp_path / "notes.txt").write_text("v1", encoding="utf-8")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "init")
+
+    (tmp_path / "notes.txt").write_text("user's staged edit", encoding="utf-8")
+    _git(tmp_path, "add", "notes.txt")
+    (tmp_path / "docs/a.md").write_text("upstream", encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(update, "_QUIET", True)
+    assert update.stage_and_commit(["docs/a.md"], "d" * 40) is True
+    assert _git(tmp_path, "show", "--name-only", "--format=", "HEAD").split() == ["docs/a.md"]
+    assert _git(tmp_path, "diff", "--cached", "--name-only").split() == ["notes.txt"]
 
 
 def test_later_run_applies_new_files(in_tmp, monkeypatch):

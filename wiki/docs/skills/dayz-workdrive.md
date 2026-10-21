@@ -4,7 +4,7 @@ name: dayz-workdrive
 
 ## Overview
 
-Mounts P:\ as the DayZ work drive without opening the DayZ Tools GUI, using WorkDrive.exe with a subst fallback, and can unmount it. Resolves the work-drive folder from an env var, cached path, settings.ini, registry or the DayZ Tools default. Idempotent, Windows-only. Use when P:\ is not mounted (usually after a reboot) and before any other DayZ skill, or when the user asks to mount or unmount the work drive.
+Mounts P:\ as the DayZ work drive without opening the DayZ Tools GUI, using WorkDrive.exe with a subst fallback, and can unmount it. Resolves the work-drive folder from an env var, cached path, settings.ini or registry, and asks for --path when none resolves. Idempotent, Windows-only. Use when P:\ is not mounted (usually after a reboot) and before any other DayZ skill, or when the user asks to mount or unmount the work drive.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
@@ -33,7 +33,8 @@ python "<skill-dir>\mount.py" --unmount
    3. The path cached by a previous successful run in `<project>\.claude\local-memory\dayz-work-drive.json`, where `<project>` is `$CLAUDE_PROJECT_DIR` or else the current directory (the same rule `/dayz-init` uses, so a plugin install caches per project)
    4. `[ProjectDrive] path=` in `<DayZ Tools>\settings.ini`
    5. Registry values `WorkDrive`, `WorkDrivePath`, `P_Drive` or `PDrive` under the DayZ Tools keys (HKCU, then HKLM 64-bit and 32-bit)
-   6. `<DayZ Tools>\Bin\WorkDrive`
+
+   If none of these exists the skill exits 1 and asks for `--path`. It never falls back to `<DayZ Tools>\Bin\WorkDrive`: that folder holds `WorkDrive.exe` itself, not a project drive.
 3. Prints and runs `WorkDrive.exe /Mount "<folder>"`. If `P:\` still is not visible (or WorkDrive.exe is missing), falls back to `subst P: "<folder>"`.
 4. On success, caches the folder for the next run.
 
@@ -46,10 +47,18 @@ DayZ Tools is located with the shared `find_dayz_tools()` resolver from `dayz-pr
 ```
 DayZ P:\ mount
 
-[INFO] Mounting P: -> C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\WorkDrive
-[CMD]  "C:\...\DayZ Tools\Bin\WorkDrive\WorkDrive.exe" /Mount "C:\...\DayZ Tools\Bin\WorkDrive"
-[OK]   P:\ mounted -> C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\WorkDrive
+[INFO] Mounting P: -> C:\P Drives\Vanilla
+[CMD]  "C:\...\DayZ Tools\Bin\WorkDrive\WorkDrive.exe" /Mount "C:\P Drives\Vanilla"
+[OK]   P:\ mounted -> C:\P Drives\Vanilla
 [INFO] Cached for future runs at <project>\.claude\local-memory\dayz-work-drive.json
+```
+
+When nothing resolves it prints, on stderr:
+
+```
+[FAIL] Could not resolve a work drive folder.
+       Tried: $DAYZ_WORK_DRIVE, cached path, settings.ini, registry.
+       Pass --path "C:\path\to\workdrive" with the folder P:\ should show (it is cached for later runs).
 ```
 
 When already mounted it prints `[OK]   P:\ already mounted -> <folder>` and runs nothing.

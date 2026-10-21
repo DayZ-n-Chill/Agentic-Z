@@ -15,11 +15,11 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ## What it does
 
-1. Resolves the open target first, so a bad flag fails before the slower checks:
+1. Gates on `/dayz-preflight` (as `/dayz-launch-workbench` does), so an unmounted `P:\` fails with preflight's fix before `--mod` looks under it.
+2. Resolves the open target:
    - `--file <path>`: that `.p3d`. Fails if the path is missing; warns if the extension isn't `.p3d`.
    - `--mod <ModName>`: `P:\<ModName>\`. Fails if the folder is missing.
    - Neither: no argument; Object Builder opens its last-used file.
-2. Gates on `/dayz-preflight`.
 3. Locates `ObjectBuilder.exe` via DayZ Tools.
 4. Verifies the registry has been populated by `/dayz-setup-objectbuilder`, and fails with a hint if not.
 5. Spawns `ObjectBuilder.exe` detached, with working directory `<DayZ Tools>\Bin\ObjectBuilder\`, so the shell returns immediately. The window may take a few seconds to appear.
@@ -73,7 +73,7 @@ Preflight complete.
 
 - `--file` and `--mod` are mutually exclusive (argparse rejects both together); pass one or neither.
 - `--file` takes an absolute path, or a path relative to the project. Warns if the extension isn't `.p3d` (Object Builder may refuse it).
-- `--mod` is just the mod name; the skill expands to `P:\<ModName>\`. Fails fast if the folder isn't there.
+- `--mod` is just the mod name; the skill expands to `P:\<ModName>\`. Fails, right after preflight, if the folder isn't there.
 
 ## Why detached
 

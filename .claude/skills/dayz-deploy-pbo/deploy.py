@@ -100,7 +100,19 @@ def main() -> int:
         + [(f, deploy_root / "Keys") for f in bikeys]
         + [(f, deploy_root) for f in metas]
     )
-    copied = sum(copy_if_changed(src, dst_dir) for src, dst_dir in plan)
+    copied = 0
+    for src, dst_dir in plan:
+        try:
+            copied += copy_if_changed(src, dst_dir)
+        except OSError as e:
+            # Typically a PBO held open by a running DayZ client or server.
+            print(f"{FAIL} could not copy {src.name}: {e}")
+            print("       Close DayZ or run /dayz-stop-test, then rerun /dayz-deploy-pbo.")
+            # The gate above passed, so this dir is ours (or new): mark it so
+            # the rerun is not refused as an unowned folder.
+            if deploy_root.exists():
+                h.write_marker(deploy_root, args.modname)
+            return 1
     skipped = len(plan) - copied
 
     for p in unsigned_pbos(pbos, bisigns):

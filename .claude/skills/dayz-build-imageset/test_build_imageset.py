@@ -191,3 +191,11 @@ def test_build_one_rejects_bad_sprite_name_before_reading_images(tmp_path, capsy
     err = capsys.readouterr().err
     assert "hud health.png" in err and "hud_ok.png" not in err
     assert not (tmp_path / "out").exists()
+
+
+def test_build_pbo_excludes_gui_sources():
+    """SKILL.md promises the source PNGs stay out of the PBO; /dayz-build-pbo's exclude.lst does that."""
+    exclude = Path(__file__).resolve().parents[1] / "dayz-build-pbo" / "exclude.lst"
+    patterns = [l.strip() for l in exclude.read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith(";")]
+    assert any(p.startswith(".gui-sources") for p in patterns)
+    assert any(".gui-sources" in p and p.startswith("*") for p in patterns)

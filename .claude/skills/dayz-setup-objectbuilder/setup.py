@@ -242,7 +242,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"{h.OK} Registry imported successfully.")
 
     print(f"\n{INFO} Applying preferred Object Builder defaults:")
-    apply_preferences()
+    changed = apply_preferences()
+    print(f"{INFO} {changed} of {len(PREFERRED_FLAGS_ON)} preferences changed.")
 
     print(f"\n{h.OK} Object Builder is ready. Launch with: /dayz-launch-objectbuilder")
     return 0

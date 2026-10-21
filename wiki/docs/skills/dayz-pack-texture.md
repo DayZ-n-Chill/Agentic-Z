@@ -37,7 +37,7 @@ python "<skill-dir>\pack_texture.py" <input1> [<input2> ...]
 1. Preflight gate.
 2. Validate every input before converting any: the file exists, the extension is `.png` or `.tga` (any case), and the basename ends with `_co`, `_nohq`, or `_smdi` (any case) before the extension.
 3. Resolve `ImageToPAA.exe` from DayZ Tools (env / registry / Steam paths) via `find_dayz_tools()`.
-4. For each input, invoke `ImageToPAA.exe <input> <output.paa>`, overwriting any existing `.paa`. Streams the tool's output live.
+4. For each input, invoke `ImageToPAA.exe <input> <output.paa>`, overwriting any existing `.paa`. Streams the tool's output live. A conversion counts as failed if the tool exits non-zero, if no `.paa` appears, or if an existing `.paa` was left unchanged (its modification time did not move), so a stale file from an earlier run is never reported as packed.
 5. Report a summary of successes and failures. Exit non-zero if any failed.
 
 ## Refuses to run if

@@ -335,3 +335,30 @@ def test_scan_dir_audits_text_files(no_gate, tmp_path):
     (tmp_path / "config.cpp").write_text("class CfgPatches {};\n", encoding="utf-8")
     (tmp_path / "data" / "box.rvmat").write_text(r'texture = "P:\x.paa";', encoding="utf-8")
     assert _run_main(["--scan-dir", str(tmp_path)]) == 1
+
+
+def test_autocenter_checked_only_on_geometry_lod(tmp_path, monkeypatch, capsys):
+    def lod(resolution, **kw):
+        stub = _stub_lod(**kw)
+        stub.resolution = resolution
+        return stub
+
+    def run(geometry_props):
+        lods = [
+            lod(1e13, selections={"Component01": FULL}, properties=geometry_props),
+            lod(7e15),  # FireGeo with no autocenter property: valid on its own
+            lod(1e15, face_indices=[], selections={"pos center": ([0], [])}),
+        ]
+        fake_py3d = type("FakePy3d", (), {"P3D": staticmethod(lambda f: _Obj(lods=lods))})
+        monkeypatch.setattr(audit, "load_py3d", lambda: fake_py3d)
+        model = tmp_path / "m.p3d"
+        model.write_bytes(b"MLOD" + b"\0" * 8)
+        audit.audit_p3d(str(model))
+        return capsys.readouterr().out
+
+    out = run({"autocenter": "0"})
+    assert "--- FireGeo LOD[1] ---" in out
+    assert "autocenter=0' LOD property" not in out
+
+    out = run({})  # the Geometry LOD still gets the check
+    assert out.count("autocenter=0' LOD property") == 1

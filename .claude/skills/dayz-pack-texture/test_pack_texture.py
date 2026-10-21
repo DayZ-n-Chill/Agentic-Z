@@ -1,5 +1,6 @@
 """Tests for input validation in pack_texture.py (no DayZ Tools needed)."""
 import importlib.util
+import os
 from pathlib import Path
 
 import pytest
@@ -116,6 +117,31 @@ def test_pack_one_success_writes_paa(monkeypatch, tmp_path):
 
     monkeypatch.setattr(pt.subprocess, "run", run)
     assert pt.pack_one(tmp_path / "ImageToPAA.exe", src) is True
+
+
+def test_pack_one_success_without_rewrite_of_existing_paa_fails(monkeypatch, tmp_path, capsys):
+    src = tmp_path / "vest_co.png"
+    src.write_bytes(b"")
+    (tmp_path / "vest_co.paa").write_bytes(b"old paa")
+    monkeypatch.setattr(pt.subprocess, "run", lambda cmd: _Result(0))
+    assert pt.pack_one(tmp_path / "ImageToPAA.exe", src) is False
+    assert "did not rewrite" in capsys.readouterr().err
+
+
+def test_pack_one_overwrites_existing_paa(monkeypatch, tmp_path):
+    src = tmp_path / "vest_co.png"
+    src.write_bytes(b"")
+    dst = tmp_path / "vest_co.paa"
+    dst.write_bytes(b"old paa")
+    os.utime(dst, ns=(1_000_000_000, 1_000_000_000))
+
+    def run(cmd):
+        Path(cmd[2]).write_bytes(b"new paa")
+        return _Result(0)
+
+    monkeypatch.setattr(pt.subprocess, "run", run)
+    assert pt.pack_one(tmp_path / "ImageToPAA.exe", src) is True
+    assert dst.read_bytes() == b"new paa"
 
 
 def test_main_exits_1_on_partial_failure(monkeypatch, tmp_path, capsys):

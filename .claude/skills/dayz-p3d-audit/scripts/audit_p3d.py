@@ -338,15 +338,15 @@ def audit_p3d(filepath):
             zs = [pt.coords[2] for pt in lod.points]
             print(f"  BBox: X=[{min(xs):.3f}..{max(xs):.3f}] Y=[{min(ys):.3f}..{max(ys):.3f}] Z=[{min(zs):.3f}..{max(zs):.3f}]")
 
-        # Component01 is required only on Geometry LOD; running it on GeoPhys/FireGeo
-        # produces false CRITICALs on valid vanilla models. There is no winding check:
+        # Component01 and the autocenter property belong only on the Geometry LOD;
+        # running those checks on GeoPhys/FireGeo flags valid vanilla models. There is no winding check:
         # the centroid heuristic flags every Blender export (left-handed transform);
         # see references/winding-methodology.md for the manual method.
         if lt == "Geometry":
             check_fns = [check_component_naming, check_component_coverage,
                          check_autocenter_prop, check_watertight, check_degenerate_faces]
         else:
-            check_fns = [check_autocenter_prop, check_watertight, check_degenerate_faces]
+            check_fns = [check_watertight, check_degenerate_faces]
         for check_fn in check_fns:
             results = check_fn(lod)
             for sev, msg in results:

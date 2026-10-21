@@ -76,6 +76,6 @@ Search: Grep `P:\gui\` for known names, RAG (`search_dayz_source` with `file_typ
 
 ## Report
 
-Gate mode, to `dayz-lead`: `PASS` or `FAIL` on the first line, then each problem with its line number, the rule it breaks, and the fix the worker should make.
+Gate mode, to your caller (`dayz-lead` or the main session): `PASS` or `FAIL` on the first line, then each problem with its line number, the rule it breaks, and the fix the worker should make.
 
 Cleanup mode, to your caller: the file you wrote, then a list of what you removed, repaired and flagged.

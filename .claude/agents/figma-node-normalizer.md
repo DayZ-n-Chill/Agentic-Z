@@ -44,6 +44,8 @@ Every node has these fields:
 
 ## Rules
 
+- If the Figma tools are unavailable, stop and tell your caller the Figma plugin must be installed. Never build the JSON from the URL or from memory.
+
 - Never invent nodes. If something the design needs is missing, say so in the summary.
 - Be deterministic: same input, same JSON, children in source order.
 - Every removal and flatten appears in the summary so the caller can challenge it.

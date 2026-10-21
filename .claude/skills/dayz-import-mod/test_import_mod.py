@@ -175,3 +175,13 @@ def test_os_error_while_writing_is_reported(tmp_path, monkeypatch, capsys):
     rc = imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING[1:2], scaffold=True, no_scaffold=False)
     assert rc == 1
     assert "Access is denied" in capsys.readouterr().out
+
+
+def test_author_flag_reaches_resolve_author(tmp_path, monkeypatch):
+    seen = []
+    monkeypatch.setattr(imp._scaffold._nm, "find_dayz_tools", lambda: None)
+    monkeypatch.setattr(imp._scaffold._nm, "resolve_author", lambda cli: seen.append(cli) or cli)
+    rc = imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING, scaffold=True, no_scaffold=False, author="Handle")
+    assert rc == 0
+    assert seen == ["Handle"]
+    assert 'author = "Handle"' in (tmp_path / "config.cpp").read_text(encoding="utf-8")

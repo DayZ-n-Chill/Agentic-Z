@@ -49,7 +49,7 @@ Resolved from `agents.json`. Defaults:
 
 | Agent  | Env var(s) checked first                | Default path |
 |--------|------------------------------------------|--------------|
-| Claude | `CLAUDE_HOME`                           | `~/.claude/skills` |
+| Claude | `CLAUDE_CONFIG_DIR`                     | `~/.claude/skills` |
 | Codex  | `CODEX_HOME`                            | `~/.codex/skills`  |
 | Gemini | `GEMINI_CLI_HOME` then `GEMINI_HOME`    | `~/.gemini/skills` |
 

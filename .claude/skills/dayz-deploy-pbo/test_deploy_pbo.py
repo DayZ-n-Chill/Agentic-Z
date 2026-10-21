@@ -129,6 +129,19 @@ def test_main_warns_unsigned_pbo_with_single_space(deploy_env, capsys):
     assert (deploy_env / "@Bundle" / h.SCAFFOLD_MARKER).read_text(encoding="utf-8") == "Bundle\n"
 
 
+def test_main_reports_locked_file_and_exits_1(deploy_env, monkeypatch, capsys):
+    def locked(src, dst):
+        raise PermissionError(13, "The process cannot access the file", str(dst))
+
+    monkeypatch.setattr(deploy.shutil, "copy2", locked)
+    assert deploy.main() == 1
+    out = capsys.readouterr().out
+    assert "[FAIL]  could not copy extras.pbo:" in out
+    assert "Close DayZ or run /dayz-stop-test" in out
+    # Marked as ours, so the rerun after closing DayZ passes the ownership gate.
+    h.gate_on_marker("Bundle", deploy_env / "@Bundle")
+
+
 def test_main_exits_1_when_marker_cannot_be_written(deploy_env, monkeypatch):
     monkeypatch.setattr(h, "write_marker", lambda root, name: False)
     assert deploy.main() == 1

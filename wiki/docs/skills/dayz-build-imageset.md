@@ -10,7 +10,7 @@ Packs the PNG sprites in each `<mod>/.gui-sources/<setname>/` folder into a DayZ
 
 # /dayz-build-imageset
 
-Pack a folder of PNG sprites into a DayZ imageset (atlas + `.imageset` definition file). Source images stay in `.gui-sources/` (kept out of the mod payload); only the packed `.paa` atlas and `.imageset` file land under `gui/imagesets/` where the engine expects them.
+Pack a folder of PNG sprites into a DayZ imageset (atlas + `.imageset` definition file). Source images stay in `.gui-sources/`, which `/dayz-build-pbo` leaves out of the PBO (its `exclude.lst` drops `.gui-sources\`); only the packed `.paa` atlas and `.imageset` file land under `gui/imagesets/` where the engine expects them.
 
 Layout convention:
 
@@ -107,7 +107,7 @@ ImageSetClass {
 
 ## Do not
 
-- Don't pack source PNGs into the PBO; they stay in `.gui-sources/` so the deployed mod ships only the atlas + definition.
+- Don't move source PNGs out of `.gui-sources/` into the mod tree; `/dayz-build-pbo` excludes only `.gui-sources\`, so PNGs anywhere else are packed into the PBO.
 - Don't add gutter pixels to the per-sprite `Size` values; the engine reads `Size` as the sprite's own dimensions.
 - Don't drop the 10px gutter; it prevents bleed between adjacent sprites at non-1:1 scaling.
 - Don't change atlas to non-power-of-two; both width and height are POT independently (rectangular allowed). DayZ's GUI subsystem and `.paa` toolchain expect POT dimensions.

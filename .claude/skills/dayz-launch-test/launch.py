@@ -356,6 +356,10 @@ def main() -> int:
         print(f"[DRY-RUN] Client cmd: {' '.join(client_cmd)}")
         return 0
 
+    # A server already on this port would make the new one fail to bind, and
+    # wait_for_server_port would mistake the old server for the new one.
+    h.gate_on_free_port(args.port)
+
     print()
     print(f"[Launch] Server: {' '.join(server_cmd)}")
     sys.stdout.flush()

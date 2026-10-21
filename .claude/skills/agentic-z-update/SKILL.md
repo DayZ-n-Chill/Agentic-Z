@@ -14,7 +14,7 @@ Pull template improvements (agents, skills, conventions, docs) from upstream `Da
 2. **Local customizations to template files are not overwritten silently.** A three-way per-file classification (local file, file at the baseline, upstream file) detects when both the clone and upstream edited the same file and leaves it alone unless the user picks "take" in `--per-file` mode. File contents are never merged: each file is either kept or replaced whole.
 3. **No two updates can apply at once.** A PID-based lock covers the apply phase (checkout, delete, commit, baseline write); previews and `--check` do not take it.
 
-The first applying run in a clone records a baseline (the SHA of upstream `main` at that moment) and adds no files: a template file missing locally could be one you deleted on purpose, so `new` files are held back and offered on the next run. Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file. The script works from the repo root (`git rev-parse --show-toplevel`), so it can be started from any subfolder.
+The first applying run in a clone records a baseline (the SHA of upstream `main` at that moment) and adds or overwrites nothing. A template file that is in the baseline but missing locally is treated as one you deleted on purpose (`locally-deleted`): it is left alone and offered for restore in `--per-file`. Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file. The script works from the repo root (`git rev-parse --show-toplevel`), so it can be started from any subfolder.
 
 ## How to run
 
@@ -27,23 +27,23 @@ python "<skill-dir>\update.py" [--check] [--quiet] [--yes] [--per-file] [--force
 | Flag | Behavior |
 |---|---|
 | (default) | Preview drift, prompt y/N, apply safe changes (conflicts left alone) |
-| `--check` | Preview only and writes nothing; exits 1 if changes are pending or no baseline exists yet, 0 if up to date |
+| `--check` | Preview only and writes nothing; exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (`local-only-edit` and `locally-deleted` files do not count) |
 | `--quiet` | With `--check`: single-line output for hooks |
 | `--yes` | Skip the confirmation prompt (CI / scripted use) |
-| `--per-file` | Walk each conflict interactively: keep / take / diff / skip |
+| `--per-file` | Walk each conflict and `locally-deleted` file interactively: keep / take / diff / skip |
 | `--force` | Override the dirty-tree check |
 | `--dry-run` | Show preview, do not apply (and do not record a first baseline) |
 | `--no-sync` | Skip the post-update `sync-skills` run (useful when Claude Code is the only agent CLI in use) |
 
 ## Automatic commit
 
-When at least one file is applied, the skill stages exactly the applied paths and creates one commit:
+When at least one file is applied, the skill stages exactly the applied paths and commits only those paths (`git commit --only -- <paths>`), so anything else you had staged stays staged and out of the commit:
 
 ```
 chore: pull Agentic-Z upstream (<first 8 chars of upstream SHA>)
 ```
 
-It then records the upstream SHA in `.claude/.upstream-baseline`, but only when the commit succeeded and nothing upstream changed is still unapplied (an unresolved `conflict` or `deleted-conflict`, or a file whose checkout or delete failed). Otherwise the baseline stays put and the next run offers those files again. If `git commit` fails (for example, a pre-commit hook rejects it), the changes stay staged, the skill prints a warning and exits 1; nothing is rolled back. Unresolved conflicts are never part of the commit. Tell the user about this commit when reporting results.
+It then records the upstream SHA in `.claude/.upstream-baseline`, but only when the commit succeeded and nothing upstream changed is still unapplied (an unresolved `conflict` or `deleted-conflict`, or a file whose checkout or delete failed; `local-only-edit` and `locally-deleted` files do not hold it back). Otherwise the baseline stays put and the next run offers those files again. If `git commit` fails (for example, a pre-commit hook rejects it), the changes stay staged, the skill prints a warning and exits 1; nothing is rolled back. Unresolved conflicts are never part of the commit. Tell the user about this commit when reporting results.
 
 ## Per-file status meanings
 
@@ -51,7 +51,8 @@ It then records the upstream SHA in `.claude/.upstream-baseline`, but only when 
 |---|---|---|
 | `unchanged` | Local file matches upstream | nothing |
 | `safe-overwrite` | Not edited locally, upstream changed it | apply upstream |
-| `new` | Upstream has it, the clone does not | apply upstream (held back on the first run) |
+| `new` | Upstream has it, the baseline and the clone do not | apply upstream |
+| `locally-deleted` | In the baseline, missing in the clone (you deleted it) | leave alone (`--per-file` take restores it) |
 | `local-only-edit` | Only the clone edited it (upstream unchanged) | leave alone |
 | `conflict` | Both the clone and upstream edited it | leave alone (use `--per-file` to resolve) |
 | `deleted-clean` | Upstream removed it, not customized locally | delete |

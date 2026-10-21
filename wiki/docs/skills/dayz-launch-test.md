@@ -36,10 +36,11 @@ python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server <instance>] 
 3. **Built-mod check**: for each mod, verifies at least one `.pbo` exists in `P:\Mods\@<ModName>\Addons\`. Fails fast with a hint to run `/dayz-build-pbo` if missing.
 4. **Diag client resolution**: finds `DayZDiag_x64.exe` via `find_dayz_diag()` (env var, DayZ game install, Steam paths). Both client and server run from this binary; the server adds `-server`. Retail `DayZ_x64.exe` and `DayZServer_x64.exe` are not used; both block past the loading screen with `-filePatching` enabled.
 5. **Instance check**: reads the mission template from the `template = "...";` line in `.server/<instance>/serverDZ.cfg`, confirms the cfg has an active `allowFilePatching = 1;` line (without it the server refuses `-filePatching` clients with error `0x00020005`; a missing line, a commented-out line or any other value counts as missing), and confirms `mission/` and the `<template>/` junction to it exist. The server's `-mission=` points at that junction (the engine resolves the template name during the connect handshake; without it the client connects but never spawns). Anything missing fails with a hint to run `/dayz-add-server <instance>`, which also sets `allowFilePatching = 1;`. This skill never edits the cfg. Outside `--dry-run` it creates the two profile dirs if absent.
-6. **Launch server**: spawns `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/<template> -mod=P:\Mods\@Mod1;P:\Mods\@Mod2 -filePatching -port=<port>`.
-7. **Wait for the port**: polls once a second, for up to 180 s, until the server has bound UDP `<port>` (a DayZ server can take 30 s or more to load the mission and mods). If the server exits, or the wait times out (the server is then killed), the skill exits 1 without starting the client.
-8. **Launch client**: spawns `DayZDiag_x64.exe -profiles=.server/!ClientDiagLogs -mod=... -connect=127.0.0.1 -port=<port> -filePatching` plus the display flags from the per-clone preferences.
-9. **Print PIDs and exit.** Both processes run independently. Close the windows to stop them, or run `/dayz-stop-test`.
+6. **Port check** (skipped with `--dry-run`): tries to bind UDP `<port>`; if something already holds it (usually a server left running), refuses with `port <port> in use; run /dayz-stop-test or pass --port` before spawning anything.
+7. **Launch server**: spawns `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/<template> -mod=P:\Mods\@Mod1;P:\Mods\@Mod2 -filePatching -port=<port>`.
+8. **Wait for the port**: polls once a second, for up to 180 s, until the server has bound UDP `<port>` (a DayZ server can take 30 s or more to load the mission and mods). If the server exits, or the wait times out (the server is then killed), the skill exits 1 without starting the client.
+9. **Launch client**: spawns `DayZDiag_x64.exe -profiles=.server/!ClientDiagLogs -mod=... -connect=127.0.0.1 -port=<port> -filePatching` plus the display flags from the per-clone preferences.
+10. **Print PIDs and exit.** Both processes run independently. Close the windows to stop them, or run `/dayz-stop-test`.
 
 ## Refuses to run if
 
@@ -49,6 +50,7 @@ python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server <instance>] 
 - Any named mod has no `.pbo` at `P:\Mods\@<ModName>\Addons\`.
 - `DayZDiag_x64.exe` is not found.
 - The `--server` instance is not set up: `serverDZ.cfg` missing, without a `template = "...";` line, or without an active `allowFilePatching = 1;` line; `mission/` missing; or the `<template>/` junction missing. Run `/dayz-add-server <instance>`.
+- UDP `--port` is already in use (not checked with `--dry-run`). Run `/dayz-stop-test` or pass another `--port`.
 
 ## Output (success)
 
@@ -62,6 +64,7 @@ Preflight complete.
 [OK]    Diag client: C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZDiag_x64.exe
 [OK]    Instance: chernarus
 [OK]    Instance dir: .server\chernarus
+[OK]    UDP port 2302 is free
 
 [Launch] Server: DayZDiag_x64.exe -server -config=...\chernarus\serverDZ.cfg -profiles=...\chernarus\Profiles -mission=...\chernarus\dayzOffline.chernarusplus -mod=P:\Mods\@BuildTest -filePatching -port=2302
 [OK]    Server PID: 12345

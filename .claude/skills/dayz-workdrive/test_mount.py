@@ -63,6 +63,7 @@ def _dir(root: Path, name: str) -> Path:
 
 
 def _tools_with_ini_and_default(root: Path, ini_target: Path | None) -> Path:
+    """A DayZ Tools folder whose Bin/WorkDrive (the binaries folder) exists."""
     tools = _dir(root, "tools")
     _dir(tools, "Bin/WorkDrive")
     if ini_target is not None:
@@ -102,7 +103,7 @@ def test_settings_ini_beats_registry_and_default(isolated, monkeypatch):
 
 
 @pytest.mark.skipif(mount.sys.platform != "win32", reason="registry lookup is Windows-only")
-def test_registry_beats_tools_default(isolated, monkeypatch):
+def test_registry_used_when_settings_ini_has_no_path(isolated, monkeypatch):
     reg = _dir(isolated, "reg")
     tools = _tools_with_ini_and_default(isolated, None)
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
@@ -110,10 +111,23 @@ def test_registry_beats_tools_default(isolated, monkeypatch):
     assert mount.find_work_drive() == reg
 
 
-def test_tools_default_is_last_resort(isolated, monkeypatch):
+def test_tools_binaries_folder_is_never_a_candidate(isolated, monkeypatch):
     tools = _tools_with_ini_and_default(isolated, None)
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
-    assert mount.find_work_drive() == tools / "Bin" / "WorkDrive"
+    assert mount.find_work_drive() is None
+
+
+def test_main_unresolved_fails_with_path_hint(isolated, monkeypatch, capsys):
+    tools = _tools_with_ini_and_default(isolated, None)
+    monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
+    monkeypatch.setattr(mount, "is_p_mounted", lambda: False)
+    monkeypatch.setattr(mount, "invoke_mount", lambda target: pytest.fail("must not mount"))
+    monkeypatch.setattr("sys.argv", ["mount.py"])
+    assert mount.main() == 1
+    err = capsys.readouterr().err
+    assert "Could not resolve a work drive folder" in err
+    assert "--path" in err
+    assert "Bin" not in err
 
 
 def test_candidates_that_do_not_exist_are_skipped(isolated, monkeypatch):

@@ -8,7 +8,7 @@ Stdlib only.
 
 Usage:
     python download.py                    # latest release
-    python download.py --tag v0.1.0       # specific tag
+    python download.py --tag 1.2.1        # specific tag
     python download.py --force            # overwrite existing index, even the same tag
     python download.py --allow-unverified # accept an asset with no published SHA-256
 """
@@ -26,10 +26,14 @@ import urllib.request
 from pathlib import Path
 
 REPO = "DayZ-n-Chill/Agentic-Z"
-ASSET_PREFIX = "dayz-search-index-"
+# Releases have shipped the index under two names: dayz-rag-index-v0.1.0.tar.gz
+# (v0.1.0 through 1.1.0, and 1.4.0) and dayz-search-index-<ver>.tar.gz (1.2.0,
+# 1.2.1). The tarball's top folder may carry either name too (dayz-rag-index/ is
+# what the original downloader expected). Any combination installs to INDEX_ROOT.
+ASSET_PREFIXES = ("dayz-search-index-", "dayz-rag-index-")
 ASSET_SUFFIX = ".tar.gz"
 INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
-INDEX_DIR_NAME = "dayz-search-index"
+INDEX_DIR_NAMES = ("dayz-search-index", "dayz-rag-index")
 INSTALLED_TAG_FILE = "release-tag.txt"
 
 
@@ -72,10 +76,11 @@ def resolve_release(tag: str | None) -> dict:
 def find_asset(release: dict) -> dict:
     for asset in release.get("assets", []):
         name = asset.get("name", "")
-        if name.startswith(ASSET_PREFIX) and name.endswith(ASSET_SUFFIX):
+        if name.startswith(ASSET_PREFIXES) and name.endswith(ASSET_SUFFIX):
             return asset
+    patterns = " or ".join(f"{p}*{ASSET_SUFFIX}" for p in ASSET_PREFIXES)
     raise SystemExit(
-        f"[ERR]\tNo asset matching {ASSET_PREFIX}*{ASSET_SUFFIX} on release "
+        f"[ERR]\tNo asset matching {patterns} on release "
         f"{release.get('tag_name')}.\n"
         f"\tThe maintainer may not have uploaded the index for this version."
     )
@@ -275,10 +280,11 @@ def main(argv: list[str] | None = None) -> int:
         with tarfile.open(archive, "r:gz") as tar:
             safe_extract(tar, out_dir)
 
-        extracted = out_dir / INDEX_DIR_NAME
-        if not extracted.is_dir():
+        extracted = next((out_dir / n for n in INDEX_DIR_NAMES if (out_dir / n).is_dir()), None)
+        if extracted is None:
+            expected = " or ".join(f"'{n}/'" for n in INDEX_DIR_NAMES)
             raise SystemExit(
-                f"[ERR]\tArchive did not contain expected '{INDEX_DIR_NAME}/' directory. "
+                f"[ERR]\tArchive did not contain an expected {expected} directory. "
                 "Existing index left untouched."
             )
         install(extracted, INDEX_ROOT, tag)

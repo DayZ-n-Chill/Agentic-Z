@@ -24,7 +24,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaffold | --no-scaffold]
+python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaffold | --no-scaffold] [--author <handle>]
 ```
 
 | Argument | Required? | Notes |
@@ -33,6 +33,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 | `--name <ModName>` | no | Override the name the mod is imported under. Defaults to the source folder's basename, validated against `[A-Za-z][A-Za-z0-9_]{0,63}`. Required if the basename has spaces or other invalid characters. |
 | `--scaffold` | no | Auto-yes for every "scaffold this missing piece?" prompt. Required for non-TTY use when missing pieces would otherwise prompt. |
 | `--no-scaffold` | no | Auto-no - link only, never write into the source folder. |
+| `--author <handle>` | no | Author handle for a scaffolded `config.cpp`, cached for future runs. Same resolution chain as `/dayz-new-mod` (flag, cache, prompt) and used only when `config.cpp` is written. Pass it on a non-TTY run with `--scaffold` when no handle is cached yet. |
 
 ## What it does
 
@@ -49,7 +50,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
    - `--scaffold` → write it
    - `--no-scaffold` → skip
    - TTY default → prompt `Add to your source folder? [y/N]:`
-9. Each "yes" is written by `/dayz-add-scaffold`'s writer, called in-process (one writer for both skills, and preflight runs only once). If a write fails (for example `config.cpp` needs an author handle and none is cached on a non-TTY run), the links stay in place, the skill names each failed piece with its retry command (`/dayz-add-scaffold <ModName> --piece <piece>`) and exits 1.
+9. Each "yes" is written by `/dayz-add-scaffold`'s writer, called in-process (one writer for both skills, and preflight runs only once). If a write fails (for example `config.cpp` needs an author handle, none is cached and `--author` was not passed on a non-TTY run), the links stay in place, the skill names each failed piece with its retry command (`/dayz-add-scaffold <ModName> --piece <piece>`) and exits 1.
 
 ## Output
 

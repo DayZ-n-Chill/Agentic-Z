@@ -26,6 +26,8 @@ def _script(argv):
      ["--source", "D:/src", "--name", "M", "--scaffold"]),
     ("import-mod", {"mod": "M", "source": "D:/src", "scaffold": False},
      ["--source", "D:/src", "--name", "M", "--no-scaffold"]),
+    ("import-mod", {"mod": "M", "source": "D:/src", "scaffold": True, "author": "Me"},
+     ["--source", "D:/src", "--name", "M", "--scaffold", "--author", "Me"]),
     ("add-server", {"server": "livonia"}, ["livonia", "--map", "livonia"]),
     ("build", {"mod": "MyMod"}, ["MyMod"]),
     ("launch", {"mod": "MyMod", "server": "chernarus"}, ["MyMod", "--server", "chernarus"]),

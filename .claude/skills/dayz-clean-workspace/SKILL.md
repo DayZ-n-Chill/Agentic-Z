@@ -1,6 +1,6 @@
 ---
 name: dayz-clean-workspace
-description: Removes Agentic-Z mod scaffolds and their artifacts from the cached project - the workspace folder or import link, the P:\<ModName>\ junction, and the P:\Mods\@<ModName>\ deploy dir when its ownership marker matches. Never touches an imported mod's external source or any mod it did not create. Use when you want to delete a mod from the workspace or reset the project; --include-server also removes .server/.
+description: Removes Agentic-Z mod scaffolds and their artifacts from the cached project - an import link, or a workspace folder the toolkit provably created (its P:\<ModName>\ junction or deploy ownership marker), plus that junction and the P:\Mods\@<ModName>\ deploy dir when its marker matches. Never deletes a folder containing .git, a hand-placed mod, or an imported mod's external source. Use when you want to delete a mod from the workspace or reset the project; --include-server also removes .server/.
 argument-hint: "[--mod <Name>] [--include-server] [--yes] [--dry-run]"
 disable-model-invocation: true
 ---
@@ -14,9 +14,10 @@ Reset the DayZ workspace of the project cached by `/dayz-init` (the same project
 
 A workspace entry is managed when it is either:
 
-- **a native scaffold**: a real folder containing `config.cpp` and `$PBOPREFIX$`; it is removed recursively.
 - **an imported link** made by `/dayz-import-mod`: only the link is removed (`cmd /c rmdir`). The external source folder it points at is never touched.
-- **a payload bundle** deployed by `/dayz-deploy-pbo`: a real folder (no `config.cpp` needed) whose `P:\Mods\@<ModName>\` carries the ownership marker for `<ModName>`; it is removed recursively.
+- **a real folder the toolkit provably created**, with no `.git` inside: `P:\<ModName>\` is a junction pointing at it (made by `/dayz-new-mod`), or `P:\Mods\@<ModName>\` carries the ownership marker for `<ModName>` (written by `/dayz-build-pbo` and `/dayz-deploy-pbo`). It is removed recursively.
+
+`config.cpp` and `$PBOPREFIX$` alone are not proof, since a hand-placed mod has them too. A real folder that contains `.git`, or has neither proof, is never deleted: a sweep skips it with a `[WARN]` naming the reason (only for folders with a `config.cpp`; other folders are skipped silently), `--mod <Name>` refuses, and both print the `cmd /c rmdir /s /q` command to remove it by hand.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -49,7 +50,7 @@ Removal runs in this order, so the junction is broken before its target goes:
 |---|---|
 | `P:\<ModName>\` junction | It is a link pointing at `workspace/<ModName>/`. A link pointing elsewhere, or a real folder, is left alone. |
 | `P:\Mods\@<ModName>\` deployed dir | It contains `.agentic-z-scaffold` with content `<ModName>`. `/dayz-build-pbo` and `/dayz-deploy-pbo` write this marker on every successful run. Without it the dir is skipped with a `[WARN]` and a manual `rmdir` hint. |
-| `workspace/<ModName>/` | Always. Shown as `workspace` (folder removed with its contents) or `workspace-link` (link removed, source kept). |
+| `workspace/<ModName>/` | Always, for a managed mod. Shown as `workspace` (folder removed with its contents) or `workspace-link` (link removed, source kept). |
 
 A deployed dir from before the marker existed is skipped. Rebuild with `/dayz-build-pbo <ModName>` to write the marker, or remove it yourself with `cmd /c rmdir /s /q P:\Mods\@<ModName>` once you have confirmed it is yours.
 
@@ -61,12 +62,13 @@ With `--include-server`, `.server/` is removed too. Leave it out to keep server 
 - `P:\<Name>\` links or folders, and `P:\Mods\@<Name>\` folders, with no matching `workspace/<Name>/` entry.
 - `P:\Mods\` itself.
 - The external source folder behind an imported mod.
+- A workspace folder that contains `.git`, or that has no `P:\<Name>\` junction to it and no ownership marker (for example a mod you copied in by hand).
 
 ## Refuses to run if
 
 - No project is cached (run `/dayz-init`).
 - `/dayz-preflight` returns non-zero.
-- `--mod <Name>` names a workspace entry that is not an imported link, a folder with `config.cpp` and `$PBOPREFIX$`, or a bundle whose `P:\Mods\@<Name>\` carries the ownership marker.
+- `--mod <Name>` names a workspace entry that is not managed: not an imported link, and either it contains `.git` or there is no `P:\<Name>\` junction to it and no ownership marker in `P:\Mods\@<Name>\`.
 - `--include-server` is given while legacy `workspace/_server/` exists. Delete that folder by hand; the layout is no longer supported.
 - Stdin isn't a TTY and `--yes` wasn't passed.
 
@@ -92,7 +94,7 @@ Proceed? [y/N]: y
 
 `--dry-run` prints the plan, then `(--dry-run) nothing removed.`
 
-If a removal fails, the skill prints `[FAIL]  could not remove (<kind>) <path>: <error>`, stops without trying the remaining items, and exits 1. Fix the cause (often a file held open by DayZ or Workbench) and rerun; already-removed items are simply no longer in the plan.
+If a removal fails, the skill prints `[FAIL]  could not remove (<kind>) <path>: <error>`, stops without trying the remaining items, and exits 1. Fix the cause (often a file held open by DayZ or Workbench) and rerun; already-removed items are simply no longer in the plan. If the junction was removed but the workspace folder was not, and no ownership marker exists, the rerun no longer finds proof for that folder: it prints the `[WARN]` with the manual `rmdir` command instead.
 
 ## Do not
 

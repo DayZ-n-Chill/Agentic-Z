@@ -147,6 +147,7 @@ def test_verify_instance_dry_run_changes_nothing(tmp_path):
 def _patch_main(monkeypatch, tmp_path, argv):
     monkeypatch.setattr(launch.h, "resolve_project_dir", lambda: tmp_path)
     monkeypatch.setattr(launch.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(launch.h, "udp_port_free", lambda port: True)
     monkeypatch.setattr(launch, "verify_built_mods", lambda names: None)
     monkeypatch.setattr(launch, "resolve_diag_client", lambda: DIAG)
     monkeypatch.setattr(launch.sys, "argv", ["launch.py", *argv])
@@ -185,6 +186,18 @@ def test_server_killed_on_bind_timeout(monkeypatch, tmp_path):
     monkeypatch.setattr(launch, "wait_for_server_port", lambda port, proc, timeout_s: False)
     assert launch.main() == 1
     assert len(procs) == 1 and procs[0].killed  # server killed, client never started
+
+
+def test_port_in_use_refuses_before_spawning(monkeypatch, tmp_path):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "--port", "2402"])
+    checked = []
+    monkeypatch.setattr(launch.h, "udp_port_free", lambda port: checked.append(port) or False)
+    monkeypatch.setattr(launch.subprocess, "Popen", lambda *a, **k: pytest.fail("spawned despite a taken port"))
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    assert checked == [2402]
+    assert "port 2402 in use; run /dayz-stop-test or pass --port" in str(exc.value.code)
 
 
 # --- built mods and display prefs -------------------------------------------------

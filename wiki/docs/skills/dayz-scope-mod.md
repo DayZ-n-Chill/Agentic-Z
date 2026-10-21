@@ -29,7 +29,7 @@ python "<skill-dir>\scope.py" --clear
 
 ## What it does
 
-1. Validates `<ModName>` exists at `workspace/<ModName>/` (refuses unknown names, and names that permission rules would read as pattern syntax: `*`, `?` or `[` anywhere, or a leading `!` or `#`; `!` and `#` mid-name are fine because gitignore syntax treats them specially only at the start of a pattern).
+1. Validates `<ModName>` exists at `workspace/<ModName>/`, matching the folder name case-insensitively and then using the folder's on-disk spelling in every rule, in the output and in the recorded scope (refuses unknown names, and names that permission rules would read as pattern syntax: `*`, `?` or `[` anywhere, or a leading `!` or `#`; `!` and `#` mid-name are fine because gitignore syntax treats them specially only at the start of a pattern).
 2. Reads `.claude/settings.local.json`, removes any rules previously added by this skill (idempotent re-run).
 3. Enumerates sibling mods under `workspace/` (every directory except the active mod and dotted folders). Refuses if a sibling's name breaks the same rule.
 4. For each sibling mod, appends deny rules to `permissions.deny`:

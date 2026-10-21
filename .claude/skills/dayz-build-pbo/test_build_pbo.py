@@ -54,6 +54,22 @@ def test_verify_workspace_missing_required_file(tmp_path, missing):
     assert missing in str(exc.value.code)
 
 
+@pytest.mark.parametrize("prefix", ["Other", "MyMod\\data", "mymod", ""])
+def test_verify_workspace_refuses_prefix_mismatch(tmp_path, prefix):
+    mod = _scaffold(tmp_path)
+    (mod / "$PBOPREFIX$").write_text(prefix, encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        build.verify_workspace("MyMod", tmp_path)
+    msg = str(exc.value.code)
+    assert "$PBOPREFIX$" in msg and repr(prefix) in msg and "'MyMod'" in msg
+
+
+def test_verify_workspace_accepts_prefix_with_newline_or_bom(tmp_path):
+    mod = _scaffold(tmp_path)
+    (mod / "$PBOPREFIX$").write_bytes(b"\xef\xbb\xbfMyMod\r\n")
+    assert build.verify_workspace("MyMod", tmp_path) == mod
+
+
 # --- junction ----------------------------------------------------------------
 
 def test_verify_junction_missing(p_drive, tmp_path):
@@ -114,6 +130,19 @@ def test_build_cmd_includes_include_list_and_clear(tmp_path):
     assert "-clear" not in build.build_addon_builder_cmd(
         Path("AB.exe"), Path("s"), Path("t"), "MyMod", Path("tmp"), clean=False
     )
+
+
+def test_build_cmd_passes_exclude_list_that_drops_gui_sources():
+    cmd = build.build_addon_builder_cmd(
+        Path("AB.exe"), Path("P:/MyMod"), Path("P:/Mods/@MyMod/Addons"), "MyMod", Path("P:/temp/MyMod"), clean=False
+    )
+    assert f"-exclude={build.EXCLUDE_LIST}" in cmd
+    patterns = [
+        line.strip() for line in build.EXCLUDE_LIST.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith(";")
+    ]
+    assert ".gui-sources\\*.*" in patterns and "*\\.gui-sources\\*" in patterns
+    assert "*\\.git\\*" in patterns
 
 
 def test_include_list_exists_and_covers_scripts():

@@ -250,3 +250,59 @@ def test_force_reinstalls_same_tag(dl, monkeypatch):
     assert dl.main(["--force"]) == 0
     assert not (dl.INDEX_ROOT / "old.txt").exists()
     assert dl.installed_tag(dl.INDEX_ROOT) == "v1.0.0"
+
+
+# --- real release asset names (from the GitHub releases API) --------------
+
+# Asset names as published on DayZ-n-Chill/Agentic-Z releases.
+REAL_ASSETS = [
+    ("1.4.0", "dayz-rag-index-v0.1.0.tar.gz"),
+    ("1.2.1", "dayz-search-index-1.2.1.tar.gz"),
+    ("1.2.0", "dayz-search-index-1.2.0.tar.gz"),
+    ("v0.1.0", "dayz-rag-index-v0.1.0.tar.gz"),
+]
+
+
+@pytest.mark.parametrize("tag, name", REAL_ASSETS)
+def test_find_asset_matches_real_release_names(dl, tag, name):
+    release = {"tag_name": tag, "assets": [{"name": "notes.txt"}, {"name": name}]}
+    assert dl.find_asset(release)["name"] == name
+
+
+def test_find_asset_refuses_release_without_index(dl):
+    with pytest.raises(SystemExit) as exc:
+        dl.find_asset({"tag_name": "1.2.2", "assets": []})
+    assert "dayz-rag-index-*.tar.gz" in str(exc.value)
+    assert "dayz-search-index-*.tar.gz" in str(exc.value)
+
+
+@pytest.mark.parametrize("top", ["dayz-rag-index", "dayz-search-index"])
+def test_installs_either_top_folder_to_current_index_path(dl, monkeypatch, top):
+    data = _tar_bytes([_file(f"{top}/manifest.json")])
+    digest = "sha256:" + hashlib.sha256(data).hexdigest()
+    release = {
+        "tag_name": "1.4.0",
+        "assets": [{
+            "name": "dayz-rag-index-v0.1.0.tar.gz",
+            "browser_download_url": "https://example.invalid/a.tar.gz",
+            "size": len(data),
+            "digest": digest,
+        }],
+    }
+    monkeypatch.setattr(dl, "resolve_release", lambda tag: release)
+    monkeypatch.setattr(dl, "download_with_progress", _fake_download(data))
+    assert dl.main([]) == 0
+    assert dl.INDEX_ROOT.name == "dayz-search-index"
+    assert (dl.INDEX_ROOT / "manifest.json").exists()
+    assert dl.installed_tag(dl.INDEX_ROOT) == "1.4.0"
+
+
+def test_archive_without_known_top_folder_is_refused(dl, monkeypatch):
+    data = _tar_bytes([_file("something-else/manifest.json")])
+    digest = "sha256:" + hashlib.sha256(data).hexdigest()
+    monkeypatch.setattr(dl, "resolve_release", lambda tag: _release(digest=digest))
+    monkeypatch.setattr(dl, "download_with_progress", _fake_download(data))
+    with pytest.raises(SystemExit) as exc:
+        dl.main([])
+    assert "'dayz-rag-index/'" in str(exc.value)
+    assert not dl.INDEX_ROOT.exists()

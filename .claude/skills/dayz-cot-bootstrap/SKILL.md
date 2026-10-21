@@ -39,11 +39,11 @@ python "<skill-dir>\bootstrap.py" [<ModName> ...] [--server <instance>] [--port 
 2. **Project root**: reads the root `/dayz-init` cached in `.claude/local-memory/dayz-current-project.txt`.
 3. **Mod check**: verifies `@CF` and `@Community-Online-Tools` have PBOs under `P:\Mods\`, prepends them to the chain (dropping duplicates), and checks every mod in the chain has at least one PBO.
 4. **Instance check**: the same check `/dayz-launch-test` runs (cfg `template = "...";` line, an active `allowFilePatching = 1;` line, `mission/`, and the template junction). Anything missing, including a commented-out or `0` `allowFilePatching`, refuses with a hint to run `/dayz-add-server <instance>`, which fixes the cfg.
-5. **First pass**: spawns the server, waits for it to bind its UDP port, spawns the client.
+5. **First pass**: checks UDP `--port` is free (same check as `/dayz-launch-test`; refuses with `port <port> in use; run /dayz-stop-test or pass --port` if not), spawns the server, waits for it to bind its UDP port, spawns the client.
 6. **Wait for COT**: polls `.server/<instance>/Profiles/PermissionsFramework/Players/*.json` for a file that is new or newer than before the launch. On timeout it stops the session and exits 1.
 7. **Stop session**: kills only the two processes this run started (waiting up to 30 s each); other `DayZDiag_x64.exe` processes are left alone.
 8. **Edit perms (per player)**: adds `"admin"` to each triggered player's `Roles[]` (no-op if present), waits up to 15 s for that player's `Permissions/<id>.txt`, and replaces every line ending in ` 0` with ` 2`. If any JSON cannot be parsed or any perms file never appears, it exits 1 without starting pass 2.
-9. **Second pass**: relaunches with the same mod chain and instance, prints the PIDs, and exits 0.
+9. **Second pass**: checks the port again, relaunches with the same mod chain and instance, prints the PIDs, and exits 0.
 
 ## Refuses to run if
 
@@ -52,6 +52,7 @@ python "<skill-dir>\bootstrap.py" [<ModName> ...] [--server <instance>] [--port 
 - Any mod in the chain has no PBO (run `/dayz-build-pbo <ModName>`).
 - `DayZDiag_x64.exe` is not found.
 - The `--server` instance is not set up (run `/dayz-add-server <instance>`).
+- UDP `--port` is already in use before a pass launches. Run `/dayz-stop-test` or pass another `--port`. If this happens on pass 2 (a pass-1 process did not release the port), the permission edits are already saved; rerun once the port is free.
 
 It exits 1 mid-run when the server never binds its port, when no Players JSON appears before `--timeout` (check `Profiles/script.log` and the latest RPT in `Profiles/` or `.server/!ClientDiagLogs/`), or when the permission edit fails.
 

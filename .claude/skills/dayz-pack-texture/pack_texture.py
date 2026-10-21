@@ -60,12 +60,22 @@ def pack_one(image_to_paa: Path, src: Path) -> bool:
     print()
     print(f"[Pack] {src.name}  ->  {dst.name}")
     sys.stdout.flush()
+    # Remember an existing .paa's mtime so a run that exits 0 without writing
+    # is not mistaken for success because the old file is still there.
+    before = dst.stat().st_mtime_ns if dst.exists() else None
     result = subprocess.run([str(image_to_paa), str(src), str(dst)])
     if result.returncode != 0:
         print(f"{h.FAIL} ImageToPAA exited {result.returncode} on {src.name}", file=sys.stderr)
         return False
     if not dst.exists():
         print(f"{h.FAIL} ImageToPAA reported success but {dst} is missing", file=sys.stderr)
+        return False
+    if before is not None and dst.stat().st_mtime_ns == before:
+        print(
+            f"{h.FAIL} ImageToPAA reported success but did not rewrite {dst}; "
+            "the existing file is from an earlier run",
+            file=sys.stderr,
+        )
         return False
     size = dst.stat().st_size
     print(f"{h.OK} Wrote {dst.name} ({size:,} bytes)")

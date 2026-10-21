@@ -143,14 +143,21 @@ def prompt_yn(prompt: str) -> bool:
 
 
 def add_missing_pieces(
-    target: Path, modname: str, missing: list[tuple[str, str, str]], scaffold: bool, no_scaffold: bool
+    target: Path,
+    modname: str,
+    missing: list[tuple[str, str, str]],
+    scaffold: bool,
+    no_scaffold: bool,
+    author: str | None = None,
 ) -> int:
     """Offer each missing piece and write the accepted ones with /dayz-add-scaffold's writer.
 
-    Runs after both links exist. A failed write leaves the links in place (the
-    import itself succeeded), names what failed and how to retry, and returns 1.
+    `author` is the --author value; it is resolved (flag, cache, prompt) only
+    if config.cpp is written. Runs after both links exist. A failed write
+    leaves the links in place (the import itself succeeded), names what failed
+    and how to retry, and returns 1.
     """
-    get_author = _scaffold.lazy_author(None)
+    get_author = _scaffold.lazy_author(author)
     failed: list[str] = []
     for key, rel, _why in missing:
         if no_scaffold:
@@ -191,6 +198,10 @@ def main() -> int:
         "--no-scaffold",
         action="store_true",
         help="Auto-no: never write into the source folder.",
+    )
+    parser.add_argument(
+        "--author",
+        help="Author handle for a scaffolded config.cpp (cached for future runs, as in /dayz-new-mod).",
     )
     args = parser.parse_args()
 
@@ -246,7 +257,9 @@ def main() -> int:
 
     if missing:
         print()
-        rc = add_missing_pieces(workspace_target, modname, missing, args.scaffold, args.no_scaffold)
+        rc = add_missing_pieces(
+            workspace_target, modname, missing, args.scaffold, args.no_scaffold, args.author
+        )
         if rc != 0:
             return rc
 

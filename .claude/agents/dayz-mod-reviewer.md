@@ -26,7 +26,7 @@ Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) fo
 
 ## Severity
 
-- **CRITICAL:** breaks the build, the game, or the override (checks 1, 4 and 5, a missing parent class, a missing texture). Any CRITICAL is a FAIL.
+- **CRITICAL:** breaks the build, the game, or the override (checks 1, 2, 4 and 5, a missing parent class or `requiredAddons` parent from check 3, a missing texture). Any CRITICAL is a FAIL.
 - **WARN:** likely to cause a bug or conflict later.
 - **NIT:** style. WARN and NIT never cause a FAIL.
 

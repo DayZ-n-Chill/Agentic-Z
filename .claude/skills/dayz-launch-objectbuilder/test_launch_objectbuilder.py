@@ -67,15 +67,29 @@ def test_missing_mod_folder_exits(tmp_path, monkeypatch):
     assert "/dayz-new-mod MyMod" in str(exc.value.code)
 
 
-def test_bad_file_fails_before_preflight(tmp_path, monkeypatch):
+def test_preflight_runs_before_target_resolution(tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(ob.h, "gate_on_preflight", lambda: calls.append("preflight"))
+    real_resolve = ob.resolve_target
+    monkeypatch.setattr(ob, "resolve_target", lambda f, m: calls.append("resolve") or real_resolve(f, m))
     monkeypatch.setattr(ob, "registry_has_objectbuilder_settings", lambda: calls.append("registry") or True)
     monkeypatch.setattr("sys.argv", ["launch.py", "--file", str(tmp_path / "missing.p3d")])
     with pytest.raises(SystemExit) as exc:
         ob.main()
     assert "does not exist" in str(exc.value.code)
-    assert calls == []
+    assert calls == ["preflight", "resolve"]
+
+
+def test_failed_preflight_stops_before_target_resolution(monkeypatch):
+    def preflight_fails():
+        raise SystemExit(1)
+
+    monkeypatch.setattr(ob.h, "gate_on_preflight", preflight_fails)
+    monkeypatch.setattr(ob, "resolve_target", lambda f, m: pytest.fail("resolved a P:\\ target before preflight"))
+    monkeypatch.setattr("sys.argv", ["launch.py", "--mod", "MyMod"])
+    with pytest.raises(SystemExit) as exc:
+        ob.main()
+    assert exc.value.code == 1
 
 
 def test_launch_uses_shared_detach_flags(tmp_path, monkeypatch):

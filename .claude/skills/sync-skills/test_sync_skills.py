@@ -185,3 +185,13 @@ def test_is_under_needs_a_separator_boundary(tmp_path):
     assert sync.is_under(tmp_path / "repo" / "x", tmp_path / "repo")
     assert sync.is_under(tmp_path / "repo", tmp_path / "repo")
     assert not sync.is_under(tmp_path / "repo-other" / "x", tmp_path / "repo")
+
+
+def test_claude_home_follows_claude_config_dir(tmp_path, monkeypatch):
+    # Claude Code's documented config-dir override is CLAUDE_CONFIG_DIR.
+    claude = next(a for a in sync.load_agents_config() if a["name"] == "claude")
+    assert claude["env_home_vars"] == ["CLAUDE_CONFIG_DIR"]
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "claude-work"))
+    assert sync.home_for(claude) == tmp_path / "claude-work"
+    monkeypatch.delenv("CLAUDE_CONFIG_DIR")
+    assert sync.home_for(claude) == Path.home() / ".claude"

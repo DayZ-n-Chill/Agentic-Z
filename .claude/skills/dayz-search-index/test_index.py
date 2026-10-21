@@ -59,10 +59,60 @@ def test_block_chunks_stops_at_unbalanced_braces(tmp_path):
     assert [c["parent_context"] for c in chunks] == ["Good"]
 
 
-def test_block_chunks_truncates_long_blocks(tmp_path):
+def test_block_chunks_default_window_is_embed_limit(tmp_path):
+    methods = "".join(f"  void M{i}()\n  {{\n    Print({i});\n  }}\n" for i in range(600))
+    src = "class Big\n{\n" + methods + "}\n"
+    chunks = index._block_chunks(_write(tmp_path, "big.c", src), "c")
+    assert len(chunks) > 1
+    assert all(len(c["content"]) <= index.EMBED_MAX_CHARS for c in chunks)
+    assert all(c["parent_context"] == "Big" for c in chunks)
+    assert "".join(c["content"] for c in chunks) == src.rstrip("\n")
+
+
+def test_oversize_class_splits_at_method_boundaries(tmp_path):
+    methods = "".join(f"  void M{i}()\n  {{\n    Print({i});\n  }}\n" for i in range(10))
+    src = "// header\nclass Big\n{\n" + methods + "}\n"
+    chunks = index._block_chunks(_write(tmp_path, "m.c", src), "c", max_chars=120)
+    lines = src.splitlines()
+    # Every window fits, keeps the class name, and no text is lost.
+    assert all(len(c["content"]) <= 120 for c in chunks)
+    assert {c["parent_context"] for c in chunks} == {"Big"}
+    assert "".join(c["content"] for c in chunks) == src[len("// header\n"):].rstrip("\n")
+    # Line ranges are real, contiguous, and cover the whole class.
+    assert chunks[0]["line_start"] == 2
+    assert chunks[-1]["line_end"] == len(lines)
+    for prev, nxt in zip(chunks, chunks[1:]):
+        assert nxt["line_start"] == prev["line_end"] + 1
+    for c in chunks:
+        expected = "\n".join(lines[c["line_start"] - 1 : c["line_end"]])
+        assert c["content"].rstrip("\n") == expected
+    # Windows after the first start on a method signature, not mid-method.
+    assert all(c["content"].startswith("  void M") for c in chunks[1:])
+
+
+def test_oversize_method_without_boundaries_splits_by_lines(tmp_path):
+    stmts = "".join(f"    Print({i});\n" for i in range(40))
+    src = "class Flat\n{\n  void M()\n  {\n" + stmts + "  }\n}\n"
+    chunks = index._block_chunks(_write(tmp_path, "f.c", src), "c", max_chars=60)
+    assert len(chunks) > 1
+    assert all(len(c["content"]) <= 60 for c in chunks)
+    assert "".join(c["content"] for c in chunks) == src.rstrip("\n")
+
+
+def test_overlong_single_line_is_sliced_not_dropped(tmp_path):
     src = "class Big {\n" + "x" * 100 + "\n}\n"
     chunks = index._block_chunks(_write(tmp_path, "d.c", src), "c", max_chars=20)
-    assert len(chunks[0]["content"]) == 20
+    assert all(len(c["content"]) <= 20 for c in chunks)
+    assert "".join(c["content"] for c in chunks) == src.rstrip("\n")
+    assert {(c["line_start"], c["line_end"]) for c in chunks if "x" in c["content"]} == {(2, 2)}
+
+
+def test_oversize_file_without_classes_is_windowed(tmp_path):
+    src = "".join(f"int g_V{i} = {i};\n" for i in range(50))
+    chunks = index._block_chunks(_write(tmp_path, "g.c", src), "c", max_chars=100)
+    assert len(chunks) > 1
+    assert {c["parent_context"] for c in chunks} == {""}
+    assert "".join(c["content"] for c in chunks) == src
 
 
 def test_empty_file_produces_no_chunks(tmp_path):

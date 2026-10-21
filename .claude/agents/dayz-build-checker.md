@@ -11,6 +11,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 
 ## What you check
 
+0. If `DayZDiag_x64.exe` is running (a session left open for the user locks the PBO), stop it with `/dayz-stop-test` first.
 1. `/dayz-build-pbo <ModName>` succeeds and the PBO exists at `P:\Mods\@<ModName>\Addons\<ModName>.pbo`.
 2. AddonBuilder's output has no errors, and no warnings about missing files, missing textures or unknown classes. Quote each one.
 

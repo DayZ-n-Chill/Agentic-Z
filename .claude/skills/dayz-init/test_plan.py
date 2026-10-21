@@ -28,6 +28,22 @@ def test_import_uses_import_step():
     assert steps[0].params == {"mod": "M", "source": "D:/src", "scaffold": False}
 
 
+def test_scaffold_import_passes_author():
+    steps = build_steps(Intent("M", source="D:/src", scaffold=True, author="Me"), False)
+    assert steps[0].params == {"mod": "M", "source": "D:/src", "scaffold": True, "author": "Me"}
+    # Link-only import writes no config.cpp, so the author is not passed.
+    steps = build_steps(Intent("M", source="D:/src", scaffold=False, author="Me"), False)
+    assert "author" not in steps[0].params
+
+
+def test_execute_forwards_author_to_import_mod(env_ok, runs, tmp_path):
+    rc = plan.main(
+        ["--mod", "M", "--import-from", "D:/src", "--scaffold", "--author", "Me", "--execute"], project=tmp_path
+    )
+    assert rc == 0
+    assert runs["argv"][0][-3:] == ["--scaffold", "--author", "Me"]
+
+
 def test_full_plan_order_and_launch_implies_build():
     intent = Intent("MyMod", author="Me", server_map="chernarus", launch=True)
     steps = build_steps(intent, False)

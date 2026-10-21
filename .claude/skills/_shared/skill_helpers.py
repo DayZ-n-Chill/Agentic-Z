@@ -9,6 +9,7 @@ One copy of the logic every pipeline script needs:
   - the P:\\Mods\\@<ModName>\\ ownership marker (owns_deploy_dir, gate_on_marker, write_marker)
   - creation flags that detach a launched GUI tool from the console (DETACH_FLAGS)
   - the active allowFilePatching setting in a serverDZ.cfg (file_patching_setting)
+  - the free-UDP-port check run before a server launch (udp_port_free, gate_on_free_port)
 
 Import from a skill script with:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
@@ -19,6 +20,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import re
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -185,3 +187,30 @@ def write_marker(deploy_root: Path, modname: str) -> bool:
         print(f"       Fix: write the single line {modname} to {marker}")
         return False
     return True
+
+
+def udp_port_free(port: int) -> bool:
+    """True when this machine can bind UDP `port` (no server is holding it).
+
+    Same probe /dayz-launch-test uses to detect a server that has started:
+    a bind on 0.0.0.0 fails while another process holds the port.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.bind(("0.0.0.0", port))
+    except OSError:
+        return False
+    finally:
+        sock.close()
+    return True
+
+
+def gate_on_free_port(port: int) -> None:
+    """Exit before a server launch when UDP `port` is already taken.
+
+    A second server on the same port fails to bind, and the launch scripts'
+    bind probe would then mistake the old server for the new one.
+    """
+    if not udp_port_free(port):
+        sys.exit(f"{FAIL} UDP port {port} in use; run /dayz-stop-test or pass --port.")
+    print(f"{OK} UDP port {port} is free")

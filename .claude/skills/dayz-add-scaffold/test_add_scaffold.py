@@ -281,6 +281,36 @@ def test_main_refuses_author_with_quote(monkeypatch, tmp_path):
     assert not (target / "config.cpp").exists()
 
 
+class _NoTty:
+    def isatty(self):
+        return False
+
+
+@pytest.mark.parametrize("existing", [None, "config.cpp"])
+def test_main_without_author_writes_nothing(monkeypatch, tmp_path, fake_tools, existing):
+    """No flag, no cache, no TTY: exit before any piece is written (README still needs the author)."""
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    if existing:
+        (target / existing).write_text("mine", encoding="utf-8")
+    before = _snapshot(target)
+    monkeypatch.setattr(scaf._nm.sys, "stdin", _NoTty())
+    monkeypatch.setattr(scaf._nm, "PROJECT_DIR", tmp_path)  # error message shows the cache path relative to it
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, tmp_path, ["MyMod"])
+    assert "No author handle available" in str(exc.value.code)
+    assert _snapshot(target) == before
+    assert sorted(p.name for p in target.iterdir()) == ([existing] if existing else [])
+
+
+def test_main_without_author_ok_when_no_author_piece_needed(monkeypatch, tmp_path, fake_tools):
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    monkeypatch.setattr(scaf._nm.sys, "stdin", _NoTty())
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "prefix"]) == 0
+    assert (target / "$PBOPREFIX$").exists()
+
+
 def test_main_prints_native_separators(monkeypatch, tmp_path, capsys, fake_tools):
     (tmp_path / "project" / "workspace" / "MyMod").mkdir(parents=True)
     _run_main(monkeypatch, tmp_path, ["MyMod", "--author", "Tester"])

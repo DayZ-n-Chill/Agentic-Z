@@ -14,7 +14,7 @@ The agent is the wizard: it runs the scripts below with Bash and asks the user q
 
 Follow `.claude/skills/_shared/dayz-conventions.md`. This skill does not gate on `/dayz-preflight` itself, because its own environment check covers the same ground and also fixes `P:\` first. Every child skill it runs gates on preflight.
 
-State is per clone, in `.claude/local-memory/` (gitignored): `dayz-current-project.txt` (the project root other DayZ skills read) and `dayz-init-state.json` (the active mod). The project root is the clone: `$CLAUDE_PROJECT_DIR`, else the current directory. Mods live in `workspace/<ModName>/`, test servers in `.server/<instance>/`.
+State is per clone, in `.claude/local-memory/` (gitignored): `dayz-current-project.txt` (the project root other DayZ skills read) and `dayz-init-state.json` (the active mod, whether it was new or imported, and the test server map). The project root is the clone: `$CLAUDE_PROJECT_DIR`, else the current directory. Mods live in `workspace/<ModName>/`, test servers in `.server/<instance>/`.
 
 ## Step 1: setup check
 
@@ -54,7 +54,7 @@ Then ask in chat for the free-text values:
 
 - Mod name (letters, digits and underscores, starting with a letter). For an import, offer the source folder's name as the default.
 - Import only: the source folder path, and whether to write missing scaffold pieces into it (`--scaffold`) or only link it (`--no-scaffold`).
-- New mod only, when `.claude/local-memory/dayz-author.txt` does not exist: the author handle shown in mod descriptions.
+- New mod, or import with `--scaffold`, when `.claude/local-memory/dayz-author.txt` does not exist: the author handle shown in mod descriptions (a scaffolded import writes it into `config.cpp`). Pass it as `--author`.
 
 ## Step 4: show the plan
 
@@ -82,7 +82,7 @@ Same command plus `--execute`. Each step's output streams through; the first fai
 | Step | Runs |
 |---|---|
 | new-mod | `dayz-new-mod\new_mod.py <ModName> [--author <handle>]` |
-| import-mod | `dayz-import-mod\import_mod.py --source <path> --name <ModName> --scaffold\|--no-scaffold` |
+| import-mod | `dayz-import-mod\import_mod.py --source <path> --name <ModName> --scaffold\|--no-scaffold [--author <handle>]` (author only with `--scaffold`) |
 | record | writes the two state files above |
 | add-server | `dayz-add-server\add_server.py <map> --map <map>` |
 | build | `dayz-build-pbo\build.py <ModName>` |

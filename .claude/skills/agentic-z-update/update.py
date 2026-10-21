@@ -52,6 +52,7 @@ class FileStatus(enum.Enum):
     UNCHANGED = "unchanged"          # no-op
     SAFE_OVERWRITE = "safe-overwrite"  # local == baseline, take upstream
     NEW = "new"                       # baseline + local missing, take upstream
+    LOCALLY_DELETED = "locally-deleted"  # in baseline, missing locally, leave alone
     LOCAL_ONLY_EDIT = "local-only-edit"  # only the user changed it, leave alone
     CONFLICT = "conflict"             # both diverged, ask user
     DELETED_CLEAN = "deleted-clean"   # local == baseline, upstream gone, delete OK
@@ -86,10 +87,9 @@ def classify_per_file(
 
     # Upstream has the file.
     if local is None:
-        # Local missing. If baseline also missing, user never had it → new.
-        # If baseline existed, user deliberately deleted it → still treat as new
-        # (re-add upstream version; user can delete again if they want).
-        return FileStatus.NEW
+        # Baseline also missing: the clone never had it, so it is new upstream.
+        # Baseline had it: the user deleted it, which is left alone by default.
+        return FileStatus.NEW if baseline is None else FileStatus.LOCALLY_DELETED
 
     # Local exists.
     if local == upstream:
@@ -281,17 +281,21 @@ def compute_drift(baseline_sha: Optional[str], upstream_ref: str) -> dict[str, F
 
 
 def stage_and_commit(updated: list[str], upstream_sha: str) -> bool:
-    """Stage updated paths and create a single commit."""
+    """Stage the updated paths and commit only them.
+
+    `git commit --only -- <paths>` keeps anything else the user had staged out
+    of the update commit; it stays staged afterwards.
+    """
     r = run(["git", "add", "--", *updated], check=False)
     if r.returncode != 0:
         return False
-    # Skip commit if nothing actually changed.
-    diff = run(["git", "diff", "--cached", "--quiet"], check=False)
+    # Skip commit if nothing actually changed in the applied paths.
+    diff = run(["git", "diff", "--cached", "--quiet", "--", *updated], check=False)
     if diff.returncode == 0:
         log("OK", "no template changes to commit (working tree already matches upstream)")
         return True
     msg = f"chore: pull Agentic-Z upstream ({upstream_sha[:8]})"
-    r = run(["git", "commit", "-m", msg], check=False)
+    r = run(["git", "commit", "--only", "-m", msg, "--", *updated], check=False)
     if r.returncode != 0:
         log("WARN", "commit failed; staged changes left in index for manual handling")
         return False
@@ -495,6 +499,7 @@ def format_preview(drift: dict[str, FileStatus], baseline_sha: Optional[str], up
         (FileStatus.NEW, "new files added"),
         (FileStatus.DELETED_CLEAN, "deletions (clean)"),
         (FileStatus.LOCAL_ONLY_EDIT, "your local-only edits (left alone)"),
+        (FileStatus.LOCALLY_DELETED, "deleted in this clone (left alone; --per-file to restore)"),
         (FileStatus.CONFLICT, "CONFLICTS — both you and upstream edited these"),
         (FileStatus.DELETED_CONFLICT, "CONFLICTS — upstream deleted these but you edited them"),
     ]
@@ -515,6 +520,14 @@ def format_preview(drift: dict[str, FileStatus], baseline_sha: Optional[str], up
         lines.append("")
 
     return "\n".join(lines)
+
+
+# Statuses walked by --per-file. Without a "take" choice they are left alone.
+PER_FILE_STATUSES = (FileStatus.CONFLICT, FileStatus.DELETED_CONFLICT, FileStatus.LOCALLY_DELETED)
+
+# Local choices with no upstream change to bring in: they do not hold the
+# baseline back and do not count as pending changes for --check.
+LOCAL_CHOICE_STATUSES = (FileStatus.LOCAL_ONLY_EDIT, FileStatus.LOCALLY_DELETED)
 
 
 def apply_drift(drift: dict[str, FileStatus], upstream_ref: str, conflict_choices: Optional[dict[str, str]] = None) -> tuple[list[str], list[str]]:
@@ -553,7 +566,7 @@ def apply_drift(drift: dict[str, FileStatus], upstream_ref: str, conflict_choice
         elif status == FileStatus.LOCAL_ONLY_EDIT:
             # Nothing to do — user's edit is the only change.
             skipped.append(path)
-        elif status in (FileStatus.CONFLICT, FileStatus.DELETED_CONFLICT):
+        elif status in PER_FILE_STATUSES:
             choice = conflict_choices.get(path)
             if choice == "take":
                 if status == FileStatus.DELETED_CONFLICT:
@@ -597,14 +610,19 @@ def _print_diff(path: str, local: bytes, upstream: bytes) -> None:
 
 
 def resolve_conflicts_per_file(drift: dict[str, FileStatus], upstream_ref: str) -> dict[str, str]:
-    """Walk each conflict interactively. Returns a {path: 'keep'|'take'} dict."""
+    """Walk each conflict and locally deleted file interactively.
+
+    Returns a {path: 'keep'|'take'} dict. For a locally deleted file, keep
+    leaves it deleted and take restores upstream's version.
+    """
     choices: dict[str, str] = {}
-    conflicts = [p for p, s in drift.items() if s in (FileStatus.CONFLICT, FileStatus.DELETED_CONFLICT)]
+    conflicts = [p for p, s in drift.items() if s in PER_FILE_STATUSES]
     if not conflicts:
         return choices
 
     print()
-    print(f"Walking {len(conflicts)} conflict(s). For each: k=keep mine, t=take upstream, d=diff, s=skip (= keep).")
+    print(f"Walking {len(conflicts)} file(s). For each: k=keep mine, t=take upstream, d=diff, s=skip (= keep).")
+    print("For a locally-deleted file, keep leaves it deleted and take restores it.")
     for path in conflicts:
         while True:
             try:
@@ -645,7 +663,7 @@ def finish_apply(
     remain) or "commit-failed" (git commit failed; changes left staged).
     """
     committed = stage_and_commit(applied, upstream_sha) if applied else True
-    pending = [p for p in skipped if drift.get(p) != FileStatus.LOCAL_ONLY_EDIT]
+    pending = [p for p in skipped if drift.get(p) not in LOCAL_CHOICE_STATUSES]
     if not committed:
         log("WARN", "Baseline not updated: the commit failed. Commit the staged files, then rerun.")
         return "commit-failed"
@@ -683,7 +701,7 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Preview drift only; writes nothing. Exits 1 if changes are pending or no baseline exists yet, 0 if up to date.",
+        help="Preview drift only; writes nothing. Exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date.",
     )
     parser.add_argument(
         "--quiet",
@@ -698,7 +716,7 @@ def main() -> int:
     parser.add_argument(
         "--per-file",
         action="store_true",
-        help="Walk each conflict interactively: keep / take / diff / skip.",
+        help="Walk each conflict and locally-deleted file interactively: keep / take / diff / skip.",
     )
     args = parser.parse_args()
 
@@ -748,6 +766,7 @@ def main() -> int:
             print("agentic-z: no update baseline recorded yet. Run /agentic-z-update once to initialize it.")
             return 1
         drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")
+        drift = {p: st for p, st in drift.items() if st not in LOCAL_CHOICE_STATUSES}
         output = format_preview(drift, baseline_sha, upstream_sha, quiet=args.quiet)
         if output:
             print(output)
@@ -757,23 +776,16 @@ def main() -> int:
         return 0
 
     # First run: record the current upstream HEAD as the baseline. Files are
-    # then compared against it, so nothing is overwritten on this run.
-    first_run = baseline_sha is None
-    if first_run and not args.dry_run:
+    # then compared against it, so nothing is overwritten or added on this run:
+    # a template file missing locally is in the baseline, so it classifies as
+    # locally-deleted and stays deleted unless restored with --per-file.
+    if baseline_sha is None and not args.dry_run:
         write_baseline(upstream_sha)
         baseline_sha = upstream_sha
         log("OK", f"Baseline initialized at upstream {upstream_sha[:7]}.")
 
     # Default flow: preview, prompt, apply.
     drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")
-    if first_run:
-        # With a brand-new baseline, a template file missing locally cannot be
-        # told apart from one the user deleted on purpose, so the first run adds
-        # nothing. Those files show up as `new` on the next run for review.
-        held = [p for p, st in drift.items() if st == FileStatus.NEW]
-        if held:
-            drift = {p: st for p, st in drift.items() if st != FileStatus.NEW}
-            log("INFO", f"First run: {len(held)} new upstream file(s) not added; rerun to review them.")
     if not drift:
         log("INFO", "Up to date.")
         return 0
