@@ -156,6 +156,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 |---|---|
 | [`/dayz-gate`](.claude/skills/dayz-gate/SKILL.md) | Run the build, in-game and behavior gates as scripts: build or deploy, launch, read the new log lines, run a test mission that spawns and uses each new item, triage failures against known errors. |
 | [`/dayz-lint`](.claude/skills/dayz-lint/SKILL.md) | Find errors that would stop a mod loading, before packing, with `file:line` and an owner for each; runs first inside `/dayz-gate build` and `/dayz-build-pbo`. |
+| [`/dayz-upgrade-guard`](.claude/skills/dayz-upgrade-guard/SKILL.md) | Snapshot vanilla classes before a DayZ update, then list the mod classes whose vanilla parents changed and optionally rebuild the search index. |
 | [`/dayz-balance`](.claude/skills/dayz-balance/SKILL.md) | Compare item stats (weight, health, damage, protection, capacity, quantity) with similar vanilla items on `P:\DZ\` and flag outliers with `file:line`. |
 | [`/dayz-route`](.claude/skills/dayz-route/SKILL.md) | Pick the skill, agent or team for a request with keyword rules first; prints one JSON decision and says when the `dayz-router` agent is needed. |
 | [`/dayz-statusline`](.claude/skills/dayz-statusline/SKILL.md) | Install a status line showing `P:\` mount, active mod, running diag session and search-index age; `--remove` undoes it. |

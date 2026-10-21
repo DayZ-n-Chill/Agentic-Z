@@ -11,6 +11,7 @@
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
+    "dayz-upgrade-guard": {"kind": "skill", "description": "Snapshot vanilla classes and, after a DayZ update, list mod classes whose vanilla parents changed"},
     "dayz-balance": {"kind": "skill", "description": "Compare a mod's item stats with similar vanilla items and flag outliers"},
     "dayz-release-pack": {"kind": "skill", "description": "Write a mod's Workshop description, changelog from version history, classname list and server owner install notes"},
     "dayz-server-kit": {"kind": "skill", "description": "Zip types.xml entries, cfgeconomycore lines, load order and the public .bikey for server owners"},
@@ -79,6 +80,12 @@
       "route": "dayz-lint",
       "confidence": 0.9,
       "patterns": ["\\blint\\s+(?!(?:the|my|this|it|mod|config|all|everything)\\b)(?P<mod>[A-Za-z][\\w-]*)", "\\blint(?:er|ing)?\\b"]
+    },
+    {
+      "route": "dayz-upgrade-guard",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bupgrade[\\s-]guard\\b", "\\b(?:dayz|game)\\s+(?:just\\s+)?(?:updated|patched)\\b", "\\b(?:after|since)\\s+(?:a|the|this|last)?\\s*(?:dayz|game)\\s+(?:update|patch)\\b", "\\bvanilla\\s+(?:parents?|parent\\s+class(?:es)?)\\s+(?:changed|moved)\\b"]
     },
     {
       "route": "dayz-balance",

@@ -72,6 +72,9 @@ def decide(text, env=NO_KEY):
         ("preview gui/layouts/compass.layout at 4k", "dayz-layout-preview", None),
         ("show me a layout preview of my HUD", "dayz-layout-preview", None),
         ("render trader_menu.layout at different screen sizes", "dayz-layout-preview", None),
+        ("run the upgrade guard on MyVest", "dayz-upgrade-guard", None),
+        ("DayZ just updated, which of my classes broke?", "dayz-upgrade-guard", None),
+        ("after the DayZ update, check my modded classes", "dayz-upgrade-guard", None),
         # Real preview widgets in a HUD or menu are UI work, not a layout preview.
         ("make a player preview panel in the hud", "dayz-ui-specialist", None),
         ("add an item preview widget to my inventory menu", "dayz-ui-specialist", None),
@@ -141,6 +144,10 @@ def test_spawn_alone_is_not_server_admin(text):
     d = decide(text)
     assert d["route"] != "dayz-server-admin"
     assert d["route"] in {"dayz-ai-specialist", "dayz-vehicle-specialist", None}
+
+
+def test_a_crash_after_an_update_is_still_the_debuggers():
+    assert decide("my server crashes after the DayZ update")["route"] == "dayz-mod-debugger"
 
 
 @pytest.mark.parametrize("text", ["add a crafting recipe for a new vest", "write a craft recipe that makes a new weapon",
