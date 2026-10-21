@@ -295,8 +295,9 @@ def main() -> int:
 
     if failed_any and os.name == "nt":
         print()
-        print("Note: symlink failures on Windows usually mean Developer Mode is off.")
-        print("      The script falls back to junctions automatically; junctions don't need admin.")
+        print("Note: a link only fails after the junction fallback has failed too, so Developer Mode")
+        print("      is not the cause. Check that you can write to the target skills folder and that")
+        print("      no other program has the path open, then run again.")
 
     return 1 if failed_any else 0
 

@@ -10,6 +10,7 @@ Run with: py scripts/dev/run_evals.py [--agent NAME] [--dry-run] [--baseline]
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -69,6 +70,19 @@ def score(answer: str, question: dict) -> dict:
     return {"id": question["id"], "passed": not failed, "failed_checks": failed}
 
 
+def file_hashes(paths: list[str]) -> dict[str, str | None]:
+    """Hash each repo-relative path, None when it is missing, so a run can prove a file was left alone."""
+    out = {}
+    for rel in paths:
+        f = REPO / rel
+        out[rel] = hashlib.sha256(f.read_bytes()).hexdigest() if f.is_file() else None
+    return out
+
+
+def changed_files(before: dict[str, str | None], after: dict[str, str | None]) -> list[str]:
+    return [f"changed: {rel}" for rel in before if before[rel] != after.get(rel)]
+
+
 def validate(path: Path) -> tuple[dict, list[str]]:
     """Load a question file and list every problem with it."""
     problems = []
@@ -100,6 +114,9 @@ def validate(path: Path) -> tuple[dict, list[str]]:
                     _compile(check)
                 except re.error as exc:
                     problems.append(f"{where}: bad regex {check!r}: {exc}")
+        for rel in q.get("unchanged", []):
+            if not (REPO / rel).is_file():
+                problems.append(f"{where}: unchanged file {rel} does not exist")
     return data, problems
 
 
@@ -151,9 +168,12 @@ def run(suites: list[dict], timeout: int, model: str | None = None) -> dict:
         rows = []
         for q in suite["questions"]:
             print(f"{agent} / {q['id']} ...", flush=True)
+            before = file_hashes(q.get("unchanged", []))
             try:
                 answer = ask(agent, q["question"], timeout, model)
                 row = score(answer, q)
+                row["failed_checks"] += changed_files(before, file_hashes(list(before)))
+                row["passed"] = not row["failed_checks"]
             except (RuntimeError, subprocess.TimeoutExpired) as exc:
                 answer = ""
                 row = {"id": q["id"], "passed": False, "failed_checks": [f"error: {exc}"]}

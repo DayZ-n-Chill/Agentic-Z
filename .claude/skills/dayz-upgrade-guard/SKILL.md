@@ -1,7 +1,7 @@
 ---
 name: dayz-upgrade-guard
 description: "Snapshots every vanilla class on P:\\ (script classes with their parent and method signatures, config classes with their parent and the properties they set). After a DayZ update it takes a new snapshot, diffs it with the last one and lists the mod classes whose vanilla parents changed, with file:line and the reason. Can rebuild the search index afterwards. Use before and after a DayZ update, or when a mod broke after one."
-argument-hint: "snapshot [--label <text>] | check [<ModName> ...] [--mod-dir <folder>] [--reindex] [--json] | diff [--old <a> --new <b>] [<ModName> ...] [--json]"
+argument-hint: "snapshot [--label <text>] | check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--json] | diff [--old <a> --new <b>] [<ModName> ...] [--mod-dir <folder>] [--json]"
 ---
 
 <!-- skill-dir-note -->
@@ -27,14 +27,14 @@ If there is no earlier snapshot, `check` saves the first one as the baseline and
 
 ```cmd
 python "<skill-dir>\upgrade_guard.py" snapshot [--label 1.28]
-python "<skill-dir>\upgrade_guard.py" check [<ModName> ...] [--mod-dir <folder>] [--reindex] [--json]
+python "<skill-dir>\upgrade_guard.py" check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--json]
 python "<skill-dir>\upgrade_guard.py" diff [--old <snapshot> --new <snapshot>] [<ModName> ...] [--mod-dir <folder>] [--json]
 ```
 
 | Argument | Notes |
 |---|---|
 | `snapshot` | Read every vanilla class and save a snapshot. `--label` adds text to the file name, such as the game version. |
-| `check` | Take a snapshot now, diff it with the newest saved one and check the mods. When nothing changed it keeps the old snapshot instead of saving a copy. |
+| `check` | Take a snapshot now, diff it with the newest saved one and check the mods. When nothing changed it keeps the old snapshot instead of saving a copy. `--label` adds text to the new snapshot's file name. |
 | `diff` | Compare two saved snapshots without reading `P:\`. With no `--old` and `--new` it uses the two newest. Use it to see a report again. |
 | `<ModName>` | A mod under `workspace/` in the project cached by `/dayz-init`. With no name and no `--mod-dir`, every mod in `workspace/` is checked. |
 | `--mod-dir` | Check this folder too. Repeat it for more folders. |

@@ -269,7 +269,11 @@ def main() -> int:
     added, present, skipped = (results.count(s) for s in (ADDED, PRESENT, SKIPPED))
 
     print()
-    if added == 0 and skipped == 0:
+    if args.piece == JUNCTION:
+        # Only the link was checked, so say nothing about the other pieces.
+        link = P_DRIVE / args.modname
+        print(f"{OK} {link} link {'created' if added else 'already in place'}.")
+    elif added == 0 and skipped == 0:
         print(f"{OK} Nothing to add - {rel} is already fully scaffolded.")
     else:
         print(f"{OK} {added} piece(s) added, {present} already present, {skipped} skipped.")

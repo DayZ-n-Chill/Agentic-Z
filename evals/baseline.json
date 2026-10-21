@@ -46,5 +46,13 @@
   "dayz-wearables-specialist": {
     "score": 5,
     "total": 5
+  },
+  "dayz-asset-specialist": {
+    "score": 5,
+    "total": 5
+  },
+  "dayz-layout-validator": {
+    "score": 5,
+    "total": 5
   }
 }

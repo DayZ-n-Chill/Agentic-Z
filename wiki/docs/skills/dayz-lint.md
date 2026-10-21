@@ -35,8 +35,8 @@ The first line is the verdict: `PASS` (exit 0, warnings allowed), `FAIL` (exit 1
 
 ```
 FAIL
-- workspace/MyVest/config.cpp:5  error cfgpatches-field: CfgPatches class MyVest has no units[] array.
-    -> dayz-config-specialist: Give every CfgPatches class units[] = {...}; weapons[] = {...}; and requiredAddons[] = {...}; ...
+- workspace/MyVest/config.cpp:5  error cfgpatches-field: CfgPatches class MyVest: units must be an array, units[] = {...};.
+    -> dayz-config-specialist: Write it as an array: units[] = {...}; weapons[] = {...}; requiredAddons[] = {...}; ...
   1 error(s), 0 warning(s)
 ```
 
@@ -47,8 +47,8 @@ With `--json`:
   "verdict": "FAIL", "mod": "MyVest", "mod_dir": "...", "errors": 1, "warnings": 0,
   "findings": [{
     "rule": "cfgpatches-field", "severity": "error", "file": "workspace/MyVest/config.cpp", "line": 5,
-    "message": "CfgPatches class MyVest has no units[] array.",
-    "text": "[lint:cfgpatches-field] CfgPatches class MyVest has no units[] array.",
+    "message": "CfgPatches class MyVest: units must be an array, units[] = {...};.",
+    "text": "[lint:cfgpatches-field] CfgPatches class MyVest: units must be an array, units[] = {...};.",
     "triage": {"status": "known", "id": "lint-cfgpatches-field", "meaning": "...", "fix": "...", "owner_agent": "dayz-config-specialist", "fingerprint": "..."}
   }]
 }
@@ -65,7 +65,8 @@ Errors fail the lint. Warnings are listed and do not.
 | `config-missing` | error | No `config.cpp`. A payload-only bundle (prebuilt `Addons\*.pbo`, no `config.cpp`) passes with a note instead. |
 | `config-syntax` | error | Unbalanced braces, a missing `;` or `};`, an array without `[]`, `;` between array elements. Same grammar as the edit hook (`hooks/edit_check.py`). The structure rules below wait until the syntax is fixed. |
 | `cfgpatches-missing`, `cfgpatches-empty` | error | No `class CfgPatches`, or one with no patch class inside. |
-| `cfgpatches-field` | error | A patch class without `units[]`, `weapons[]` or `requiredAddons[]`, or one of them written without `[]`. |
+| `cfgpatches-field` | error | `units`, `weapons` or `requiredAddons` written without `[]`, so it is not an array. |
+| `cfgpatches-field-missing` | warning | A patch class without `units[]`, `weapons[]` or `requiredAddons[]`. Vanilla loads such classes (`DZ_data_aiconfigs` in `P:\DZ\data\aiconfigs\config.cpp` has an empty body), but without `requiredAddons[]` the load order is not guaranteed. |
 | `required-addon-name` | error | An entry that is not a class name (a path, a `.pbo`, an `@mod` folder, a space), the mod's own patch class, or a `DZ_` name that no vanilla config on `P:\DZ\` or `P:\scripts\` declares. |
 | `required-addon-duplicate` | warning | The same entry twice. |
 | `pboprefix-missing`, `pboprefix-mismatch` | error | No `$PBOPREFIX$`, or one that does not hold exactly the mod name, which `/dayz-build-pbo` needs. |

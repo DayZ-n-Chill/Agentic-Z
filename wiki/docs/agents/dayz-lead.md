@@ -1,7 +1,6 @@
 ---
 name: "dayz-lead"
 color: cyan
-memory: project
 ---
 
 <p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--cyan">cyan</span></p>

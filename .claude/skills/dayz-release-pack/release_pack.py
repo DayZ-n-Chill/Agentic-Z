@@ -52,6 +52,7 @@ OTHER_GROUP = "Changed"
 CONVENTIONAL_RE = re.compile(r"^(?P<type>[a-z]+)(?:\([^)]*\))?!?:\s*(?P<rest>.+)$")
 # Release bookkeeping commits say nothing a player needs.
 SKIP_SUBJECT_RE = re.compile(r"^(?:chore\(release\)|Merge )", re.IGNORECASE)
+RELEASE_SUBJECT_RE = re.compile(r"^chore\(release\)", re.IGNORECASE)
 
 
 class ReleaseError(Exception):
@@ -265,18 +266,29 @@ def git_changes(mod_dir: Path, since: Optional[str]) -> dict:
     """Commits that touched the mod folder since `since`.
 
     The default is the latest tag when the mod folder is its own repository. A mod
-    inside a bigger repository (an Agentic-Z clone) takes its whole folder history,
-    since that repository's tags are not the mod's releases.
+    inside a bigger repository (an Agentic-Z clone) cannot use that repository's
+    tags, so it starts after the newest chore(release) commit that touched the mod
+    folder, or takes the whole folder history when there is none.
+    `from` says where the start came from: "option", "tag", "release-commit" or None.
     """
     top = _git(mod_dir, "rev-parse", "--show-toplevel")
     if top is None:
-        return {"git": False, "since": None, "commits": []}
+        return {"git": False, "since": None, "from": None, "commits": []}
     own_repo = Path(top.strip()).resolve() == mod_dir.resolve()
-    if since is None:
-        tag = _git(mod_dir, "describe", "--tags", "--abbrev=0") if own_repo else None
+    origin = None
+    if since is None and own_repo:
+        tag = _git(mod_dir, "describe", "--tags", "--abbrev=0")
         since = tag.strip() if tag and tag.strip() else None
+        origin = "tag" if since else None
+    elif since is None:
+        log = _git(mod_dir, "log", "--no-merges", "--format=%h%x1f%s", "--", ".") or ""
+        since = next((ref for ref, _, s in (line.partition("\x1f") for line in log.splitlines())
+                      if RELEASE_SUBJECT_RE.match(s)), None)
+        origin = "release-commit" if since else None
     elif _git(mod_dir, "rev-parse", "--verify", "--quiet", f"{since}^{{commit}}") is None:
         raise ReleaseError(f"--since {since!r} is not a commit or tag in the git history of {mod_dir}")
+    else:
+        origin = "option"
     args = ["log", "--no-merges", "--format=%h%x1f%as%x1f%s"]
     if since:
         args.append(f"{since}..HEAD")
@@ -286,7 +298,7 @@ def git_changes(mod_dir: Path, since: Optional[str]) -> dict:
         parts = line.split("\x1f")
         if len(parts) == 3 and not SKIP_SUBJECT_RE.match(parts[2]):
             commits.append({"hash": parts[0], "date": parts[1], "subject": parts[2]})
-    return {"git": True, "since": since, "commits": commits}
+    return {"git": True, "since": since, "from": origin, "commits": commits, "own_repo": own_repo}
 
 
 def group_changes(commits: list[dict]) -> dict[str, list[str]]:
@@ -416,6 +428,14 @@ def release_pack(mod: str, mod_dir: Path, out_dir: Path, version: str = "Unrelea
     changes = git_changes(mod_dir, since)
     if not changes["git"]:
         facts["warnings"].append("no-git: the mod folder is not in a git repository, so the changelog entry is empty")
+    else:
+        if changes["since"] is None and not changes["own_repo"]:
+            facts["warnings"].append("changelog-full-history: no chore(release) commit touched the mod folder, so the "
+                                     "entry lists its whole history; pass --since <ref> to limit the entry")
+        if not changes["commits"]:
+            since_text = f" since {changes['since']}" if changes["since"] else ""
+            facts["warnings"].append(f"changelog-empty: no commits touched the mod folder{since_text}, "
+                                     "so the changelog entry lists no changes")
     groups = group_changes(changes["commits"])
     if date is None:
         import datetime as _dt
@@ -438,7 +458,7 @@ def release_pack(mod: str, mod_dir: Path, out_dir: Path, version: str = "Unrelea
         "unresolved": [c["name"] for c in facts["unresolved"]],
         "load_order": load_order(facts),
         "keys": facts["keys"],
-        "changes": {"since": changes["since"], "commits": len(changes["commits"])},
+        "changes": {"since": changes["since"], "from": changes["from"], "commits": len(changes["commits"])},
         "warnings": facts["warnings"],
     }
 
@@ -463,6 +483,9 @@ def render_text(report: dict) -> str:
     out += [f"       {name}" for name in report["files"]]
     out.append(f"       {len(report['spawnable'])} spawnable classes, {report['changes']['commits']} commits, "
                f"load order {';'.join(report['load_order'])}")
+    if report["changes"]["from"] == "release-commit":
+        out.append(f"       changelog starts after {report['changes']['since']}, "
+                   "the newest chore(release) commit in the mod folder")
     out += [f"[WARN] {w}" for w in report["warnings"]]
     return "\n".join(out)
 
@@ -472,7 +495,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("mod", nargs="?", help="Mod name under workspace/ in the project cached by /dayz-init.")
     parser.add_argument("--mod-dir", type=Path, help="Use this folder instead (its name is the mod name).")
     parser.add_argument("--version", default="Unreleased", help="Version for the changelog and Workshop text.")
-    parser.add_argument("--since", help="Git ref the changelog starts after. Default: the latest tag, or all history.")
+    parser.add_argument("--since", help="Git ref the changelog starts after. Default: the latest tag in the mod's own "
+                        "repository, else the newest chore(release) commit in the mod folder, else all history.")
     parser.add_argument("--deps", nargs="+", default=[], metavar="MOD", help="Dependency mods in load order (CF or @CF).")
     parser.add_argument("--out", type=Path, help="Output folder. Default output/<ModName>-release/.")
     parser.add_argument("--json", action="store_true", help="Print the report as JSON.")

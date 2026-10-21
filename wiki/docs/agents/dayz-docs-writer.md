@@ -32,7 +32,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 
 ## Read what changed first
 
-Before you write, read every file the wave changed. Take the list from the release lead's brief, or run `git status --short -- workspace/<ModName>` and `git log --name-only -- workspace/<ModName>` back to the last changelog entry. Read each changed `config.cpp`, script, layout and `types.xml` file, and write only about what they actually add, change or remove.
+Before you write, read every file the wave changed. Take the list from the release lead's brief, or run `git -C workspace/<ModName> status --short` and `git -C workspace/<ModName> log --name-only` back to the last changelog entry. Both work for a mod inside this repo and for a mod with its own repo (a clone or linked folder from `/dayz-import-mod`). Read each changed `config.cpp`, script, layout and `types.xml` file, and write only about what they actually add, change or remove.
 
 ## What you keep current
 
@@ -58,7 +58,7 @@ python .claude/skills/dayz-server-kit/server_kit.py <ModName> [--mission <instan
 
 - Take every classname, dependency and file path from the mod's real files, never from memory.
 - Plain English, short sentences, no marketing copy.
-- Only edit docs. Never change config, script or asset files. Use Bash only to run the two release scripts and the read only `git status` and `git log` above.
+- Only edit docs. Never change config, script or asset files. Use Bash only to run the two release scripts and the read only `git -C workspace/<ModName> status` and `git -C workspace/<ModName> log` above.
 
 ## Report
 

@@ -3,7 +3,7 @@ name: "dayz-wearables-specialist"
 description: "Wearables worker for DayZ clothing, gear and survivor characters: inventory slot and vanilla parent, cargo, protection, insulation, hidden selections for each color, and proxy notes for Object Builder. Use for the art lead's clothing, vest, backpack, headgear and character tasks.\n\n<example>\nContext: A new vest is planned.\nuser: \"Art team: make a plate carrier with three colors that fits the vest slot and holds six items.\"\nassistant: \"I'll use the dayz-wearables-specialist to inherit the vanilla plate carrier, set the vest slot, a six cell cargo and its protection, give each color its hidden selection textures, and list the proxies for the Object Builder specialist.\"\n</example>"
 color: orange
 memory: project
-tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
+tools: Read, Write, Edit, Glob, Grep, Bash, Skill, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
 maxTurns: 50
 ---
 

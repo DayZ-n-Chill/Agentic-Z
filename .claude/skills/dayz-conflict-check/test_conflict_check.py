@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import shutil
 import struct
+import subprocess
 import sys
 from pathlib import Path
 
@@ -287,3 +290,52 @@ def test_ingame_unreadable_gate_output_fails(world, monkeypatch, capsys):
 
 def test_ingame_needs_a_project_mod(world, capsys):
     assert cc.main(["--mod-dir", str(world), "--ingame"]) == 2
+
+
+def test_ingame_refuses_a_source_folder_in_against(world, monkeypatch, capsys):
+    make_mod(world / "workspace" / "MyVest")
+    source = make_mod(world / "OtherSource", prefix="OtherSource")
+    monkeypatch.setattr(cc.h, "resolve_project_dir", lambda: world)
+    rc = cc.main(["MyVest", "--mods-root", str(world / "Mods"), "--against", str(source), "--ingame"],
+                 run=lambda cmd: pytest.fail("the gate must not run"))
+    out = capsys.readouterr().out
+    assert rc == 2 and out.startswith("ERROR")
+    assert "OtherSource" in out and "@mod" in out
+
+
+def test_ingame_accepts_named_mods_in_against(world, monkeypatch, capsys):
+    make_mod(world / "workspace" / "MyVest")
+    monkeypatch.setattr(cc.h, "resolve_project_dir", lambda: world)
+    calls = []
+    rc = cc.main(["MyVest", "--mods-root", str(world / "Mods"), "--against", "CF", "--ingame"],
+                 run=lambda cmd: calls.append(cmd) or (0, "PASS\n{}"))
+    assert rc == 0 and calls[0][4:6] == ["--deps", "@CF"]
+
+
+def link_folder(link: Path, target: Path) -> bool:
+    """Make link point at target: a symlink, or a junction on Windows. False when neither works."""
+    try:
+        os.symlink(target, link, target_is_directory=True)
+        return True
+    except (OSError, NotImplementedError):
+        pass
+    if os.name == "nt":
+        r = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)], capture_output=True, text=True)
+        return r.returncode == 0
+    return False
+
+
+def test_ingame_accepts_a_linked_mod_in_against(world, monkeypatch, capsys):
+    # Workshop @mods under P:\Mods are usually links to a folder elsewhere.
+    make_mod(world / "workspace" / "MyVest")
+    outside = world / "Workshop" / "CF"
+    outside.parent.mkdir()
+    shutil.move(str(world / "Mods" / "@CF"), str(outside))
+    if not link_folder(world / "Mods" / "@CF", outside):
+        pytest.skip("cannot create a symlink or junction here")
+    monkeypatch.setattr(cc.h, "resolve_project_dir", lambda: world)
+    calls = []
+    rc = cc.main(["MyVest", "--mods-root", str(world / "Mods"), "--against", "CF", "--ingame"],
+                 run=lambda cmd: calls.append(cmd) or (0, "PASS\n{}"))
+    assert rc == 0, capsys.readouterr().out
+    assert calls[0][4:6] == ["--deps", "@CF"]

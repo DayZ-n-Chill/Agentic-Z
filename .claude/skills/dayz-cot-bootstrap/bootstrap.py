@@ -81,6 +81,11 @@ def dedup_with_cf_cot(user_mods: list[str]) -> list[str]:
     return out
 
 
+# How long pass 1 waits, with the server still running, for COT to write each
+# player's Permissions/<id>.txt after the Players JSON appeared.
+PERMS_WAIT_S = 15
+
+
 def snapshot_player_files(players_dir: Path) -> dict[str, float]:
     """Return {player_id: mtime} for all existing Players/*.json files.
 
@@ -188,6 +193,21 @@ def wait_for_personal_perms(perms_file: Path, timeout_s: int) -> bool:
     return False
 
 
+def perms_file_for(profile_dir: Path, player_json: Path) -> Path:
+    return profile_dir / "PermissionsFramework" / "Permissions" / f"{player_json.stem}.txt"
+
+
+def wait_for_perms_files(profile_dir: Path, triggered: list[Path], timeout_s: int = PERMS_WAIT_S) -> None:
+    """Wait for each triggered player's Permissions/<id>.txt while the pass-1
+    server is still running: the server writes that file, so once it is stopped
+    a file that came slightly after the JSON can never appear. A file still
+    missing afterwards is reported by edit_permissions."""
+    print("        Waiting for COT to write the personal permission file(s)...")
+    sys.stdout.flush()
+    for json_path in triggered:
+        wait_for_personal_perms(perms_file_for(profile_dir, json_path), timeout_s)
+
+
 def edit_permissions(profile_dir: Path, triggered: list[Path]) -> bool:
     """Per-player grant only. For each triggered player JSON, add 'admin' to
     its Roles[], then flip ' 0' -> ' 2' in the matching Permissions/<id>.txt.
@@ -196,13 +216,14 @@ def edit_permissions(profile_dir: Path, triggered: list[Path]) -> bool:
     Returns True only when every player got both edits (or already had them)."""
     print()
     print("[Edit] Applying COT admin permissions (per-player only)...")
-    perms_dir = profile_dir / "PermissionsFramework" / "Permissions"
     ok = True
     for json_path in triggered:
         if grant_admin_role(json_path) is None:
             ok = False
-        perms_file = perms_dir / f"{json_path.stem}.txt"
-        if not wait_for_personal_perms(perms_file, timeout_s=15):
+        perms_file = perms_file_for(profile_dir, json_path)
+        # wait_for_perms_files already waited while the server ran; the server
+        # is stopped now, so only check that the file is there.
+        if not (perms_file.exists() and perms_file.stat().st_size > 0):
             print(f"{FAIL} Personal perms file did not appear at {perms_file}")
             ok = False
             continue
@@ -313,6 +334,8 @@ def main() -> int:
         print("       Stopping the pass-1 server and client before exiting...")
         stop_session(session)
         return 1
+
+    wait_for_perms_files(profile_dir, triggered)
 
     # === Stop, edit, relaunch ===
     print()

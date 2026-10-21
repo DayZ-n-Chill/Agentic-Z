@@ -17,6 +17,8 @@ def test_status_reads_active_mod_pbo_and_servers(tmp_path, monkeypatch):
     write_state(project, {"last_intent": {"mod_name": "MyMod"}})
     for name in ("chernarus", "livonia", "!ClientDiagLogs"):
         (project / ".server" / name).mkdir(parents=True)
+    for name in ("chernarus", "livonia"):
+        (project / ".server" / name / "serverDZ.cfg").write_text("", encoding="utf-8")
     pbo = tmp_path / "Mods" / "@MyMod" / "Addons" / "MyMod.pbo"
     pbo.parent.mkdir(parents=True)
     pbo.write_bytes(b"")
@@ -48,3 +50,28 @@ def test_search_status_wording():
     assert "Search:  ready" in ready
     assert "VOYAGE_API_KEY missing" in no_key
     assert "PBO:     not built yet" in ready
+
+
+def test_behavior_copies_and_folders_without_a_config_are_not_servers(tmp_path):
+    server_dir = tmp_path / ".server"
+    for name in ("chernarus", "chernarus-behavior", "half-made", "!Health"):
+        (server_dir / name).mkdir(parents=True)
+    for name in ("chernarus", "chernarus-behavior", "!Health"):
+        (server_dir / name / "serverDZ.cfg").write_text("", encoding="utf-8")
+    assert hub_status._test_servers(server_dir) == ["chernarus"]
+
+
+def test_non_vanilla_required_addons_are_listed(tmp_path, monkeypatch):
+    monkeypatch.setattr(hub_status, "_diag_running", lambda: False)
+    project = tmp_path / "clone"
+    write_state(project, {"last_intent": {"mod_name": "MyMod"}})
+    cfg = project / "workspace" / "MyMod" / "config.cpp"
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(
+        'class CfgPatches { class MyMod { requiredAddons[] = {"DZ_Data", "JM_CF_Scripts"}; }; };\n'
+        '// requiredAddons[] = {"Commented_Out"};\n',
+        encoding="utf-8",
+    )
+    s = hub_status.gather_status(project, mods_root=tmp_path / "Mods")
+    assert s.needs == ["JM_CF_Scripts"]
+    assert "Needs:   JM_CF_Scripts" in hub_status.render_status(s)

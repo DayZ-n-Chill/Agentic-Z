@@ -4,13 +4,13 @@ name: dayz-ask
 
 ## Overview
 
-Answers a plain English question about vanilla DayZ with path:line citations. A script runs the RAG search, checks every hit against the file on P:\ and falls back to a keyword Grep of the vanilla folders when there is no VOYAGE_API_KEY or index; the AI answers only from the checked lines. Use when the user asks how vanilla does something, where it lives, or what a vanilla class or config value does.
+Answers a plain English question about vanilla DayZ with checked path:line citations. Use when the user asks how vanilla does something, where it lives, or what a vanilla class or config value does.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-ask
 
-A script finds and checks the evidence. You read it and write the answer. Every claim in the answer cites a line the script read from disk.
+A script finds and checks the evidence. You read it and write the answer. Every claim in the answer cites a line the script read from disk. The script runs the RAG search, checks every hit against the file on `P:\`, and falls back to a keyword Grep of the vanilla folders when there is no `VOYAGE_API_KEY` or index.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`. Format the answer per `.claude/skills/_shared/answer-formatting.md`.
 
@@ -46,7 +46,7 @@ EVIDENCE 2 citation(s) via rag
     | ...
 ```
 
-`via` is `rag`, `grep`, or `rag+grep` when every RAG hit was dropped. An excerpt shows at most 60 lines.
+`via` is `rag`, `grep`, or `rag+grep` when RAG gave no surviving hit (none returned, or all dropped). An excerpt shows at most 60 lines.
 
 With `--json`, the report holds `verdict`, `question`, `mode`, `notes`, `citations` and `dropped`. Each citation has `cite` (`path:line_start-line_end`), `path`, `line_start`, `line_end`, `status`, `source` (`rag` or `grep`) and `excerpt`; RAG citations add `distance` and `context`, Grep citations add `match_line` and `terms_in_file`.
 

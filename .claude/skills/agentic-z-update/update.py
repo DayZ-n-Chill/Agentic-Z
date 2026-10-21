@@ -1,7 +1,8 @@
 """Pull Agentic-Z template updates from upstream into the current clone.
 
 What it touches:
-    .claude/agents/, .claude/skills/, .claude/mcp/
+    .claude/agents/, .claude/skills/, .claude/mcp/, .claude/settings.json
+    .claude-plugin/, .mcp.json, hooks/, mods/, evals/
     docs/, wiki/, scripts/
     CLAUDE.md, AGENTS.md, GEMINI.md, README.md
 
@@ -38,6 +39,12 @@ TEMPLATE_PATHS = [
     ".claude/agents",
     ".claude/skills",
     ".claude/mcp",
+    ".claude/settings.json",
+    ".claude-plugin",
+    ".mcp.json",
+    "hooks",
+    "mods",
+    "evals",
     "docs",
     "wiki",
     "scripts",
@@ -387,13 +394,19 @@ def read_lock() -> Optional[dict]:
 
 
 def write_lock() -> None:
-    """Write a lock file with this process's PID and an ISO timestamp."""
+    """Create the lock file with this process's PID and an ISO timestamp.
+
+    The file is created with O_CREAT | O_EXCL, so creating it is atomic: when two
+    updates race, exactly one succeeds and the other gets FileExistsError.
+    """
     LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "pid": os.getpid(),
         "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
     }
-    LOCK_FILE.write_text(json.dumps(payload), encoding="utf-8")
+    fd = os.open(LOCK_FILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(json.dumps(payload))
 
 
 def release_lock() -> None:
@@ -689,19 +702,28 @@ def finish_apply(
 def acquire_lock() -> bool:
     """Acquire the update lock. Returns True if acquired, False if another live process holds it.
 
-    Stale locks (PID dead) are taken over automatically.
+    The lock file is created atomically (see write_lock). Stale locks (PID dead
+    or unreadable) are removed and the create is retried once.
     """
-    existing = read_lock()
-    if existing is not None:
-        pid = int(existing.get("pid", 0))
+    for _attempt in range(2):
+        try:
+            write_lock()
+            return True
+        except FileExistsError:
+            pass
+        existing = read_lock() or {}
+        try:
+            pid = int(existing.get("pid", 0))
+        except (TypeError, ValueError):
+            pid = 0
         if pid > 0 and _pid_alive(pid):
             log("FAIL", f"Another update is running (PID {pid}, started {existing.get('started_at', '?')}).")
             log("FAIL", "If you're sure it's stuck, delete .claude/.upstream-update.lock")
             return False
-        # Stale lock — overwrite it.
         log("WARN", f"Found stale lock from dead PID {pid}; taking over.")
-    write_lock()
-    return True
+        release_lock()
+    log("FAIL", "Could not take the update lock; another update grabbed it first.")
+    return False
 
 
 def main() -> int:
@@ -712,12 +734,12 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Preview drift only; writes nothing. Exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date.",
+        help="Preview drift only; writes nothing. Exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (always 0 with --quiet).",
     )
     parser.add_argument(
         "--quiet",
         action="store_true",
-        help="With --check: silent on no-change, single line on drift. Used by SessionStart hook.",
+        help="With --check: silent on no-change, single line on drift, always exits 0. Used by SessionStart hook.",
     )
     parser.add_argument(
         "--yes",
@@ -773,15 +795,17 @@ def main() -> int:
     if args.check:
         # Read-only: --check never writes the baseline. Without one there is
         # nothing to compare against, so say so instead of reporting "Up to date".
+        # With --quiet (the SessionStart hook) the nudge exits 0: Claude Code drops
+        # plain stdout from a hook that exits non-zero, so the nudge would never show.
         if baseline_sha is None:
             print("agentic-z: no update baseline recorded yet. Run /agentic-z-update once to initialize it.")
-            return 1
+            return 0 if args.quiet else 1
         drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")
         drift = {p: st for p, st in drift.items() if st not in LOCAL_CHOICE_STATUSES}
         output = format_preview(drift, baseline_sha, upstream_sha, quiet=args.quiet)
         if output:
             print(output)
-            return 1  # drift exists
+            return 0 if args.quiet else 1  # drift exists
         if not args.quiet:
             print("Up to date.")
         return 0
@@ -791,7 +815,12 @@ def main() -> int:
     # a template file missing locally is in the baseline, so it classifies as
     # locally-deleted and stays deleted unless restored with --per-file.
     if baseline_sha is None and not args.dry_run:
-        write_baseline(upstream_sha)
+        if not acquire_lock():
+            return 1
+        try:
+            write_baseline(upstream_sha)
+        finally:
+            release_lock()
         baseline_sha = upstream_sha
         log("OK", f"Baseline initialized at upstream {upstream_sha[:7]}.")
 

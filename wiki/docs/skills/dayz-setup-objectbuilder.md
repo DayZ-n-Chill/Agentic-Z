@@ -52,6 +52,15 @@ Exits 1 if DayZ Tools, `ObjectBuilder.exe` or the `.reg` is missing, the `.reg` 
 ```
 DayZ Object Builder setup
 
+DayZ preflight
+
+[OK]    P:\ is mounted
+[OK]    DayZ Tools found: C:\...\steamapps\common\DayZ Tools
+[OK]    Vanilla data found: P:\dz
+[OK]    P:\Mods -> C:\...\steamapps\common\DayZ\!Workshop
+
+Preflight complete.
+
 [OK]    DayZ Tools: C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools
 [OK]    ObjectBuilder.exe: ...\Bin\ObjectBuilder\ObjectBuilder.exe
 [OK]    Default settings file: ObjectBuilder_defaultSettings.reg
