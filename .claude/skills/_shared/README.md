@@ -125,6 +125,19 @@ Front index: `_shared/persistence/README.md`. Written for `dayz-persistence-spec
 | `_shared/persistence/base-building.md` | Part ID bit masks, the `Construction` config, territory flag and lock saves. |
 | `_shared/persistence/data-audit.md` | The pre release data loss audit and its report format for the server lead. |
 
+### Vehicle pack (`_shared/vehicles`)
+
+Front index: `_shared/vehicles/README.md`. Loaded by dayz-vehicle-specialist and by any worker that checks a vehicle.
+
+| File | Purpose |
+|---|---|
+| `_shared/vehicles/class-hierarchy.md` | Config and script parents for cars, boats and helicopters, addons to require, mandatory overrides. |
+| `_shared/vehicles/simulation.md` | `SimulationModule` keys for engine, gearbox, axles, suspension, wheels and boat propeller. |
+| `_shared/vehicles/attachments-and-crew.md` | `attachments[]`, `CfgSlots`, door and wheel parts, inventory groups, crew seats, door states. |
+| `_shared/vehicles/fluids-and-engine.md` | Fluid config keys and script calls, engine start rules, vital parts. |
+| `_shared/vehicles/damage.md` | `DamageSystem` zones, zone names script reads, crash and crew damage. |
+| `_shared/vehicles/helicopters.md` | What vanilla ships for helicopters and what a mod must write. |
+
 ### Skill packs (`references/`)
 
 | Folder or file | Purpose |

@@ -1,0 +1,60 @@
+{
+  "agent": "dayz-vehicle-specialist",
+  "questions": [
+    {
+      "id": "anim-instance-missing",
+      "question": "Answer only, do not edit any file. My config.cpp has class MyMod_Pickup: CarScript with my own model, and I wrote no script class for it. When I try to get in, script.log says \"GetAnimInstance() not implemented\". Why, and what do I need to add?",
+      "must_include": [
+        "re:class\\s+MyMod_Pickup\\s*(:|extends)\\s*CarScript",
+        "GetAnimInstance",
+        "VehicleAnimInstances",
+        "GetSeatAnimationType"
+      ],
+      "verified": "P:/scripts/3_game/vehicles/transport.c:662 (GetAnimInstance errors when not overridden) and :682 (GetSeatAnimationType); P:/scripts/4_world/entities/vehicles/vehicleaniminstances.c:1"
+    },
+    {
+      "id": "bigger-fuel-tank",
+      "question": "Answer only, do not edit any file. I want a variant of the vanilla Offroad_02 with a bigger fuel tank and nothing else changed. Show the config.cpp, including CfgPatches. Which key do I change, and which vanilla addon must I require?",
+      "must_include": [
+        "fuelCapacity",
+        "DZ_Vehicles_Wheeled",
+        "re:class\\s+\\w+\\s*:\\s*Offroad_02\\b",
+        "re:class\\s+Offroad_02\\s*;"
+      ],
+      "must_not_include": [
+        "re:class\\s+SimulationModule\\s*:"
+      ],
+      "verified": "P:/DZ/vehicles/wheeled/config.cpp:3 (class DZ_Vehicles_Wheeled), :20899 (class Offroad_02: CarScript) and :20980 (fuelCapacity=115)"
+    },
+    {
+      "id": "diesel-needs-glowplug",
+      "question": "Answer only, do not edit any file. My car class inherits vanilla Offroad_02. I added a SparkPlug slot, attached a spark plug and a charged battery, and filled the fuel, but the engine still will not start. Why?",
+      "must_include": [
+        "GlowPlug",
+        "re:IsVitalSparkPlug|IsVitalGlowPlug",
+        "re:CheckOperationalRequirements|OnBeforeEngineStart"
+      ],
+      "verified": "P:/scripts/4_world/entities/vehicles/inheritedcars/offroad_02.c:415 (IsVitalSparkPlug returns false); P:/scripts/3_game/vehicles/transport.c:409 (IsVitalGlowPlug defaults to true); P:/scripts/4_world/entities/vehicles/carscript.c:1752 and :1783 (missing glow plug sets NO_IGNITER)"
+    },
+    {
+      "id": "new-door-slot",
+      "question": "Answer only, do not edit any file. My car lists \"MyMod_Door_1_1\" in attachments[] and my door item has inventorySlot[] = {\"MyMod_Door_1_1\"};, but the door never attaches and the RPT shows no error. What is missing?",
+      "must_include": [
+        "CfgSlots",
+        "re:class\\s+Slot_MyMod_Door_1_1",
+        "re:name\\s*=\\s*\"MyMod_Door_1_1\""
+      ],
+      "verified": "P:/scripts/config.cpp:11 (CfgSlots) and :1852 (class Slot_Offroad_02_Door_1_1 with name=); P:/scripts/3_game/systems/inventory/inventoryslots.c:28-42 (slots are looked up by the class name Slot_ plus the slot name)"
+    },
+    {
+      "id": "vanilla-helicopter",
+      "question": "Answer only, do not edit any file. Does vanilla DayZ have a flyable helicopter I can inherit from? Which classes would I build a helicopter on?",
+      "must_include": [
+        "HelicopterScript",
+        "HelicopterAuto",
+        "re:\\bno\\b|not|none|isn't|doesn't|does not"
+      ],
+      "verified": "P:/scripts/3_game/vehicles/helicopter.c:9 and :14 (Helicopter, HelicopterAuto); P:/scripts/4_world/entities/vehicles/helicopterscript.c:4 (HelicopterScript); no CfgVehicles class under P:/DZ uses HelicopterScript"
+    }
+  ]
+}
