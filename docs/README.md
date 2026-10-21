@@ -162,6 +162,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 |---|---|
 | [`/dayz-gate`](../.claude/skills/dayz-gate/SKILL.md) | Run the build, in-game and behavior gates as scripts: build or deploy, launch, read the new log lines, run a test mission that spawns and uses each new item, triage failures against known errors |
 | [`/dayz-lint`](../.claude/skills/dayz-lint/SKILL.md) | Find errors that would stop a mod loading, before packing, with `file:line` and an owner for each; runs first inside `/dayz-gate build` and `/dayz-build-pbo` |
+| [`/dayz-conflict-check`](../.claude/skills/dayz-conflict-check/SKILL.md) | Find `$PBOPREFIX$`, path and class name collisions with CF, COT and Expansion from their configs and PBO headers, without extracting them; `--ingame` then runs the in-game gate with them loaded |
 | [`/dayz-route`](../.claude/skills/dayz-route/SKILL.md) | Pick the skill, agent or team for a request with keyword rules first; prints one JSON decision and says when the `dayz-router` agent is needed |
 | [`/dayz-statusline`](../.claude/skills/dayz-statusline/SKILL.md) | Install a status line showing `P:\` mount, active mod, running diag session and search-index age; `--remove` undoes it |
 
