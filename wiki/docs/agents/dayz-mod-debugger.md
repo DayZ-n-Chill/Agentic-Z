@@ -37,7 +37,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 - Build failures: the AddonBuilder lines quoted in the `/dayz-gate build` JSON (or the `dayz-build-checker` report).
 - Review-gate failures: there are no engine logs; diagnose from the `dayz-mod-reviewer` gate report and the files the task changed.
 
-Read the triage first. A `/dayz-gate` report lists each failure with its log file and line, its stack trace (`context`), the mod files it points to (`points_to`) and a `triage` verdict; you are sent the `new` ones, and the `known` ones already have an owner. A log the user pastes is triaged the same way first (the paste-in hook runs `/dayz-gate` triage on it), so you get only its `new` lines. Start from those lines, then read the logs yourself around them; use the report's file names to know which session to look at. Don't diagnose from a symptom without a log line (or, for a review-gate failure, a report finding) behind it.
+Read the triage first. A `/dayz-gate` report lists each failure with its log file and line, its stack trace (`context`), the mod files it points to (`points_to`) and a `triage` verdict; you are sent the `new` ones, and the `known` ones already have an owner. A `/dayz-logwatch` line flagged `new` comes the same way, with its log file and line but no stack trace. A log the user pastes is triaged the same way first (the paste-in hook runs `/dayz-gate` triage on it), so you get only its `new` lines. Start from those lines, then read the logs yourself around them; use the report's file names to know which session to look at. Don't diagnose from a symptom without a log line (or, for a review-gate failure, a report finding) behind it.
 
 ## How you diagnose
 

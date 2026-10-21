@@ -12,6 +12,10 @@ Errors: bad arguments raise ValueError, a missing index or file raises
 RuntimeError / FileNotFoundError. FastMCP turns any raised exception into a
 tool result with isError=True, so clients always see failures the same way.
 
+Repeated searches are answered from an in-memory cache keyed on the query,
+its filters and the index build time. A rebuilt index (a new manifest.json)
+empties the cache and reopens the table on the next search.
+
 Embedding: Voyage AI cloud (default voyage-code-3, 1024D). Uses input_type="query"
 for asymmetric retrieval — matches the "document" mode used at index time.
 
@@ -24,6 +28,7 @@ import json
 import os
 import sys
 import time
+from collections import OrderedDict
 from pathlib import Path
 from typing import Optional
 
@@ -35,6 +40,7 @@ TABLE_NAME = "chunks"
 DEFAULT_EMBED_MODEL = "voyage-code-3"
 MAX_TOP_K = 25
 MAX_FILE_BYTES = 200_000
+CACHE_MAX = 256  # repeated search answers kept in memory, oldest dropped first
 
 # Optional distance ceiling for search results. LanceDB returns L2² distance
 # (lower = closer match). Useful thresholds depend on the embed model and the
@@ -74,6 +80,11 @@ _voyage_client = None
 _embed_model: Optional[str] = None
 _table = None
 _index_built_at: Optional[float] = None  # epoch seconds; set on first manifest load
+# Raw rows per (query, top_k, file_type, build time), most recently used last.
+# Rows are cached before the distance filter and formatting, so a hit's
+# is_stale flag is still checked against the file on every answer.
+_search_cache: "OrderedDict[tuple, list[dict]]" = OrderedDict()
+_manifest_stamp: Optional[int] = None  # manifest.json mtime the cache and open table belong to
 
 
 def _get_index_built_at() -> Optional[float]:
@@ -91,6 +102,28 @@ def _get_index_built_at() -> Optional[float]:
     except (json.JSONDecodeError, OSError, ValueError, TypeError):
         _index_built_at = None
     return _index_built_at
+
+
+def _manifest_mtime() -> Optional[int]:
+    try:
+        return (INDEX_ROOT / "manifest.json").stat().st_mtime_ns
+    except OSError:
+        return None
+
+
+def _sync_with_index() -> None:
+    """Forget cached answers, the open table and the build time once the index is rebuilt.
+
+    The indexer writes manifest.json last, so a changed manifest mtime means a
+    new index. Checking it costs one stat per search.
+    """
+    global _manifest_stamp, _table, _index_built_at
+    stamp = _manifest_mtime()
+    if stamp != _manifest_stamp:
+        _search_cache.clear()
+        _table = None
+        _index_built_at = None
+        _manifest_stamp = stamp
 
 
 def _get_client():
@@ -200,6 +233,14 @@ def search_dayz_source_impl(
         raise ValueError(f"file_type must be one of {sorted(VALID_FILE_TYPES)} or None")
 
     threshold = max_distance if max_distance is not None else DEFAULT_MAX_DISTANCE
+    query = " ".join(query.split())
+
+    _sync_with_index()
+    key = (query, top_k, file_type, _get_index_built_at())
+    rows = _search_cache.get(key)
+    if rows is not None:
+        _search_cache.move_to_end(key)
+        return _finish(rows, threshold)
 
     table = _get_table()
     vec = _embed_query(query)
@@ -208,7 +249,11 @@ def search_dayz_source_impl(
     if file_type:
         # file_type is checked against VALID_FILE_TYPES above, so quoting it is safe.
         q = q.where(f"file_type = '{file_type}'", prefilter=True)
-    return _finish(q.limit(top_k).to_list(), threshold)
+    rows = q.limit(top_k).to_list()
+    _search_cache[key] = rows
+    if len(_search_cache) > CACHE_MAX:
+        _search_cache.popitem(last=False)
+    return _finish(rows, threshold)
 
 
 def _finish(results: list[dict], threshold: Optional[float]) -> list[dict]:
@@ -340,7 +385,8 @@ def main() -> int:
         mtime is newer than the index build (or the file is missing); the snippet
         may not match what's currently on disk. Verify with get_dayz_file or Read
         before grounding claims on a hit (see cite-then-verify rule in
-        .claude/skills/_shared/dayz-conventions.md).
+        .claude/skills/_shared/dayz-conventions.md). A repeated search is
+        answered from a cache until the index is rebuilt.
         """
         return search_dayz_source_impl(query, top_k, file_type, max_distance)
 

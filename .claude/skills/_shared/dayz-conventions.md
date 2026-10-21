@@ -20,6 +20,7 @@ All Enforce Script (`.c`) work follows `.claude/skills/_shared/enscript-style.md
   - `/dayz-init` runs preflight inside its own steps (the environment check and the plan it executes), so it does not gate before the wizard starts.
   - `/dayz-workdrive` mounts `P:\`, which is the thing preflight checks.
   - `/dayz-search-download` only downloads a prebuilt index into `~/.claude/`; it never reads or writes `P:\`.
+  - `/dayz-ask` only reads vanilla files. It checks that `P:\` is mounted itself and needs none of the rest of preflight.
 
   Every other skill that does work gates on preflight, including `/dayz-search-index` (it reads vanilla source on `P:\`). A new exception needs a stated reason here.
 - DayZ Tools is installed via Steam (Tools section).
