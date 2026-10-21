@@ -1,0 +1,3 @@
+<FrameWidgetClass name="root_hud">
+  <TextWidgetClass name="txt_title" text="Hello"/>
+</FrameWidgetClass>
