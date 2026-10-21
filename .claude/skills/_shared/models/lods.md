@@ -33,7 +33,7 @@ LODs sit in rising resolution order: the visual LODs first, then each special LO
 
 - Numbering starts at `1` in most vanilla models and at `0` in the rest (gear: 375 start at `1`, 132 at `0`; structures: 1,607 at `1`, 934 at `0`). Either works. The audit checks the lowest one as LOD0.
 - Most vanilla gear has three to five visual LODs (four is the most common, 260 of 519 gear models with a visual LOD). Each next LOD is a simpler mesh of the same object.
-- Every visual LOD carries the same named selections: hidden selections (`camo1`, `camoGround` on the wooden case, `P:\DZ\gear\camping\config.cpp:10180`), bones for moving parts and proxies. A selection missing from a lower LOD makes that part vanish or stop moving at a distance.
+- Every visual LOD carries the same named selections: hidden selections (`camoGround` on the wooden case, `P:\DZ\gear\camping\config.cpp:10180`), bones for moving parts and proxies. A selection missing from a lower LOD makes that part vanish or stop moving at a distance.
 
 ## Common LOD sets
 
@@ -63,6 +63,6 @@ What bullets hit. Same rules as Geometry: closed convex components, named the sa
 
 ## View Geometry
 
-What the action cursor and view checks hit. Without it the player gets no action prompt on the object (`p3d-killers.md` section 4). A building door is found from its View Geometry component (`P:\scripts\3_game\entities\building.c:27` to `:28`), so each door needs its own named component here; see `doors.md`.
+What the action cursor and view checks hit. Without it the player gets no action prompt on the object (`p3d-killers.md` section 4). A building door is found from its View Geometry component (`P:\scripts\3_game\entities\building.c:27` to `:28`), so each door needs its own convex component plus a named selection named after the door here; see `doors.md`.
 
 To prove which LOD a fault is in, probe it from script as `_shared/physics/collision-lods.md` shows.
