@@ -179,6 +179,35 @@ def test_pack_index_paths_exist():
         assert (SKILLS_DIR / ref).exists(), f"pack index names missing {ref}"
 
 
+CONVENTIONS = SHARED_DIR / "dayz-conventions.md"
+
+
+def _preflight_exceptions() -> set[str]:
+    """The skills named in Tier 2's 'Exceptions to the preflight gate' list."""
+    text = CONVENTIONS.read_text(encoding="utf-8")
+    block = text.split("Exceptions to the preflight gate", 1)[1].split("Every other skill that does work", 1)[0]
+    return set(re.findall(r"`/(dayz-[a-z0-9-]+)`", block))
+
+
+def test_every_dayz_skill_script_gates_on_preflight_or_is_an_exception():
+    exceptions = _preflight_exceptions()
+    ungated = []
+    for skill in sorted(SKILLS_DIR.glob("dayz-*/")):
+        scripts = [p for p in skill.rglob("*.py") if not p.name.startswith("test_") and "__pycache__" not in p.parts]
+        if not scripts:
+            continue  # a reference or meta skill with no script
+        if any("gate_on_preflight" in p.read_text(encoding="utf-8", errors="replace") for p in scripts):
+            continue
+        if skill.name not in exceptions:
+            ungated.append(skill.name)
+    assert not ungated, f"no gate_on_preflight and no stated exception in {CONVENTIONS.name}: {ungated}"
+
+
+def test_preflight_exceptions_are_real_skills():
+    for name in _preflight_exceptions():
+        assert (SKILLS_DIR / name / "SKILL.md").exists(), f"exception list names unknown skill /{name}"
+
+
 def test_tier_one_files_match():
     texts = {name: (REPO / name).read_text(encoding="utf-8") for name in ("CLAUDE.md", "AGENTS.md", "GEMINI.md")}
     assert len(set(texts.values())) == 1

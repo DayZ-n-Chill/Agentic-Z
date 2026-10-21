@@ -4,6 +4,29 @@
 >
 > **Authority:** This is best-practice for EnScript across DayZ modding. When code in `workspace/` conflicts with this guide, this guide wins unless the user says otherwise.
 
+## Read only the section you need
+
+The guide is long. Find the task below and read that section; you do not need the rest. Facts about vanilla APIs live in the cited references under `_shared/enscript/references/`, not here.
+
+| Task | Section |
+|---|---|
+| Naming a class, method, member, constant or file | Naming Conventions, File Organization |
+| Laying out a class: braces, member order, access | Code Structure |
+| Picking a type, casting, `auto`, containers | Type System |
+| `ref`, `autoptr`, `delete`, lifetime of objects | Memory Management |
+| `if`, loops, `switch`, early returns | Control Flow |
+| `#ifdef`, `#define`, server and client builds | Preprocessor Directives |
+| Writing comments and doc blocks | Comments |
+| `modded class`, overriding vanilla, calling `super` | Modding Patterns |
+| Singletons and globals | Global Variables and Singletons |
+| Getters and setters | Property Access |
+| Saving and loading (`OnStoreSave`, `OnStoreLoad`) | Serialization |
+| Key binds and input | Input Handling |
+| `config.cpp` script modules | Module System |
+| Logging and tracing | Debugging and Tracing |
+| Null checks, guards, error reporting | Error Handling |
+| A review pass over finished code | Best Practices, Common Pitfalls and Issues, Engine traps & production pitfalls |
+
 ## Introduction
 
 EnScript (Enforce Script) is the object-oriented scripting language used by the Enfusion engine in DayZ Standalone. This style guide is based on conventions observed in the official Bohemia Interactive DayZ Script Diff and the DayZ Expansion mod codebase.

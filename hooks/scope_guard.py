@@ -83,7 +83,26 @@ def decide(data: dict, project: Path) -> Optional[str]:
     )
 
 
+def shadowed_by_project() -> bool:
+    """True when this is the plugin copy and the project has its own copy of the hook.
+
+    A clone with the agentic-z plugin enabled wires each hook twice: once from
+    .claude/settings.json and once from the plugin's hooks.json. The plugin
+    copy then steps aside so the project copy runs alone.
+    """
+    project = os.environ.get("CLAUDE_PROJECT_DIR")
+    if not project:
+        return False
+    here = Path(__file__).resolve()
+    root = Path(project).resolve()
+    if here.is_relative_to(root):
+        return False
+    return (root / "hooks" / here.name).is_file()
+
+
 def main() -> int:
+    if shadowed_by_project():
+        return 0
     try:
         data = json.loads(sys.stdin.read() or "{}")
         project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd())

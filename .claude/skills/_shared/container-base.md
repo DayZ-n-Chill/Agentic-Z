@@ -3,15 +3,16 @@
 Tier 3 pack for config work on custom containers (dayz-config-specialist). Tier 2 rules in `dayz-conventions.md` still apply.
 
 Inheriting from `Container_Base` and declaring `scope = 2; model = ...` is
-not enough for the resulting object to (a) take damage, (b) stop bullets,
-or (c) appear as an interactive container. Three common omissions cause
-silent failures:
+not the whole class. Vanilla containers also declare a `class Cargo`, a
+`GlobalArmor` and nested `healthLevels[]`. Copy all three.
 
-### 1. Declare `class Cargo`, even for a non-cargo container
+### 1. Declare `class Cargo`
 
-Some engine builds skip container initialization entirely without it. For
-containers that don't expose player cargo (loot drops via `EEKilled` etc.),
-declare an empty cargo class and mark zero size:
+Vanilla containers declare it next to `DamageSystem`: `Barrel_ColorBase`
+(`P:\DZ\gear\containers\config.cpp:93-98`, `itemsCargoSize[]={10,15}`)
+and `WoodenCrate` (`P:\DZ\gear\camping\config.cpp:10261-10266`). For a
+container that holds no player cargo (loot dropped from `EEKilled` and the
+like), declare it with a zero size:
 
 ```cpp
 class MyMod_FancyContainer : Container_Base
@@ -30,16 +31,16 @@ class MyMod_FancyContainer : Container_Base
 };
 ```
 
-Some builds emit an RPT warning for `itemsCargoSize[] = {0, 0}`. If yours
-does, fall back to extending `Inventory_Base` and removing `class Cargo`
-entirely.
+No vanilla container uses a zero cargo size, so this case is not checked on
+`P:\`. Start a diag session and read the RPT after you add it.
 
-### 2. `class GlobalArmor` for projectile registration
+### 2. `class GlobalArmor` for each damage type
 
-Without an armor declaration the engine may not register impacts of
-projectiles, causing "bullets pass through" even when FireGeometry is
-present. `GlobalArmor` sits inside `class DamageSystem`, next to
-`GlobalHealth`. Its classes are keyed by damage type, the `type` an ammo's
+`GlobalArmor` sets how much of each damage type reaches the object's
+health, blood and shock. It sits inside `class DamageSystem`, next to
+`GlobalHealth`: `Barrel_ColorBase` sets `FragGrenade` there
+(`P:\DZ\gear\containers\config.cpp:74-91`), and the vests set
+`Projectile` (`P:\DZ\characters\vests\config.cpp:114-120`). Its classes are keyed by damage type, the `type` an ammo's
 `class DamageApplied` declares (`Bullet_762x39` declares `type="Projectile"`
 in `DZ\weapons\projectiles\config.cpp:4482-4484`), not by ammo class name.
 Vanilla uses `Projectile`, `Melee`, `FragGrenade` and `Infected`. Each zone

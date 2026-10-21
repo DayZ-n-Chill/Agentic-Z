@@ -38,7 +38,11 @@ async function findRoot($: any, cwd: string): Promise<string | null> {
   const home = (await $.process.run(['cmd', '/c', 'echo %USERPROFILE%'])).stdout.trim()
   const cache = join(home, '.claude', 'plugins', 'cache', 'dayz-n-chill', 'agentic-z')
   if (!(await $.fs.exists(cache))) return null
-  const versions = (await $.fs.list(cache)).filter((v: { kind: string }) => v.kind === 'dir').map((v: { name: string }) => v.name).sort()
+  // Numeric order, so 1.10.0 sorts after 1.9.0.
+  const versions = (await $.fs.list(cache))
+    .filter((v: { kind: string }) => v.kind === 'dir')
+    .map((v: { name: string }) => v.name)
+    .sort((a: string, b: string) => a.localeCompare(b, undefined, { numeric: true }))
   return versions.length ? join(cache, versions[versions.length - 1]) : null
 }
 
@@ -70,7 +74,23 @@ async function refresh($: any, cwd: string): Promise<PanelStatus> {
   return next
 }
 
+// One action at a time: a second press would start a second AddonBuilder run
+// or a second DayZ session beside the first.
 async function runAction($: any, cwd: string, action: string, question?: string) {
+  const running = await read($, busy)
+  if (running) {
+    $.ui.toast(`${running} is still running`)
+    return
+  }
+  await update($, busy, () => action)
+  try {
+    await runNow($, cwd, action, question)
+  } finally {
+    await update($, busy, () => null)
+  }
+}
+
+async function runNow($: any, cwd: string, action: string, question?: string) {
   const current = (await read($, status)) ?? (await refresh($, cwd))
   if (!current.root) {
     $.ui.toast('Agentic-Z not found in this project or the plugin cache.')
@@ -104,7 +124,6 @@ async function runAction($: any, cwd: string, action: string, question?: string)
       argv.push('--mod', current.mod)
     }
   }
-  await update($, busy, () => action)
   let run: PanelRun
   try {
     const result = await $.process.run(argv, { cwd, timeoutMs: 600_000 })
@@ -120,7 +139,6 @@ async function runAction($: any, cwd: string, action: string, question?: string)
     run = { action, ok: false, detail: String(err) }
   }
   await update($, lastRun, () => run)
-  await update($, busy, () => null)
   $.ui.toast(`${action}: ${run.ok ? 'done' : 'failed'}`)
   await refresh($, cwd)
 }

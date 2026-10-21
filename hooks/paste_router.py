@@ -35,7 +35,13 @@ MAX_CONTEXT = 9000  # characters of context added
 WORKSHOP_RE = re.compile(
     r"(?i)(?:https?://)?steamcommunity\.com/(?:sharedfiles|workshop)/filedetails/?\?\S*|steam://url/CommunityFilePage/\d+"
 )
-GITHUB_RE = re.compile(r"(?i)(?:https?://)?(?:www\.)?github\.com/[\w.-]+/[\w.-]*[\w-](?:/tree/[\w.-]*[\w-])?")
+# Only a repo or tree link is a mod to import. The first lookahead keeps the
+# repo name whole; the second skips pull requests, issues, files and the like.
+GITHUB_RE = re.compile(
+    r"(?i)(?:https?://)?(?:www\.)?github\.com/[\w.-]+/[\w.-]*[\w-](?![\w-]|\.[\w-])"
+    r"(?!/(?:pulls?|issues|blob|commits?|releases|actions|compare|discussions)\b)"
+    r"(?:/tree/[\w.-]*[\w-])?"
+)
 FIGMA_RE = re.compile(r"(?i)\bfigma\.com/(?:file|design|proto|board)/\S+")
 TYPE_CHUNK_RE = re.compile(r"<type\s+name\s*=")
 IMAGE_RE = re.compile(r"\[Image #\d+\]")
@@ -145,17 +151,43 @@ def build_context(prompt: str, project: Path) -> Optional[str]:
         parts.append(GITHUB_CONTEXT.format(link=github.group(0)))
     if FIGMA_RE.search(prompt):
         parts.append(FIGMA_CONTEXT)
+    # The types and log detectors load other modules; one failing must not drop the rest.
     if TYPE_CHUNK_RE.search(prompt):
-        parts.append(types_context(prompt))
+        try:
+            parts.append(types_context(prompt))
+        except Exception:
+            pass
     if LOG_RE.search(prompt):
-        parts.append(log_context(prompt, project))
+        try:
+            parts.append(log_context(prompt, project))
+        except Exception:
+            pass
     if IMAGE_RE.search(prompt) or SCREENSHOT_FILE_RE.search(prompt):
         parts.append(SCREENSHOT_CONTEXT)
     text = "\n\n".join(p for p in parts if p)
     return text[:MAX_CONTEXT] or None
 
 
+def shadowed_by_project() -> bool:
+    """True when this is the plugin copy and the project has its own copy of the hook.
+
+    A clone with the agentic-z plugin enabled wires each hook twice: once from
+    .claude/settings.json and once from the plugin's hooks.json. The plugin
+    copy then steps aside so the project copy runs alone.
+    """
+    project = os.environ.get("CLAUDE_PROJECT_DIR")
+    if not project:
+        return False
+    here = Path(__file__).resolve()
+    root = Path(project).resolve()
+    if here.is_relative_to(root):
+        return False
+    return (root / "hooks" / here.name).is_file()
+
+
 def main() -> int:
+    if shadowed_by_project():
+        return 0
     try:
         data = json.loads(sys.stdin.read() or "{}")
         prompt = data.get("prompt") or ""

@@ -22,5 +22,29 @@
   "dayz-object-builder": {
     "score": 5,
     "total": 5
+  },
+  "dayz-ai-specialist": {
+    "score": 5,
+    "total": 5
+  },
+  "dayz-animation-specialist": {
+    "score": 5,
+    "total": 5
+  },
+  "dayz-persistence-specialist": {
+    "score": 5,
+    "total": 5
+  },
+  "dayz-physics-specialist": {
+    "score": 5,
+    "total": 5
+  },
+  "dayz-vehicle-specialist": {
+    "score": 5,
+    "total": 5
+  },
+  "dayz-wearables-specialist": {
+    "score": 5,
+    "total": 5
   }
 }

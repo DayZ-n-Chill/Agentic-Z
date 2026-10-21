@@ -21,6 +21,13 @@ All Enforce Script (`.c`) work follows `.claude/skills/_shared/enscript-style.md
   - `/dayz-workdrive` mounts `P:\`, which is the thing preflight checks.
   - `/dayz-search-download` only downloads a prebuilt index into `~/.claude/`; it never reads or writes `P:\`.
   - `/dayz-ask` only reads vanilla files. It checks that `P:\` is mounted itself and needs none of the rest of preflight.
+  - `/dayz-preflight` is the gate itself.
+  - `/dayz-gate` gates through the scripts it runs: the build gate calls `/dayz-build-pbo` and the game gates call `/dayz-launch-test`, and both gate on preflight.
+  - `/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-upgrade-guard`, `/dayz-recipe` and `/dayz-layout-preview` only read files and write a report. The ones that read `P:\` say so themselves when it is not mounted.
+  - `/dayz-release-pack` and `/dayz-server-kit` only read the mod's own files and write texts or a zip under `output/`.
+  - `/dayz-health` and `/dayz-logwatch` only read gate results and logs.
+  - `/dayz-route` only classifies the text of a request.
+  - `/dayz-statusline` only edits a settings file, and the status line exists to show a broken environment.
 
   Every other skill that does work gates on preflight, including `/dayz-search-index` (it reads vanilla source on `P:\`). A new exception needs a stated reason here.
 - DayZ Tools is installed via Steam (Tools section).

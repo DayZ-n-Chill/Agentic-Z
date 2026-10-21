@@ -5,6 +5,7 @@ index, an API key, or P:\\ mounted.
 """
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -130,8 +131,9 @@ def test_top_k_is_clamped(fake_table):
 def test_missing_index_raises(monkeypatch, tmp_path):
     monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
     monkeypatch.setattr(server, "_table", None)
-    with pytest.raises(RuntimeError, match="dayz-search-index"):
+    with pytest.raises(RuntimeError, match="dayz-search-index") as err:
         server._get_table()
+    assert "/dayz-search-download" in str(err.value)
 
 
 # --------------- answer cache ---------------
@@ -241,15 +243,19 @@ def test_slice_rejects_bad_ranges(start, end):
 # --------------- stale detection ---------------
 
 
-def _fake_path(monkeypatch, mtime=None):
-    """Make server.Path(...).stat() return the given mtime, or raise if None."""
+def _fake_path(monkeypatch, mtime=None, content=b"class A {};", hashes=None):
+    """Make server.Path(...).stat() return the given mtime, or raise if None.
+
+    The file's bytes are `content`; `hashes` is the indexer's recorded map (none by default).
+    """
 
     def stat():
         if mtime is None:
             raise FileNotFoundError("gone")
         return SimpleNamespace(st_mtime=mtime)
 
-    monkeypatch.setattr(server, "Path", lambda _p: SimpleNamespace(stat=stat))
+    monkeypatch.setattr(server, "Path", lambda _p: SimpleNamespace(stat=stat, read_bytes=lambda: content))
+    monkeypatch.setattr(server, "_get_file_hashes", lambda: hashes or {})
 
 
 def test_non_local_paths_are_never_stale():
@@ -260,6 +266,33 @@ def test_file_newer_than_index_is_stale(monkeypatch):
     monkeypatch.setattr(server, "_get_index_built_at", lambda: 100.0)
     _fake_path(monkeypatch, mtime=200.0)
     assert server._check_stale(r"P:\scripts\a.c") == (True, "modified")
+
+
+def test_newer_file_with_the_indexed_content_is_fresh(monkeypatch):
+    """A re-extracted P:\\ gives every file a new mtime; unchanged content is not stale."""
+    monkeypatch.setattr(server, "_get_index_built_at", lambda: 100.0)
+    digest = hashlib.sha256(b"class A {};").hexdigest()
+    _fake_path(monkeypatch, mtime=200.0, hashes={r"P:\scripts\a.c": digest})
+    assert server._check_stale(r"P:\scripts\a.c") == (False, None)
+
+
+def test_newer_file_with_changed_content_is_stale(monkeypatch):
+    monkeypatch.setattr(server, "_get_index_built_at", lambda: 100.0)
+    digest = hashlib.sha256(b"class A {};").hexdigest()
+    _fake_path(monkeypatch, mtime=200.0, content=b"class B {};", hashes={r"P:\scripts\a.c": digest})
+    assert server._check_stale(r"P:\scripts\a.c") == (True, "modified")
+
+
+def test_file_hashes_load_from_the_index_and_reset_on_rebuild(monkeypatch, tmp_path):
+    monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
+    monkeypatch.setattr(server, "_file_hashes", None)
+    monkeypatch.setattr(server, "_manifest_stamp", None)
+    assert server._get_file_hashes() == {}  # an index built before hashes existed
+    (tmp_path / "file_hashes.json").write_text(json.dumps({"P:\\a.c": "ab"}), encoding="utf-8")
+    assert server._get_file_hashes() == {}  # cached until the index changes
+    _write_manifest(tmp_path, 1, 1_000)
+    server._sync_with_index()
+    assert server._get_file_hashes() == {"P:\\a.c": "ab"}
 
 
 def test_file_older_than_index_is_fresh(monkeypatch):

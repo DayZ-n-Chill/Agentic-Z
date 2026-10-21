@@ -19,6 +19,7 @@ Manual use: python hooks/edit_check.py --file <path>   (prints problems, exit 1)
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -492,6 +493,23 @@ def format_reason(path: Path, problems: list[Problem]) -> str:
     return "\n".join(lines)
 
 
+def shadowed_by_project() -> bool:
+    """True when this is the plugin copy and the project has its own copy of the hook.
+
+    A clone with the agentic-z plugin enabled wires each hook twice: once from
+    .claude/settings.json and once from the plugin's hooks.json. The plugin
+    copy then steps aside so the project copy runs alone.
+    """
+    project = os.environ.get("CLAUDE_PROJECT_DIR")
+    if not project:
+        return False
+    here = Path(__file__).resolve()
+    root = Path(project).resolve()
+    if here.is_relative_to(root):
+        return False
+    return (root / "hooks" / here.name).is_file()
+
+
 def main(argv: list[str]) -> int:
     if len(argv) == 2 and argv[0] == "--file":
         path = Path(argv[1])
@@ -499,6 +517,8 @@ def main(argv: list[str]) -> int:
         if problems:
             print(format_reason(path, problems))
             return 1
+        return 0
+    if shadowed_by_project():
         return 0
     try:
         data = json.loads(sys.stdin.read() or "{}")

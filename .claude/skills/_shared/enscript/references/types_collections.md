@@ -1,6 +1,6 @@
 # Reference: Core Types and Collections
 
-Quick examples. The checked reference with vanilla line citations is `language_types.md`.
+Quick examples. Every method below was checked against its declaration on `P:\scripts\1_core\proto\` (the file and first line are given under each block). The longer reference is `language_types.md`.
 
 ## Primitive Types
 
@@ -42,6 +42,8 @@ s.Split(",", parts);                      // parts = ["Hello", " World!"]
 if (s.IndexOf("World") != -1) { }
 ```
 
+Declared in `P:\scripts\1_core\proto\enstring.c`: `ToInt` `:20`, `ToFloat` `:46`, `Substring` `:113`, `Replace` `:156`, `ToLower` `:171`, `ToUpper` `:186`, `Length` `:199`, `IndexOf` `:240`, `LastIndexOf` `:253`, `IndexOfFrom` `:271`, `Contains` `:286`, `Trim` `:304`, `Split` `:396`, `Format` `:526`.
+
 ---
 
 ## array\<T\>
@@ -69,6 +71,8 @@ foreach (string item : arr)
 int i = arr.Find("a");
 ```
 
+`class array<Class T>` is `P:\scripts\1_core\proto\enscript.c:374`: `Count` `:380`, `Clear` `:385`, `Set` `:389`, `Find` `:394`, `Get` `:399`, `Insert` `:407`, `InsertAt` `:418`, `Remove` `:463` (vanilla: "the empty position is replaced by last element", `:458` to `:459`), `RemoveOrdered` `:470`, `Sort(bool reverse = false)` `:493`, `Copy(from)` `:499` (copies `from` into this array), `RemoveItem` `:502`.
+
 ---
 
 ## map\<K, V\>
@@ -93,6 +97,8 @@ for (int i = 0; i < scores.Count(); i++)
 }
 ```
 
+`class map<Class TKey,Class TValue>` is `P:\scripts\1_core\proto\enscript.c:846`: `Get` `:866`, `GetElement` `:887`, `GetKey` `:897`, `Set` `:902`, `Remove(key)` `:906`, `Contains` `:917`.
+
 ---
 
 ## set\<T\>
@@ -105,6 +111,8 @@ bool has = seen.Find("item_a") != -1;   // set has no Contains
 seen.RemoveItem("item_a");              // Remove(i) takes an index
 int cnt = seen.Count();
 ```
+
+`class set<Class T>` is `P:\scripts\1_core\proto\enscript.c:741`: `Find` `:749`, `Insert` `:758`, `Remove(index)` `:775`, `RemoveItem` `:790`. It declares no `Contains`.
 
 ---
 
@@ -126,6 +134,8 @@ float len    = pos.Length();
 float yaw    = dir.VectorToYaw();
 ```
 
+`class vector` is `P:\scripts\1_core\proto\enconvert.c:118`: `Normalized` `:156`, `Length` `:169`, `Distance` `:196`, `DistanceSq` `:210`, `Cross` `:239` (an instance method), `Direction` `:254`, `Dot` `:305`, `VectorToYaw` `:345`.
+
 ---
 
 ## Math API (Math class)
@@ -146,6 +156,8 @@ float t = Math.Sqrt(9);            // 3
 float pi = Math.PI;
 ```
 
+Declared in `P:\scripts\1_core\proto\enmath.c`: `PI` `:12`, `DEG2RAD` `:17`, `RandomInt` `:38` (vanilla: "Range ends [exclusive]", `:28`), `RandomFloat` `:91`, `Pow` `:183`, `AbsFloat` `:225`, `AbsInt` `:237`, `Sqrt` `:305`, `Sin` `:331`, `Round` `:413`, `Floor` `:427`, `Ceil` `:441`, `Clamp` `:540`, `Min` `:553`, `Max` `:566`, `Lerp` `:608`, `InverseLerp` `:622`.
+
 ---
 
 ## ⚠️ `string.ToLower()` / `ToUpper()` mutate in place
@@ -163,7 +175,7 @@ string lower = original + "";
 lower.ToLower();
 ```
 
-The `+ ""` forces an allocation; assignment alone (`string lower = original;`) shares the underlying string in some engine versions and ToLower will mutate both names.
+Reported, not checked on `P:\`: plain assignment (`string lower = original;`) can share the underlying string, so `ToLower` on the copy changes both names. Copying with `+ ""` avoids the question.
 
 ---
 
@@ -173,16 +185,18 @@ Counters outdated wiki/forum claims:
 
 | API | Verified location |
 |---|---|
-| `Math.Clamp(val, min, max)` | `P:\scripts\1_core\proto\enmath.c` |
-| `Math.Min`, `Math.Max`, `Math.Sqrt`, `Math.Pow` | same |
-| `string.IndexOfFrom(startPos, search)` | `P:\scripts\1_core\proto\enstring.c` |
-| `string.LastIndexOf`, `string.Hash`, `string.Replace` | same |
+| `Math.Clamp(val, min, max)` | `P:\scripts\1_core\proto\enmath.c:540` |
+| `Math.Min`, `Math.Max`, `Math.Sqrt`, `Math.Pow` | `:553`, `:566`, `:305`, `:183` |
+| `string.IndexOfFrom(startPos, search)` | `P:\scripts\1_core\proto\enstring.c:271` |
+| `string.LastIndexOf`, `string.Hash`, `string.Replace` | `:253`, `:223`, `:156` |
 
 If older modding guides say *"you need to write a custom Clamp"* — they're stale.
 
 ---
 
-## ⚠️ `int.MIN` comparison quirk
+## Reported: `int.MIN` comparison quirk
+
+`int.MIN` is `-2147483648` (`P:\scripts\1_core\proto\enconvert.c:28`). The comparison result below is reported by modders and not checked on `P:\`:
 
 ```c
 // int.MIN = -2147483648

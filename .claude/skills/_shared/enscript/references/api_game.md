@@ -1,6 +1,6 @@
 # Reference: the game object, side checks, config and logging
 
-`GetGame()` and the calls a mod makes on it most: which side the code runs on, time, the mission, the world, config reads and logging. Facts cite the vanilla file on `P:\scripts\` they were checked against (game storage version 144, `P:\scripts\3_game\global\game.c:5`). The older `game_api.md` holds extra tips that are not yet checked line by line.
+`GetGame()` and the calls a mod makes on it most: which side the code runs on, time, the mission, the world, config reads and logging. Facts cite the vanilla file on `P:\scripts\` they were checked against (game storage version 144, `P:\scripts\3_game\global\game.c:5`).
 
 ## Getting the game
 
@@ -38,6 +38,17 @@ Use `IsServer()` for authority work so it also runs in single player. Use `IsDed
 - `SurfaceY(x, z)` is the terrain height and `SurfaceRoadY(x, z)` includes roads and surfaces on top (`:1176`, `:1177`).
 - `GetObjectsAtPosition(pos, radius, out objects, out proxyCargos)` and its 3D form find nearby objects (`:923`, `:930`). They are slow; the style guide says to avoid them (`_shared/enscript-style.md`).
 - `GetObjectByNetworkId(low, high)` finds an object from its two network ID halves (`:356`).
+
+## World to screen
+
+`GetScreenPos(worldPos)` returns the screen position in pixels as `x` and `y`, and in `z` the distance between the camera and the point (`P:\scripts\3_game\global\game.c:962` to `:963`). A point behind the camera still gets an `x` and `y`, so check `z` before you place a marker. Vanilla shows its debug labels only when `z > 0` (`P:\scripts\4_world\plugins\pluginbase\plugindeveloper\pluginuniversaltemperaturesourceclient.c:163` to `:167`).
+
+```c
+vector screen = g_Game.GetScreenPos(targetPos);
+m_Marker.Show(screen[2] > 0);
+if (screen[2] > 0)
+    m_Marker.SetPos(screen[0], screen[1]);
+```
 
 ## Players
 

@@ -1,6 +1,6 @@
 # Reference: players, identities and player state
 
-Finding players, telling them apart, the connect hooks in `MissionServer`, and reading health and stats. Facts cite the vanilla file on `P:\scripts\` they were checked against (game storage version 144, `P:\scripts\3_game\global\game.c:5`). The older `player_api.md` lists more `PlayerBase` helpers that are not yet checked line by line.
+Finding players, telling them apart, the connect hooks in `MissionServer`, and reading health and stats. Facts cite the vanilla file on `P:\scripts\` they were checked against (game storage version 144, `P:\scripts\3_game\global\game.c:5`).
 
 ## Classes
 

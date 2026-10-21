@@ -24,13 +24,17 @@ BASELINE = REPO / "evals" / "baseline.json"
 AGENTS_DIR = REPO / ".claude" / "agents"
 RESULTS_DIR = REPO / "output" / "evals"
 
-# The agent answers with read-only tools only, so an eval run never edits the repo.
+# --allowedTools only grants these without a prompt; it does not take the other
+# tools away. The agent keeps its own tools (Edit and Write for the specialists)
+# and the project's allow rules, so the editing and shell tools are also
+# removed with --disallowedTools. Then an eval run cannot edit the repo.
 READ_ONLY_TOOLS = [
     "Read", "Glob", "Grep",
     "mcp__dayz-rag__search_dayz_source", "mcp__plugin_agentic-z_dayz-rag__search_dayz_source",
     "mcp__dayz-rag__get_dayz_file", "mcp__plugin_agentic-z_dayz-rag__get_dayz_file",
     "mcp__dayz-rag__list_indexed_sources", "mcp__plugin_agentic-z_dayz-rag__list_indexed_sources",
 ]
+DENIED_TOOLS = ["Edit", "Write", "MultiEdit", "NotebookEdit", "Bash", "PowerShell"]
 
 REGEX_PREFIX = "re:"
 
@@ -116,14 +120,22 @@ def load_suites(agents: list[str] | None) -> tuple[list[dict], list[str]]:
     return suites, problems
 
 
+def build_command(exe: str, agent: str, model: str | None = None) -> list[str]:
+    """The claude command line for one question: read-only tools, editing and shell tools removed."""
+    cmd = [exe, "-p", "--agent", agent,
+           "--allowedTools", ",".join(READ_ONLY_TOOLS),
+           "--disallowedTools", ",".join(DENIED_TOOLS)]
+    if model:
+        cmd += ["--model", model]
+    return cmd
+
+
 def ask(agent: str, question: str, timeout: int, model: str | None = None) -> str:
     """Ask one agent one question through the Claude Code CLI and return its answer."""
     exe = shutil.which("claude")
     if not exe:
         raise RuntimeError("claude CLI not found on PATH")
-    cmd = [exe, "-p", "--agent", agent, "--allowedTools", ",".join(READ_ONLY_TOOLS)]
-    if model:
-        cmd += ["--model", model]
+    cmd = build_command(exe, agent, model)
     # The question goes in on stdin so Windows quoting never mangles code snippets.
     proc = subprocess.run(cmd, input=question, capture_output=True, text=True, encoding="utf-8",
                           timeout=timeout, cwd=REPO)
@@ -153,12 +165,19 @@ def run(suites: list[dict], timeout: int, model: str | None = None) -> dict:
     return results
 
 
-def compare(results: dict, baseline: dict) -> list[str]:
-    """List every agent whose score fell below its baseline."""
+def compare(results: dict, baseline: dict, require_baseline: bool = False) -> list[str]:
+    """List every agent whose score fell below its baseline.
+
+    With require_baseline (the --baseline check), an agent with no baseline
+    entry is listed too, since a drop could never be caught for it.
+    """
     drops = []
     for agent, entry in results["agents"].items():
         before = baseline.get(agent, {}).get("score")
-        if before is not None and entry["score"] < before:
+        if before is None:
+            if require_baseline:
+                drops.append(f"{agent}: no baseline entry; record one with --update-baseline")
+        elif entry["score"] < before:
             drops.append(f"{agent}: {entry['score']}/{entry['total']} is below the baseline {before}")
     return drops
 
@@ -203,7 +222,7 @@ def main(argv: list[str] | None = None) -> int:
     code = 0
     if args.baseline:
         baseline = json.loads(BASELINE.read_text(encoding="utf-8")) if BASELINE.exists() else {}
-        drops = compare(results, baseline)
+        drops = compare(results, baseline, require_baseline=True)
         for d in drops:
             print(f"REGRESSION {d}", file=sys.stderr)
         code = 1 if drops else 0
