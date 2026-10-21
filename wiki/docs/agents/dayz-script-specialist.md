@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Script worker for DayZ Enforce Script mod code: `modded class` overrides, new item and action classes, RPCs, net sync, persistence and mission hooks. Use for the script lead's game-logic tasks. Log diagnosis goes to dayz-mod-debugger and UI scripts to dayz-ui-specialist.
+Script worker for DayZ Enforce Script mod code: `modded class` overrides, new item and action classes, RPCs, net sync and mission hooks. Use for the script lead's game-logic tasks. Log diagnosis goes to dayz-mod-debugger, UI scripts to dayz-ui-specialist, saving data to dayz-persistence-specialist, and infected, animal and patrol behavior to dayz-ai-specialist.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -45,6 +45,9 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 - Errors in `script.log` or RPT files: dayz-mod-debugger diagnoses them; you fix what it routes to you.
 - `P:\scripts\3_game\colors.c`, `P:\scripts\5_mission\gui\`, and any HUD, menu or color work: dayz-ui-specialist.
 - `config.cpp` entries your classes need: dayz-config-specialist, through the script lead.
+- Data that must survive a restart (`OnStoreSave`, `OnStoreLoad`, save versions, base building saves): dayz-persistence-specialist, through the script lead.
+- Infected, animal and human AI behavior: dayz-ai-specialist, through the script lead.
+- Sound and particle playback: dayz-audio-fx-specialist. Vehicle script classes: dayz-vehicle-specialist. Animation hooks come from dayz-animation-specialist, and you write the code it names.
 
 ## Report
 

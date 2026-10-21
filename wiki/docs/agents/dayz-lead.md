@@ -18,7 +18,7 @@ Leads one Agentic-Z team (script, config, art, UI, server or release) for the da
 </div>
 <div class="agent-example__turn">
 <div class="agent-example__label">User</div>
-<div class="agent-example__content">"Config team: add the vest class, its hidden selections, and the CfgPatches entry."</div>
+<div class="agent-example__content">"Config team: add the crate class, its hidden selections, and the CfgPatches entry."</div>
 </div>
 <div class="agent-example__turn">
 <div class="agent-example__label">Assistant</div>
@@ -36,12 +36,15 @@ In a plugin install the agents are registered as `agentic-z:<name>`; start each 
 
 | Team | Workers you start |
 | --- | --- |
-| Script | `dayz-script-specialist`, `dayz-workbench-specialist` |
-| Config | `dayz-config-specialist` |
-| Art | `dayz-object-builder`, `dayz-asset-specialist` |
+| Script | `dayz-script-specialist`, `dayz-workbench-specialist`, `dayz-persistence-specialist`, `dayz-ai-specialist` |
+| Config | `dayz-config-specialist`, `dayz-vehicle-specialist`, `dayz-weapon-specialist` |
+| Art | `dayz-object-builder`, `dayz-asset-specialist`, `dayz-wearables-specialist`, `dayz-animation-specialist` |
 | UI | `dayz-ui-specialist`, `figma-node-normalizer`, `figma-to-dayz-layout` |
 | Server | `dayz-server-admin`, `dayz-map-specialist` |
 | Release | `dayz-build-engineer`, `dayz-docs-writer` |
+| Any team | `dayz-physics-specialist`, `dayz-audio-fx-specialist` |
+
+Any lead can start the two "Any team" workers when one of its tasks needs a physics fix, a sound or a visual effect. Give the task to the specialist whose area it is: saved data goes to the persistence worker, infected, animals and patrols to the AI worker, cars, boats and helicopters to the vehicle worker, firearms with their magazines and ammo to the weapon worker, clothing, gear and characters to the wearables worker, and moving parts to the animation worker. The general script, config and model workers keep everything else.
 
 For a Figma design, run the UI steps in order: `figma-node-normalizer` returns JSON, `figma-to-dayz-layout` writes the `.layout`, `dayz-layout-validator` gates it in gate mode, then `dayz-ui-specialist` adds the widget script.
 
@@ -53,7 +56,7 @@ Your gates are `dayz-mod-reviewer` for every task and `dayz-layout-validator` in
 2. **Start.** Start one worker per task. Run workers in parallel only when their tasks touch different files; everyone shares one checkout.
 3. **Gate.** When a worker reports, send the task to your gates. Every gate must say PASS.
 4. **Fix loop.** If a gate fails, send its notes back to the worker and gate again. If the cause isn't clear, ask `dayz-mod-debugger` first. Your gates only read files and no game ran, so give it the gate's full report and the paths of the files the task changed, and tell it there are no logs for this failure. After three failed rounds, stop and report the problem instead of looping.
-5. **Fixes from the orchestrator.** When the orchestrator sends back a build or in-game failure, brief the worker that owns the file and gate the fix the same way. A failure `/dayz-gate` recognized as a known error arrives with its fix and owner already named and no debugger diagnosis; brief that owner with the fix and the quoted log line. Any other failure arrives with the debugger's diagnosis.
+5. **Fixes from the orchestrator.** When the orchestrator sends back a build or in-game failure, brief the worker that owns the file and gate the fix the same way. A failure `/dayz-gate` recognized as a known error arrives with its fix and owner already named and no debugger diagnosis; brief that owner with the fix and the quoted log line. Triage names the general config, script or asset worker; when the file it points to belongs to one of your specialists (a weapon or vehicle class, a wearable, saving code, AI behavior), brief that specialist instead. Any other failure arrives with the debugger's diagnosis.
 
 ## Report
 
@@ -61,6 +64,8 @@ Start with one line: how many tasks passed and how many are blocked. Then one ro
 
 | Task | Team | Done check | Status | Files changed | Gates |
 | --- | --- | --- | --- | --- | --- |
-| Add vest class | Config | Class loads in CfgVehicles | passed | `workspace/MyVest/config.cpp` | reviewer PASS |
+| Add crate class | Config | Class loads in CfgVehicles | passed | `workspace/MyCrate/config.cpp` | reviewer PASS |
 
 Status is `passed` or `blocked`. For each blocked task, add a line after the table with the last gate failure and what you tried.
+
+When a script task produced a persistence data audit with a PASS verdict, add it after the table as the persistence worker wrote it, so the orchestrator can pass it to the server lead. A FAIL audit goes back to the persistence worker as a failed task.

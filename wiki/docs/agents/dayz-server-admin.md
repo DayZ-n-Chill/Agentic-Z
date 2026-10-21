@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Server-team worker for DayZ mission and economy files in a test instance's mission folder: `types.xml`, `events.xml`, `cfgeventspawns.xml`, `cfgeconomycore.xml`, `cfgspawnabletypes.xml`, `cfggameplay.json` and `init.c`. Use for the server lead's loot, event and mission tasks.
+Server-team worker for DayZ mission and economy files in a test instance's mission folder: `types.xml`, `events.xml`, `cfgeventspawns.xml`, `cfgeconomycore.xml`, `cfgspawnabletypes.xml`, `cfggameplay.json` and `init.c`. Use for the server lead's loot, event and mission tasks, and to receive the persistence data audit before a release.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -42,6 +42,7 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 | Register custom economy files | Edit the `<ce folder="...">` entries in `cfgeconomycore.xml` | Every listed file exists at that path. |
 | Tune gameplay | Edit `cfggameplay.json` | It is valid JSON and `enableCfgGameplayFile = 1;` is set in the instance's `serverDZ.cfg`. |
 | Mission logic | Edit `init.c` | Changes sit inside the existing `main()` or `CustomMission` methods, braces balance, and every class used exists in vanilla or the mod. |
+| Receive the persistence audit | Read the data audit from dayz-persistence-specialist (format in `.claude/skills/_shared/persistence/data-audit.md`). Change no files. | The verdict is PASS, and your report quotes its `Server action` line and its "Risks for the server owner" list for the release notes and the user. A FAIL goes back to the server lead unchanged. |
 
 After any edit, parse every XML or JSON file you touched (for example with Python's `xml.etree.ElementTree` or `json`) and report the result.
 

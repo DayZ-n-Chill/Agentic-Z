@@ -235,7 +235,7 @@ L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](../.claude/skills
 
 ## DayZ agents
 
-The 22 agents live under `.claude/agents/`. The mod team runs a whole mod; the specialists also take single tasks directly.
+The 30 agents live under `.claude/agents/`. The mod team runs a whole mod; the specialists also take single tasks directly.
 
 | Agent | Focus |
 |---|---|
@@ -248,7 +248,7 @@ The 22 agents live under `.claude/agents/`. The mod team runs a whole mod; the s
 | `dayz-build-engineer` | Builds, launches test sessions and deploys after your yes |
 | `dayz-docs-writer` | Keeps the mod's README, changelog and classname list current |
 | `dayz-asset-specialist` | `.p3d` / `.paa` / `.rvmat` and Workbench asset integration |
-| `dayz-config-specialist` | `config.cpp`, CfgPatches, CfgVehicles, CfgWeapons, hidden selections |
+| `dayz-config-specialist` | `config.cpp`, CfgPatches, CfgVehicles, inheritance, hidden selections |
 | `dayz-map-specialist` | Terrain Builder, DayZ Editor, map objects, clutter, surfaces |
 | `dayz-mod-debugger` | Log/RPT/crash analysis, BattlEye diagnosis, performance profiling |
 | `dayz-mod-reviewer` | Audit `workspace/<ModName>/` for convention compliance; routes findings to the right specialist |
@@ -257,6 +257,14 @@ The 22 agents live under `.claude/agents/`. The mod team runs a whole mod; the s
 | `dayz-server-admin` | `types.xml`, `init.c`, `cfggameplay.json`, server performance |
 | `dayz-ui-specialist` | `.layout` files, widget scripting, HUD/menu, UI theme/color |
 | `dayz-workbench-specialist` | Workbench plugin development (editor-time tooling) |
+| `dayz-persistence-specialist` | Data that survives a server restart: save and load code, save versions, base building, the data audit before release |
+| `dayz-ai-specialist` | Infected, animals and human AI such as patrols and guards |
+| `dayz-vehicle-specialist` | Cars, boats and helicopters |
+| `dayz-weapon-specialist` | Weapons, magazines, ammo, attachments, recoil and fire modes |
+| `dayz-wearables-specialist` | Clothing, characters, inventory slots, protection, color variants and proxies |
+| `dayz-animation-specialist` | `model.cfg` animations, RTM files and the Blender handoff |
+| `dayz-audio-fx-specialist` | Sound shaders, sound sets and particle effects; any lead can call it |
+| `dayz-physics-specialist` | Weight, collision LODs, dropping, throwing and contact; any lead can call it |
 | `figma-node-normalizer` | Cleans a Figma frame so it can be converted |
 | `figma-to-dayz-layout` | Turns a cleaned Figma frame into a DayZ `.layout` |
 | `dayz-layout-validator` | Checks and cleans generated `.layout` files; the UI gate |

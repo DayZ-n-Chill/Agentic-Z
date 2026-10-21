@@ -125,6 +125,41 @@ Front index: `_shared/persistence/README.md`. Written for `dayz-persistence-spec
 | `_shared/persistence/base-building.md` | Part ID bit masks, the `Construction` config, territory flag and lock saves. |
 | `_shared/persistence/data-audit.md` | The pre release data loss audit and its report format for the server lead. |
 
+### Vehicle pack (`_shared/vehicles`)
+
+Front index: `_shared/vehicles/README.md`. Loaded by dayz-vehicle-specialist and by any worker that checks a vehicle.
+
+| File | Purpose |
+|---|---|
+| `_shared/vehicles/class-hierarchy.md` | Config and script parents for cars, boats and helicopters, addons to require, mandatory overrides. |
+| `_shared/vehicles/simulation.md` | `SimulationModule` keys for engine, gearbox, axles, suspension, wheels and boat propeller. |
+| `_shared/vehicles/attachments-and-crew.md` | `attachments[]`, `CfgSlots`, door and wheel parts, inventory groups, crew seats, door states. |
+| `_shared/vehicles/fluids-and-engine.md` | Fluid config keys and script calls, engine start rules, vital parts. |
+| `_shared/vehicles/damage.md` | `DamageSystem` zones, zone names script reads, crash and crew damage. |
+| `_shared/vehicles/helicopters.md` | What vanilla ships for helicopters and what a mod must write. |
+
+### Audio and effects pack (`_shared/audio-fx`)
+
+Front index: `_shared/audio-fx/README.md`. Used by `dayz-audio-fx-specialist` and any lead that needs a sound or an effect.
+
+| File | Purpose |
+|---|---|
+| `_shared/audio-fx/sound-config.md` | `CfgSoundShaders` and `CfgSoundSets`: samples, volume, range, curves, looping, `CfgPatches`. |
+| `_shared/audio-fx/sound-script.md` | Playing, looping, fading and stopping sound sets from script; cleanup; server triggers. |
+| `_shared/audio-fx/effects-wiring.md` | Sound plus particle on one device, and config hooks for weapon and item sounds and particles. |
+
+### AI pack (`_shared/ai`)
+
+Front index: `_shared/ai/README.md`. Main user: `dayz-ai-specialist`.
+
+| File | Purpose |
+|---|---|
+| `_shared/ai/creatures.md` | Infected and animal classes, commands, the command handler order, mod hooks, input controllers, mind states, attacks. |
+| `_shared/ai/behaviour-config.md` | `CfgAIBehaviours` templates, `aiAgentTemplate`, alert, vision and noise tuning, making a variant. |
+| `_shared/ai/perception.md` | Noise system, player visibility, reacting to gunfire. |
+| `_shared/ai/patrols-and-guards.md` | AI world, groups, navmesh paths, waypoint patrols, steering, and the limits of human AI. |
+| `_shared/ai/spawning-and-performance.md` | Spawn flags, Central Economy handoff to the server lead, server performance rules. |
+
 ### Skill packs (`references/`)
 
 | Folder or file | Purpose |

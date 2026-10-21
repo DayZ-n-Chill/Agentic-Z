@@ -51,6 +51,17 @@ def decide(text, env=NO_KEY):
         ("update the README and changelog for MyVest", "dayz-docs-writer", None),
         ("turn https://www.figma.com/design/abc123/Trader?node-id=10-42 into a .layout", "figma-node-normalizer", None),
         ("build this Figma frame as my HUD", "figma-node-normalizer", None),
+        ("add a CfgWeapons class", "dayz-weapon-specialist", None),
+        # A rule that names a file, a log or a tool keeps winning when the request also names an object.
+        ("My car crashes the server, here is the RPT.", "dayz-mod-debugger", None),
+        ("Make my rifle spawn rarely in military zones.", "dayz-server-admin", None),
+        ("zombies spawn too much in types.xml", "dayz-server-admin", None),
+        ("launch a test with my car", "dayz-launch-test", None),
+        ("write a modded class for my rifle", "dayz-script-specialist", None),
+        # Saved data and AI belong to their own specialists even when the request says modded class.
+        ("write a modded class so my safe keeps its code after a restart", "dayz-persistence-specialist", None),
+        ("write a modded class so my zombies patrol the town", "dayz-ai-specialist", None),
+        ("review my vehicle mod", "dayz-mod-reviewer", None),
     ],
 )
 def test_rules_route_confidently(text, expected, args):
@@ -62,6 +73,46 @@ def test_rules_route_confidently(text, expected, args):
     assert d.get("args") == args
 
 
+# The sample requests the Agentic-Z guide gives for each specialist, short and long forms.
+GUIDE_SAMPLES = [
+    ("Make my safe keep its code and contents after a restart.", "dayz-persistence-specialist"),
+    ("Make my safe keep its code and contents after a restart, and do not break saves from the last version.",
+     "dayz-persistence-specialist"),
+    ("Add guards that patrol my base and react to gunfire.", "dayz-ai-specialist"),
+    ("Add a patrol of guards that walk a route around my military base and react to gunfire.", "dayz-ai-specialist"),
+    ("Add a four door pickup with a bigger fuel tank.", "dayz-vehicle-specialist"),
+    ("Add a four door pickup with its own doors and a bigger fuel tank.", "dayz-vehicle-specialist"),
+    ("Add a hunting rifle that takes a five round magazine.", "dayz-weapon-specialist"),
+    ("Add a scoped hunting rifle that takes a five round magazine and the vanilla long range optics.",
+     "dayz-weapon-specialist"),
+    ("Make a plate carrier in three colors.", "dayz-wearables-specialist"),
+    ("Make a plate carrier with three colors that fits the vest slot and holds six items.", "dayz-wearables-specialist"),
+    ("Make my bunker doors open and close.", "dayz-animation-specialist"),
+    ("Make the doors on my bunker open and close when a player uses them.", "dayz-animation-specialist"),
+    ("Give my generator a running sound and exhaust smoke.", "dayz-audio-fx-specialist"),
+    ("Give my generator a running sound that fades with distance and a puff of exhaust smoke.",
+     "dayz-audio-fx-specialist"),
+    ("My crate falls through the floor. Fix it.", "dayz-physics-specialist"),
+    ("My crate falls through the floor when I drop it. Fix it.", "dayz-physics-specialist"),
+]
+
+
+@pytest.mark.parametrize("text, expected", GUIDE_SAMPLES)
+def test_guide_samples_reach_their_specialist(text, expected):
+    d = decide(text)
+    assert d["route"] == expected
+    assert d["kind"] == "agent"
+    assert d["confidence"] >= CFG["threshold"]
+
+
+@pytest.mark.parametrize("text", ["add guards that spawn at my base and patrol it",
+                                  "add a helicopter that spawns at the airfield"])
+def test_spawn_alone_is_not_server_admin(text):
+    d = decide(text)
+    assert d["route"] != "dayz-server-admin"
+    assert d["route"] in {"dayz-ai-specialist", "dayz-vehicle-specialist", None}
+
+
 def test_orchestrator_is_a_team():
     assert decide("build me a vest mod")["kind"] == "team"
 
@@ -71,7 +122,8 @@ def test_build_me_is_not_a_pbo_build(text):
     assert decide(text)["route"] != "dayz-build-pbo"
 
 
-@pytest.mark.parametrize("text", ["build MyVest and then launch the test server", "what should I do next?"])
+@pytest.mark.parametrize("text", ["build MyVest and then launch the test server", "what should I do next?",
+                                  "fix the throw action script"])
 def test_multi_step_or_unknown_falls_through(text):
     d = decide(text)
     assert d == {"route": None, "next": "dayz-router", "note": d["note"]}

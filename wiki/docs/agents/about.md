@@ -6,7 +6,7 @@ title: About the Agents
 
 # About the Agents
 
-Agentic-Z ships with 22 agents. Each one owns a slice of the DayZ stack and has its own model, color, and judgment style. You don't need to memorize the roster: ask a question, and the right specialist picks itself up.
+Agentic-Z ships with 30 agents. Each one owns a slice of the DayZ stack and has its own model, color, and judgment style. You don't need to memorize the roster: ask a question, and the right specialist picks itself up.
 
 :::warning[These are default starter agents]
 
@@ -23,6 +23,7 @@ A specialist AI persona with a focused domain. Every agent reads the L1 default 
 - **Scripting & diagnosis** handle Enforce Script logic and crash forensics. They run on Opus for deep reasoning.
 - **Content & assets** handle `config.cpp`, `.p3d` models, `.paa` textures, `.rvmat` materials, maps, and UI. They run on Sonnet because the work is pattern-driven.
 - **Server & tooling** cover `types.xml`, `init.c`, server tuning, and Workbench plugin development. Sonnet handles the config-shaped work cleanly.
+- **Mod part specialists** cover saving data, AI, vehicles, weapons, wearables, animation, audio and effects, and physics. Each works under a team lead, and the physics and audio and effects specialists work for any lead.
 - **Meta agents** maintain the toolkit itself: pre-build mod review, wiki sync, scaffolding new agent definitions.
 
 ## Picking an agent

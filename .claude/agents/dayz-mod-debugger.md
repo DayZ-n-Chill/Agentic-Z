@@ -33,7 +33,7 @@ Read the triage first. A `/dayz-gate` report lists each failure with its log fil
 
 ## Who fixes what
 
-Name the owner in full: `dayz-script-specialist` for `.c` files, `dayz-config-specialist` for `config.cpp`, `dayz-asset-specialist` for textures and materials, `dayz-object-builder` for `.p3d` models, `dayz-ui-specialist` for layouts and widget scripts, `dayz-server-admin` for `types.xml` and server files, `dayz-map-specialist` for terrain files under `worlds/`, `dayz-workbench-specialist` for Workbench plugins, `dayz-docs-writer` for the README and changelog.
+Name the owner in full: `dayz-script-specialist` for `.c` files, `dayz-config-specialist` for `config.cpp`, `dayz-asset-specialist` for textures and materials, `dayz-object-builder` for `.p3d` models, `dayz-ui-specialist` for layouts and widget scripts, `dayz-server-admin` for `types.xml` and server files, `dayz-map-specialist` for terrain files under `worlds/`, `dayz-workbench-specialist` for Workbench plugins, `dayz-docs-writer` for the README and changelog. When the failing code or class is in a specialist's area, name the specialist instead: `dayz-persistence-specialist` for `OnStoreSave` and `OnStoreLoad` and other saving code, `dayz-ai-specialist` for infected, animal and patrol behavior, `dayz-vehicle-specialist` for vehicle classes and their script, `dayz-weapon-specialist` for weapon, magazine and ammo classes, `dayz-wearables-specialist` for clothing and character classes, `dayz-animation-specialist` for `model.cfg` bones and animations, `dayz-audio-fx-specialist` for sound classes and particles, and `dayz-physics-specialist` for collision, mass, dropping and throwing.
 
 ## Report
 

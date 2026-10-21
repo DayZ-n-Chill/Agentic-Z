@@ -358,6 +358,14 @@ When a Superpowers workflow (`/brainstorming`, `/writing-plans`, `/executing-pla
 | terrain / map / clutter | `dayz-map-specialist` |
 | server / Central Economy / `types.xml` / `init.c` | `dayz-server-admin` |
 | Workbench plugin (editor-time tooling) | `dayz-workbench-specialist` |
+| saving data across restarts, save versions, base building saves | `dayz-persistence-specialist` |
+| infected, animals, patrols and guards | `dayz-ai-specialist` |
+| cars, boats and helicopters | `dayz-vehicle-specialist` |
+| weapons, magazines, ammo, attachments | `dayz-weapon-specialist` |
+| clothing, gear and characters | `dayz-wearables-specialist` |
+| moving parts, `model.cfg` animations, RTM | `dayz-animation-specialist` |
+| sound sets, sound shaders, particles | `dayz-audio-fx-specialist` |
+| weight, collision, dropping and throwing | `dayz-physics-specialist` |
 | log / crash forensics (RPT, script.log, BattlEye) | `dayz-mod-debugger` |
 | Figma → `.layout` conversion | `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator` (gate mode), then `dayz-ui-specialist` for the widget script (in order) |
 

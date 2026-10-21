@@ -19,7 +19,7 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-gate` (skill): run the behavior test, a test mission that spawns and uses each new item and gives PASS or FAIL per check. Put the mod name in `args.mod` when it is given.
 - `dayz-new-mod` (skill): scaffold an empty mod folder.
 - `dayz-server-admin` (agent): types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json.
-- `dayz-config-specialist` (agent): config.cpp, CfgPatches, CfgVehicles, CfgWeapons, hidden selections.
+- `dayz-config-specialist` (agent): config.cpp, CfgPatches, CfgVehicles, hidden selections.
 - `dayz-script-specialist` (agent): Enforce Script code, modded classes, RPCs.
 - `dayz-ui-specialist` (agent): .layout files, HUD, menus, widgets, UI colors.
 - `dayz-object-builder` (agent): .p3d models, LODs, named selections, proxies.
@@ -30,6 +30,14 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-workbench-specialist` (agent): Enfusion Workbench plugins and editor tools.
 - `dayz-build-engineer` (agent): a test build the user can play, with the PBO built and a test session started.
 - `dayz-docs-writer` (agent): a mod's README, changelog, install notes and classname list.
+- `dayz-persistence-specialist` (agent): data that must survive a server restart, `OnStoreSave` and `OnStoreLoad`, save versions, base building saves, the data loss audit.
+- `dayz-ai-specialist` (agent): infected, animals and human AI such as patrols and guards.
+- `dayz-vehicle-specialist` (agent): cars, boats and helicopters, with their engine, wheels, doors, fluids, seats and damage.
+- `dayz-weapon-specialist` (agent): firearms, CfgWeapons, magazines, ammo, attachments, recoil and fire modes.
+- `dayz-wearables-specialist` (agent): clothing, gear and characters, inventory slots, protection, insulation and color variants.
+- `dayz-animation-specialist` (agent): moving parts such as doors and lids, `model.cfg` bones and animations, RTM files, the Blender handoff.
+- `dayz-audio-fx-specialist` (agent): sound shaders, sound sets and particle effects such as smoke and sparks.
+- `dayz-physics-specialist` (agent): weight, collision, dropping, throwing and contact, such as an item that falls through the floor.
 - `figma-node-normalizer` (agent): a Figma design or figma.com link to turn into a DayZ `.layout`. It is the first stage of the Figma pipeline.
 - `orchestrator` (team): a whole new mod or a request that needs several of the above.
 
