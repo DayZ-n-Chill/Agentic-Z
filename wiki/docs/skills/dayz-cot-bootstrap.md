@@ -40,9 +40,9 @@ python "<skill-dir>\bootstrap.py" [<ModName> ...] [--server <instance>] [--port 
 3. **Mod check**: verifies `@CF` and `@Community-Online-Tools` have PBOs under `P:\Mods\`, prepends them to the chain (dropping duplicates), and checks every mod in the chain has at least one PBO.
 4. **Instance check**: the same check `/dayz-launch-test` runs (cfg `template = "...";` line, an active `allowFilePatching = 1;` line, `mission/`, and the template junction). Anything missing, including a commented-out or `0` `allowFilePatching`, refuses with a hint to run `/dayz-add-server <instance>`, which fixes the cfg.
 5. **First pass**: checks UDP `--port` is free (same check as `/dayz-launch-test`; refuses with `port <port> in use; run /dayz-stop-test or pass --port` if not), spawns the server, waits for it to bind its UDP port, spawns the client.
-6. **Wait for COT**: polls `.server/<instance>/Profiles/PermissionsFramework/Players/*.json` for a file that is new or newer than before the launch. If the server or client process exits first, the wait ends at once; on that or on timeout it stops the session and exits 1, pointing at `script.log` and the RPT in `Profiles/` and at `.server/!ClientDiagLogs/`.
+6. **Wait for COT**: polls `.server/<instance>/Profiles/PermissionsFramework/Players/*.json` for a file that is new or newer than before the launch. If the server or client process exits first, the wait ends at once; on that or on timeout it stops the session and exits 1, pointing at `script.log` and the RPT in `Profiles/` and at `.server/!ClientDiagLogs/`. Once a Players JSON appears, it waits up to 15 s more for that player's `Permissions/<id>.txt`, while the server is still running, since the server writes that file a little later.
 7. **Stop session**: kills only the two processes this run started (waiting up to 30 s each); other `DayZDiag_x64.exe` processes are left alone.
-8. **Edit perms (per player)**: adds `"admin"` to each triggered player's `Roles[]` (no-op if present), waits up to 15 s for that player's `Permissions/<id>.txt`, and replaces every line ending in ` 0` with ` 2`. If any JSON cannot be parsed or any perms file never appears, it exits 1 without starting pass 2.
+8. **Edit perms (per player)**: adds `"admin"` to each triggered player's `Roles[]` (no-op if present), and replaces every line ending in ` 0` with ` 2` in that player's `Permissions/<id>.txt`. If any JSON cannot be parsed or any perms file never appears, it exits 1 without starting pass 2.
 9. **Second pass**: checks the port again, relaunches with the same mod chain and instance, prints the PIDs, and exits 0.
 
 ## Refuses to run if
@@ -66,6 +66,7 @@ Safe on the same instance: an existing `admin` role and an all-` 2` perms file a
 [Pass 1/2] Booting so COT can generate permission files for your character.
 ...
 [OK]    Detected player file: flFK...HTY.json
+        Waiting for COT to write the personal permission file(s)...
 
 [Stop] Stopping the pass-1 server and client before editing perm files...
 

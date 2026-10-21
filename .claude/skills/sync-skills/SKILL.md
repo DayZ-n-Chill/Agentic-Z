@@ -72,10 +72,10 @@ Link targets are compared after normalising separators and, on Windows, case (`o
 
 ## Output
 
-One line per skill per agent, then a summary. Example (trimmed):
+One line per skill per agent, then a summary. Example (trimmed). The repo count is from this repo at the time of writing (44 skills plus `_shared`); the summary counts are made up for illustration, and yours depend on what each agent home already holds:
 
 ```
-Repo skills: 33  (H:\Projects\Agentic-Z\.claude\skills)
+Repo skills: 45  (H:\Projects\Agentic-Z\.claude\skills)
   - _shared
   - agentic-z-update
   ...
@@ -98,7 +98,7 @@ Summary
       failed: 0
 ```
 
-Exits 1 if any link operation failed, and 2 if `agents.json` is missing or malformed or `--agents`/`--skip` names an unknown agent.
+Exits 1 if any link operation failed, and 2 if `agents.json` is missing or malformed, `--agents`/`--skip` names an unknown agent, or the repo's `.claude/skills/` folder is missing.
 
 ## Steps
 

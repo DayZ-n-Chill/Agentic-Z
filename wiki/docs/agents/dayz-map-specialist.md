@@ -35,8 +35,8 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 ## Workflow
 
 1. Confirm the terrain's size, grid and cell size before touching images. Heightmap, satellite and mask images must match the Terrain Builder project's dimensions.
-2. Write `layers.cfg` so each mask color maps to a surface layer, and each layer's `texture` and `material` paths exist: mod-owned files under the mod's `$PBOPREFIX$`, vanilla ones as `dz\...` paths that exist under `P:\DZ\`. Vanilla terrains under `P:\DZ\worlds\` ship no `layers.cfg`, so take its structure from the sample terrain project that comes with DayZ Tools.
-3. Define surfaces and clutter in the terrain's config. Vanilla `CfgSurfaces` is in `P:\DZ\surfaces\config.cpp`; world and clutter classes are in `P:\DZ\worlds\<map>\world\config.cpp`.
+2. Write `layers.cfg` so each mask color maps to a surface layer, and each layer's `texture` and `material` paths exist: mod-owned files under the mod's `$PBOPREFIX$`, vanilla ones as `dz\...` paths that exist under `P:\DZ\`. Vanilla terrains under `P:\DZ\worlds\` ship no `layers.cfg`, and neither does DayZ Tools. Ask the user for the `layers.cfg` from their Terrain Builder project and keep its structure.
+3. Define surfaces and clutter in the terrain's config. Vanilla `CfgSurfaces`, the `Clutter` classes (`CfgWorlds` > `CAWorld` > `Clutter`) and `CfgSurfaceCharacters` are in `P:\DZ\surfaces\config.cpp` (plus `surfaces_bliss` and `surfaces_sakhal`); the world class itself is in `P:\DZ\worlds\<map>\world\config.cpp`.
 4. Terrain Builder and DayZ Editor are interactive: give numbered steps for import, export and generation, and write only the config files yourself.
 
 ## Report

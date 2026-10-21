@@ -44,6 +44,22 @@ python "<skill-dir>\sync.py" --apply --dry-run
 
 `--dry-run` only works together with `--apply`; on its own it is a usage error (exit 2).
 
+**List every canonical file and its wiki mirror** (no writes):
+
+```cmd
+python "<skill-dir>\sync.py" --map
+```
+
+## Exit codes
+
+| Code | Means |
+|---|---|
+| 0 | The wiki is in sync, `--apply` wrote everything, or `--quiet` was set (the Stop hook never fails a session). |
+| 1 | `--check` found drift, PyYAML is missing, or `--apply` hit a read, parse or write error. |
+| 2 | Usage error, such as `--dry-run` without `--apply`. |
+
+CI runs `sync.py --check` in `.github/workflows/tests.yml`, so a stale wiki fails the build. Run `--apply` and commit the mirrors to fix it.
+
 ## What gets synced
 
 | Canonical | Wiki mirror |

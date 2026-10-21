@@ -54,4 +54,4 @@ Write the plan to `output/<ModName>-plan/plan.md` and the behavior checks to `ou
 }
 ```
 
-An `id` is letters, digits, `_`, `.` or `-` with no spaces. Return the task table (Task, Team, Done check, Files, Depends on), the vanilla classes you chose with `path:line` citations, and any open questions for the user.
+An `id` starts with a letter or digit, then up to 63 more letters, digits, `_`, `.` or `-`, with no spaces. Return the task table (Task, Team, Done check, Files, Depends on), the vanilla classes you chose with `path:line` citations, and any open questions for the user.

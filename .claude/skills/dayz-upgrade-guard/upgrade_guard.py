@@ -1,8 +1,8 @@
 """dayz-upgrade-guard: see which mod classes a DayZ update affects.
 
   upgrade_guard.py snapshot [--label <text>]
-  upgrade_guard.py check [<ModName> ...] [--mod-dir <folder>] [--reindex] [--json]
-  upgrade_guard.py diff [<old> <new>] [<ModName> ...] [--mod-dir <folder>] [--json]
+  upgrade_guard.py check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--json]
+  upgrade_guard.py diff [--old <snapshot> --new <snapshot>] [<ModName> ...] [--mod-dir <folder>] [--json]
 
 A snapshot records every vanilla class on P:\\: script classes from the .c
 files (parent and method signatures) and config classes from config.cpp

@@ -38,7 +38,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 Pillow composes the atlas. If it is missing the script exits 1 with an install hint:
 
 ```cmd
-python -m pip install -r "<skill-dir>\requirements.txt"
+py -m pip install -r "<skill-dir>\requirements.txt"
 ```
 
 ## How to run
@@ -62,8 +62,8 @@ python "<skill-dir>\build_imageset.py" [<mod-root>] [--mod-name <name>]
    - Sort sprites by height descending and shelf-pack into the smallest power-of-two atlas that fits (each dimension picked from 256 / 512 / 1024 / 2048 / 4096; rectangular atlases allowed; ordered by area, square preferred at equal area), with a 10px gutter on all sides of every sprite.
    - If everything fits in one atlas: emit `<setname>.{paa,imageset}`.
    - If sprites won't fit in a single 4096x4096 atlas: split, next-fit in height order (a new atlas starts when the current one overflows), into multiple atlases and emit `<setname>_1.{paa,imageset}`, `<setname>_2.{paa,imageset}`, etc. Each part is its own self-contained imageset.
-   - Delete this set's outputs from an earlier run that this run won't rewrite (`<setname>.*` after a split, extra `<setname>_N.*` when the part count drops), so no orphan atlas is left behind. Stems matching another source set's name are left alone.
    - Compose each atlas as PNG via Pillow, convert to `.paa` via `ImageToPAA.exe`. The atlas fails if ImageToPAA exits non-zero or leaves no `.paa`, or if a `.paa` from an earlier run is still there unchanged (it did not rewrite the file).
+   - Once every atlas of the set converted, delete this set's outputs from an earlier run that this run did not rewrite (`<setname>.*` after a split, extra `<setname>_N.*` when the part count drops), so no orphan atlas is left behind. If any atlas failed, nothing is deleted, so the earlier good atlas stays. Stems matching another source set's name are left alone.
    - Each `.imageset`'s `path` references its own `.paa` via `<mod-name>\gui\imagesets\<stem>.paa`.
 5. Report a summary; exit non-zero if any imageset failed.
 

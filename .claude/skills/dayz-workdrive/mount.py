@@ -25,10 +25,11 @@ from typing import Optional
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
-# The cache is per project, resolved like dayz-init/state.py: $CLAUDE_PROJECT_DIR,
-# else the current directory. Not the script's own folder, which is the shared
-# plugin cache on a plugin install.
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+# The cache is per project, resolved by dayz-init/state.py: $CLAUDE_PROJECT_DIR,
+# else the nearest folder at or above the current directory that holds the
+# project cache, else the current directory. Not the script's own folder, which
+# is the shared plugin cache on a plugin install.
+PROJECT_DIR = h.load_module("dayz_workdrive_state", h.DAYZ_INIT_STATE).find_project_dir()
 CACHE = PROJECT_DIR / ".claude" / "local-memory" / "dayz-work-drive.json"
 P_DRIVE = Path("P:\\")
 
