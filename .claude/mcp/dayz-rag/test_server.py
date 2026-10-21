@@ -10,6 +10,7 @@ import json
 import os
 import re
 import sys
+from collections import OrderedDict
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -52,6 +53,7 @@ class _FakeTable:
         self.last_query = None
 
     def search(self, _vec):
+        self.searches = getattr(self, "searches", 0) + 1
         self.last_query = _FakeQuery(self.rows)
         return self.last_query
 
@@ -61,7 +63,7 @@ def _row(path, file_type, distance):
 
 
 @pytest.fixture
-def fake_table(monkeypatch):
+def fake_table(monkeypatch, tmp_path):
     rows = [
         _row("https://wiki/a", "c", 0.5),
         _row("https://wiki/b", "cpp", 0.6),
@@ -72,6 +74,11 @@ def fake_table(monkeypatch):
     monkeypatch.setattr(server, "DEFAULT_MAX_DISTANCE", None)  # ignore a developer's env override
     monkeypatch.setattr(server, "_get_table", lambda: table)
     monkeypatch.setattr(server, "_embed_query", lambda _q: [0.0])
+    # Each test starts with an empty answer cache over its own (unbuilt) index.
+    monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
+    monkeypatch.setattr(server, "_search_cache", OrderedDict())
+    monkeypatch.setattr(server, "_manifest_stamp", None)
+    monkeypatch.setattr(server, "_index_built_at", None)
     return table
 
 
@@ -125,6 +132,72 @@ def test_missing_index_raises(monkeypatch, tmp_path):
     monkeypatch.setattr(server, "_table", None)
     with pytest.raises(RuntimeError, match="dayz-search-index"):
         server._get_table()
+
+
+# --------------- answer cache ---------------
+
+
+def _write_manifest(root, indexed_at, mtime_ns):
+    manifest = root / "manifest.json"
+    manifest.write_text(json.dumps({"indexed_at": indexed_at}), encoding="utf-8")
+    os.utime(manifest, ns=(mtime_ns, mtime_ns))
+
+
+def test_repeated_search_is_answered_from_cache(fake_table):
+    first = server.search_dayz_source_impl("vest", top_k=2)
+    again = server.search_dayz_source_impl("  vest ", top_k=2)
+    assert again == first
+    assert fake_table.searches == 1
+
+
+def test_cache_key_includes_filters(fake_table):
+    server.search_dayz_source_impl("vest", top_k=2)
+    server.search_dayz_source_impl("vest", top_k=3)
+    server.search_dayz_source_impl("vest", top_k=2, file_type="cpp")
+    server.search_dayz_source_impl("jacket", top_k=2)
+    assert fake_table.searches == 4
+
+
+def test_max_distance_applies_to_cached_rows(fake_table):
+    server.search_dayz_source_impl("vest", top_k=5)
+    hits = server.search_dayz_source_impl("vest", top_k=5, max_distance=0.7)
+    assert [h["path"] for h in hits] == ["https://wiki/a", "https://wiki/b"]
+    assert fake_table.searches == 1
+
+
+def test_stale_flag_is_rechecked_on_cached_answers(fake_table, monkeypatch):
+    server.search_dayz_source_impl("vest", top_k=1)
+    monkeypatch.setattr(server, "_check_stale", lambda _p: (True, "modified"))
+    assert server.search_dayz_source_impl("vest", top_k=1)[0]["is_stale"] is True
+    assert fake_table.searches == 1
+
+
+def test_reindex_empties_the_cache(fake_table, tmp_path):
+    _write_manifest(tmp_path, 100, 1_000_000_000)
+    server.search_dayz_source_impl("vest", top_k=2)
+    _write_manifest(tmp_path, 200, 2_000_000_000)
+    server.search_dayz_source_impl("vest", top_k=2)
+    assert fake_table.searches == 2
+    assert server._get_index_built_at() == 200.0
+    assert [k[3] for k in server._search_cache] == [200.0]
+
+
+def test_reindex_reopens_the_table(monkeypatch, tmp_path):
+    monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
+    monkeypatch.setattr(server, "_manifest_stamp", None)
+    monkeypatch.setattr(server, "_table", "old table")
+    _write_manifest(tmp_path, 100, 1_000_000_000)
+    server._sync_with_index()
+    assert server._table is None
+
+
+def test_cache_is_bounded(fake_table, monkeypatch):
+    monkeypatch.setattr(server, "CACHE_MAX", 2)
+    for q in ("a", "b", "c"):
+        server.search_dayz_source_impl(q)
+    assert [k[0] for k in server._search_cache] == ["b", "c"]
+    server.search_dayz_source_impl("a")
+    assert fake_table.searches == 4
 
 
 # --------------- get_dayz_file ---------------

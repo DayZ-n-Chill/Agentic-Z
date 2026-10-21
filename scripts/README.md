@@ -31,6 +31,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `workbench.bat` | Open Workbench | `workbench.bat --mod MyVest` |
 | `objectbuilder.bat` | Open Object Builder | `objectbuilder.bat` |
 | `route.bat` | Show who should handle a request | `route.bat "build MyVest"` |
+| `ask.bat` | Answer a vanilla DayZ question with checked `path:line` citations | `ask.bat "how does food spoil"` |
 | `dayz-search.bat` | Search the vanilla RAG index from the terminal | `dayz-search.bat "food spoilage"` |
 | `search-download.bat` | Install the prebuilt search index | `search-download.bat` |
 | `search-index.bat` | Build the search index yourself | `search-index.bat --full` |
