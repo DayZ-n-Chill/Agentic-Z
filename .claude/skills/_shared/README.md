@@ -61,6 +61,19 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/file_paths.md` | `$profile` and `$saves` paths, file and JSON helpers. |
 | `_shared/enscript/references/gui_layout.md` | `.layout` format and every widget type. |
 
+### Animation pack (`_shared/animation`)
+
+Front index: `_shared/animation/README.md`. Used by `dayz-animation-specialist`.
+
+| Folder or file | Purpose |
+|---|---|
+| `_shared/animation` | Moving parts: `model.cfg` animations, their config sources, script hooks, RTM and the Blender handoff. |
+| `_shared/animation/model-cfg-animations.md` | Skeleton bones and the `Animations` block: keys, radians, value ranges, names in vanilla models. |
+| `_shared/animation/animation-sources.md` | `AnimationSources` for items and `class Doors` for buildings. |
+| `_shared/animation/script-hooks.md` | `SetAnimationPhase`, the door API and the vanilla barrel and fence patterns. |
+| `_shared/animation/rtm-and-character-animation.md` | Where vanilla uses `.rtm`, and why player and infected animation is out of scope. |
+| `_shared/animation/blender-handoff.md` | Naming and export notes for parts modelled in Blender. |
+
 ### Wearables pack (`_shared/wearables`)
 
 Front index: `_shared/wearables/README.md`. Written for `dayz-wearables-specialist`.
