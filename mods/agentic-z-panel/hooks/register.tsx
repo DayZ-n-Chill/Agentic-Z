@@ -19,7 +19,16 @@ const SKILL = {
   launch: ['dayz-launch-test', 'launch.py'],
   workbench: ['dayz-launch-workbench', 'launch.py'],
   objectbuilder: ['dayz-launch-objectbuilder', 'launch.py'],
+  logwatch: ['dayz-logwatch', 'logwatch.py'],
+  releasepack: ['dayz-release-pack', 'release_pack.py'],
+  health: ['dayz-health', 'health.py'],
+  ask: ['dayz-ask', 'ask.py'],
 } as const
+
+// How far back the logs button reads, and how long it then watches. A button
+// must return, so it reads the recent session lines once instead of following.
+const LOGWATCH_SINCE_MINUTES = '30'
+const LOGWATCH_SECONDS = '3'
 
 const join = (...parts: string[]) => parts.join('\\')
 
@@ -61,7 +70,7 @@ async function refresh($: any, cwd: string): Promise<PanelStatus> {
   return next
 }
 
-async function runAction($: any, cwd: string, action: string) {
+async function runAction($: any, cwd: string, action: string, question?: string) {
   const current = (await read($, status)) ?? (await refresh($, cwd))
   if (!current.root) {
     $.ui.toast('Agentic-Z not found in this project or the plugin cache.')
@@ -75,8 +84,17 @@ async function runAction($: any, cwd: string, action: string) {
     argv = ['python', join(current.root, '.claude', 'skills', skill, script)]
     if (action === 'gatebuild') argv.push('build')
     if (action === 'gateingame') argv.push('ingame')
-    const needsMod = ['build', 'deploy', 'gatebuild', 'gateingame', 'launch'].includes(action)
-    if (needsMod) {
+    const needsMod = ['build', 'deploy', 'gatebuild', 'gateingame', 'launch', 'releasepack', 'health'].includes(action)
+    if (action === 'ask') {
+      if (!question?.trim()) {
+        $.ui.toast('Type a question about vanilla DayZ first.')
+        return
+      }
+      argv.push(question.trim())
+    } else if (action === 'logwatch') {
+      argv.push('--since', LOGWATCH_SINCE_MINUTES, '--duration', LOGWATCH_SECONDS)
+      if (current.mod) argv.push('--mod', current.mod)
+    } else if (needsMod) {
       if (!current.mod) {
         $.ui.toast('No active mod yet. Run /dayz-init first.')
         return
@@ -92,7 +110,12 @@ async function runAction($: any, cwd: string, action: string) {
     const result = await $.process.run(argv, { cwd, timeoutMs: 600_000 })
     const lines = (result.stdout + '\n' + result.stderr).trim().split(/\r?\n/)
     const failLine = lines.find((l: string) => l.startsWith('[FAIL]'))
-    run = { action, ok: result.exitCode === 0, detail: failLine ?? lines[lines.length - 1] ?? '' }
+    // An answer is the verdict and its citations; everything else is one line.
+    const detail =
+      action === 'ask'
+        ? lines.filter((l: string) => /^(EVIDENCE|NONE|ERROR|\[\d+\])/.test(l)).slice(0, 6).join('\n')
+        : (failLine ?? lines[lines.length - 1] ?? '')
+    run = { action, ok: result.exitCode === 0, detail }
   } catch (err) {
     run = { action, ok: false, detail: String(err) }
   }
@@ -119,7 +142,7 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Button, Text } = $.ui.resolve(e)
+    const { Box, Button, Input, Text } = $.ui.resolve(e)
     const s = await read($, status)
     const run = await read($, lastRun)
     const working = await read($, busy)
@@ -143,8 +166,20 @@ export const register: Register = on => {
           <Button key="stop" label="Stop test" hotkey="s" onPress={press('stop')} />
           <Button key="workbench" label="Open Workbench" hotkey="w" onPress={press('workbench')} />
           <Button key="objectbuilder" label="Open Object Builder" hotkey="o" onPress={press('objectbuilder')} />
+          <Button key="logwatch" label="Check test logs" hotkey="t" onPress={press('logwatch')} />
+          <Button key="health" label="Health page" hotkey="h" onPress={press('health')} />
+          <Button key="releasepack" label="Release pack" hotkey="k" onPress={press('releasepack')} />
           <Button key="refresh" label="Refresh" hotkey="r" onPress={() => refresh($, cwd)} />
         </Box>
+        {Input && (
+          <Input
+            key="ask"
+            label="Ask vanilla:"
+            placeholder="how does food spoil"
+            submitLabel="ask"
+            onSubmit={(question: string) => runAction($, cwd, 'ask', question)}
+          />
+        )}
         {working && <Text dimColor>Running {working}...</Text>}
         {run && (
           <Text dimColor>

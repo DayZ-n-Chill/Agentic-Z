@@ -190,19 +190,25 @@ Then run `/dayz-panel` to open the panel.
 | Stop test | `s` | `dayz-stop-test/stop_test.bat` |
 | Open Workbench | `w` | `dayz-launch-workbench/launch.py --mod <active mod>` |
 | Open Object Builder | `o` | `dayz-launch-objectbuilder/launch.py` |
+| Check test logs | `t` | `dayz-logwatch/logwatch.py --since 30 --duration 3 --mod <active mod>` |
+| Health page | `h` | `dayz-health/health.py <active mod>` |
+| Release pack | `k` | `dayz-release-pack/release_pack.py <active mod>` |
+| Ask vanilla (a text field) | Enter | `dayz-ask/ask.py "<question>"` |
 | Refresh | `r` | re-checks the state |
 
 Each run shows a toast when it finishes and keeps the result line (the first `[FAIL]` line, or the last output line) in the panel.
 
 **Where it finds Agentic-Z:** the project itself when it is a clone, otherwise the newest version in the plugin cache.
 
-**Limits:** Windows only, like the rest of Agentic-Z. Launch uses the default server instance; pick another with `/dayz-launch-test --server`. Checked with `claude plugin validate` and a test (`claude plugin test mods/agentic-z-panel`) that draws the panel on all four surfaces and presses Build. A second test presses the two check buttons.
+**Limits:** Windows only, like the rest of Agentic-Z. Launch uses the default server instance; pick another with `/dayz-launch-test --server`. Checked with `claude plugin validate` and a test (`claude plugin test mods/agentic-z-panel`) that draws the panel on all four surfaces and presses Build. A second test presses the two check buttons, a third the logs, health and release pack buttons, and a fourth types a question into the ask field.
 
 **Version 0.2.0** adds three buttons: Check build (`c`, `/dayz-gate build`), Check in game (`g`, `/dayz-gate ingame`) and Deploy prebuilt PBOs (`d`, `/dayz-deploy-pbo`).
 
+**Version 0.3.0** adds Check test logs (`t`, `/dayz-logwatch`), Health page (`h`, `/dayz-health`), Release pack (`k`, `/dayz-release-pack`) and an ask field (`/dayz-ask`). The logs button reads the session lines of the last 30 minutes once and stops after three seconds, so it returns like the other buttons; run `/dayz-logwatch --until-closed` to follow a whole session. The ask field shows the verdict and the first citations; the mobile app draws no text field, so it has no ask field there.
+
 ## 9. No-token wrappers
 
-**What it is:** every skill that runs a script now has a `.bat` in `scripts\dayz\`, `scripts\setup\` or `scripts\dev\`. Double-click it or run it from a terminal; no AI is involved. `scripts\README.md` lists all 35 with an example each.
+**What it is:** every skill that runs a script now has a `.bat` in `scripts\dayz\`, `scripts\setup\` or `scripts\dev\`. Double-click it or run it from a terminal; no AI is involved. `scripts\README.md` lists all 45 with an example each.
 
 **New in this pass:** `status.bat`, `gate.bat`, `triage.bat`, `route.bat`, `deploy-pbo.bat`, `cot-bootstrap.bat`, `build-imageset.bat`, `p3d-audit.bat` and `setup\statusline.bat`.
 
