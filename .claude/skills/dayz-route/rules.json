@@ -114,7 +114,7 @@
     {
       "route": "dayz-build-pbo",
       "confidence": 0.9,
-      "patterns": ["\\b(?:build|pack|rebuild|repack)\\s+(?:the\\s+)?(?:pbo\\s+(?:for\\s+)?)?(?!(?:me|a|an|it|the|my|this|pbo|and|mod|again|all|everything|config|script|scripts|ui|layout|hud|types|server)\\b)(?P<mod>[A-Za-z][\\w-]*)"]
+      "patterns": ["\\b(?:build|pack|rebuild|repack)\\s+(?:the\\s+)?(?:pbos?\\s+(?:for\\s+)?)?(?!(?:me|a|an|it|the|my|this|pbos?|for|and|mod|again|all|everything|config|script|scripts|ui|layout|hud|types|server)\\b)(?P<mod>[A-Za-z][\\w-]*)"]
     },
     {
       "route": "dayz-conflict-check",
@@ -160,6 +160,11 @@
       "confidence": 0.9,
       "absorbs": true,
       "patterns": ["\\b(?:launch|start|run|boot)\\b[\\w\\s]{0,30}?\\b(?:test|server|game|dayz|client|diag)\\b", "\\btest\\s+(?:it|this)?\\s*in[- ]game\\b", "^\\s*(?:launch|test)\\s*(?:it)?\\s*$"]
+    },
+    {
+      "route": "dayz-launch-test",
+      "confidence": 0.85,
+      "patterns": ["\\b(?:and|then)\\s+(?:launch|test)\\b", "\\b(?:and|then)\\s+run\\s+(?:it|this)\\b"]
     },
     {
       "route": "dayz-preflight",

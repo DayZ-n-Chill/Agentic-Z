@@ -55,8 +55,19 @@ python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "<skill-dir>"
 
 - In a clone, edit the file the tier names under that repo root, even when the session was started in another project. Keep the edit small and in the file's existing style.
 - In a clone, if the edited file is under `.claude\agents\` or `.claude\skills\` (a `SKILL.md` or the shared conventions in `.claude\skills\_shared\dayz-conventions.md`), run `/docs-sync` so the wiki mirror under `wiki\docs\` stays in sync. Otherwise the Stop hook reports wiki drift at the end of the session.
-- In a plugin install, the plugin's files are replaced on every update. Write the rule to the user's project `CLAUDE.md` under a `## Agentic-Z rules` heading instead, and say that's why.
+- In a plugin install, the plugin's files are replaced on every update. Write the rule under a `## Agentic-Z rules` heading in whichever of the project's `CLAUDE.md`, `AGENTS.md` and `GEMINI.md` exist, with the same text in each, and say that's why. For a Tier 1 rule, create any of the three that are missing, so Claude Code, Codex and Gemini all see it.
+
+## 3b. Check it (clones only)
+
+From the repo root, run the tests and the wiki drift check:
+
+```cmd
+py -m pytest -q .claude scripts/dev hooks
+python .claude/skills/docs-sync/sync.py --check
+```
+
+An edit to an agent file or a rules file can break the repo tests (for example `test_route.py` checks the agent list against `rules.json`). If either command fails, fix the problem or revert the edit, then run both again.
 
 ## 4. Say what changed
 
-One line: the rule and the file it went into. When `/docs-sync` ran, also name the wiki page it updated, for example `wiki\docs\agents\dayz-config-specialist.md`.
+One line: the rule and the file it went into. When `/docs-sync` ran, also name the wiki page it updated, for example `wiki\docs\agents\dayz-config-specialist.md`. In a clone, add the result of step 3b: tests passed and the wiki is in sync, or what failed and whether you fixed or reverted it.

@@ -49,7 +49,7 @@ python .claude/skills/dayz-release-pack/release_pack.py <ModName> --version <x.y
 python .claude/skills/dayz-server-kit/server_kit.py <ModName> [--mission <instance>] [--deps CF]
 ```
 
-- Settle every `[WARN]` before you report: write the summary sentence in `workshop-description.txt` if it holds a placeholder, map each non vanilla addon to its Workshop mod and rerun with `--deps`, and check the classes under "Check by hand" in `classnames.md`.
+- Settle every `[WARN]` before you report: write the summary sentence in `workshop-description.txt` if it holds a placeholder, map each non vanilla addon to its Workshop mod and rerun with `--deps`, have an explicit scope set in `config.cpp` for each class under "Scope not set" in `classnames.md` and rerun, and replace `SERVER_KIT_LINK` with the address where the server kit is published.
 - Merge `changelog.md` into `workspace/<ModName>/CHANGELOG.md`, and the classes in `classnames.md` into the README's `## Classnames` section.
 - Pass `--mission` with the test server instance so the kit carries real types entries. Tell the release lead which entries are still placeholders.
 - Never put a `.biprivatekey` anywhere a player or server owner can get it. The kit packs only `.bikey` files.

@@ -221,7 +221,8 @@ def mod_facts(mod: str, mod_dir: Path, deps: Optional[list[str]] = None, p_mods:
     unresolved = [c["name"] for c in classes if c["scope"] is None]
     if unresolved:
         warnings.append(f"scope-unknown: {unresolved} set no scope here and take it from a parent outside this mod; "
-                        "check each and list the spawnable ones by hand")
+                        "set an explicit scope in config.cpp for each listed class (scope = 2 for spawnable items, "
+                        "otherwise 0 or 1) and rerun")
     if not keys["public"]:
         warnings.append("no-bikey: no .bikey in Keys/ or the deployed @mod Keys folder; sign the PBO before release "
                         "so servers with verifySignatures can load it")
@@ -316,6 +317,7 @@ def group_changes(commits: list[dict]) -> dict[str, list[str]]:
 # --- the four texts -----------------------------------------------------------
 
 SUMMARY_PLACEHOLDER = "Write one or two sentences here on what the mod adds."
+KIT_LINK_PLACEHOLDER = "[url=SERVER_KIT_LINK]server kit[/url]"
 
 
 def _label(c: dict) -> str:
@@ -342,7 +344,7 @@ def workshop_text(facts: dict, version: str, groups: dict[str, list[str]], since
         "",
         "[h2]Server owners[/h2]",
         "Copy the key from the mod's Keys folder into your server's keys folder. "
-        "The server kit has the types.xml entries, the cfgeconomycore.xml lines and the load order.",
+        f"Download the server kit for the types.xml entries, the cfgeconomycore.xml lines and the load order: {KIT_LINK_PLACEHOLDER}",
         "",
         "[h2]Changes[/h2]" if version == "Unreleased" else f"[h2]Changes in {version}[/h2]",
     ]
@@ -384,9 +386,10 @@ def classnames_md(facts: dict) -> str:
         out += ["`config.cpp` declares no class with `scope = 2`, so there is nothing to add to `types.xml`.", ""]
     if facts["unresolved"]:
         out += [
-            "## Check by hand",
+            "## Scope not set",
             "",
-            "These classes set no scope here and take it from a parent outside this mod.",
+            "These classes set no scope here and take it from a parent outside this mod. "
+            "Set an explicit scope in config.cpp for each (scope = 2 for spawnable items, otherwise 0 or 1) and rerun.",
             "",
         ]
         out += [f"- `{c['name']}` (parent `{c['parent']}`)" for c in facts["unresolved"]]
@@ -426,10 +429,16 @@ def release_pack(mod: str, mod_dir: Path, out_dir: Path, version: str = "Unrelea
                  deps: Optional[list[str]] = None, p_mods: Optional[Path] = P_MODS, date: Optional[str] = None) -> dict:
     facts = mod_facts(mod, mod_dir, deps, p_mods)
     changes = git_changes(mod_dir, since)
+    facts["warnings"].append("server-kit-link: the Workshop text links the server kit as SERVER_KIT_LINK; replace it "
+                             "with the address where the kit is published (for example a GitHub release)")
     if not changes["git"]:
         facts["warnings"].append("no-git: the mod folder is not in a git repository, so the changelog entry is empty")
     else:
-        if changes["since"] is None and not changes["own_repo"]:
+        if changes["since"] is None and changes["own_repo"]:
+            facts["warnings"].append("changelog-full-history: the mod's repository has no tag, so the entry lists its "
+                                     "whole history; tag the release (git tag v<version>) so the next run starts "
+                                     "after it, or pass --since <ref> to limit the entry")
+        elif changes["since"] is None:
             facts["warnings"].append("changelog-full-history: no chore(release) commit touched the mod folder, so the "
                                      "entry lists its whole history; pass --since <ref> to limit the entry")
         if not changes["commits"]:

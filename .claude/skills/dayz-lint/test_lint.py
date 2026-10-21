@@ -186,6 +186,23 @@ def test_every_rule_has_a_fixture_and_a_catalog_entry():
         assert re.search(entry["pattern"], f"[lint:{rule}] message")
 
 
+@pytest.mark.parametrize("source", [
+    "// modded class Foo extends Foo\nmodded class PlayerBase\n{\n}\n",
+    "/* modded class Foo extends Foo\nmodded class Bar extends Bar */\nmodded class PlayerBase\n{\n}\n",
+    "modded class PlayerBase // modded class Foo extends Foo\n{\n}\n",
+])
+def test_commented_out_modded_extends_is_not_reported(mod, p_drive, source):
+    (mod / "scripts" / "4_World" / "vest.c").write_text(source, encoding="utf-8")
+    report = run(mod, p_drive)
+    assert report["findings"] == [] and report["verdict"] == "PASS"
+
+
+def test_modded_extends_after_a_block_comment_keeps_its_line_number(mod, p_drive):
+    (mod / "scripts" / "4_World" / "vest.c").write_text("/* one\ntwo\n*/\nmodded class PlayerBase extends PlayerBase {}\n", encoding="utf-8")
+    [f] = run(mod, p_drive)["findings"]
+    assert (f["rule"], f["line"]) == ("modded-class-extends", 4)
+
+
 def test_lint_entries_never_match_log_lines():
     known = lint.triage.load_known()
     for line in ("[FAIL] workspace\\MyMod\\$PBOPREFIX$ is 'Other', expected 'MyMod'.", "SCRIPT    (E): NULL pointer to instance"):

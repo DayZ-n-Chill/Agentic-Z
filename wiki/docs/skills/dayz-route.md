@@ -30,7 +30,7 @@ One shape for every stage:
 {"route": "dayz-build-pbo", "kind": "skill", "confidence": 0.9, "source": "rules", "args": {"mod": "MyVest"}}
 ```
 
-- `kind` `skill`: run `/<route>`, passing `args` (for `dayz-build-pbo`, `args.mod` is the mod name). Pasted content has its own routes, which win over anything else the message says:
+- `kind` `skill`: run `/<route>`, passing `args` (for `dayz-build-pbo`, `args.mod` is the mod name). A decision with `source` `jev` carries no `args`. Before you run `/dayz-build-pbo`, `/dayz-lint` or `/dayz-release-pack` from one, take the mod name from the request, or ask the user for it when the request does not name one. Pasted content has its own routes, which win over anything else the message says:
   - `dayz-gate` with `args.mode` `triage`: pasted crash log or RPT lines. Pipe the pasted text to `triage.py --stdin --json` (in `dayz-gate`). Hand each `known` result's fix to its `owner_agent`, and dispatch `dayz-mod-debugger` with only the `new` lines.
   - `dayz-edit-types` with `args.mode` `merge`: a pasted chunk of `<type>` entries. Run `types_edit.py <types.xml> --merge -` with the chunk on stdin.
   - `dayz-import-mod` with `args.source`: a GitHub link to clone into `workspace\`, or a Steam Workshop link, which the skill refuses with the reason.

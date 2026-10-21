@@ -182,6 +182,23 @@ def test_pastes_route_to_their_workflow(text, expected, args):
     assert d.get("args") == args
 
 
+@pytest.mark.parametrize("text", ["build PBOs for everything", "repack PBOs", "build pbo for everything",
+                                  "rebuild the pbos"])
+def test_plural_pbos_and_for_are_never_a_mod_name(text):
+    d = decide(text)
+    assert d.get("args", {}).get("mod", "").lower() not in {"pbos", "pbo", "for"}
+
+
+def test_plural_pbos_for_a_mod_still_names_the_mod():
+    assert decide("build the pbos for MyVest").get("args") == {"mod": "MyVest"}
+
+
+@pytest.mark.parametrize("text", ["build MyVest and launch it", "build MyVest then test it"])
+def test_build_and_launch_is_two_steps(text):
+    d = decide(text)
+    assert d["route"] is None or d["confidence"] < CFG["threshold"]
+
+
 def test_a_crash_after_an_update_is_still_the_debuggers():
     assert decide("my server crashes after the DayZ update")["route"] == "dayz-mod-debugger"
 
