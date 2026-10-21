@@ -3,15 +3,19 @@
   gate.py build  <ModName> [--json]
   gate.py ingame <ModName> [--deps CF ...] [--server <instance>] [--port N]
                  [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
+  gate.py behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>]
+                 [--port N] [--timeout S] [--settle S] [--prepare-only | --logs FILE ...] [--json]
 
-Both modes stop a running DayZDiag session first, run the existing skill
+All modes stop a running DayZDiag session first, run the existing skill
 scripts (/dayz-build-pbo, /dayz-deploy-pbo, /dayz-launch-test) as subprocesses,
 apply the pass/fail rules of the dayz-build-checker and dayz-ingame-tester
 agents, triage every failure against known-errors.json, and print the verdict
 on the first line (PASS, FAIL, or ERROR), then a summary or, with --json, JSON.
 
 Exit codes: 0 PASS, 1 FAIL, 2 usage or environment error in the gate itself
-(the orchestrator then falls back to the gate agents). See SKILL.md.
+(the orchestrator then falls back to the gate agents). behavior runs the
+in-game flow on a copy of the instance whose mission spawns and uses each item
+in a checks file (behavior.py). See SKILL.md.
 """
 from __future__ import annotations
 
@@ -33,6 +37,7 @@ sys.path.insert(0, str(SKILLS_DIR / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 triage = h.load_module("dayz_gate_triage", HERE / "triage.py")
+behavior = h.load_module("dayz_gate_behavior", HERE / "behavior.py")
 
 BUILD_PY = SKILLS_DIR / "dayz-build-pbo" / "build.py"
 DEPLOY_PY = SKILLS_DIR / "dayz-deploy-pbo" / "deploy.py"
@@ -42,6 +47,7 @@ DIAG_EXE = "DayZDiag_x64.exe"
 
 DEFAULT_TIMEOUT_S = 300  # dayz-ingame-tester gives the client five minutes
 DEFAULT_SETTLE_S = 30    # keep reading after the ready signal to catch spawn-time errors
+BEHAVIOR_SETTLE_S = 600  # behavior: upper bound after the ready signal; the test mission's DONE line ends it sooner
 POLL_S = 2
 MAX_LISTED = 30          # cap per list in the report; the rest is counted
 
@@ -450,7 +456,25 @@ def gate_ingame(
     settle: float = DEFAULT_SETTLE_S,
     ready_pattern: str = DEFAULT_READY_RE,
 ) -> dict:
-    report = new_report("ingame", mod)
+    report, _ = ingame_session(mod, project_dir, rt, deps, instance, port, timeout, settle, ready_pattern)
+    return finish(report, project_dir, {"instance": instance})
+
+
+def ingame_session(
+    mod: str,
+    project_dir: Path,
+    rt: Runtime,
+    deps: list[str],
+    instance: str,
+    port: int,
+    timeout: float,
+    settle: float,
+    ready_pattern: str,
+    mode: str = "ingame",
+    done_re: Optional[re.Pattern] = None,
+) -> tuple[dict, list[tuple[Path, int, str]]]:
+    """The in-game flow up to the verdict: (unfinished report, every new log line)."""
+    report = new_report(mode, mod)
     mod_dir = project_dir / "workspace" / mod
     identity = mod_identity(mod, mod_dir)
     deps = [d.lstrip("@") for d in deps]
@@ -481,7 +505,7 @@ def gate_ingame(
             ]
         else:
             pids = sorted({int(p) for p in re.findall(r"(?:Server|Client) PID: (\d+)", out)})
-            lines, ready, problem = watch_session(rt, logs, client_dir, pids, ready_re, timeout, settle)
+            lines, ready, problem = watch_session(rt, logs, client_dir, pids, ready_re, timeout, settle, done_re)
             report["ready"] = ready
             if problem is not None:
                 extra.append(problem)
@@ -500,17 +524,18 @@ def gate_ingame(
     report["failures"] = extra + [entry_finding(e, project_dir) for e in failures]
     report["warnings"] = [entry_finding(e, project_dir) for e in warnings]
     report["noise"] = [entry_finding(e, project_dir) for e in noise]
-    return finish(report, project_dir, {"instance": instance})
+    return report, lines
 
 
 def watch_session(
-    rt: Runtime, logs: LogTail, client_dir: Path, pids: list[int], ready_re: re.Pattern, timeout: float, settle: float
+    rt: Runtime, logs: LogTail, client_dir: Path, pids: list[int], ready_re: re.Pattern, timeout: float, settle: float,
+    done_re: Optional[re.Pattern] = None,
 ) -> tuple[list[tuple[Path, int, str]], Optional[dict], Optional[dict]]:
     """Poll the logs until the client is in the mission plus `settle` seconds.
 
     Returns (lines read, ready signal or None, failure or None). Stops early
-    when a script module fails to compile, a crash log appears, or the server
-    or client process exits.
+    when a script module fails to compile, a crash log appears, the server
+    or client process exits, or a line matches `done_re` after the ready signal.
     """
     lines: list[tuple[Path, int, str]] = []
     ready: Optional[dict] = None
@@ -523,6 +548,8 @@ def watch_session(
             if ready is None and path.parent == client_dir and path.name.lower().startswith("script") and ready_re.search(text):
                 ready = {"file": str(path.name), "line": number, "text": text.strip()}
                 ready_at = rt.clock()
+        if ready is not None and done_re is not None and any(done_re.search(t) for _, _, t in new):
+            return lines, ready, None
         if any(triage.classify(t) == "compile" and "script module" in t for _, _, t in new):
             return lines, ready, None
         if any(p.name.lower().startswith("crash") for p in logs.new_files()):
@@ -542,6 +569,58 @@ def watch_session(
         rt.sleep(POLL_S)
 
 
+# --- behavior gate --------------------------------------------------------------
+
+def gate_behavior(
+    mod: str,
+    project_dir: Path,
+    rt: Runtime,
+    checks_path: Optional[Path],
+    deps: list[str],
+    instance: str = "chernarus",
+    port: int = 2302,
+    timeout: float = DEFAULT_TIMEOUT_S,
+    settle: float = BEHAVIOR_SETTLE_S,
+) -> dict:
+    """Copy the instance with the test mission injected, run the in-game flow on it, judge the checks."""
+    checks = behavior.load_checks(checks_path or behavior.default_checks_path(project_dir, mod))
+    stop_session(rt)  # a running session can hold the old copy's files open
+    prepared = behavior.prepare_instance(project_dir, instance, checks)
+    report, lines = ingame_session(
+        mod, project_dir, rt, deps, prepared["instance"], port, timeout, settle, DEFAULT_READY_RE,
+        mode="behavior", done_re=behavior.DONE_RE,
+    )
+    add_behavior_results(report, behavior.parse_lines(lines, checks), project_dir)
+    return finish(report, project_dir, {"instance": prepared["instance"]})
+
+
+def gate_behavior_logs(mod: str, project_dir: Path, checks_path: Optional[Path], instance: str, files: list[Path]) -> dict:
+    """Judge the checks from logs of a session already run (default: the behavior copy's server script logs)."""
+    checks = behavior.load_checks(checks_path or behavior.default_checks_path(project_dir, mod))
+    copy = instance + behavior.INSTANCE_SUFFIX
+    files = files or behavior.server_script_logs(project_dir, copy)
+    if not files:
+        raise GateError(f"no script logs in .server/{copy}/Profiles/; run the behavior gate or pass --logs")
+    report = new_report("behavior", mod)
+    report["steps"].append({"step": "read-logs", "result": f"{len(files)} file(s)"})
+    add_behavior_results(report, behavior.parse_lines(behavior.read_logs(files), checks), project_dir)
+    return finish(report, project_dir, {"instance": copy})
+
+
+def add_behavior_results(report: dict, parsed: dict, project_dir: Path) -> None:
+    """Per-check results into the report; every failed check is a failure."""
+    report["checks"] = []
+    for r in parsed["results"]:
+        where = _rel(r["file"], project_dir) if r["file"] else "server script log"
+        report["checks"].append({**r, "file": where})
+        if r["status"] == "FAIL":
+            text = r["text"] or f"{behavior.TAG} FAIL {r['id']} {r['reason']}"
+            finding = _finding("behavior", text, where, r["line"])
+            finding["check"] = r["id"]
+            report["failures"].append(finding)
+    report["behavior"] = {"started": parsed["started"], "done": parsed["done"], "unexpected": parsed["unexpected"]}
+
+
 # --- report -------------------------------------------------------------------
 
 def new_report(mode: str, mod: str) -> dict:
@@ -552,7 +631,8 @@ def dedupe(findings: list[dict]) -> list[dict]:
     """One finding per fingerprint (head line plus stack), first occurrence kept, with a count."""
     seen: dict[str, dict] = {}
     for f in findings:
-        key = triage.fingerprint(" | ".join([f["text"], *f["context"][:3]]))
+        # Behavior failures are per check: two checks failing alike stay two findings.
+        key = f.get("check", "") + "|" + triage.fingerprint(" | ".join([f["text"], *f["context"][:3]]))
         if key in seen:
             seen[key]["count"] += 1
         else:
@@ -587,6 +667,8 @@ def render_text(report: dict) -> str:
         out.append(f"  {step['step']}: " + (f"exit {step['rc']}" if "rc" in step else step["result"]))
     if report.get("ready"):
         out.append(f"  ready: {report['ready']['file']}:{report['ready']['line']}  {report['ready']['text']}")
+    for c in report.get("checks", []):
+        out.append(f"  {c['status']} {c['id']}" + (f"  {c['reason']}" if c["reason"] else ""))
     for f in report["failures"]:
         where = f"{f['file']}:{f['line']}" if f["line"] else f["file"]
         times = f" (x{f['count']})" if f["count"] > 1 else ""
@@ -628,6 +710,19 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     g.add_argument("--settle", type=float, default=DEFAULT_SETTLE_S, help="Seconds to keep reading after the ready signal.")
     g.add_argument("--ready-pattern", default=DEFAULT_READY_RE, help="Regex in the client script log that means the mission is running.")
     g.add_argument("--json", action="store_true")
+    v = sub.add_parser("behavior", help="Run a test mission that spawns and uses each item in a checks file.")
+    v.add_argument("mod")
+    v.add_argument("--checks", type=Path, help="Checks JSON (default output/<ModName>-plan/behavior-checks.json).")
+    v.add_argument("--deps", nargs="+", default=[], metavar="MOD", help="Dependency mods in load order (CF or @CF).")
+    v.add_argument("--server", default="chernarus", help="Server instance to copy (default chernarus).")
+    v.add_argument("--port", type=int, default=2302)
+    v.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S, help="Seconds to wait for the client to reach the mission.")
+    v.add_argument("--settle", type=float, default=BEHAVIOR_SETTLE_S, help="Most seconds to wait after that for the DONE line.")
+    only = v.add_mutually_exclusive_group()
+    only.add_argument("--prepare-only", action="store_true", help="Write the behavior instance copy and stop.")
+    only.add_argument("--logs", nargs="*", type=Path, metavar="FILE",
+                      help="Judge logs of a session already run (no files: the copy's server script logs).")
+    v.add_argument("--json", action="store_true")
     try:
         args = parser.parse_args(argv)
     except SystemExit as e:
@@ -640,6 +735,14 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
         rt = rt or real_runtime()
         if args.mode == "build":
             report = gate_build(args.mod, project_dir, rt)
+        elif args.mode == "behavior" and args.prepare_only:
+            return _prepared(args.mod, project_dir, args.checks, args.server, args.json)
+        elif args.mode == "behavior" and args.logs is not None:
+            report = gate_behavior_logs(args.mod, project_dir, args.checks, args.server, args.logs)
+        elif args.mode == "behavior":
+            report = gate_behavior(
+                args.mod, project_dir, rt, args.checks, args.deps, args.server, args.port, args.timeout, args.settle,
+            )
         else:
             report = gate_ingame(
                 args.mod, project_dir, rt, args.deps, args.server, args.port,
@@ -651,6 +754,20 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
         return _error(str(e), args.json)
     emit(report, args.json)
     return 0 if report["verdict"] == "PASS" else 1
+
+
+def _prepared(mod: str, project_dir: Path, checks_path: Optional[Path], instance: str, as_json: bool) -> int:
+    """--prepare-only: write the copy, print PREPARED and how to run it by hand."""
+    checks = behavior.load_checks(checks_path or behavior.default_checks_path(project_dir, mod))
+    prepared = behavior.prepare_instance(project_dir, instance, checks)
+    info = {"verdict": "PREPARED", "instance": prepared["instance"], "init": _rel(prepared["init"], project_dir), "checks": len(checks)}
+    print("PREPARED")
+    if as_json:
+        print(json.dumps(info, indent=2))
+    else:
+        print(f"  instance {info['instance']}: {info['checks']} checks in {info['init']}")
+        print(f"  run: /dayz-launch-test {mod} --server {info['instance']}, then gate.py behavior {mod} --logs")
+    return 0
 
 
 def _error(message: str, as_json: bool) -> int:

@@ -43,3 +43,5 @@ workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/
 !.server/*/serverDZ.cfg
 !.server/*/mission/
 .server/*/mission/storage_*/
+# /dayz-gate behavior rebuilds .server/<instance>-behavior/ from <instance>/ on every run.
+.server/*-behavior/

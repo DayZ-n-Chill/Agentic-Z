@@ -1,0 +1,11 @@
+09:10:04.880 SCRIPT       : [AZ-BEHAVIOR] START 5
+09:10:42.115 SCRIPT       : [AZ-BEHAVIOR] FAIL vest-spawns MyMod_Vest was not created by CreateObjectEx
+09:10:43.117 SCRIPT       : [AZ-BEHAVIOR] FAIL vest-wear MyMod_Vest was not created by CreateObjectEx
+09:10:47.126 SCRIPT       : [AZ-BEHAVIOR] DONE
+09:40:04.880 SCRIPT       : [AZ-BEHAVIOR] START 5
+09:40:42.115 SCRIPT       : [AZ-BEHAVIOR] PASS vest-spawns
+09:40:43.117 SCRIPT       : [AZ-BEHAVIOR] PASS vest-wear
+09:40:44.120 SCRIPT       : [AZ-BEHAVIOR] PASS vest-pouch
+09:40:45.121 SCRIPT       : [AZ-BEHAVIOR] PASS vest-cargo
+09:40:46.125 SCRIPT       : [AZ-BEHAVIOR] PASS knife-hands
+09:40:47.126 SCRIPT       : [AZ-BEHAVIOR] DONE

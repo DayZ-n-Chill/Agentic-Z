@@ -14,7 +14,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `add-scaffold.bat` | Add missing standard pieces to a mod | `add-scaffold.bat MyVest --piece junction` |
 | `scope-mod.bat` | Lock editing to one mod | `scope-mod.bat MyVest` |
 | `build-pbo.bat` | Pack a mod into a PBO | `build-pbo.bat MyVest` |
-| `gate.bat` | Build or in-game check with PASS or FAIL | `gate.bat build MyVest` |
+| `gate.bat` | Build, in-game or behavior check with PASS or FAIL | `gate.bat build MyVest` |
 | `triage.bat` | Match log lines against known errors | `triage.bat .server\chernarus\Profiles\script.log` |
 | `deploy-pbo.bat` | Copy a bundle's prebuilt PBOs into place | `deploy-pbo.bat MyBundle` |
 | `add-server.bat` | Set up a local test server | `add-server.bat chernarus` |

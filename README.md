@@ -153,7 +153,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-gate`](.claude/skills/dayz-gate/SKILL.md) | Run the build and in-game gates as scripts: build or deploy, launch, read the new log lines, triage failures against known errors. |
+| [`/dayz-gate`](.claude/skills/dayz-gate/SKILL.md) | Run the build, in-game and behavior gates as scripts: build or deploy, launch, read the new log lines, run a test mission that spawns and uses each new item, triage failures against known errors. |
 | [`/dayz-route`](.claude/skills/dayz-route/SKILL.md) | Pick the skill, agent or team for a request with keyword rules first; prints one JSON decision and says when the `dayz-router` agent is needed. |
 | [`/dayz-statusline`](.claude/skills/dayz-statusline/SKILL.md) | Install a status line showing `P:\` mount, active mod, running diag session and search-index age; `--remove` undoes it. |
 
