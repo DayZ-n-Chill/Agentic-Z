@@ -1,7 +1,7 @@
 ---
 name: dayz-launch-test
 description: "Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run."
-argument-hint: "<ModName> [<ModName2> ...] [--server <instance>] [--port N] [--dry-run]"
+argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName> ...] [--server <instance>] [--port N] [--dry-run]"
 ---
 
 <!-- skill-dir-note -->
@@ -18,12 +18,13 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server <instance>] [--port N] [--dry-run]
+python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server-only <ModName> ...] [--server <instance>] [--port N] [--dry-run]
 ```
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<ModName> ...` | yes | One or more mod names already built. Each must have at least one `.pbo` at `P:\Mods\@<ModName>\Addons\` (build with `/dayz-build-pbo` first). |
+| `<ModName> ...` | yes | Mod names loaded on **both** client and server. Each must have at least one `.pbo` at `P:\Mods\@<ModName>\Addons\` (build with `/dayz-build-pbo` first). |
+| `--server-only` | no | Mod names loaded on the **server only** — never added to the client's `-mod=` list. Use for a mod that self-terminates when it detects itself running outside the dedicated server (e.g. a `CfgMods` server-marker `defines[]` entry guarding a `RequestExit()` call). Same `.pbo`-presence requirement as above. |
 | `--server` | no | Server instance to launch on. Default `chernarus`. Must have been added via `/dayz-add-server`. |
 | `--port` | no | Server port. Default `2302`. |
 | `--dry-run` | no | Run every check, print the resolved server and client commands, then exit 0. Writes nothing: no profile dirs, no display-prefs file, no processes. |
