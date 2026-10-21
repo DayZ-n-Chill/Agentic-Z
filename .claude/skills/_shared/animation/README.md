@@ -11,6 +11,7 @@ Vanilla ships `model.cfg` only inside the packed `.p3d` files, so there is no va
 | Which script call plays the animation, on which side, and how do clients see it? | `script-hooks.md` |
 | Where does DayZ use `.rtm` files, and how is that different from character animation? | `rtm-and-character-animation.md` |
 | What must the user keep straight when the model comes from Blender? | `blender-handoff.md` |
+| What does a door need inside the `.p3d` (bones, axes, components, action points)? | `_shared/models/doors.md`, owned by `dayz-object-builder` |
 
 ## Worked vanilla examples
 
