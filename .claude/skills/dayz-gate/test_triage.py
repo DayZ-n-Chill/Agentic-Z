@@ -89,6 +89,9 @@ SAMPLES = [
     ("[FAIL] DayZDiag_x64.exe not found.", "diag-exe-missing"),
     ("[FAIL] UDP port 2302 in use; run /dayz-stop-test or pass --port.", "port-in-use"),
     ("[WARN] extras.pbo has no matching .bisign - clients with signature verification", "unsigned-payload"),
+    ("[visual:diff] hud: 1.56% of pixels differ (threshold 1.00%)", "visual-diff"),
+    ("[visual:no-baseline] hud: no baseline yet: look at the capture and accept it if it shows the expected look", "visual-no-baseline"),
+    ("[visual:no-capture] hud: capture failed: DayZ client PID 222 has no visible window", "visual-no-capture"),
 ]
 
 

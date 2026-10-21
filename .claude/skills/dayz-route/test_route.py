@@ -40,6 +40,8 @@ def decide(text, env=NO_KEY):
         ("run preflight", "dayz-preflight", None),
         ("run the behavior tests for MyVest", "dayz-gate", {"mod": "MyVest"}),
         ("behaviour check", "dayz-gate", None),
+        ("run the visual test for MyVest", "dayz-gate", {"mod": "MyVest"}),
+        ("compare the screenshots with the baseline", "dayz-gate", None),
         ("build me a tactical vest mod with three retextures that spawns in military zones", "orchestrator", None),
         ("create a new backpack mod", "orchestrator", None),
         ("convert vest_camo_co.png to .paa and write an rvmat", "dayz-asset-specialist", None),

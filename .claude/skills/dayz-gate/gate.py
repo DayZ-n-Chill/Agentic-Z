@@ -5,6 +5,8 @@
                  [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
   gate.py behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>]
                  [--port N] [--timeout S] [--settle S] [--prepare-only | --logs FILE ...] [--json]
+  gate.py visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N]
+                 [--timeout S] [--threshold R] [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--json]
 
 All modes stop a running DayZDiag session first, run the existing skill
 scripts (/dayz-build-pbo, /dayz-deploy-pbo, /dayz-launch-test) as subprocesses,
@@ -15,7 +17,9 @@ on the first line (PASS, FAIL, or ERROR), then a summary or, with --json, JSON.
 Exit codes: 0 PASS, 1 FAIL, 2 usage or environment error in the gate itself
 (the orchestrator then falls back to the gate agents). behavior runs the
 in-game flow on a copy of the instance whose mission spawns and uses each item
-in a checks file (behavior.py). See SKILL.md.
+in a checks file (behavior.py). visual captures the client window at set
+seconds of the in-game flow and compares each capture with its stored
+baseline (visual.py). See SKILL.md.
 """
 from __future__ import annotations
 
@@ -38,6 +42,7 @@ import skill_helpers as h  # noqa: E402
 
 triage = h.load_module("dayz_gate_triage", HERE / "triage.py")
 behavior = h.load_module("dayz_gate_behavior", HERE / "behavior.py")
+visual = h.load_module("dayz_gate_visual", HERE / "visual.py")
 lint = h.load_module("dayz_gate_lint", SKILLS_DIR / "dayz-lint" / "lint.py")
 
 BUILD_PY = SKILLS_DIR / "dayz-build-pbo" / "build.py"
@@ -94,6 +99,7 @@ class Runtime(NamedTuple):
     pid_alive: Callable[[int], bool]
     sleep: Callable[[float], None] = time.sleep
     clock: Callable[[], float] = time.monotonic
+    capture: Callable[[int, Path], None] = visual.capture_window
 
 
 def run_captured(cmd: list[str]) -> tuple[int, str]:
@@ -489,8 +495,12 @@ def ingame_session(
     ready_pattern: str,
     mode: str = "ingame",
     done_re: Optional[re.Pattern] = None,
+    on_poll: Optional[Callable[[Optional[float], Optional[int]], None]] = None,
 ) -> tuple[dict, list[tuple[Path, int, str]]]:
-    """The in-game flow up to the verdict: (unfinished report, every new log line)."""
+    """The in-game flow up to the verdict: (unfinished report, every new log line).
+
+    `on_poll(seconds since the client joined or None, client PID)` runs on every poll.
+    """
     report = new_report(mode, mod)
     mod_dir = project_dir / "workspace" / mod
     identity = mod_identity(mod, mod_dir)
@@ -522,7 +532,10 @@ def ingame_session(
             ]
         else:
             pids = sorted({int(p) for p in re.findall(r"(?:Server|Client) PID: (\d+)", out)})
-            lines, ready, problem = watch_session(rt, logs, client_dir, pids, ready_re, timeout, settle, done_re)
+            client = re.search(r"Client PID: (\d+)", out)
+            client_pid = int(client.group(1)) if client else None
+            hook = (lambda elapsed: on_poll(elapsed, client_pid)) if on_poll else None
+            lines, ready, problem = watch_session(rt, logs, client_dir, pids, ready_re, timeout, settle, done_re, hook)
             report["ready"] = ready
             if problem is not None:
                 extra.append(problem)
@@ -547,12 +560,14 @@ def ingame_session(
 def watch_session(
     rt: Runtime, logs: LogTail, client_dir: Path, pids: list[int], ready_re: re.Pattern, timeout: float, settle: float,
     done_re: Optional[re.Pattern] = None,
+    on_poll: Optional[Callable[[Optional[float]], None]] = None,
 ) -> tuple[list[tuple[Path, int, str]], Optional[dict], Optional[dict]]:
     """Poll the logs until the client is in the mission plus `settle` seconds.
 
     Returns (lines read, ready signal or None, failure or None). Stops early
     when a script module fails to compile, a crash log appears, the server
     or client process exits, or a line matches `done_re` after the ready signal.
+    `on_poll` gets the seconds since the ready signal (None before it) on every poll.
     """
     lines: list[tuple[Path, int, str]] = []
     ready: Optional[dict] = None
@@ -575,6 +590,8 @@ def watch_session(
         if dead:
             return lines, ready, _finding("crash", f"DayZDiag process exited before the gate stopped it (PID {', '.join(map(str, dead))})", "process", None)
         now = rt.clock()
+        if on_poll is not None:
+            on_poll(None if ready_at is None else now - ready_at)
         if ready_at is not None and now - ready_at >= settle:
             return lines, ready, None
         if now >= deadline:
@@ -639,6 +656,72 @@ def add_behavior_results(report: dict, parsed: dict, project_dir: Path) -> None:
     report["behavior"] = {"started": parsed["started"], "done": parsed["done"], "unexpected": parsed["unexpected"]}
 
 
+# --- visual gate ----------------------------------------------------------------
+
+def gate_visual(
+    mod: str,
+    project_dir: Path,
+    rt: Runtime,
+    shots_path: Optional[Path],
+    deps: list[str],
+    instance: str = "chernarus",
+    port: int = 2302,
+    timeout: float = DEFAULT_TIMEOUT_S,
+    threshold: Optional[float] = None,
+) -> dict:
+    """Run the in-game flow, capture each shot at its second, compare the captures with the baselines."""
+    spec = visual.load_shots(shots_path or visual.default_shots_path(project_dir, mod))
+    run_dir = visual.new_run_dir(project_dir, mod)
+    capturer = visual.Capturer(spec["shots"], run_dir, rt.capture)
+    report, _ = ingame_session(
+        mod, project_dir, rt, deps, instance, port, timeout, visual.last_shot_at(spec) + POLL_S, DEFAULT_READY_RE,
+        mode="visual", on_poll=capturer,
+    )
+    capturer.finish()
+    results = visual.compare_run(spec, run_dir, visual.baseline_dir(project_dir, mod), threshold, capturer.errors)
+    add_visual_results(report, results, run_dir, project_dir)
+    return finish(report, project_dir, {"instance": instance})
+
+
+def gate_visual_compare(mod: str, project_dir: Path, shots_path: Optional[Path], run_dir: Optional[Path],
+                        threshold: Optional[float] = None) -> dict:
+    """Compare captures already taken (default: the newest run) with the baselines."""
+    spec = visual.load_shots(shots_path or visual.default_shots_path(project_dir, mod))
+    run_dir = run_dir or visual.latest_run_dir(project_dir, mod)
+    if not run_dir.is_dir():
+        raise GateError(f"no folder {run_dir}")
+    report = new_report("visual", mod)
+    report["steps"].append({"step": "compare", "result": f"captures in {_rel(run_dir, project_dir)}"})
+    results = visual.compare_run(spec, run_dir, visual.baseline_dir(project_dir, mod), threshold)
+    add_visual_results(report, results, run_dir, project_dir)
+    return finish(report, project_dir)
+
+
+VISUAL_TEXT = {
+    visual.FAIL: "[visual:diff] {id}: {reason}",
+    visual.NEW: "[visual:no-baseline] {id}: {reason}",
+    visual.MISSING: "[visual:no-capture] {id}: {reason}",
+}
+
+
+def add_visual_results(report: dict, results: list[dict], run_dir: Path, project_dir: Path) -> None:
+    """Per-shot results into the report; every shot that did not pass is a failure."""
+    report["shots"] = []
+    for r in results:
+        entry = {**r, **{k: _rel(r[k], project_dir) if r[k] else None for k in ("capture", "baseline", "diff")}}
+        report["shots"].append(entry)
+        if r["status"] != visual.PASS:
+            where = entry["capture"] or _rel(run_dir, project_dir)
+            context = [f"{k}: {entry[k]}" for k in ("capture", "baseline", "diff") if entry[k]]
+            finding = _finding("visual", VISUAL_TEXT[r["status"]].format(**r), where, None, context)
+            finding["shot"] = r["id"]
+            report["failures"].append(finding)
+    report["visual"] = {
+        "run": _rel(run_dir, project_dir),
+        "baseline": _rel(visual.baseline_dir(project_dir, report["mod"]), project_dir),
+    }
+
+
 # --- report -------------------------------------------------------------------
 
 def new_report(mode: str, mod: str) -> dict:
@@ -650,7 +733,7 @@ def dedupe(findings: list[dict]) -> list[dict]:
     seen: dict[str, dict] = {}
     for f in findings:
         # Behavior failures are per check: two checks failing alike stay two findings.
-        key = f.get("check", "") + "|" + triage.fingerprint(" | ".join([f["text"], *f["context"][:3]]))
+        key = f.get("check", f.get("shot", "")) + "|" + triage.fingerprint(" | ".join([f["text"], *f["context"][:3]]))
         if key in seen:
             seen[key]["count"] += 1
         else:
@@ -689,6 +772,9 @@ def render_text(report: dict) -> str:
         out.append(f"  ready: {report['ready']['file']}:{report['ready']['line']}  {report['ready']['text']}")
     for c in report.get("checks", []):
         out.append(f"  {c['status']} {c['id']}" + (f"  {c['reason']}" if c["reason"] else ""))
+    for s in report.get("shots", []):
+        detail = s["reason"] or (f"{s['ratio']:.2%} of pixels differ" if s["ratio"] is not None else "")
+        out.append(f"  {s['status']} {s['id']}" + (f"  {detail}" if detail else ""))
     for f in report["failures"]:
         where = f"{f['file']}:{f['line']}" if f["line"] else f["file"]
         times = f" (x{f['count']})" if f["count"] > 1 else ""
@@ -743,6 +829,21 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     only.add_argument("--logs", nargs="*", type=Path, metavar="FILE",
                       help="Judge logs of a session already run (no files: the copy's server script logs).")
     v.add_argument("--json", action="store_true")
+    s = sub.add_parser("visual", help="Capture the client window during the in-game test and compare with baselines.")
+    s.add_argument("mod")
+    s.add_argument("--shots", type=Path, help="Shots JSON (default output/<ModName>-plan/visual-shots.json).")
+    s.add_argument("--deps", nargs="+", default=[], metavar="MOD", help="Dependency mods in load order (CF or @CF).")
+    s.add_argument("--server", default="chernarus", help="Server instance (default chernarus).")
+    s.add_argument("--port", type=int, default=2302)
+    s.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S, help="Seconds to wait for the client to reach the mission.")
+    s.add_argument("--threshold", type=float, help="Share of pixels allowed to differ, 0 to 1, for shots without their own.")
+    offline = s.add_mutually_exclusive_group()
+    offline.add_argument("--compare", nargs="?", const=True, type=Path, metavar="DIR",
+                         help="Compare captures already taken (no folder: the newest run).")
+    offline.add_argument("--accept", nargs="?", const=True, type=Path, metavar="DIR",
+                         help="Make captures the new baselines (no folder: the newest run).")
+    s.add_argument("--shot", nargs="+", metavar="ID", help="--accept: only these shots.")
+    s.add_argument("--json", action="store_true")
     try:
         args = parser.parse_args(argv)
     except SystemExit as e:
@@ -751,6 +852,8 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     try:
         if args.mode == "ingame":
             re.compile(args.ready_pattern)
+        if args.mode == "visual" and args.threshold is not None and not 0 <= args.threshold <= 1:
+            raise GateError("--threshold must be from 0 to 1")
         project_dir = h.resolve_project_dir()
         rt = rt or real_runtime()
         if args.mode == "build":
@@ -759,6 +862,14 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
             return _prepared(args.mod, project_dir, args.checks, args.server, args.json)
         elif args.mode == "behavior" and args.logs is not None:
             report = gate_behavior_logs(args.mod, project_dir, args.checks, args.server, args.logs)
+        elif args.mode == "visual" and args.accept is not None:
+            return _accepted(args.mod, project_dir, args.shots, args.accept, args.shot, args.json)
+        elif args.mode == "visual" and args.compare is not None:
+            report = gate_visual_compare(args.mod, project_dir, args.shots, _dir_arg(args.compare), args.threshold)
+        elif args.mode == "visual":
+            report = gate_visual(
+                args.mod, project_dir, rt, args.shots, args.deps, args.server, args.port, args.timeout, args.threshold,
+            )
         elif args.mode == "behavior":
             report = gate_behavior(
                 args.mod, project_dir, rt, args.checks, args.deps, args.server, args.port, args.timeout, args.settle,
@@ -787,6 +898,24 @@ def _prepared(mod: str, project_dir: Path, checks_path: Optional[Path], instance
     else:
         print(f"  instance {info['instance']}: {info['checks']} checks in {info['init']}")
         print(f"  run: /dayz-launch-test {mod} --server {info['instance']}, then gate.py behavior {mod} --logs")
+    return 0
+
+
+def _dir_arg(value: object) -> Optional[Path]:
+    """--compare / --accept: a folder, or True when given with no folder (the newest run)."""
+    return None if value is True else value
+
+
+def _accepted(mod: str, project_dir: Path, shots_path: Optional[Path], run_dir: object,
+              only: Optional[list[str]], as_json: bool) -> int:
+    """--accept: copy captures into the baseline folder, print ACCEPTED."""
+    spec = visual.load_shots(shots_path or visual.default_shots_path(project_dir, mod))
+    run_dir = _dir_arg(run_dir) or visual.latest_run_dir(project_dir, mod)
+    done = visual.accept(spec, run_dir, visual.baseline_dir(project_dir, mod), only)
+    info = {"verdict": "ACCEPTED", "shots": done, "from": _rel(run_dir, project_dir),
+            "baseline": _rel(visual.baseline_dir(project_dir, mod), project_dir)}
+    print("ACCEPTED")
+    print(json.dumps(info, indent=2) if as_json else f"  {len(done)} baseline(s) in {info['baseline']}: {', '.join(done)}")
     return 0
 
 

@@ -400,5 +400,29 @@
     "fix": "Put the PBO's .bisign (from the mod's author) next to it in workspace/<ModName>/Addons/ and gate again.",
     "owner_agent": "user",
     "source": "dayz-build-checker bundle rule; dayz-deploy-pbo SKILL.md"
+  },
+  {
+    "id": "visual-diff",
+    "pattern": "^\\[visual:diff\\] ",
+    "meaning": "A capture of the DayZ window looks different from its baseline by more than the shot's threshold.",
+    "fix": "Open the diff image (red pixels changed). If the change is intended, run gate.py visual <ModName> --accept --shot <id>; if not, send the capture and the diff to the specialist who owns that part of the screen.",
+    "owner_agent": "user",
+    "source": "dayz-gate SKILL.md, What visual does"
+  },
+  {
+    "id": "visual-no-baseline",
+    "pattern": "^\\[visual:no-baseline\\] ",
+    "meaning": "A shot has no baseline yet, so there is no expected look to compare with.",
+    "fix": "Look at the capture. If it shows the expected look, run gate.py visual <ModName> --accept --shot <id> and gate again.",
+    "owner_agent": "user",
+    "source": "dayz-gate SKILL.md, What visual does"
+  },
+  {
+    "id": "visual-no-capture",
+    "pattern": "^\\[visual:no-capture\\] ",
+    "meaning": "A shot was not captured: the client window was hidden or minimized, or the session ended first.",
+    "fix": "Keep the DayZ client window visible and not minimized during the gate, check the in-game failures in the same report, then gate again.",
+    "owner_agent": "user",
+    "source": "dayz-gate SKILL.md, What visual does"
   }
 ]

@@ -7,7 +7,7 @@
     "dayz-launch-test": {"kind": "skill", "description": "Launch the local DayZ Diag test server and client"},
     "dayz-stop-test": {"kind": "skill", "description": "Stop a running local DayZ test session"},
     "dayz-preflight": {"kind": "skill", "description": "Check the DayZ modding environment (P: drive, DayZ Tools)"},
-    "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
+    "dayz-gate": {"kind": "skill", "description": "Behavior or visual test: a test mission spawns and uses each new item, or screenshots of the game are compared with stored baselines; PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
@@ -57,6 +57,16 @@
       "confidence": 0.9,
       "absorbs": true,
       "patterns": ["\\bbehaviou?r\\s+(?:tests?|checks?|gate)\\b(?:\\s+(?:for|on|of)\\s+(?P<mod>[A-Za-z][\\w-]*))?"]
+    },
+    {
+      "route": "dayz-gate",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": [
+        "\\b(?:visual|screenshot)\\s+(?:tests?|checks?|gate|compare|comparison|diff)\\b(?:\\s+(?:for|on|of)\\s+(?P<mod>[A-Za-z][\\w-]*))?",
+        "\\bcompare\\s+(?:the\\s+)?screenshots?\\b",
+        "\\bscreenshot\\s+baselines?\\b"
+      ]
     },
     {
       "route": "dayz-build-pbo",
