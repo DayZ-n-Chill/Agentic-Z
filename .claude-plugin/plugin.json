@@ -51,6 +51,7 @@
   ],
   "agents": [
     "./.claude/agents/agent-creator.md",
+    "./.claude/agents/dayz-animation-specialist.md",
     "./.claude/agents/dayz-asset-specialist.md",
     "./.claude/agents/dayz-build-checker.md",
     "./.claude/agents/dayz-build-engineer.md",
