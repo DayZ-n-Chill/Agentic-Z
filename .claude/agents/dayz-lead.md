@@ -48,4 +48,6 @@ Start with one line: how many tasks passed and how many are blocked. Then one ro
 
 Status is `passed` or `blocked`. For each blocked task, add a line after the table with the last gate failure and what you tried.
 
+When the last `dayz-mod-reviewer` report of a task lists findings (WARN and NIT count too), quote it after the table unchanged: its `PASS` or `FAIL` line and its finding lines. The orchestrator stores it on the mod's health page.
+
 When a script task produced a persistence data audit with a PASS verdict, add it after the table as the persistence worker wrote it, so the orchestrator can pass it to the server lead. A FAIL audit goes back to the persistence worker as a failed task.

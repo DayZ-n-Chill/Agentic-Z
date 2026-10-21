@@ -295,6 +295,15 @@ def test_logs_mode_fail_keeps_one_failure_per_check(project, capsys):
     assert data["behavior"]["unexpected"] == ["old-check"]
 
 
+def test_logs_mode_result_and_checks_reach_the_health_page(project, capsys):
+    run_main(["behavior", "MyMod", "--logs", str(FIXTURES / "logs" / "script_fail.log"), "--json"], capsys)
+    data = gate.health.health(project, "MyMod")
+    assert (data["last_test"]["kind"], data["last_test"]["verdict"]) == ("behavior", "FAIL")
+    assert [c["id"] for c in data["last_test"]["checks"] if c["status"] == "FAIL"] == ["vest-wear", "vest-pouch", "knife-hands"]
+    page = (project / ".server" / "!Health" / "MyMod" / "health.md").read_text(encoding="utf-8")
+    assert "## Behavior checks (latest run)" in page and "| vest-wear | FAIL |" in page
+
+
 def test_logs_mode_text_lists_each_check(project, capsys):
     rc, first, text = run_main(["behavior", "MyMod", "--logs", str(FIXTURES / "logs" / "script_fail.log")], capsys)
     assert rc == 1 and first == "FAIL"

@@ -15,7 +15,8 @@ on the first line (PASS, FAIL, or ERROR), then a summary or, with --json, JSON.
 Exit codes: 0 PASS, 1 FAIL, 2 usage or environment error in the gate itself
 (the orchestrator then falls back to the gate agents). behavior runs the
 in-game flow on a copy of the instance whose mission spawns and uses each item
-in a checks file (behavior.py). See SKILL.md.
+in a checks file (behavior.py). Every PASS or FAIL is stored for /dayz-health
+(health.py), which then rebuilds the mod's health page. See SKILL.md.
 """
 from __future__ import annotations
 
@@ -39,6 +40,7 @@ import skill_helpers as h  # noqa: E402
 triage = h.load_module("dayz_gate_triage", HERE / "triage.py")
 behavior = h.load_module("dayz_gate_behavior", HERE / "behavior.py")
 lint = h.load_module("dayz_gate_lint", SKILLS_DIR / "dayz-lint" / "lint.py")
+health = h.load_module("dayz_gate_health", SKILLS_DIR / "dayz-health" / "health.py")
 
 BUILD_PY = SKILLS_DIR / "dayz-build-pbo" / "build.py"
 DEPLOY_PY = SKILLS_DIR / "dayz-deploy-pbo" / "deploy.py"
@@ -707,7 +709,20 @@ def render_text(report: dict) -> str:
             f"  warnings: {len(report['warnings']) + report.get('warnings_not_listed', 0)}, "
             f"vanilla noise skipped: {len(report['noise']) + report.get('noise_not_listed', 0)} (see --json)"
         )
+    if report.get("health"):
+        out.append(f"  health page: {report['health']}")
+    if report.get("health_error"):
+        out.append(f"  health page not updated: {report['health_error']}")
     return "\n".join(out)
+
+
+def save_health(report: dict, project_dir: Path) -> None:
+    """Store the result for /dayz-health. A store that fails is noted in the report; the verdict stands."""
+    try:
+        health.record_gate(project_dir, report)
+        report["health"] = _rel(health.mod_dir(project_dir, report["mod"]) / "health.md", project_dir)
+    except (health.HealthError, OSError) as e:
+        report["health_error"] = str(e)
 
 
 def emit(report: dict, as_json: bool) -> None:
@@ -772,6 +787,7 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
         return _error("no usable project: run /dayz-init", args.json)
     except (GateError, OSError, ValueError, re.error) as e:
         return _error(str(e), args.json)
+    save_health(report, project_dir)
     emit(report, args.json)
     return 0 if report["verdict"] == "PASS" else 1
 
