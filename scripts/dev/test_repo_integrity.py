@@ -145,6 +145,40 @@ def test_every_runnable_skill_has_a_bat_wrapper():
     assert skills - wrapped - RUNNABLE_WITHOUT_BAT == set()
 
 
+SHARED_DIR = SKILLS_DIR / "_shared"
+PACK_INDEX = SHARED_DIR / "README.md"
+NOT_PACKS = {"README.md", "dayz-conventions.md"}  # the index itself and the Tier 2 core
+
+
+def _pack_folders() -> list[Path]:
+    folders = [p for p in SHARED_DIR.iterdir() if p.is_dir() and p.name not in {"conventions", "__pycache__"}]
+    for folder in list(folders):
+        folders += [p for p in folder.rglob("*") if p.is_dir() and p.name != "__pycache__"]
+    folders += [p for p in SKILLS_DIR.glob("*/reference*") if p.is_dir()]
+    return sorted(folders)
+
+
+def _pack_files() -> list[Path]:
+    files = [p for p in SHARED_DIR.glob("*.md") if p.name not in NOT_PACKS]
+    for folder in _pack_folders():
+        files += [p for p in folder.glob("*.md") if p.name != "README.md"]
+    return sorted(files)
+
+
+def test_every_pack_is_in_the_index():
+    index = PACK_INDEX.read_text(encoding="utf-8")
+    listed = set(re.findall(r"`([\w./-]+)`", index))
+    for path in _pack_folders() + _pack_files():
+        rel = path.relative_to(SKILLS_DIR).as_posix()
+        assert rel in listed, f"pack index does not list {rel}"
+
+
+def test_pack_index_paths_exist():
+    index = PACK_INDEX.read_text(encoding="utf-8")
+    for ref in re.findall(r"`((?:_shared|dayz-[\w-]+)/[\w./-]+)`", index):
+        assert (SKILLS_DIR / ref).exists(), f"pack index names missing {ref}"
+
+
 def test_tier_one_files_match():
     texts = {name: (REPO / name).read_text(encoding="utf-8") for name in ("CLAUDE.md", "AGENTS.md", "GEMINI.md")}
     assert len(set(texts.values())) == 1
