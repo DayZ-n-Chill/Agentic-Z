@@ -10,6 +10,7 @@
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
+    "dayz-upgrade-guard": {"kind": "skill", "description": "Snapshot vanilla classes and, after a DayZ update, list mod classes whose vanilla parents changed"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
     "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, inheritance, hidden selections"},
     "dayz-script-specialist": {"kind": "agent", "description": "Write or change Enforce Script (.c) code, modded classes, RPCs"},
@@ -67,6 +68,12 @@
       "route": "dayz-lint",
       "confidence": 0.9,
       "patterns": ["\\blint\\s+(?!(?:the|my|this|it|mod|config|all|everything)\\b)(?P<mod>[A-Za-z][\\w-]*)", "\\blint(?:er|ing)?\\b"]
+    },
+    {
+      "route": "dayz-upgrade-guard",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bupgrade[\\s-]guard\\b", "\\b(?:dayz|game)\\s+(?:just\\s+)?(?:updated|patched)\\b", "\\b(?:after|since)\\s+(?:a|the|this|last)?\\s*(?:dayz|game)\\s+(?:update|patch)\\b", "\\bvanilla\\s+(?:parents?|parent\\s+class(?:es)?)\\s+(?:changed|moved)\\b"]
     },
     {
       "route": "dayz-stop-test",
