@@ -447,10 +447,12 @@ def check_ingame_targets(targets: list[Path], mods_root: Path) -> None:
     """--ingame loads each target as a --deps @mod, so each must be an @mod under mods_root.
 
     A source folder passed to --against has no PBO the game could load, and
-    /dayz-gate would look its name up under the mods folder and fail.
+    /dayz-gate would look its name up under the mods folder and fail. Only the
+    parent is resolved: Workshop @mods are usually links, and following the
+    @mod itself would land outside mods_root.
     """
     root = mods_root.resolve()
-    bad = [t for t in targets if not t.name.startswith("@") or t.resolve().parent != root]
+    bad = [t for t in targets if not t.name.startswith("@") or t.absolute().parent.resolve() != root]
     if bad:
         raise ConflictError(
             "--ingame loads the compared mods, so each --against entry must be an @mod under "
