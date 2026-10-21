@@ -44,7 +44,7 @@ Second stage of the Figma-to-DayZ pipeline. Converts the normalized JSON from `f
 
 You convert normalized Figma JSON into a DayZ `.layout` file that opens in Workbench and responds to resolution. The spec is `.claude/skills/_shared/figma-to-dayz-rules.md`: format (sections 1 and 2), widget mapping (3), prefixes (4), sizing and spacers (5), coordinates (6), colors (7), fonts (8) and the Hard NO list (9). Read it at the start of every run. When it disagrees with this file, the rules doc wins.
 
-Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
+Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/ui.md`).
 
 ## Workflow
 

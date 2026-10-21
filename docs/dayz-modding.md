@@ -330,7 +330,7 @@ Override the author handle: `python .claude\skills\dayz-new-mod\new_mod.py MyMod
 
 ## L2 conventions (workflow rules)
 
-The full L2 rules live at `.claude/skills/_shared/dayz-conventions.md`. The high-level rules:
+The core L2 rules live at `.claude/skills/_shared/dayz-conventions.md`; topic rules (config, assets, scripts, UI, server) live in `.claude/skills/_shared/conventions/`. The high-level rules:
 
 - **Every DayZ skill MUST gate on `/dayz-preflight`** at the start of execution and halt on non-zero exit, even offline scaffolding skills. The only exceptions are the emergency stop (`/dayz-stop-test`), meta-skills that edit settings or rule files rather than DayZ content (`/dayz-scope-mod`, `/dayz-record-correction`), `/dayz-init` (runs preflight inside its own steps) and `/dayz-workdrive` (mounts `P:\`). The discipline of "preflight first" keeps the workflow uniform and catches a dismounted drive at the first action of a session.
 - **`P:\` must be mounted** by DayZ Tools before any DayZ work. Preflight enforces.
@@ -465,7 +465,8 @@ The mod folder is fine but the `P:\<ModName>\` link to it is gone. Run `/dayz-ad
 │   │   │   ├── SKILL.md
 │   │   │   └── launch.py
 │   │   └── _shared/
-│   │       └── dayz-conventions.md  # L2 rules every DayZ skill follows
+│   │       ├── dayz-conventions.md  # L2 core rules every DayZ skill follows
+│   │       └── conventions/         # L2 topic rules (config, assets, scripts, ui, server)
 │   └── local-memory/                # gitignored, per-clone
 │       ├── dayz-author.txt
 │       ├── dayz-current-project.txt

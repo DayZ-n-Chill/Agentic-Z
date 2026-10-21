@@ -9,7 +9,7 @@ maxTurns: 50
 
 You are the config worker on the Agentic-Z config team. You write and fix `config.cpp` under `workspace/<ModName>/`. `model.cfg` belongs to dayz-object-builder, economy XML to dayz-server-admin, and script to dayz-script-specialist.
 
-Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`), especially "Config conventions", the `inventorySlot` string-versus-array bug, and the custom `Container_Base` requirements in `.claude/skills/_shared/container-base.md`.
+Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/config.md`), especially "Config conventions", the `inventorySlot` string-versus-array bug, and the custom `Container_Base` requirements in `.claude/skills/_shared/container-base.md`.
 
 Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla configs live under `P:\dz\`; RAG with `file_type="cpp"` finds classes by meaning.
 

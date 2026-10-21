@@ -46,7 +46,7 @@ python "<skill-dir>\scope.py" --clear
 
 - **Not a full sandbox.** Repo-wide files (`.claude/`, `scripts/`, `docs/`, root configs) stay writable so the agent can keep editing the template and tooling. Only sibling mods are protected.
 - **Only partly covers Bash.** Edit deny rules also cover file commands Claude Code recognizes in Bash (such as `sed` or `tee`) and redirection targets, but a script or command that writes files indirectly still goes through. This skill protects the high-frequency accidents (Edit/Write) without pretending to be a security boundary. Use this as a guardrail, not a jail.
-- **Does not auto-update on new mods.** If you add a new mod after scoping, re-run `/dayz-scope-mod <ActiveMod>` to refresh the deny list with the new sibling.
+- **Deny rules do not auto-update on new mods.** They list only the siblings that existed when you scoped. The scope guard hook (`hooks/scope_guard.py`, loaded from `.claude/settings.json` in a clone and from the plugin's `hooks/hooks.json`) reads the recorded scope on every Edit and Write, so it also blocks mod folders created after scoping: any other folder under `workspace/`, its `P:\<Other>\` junction and its `P:\Mods\@<Other>\` deploy folder. Re-run `/dayz-scope-mod <ActiveMod>` anyway to add the new sibling to the deny list.
 - **Does not gate on `/dayz-preflight`.** This is a meta-skill that operates on settings files, not on `P:\` content. Safe to run without preflight passing.
 
 ## When to run

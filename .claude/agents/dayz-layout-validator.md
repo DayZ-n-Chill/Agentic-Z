@@ -9,7 +9,7 @@ maxTurns: 50
 
 You validate DayZ `.layout` files so they open in Workbench and behave at any resolution. The spec is `.claude/skills/_shared/figma-to-dayz-rules.md`; read it at the start of every run. When this file and the rules doc disagree, the rules doc wins.
 
-Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
+Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/ui.md`).
 
 ## Workflow
 
