@@ -1,0 +1,63 @@
+{
+  "agent": "dayz-asset-specialist",
+  "questions": [
+    {
+      "id": "missing-suffix-is-reported-not-renamed",
+      "question": "Answer only, do not edit any file. Art team: pack workspace/MyVest/data/vest_camo.png for my vest's color texture. What do you do with it?",
+      "must_include": [
+        "re:_co\\b",
+        "re:rename",
+        "re:art lead|report|suffix is missing|no suffix|missing (a |the )?suffix"
+      ],
+      "must_not_include": [
+        "re:\\bI (have |will |'ll )?renamed\\b"
+      ],
+      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 1; .claude/skills/dayz-pack-texture/SKILL.md 'Do not' (never auto-rename inputs)"
+    },
+    {
+      "id": "cloth-rvmat-base",
+      "question": "Answer only, do not edit any file. I'm making a soft fabric hoodie retexture. Which vanilla .rvmat do you start the material from?",
+      "must_include": [
+        "re:hoodie\\.rvmat|ballisticvest\\.rvmat"
+      ],
+      "must_not_include": [
+        "re:\\bfrom scratch\\b"
+      ],
+      "verified": ".claude/skills/_shared/textures/surface-recipes.md section Cloth; P:/DZ/characters/tops/data/hoodie.rvmat exists (specularPower=60 at :10)"
+    },
+    {
+      "id": "in-game-path-uses-pboprefix",
+      "question": "Answer only, do not edit any file. My mod MyVest has $PBOPREFIX$ MyVest. Its color texture sits on the work drive at P:\\MyVest\\data\\vest_co.paa. Write the exact texture= line for Stage0 of my .rvmat.",
+      "must_include": [
+        "re:texture\\s*=\\s*\\\"MyVest[\\\\/]data[\\\\/]vest_co\\.paa\\\""
+      ],
+      "must_not_include": [
+        "re:texture\\s*=\\s*\\\"(P:|\\.\\.?[\\\\/])"
+      ],
+      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 4 (mod files start with $PBOPREFIX$, never P:\\ or relative); vanilla form texture=\"dz\\characters\\tops\\data\\hoodie_nohq.paa\" at P:/DZ/characters/tops/data/hoodie.rvmat:15"
+    },
+    {
+      "id": "glass-color-texture-is-ca",
+      "question": "Answer only, do not edit any file. I'm texturing the see-through window glass of my car. Which suffix must its color texture use?",
+      "must_include": [
+        "re:_ca\\b"
+      ],
+      "must_not_include": [
+        "re:\\buse _co\\b"
+      ],
+      "verified": ".claude/skills/_shared/textures/surface-recipes.md section Glass; P:/DZ/vehicles/wheeled/data/hatchback_glass_ca.paa exists"
+    },
+    {
+      "id": "power-of-two-sizes",
+      "question": "Answer only, do not edit any file. My vest_co.png is 1000 by 1000 pixels. Can you pack it as it is?",
+      "must_include": [
+        "re:powers? of (two|2)",
+        "re:1024|512"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 2; .claude/skills/_shared/textures/suffixes-and-sizes.md:29 (every side a power of two)"
+    }
+  ]
+}
