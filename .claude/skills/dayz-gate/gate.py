@@ -596,6 +596,7 @@ def gate_behavior(
 
 def gate_behavior_logs(mod: str, project_dir: Path, checks_path: Optional[Path], instance: str, files: list[Path]) -> dict:
     """Judge the checks from logs of a session already run (default: the behavior copy's server script logs)."""
+    behavior.check_instance(instance)
     checks = behavior.load_checks(checks_path or behavior.default_checks_path(project_dir, mod))
     copy = instance + behavior.INSTANCE_SUFFIX
     files = files or behavior.server_script_logs(project_dir, copy)

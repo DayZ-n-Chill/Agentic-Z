@@ -204,6 +204,37 @@ def test_prepare_instance_refusals(project):
         behavior.prepare_instance(project, "livonia", CHECKS)
 
 
+def _tree(root: Path) -> set:
+    return {p.relative_to(root) for p in root.rglob("*")}
+
+
+@pytest.mark.parametrize("instance", ["../x", "a\\b", "..", "", "C:x"])
+def test_prepare_instance_refuses_bad_instance_names(project, instance):
+    before = _tree(project.parent)
+    with pytest.raises(behavior.BehaviorError, match="not a valid instance name"):
+        behavior.prepare_instance(project, instance, CHECKS)
+    assert _tree(project.parent) == before
+
+
+def test_log_lookups_refuse_bad_instance_names(project):
+    with pytest.raises(behavior.BehaviorError, match="not a valid instance name"):
+        behavior.server_script_logs(project, "../x")
+    with pytest.raises(behavior.BehaviorError, match="not a valid instance name"):
+        gate.gate_behavior_logs("MyMod", project, None, "a\\b", [])
+
+
+@pytest.mark.parametrize("template", ["C:\\Something", "..\\..\\victim", "..", "x&calc", "a/b"])
+def test_prepare_instance_refuses_bad_templates(project, template):
+    cfg = project / ".server" / "chernarus" / "serverDZ.cfg"
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace(TEMPLATE, template), encoding="utf-8")
+    victim = project / "victim"
+    victim.mkdir()
+    before = _tree(project.parent)
+    with pytest.raises(behavior.BehaviorError, match="one mission folder name"):
+        behavior.prepare_instance(project, "chernarus", CHECKS)
+    assert _tree(project.parent) == before
+
+
 # --- parser --------------------------------------------------------------------------
 
 def _parse(name: str) -> dict:

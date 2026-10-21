@@ -16,6 +16,7 @@ was checked against vanilla P:\\scripts (see SKILL.md, "What behavior does").
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -47,6 +48,8 @@ MARK_BEGIN = "// AZ-BEHAVIOR BEGIN: test mission added by /dayz-gate behavior. N
 MARK_END = "// AZ-BEHAVIOR END"
 START_CALL = "AZ_BehaviorTest.Start(); // AZ-BEHAVIOR"
 TEMPLATE_RE = re.compile(r'^\s*template\s*=\s*"([^"]+)"', re.MULTILINE)
+# A mission template is one plain folder name: no separators, no shell metacharacters.
+TEMPLATE_NAME_RE = re.compile(r"[A-Za-z0-9_.-]+")
 
 PLAYER_WAIT_S = 240  # the in-game gate gives the client 300 s to reach the mission
 SETTLE_S = 10        # seconds after the player appears before the first check
@@ -356,6 +359,16 @@ def _remove_tree(path: Path) -> None:
         path.unlink()
 
 
+def check_instance(instance: str) -> str:
+    """Refuse an instance that is not one folder name directly under .server/ (same rule as /dayz-add-server)."""
+    if instance in ("", ".", "..") or any(c in instance for c in '/\\:*?"<>|'):
+        raise BehaviorError(
+            f"{instance!r} is not a valid instance name: use a single folder name "
+            "(no path separators, drive letters, '..', or the characters * ? \" < > |)"
+        )
+    return instance
+
+
 def make_junction(link: Path, target: Path) -> None:
     result = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)], capture_output=True, text=True)
     if result.returncode != 0:
@@ -369,6 +382,7 @@ def prepare_instance(project_dir: Path, instance: str, checks: list[dict]) -> di
     test world starts fresh), the <template>/ junction /dayz-launch-test needs
     and an empty Profiles/. A previous copy is replaced; its Profiles/ logs stay.
     """
+    check_instance(instance)
     if instance.endswith(INSTANCE_SUFFIX):
         raise BehaviorError(f"pass the original instance, not the behavior copy {instance!r}")
     server = project_dir / ".server"
@@ -381,11 +395,16 @@ def prepare_instance(project_dir: Path, instance: str, checks: list[dict]) -> di
     if match is None:
         raise BehaviorError(f'{cfg} has no template = "..."; line. Run /dayz-add-server {instance}')
     template = match.group(1)
+    if template in (".", "..") or not TEMPLATE_NAME_RE.fullmatch(template):
+        raise BehaviorError(f"{cfg} has template = {template!r}; it must be one mission folder name such as dayzOffline.chernarusplus")
 
     name = instance + INSTANCE_SUFFIX
     dst = server / name
     mission = dst / "mission"
     link = dst / template
+    # link may already be a junction, so check its own path, not where it points.
+    if dst.resolve().parent != server.resolve() or Path(os.path.normpath(dst.resolve() / template)).parent != dst.resolve():
+        raise BehaviorError(f"refusing to write outside {server}: instance {instance!r}, template {template!r}")
     dst.mkdir(parents=True, exist_ok=True)
     _remove_tree(link)
     _remove_tree(mission)
@@ -445,5 +464,6 @@ def read_logs(files: list[Path]) -> list[tuple[Path, int, str]]:
 
 def server_script_logs(project_dir: Path, instance: str) -> list[Path]:
     """The behavior copy's server script logs, oldest first (the test mission prints there)."""
+    check_instance(instance)
     profiles = project_dir / ".server" / instance / "Profiles"
     return sorted(profiles.glob("script*.log")) if profiles.is_dir() else []
