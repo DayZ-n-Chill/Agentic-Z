@@ -1,0 +1,72 @@
+{
+  "name": "craftable",
+  "title": "New craftable",
+  "summary": "A new item that a player crafts from two vanilla items: its config class, a crafting recipe in script, the recipe registered with the vanilla recipe manager, and a loot entry.",
+  "item": {"default": "{mod}_Item", "root": "CfgVehicles"},
+  "options": {
+    "parent": {"default": "Inventory_Base", "root": "CfgVehicles", "hint": "dz/data/config.cpp",
+               "help": "Vanilla class the new item inherits"},
+    "ingredient1": {"default": "Rag", "root": "CfgVehicles", "hint": "dz/gear/consumables/config.cpp",
+                    "help": "First vanilla ingredient"},
+    "ingredient2": {"default": "DuctTape", "root": "CfgVehicles", "hint": "dz/gear/consumables/config.cpp",
+                    "help": "Second vanilla ingredient"}
+  },
+  "fits": [],
+  "scripts": [
+    {"symbol": "RecipeBase", "pattern": "^\\s*class\\s+RecipeBase\\b", "hint": "4_world/classes/recipes/recipebase.c",
+     "why": "Base class of the new recipe."},
+    {"symbol": "PluginRecipesManager", "pattern": "^\\s*class\\s+PluginRecipesManager\\b", "hint": "4_world/plugins/pluginbase/pluginrecipesmanager.c",
+     "why": "Modded to register the recipe."},
+    {"symbol": "RegisterRecipies", "pattern": "^\\s*void\\s+RegisterRecipies\\s*\\(", "hint": "4_world/classes/recipes/recipes/pluginrecipesmanagerbase.c",
+     "why": "The method the modded manager overrides, calling super first."},
+    {"symbol": "CraftRagRope", "pattern": "^\\s*class\\s+CraftRagRope\\b", "hint": "4_world/classes/recipes/recipes/craftragrope.c",
+     "why": "A vanilla two ingredient recipe to mirror."}
+  ],
+  "classes": [
+    {"name": "{item}", "where": "config.cpp, CfgVehicles", "parent": "{parent}",
+     "notes": "scope 2, with its own model, itemSize and weight."},
+    {"name": "Craft_{item}", "where": "scripts/4_World, script class", "parent": "RecipeBase",
+     "notes": "Ingredients {ingredient1} and {ingredient2}, result {item}."},
+    {"name": "PluginRecipesManager", "where": "scripts/4_World, modded class", "parent": "none (modded)",
+     "notes": "Overrides RegisterRecipies(), calls super, then RegisterRecipe(new Craft_{item})."}
+  ],
+  "files": [
+    {"path": "workspace/{mod}/config.cpp", "what": "Add {parent_addon} to requiredAddons[] and the {item} class to CfgVehicles. CfgMods must list scripts/4_World."},
+    {"path": "workspace/{mod}/scripts/4_World/{mod}/recipes/craft_{item_lower}.c", "what": "The Craft_{item} recipe."},
+    {"path": "workspace/{mod}/scripts/4_World/{mod}/plugins/pluginrecipesmanager.c", "what": "The modded PluginRecipesManager that registers it."},
+    {"path": "workspace/{mod}/data/", "what": "Model and texture for {item}."},
+    {"path": ".server/<instance>/mission/db/types.xml", "what": "Entry for {item}."}
+  ],
+  "tasks": [
+    {"id": "T1", "team": "Config", "worker": "dayz-config-specialist",
+     "task": "Add class {item} : {parent} to CfgVehicles with scope 2, displayName, descriptionShort, model, itemSize and weight. Add {parent_addon} to requiredAddons[]. Make sure CfgMods lists scripts/4_World.",
+     "done": "/dayz-lint {mod} passes and {item} inherits {parent}.",
+     "files": ["workspace/{mod}/config.cpp"], "depends": []},
+    {"id": "T2", "team": "Art", "worker": "dayz-object-builder",
+     "task": "Make or pick the model for {item} and its texture, or reuse a vanilla model if the user agrees.",
+     "done": "/dayz-p3d-audit passes on the model, and the model path in config.cpp exists.",
+     "files": ["workspace/{mod}/data/"], "depends": []},
+    {"id": "T3", "team": "Script", "worker": "dayz-script-specialist",
+     "task": "Write Craft_{item} extends RecipeBase, mirroring CraftRagRope: ingredient 0 {ingredient1}, ingredient 1 {ingredient2}, result {item}. Register it in a modded PluginRecipesManager that overrides RegisterRecipies(), calls super.RegisterRecipies(), then RegisterRecipe(new Craft_{item}).",
+     "done": "/dayz-lint {mod} passes and the modded class has no extends clause.",
+     "files": ["workspace/{mod}/scripts/4_World/{mod}/recipes/craft_{item_lower}.c", "workspace/{mod}/scripts/4_World/{mod}/plugins/pluginrecipesmanager.c"],
+     "depends": ["T1"]},
+    {"id": "T4", "team": "Server", "worker": "dayz-server-admin",
+     "task": "Add a types.xml entry for {item} with /dayz-edit-types. Use nominal 0 if it is only crafted.",
+     "done": "The entry exists and min is not above nominal.",
+     "files": [".server/<instance>/mission/db/types.xml"], "depends": ["T1"]}
+  ],
+  "checks": [
+    {"id": "craft-spawn", "feature": "The crafted item exists in the world", "item": "{item}", "action": "spawn"},
+    {"id": "craft-hands", "feature": "A player can hold the crafted item", "item": "{item}", "action": "hands"}
+  ],
+  "needs_person": [
+    "The craft itself: combine {ingredient1} and {ingredient2} in game and check that {item} appears and the ingredients are used up. The gate has no craft action."
+  ],
+  "questions": [
+    "What display name and description should the item have?",
+    "What should crafting use up: all of both ingredients, or part of a stack?",
+    "Should it also spawn as loot, or only be crafted?",
+    "A new model, or a vanilla model to start with?"
+  ]
+}

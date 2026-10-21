@@ -1,0 +1,256 @@
+"""Tests for upgrade_guard.py: the two fixture snapshots and the fixture mod, plus fake P:\\ roots in tmp_path. No DayZ, no real P:\\."""
+from __future__ import annotations
+
+import importlib.util
+import json
+import shutil
+from pathlib import Path
+
+import pytest
+
+HERE = Path(__file__).resolve().parent
+FIXTURES = HERE / "fixtures"
+_spec = importlib.util.spec_from_file_location("dayz_upgrade_guard_under_test", HERE / "upgrade_guard.py")
+guard = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(guard)
+
+OLD = json.loads((FIXTURES / "snapshot_old.json").read_text(encoding="utf-8"))
+NEW = json.loads((FIXTURES / "snapshot_new.json").read_text(encoding="utf-8"))
+MOD = FIXTURES / "MyVest"
+
+
+def _reasons(report: dict) -> dict[str, list[str]]:
+    return {f["class"]: [r["reason"] for r in f["reasons"]] for f in report["findings"]}
+
+
+# --- diff of the two fixture snapshots -------------------------------------------
+
+def test_diff_finds_each_vanilla_change():
+    diff = guard.diff_snapshots(OLD, NEW)
+    assert diff["script"]["removed"] == ["Hologram"]
+    assert diff["script"]["added"] == ["Fence"]
+    assert diff["script"]["parent"] == [{"class": "Clothing", "old": "Clothing_Base", "new": "ItemBase"}]
+    assert diff["script"]["methods"] == [{"class": "ItemBase", "removed": ["GetQuickBarBonus"], "changed": ["OnWasAttached"]}]
+    assert diff["config"]["members"] == [{"class": "CfgVehicles/PlateCarrierVest", "removed": ["hiddenSelections"]}]
+    assert diff["config"]["parent"] == [] and diff["config"]["removed"] == []
+
+
+def test_same_snapshot_has_an_empty_diff():
+    assert guard.diff_is_empty(guard.diff_snapshots(OLD, OLD))
+    assert guard.same_classes(OLD, json.loads(json.dumps(OLD)))
+
+
+# --- the fixture mod against the two snapshots ------------------------------------
+
+def test_mod_classes_whose_vanilla_parents_changed_are_listed():
+    report = guard.check_mod("MyVest", MOD, OLD, NEW, display_root=FIXTURES)
+    reasons = _reasons(report)
+    assert reasons == {
+        "MyVest_Base": ["parent-changed"],
+        "ItemBase": ["override-removed", "override-changed"],
+        "MyVest_Hologram": ["parent-removed"],
+        "CfgVehicles/MyVest_PlateCarrier": ["members-removed"],
+    }
+    # Built on vanilla: 5 script classes (the CF one is skipped) and 2 config items.
+    assert report["classes_checked"] == 7
+
+
+def test_findings_carry_file_line_and_a_readable_reason():
+    report = guard.check_mod("MyVest", MOD, OLD, NEW, display_root=FIXTURES)
+    by_class = {f["class"]: f for f in report["findings"]}
+    assert by_class["MyVest_Base"]["where"] == "MyVest/scripts/4_World/MyVest.c:3"
+    assert by_class["CfgVehicles/MyVest_PlateCarrier"]["where"] == "MyVest/config.cpp:15"
+    assert by_class["MyVest_Base"]["reasons"][0]["message"] == "vanilla Clothing now extends ItemBase (was Clothing_Base)"
+    changed = next(r for r in by_class["ItemBase"]["reasons"] if r["reason"] == "override-changed")
+    assert changed["method"] == "OnWasAttached"
+    assert "from_cargo" in changed["message"]
+    assert by_class["CfgVehicles/MyVest_PlateCarrier"]["reasons"][0]["members"] == ["hiddenSelections"]
+
+
+def test_unchanged_vanilla_affects_nothing():
+    report = guard.check_mod("MyVest", MOD, OLD, OLD)
+    assert report["findings"] == []
+
+
+def test_config_redeclared_with_an_old_parent(tmp_path):
+    (tmp_path / "config.cpp").write_text(
+        "class CfgVehicles\n{\n    class Clothing_Base;\n    class Clothing: Clothing_Base\n    {\n        itemSize[] = {2,2};\n    };\n};\n",
+        encoding="utf-8")
+    new = json.loads(json.dumps(NEW))
+    new["config"]["CfgVehicles/Clothing"]["parent"] = "Inventory_Base"
+    report = guard.check_mod("Redeclare", tmp_path, OLD, new)
+    assert _reasons(report)["CfgVehicles/Clothing"][0] == "redeclared-parent"
+
+
+def test_missing_mod_folder_is_an_error(tmp_path):
+    with pytest.raises(guard.GuardError):
+        guard.check_mod("Gone", tmp_path / "Gone", OLD, NEW)
+
+
+# --- parsing ----------------------------------------------------------------------
+
+def test_script_parser_reads_classes_and_methods():
+    text = """
+    // class InComment extends Nope {}
+    /* class InBlock extends Nope {} */
+    class Fwd;
+    class Param1<Class T1> extends Param { T1 param1; void Param1(T1 p1) { param1 = p1; } }
+    sealed class Sealed {}
+    class Plain : Managed
+    {
+        [NonSerialized()]
+        int m_Count = Count("x;{");
+        ref array<string> m_List = new array<string>();
+        void Plain() {}
+        void ~Plain() {}
+        override protected bool Do(int a, float b = 0.5, string s = "a,b")
+        {
+            if (a) { return true; }
+            return false;
+        }
+        proto native int Native(out vector pos);
+    }
+    modded class Plain { override void Extra() {} }
+    """
+    decls = {(d["name"], d["modded"]): d for d in guard.parse_script(text)}
+    assert set(decls) == {("Param1", False), ("Sealed", False), ("Plain", False), ("Plain", True)}
+    assert decls[("Param1", False)]["parent"] == "Param"
+    plain = decls[("Plain", False)]
+    assert plain["parent"] == "Managed"
+    assert plain["line"] == 7
+    methods = {name: sig for name, (sig, _) in plain["methods"].items()}
+    assert methods == {
+        "Plain": "void Plain()",
+        "~Plain": "void ~Plain()",
+        "Do": "protected bool Do(int a, float b, string s)",
+        "Native": "proto native int Native(out vector pos)",
+    }
+    assert plain["methods"]["Do"][1] is True
+    assert decls[("Plain", True)]["methods"]["Extra"] == ("void Extra()", True)
+
+
+def test_config_parser_keeps_parents_and_member_names():
+    text = """
+    class CfgPatches { class A { units[] = {}; weapons[] = {}; requiredAddons[] = {}; }; };
+    class CfgVehicles
+    {
+        class Clothing;
+        class Vest: Clothing
+        {
+            scope = 2;
+            hiddenSelections[] = {"camo"};
+            itemInfo[] += {"Vest"};
+            class DamageSystem { class GlobalHealth { hitpoints = 100; }; };
+        };
+    };
+    """
+    decls = {f"{d['container']}/{d['name']}": d for d in guard.parse_config(text)}
+    assert set(decls) == {"CfgPatches/A", "CfgVehicles/Vest"}
+    vest = decls["CfgVehicles/Vest"]
+    assert vest["parent"] == "Clothing"
+    assert vest["members"] == ["DamageSystem", "hiddenSelections", "itemInfo", "scope"]
+
+
+# --- snapshot and check from fake P:\ roots ------------------------------------------
+
+def _fake_p(root: Path, clothing_parent: str, quickbar: bool) -> Path:
+    scripts = root / "scripts" / "4_world"
+    scripts.mkdir(parents=True)
+    quick = "int GetQuickBarBonus() { return 0; }" if quickbar else ""
+    (scripts / "itembase.c").write_text(
+        f"class ItemBase extends InventoryItem {{ void SetActions() {{}} {quick} }}\n"
+        "class InventoryItem extends EntityAI {}\n"
+        f"class Clothing extends {clothing_parent} {{}}\n"
+        "class Clothing_Base extends ItemBase {}\n",
+        encoding="utf-8")
+    (scripts / "modded_part.c").write_text("modded class ItemBase { void Extra() {} }\n", encoding="utf-8")
+    cfg = root / "DZ" / "characters"
+    cfg.mkdir(parents=True)
+    (cfg / "config.cpp").write_text(
+        "class CfgVehicles { class Clothing_Base; class Clothing: Clothing_Base { itemSize[] = {1,1}; }; };\n",
+        encoding="utf-8")
+    (root / "DZ" / "characters" / "broken").mkdir()
+    (root / "DZ" / "characters" / "broken" / "config.cpp").write_text('class X { a = "unclosed; };\n', encoding="utf-8")
+    return root
+
+
+def test_snapshot_reads_a_fake_p_root(tmp_path):
+    snap = guard.take_snapshot(_fake_p(tmp_path / "p", "Clothing_Base", True))
+    assert snap["script"]["ItemBase"]["parent"] == "InventoryItem"
+    assert set(snap["script"]["ItemBase"]["methods"]) == {"SetActions", "GetQuickBarBonus", "Extra"}
+    assert snap["script"]["ItemBase"]["file"] == "scripts/4_world/itembase.c"
+    assert snap["config"]["CfgVehicles/Clothing"] == {
+        "parent": "Clothing_Base", "file": "DZ/characters/config.cpp", "line": 1, "members": ["itemSize"]}
+    assert snap["skipped"] == ["DZ/characters/broken/config.cpp"]
+
+
+def test_snapshot_without_game_data_is_an_error(tmp_path, capsys):
+    assert guard.main(["snapshot", "--p-root", str(tmp_path), "--store", str(tmp_path / "store")]) == 2
+    assert capsys.readouterr().out.startswith("ERROR")
+
+
+def test_check_before_and_after_an_update(tmp_path, capsys, monkeypatch):
+    store = tmp_path / "store"
+    mod = tmp_path / "MyVest"
+    shutil.copytree(MOD, mod)
+    reindexed = []
+    monkeypatch.setattr(guard, "run_reindex", lambda: reindexed.append(True) or 0)
+    before = _fake_p(tmp_path / "before", "Clothing_Base", True)
+    after = _fake_p(tmp_path / "after", "ItemBase", False)
+    common = ["--store", str(store), "--mod-dir", str(mod)]
+
+    # First run: nothing to compare with, so it saves the baseline.
+    assert guard.main(["check", "--p-root", str(before), *common]) == 0
+    assert "baseline" in capsys.readouterr().out
+    assert len(guard.stored_snapshots(store)) == 1
+
+    # Same game data again: PASS, and no second copy is saved.
+    assert guard.main(["check", "--p-root", str(before), "--reindex", *common]) == 0
+    assert capsys.readouterr().out.startswith("PASS")
+    assert len(guard.stored_snapshots(store)) == 1 and not reindexed
+
+    # After the update: FAIL with the affected classes, a new snapshot and a re index.
+    assert guard.main(["check", "--p-root", str(after), "--reindex", "--json", *common]) == 1
+    out = capsys.readouterr().out
+    assert out.startswith("FAIL")
+    report = json.loads(out[out.index("{"):out.rindex("}") + 1])
+    assert _reasons(report["mods"][0]) == {"MyVest_Base": ["parent-changed"], "ItemBase": ["override-removed"]}
+    assert len(guard.stored_snapshots(store)) == 2 and reindexed == [True]
+
+    # diff shows the same report again from the two saved snapshots.
+    assert guard.main(["diff", *common]) == 1
+    assert "MyVest_Base" in capsys.readouterr().out
+
+
+def test_diff_with_the_fixture_snapshots_from_the_cli(capsys):
+    args = ["diff", "--old", str(FIXTURES / "snapshot_old.json"), "--new", str(FIXTURES / "snapshot_new.json"),
+            "--mod-dir", str(MOD)]
+    assert guard.main(args) == 1
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "FAIL"
+    assert "script Clothing now extends ItemBase (was Clothing_Base)" in out
+    assert "script Hologram removed" in out
+    assert "MyVest: 7 class(es) built on vanilla, 4 affected" in out
+
+
+def test_diff_needs_two_snapshots(tmp_path, capsys):
+    assert guard.main(["diff", "--store", str(tmp_path), "--mod-dir", str(MOD)]) == 2
+    assert capsys.readouterr().out.startswith("ERROR")
+
+
+def test_no_mods_named_and_no_project_checks_vanilla_only(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(guard, "_cached_project", lambda: None)
+    args = ["diff", "--old", str(FIXTURES / "snapshot_old.json"), "--new", str(FIXTURES / "snapshot_new.json")]
+    assert guard.main(args) == 0
+    assert "No mods checked" in capsys.readouterr().out
+
+
+def test_every_mod_in_the_workspace_is_checked_by_default(tmp_path, capsys, monkeypatch):
+    shutil.copytree(MOD, tmp_path / "workspace" / "MyVest")
+    (tmp_path / "workspace" / "Empty").mkdir()
+    monkeypatch.setattr(guard, "_cached_project", lambda: tmp_path)
+    args = ["diff", "--old", str(FIXTURES / "snapshot_old.json"), "--new", str(FIXTURES / "snapshot_new.json")]
+    assert guard.main(args) == 1
+    out = capsys.readouterr().out
+    assert "Empty: 0 class(es)" in out
+    assert "workspace/MyVest/scripts/4_World/MyVest.c:3" in out

@@ -32,9 +32,16 @@ def decide(text, env=NO_KEY):
         ("check my mod for conflicts with CF and Expansion", "dayz-conflict-check", None),
         ("do my classes collide with COT?", "dayz-conflict-check", None),
         ("run the linter on my mod", "dayz-lint", None),
+        ("balance MyVest", "dayz-balance", {"mod": "MyVest"}),
+        ("is my vest balanced against vanilla?", "dayz-balance", None),
+        ("is my new rifle overpowered", "dayz-balance", None),
+        ("compare my backpack stats with vanilla", "dayz-balance", None),
         ("launch the test server", "dayz-launch-test", None),
         ("test it in-game", "dayz-launch-test", None),
         ("stop", "dayz-stop-test", None),
+        ("watch the logs while I test MyVest", "dayz-logwatch", None),
+        ("tail the server script.log for errors", "dayz-logwatch", None),
+        ("start logwatch", "dayz-logwatch", None),
         ("kill the dayz session", "dayz-stop-test", None),
         ("add my jacket to types.xml", "dayz-server-admin", None),
         ("make the AK spawn less often", "dayz-server-admin", None),
@@ -68,12 +75,29 @@ def decide(text, env=NO_KEY):
         ("preview gui/layouts/compass.layout at 4k", "dayz-layout-preview", None),
         ("show me a layout preview of my HUD", "dayz-layout-preview", None),
         ("render trader_menu.layout at different screen sizes", "dayz-layout-preview", None),
+        ("run the upgrade guard on MyVest", "dayz-upgrade-guard", None),
+        ("DayZ just updated, which of my classes broke?", "dayz-upgrade-guard", None),
+        ("after the DayZ update, check my modded classes", "dayz-upgrade-guard", None),
         # Real preview widgets in a HUD or menu are UI work, not a layout preview.
         ("make a player preview panel in the hud", "dayz-ui-specialist", None),
         ("add an item preview widget to my inventory menu", "dayz-ui-specialist", None),
         # UI icons and the Dabs Framework MVC layer go to the UI specialist.
         ("pack my menu icons into an imageset", "dayz-ui-specialist", None),
         ("make a Dabs ScriptView for my trader panel", "dayz-ui-specialist", None),
+        # Release texts and the server kit beat the docs writer and server admin rules they overlap.
+        ("make the release pack for MyVest", "dayz-release-pack", {"mod": "MyVest"}),
+        ("write the workshop description and changelog for my vest", "dayz-release-pack", None),
+        ("build the server kit for MyVest", "dayz-server-kit", {"mod": "MyVest"}),
+        ("zip the types.xml entries and cfgeconomycore lines for server owners", "dayz-server-kit", None),
+        ("start MyRifle from the new weapon recipe", "dayz-recipe", {"recipe": "weapon"}),
+        ("use the vest recipe for my plate carrier mod", "dayz-recipe", {"recipe": "vest"}),
+        ("run /dayz-recipe craftable MyKit", "dayz-recipe", None),
+        ("build me a weapon mod from a recipe for a new weapon", "dayz-recipe", {"recipe": "weapon"}),
+        # Questions about how vanilla works get a cited answer, whatever they are about.
+        ("how does vanilla handle food spoilage?", "dayz-ask", None),
+        ("Where is bleeding started in vanilla?", "dayz-ask", None),
+        ("what does vanilla use for the AKM recoil?", "dayz-ask", None),
+        ("How does DayZ decide when food goes bad?", "dayz-ask", None),
     ],
 )
 def test_rules_route_confidently(text, expected, args):
@@ -125,8 +149,23 @@ def test_spawn_alone_is_not_server_admin(text):
     assert d["route"] in {"dayz-ai-specialist", "dayz-vehicle-specialist", None}
 
 
+def test_a_crash_after_an_update_is_still_the_debuggers():
+    assert decide("my server crashes after the DayZ update")["route"] == "dayz-mod-debugger"
+
+
+@pytest.mark.parametrize("text", ["add a crafting recipe for a new vest", "write a craft recipe that makes a new weapon",
+                                  "add a recipe so players can craft rope"])
+def test_crafting_recipes_are_not_mod_recipes(text):
+    assert decide(text)["route"] != "dayz-recipe"
+
+
 def test_orchestrator_is_a_team():
     assert decide("build me a vest mod")["kind"] == "team"
+
+
+@pytest.mark.parametrize("text", ["make my vest work like the vanilla one", "add a vanilla style rifle"])
+def test_vanilla_in_a_change_request_is_not_a_question(text):
+    assert decide(text)["route"] != "dayz-ask"
 
 
 @pytest.mark.parametrize("text", ["build me a mod", "build a pbo", "build the config", "build it"])

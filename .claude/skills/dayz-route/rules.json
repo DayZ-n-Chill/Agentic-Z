@@ -6,11 +6,18 @@
     "dayz-lint": {"kind": "skill", "description": "Check a mod for errors that would stop it loading, before packing"},
     "dayz-conflict-check": {"kind": "skill", "description": "Find class name and path collisions between a mod and CF, COT, Expansion or other mods"},
     "dayz-launch-test": {"kind": "skill", "description": "Launch the local DayZ Diag test server and client"},
+    "dayz-logwatch": {"kind": "skill", "description": "Watch a running test session's logs and triage each new error line as it appears"},
     "dayz-stop-test": {"kind": "skill", "description": "Stop a running local DayZ test session"},
     "dayz-preflight": {"kind": "skill", "description": "Check the DayZ modding environment (P: drive, DayZ Tools)"},
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
+    "dayz-upgrade-guard": {"kind": "skill", "description": "Snapshot vanilla classes and, after a DayZ update, list mod classes whose vanilla parents changed"},
+    "dayz-balance": {"kind": "skill", "description": "Compare a mod's item stats with similar vanilla items and flag outliers"},
+    "dayz-release-pack": {"kind": "skill", "description": "Write a mod's Workshop description, changelog from version history, classname list and server owner install notes"},
+    "dayz-server-kit": {"kind": "skill", "description": "Zip types.xml entries, cfgeconomycore lines, load order and the public .bikey for server owners"},
+    "dayz-recipe": {"kind": "skill", "description": "Start a mod plan from a recipe: new weapon, new vest or new craftable"},
+    "dayz-ask": {"kind": "skill", "description": "Answer a question about how vanilla DayZ works, with path:line citations"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
     "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, inheritance, hidden selections"},
     "dayz-script-specialist": {"kind": "agent", "description": "Write or change Enforce Script (.c) code, modded classes, RPCs"},
@@ -35,6 +42,12 @@
     "figma-node-normalizer": {"kind": "agent", "description": "Start the Figma pipeline: turn a Figma design or figma.com link into a checked DayZ .layout"}
   },
   "rules": [
+    {
+      "route": "dayz-recipe",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bdayz-recipe\\b", "(?<!craft )(?<!crafting )\\brecipes?\\b[\\w\\s]{0,20}?\\bnew\\s+(?P<recipe>weapon|vest|craftable)\\b", "(?<!craft )(?<!crafting )\\b(?:new\\s+)?(?P<recipe>weapon|vest|craftable)\\s+recipe\\b", "\\b(?:mod|plan)\\s+recipes?\\b"]
+    },
     {
       "route": "orchestrator",
       "confidence": 0.95,
@@ -81,6 +94,24 @@
       "patterns": ["\\blint\\s+(?!(?:the|my|this|it|mod|config|all|everything)\\b)(?P<mod>[A-Za-z][\\w-]*)", "\\blint(?:er|ing)?\\b"]
     },
     {
+      "route": "dayz-upgrade-guard",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bupgrade[\\s-]guard\\b", "\\b(?:dayz|game)\\s+(?:just\\s+)?(?:updated|patched)\\b", "\\b(?:after|since)\\s+(?:a|the|this|last)?\\s*(?:dayz|game)\\s+(?:update|patch)\\b", "\\bvanilla\\s+(?:parents?|parent\\s+class(?:es)?)\\s+(?:changed|moved)\\b"]
+    },
+    {
+      "route": "dayz-balance",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bbalance\\s+(?:check\\s+)?(?!(?:the|my|this|it|of|for|on|all|everything|check|items?|stats?|mod)\\b)(?P<mod>[A-Za-z][\\w-]*)", "\\b(?:balanced?|balancing|imbalanced?|unbalanced)\\b", "\\b(?:over|under)powered\\b", "\\bcompared?\\b[\\w\\s']{0,40}?\\b(?:with|to|against)\\s+vanilla\\b"]
+    },
+    {
+      "route": "dayz-ask",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["^\\s*(?:how|where|what|which|why|when)\\b[^?]{0,80}?\\bvanilla\\b", "^\\s*how\\s+does\\s+(?:dayz|the\\s+game)\\b"]
+    },
+    {
       "route": "dayz-stop-test",
       "confidence": 0.9,
       "patterns": ["^\\s*(?:please\\s+)?(?:stop|kill)\\b", "\\b(?:stop|kill|shut\\s*down|close)\\s+(?:the\\s+)?(?:test|server|client|game|dayz|session)"]
@@ -102,10 +133,28 @@
       "patterns": ["\\bscaffold\\b"]
     },
     {
+      "route": "dayz-logwatch",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\blog\\s*watch(?:er)?\\b", "\\b(?:watch|tail|follow|monitor)\\s+(?:the\\s+|my\\s+)?(?:server\\s+|client\\s+)?(?:logs?|script\\.log|rpts?)\\b"]
+    },
+    {
       "route": "dayz-mod-debugger",
       "confidence": 0.95,
       "absorbs": true,
       "patterns": ["access violation", "unhandled exception", "exception code", "\\bSCRIPT\\s+\\(E\\)", "can't compile", "null pointer", "\\bcrash(?:es|ed|ing|\\.log)?\\b", "\\bscript\\.log\\b", "\\.rpt\\b", "\\bstack trace\\b"]
+    },
+    {
+      "route": "dayz-server-kit",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bserver[- ]?kit\\b(?:\\s+(?:for|of)\\s+(?P<mod>[A-Za-z][\\w-]*))?", "\\b(?:zip|bundle|package)\\b[^\\n]{0,80}?\\bfor\\s+server\\s+owners?\\b"]
+    },
+    {
+      "route": "dayz-release-pack",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\brelease[- ]?pack\\b(?:\\s+(?:for|of)\\s+(?P<mod>[A-Za-z][\\w-]*))?", "\\bworkshop\\s+(?:description|page|text|listing)\\b", "\\brelease\\s+(?:notes|texts?)\\b"]
     },
     {
       "route": "dayz-server-admin",
