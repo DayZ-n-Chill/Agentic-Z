@@ -12,6 +12,7 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `new-mod.bat` | Create a new mod in `workspace\` | `new-mod.bat MyVest --author Me` |
 | `import-mod.bat` | Bring an existing mod folder in | `import-mod.bat --source D:\Mods\MyVest` |
 | `add-scaffold.bat` | Add missing standard pieces to a mod | `add-scaffold.bat MyVest --piece junction` |
+| `recipe.bat` | Start a mod plan from a recipe: weapon, vest or craftable | `recipe.bat vest MyVest` |
 | `scope-mod.bat` | Lock editing to one mod | `scope-mod.bat MyVest` |
 | `lint.bat` | Find errors that would stop a mod loading, with PASS or FAIL | `lint.bat MyVest` |
 | `build-pbo.bat` | Pack a mod into a PBO | `build-pbo.bat MyVest` |

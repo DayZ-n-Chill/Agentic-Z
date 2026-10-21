@@ -1,0 +1,57 @@
+{
+  "name": "weapon",
+  "title": "New weapon",
+  "summary": "A new firearm built on a vanilla one: its own class and textures on the vanilla model, the vanilla magazines and attachments, and a loot entry.",
+  "item": {"default": "{mod}_Rifle", "root": "CfgWeapons"},
+  "options": {
+    "parent": {"default": "AKM", "root": "CfgWeapons", "hint": "dz/weapons/firearms/akm/config.cpp",
+               "help": "Vanilla weapon the new one inherits"},
+    "attachment": {"default": "AK_WoodBttstck", "root": "CfgVehicles", "hint": "dz/weapons/attachments/support/config.cpp",
+                   "help": "Vanilla attachment for the attach check; it must fit a slot of the parent"},
+    "magazine": {"default": "Mag_AKM_30Rnd", "root": "CfgMagazines", "hint": "dz/weapons/attachments/magazine/config.cpp",
+                 "help": "Vanilla magazine the weapon must accept"}
+  },
+  "fits": [
+    {"kind": "slot", "item": "attachment", "host": "parent"},
+    {"kind": "magazine", "item": "magazine", "host": "parent"}
+  ],
+  "scripts": [],
+  "classes": [
+    {"name": "{item}", "where": "config.cpp, CfgWeapons", "parent": "{parent}",
+     "notes": "scope 2. Its script class is the parent's, so no script is needed."}
+  ],
+  "files": [
+    {"path": "workspace/{mod}/config.cpp", "what": "Add {parent_addon} to requiredAddons[] and the {item} class to CfgWeapons."},
+    {"path": "workspace/{mod}/data/{item_lower}_co.paa", "what": "Texture for the hidden selections ({parent_selections})."},
+    {"path": ".server/<instance>/mission/db/types.xml", "what": "Loot entry for {item}."}
+  ],
+  "tasks": [
+    {"id": "T1", "team": "Config", "worker": "dayz-weapon-specialist",
+     "task": "Add class {item} : {parent} to CfgWeapons with scope 2, displayName and descriptionShort. Set hiddenSelectionsTextures for {parent_selections} to the new texture. Add {parent_addon} to requiredAddons[].",
+     "done": "/dayz-lint {mod} passes and {item} inherits {parent}.",
+     "files": ["workspace/{mod}/config.cpp"], "depends": []},
+    {"id": "T2", "team": "Art", "worker": "dayz-asset-specialist",
+     "task": "Make {item_lower}_co.paa from the user's PNG or TGA source with /dayz-pack-texture, laid out like the {parent} texture.",
+     "done": "The .paa exists at the path T1 put in hiddenSelectionsTextures.",
+     "files": ["workspace/{mod}/data/{item_lower}_co.paa"], "depends": []},
+    {"id": "T3", "team": "Server", "worker": "dayz-server-admin",
+     "task": "Add a types.xml entry for {item} with /dayz-edit-types, starting from the vanilla {parent} entry.",
+     "done": "The entry exists and min is not above nominal.",
+     "files": [".server/<instance>/mission/db/types.xml"], "depends": ["T1"]}
+  ],
+  "checks": [
+    {"id": "weapon-spawn", "feature": "The weapon exists in the world", "item": "{item}", "action": "spawn"},
+    {"id": "weapon-hands", "feature": "A player can hold the weapon", "item": "{item}", "action": "hands"},
+    {"id": "weapon-attach", "feature": "The {attachment} attaches to the weapon", "item": "{item}", "action": "attach", "with": "{attachment}"}
+  ],
+  "needs_person": [
+    "Firing, recoil, reloading with {magazine} and the sight picture. The gate has no fire action.",
+    "How the new texture looks in hands and on the ground."
+  ],
+  "questions": [
+    "What display name and description should the weapon have?",
+    "New textures on the vanilla {parent} model, or a new model? This draft assumes new textures only.",
+    "Change any stats (fire modes, recoil, damage), or keep the {parent} values?",
+    "Where should it spawn, and how often?"
+  ]
+}
