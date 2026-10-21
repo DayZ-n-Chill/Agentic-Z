@@ -16,7 +16,7 @@ Reference blocks: `RearDrive` (`P:\DZ\vehicles\wheeled\config.cpp:437` to `:532`
 | `Aerodynamics` | `frontalArea`, `dragCoefficient`; `RearDrive` adds `downforceCoefficient`, `downforceOffset[]` (`:462`) | Drag and downforce. |
 | `drive` | `"DRIVE_AWD"` (`:1401`); vanilla also uses `DRIVE_RWD`, `DRIVE_FWD` and, for six wheels, `DRIVE_642` (`:764`) | Which axles are driven. |
 | `Engine` | `torqueCurve[]` as rpm and torque pairs, `inertia`, `frictionTorque`, `rollingFriction`, `viscousFriction`, `rpmIdle`, `rpmMin`, `rpmClutch`, `rpmRedline` (`:1402`) | Power and rev range. `rpmRedline` matters to damage; see `damage.md`. |
-| `Clutch` (`:138`) | `maxTorqueTransfer`, `uncoupleTime`, `coupleTime` (`:1414`) | |
+| `Clutch` | `maxTorqueTransfer`, `uncoupleTime`, `coupleTime` (`:1414`) | |
 | `Gearbox` | `type="GEARBOX_MANUAL"`, `reverse`, `ratios[]` (`:1420`); `Offroad_02` uses `GEARBOX_AUTOMATIC` (`:21056`) | Gear count is the length of `ratios[]`. |
 | `CentralDifferential` | `ratio`, `type="DIFFERENTIAL_LOCKED"` (`:1426`) | Only on all wheel drive. |
 | `Axles` then `Front`, `Rear` | `maxBrakeTorque`, `maxHandbrakeTorque`, `wheelHubMass`, `wheelHubRadius` (`:1433`) | One class per axle; trucks add `class Middle: Rear` (`:810`). |
