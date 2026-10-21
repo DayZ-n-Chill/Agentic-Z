@@ -172,6 +172,13 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 | [`/dayz-edit-types`](.claude/skills/dayz-edit-types/SKILL.md) | Programmatically upsert a single `<type>` in `types.xml`. |
 | [`/dayz-split-types`](.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into per-category files and point `cfgeconomycore.xml` at them. |
 
+### Release
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-release-pack`](.claude/skills/dayz-release-pack/SKILL.md) | Write the Workshop description, a changelog entry from the mod's history, the classname list and server owner install notes in one go. |
+| [`/dayz-server-kit`](.claude/skills/dayz-server-kit/SKILL.md) | Zip the `types.xml` entries, `cfgeconomycore.xml` lines, load order and the public `.bikey` for server owners. Never packs a `.biprivatekey`. |
+
 ### Specialist tools (deep)
 
 | Command | Purpose |
@@ -228,7 +235,7 @@ For a whole mod, start the orchestrator as your main session: `claude --agent ag
 | [`dayz-build-checker`](.claude/agents/dayz-build-checker.md) | Gate: the PBO builds with no AddonBuilder errors. |
 | [`dayz-ingame-tester`](.claude/agents/dayz-ingame-tester.md) | Gate: the mod loads on a diag server and client with clean logs. |
 | [`dayz-build-engineer`](.claude/agents/dayz-build-engineer.md) | Builds, launches test sessions and deploys after your yes. |
-| [`dayz-docs-writer`](.claude/agents/dayz-docs-writer.md) | Keeps the mod's README, changelog and classname list current. |
+| [`dayz-docs-writer`](.claude/agents/dayz-docs-writer.md) | Keeps the mod's README, changelog and classname list current, and writes the Workshop text and server kit with `/dayz-release-pack` and `/dayz-server-kit`. |
 
 You can still call any specialist below directly for a single task.
 
