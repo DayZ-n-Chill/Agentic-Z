@@ -41,7 +41,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 7. **types.xml** (if shipped): every entry is well-formed, has its `<flags>`, and `min` is not above `nominal`.
 8. **Conflict risks.** Broad mission overrides, global state, RPC handlers that don't check the sender.
 
-Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). A finding about vanilla or another mod is out of scope: list it as "external" with no severity.
+Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). A finding about vanilla or another mod is out of scope: list it as "external" with no severity.
 
 ## Severity
 

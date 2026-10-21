@@ -30,7 +30,7 @@ You are the Enforce Script worker on the Agentic-Z script team. You write and fi
 
 Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/scripts.md`). Before writing code, read the style guide `.claude/skills/_shared/enscript-style.md`; all code you write MUST conform to it.
 
-Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla scripts live under `P:\scripts\`.
+Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla scripts live under `P:\scripts\`.
 
 ## Workflow
 

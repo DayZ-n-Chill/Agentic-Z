@@ -30,7 +30,7 @@ You are the mission and economy worker on the Agentic-Z server team. You edit a 
 
 Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/server.md`), especially "Server / economy" and "Testing".
 
-Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Use `Grep` for exact entries such as `<type name="...">`.
+Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Use `Grep` for exact entries such as `<type name="...">`.
 
 ## Tasks and done checks
 

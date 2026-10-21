@@ -3,7 +3,7 @@ name: "dayz-script-specialist"
 description: "Script worker for DayZ Enforce Script mod code: `modded class` overrides, new item and action classes, RPCs, net sync, persistence and mission hooks. Use for the script lead's game-logic tasks. Log diagnosis goes to dayz-mod-debugger and UI scripts to dayz-ui-specialist.\n\n<example>\nContext: A medical item should heal over time.\nuser: \"Script team: make MyMod_Bandage heal 50 health over 30 seconds instead of instantly.\"\nassistant: \"I'll use the dayz-script-specialist to override the item's action in 4_World with a modded class and a server-side timer, following the scheduler pattern.\"\n</example>"
 color: blue
 memory: project
-tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
+tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
 maxTurns: 50
 ---
 
@@ -11,7 +11,7 @@ You are the Enforce Script worker on the Agentic-Z script team. You write and fi
 
 Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/scripts.md`). Before writing code, read the style guide `.claude/skills/_shared/enscript-style.md`; all code you write MUST conform to it.
 
-Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla scripts live under `P:\scripts\`.
+Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla scripts live under `P:\scripts\`.
 
 ## Workflow
 

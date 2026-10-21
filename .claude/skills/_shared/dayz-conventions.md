@@ -20,7 +20,6 @@ All Enforce Script (`.c`) work follows `.claude/skills/_shared/enscript-style.md
   - `/dayz-init` runs preflight inside its own steps (the environment check and the plan it executes), so it does not gate before the wizard starts.
   - `/dayz-workdrive` mounts `P:\`, which is the thing preflight checks.
   - `/dayz-search-download` only downloads a prebuilt index into `~/.claude/`; it never reads or writes `P:\`.
-  - `/dayz-search-wiki-index` is on hold; its gating is decided when it is picked up again.
 
   Every other skill that does work gates on preflight, including `/dayz-search-index` (it reads vanilla source on `P:\`). A new exception needs a stated reason here.
 - DayZ Tools is installed via Steam (Tools section).
@@ -50,7 +49,6 @@ The RAG layer (`/dayz-search-index` plus the `dayz-rag` MCP server) embeds vanil
 - It needs `VOYAGE_API_KEY=...` in `.env` at the repo root. Without it, searches fail with a "VOYAGE_API_KEY not set" error.
 - Indexed file types: `.c`, `.cpp`, `.hpp`, `.h`, `.cfg`, `.layout`, `.rvmat`, `.xml`, `.json`, `.csv`. Binary formats (`.p3d`, `.paa`) are not indexed.
 - `list_indexed_sources()` reports what the live index holds and when it was built.
-- The wiki index is separate and built by `/dayz-search-wiki-index --full`. That skill is on hold, so the wiki index may not exist; `search_dayz_wiki` then raises a "Wiki index unavailable" error.
 
 ## Project layout
 
@@ -79,7 +77,7 @@ The `.server/<instance>/` layout and setup/run split are in `conventions/server.
 This is the single search rule for every DayZ agent and skill. Agents state it in one line and point here.
 
 1. **Grep first** when you know the symbol or exact string (class names, method names, `class X extends Y`, a `<type name="...">` entry). `Grep` over the relevant `P:\` folder is fast and exhaustive.
-2. **RAG search** (`search_dayz_source`, or `search_dayz_wiki` for the community wiki) when the question is by meaning ("how does vanilla handle X?"), when you are hunting for an example to mirror, or after two or three greps came up empty.
+2. **RAG search** (`search_dayz_source`) when the question is by meaning ("how does vanilla handle X?"), when you are hunting for an example to mirror, or after two or three greps came up empty.
 3. **Cite, then verify** every hit before you rely on it (below).
 
 Scope searches to your domain's folders (`P:\scripts\`, `P:\dz\<category>\`, `P:\gui\`, mission templates). Do not fan out across all of `P:\`; if a scoped search is empty, ask before widening.
@@ -89,9 +87,8 @@ Scope searches to your domain's folders (`P:\scripts\`, `P:\dz\<category>\`, `P:
 Each tool is exposed under two names depending on how the server is loaded: `mcp__dayz-rag__<tool>` (project server) and `mcp__plugin_agentic-z_dayz-rag__<tool>` (plugin). Agents that search list both in `tools:`.
 
 - `search_dayz_source(query, top_k=5, file_type=None, max_distance=None)` returns chunks with `path`, `file_type`, `parent_context`, `line_start`/`line_end`, `distance` (lower is closer; `max_distance` drops hits above it), `is_stale`, and a truncated snippet. `file_type` is one of `c`, `cpp`, `hpp`, `h`, `layout`, `cfg`, `rvmat`, `xml`, `json`, `csv`, or omitted.
-- `search_dayz_wiki(query, top_k=5, max_distance=None)` searches the Bohemia community wiki (DayZ categories) and returns the same fields, with the page URL as `path`. It needs the wiki index, whose build skill is on hold, so expect a "Wiki index unavailable" error until that index exists.
 - `get_dayz_file(path, line_start=None, line_end=None)` fetches a file or range under `P:\` to verify a hit.
-- `list_indexed_sources()` returns `{source, wiki}`: the manifest of the vanilla source index and of the wiki index (what was indexed and when), with `null` for an index that has not been built.
+- `list_indexed_sources()` returns `{source}`: the manifest of the vanilla source index (what was indexed and when), or `null` if it has not been built.
 
 ### Cite, then verify
 
@@ -99,7 +96,7 @@ A search hit is a hint, not a fact. Before grounding a claim on one:
 
 1. Fetch the cited range with `get_dayz_file` (or `Read` the `P:\` path). The snippet is truncated and the index can lag the files on disk; `is_stale=True` says so explicitly.
 2. Check the code says what you think, in the form you think. Retrieval returns near-misses: a similar class on another inheritance branch, a constant nothing references.
-3. If the file disagrees with the snippet, trust the file and suggest re-running `/dayz-search-index --full`. For a wiki hit, say the wiki index is out of date; its rebuild skill `/dayz-search-wiki-index` is on hold, so don't offer it as a fix.
+3. If the file disagrees with the snippet, trust the file and suggest re-running `/dayz-search-index --full`.
 4. Cite vanilla as `path:line_start-line_end` so the user can check it.
 
 A single search used only to navigate does not need verifying. A single chunk treated as ground truth is the most common RAG failure.
@@ -108,7 +105,7 @@ Format answers grounded in vanilla source per `.claude/skills/_shared/answer-for
 
 ### When the index is unavailable
 
-If a search returns "no index", a missing-table error, or a missing `VOYAGE_API_KEY`, say so, fall back to scoped `Grep`, and tell the user which fix applies (`/dayz-search-index --full`, or adding the key to `.env`). For the wiki index the rebuild skill `/dayz-search-wiki-index` is on hold: say the wiki index is unavailable rather than offering it as a fix. After a DayZ update the index goes stale; rebuild with `--full`.
+If a search returns "no index", a missing-table error, or a missing `VOYAGE_API_KEY`, say so, fall back to scoped `Grep`, and tell the user which fix applies (`/dayz-search-index --full`, or adding the key to `.env`). After a DayZ update the index goes stale; rebuild with `--full`.
 
 ## Topic files
 

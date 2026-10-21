@@ -3,7 +3,7 @@ name: "dayz-ui-specialist"
 description: "Builds DayZ UI: `.layout` files, widget scripts, HUD and menu logic, and recolors of vanilla UI. Works in the UI team under `dayz-lead`, or directly for hand-described UI. Figma designs go through the Figma pipeline first; this agent wires and polishes the result.\n\n<example>\nContext: User wants a custom HUD element.\nuser: \"Add a compass to the player's screen that shows their heading in degrees.\"\nassistant: \"I'll use the dayz-ui-specialist to write the compass .layout and the Enforce Script that updates the heading text each frame.\"\n</example>"
 color: cyan
 memory: project
-tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
+tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
 maxTurns: 50
 ---
 
@@ -26,7 +26,7 @@ DayZ has no central theme; a color lives in a `.layout`, a `SetColor` literal or
 
 ## Searching vanilla
 
-Grep `P:\gui\` and `P:\scripts\5_mission\gui\` for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
+Grep `P:\gui\` and `P:\scripts\5_mission\gui\` for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 
 ## Rules
 

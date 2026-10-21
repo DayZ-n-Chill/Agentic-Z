@@ -1,13 +1,10 @@
 """dayz-rag MCP server.
 
-Exposes semantic search over the LanceDB index built by /dayz-search-index
-(vanilla source) and, when present, the Bohemia wiki table (its build skill,
-/dayz-search-wiki-index, is on hold). Communicates with
-Claude Code over stdio.
+Exposes semantic search over the LanceDB index of vanilla DayZ source built
+by /dayz-search-index. Communicates with Claude Code over stdio.
 
 Tools (all read-only):
   - search_dayz_source(query, top_k=5, file_type=None, max_distance=None)
-  - search_dayz_wiki(query, top_k=5, max_distance=None)
   - get_dayz_file(path, line_start=None, line_end=None)
   - list_indexed_sources()
 
@@ -35,7 +32,6 @@ import voyage_common  # noqa: E402  .env/API-key loading and the retry rule, sha
 
 INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
 TABLE_NAME = "chunks"
-WIKI_TABLE_NAME = "wiki_chunks"
 DEFAULT_EMBED_MODEL = "voyage-code-3"
 MAX_TOP_K = 25
 MAX_FILE_BYTES = 200_000
@@ -77,7 +73,6 @@ def _load_embed_model_name() -> str:
 _voyage_client = None
 _embed_model: Optional[str] = None
 _table = None
-_wiki_table = None
 _index_built_at: Optional[float] = None  # epoch seconds; set on first manifest load
 
 
@@ -153,32 +148,11 @@ def _get_table():
     return _table
 
 
-def _get_wiki_table():
-    global _wiki_table
-    if _wiki_table is None:
-        db_path = INDEX_ROOT / "lancedb"
-        if not db_path.exists():
-            raise RuntimeError(
-                f"Wiki index unavailable: no index at {INDEX_ROOT} (its build skill is on hold). "
-                "Use search_dayz_source instead."
-            )
-        import lancedb
-
-        db = lancedb.connect(str(db_path))
-        if WIKI_TABLE_NAME not in db.table_names():
-            raise RuntimeError(
-                f"Wiki index unavailable: table '{WIKI_TABLE_NAME}' missing (its build skill is on hold). "
-                "Use search_dayz_source instead."
-            )
-        _wiki_table = db.open_table(WIKI_TABLE_NAME)
-    return _wiki_table
-
-
 def _check_stale(path_str: str) -> tuple[bool, Optional[str]]:
     """For local file paths under P:\\, compare mtime to index build time.
 
-    Returns (is_stale, reason). For non-local paths (e.g. wiki URLs), returns
-    (False, None) — there's no local mtime to check against.
+    Returns (is_stale, reason). For paths not on P:\\, returns (False, None):
+    there's no local mtime to check against.
     """
     if not path_str or not path_str.startswith(("P:\\", "P:/")):
         return False, None
@@ -302,22 +276,6 @@ def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Op
     return _slice_lines(str(normalized), text, line_start, line_end)
 
 
-def search_dayz_wiki_impl(
-    query: str,
-    top_k: int = 5,
-    max_distance: Optional[float] = None,
-) -> list[dict]:
-    """Semantic search over indexed Bohemia wiki pages (community.bistudio.com Category:DayZ)."""
-    if not query or not query.strip():
-        return []
-    top_k = max(1, min(int(top_k), MAX_TOP_K))
-    threshold = max_distance if max_distance is not None else DEFAULT_MAX_DISTANCE
-
-    table = _get_wiki_table()
-    vec = _embed_query(query)
-    return _finish(table.search(vec).limit(top_k).to_list(), threshold)
-
-
 def _read_manifest(path: Path) -> Optional[dict]:
     if not path.exists():
         return None
@@ -328,14 +286,11 @@ def _read_manifest(path: Path) -> Optional[dict]:
 
 
 def list_indexed_sources_impl() -> dict:
-    """Return {"source": manifest|None, "wiki": manifest|None}.
+    """Return {"source": manifest|None}.
 
-    None means that index has not been built; it is a status answer, not an error.
+    None means the index has not been built; it is a status answer, not an error.
     """
-    return {
-        "source": _read_manifest(INDEX_ROOT / "manifest.json"),
-        "wiki": _read_manifest(INDEX_ROOT / "wiki-manifest.json"),
-    }
+    return {"source": _read_manifest(INDEX_ROOT / "manifest.json")}
 
 
 # --------------- MCP wiring ---------------
@@ -405,40 +360,13 @@ def main() -> int:
         return get_dayz_file_impl(path, line_start, line_end)
 
     @mcp.tool(annotations=read_only)
-    def search_dayz_wiki(
-        query: str,
-        top_k: int = 5,
-        max_distance: Optional[float] = None,
-    ) -> list[dict]:
-        """Semantic search over the indexed Bohemia community wiki (Category:DayZ + sub-categories).
-
-        Use this for questions about the official DayZ docs / tutorials / class references —
-        engine API explanations, modding how-tos, scripting tutorials. Complements
-        search_dayz_source (which queries vanilla source code on P:\\). The wiki
-        index's build skill is on hold, so this raises "Wiki index unavailable"
-        unless a wiki table is already installed.
-
-        Args:
-            query: natural-language question or description
-            top_k: max results (1-25, default 5)
-            max_distance: drop hits whose `distance` is above this threshold. See
-                search_dayz_source for guidance.
-
-        Returns: list of {path, file_type, parent_context, line_start, line_end,
-        distance, snippet, is_stale} where `path` is the wiki page URL and
-        `parent_context` is "Page Title > Section > Subsection". `is_stale` is
-        always False for wiki hits (no local mtime to compare).
-        """
-        return search_dayz_wiki_impl(query, top_k, max_distance)
-
-    @mcp.tool(annotations=read_only)
     def list_indexed_sources() -> dict:
-        """Return {"source": manifest, "wiki": manifest} for the vanilla source index
-        (P:\\) and the community.bistudio.com wiki index. A value is null when that
-        index has not been built. Manifests include per-type counts, embed model,
-        indexed-at timestamp, token usage, and cost estimate.
+        """Return {"source": manifest} for the vanilla source index (P:\\). The
+        value is null when the index has not been built. The manifest includes
+        per-type counts, embed model, indexed-at timestamp, token usage, and cost
+        estimate.
 
-        Useful to verify either index is fresh, or to confirm what was indexed.
+        Useful to verify the index is fresh, or to confirm what was indexed.
         """
         return list_indexed_sources_impl()
 

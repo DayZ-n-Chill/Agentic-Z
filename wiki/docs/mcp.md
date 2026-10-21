@@ -12,13 +12,13 @@ Agentic-Z ships with one MCP server bundled (`dayz-rag`). Two more are recommend
 
 ## Bundled: `dayz-rag`
 
-The local semantic-search server over the vanilla DayZ source plus the Bohemia community wiki. Powers the `search_dayz_source`, `search_dayz_wiki`, `get_dayz_file`, and `list_indexed_sources` tools available to every DayZ specialist agent.
+The local semantic-search server over the vanilla DayZ source. Powers the `search_dayz_source`, `get_dayz_file`, and `list_indexed_sources` tools available to every DayZ specialist agent.
 
 | | |
 |---|---|
 | **Source** | `.claude/mcp/dayz-rag/` |
 | **Setup** | Build the index once with **[`/dayz-search-index`](./skills/dayz-search-index)** or pull a prebuilt one with **[`/dayz-search-download`](./skills/dayz-search-download)** |
-| **Tools added** | `search_dayz_source`, `search_dayz_wiki`, `get_dayz_file`, `list_indexed_sources` |
+| **Tools added** | `search_dayz_source`, `get_dayz_file`, `list_indexed_sources` |
 | **Backend** | Local vector DB (LanceDB) + Voyage embeddings (`voyage-code-3`) |
 
 ## Optional: GitHub MCP
@@ -59,7 +59,7 @@ The local semantic-search server over the vanilla DayZ source plus the Bohemia c
 
 ### When it helps
 
-- Bohemia community wiki edits since the last RAG index build.
+- Bohemia community wiki pages, which the local RAG does not index.
 - Forum threads, blog posts, or Steam guides about DayZ modding patterns.
 - Scraping a release page or change log.
 

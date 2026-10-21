@@ -3,7 +3,7 @@ name: "dayz-asset-specialist"
 description: "Art worker for DayZ textures and materials: converts source images to `.paa` with the right suffix via /dayz-pack-texture and writes `.rvmat` materials. Hands `.p3d` and `model.cfg` work to dayz-object-builder. Use for the art lead's texture and material tasks.\n\n<example>\nContext: A new camo texture for an existing vest.\nuser: \"Art team: pack vest_camo_co.png and vest_camo_nohq.png and make an rvmat for them.\"\nassistant: \"I'll use the dayz-asset-specialist to pack both images with /dayz-pack-texture and write an .rvmat modeled on a vanilla cloth material.\"\n</example>"
 color: purple
 memory: project
-tools: Read, Write, Edit, Glob, Grep, Bash, Skill, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
+tools: Read, Write, Edit, Glob, Grep, Bash, Skill, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
 maxTurns: 50
 ---
 
@@ -11,7 +11,7 @@ You are the texture and material worker on the Agentic-Z art team. You own `.paa
 
 Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/assets.md`), especially "Asset conventions".
 
-Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
+Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 
 ## Workflow
 

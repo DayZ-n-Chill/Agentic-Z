@@ -3,13 +3,12 @@
 Usage:
     dayz-search <query>                  # source corpus, top 5
     dayz-search -k 3 <query>             # top 3
-    dayz-search -w <query>               # wiki corpus instead of source
     dayz-search -t c <query>             # filter to file_type=c (Enforce Script)
     dayz-search -s 800 <query>           # snippet preview length (default 400)
     dayz-search -j <query>               # raw JSON output
 
-Reuses search_dayz_source_impl / search_dayz_wiki_impl from the MCP server module
-so behavior matches what agents see.
+Reuses search_dayz_source_impl from the MCP server module so behavior matches
+what agents see.
 """
 from __future__ import annotations
 
@@ -22,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP_DIR = REPO_ROOT / ".claude" / "mcp" / "dayz-rag"
 sys.path.insert(0, str(MCP_DIR))
 
-from server import search_dayz_source_impl, search_dayz_wiki_impl  # noqa: E402
+from server import search_dayz_source_impl  # noqa: E402
 
 
 def _print_hits(hits: list[dict], snippet_chars: int) -> None:
@@ -50,7 +49,6 @@ def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(prog="dayz-search", description="Search the DayZ RAG index from the terminal.")
     p.add_argument("query", nargs="+", help="natural-language query")
     p.add_argument("-k", "--top-k", type=int, default=5, help="max hits (default 5, max 25)")
-    p.add_argument("-w", "--wiki", action="store_true", help="search the wiki corpus instead of vanilla source")
     p.add_argument("-t", "--file-type", default=None, help='source filter: c | layout | cfg | rvmat | xml | json | csv')
     p.add_argument("-d", "--max-distance", type=float, default=None, help="drop hits with distance above this")
     p.add_argument("-s", "--snippet-chars", type=int, default=400, help="snippet preview length (0 = full)")
@@ -62,12 +60,9 @@ def main(argv: list[str]) -> int:
         print("error: empty query", file=sys.stderr)
         return 2
 
-    if args.wiki:
-        hits = search_dayz_wiki_impl(query, top_k=args.top_k, max_distance=args.max_distance)
-    else:
-        hits = search_dayz_source_impl(
-            query, top_k=args.top_k, file_type=args.file_type, max_distance=args.max_distance,
-        )
+    hits = search_dayz_source_impl(
+        query, top_k=args.top_k, file_type=args.file_type, max_distance=args.max_distance,
+    )
 
     if args.json:
         print(json.dumps(hits, indent=2))

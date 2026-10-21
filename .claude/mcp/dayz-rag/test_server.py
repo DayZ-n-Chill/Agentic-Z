@@ -220,85 +220,18 @@ def test_index_build_time_read_from_manifest(monkeypatch, tmp_path):
     assert server._get_index_built_at() == 1234.0
 
 
-# --------------- wiki search ---------------
-
-
-@pytest.fixture
-def fake_wiki_table(monkeypatch):
-    rows = [
-        _row("https://community.bistudio.com/wiki/A", "wiki", 0.4),
-        _row("https://community.bistudio.com/wiki/B", "wiki", 0.8),
-        _row("https://community.bistudio.com/wiki/C", "wiki", 1.1),
-    ]
-    rows[0]["parent_context"] = "A > Intro"
-    table = _FakeTable(rows)
-    monkeypatch.setattr(server, "DEFAULT_MAX_DISTANCE", None)
-    monkeypatch.setattr(server, "_get_wiki_table", lambda: table)
-    monkeypatch.setattr(server, "_get_table", lambda: pytest.fail("wiki search must not open the source table"))
-    monkeypatch.setattr(server, "_embed_query", lambda _q: [0.0])
-    return table
-
-
-def test_wiki_search_returns_formatted_hits(fake_wiki_table):
-    hits = server.search_dayz_wiki_impl("how do RPCs work", top_k=2)
-    assert [h["path"] for h in hits] == [
-        "https://community.bistudio.com/wiki/A",
-        "https://community.bistudio.com/wiki/B",
-    ]
-    assert hits[0]["parent_context"] == "A > Intro"
-    assert all(h["is_stale"] is False and "stale_reason" not in h for h in hits)
-    assert fake_wiki_table.last_query.limit_value == 2
-
-
-def test_wiki_search_max_distance_filters(fake_wiki_table):
-    hits = server.search_dayz_wiki_impl("rpc", top_k=3, max_distance=0.9)
-    assert len(hits) == 2
-    assert fake_wiki_table.last_query.limit_value == 3
-
-
-def test_wiki_blank_query_returns_nothing(monkeypatch):
-    monkeypatch.setattr(server, "_get_wiki_table", lambda: pytest.fail("index should not be opened"))
-    assert server.search_dayz_wiki_impl("") == []
-
-
-def test_missing_wiki_index_says_unavailable(monkeypatch, tmp_path):
-    monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
-    monkeypatch.setattr(server, "_wiki_table", None)
-    with pytest.raises(RuntimeError, match="Wiki index unavailable.*on hold") as exc:
-        server._get_wiki_table()
-    assert "dayz-search-wiki-index" not in str(exc.value)
-
-
-def test_missing_wiki_table_says_unavailable(monkeypatch, tmp_path):
-    (tmp_path / "lancedb").mkdir()
-    fake_lancedb = SimpleNamespace(connect=lambda path: SimpleNamespace(table_names=lambda: ["chunks"]))
-    monkeypatch.setitem(sys.modules, "lancedb", fake_lancedb)
-    monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
-    monkeypatch.setattr(server, "_wiki_table", None)
-    with pytest.raises(RuntimeError, match="Wiki index unavailable: table 'wiki_chunks' missing.*on hold") as exc:
-        server._get_wiki_table()
-    assert "dayz-search-wiki-index" not in str(exc.value)
-
-
 # --------------- list_indexed_sources ---------------
 
 
 def test_list_sources_reports_nulls_when_nothing_built(monkeypatch, tmp_path):
     monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
-    assert server.list_indexed_sources_impl() == {"source": None, "wiki": None}
+    assert server.list_indexed_sources_impl() == {"source": None}
 
 
-def test_list_sources_source_only(monkeypatch, tmp_path):
+def test_list_sources_returns_source_manifest(monkeypatch, tmp_path):
     (tmp_path / "manifest.json").write_text(json.dumps({"files": 3}), encoding="utf-8")
     monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
-    assert server.list_indexed_sources_impl() == {"source": {"files": 3}, "wiki": None}
-
-
-def test_list_sources_returns_both_when_wiki_present(monkeypatch, tmp_path):
-    (tmp_path / "manifest.json").write_text(json.dumps({"files": 3}), encoding="utf-8")
-    (tmp_path / "wiki-manifest.json").write_text(json.dumps({"pages": 9}), encoding="utf-8")
-    monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
-    assert server.list_indexed_sources_impl() == {"source": {"files": 3}, "wiki": {"pages": 9}}
+    assert server.list_indexed_sources_impl() == {"source": {"files": 3}}
 
 
 def test_list_sources_raises_on_corrupt_manifest(monkeypatch, tmp_path):

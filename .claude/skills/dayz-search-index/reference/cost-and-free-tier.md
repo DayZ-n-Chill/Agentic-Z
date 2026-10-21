@@ -17,7 +17,7 @@ The 2026-08-10 vanilla build was 52,048 chunks, about 66M tokens (`--status` sho
 Before embedding, the indexer estimates this build's tokens (total characters divided by `CHARS_PER_TOKEN_EST`) and adds this calendar month's total from `usage.log`. If the projection reaches 80% of the budget, it shows the numbers (with an overage estimate at the selected model's rate from `COST_PER_MTOKEN`) and asks to continue. In a non-interactive shell it refuses unless you pass `--ignore-tier-warning`.
 
 - Override the budget with `VOYAGE_FREE_TIER_TOKENS=<int>` if your plan differs from the default.
-- The counter is local: it only sees builds run through `/dayz-search-index` and `/dayz-search-wiki-index`, not other apps sharing the same key.
+- The counter is local: it only sees builds run through `/dayz-search-index`, not other apps sharing the same key.
 
 ## The chunk ceiling
 

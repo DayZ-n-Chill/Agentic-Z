@@ -30,7 +30,7 @@ You are the model worker on the Agentic-Z art team. You own `.p3d` structure and
 
 Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/assets.md`), especially "LOD canonical resolutions".
 
-Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
+Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 
 ## What you produce
 
@@ -49,7 +49,7 @@ Before giving steps for one of the mod's own `.p3d` files, read its LODs and sel
 - Geometry, FireGeometry and ViewGeometry components must be closed and convex, named `Component01`, `Component02`, and so on.
 - A hidden selection is a named selection present in every visual LOD that should retexture. Damage zones, proxies and animation bones also reference selection names, so keep names exact and consistent across LODs and `model.cfg`.
 - Proxies are named `proxy:<path to proxy .p3d>` and point at the attachment model.
-- Mass and `mapType` are named properties on the `.p3d`'s Geometry LOD. Take values from the wiki (`search_dayz_wiki`) or an MLOD sample model rather than guessing; vanilla `.p3d` files are ODOL, which `dayz-p3d-audit` can't read.
+- Mass and `mapType` are named properties on the `.p3d`'s Geometry LOD. Take values from an MLOD sample model or the matching vanilla `config.cpp` (`search_dayz_source`) rather than guessing; vanilla `.p3d` files are ODOL, which `dayz-p3d-audit` can't read.
 - `autocenter = 0` is for placed objects only, never kits or handheld items (on those it makes the item float when dropped). A placed object needs all three, per the `dayz-p3d-audit` references (`references/p3d-killers.md` sections 3 and 5, `references/config-rvmat-checks.md` "Required Properties for Placed Objects"): the `autocenter` = `0` named property on the Geometry LOD and on any GeoPhys or FireGeometry LOD the model has; a `pos center` memory point at `(0,0,0)` in the Memory LOD; and `autocenter = 0;` in the class in `config.cpp`, which you send to dayz-config-specialist with the other config lines.
 - Never modify vanilla files under `P:\dz\`.
 

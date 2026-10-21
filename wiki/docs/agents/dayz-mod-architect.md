@@ -33,7 +33,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 ## How you plan
 
 1. Read the request and, if it exists, `workspace/<ModName>/`.
-2. Find the vanilla classes to build on under `P:\scripts\` and `P:\dz\`. Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
+2. Find the vanilla classes to build on under `P:\scripts\` and `P:\dz\`. Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 3. Decide the pieces: `CfgPatches` dependencies, config classes, script files and which script layer (`3_Game`, `4_World`, `5_Mission`) each belongs in, models, textures, layouts, and server files such as `types.xml`.
 4. Split the work into tasks one worker can finish in one sitting. Give each task a team (script, config, art, UI, server, release), the files it touches, and a done check that a gatekeeper can verify.
 5. Mark which tasks depend on others. Two tasks that edit the same file must not run at the same time.
