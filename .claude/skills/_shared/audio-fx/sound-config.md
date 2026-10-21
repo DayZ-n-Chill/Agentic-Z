@@ -68,7 +68,7 @@ A named curve in `CfgSoundCurves` has `points[]` whose first value runs from 0 t
 
 An inline `rangeCurve[]` uses meters. `reloadWeapon_SoundShader` (line 17078) has `range=30` and points from `{0,1}` to `{30,0}`, with full volume held to 2 m.
 
-Always name a curve that exists. The vanilla generator shaders name `Animals_new_Curve`, but no class of that name exists anywhere under `P:\DZ\`. Copy a curve that is defined, such as `defaultAmpAttenuationCurve` or `InverseSquare1Curve` (line 806), or write an inline one.
+Always name a curve that exists. The vanilla generator shaders name `Animals_new_Curve`; the class is declared as `animals_new_Curve` in `CfgSoundCurves` (line 1799) and matches because lookup ignores case. In your own mod, name a curve with its exact case, such as `defaultAmpAttenuationCurve` (line 61) or `InverseSquare1Curve` (line 806), or write an inline one.
 
 ## Sound set (`CfgSoundSets`)
 

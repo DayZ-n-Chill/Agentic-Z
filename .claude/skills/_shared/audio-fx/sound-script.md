@@ -2,7 +2,7 @@
 
 How Enforce Script plays, loops, fades and stops a sound set, and how to clean it up. The sound set itself is written in config (`sound-config.md`).
 
-Sounds are client only (Tier 2, `conventions/scripts.md`, "Client and server ownership"). Every helper below already does nothing on a dedicated server, but the code around it (timers, fields, particles) still needs the side check.
+Sounds are client only (Tier 2, `conventions/scripts.md`, "Client and server ownership"). PlaySoundSet, PlaySoundSetLoop and StopSoundSet do nothing on a dedicated server (object.c:1249, 1316). The memory point helpers (lines 1279 to 1311) have no server check, so put them behind `!GetGame().IsDedicatedServer()` yourself. The code around any helper (timers, fields, particles) needs the check too.
 
 ## The helpers on every Object
 
@@ -36,7 +36,7 @@ Two rules hidden in `PlaySoundSet` (lines 1251 to 1260):
 | 153 | `static EffectSound CreateSound(string sound_set, vector position, ...)` | Creates and registers without playing. Call `SoundPlay()` on it later. |
 | 280 | `static void DestroyEffect(Effect effect)` | Stops, unregisters and frees. If a fade out is still running, it lets the sound finish and then frees it. |
 
-The manager keeps a strong reference to every effect it registers (warning at line 3, and at line 40 for `PlayInWorld`). An effect is freed only when it has autodestroy set and stops, or when you call `DestroyEffect`. A sound you play through `SEffectManager` directly and never destroy stays in memory. The `Object` helpers set autodestroy for you (object.c line 1264).
+The manager keeps a strong reference to every effect it registers (warning at line 3, and at line 40 for `PlayInWorld`). An effect is freed only when it has autodestroy set and stops, or when you call `DestroyEffect`. A sound you play through `SEffectManager` directly and never destroy stays in memory. `PlaySoundSet` and `PlaySoundSetLoop` set autodestroy for you (object.c line 1264). The memory point helpers do not, so free their sound with `StopSoundSet` or `SEffectManager.DestroyEffect`.
 
 ## EffectSound
 
