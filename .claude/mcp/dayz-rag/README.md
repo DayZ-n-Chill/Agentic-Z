@@ -13,7 +13,7 @@ Installed as a plugin, the tools appear as `mcp__plugin_agentic-z_dayz-rag__<too
 ## How it works
 
 1. The indexer walks the vanilla source, chunks it, embeds each chunk with Voyage AI `voyage-code-3` (1024-dim) using `input_type="document"`, and stores the chunks in LanceDB at `~/.claude/dayz-search-index/` (table `chunks`).
-2. This server opens LanceDB lazily, embeds each query with the same model using `input_type="query"`, and returns the nearest chunks. A `file_type` filter is a LanceDB prefilter (`where`), so `top_k` hits of that type come back even when other types rank nearer. The model comes from `config.json` written by the indexer.
+2. This server opens LanceDB lazily, embeds each query with the same model using `input_type="query"`, and returns the nearest chunks. A repeated search is answered from an in-memory cache of up to 256 searches, keyed on the query, `top_k`, `file_type` and the index build time. The cache keeps the raw rows, so `max_distance` and the `is_stale` check still run on every answer. A rebuilt index empties the cache. A `file_type` filter is a LanceDB prefilter (`where`), so `top_k` hits of that type come back even when other types rank nearer. The model comes from `config.json` written by the indexer.
 
 `list_indexed_sources` reports the current chunk and token counts. Indexed types: `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`, which are also the accepted `file_type` filter values.
 
@@ -42,7 +42,7 @@ It waits silently for MCP traffic on stdin when healthy; a missing `mcp` package
 
 ## Rebuilding
 
-After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index.py --full` and restart Claude Code so the server reopens the index. Changing `VOYAGE_MODEL` also needs a `--full` rebuild. Token costs and the free-tier check are covered in `.claude/skills/dayz-search-index/reference/cost-and-free-tier.md`.
+After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index.py --full`. The server sees the new `manifest.json` on its next search and reopens the index, so no restart is needed. Changing `VOYAGE_MODEL` also needs a `--full` rebuild. Token costs and the free-tier check are covered in `.claude/skills/dayz-search-index/reference/cost-and-free-tier.md`.
 
 ## Environment variables
 
