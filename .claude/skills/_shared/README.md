@@ -169,6 +169,17 @@ Front index: `_shared/ai/README.md`. Main user: `dayz-ai-specialist`.
 | `_shared/ai/patrols-and-guards.md` | AI world, groups, navmesh paths, waypoint patrols, steering, and the limits of human AI. |
 | `_shared/ai/spawning-and-performance.md` | Spawn flags, Central Economy handoff to the server lead, server performance rules. |
 
+### Texture and material pack (`_shared/textures`)
+
+Front index: `_shared/textures/README.md`, which also has a symptom to cause table. Written for `dayz-asset-specialist`.
+
+| File | Purpose |
+|---|---|
+| `_shared/textures/suffixes-and-sizes.md` | Texture suffixes and what ImageToPAA does with each, vanilla sizes, procedural placeholders. |
+| `_shared/textures/rvmat-stages.md` | `.rvmat` keys, Super and Skin stages, damage and destruct materials, the thermal stage. |
+| `_shared/textures/surface-recipes.md` | The vanilla material to copy and the values to change for cloth, metal, glass and skin. |
+| `_shared/textures/checking-the-look.md` | What the user checks in Object Builder and in game after the files are written. |
+
 ### Skill packs (`references/`)
 
 | Folder or file | Purpose |
