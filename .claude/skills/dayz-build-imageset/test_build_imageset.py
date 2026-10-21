@@ -1,5 +1,6 @@
 """Tests for the atlas packing logic in build_imageset.py (no Pillow or DayZ Tools needed)."""
 import importlib.util
+import os
 from pathlib import Path
 
 import pytest
@@ -199,3 +200,62 @@ def test_build_pbo_excludes_gui_sources():
     patterns = [l.strip() for l in exclude.read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith(";")]
     assert any(p.startswith(".gui-sources") for p in patterns)
     assert any(".gui-sources" in p and p.startswith("*") for p in patterns)
+
+
+def test_build_one_empty_set_clears_its_outputs(tmp_path):
+    set_dir = tmp_path / ".gui-sources" / "icons"
+    set_dir.mkdir(parents=True)
+    out_dir = tmp_path / "gui" / "imagesets"
+    _touch_outputs(out_dir, "icons", "icons_1", "other")
+    assert bi.build_one(set_dir, "MyMod", out_dir, Path("ImageToPAA.exe"), frozenset({"other"}))
+    assert sorted(p.name for p in out_dir.iterdir()) == ["other.imageset", "other.paa"]
+
+
+class _FakeAtlas:
+    def paste(self, *a):
+        pass
+
+    def save(self, path, fmt):
+        Path(path).write_bytes(b"png")
+
+
+class _FakeImage:
+    @staticmethod
+    def new(mode, size, color):
+        return _FakeAtlas()
+
+
+def _convert(monkeypatch, tmp_path, writes):
+    """Run write_one_atlas with ImageToPAA faked to exit 0 and write the .paa only if `writes`."""
+    monkeypatch.setattr(bi, "Image", _FakeImage)
+
+    def fake_run(cmd):
+        if writes:
+            Path(cmd[2]).write_bytes(b"new paa")
+        return bi.subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(bi.subprocess, "run", fake_run)
+    return bi.write_one_atlas("icons", 256, 256, [], "MyMod", tmp_path, Path("ImageToPAA.exe"))
+
+
+def _age(path):
+    """Backdate `path` one minute, like a .paa left by an earlier run."""
+    old = path.stat().st_mtime_ns - 60_000_000_000
+    os.utime(path, ns=(old, old))
+
+
+def test_write_one_atlas_rejects_paa_left_from_earlier_run(monkeypatch, tmp_path, capsys):
+    stale = tmp_path / "icons.paa"
+    stale.write_bytes(b"old paa")
+    _age(stale)
+    assert _convert(monkeypatch, tmp_path, writes=False) is False
+    assert "did not rewrite icons.paa" in capsys.readouterr().err
+    assert not (tmp_path / "icons.imageset").exists()
+
+
+def test_write_one_atlas_accepts_rewritten_paa(monkeypatch, tmp_path):
+    stale = tmp_path / "icons.paa"
+    stale.write_bytes(b"old paa")
+    _age(stale)
+    assert _convert(monkeypatch, tmp_path, writes=True) is True
+    assert (tmp_path / "icons.imageset").is_file()

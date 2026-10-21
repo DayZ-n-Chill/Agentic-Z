@@ -4,14 +4,14 @@ Two files (both gitignored with the rest of local-memory/):
   dayz-current-project.txt  the cached project root. Other DayZ skills read it
                             through cached_project_root() and refuse to run
                             until /dayz-init has written it.
-  dayz-init-state.json      the setup choices disk inspection cannot derive:
-                            {"last_intent": {"mod_name", "is_new", "server_map"}},
-                            i.e. the active mod, whether it was scaffolded new
-                            (False for an import) and the test server map
-                            ("" when none was picked).
+  dayz-init-state.json      the setup choice disk inspection cannot derive:
+                            {"last_intent": {"mod_name"}}, the active mod.
 
 The project root is the clone (or user project) that holds workspace/ and
-.server/: $CLAUDE_PROJECT_DIR when set, else the current directory.
+.server/: $CLAUDE_PROJECT_DIR when set, else the nearest folder at or above the
+current directory (below the home folder) whose local-memory holds the
+project cache, so skills work from a subfolder such as workspace/<mod>/; else
+the current directory.
 """
 from __future__ import annotations
 
@@ -19,9 +19,27 @@ import json
 import os
 from pathlib import Path
 
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 CACHE_FILENAME = "dayz-current-project.txt"
 STATE_FILENAME = "dayz-init-state.json"
+
+
+def find_project_dir() -> Path:
+    env = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env:
+        return Path(env).resolve()
+    cwd = Path.cwd().resolve()
+    home = Path.home().resolve()
+    for folder in (cwd, *cwd.parents):
+        # Stop at the home folder: ~/.claude/ is Claude Code's user config, not
+        # a project, so a cache there must not capture every folder under home.
+        if folder == home:
+            break
+        if (folder / ".claude" / "local-memory" / CACHE_FILENAME).is_file():
+            return folder
+    return cwd
+
+
+PROJECT_DIR = find_project_dir()
 
 
 def local_memory(project: Path | None = None) -> Path:

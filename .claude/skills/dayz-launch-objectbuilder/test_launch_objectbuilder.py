@@ -118,3 +118,11 @@ def test_launch_uses_shared_detach_flags(tmp_path, monkeypatch):
     assert spawned["cmd"] == [str(exe)]
     assert spawned["creationflags"] == ob.h.DETACH_FLAGS
     assert spawned["cwd"] == str(exe.parent)
+
+
+def test_registry_check_comes_from_setup_objectbuilder():
+    """One definition of the key and the check, owned by the skill that writes the key."""
+    setup_py = Path(ob.__file__).resolve().parents[1] / "dayz-setup-objectbuilder" / "setup.py"
+    assert Path(ob._setup.__file__).resolve() == setup_py
+    assert ob.REG_KEY == ob._setup.REG_KEY
+    assert ob.registry_has_objectbuilder_settings is ob._setup.registry_has_objectbuilder_settings

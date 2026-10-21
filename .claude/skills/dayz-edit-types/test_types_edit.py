@@ -179,3 +179,37 @@ def test_main_rejects_min_above_nominal(types_file, monkeypatch, argv):
 def test_main_accepts_min_equal_to_nominal(types_file, monkeypatch):
     assert _run_main(monkeypatch, [str(types_file), "AKM", "--min", "10"]) == 0
     assert _find(_roundtrip(types_file)[1], "AKM").findtext("min") == "10"
+
+
+def test_main_refuses_file_without_types_root(tmp_path, monkeypatch):
+    events = tmp_path / "events.xml"
+    events.write_text('<?xml version="1.0"?>\n<events>\n    <event name="x"/>\n</events>\n', encoding="utf-8")
+    before = events.read_bytes()
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(events), "AKM", "--nominal", "3"])
+    assert "root element <events>, not <types>" in str(exc.value.code)
+    assert events.read_bytes() == before
+    assert not events.with_suffix(".xml.bak").exists()
+
+
+def _with_duplicate(types_file, name):
+    text = types_file.read_text(encoding="utf-8")
+    types_file.write_text(text.replace("</types>", f'    <type name="{name}"><nominal>1</nominal></type>\n</types>'),
+                          encoding="utf-8")
+
+
+def test_main_refuses_to_edit_a_duplicated_entry(types_file, monkeypatch):
+    _with_duplicate(types_file, "AKM")
+    before = types_file.read_bytes()
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "AKM", "--nominal", "3"])
+    assert 'more than one <type name="AKM">' in str(exc.value.code)
+    assert types_file.read_bytes() == before
+
+
+def test_main_warns_on_other_duplicates_and_still_edits(types_file, monkeypatch, capsys):
+    _with_duplicate(types_file, "Apple")
+    _with_duplicate(types_file, "Apple")
+    assert _run_main(monkeypatch, [str(types_file), "AKM", "--nominal", "12"]) == 0
+    assert "lists these types more than once: Apple" in capsys.readouterr().out
+    assert _find(_roundtrip(types_file)[1], "AKM").findtext("nominal") == "12"

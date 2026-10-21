@@ -153,8 +153,8 @@ def add_missing_pieces(
     """Offer each missing piece and write the accepted ones with /dayz-add-scaffold's writer.
 
     `author` is the --author value; it is resolved (flag, cache, prompt) only
-    if config.cpp is written. Runs after both links exist. A failed write
-    leaves the links in place (the import itself succeeded), names what failed
+    if config.cpp is written. Runs after both links exist. A failed write, or a
+    piece the writer skipped (workbench/ without DayZ Tools), leaves the links in place (the import itself succeeded), names what failed
     and how to retry, and returns 1.
     """
     get_author = _scaffold.lazy_author(author)
@@ -167,10 +167,15 @@ def add_missing_pieces(
         if not (scaffold or prompt_yn(f"  Add {rel} to your source folder? [y/N]: ")):
             continue
         try:
-            _scaffold.add_piece(key, target, modname, get_author)
+            result = _scaffold.add_piece(key, target, modname, get_author)
         except (OSError, SystemExit) as e:
             # SystemExit: resolve_author found no author handle (non-TTY, nothing cached).
             print(f"  {FAIL} Could not add {rel}: {e.code if isinstance(e, SystemExit) else e}")
+            failed.append(key)
+            continue
+        if result == _scaffold.SKIPPED:
+            # The writer printed why (e.g. DayZ Tools not detected for workbench/).
+            print(f"  {FAIL} Could not add {rel}: see the warning above.")
             failed.append(key)
     if not failed:
         return 0

@@ -64,7 +64,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 - **Prefix is authoritative.** A `btn_`, `bar_`, `panel_`, `txt_` or other prefixed widget must use the class the prefix maps to (rules doc section 4). `FrameWidgetClass btn_close` is a FAIL.
 - **Fill Container stays relative.** Siblings in a stacked container that all share the container's inner pixel width with `hexactsize 1` are almost always mis-translated Fill Container children; the correct form is `size 1 H` with `hexactsize 0` (rules doc section 5). You can't recover the Figma sizing from the file alone, so flag it and recommend regenerating from the Figma node.
 - No Hard NO items (rules doc section 9): no XML, no `=`, no semicolons, no CSS properties such as `borderRadius`, `flex`, `padding` or `opacity`.
-- Spacer widgets have at least one child. Widget names are unique within their parent, and property keys don't repeat on a widget.
+- Widget names are unique within their parent, and property keys don't repeat on a widget. An empty spacer widget is fine (vanilla layouts ship many that script fills at runtime); at most mention it as a note, never a FAIL.
 
 Search: Grep `P:\gui\` for known names, RAG (`search_dayz_source` with `file_type="layout"`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Flag an unfamiliar class or property you can't confirm for review; don't delete it.
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -268,6 +269,17 @@ def test_main_stops_at_first_failed_removal(project, monkeypatch, capsys, juncti
     assert _main(monkeypatch, "--yes") == 1
     assert len(calls) == 1
     assert "could not remove" in capsys.readouterr().out
+
+
+def test_main_reports_rmdir_message_on_failure(project, monkeypatch, capsys, junctions):
+    _native(project / "workspace", "AMod", junctions)
+
+    def rmdir_fails(kind, path):
+        raise subprocess.CalledProcessError(2, ["cmd", "/c", "rmdir"], stderr="The process cannot access the file.")
+
+    monkeypatch.setattr(clean, "remove_artifact", rmdir_fails)
+    assert _main(monkeypatch, "--yes") == 1
+    assert "The process cannot access the file." in capsys.readouterr().out
 
 
 def test_main_never_removes_hand_placed_mod(project, monkeypatch, capsys):

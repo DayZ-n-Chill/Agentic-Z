@@ -142,10 +142,8 @@ def test_edit_permissions_already_admin_counts_as_success(tmp_path):
 
 # --- main: pass 2 only after a successful edit ---------------------------------------
 
-@pytest.mark.parametrize("edit_ok, expected_rc, expected_launches", [(False, 1, 1), (True, 0, 2)])
-def test_main_runs_pass_two_only_after_successful_edit(
-    monkeypatch, tmp_path, edit_ok, expected_rc, expected_launches
-):
+def _patch_main(monkeypatch, tmp_path, triggered, edit_ok=True):
+    """Stub everything main() touches; returns the list of launched pass labels."""
     profile = tmp_path / "Profiles"
     monkeypatch.setattr(cot.h, "gate_on_preflight", lambda: None)
     monkeypatch.setattr(cot.h, "resolve_project_dir", lambda: tmp_path)
@@ -154,7 +152,7 @@ def test_main_runs_pass_two_only_after_successful_edit(
     monkeypatch.setattr(cot, "resolve_diag_client", lambda: Path("C:/DayZ/DayZDiag_x64.exe"))
     monkeypatch.setattr(
         cot, "verify_instance_environment",
-        lambda inst, proj: (tmp_path / "serverDZ.cfg", profile, tmp_path / "m", tmp_path / "logs"),
+        lambda inst, proj: (tmp_path / "serverDZ.cfg", profile, tmp_path / "m", tmp_path / "!ClientDiagLogs"),
     )
     monkeypatch.setattr(cot, "read_client_display_prefs", lambda proj: {})
     launches = []
@@ -164,14 +162,29 @@ def test_main_runs_pass_two_only_after_successful_edit(
         return [FakeProc(1), FakeProc(2)]
 
     monkeypatch.setattr(cot, "launch_pair", fake_launch_pair)
-    monkeypatch.setattr(cot, "wait_for_cot_player", lambda d, b, t: [profile / "abc.json"])
+    monkeypatch.setattr(cot, "wait_for_cot_player", lambda d, b, t, s: triggered)
     monkeypatch.setattr(cot, "stop_session", lambda procs: None)
     monkeypatch.setattr(cot.time, "sleep", lambda s: None)
     monkeypatch.setattr(cot, "edit_permissions", lambda p, t: edit_ok)
     monkeypatch.setattr(cot.sys, "argv", ["bootstrap.py", "MyMod"])
+    return launches
 
+
+@pytest.mark.parametrize("edit_ok, expected_rc, expected_launches", [(False, 1, 1), (True, 0, 2)])
+def test_main_runs_pass_two_only_after_successful_edit(
+    monkeypatch, tmp_path, edit_ok, expected_rc, expected_launches
+):
+    launches = _patch_main(monkeypatch, tmp_path, [tmp_path / "Profiles" / "abc.json"], edit_ok)
     assert cot.main() == expected_rc
     assert len(launches) == expected_launches
+
+
+def test_main_failed_wait_points_at_script_logs(monkeypatch, tmp_path, capsys):
+    launches = _patch_main(monkeypatch, tmp_path, [])
+    assert cot.main() == 1
+    assert launches == ["Pass 1"]
+    out = capsys.readouterr().out
+    assert "script.log" in out and "!ClientDiagLogs" in out
 
 
 # --- stop_session only touches our own processes --------------------------------
@@ -213,8 +226,25 @@ def test_snapshot_and_detection_of_new_player(tmp_path):
     (players / "old.json").write_text("{}", encoding="utf-8")
     baseline = cot.snapshot_player_files(players)
     (players / "new.json").write_text("{}", encoding="utf-8")
-    triggered = cot.wait_for_cot_player(players, baseline, timeout_s=5)
+    triggered = cot.wait_for_cot_player(players, baseline, timeout_s=5, session=[FakeProc(1), FakeProc(2)])
     assert [p.name for p in triggered] == ["new.json"]
+
+
+@pytest.mark.parametrize("dead, label", [(0, "server"), (1, "client")])
+def test_wait_ends_early_when_a_process_exits(tmp_path, monkeypatch, capsys, dead, label):
+    session = [FakeProc(1), FakeProc(2)]
+    session[dead]._running = False
+    monkeypatch.setattr(cot.time, "sleep", lambda s: pytest.fail("kept waiting after a process exited"))
+    assert cot.wait_for_cot_player(tmp_path / "Players", {}, timeout_s=600, session=session) == []
+    assert f"The {label} exited (code 0)" in capsys.readouterr().out
+
+
+def test_wait_reports_timeout(tmp_path, monkeypatch, capsys):
+    now = [0.0]
+    monkeypatch.setattr(cot.time, "time", lambda: now[0])
+    monkeypatch.setattr(cot.time, "sleep", lambda s: now.__setitem__(0, now[0] + s))
+    assert cot.wait_for_cot_player(tmp_path / "Players", {}, timeout_s=10, session=[FakeProc(1), FakeProc(2)]) == []
+    assert "Timed out after 10s" in capsys.readouterr().out
 
 
 def test_server_bind_timeout_comes_from_launch_test():

@@ -6,7 +6,9 @@ Object Builder flags (PREFERRED_FLAGS_ON) under HKCU, writing only the ones
 that differ. Pass --force to re-import the .reg and reset Object Builder to
 factory defaults (asks first; --yes skips the question). A forced reset first
 exports the current Object Builder key with `reg export` to a timestamped .reg
-under .claude/local-memory/ so it can be restored.
+under .claude/local-memory/ so it can be restored, then deletes the key with
+`reg delete` so the import starts from an empty tree (values and subkeys the
+.reg does not mention, such as saved MainFrame-* layouts, are gone too).
 
 The .reg is imported only if every key it touches is under HKEY_CURRENT_USER.
 
@@ -150,6 +152,19 @@ def backup_registry(backup_dir: Path) -> Optional[Path]:
     return dest
 
 
+def delete_objectbuilder_key() -> int:
+    """`reg delete` the HKCU Object Builder key and everything under it.
+
+    Returns the process exit code (its error is printed on failure).
+    """
+    cmd = ["reg", "delete", f"HKCU\\{REG_KEY}", "/f"]
+    print(f"{INFO} Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0 and result.stderr.strip():
+        print(result.stderr.strip(), file=sys.stderr)
+    return result.returncode
+
+
 def confirm_reset(assume_yes: bool) -> bool:
     """Ask before --force wipes an existing Object Builder configuration."""
     if assume_yes:
@@ -211,8 +226,14 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"{h.OK} Registry already configured at HKCU\\{REG_KEY}")
         print(f"{INFO} Re-run with --force to reset Object Builder to factory defaults.")
     else:
+        foreign = foreign_reg_keys(ob_reg)
+        if foreign:
+            print(f"{h.FAIL} {ob_reg.name} writes outside HKEY_CURRENT_USER; refusing to import:", file=sys.stderr)
+            for key in foreign:
+                print(f"          {key}", file=sys.stderr)
+            return 1
         if already_configured:
-            print(f"{INFO} Registry already populated; --force will overwrite it with defaults.")
+            print(f"{INFO} Registry already populated; --force will delete it and import the defaults.")
             if not confirm_reset(args.yes):
                 print(f"{INFO} Reset cancelled. Registry left unchanged.")
                 return 1
@@ -222,14 +243,13 @@ def main(argv: Optional[list[str]] = None) -> int:
                 return 1
             print(f"{h.OK} Current settings backed up to {backup}")
             print(f"{INFO} Restore them with: reg import \"{backup}\"")
+            rc = delete_objectbuilder_key()
+            if rc != 0:
+                print(f"{h.FAIL} Could not delete HKCU\\{REG_KEY} (exit {rc}); defaults not imported.", file=sys.stderr)
+                return 1
+            print(f"{h.OK} Deleted HKCU\\{REG_KEY}.")
         else:
             print(f"{INFO} Registry empty — importing defaults.")
-        foreign = foreign_reg_keys(ob_reg)
-        if foreign:
-            print(f"{h.FAIL} {ob_reg.name} writes outside HKEY_CURRENT_USER; refusing to import:", file=sys.stderr)
-            for key in foreign:
-                print(f"          {key}", file=sys.stderr)
-            return 1
         rc = import_reg_file(ob_reg)
         if rc != 0:
             print(f"{h.FAIL} reg import failed (exit {rc}).", file=sys.stderr)

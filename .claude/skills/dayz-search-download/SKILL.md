@@ -83,7 +83,7 @@ DayZ RAG index downloader
 
 - **Checksum:** GitHub publishes a SHA-256 `digest` for release assets it stores. The download must match it, or the skill exits non-zero and leaves the existing index untouched. This catches corrupted or truncated downloads only: the digest comes from the same GitHub release as the file, so it does not prove who published the asset. An asset with no digest is refused before downloading unless you pass `--allow-unverified`, which installs it with a warning.
 - **Safe extraction:** archive entries that would land outside the extract folder (absolute paths, `..` traversal, links pointing outside) are refused. On Python 3.12+ this uses the `tarfile` `data` filter.
-- **Network errors** (offline, DNS, proxy, HTTP errors) exit non-zero with the URL and the reason.
+- **Network errors** (offline, DNS, proxy, HTTP errors, and timeouts or dropped connections partway through the download) exit non-zero with the URL and the reason, leaving the existing index untouched.
 
 ## After downloading
 

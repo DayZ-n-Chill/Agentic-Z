@@ -80,10 +80,11 @@ Umbrella pattern: each payload PBO keeps its own prefix (baked in when it was co
 
 ## Asset conventions
 
-- Textures are `.paa` only, with required suffixes:
-  - `_co`: color (diffuse)
-  - `_nohq`: normal
-  - `_smdi`: spec / mask
+- Textures are `.paa` only, and every texture name ends in a role suffix. ImageToPAA picks compression and color space from the suffix (rules in `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg`). Vanilla gear uses three:
+  - `_co`: color (diffuse); `_ca` when it carries alpha
+  - `_nohq`: normal map
+  - `_smdi`: specular
+- The other suffixes vanilla ships under `P:\DZ` (all with TexConvert rules): `_lco`, `_lca` (terrain layer color), `_no`, `_non`, `_nopx` (other normal maps), `_sm` (specular), `_as`, `_ads`, `_adshq` (ambient shadow), `_mc`, `_mco` (macro, multiply color), `_dt`, `_detail`, `_cdt`, `_dtsmdi` (detail), `_mask` and `_sky`. `/dayz-pack-texture` accepts exactly this set.
 - Materials are `.rvmat` files referencing the textures and assigning shaders.
 - Models are `.p3d` files exported from Object Builder. Code that reads `.p3d` with py3d follows `.claude/skills/_shared/py3d-mlod-notes.md`.
 
@@ -94,31 +95,34 @@ Umbrella pattern: each payload PBO keeps its own prefix (baked in when it was co
 - Inherit from vanilla classes (requires vanilla data on `P:\`).
 - Custom containers: see `.claude/skills/_shared/container-base.md` (the `class Cargo`, `GlobalArmor` and `healthLevels[]` requirements).
 
-## Vanilla bug: `inventorySlot` string vs array (`T148506`)
+## `inventorySlot`: string vs array (`T148506`)
 
-When a vanilla item's config declares `inventorySlot` as a **string** (single slot), trying to extend it from a mod with the `+=` array-append syntax fails silently: the mod's slot is dropped at parse time.
+Vanilla declares `inventorySlot` in two forms: a string for a single slot, and an array for several.
 
 ```cpp
-// Vanilla (DZ\gear\camping\config.cpp ~ line 10074):
-class WoodenCrate : Inventory_Base
+// String form (DZ\vehicles\parts\config.cpp:822-831):
+class GlowPlug : Inventory_Base
 {
-    inventorySlot = "WoodenCrate";       // STRING, not array
+    inventorySlot = "GlowPlug";
 };
 
-// FAILS silently — append to a string isn't valid:
-class MyMod_FancyCrate : WoodenCrate
+// Array form (DZ\gear\camping\config.cpp:10157-10173):
+class WoodenCrate : Container_Base
 {
-    inventorySlot[] += {"MyMod_CustomSlot"};
-};
-
-// FIX — redeclare as an explicit array, including the original value:
-class MyMod_FancyCrate : WoodenCrate
-{
-    inventorySlot[] = {"WoodenCrate", "MyMod_CustomSlot"};
+    inventorySlot[] = {"Truck_01_WoodenCrate1", "Truck_01_WoodenCrate2", "Truck_01_WoodenCrate3", "Truck_01_WoodenCrate4"};
 };
 ```
 
-Bohemia ticket: `T148506`. The bug is "won't fix"; the workaround is mandatory. Symptom: attachment slot just doesn't accept the modded item, no RPT error, no script error.
+Appending with `inventorySlot[] += {...}` to a class whose parent uses the string form fails silently: the mod's slot is dropped at parse time, and the slot just refuses the item with no RPT or script error (Bohemia tracker `T148506`). So whenever a mod class changes a parent's `inventorySlot`, redeclare the whole array with `=` and keep the parent's existing entries:
+
+```cpp
+class MyMod_GlowPlug : GlowPlug
+{
+    inventorySlot[] = {"GlowPlug", "MyMod_CustomSlot"};   // not += {"MyMod_CustomSlot"}
+};
+```
+
+Check the parent's declaration on `P:\` first (Grep for the class name) so the copied entries match what vanilla ships.
 
 ## Script conventions
 
@@ -157,8 +161,8 @@ Bohemia ticket: `T148506`. The bug is "won't fix"; the workaround is mandatory. 
 DayZ's UI has no central theme system; no `PrimaryAccentColor` constant flows through every widget. A color comes from three independent places, each overridden differently:
 
 1. `.layout` files in `P:\gui\layouts\` (100+ files). Colors are baked per widget as RGBA values. `modded class` does not apply; overriding means shipping a same-named layout in your mod's `gui/layouts/`, which replaces the whole layout and is brittle across DayZ updates.
-2. Inline ARGB literals in `P:\scripts\5_mission\gui\` (10+ files), such as `widget.SetColor(0xFFD70D11)`. Override the containing class's method with `modded class`, not the constant.
-3. `Colors` / `FadeColors` constants in `P:\scripts\3_game\colors.c`. `modded class Colors { const int X = ...; }` is a no-op for compile-time constants, because callers baked the original value at compile time. `COLOR_DAYZ_RED` is referenced in one place across vanilla scripts (`mainmenupromo.c:158`), so even a working override would only recolor the main-menu promo banner.
+2. Inline ARGB literals in `P:\scripts\5_mission\gui\` (10+ files), such as `w.SetColor(0xFFFFEC44)` in `actionmenu.c:74`. Override the containing class's method with `modded class`, not the constant.
+3. `Colors` / `FadeColors` constants in `P:\scripts\3_game\colors.c`. `modded class Colors { const int X = ...; }` is a no-op for compile-time constants, because callers baked the original value at compile time. `COLOR_DAYZ_RED` is referenced in one place across vanilla scripts (`P:\scripts\5_mission\gui\newui\mainmenu\mainmenupromo.c:157`), so even a working override would only recolor the main-menu promo banner.
 
 So "change all the red UI to blue" is not a one-file task: it means sweeping `.layout` files per widget and overriding every class method that calls `SetColor(<red ARGB>)` in `5_mission/gui/`. That is hours of work. For new mods that need theming, build on CUI (Community UI Framework), which supplies the theme layer the engine lacks; for one-off recolors, scope the task to one element.
 
@@ -183,8 +187,8 @@ Scope searches to your domain's folders (`P:\scripts\`, `P:\dz\<category>\`, `P:
 
 Each tool is exposed under two names depending on how the server is loaded: `mcp__dayz-rag__<tool>` (project server) and `mcp__plugin_agentic-z_dayz-rag__<tool>` (plugin). Agents that search list both in `tools:`.
 
-- `search_dayz_source(query, top_k=5, file_type=None, max_distance=None)` returns chunks with `path`, `parent_context`, `line_start`/`line_end`, `distance` (lower is closer), `is_stale`, and a truncated snippet. `file_type` is one of `c`, `cpp`, `hpp`, `h`, `layout`, `cfg`, `rvmat`, `xml`, `json`, `csv`, or omitted.
-- `search_dayz_wiki(query, top_k=5)` searches the Bohemia community wiki (DayZ categories). It needs the wiki index, whose build skill is on hold, so expect a missing-table error until that index exists.
+- `search_dayz_source(query, top_k=5, file_type=None, max_distance=None)` returns chunks with `path`, `file_type`, `parent_context`, `line_start`/`line_end`, `distance` (lower is closer; `max_distance` drops hits above it), `is_stale`, and a truncated snippet. `file_type` is one of `c`, `cpp`, `hpp`, `h`, `layout`, `cfg`, `rvmat`, `xml`, `json`, `csv`, or omitted.
+- `search_dayz_wiki(query, top_k=5, max_distance=None)` searches the Bohemia community wiki (DayZ categories) and returns the same fields, with the page URL as `path`. It needs the wiki index, whose build skill is on hold, so expect a "Wiki index unavailable" error until that index exists.
 - `get_dayz_file(path, line_start=None, line_end=None)` fetches a file or range under `P:\` to verify a hit.
 - `list_indexed_sources()` returns `{source, wiki}`: the manifest of the vanilla source index and of the wiki index (what was indexed and when), with `null` for an index that has not been built.
 

@@ -13,16 +13,27 @@ _SPEC.loader.exec_module(pt)
 
 
 @pytest.mark.parametrize("stem", ["vest_co", "vest_camo_nohq", "vest_smdi", "VEST_CO", "a_b_NoHQ"])
-def test_suffix_re_accepts_role_suffixes(stem):
+def test_suffix_re_accepts_core_suffixes(stem):
     assert pt.SUFFIX_RE.search(stem)
 
 
-@pytest.mark.parametrize("stem", ["vest", "vest_ca", "vest_co_old", "vestco", "vest_nohq2", "co"])
+@pytest.mark.parametrize("suffix", pt.ALLOWED_SUFFIXES)
+def test_suffix_re_accepts_every_vanilla_suffix(suffix):
+    assert pt.SUFFIX_RE.search("vest" + suffix)
+    assert pt.SUFFIX_RE.search("VEST" + suffix.upper())
+
+
+@pytest.mark.parametrize("stem", ["glass_ca", "ui_icon_lco", "bricks_broken_full_dtsmdi", "rock_apart1_mask"])
+def test_suffix_re_accepts_vanilla_examples(stem):
+    assert pt.SUFFIX_RE.search(stem)
+
+
+@pytest.mark.parametrize("stem", ["vest", "vest_co_old", "vestco", "vest_nohq2", "co", "vest_diffuse", "vest_normal", "vest_c"])
 def test_suffix_re_rejects_other_names(stem):
     assert not pt.SUFFIX_RE.search(stem)
 
 
-@pytest.mark.parametrize("name", ["vest_co.png", "vest_nohq.TGA", "vest_smdi.Png"])
+@pytest.mark.parametrize("name", ["vest_co.png", "vest_nohq.TGA", "vest_smdi.Png", "glass_ca.png", "vest_as.tga"])
 def test_validate_input_accepts(tmp_path, name):
     path = tmp_path / name
     path.write_bytes(b"")

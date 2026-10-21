@@ -244,6 +244,26 @@ def test_render_description_prose_then_examples():
     assert ">c2<" in out
 
 
+def test_render_description_escapes_prose_and_examples_like_skills():
+    desc = (
+        "Use for `modded class X {}` & <Widget> work with {braces}.\n\n"
+        "<example>\nContext: set {a} & b\n"
+        'user: "Add `class Foo {}` to <config>"\n'
+        'assistant: "I\'ll use x -> y {z}"\n</example>\n\n'
+        "Tail {t} & <u>."
+    )
+    out = render_description(desc)
+    # Prose: escaped outside inline code, code spans left literal.
+    assert "Use for `modded class X {}` &amp; &lt;Widget&gt; work with &#123;braces&#125;." in out
+    # Example turns get the same treatment.
+    assert ">set &#123;a&#125; &amp; b<" in out
+    assert '`class Foo {}` to &lt;config&gt;' in out
+    assert "x -&gt; y &#123;z&#125;" in out
+    assert "Tail &#123;t&#125; &amp; &lt;u&gt;." in out
+    # The generated div markup itself is not escaped.
+    assert out.count('<div class="agent-example">') == 1
+
+
 # ---------- MDX tag escape in body ----------
 
 def test_escape_mdx_tags_in_body_only_targets_mdx_problem_tags():

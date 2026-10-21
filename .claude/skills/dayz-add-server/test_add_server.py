@@ -202,6 +202,12 @@ def test_instance_name_rejects_paths(bad):
         srv.validate_instance(bad)
 
 
+@pytest.mark.parametrize("bad", ["a*b", "a?b", 'a"b', "a<b", "a>b", "a|b"])
+def test_instance_name_rejects_windows_forbidden_chars(bad):
+    with pytest.raises(srv.argparse.ArgumentTypeError, match="Windows forbids"):
+        srv.validate_instance(bad)
+
+
 @pytest.mark.parametrize("good", ["chernarus", "chernarus-hardcore", "loot_test.2"])
 def test_instance_name_accepts_folder_names(good):
     assert srv.validate_instance(good) == good

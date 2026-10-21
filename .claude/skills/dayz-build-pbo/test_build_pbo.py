@@ -210,3 +210,31 @@ def test_main_clean_refuses_before_running_addonbuilder(p_drive, tmp_path, monke
         build.main()
     assert "--clean would wipe" in str(exc.value.code)
     assert ran == []
+
+
+def test_failed_first_build_does_not_block_the_rebuild(p_drive, tmp_path, monkeypatch):
+    """A first build that fails after creating @MyMod/Addons must leave the folder
+    marked, so the next build passes the ownership gate and succeeds."""
+    project = tmp_path / "proj"
+    _scaffold(project)
+    deploy = p_drive / "Mods" / "@MyMod"
+    monkeypatch.setattr(build, "TEMP_ROOT", tmp_path / "temp")
+    monkeypatch.setattr(build.h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(build.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(build, "validate_p_mods", lambda: None)
+    monkeypatch.setattr(build, "verify_junction", lambda m, w: None)
+    monkeypatch.setattr(build, "resolve_addon_builder", lambda: Path("AB.exe"))
+    monkeypatch.setattr("sys.argv", ["build.py", "MyMod"])
+
+    monkeypatch.setattr(build.subprocess, "run", lambda cmd: build.subprocess.CompletedProcess(cmd, 3))
+    assert build.main() == 3
+    assert (deploy / "Addons").is_dir()
+    assert h.owns_deploy_dir(deploy, "MyMod")
+
+    def good_build(cmd):
+        (deploy / "Addons" / "MyMod.pbo").write_bytes(b"pbo")
+        return build.subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(build.subprocess, "run", good_build)
+    assert build.main() == 0
+    assert (deploy / "Addons" / "MyMod.pbo").is_file()

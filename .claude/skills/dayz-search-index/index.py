@@ -538,6 +538,40 @@ def _pack_batches(texts: list[str]) -> Iterator[list[str]]:
 EMBED_ATTEMPTS = 5
 
 
+class EmbedError(Exception):
+    """An embed batch failed for good. Carries the tokens already billed for the
+    batches that succeeded, so the caller can log them before exiting."""
+
+    def __init__(self, cause: Exception, tokens_used: int, transient: bool):
+        self.cause = cause
+        self.tokens_used = tokens_used
+        self.transient = transient
+        detail = " ".join(str(cause).split()) or "no message"
+        super().__init__(f"{type(cause).__name__}: {detail}")
+
+
+def embed_or_fail(texts: list[str], model: str, api_key: str) -> Optional[tuple[list[list[float]], int]]:
+    """Run embed_all. On failure, log the tokens spent so far to usage.log,
+    print one [FAIL] line and return None."""
+    try:
+        return embed_all(texts, model, api_key)
+    except EmbedError as exc:
+        if exc.tokens_used:
+            cost = round((exc.tokens_used / 1_000_000) * (_rate(model) or 0), 4)
+            _append_usage_entry(exc.tokens_used, cost, "dayz-search-index")
+        if exc.transient:
+            what = f"Voyage embedding failed after {EMBED_ATTEMPTS} attempts ({exc})."
+        else:
+            what = f"Voyage rejected the embed request ({exc}). Check VOYAGE_API_KEY in .env and your Voyage account."
+        spent = (
+            f"{exc.tokens_used:,} tokens used before the failure were logged to {USAGE_LOG_NAME}"
+            if exc.tokens_used
+            else "No tokens were used"
+        )
+        print(f"{FAIL} {what} {spent}; the existing index is unchanged.", file=sys.stderr)
+        return None
+
+
 def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[float]], int]:
     """Embed all texts via Voyage in dynamically-packed batches. Returns
     (vectors, total_tokens).
@@ -570,9 +604,10 @@ def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[flo
                 total_tokens += int(resp.total_tokens or 0)
                 break
             except Exception as exc:
-                if attempt == EMBED_ATTEMPTS - 1 or not voyage_common.is_transient(exc):
+                transient = voyage_common.is_transient(exc)
+                if attempt == EMBED_ATTEMPTS - 1 or not transient:
                     pbar.close()
-                    raise
+                    raise EmbedError(exc, total_tokens, transient) from exc
                 pbar.write(f"{WARN} {exc} — retry in {delay:.0f}s (attempt {attempt + 1}/{EMBED_ATTEMPTS})")
                 time.sleep(delay)
                 delay *= 2
@@ -765,7 +800,10 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     print(f"\nEmbedding {len(chunks)} chunks via Voyage ({embed_model}, document mode)...")
     started = time.time()
-    embeddings, total_tokens = embed_all(texts, embed_model, api_key)
+    embedded = embed_or_fail(texts, embed_model, api_key)
+    if embedded is None:
+        return 1
+    embeddings, total_tokens = embedded
     elapsed = time.time() - started
 
     if len(embeddings) != len(chunks):

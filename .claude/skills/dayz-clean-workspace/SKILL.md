@@ -94,7 +94,7 @@ Proceed? [y/N]: y
 
 `--dry-run` prints the plan, then `(--dry-run) nothing removed.`
 
-If a removal fails, the skill prints `[FAIL]  could not remove (<kind>) <path>: <error>`, stops without trying the remaining items, and exits 1. Fix the cause (often a file held open by DayZ or Workbench) and rerun; already-removed items are simply no longer in the plan. If the junction was removed but the workspace folder was not, and no ownership marker exists, the rerun no longer finds proof for that folder: it prints the `[WARN]` with the manual `rmdir` command instead.
+If a removal fails, the skill prints `[FAIL]  could not remove (<kind>) <path>: <error>` (for a link, `<error>` is `rmdir`'s own message), stops without trying the remaining items, and exits 1. Fix the cause (often a file held open by DayZ or Workbench) and rerun; already-removed items are simply no longer in the plan. If the junction was removed but the workspace folder was not, and no ownership marker exists, the rerun no longer finds proof for that folder: it prints the `[WARN]` with the manual `rmdir` command instead.
 
 ## Do not
 

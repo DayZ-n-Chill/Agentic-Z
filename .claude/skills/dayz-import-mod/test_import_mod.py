@@ -136,9 +136,20 @@ def test_scaffold_writes_in_process_without_rerunning_preflight(tmp_path, monkey
     monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: pytest.fail("preflight must not re-run"))
     monkeypatch.setattr(imp._scaffold._nm, "find_dayz_tools", lambda: None)
     monkeypatch.setattr(imp._scaffold._nm, "resolve_author", lambda cli: "Tester")
-    rc = imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING, scaffold=True, no_scaffold=False)
+    rc = imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING[:2], scaffold=True, no_scaffold=False)
     assert rc == 0
     assert (tmp_path / "config.cpp").is_file() and (tmp_path / "$PBOPREFIX$").is_file()
+
+
+def test_skipped_workbench_piece_fails_the_import(tmp_path, monkeypatch, capsys):
+    """Without DayZ Tools the writer skips workbench/; that is a failure, not a success."""
+    monkeypatch.setattr(imp._scaffold._nm, "find_dayz_tools", lambda: None)
+    workbench = [c for c in ALL_MISSING if c[0] == "workbench"]
+    rc = imp.add_missing_pieces(tmp_path, "MyMod", workbench, scaffold=True, no_scaffold=False)
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "Could not add workbench/dayz.gproj" in out
+    assert "Retry: /dayz-add-scaffold MyMod --piece workbench" in out
 
 
 def test_no_scaffold_writes_nothing(tmp_path, monkeypatch):
@@ -181,7 +192,7 @@ def test_author_flag_reaches_resolve_author(tmp_path, monkeypatch):
     seen = []
     monkeypatch.setattr(imp._scaffold._nm, "find_dayz_tools", lambda: None)
     monkeypatch.setattr(imp._scaffold._nm, "resolve_author", lambda cli: seen.append(cli) or cli)
-    rc = imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING, scaffold=True, no_scaffold=False, author="Handle")
+    rc = imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING[:1], scaffold=True, no_scaffold=False, author="Handle")
     assert rc == 0
     assert seen == ["Handle"]
     assert 'author = "Handle"' in (tmp_path / "config.cpp").read_text(encoding="utf-8")

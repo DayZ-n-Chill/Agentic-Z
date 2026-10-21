@@ -99,6 +99,13 @@ def test_inject_matches_existing_path_indentation():
     assert '      "MyMod/scripts/3_Game"\n' in out
 
 
+def test_rewrite_filesystem_block_warns_when_nothing_matches(capsys):
+    text = "GameProjectClass {\n Configurations {\n }\n}\n"
+    assert nm.rewrite_filesystem_block(text, "MyMod") == text
+    err = capsys.readouterr().err
+    assert "no single-entry FileSystem block" in err and "P:/MyMod/" in err
+
+
 def test_rewrite_filesystem_block_mounts_p_drive_and_mod():
     out = nm.rewrite_filesystem_block(VANILLA_GPROJ, "MyMod")
     assert 'Directory "./"' not in out
@@ -235,41 +242,35 @@ def test_cached_author_with_quote_refused(author_cache, monkeypatch):
 
 # --- sync_project_cache ----------------------------------------------------------------
 
-def _fake_state(monkeypatch, cached):
-    written = []
+def _cache(project):
+    return project / ".claude" / "local-memory" / "dayz-current-project.txt"
 
-    class FakeState:
-        @staticmethod
-        def cached_project_root():
-            return cached
 
-        @staticmethod
-        def write_cached_project_root(path):
-            written.append(path)
-
-    monkeypatch.setattr(h, "load_module", lambda name, path: FakeState)
-    return written
+def _seed_cache(monkeypatch, project, cached):
+    """Point new_mod at `project` and seed its project cache with `cached` (None = no cache)."""
+    monkeypatch.setattr(nm, "PROJECT_DIR", project)
+    if cached is not None:
+        _cache(project).parent.mkdir(parents=True)
+        _cache(project).write_text(str(cached), encoding="utf-8")
 
 
 def test_sync_cache_sets_when_empty(monkeypatch, tmp_path, capsys):
-    monkeypatch.setattr(nm, "PROJECT_DIR", tmp_path.resolve())
-    written = _fake_state(monkeypatch, None)
+    _seed_cache(monkeypatch, tmp_path.resolve(), None)
     nm.sync_project_cache()
-    assert written == [tmp_path.resolve()]
+    assert _cache(tmp_path).read_text(encoding="utf-8") == str(tmp_path.resolve())
     assert "Project cache set" in capsys.readouterr().out
 
 
-def test_sync_cache_noop_when_already_current(monkeypatch, tmp_path):
-    monkeypatch.setattr(nm, "PROJECT_DIR", tmp_path.resolve())
-    assert _fake_state(monkeypatch, tmp_path) == []
+def test_sync_cache_noop_when_already_current(monkeypatch, tmp_path, capsys):
+    _seed_cache(monkeypatch, tmp_path.resolve(), tmp_path)
     nm.sync_project_cache()
+    assert capsys.readouterr().out == ""
 
 
 def test_sync_cache_repoints_other_project(monkeypatch, tmp_path, capsys):
-    monkeypatch.setattr(nm, "PROJECT_DIR", tmp_path.resolve())
-    written = _fake_state(monkeypatch, tmp_path / "other")
+    _seed_cache(monkeypatch, tmp_path.resolve(), tmp_path / "other")
     nm.sync_project_cache()
-    assert written == [tmp_path.resolve()]
+    assert _cache(tmp_path).read_text(encoding="utf-8") == str(tmp_path.resolve())
     assert "repointed" in capsys.readouterr().out
 
 
@@ -307,12 +308,13 @@ def test_main_without_tools_points_at_add_scaffold(main_env, monkeypatch, capsys
 
 def test_main_rolls_back_when_link_fails(main_env, monkeypatch):
     def fail_link(src, dst):
-        raise subprocess.CalledProcessError(1, "mklink")
+        raise subprocess.CalledProcessError(1, "mklink", stderr="Access is denied.\n")
 
     monkeypatch.setattr(nm, "make_dir_link", fail_link)
     with pytest.raises(SystemExit) as exc:
         nm.main()
     assert "rolled back" in str(exc.value.code)
+    assert "junction: Access is denied." in str(exc.value.code)  # mklink's own reason, not the exit status
     assert not main_env.exists()
 
 
@@ -335,3 +337,21 @@ def test_main_refuses_existing_workspace_entry(main_env, monkeypatch):
         nm.main()
     assert "already exists" in str(exc.value.code)
     assert (main_env / "keep.txt").read_text(encoding="utf-8") == "mine"
+
+
+def test_project_dir_found_from_subfolder(monkeypatch, tmp_path):
+    """Loaded from inside workspace/ with no CLAUDE_PROJECT_DIR, new_mod resolves
+    the project the way every skill does (the cache above cwd), so workspace/ and
+    the author cache are not created under the subfolder."""
+    project = tmp_path.resolve() / "project"
+    _cache(project).parent.mkdir(parents=True)
+    _cache(project).write_text(str(project), encoding="utf-8")
+    (project / "workspace").mkdir()
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(project / "workspace")
+    spec = importlib.util.spec_from_file_location("dayz_new_mod_subfolder", HERE / "new_mod.py")
+    fresh = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fresh)
+    assert fresh.PROJECT_DIR == project
+    assert fresh.WORKSPACE == project / "workspace"
+    assert fresh.AUTHOR_CACHE == project / ".claude" / "local-memory" / "dayz-author.txt"

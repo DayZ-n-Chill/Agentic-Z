@@ -75,3 +75,38 @@ def test_mod_exists_counts_a_dangling_link(tmp_path, monkeypatch):
     monkeypatch.setattr(state.os.path, "lexists", lambda p: Path(p).name == "Gone")
     assert state.mod_exists(tmp_path, "Gone")
     assert not state.mod_exists(tmp_path, "Other")
+
+
+def _seed_cache(project: Path) -> Path:
+    cache = project / ".claude" / "local-memory" / state.CACHE_FILENAME
+    cache.parent.mkdir(parents=True)
+    cache.write_text(str(project), encoding="utf-8")
+    return project
+
+
+def test_find_project_dir_walks_up_to_the_cache(tmp_path, monkeypatch):
+    project = _seed_cache(tmp_path.resolve() / "project")
+    sub = project / "workspace" / "MyMod" / "scripts"
+    sub.mkdir(parents=True)
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(sub)
+    assert state.find_project_dir() == project
+
+
+def test_find_project_dir_prefers_env_then_falls_back_to_cwd(tmp_path, monkeypatch):
+    monkeypatch.setattr(state.Path, "home", classmethod(lambda cls: tmp_path.resolve()))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path / "env"))
+    assert state.find_project_dir() == (tmp_path / "env").resolve()
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR")
+    assert state.find_project_dir() == tmp_path.resolve()
+
+
+def test_find_project_dir_ignores_a_cache_in_home(tmp_path, monkeypatch):
+    home = _seed_cache(tmp_path.resolve() / "home")
+    sub = home / "repos" / "Other"
+    sub.mkdir(parents=True)
+    monkeypatch.setattr(state.Path, "home", classmethod(lambda cls: home))
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(sub)
+    assert state.find_project_dir() == sub

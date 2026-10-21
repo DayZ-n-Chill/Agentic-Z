@@ -61,16 +61,16 @@ Other wiki pages (`intro.mdx`, `install.mdx`, `architecture.md` and so on) are h
 The Docusaurus transform (`apply.py`):
 - Frontmatter is parsed as YAML (PyYAML), so folded `>` / `>-` descriptions render as plain text.
 - Skills: frontmatter trimmed to `name`; the description becomes an `## Overview` section.
-- Agents: frontmatter trimmed to `name`, `model`, `color`, `memory`; a badge row is injected; `<example>` blocks in the description become styled example cards (`<commentary>` dropped).
+- Agents: frontmatter trimmed to `name`, `model`, `color`, `memory`; a badge row is injected; `<example>` blocks in the description become styled example cards (`<commentary>` dropped). The description prose and the example text are escaped like skill descriptions (`&`, `<`, `>`, `{`, `}` outside inline code).
 - Bodies: HTML comments, including ones spanning several lines, are stripped and curly braces in prose are escaped so MDX can render the page. Fenced code (backtick or `~~~` fences) and inline code are left as written. Agent bodies also escape literal `<example>`/`<commentary>` tags.
 - Docs: frontmatter kept verbatim; the body gets the same HTML-comment and curly-brace pass.
 
 ## Stop hook integration
 
-The drift detector (`sync.py --check`) is wired to Claude Code's Stop hook. When Claude finishes a response, if any canonical file changed without its wiki mirror being updated, you'll see a one-line notice:
+The drift detector is wired to Claude Code's Stop hook in `.claude/settings.json` as `sync.py --check --quiet`. Claude Code only logs a command hook's plain stdout (to the debug log) when it exits 0; what it shows the user is a `systemMessage` field in JSON output. So under `--quiet` the script prints nothing when the wiki is in sync, and otherwise one JSON line, which appears as a notice when Claude finishes a response:
 
 ```
-docs-sync: 2 file(s) need wiki sync. Run /docs-sync.
+{"systemMessage": "docs-sync: 2 file(s) need wiki sync. Run /docs-sync."}
 ```
 
-The hook never auto-applies edits — you decide when to run the sync. If PyYAML is missing, the hook prints one line saying the check was skipped and still exits 0, so it never fails a session; a manual `--check` or `--apply` without PyYAML exits 1.
+The hook never auto-applies edits; you decide when to run the sync. If PyYAML is missing, the hook's message says the check was skipped and it still exits 0, so it never fails a session; a manual `--check` or `--apply` without PyYAML exits 1.

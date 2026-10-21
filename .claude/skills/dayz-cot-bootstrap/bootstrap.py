@@ -92,9 +92,12 @@ def snapshot_player_files(players_dir: Path) -> dict[str, float]:
     return {p.stem: p.stat().st_mtime for p in players_dir.glob("*.json")}
 
 
-def wait_for_cot_player(players_dir: Path, baseline: dict[str, float], timeout_s: int) -> list[Path]:
+def wait_for_cot_player(players_dir: Path, baseline: dict[str, float], timeout_s: int,
+                        session: list[subprocess.Popen]) -> list[Path]:
     """Poll players_dir for new or touched JSON files. Returns the files that
-    triggered; an empty list means timeout."""
+    triggered. An empty list means the wait failed, already reported as [FAIL]:
+    the timeout ran out, or the server or client (session = [server, client])
+    exited first, which ends the wait at once."""
     print(f"        Waiting up to {timeout_s}s for COT to register your character...")
     print(f"        (watching {players_dir})")
     sys.stdout.flush()
@@ -111,11 +114,18 @@ def wait_for_cot_player(players_dir: Path, baseline: dict[str, float], timeout_s
                 for p in triggered:
                     print(f"{OK} Detected player file: {p.name}")
                 return triggered
+        for label, proc in zip(("server", "client"), session):
+            code = proc.poll()
+            if code is not None:
+                print()
+                print(f"{FAIL} The {label} exited (code {code}) before COT registered a player.")
+                return []
         if time.time() - last_dot > 5:
             print(".", end="", flush=True)
             last_dot = time.time()
         time.sleep(2)
     print()
+    print(f"{FAIL} Timed out after {timeout_s}s waiting for COT to register a player.")
     return []
 
 
@@ -296,10 +306,10 @@ def main() -> int:
         client_diag_dir, display, "Pass 1",
     )
 
-    triggered = wait_for_cot_player(players_dir, baseline, args.timeout)
+    triggered = wait_for_cot_player(players_dir, baseline, args.timeout, session)
     if not triggered:
-        print(f"{FAIL} Timed out after {args.timeout}s waiting for COT to register a player.")
-        print(f"       Check the server RPT in {profile_dir}\\ for errors.")
+        print(f"       Check script.log and the server RPT in {profile_dir}\\,")
+        print(f"       and the client's script.log in {client_diag_dir}\\.")
         print("       Stopping the pass-1 server and client before exiting...")
         stop_session(session)
         return 1

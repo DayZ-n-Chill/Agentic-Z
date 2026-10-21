@@ -158,6 +158,7 @@ def env(tmp_path, monkeypatch):
 
     def fake_import(path):
         state["imports"] += 1
+        state["order"].append("import")
         if state["import_rc"] == 0 and state["import_creates_keys"]:
             state["configured"] = True
         return state["import_rc"]
@@ -172,9 +173,17 @@ def env(tmp_path, monkeypatch):
 
     def fake_backup(backup_dir):
         state["backups"] += 1
+        state["order"].append("backup")
         return None if state["backup_fails"] else backup_dir / "objectbuilder-backup.reg"
 
-    state.update(backups=0, backup_fails=False)
+    def fake_delete():
+        state["order"].append("delete")
+        if state["delete_rc"] == 0:
+            state["configured"] = False
+        return state["delete_rc"]
+
+    state.update(backups=0, backup_fails=False, delete_rc=0, order=[])
+    monkeypatch.setattr(setup, "delete_objectbuilder_key", fake_delete)
     monkeypatch.setattr(setup, "apply_preferences", fake_prefs)
     monkeypatch.setattr(setup, "backup_registry", fake_backup)
     monkeypatch.setattr(setup, "BACKUP_DIR", tmp_path / "local-memory")
@@ -278,6 +287,50 @@ def test_main_force_aborts_when_backup_fails(env, capsys):
     assert setup.main(["--force", "--yes"]) == 1
     assert "reset not attempted" in capsys.readouterr().err
     assert state["imports"] == 0
+    assert "delete" not in state["order"]
+
+
+def test_main_force_deletes_key_after_backup_and_before_import(env, capsys):
+    _, state = env
+    state["configured"] = True
+    assert setup.main(["--force", "--yes"]) == 0
+    assert state["order"] == ["backup", "delete", "import"]
+    assert "Deleted HKCU" in capsys.readouterr().out
+
+
+def test_main_force_stops_when_delete_fails(env, capsys):
+    _, state = env
+    state["configured"] = True
+    state["delete_rc"] = 1
+    assert setup.main(["--force", "--yes"]) == 1
+    assert "Could not delete" in capsys.readouterr().err
+    assert state["order"] == ["backup", "delete"]
+
+
+def test_main_force_declined_deletes_nothing(env, monkeypatch):
+    _, state = env
+    state["configured"] = True
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True, raising=False)
+    monkeypatch.setattr("builtins.input", lambda prompt: "n")
+    assert setup.main(["--force"]) == 1
+    assert state["order"] == []
+
+
+def test_main_force_refuses_foreign_reg_before_touching_registry(env, capsys):
+    ob, state = env
+    state["configured"] = True
+    (ob / "ObjectBuilder_defaultSettings.reg").write_text(
+        HKCU_REG + "[HKEY_LOCAL_MACHINE\\SOFTWARE\\X]\r\n", encoding="utf-8"
+    )
+    assert setup.main(["--force", "--yes"]) == 1
+    assert "outside HKEY_CURRENT_USER" in capsys.readouterr().err
+    assert state["order"] == []
+
+
+def test_main_fresh_machine_does_not_delete(env):
+    _, state = env
+    assert setup.main([]) == 0
+    assert state["order"] == ["import"]
 
 
 def test_main_fresh_machine_skips_backup(env):
@@ -302,6 +355,27 @@ def test_backup_registry_runs_reg_export(tmp_path, monkeypatch):
     assert dest.parent == tmp_path / "mem"
     assert dest.name.startswith("objectbuilder-backup-") and dest.suffix == ".reg"
     assert calls == [["reg", "export", "HKCU\\" + setup.REG_KEY, str(dest), "/y"]]
+
+
+def test_delete_objectbuilder_key_runs_reg_delete(monkeypatch):
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(setup.subprocess, "run", fake_run)
+    assert setup.delete_objectbuilder_key() == 0
+    assert calls == [["reg", "delete", "HKCU\\" + setup.REG_KEY, "/f"]]
+
+
+def test_delete_objectbuilder_key_failure_returns_code(monkeypatch, capsys):
+    monkeypatch.setattr(
+        setup.subprocess, "run",
+        lambda cmd, **k: types.SimpleNamespace(returncode=1, stdout="", stderr="ERROR: access denied"),
+    )
+    assert setup.delete_objectbuilder_key() == 1
+    assert "access denied" in capsys.readouterr().err
 
 
 def test_backup_registry_failure_returns_none(tmp_path, monkeypatch, capsys):

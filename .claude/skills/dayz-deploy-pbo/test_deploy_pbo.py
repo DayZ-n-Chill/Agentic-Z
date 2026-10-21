@@ -145,3 +145,13 @@ def test_main_reports_locked_file_and_exits_1(deploy_env, monkeypatch, capsys):
 def test_main_exits_1_when_marker_cannot_be_written(deploy_env, monkeypatch):
     monkeypatch.setattr(h, "write_marker", lambda root, name: False)
     assert deploy.main() == 1
+
+
+@pytest.mark.parametrize("bad", ["..", "../Other", r"..\..\Windows", "My Mod", "@MyMod", "1Mod"])
+def test_main_refuses_invalid_mod_name_before_touching_disk(deploy_env, monkeypatch, bad):
+    monkeypatch.setattr(h, "resolve_project_dir", lambda: pytest.fail("resolved the project for a bad name"))
+    monkeypatch.setattr("sys.argv", ["deploy.py", bad])
+    with pytest.raises(SystemExit) as exc:
+        deploy.main()
+    assert "Invalid mod name" in str(exc.value.code)
+    assert not deploy_env.exists()

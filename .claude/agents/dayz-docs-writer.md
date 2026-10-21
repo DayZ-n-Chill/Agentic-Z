@@ -12,7 +12,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 ## What you keep current
 
 - `workspace/<ModName>/README.md`: what the mod adds, its dependencies (`CfgPatches` `requiredAddons`), and load order.
-- A `## Classnames` section in that README for server owners: every spawnable class (`scope = 2`) from the mod's `config.cpp`, skipping `scope = 0` and `scope = 1` base classes, each with a sample `types.xml` entry. Copy each sample from the mission's real `types.xml` (for example `.server/<instance>/mission/db/types.xml`) when it has an entry for the class; otherwise mark the values as placeholders for server owners to tune.
+- A `## Classnames` section in that README for server owners: every spawnable class (`scope = 2`) from the mod's `config.cpp`, skipping `scope = 0` and `scope = 1` base classes, each with a sample `types.xml` entry. Copy each sample from the mission's real types entries when one exists for the class; otherwise mark the values as placeholders for server owners to tune. Search `db/types.xml` (for example `.server/<instance>/mission/db/types.xml`) and every file the mission's `cfgeconomycore.xml` lists in its `<ce folder="...">` blocks: after `/dayz-split-types`, `types.xml` is an empty stub and the entries live in `db/types/*.xml`.
 - `workspace/<ModName>/CHANGELOG.md`: one entry per release, newest first.
 
 ## Rules

@@ -2,10 +2,12 @@
 
 ## Config.cpp Validation
 
-### Baked-in P:\ Drive Paths (CRITICAL)
+### Baked-in P:\ Drive Paths (WARNING, fails the run)
 
 Absolute paths like `P:\DZ\gear\consumables\data\rag_co.paa` only exist on the
-developer's machine. These MUST be converted to game-relative paths:
+developer's machine. `audit_p3d.py` reports each one as a WARNING with its line
+number, and any WARNING in a text file makes the run exit 1. Convert them to
+game-relative paths:
 
 ```cpp
 // WRONG — breaks on any other machine:
@@ -58,7 +60,7 @@ Visual LOD of the P3D. Missing selections silently fail (no texture swap occurs)
 
 ### P:\ Drive Paths in .rvmat Files
 
-Same rule as config.cpp — `P:\` paths break on distribution:
+Same rule and severity as config.cpp (WARNING, fails the run); `P:\` paths break on distribution:
 
 ```text
 // WRONG:
@@ -68,12 +70,26 @@ texture="P:\dz\gear\camping\data\flag_generic_nohq.paa";
 texture="dz\gear\camping\data\flag_generic_nohq.paa";
 ```
 
-### Required Texture Stages
+### Texture Stages (Super shader, manual check)
 
-Standard DayZ .rvmat needs at minimum:
+`audit_p3d.py` does not check stages; review them by hand. Vanilla gear materials
+use `PixelShaderID="Super"` / `VertexShaderID="Super"` with `Stage1` to `Stage7`
+(for example `DZ\gear\camping\data\wooden_case.rvmat`,
+`DZ\characters\vests\data\ballisticvest.rvmat`,
+`DZ\weapons\firearms\akm\data\akm.rvmat`):
 
-- Stage 0: Diffuse color texture (`_co.paa`)
-- Stage 1: Normal map (`_nohq.paa`)
-- Stage 2: Specular/detail map (`_smdi.paa`)
+| Stage | Holds | Typical vanilla value |
+|---|---|---|
+| (none) | Diffuse `_co`, supplied by the model's face texture or `hiddenSelectionsTextures[]`, not by the rvmat | |
+| `Stage1` | Normal map | the item's `_nohq.paa` |
+| `Stage2` | Detail map | `#(argb,8,8,3)color(0.5,0.5,0.5,1,DT)` placeholder, or a `_dt.paa` |
+| `Stage3` | Macro map | `#(argb,8,8,3)color(0,0,0,0,MC)` placeholder, or a `_mc.paa` (akm) |
+| `Stage4` | Ambient shadow | `#(argb,8,8,3)color(1,1,1,1,AS)` placeholder, or an `_as.paa` (wooden_case) |
+| `Stage5` | Specular | the item's `_smdi.paa` |
+| `Stage6` | Fresnel, `uvSource="none"` | `#(ai,64,64,1)fresnel(...)` |
+| `Stage7` | Environment map | `dz\data\data\env_land_co.paa` |
 
-Missing stages produce engine warnings but don't crash.
+Keep every stage, using the procedural placeholder when there is no texture,
+and copy the layout from a vanilla rvmat of a similar item rather than writing
+one from scratch. Only a minority of vanilla Super materials add a `Stage0`
+with the diffuse (330 of 5,841 under `P:\DZ`).

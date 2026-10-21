@@ -23,8 +23,12 @@ from string import Template
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
-# PROJECT_DIR = user's project (where workspace/ and local-memory/ live).
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+# PROJECT_DIR = user's project (where workspace/ and local-memory/ live), found
+# the same way every DayZ skill finds it (dayz-init/state.py). Not
+# h.resolve_project_dir(): that requires the cache, and this skill is the one
+# that writes it on a first scaffold.
+_state = h.load_module("dayz_init_state_module", h.DAYZ_INIT_STATE)
+PROJECT_DIR = _state.PROJECT_DIR
 WORKSPACE = PROJECT_DIR / "workspace"
 LOCAL_MEMORY = PROJECT_DIR / ".claude" / "local-memory"
 AUTHOR_CACHE = LOCAL_MEMORY / "dayz-author.txt"
@@ -295,13 +299,21 @@ def rewrite_filesystem_block(text: str, modname: str) -> str:
         f'    }}\n'
         f'   }}'
     )
-    return re.sub(
+    result, replaced = re.subn(
         r'^\s*FileSystem\s*\{[^}]*?FileSystemPathClass\s*\{[^}]*?\}\s*\}',
         new_block,
         text,
         count=1,
         flags=re.MULTILINE | re.DOTALL,
     )
+    if not replaced:
+        print(
+            f"{WARN} dayz.gproj has no single-entry FileSystem block; left it unchanged.\n"
+            f"       Add FileSystemPathClass entries for P:/ and P:/{modname}/ by hand, "
+            "or Workbench may not find vanilla or mod files.",
+            file=sys.stderr,
+        )
+    return result
 
 
 def inject_mod_paths_into_gproj(text: str, modname: str) -> str:
@@ -416,11 +428,11 @@ def sync_project_cache() -> None:
     "workspace not found". Scaffolding here is an explicit signal that this is
     the active project, so repoint (visibly) rather than let that happen.
     """
-    state = h.load_module("dayz_init_state_module", h.DAYZ_INIT_STATE)
-    cached = state.cached_project_root()
+    memory = PROJECT_DIR / ".claude" / "local-memory"
+    cached = _state.cached_project_root(memory)
     if cached is not None and cached.resolve() == PROJECT_DIR:
         return
-    state.write_cached_project_root(PROJECT_DIR)
+    _state.write_cached_project_root(PROJECT_DIR, memory)
     if cached is None:
         print(f"{OK} Project cache set: {PROJECT_DIR}")
     else:
@@ -462,8 +474,10 @@ def main() -> int:
         kind = make_dir_link(target, p_drive_link)
     except (OSError, subprocess.CalledProcessError) as e:
         shutil.rmtree(target, ignore_errors=True)
+        # mklink's own message ("Access is denied." etc.) is in e.stderr.
+        detail = (getattr(e, "stderr", "") or str(e)).strip()
         sys.exit(
-            f"{FAIL} Failed to create P:\\{args.modname} junction: {e}\n"
+            f"{FAIL} Failed to create P:\\{args.modname} junction: {detail}\n"
             "       Scaffold rolled back."
         )
     print(f"{OK} P:\\{args.modname} {kind} -> {target.relative_to(PROJECT_DIR)}")

@@ -217,3 +217,50 @@ def test_display_prefs_created_then_read(tmp_path):
     prefs = tmp_path / ".claude" / "local-memory" / launch.CLIENT_DISPLAY_PREFS_NAME
     prefs.write_text(json.dumps({"windowed": False}), encoding="utf-8")
     assert launch.read_client_display_prefs(tmp_path) == {"windowed": False}
+
+
+@pytest.mark.parametrize("content", ['[1920, 1080]', '"windowed"', '{"windowed": "yes"}',
+                                     '{"width": "1920"}', '{"height": 0}', '{"width": true}', "{not json"])
+def test_display_prefs_bad_shape_falls_back_with_warning(tmp_path, capsys, content):
+    prefs = tmp_path / ".claude" / "local-memory" / launch.CLIENT_DISPLAY_PREFS_NAME
+    prefs.parent.mkdir(parents=True)
+    prefs.write_text(content, encoding="utf-8")
+    assert launch.read_client_display_prefs(tmp_path) == launch.DEFAULT_CLIENT_DISPLAY
+    assert "Falling back to defaults" in capsys.readouterr().out
+
+
+# --- wait_for_server_port -------------------------------------------------------------
+
+class _ServerProc:
+    def __init__(self, returncode=None):
+        self.returncode = returncode
+
+    def poll(self):
+        return self.returncode
+
+
+@pytest.fixture
+def fake_clock(monkeypatch):
+    now = [0.0]
+    monkeypatch.setattr(launch.time, "time", lambda: now[0])
+    monkeypatch.setattr(launch.time, "sleep", lambda s: now.__setitem__(0, now[0] + s))
+    return now
+
+
+def test_wait_for_port_stops_when_server_exits(monkeypatch, fake_clock, capsys):
+    monkeypatch.setattr(launch.h, "udp_port_free", lambda port: pytest.fail("probed after the server exited"))
+    assert launch.wait_for_server_port(2302, _ServerProc(returncode=3), timeout_s=60) is False
+    assert "exited unexpectedly (rc=3)" in capsys.readouterr().out
+
+
+def test_wait_for_port_succeeds_once_server_binds(monkeypatch, fake_clock):
+    probes = iter([True, True, False])  # free, free, then held by the server
+    monkeypatch.setattr(launch.h, "udp_port_free", lambda port: next(probes))
+    assert launch.wait_for_server_port(2302, _ServerProc(), timeout_s=60) is True
+    assert fake_clock[0] == 2  # slept once per free probe
+
+
+def test_wait_for_port_times_out(monkeypatch, fake_clock):
+    monkeypatch.setattr(launch.h, "udp_port_free", lambda port: True)
+    assert launch.wait_for_server_port(2302, _ServerProc(), timeout_s=10) is False
+    assert fake_clock[0] >= 10

@@ -1,7 +1,8 @@
 """dayz-pack-texture: Convert PNG/TGA -> .paa via DayZ Tools' ImageToPAA.exe.
 
-Validates the required DayZ suffix (_co, _nohq, _smdi) on each input so the
-engine assigns the correct texture role. An existing .paa next to the source is
+Validates that each input ends in a texture-role suffix used by vanilla DayZ
+(_co, _nohq, _smdi and the rest of ALLOWED_SUFFIXES) so ImageToPAA and the
+engine treat the texture as the right kind. An existing .paa next to the source is
 overwritten.
 
 See SKILL.md for full usage.
@@ -18,7 +19,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 ALLOWED_EXTS = {".png", ".tga"}
-ALLOWED_SUFFIXES = ("_co", "_nohq", "_smdi")
+# Texture-role suffixes that both appear on vanilla .paa files under P:\DZ and
+# have an entry in DayZ Tools' Bin\ImageToPAA\TexConvert.cfg, which picks the
+# compression and color space from the suffix.
+ALLOWED_SUFFIXES = (
+    "_co", "_ca", "_lco", "_lca",          # color, color+alpha, terrain layer color (+alpha)
+    "_nohq", "_no", "_non", "_nopx",       # normal maps (HQ, plain, alpha noise, parallax)
+    "_smdi", "_sm",                        # specular
+    "_as", "_ads", "_adshq",               # ambient shadow
+    "_mc", "_mco",                         # macro, multiply color
+    "_dt", "_detail", "_cdt", "_dtsmdi",   # detail
+    "_mask", "_sky",                       # masks, sky
+)
 SUFFIX_RE = re.compile(
     "(" + "|".join(re.escape(s) for s in ALLOWED_SUFFIXES) + ")$", re.IGNORECASE
 )
@@ -89,7 +101,8 @@ def main() -> int:
     parser.add_argument(
         "inputs",
         nargs="+",
-        help="One or more PNG/TGA files. Basenames must end with _co, _nohq, or _smdi.",
+        help="One or more PNG/TGA files. Basenames must end with a DayZ texture-role "
+        "suffix such as _co, _ca, _nohq or _smdi (full list in SKILL.md).",
     )
     args = parser.parse_args()
 

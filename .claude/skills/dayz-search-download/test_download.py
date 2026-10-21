@@ -226,6 +226,55 @@ def test_download_url_error_exits(dl, tmp_path, monkeypatch):
     assert "timed out" in str(exc.value)
 
 
+class _BrokenStream:
+    """Response that yields one chunk, then fails the way a dropped connection does."""
+
+    def __init__(self, err):
+        self._err = err
+        self._sent = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self, n):
+        if not self._sent:
+            self._sent = True
+            return b"x" * 10
+        raise self._err
+
+
+@pytest.mark.parametrize(
+    "err, reason",
+    [
+        (TimeoutError("The read operation timed out"), "The read operation timed out"),
+        (ConnectionResetError(10054, "An existing connection was forcibly closed"), "forcibly closed"),
+    ],
+)
+def test_download_error_mid_read_exits_with_url_and_reason(dl, tmp_path, monkeypatch, err, reason):
+    monkeypatch.setattr(dl.urllib.request, "urlopen", lambda *a, **k: _BrokenStream(err))
+    url = "https://example.invalid/index.tar.gz"
+    with pytest.raises(SystemExit) as exc:
+        dl.download_with_progress(url, tmp_path / "x", 100)
+    msg = str(exc.value)
+    assert url in msg
+    assert reason in msg
+    assert "after 10 bytes" in msg
+
+
+def test_resolve_release_read_timeout_exits(dl, monkeypatch):
+    def slow(*a, **k):
+        raise TimeoutError("The read operation timed out")
+
+    monkeypatch.setattr(dl, "fetch_json", slow)
+    with pytest.raises(SystemExit) as exc:
+        dl.resolve_release("1.2.1")
+    assert "Could not reach https://api.github.com/" in str(exc.value)
+    assert "timed out" in str(exc.value)
+
+
 @pytest.mark.parametrize(
     "asset, expected",
     [

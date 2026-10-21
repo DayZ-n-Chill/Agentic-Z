@@ -8,8 +8,10 @@ Modes:
   --check (default)    Detect drift (missing mirror, mirror content differs
                        from the transformed source, orphan mirror) and print a
                        report. Exits 0, also when PyYAML is missing under
-                       --quiet (one line), so the Stop hook never fails.
-                       The Stop hook runs this with --quiet.
+                       --quiet, so the Stop hook never fails. With --quiet
+                       (how the Stop hook runs it) it prints nothing when in
+                       sync, else one {"systemMessage": ...} JSON line, the
+                       hook output Claude Code shows the user.
   --apply              Run the canonical->wiki transforms in apply.py, write
                        every changed mirror, and prune orphan wiki pages.
   --apply --dry-run    Print what --apply would write or prune; changes nothing
@@ -20,11 +22,21 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 YAML_HINT = "PyYAML is required. Install it with: python -m pip install pyyaml"
+
+
+def hook_notice(message: str) -> None:
+    """Print a message for the Stop hook (--quiet) as hook JSON output.
+
+    Claude Code sends a command hook's plain stdout on exit 0 to the debug log,
+    not the transcript; a `systemMessage` field is what it shows the user.
+    """
+    print(json.dumps({"systemMessage": message}))
 
 
 def _load_apply_module():
@@ -140,7 +152,7 @@ def report(drift: dict[str, list[Path]], quiet: bool) -> int:
         return 0
 
     if quiet:
-        print(f"docs-sync: {total} file(s) need wiki sync. Run /docs-sync.")
+        hook_notice(f"docs-sync: {total} file(s) need wiki sync. Run /docs-sync.")
         return 0
 
     print(f"docs-sync: {total} file(s) need wiki sync.")
@@ -252,7 +264,7 @@ def apply_all(dry_run: bool = False) -> int:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--check", action="store_true", help="Report drift (default)")
-    p.add_argument("--quiet", action="store_true", help="Silent on success, single-line on drift (for hooks)")
+    p.add_argument("--quiet", action="store_true", help="Stop hook mode: silent when in sync, otherwise one JSON systemMessage line")
     p.add_argument("--map", action="store_true", help="Print canonical->mirror map and exit")
     p.add_argument("--apply", action="store_true", help="Apply Docusaurus transform and write all mirrors")
     p.add_argument("--dry-run", action="store_true", help="With --apply: preview what would change without writing (requires --apply)")
@@ -266,7 +278,7 @@ def main(argv: list[str] | None = None) -> int:
     if importlib.util.find_spec("yaml") is None:
         if args.quiet:
             # The Stop hook runs --check --quiet; it must never fail a session.
-            print(f"docs-sync: drift check skipped. {YAML_HINT}")
+            hook_notice(f"docs-sync: drift check skipped. {YAML_HINT}")
             return 0
         print(f"docs-sync: {YAML_HINT}", file=sys.stderr)
         return 1

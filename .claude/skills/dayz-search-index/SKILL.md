@@ -99,7 +99,7 @@ Embedding <n> chunks via Voyage (voyage-code-3, document mode)...
 ## Failure modes
 
 - Missing dependency, missing `VOYAGE_API_KEY`, `P:\` not mounted, or no chunks produced: exits 1 before any tokens are spent.
-- Transient Voyage errors (the SDK's `RateLimitError`, `Timeout`, `APIConnectionError`, `TryAgain`, `ServiceUnavailableError` and `ServerError`) are retried with exponential backoff, 5 attempts per batch. Any other embed failure, such as a bad key aborts the run before LanceDB is touched. The new rows are written to a `chunks_staging` table first and only then swapped into `chunks`, so a failed write also leaves the previous index usable.
+- Transient Voyage errors (the SDK's `RateLimitError`, `Timeout`, `APIConnectionError`, `TryAgain`, `ServiceUnavailableError` and `ServerError`) are retried with exponential backoff, 5 attempts per batch. Any other embed failure (a bad or revoked key, for example), or a transient one still failing after the last attempt, prints one `[FAIL]` line naming the error and exits 1 before LanceDB is touched. Tokens already spent on the batches that succeeded are appended to `usage.log` first, so the next free-tier check still counts them. The new rows are written to a `chunks_staging` table first and only then swapped into `chunks`, so a failed write also leaves the previous index usable.
 
 ## Do not
 

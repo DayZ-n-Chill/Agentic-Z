@@ -50,7 +50,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
    - `--scaffold` → write it
    - `--no-scaffold` → skip
    - TTY default → prompt `Add to your source folder? [y/N]:`
-9. Each "yes" is written by `/dayz-add-scaffold`'s writer, called in-process (one writer for both skills, and preflight runs only once). If a write fails (for example `config.cpp` needs an author handle, none is cached and `--author` was not passed on a non-TTY run), the links stay in place, the skill names each failed piece with its retry command (`/dayz-add-scaffold <ModName> --piece <piece>`) and exits 1.
+9. Each "yes" is written by `/dayz-add-scaffold`'s writer, called in-process (one writer for both skills, and preflight runs only once). If a write fails or the writer skips the piece (for example `config.cpp` needs an author handle, none is cached and `--author` was not passed on a non-TTY run, or `workbench/` is skipped because DayZ Tools is not detected), the links stay in place, the skill names each failed piece with its retry command (`/dayz-add-scaffold <ModName> --piece <piece>`) and exits 1.
 
 ## Output
 

@@ -218,7 +218,9 @@ def main() -> int:
         try:
             remove_artifact(kind, path)
         except (OSError, subprocess.CalledProcessError) as e:
-            print(f"{FAIL} could not remove ({kind}) {path}: {e}")
+            # rmdir's own message ("Access is denied." etc.) is in e.stderr.
+            detail = (getattr(e, "stderr", "") or str(e)).strip()
+            print(f"{FAIL} could not remove ({kind}) {path}: {detail}")
             return 1
         print(f"{OK} removed ({kind}): {_display(path, project_dir)}")
 

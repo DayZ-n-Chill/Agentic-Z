@@ -84,11 +84,7 @@ def render_plan(steps: list[Step]) -> str:
 def record_project(project: Path, intent: Intent) -> None:
     write_cached_project_root(project, project / ".claude" / "local-memory")
     write_state(project, {
-        "last_intent": {
-            "mod_name": intent.mod_name,
-            "is_new": intent.source is None,
-            "server_map": intent.server_map or "",
-        },
+        "last_intent": {"mod_name": intent.mod_name},
     })
 
 
@@ -126,6 +122,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         parser.error("--launch needs --server")
     if args.scaffold is not None and not args.source:
         parser.error("--scaffold/--no-scaffold only apply with --import-from")
+    if args.source and args.scaffold is None:
+        # import_mod.py would otherwise prompt per piece, and the wizard's
+        # scripts never prompt.
+        parser.error("--import-from needs --scaffold or --no-scaffold")
     return args
 
 

@@ -17,6 +17,8 @@ Use this when:
 - You're upgrading an older scaffold that pre-dates the workbench-folder convention.
 - `/dayz-build-pbo` or `/dayz-import-mod` reports the `P:\<ModName>\` link missing (for example after cloning a mod straight into `workspace/`): `--piece junction` creates it.
 
+The mod folder is `workspace/<ModName>/` in the project cached by `/dayz-init`, the same project `/dayz-build-pbo` uses, so the skill works from any subfolder of it.
+
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ## How to run
@@ -58,6 +60,7 @@ The first line says `symlink` instead of `junction` when Windows allows symlinks
 
 - `/dayz-preflight` returns non-zero (typically `P:\` not mounted) - preflight runs first and propagates its exit code.
 - `<ModName>` fails the name pattern.
+- No project is cached (run `/dayz-init`), or the cached project folder no longer exists.
 - `workspace/<ModName>/` does not exist. This skill never creates the top-level mod folder - that's `/dayz-new-mod` (for fresh) or `/dayz-import-mod` (for external).
 - `--piece junction` and `P:\<ModName>\` exists as a real folder or as a link to somewhere other than `workspace/<ModName>/`. Remove it by hand first; the skill never deletes anything on `P:\`.
 - The author handle (flag, cache or prompt) contains `"` or a line break.

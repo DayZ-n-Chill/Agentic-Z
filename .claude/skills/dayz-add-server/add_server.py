@@ -39,10 +39,11 @@ find_dayz_server = h.preflight.find_dayz_server
 
 def validate_instance(instance: str) -> str:
     """argparse type for <instance>: one folder name directly under .server/."""
-    if instance in ("", ".", "..") or any(c in instance for c in "/\\:"):
+    if instance in ("", ".", "..") or any(c in instance for c in '/\\:*?"<>|'):
         raise argparse.ArgumentTypeError(
             f"'{instance}' is not a valid instance name: use a single folder name "
-            "(no path separators, drive letters, or '..')."
+            "(no path separators, drive letters, '..', or the characters * ? \" < > | "
+            "that Windows forbids in file names)."
         )
     return instance
 

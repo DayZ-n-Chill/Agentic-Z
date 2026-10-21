@@ -399,17 +399,83 @@ def test_embed_all_retries_transient_errors(fake_voyage):
 def test_embed_all_does_not_retry_auth_errors(fake_voyage):
     errors, failures, calls = fake_voyage
     failures.append(errors.AuthenticationError("bad key"))
-    with pytest.raises(errors.AuthenticationError):
+    with pytest.raises(index.EmbedError) as exc:
         index.embed_all(["a"], "voyage-code-3", "pa-test")
+    assert isinstance(exc.value.cause, errors.AuthenticationError)
+    assert exc.value.transient is False
     assert len(calls) == 1
 
 
 def test_embed_all_gives_up_after_last_attempt(fake_voyage):
     errors, failures, calls = fake_voyage
     failures += [errors.Timeout("slow")] * index.EMBED_ATTEMPTS
-    with pytest.raises(errors.Timeout):
+    with pytest.raises(index.EmbedError) as exc:
         index.embed_all(["a"], "voyage-code-3", "pa-test")
+    assert isinstance(exc.value.cause, errors.Timeout)
+    assert exc.value.transient is True
     assert len(calls) == index.EMBED_ATTEMPTS
+
+
+def _usage_entries(path):
+    import json
+
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def test_bad_key_is_one_fail_line_and_logs_tokens_already_spent(fake_voyage, tmp_path, monkeypatch, capsys):
+    errors, _failures, _calls = fake_voyage
+    monkeypatch.setattr(index, "INDEX_ROOT", tmp_path)
+    monkeypatch.setattr(index, "TEXT_LIMIT_PER_BATCH", 2)
+
+    # First batch (2 texts, 2 tokens) succeeds; the key is revoked before the second.
+    class FailingSecondBatch:
+        def __init__(self, **_kwargs):
+            self.n = 0
+
+        def embed(self, texts, **_kwargs):
+            self.n += 1
+            if self.n == 2:
+                raise errors.AuthenticationError("Provided API key is invalid.\nSee docs.")
+            return SimpleNamespace(embeddings=[[0.0] for _ in texts], total_tokens=len(texts))
+
+    monkeypatch.setattr(sys.modules["voyageai"], "Client", FailingSecondBatch)
+
+    assert index.embed_or_fail(["a", "b", "c"], "voyage-code-3", "pa-test") is None
+
+    err_lines = [l for l in capsys.readouterr().err.splitlines() if l.strip()]
+    assert len(err_lines) == 1
+    assert err_lines[0].startswith(index.FAIL)
+    assert "AuthenticationError: Provided API key is invalid. See docs." in err_lines[0]
+    assert "VOYAGE_API_KEY" in err_lines[0]
+    entries = _usage_entries(tmp_path / index.USAGE_LOG_NAME)
+    assert [e["tokens"] for e in entries] == [2]
+    assert entries[0]["skill"] == "dayz-search-index"
+
+
+def test_failure_before_any_tokens_writes_no_usage_entry(fake_voyage, tmp_path, monkeypatch, capsys):
+    errors, failures, _calls = fake_voyage
+    monkeypatch.setattr(index, "INDEX_ROOT", tmp_path)
+    failures.append(errors.AuthenticationError("bad key"))
+    assert index.embed_or_fail(["a"], "voyage-code-3", "pa-test") is None
+    assert "No tokens were used" in capsys.readouterr().err
+    assert _usage_entries(tmp_path / index.USAGE_LOG_NAME) == []
+
+
+def test_transient_failure_after_retries_names_attempts(fake_voyage, tmp_path, monkeypatch, capsys):
+    errors, failures, _calls = fake_voyage
+    monkeypatch.setattr(index, "INDEX_ROOT", tmp_path)
+    failures += [errors.Timeout("slow")] * index.EMBED_ATTEMPTS
+    assert index.embed_or_fail(["a"], "voyage-code-3", "pa-test") is None
+    err = capsys.readouterr().err
+    assert f"after {index.EMBED_ATTEMPTS} attempts" in err
+    assert "Timeout: slow" in err
+
+
+def test_embed_or_fail_returns_vectors_on_success(fake_voyage):
+    vectors, tokens = index.embed_or_fail(["a", "b"], "voyage-code-3", "pa-test")
+    assert len(vectors) == 2 and tokens == 2
 
 
 # --------------- API key ---------------

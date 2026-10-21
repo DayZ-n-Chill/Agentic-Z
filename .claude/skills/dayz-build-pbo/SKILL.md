@@ -33,9 +33,9 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 5. **Tools check** - resolves `AddonBuilder.exe` through `find_dayz_tools()` (env var, registry, Steam libraries).
 6. **Ownership gate** - if `P:\Mods\@<ModName>\` already exists, it must contain `.agentic-z-scaffold` with content `<ModName>`. An unmarked folder could be a subscribed or hand-placed mod, so the build refuses to write into it or `-clear` it. This is the same rule `/dayz-deploy-pbo` uses.
 7. **Clean gate** (`--clean` only) - refuses if `P:\Mods\@<ModName>\Addons\` holds any `.pbo` other than `<ModName>.pbo`, since `-clear` would wipe that deployed payload.
-8. **Build** - runs `AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill-dir>\include.lst -exclude=<skill-dir>\exclude.lst [-clear]`. Binarization is on.
-9. **Verify output** - `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and is newer than the build start. AddonBuilder can exit 0 while leaving an old PBO in place; that case fails as a stale PBO.
-10. **Ownership marker** - writes `P:\Mods\@<ModName>\.agentic-z-scaffold`. It sits above `Addons\`, so `-clear` keeps it. `/dayz-clean-workspace` only removes deployed folders that carry it. If the marker cannot be written, the build prints `[FAIL]` and exits 1 even though the PBO was built, because the next build, deploy and clean would all refuse that folder.
+8. **Ownership marker** - when this run creates `P:\Mods\@<ModName>\`, it writes `.agentic-z-scaffold` there before AddonBuilder starts, so a failed first build leaves a marked folder that the next build accepts. The marker sits above `Addons\`, so `-clear` keeps it. `/dayz-clean-workspace` only removes deployed folders that carry it. If the marker cannot be written, the build prints `[FAIL]` and exits 1 without running AddonBuilder.
+9. **Build** - runs `AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill-dir>\include.lst -exclude=<skill-dir>\exclude.lst [-clear]`. Binarization is on.
+10. **Verify output** - `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and is newer than the build start. AddonBuilder can exit 0 while leaving an old PBO in place; that case fails as a stale PBO.
 11. **Cleanup** - removes `P:\temp\<ModName>\` on success; keeps it on failure for debugging.
 
 ## include.lst

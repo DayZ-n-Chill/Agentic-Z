@@ -60,13 +60,14 @@ class FileStatus(enum.Enum):
 
 
 def classify_per_file(
-    baseline: Optional[bytes],
-    local: Optional[bytes],
-    upstream: Optional[bytes],
+    baseline: Optional[bytes | str],
+    local: Optional[bytes | str],
+    upstream: Optional[bytes | str],
 ) -> FileStatus:
     """Three-way classification for a single template file.
 
-    None for any blob means "file does not exist at that revision".
+    Each argument is the file's content or git blob id at that revision; None
+    means "file does not exist at that revision".
     Returns a FileStatus enum value indicating what action (if any) to take.
     """
     # Defensive: nothing exists anywhere.
@@ -186,19 +187,7 @@ def fetch_upstream() -> bool:
 
 
 def git_show_blob(ref: str, path: str) -> Optional[bytes]:
-    """Return the bytes of `path` at git ref `ref`, or None if it doesn't exist there.
-
-    `ref` is either a commit SHA, a branch name, or 'WORKING_TREE' (sentinel for the
-    current on-disk file content rather than any committed version).
-    """
-    if ref == "WORKING_TREE":
-        p = Path(path)
-        if not p.exists():
-            return None
-        try:
-            return p.read_bytes()
-        except OSError:
-            return None
+    """Return the bytes of `path` at git ref `ref`, or None if it doesn't exist there."""
     r = subprocess.run(
         ["git", "show", f"{ref}:{path}"],
         check=False,
@@ -207,6 +196,27 @@ def git_show_blob(ref: str, path: str) -> Optional[bytes]:
     if r.returncode != 0:
         return None
     return r.stdout
+
+
+def git_object_id(ref: str, path: str) -> Optional[str]:
+    """Return the blob id of `path` at `ref`, or None if it doesn't exist there.
+
+    `ref` is a commit SHA, a branch name, or 'WORKING_TREE' for the on-disk file.
+    The working-tree id comes from `git hash-object --path=<p>`, which applies the
+    same clean filters as `git add` (core.autocrlf, .gitattributes eol). Comparing
+    ids instead of raw bytes keeps a CRLF checkout of an untouched LF file from
+    looking like a local edit.
+    """
+    if ref == "WORKING_TREE":
+        if not Path(path).is_file():
+            return None
+        cmd = ["git", "hash-object", f"--path={path}", "--", path]
+    else:
+        cmd = ["git", "rev-parse", "--verify", "--quiet", f"{ref}:{path}"]
+    r = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    if r.returncode != 0:
+        return None
+    return r.stdout.strip() or None
 
 
 def _candidate_paths(baseline_sha: str, upstream_ref: str) -> set[str]:
@@ -271,10 +281,11 @@ def compute_drift(baseline_sha: Optional[str], upstream_ref: str) -> dict[str, F
     candidates = _candidate_paths(baseline_sha, upstream_ref)
     result: dict[str, FileStatus] = {}
     for path in sorted(candidates):
-        baseline_blob = git_show_blob(baseline_sha, path)
-        upstream_blob = git_show_blob(upstream_ref, path)
-        local_blob = git_show_blob("WORKING_TREE", path)
-        status = classify_per_file(baseline=baseline_blob, local=local_blob, upstream=upstream_blob)
+        status = classify_per_file(
+            baseline=git_object_id(baseline_sha, path),
+            local=git_object_id("WORKING_TREE", path),
+            upstream=git_object_id(upstream_ref, path),
+        )
         if status != FileStatus.UNCHANGED:
             result[path] = status
     return result

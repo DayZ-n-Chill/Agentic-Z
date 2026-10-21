@@ -403,3 +403,33 @@ def test_is_newer_handles_mixed_tags():
     assert update._is_newer("v1.10", "v1.9")
     assert not update._is_newer("v1.2", "v1.2")
     assert update._is_newer("v1.2.rc", "v1.2.1")  # non-numeric part sorts after numbers
+
+
+# ---------- drift compares git blob ids, not raw bytes ----------
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
+def test_crlf_working_copy_is_not_a_local_edit(tmp_path, monkeypatch):
+    """With core.autocrlf=true, an untouched file checked out as CRLF still
+    matches its LF baseline blob, so an upstream change is SAFE_OVERWRITE (raw
+    byte comparison would call it a CONFLICT)."""
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "t@example.com")
+    _git(tmp_path, "config", "user.name", "t")
+    _git(tmp_path, "config", "core.autocrlf", "false")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "a.md").write_bytes(b"one\ntwo\n")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "baseline")
+    baseline = _git(tmp_path, "rev-parse", "HEAD").strip()
+    _git(tmp_path, "checkout", "-q", "-b", "up")
+    (tmp_path / "docs" / "a.md").write_bytes(b"one\ntwo\nthree\n")
+    _git(tmp_path, "commit", "-q", "-am", "upstream change")
+    _git(tmp_path, "checkout", "-q", baseline)
+    _git(tmp_path, "config", "core.autocrlf", "true")
+    (tmp_path / "docs" / "a.md").write_bytes(b"one\r\ntwo\r\n")  # what a CRLF checkout writes
+
+    monkeypatch.chdir(tmp_path)
+    assert update.compute_drift(baseline, "up") == {"docs/a.md": S.SAFE_OVERWRITE}
+
+    (tmp_path / "docs" / "a.md").write_bytes(b"one\r\nlocal\r\n")  # a real local edit
+    assert update.compute_drift(baseline, "up") == {"docs/a.md": S.CONFLICT}

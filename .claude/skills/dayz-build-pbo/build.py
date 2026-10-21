@@ -198,7 +198,12 @@ def main() -> int:
     if args.clean:
         gate_clean(target_dir, args.modname)
     temp_dir = TEMP_ROOT / args.modname
+    created_root = not deploy_root.exists()
     target_dir.mkdir(parents=True, exist_ok=True)
+    # Mark a folder this run created before building, so a failed first build
+    # does not leave an unmarked @<ModName> that gate_on_marker then refuses.
+    if created_root and not h.write_marker(deploy_root, args.modname):
+        return 1
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     cmd = build_addon_builder_cmd(
@@ -225,7 +230,6 @@ def main() -> int:
         return 1
 
     print(f"{OK} Built: {pbo_path} ({pbo_path.stat().st_size:,} bytes)")
-    marker_ok = h.write_marker(deploy_root, args.modname)
 
     try:
         shutil.rmtree(temp_dir)
@@ -233,7 +237,7 @@ def main() -> int:
     except OSError as e:
         print(f"{WARN} Could not remove {temp_dir}: {e}")
 
-    return 0 if marker_ok else 1
+    return 0
 
 
 if __name__ == "__main__":

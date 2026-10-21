@@ -26,7 +26,7 @@ Pick the tier by scope:
 - **Tier 2**: true for all DayZ work (Enforce Script style, config patterns, asset rules). Goes in `.claude/skills/_shared/dayz-conventions.md`.
 - **Tier 3**: about one kind of work. Goes in that agent's file under `.claude/agents/` or the matching knowledge pack under `.claude/skills/_shared/`.
 
-Once you have picked a tier, search all three tiers for a rule that overlaps (Grep the key words across `CLAUDE.md`, `.claude/skills/_shared/dayz-conventions.md`, `.claude/agents/*.md` and `.claude/skills/_shared/*.md`):
+Once you have picked a tier, search all three tiers for a rule that overlaps (Grep the key words across `CLAUDE.md`, `.claude/skills/_shared/dayz-conventions.md`, `.claude/agents/*.md` and `.claude/skills/_shared/*.md`, all relative to the Agentic-Z repo root that step 3 shows how to find):
 
 - An overlapping rule in the right tier: propose an edit to that rule instead of a new one.
 - An overlapping rule in the wrong tier (for example a DayZ-wide rule sitting in one agent's file): propose moving it to the right tier and merging the correction into it, so the rule lives in one place.
@@ -38,9 +38,18 @@ Show the draft and ask for yes, a change, or no. Keep it short.
 
 ## 3. Write it (only after yes)
 
-First tell which install you are in from this skill's own base directory: a path under `~/.claude/plugins/cache/` (for example `C:\Users\<you>\.claude\plugins\cache\...`) means a plugin install; anything else (the repo's `.claude/skills/`, or a `~/.claude/skills/` link made by `/sync-skills` that points back into a repo) means a clone.
+First find where this skill really lives. `/sync-skills` exposes it through a link (a junction on Windows) under `~/.claude/skills/`, and the harness reports the link path as the base directory, so resolve the link before deciding anything:
 
-- In a clone, edit the file the tier names. Keep the edit small and in the file's existing style.
+```cmd
+python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "<skill-dir>"
+```
+
+`os.path.realpath` follows symlinks and junctions. Then read the resolved path:
+
+- Under `~/.claude/plugins/cache/` (for example `C:\Users\<you>\.claude\plugins\cache\...`): a plugin install.
+- Ending in `\.claude\skills\dayz-record-correction`: a clone. The Agentic-Z repo root is three levels up from it (the folder that holds `.claude\`), and every file the tiers name (`CLAUDE.md`, `.claude\skills\_shared\dayz-conventions.md`, `.claude\agents\...`) is relative to that root, not to the current project.
+
+- In a clone, edit the file the tier names under that repo root, even when the session was started in another project. Keep the edit small and in the file's existing style.
 - In a plugin install, the plugin's files are replaced on every update. Write the rule to the user's project `CLAUDE.md` under a `## Agentic-Z rules` heading instead, and say that's why.
 
 ## 4. Say what changed

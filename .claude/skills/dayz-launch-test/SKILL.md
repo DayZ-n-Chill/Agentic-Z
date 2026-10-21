@@ -94,7 +94,7 @@ The client reads `.claude/local-memory/dayz-client-display.json` (per clone, git
 }
 ```
 
-These map to `-window`, `-x=<width>`, `-y=<height>`. Edit the file freely; an unparseable file falls back to the defaults with a warning.
+These map to `-window`, `-x=<width>`, `-y=<height>`. Edit the file freely. A file that is not valid JSON, or has the wrong shape (not an object, `windowed` not true or false, `width` or `height` not a positive whole number), falls back to the defaults with a warning.
 
 ## Do not
 

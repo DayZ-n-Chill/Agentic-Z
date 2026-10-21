@@ -6,6 +6,7 @@ at it, so the real wiki is never read or written.
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 from pathlib import Path
 
@@ -141,8 +142,17 @@ def test_quiet_without_pyyaml_prints_one_line_and_exits_0(repo, monkeypatch, cap
     _hide_yaml(monkeypatch)
     assert sync.main(["--check", "--quiet"]) == 0
     out, err = capsys.readouterr()
-    assert out.count("\n") == 1 and "PyYAML is required" in out
+    assert out.count("\n") == 1
+    assert "PyYAML is required" in json.loads(out)["systemMessage"]
     assert err == ""
+
+
+def test_quiet_drift_emits_system_message_json(repo, capsys):
+    # The repo fixture has a skill with no wiki mirror yet.
+    assert sync.main(["--check", "--quiet"]) == 0
+    out = capsys.readouterr().out
+    assert out.count("\n") == 1
+    assert json.loads(out) == {"systemMessage": "docs-sync: 1 file(s) need wiki sync. Run /docs-sync."}
 
 
 def test_check_without_pyyaml_fails_loudly(repo, monkeypatch, capsys):

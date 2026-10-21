@@ -27,6 +27,10 @@ OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
 validate_p_mods = h.preflight.validate_p_mods
 
+# Same mod-name rule as /dayz-new-mod and /dayz-import-mod. The name becomes
+# workspace/<ModName> and P:\Mods\@<ModName>, so it must not carry a path.
+_nm = h.load_module("dayz_new_mod_module", h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py")
+
 
 def verify_bundle(modname: str, project_dir: Path) -> Path:
     """A bundle only needs Addons/ with at least one .pbo. No config.cpp,
@@ -75,6 +79,7 @@ def main() -> int:
     parser.add_argument("modname", help="Mod name (must match workspace/<ModName>/ with Addons/*.pbo inside).")
     args = parser.parse_args()
 
+    _nm.validate_name(args.modname)
     project_dir = h.resolve_project_dir()
     h.gate_on_preflight()
     p_mods_err = validate_p_mods()

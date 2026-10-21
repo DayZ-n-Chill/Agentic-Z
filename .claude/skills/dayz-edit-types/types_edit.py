@@ -9,6 +9,7 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import shutil
 import sys
 import xml.etree.ElementTree as ET
@@ -19,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 OK = h.OK
+WARN = h.WARN
 FAIL = h.FAIL
 
 # DayZ defaults for a new <type> entry. 3888000s = 45 days (vanilla typical).
@@ -176,6 +178,31 @@ def remove(root: ET.Element, classname: str) -> tuple[bool, str]:
     return True, f"Removed <type name=\"{classname}\">"
 
 
+def duplicate_names(root: ET.Element) -> list[str]:
+    """<type> names that appear more than once, sorted."""
+    counts = Counter(t.get("name") for t in root.findall("type"))
+    return sorted(name for name, n in counts.items() if name is not None and n > 1)
+
+
+def check_types_root(root: ET.Element, path: Path, classname: str) -> None:
+    """Refuse a file that is not a types.xml or whose target entry is ambiguous.
+
+    Other files under a mission's db/ (events.xml, globals.xml) parse fine but
+    have a different root, and an edit would graft a <type> into them. A name
+    listed twice cannot be edited safely: only the first block would change.
+    """
+    if root.tag != "types":
+        sys.exit(f"{FAIL} {path} has root element <{root.tag}>, not <types>; refusing to edit it.")
+    dups = duplicate_names(root)
+    if classname in dups:
+        sys.exit(
+            f"{FAIL} {path} has more than one <type name=\"{classname}\">.\n"
+            "       Merge them by hand into one block, then rerun."
+        )
+    if dups:
+        print(f"{WARN} {path} lists these types more than once: {', '.join(dups)}")
+
+
 def parse_types(path: Path) -> ET.ElementTree:
     """Parse types.xml keeping comments (the default parser drops them)."""
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
@@ -217,6 +244,7 @@ def main() -> int:
     except ET.ParseError as e:
         sys.exit(f"{FAIL} Could not parse {args.path}: {e}")
     root = tree.getroot()
+    check_types_root(root, args.path, args.classname)
 
     if args.remove:
         changed, msg = remove(root, args.classname)

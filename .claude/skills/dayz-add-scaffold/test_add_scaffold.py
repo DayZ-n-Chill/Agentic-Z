@@ -135,8 +135,7 @@ def test_lazy_author_resolves_once(monkeypatch):
 
 def _run_main(monkeypatch, tmp_path, argv):
     project = tmp_path / "project"
-    monkeypatch.setattr(scaf, "PROJECT_DIR", project)
-    monkeypatch.setattr(scaf, "WORKSPACE", project / "workspace")
+    monkeypatch.setattr(scaf.h, "resolve_project_dir", lambda: project)
     monkeypatch.setattr(scaf.h, "gate_on_preflight", lambda: None)
     monkeypatch.setattr(scaf._nm, "AUTHOR_CACHE", tmp_path / "author.txt")
     monkeypatch.setattr(scaf.sys, "argv", ["add_scaffold.py", *argv])
@@ -263,8 +262,7 @@ def test_main_junction_piece_is_preflight_gated(monkeypatch, tmp_path, p_drive):
         raise SystemExit(1)
 
     project = tmp_path / "project"
-    monkeypatch.setattr(scaf, "PROJECT_DIR", project)
-    monkeypatch.setattr(scaf, "WORKSPACE", project / "workspace")
+    monkeypatch.setattr(scaf.h, "resolve_project_dir", lambda: project)
     monkeypatch.setattr(scaf.h, "gate_on_preflight", gate)
     monkeypatch.setattr(scaf.sys, "argv", ["add_scaffold.py", "MyMod", "--piece", "junction"])
     with pytest.raises(SystemExit):
@@ -316,3 +314,21 @@ def test_main_prints_native_separators(monkeypatch, tmp_path, capsys, fake_tools
     _run_main(monkeypatch, tmp_path, ["MyMod", "--author", "Tester"])
     sep = scaf.os.sep
     assert f"Scaffolding workspace{sep}MyMod{sep}\n" in capsys.readouterr().out
+
+
+def test_main_from_mod_subfolder_uses_cached_project(monkeypatch, tmp_path, fake_tools):
+    """Run from inside workspace/MyMod with no CLAUDE_PROJECT_DIR: the project
+    comes from the /dayz-init cache found above cwd, not from cwd itself."""
+    project = (tmp_path / "project").resolve()
+    target = project / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    cache = project / ".claude" / "local-memory" / "dayz-current-project.txt"
+    cache.parent.mkdir(parents=True)
+    cache.write_text(str(project), encoding="utf-8")
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(target)
+    monkeypatch.setattr(scaf.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(scaf.sys, "argv", ["add_scaffold.py", "MyMod", "--piece", "prefix"])
+    assert scaf.main() == 0
+    assert (target / "$PBOPREFIX$").is_file()
+    assert not (target / "workspace").exists()

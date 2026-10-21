@@ -12,7 +12,7 @@ The agent is the wizard: it runs the scripts below with Bash and asks the user q
 
 Follow `.claude/skills/_shared/dayz-conventions.md`. This skill does not gate on `/dayz-preflight` itself, because its own environment check covers the same ground and also fixes `P:\` first. Every child skill it runs gates on preflight.
 
-State is per clone, in `.claude/local-memory/` (gitignored): `dayz-current-project.txt` (the project root other DayZ skills read) and `dayz-init-state.json` (the active mod, whether it was new or imported, and the test server map). The project root is the clone: `$CLAUDE_PROJECT_DIR`, else the current directory. Mods live in `workspace/<ModName>/`, test servers in `.server/<instance>/`.
+State is per clone, in `.claude/local-memory/` (gitignored): `dayz-current-project.txt` (the project root other DayZ skills read) and `dayz-init-state.json` (the active mod). The project root is the clone: `$CLAUDE_PROJECT_DIR`, else the nearest folder at or above the current directory (below the home folder) that holds `dayz-current-project.txt`, else the current directory. Mods live in `workspace/<ModName>/`, test servers in `.server/<instance>/`.
 
 ## Step 1: setup check
 

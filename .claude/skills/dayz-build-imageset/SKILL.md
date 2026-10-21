@@ -61,12 +61,12 @@ python "<skill-dir>\build_imageset.py" [<mod-root>] [--mod-name <name>]
 2. Check that Pillow is installed and that `<mod-root>/.gui-sources/` exists with at least one subfolder.
 3. Resolve `ImageToPAA.exe` from DayZ Tools.
 4. For each subfolder of `<mod-root>/.gui-sources/`:
-   - Collect all `.png` files in that subfolder. Each file becomes one named sprite (the file's stem becomes the `ImageSetDefClass` name). A stem that is not an identifier (letters, digits and underscores, not starting with a digit; so no spaces or hyphens) fails that set with a `[FAIL]` naming the files to rename.
+   - Collect all `.png` files in that subfolder. Each file becomes one named sprite (the file's stem becomes the `ImageSetDefClass` name). A stem that is not an identifier (letters, digits and underscores, not starting with a digit; so no spaces or hyphens) fails that set with a `[FAIL]` naming the files to rename. A subfolder with no `.png` files is skipped with a `[WARN]`, and its outputs from an earlier run are deleted.
    - Sort sprites by height descending and shelf-pack into the smallest power-of-two atlas that fits (each dimension picked from 256 / 512 / 1024 / 2048 / 4096; rectangular atlases allowed; ordered by area, square preferred at equal area), with a 10px gutter on all sides of every sprite.
    - If everything fits in one atlas: emit `<setname>.{paa,imageset}`.
    - If sprites won't fit in a single 4096x4096 atlas: split, next-fit in height order (a new atlas starts when the current one overflows), into multiple atlases and emit `<setname>_1.{paa,imageset}`, `<setname>_2.{paa,imageset}`, etc. Each part is its own self-contained imageset.
    - Delete this set's outputs from an earlier run that this run won't rewrite (`<setname>.*` after a split, extra `<setname>_N.*` when the part count drops), so no orphan atlas is left behind. Stems matching another source set's name are left alone.
-   - Compose each atlas as PNG via Pillow, convert to `.paa` via `ImageToPAA.exe`.
+   - Compose each atlas as PNG via Pillow, convert to `.paa` via `ImageToPAA.exe`. The atlas fails if ImageToPAA exits non-zero or leaves no `.paa`, or if a `.paa` from an earlier run is still there unchanged (it did not rewrite the file).
    - Each `.imageset`'s `path` references its own `.paa` via `<mod-name>\gui\imagesets\<stem>.paa`.
 5. Report a summary; exit non-zero if any imageset failed.
 

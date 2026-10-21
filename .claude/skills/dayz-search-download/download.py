@@ -41,10 +41,20 @@ def log(level: str, msg: str) -> None:
     print(f"[{level}]\t{msg}", flush=True)
 
 
-def _network_error(url: str, err: urllib.error.URLError) -> SystemExit:
-    reason = f"HTTP {err.code}" if isinstance(err, urllib.error.HTTPError) else err.reason
+def _reason(err: OSError) -> str:
+    """Short reason for a failed request. URLError covers connect-time failures
+    (DNS, refused, HTTP status); a plain OSError is what a read raises
+    mid-transfer (timeout, connection reset or aborted)."""
+    if isinstance(err, urllib.error.HTTPError):
+        return f"HTTP {err.code}"
+    if isinstance(err, urllib.error.URLError):
+        return str(err.reason)
+    return str(err) or type(err).__name__
+
+
+def _network_error(url: str, err: OSError) -> SystemExit:
     return SystemExit(
-        f"[ERR]\tCould not reach {url}: {reason}\n"
+        f"[ERR]\tCould not reach {url}: {_reason(err)}\n"
         "\tCheck your internet connection (or proxy) and try again."
     )
 
@@ -69,7 +79,7 @@ def resolve_release(tag: str | None) -> dict:
                 f"\tCheck https://github.com/{REPO}/releases."
             )
         raise _network_error(url, e)
-    except urllib.error.URLError as e:
+    except OSError as e:  # URLError, plus timeouts and resets while reading
         raise _network_error(url, e)
 
 
@@ -134,9 +144,13 @@ def download_with_progress(url: str, dest: Path, expected_bytes: int) -> str:
                         end="",
                         flush=True,
                     )
-    except urllib.error.URLError as e:
+    except OSError as e:  # URLError, plus timeouts and resets mid-download
         print()
-        raise _network_error(url, e)
+        raise SystemExit(
+            f"[ERR]\tDownload from {url} failed after {written:,} bytes: {_reason(e)}\n"
+            "\tCheck your internet connection (or proxy) and try again. "
+            "Existing index left untouched."
+        )
     print()
     return sha.hexdigest()
 

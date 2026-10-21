@@ -22,7 +22,7 @@ python "<skill-dir>\deploy.py" <ModName>
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<ModName>` | yes | Must match a bundle folder `workspace/<ModName>/` (in the project cached by `/dayz-init`) containing `Addons/` with at least one `.pbo`. |
+| `<ModName>` | yes | Must match a bundle folder `workspace/<ModName>/` (in the project cached by `/dayz-init`) containing `Addons/` with at least one `.pbo`. Same name rule as `/dayz-new-mod`: starts with a letter, then letters, digits and underscores, at most 64 characters. |
 
 ## What it does
 
@@ -50,6 +50,7 @@ Both write the same ownership marker; deploy never deletes, so the built `<ModNa
 
 ## Refuses to run if
 
+- `<ModName>` fails the name rule (checked first, so a name such as `..\Other` never reaches the disk).
 - No project is cached (run `/dayz-init`).
 - `/dayz-preflight` returns non-zero, or `P:\Mods\` is not a valid junction.
 - `workspace/<ModName>/` is missing, has no `Addons/` folder, or `Addons/` contains no `.pbo`.

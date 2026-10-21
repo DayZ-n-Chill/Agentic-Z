@@ -53,6 +53,8 @@ Formatting: comments survive the round trip, but the whole file is re-indented w
 - `/dayz-preflight` returns non-zero.
 - `<types.xml>` doesn't exist.
 - `<types.xml>` isn't valid XML.
+- The root element is not `<types>` (for example `events.xml` or `globals.xml` passed by mistake).
+- `<ClassName>` appears in more than one `<type>` block; merge them by hand first. Duplicates of other names only print a `[WARN]` listing them.
 - `--nominal`, `--min`, `--lifetime`, `--restock` or `--cost` is negative (argparse usage error, exit 2).
 - `--min` or `--nominal` would leave the entry with `min` greater than `nominal` (checked against the entry's existing or default value for the flag you did not pass). The file is left unchanged.
 

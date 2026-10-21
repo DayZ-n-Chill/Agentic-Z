@@ -21,9 +21,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
-# PROJECT_DIR = user's project (where workspace/ lives).
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
-WORKSPACE = PROJECT_DIR / "workspace"
 NEW_MOD = h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py"
 P_DRIVE = Path("P:\\")
 
@@ -222,12 +219,9 @@ def lazy_author(cli_value: str | None):
     return get_author
 
 
-def _display(path: Path) -> Path:
-    """The path relative to the project when it is inside it, as printed in output."""
-    try:
-        return path.relative_to(PROJECT_DIR)
-    except ValueError:
-        return path
+def _display(target: Path) -> Path:
+    """workspace/<ModName> as printed in output (the mod folder relative to the project)."""
+    return Path(target.parent.name) / target.name
 
 
 def main() -> int:
@@ -248,7 +242,7 @@ def main() -> int:
     h.gate_on_preflight()
     _nm.validate_name(args.modname)
 
-    target = WORKSPACE / args.modname
+    target = h.resolve_project_dir() / "workspace" / args.modname
     rel = _display(target)
     if not target.exists():
         sys.exit(

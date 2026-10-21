@@ -15,7 +15,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import socket
 import subprocess
 import sys
 import time
@@ -201,6 +200,24 @@ def build_server_cmd(
     ]
 
 
+def display_prefs_problem(prefs) -> str | None:
+    """Why parsed display prefs are unusable, or None when they are fine.
+
+    Valid JSON can still have the wrong shape (a list, "width": "1920"), which
+    would crash on .get() or put a bad value on the client command line.
+    """
+    if not isinstance(prefs, dict):
+        return f"expected a JSON object, got {type(prefs).__name__}"
+    if "windowed" in prefs and not isinstance(prefs["windowed"], bool):
+        return '"windowed" must be true or false'
+    for key in ("width", "height"):
+        if key in prefs:
+            value = prefs[key]
+            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+                return f'"{key}" must be a positive whole number'
+    return None
+
+
 def read_client_display_prefs(project_dir: Path, create: bool = True) -> dict:
     """Read client display preferences (windowed/resolution) from local-memory.
 
@@ -215,11 +232,15 @@ def read_client_display_prefs(project_dir: Path, create: bool = True) -> dict:
     prefs_path = local_memory / CLIENT_DISPLAY_PREFS_NAME
     if prefs_path.exists():
         try:
-            return json.loads(prefs_path.read_text(encoding="utf-8"))
+            prefs = json.loads(prefs_path.read_text(encoding="utf-8"))
+            problem = display_prefs_problem(prefs)
         except (json.JSONDecodeError, OSError) as e:
-            print(f"{WARN} Could not parse {prefs_path.relative_to(project_dir)}: {e}")
-            print(f"{WARN} Falling back to defaults: {DEFAULT_CLIENT_DISPLAY}")
-            return dict(DEFAULT_CLIENT_DISPLAY)
+            problem = str(e)
+        if problem is None:
+            return prefs
+        print(f"{WARN} Could not use {prefs_path.relative_to(project_dir)}: {problem}")
+        print(f"{WARN} Falling back to defaults: {DEFAULT_CLIENT_DISPLAY}")
+        return dict(DEFAULT_CLIENT_DISPLAY)
     if not create:
         return dict(DEFAULT_CLIENT_DISPLAY)
     local_memory.mkdir(parents=True, exist_ok=True)
@@ -237,9 +258,9 @@ def wait_for_server_port(port: int, server_proc: subprocess.Popen, timeout_s: in
     """Wait until the DayZ server has bound UDP `port`. Returns True when bound
     within `timeout_s`, False if it gives up.
 
-    Detection: try to bind() the same UDP port ourselves. If bind fails with
-    EADDRINUSE (or any OSError), the server is holding it; we're good. If
-    bind succeeds, the server hasn't bound yet — release and retry.
+    Detection: h.udp_port_free tries to bind the same UDP port (and always
+    closes its socket). If that bind fails, the server is holding the port;
+    we're good. If it succeeds, the server hasn't bound yet, so retry.
 
     DayZ does not respond to Source Engine Query on the game port, so packet-
     based probes don't work. Bind-collision is the reliable signal.
@@ -256,13 +277,7 @@ def wait_for_server_port(port: int, server_proc: subprocess.Popen, timeout_s: in
         if server_proc.poll() is not None:
             print(f"\n{FAIL} Server process exited unexpectedly (rc={server_proc.returncode}).")
             return False
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.bind(("0.0.0.0", port))
-            s.close()
-            # Bind succeeded => server has NOT bound yet. Keep waiting.
-        except OSError:
-            # Bind failed => something (the server) is holding the port. Ready.
+        if not h.udp_port_free(port):
             print(f"\n{OK} Server has bound UDP port {port}")
             return True
         if time.time() - last_dot > 5:

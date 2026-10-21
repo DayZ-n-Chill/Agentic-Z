@@ -10,7 +10,7 @@ Scaffolds a new DayZ mod under workspace/&lt;ModName&gt;/ (config.cpp, $PBOPREFI
 
 # /dayz-new-mod
 
-Create a new DayZ mod project under `workspace/<ModName>/` in the current project (`CLAUDE_PROJECT_DIR`, else the working directory). Gates on `/dayz-preflight` like every DayZ skill, so it refuses to run when `P:\` is not mounted.
+Create a new DayZ mod project under `workspace/<ModName>/` in the current project: `CLAUDE_PROJECT_DIR`, else the nearest folder at or above the working directory (below the home folder) that holds a `/dayz-init` project cache, else the working directory. This is the same lookup every DayZ skill uses; it does not require the cache, because this skill writes it. Gates on `/dayz-preflight` like every DayZ skill, so it refuses to run when `P:\` is not mounted.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -58,7 +58,7 @@ workspace/<ModName>/
 
 ### The `workbench/` folder
 
-Open this mod in Workbench via `/dayz-launch-workbench --mod <ModName>` (it loads `workbench/dayz.gproj`). The gproj is a copy of the official `dayz.gproj` shipped with DayZ Tools (`Bin\Workbench\`), with this mod's script paths injected into the `game`/`world`/`mission` modules so Workbench compiles and lints vanilla + your mod together — same as the engine does at runtime.
+Open this mod in Workbench via `/dayz-launch-workbench --mod <ModName>` (it loads `workbench/dayz.gproj`). The gproj is a copy of the official `dayz.gproj` shipped with DayZ Tools (`Bin\Workbench\`), with this mod's script paths injected into the `game`/`world`/`mission` modules so Workbench compiles and lints vanilla + your mod together — same as the engine does at runtime. Its single `FileSystem` entry is replaced with two mounts, `P:/` and `P:/<ModName>/`; if a future DayZ Tools gproj has no such block, the skill leaves it unchanged and prints a `[WARN]` saying to add the two entries by hand.
 
 If DayZ Tools isn't installed when you run `/dayz-new-mod`, the folder is still created (with a README placeholder) but the `.gproj`/`.xml` are skipped with a warning; once Tools is installed, run `/dayz-add-scaffold <ModName> --piece workbench` to add them.
 
@@ -99,7 +99,7 @@ After the junction is created, the skill points the `/dayz-init` project cache a
 
 If `P:\<ModName>\` exists as a junction or symlink whose target is the about-to-be-scaffolded `workspace/<ModName>/` (typically because a prior scaffold's workspace folder was deleted but the junction wasn't), the skill removes the stale link automatically and proceeds. This handles the common cleanup case where you `rm -rf workspace/<ModName>/` to start over.
 
-If writing the scaffold fails partway, or junction creation fails afterwards (permission error, filesystem weirdness), the new `workspace/<ModName>/` folder is removed so you can retry cleanly.
+If writing the scaffold fails partway, or junction creation fails afterwards (permission error, filesystem weirdness), the new `workspace/<ModName>/` folder is removed so you can retry cleanly. A junction failure shows `mklink`'s own message (for example `Access is denied.`).
 
 ## Output
 

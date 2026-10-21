@@ -172,6 +172,9 @@ def write_one_atlas(stem: str, atlas_w: int, atlas_h: int, placed,
     paa_path = out_dir / f"{stem}.paa"
     imageset_path = out_dir / f"{stem}.imageset"
 
+    # A .paa from an earlier run must not pass for this run's output, so the
+    # file has to be new or have a later modification time after conversion.
+    previous_mtime = paa_path.stat().st_mtime_ns if paa_path.exists() else None
     with tempfile.TemporaryDirectory() as td:
         temp_png = Path(td) / f"{stem}.png"
         atlas.save(temp_png, "PNG")
@@ -181,6 +184,13 @@ def write_one_atlas(stem: str, atlas_w: int, atlas_h: int, placed,
             return False
         if not paa_path.exists():
             print(f"{FAIL} ImageToPAA reported success but {paa_path} is missing", file=sys.stderr)
+            return False
+        if previous_mtime is not None and paa_path.stat().st_mtime_ns <= previous_mtime:
+            print(
+                f"{FAIL} ImageToPAA reported success but did not rewrite {paa_path.name};\n"
+                "       the file on disk is from an earlier run.",
+                file=sys.stderr,
+            )
             return False
 
     print(f"{OK} Wrote {paa_path.name} ({paa_path.stat().st_size:,} bytes)")
@@ -195,7 +205,8 @@ def remove_stale_outputs(out_dir: Path, set_name: str, part_count: int,
                          other_sets: frozenset = frozenset()) -> list:
     """Delete <set>.{paa,imageset} / <set>_N.{paa,imageset} this run won't rewrite.
 
-    part_count == 1 keeps <set>.*; part_count > 1 keeps <set>_1 .. <set>_<part_count>.
+    part_count == 1 keeps <set>.*; part_count > 1 keeps <set>_1 .. <set>_<part_count>;
+    part_count == 0 (the set's folder is empty) keeps nothing.
     Stems that are the name of another source set are never touched.
     Returns the removed paths.
     """
@@ -230,6 +241,9 @@ def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path,
 
     if not pngs:
         print(f"{WARN} {set_name}: no .png files in {set_dir}, skipping")
+        # Outputs from when the folder still had sprites would otherwise ship
+        # sprites the user has deleted.
+        remove_stale_outputs(out_dir, set_name, 0, other_sets)
         return True
 
     bad = bad_sprite_names(pngs)

@@ -38,22 +38,29 @@ entirely.
 
 Without an armor declaration the engine may not register impacts of
 projectiles, causing "bullets pass through" even when FireGeometry is
-present. Damage classes inside `GlobalArmor` are keyed by `cfgAmmo` class
-names (e.g. `Bullet_762x39`, `FragGrenade`, `MeleeFist`), and each entry
-uses `damage = N;` not `hit = N;`:
+present. `GlobalArmor` sits inside `class DamageSystem`, next to
+`GlobalHealth`. Its classes are keyed by damage type, the `type` an ammo's
+`class DamageApplied` declares (`Bullet_762x39` declares `type="Projectile"`
+in `DZ\weapons\projectiles\config.cpp:4482-4484`), not by ammo class name.
+Vanilla uses `Projectile`, `Melee`, `FragGrenade` and `Infected`. Each zone
+entry uses `damage = N;`, not `hit = N;`:
 
 ```cpp
-class GlobalArmor
+class DamageSystem
 {
-    class FragGrenade
+    class GlobalHealth { /* see section 3 */ };
+    class GlobalArmor
     {
-        class Health { damage = 0; };
-        class Blood  { damage = 0; };
-        class Shock  { damage = 0; };
-    };
-    class Bullet_762x39
-    {
-        class Health { damage = 5; };
+        class Projectile
+        {
+            class Health { damage = 5; };
+        };
+        class FragGrenade
+        {
+            class Health { damage = 0; };
+            class Blood  { damage = 0; };
+            class Shock  { damage = 0; };
+        };
     };
 };
 ```
@@ -89,4 +96,5 @@ healthLevelValues[] = { 1.0, 0.7, 0.5, 0.3, 0.0 };
 ```
 
 Reference: vanilla `WoodenCrate` in `DZ\gear\camping\config.cpp` lines
-~10074-10210 has the canonical full pattern.
+10157-10292 has the full pattern (`DamageSystem` with `GlobalHealth` and
+`GlobalArmor`, then `class Cargo`).

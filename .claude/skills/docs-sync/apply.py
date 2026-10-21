@@ -11,7 +11,8 @@ Three transform kinds, mirroring docs-sync's `find_canonical_targets`:
         Trim frontmatter to `name/model/color/memory`. Inject badge HTML.
         Insert `## Overview` + parsed description: prose chunks + each
         `<example>` block transformed into a styled `<div>` (Context/User/
-        Assistant turns; `<commentary>` blocks dropped). Body HTML-escapes
+        Assistant turns; `<commentary>` blocks dropped). Prose and example
+        text are escaped like skill descriptions. Body HTML-escapes
         literal `<example>...</example>` strings (defensive against MDX
         treating them as components).
 
@@ -133,7 +134,7 @@ def render_example_div(example: dict[str, str]) -> str:
             continue
         lines.append('<div class="agent-example__turn">')
         lines.append(f'<div class="agent-example__label">{label}</div>')
-        lines.append(f'<div class="agent-example__content">{content}</div>')
+        lines.append(f'<div class="agent-example__content">{escape_description(content)}</div>')
         lines.append('</div>')
     lines.append('</div>')
     return "\n".join(lines)
@@ -141,20 +142,21 @@ def render_example_div(example: dict[str, str]) -> str:
 
 def render_description(decoded: str) -> str:
     """Turn an agent description (already YAML-decoded) into the body content
-    for the Overview section: prose + zero-or-more example divs.
+    for the Overview section: prose + zero-or-more example divs. Prose and
+    example text get the same escaping as skill descriptions.
     """
     parts: list[str] = []
     last_end = 0
     for m in _EXAMPLE_BLOCK.finditer(decoded):
         prose = decoded[last_end:m.start()].strip()
         if prose:
-            parts.append(prose)
+            parts.append(escape_description(prose))
         ex = parse_example_block(m.group(1))
         parts.append(render_example_div(ex))
         last_end = m.end()
     tail = decoded[last_end:].strip()
     if tail:
-        parts.append(tail)
+        parts.append(escape_description(tail))
     return "\n\n".join(parts)
 
 

@@ -26,22 +26,16 @@ import skill_helpers as h  # noqa: E402
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 P_DRIVE = Path("P:\\")
 
-REG_KEY = r"Software\Bohemia Interactive\DayZ Tools\Object Builder"
-REG_SUBKEY_CCONFIG = REG_KEY + r"\CConfig"
-
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 INFO = "[INFO] "
 
-
-def registry_has_objectbuilder_settings() -> bool:
-    if sys.platform != "win32":
-        return False
-    import winreg
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_SUBKEY_CCONFIG):
-            return True
-    except OSError:
-        return False
+# The registry key and its "is Object Builder configured" check belong to
+# /dayz-setup-objectbuilder, which writes that key; read them from there.
+_setup = h.load_module(
+    "dayz_setup_objectbuilder_module", h.SKILLS_DIR / "dayz-setup-objectbuilder" / "setup.py"
+)
+REG_KEY = _setup.REG_KEY
+registry_has_objectbuilder_settings = _setup.registry_has_objectbuilder_settings
 
 
 def build_parser() -> argparse.ArgumentParser:

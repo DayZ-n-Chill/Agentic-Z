@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import plan  # noqa: E402
 from env_check import EnvIssue, Severity  # noqa: E402
 from plan import Intent, build_steps  # noqa: E402
+from state import read_state  # noqa: E402
 
 
 def _actions(steps):
@@ -132,3 +133,15 @@ def test_rerun_after_no_scaffold_import_skips_the_import(monkeypatch, runs, tmp_
     rc = plan.main(["--mod", "Linked", "--import-from", "D:/src", "--no-scaffold", "--execute"], project=tmp_path)
     assert rc == 0
     assert runs["argv"] == []
+
+
+def test_import_requires_a_scaffold_choice(capsys):
+    with pytest.raises(SystemExit) as exc:
+        plan.parse_args(["--mod", "M", "--import-from", "D:/src"])
+    assert exc.value.code == 2
+    assert "--import-from needs --scaffold or --no-scaffold" in capsys.readouterr().err
+
+
+def test_record_project_stores_only_the_active_mod(tmp_path):
+    plan.record_project(tmp_path, Intent("MyMod", source="D:/src", scaffold=False, server_map="chernarus"))
+    assert read_state(tmp_path) == {"last_intent": {"mod_name": "MyMod"}}

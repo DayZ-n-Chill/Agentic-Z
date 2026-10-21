@@ -97,7 +97,8 @@ Deep material lives in `<skill-dir>\references\`:
   selections, collision-LOD surface materials, …) plus Blender export pitfalls and
   script-side gotchas that co-occur during debugging.
 - **`references/config-rvmat-checks.md`** — config.cpp checks (P:\ paths, placed-object
-  properties, AnimationSources, hiddenSelections) and .rvmat checks (paths, texture stages).
+  properties, AnimationSources, hiddenSelections) and .rvmat checks (paths, plus the
+  Super-shader stage layout to review by hand).
 - **`references/winding-methodology.md`** — how to actually verify face winding
   (edge-pair topology, averaged-normal checks), which heuristics mislead and why,
   known traps, and the full Blender-import checklist.
