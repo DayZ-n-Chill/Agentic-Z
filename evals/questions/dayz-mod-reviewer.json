@@ -1,0 +1,65 @@
+{
+  "agent": "dayz-mod-reviewer",
+  "questions": [
+    {
+      "id": "modded-class-extends",
+      "question": "Gate review of a pasted file; review only what is shown and do not open workspace/. The mod is MyMod. File scripts/4_World/MyMod/playerbase.c:\n\nmodded class PlayerBase extends PlayerBase\n{\n    override void OnConnect()\n    {\n        super.OnConnect();\n    }\n}\n\nReturn your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*FAIL",
+        "CRITICAL",
+        "dayz-script-specialist"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*PASS\\b"
+      ],
+      "verified": ".claude/agents/dayz-mod-reviewer.md check 1 and Severity; P:/scripts/4_world/entities/manbase/playerbase.c:7623 (OnConnect exists)"
+    },
+    {
+      "id": "hidden-selection-mismatch",
+      "question": "Gate review of a pasted file; review only what is shown, do not open workspace/, and assume every referenced file exists. The mod is MyMod with $PBOPREFIX$ MyMod. File config.cpp:\n\nclass CfgPatches\n{\n    class MyMod\n    {\n        units[] = {\"MyMod_Hoodie\"};\n        weapons[] = {};\n        requiredVersion = 0.1;\n        requiredAddons[] = {\"DZ_Characters_Tops\"};\n    };\n};\nclass CfgVehicles\n{\n    class Hoodie_ColorBase;\n    class MyMod_Hoodie: Hoodie_ColorBase\n    {\n        scope = 2;\n        hiddenSelections[] = {\"camoGround\", \"camoMale\", \"camoFemale\"};\n        hiddenSelectionsTextures[] = {\"MyMod\\data\\hoodie_co.paa\", \"MyMod\\data\\hoodie_co.paa\"};\n    };\n};\n\nReturn your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*FAIL",
+        "CRITICAL",
+        "dayz-config-specialist"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*PASS\\b"
+      ],
+      "verified": ".claude/agents/dayz-mod-reviewer.md check 4; P:/DZ/characters/tops/config.cpp:3 (DZ_Characters_Tops), :2479 (class Hoodie_ColorBase: Clothing) and :2506-2508 (camoGround, camoMale, camoFemale)"
+    },
+    {
+      "id": "texture-suffix-warn",
+      "question": "Gate review of a pasted file; review only what is shown, do not open workspace/, and assume every referenced file exists. The mod is MyMod with $PBOPREFIX$ MyMod. File config.cpp:\n\nclass CfgPatches\n{\n    class MyMod\n    {\n        units[] = {\"MyMod_PlateCarrier\"};\n        weapons[] = {};\n        requiredVersion = 0.1;\n        requiredAddons[] = {\"DZ_Characters_Vests\"};\n    };\n};\nclass CfgVehicles\n{\n    class PlateCarrierVest;\n    class MyMod_PlateCarrier: PlateCarrierVest\n    {\n        scope = 2;\n        hiddenSelections[] = {\"camoGround\"};\n        hiddenSelectionsTextures[] = {\"MyMod\\data\\platecarrier.paa\"};\n    };\n};\n\nReturn your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*PASS",
+        "WARN",
+        "dayz-asset-specialist"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*FAIL\\b"
+      ],
+      "verified": ".claude/agents/dayz-mod-reviewer.md check 6 (missing suffix is a WARN) and Severity (WARN never fails); P:/DZ/characters/vests/config.cpp:3 and :24"
+    },
+    {
+      "id": "procedural-texture-pass",
+      "question": "Gate review of a pasted file; review only what is shown, do not open workspace/, and assume every referenced file exists. The mod is MyMod with $PBOPREFIX$ MyMod. File config.cpp:\n\nclass CfgPatches\n{\n    class MyMod\n    {\n        units[] = {\"MyMod_PlateCarrier_Red\"};\n        weapons[] = {};\n        requiredVersion = 0.1;\n        requiredAddons[] = {\"DZ_Characters_Vests\"};\n    };\n};\nclass CfgVehicles\n{\n    class PlateCarrierVest;\n    class MyMod_PlateCarrier_Red: PlateCarrierVest\n    {\n        scope = 2;\n        hiddenSelections[] = {\"camoGround\"};\n        hiddenSelectionsTextures[] = {\"#(argb,8,8,3)color(1,0,0,1,co)\"};\n    };\n};\n\nReturn your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*PASS"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*FAIL\\b",
+        "re:CRITICAL[^\\n]*#\\(argb"
+      ],
+      "verified": ".claude/agents/dayz-mod-reviewer.md check 6 (skip procedural textures); vanilla uses the same form at P:/DZ/gear/camping/config.cpp:60"
+    },
+    {
+      "id": "types-min-above-nominal",
+      "question": "Gate review of a pasted file; review only what is shown and do not open workspace/. The mod is MyMod. File types.xml:\n\n<types>\n    <type name=\"MyMod_Hoodie\">\n        <nominal>5</nominal>\n        <lifetime>14400</lifetime>\n        <restock>0</restock>\n        <min>10</min>\n        <quantmin>-1</quantmin>\n        <quantmax>-1</quantmax>\n        <cost>100</cost>\n        <flags count_in_cargo=\"0\" count_in_hoarder=\"0\" count_in_map=\"1\" count_in_player=\"0\" crafted=\"0\" deloot=\"0\"/>\n        <category name=\"clothes\"/>\n    </type>\n</types>\n\nReturn your verdict in your usual report format.",
+      "must_include": [
+        "dayz-server-admin",
+        "re:min[^\\n]*nominal|nominal[^\\n]*min"
+      ],
+      "verified": ".claude/agents/dayz-mod-reviewer.md check 7 (min is not above nominal) and the owner list"
+    }
+  ]
+}
