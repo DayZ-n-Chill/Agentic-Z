@@ -4,13 +4,13 @@ name: dayz-gate
 
 ## Overview
 
-Runs the orchestrator's build and in-game gates as scripts instead of agent turns: build packs the mod and checks AddonBuilder output; ingame runs a test session and checks the new log lines. Failures are triaged against known errors. Use when gating a finished wave.
+Runs the orchestrator's build, in-game and behavior gates as scripts instead of agent turns: build packs the mod and checks AddonBuilder output; ingame runs a test session and checks the new log lines; behavior runs a test mission that spawns and uses each new item and gives PASS or FAIL per check. Failures are triaged against known errors. Use when gating a finished wave.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-gate
 
-Script versions of the `dayz-build-checker` and `dayz-ingame-tester` gates. They run the existing skill scripts as subprocesses and apply the same rules those agents follow, so a wave costs one command and a short report instead of two agent runs. The gates gate on `/dayz-preflight` through the scripts they call.
+Script versions of the `dayz-build-checker` and `dayz-ingame-tester` gates, plus a behavior gate that tests what each new item does. They run the existing skill scripts as subprocesses and apply the same rules those agents follow, so a wave costs one command and a short report instead of two agent runs. The gates gate on `/dayz-preflight` through the scripts they call.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -19,6 +19,9 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ```cmd
 python "<skill-dir>\gate.py" build <ModName> [--json]
 python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
+python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--json]
+python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --prepare-only
+python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --logs [FILE ...] [--json]
 ```
 
 | Argument | Notes |
@@ -29,7 +32,12 @@ python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instanc
 | `--timeout` | `ingame`: seconds to wait for the client to reach the mission (default 300). |
 | `--settle` | `ingame`: seconds to keep reading after that, to catch spawn-time errors (default 30). |
 | `--ready-pattern` | `ingame`: regex in the client script log that means the mission is running. Default `Creating Mission: mpmissions\__cur_mp.`, printed by vanilla `CreateMission()` (`P:\scripts\5_mission\somemission.c`) when the client joins. |
+| `--checks` | `behavior`: the checks file. Default `output/<ModName>-plan/behavior-checks.json`, which `dayz-mod-architect` writes with the plan. |
+| `--prepare-only` | `behavior`: write the instance copy and stop. The first line is `PREPARED` (exit 0). |
+| `--logs` | `behavior`: judge the logs of a session that already ran instead of launching one. With no files it reads the copy's server script logs. |
 | `--json` | Print the full report as JSON after the verdict line. |
+
+`behavior` takes `--deps`, `--server`, `--port` and `--timeout` like `ingame`. Its `--settle` is the most seconds to wait for the test mission's `DONE` line after the client joins (default 600); the gate stops as soon as that line appears.
 
 ## Output and exit codes
 
@@ -69,6 +77,53 @@ Each failure carries `triage`: `known` (with `id`, `meaning`, `fix` and `owner_a
    - A line names the mod when it, or its stack trace, mentions the mod's folder, its `$PBOPREFIX$` root, or a class the mod declares (top-level classes in `config.cpp`'s `Cfg*` blocks and non-modded script classes).
    - Vanilla noise: a line that names nothing of the mod and also appears in a vanilla-only run, meaning one of the two newest older sessions in the same folder whose RPT `CLI params:` line has no `@<ModName>` (plus the script logs created within 30 s after that RPT). Noise is listed, not failed. With no such run the line is a warning.
 
+## What `behavior` does
+
+1. Reads the checks file and refuses a bad one (exit 2) before touching anything. Stops any running session.
+2. Copies `.server/<instance>/` to `.server/<instance>-behavior/`: `serverDZ.cfg`, `mission/` without its `storage_*` persistence folders, the `<template>/` junction that `/dayz-launch-test` needs, and `Profiles/`. A previous copy is replaced; its logs stay. Your own instance is never changed.
+3. Adds a test mission to the copy's `init.c`: the class `AZ_BehaviorTest` above `main()` and an `AZ_BehaviorTest.Start();` call as the last line of `main()`.
+4. Runs the `ingame` flow on the copy, so every `ingame` rule still applies. The test mission waits for the first player (up to 240 s), waits 10 s more, empties the player's hands and clothing slots, then runs one check per second and prints to the server script log:
+
+   ```text
+   [AZ-BEHAVIOR] START <count>
+   [AZ-BEHAVIOR] PASS <check id>
+   [AZ-BEHAVIOR] FAIL <check id> <reason>
+   [AZ-BEHAVIOR] DONE
+   ```
+
+5. Reads those lines. A check passes only on its `PASS` line. A `FAIL` line, or no line at all (the mission never started, or a script error stopped it first), fails the check. A new `START` line starts over, so the newest run in the logs wins.
+
+The report adds `checks` (one entry per check with `status`, `reason`, `file` and `line`) and `behavior` (`started`, `done`, and `unexpected` ids that are not in the checks file). Each failed check is a failure with category `behavior` and its `check` id; triage marks it `new`, so it goes to `dayz-mod-debugger` with the reason line.
+
+### Checks file
+
+`dayz-mod-architect` writes one check per feature:
+
+```json
+{
+  "mod": "MyVest",
+  "checks": [
+    {"id": "vest-spawns", "feature": "The vest exists in the world", "item": "MyVest_Carrier", "action": "spawn"},
+    {"id": "vest-wear", "feature": "A player can wear the vest", "item": "MyVest_Carrier", "action": "wear"},
+    {"id": "vest-pouch", "feature": "The pouch attaches to the vest", "item": "MyVest_Carrier", "action": "attach", "with": "MyVest_Pouch"}
+  ]
+}
+```
+
+| Action | What the test mission does | Passes when |
+|---|---|---|
+| `spawn` | Creates `item` on the ground next to the player. | the object is created |
+| `hands` | Creates `item` in the player's hands. | the item is in hands |
+| `wear` | Finds a slot of `item` that the player has and creates `item` in it. | the player wears it |
+| `attach` | Spawns `item`, then creates `with` as its attachment. | the attachment is created |
+| `cargo` | Spawns `item`, then creates `with` in its cargo. | `with` fits in the cargo |
+
+Every check first needs `item` (and `with`) to exist in `CfgVehicles`, `CfgWeapons` or `CfgMagazines`. Each check deletes what it created. An `id` is letters, digits, `_`, `.` or `-` with no spaces; `item` and `with` are config class names. `feature` says in words what the check proves.
+
+### Running it by hand
+
+`--prepare-only` writes the copy. Launch it with `/dayz-launch-test <ModName> --server <instance>-behavior`, stop it with `/dayz-stop-test`, then judge it with `behavior <ModName> --logs`.
+
 ## Triage
 
 `triage.py` fingerprints each line (timestamps, absolute paths, hex addresses and numbers normalized, lowercased) and matches it against `known-errors.json` (regex entries shipped with the repo) and the project's learned file `.claude/local-memory/dayz-gate-known-errors.json`. Run it on its own for any log:
@@ -90,6 +145,9 @@ An existing `<id>` lends its meaning, fix and owner; a new id needs all three. L
 - The ready line is the vanilla client print when it joins a multiplayer mission. A mod that replaces `CreateMission` or the mission flow needs `--ready-pattern`.
 - AddonBuilder diagnostics are matched by keyword (`error`, `failed`, `undefined base class`, and warning lines that mention missing, not found or unknown class), since AddonBuilder, CfgConvert and Binarize word their messages differently. A non-zero exit with no matching line still fails, with the last 25 output lines as the failure's `context`.
 - Dependency mapping from `requiredAddons` to `@mods` is not automatic; pass `--deps`.
+- The behavior test mission only knows the five actions above. A feature that needs more (driving, firing, eating) has no check yet; say so in the plan.
+- The test player is stripped once before the checks and each check deletes what it made, so no check can prove two items work together on the player.
+- The test mission's engine calls are checked against vanilla `P:\scripts`, and the injector and parser are tested on fixture missions and logs, but the mission has not yet run in a live session.
 
 ## Do not
 

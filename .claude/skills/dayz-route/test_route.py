@@ -38,6 +38,8 @@ def decide(text, env=NO_KEY):
         ("fix the CfgPatches in config.cpp", "dayz-config-specialist", None),
         ("here's my log: 12:01 SCRIPT (E): NULL pointer to instance", "dayz-mod-debugger", None),
         ("run preflight", "dayz-preflight", None),
+        ("run the behavior tests for MyVest", "dayz-gate", {"mod": "MyVest"}),
+        ("behaviour check", "dayz-gate", None),
         ("build me a tactical vest mod with three retextures that spawns in military zones", "orchestrator", None),
         ("create a new backpack mod", "orchestrator", None),
         ("convert vest_camo_co.png to .paa and write an rvmat", "dayz-asset-specialist", None),

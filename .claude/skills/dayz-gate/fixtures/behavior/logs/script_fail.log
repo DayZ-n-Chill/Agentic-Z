@@ -1,0 +1,12 @@
+12:00:01.204 SCRIPT       : Module: Game; loaded 415x files
+12:00:04.880 SCRIPT       : [AZ-BEHAVIOR] START 5
+12:00:42.115 SCRIPT       : [AZ-BEHAVIOR] PASS vest-spawns
+12:00:43.117 SCRIPT       : [AZ-BEHAVIOR] FAIL vest-wear MyMod_Vest has no inventorySlot the player can wear
+12:00:44.120 SCRIPT       : [AZ-BEHAVIOR] FAIL vest-pouch MyMod_Pouch did not attach to MyMod_Vest
+12:00:45.121 SCRIPT       : [AZ-BEHAVIOR] PASS vest-cargo
+12:00:45.900 SCRIPT    (E): NULL pointer to instance
+Class:      'MyMod_Knife'
+Function: 'OnItemLocationChanged'
+Stack trace:
+MyMod/scripts/4_World/knife.c:12
+12:00:46.125 SCRIPT       : [AZ-BEHAVIOR] PASS old-check

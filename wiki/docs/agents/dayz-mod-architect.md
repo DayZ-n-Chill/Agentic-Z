@@ -37,7 +37,20 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 3. Decide the pieces: `CfgPatches` dependencies, config classes, script files and which script layer (`3_Game`, `4_World`, `5_Mission`) each belongs in, models, textures, layouts, and server files such as `types.xml`.
 4. Split the work into tasks one worker can finish in one sitting. Give each task a team (script, config, art, UI, server, release), the files it touches, and a done check that a gatekeeper can verify.
 5. Mark which tasks depend on others. Two tasks that edit the same file must not run at the same time.
+6. Write one in-game behavior check per feature the user can try in game, for `/dayz-gate behavior`. Each check names the feature, the config class it uses and one action: `spawn` (it exists in the world), `hands` (a player can hold it), `wear` (a player can wear it), `attach` (a second class `with` attaches to it) or `cargo` (`with` fits in its cargo). Use the class names from your plan. When a feature needs an action the gate doesn't have (driving, firing, eating), give it the closest check and say in the plan what still needs a person to try in game.
 
 ## Report (to the orchestrator)
 
-Write the plan to `output/<ModName>-plan/plan.md`. Return the task table (Task, Team, Done check, Files, Depends on), the vanilla classes you chose with `path:line` citations, and any open questions for the user.
+Write the plan to `output/<ModName>-plan/plan.md` and the behavior checks to `output/<ModName>-plan/behavior-checks.json` in this format (the `/dayz-gate` skill has the full rules):
+
+```json
+{
+  "mod": "MyVest",
+  "checks": [
+    {"id": "vest-wear", "feature": "A player can wear the vest", "item": "MyVest_Carrier", "action": "wear"},
+    {"id": "vest-pouch", "feature": "The pouch attaches to the vest", "item": "MyVest_Carrier", "action": "attach", "with": "MyVest_Pouch"}
+  ]
+}
+```
+
+An `id` is letters, digits, `_`, `.` or `-` with no spaces. Return the task table (Task, Team, Done check, Files, Depends on), the vanilla classes you chose with `path:line` citations, and any open questions for the user.
