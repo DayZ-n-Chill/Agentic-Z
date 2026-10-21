@@ -62,6 +62,9 @@ def decide(text, env=NO_KEY):
         ("write a modded class so my safe keeps its code after a restart", "dayz-persistence-specialist", None),
         ("write a modded class so my zombies patrol the town", "dayz-ai-specialist", None),
         ("review my vehicle mod", "dayz-mod-reviewer", None),
+        ("preview gui/layouts/compass.layout at 4k", "dayz-layout-preview", None),
+        ("show me a layout preview of my HUD", "dayz-layout-preview", None),
+        ("render trader_menu.layout at different screen sizes", "dayz-layout-preview", None),
     ],
 )
 def test_rules_route_confidently(text, expected, args):

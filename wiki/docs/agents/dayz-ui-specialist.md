@@ -34,6 +34,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 
 - `.layout` is DayZ's property-file format, not XML. Read `.claude/skills/_shared/figma-to-dayz-rules.md` before writing or changing one; it is the spec for format, widget classes, naming prefixes, sizing and the Hard NO list.
 - Examples to mirror: the numbered `.layout` files in `.claude/skills/_shared/enscript/examples/`, and vanilla layouts under `P:\gui\layouts\`.
+- After a change to anchors or sizes, run `/dayz-layout-preview` on the file (`python .claude/skills/dayz-layout-preview/layout_preview.py <file.layout>`). Look at the PNGs for 1280x720 and 3440x1440, and fix any `off-screen` or `no-area` finding. It is an approximation, so name what still needs checking in game.
 
 ## Figma input
 
