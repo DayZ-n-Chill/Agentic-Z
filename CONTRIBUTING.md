@@ -16,7 +16,7 @@ python .claude\skills\sync-skills\sync.py
 
 - Branch from `develop`, never from `main`.
 - PR target is `develop`. The `main` branch is for landed, released work only.
-- Branch naming: `feature/<thing>`, `fix/<thing>`, `docs/<thing>`.
+- Branch naming: `feature/<thing>`, `fix/<thing>`, `docs/<thing>`, `chore/<thing>`.
 
 ## Standard contribution flow
 

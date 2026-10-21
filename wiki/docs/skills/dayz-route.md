@@ -31,13 +31,13 @@ One shape for every stage:
 ```
 
 - `kind` `skill`: run `/<route>`, passing `args` (for `dayz-build-pbo`, `args.mod` is the mod name).
-- `kind` `agent`: dispatch that agent with the user's request.
+- `kind` `agent`: dispatch that agent with the user's request. When the route is `figma-node-normalizer`, run the whole Figma pipeline in order: `figma-node-normalizer`, then `figma-to-dayz-layout`, then `dayz-layout-validator` in gate mode.
 - `kind` `team` (`route` is `orchestrator`): a whole-mod build. Tell the user to start `claude --agent agentic-z:dayz-orchestrator` (or `claude --agent dayz-orchestrator` in a clone).
 - `{"route": null, "next": "dayz-router", "note": "..."}`: no stage was confident. Dispatch the `dayz-router` agent with the request; it returns the same shape with `source` `router`. Follow it when `confidence` is 0.8 or more, otherwise handle the routing yourself or ask the user.
 
 ## Stages
 
-1. **Rules** (`rules.json`, free): regex patterns per route. Matches for two different routes (for example "build MyVest and launch it") cut confidence by `conflict_factor`, because that is a multi-step request. The `orchestrator` rule absorbs other matches, since a whole-mod request names its parts. Results at or above `threshold` (0.8) are final.
+1. **Rules** (`rules.json`, free): regex patterns per route. Matches for two different routes (for example "build MyVest and launch it") cut confidence by `conflict_factor`, because that is a multi-step request. The `orchestrator`, `figma-node-normalizer`, `dayz-build-engineer` and `dayz-workbench-specialist` rules absorb other matches, since those requests name their parts. Results at or above `threshold` (0.8) are final.
 2. **Jev** (`jev.py`, only with `TYPESAFE_API_KEY` set): one TypeSafe Choice question over all targets plus `other`, 5 second timeout. Missing key, network error, bad status, `other` or low confidence all fall through, with the reason in `note`. The request text is sent to `api.typesafe.ai`.
 3. **dayz-router** agent: Haiku, reads nothing but the request (and `rules.json` if needed).
 

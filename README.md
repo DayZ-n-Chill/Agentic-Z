@@ -62,7 +62,7 @@ Full prerequisites, env-var overrides, and troubleshooting: **[`docs/dayz-moddin
 | **Vanilla data on `P:\`** | DayZ Tools → "Extract Game Data". Your configs inherit from `ItemBase`, `Inventory_Base`, etc. |
 | **Python 3.10+** on `PATH` | The skills are Python scripts. |
 
-Search (optional) embeds through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim) and stores the vectors in LanceDB under `~/.claude/dayz-search-index/`, where the `dayz-rag` MCP server reads them. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root; queries need it either way. A full local build with `/dayz-search-index` embeds about 52,000 chunks from about 38,000 files (roughly 66M tokens), so check Voyage's pricing first. To skip the build, `/dayz-search-download` installs the prebuilt index from GitHub releases with no embedding cost.
+Search (optional) embeds through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim) and stores the vectors in LanceDB under `~/.claude/dayz-search-index/`, where the `dayz-rag` MCP server reads them. Install its Python packages once from the repo root with `pip install -r .claude\mcp\dayz-rag\requirements.txt -r .claude\skills\dayz-search-index\requirements.txt`. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root; queries need it either way. A full local build with `/dayz-search-index` embeds about 52,000 chunks from about 38,000 files (roughly 66M tokens), so check Voyage's pricing first. To skip the build, `/dayz-search-download` installs the prebuilt index from GitHub releases with no embedding cost.
 
 ---
 
@@ -316,4 +316,4 @@ If you fork the repo to publish a downstream variant, run `git diff main -- .cla
 
 ## License
 
-See [`LICENSE`](LICENSE). Copyright (c) 2026 Brian Orr (DayZ n' Chill). Free to use for developing DayZ modifications.
+See [`LICENSE`](LICENSE). Copyright (c) 2026 DayZ n Chill. Free to use for developing DayZ modifications.

@@ -14,7 +14,13 @@
     "dayz-object-builder": {"kind": "agent", "description": "Model work in Object Builder: .p3d LODs, named selections, proxies"},
     "dayz-mod-debugger": {"kind": "agent", "description": "Diagnose a crash, error or log: script.log, RPT, crash.log"},
     "dayz-mod-reviewer": {"kind": "agent", "description": "Review or audit a mod for convention problems before building or release"},
-    "orchestrator": {"kind": "team", "agent": "dayz-orchestrator", "description": "Build a whole new mod with many parts (plan, team, build, test)"}
+    "dayz-asset-specialist": {"kind": "agent", "description": "Textures and materials: pack images to .paa, write .rvmat files"},
+    "dayz-map-specialist": {"kind": "agent", "description": "Terrain and map building: Terrain Builder, heightmaps, layers.cfg, surfaces, clutter, DayZ Editor imports"},
+    "dayz-workbench-specialist": {"kind": "agent", "description": "Enfusion Workbench plugins: editor-time tools and batch automation for DayZ Tools"},
+    "dayz-build-engineer": {"kind": "agent", "description": "Turn a finished mod into a test build the user can play: build the PBO, set up the server, launch a session"},
+    "dayz-docs-writer": {"kind": "agent", "description": "A mod's README, changelog, install notes and classname list for server owners"},
+    "orchestrator": {"kind": "team", "agent": "dayz-orchestrator", "description": "Build a whole new mod with many parts (plan, team, build, test)"},
+    "figma-node-normalizer": {"kind": "agent", "description": "Start the Figma pipeline: turn a Figma design or figma.com link into a checked DayZ .layout"}
   },
   "rules": [
     {
@@ -22,6 +28,18 @@
       "confidence": 0.95,
       "absorbs": true,
       "patterns": ["\\b(?:build|make|create|write)\\s+(?:me\\s+)?(?:a|an)\\s+(?:new\\s+)?[\\w\\s,'-]{0,60}?\\bmod\\b"]
+    },
+    {
+      "route": "figma-node-normalizer",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bfigma\\.com/", "\\bfigma\\b"]
+    },
+    {
+      "route": "dayz-build-engineer",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\b(?:test|release|playable)\\s+build\\b", "\\bbuild\\s+engineer\\b"]
     },
     {
       "route": "dayz-build-pbo",
@@ -77,6 +95,27 @@
       "route": "dayz-script-specialist",
       "confidence": 0.85,
       "patterns": ["\\bmodded\\s+class\\b", "\\benforce\\s*script\\b", "\\brpc\\b"]
+    },
+    {
+      "route": "dayz-asset-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\.paa\\b", "\\brvmats?\\b", "\\btextures?\\b"]
+    },
+    {
+      "route": "dayz-map-specialist",
+      "confidence": 0.85,
+      "patterns": ["\\bterrain(?:\\s+builder)?\\b", "\\bheightmaps?\\b", "\\blayers\\.cfg\\b", "\\bcfgsurfaces\\b", "\\bclutter\\b", "\\bdayz\\s+editor\\b", "\\b(?:custom|new|my|own)\\s+map\\b"]
+    },
+    {
+      "route": "dayz-workbench-specialist",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bworkbench\\s+(?:plugin|tool|script)s?\\b", "\\bworkbenchplugin\\b"]
+    },
+    {
+      "route": "dayz-docs-writer",
+      "confidence": 0.85,
+      "patterns": ["\\breadme\\b", "\\bchangelog\\b", "\\binstall\\s+notes\\b", "\\bdocs\\b", "\\bdocumentation\\b"]
     },
     {
       "route": "dayz-mod-reviewer",

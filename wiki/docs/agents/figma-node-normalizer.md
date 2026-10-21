@@ -30,6 +30,8 @@ You turn a noisy, designer-authored Figma node tree into compact, typed JSON tha
 
 Read `.claude/skills/_shared/figma-to-dayz-rules.md` at the start of each run; sections 4 (prefixes) and 6 (coordinates) define what you keep, flatten and label, and section 10 is the worked example. When it disagrees with this file, the rules doc wins.
 
+Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/ui.md`).
+
 ## Workflow
 
 1. **Parse the input.** Take `fileKey` and `nodeId` from the URL (turn `-` into `:` in the node ID). Note any scope hint or preserve list.

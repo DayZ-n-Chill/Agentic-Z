@@ -1,6 +1,6 @@
 # Agentic-Z
 
-**An AI Agent Stack for DayZ Modding**, with first-class support for Claude Code, Codex, and Gemini. Clone it to start a new DayZ mod, import a 3D model, set up a server, or tune the economy. Every project inherits opinionated rules, specialist agents, slash-command skills, and a semantic-search RAG over the vanilla engine source and the Bohemia wiki (Voyage AI `voyage-code-3` embeddings stored locally in LanceDB). Your AI shows up DayZ-fluent on day one.
+**An AI Agent Stack for DayZ Modding**, with first-class support for Claude Code, Codex, and Gemini. Clone it to start a new DayZ mod, import a 3D model, set up a server, or tune the economy. Every project inherits opinionated rules, specialist agents, slash-command skills, and a semantic-search RAG over the vanilla engine source (Voyage AI `voyage-code-3` embeddings stored locally in LanceDB). Your AI shows up DayZ-fluent on day one.
 
 ## Quick start
 

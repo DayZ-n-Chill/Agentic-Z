@@ -76,7 +76,7 @@ Section outline:
 
 ## Phase 2: agent patches (not authored in Phase 1)
 
-After the rules doc lands and Brian reviews it, the three agents are patched:
+After the rules doc lands and the user reviews it, the three agents are patched:
 
 - **`figma-node-normalizer`** — small. The closing handoff line currently says "ready for figma-to-dayz-layout to convert into `.layout` XML." Drop "XML." Add a one-line reference to the rules doc so the agent knows what the downstream format looks like (avoids producing JSON shapes the generator cannot consume).
 

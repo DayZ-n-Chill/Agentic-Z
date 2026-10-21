@@ -38,6 +38,15 @@ def decide(text, env=NO_KEY):
         ("run preflight", "dayz-preflight", None),
         ("build me a tactical vest mod with three retextures that spawns in military zones", "orchestrator", None),
         ("create a new backpack mod", "orchestrator", None),
+        ("convert vest_camo_co.png to .paa and write an rvmat", "dayz-asset-specialist", None),
+        ("the texture on my jacket looks washed out", "dayz-asset-specialist", None),
+        ("import my DayZ Editor base into Terrain Builder", "dayz-map-specialist", None),
+        ("add clutter to the forest surface in layers.cfg", "dayz-map-specialist", None),
+        ("write a Workbench plugin that lists textures missing a suffix", "dayz-workbench-specialist", None),
+        ("make a playable test build of MyVest and start a session", "dayz-build-engineer", None),
+        ("update the README and changelog for MyVest", "dayz-docs-writer", None),
+        ("turn https://www.figma.com/design/abc123/Trader?node-id=10-42 into a .layout", "figma-node-normalizer", None),
+        ("build this Figma frame as my HUD", "figma-node-normalizer", None),
     ],
 )
 def test_rules_route_confidently(text, expected, args):
