@@ -14,6 +14,7 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-build-pbo` (skill): pack an existing mod from `workspace/<ModName>/` into a PBO. Put the mod name in `args.mod` when it is given.
 - `dayz-lint` (skill): check a mod for errors that would stop it loading, before packing. Put the mod name in `args.mod` when it is given.
 - `dayz-launch-test` (skill): launch the local test server and client.
+- `dayz-logwatch` (skill): watch a running test session's logs and triage each new error line as it appears.
 - `dayz-stop-test` (skill): stop a running test session.
 - `dayz-preflight` (skill): check the modding environment.
 - `dayz-gate` (skill): run the behavior test, a test mission that spawns and uses each new item and gives PASS or FAIL per check. Put the mod name in `args.mod` when it is given.

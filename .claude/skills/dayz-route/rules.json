@@ -5,6 +5,7 @@
     "dayz-build-pbo": {"kind": "skill", "description": "Pack an existing mod from workspace/<ModName>/ into a PBO"},
     "dayz-lint": {"kind": "skill", "description": "Check a mod for errors that would stop it loading, before packing"},
     "dayz-launch-test": {"kind": "skill", "description": "Launch the local DayZ Diag test server and client"},
+    "dayz-logwatch": {"kind": "skill", "description": "Watch a running test session's logs and triage each new error line as it appears"},
     "dayz-stop-test": {"kind": "skill", "description": "Stop a running local DayZ test session"},
     "dayz-preflight": {"kind": "skill", "description": "Check the DayZ modding environment (P: drive, DayZ Tools)"},
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
@@ -102,6 +103,12 @@
       "route": "dayz-new-mod",
       "confidence": 0.85,
       "patterns": ["\\bscaffold\\b"]
+    },
+    {
+      "route": "dayz-logwatch",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\blog\\s*watch(?:er)?\\b", "\\b(?:watch|tail|follow|monitor)\\s+(?:the\\s+|my\\s+)?(?:server\\s+|client\\s+)?(?:logs?|script\\.log|rpts?)\\b"]
     },
     {
       "route": "dayz-mod-debugger",
