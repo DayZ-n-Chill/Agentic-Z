@@ -1,6 +1,7 @@
 ---
 name: dayz-setup-objectbuilder
 description: "Configures Object Builder (DayZ Tools' .p3d editor) by importing DayZ Tools' default registry settings and preferred view flags. Use when Object Builder is opened for the first time on a machine, after a DayZ Tools reinstall, or when it opens with broken panel layouts."
+argument-hint: "[--force [--yes]]"
 ---
 
 <!-- skill-dir-note -->
@@ -49,6 +50,15 @@ Exits 1 if DayZ Tools, `ObjectBuilder.exe` or the `.reg` is missing, the `.reg` 
 
 ```
 DayZ Object Builder setup
+
+DayZ preflight
+
+[OK]    P:\ is mounted
+[OK]    DayZ Tools found: C:\...\steamapps\common\DayZ Tools
+[OK]    Vanilla data found: P:\dz
+[OK]    P:\Mods -> C:\...\steamapps\common\DayZ\!Workshop
+
+Preflight complete.
 
 [OK]    DayZ Tools: C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools
 [OK]    ObjectBuilder.exe: ...\Bin\ObjectBuilder\ObjectBuilder.exe

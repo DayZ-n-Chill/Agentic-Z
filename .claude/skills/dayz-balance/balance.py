@@ -436,8 +436,13 @@ class Balance:
 def meaning(stat: str, direction: str) -> str:
     """What a high or low value means for the player."""
     if stat.startswith("protection."):
-        # Armor values are damage multipliers: lower lets less damage through.
-        return "less protection than vanilla" if direction == "high" else "more protection than vanilla"
+        if stat.count(".") >= 2:
+            # GlobalArmor values (protection.<kind>.<type>) are damage multipliers:
+            # lower lets less damage through.
+            return "less protection than vanilla" if direction == "high" else "more protection than vanilla"
+        # Protection class values (protection.<name>, such as biological on masks)
+        # are coverage: higher keeps more out. The best vanilla mask has biological=1.
+        return "more protection than vanilla" if direction == "high" else "less protection than vanilla"
     words = {
         "weight": ("heavier", "lighter"),
         "health": ("tougher", "more fragile"),

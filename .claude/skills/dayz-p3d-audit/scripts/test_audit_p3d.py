@@ -154,37 +154,112 @@ def _memory(selections, coords=((0.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 2.0, 0.0
     return _points_lod(coords, {**base, **selections})
 
 
+MODEL_CFG = """
+#define _ARMA_
+class CfgSkeletons { class FlagPole_skeleton { skeletonBones[] = {"flag_mast", ""}; }; };
+class CfgModels
+{
+    class Default;
+    class flagpole: Default
+    {
+        skeletonName = "FlagPole_skeleton";
+        class Animations
+        {
+            class flag_mast { type = "translation"; source = "flag_mast"; selection = "flag_mast"; axis = "flag_mast_axis"; minValue = 0; maxValue = 1; };
+            /* a door that inherits its type and source */
+            class door_base { type = "rotation"; source = "door"; selection = "door"; axis = "door_axis"; };
+            class lid: door_base { selection = "lid"; axis = ""; begin = "lid_begin"; end = "lid_end"; };
+        };
+    };
+    class flagpole_tall: flagpole {};
+};
+"""
+
+
+def test_model_animations_reads_cfgmodels():
+    anims = audit.model_animations(MODEL_CFG, "FlagPole")
+    assert sorted(anims) == ["door_base", "flag_mast", "lid"]
+    assert anims["flag_mast"]["selection"] == "flag_mast" and anims["flag_mast"]["axis"] == "flag_mast_axis"
+    assert anims["lid"]["type"] == "rotation" and anims["lid"]["begin"] == "lid_begin"  # inherited from door_base
+
+
+def test_model_animations_inherits_from_parent_model_and_misses_unknown():
+    assert sorted(audit.model_animations(MODEL_CFG, "flagpole_tall")) == ["door_base", "flag_mast", "lid"]
+    assert audit.model_animations(MODEL_CFG, "other") is None
+    assert audit.model_animations("class CfgModels { class box {}; };", "box") == {}
+
+
+def _anim_lods(visual_sels, memory_sels):
+    visual = _points_lod(TETRA_POINTS, visual_sels)
+    memory = _memory(memory_sels)
+    return {"Visual": (0, visual), "Memory": (1, memory)}
+
+
+FLAG = {"flag_mast": {"selection": "flag_mast", "axis": "flag_mast_axis"}}
+
+
+def test_animation_selection_and_axis_present_pass():
+    assert audit.check_animations(FLAG, _anim_lods({"flag_mast": [0, 1]}, {"flag_mast_axis": [1, 2]})) == []
+
+
+def test_animation_selection_missing_from_visual_is_critical():
+    issues = audit.check_animations(FLAG, _anim_lods({}, {"flag_mast_axis": [1, 2]}))
+    assert _severities(issues) == ["CRITICAL"]
+    assert "Visual LOD has no 'flag_mast' selection" in issues[0][1]
+
+
+def test_animation_empty_visual_selection_warns():
+    issues = audit.check_animations(FLAG, _anim_lods({"flag_mast": []}, {"flag_mast_axis": [1, 2]}))
+    assert _severities(issues) == ["WARNING"]
+
+
 @pytest.mark.parametrize("indices", [[1], [0, 1, 2]])
-def test_flag_mast_axis_needs_exactly_two_points(indices):
-    issues = audit.check_memory_lod(_memory({"flag_mast_axis": indices}))
+def test_animation_axis_needs_exactly_two_points(indices):
+    issues = audit.check_animations(FLAG, _anim_lods({"flag_mast": [0]}, {"flag_mast_axis": indices}))
     assert _severities(issues) == ["CRITICAL"]
-    assert f"flag_mast_axis has {len(indices)} points" in issues[0][1]
+    assert f"axis 'flag_mast_axis' has {len(indices)} points" in issues[0][1]
 
 
-def test_flag_mast_axis_two_points_ok_and_short_travel_warns():
-    assert audit.check_memory_lod(_memory({"flag_mast_axis": [1, 2]})) == []
-    flat = _memory({"flag_mast_axis": [0, 1]}, coords=((0.0, 0.0, 0.0), (1.0, 0.05, 0.0)))
-    assert _severities(audit.check_memory_lod(flat)) == ["WARNING"]
+def test_animation_axis_missing_and_begin_end_points():
+    issues = audit.check_animations(FLAG, _anim_lods({"flag_mast": [0]}, {}))
+    assert _severities(issues) == ["CRITICAL"] and "no 'flag_mast_axis'" in issues[0][1]
+    lid = {"lid": {"selection": "LID", "axis": "", "begin": "lid_begin", "end": "lid_end"}}
+    issues = audit.check_animations(lid, _anim_lods({"lid": [0]}, {"lid_begin": [1]}))
+    assert [m for _, m in issues] == ["Animation 'lid': Memory LOD has no 'lid_end' point (end of the axis)."]
 
 
-def test_memory_axis_without_visual_selection_is_critical():
-    memory = _memory({"door_axis": [1, 2]})
-    visual = _points_lod(TETRA_POINTS, {})
-    issues = audit.check_visual_lod(visual, {"Memory": (1, memory)})
-    assert _severities(issues) == ["CRITICAL"]
-    assert "missing 'door' selection" in issues[0][1]
+def test_memory_axis_without_model_cfg_is_not_guessed():
+    # Without model.cfg nothing is inferred from names such as door_axis.
+    assert audit.check_memory_lod(_memory({"door_axis": [1]})) == []
+    assert audit.check_visual_lod(_points_lod(TETRA_POINTS, {})) == []
 
 
-def test_memory_axis_with_empty_visual_selection_warns():
-    memory = _memory({"door_axis": [1, 2]})
-    visual = _points_lod(TETRA_POINTS, {"door": []})
-    assert _severities(audit.check_visual_lod(visual, {"Memory": (1, memory)})) == ["WARNING"]
+def test_find_model_cfg_walks_up_to_root(tmp_path):
+    (tmp_path / "data" / "sub").mkdir(parents=True)
+    model = tmp_path / "data" / "sub" / "box.p3d"
+    assert audit.find_model_cfg(model, tmp_path) is None
+    (tmp_path / "model.cfg").write_text("", encoding="utf-8")
+    assert Path(audit.find_model_cfg(model, tmp_path)) == (tmp_path / "model.cfg").resolve()
+    (tmp_path / "data" / "model.cfg").write_text("", encoding="utf-8")
+    assert Path(audit.find_model_cfg(model, tmp_path)) == (tmp_path / "data" / "model.cfg").resolve()
 
 
-def test_memory_axis_with_matching_visual_selection_passes():
-    memory = _memory({"door_axis": [1, 2]})
-    visual = _points_lod(TETRA_POINTS, {"door": [0, 1]})
-    assert audit.check_visual_lod(visual, {"Memory": (1, memory)}) == []
+def test_missing_py3d_exits_2_with_requirements_hint(monkeypatch, capsys):
+    import builtins
+    real_import = builtins.__import__
+
+    def fake_import(name, *a, **kw):
+        if name == "py3d":
+            raise ImportError(name)
+        return real_import(name, *a, **kw)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    with pytest.raises(SystemExit) as exc:
+        audit.load_py3d()
+    assert exc.value.code == 2
+    out = capsys.readouterr().out
+    assert "python -m pip install -r" in out and "requirements.txt" in out
+    assert audit.REQUIREMENTS.is_file()
 
 
 def test_face_winding_check_removed():
@@ -275,6 +350,24 @@ def test_audit_p3d_flags_lowercase_component(tmp_path, capsys):
 
     assert audit.audit_p3d(str(model)) is False
     assert "'component01' (lowercase)" in capsys.readouterr().out
+
+
+def test_audit_p3d_checks_model_cfg_animations(tmp_path, capsys):
+    pytest.importorskip("py3d")
+    geometry = _write_lod(1e13, TETRA_POINTS, TETRA_FACES, selections=[("Component01", FULL)])
+    memory = _write_lod(1e15, [(0.0, 0.0, 0.0), (0.0, 1.0, 0.0)], [],
+                        selections=[("flag_mast_axis", ([0, 1], []))])
+    visual = _write_lod(0.0, TETRA_POINTS, TETRA_FACES, selections=[("flag_mast", ([0, 1], [0]))])
+    model = tmp_path / "flagpole.p3d"
+    _write_mlod(model, [visual, geometry, memory])
+    cfg = tmp_path / "model.cfg"
+    cfg.write_text(MODEL_CFG, encoding="utf-8")
+
+    assert audit.audit_p3d(str(model), str(cfg)) is False  # door and lid parts are missing
+    out = capsys.readouterr().out
+    assert "3 animation(s)" in out
+    assert "Animation 'flag_mast'" not in out
+    assert "Animation 'door_base': Visual LOD has no 'door' selection" in out
 
 
 def test_audit_p3d_rejects_odol(tmp_path, capsys):

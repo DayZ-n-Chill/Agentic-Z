@@ -128,9 +128,9 @@ CASES = [
      cfg_edit('    class MyMod\n    {\n        units[] = {"MyMod_Vest"};\n        weapons[] = {};\n        requiredVersion = 0.1;\n'
               '        requiredAddons[] = {"DZ_Data", "DZ_Scripts"};\n    };\n', ""),
      "workspace/MyMod/config.cpp", 1),
-    ("cfgpatches-field", "error", cfg_edit('        units[] = {"MyMod_Vest"};\n', ""), "workspace/MyMod/config.cpp", 3),
+    ("cfgpatches-field-missing", "warning", cfg_edit('        units[] = {"MyMod_Vest"};\n', ""), "workspace/MyMod/config.cpp", 3),
     ("cfgpatches-field", "error", cfg_edit("weapons[] = {};", 'weapons = "";'), "workspace/MyMod/config.cpp", 6),
-    ("cfgpatches-field", "error", cfg_edit('        requiredAddons[] = {"DZ_Data", "DZ_Scripts"};\n', ""), "workspace/MyMod/config.cpp", 3),
+    ("cfgpatches-field-missing", "warning", cfg_edit('        requiredAddons[] = {"DZ_Data", "DZ_Scripts"};\n', ""), "workspace/MyMod/config.cpp", 3),
     ("required-addon-name", "error", cfg_edit('"DZ_Scripts"', '"@CF"'), "workspace/MyMod/config.cpp", 8),
     ("required-addon-name", "error", cfg_edit('"DZ_Scripts"', '"DZ\\gear\\vests"'), "workspace/MyMod/config.cpp", 8),
     ("required-addon-name", "error", cfg_edit('"DZ_Scripts"', '"MyMod"'), "workspace/MyMod/config.cpp", 8),
@@ -267,6 +267,16 @@ def test_empty_script_folder_needs_no_module(mod, p_drive):
     assert run(mod, p_drive)["findings"] == []
 
 
+def test_empty_patch_class_like_vanilla_passes_with_warnings(mod, p_drive):
+    # Vanilla P:\DZ\data\aiconfigs\config.cpp: class DZ_data_aiconfigs {}; loads with no arrays at all.
+    edit(mod / "config.cpp",
+         '        units[] = {"MyMod_Vest"};\n        weapons[] = {};\n        requiredVersion = 0.1;\n'
+         '        requiredAddons[] = {"DZ_Data", "DZ_Scripts"};\n', "")
+    report = run(mod, p_drive)
+    assert report["verdict"] == "PASS" and report["errors"] == 0
+    assert [(f["rule"], f["severity"], f["line"]) for f in report["findings"]] == [("cfgpatches-field-missing", "warning", 3)] * 3
+
+
 def test_patch_names_reads_only_cfgpatches_children():
     text = "// class CfgPatches { class Fake {}; };\nclass CfgPatches { class A { x[] = {}; }; class B: A {}; };\nclass CfgVehicles { class C {}; };"
     assert lint.patch_names(text) == {"a", "b"}
@@ -281,11 +291,12 @@ def test_missing_mod_folder_raises(tmp_path):
 
 def test_cli_text_and_json(mod, p_drive, monkeypatch, capsys):
     monkeypatch.setattr(lint, "P_DRIVE", p_drive)
-    edit(mod / "config.cpp", '        units[] = {"MyMod_Vest"};\n', "")
+    edit(mod / "config.cpp", 'units[] = {"MyMod_Vest"};', 'units = "MyMod_Vest";')
     assert lint.main(["--mod-dir", str(mod)]) == 1
     out = capsys.readouterr().out.splitlines()
     assert out[0] == "FAIL"
-    assert any(line.endswith("config.cpp:3  error cfgpatches-field: CfgPatches class MyMod has no units[] array.") for line in out)
+    assert any(line.endswith("config.cpp:5  error cfgpatches-field: CfgPatches class MyMod: units must be an array, units[] = {...};.")
+               for line in out)
     assert any(line.startswith("    -> dayz-config-specialist: ") for line in out)
     assert lint.main(["--mod-dir", str(mod), "--json"]) == 1
     first, _, rest = capsys.readouterr().out.partition("\n")

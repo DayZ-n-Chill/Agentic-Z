@@ -31,6 +31,10 @@ MODS_ROOT = P_DRIVE / "Mods"
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
 
+# Where /dayz-health keeps each mod's gate results (.server/!Health/<ModName>/).
+HEALTH_DIR = Path(".server") / "!Health"
+
+
 def has_junction_to(path: Path) -> bool:
     """True when P:\\<Name>\\ is a link pointing at this workspace folder (made by /dayz-new-mod)."""
     target = h.link_target(P_DRIVE / path.name)
@@ -153,7 +157,7 @@ def main() -> int:
     parser.add_argument(
         "--include-server",
         action="store_true",
-        help="Also remove .server/ at the project root (all instances and client logs).",
+        help="Also remove .server/ at the project root (all instances, client logs and /dayz-health results).",
     )
     parser.add_argument("--yes", action="store_true", help="Skip the interactive confirmation prompt.")
     parser.add_argument(
@@ -173,6 +177,11 @@ def main() -> int:
     mods, warnings = discover_mods(workspace, args.mod)
     for mod in mods:
         mod_plan, mod_warnings = find_artifacts(mod)
+        # The mod's /dayz-health results go too, or /dayz-health --all keeps
+        # listing a deleted mod. --include-server removes all of .server/ anyway.
+        health = project_dir / HEALTH_DIR / mod.name
+        if health.is_dir() and not args.include_server:
+            mod_plan.insert(len(mod_plan) - 1, ("health", health))
         plan.extend(mod_plan)
         warnings.extend(mod_warnings)
 

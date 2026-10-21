@@ -10,8 +10,11 @@ Usage:
     python audit_p3d.py --rvmat a.rvmat b.rvmat
     python audit_p3d.py --scan-dir path/to/mod/  (scans all .p3d, config.cpp, .rvmat, model.cfg)
 
-Gates on /dayz-preflight. Requires py3d
-(pip install git+https://github.com/KoffeinFlummi/py3d.git) for .p3d parsing.
+With a model.cfg (--model-cfg, or the nearest one under --scan-dir) each
+animation in CfgModels > <model> > Animations is checked against the model.
+
+Gates on /dayz-preflight. Requires py3d for .p3d parsing
+(python -m pip install -r ../requirements.txt); exits 2 when it is missing.
 """
 
 import sys, os, re, glob, argparse
@@ -21,15 +24,164 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 
+REQUIREMENTS = Path(__file__).resolve().parents[1] / "requirements.txt"
+
+
 def load_py3d():
-    """Import py3d, exiting with an install hint if it is missing."""
+    """Import py3d, exiting 2 with an install hint if it is missing."""
     try:
         import py3d
     except ImportError:
         print("ERROR: py3d not installed.")
-        print("Run: pip install git+https://github.com/KoffeinFlummi/py3d.git")
-        sys.exit(1)
+        print(f'Run: python -m pip install -r "{REQUIREMENTS}"')
+        sys.exit(2)
     return py3d
+
+# ============================================================================
+# model.cfg: CfgModels > <model> > Animations
+# ============================================================================
+_CFG_TOKEN = re.compile(r'"(?:[^"]|"")*"|[A-Za-z0-9_.\-+]+|[{}:;=\[\],]')
+
+
+class CfgClass:
+    """One class of a config file: its parent name, child classes and plain properties."""
+
+    def __init__(self, name, parent=None):
+        self.name, self.parent = name, parent
+        self.classes = {}  # lower name -> CfgClass
+        self.props = {}    # lower name -> str value (first value of an array)
+
+
+def parse_cfg(text):
+    """Parse config syntax (model.cfg, config.cpp) into a CfgClass tree.
+
+    Comments and preprocessor lines are dropped; anything the parser does not
+    understand is skipped, so a broken file gives a partial tree, not an error.
+    """
+    text = re.sub(r'/\*.*?\*/', ' ', text, flags=re.S)
+    text = re.sub(r'//[^\n]*', ' ', text)
+    text = re.sub(r'(?m)^\s*#.*$', ' ', text)
+    toks = _CFG_TOKEN.findall(text)
+    root = CfgClass("")
+    stack = [root]
+    i, n = 0, len(toks)
+    while i < n:
+        t = toks[i]
+        if t == "}":
+            if len(stack) > 1:
+                stack.pop()
+            i += 1
+        elif t == "class" and i + 1 < n:
+            name, j, parent = toks[i + 1], i + 2, None
+            if j < n and toks[j] == ":" and j + 1 < n:
+                parent, j = toks[j + 1], j + 2
+            if j < n and toks[j] == "{":
+                node = CfgClass(name, parent)
+                stack[-1].classes[name.lower()] = node
+                stack.append(node)
+            i = j + 1
+        elif i + 1 < n and toks[i + 1] in ("=", "["):
+            j = i + 1
+            while j < n and toks[j] != "=":
+                j += 1
+            value = None
+            k = j + 1
+            while k < n and toks[k] not in (";", "}"):
+                if toks[k] not in ("{", ","):
+                    value = toks[k][1:-1] if toks[k].startswith('"') else toks[k]
+                    break
+                k += 1
+            stack[-1].props[t.lower()] = value
+            while k < n and toks[k] != ";":
+                k += 1
+            i = k + 1
+        else:
+            i += 1
+    return root
+
+
+def model_animations(model_cfg_text, model_name):
+    """The animations model.cfg gives a model, as {name: {selection, axis, begin, end, ...}}.
+
+    Returns None when CfgModels has no class for the model. A model class without
+    its own Animations uses its parent's, and an animation class inherits the
+    properties of the animation it extends, as the engine resolves them.
+    """
+    models = parse_cfg(model_cfg_text).classes.get("cfgmodels")
+    if models is None:
+        return None
+    node = models.classes.get(model_name.lower())
+    if node is None:
+        return None
+    seen = set()
+    while node is not None and "animations" not in node.classes and node.name.lower() not in seen:
+        seen.add(node.name.lower())
+        node = models.classes.get((node.parent or "").lower())
+    if node is None or "animations" not in node.classes:
+        return {}
+    anims = node.classes["animations"].classes
+
+    def props(anim, depth=0):
+        base = anims.get((anim.parent or "").lower())
+        merged = props(base, depth + 1) if base is not None and depth < 16 else {}
+        merged.update(anim.props)
+        return merged
+
+    return {a.name: props(a) for a in anims.values()}
+
+
+def check_animations(anims, lod_map):
+    """Check each model.cfg animation against the model: its selection in the Visual LOD,
+    its axis (exactly 2 points) and its begin and end points in the Memory LOD."""
+    issues = []
+    visual = lod_map["Visual"][1] if "Visual" in lod_map else None
+    memory = lod_map["Memory"][1] if "Memory" in lod_map else None
+
+    def find(lod, name):
+        # Selection names match without case in model.cfg lookups.
+        return next((s for k, s in lod.selections.items() if k.lower() == name.lower()), None)
+
+    for anim, p in anims.items():
+        sel = p.get("selection")
+        if sel and visual is not None:
+            found = find(visual, sel)
+            if found is None:
+                issues.append(("CRITICAL",
+                    f"Animation '{anim}': Visual LOD has no '{sel}' selection. "
+                    f"The animation will silently do nothing."))
+            elif len(found.points) == 0:
+                issues.append(("WARNING",
+                    f"Animation '{anim}': Visual LOD selection '{sel}' has 0 vertices, nothing will animate."))
+        if memory is None:
+            continue
+        axis = p.get("axis")
+        if axis:
+            found = find(memory, axis)
+            if found is None:
+                issues.append(("CRITICAL",
+                    f"Animation '{anim}': Memory LOD has no '{axis}' axis selection."))
+            elif len(found.points) != 2:
+                issues.append(("CRITICAL",
+                    f"Animation '{anim}': axis '{axis}' has {len(found.points)} points, MUST have exactly 2 "
+                    f"(start and end of the axis)."))
+        for key in ("begin", "end"):
+            point = p.get(key)
+            if point and find(memory, point) is None:
+                issues.append(("CRITICAL",
+                    f"Animation '{anim}': Memory LOD has no '{point}' point ({key} of the axis)."))
+    return issues
+
+
+def find_model_cfg(p3d_path, root):
+    """The model.cfg that binarize uses for a model: in its folder or the nearest parent, up to root."""
+    folder, root = Path(p3d_path).resolve().parent, Path(root).resolve()
+    while True:
+        cfg = folder / "model.cfg"
+        if cfg.is_file():
+            return str(cfg)
+        if folder == root or folder.parent == folder:
+            return None
+        folder = folder.parent
 
 # ============================================================================
 # LOD classification
@@ -203,22 +355,6 @@ def check_memory_lod(lod):
         issues.append(("NOTE",
             "No box_placing_min/max points. Needed for deployable items with hologram placement."))
 
-    # flag_mast_axis (if present, must have exactly 2 points)
-    if 'flag_mast_axis' in sels:
-        sel = lod.selections['flag_mast_axis']
-        if len(sel.points) != 2:
-            issues.append(("CRITICAL",
-                f"flag_mast_axis has {len(sel.points)} points, MUST have exactly 2 "
-                f"(start and end of animation translation axis)."))
-        else:
-            pts = list(sel.points.keys())
-            p0, p1 = pts[0].coords, pts[1].coords
-            dy = abs(p0[1] - p1[1])
-            if dy < 0.1:
-                issues.append(("WARNING",
-                    f"flag_mast_axis points have only {dy:.3f}m Y separation — "
-                    f"animation travel may be too small."))
-
     # Faces in Memory LOD (should be zero)
     if len(lod.faces) > 0:
         issues.append(("WARNING",
@@ -228,27 +364,10 @@ def check_memory_lod(lod):
     return issues
 
 
-def check_visual_lod(lod, lod_map):
-    """Check Visual LOD for animation selections and path issues."""
+def check_visual_lod(lod):
+    """Check Visual LOD for path issues and placement. Animations are checked
+    against model.cfg by check_animations."""
     issues = []
-    sels = list(lod.selections.keys())
-
-    # Check for animation selections (if Memory LOD has axes)
-    if "Memory" in lod_map:
-        mem_sels = list(lod_map["Memory"][1].selections.keys())
-        for ms in mem_sels:
-            if ms.endswith('_axis'):
-                anim_name = ms.replace('_axis', '')
-                if anim_name not in sels:
-                    issues.append(("CRITICAL",
-                        f"Memory LOD has '{ms}' axis but Visual LOD missing '{anim_name}' "
-                        f"selection. Animation will silently do nothing."))
-                else:
-                    sel = lod.selections[anim_name]
-                    if len(sel.points) == 0:
-                        issues.append(("WARNING",
-                            f"Visual LOD selection '{anim_name}' has 0 vertices — "
-                            f"nothing will animate."))
 
     # Check for P:\ paths in face textures
     p_drive_count = 0
@@ -296,8 +415,8 @@ def check_p_drive_paths_in_file(filepath):
 # MAIN AUDIT
 # ============================================================================
 
-def audit_p3d(filepath):
-    """Full audit of one P3D file."""
+def audit_p3d(filepath, model_cfg=None):
+    """Full audit of one P3D file; model_cfg is the model.cfg whose animations are checked."""
     print(f"\n{'='*70}")
     print(f"AUDITING P3D: {filepath}")
     print(f"{'='*70}")
@@ -374,10 +493,32 @@ def audit_p3d(filepath):
     if "Visual" in lod_map:
         idx, lod = lod_map["Visual"]
         print(f"\n  --- Visual LOD[{idx}] ---")
-        results = check_visual_lod(lod, lod_map)
+        results = check_visual_lod(lod)
         for sev, msg in results:
             print(f"  {sev}: {msg}")
             all_issues.append((sev, msg))
+
+    # Animations named in model.cfg
+    print(f"\n  --- Animations ---")
+    if model_cfg is None:
+        print("  No model.cfg given (--model-cfg, or one beside the model under --scan-dir); not checked.")
+    else:
+        try:
+            text = Path(model_cfg).read_text(encoding="utf-8", errors="ignore")
+        except OSError as e:
+            text = None
+            all_issues.append(("CRITICAL", f"Cannot read {model_cfg}: {e}"))
+            print(f"  CRITICAL: Cannot read {model_cfg}: {e}")
+        anims = model_animations(text, Path(filepath).stem) if text is not None else {}
+        if anims is None:
+            msg = f"{model_cfg} has no CfgModels class {Path(filepath).stem}; animations not checked."
+            print(f"  NOTE: {msg}")
+            all_issues.append(("NOTE", msg))
+        else:
+            print(f"  {len(anims)} animation(s) in {model_cfg}: {sorted(anims)}")
+            for sev, msg in check_animations(anims, lod_map):
+                print(f"  {sev}: {msg}")
+                all_issues.append((sev, msg))
 
     # Summary
     crits = sum(1 for s, _ in all_issues if s == "CRITICAL")
@@ -412,7 +553,7 @@ def scan_directory(dirpath):
     # P3D files
     p3d_files = glob.glob(os.path.join(dirpath, '**', '*.p3d'), recursive=True)
     for f in sorted(p3d_files):
-        if not audit_p3d(f):
+        if not audit_p3d(f, find_model_cfg(f, dirpath)):
             all_pass = False
 
     # config.cpp
@@ -470,7 +611,8 @@ def main(argv=None):
                 print(f"ERROR: File not found: {f}")
                 all_pass = False
             elif label is None and f.lower().endswith('.p3d'):
-                if not audit_p3d(f):
+                cfg = args.model_cfg if args.model_cfg and os.path.isfile(args.model_cfg) else None
+                if not audit_p3d(f, cfg):
                     all_pass = False
             elif not audit_text_file(f, label or "file"):
                 all_pass = False

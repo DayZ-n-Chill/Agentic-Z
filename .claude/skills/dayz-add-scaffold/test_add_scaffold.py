@@ -332,3 +332,25 @@ def test_main_from_mod_subfolder_uses_cached_project(monkeypatch, tmp_path, fake
     assert scaf.main() == 0
     assert (target / "$PBOPREFIX$").is_file()
     assert not (target / "workspace").exists()
+
+
+def test_main_junction_present_prints_link_summary(monkeypatch, tmp_path, p_drive, capsys):
+    drive, made = p_drive
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    (drive / "MyMod").mkdir()
+    monkeypatch.setattr(scaf.h, "link_target", lambda p: target)
+    monkeypatch.setattr(scaf.h, "paths_equal", lambda a, b: a == b)
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "junction"]) == 0
+    out = capsys.readouterr().out
+    assert "link already in place" in out
+    assert "fully scaffolded" not in out
+    assert made == []
+
+
+def test_main_junction_created_prints_link_summary(monkeypatch, tmp_path, p_drive, capsys):
+    (tmp_path / "project" / "workspace" / "MyMod").mkdir(parents=True)
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "junction"]) == 0
+    out = capsys.readouterr().out
+    assert "link created" in out
+    assert "fully scaffolded" not in out

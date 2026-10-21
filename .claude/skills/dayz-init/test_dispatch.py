@@ -34,6 +34,14 @@ def _script(argv):
     ("workbench", {"mod": "MyMod"}, ["--mod", "MyMod"]),
     ("objectbuilder", {"mod": "MyMod"}, ["--mod", "MyMod"]),
     ("search-download", {}, []),
+    ("launch", {"mod": "MyMod", "server": "chernarus", "deps": ["@CF", "COT"]},
+     ["CF", "COT", "MyMod", "--server", "chernarus"]),
+    ("lint", {"mod": "MyMod"}, ["MyMod"]),
+    ("gate-build", {"mod": "MyMod"}, ["build", "MyMod"]),
+    ("gate-ingame", {"mod": "MyMod", "server": "chernarus"}, ["ingame", "MyMod", "--server", "chernarus"]),
+    ("gate-ingame", {"mod": "MyMod", "server": "chernarus", "deps": ["CF"]},
+     ["ingame", "MyMod", "--server", "chernarus", "--deps", "CF"]),
+    ("health", {"mod": "MyMod"}, ["MyMod"]),
 ])
 def test_python_actions_point_at_existing_scripts(action, kwargs, tail):
     argv = command_for(action, **kwargs)
@@ -63,6 +71,9 @@ def test_mods_junction_is_not_an_action():
     ("build", {}),
     ("launch", {"mod": "M"}),
     ("workbench", {}),
+    ("lint", {}),
+    ("gate-ingame", {"mod": "M"}),
+    ("health", {}),
     ("unknown-thing", {}),
 ])
 def test_missing_values_raise(action, kwargs):
@@ -94,3 +105,11 @@ def test_known_maps_come_from_add_server():
     add_server = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(add_server)
     assert dispatch.KNOWN_MAPS == tuple(add_server.KNOWN_MAPS)
+
+
+def test_hub_launch_passes_deps_before_the_mod(monkeypatch):
+    seen = []
+    monkeypatch.setattr(dispatch, "active_mod", lambda project: "ActiveMod")
+    monkeypatch.setattr(dispatch.subprocess, "run", lambda argv: seen.append(argv) or SimpleNamespace(returncode=0))
+    assert dispatch.main(["launch", "--server", "chernarus", "--deps", "CF"]) == 0
+    assert seen[0][2:] == ["CF", "ActiveMod", "--server", "chernarus"]

@@ -1,0 +1,83 @@
+{
+  "agent": "dayz-layout-validator",
+  "questions": [
+    {
+      "id": "xml-style-fails-on-line-1",
+      "question": "Answer only, do not edit any file. Gate check evals/fixtures/dayz-layout-validator/xml_style.layout in gate mode for the dayz-lead. Read the file from disk. Return your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*FAIL",
+        "re:\\bXML\\b",
+        "re:\\bline\\s*1\\b|\\bL1\\b|:1\\b"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*PASS\\b"
+      ],
+      "unchanged": [
+        "evals/fixtures/dayz-layout-validator/xml_style.layout"
+      ],
+      "verified": ".claude/agents/dayz-layout-validator.md workflow steps 1 and 3 and Report (gate mode never edits); .claude/skills/_shared/figma-to-dayz-rules.md section 9 (XML syntax is a Hard NO); vanilla layouts are brace files, for example P:/gui/layouts/day_z_connection_lost.layout:1"
+    },
+    {
+      "id": "frame-btn-close-fails-on-line-1",
+      "question": "Answer only, do not edit any file. Gate check evals/fixtures/dayz-layout-validator/frame_btn_close.layout in gate mode for the dayz-lead. Read the file from disk. Return your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*FAIL",
+        "ButtonWidgetClass",
+        "re:\\bline\\s*1\\b|\\bL1\\b|:1\\b"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*PASS\\b"
+      ],
+      "unchanged": [
+        "evals/fixtures/dayz-layout-validator/frame_btn_close.layout"
+      ],
+      "verified": ".claude/agents/dayz-layout-validator.md check 'Prefix is authoritative' (FrameWidgetClass btn_close is a FAIL); .claude/skills/_shared/figma-to-dayz-rules.md section 4 (btn_ maps to ButtonWidgetClass)"
+    },
+    {
+      "id": "opacity-property-fails",
+      "question": "Answer only, do not edit any file. Gate check evals/fixtures/dayz-layout-validator/panel_opacity.layout in gate mode for the dayz-lead. Read the file from disk. Return your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*FAIL",
+        "opacity",
+        "re:\\bline\\s*7\\b|\\bL7\\b|:7\\b"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*PASS\\b"
+      ],
+      "unchanged": [
+        "evals/fixtures/dayz-layout-validator/panel_opacity.layout"
+      ],
+      "verified": ".claude/skills/_shared/figma-to-dayz-rules.md section 9 (opacity as a separate property is a Hard NO; alpha is the fourth float of color, as in P:/gui/layouts/camera_tools/camera_tools.layout); .claude/agents/dayz-layout-validator.md Hard NO check"
+    },
+    {
+      "id": "equals-and-semicolons-fail",
+      "question": "Answer only, do not edit any file. Gate check evals/fixtures/dayz-layout-validator/equals_semicolons.layout in gate mode for the dayz-lead. Read the file from disk. Return your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*FAIL",
+        "re:semicolon|;",
+        "re:=|equals"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*PASS\\b"
+      ],
+      "unchanged": [
+        "evals/fixtures/dayz-layout-validator/equals_semicolons.layout"
+      ],
+      "verified": ".claude/skills/_shared/figma-to-dayz-rules.md section 9 ('=' between key and value and semicolons are Hard NO items); vanilla writes 'size 270 20' at P:/gui/layouts/day_z_connection_lost.layout:2"
+    },
+    {
+      "id": "clean-layout-passes",
+      "question": "Answer only, do not edit any file. Gate check evals/fixtures/dayz-layout-validator/clean_frame.layout in gate mode for the dayz-lead. Read the file from disk. Return your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*PASS"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*FAIL\\b"
+      ],
+      "unchanged": [
+        "evals/fixtures/dayz-layout-validator/clean_frame.layout"
+      ],
+      "verified": "Same widget classes and property keys as P:/gui/layouts/day_z_connection_lost.layout:1 to :26 (FrameWidgetClass root, TextWidgetClass child, exact toggles, \"exact text\"); text \"...\" as in P:/gui/layouts/camera_tools/camera_tools.layout; txt_ maps to TextWidgetClass in .claude/skills/_shared/figma-to-dayz-rules.md section 4"
+    }
+  ]
+}

@@ -68,6 +68,21 @@ def test_upsert_new_entry_gets_defaults_and_survives_write(types_file):
     assert sorted(u.get("name") for u in vest.findall("usage")) == ["Military", "Police"]
 
 
+def test_new_entry_has_quant_tags_and_passes_its_own_merge_check(types_file):
+    _, root = _roundtrip(types_file)
+    te.upsert(root, "MyMod_Vest", _args(nominal=3))
+    vest = _find(root, "MyMod_Vest")
+    assert vest.findtext("quantmin") == "-1" and vest.findtext("quantmax") == "-1"
+    assert te.validate_type(vest) == ([], [])
+
+
+def test_update_leaves_quant_tags_alone(types_file):
+    _, root = _roundtrip(types_file)
+    te.upsert(root, "AKM", _args(nominal=20))
+    akm = _find(root, "AKM")
+    assert akm.find("quantmin") is None and akm.find("quantmax") is None
+
+
 def test_new_entry_zero_values_are_not_replaced_by_defaults(types_file):
     _, root = _roundtrip(types_file)
     changed, msg = te.upsert(root, "Zero", _args(nominal=0, cost=0))

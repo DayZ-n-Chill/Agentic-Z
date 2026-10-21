@@ -118,7 +118,7 @@ def test_changelog_from_git_groups_conventional_commits(mod, tmp_path):
     assert "### Changed\n\n- Update notes" in entry
     assert "black vest" not in entry  # before the latest tag
     assert "1.1.0" not in entry.split("\n", 1)[1]  # the release commit is left out
-    assert report["changes"] == {"since": "v1.0.0", "commits": 3}
+    assert report["changes"] == {"since": "v1.0.0", "from": "tag", "commits": 3}
     assert "[h2]Changes in 1.1.0[/h2]" in files["workshop-description.txt"]
 
     # HEAD~2..HEAD holds "update notes" and the skipped release commit.
@@ -137,8 +137,42 @@ def test_mod_inside_a_bigger_repo_ignores_its_tags(tmp_path):
     commit(repo, mod / "config.cpp", "feat: add the vest")
     commit(repo, repo / "README.md", "docs: template only")
     report, files = pack(mod, tmp_path)
-    assert report["changes"] == {"since": None, "commits": 1}
+    assert report["changes"] == {"since": None, "from": None, "commits": 1}
     assert "- Add the vest" in files["changelog.md"]
+    assert any(w.startswith("changelog-full-history") and "--since <ref>" in w for w in report["warnings"])
+
+
+def test_mod_inside_a_bigger_repo_starts_after_its_last_release_commit(tmp_path):
+    repo = tmp_path / "clone"
+    mod = repo / "workspace" / "MyVest"
+    repo.mkdir()
+    git(repo, "init", "-q")
+    shutil.copytree(FIXTURE, mod)
+    commit(repo, mod / "config.cpp", "feat: add the black vest")
+    commit(repo, mod / "notes.txt", "chore(release): 1.0.0")
+    commit(repo, repo / "README.md", "chore(release): template 2.0.0")  # not in the mod folder
+    commit(repo, mod / "config.cpp", "feat: add the green vest")
+    report, files = pack(mod, tmp_path, version="1.1.0")
+    release = subprocess.run(["git", "log", "-1", "--format=%h", "--grep=1.0.0"], cwd=repo,
+                             capture_output=True, text=True, check=True).stdout.strip()
+    assert report["changes"] == {"since": release, "from": "release-commit", "commits": 1}
+    assert "- Add the green vest" in files["changelog.md"] and "black vest" not in files["changelog.md"]
+    assert not any(w.startswith("changelog-") for w in report["warnings"])
+    assert f"changelog starts after {release}" in rp.render_text(report)
+
+
+def test_no_commits_since_the_start_warns(tmp_path):
+    repo = tmp_path / "clone"
+    mod = repo / "workspace" / "MyVest"
+    repo.mkdir()
+    git(repo, "init", "-q")
+    shutil.copytree(FIXTURE, mod)
+    commit(repo, mod / "notes.txt", "chore(release): 1.0.0")
+    commit(repo, repo / "README.md", "docs: template only")
+    report, files = pack(mod, tmp_path, version="1.0.1")
+    assert report["changes"]["commits"] == 0
+    assert any(w.startswith("changelog-empty: no commits touched the mod folder since ") for w in report["warnings"])
+    assert "No commits touched the mod folder since" in files["changelog.md"]
 
 
 def test_no_git_says_so(mod, tmp_path, monkeypatch):

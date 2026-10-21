@@ -1,6 +1,7 @@
 ---
 name: dayz-add-scaffold
 description: "Adds missing DayZ mod scaffold pieces (config.cpp, $PBOPREFIX$, Workbench gproj, README, folders) to a folder already in workspace/ without overwriting files, and can create its P:\\ link. Use when a workspace mod lacks scaffold pieces or its P: link, such as a hand-cloned or older mod."
+argument-hint: "<ModName> [--piece config|prefix|workbench|readme|skeleton|junction|all] [--author <handle>]"
 ---
 
 <!-- skill-dir-note -->
@@ -93,6 +94,12 @@ If everything is already present:
 
 ```
 [OK]    Nothing to add - workspace\MyMod is already fully scaffolded.
+```
+
+`--piece junction` checks only the link, so it ends with a line about the link instead:
+
+```
+[OK]    P:\MyMod link already in place.
 ```
 
 ## What it does not do

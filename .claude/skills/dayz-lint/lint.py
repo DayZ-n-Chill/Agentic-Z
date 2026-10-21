@@ -46,7 +46,7 @@ ERROR, WARNING = "error", "warning"
 # Every rule lint can report; each has a "lint-<rule>" entry in dayz-gate/known-errors.json.
 RULES = (
     "config-missing", "config-syntax", "cfgpatches-missing", "cfgpatches-empty", "cfgpatches-field",
-    "required-addon-name", "required-addon-duplicate", "pboprefix-missing", "pboprefix-mismatch",
+    "cfgpatches-field-missing", "required-addon-name", "required-addon-duplicate", "pboprefix-missing", "pboprefix-mismatch",
     "p-link", "p-not-mounted", "script-module-path", "script-module-layer", "script-module-unlisted",
     "modded-class-extends", "script-suffix", "missing-model", "missing-texture", "missing-file",
     "absolute-path", "texture-format", "texture-suffix", "rvmat-syntax",
@@ -269,7 +269,9 @@ class Lint:
             for field in ("units", "weapons", "requiredAddons"):
                 prop = patch.props.get(field.lower())
                 if prop is None:
-                    self.add("cfgpatches-field", ERROR, cfg, patch.line, f"CfgPatches class {patch.name} has no {field}[] array.")
+                    # Vanilla loads patch classes without these arrays (P:\DZ\data\aiconfigs\config.cpp,
+                    # class DZ_data_aiconfigs has an empty body), so a missing one is only a warning.
+                    self.add("cfgpatches-field-missing", WARNING, cfg, patch.line, f"CfgPatches class {patch.name} has no {field}[] array.")
                 elif not prop[2]:
                     self.add("cfgpatches-field", ERROR, cfg, prop[1], f"CfgPatches class {patch.name}: {field} must be an array, {field}[] = {{...}};.")
             prop = patch.props.get("requiredaddons")

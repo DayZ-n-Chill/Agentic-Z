@@ -272,23 +272,27 @@ def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path,
         return False
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    remove_stale_outputs(out_dir, set_name, len(atlases), other_sets)
 
     if len(atlases) == 1:
         (atlas_w, atlas_h), placed = atlases[0]
         print(f"{INFO} {len(pngs)} sprite(s) -> {atlas_w}x{atlas_h} atlas")
-        return write_one_atlas(set_name, atlas_w, atlas_h, placed, mod_name, out_dir, image_to_paa)
+        all_ok = write_one_atlas(set_name, atlas_w, atlas_h, placed, mod_name, out_dir, image_to_paa)
+    else:
+        print(
+            f"{INFO} {len(pngs)} sprite(s) won't fit in one atlas, splitting into "
+            f"{len(atlases)} parts: {set_name}_1 ... {set_name}_{len(atlases)}"
+        )
+        all_ok = True
+        for idx, ((atlas_w, atlas_h), placed) in enumerate(atlases, start=1):
+            stem = f"{set_name}_{idx}"
+            print(f"{INFO}   {stem}: {len(placed)} sprite(s) -> {atlas_w}x{atlas_h} atlas")
+            if not write_one_atlas(stem, atlas_w, atlas_h, placed, mod_name, out_dir, image_to_paa):
+                all_ok = False
 
-    print(
-        f"{INFO} {len(pngs)} sprite(s) won't fit in one atlas, splitting into "
-        f"{len(atlases)} parts: {set_name}_1 ... {set_name}_{len(atlases)}"
-    )
-    all_ok = True
-    for idx, ((atlas_w, atlas_h), placed) in enumerate(atlases, start=1):
-        stem = f"{set_name}_{idx}"
-        print(f"{INFO}   {stem}: {len(placed)} sprite(s) -> {atlas_w}x{atlas_h} atlas")
-        if not write_one_atlas(stem, atlas_w, atlas_h, placed, mod_name, out_dir, image_to_paa):
-            all_ok = False
+    # Only once every atlas converted: if a conversion fails, the earlier good
+    # outputs stay in place instead of being deleted with nothing to replace them.
+    if all_ok:
+        remove_stale_outputs(out_dir, set_name, len(atlases), other_sets)
     return all_ok
 
 
@@ -314,7 +318,7 @@ def main() -> int:
     if Image is None:
         sys.exit(
             f"{FAIL} Pillow is not installed (needed to compose the atlas).\n"
-            f'       Install it: python -m pip install -r "{REQUIREMENTS}"'
+            f'       Install it: py -m pip install -r "{REQUIREMENTS}"'
         )
 
     mod_root = Path(args.mod_root).resolve()

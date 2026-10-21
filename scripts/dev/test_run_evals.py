@@ -147,6 +147,32 @@ def test_run_scores_and_counts_errors_as_failures(monkeypatch):
     assert result["questions"][1]["failed_checks"][0].startswith("error:")
 
 
+def test_run_fails_a_question_whose_unchanged_file_was_edited(monkeypatch, tmp_path):
+    monkeypatch.setattr(run_evals, "REPO", tmp_path)
+    target = tmp_path / "gated.layout"
+    target.write_text("FrameWidgetClass root {\n}\n", encoding="utf-8")
+
+    def editing_ask(agent, question, timeout, model=None):
+        if question == "edit":
+            target.write_text("changed", encoding="utf-8")
+        return "FAIL line 1"
+    monkeypatch.setattr(run_evals, "ask", editing_ask)
+    suite = {"agent": "a", "questions": [
+        {"id": "keep", "question": "keep", "must_include": ["FAIL"], "unchanged": ["gated.layout"]},
+        {"id": "edit", "question": "edit", "must_include": ["FAIL"], "unchanged": ["gated.layout"]},
+    ]}
+    rows = run_evals.run([suite], timeout=5)["agents"]["a"]["questions"]
+    assert rows[0]["passed"]
+    assert not rows[1]["passed"]
+    assert rows[1]["failed_checks"] == ["changed: gated.layout"]
+
+
+def test_validate_rejects_missing_unchanged_file(tmp_path):
+    questions = [{"id": "q", "question": "x", "must_include": ["a"], "unchanged": ["evals/nope.layout"]}]
+    _, problems = run_evals.validate(_suite(tmp_path, questions=questions))
+    assert any("unchanged file evals/nope.layout does not exist" in p for p in problems)
+
+
 def test_dry_run_asks_nothing(capsys):
     assert run_evals.main(["--dry-run"]) == 0
     assert "question files are valid" in capsys.readouterr().out
