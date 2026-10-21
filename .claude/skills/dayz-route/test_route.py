@@ -68,6 +68,9 @@ def decide(text, env=NO_KEY):
         # Real preview widgets in a HUD or menu are UI work, not a layout preview.
         ("make a player preview panel in the hud", "dayz-ui-specialist", None),
         ("add an item preview widget to my inventory menu", "dayz-ui-specialist", None),
+        # UI icons and the Dabs Framework MVC layer go to the UI specialist.
+        ("pack my menu icons into an imageset", "dayz-ui-specialist", None),
+        ("make a Dabs ScriptView for my trader panel", "dayz-ui-specialist", None),
     ],
 )
 def test_rules_route_confidently(text, expected, args):

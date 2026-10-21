@@ -28,21 +28,18 @@ string label = StringIf(count > 0, "items", "empty");
 
 ---
 
-## No `auto` Type Inference
+## `auto` infers a local's type
 
-`auto` is a **storage qualifier** (autoptr = reference-counted pointer), NOT type inference.
+`auto` declares a local whose type comes from the value. Vanilla uses it, for example `auto vehicle = CarScript.Cast(vehCommand.GetTransport());` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionstartengine.c:32`). The owning qualifier is `autoptr`, a different keyword (`references/language_memory.md`).
 
 ```c
-// ✗ WRONG — 'auto x = 5' means autoptr int (confusing, avoid)
-auto x = 5;
+// Legal, as in vanilla
+auto tmp = t.m_srcState.GetParentState();   // 3_game/systems/hfsmbase.c:177
 
-// ✓ Always declare explicit types
+// Preferred in mod code: explicit types are easier to read
 int x = 5;
 float f = 3.14;
 string s = "hello";
-
-// ✓ 'auto Type' IS valid — it means autoptr (ref-counted ownership)
-auto array<int> arr = new array<int>(); // equivalent to: ref array<int> arr = ...
 ```
 
 ---

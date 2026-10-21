@@ -13,7 +13,7 @@
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
     "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, inheritance, hidden selections"},
     "dayz-script-specialist": {"kind": "agent", "description": "Write or change Enforce Script (.c) code, modded classes, RPCs"},
-    "dayz-ui-specialist": {"kind": "agent", "description": "UI work: .layout files, HUD, menus, widgets"},
+    "dayz-ui-specialist": {"kind": "agent", "description": "UI work: .layout files, HUD, menus, widgets, imagesets, Dabs views"},
     "dayz-object-builder": {"kind": "agent", "description": "Model work in Object Builder: .p3d LODs, named selections, proxies"},
     "dayz-mod-debugger": {"kind": "agent", "description": "Diagnose a crash, error or log: script.log, RPT, crash.log"},
     "dayz-mod-reviewer": {"kind": "agent", "description": "Review or audit a mod for convention problems before building or release"},
@@ -121,7 +121,7 @@
     {
       "route": "dayz-ui-specialist",
       "confidence": 0.85,
-      "patterns": ["\\.layout\\b", "\\bhud\\b", "\\bwidget"]
+      "patterns": ["\\.layout\\b", "\\bhud\\b", "\\bwidget", "\\bimagesets?\\b", "\\bdabs\\b", "\\bscriptview"]
     },
     {
       "route": "dayz-object-builder",

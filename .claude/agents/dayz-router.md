@@ -22,7 +22,7 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-server-admin` (agent): types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json.
 - `dayz-config-specialist` (agent): config.cpp, CfgPatches, CfgVehicles, hidden selections.
 - `dayz-script-specialist` (agent): Enforce Script code, modded classes, RPCs.
-- `dayz-ui-specialist` (agent): .layout files, HUD, menus, widgets, UI colors.
+- `dayz-ui-specialist` (agent): .layout files, HUD, menus, widgets, UI colors, icon imagesets, Dabs Framework views.
 - `dayz-object-builder` (agent): .p3d models, LODs, named selections, proxies.
 - `dayz-mod-debugger` (agent): a crash, error or pasted log.
 - `dayz-mod-reviewer` (agent): review or audit a mod.
