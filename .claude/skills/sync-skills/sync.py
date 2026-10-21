@@ -9,6 +9,7 @@ to its own location):
     python .claude/skills/sync-skills/sync.py
     python .claude/skills/sync-skills/sync.py --agents claude codex
     python .claude/skills/sync-skills/sync.py --dry-run
+    python .claude/skills/sync-skills/sync.py --skip claude
 """
 from __future__ import annotations
 
@@ -35,11 +36,23 @@ def repo_skills_dir() -> Path:
 
 
 def load_agents_config() -> list[dict]:
+    """Read agents.json. Exits 2 with a clear message if it is missing or malformed."""
     cfg_path = script_dir() / "agents.json"
     if not cfg_path.is_file():
         print(f"ERROR: agents config not found at {cfg_path}", file=sys.stderr)
         sys.exit(2)
-    return json.loads(cfg_path.read_text(encoding="utf-8")).get("agents", [])
+    try:
+        data = json.loads(cfg_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"ERROR: {cfg_path} is not valid JSON (line {e.lineno}, column {e.colno}): {e.msg}",
+              file=sys.stderr)
+        sys.exit(2)
+    agents = data.get("agents") if isinstance(data, dict) else None
+    if not isinstance(agents, list) or not all(isinstance(a, dict) and a.get("name") for a in agents):
+        print(f'ERROR: {cfg_path} must be {{"agents": [{{"name": ..., ...}}, ...]}}; '
+              "every entry needs a \"name\".", file=sys.stderr)
+        sys.exit(2)
+    return agents
 
 
 def home_for(agent_cfg: dict) -> Path:
@@ -77,7 +90,7 @@ def link_target(path: Path) -> Path | None:
 
     Strips Windows `\\\\?\\` long-path prefix so the returned Path compares
     equal to other Path representations of the same target. Without this,
-    pass-2 prune logic would never fire (relative_to() fails on the prefixed
+    pass-2 prune logic would never fire (is_under() fails on the prefixed
     form) and pass-1 would treat every junction as "needs refresh".
     """
     try:
@@ -87,6 +100,24 @@ def link_target(path: Path) -> Path | None:
     if target.startswith("\\\\?\\"):
         target = target[4:]
     return Path(target)
+
+
+def _norm(p: Path) -> str:
+    return os.path.normcase(os.path.normpath(str(p)))
+
+
+def paths_equal(a: Path, b: Path) -> bool:
+    """True when two paths name the same location: case-insensitive on Windows
+    (os.path.normcase), separators and `..` normalised. Same rule as
+    dayz-preflight's paths_equal, kept local so this generic skill does not
+    depend on a DayZ one."""
+    return _norm(a) == _norm(b)
+
+
+def is_under(path: Path, root: Path) -> bool:
+    """True when path is root or inside it, compared the same way as paths_equal."""
+    p, r = _norm(path), _norm(root)
+    return p == r or p.startswith(r.rstrip(os.sep) + os.sep)
 
 
 def make_link(src: Path, dst: Path) -> str:
@@ -139,20 +170,15 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
                 existing_resolved = existing.resolve() if existing.is_absolute() else (dst.parent / existing).resolve()
             except OSError:
                 existing_resolved = existing
-            if str(existing_resolved).lower() == str(src_resolved).lower():
+            if paths_equal(existing_resolved, src_resolved):
                 print(f"  [OK]      {src.name}")
                 counts["ok"] += 1
                 continue
             # Link points at another clone of this template. Refusing to steal
             # it silently — that breaks the other clone's sessions. --force
             # makes the takeover explicit.
-            try:
-                existing_resolved.relative_to(repo)
-                is_foreign = False
-            except ValueError:
-                is_foreign = True
-            if is_foreign and not force:
-                print(f"  [FOREIGN] {src.name}: points at {existing} — rerun with --force to take ownership")
+            if not is_under(existing_resolved, repo) and not force:
+                print(f"  [FOREIGN] {src.name}: points at {existing}; rerun with --force to take ownership")
                 counts["skipped"] += 1
                 continue
             if dry_run:
@@ -196,9 +222,7 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
                 t_resolved = t.resolve() if t.is_absolute() else (child.parent / t).resolve()
             except OSError:
                 continue
-            try:
-                t_resolved.relative_to(repo)
-            except ValueError:
+            if not is_under(t_resolved, repo):
                 continue  # not pointing back into our repo, leave it alone
             if t_resolved.exists():
                 continue  # repo target still exists; not an orphan
@@ -221,6 +245,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--agents", nargs="+", default=None,
                     help="Subset of agents to sync (by name in agents.json). Default: all.")
+    ap.add_argument("--skip", nargs="+", default=[],
+                    help="Agents to leave out (by name in agents.json), e.g. --skip claude.")
     ap.add_argument("--dry-run", action="store_true",
                     help="Show what would happen, write nothing.")
     ap.add_argument("--force", action="store_true",
@@ -231,15 +257,18 @@ def main() -> int:
     if not all_agents:
         print("ERROR: no agents configured in agents.json", file=sys.stderr)
         return 2
-    if args.agents:
-        valid = {a["name"] for a in all_agents}
-        bad = [a for a in args.agents if a not in valid]
-        if bad:
-            print(f"ERROR: unknown agent(s): {bad}. Valid: {sorted(valid)}", file=sys.stderr)
-            return 2
-        agents = [a for a in all_agents if a["name"] in args.agents]
-    else:
-        agents = all_agents
+    valid = {a["name"] for a in all_agents}
+    bad = [a for a in (args.agents or []) + args.skip if a not in valid]
+    if bad:
+        print(f"ERROR: unknown agent(s): {bad}. Valid: {sorted(valid)}", file=sys.stderr)
+        return 2
+    agents = [
+        a for a in all_agents
+        if (not args.agents or a["name"] in args.agents) and a["name"] not in args.skip
+    ]
+    if not agents:
+        print("Nothing to do: every agent was excluded by --agents/--skip.")
+        return 0
 
     skills = list_repo_skills()
     if not skills:

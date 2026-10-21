@@ -1,6 +1,6 @@
 ---
 name: dayz-deploy-pbo
-description: Deploy pre-compiled PBOs from a workspace bundle (workspace/<ModName>/Addons/*.pbo + Keys/*.bikey) to P:\Mods\@<ModName>\ by pure copy — no AddonBuilder, no source required. Idempotent (skips unchanged files), verified (counts + missing-.bisign warnings), marker-gated so it never clobbers a deploy dir it doesn't own. Use for PBO-only third-party mods and umbrella/bundle @mods; composes with /dayz-build-pbo for bundles with a built linker PBO.
+description: Copies pre-compiled PBOs from a workspace bundle (workspace/<ModName>/Addons/*.pbo, Keys/*.bikey) to P:\Mods\@<ModName>\ without AddonBuilder. Skips unchanged files, warns on missing .bisign files, and refuses to touch a deploy dir it does not own. Use when a mod ships only PBOs (third-party or umbrella bundles), or after /dayz-build-pbo builds a bundle's linker PBO.
 ---
 
 <!-- skill-dir-note -->
@@ -8,7 +8,7 @@ description: Deploy pre-compiled PBOs from a workspace bundle (workspace/<ModNam
 
 # /dayz-deploy-pbo
 
-Mirror pre-compiled artifacts from a workspace bundle folder to the deploy tree: `workspace/<ModName>/Addons/*.pbo` (+ `*.bisign`) to `P:\Mods\@<ModName>\Addons\`, `Keys/*.bikey` to `P:\Mods\@<ModName>\Keys\`, plus optional `meta.cpp`/`mod.cpp`. Pure copy — no AddonBuilder, no binarization, no buildable source required (`config.cpp` and `$PBOPREFIX$` are the **build** path's gate, not this one). Gates on `/dayz-preflight`.
+Mirror pre-compiled artifacts from a workspace bundle folder to the deploy tree: `workspace/<ModName>/Addons/*.pbo` (+ `*.bisign`) to `P:\Mods\@<ModName>\Addons\`, `Keys/*.bikey` to `P:\Mods\@<ModName>\Keys\`, plus optional `meta.cpp`/`mod.cpp`. Pure copy: no AddonBuilder, no binarization, no buildable source required (`config.cpp` and `$PBOPREFIX$` are the build path's gate, not this one). The preflight gate, project cache and ownership-marker rules come from `.claude/skills/_shared/skill_helpers.py`, shared with `/dayz-build-pbo` and `/dayz-clean-workspace`.
 
 Follow `.claude/skills/_shared/dayz-conventions.md` (see "Bundle / umbrella mods").
 
@@ -20,18 +20,20 @@ python "<skill-dir>\deploy.py" <ModName>
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<ModName>` | yes | Must match a bundle folder `workspace/<ModName>/` containing `Addons/` with at least one `.pbo`. |
+| `<ModName>` | yes | Must match a bundle folder `workspace/<ModName>/` (in the project cached by `/dayz-init`) containing `Addons/` with at least one `.pbo`. Same name rule as `/dayz-new-mod`: starts with a letter, then letters, digits and underscores, at most 64 characters. |
 
 ## What it does
 
-1. **Preflight gate** — runs `/dayz-preflight`; halts on non-zero.
-2. **Bundle check** — verifies `workspace/<ModName>/Addons/` exists and contains at least one `.pbo`. Does NOT require `config.cpp`, `$PBOPREFIX$`, or the `P:\<ModName>\` junction — a pure payload bundle has no buildable source.
-3. **Ownership gate** — if `P:\Mods\@<ModName>\` already exists, it must contain the `.agentic-z-scaffold` marker with matching content (the same ownership rule `dayz-clean-workspace` uses). An unmarked dir could be a subscribed mod or hand-placed folder; deploy refuses to touch it.
+1. **Preflight gate** — reads the project cached by `/dayz-init`, runs `/dayz-preflight` (halts on non-zero), and confirms `P:\Mods\` is a junction to `!Workshop`.
+2. **Bundle check** — verifies `workspace/<ModName>/Addons/` exists and contains at least one `.pbo`. Does not require `config.cpp`, `$PBOPREFIX$`, or the `P:\<ModName>\` junction — a pure payload bundle has no buildable source.
+3. **Ownership gate** — if `P:\Mods\@<ModName>\` already exists, it must contain the `.agentic-z-scaffold` marker with matching content (the same ownership rule `/dayz-clean-workspace` uses). An unmarked dir could be a subscribed mod or hand-placed folder; deploy refuses to touch it.
 4. **Copy Addons** — mirrors `Addons/*.pbo` + `Addons/*.bisign` into `P:\Mods\@<ModName>\Addons\`. Idempotent: a file already present with identical size + mtime is skipped. Purely additive: nothing in the deploy dir is ever deleted, so a linker PBO placed there by `/dayz-build-pbo` survives.
 5. **Copy Keys** — mirrors `Keys/*.bikey` into `P:\Mods\@<ModName>\Keys\` (skipped entirely if the bundle has no keys).
 6. **Copy metadata** — `meta.cpp` / `mod.cpp` from the bundle root, if present.
+
+   If any copy in steps 4-6 fails (typically a PBO held open by a running DayZ client or server), deploy prints `[FAIL] could not copy <file>: <error>` with the hint "Close DayZ or run /dayz-stop-test", writes the ownership marker so the rerun is not refused, and exits 1. Files copied before the failure stay; the rerun skips them as unchanged.
 7. **Verify** — reports copied vs. unchanged counts per run, and `[WARN]`s for every `.pbo` lacking a matching `<name>.pbo.<key>.bisign` (signature-checking clients will reject unsigned PBOs).
-8. **Drop ownership marker** — writes `P:\Mods\@<ModName>\.agentic-z-scaffold` (single line: the modname), exactly as `/dayz-build-pbo` does, so `dayz-clean-workspace` can manage the deployed dir.
+8. **Drop ownership marker** — writes `P:\Mods\@<ModName>\.agentic-z-scaffold` (single line: the modname), exactly as `/dayz-build-pbo` does, so `/dayz-clean-workspace` treats the bundle as managed and can remove both `workspace/<ModName>/` and the deployed dir (a pure payload bundle has no `config.cpp`, so the marker is what marks it as ours). If the marker cannot be written, deploy prints `[FAIL]` and exits 1 even though the files were copied, because the next build, deploy and clean would all refuse that folder.
 
 ## Composing with /dayz-build-pbo (umbrella bundles)
 
@@ -42,11 +44,13 @@ python "<skill-dir>\..\dayz-build-pbo\build.py" <ModName>
 python "<skill-dir>\deploy.py" <ModName>
 ```
 
-Both write the same ownership marker; deploy never deletes, so the built `<ModName>.pbo` and the copied payload PBOs coexist under one `@<ModName>\Addons\`. Order doesn't matter for correctness — but do NOT pass `--clean` to a build that runs *after* deploy (its `-clear` wipes `Addons\`, payload included).
+Both write the same ownership marker; deploy never deletes, so the built `<ModName>.pbo` and the copied payload PBOs coexist under one `@<ModName>\Addons\`. Order doesn't matter for correctness. `/dayz-build-pbo --clean` refuses while payload PBOs sit in `Addons\`, since its `-clear` would wipe them.
 
 ## Refuses to run if
 
-- `/dayz-preflight` returns non-zero.
+- `<ModName>` fails the name rule (checked first, so a name such as `..\Other` never reaches the disk).
+- No project is cached (run `/dayz-init`).
+- `/dayz-preflight` returns non-zero, or `P:\Mods\` is not a valid junction.
 - `workspace/<ModName>/` is missing, has no `Addons/` folder, or `Addons/` contains no `.pbo`.
 - `P:\Mods\@<ModName>\` exists without the `.agentic-z-scaffold` ownership marker (or with mismatched content). Remove the dir manually if it's actually yours: `cmd /c rmdir /s /q P:\Mods\@<ModName>`.
 
@@ -56,22 +60,24 @@ Success:
 
 ```
 DayZ preflight
+
 [OK]    P:\ is mounted
-...
+...     (rest of the /dayz-preflight report)
+
 Preflight complete.
 [OK]    P:\Mods junction valid
 [OK]    workspace\MyBundle\Addons\ found (with .pbo payload)
-[WARN] extras.pbo has no matching .bisign - clients with signature verification enabled will reject it.
+[WARN]  extras.pbo has no matching .bisign - clients with signature verification enabled will reject it.
 
-[OK]    Deployed to P:\Mods\@MyBundle\ - 5 copied, 0 unchanged (3 .pbo, 2 .bisign, 1 .bikey)
+[OK]    Deployed to P:\Mods\@MyBundle\ - 6 copied, 0 unchanged (3 .pbo, 2 .bisign, 1 .bikey)
 ```
 
-Re-run with nothing changed: same shape, `0 copied, 5 unchanged`.
+Re-run with nothing changed: same shape, `0 copied, 6 unchanged`.
 
 Failure (any step):
 
 ```
-[FAIL] <reason>
+[FAIL]  <reason>
        <hint or next step>
 ```
 

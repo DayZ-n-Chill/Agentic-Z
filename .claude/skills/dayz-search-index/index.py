@@ -1,12 +1,12 @@
 """DayZ RAG indexer.
 
 Walk vanilla DayZ source on P:\\, chunk per file type, embed via Voyage AI
-(`voyage-code-3` by default — code-tuned, 1024-dim), store in LanceDB at
-~/.claude/dayz-search-index/.
+(`voyage-code-3` by default, 1024-dim), store in LanceDB at
+~/.claude/dayz-search-index/ for the dayz-rag MCP server.
 
-Cost reality: a full vanilla rebuild is ~5-20M tokens. Voyage gives 200M tokens
-free per Series-4 model. You'd have to rebuild ~10x before paying anything.
-Live token + $ telemetry prints during the embed loop so there are no surprises.
+Gates on /dayz-preflight (it reads vanilla data on P:\\). A live token and cost
+estimate prints during the embed loop; see reference/cost-and-free-tier.md for
+the free-tier check.
 
 Run:
     python .claude/skills/dayz-search-index/index.py --full   # first time / rebuild
@@ -19,40 +19,55 @@ import hashlib
 import json
 import os
 import re
-import subprocess
 import sys
 import time
+import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Optional
+from xml.parsers import expat
 
-# Reuse preflight resolvers
 _HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(_HERE.parent / "dayz-preflight"))
-from preflight import find_vanilla_data  # noqa: E402
+sys.path.insert(0, str(_HERE.parent / "_shared"))
+import skill_helpers as h  # noqa: E402
+
+# .env/API-key loading and the Voyage retry rule live next to the MCP server so
+# indexing and searching read the same key the same way.
+sys.path.insert(0, str(_HERE.parents[1] / "mcp" / "dayz-rag"))
+import voyage_common  # noqa: E402
 
 INDEX_ROOT = Path.home() / ".claude" / "dayz-search-index"
 TABLE_NAME = "chunks"
+# The new index is written here first and only swapped into TABLE_NAME once
+# the write succeeded, so a failed write never leaves the server without a table.
+STAGING_TABLE_NAME = TABLE_NAME + "_staging"
+P_ROOT = Path("P:\\")
 
-# Voyage model. Override via VOYAGE_MODEL env var (e.g. "voyage-4-lite" for
-# cheaper, "voyage-4-large" for top general quality). All current Series-4
-# models output 1024-dim embeddings.
+# Cost-runaway backstop: refuse to embed more than this many chunks without
+# --force. A vanilla build is far below it, so hitting it means the walk scope grew.
+CHUNK_CEILING = 150_000
+
+# Voyage model. Override via the VOYAGE_MODEL env var. The LanceDB table is
+# fixed at EMBED_DIM, so only choose models that emit 1024-dim vectors.
 DEFAULT_EMBED_MODEL = "voyage-code-3"
 EMBED_DIM = 1024
 
 # Voyage API limits per request (voyage-code-3): 128 texts max, 120k tokens max.
 # We pack batches dynamically up to TOKEN_BUDGET_PER_BATCH (under the 120k cap)
-# OR TEXT_LIMIT_PER_BATCH, whichever hits first. CHARS_PER_TOKEN_EST is a
-# conservative local estimate (real code ratio is ~3.5-4 chars/token).
+# OR TEXT_LIMIT_PER_BATCH, whichever hits first.
 TEXT_LIMIT_PER_BATCH = 128
-# Code tokenizes denser than prose (punctuation, brackets, short identifiers).
-# Empirically Voyage tokenizer hit ~1.8 chars/token on Enforce Script. Using
-# 1.8 with a 75k token budget keeps real batch tokens well under the 120k cap
-# even with surprise-heavy content.
+# Code tokenizes denser than prose (punctuation, brackets, short identifiers):
+# the Voyage tokenizer measured ~1.8 chars/token on Enforce Script. Estimating
+# at 1.8 with a 75k token budget keeps real batch tokens well under the 120k cap.
 TOKEN_BUDGET_PER_BATCH = 75_000
 CHARS_PER_TOKEN_EST = 1.8
-EMBED_MAX_CHARS = 6000  # voyage-code-3 has 32k context — plenty of headroom
+# Largest text sent to the embedder (~3.3k tokens at 1.8 chars/token, far under
+# voyage-code-3's 32k context). Class-style files are split into windows of at
+# most this size, so their text is never cut; the embed step still clips other
+# chunk types to it.
+EMBED_MAX_CHARS = 6000
 
-# Rough $ per 1M input tokens, used for the live cost estimate. Source:
+# Approximate $ per 1M input tokens, used only for the live cost estimate and
+# the manifest's cost_estimate_usd. Rates change; the authoritative source is
 # https://docs.voyageai.com/docs/pricing
 COST_PER_MTOKEN = {
     "voyage-code-3": 0.18,
@@ -64,14 +79,18 @@ COST_PER_MTOKEN = {
     "voyage-3.5-lite": 0.02,
 }
 
+
+def _rate(model: str) -> Optional[float]:
+    """Estimated $ per 1M tokens for model, or None when the model isn't in the table."""
+    return COST_PER_MTOKEN.get(model)
+
 OK = "[OK]   "
 WARN = "[WARN] "
 FAIL = "[FAIL] "
 INFO = "[INFO] "
 
-# Voyage Series-4 free tier (default for new accounts as of late 2025).
-# If the user is on a different plan, they can override via VOYAGE_FREE_TIER_TOKENS
-# env var or just pass --ignore-tier-warning.
+# Default free-tier budget for the pre-build projection check. Plans differ;
+# override with the VOYAGE_FREE_TIER_TOKENS env var or pass --ignore-tier-warning.
 VOYAGE_FREE_TIER_BUDGET = 200_000_000
 TIER_WARN_THRESHOLD = 0.80  # warn when projected usage hits 80%
 USAGE_LOG_NAME = "usage.log"
@@ -107,7 +126,7 @@ def _read_monthly_usage_tokens() -> int:
 
 
 def _append_usage_entry(tokens: int, cost_usd: float, skill: str) -> None:
-    """Append one JSONL entry to the usage log. Idempotent on repeat calls."""
+    """Append one JSONL entry to the usage log. Every call adds a line, so call it once per build."""
     entry = {
         "timestamp_unix": int(time.time()),
         "timestamp_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -121,11 +140,14 @@ def _append_usage_entry(tokens: int, cost_usd: float, skill: str) -> None:
         f.write(json.dumps(entry) + "\n")
 
 
-def _check_voyage_tier(estimated_tokens: int, ignore_warning: bool) -> bool:
+def _check_voyage_tier(
+    estimated_tokens: int, ignore_warning: bool, model: str = DEFAULT_EMBED_MODEL
+) -> bool:
     """Pre-build tier check. Returns True if user wants to proceed.
 
-    Uses local cumulative tracking only — Voyage doesn't expose a public
-    usage API. See README of dayz-search-index for caveats.
+    Uses local cumulative tracking only; Voyage doesn't expose a public
+    usage API. The overage estimate uses `model`'s rate from COST_PER_MTOKEN.
+    See reference/cost-and-free-tier.md for caveats.
     """
     budget = int(os.environ.get("VOYAGE_FREE_TIER_TOKENS", VOYAGE_FREE_TIER_BUDGET))
     used = _read_monthly_usage_tokens()
@@ -142,8 +164,12 @@ def _check_voyage_tier(estimated_tokens: int, ignore_warning: bool) -> bool:
     print(f"        This build est:    {estimated_tokens:,} tokens")
     print(f"        Projected total:   {projected:,} tokens ({pct_projected*100:.1f}% of free tier)")
     if pct_projected > 1.0:
-        cost_over = ((projected - budget) / 1_000_000) * 0.18
-        print(f"        Past free tier — estimated overage: ${cost_over:.2f}")
+        rate = _rate(model)
+        if rate is None:
+            print(f"        Past free tier — no local rate for {model}; check Voyage pricing.")
+        else:
+            cost_over = ((projected - budget) / 1_000_000) * rate
+            print(f"        Past free tier — estimated overage: ${cost_over:.2f}")
     print()
     print("        Caveats:")
     print("        - Counter is local. Other apps using your VOYAGE_API_KEY are NOT counted.")
@@ -164,48 +190,33 @@ def _check_voyage_tier(estimated_tokens: int, ignore_warning: bool) -> bool:
     return answer in ("y", "yes")
 
 
-def _ensure_deps() -> None:
-    """Install lancedb + tqdm + voyageai + python-dotenv if missing. Re-execs after install."""
+def _require_deps() -> None:
+    """Exit with a clear message if the indexer's Python deps are missing."""
     try:
         import lancedb  # noqa: F401
         import tqdm  # noqa: F401
         import voyageai  # noqa: F401
         import dotenv  # noqa: F401
-        return
-    except ImportError:
-        pass
-    req = _HERE / "requirements.txt"
-    print(f"{INFO} Installing index dependencies (one-time)...")
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-r", str(req)],
-        check=True,
-    )
-    print(f"{INFO} Restarting indexer to pick up newly installed deps...", flush=True)
-    result = subprocess.run([sys.executable, *sys.argv], check=False)
-    sys.exit(result.returncode)
-
-
-def _load_env_and_key() -> str:
-    """Find repo .env, load it, return the Voyage API key. Hard-fail if missing."""
-    from dotenv import find_dotenv, load_dotenv
-    env_path = find_dotenv(usecwd=True)
-    if env_path:
-        load_dotenv(env_path)
-    key = os.environ.get("VOYAGE_API_KEY", "").strip()
-    # Accept `export VOYAGE_API_KEY="..."` form too — strip leading "export "
-    # if a literal value with that prefix snuck in.
-    if key.startswith("export "):
-        key = key.split("=", 1)[-1].strip().strip('"').strip("'")
-    if not key:
+    except ImportError as exc:
         print(
-            f"{FAIL} VOYAGE_API_KEY not set.\n"
-            f"        Add it to .env at the repo root:\n"
-            f"            VOYAGE_API_KEY=pa-xxxxxxxx\n"
-            f"        Get a key at: https://dash.voyageai.com",
+            f"{FAIL} Missing Python dependency: {exc.name}\n"
+            f"        Install the indexer's requirements first:\n"
+            f"            pip install -r \"{_HERE / 'requirements.txt'}\"",
             file=sys.stderr,
         )
         sys.exit(1)
-    return key
+
+
+def _load_env_and_key() -> str:
+    """Return the Voyage API key (see voyage_common.load_api_key). Exit 1 if missing.
+
+    dayz-search-wiki-index calls this too, so keep the name.
+    """
+    try:
+        return voyage_common.load_api_key()
+    except RuntimeError as exc:
+        print(f"{FAIL} {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
 # --------------- chunkers ---------------
@@ -258,33 +269,70 @@ def _read_text(path: Path) -> str:
         return ""
 
 
-def _block_chunks(path: Path, file_type: str, max_chars: int = 8000) -> list[dict]:
-    """Chunk a class-style file. Falls back to whole-file if no class blocks."""
+def _split_windows(body: str, first_line: int, max_chars: int) -> list[tuple[int, int, str]]:
+    """Split body into (line_start, line_end, text) windows of at most max_chars.
+
+    A body that fits is returned whole. Otherwise each window ends at the last
+    member boundary that fits (a line that starts at brace depth 1 and is not
+    itself a brace, i.e. where a method or field of the class begins); with no
+    boundary in reach it ends at the last whole line that fits. A single line
+    longer than max_chars is sliced, each slice keeping that line's number.
+    Nothing is dropped.
+    """
+    if len(body) <= max_chars:
+        return [(first_line, first_line + body.count("\n"), body)]
+    lines = body.splitlines(keepends=True)
+    boundaries: set[int] = set()
+    depth = 0
+    for i, line in enumerate(lines):
+        if i > 0 and depth == 1 and not line.lstrip().startswith(("{", "}")):
+            boundaries.add(i)
+        depth += line.count("{") - line.count("}")
+
+    windows: list[tuple[int, int, str]] = []
+    start = 0
+    while start < len(lines):
+        if len(lines[start]) > max_chars:
+            line_no = first_line + start
+            text = lines[start]
+            windows.extend(
+                (line_no, line_no, text[k : k + max_chars]) for k in range(0, len(text), max_chars)
+            )
+            start += 1
+            continue
+        size = 0
+        end = start  # exclusive
+        while end < len(lines) and size + len(lines[end]) <= max_chars:
+            size += len(lines[end])
+            end += 1
+        if end < len(lines):
+            cut = max((b for b in boundaries if start < b <= end), default=None)
+            if cut is not None:
+                end = cut
+        windows.append((first_line + start, first_line + end - 1, "".join(lines[start:end])))
+        start = end
+    return windows
+
+
+def _block_chunks(path: Path, file_type: str, max_chars: int = EMBED_MAX_CHARS) -> list[dict]:
+    """Chunk a class-style file: one chunk per top-level class block, or the
+    whole file if there are none. Anything over max_chars is split into
+    windows (see _split_windows) that keep the class name as parent_context."""
     text = _read_text(path)
     if not text:
         return []
-    blocks = list(_walk_class_blocks(text))
-    if blocks:
-        return [
-            {
-                "path": str(path),
-                "file_type": file_type,
-                "parent_context": name,
-                "line_start": s,
-                "line_end": e,
-                "content": body[:max_chars],
-            }
-            for name, s, e, body in blocks
-        ]
+    blocks = list(_walk_class_blocks(text)) or [("", 1, text.count("\n") + 1, text)]
     return [
         {
             "path": str(path),
             "file_type": file_type,
-            "parent_context": "",
-            "line_start": 1,
-            "line_end": text.count("\n") + 1,
-            "content": text[:max_chars],
+            "parent_context": name,
+            "line_start": ws,
+            "line_end": we,
+            "content": window,
         }
+        for name, s, _e, body in blocks
+        for ws, we, window in _split_windows(body, s, max_chars)
     ]
 
 
@@ -294,16 +342,16 @@ def chunk_rvmat(path: Path, seen_hashes: set[str]) -> list[dict] | None:
         raw = path.read_bytes()
     except OSError:
         return None
-    h = hashlib.sha256(raw).hexdigest()
-    if h in seen_hashes:
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest in seen_hashes:
         return None
-    seen_hashes.add(h)
+    seen_hashes.add(digest)
     text = raw.decode("utf-8", errors="replace")
     return [
         {
             "path": str(path),
             "file_type": "rvmat",
-            "parent_context": h[:12],
+            "parent_context": digest[:12],
             "line_start": 1,
             "line_end": text.count("\n") + 1,
             "content": text[:4000],
@@ -314,17 +362,48 @@ def chunk_rvmat(path: Path, seen_hashes: set[str]) -> list[dict] | None:
 XML_BATCH_SIZE = 50  # max top-level elements grouped into one chunk
 
 
+def _xml_child_line_spans(text: str) -> list[tuple[int, int]]:
+    """(start_line, end_line) of each top-level child element, in document order.
+
+    end_line is the line of the closing tag (or of the start tag for a
+    self-closing element). Raises expat.ExpatError on malformed XML.
+    """
+    parser = expat.ParserCreate()
+    spans: list[tuple[int, int]] = []
+    depth = 0
+    start = 0
+
+    def on_start(_name, _attrs):
+        nonlocal depth, start
+        depth += 1
+        if depth == 2:
+            start = parser.CurrentLineNumber
+
+    def on_end(_name):
+        nonlocal depth
+        if depth == 2:
+            spans.append((start, parser.CurrentLineNumber))
+        depth -= 1
+
+    parser.StartElementHandler = on_start
+    parser.EndElementHandler = on_end
+    parser.Parse(text, True)
+    return spans
+
+
 def chunk_xml(path: Path, file_type: str = "xml", batch_size: int = XML_BATCH_SIZE) -> list[dict]:
     """Chunk XML by groups of top-level child elements. Caps explosion on
     types.xml-style files (one chunk per ~50 entries instead of per entry).
 
     - Small files (<4KB): one whole-file chunk
-    - Files with many children: batched 50 per chunk by default
+    - Files with many children: batched 50 per chunk by default, each chunk
+      carrying the real line range of its first and last element
     - Parse errors: fall back to whole-file truncated
     """
     text = _read_text(path)
     if not text:
         return []
+    total_lines = text.count("\n") + 1
     if len(text) < 4000:
         return [
             {
@@ -332,18 +411,24 @@ def chunk_xml(path: Path, file_type: str = "xml", batch_size: int = XML_BATCH_SI
                 "file_type": file_type,
                 "parent_context": "",
                 "line_start": 1,
-                "line_end": text.count("\n") + 1,
+                "line_end": total_lines,
                 "content": text[:8000],
             }
         ]
     try:
-        import xml.etree.ElementTree as ET
         root = ET.fromstring(text)
         children = list(root)
+        try:
+            spans = _xml_child_line_spans(text)
+        except expat.ExpatError:
+            spans = []
+        if len(spans) != len(children):  # never mislabel lines; fall back to the whole file
+            spans = [(1, total_lines)] * len(children)
         if len(children) >= 5:
             chunks = []
             for i in range(0, len(children), batch_size):
                 batch = children[i : i + batch_size]
+                batch_spans = spans[i : i + batch_size]
                 snippets = [ET.tostring(c, encoding="unicode") for c in batch]
                 first_name = batch[0].get("name") or batch[0].get("Name") or batch[0].tag
                 last_name = batch[-1].get("name") or batch[-1].get("Name") or batch[-1].tag
@@ -356,8 +441,8 @@ def chunk_xml(path: Path, file_type: str = "xml", batch_size: int = XML_BATCH_SI
                         "path": str(path),
                         "file_type": file_type,
                         "parent_context": parent_context,
-                        "line_start": 1,
-                        "line_end": 1,
+                        "line_start": batch_spans[0][0],
+                        "line_end": batch_spans[-1][1],
                         "content": ("\n".join(snippets))[:8000],
                     }
                 )
@@ -370,7 +455,7 @@ def chunk_xml(path: Path, file_type: str = "xml", batch_size: int = XML_BATCH_SI
             "file_type": file_type,
             "parent_context": "",
             "line_start": 1,
-            "line_end": text.count("\n") + 1,
+            "line_end": total_lines,
             "content": text[:8000],
         }
     ]
@@ -423,6 +508,11 @@ WHOLE_FILE_TYPES = {"json", "csv"}
 # --------------- Voyage embedding ---------------
 
 
+def _estimate_tokens(text: str) -> int:
+    """Local token estimate for one text: len / CHARS_PER_TOKEN_EST, at least 1."""
+    return max(1, int(len(text) / CHARS_PER_TOKEN_EST))
+
+
 def _pack_batches(texts: list[str]) -> Iterator[list[str]]:
     """Yield batches that respect both Voyage limits: max TEXT_LIMIT_PER_BATCH
     items AND max ~TOKEN_BUDGET_PER_BATCH tokens (estimated locally as
@@ -431,7 +521,7 @@ def _pack_batches(texts: list[str]) -> Iterator[list[str]]:
     batch: list[str] = []
     batch_tokens = 0
     for t in texts:
-        est = max(1, len(t) // CHARS_PER_TOKEN_EST)
+        est = _estimate_tokens(t)
         if batch and (
             batch_tokens + est > TOKEN_BUDGET_PER_BATCH
             or len(batch) >= TEXT_LIMIT_PER_BATCH
@@ -445,13 +535,51 @@ def _pack_batches(texts: list[str]) -> Iterator[list[str]]:
         yield batch
 
 
-def _embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[float]], int]:
+EMBED_ATTEMPTS = 5
+
+
+class EmbedError(Exception):
+    """An embed batch failed for good. Carries the tokens already billed for the
+    batches that succeeded, so the caller can log them before exiting."""
+
+    def __init__(self, cause: Exception, tokens_used: int, transient: bool):
+        self.cause = cause
+        self.tokens_used = tokens_used
+        self.transient = transient
+        detail = " ".join(str(cause).split()) or "no message"
+        super().__init__(f"{type(cause).__name__}: {detail}")
+
+
+def embed_or_fail(texts: list[str], model: str, api_key: str) -> Optional[tuple[list[list[float]], int]]:
+    """Run embed_all. On failure, log the tokens spent so far to usage.log,
+    print one [FAIL] line and return None."""
+    try:
+        return embed_all(texts, model, api_key)
+    except EmbedError as exc:
+        if exc.tokens_used:
+            cost = round((exc.tokens_used / 1_000_000) * (_rate(model) or 0), 4)
+            _append_usage_entry(exc.tokens_used, cost, "dayz-search-index")
+        if exc.transient:
+            what = f"Voyage embedding failed after {EMBED_ATTEMPTS} attempts ({exc})."
+        else:
+            what = f"Voyage rejected the embed request ({exc}). Check VOYAGE_API_KEY in .env and your Voyage account."
+        spent = (
+            f"{exc.tokens_used:,} tokens used before the failure were logged to {USAGE_LOG_NAME}"
+            if exc.tokens_used
+            else "No tokens were used"
+        )
+        print(f"{FAIL} {what} {spent}; the existing index is unchanged.", file=sys.stderr)
+        return None
+
+
+def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[float]], int]:
     """Embed all texts via Voyage in dynamically-packed batches. Returns
     (vectors, total_tokens).
 
     - Uses input_type="document" (asymmetric retrieval — matches "query" at search time)
     - truncation=True so over-context single inputs don't 400
-    - Retries on 429 / transient errors with exponential backoff
+    - Retries transient Voyage errors (voyage_common.is_transient: rate limit,
+      timeout, connection, server) with exponential backoff, EMBED_ATTEMPTS per batch
     """
     import voyageai
     from tqdm import tqdm
@@ -459,12 +587,12 @@ def _embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[fl
     client = voyageai.Client(api_key=api_key)
     vectors: list[list[float]] = []
     total_tokens = 0
-    cost_per_m = COST_PER_MTOKEN.get(model, 0.18)
+    cost_per_m = _rate(model)
 
     pbar = tqdm(total=len(texts), desc="  embedding", unit="chunk")
     for batch in _pack_batches(texts):
         delay = 2.0
-        for attempt in range(5):
+        for attempt in range(EMBED_ATTEMPTS):
             try:
                 resp = client.embed(
                     texts=batch,
@@ -475,35 +603,55 @@ def _embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[fl
                 vectors.extend(resp.embeddings)
                 total_tokens += int(resp.total_tokens or 0)
                 break
-            except Exception as exc:  # voyageai.error.RateLimitError + transient network
-                msg = str(exc).lower()
-                is_rate_limit = "rate" in msg or "429" in msg or "quota" in msg
-                if attempt == 4 or not (is_rate_limit or "timeout" in msg or "connection" in msg):
+            except Exception as exc:
+                transient = voyage_common.is_transient(exc)
+                if attempt == EMBED_ATTEMPTS - 1 or not transient:
                     pbar.close()
-                    raise
-                pbar.write(f"{WARN} {exc} — retry in {delay:.0f}s (attempt {attempt + 1}/5)")
+                    raise EmbedError(exc, total_tokens, transient) from exc
+                pbar.write(f"{WARN} {exc} — retry in {delay:.0f}s (attempt {attempt + 1}/{EMBED_ATTEMPTS})")
                 time.sleep(delay)
                 delay *= 2
-        cost_so_far = (total_tokens / 1_000_000) * cost_per_m
-        pbar.set_postfix_str(f"{total_tokens:,} tok / ~${cost_so_far:.3f}")
+        if cost_per_m is None:
+            pbar.set_postfix_str(f"{total_tokens:,} tok")
+        else:
+            cost_so_far = (total_tokens / 1_000_000) * cost_per_m
+            pbar.set_postfix_str(f"{total_tokens:,} tok / ~${cost_so_far:.3f}")
         pbar.update(len(batch))
 
     pbar.close()
     return vectors, total_tokens
 
 
+# dayz-search-wiki-index imports the old private name; keep it working.
+_embed_all = embed_all
+
+
+def write_table(db, rows: list[dict]) -> None:
+    """Write rows to the staging table, then swap them into TABLE_NAME.
+
+    The live table is only touched after the staging write succeeded, and the
+    swap is a single LanceDB overwrite (a new table version), so a failure at
+    any step leaves the previous index readable. LanceDB OSS has no
+    rename_table, hence the copy from staging.
+    """
+    if STAGING_TABLE_NAME in db.table_names():
+        db.drop_table(STAGING_TABLE_NAME)
+    staging = db.create_table(STAGING_TABLE_NAME, data=rows)
+    db.create_table(TABLE_NAME, data=staging.to_arrow(), mode="overwrite")
+    db.drop_table(STAGING_TABLE_NAME)
+
+
 # --------------- main ---------------
 
 
-def main() -> int:
+def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="DayZ RAG indexer")
-    parser.add_argument("--full", action="store_true", help="Drop existing index and rebuild")
+    parser.add_argument("--full", action="store_true", help="Rebuild the index, replacing the existing one")
     parser.add_argument("--status", action="store_true", help="Print manifest and exit")
-    parser.add_argument("--force", action="store_true", help="Override the chunk-count safety ceiling (only if you know your RAM headroom is fine)")
+    parser.add_argument("--force", action="store_true", help=f"Override the {CHUNK_CEILING:,}-chunk cost ceiling")
     parser.add_argument("--ignore-tier-warning", action="store_true", help="Skip the Voyage free-tier prompt (CI / scripted use)")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    INDEX_ROOT.mkdir(parents=True, exist_ok=True)
     manifest_path = INDEX_ROOT / "manifest.json"
     config_path = INDEX_ROOT / "config.json"
     db_path = INDEX_ROOT / "lancedb"
@@ -516,28 +664,25 @@ def main() -> int:
         return 1
 
     print("DayZ RAG indexer\n")
+    h.gate_on_preflight()
+    print()
 
-    if not Path(r"P:\\").exists():
-        print(f"{FAIL} P:\\ not mounted. Run /dayz-preflight first.", file=sys.stderr)
-        return 1
-    print(f"{OK} P:\\ mounted")
-
-    vanilla = find_vanilla_data()
+    vanilla = h.preflight.find_vanilla_data()
     if vanilla:
         print(f"{OK} Vanilla data: {vanilla}")
     else:
         print(f"{WARN} vanilla data not detected — config.cpp scope will be empty")
 
-    _ensure_deps()
+    _require_deps()
     api_key = _load_env_and_key()
     embed_model = os.environ.get("VOYAGE_MODEL", DEFAULT_EMBED_MODEL).strip() or DEFAULT_EMBED_MODEL
 
     print(f"{OK} VOYAGE_API_KEY loaded ({api_key[:6]}...{api_key[-4:]})")
     print(f"{INFO} Index: {INDEX_ROOT}")
-    print(f"{INFO} Embedding model: {embed_model} (1024D, via Voyage cloud)")
-    cost_per_m = COST_PER_MTOKEN.get(embed_model)
+    print(f"{INFO} Embedding model: {embed_model} ({EMBED_DIM}D, via Voyage cloud)")
+    cost_per_m = _rate(embed_model)
     if cost_per_m is not None:
-        print(f"{INFO} Pricing: ${cost_per_m:.2f} per 1M tokens (Series-4 includes 200M free)")
+        print(f"{INFO} Estimate rate: ${cost_per_m:.2f} per 1M tokens (Voyage pricing page is authoritative)")
     print()
 
     if manifest_path.exists() and not args.full:
@@ -561,7 +706,7 @@ def main() -> int:
     counts_by_folder: dict[str, dict[str, dict[str, int]]] = {}
 
     for folder in VANILLA_FOLDERS:
-        root = Path(r"P:\\") / folder
+        root = P_ROOT / folder
         if not root.exists():
             print(f"  {folder}/  (skipped — not present)")
             counts_by_folder[folder] = {}
@@ -625,14 +770,12 @@ def main() -> int:
         print(f"\n{FAIL} No chunks produced. Check P:\\ has the vanilla folders.", file=sys.stderr)
         return 1
 
-    # Cost-runaway safety: refuse to embed more than CHUNK_CEILING without --force.
-    # At ~1500 tokens/chunk avg, 150k chunks ≈ 225M tokens — past the 200M free tier.
-    CHUNK_CEILING = 150_000
     if len(chunks) > CHUNK_CEILING and not args.force:
+        est_mtokens = sum(_estimate_tokens(c["content"][:EMBED_MAX_CHARS]) for c in chunks) / 1_000_000
+        cost_note = f" (~${est_mtokens * cost_per_m:.0f} if billed)" if cost_per_m is not None else ""
         print(
             f"\n{FAIL} {len(chunks)} chunks exceeds the safety ceiling ({CHUNK_CEILING}).\n"
-            f"        At ~1500 tokens/chunk this is ~{len(chunks) * 1500 / 1_000_000:.0f}M tokens —\n"
-            f"        likely past the 200M Voyage free tier (~${len(chunks) * 1500 / 1_000_000 * (cost_per_m or 0.18):.0f} if billed).\n"
+            f"        At ~{CHARS_PER_TOKEN_EST} chars/token that is ~{est_mtokens:.0f}M tokens{cost_note}.\n"
             f"        Either narrow the indexing scope or re-run with --force to override.",
             file=sys.stderr,
         )
@@ -650,15 +793,17 @@ def main() -> int:
 
     # Voyage free-tier projection check. Estimate this build's tokens from
     # local char-per-token ratio so we can warn before committing to the embed.
-    estimated_tokens = sum(max(1, len(t) // CHARS_PER_TOKEN_EST) for t in texts)
-    estimated_tokens = int(estimated_tokens)
-    if not _check_voyage_tier(estimated_tokens, args.ignore_tier_warning):
+    estimated_tokens = sum(_estimate_tokens(t) for t in texts)
+    if not _check_voyage_tier(estimated_tokens, args.ignore_tier_warning, embed_model):
         print(f"{FAIL} Cancelled by user. No tokens consumed.", file=sys.stderr)
         return 1
 
     print(f"\nEmbedding {len(chunks)} chunks via Voyage ({embed_model}, document mode)...")
     started = time.time()
-    embeddings, total_tokens = _embed_all(texts, embed_model, api_key)
+    embedded = embed_or_fail(texts, embed_model, api_key)
+    if embedded is None:
+        return 1
+    embeddings, total_tokens = embedded
     elapsed = time.time() - started
 
     if len(embeddings) != len(chunks):
@@ -672,11 +817,8 @@ def main() -> int:
 
     cost_estimate_usd = round((total_tokens / 1_000_000) * (cost_per_m or 0), 4)
 
-    # Write to LanceDB
-    db = lancedb.connect(str(db_path))
-    if TABLE_NAME in db.table_names():
-        db.drop_table(TABLE_NAME)
-    db.create_table(TABLE_NAME, data=chunks)
+    INDEX_ROOT.mkdir(parents=True, exist_ok=True)
+    write_table(lancedb.connect(str(db_path)), chunks)
 
     # Manifest
     manifest = {

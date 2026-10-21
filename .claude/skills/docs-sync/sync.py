@@ -1,37 +1,42 @@
-"""Drift detector + applier for docs ↔ wiki sync.
+"""Drift detector + applier for docs <-> wiki sync.
 
-Compares canonical source files (.claude/agents/, .claude/skills/, docs/, L1 files)
-to their Docusaurus wiki mirrors at wiki/docs/. Detects drift (--check) and
-applies the Docusaurus transform (--apply).
+Compares canonical source files (.claude/agents/, .claude/skills/, docs/,
+.claude/skills/_shared/dayz-conventions.md) to their Docusaurus wiki mirrors
+under wiki/docs/.
 
-Two modes:
-  --check (default)    Detect drift, print report, exit 0 even with drift.
-                       Used by the SessionStop hook for fast, LLM-free polling.
-  --apply              Run the canonical->wiki transforms in apply.py and
-                       write every mirror. Prunes orphan wiki pages whose
-                       canonical source no longer exists.
-
-Pre-apply.py history: the apply step used to live in a `docs-wiki-sync`
-agent that Claude had to dispatch manually, so wiki updates rotted between
-manual invocations. The transforms are deterministic, so they live here
-in pure Python now.
-
-Usage:
-    python .claude/skills/docs-sync/sync.py --check       # report drift, exit 0 if clean
-    python .claude/skills/docs-sync/sync.py --check --quiet  # silent unless drift
-    python .claude/skills/docs-sync/sync.py --apply       # apply transforms, prune orphans
-    python .claude/skills/docs-sync/sync.py --apply --dry-run  # preview what --apply would do
-    python .claude/skills/docs-sync/sync.py --map         # print canonical->mirror map and exit
+Modes:
+  --check (default)    Detect drift (missing mirror, mirror content differs
+                       from the transformed source, orphan mirror) and print a
+                       report. Exits 0, also when PyYAML is missing under
+                       --quiet, so the Stop hook never fails. With --quiet
+                       (how the Stop hook runs it) it prints nothing when in
+                       sync, else one {"systemMessage": ...} JSON line, the
+                       hook output Claude Code shows the user.
+  --apply              Run the canonical->wiki transforms in apply.py, write
+                       every changed mirror, and prune orphan wiki pages.
+  --apply --dry-run    Print what --apply would write or prune; changes nothing
+                       on disk. --dry-run without --apply is a usage error.
+  --map                Print the canonical->mirror map and exit.
 """
 from __future__ import annotations
 
 import argparse
 import importlib.util
-import re
+import json
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+YAML_HINT = "PyYAML is required. Install it with: python -m pip install pyyaml"
+
+
+def hook_notice(message: str) -> None:
+    """Print a message for the Stop hook (--quiet) as hook JSON output.
+
+    Claude Code sends a command hook's plain stdout on exit 0 to the debug log,
+    not the transcript; a `systemMessage` field is what it shows the user.
+    """
+    print(json.dumps({"systemMessage": message}))
 
 
 def _load_apply_module():
@@ -79,99 +84,67 @@ def find_canonical_targets() -> list[tuple[Path, Path, str]]:
     return targets
 
 
-def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
-    if not text.startswith("---"):
-        return {}, text
-    parts = text.split("---", 2)
-    if len(parts) < 3:
-        return {}, text
-    fm_block, body = parts[1], parts[2]
-    fm: dict[str, str] = {}
-    for line in fm_block.strip().splitlines():
-        if ":" not in line:
-            continue
-        key, _, val = line.partition(":")
-        fm[key.strip()] = val.strip().strip('"').strip("'")
-    return fm, body.lstrip("\n")
+def find_orphans(seen_mirrors: set[Path]) -> list[Path]:
+    """Return agent/skill wiki pages that no canonical source maps to.
 
-
-def signature_for_kind(kind: str, src_text: str) -> str:
-    """Compute a content signature for drift detection.
-
-    Strips fields the wiki version reasonably differs on (description moves
-    out of frontmatter, etc.) and normalizes whitespace. Mirror's signature
-    is computed the same way.
+    `_*.md` files and the hand-written about.md are not auto-mirrors and are
+    never reported or pruned.
     """
-    fm, body = split_frontmatter(src_text)
-    if kind == "agent":
-        normalized_fm = {k: fm.get(k, "") for k in ("name", "model", "color", "memory")}
-    elif kind == "skill":
-        normalized_fm = {k: fm.get(k, "") for k in ("name",)}
-    else:
-        normalized_fm = {k: fm.get(k, "") for k in ("name", "title")}
+    orphans: list[Path] = []
+    for wiki_dir in (REPO_ROOT / "wiki" / "docs" / "agents", REPO_ROOT / "wiki" / "docs" / "skills"):
+        if not wiki_dir.is_dir():
+            continue
+        for mirror in sorted(wiki_dir.glob("*.md")):
+            if mirror.name.startswith("_") or mirror.name == "about.md":
+                continue
+            if mirror not in seen_mirrors:
+                orphans.append(mirror)
+    return orphans
 
-    body_norm = re.sub(r"\s+", " ", body).strip()
-    fm_norm = "|".join(f"{k}={v}" for k, v in sorted(normalized_fm.items()))
-    return f"{fm_norm}::{body_norm}"
 
-
-def mirror_signature(kind: str, mirror_text: str) -> str:
-    """Mirror files have already been transformed (description in body, etc.).
-    For drift detection we hash the body only — frontmatter is reduced and we
-    don't try to round-trip the description back out for comparison."""
-    fm, body = split_frontmatter(mirror_text)
-    if kind == "agent":
-        normalized_fm = {k: fm.get(k, "") for k in ("name", "model", "color", "memory")}
-    elif kind == "skill":
-        normalized_fm = {k: fm.get(k, "") for k in ("name",)}
-    else:
-        normalized_fm = {k: fm.get(k, "") for k in ("name", "title")}
-    body_norm = re.sub(r"\s+", " ", body).strip()
-    fm_norm = "|".join(f"{k}={v}" for k, v in sorted(normalized_fm.items()))
-    return f"{fm_norm}::{body_norm}"
+def _transformers() -> dict:
+    apply_mod = _load_apply_module()
+    return {
+        "skill": apply_mod.transform_skill,
+        "agent": apply_mod.transform_agent,
+        "doc": apply_mod.transform_doc,
+    }
 
 
 def detect_drift() -> dict[str, list[Path]]:
-    targets = find_canonical_targets()
-    out: dict[str, list[Path]] = {"missing_mirror": [], "src_newer": [], "orphan": []}
+    """Compare each mirror's content with its freshly transformed source.
 
+    Content comparison (not modification times) so a checkout, copy or touch
+    never reports false drift, and an edited mirror is always caught. A source
+    whose frontmatter fails to parse is reported as stale; --apply shows the error.
+    """
+    transform_for = _transformers()
+    out: dict[str, list[Path]] = {"missing_mirror": [], "stale": [], "orphan": []}
     seen_mirrors: set[Path] = set()
 
-    for src, mirror, kind in targets:
+    for src, mirror, kind in find_canonical_targets():
         seen_mirrors.add(mirror)
         if not mirror.is_file():
             out["missing_mirror"].append(src)
             continue
         try:
-            src_mtime = src.stat().st_mtime
-            mirror_mtime = mirror.stat().st_mtime
-        except OSError:
+            expected = transform_for[kind](src.read_text(encoding="utf-8"))
+            current = mirror.read_text(encoding="utf-8")
+        except (OSError, ValueError):
+            out["stale"].append(src)
             continue
-        if src_mtime > mirror_mtime + 1.0:
-            out["src_newer"].append(src)
+        if expected != current:
+            out["stale"].append(src)
 
-    for wiki_dir, kind in [
-        (REPO_ROOT / "wiki" / "docs" / "agents", "agent"),
-        (REPO_ROOT / "wiki" / "docs" / "skills", "skill"),
-    ]:
-        if not wiki_dir.is_dir():
-            continue
-        for mirror in wiki_dir.glob("*.md"):
-            if mirror.name.startswith("_") or mirror.name == "about.md":
-                # `_*.md` files and the hand-written about.md aren't auto-mirrors
-                continue
-            if mirror in seen_mirrors:
-                continue
-            out["orphan"].append(mirror)
-
+    out["orphan"] = find_orphans(seen_mirrors)
     return out
 
 
 def report(drift: dict[str, list[Path]], quiet: bool) -> int:
     n_missing = len(drift["missing_mirror"])
-    n_newer = len(drift["src_newer"])
+    n_stale = len(drift["stale"])
     n_orphan = len(drift["orphan"])
-    total = n_missing + n_newer + n_orphan
+    total = n_missing + n_stale + n_orphan
 
     if total == 0:
         if not quiet:
@@ -179,7 +152,7 @@ def report(drift: dict[str, list[Path]], quiet: bool) -> int:
         return 0
 
     if quiet:
-        print(f"docs-sync: {total} file(s) need wiki sync. Run /docs-sync.")
+        hook_notice(f"docs-sync: {total} file(s) need wiki sync. Run /docs-sync.")
         return 0
 
     print(f"docs-sync: {total} file(s) need wiki sync.")
@@ -187,9 +160,9 @@ def report(drift: dict[str, list[Path]], quiet: bool) -> int:
         print(f"  Missing wiki mirror ({n_missing}):")
         for p in drift["missing_mirror"]:
             print(f"    - {p.relative_to(REPO_ROOT)}")
-    if n_newer:
-        print(f"  Source newer than mirror ({n_newer}):")
-        for p in drift["src_newer"]:
+    if n_stale:
+        print(f"  Mirror out of date ({n_stale}):")
+        for p in drift["stale"]:
             print(f"    - {p.relative_to(REPO_ROOT)}")
     if n_orphan:
         print(f"  Orphan wiki page (canonical source missing) ({n_orphan}):")
@@ -214,17 +187,10 @@ def print_map() -> int:
 def apply_all(dry_run: bool = False) -> int:
     """Run every transform and write mirror files. Prune orphan wiki pages.
 
-    Returns 0 on success, non-zero on any IO error.
+    Returns 0 on success, 1 on any read, parse or write error.
     """
-    apply_mod = _load_apply_module()
+    transform_for = _transformers()
     targets = find_canonical_targets()
-
-    # Build (canonical, mirror, kind, transform_fn) tuples
-    transform_for = {
-        "skill": apply_mod.transform_skill,
-        "agent": apply_mod.transform_agent,
-        "doc": apply_mod.transform_doc,
-    }
 
     written = 0
     unchanged = 0
@@ -241,7 +207,12 @@ def apply_all(dry_run: bool = False) -> int:
             errors += 1
             continue
 
-        new_text = transform_for[kind](canonical_text)
+        try:
+            new_text = transform_for[kind](canonical_text)
+        except ValueError as e:
+            print(f"[FAIL] {src}: {e}", file=sys.stderr)
+            errors += 1
+            continue
 
         existing_text: str | None = None
         if mirror.exists():
@@ -253,16 +224,6 @@ def apply_all(dry_run: bool = False) -> int:
                 continue
 
         if existing_text == new_text:
-            # Content already matches, but the canonical's mtime is newer
-            # than the mirror's. Touch the mirror so the drift detector
-            # (mtime-based) doesn't keep flagging false drift.
-            try:
-                src_mtime = src.stat().st_mtime
-                mirror.touch()
-                import os
-                os.utime(mirror, (src_mtime, src_mtime))
-            except OSError:
-                pass
             unchanged += 1
             continue
 
@@ -281,47 +242,46 @@ def apply_all(dry_run: bool = False) -> int:
             errors += 1
 
     # Prune orphan wiki pages (mirror exists but no canonical source).
-    for wiki_dir, _kind in [
-        (REPO_ROOT / "wiki" / "docs" / "agents", "agent"),
-        (REPO_ROOT / "wiki" / "docs" / "skills", "skill"),
-    ]:
-        if not wiki_dir.is_dir():
-            continue
-        for mirror in wiki_dir.glob("*.md"):
-            if mirror.name.startswith("_") or mirror.name == "about.md":
-                # `_` files and the hand-written about.md aren't auto-mirrors
+    for mirror in find_orphans(seen_mirrors):
+        if dry_run:
+            print(f"[DRY] would prune orphan {mirror.relative_to(REPO_ROOT)}")
+        else:
+            try:
+                mirror.unlink()
+                print(f"[OK]   pruned orphan {mirror.relative_to(REPO_ROOT)}")
+            except OSError as e:
+                print(f"[FAIL] prune {mirror}: {e}", file=sys.stderr)
+                errors += 1
                 continue
-            if mirror in seen_mirrors:
-                continue
-            if dry_run:
-                print(f"[DRY] would prune orphan {mirror.relative_to(REPO_ROOT)}")
-            else:
-                try:
-                    mirror.unlink()
-                    print(f"[OK]   pruned orphan {mirror.relative_to(REPO_ROOT)}")
-                except OSError as e:
-                    print(f"[FAIL] prune {mirror}: {e}", file=sys.stderr)
-                    errors += 1
-                    continue
-            pruned += 1
+        pruned += 1
 
     print()
-    verb = "would " if dry_run else ""
-    print(f"docs-sync apply: {verb}wrote {written}, {verb}pruned {pruned}, unchanged {unchanged}, errors {errors}")
+    wrote_word, pruned_word = ("would write", "would prune") if dry_run else ("wrote", "pruned")
+    print(f"docs-sync apply: {wrote_word} {written}, {pruned_word} {pruned}, unchanged {unchanged}, errors {errors}")
     return 1 if errors else 0
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--check", action="store_true", help="Report drift (default)")
-    p.add_argument("--quiet", action="store_true", help="Silent on success, single-line on drift (for hooks)")
+    p.add_argument("--quiet", action="store_true", help="Stop hook mode: silent when in sync, otherwise one JSON systemMessage line")
     p.add_argument("--map", action="store_true", help="Print canonical->mirror map and exit")
     p.add_argument("--apply", action="store_true", help="Apply Docusaurus transform and write all mirrors")
-    p.add_argument("--dry-run", action="store_true", help="With --apply: preview what would change without writing")
-    args = p.parse_args()
+    p.add_argument("--dry-run", action="store_true", help="With --apply: preview what would change without writing (requires --apply)")
+    args = p.parse_args(argv)
+    if args.dry_run and not args.apply:
+        p.error("--dry-run only works with --apply")
 
     if args.map:
         return print_map()
+
+    if importlib.util.find_spec("yaml") is None:
+        if args.quiet:
+            # The Stop hook runs --check --quiet; it must never fail a session.
+            hook_notice(f"docs-sync: drift check skipped. {YAML_HINT}")
+            return 0
+        print(f"docs-sync: {YAML_HINT}", file=sys.stderr)
+        return 1
 
     if args.apply:
         return apply_all(dry_run=args.dry_run)

@@ -1,7 +1,7 @@
 {
   "name": "agentic-z",
   "version": "1.6.0",
-  "description": "AI agent stack for DayZ modding. After install, run /dayz-init for a guided setup wizard that takes you from empty repo to mod-loaded-in-DayZ. Ships 11 specialist subagents and 25 DayZ skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexers, p3d audit, particle effects, GUI imageset packing), plus the dayz-rag MCP server for semantic search over vanilla Enforce Script and the Bohemia community wiki.",
+  "description": "AI agent stack for DayZ modding. After install, run /dayz-init for a guided setup wizard that takes you from empty repo to mod-loaded-in-DayZ. Ships a 21-agent mod team (orchestrator, team leads, specialists and gatekeepers) and 27 DayZ skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexers, p3d audit, particle effects, GUI imageset packing), plus the dayz-rag MCP server for semantic search over vanilla Enforce Script and the Bohemia community wiki.",
   "author": {
     "name": "DayZ n' Chill",
     "url": "https://github.com/DayZ-n-Chill"
@@ -42,20 +42,32 @@
     "./.claude/skills/dayz-stop-test",
     "./.claude/skills/dayz-edit-types",
     "./.claude/skills/dayz-split-types",
-    "./.claude/skills/dayz-init"
+    "./.claude/skills/dayz-init",
+    "./.claude/skills/dayz-deploy-pbo",
+    "./.claude/skills/dayz-record-correction"
   ],
   "agents": [
     "./.claude/agents/agent-creator.md",
     "./.claude/agents/dayz-asset-specialist.md",
+    "./.claude/agents/dayz-build-checker.md",
+    "./.claude/agents/dayz-build-engineer.md",
     "./.claude/agents/dayz-config-specialist.md",
+    "./.claude/agents/dayz-docs-writer.md",
+    "./.claude/agents/dayz-ingame-tester.md",
+    "./.claude/agents/dayz-layout-validator.md",
+    "./.claude/agents/dayz-lead.md",
     "./.claude/agents/dayz-map-specialist.md",
+    "./.claude/agents/dayz-mod-architect.md",
     "./.claude/agents/dayz-mod-debugger.md",
     "./.claude/agents/dayz-mod-reviewer.md",
     "./.claude/agents/dayz-object-builder.md",
+    "./.claude/agents/dayz-orchestrator.md",
     "./.claude/agents/dayz-script-specialist.md",
     "./.claude/agents/dayz-server-admin.md",
     "./.claude/agents/dayz-ui-specialist.md",
-    "./.claude/agents/dayz-workbench-specialist.md"
+    "./.claude/agents/dayz-workbench-specialist.md",
+    "./.claude/agents/figma-node-normalizer.md",
+    "./.claude/agents/figma-to-dayz-layout.md"
   ],
   "mcpServers": {
     "dayz-rag": {

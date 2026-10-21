@@ -33,10 +33,10 @@ def _print_hits(hits: list[dict], snippet_chars: int) -> None:
         path = h.get("path", "")
         ls = h.get("line_start", 0)
         le = h.get("line_end", 0)
-        score = h.get("score", 0.0)
+        distance = h.get("distance", 0.0)
         ctx = h.get("parent_context", "")
         stale = " [STALE]" if h.get("is_stale") else ""
-        print(f"\n[{i}] {path}:{ls}-{le}  score={score:.3f}{stale}")
+        print(f"\n[{i}] {path}:{ls}-{le}  distance={distance:.3f}{stale}")
         if ctx:
             print(f"    {ctx}")
         snippet = (h.get("snippet", "") or "").rstrip()
@@ -52,7 +52,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("-k", "--top-k", type=int, default=5, help="max hits (default 5, max 25)")
     p.add_argument("-w", "--wiki", action="store_true", help="search the wiki corpus instead of vanilla source")
     p.add_argument("-t", "--file-type", default=None, help='source filter: c | layout | cfg | rvmat | xml | json | csv')
-    p.add_argument("-d", "--max-distance", type=float, default=None, help="drop hits with score above this")
+    p.add_argument("-d", "--max-distance", type=float, default=None, help="drop hits with distance above this")
     p.add_argument("-s", "--snippet-chars", type=int, default=400, help="snippet preview length (0 = full)")
     p.add_argument("-j", "--json", action="store_true", help="print raw JSON instead of formatted output")
     args = p.parse_args(argv)

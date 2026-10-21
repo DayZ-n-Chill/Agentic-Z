@@ -15,20 +15,16 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
-import importlib.util
+import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from textwrap import dedent
 
-# REPO_ROOT = where this skill ships from (plugin or template clone).
-# Project dir (where .server/ lives) is resolved at runtime from the
-# /dayz-init project cache; see resolve_project_dir().
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
-PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
-DAYZ_INIT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-init"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
 
 KNOWN_MAPS: dict[str, str] = {
     "chernarus": "dayzOffline.chernarusplus",
@@ -36,46 +32,20 @@ KNOWN_MAPS: dict[str, str] = {
     "sakhal": "dayzOffline.sakhal",
 }
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
+
+find_dayz_server = h.preflight.find_dayz_server
 
 
-def _load_module_from_path(name: str, path: Path):
-    """Load a sibling-skill .py as a module by file path so static analyzers don't
-    choke on a sys.path-based sibling import."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load module at {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_preflight = _load_module_from_path("dayz_preflight_module", PREFLIGHT)
-find_dayz_server = _preflight.find_dayz_server
-
-# Reuse the project-root cache reader from /dayz-init so add-server follows the same source of truth.
-_dayz_init_state = _load_module_from_path("dayz_init_state_module", DAYZ_INIT_DIR / "state.py")
-cached_project_root = _dayz_init_state.cached_project_root
-
-
-def resolve_project_dir() -> Path:
-    """Return the cached project root, or bail out pointing the user at /dayz-init."""
-    project = cached_project_root()
-    if project is None:
-        print("error: no project cached.", file=sys.stderr)
-        print("  Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
-        sys.exit(2)
-    return project.resolve()
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight skill not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
+def validate_instance(instance: str) -> str:
+    """argparse type for <instance>: one folder name directly under .server/."""
+    if instance in ("", ".", "..") or any(c in instance for c in '/\\:*?"<>|'):
+        raise argparse.ArgumentTypeError(
+            f"'{instance}' is not a valid instance name: use a single folder name "
+            "(no path separators, drive letters, '..', or the characters * ? \" < > | "
+            "that Windows forbids in file names)."
+        )
+    return instance
 
 
 def gate_on_old_layout(project_dir: Path) -> None:
@@ -110,6 +80,30 @@ def resolve_map_name(instance: str, map_arg: str | None) -> str:
 
 def resolve_mission_template(map_name: str) -> str:
     return KNOWN_MAPS.get(map_name, map_name)
+
+
+# The active `template = "..."` line in serverDZ.cfg (a commented-out line does not count).
+TEMPLATE_RE = re.compile(r'^\s*template\s*=\s*"([^"]*)"', re.MULTILINE)
+
+
+def gate_on_template_mismatch(cfg_path: Path, template: str, instance: str) -> None:
+    """Refuse when an existing instance was set up for a different mission template.
+
+    Rerunning with another --map would otherwise leave the old mission/ and
+    cfg in place while reporting the new map, so the server loads the old one.
+    """
+    if not cfg_path.exists():
+        return
+    match = TEMPLATE_RE.search(cfg_path.read_text(encoding="utf-8"))
+    if match is None or match.group(1) == template:
+        return
+    sys.exit(
+        f"{FAIL} Instance '{instance}' is set up for mission template '{match.group(1)}',\n"
+        f"       not '{template}' (from {cfg_path.name}'s template = line).\n"
+        f"       For a different map, add a new instance: /dayz-add-server <new-name> --map <map>\n"
+        f"       To switch this instance, set template = \"{template}\"; in {cfg_path}\n"
+        "       and rerun with --refresh-mission (the old mission/ is kept as a backup)."
+    )
 
 
 def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir: Path) -> None:
@@ -147,13 +141,26 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir:
         )
 
     mission_dir.parent.mkdir(parents=True, exist_ok=True)
+    action = "Copied"
     if mission_dir.exists():
-        shutil.rmtree(mission_dir)
+        backup = backup_mission(mission_dir)
+        print(f"{OK} Kept previous mission as {backup.relative_to(project_dir)}")
         action = "Refreshed"
-    else:
-        action = "Copied"
     shutil.copytree(src, mission_dir)
     print(f"{OK} {action} {mission_dir.relative_to(project_dir)}  (from DayZ Server install)")
+
+
+def backup_mission(mission_dir: Path) -> Path:
+    """Rename mission/ to mission.bak-<timestamp>/ so --refresh-mission never
+    destroys local edits. Returns the backup path."""
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    backup = mission_dir.with_name(f"{mission_dir.name}.bak-{stamp}")
+    n = 1
+    while backup.exists():
+        backup = mission_dir.with_name(f"{mission_dir.name}.bak-{stamp}-{n}")
+        n += 1
+    mission_dir.rename(backup)
+    return backup
 
 
 def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
@@ -184,10 +191,16 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
         print(f"{OK} Wrote default {cfg_path.relative_to(project_dir)}")
     else:
         cfg = cfg_path.read_text(encoding="utf-8")
-        if "allowFilePatching" not in cfg:
+        setting = h.file_patching_setting(cfg)
+        if setting is None:
             cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
             cfg_path.write_text(cfg, encoding="utf-8")
             print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(project_dir)}")
+        elif setting.group(1) != "1":
+            # Clients launch with -filePatching and cannot join a server without it.
+            cfg = cfg[: setting.start(1)] + "1" + cfg[setting.end(1):]
+            cfg_path.write_text(cfg, encoding="utf-8")
+            print(f"{OK} Set allowFilePatching = 1 in {cfg_path.relative_to(project_dir)} (was {setting.group(1)})")
         else:
             print(f"{OK} {cfg_path.relative_to(project_dir)} unchanged (already configured)")
 
@@ -198,23 +211,28 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
     mission_dir = inst_dir / "mission"
     template_junction = inst_dir / template
     if mission_dir.exists() and not template_junction.exists():
-        import subprocess
         result = subprocess.run(
             ["cmd", "/c", "mklink", "/J", str(template_junction), str(mission_dir)],
             capture_output=True, text=True
         )
-        if result.returncode == 0:
-            print(f"{OK} Junction {template_junction.name}/ -> mission/ (template handshake)")
-        else:
-            print(f"{FAIL} Could not create template junction: {result.stderr.strip()}")
+        if result.returncode != 0:
+            sys.exit(
+                f"{FAIL} Could not create template junction {template_junction}: "
+                f"{(result.stderr or result.stdout).strip()}\n"
+                "       Without it the client connects but never spawns. Fix the cause and rerun."
+            )
+        print(f"{OK} Junction {template_junction.name}/ -> mission/ (template handshake)")
+    elif template_junction.exists():
+        print(f"{OK} Junction {template_junction.name}/ -> mission/ already present")
 
     print(f"{OK} {server_profiles.relative_to(project_dir)} ready")
     print(f"{OK} {client_diag_logs.relative_to(project_dir)} ready")
 
 
 def default_server_cfg(instance: str, template: str) -> str:
-    # Six-char shardId required by engine; truncate/pad instance name.
-    shard = (instance + "shard")[:6].lower()
+    # The engine needs a six-char alphanumeric shardId: keep only the instance
+    # name's letters and digits, pad with "shard", truncate to six.
+    shard = (re.sub(r"[^A-Za-z0-9]", "", instance) + "shard")[:6].lower()
     return dedent(
         f"""\
         hostname = "Local Test ({instance})";   // Server name
@@ -273,6 +291,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Set up a DayZ test server instance under .server/<instance>/.")
     parser.add_argument(
         "instance",
+        type=validate_instance,
         help=(
             "Free-form instance name (becomes .server/<instance>/). If the name "
             f"matches a known map alias ({', '.join(KNOWN_MAPS)}), --map defaults "
@@ -292,12 +311,12 @@ def main() -> int:
     parser.add_argument(
         "--refresh-mission",
         action="store_true",
-        help="Re-copy the mission folder from DayZ Server install, overwriting local edits.",
+        help="Re-copy the mission folder from DayZ Server install; the old copy is kept as mission.bak-<timestamp>.",
     )
     args = parser.parse_args()
 
-    project_dir = resolve_project_dir()
-    gate_on_preflight()
+    project_dir = h.resolve_project_dir()
+    h.gate_on_preflight()
     print()
     print(f"{OK} Project: {project_dir}")
     gate_on_old_layout(project_dir)
@@ -310,6 +329,7 @@ def main() -> int:
     inst_dir = server_root / args.instance
     mission_dir = inst_dir / "mission"
 
+    gate_on_template_mismatch(inst_dir / "serverDZ.cfg", template, args.instance)
     ensure_mission(template, mission_dir, refresh=args.refresh_mission, project_dir=project_dir)
     setup_instance_dir(args.instance, template, project_dir)
 

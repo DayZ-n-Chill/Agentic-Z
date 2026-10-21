@@ -36,8 +36,10 @@ workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/
 
 # DayZ test-server runtime (.server/<instance>/). Logs, profiles, and storage are
 # runtime junk and should not be tracked. User-edited serverDZ.cfg and mission/
-# contents stay tracked via negation patterns.
-.server/*/
+# contents stay tracked. The pattern ignores what is inside each instance, not
+# the instance folder itself: git cannot re-include a file whose parent folder
+# is ignored, so `.server/*/` would make the exceptions below dead.
+.server/*/*
 !.server/*/serverDZ.cfg
 !.server/*/mission/
-!.server/*/mission/**
+.server/*/mission/storage_*/

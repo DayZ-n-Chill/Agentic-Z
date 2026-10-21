@@ -1,224 +1,159 @@
-"""Plan building, rendering, and execution for /dayz-init.
+"""dayz-init Steps 4-5: build the setup plan, print it, and optionally run it.
 
-A Plan is a list of Steps. Each Step has a `kind` (string identifying which
-skill to invoke), a human-readable label for the plan render, and optional
-extra args.
+Usage:
+    python plan.py --mod NAME [--import-from PATH [--scaffold | --no-scaffold]]
+                   [--author HANDLE] [--server MAP] [--build] [--launch] [--execute]
 
-Execution wraps each step in a try/except. On failure, returns the index
-of the failing step so the caller can show "stopped at step N/M".
+Without --execute: prints the plan and exits 0.
+With --execute: runs each step in order and stops at the first failure,
+exiting with that step's exit code. Refuses (exit 2) while the environment
+check reports a hard stop or P:\\ is not mounted.
+
+Steps, in order (each skipped when not needed):
+  1. new-mod / import-mod   skipped when workspace/<mod> already exists
+  2. record          write the per-clone project cache and the active mod
+  3. add-server      --server
+  4. build           --build, or implied by --launch
+  5. launch          --launch (needs --server)
+The P:\\Mods junction is not a step: /dayz-preflight, which every child skill
+runs first, creates it when it is missing.
 """
 from __future__ import annotations
 
-import subprocess
+import argparse
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from env_check import EnvIssue
-from intent import Intent
+from dispatch import KNOWN_MAPS, DispatchError, command_for, run
+from env_check import classify, run_all
+from state import PROJECT_DIR, mod_exists, write_cached_project_root, write_state
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+
+@dataclass
+class Intent:
+    mod_name: str
+    source: str | None = None        # set for an import, None for a new mod
+    scaffold: bool | None = None     # import only: write missing pieces into the source?
+    author: str | None = None        # new mod or --scaffold import: passed as --author
+    server_map: str | None = None
+    build: bool = False
+    launch: bool = False
 
 
 @dataclass
 class Step:
-    kind: str
+    action: str
     label: str
-    args: list[str] = field(default_factory=list)
+    params: dict = field(default_factory=dict)
 
 
-def build_steps(intent: Intent, autofix_issues: list[EnvIssue]) -> list[Step]:
-    """Compose the full ordered list of steps from intent + env state."""
+def build_steps(intent: Intent, already_exists: bool) -> list[Step]:
+    """Ordered steps for this intent."""
     steps: list[Step] = []
-
-    # Autofix env issues first.
-    for issue in autofix_issues:
-        steps.append(
-            Step(
-                kind=f"autofix:{issue.name}",
-                label=issue.message,
-            )
-        )
-
-    # Required: scaffold OR import.
-    if intent.is_new:
-        steps.append(
-            Step(
-                kind="scaffold",
-                label=f"Scaffold {intent.mod_name} at {intent.project_path}",
-                args=[intent.mod_name, str(intent.project_path)],
-            )
-        )
+    mod = intent.mod_name
+    if already_exists:
+        pass
+    elif intent.source:
+        params = {"mod": mod, "source": intent.source, "scaffold": intent.scaffold}
+        if intent.scaffold:
+            # A scaffolded config.cpp needs the author handle.
+            params["author"] = intent.author
+        steps.append(Step("import-mod", f"Import {intent.source} as {mod}", params))
     else:
-        steps.append(
-            Step(
-                kind="import_mod",
-                label=f"Import existing mod at {intent.project_path}",
-                args=[str(intent.project_path), intent.mod_name],
-            )
-        )
+        steps.append(Step("new-mod", f"Scaffold workspace\\{mod}", {"mod": mod, "author": intent.author}))
 
-    # Required: junction P:\<Mod>\.
-    steps.append(
-        Step(
-            kind="junction_mod",
-            label=f"Junction P:\\{intent.mod_name}\\",
-            args=[intent.mod_name, str(intent.project_path)],
-        )
-    )
+    steps.append(Step("record", f"Record {mod} as the active mod"))
 
-    # Required: cache project root.
-    steps.append(
-        Step(
-            kind="cache_project",
-            label="Cache project root",
-            args=[str(intent.project_path)],
-        )
-    )
-
-    # Optional: server stage.
-    if intent.add_server and intent.server_map:
-        steps.append(
-            Step(
-                kind="stage_server",
-                label=f"Stage {intent.server_map} server",
-                args=[intent.server_map, intent.server_map],  # instance name = map alias for now
-            )
-        )
-
-    # Optional: PBO build.
-    if intent.build_pbo:
-        steps.append(
-            Step(
-                kind="build_pbo",
-                label=f"Build {intent.mod_name}.pbo",
-                args=[intent.mod_name],
-            )
-        )
-
-    # Optional: launch diag.
-    if intent.launch_diag and intent.server_map:
-        steps.append(
-            Step(
-                kind="launch_diag",
-                label=(
-                    f"Launch DayZDiag with {intent.mod_name} loaded "
-                    f"on {intent.server_map}"
-                ),
-                args=[intent.mod_name, intent.server_map],
-            )
-        )
-
+    if intent.server_map:
+        steps.append(Step("add-server", f"Set up the {intent.server_map} test server", {"server": intent.server_map}))
+    if intent.build or intent.launch:
+        steps.append(Step("build", f"Build {mod}.pbo", {"mod": mod}))
+    if intent.launch:
+        steps.append(Step(
+            "launch", f"Launch DayZ Diag with {mod} on {intent.server_map}",
+            {"mod": mod, "server": intent.server_map},
+        ))
     return steps
 
 
 def render_plan(steps: list[Step]) -> str:
-    """Pretty-print the plan for the consent gate."""
-    lines = ["── Plan ──"]
-    for step in steps:
-        lines.append(f"  • {step.label}")
-    return "\n".join(lines)
+    return "\n".join(["Plan:"] + [f"  {i}. {s.label}" for i, s in enumerate(steps, start=1)])
 
 
-def execute(steps: list[Step]) -> int:
-    """Run each step in order. Return the 1-indexed failing step, or 0 on success."""
+def record_project(project: Path, intent: Intent) -> None:
+    write_cached_project_root(project, project / ".claude" / "local-memory")
+    write_state(project, {
+        "last_intent": {"mod_name": intent.mod_name},
+    })
+
+
+def execute(steps: list[Step], intent: Intent, project: Path) -> int:
+    """Run steps in order. Return 0, or the exit code of the first failing step."""
     for i, step in enumerate(steps, start=1):
-        print(f"[{i}/{len(steps)}] {step.label}")
-        try:
-            _dispatch(step)
-        except Exception as exc:
-            print(f"  failed [{step.kind}]: {exc}")
-            return i
-        print("  ok")
+        print(f"\n[{i}/{len(steps)}] {step.label}", flush=True)
+        if step.action == "record":
+            record_project(project, intent)
+            continue
+        rc = run(command_for(step.action, **step.params))
+        if rc != 0:
+            print(f"[FAIL] Step {i}/{len(steps)} ({step.label}) exited with {rc}.", file=sys.stderr)
+            return rc
+    print("\n[OK]   Setup complete.")
     return 0
 
 
-def _dispatch(step: Step) -> None:
-    """Map a step kind to the existing skill that performs it."""
-    if step.kind.startswith("autofix:"):
-        which = step.kind.split(":", 1)[1]
-        if which == "p_drive":
-            _dispatch_p_drive_autofix()
-        elif which == "mods_junction":
-            _create_mods_junction()
-        else:
-            raise RuntimeError(f"Unknown autofix kind: {which}")
-        return
-
-    if step.kind == "scaffold":
-        mod_name, project_path = step.args
-        _run("dayz-new-mod", "new_mod.py", mod_name, "--path", project_path)
-    elif step.kind == "import_mod":
-        project_path, mod_name = step.args
-        _run("dayz-import-mod", "import_mod.py", "--source", project_path, "--name", mod_name)
-    elif step.kind == "junction_mod":
-        _create_mod_junction(*step.args)
-    elif step.kind == "cache_project":
-        from state import write_cached_project_root  # local import
-        write_cached_project_root(Path(step.args[0]))
-    elif step.kind == "stage_server":
-        instance, map_name = step.args
-        _run("dayz-add-server", "add_server.py", instance, "--map", map_name)
-    elif step.kind == "build_pbo":
-        _run("dayz-build-pbo", "build.py", *step.args)
-    elif step.kind == "launch_diag":
-        mod_name, server_map = step.args
-        _run("dayz-launch-test", "launch.py", mod_name, "--server", server_map)
-    else:
-        raise RuntimeError(f"Unknown step kind: {step.kind}")
+def parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Plan and run /dayz-init setup.")
+    parser.add_argument("--mod", required=True, help="Mod name (folder under workspace/)")
+    parser.add_argument("--import-from", dest="source", help="Existing mod folder to import")
+    scaffold = parser.add_mutually_exclusive_group()
+    scaffold.add_argument("--scaffold", dest="scaffold", action="store_true", default=None,
+                          help="Import: write missing pieces into the source folder")
+    scaffold.add_argument("--no-scaffold", dest="scaffold", action="store_false",
+                          help="Import: link only, never write into the source folder")
+    parser.add_argument("--author", help="New mod or --scaffold import: author handle (cached for future runs)")
+    parser.add_argument("--server", choices=KNOWN_MAPS, help="Set up a test server on this map")
+    parser.add_argument("--build", action="store_true", help="Build the PBO")
+    parser.add_argument("--launch", action="store_true", help="Launch DayZ Diag (implies --build)")
+    parser.add_argument("--execute", action="store_true", help="Run the plan instead of printing it")
+    args = parser.parse_args(argv)
+    if args.launch and not args.server:
+        parser.error("--launch needs --server")
+    if args.scaffold is not None and not args.source:
+        parser.error("--scaffold/--no-scaffold only apply with --import-from")
+    if args.source and args.scaffold is None:
+        # import_mod.py would otherwise prompt per piece, and the wizard's
+        # scripts never prompt.
+        parser.error("--import-from needs --scaffold or --no-scaffold")
+    return args
 
 
-def _run(skill_name: str, entry_filename: str, *args: str) -> None:
-    """Invoke an existing skill via subprocess. Raises on non-zero exit."""
-    skill_path = REPO_ROOT / ".claude" / "skills" / skill_name / entry_filename
-    cmd = [sys.executable, str(skill_path), *args]
-    subprocess.run(cmd, check=True)
-
-
-def _dispatch_p_drive_autofix() -> None:
-    """Mount P:\\ via dayz-workdrive's mount.ps1."""
-    skill_dir = REPO_ROOT / ".claude" / "skills" / "dayz-workdrive"
-    subprocess.run(
-        ["powershell", "-NoProfile", "-File", str(skill_dir / "mount.ps1")],
-        check=True,
+def main(argv: list[str] | None = None, project: Path | None = None) -> int:
+    args = parse_args(argv)
+    project = project or PROJECT_DIR
+    intent = Intent(
+        mod_name=args.mod, source=args.source, scaffold=args.scaffold, author=args.author,
+        server_map=args.server, build=args.build, launch=args.launch,
     )
 
+    autofix, hard = classify(run_all())
+    if hard or any(i.name == "p_drive" for i in autofix):
+        print("[FAIL] Environment not ready; run check_env.py and resolve it first:", file=sys.stderr)
+        for issue in hard + autofix:
+            print(f"       {issue.message}", file=sys.stderr)
+        return 2
 
-def _create_mods_junction() -> None:
-    """Create P:\\Mods\\ junction to <DayZ install>\\!Workshop\\.
-
-    Reads the DayZ install path from Steam's app manifest if available,
-    otherwise falls back to the conventional path. Best-effort.
-    """
-    workshop_candidates = [
-        Path(r"C:\Program Files (x86)\Steam\steamapps\common\DayZ\!Workshop"),
-        Path(r"C:\Program Files\Steam\steamapps\common\DayZ\!Workshop"),
-    ]
-    workshop = next((p for p in workshop_candidates if p.is_dir()), None)
-    if workshop is None:
-        raise RuntimeError(
-            "Could not find DayZ !Workshop directory. "
-            "Verify DayZ is installed via Steam, then re-run /dayz-init."
-        )
-    subprocess.run(
-        ["cmd", "/c", "mklink", "/J", "P:\\Mods", str(workshop)],
-        check=True,
-    )
-
-
-def _create_mod_junction(mod_name: str, project_path: str) -> None:
-    """Create P:\\<ModName>\\ junction to <project_path>."""
-    target = f"P:\\{mod_name}"
+    steps = build_steps(intent, mod_exists(project, args.mod))
+    print(render_plan(steps))
+    if not args.execute:
+        return 0
     try:
-        subprocess.run(
-            ["cmd", "/c", "mklink", "/J", target, project_path],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except subprocess.CalledProcessError as exc:
-        raise RuntimeError(
-            f"Failed to create junction {target} -> {project_path}.\n"
-            f"  mklink output: {exc.stderr or exc.stdout}\n"
-            f"  Try running Claude Code with elevated privileges, or enable Developer Mode."
-        ) from exc
+        return execute(steps, intent, project)
+    except DispatchError as exc:
+        print(f"[FAIL] {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

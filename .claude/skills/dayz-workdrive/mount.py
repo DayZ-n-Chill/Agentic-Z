@@ -1,10 +1,10 @@
 r"""dayz-workdrive: Mount P:\ as the DayZ work drive without DayZ Tools' GUI.
 
-Resolves the work-drive folder (env var, cache, settings.ini, registry, fallback)
+Resolves the work-drive folder (env var, cache, settings.ini, registry)
 and mounts it via DayZ Tools' WorkDrive.exe /Mount, falling back to Windows'
 built-in subst command. Idempotent: exits OK if already mounted.
 
-This skill does NOT gate on /dayz-preflight — chicken-and-egg: preflight checks
+This skill does not gate on /dayz-preflight: preflight checks
 that P:\ is mounted, this skill mounts it.
 
 Usage:
@@ -15,7 +15,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import os
 import subprocess
@@ -23,36 +22,49 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
+# The cache is per project, resolved like dayz-init/state.py: $CLAUDE_PROJECT_DIR,
+# else the current directory. Not the script's own folder, which is the shared
+# plugin cache on a plugin install.
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 CACHE = PROJECT_DIR / ".claude" / "local-memory" / "dayz-work-drive.json"
 P_DRIVE = Path("P:\\")
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
 
-OK = "[OK]   "
+OK = h.OK
 INFO = "[INFO] "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+WARN = h.WARN
+FAIL = h.FAIL
 CMD = "[CMD]  "
 
-
-def _load_preflight_module():
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-# Reuse preflight's find_dayz_tools (env DAYZ_TOOLS_PATH -> 3 registry keys ->
-# common Steam paths, validated by AddonBuilder.exe presence). Importing the
-# module here does NOT run preflight's gate — it just exposes the helper.
-find_dayz_tools = _load_preflight_module().find_dayz_tools
+# Reuse preflight's resolvers (loading the module does not run its checks).
+find_dayz_tools = h.preflight.find_dayz_tools
+read_registry_string = h.preflight.read_registry_string
+paths_equal = h.preflight.paths_equal
 
 
 def is_p_mounted() -> bool:
     return P_DRIVE.is_dir()
+
+
+def current_p_target() -> Optional[Path]:
+    r"""Folder P: is mapped to, or None if it is not a folder mapping.
+
+    WorkDrive.exe and subst both create a DOS device mapping, which
+    QueryDosDeviceW reports as "\??\C:\folder".
+    """
+    if sys.platform != "win32":
+        return None
+    import ctypes
+
+    buf = ctypes.create_unicode_buffer(1024)
+    if not ctypes.windll.kernel32.QueryDosDeviceW("P:", buf, len(buf)):
+        return None
+    prefix = "\\??\\"
+    if not buf.value.startswith(prefix):
+        return None  # a volume or network device, not a folder mapping
+    return Path(buf.value[len(prefix):])
 
 
 def get_cached_path() -> Optional[Path]:
@@ -96,21 +108,6 @@ def read_settings_ini_path(tools_root: Path) -> Optional[Path]:
     return None
 
 
-def _read_registry_string(hive, subkey: str, value_name: str) -> Optional[str]:
-    if sys.platform != "win32":
-        return None
-    try:
-        import winreg
-    except ImportError:
-        return None
-    try:
-        with winreg.OpenKey(hive, subkey) as key:
-            val, _ = winreg.QueryValueEx(key, value_name)
-            return str(val) if val else None
-    except OSError:
-        return None
-
-
 def find_work_drive() -> Optional[Path]:
     """Resolve the work-drive folder. Returns the first candidate that exists.
 
@@ -120,7 +117,10 @@ def find_work_drive() -> Optional[Path]:
       3. <DayZ Tools>/settings.ini [ProjectDrive] path=
       4. Registry values WorkDrive / WorkDrivePath / P_Drive / PDrive under
          3 well-known DayZ Tools keys (HKCU + HKLM 64-bit + HKLM 32-bit)
-      5. <DayZ Tools>/Bin/WorkDrive (default location DayZ Tools creates)
+
+    There is no default: <DayZ Tools>/Bin/WorkDrive holds WorkDrive.exe itself,
+    not a project drive, so mounting it would be wrong. Returns None instead and
+    the caller asks for --path.
     """
     candidates: list[Path] = []
 
@@ -151,12 +151,9 @@ def find_work_drive() -> Optional[Path]:
             ]
             for hive, subkey in registry_keys:
                 for value_name in ("WorkDrive", "WorkDrivePath", "P_Drive", "PDrive"):
-                    val = _read_registry_string(hive, subkey, value_name)
+                    val = read_registry_string(hive, subkey, value_name)
                     if val:
                         candidates.append(Path(val))
-
-    if tools:
-        candidates.append(tools / "Bin" / "WorkDrive")
 
     for c in candidates:
         if c and c.is_dir():
@@ -203,8 +200,11 @@ def invoke_mount(target: Path) -> bool:
         print(f"{WARN}WorkDrive.exe not found; falling back to subst")
 
     print(f'{CMD}subst P: "{target}"')
-    subprocess.run(["subst", "P:", str(target)], shell=True)
-    return is_p_mounted()
+    rc = subprocess.run(["subst", "P:", str(target)]).returncode
+    if is_p_mounted():
+        return True
+    print(f"{FAIL}subst P: exited with code {rc}; P:\\ is not mounted", file=sys.stderr)
+    return False
 
 
 def invoke_unmount() -> int:
@@ -224,7 +224,7 @@ def invoke_unmount() -> int:
             print(stderr.rstrip(), file=sys.stderr)
 
     print(f"{CMD}subst P: /D")
-    rc = subprocess.run(["subst", "P:", "/D"], shell=True).returncode
+    rc = subprocess.run(["subst", "P:", "/D"]).returncode
     if rc != 0 or is_p_mounted():
         print(f"{FAIL}subst /D returned {rc}; P:\\ still mounted={is_p_mounted()}", file=sys.stderr)
         return 1
@@ -253,7 +253,11 @@ def main() -> int:
         return invoke_unmount()
 
     if is_p_mounted():
-        print(f"{OK}P:\\ already mounted")
+        current = current_p_target()
+        print(f"{OK}P:\\ already mounted" + (f" -> {current}" if current else ""))
+        if args.path and current and not paths_equal(current, Path(args.path)):
+            print(f"{WARN}--path was not used: P:\\ already points to {current}, not {args.path}.")
+            print("       Run with --unmount first, then mount again with --path.")
         return 0
 
     if args.path:
@@ -266,19 +270,18 @@ def main() -> int:
         if not work:
             print(f"{FAIL}Could not resolve a work drive folder.", file=sys.stderr)
             print(
-                "       Tried: $DAYZ_WORK_DRIVE, cached path, settings.ini, registry, "
-                "DayZ Tools\\Bin\\WorkDrive\\.",
+                "       Tried: $DAYZ_WORK_DRIVE, cached path, settings.ini, registry.",
                 file=sys.stderr,
             )
-            print('       Pass --path "C:\\path\\to\\workdrive" to specify explicitly.', file=sys.stderr)
+            print(
+                '       Pass --path "C:\\path\\to\\workdrive" with the folder P:\\ should show '
+                "(it is cached for later runs).",
+                file=sys.stderr,
+            )
             return 1
 
     print(f"{INFO}Mounting P: -> {work}")
     if not invoke_mount(work):
-        return 1
-
-    if not is_p_mounted():
-        print(f"{FAIL}Mount returned 0 but P:\\ still isn't visible", file=sys.stderr)
         return 1
 
     set_cached_path(work)

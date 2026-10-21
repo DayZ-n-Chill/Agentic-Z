@@ -1,28 +1,34 @@
 """dayz-build-imageset: Pack PNG sprites into a DayZ .imageset + .paa atlas.
 
-Reads `<mod>/.gui-sources/<setname>/*.png`, shelf-packs into a square POT atlas
-with a 10px gutter, converts to .paa via ImageToPAA.exe, and writes a matching
-.imageset definition file under `<mod>/gui/imagesets/`.
+Reads `<mod>/.gui-sources/<setname>/*.png`, shelf-packs into the smallest
+power-of-two atlas (rectangular allowed) with a 10px gutter, splitting across
+several atlases (next-fit) when one 4096x4096 atlas is not enough, converts to
+.paa via ImageToPAA.exe, and writes a matching .imageset definition file under
+`<mod>/gui/imagesets/`. Outputs left over from a previous run with a different
+split count are removed.
 
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
-import importlib.util
+import re
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:  # reported with an install hint in main(); packing logic doesn't need it
+    Image = None
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+OK = h.OK
+WARN = h.WARN
+FAIL = h.FAIL
 INFO = "[INFO] "
 
 GAP = 10
@@ -33,28 +39,20 @@ ATLAS_SIZES = sorted(
 )
 
 
-def _load_preflight_module():
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+REQUIREMENTS = Path(__file__).resolve().parent / "requirements.txt"
+
+# A sprite's file stem becomes its ImageSetDefClass name, an unquoted
+# identifier in the .imageset file, so it must be a plain identifier.
+SPRITE_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
-find_dayz_tools = _load_preflight_module().find_dayz_tools
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
+def bad_sprite_names(pngs) -> list[str]:
+    """File names whose stem cannot be an ImageSetDefClass name."""
+    return [p.name for p in pngs if not SPRITE_NAME_RE.fullmatch(p.stem)]
 
 
 def resolve_image_to_paa() -> Path:
-    tools_root = find_dayz_tools()
+    tools_root = h.preflight.find_dayz_tools()
     if tools_root is None:
         sys.exit(
             f"{FAIL} DayZ Tools not found.\n"
@@ -102,11 +100,15 @@ def shelf_pack(metas, gap=GAP):
 def pack_split(metas, gap=GAP):
     """Pack sprites across one or more atlases when a single atlas can't hold them all.
 
-    Greedy first-fit-decreasing: sort sprites by height desc, then for each sprite
-    try to add it to the current atlas; if it overflows, start a new atlas.
+    Greedy next-fit-decreasing: sort sprites by height desc, then for each sprite
+    try to add it to the current atlas; if it overflows, close that atlas and
+    start a new one (earlier atlases are never revisited).
     Returns list of (dims, placed) tuples, or None if a single sprite is too big
     for the largest allowed atlas.
     """
+    max_dim = POT_DIMS[-1]
+    if any(w + 2 * gap > max_dim or h + 2 * gap > max_dim for _, w, h in metas):
+        return None  # a sprite doesn't fit even in the largest atlas
     sorted_metas = sorted(metas, key=lambda m: (-m[2], -m[1]))
     atlases = []
     current: list = []
@@ -116,8 +118,6 @@ def pack_split(metas, gap=GAP):
         if dims is not None:
             current = trial
             continue
-        if not current:
-            return None  # single sprite doesn't fit even in the largest atlas
         dims_final, placed_final = shelf_pack(current, gap)
         atlases.append((dims_final, placed_final))
         current = [sprite]
@@ -172,6 +172,9 @@ def write_one_atlas(stem: str, atlas_w: int, atlas_h: int, placed,
     paa_path = out_dir / f"{stem}.paa"
     imageset_path = out_dir / f"{stem}.imageset"
 
+    # A .paa from an earlier run must not pass for this run's output, so the
+    # file has to be new or have a later modification time after conversion.
+    previous_mtime = paa_path.stat().st_mtime_ns if paa_path.exists() else None
     with tempfile.TemporaryDirectory() as td:
         temp_png = Path(td) / f"{stem}.png"
         atlas.save(temp_png, "PNG")
@@ -182,6 +185,13 @@ def write_one_atlas(stem: str, atlas_w: int, atlas_h: int, placed,
         if not paa_path.exists():
             print(f"{FAIL} ImageToPAA reported success but {paa_path} is missing", file=sys.stderr)
             return False
+        if previous_mtime is not None and paa_path.stat().st_mtime_ns <= previous_mtime:
+            print(
+                f"{FAIL} ImageToPAA reported success but did not rewrite {paa_path.name};\n"
+                "       the file on disk is from an earlier run.",
+                file=sys.stderr,
+            )
+            return False
 
     print(f"{OK} Wrote {paa_path.name} ({paa_path.stat().st_size:,} bytes)")
 
@@ -191,7 +201,38 @@ def write_one_atlas(stem: str, atlas_w: int, atlas_h: int, placed,
     return True
 
 
-def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path) -> bool:
+def remove_stale_outputs(out_dir: Path, set_name: str, part_count: int,
+                         other_sets: frozenset = frozenset()) -> list:
+    """Delete <set>.{paa,imageset} / <set>_N.{paa,imageset} this run won't rewrite.
+
+    part_count == 1 keeps <set>.*; part_count > 1 keeps <set>_1 .. <set>_<part_count>;
+    part_count == 0 (the set's folder is empty) keeps nothing.
+    Stems that are the name of another source set are never touched.
+    Returns the removed paths.
+    """
+    if not out_dir.is_dir():
+        return []
+    if part_count == 1:
+        keep = {set_name}
+    else:
+        keep = {f"{set_name}_{i}" for i in range(1, part_count + 1)}
+    part_re = re.compile(re.escape(set_name) + r"_\d+")
+    removed = []
+    for f in sorted(out_dir.iterdir()):
+        if not f.is_file() or f.suffix.lower() not in (".paa", ".imageset"):
+            continue
+        stem = f.stem
+        if stem in keep or stem in other_sets:
+            continue
+        if stem == set_name or part_re.fullmatch(stem):
+            f.unlink()
+            removed.append(f)
+            print(f"{INFO} Removed stale {f.name}")
+    return removed
+
+
+def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path,
+              other_sets: frozenset = frozenset()) -> bool:
     set_name = set_dir.name
     pngs = sorted(p for p in set_dir.iterdir() if p.is_file() and p.suffix.lower() == ".png")
 
@@ -200,7 +241,20 @@ def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path) -
 
     if not pngs:
         print(f"{WARN} {set_name}: no .png files in {set_dir}, skipping")
+        # Outputs from when the folder still had sprites would otherwise ship
+        # sprites the user has deleted.
+        remove_stale_outputs(out_dir, set_name, 0, other_sets)
         return True
+
+    bad = bad_sprite_names(pngs)
+    if bad:
+        print(
+            f"{FAIL} {set_name}: sprite file names must be identifiers (letters, digits,\n"
+            "       underscores; not starting with a digit), because each name becomes an\n"
+            f"       ImageSetDefClass name. Rename: {', '.join(bad)}",
+            file=sys.stderr,
+        )
+        return False
 
     metas = []
     for p in pngs:
@@ -218,6 +272,7 @@ def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path) -
         return False
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    remove_stale_outputs(out_dir, set_name, len(atlases), other_sets)
 
     if len(atlases) == 1:
         (atlas_w, atlas_h), placed = atlases[0]
@@ -254,6 +309,14 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    h.gate_on_preflight()
+
+    if Image is None:
+        sys.exit(
+            f"{FAIL} Pillow is not installed (needed to compose the atlas).\n"
+            f'       Install it: python -m pip install -r "{REQUIREMENTS}"'
+        )
+
     mod_root = Path(args.mod_root).resolve()
     if not mod_root.is_dir():
         sys.exit(f"{FAIL} mod_root not a directory: {mod_root}")
@@ -275,7 +338,6 @@ def main() -> int:
     mod_name = args.mod_name or mod_root.name
     out_dir = mod_root / "gui" / "imagesets"
 
-    gate_on_preflight()
     print()
     image_to_paa = resolve_image_to_paa()
     print(f"{OK} ImageToPAA: {image_to_paa}")
@@ -285,9 +347,10 @@ def main() -> int:
     print(f"{INFO} output dir: {out_dir}")
     print(f"{INFO} {len(set_dirs)} imageset(s): {', '.join(d.name for d in set_dirs)}")
 
+    set_names = frozenset(d.name for d in set_dirs)
     success = 0
     for set_dir in set_dirs:
-        if build_one(set_dir, mod_name, out_dir, image_to_paa):
+        if build_one(set_dir, mod_name, out_dir, image_to_paa, set_names - {set_dir.name}):
             success += 1
 
     total = len(set_dirs)

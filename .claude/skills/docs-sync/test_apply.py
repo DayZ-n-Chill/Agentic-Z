@@ -10,10 +10,12 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from apply import (
-    decode_yaml_quoted,
+    escape_mdx_curlies_outside_fences,
     escape_mdx_tags_in_body,
     html_escape,
     parse_example_block,
@@ -21,6 +23,7 @@ from apply import (
     render_example_div,
     render_frontmatter,
     split_frontmatter,
+    strip_html_comments_outside_fences,
     transform_agent,
     transform_doc,
     transform_skill,
@@ -60,24 +63,107 @@ def test_render_frontmatter_quoting():
     assert out == '---\nname: "x"\nmodel: opus\n---\n'
 
 
+def test_escape_description_prose_only():
+    from apply import escape_description
+
+    out = escape_description("Packs `<mod>/gui/` sprites; uses {GUID}path & <tags> but `{x}` stays")
+    assert out == (
+        "Packs `<mod>/gui/` sprites; uses &#123;GUID&#125;path &amp; &lt;tags&gt; but `{x}` stays"
+    )
+
+
+def test_skill_overview_escapes_curly_braces():
+    out = transform_skill("---\nname: s\ndescription: Uses {GUID}path refs.\n---\n# s\n")
+    assert "Uses &#123;GUID&#125;path refs." in out
+
+
 def test_html_escape_safety():
     assert html_escape("<example>") == "&lt;example&gt;"
     assert html_escape("a & b") == "a &amp; b"
     assert html_escape('user said "hi"') == 'user said "hi"'  # quotes left alone
 
 
-# ---------- yaml-quoted decode ----------
+# ---------- YAML frontmatter ----------
 
-def test_decode_yaml_quoted_newlines():
-    assert decode_yaml_quoted("line1\\nline2") == "line1\nline2"
+def test_split_frontmatter_folded_description():
+    text = (
+        "---\n"
+        "name: foo\n"
+        "description: >\n"
+        "  Audits things and\n"
+        "  reports findings.\n"
+        "---\n"
+        "body\n"
+    )
+    fm, body = split_frontmatter(text)
+    assert fm["description"] == "Audits things and reports findings."
+    assert body == "body\n"
 
 
-def test_decode_yaml_quoted_quote_escape():
-    assert decode_yaml_quoted('he said \\"hi\\"') == 'he said "hi"'
+def test_split_frontmatter_folded_strip_description():
+    text = "---\nname: foo\ndescription: >-\n  One\n  two.\n---\nbody\n"
+    assert split_frontmatter(text)[0]["description"] == "One two."
 
 
-def test_decode_yaml_quoted_backslash():
-    assert decode_yaml_quoted("path C:\\\\foo") == "path C:\\foo"
+def test_split_frontmatter_invalid_yaml_raises():
+    with pytest.raises(ValueError):
+        split_frontmatter("---\nname: [unclosed\n---\nbody\n")
+
+
+def test_transform_skill_folded_description_renders_text():
+    src = "---\nname: dayz-x\ndescription: >\n  Does x with P:\\ paths.\n  Use when x.\n---\n\n# /dayz-x\n"
+    out = transform_skill(src)
+    assert "&gt;" not in out
+    assert "Does x with P:\\ paths. Use when x." in out
+
+
+# ---------- MDX curly escape ----------
+
+def test_curly_escape_skips_inline_code_and_fences():
+    body = "Prose {a} and `code {b}` here.\n```\n{c}\n```\n"
+    out = escape_mdx_curlies_outside_fences(body)
+    assert "Prose &#123;a&#125;" in out
+    assert "`code {b}`" in out
+    assert "\n{c}\n" in out
+
+
+def test_curly_escape_skips_tilde_fences():
+    body = "~~~\n{c}\n~~~\n{d}\n"
+    assert escape_mdx_curlies_outside_fences(body) == "~~~\n{c}\n~~~\n&#123;d&#125;\n"
+
+
+def test_fence_closes_only_on_same_marker():
+    # A ``` line inside a ~~~ fence is code, not a closing fence.
+    body = "~~~\n```\n{c}\n~~~\n{d}\n"
+    out = escape_mdx_curlies_outside_fences(body)
+    assert "\n{c}\n" in out and "&#123;d&#125;" in out
+
+
+# ---------- HTML comment stripping ----------
+
+def test_strip_single_line_comment_drops_line():
+    assert strip_html_comments_outside_fences("a\n<!-- note -->\nb\n") == "a\nb\n"
+
+
+def test_strip_multi_line_comment():
+    body = "a\n<!--\nhidden {x}\nmore\n-->\nb\n"
+    assert strip_html_comments_outside_fences(body) == "a\nb\n"
+
+
+def test_strip_inline_comment_keeps_text():
+    assert strip_html_comments_outside_fences("keep <!-- x --> this\n") == "keep  this\n"
+
+
+def test_strip_does_not_join_two_comments_across_text():
+    body = "<!-- a --> keep\n<!-- b -->\n"
+    assert strip_html_comments_outside_fences(body) == " keep\n"
+
+
+def test_comments_in_backtick_and_tilde_fences_are_kept():
+    body = "```\n<!-- c1 -->\n```\n~~~html\n<!--\nc2\n-->\n~~~\n<!-- gone -->\n"
+    assert strip_html_comments_outside_fences(body) == (
+        "```\n<!-- c1 -->\n```\n~~~html\n<!--\nc2\n-->\n~~~\n"
+    )
 
 
 # ---------- example block parser ----------
@@ -158,14 +244,24 @@ def test_render_description_prose_then_examples():
     assert ">c2<" in out
 
 
-def test_render_description_yaml_quoted_input():
-    """Agent files store description as a YAML quoted string with \\n escapes;
-    render_description must decode those before parsing examples."""
-    desc_raw = 'Lead-in.\\n\\n<example>\\nContext: ctx\\nuser: "u"\\nassistant: "a"\\n</example>'
-    out = render_description(desc_raw)
-    assert out.startswith("Lead-in.")
-    assert '<div class="agent-example">' in out
-    assert ">ctx<" in out
+def test_render_description_escapes_prose_and_examples_like_skills():
+    desc = (
+        "Use for `modded class X {}` & <Widget> work with {braces}.\n\n"
+        "<example>\nContext: set {a} & b\n"
+        'user: "Add `class Foo {}` to <config>"\n'
+        'assistant: "I\'ll use x -> y {z}"\n</example>\n\n'
+        "Tail {t} & <u>."
+    )
+    out = render_description(desc)
+    # Prose: escaped outside inline code, code spans left literal.
+    assert "Use for `modded class X {}` &amp; &lt;Widget&gt; work with &#123;braces&#125;." in out
+    # Example turns get the same treatment.
+    assert ">set &#123;a&#125; &amp; b<" in out
+    assert '`class Foo {}` to &lt;config&gt;' in out
+    assert "x -&gt; y &#123;z&#125;" in out
+    assert "Tail &#123;t&#125; &amp; &lt;u&gt;." in out
+    # The generated div markup itself is not escaped.
+    assert out.count('<div class="agent-example">') == 1
 
 
 # ---------- MDX tag escape in body ----------
@@ -289,6 +385,14 @@ def test_transform_agent_escapes_mdx_tags_in_body():
 
 # ---------- transform_doc ----------
 
-def test_transform_doc_is_identity():
-    src = "---\nname: X\ntitle: Y\n---\n\nbody contents\n"
+def test_transform_doc_plain_body_is_unchanged():
+    src = "---\nname: X\ntitle: Y\n---\n\nbody `{x}` contents\n"
     assert transform_doc(src) == src
+
+
+def test_transform_doc_makes_body_mdx_safe():
+    src = '---\ntitle: "{keep}"\n---\n\n<!-- note -->\nUse {name} here.\n'
+    out = transform_doc(src)
+    assert out.startswith('---\ntitle: "{keep}"\n---\n')
+    assert "<!--" not in out
+    assert "Use &#123;name&#125; here." in out

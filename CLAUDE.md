@@ -6,9 +6,21 @@ This file provides foundational guidance for agents working in this repository.
 
 This repo is **Agentic-Z** — an AI Agent Stack for DayZ Modding, with first-class support for Claude Code, Codex, and Gemini. Cloning it starts a new DayZ mod project. Every clone inherits the same scaffolding: rules, agents, skills, helper scripts.
 
+## The three tiers
+
+Every agent works from three tiers. When two disagree, the more specific tier wins, and no tier repeats another.
+
+| Tier | What it holds | Where it lives | Loads |
+|---|---|---|---|
+| 1 · Repo rules (L1) | How every agent works here: communication, tooling, memory, routing, file locations. | This file (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) | Every agent, every task |
+| 2 · DayZ rules (L2) | Enforce Script style, config patterns, asset rules, environment, vanilla search. | `.claude/skills/_shared/dayz-conventions.md` | All DayZ work |
+| 3 · Agents and knowledge packs | The agents in `.claude/agents/`, the skills, and the packs under `.claude/skills/_shared/` (EnScript patterns, Figma-to-DayZ rules). | Their own files | Only what the task needs |
+
+Corrections from the user go into the right tier through `/dayz-record-correction`.
+
 ## Default rules (apply to every clone)
 
-These are the L1 rules of the template. They apply to every clone of this repo, every agent, every skill. DayZ-specific rules live separately at `.claude/skills/_shared/dayz-conventions.md` and are referenced from the individual agent/skill files that need them.
+These are the L1 (Tier 1) rules of the template. They apply to every clone of this repo, every agent, every skill. DayZ-specific rules live separately at `.claude/skills/_shared/dayz-conventions.md` and are referenced from the individual agent/skill files that need them.
 
 **Skim summary:**
 
@@ -37,7 +49,7 @@ User/machine-specific notes go in `<repo>/.claude/local-memory/` (gitignored, pe
 
 When a Superpowers workflow (`/brainstorming`, `/executing-plans`, `/requesting-code-review`, `/dispatching-parallel-agents`, etc.) needs to dispatch a subagent and the work touches DayZ, route to the matching `dayz-*` specialist via the Agent tool. Generic Superpowers agents (e.g. `superpowers:code-reviewer`) don't know Enforce Script conventions and will miss DayZ-specific traps like the `modded class` no-extends rule or engine classes that can't be modded.
 
-**Figma-to-DayZ work has its own pipeline.** When the input is a Figma URL, fileKey, or node ID and the target is a DayZ `.layout`, dispatch the three-stage pipeline in order: `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator`. Do not author the `.layout` inline or via `dayz-ui-specialist` alone — the canonical translation rules live at `.claude/skills/_shared/figma-to-dayz-rules.md` and only the pipeline applies them. After the pipeline finishes, `dayz-ui-specialist` handles polish, widget scripts, and Workbench wiring. `dayz-ui-specialist` will dispatch the pipeline itself when given a Figma input.
+**Figma-to-DayZ work has its own pipeline.** When the input is a Figma URL, fileKey, or node ID and the target is a DayZ `.layout`, dispatch the three-stage pipeline in order: `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator` (gate mode). Do not author the `.layout` inline or via `dayz-ui-specialist` alone — the canonical translation rules live at `.claude/skills/_shared/figma-to-dayz-rules.md` and only the pipeline applies them. After the pipeline finishes, `dayz-ui-specialist` handles polish, widget scripts, and Workbench wiring. When `dayz-ui-specialist` is handed a Figma input it returns to its caller, and the caller (`dayz-lead` or the main session) runs the pipeline.
 
 Heuristic: anything under `workspace/<ModName>/`, `.claude/skills/dayz-*/`, `P:\`, or DayZ file types (`.c`, `.layout`, `.p3d`, `.paa`, `.rvmat`, `config.cpp`, `types.xml`) is DayZ work. See the role-to-specialist table at `docs/dayz-modding.md` ("Superpowers ↔ DayZ specialist routing").
 
@@ -77,4 +89,4 @@ For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generi
 - This is a Windows workspace.
 - `package.json` is lightweight and supports helper dependencies for sandbox scripts.
 - There is no formal app source tree or test suite here; validate changes by running the relevant helper script and checking the generated artifact.
-- Slash skill discovery is agent-specific. Codex reads `$CODEX_HOME/skills` or `$HOME/.codex/skills`, Claude reads `$CLAUDE_HOME/skills` or `$HOME/.claude/skills`, and Gemini reads `$GEMINI_CLI_HOME/skills` or `$HOME/.gemini/skills`. To make the repo's `.claude/skills/` appear in all three, run `/sync-skills` (or `python .claude/skills/sync-skills/sync.py`). It symlinks each repo skill into each agent's skills directory without moving the source files; falls back to junctions on Windows when symlinks need elevation. Afterward, restart/reload the agent session; in Gemini CLI, run `/skills reload` before `/skills list`.
+- Slash skill discovery is agent-specific. Codex reads `$CODEX_HOME/skills` or `$HOME/.codex/skills`, Claude Code reads `$CLAUDE_CONFIG_DIR/skills` or `$HOME/.claude/skills`, and Gemini reads `$GEMINI_CLI_HOME/skills` or `$HOME/.gemini/skills`. To make the repo's `.claude/skills/` appear in all three, run `/sync-skills` (or `python .claude/skills/sync-skills/sync.py`). It symlinks each repo skill into each agent's skills directory without moving the source files; falls back to junctions on Windows when symlinks need elevation. Afterward, restart/reload the agent session; in Gemini CLI, run `/skills reload` before `/skills list`.

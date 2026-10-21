@@ -1,8 +1,8 @@
 """Scope the agent to a single DayZ mod.
 
-Adds deny rules to .claude/settings.local.json that block Edit/Write to OTHER
-mods' workspace folders, P:\\<other>\\ junctions, and P:\\Mods\\@<other>\\
-deploy dirs. Reads stay broad. Records the exact rules added in
+Adds Edit deny rules to .claude/settings.local.json for OTHER mods' workspace
+folders, P:\\<other>\\ junctions, and P:\\Mods\\@<other>\\ deploy dirs. Claude
+Code checks Edit rules for both the Edit and Write tools. Reads stay broad. Records the exact rules added in
 .claude/local-memory/dayz-active-scope.json so --clear is precise.
 
 Run:
@@ -20,32 +20,56 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-# REPO_ROOT = where this skill ships from. PROJECT_DIR = user's project,
-# where workspace/, settings.local.json, and local-memory/ all live.
-_HERE = Path(__file__).resolve().parent
-REPO_ROOT = _HERE.parent.parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
+# PROJECT_DIR = user's project, where workspace/, settings.local.json, and
+# local-memory/ all live.
 PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
 WORKSPACE = PROJECT_DIR / "workspace"
 SETTINGS_LOCAL = PROJECT_DIR / ".claude" / "settings.local.json"
 SCOPE_STATE = PROJECT_DIR / ".claude" / "local-memory" / "dayz-active-scope.json"
 
 OK = "[OK]   "
-WARN = "[WARN] "
 FAIL = "[FAIL] "
 INFO = "[INFO] "
 
-# Folders under workspace/ that are NEVER mods (don't deny these).
-NON_MOD_DIRS: set[str] = set()
-
-# Per-other-mod deny templates. {} substituted with the other mod's name.
+# Per-other-mod deny templates in Claude Code permission-rule syntax:
+# - File writes are checked against Edit(path) rules only; one Edit rule
+#   blocks both the Edit and Write tools. A Write(path) rule is never matched.
+# - "/path" in .claude/settings.local.json anchors at the primary working
+#   directory (the project root).
+# - "//path" is absolute. Windows paths are normalized to POSIX form before
+#   matching (P:\Foo becomes /p/Foo), so P:\Foo\** is written //p/Foo/**.
 DENY_TEMPLATES = (
-    "Edit(workspace/{name}/**)",
-    "Write(workspace/{name}/**)",
-    "Edit(P:\\{name}\\**)",
-    "Write(P:\\{name}\\**)",
-    "Edit(P:\\Mods\\@{name}\\**)",
-    "Write(P:\\Mods\\@{name}\\**)",
+    "Edit(/workspace/{name}/**)",
+    "Edit(//p/{name}/**)",
+    "Edit(//p/Mods/@{name}/**)",
 )
+
+# Rule paths use gitignore syntax. * ? [ are wildcards anywhere in a name.
+# ! (negation) and # (comment) are special only at the start of a pattern, so
+# they are fine mid-name (the real <game>\!Workshop rule relies on that); they
+# are refused only as a name's first character, to stay clear of that edge.
+GITIGNORE_WILDCARDS = frozenset("*?[")
+GITIGNORE_LEADING = frozenset("!#")
+META_HINT = "* ? [ anywhere, or a leading ! or #"
+
+
+def _has_meta(name: str) -> bool:
+    return any(c in GITIGNORE_WILDCARDS for c in name) or name[:1] in GITIGNORE_LEADING
+
+
+def _posix_rule_path(path: Path) -> str:
+    """C:\\Games\\DayZ -> //c/Games/DayZ (the absolute form Claude Code matches)."""
+    drive, rest = os.path.splitdrive(str(path))
+    return "//" + drive.rstrip(":").lower() + rest.replace("\\", "/")
+
+
+def _game_workshop_dir() -> Optional[Path]:
+    """<DayZ game>\\!Workshop, the real folder behind the P:\\Mods junction, or None."""
+    game = h.preflight.find_dayz_game()
+    return game / "!Workshop" if game is not None else None
 
 
 def _load_settings() -> dict:
@@ -102,8 +126,6 @@ def _list_mods() -> list[str]:
             continue
         if p.name.startswith("."):
             continue
-        if p.name in NON_MOD_DIRS:
-            continue
         out.append(p.name)
     return out
 
@@ -125,9 +147,20 @@ def _remove_prior_rules(settings: dict) -> int:
 
 
 def cmd_scope(mod_name: str) -> int:
-    target = WORKSPACE / mod_name
-    if not target.exists() or not target.is_dir():
-        known = _list_mods()
+    if _has_meta(mod_name):
+        print(
+            f"{FAIL} Mod name {mod_name!r} contains {META_HINT}, which permission "
+            "rules treat as pattern syntax. Rename the mod folder.",
+            file=sys.stderr,
+        )
+        return 1
+    # Match the folder on disk case-insensitively (Windows paths are), then use
+    # its real name everywhere, so the active mod is never listed as its own sibling.
+    known = _list_mods()
+    on_disk = mod_name if mod_name in known else next(
+        (m for m in known if m.lower() == mod_name.lower()), None
+    )
+    if on_disk is None:
         print(f"{FAIL} workspace\\{mod_name} does not exist.", file=sys.stderr)
         if known:
             print("        Known mods:", file=sys.stderr)
@@ -141,6 +174,7 @@ def cmd_scope(mod_name: str) -> int:
             file=sys.stderr,
         )
         return 1
+    mod_name = on_disk
 
     print(f"DayZ scope: {mod_name}\n")
     print(f"{OK} Mod found: workspace\\{mod_name}")
@@ -158,26 +192,46 @@ def cmd_scope(mod_name: str) -> int:
         print(f"{INFO} No sibling mods to deny. Scope is set, but no rules were needed.")
         return 0
 
+    bad = [m for m in siblings if _has_meta(m)]
+    if bad:
+        print(
+            f"{FAIL} Sibling mod folder(s) {', '.join(bad)} contain {META_HINT},\n"
+            "        so no exact deny rule can be written for them. Rename them first.",
+            file=sys.stderr,
+        )
+        return 1
+
     print(f"{INFO} Sibling mods detected: {len(siblings)} ({', '.join(siblings)})")
+
+    # P:\Mods is a junction, so also deny the real folder it points at.
+    workshop = _game_workshop_dir()
+    if workshop is None:
+        print(f"{INFO} DayZ game install not found: no rule for <game>\\!Workshop\\@<other>")
 
     new_rules: list[str] = []
     for other in siblings:
         for tmpl in DENY_TEMPLATES:
             new_rules.append(tmpl.format(name=other))
+        if workshop is not None:
+            new_rules.append(f"Edit({_posix_rule_path(workshop)}/@{other}/**)")
 
     perms = settings.setdefault("permissions", {})
     deny = perms.setdefault("deny", [])
-    for r in new_rules:
-        if r not in deny:
-            deny.append(r)
+    # Record only the rules this run appended: a rule the user already had stays
+    # theirs, so --clear must not remove it.
+    added = [r for r in new_rules if r not in deny]
+    deny.extend(added)
 
     _save_settings(settings)
-    _save_state(mod_name, new_rules)
+    _save_state(mod_name, added)
 
-    print(f"{OK} Added {len(new_rules)} deny rules to .claude\\settings.local.json")
+    print(f"{OK} Added {len(added)} Edit deny rules to .claude\\settings.local.json")
+    skipped = len(new_rules) - len(added)
+    if skipped:
+        print(f"{INFO} {skipped} matching rule(s) were already present; they stay yours and --clear keeps them")
     print(f"{OK} Active scope recorded at .claude\\local-memory\\dayz-active-scope.json")
     print()
-    print("Reads remain broad. Edit/Write to other mods is blocked.")
+    print("Reads remain broad. Edit and Write to other mods are blocked.")
     print("Run /dayz-scope-mod --clear (or scope.py --clear) to lift.")
     return 0
 
@@ -215,32 +269,20 @@ def cmd_status() -> int:
     return 0
 
 
-def main() -> int:
+def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description="Scope the agent to a single DayZ mod by adding deny rules for sibling mods."
     )
-    parser.add_argument("mod", nargs="?", help="Mod name under workspace/")
-    parser.add_argument("--clear", action="store_true", help="Remove the active scope")
-    parser.add_argument("--status", action="store_true", help="Show current scope")
-    args = parser.parse_args()
-
-    if args.clear and args.status:
-        print(f"{FAIL} --clear and --status are mutually exclusive", file=sys.stderr)
-        return 2
-    if args.clear and args.mod:
-        print(f"{FAIL} --clear takes no mod argument", file=sys.stderr)
-        return 2
-    if args.status and args.mod:
-        print(f"{FAIL} --status takes no mod argument", file=sys.stderr)
-        return 2
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("mod", nargs="?", help="Mod name under workspace/")
+    group.add_argument("--clear", action="store_true", help="Remove the active scope")
+    group.add_argument("--status", action="store_true", help="Show current scope")
+    args = parser.parse_args(argv)
 
     if args.clear:
         return cmd_clear()
     if args.status:
         return cmd_status()
-    if not args.mod:
-        parser.print_help(sys.stderr)
-        return 2
     return cmd_scope(args.mod)
 
 

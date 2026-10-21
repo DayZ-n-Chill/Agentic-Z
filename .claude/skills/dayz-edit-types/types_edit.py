@@ -1,26 +1,27 @@
 """dayz-edit-types: Add / update / remove an entry in DayZ types.xml.
 
-Upserts a <type name="..."> block. Backs up to <file>.bak before writing.
+Upserts or removes a <type name="..."> block. When the edit changes the file,
+backs it up to <file>.bak first; when nothing changes, writes nothing.
+Comments survive the round trip; the file is re-indented with 4 spaces.
 
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
-import importlib.util
+from collections import Counter
 import shutil
-import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+OK = h.OK
+WARN = h.WARN
+FAIL = h.FAIL
 
 # DayZ defaults for a new <type> entry. 3888000s = 45 days (vanilla typical).
 DEFAULTS = {
@@ -38,26 +39,6 @@ DEFAULT_FLAGS = {
     "crafted": "0",
     "deloot": "0",
 }
-
-
-def _load_preflight():
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight at {PREFLIGHT}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_load_preflight()  # ensure preflight module is importable
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
 
 
 def _set_int_child(parent: ET.Element, tag: str, value: int) -> Optional[tuple[str, str]]:
@@ -112,8 +93,11 @@ def _ensure_flags(parent: ET.Element) -> None:
         el.set(k, v)
 
 
-def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> str:
-    """Create or update the <type name="classname"> block. Returns a one-line summary."""
+def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> tuple[bool, str]:
+    """Create or update the <type name="classname"> block.
+
+    Returns (changed, one-line summary).
+    """
     type_el = next((t for t in root.findall("type") if t.get("name") == classname), None)
     is_new = type_el is None
     if is_new:
@@ -124,7 +108,7 @@ def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> str:
             value = getattr(args, tag, None)
             ET.SubElement(type_el, tag).text = str(value if value is not None else default)
         _ensure_flags(type_el)
-        if args.category:
+        if args.category is not None:
             sub = ET.SubElement(type_el, "category")
             sub.set("name", args.category)
         for usage in args.usage or []:
@@ -133,13 +117,10 @@ def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> str:
             ET.SubElement(type_el, "value").set("name", value)
         for tag in args.tag or []:
             ET.SubElement(type_el, "tag").set("name", tag)
-        return (
-            f"Added <type name=\"{classname}\"> "
-            f"nominal={args.nominal or DEFAULTS['nominal']}, "
-            f"min={args.min or DEFAULTS['min']}, "
-            f"lifetime={args.lifetime or DEFAULTS['lifetime']}, "
-            f"cost={args.cost or DEFAULTS['cost']}"
+        summary = ", ".join(
+            f"{tag}={type_el.findtext(tag)}" for tag in ("nominal", "min", "lifetime", "cost")
         )
+        return True, f"Added <type name=\"{classname}\"> {summary}"
 
     changes: list[str] = []
     for tag in ("nominal", "min", "lifetime", "restock", "cost"):
@@ -149,7 +130,7 @@ def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> str:
         diff = _set_int_child(type_el, tag, value)
         if diff:
             changes.append(f"{tag} {diff[0]} -> {diff[1]}")
-    if args.category:
+    if args.category is not None:
         diff = _set_named_singleton(type_el, "category", args.category)
         if diff:
             changes.append(f"category {diff[0]} -> {diff[1]}")
@@ -161,56 +142,130 @@ def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> str:
             changes.append(f"{tag}s {diff[0]} -> {diff[1]}")
 
     if not changes:
-        return f"<type name=\"{classname}\"> already matches; no change"
-    return f"Updated <type name=\"{classname}\">: " + ", ".join(changes)
+        return False, f"<type name=\"{classname}\"> already matches; no change"
+    return True, f"Updated <type name=\"{classname}\">: " + ", ".join(changes)
 
 
-def remove(root: ET.Element, classname: str) -> str:
+def min_exceeds_nominal(root: ET.Element, classname: str) -> Optional[tuple[int, int]]:
+    """(min, nominal) when the entry's min is above its nominal, else None."""
     type_el = next((t for t in root.findall("type") if t.get("name") == classname), None)
     if type_el is None:
-        return f"<type name=\"{classname}\"> not found; no change"
+        return None
+    try:
+        lo, hi = int(type_el.findtext("min", "0")), int(type_el.findtext("nominal", "0"))
+    except ValueError:
+        return None  # a hand-edited non-number is left for the user to fix
+    return (lo, hi) if lo > hi else None
+
+
+def non_negative_int(text: str) -> int:
+    """argparse type: an int >= 0 (counts, seconds and cost are never negative)."""
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid int value: {text!r}")
+    if value < 0:
+        raise argparse.ArgumentTypeError(f"must be 0 or more, got {value}")
+    return value
+
+
+def remove(root: ET.Element, classname: str) -> tuple[bool, str]:
+    """Delete the <type name="classname"> block. Returns (changed, summary)."""
+    type_el = next((t for t in root.findall("type") if t.get("name") == classname), None)
+    if type_el is None:
+        return False, f"<type name=\"{classname}\"> not found; no change"
     root.remove(type_el)
-    return f"Removed <type name=\"{classname}\">"
+    return True, f"Removed <type name=\"{classname}\">"
+
+
+def duplicate_names(root: ET.Element) -> list[str]:
+    """<type> names that appear more than once, sorted."""
+    counts = Counter(t.get("name") for t in root.findall("type"))
+    return sorted(name for name, n in counts.items() if name is not None and n > 1)
+
+
+def check_types_root(root: ET.Element, path: Path, classname: str) -> None:
+    """Refuse a file that is not a types.xml or whose target entry is ambiguous.
+
+    Other files under a mission's db/ (events.xml, globals.xml) parse fine but
+    have a different root, and an edit would graft a <type> into them. A name
+    listed twice cannot be edited safely: only the first block would change.
+    """
+    if root.tag != "types":
+        sys.exit(f"{FAIL} {path} has root element <{root.tag}>, not <types>; refusing to edit it.")
+    dups = duplicate_names(root)
+    if classname in dups:
+        sys.exit(
+            f"{FAIL} {path} has more than one <type name=\"{classname}\">.\n"
+            "       Merge them by hand into one block, then rerun."
+        )
+    if dups:
+        print(f"{WARN} {path} lists these types more than once: {', '.join(dups)}")
+
+
+def parse_types(path: Path) -> ET.ElementTree:
+    """Parse types.xml keeping comments (the default parser drops them)."""
+    parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
+    return ET.parse(path, parser=parser)
+
+
+def write_types(tree: ET.ElementTree, path: Path) -> None:
+    """Write types.xml re-indented with 4 spaces, with an XML declaration."""
+    ET.indent(tree, space="    ")
+    tree.write(path, encoding="utf-8", xml_declaration=True)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Upsert / remove an entry in DayZ types.xml.")
     parser.add_argument("path", type=Path, help="Path to types.xml.")
     parser.add_argument("classname", help="Class name (the `name` attribute of the <type> block).")
-    parser.add_argument("--remove", action="store_true", help="Remove the entry instead of upserting.")
-    parser.add_argument("--nominal", type=int)
-    parser.add_argument("--min", type=int)
-    parser.add_argument("--lifetime", type=int)
-    parser.add_argument("--restock", type=int)
-    parser.add_argument("--cost", type=int)
+    parser.add_argument(
+        "--remove", action="store_true",
+        help="Remove the entry instead of upserting. Field flags (--nominal, --usage, ...) are ignored.",
+    )
+    parser.add_argument("--nominal", type=non_negative_int)
+    parser.add_argument("--min", type=non_negative_int)
+    parser.add_argument("--lifetime", type=non_negative_int)
+    parser.add_argument("--restock", type=non_negative_int)
+    parser.add_argument("--cost", type=non_negative_int)
     parser.add_argument("--category")
     parser.add_argument("--usage", action="append", help="Repeatable. Replaces all existing usages.")
     parser.add_argument("--value", action="append", help="Repeatable. Replaces all existing values.")
     parser.add_argument("--tag", action="append", help="Repeatable. Replaces all existing tags.")
     args = parser.parse_args()
 
-    gate_on_preflight()
+    h.gate_on_preflight()
     print()
 
     if not args.path.exists():
         sys.exit(f"{FAIL} {args.path} not found.")
     try:
-        tree = ET.parse(args.path)
+        tree = parse_types(args.path)
     except ET.ParseError as e:
         sys.exit(f"{FAIL} Could not parse {args.path}: {e}")
     root = tree.getroot()
+    check_types_root(root, args.path, args.classname)
 
     if args.remove:
-        msg = remove(root, args.classname)
+        changed, msg = remove(root, args.classname)
     else:
-        msg = upsert(root, args.classname, args)
+        changed, msg = upsert(root, args.classname, args)
+        if args.min is not None or args.nominal is not None:
+            bad = min_exceeds_nominal(root, args.classname)
+            if bad:
+                sys.exit(
+                    f"{FAIL} min ({bad[0]}) would be greater than nominal ({bad[1]}) for {args.classname}.\n"
+                    f"       Pass values with min <= nominal. {args.path} was not changed."
+                )
     print(f"{OK} {msg}")
+    if not changed:
+        return 0
 
     backup = args.path.with_suffix(args.path.suffix + ".bak")
     shutil.copy2(args.path, backup)
     print(f"{OK} Backup: {backup}")
 
-    tree.write(args.path, encoding="utf-8", xml_declaration=True)
+    write_types(tree, args.path)
     print(f"{OK} Wrote {args.path}")
     return 0
 

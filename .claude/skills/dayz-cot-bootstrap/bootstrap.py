@@ -3,26 +3,25 @@
 Two-pass workflow:
   1. Launch server + client with CF + COT + user mods. Wait for COT to write the
      per-player files under <profiles>/PermissionsFramework/Players/<id>.json
-     AND <profiles>/PermissionsFramework/Permissions/<id>.txt.
-  2. Kill the session. For each triggered player, add "admin" to the JSON's
-     Roles and flip ' 0' -> ' 2' in that player's Permissions/<id>.txt.
-     Relaunch.
+     and <profiles>/PermissionsFramework/Permissions/<id>.txt.
+  2. Stop the server and client this script started. For each triggered
+     player, add "admin" to the JSON's Roles and flip ' 0' -> ' 2' in that
+     player's Permissions/<id>.txt. Relaunch.
 
 The grant is strictly per-player. Roles/everyone.txt (and the rest of
-Roles/*.txt) is NEVER modified — flipping everyone.txt would grant every
+Roles/*.txt) is never modified: flipping everyone.txt would grant every
 connecting player full admin perms, which is unsafe even on a solo test box.
 
 COT does not write its perm files until a player has loaded in, which is why
 this can't be done as a one-time pre-launch edit.
 
-Reuses helpers from dayz-launch-test/launch.py and dayz-preflight/preflight.py.
+Reuses the launch helpers from dayz-launch-test/launch.py.
 
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import re
 import subprocess
@@ -30,41 +29,23 @@ import sys
 import time
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
-LAUNCH_TEST = REPO_ROOT / ".claude" / "skills" / "dayz-launch-test" / "launch.py"
-DAYZ_INIT_STATE = REPO_ROOT / ".claude" / "skills" / "dayz-init" / "state.py"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
 
 CF_MOD = "CF"
 COT_MOD = "Community-Online-Tools"
-DIAG_IMAGE_NAME = "DayZDiag_x64.exe"
 
 DEFAULT_INSTANCE = "chernarus"
 DEFAULT_PORT = 2302
 DEFAULT_TIMEOUT = 600  # 10 minutes
+STOP_TIMEOUT_S = 30
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
-
-def _load(path: Path, alias: str):
-    spec = importlib.util.spec_from_file_location(alias, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load module at {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_preflight = _load(PREFLIGHT, "dayz_preflight_module")
-_launch = _load(LAUNCH_TEST, "dayz_launch_test_module")
-_dayz_init_state = _load(DAYZ_INIT_STATE, "dayz_init_state_module")
-
-find_dayz_diag = _preflight.find_dayz_diag
-cached_project_root = _dayz_init_state.cached_project_root
+_launch = h.load_module("dayz_launch_test_module", h.SKILLS_DIR / "dayz-launch-test" / "launch.py")
 verify_built_mods = _launch.verify_built_mods
 resolve_diag_client = _launch.resolve_diag_client
 verify_instance_environment = _launch.verify_instance_environment
@@ -72,19 +53,12 @@ build_server_cmd = _launch.build_server_cmd
 build_client_cmd = _launch.build_client_cmd
 read_client_display_prefs = _launch.read_client_display_prefs
 wait_for_server_port = _launch.wait_for_server_port
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight skill not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
+SERVER_BIND_TIMEOUT_S = _launch.SERVER_BIND_TIMEOUT_S
 
 
 def verify_cf_cot_subscribed() -> None:
     """CF and COT are external Steam Workshop mods. They must be subscribed
-    (i.e. present at P:\\Mods\\@<name>\\Addons\\) before this skill can run."""
+    (present at P:\\Mods\\@<name>\\Addons\\) before this skill can run."""
     for name in (CF_MOD, COT_MOD):
         addons = MODS_ROOT / f"@{name}" / "Addons"
         if not addons.exists() or not any(addons.glob("*.pbo")):
@@ -96,9 +70,8 @@ def verify_cf_cot_subscribed() -> None:
 
 
 def dedup_with_cf_cot(user_mods: list[str]) -> list[str]:
-    """Prepend CF + COT to the mod chain, removing any duplicates the user
-    passed. Order matters: CF must come before COT, and both must come before
-    user mods that may depend on them."""
+    """Prepend CF + COT to the mod chain, dropping duplicates the user passed.
+    CF must load before COT, and both before user mods that may depend on them."""
     seen: set[str] = set()
     out: list[str] = []
     for name in (CF_MOD, COT_MOD, *user_mods):
@@ -112,16 +85,19 @@ def snapshot_player_files(players_dir: Path) -> dict[str, float]:
     """Return {player_id: mtime} for all existing Players/*.json files.
 
     COT touches these files when a player connects, so the wait loop watches
-    for new files (key not in snapshot) OR mtime advancing (existing player
-    reconnecting on a re-run)."""
+    for new files (key not in snapshot) or a newer mtime (a player reconnecting
+    on a re-run)."""
     if not players_dir.exists():
         return {}
     return {p.stem: p.stat().st_mtime for p in players_dir.glob("*.json")}
 
 
-def wait_for_cot_player(players_dir: Path, baseline: dict[str, float], timeout_s: int) -> list[Path]:
-    """Poll players_dir for new or touched JSON files. Returns the list of
-    paths that triggered. Empty list means timeout."""
+def wait_for_cot_player(players_dir: Path, baseline: dict[str, float], timeout_s: int,
+                        session: list[subprocess.Popen]) -> list[Path]:
+    """Poll players_dir for new or touched JSON files. Returns the files that
+    triggered. An empty list means the wait failed, already reported as [FAIL]:
+    the timeout ran out, or the server or client (session = [server, client])
+    exited first, which ends the wait at once."""
     print(f"        Waiting up to {timeout_s}s for COT to register your character...")
     print(f"        (watching {players_dir})")
     sys.stdout.flush()
@@ -129,56 +105,53 @@ def wait_for_cot_player(players_dir: Path, baseline: dict[str, float], timeout_s
     last_dot = time.time()
     while time.time() < deadline:
         if players_dir.exists():
-            triggered: list[Path] = []
-            for p in players_dir.glob("*.json"):
-                pid = p.stem
-                mtime = p.stat().st_mtime
-                if pid not in baseline or mtime > baseline[pid]:
-                    triggered.append(p)
+            triggered = [
+                p for p in players_dir.glob("*.json")
+                if p.stem not in baseline or p.stat().st_mtime > baseline[p.stem]
+            ]
             if triggered:
                 print()
                 for p in triggered:
                     print(f"{OK} Detected player file: {p.name}")
                 return triggered
+        for label, proc in zip(("server", "client"), session):
+            code = proc.poll()
+            if code is not None:
+                print()
+                print(f"{FAIL} The {label} exited (code {code}) before COT registered a player.")
+                return []
         if time.time() - last_dot > 5:
             print(".", end="", flush=True)
             last_dot = time.time()
         time.sleep(2)
     print()
+    print(f"{FAIL} Timed out after {timeout_s}s waiting for COT to register a player.")
     return []
 
 
-def kill_diag_processes() -> int:
-    """taskkill all DayZDiag_x64.exe. Returns count killed (best effort)."""
-    result = subprocess.run(
-        ["taskkill", "/IM", DIAG_IMAGE_NAME, "/F"],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode == 0:
-        killed = sum(1 for line in result.stdout.splitlines() if line.startswith("SUCCESS:"))
-        word = "process" if killed == 1 else "processes"
-        print(f"{OK} Killed {killed} {DIAG_IMAGE_NAME} {word}.")
-        return killed
-    if "not found" in (result.stderr or "").lower():
-        print(f"{OK} No {DIAG_IMAGE_NAME} processes were running.")
-        return 0
-    print(f"{WARN} taskkill returned rc={result.returncode}")
-    if result.stdout.strip():
-        print(result.stdout)
-    if result.stderr.strip():
-        print(result.stderr)
-    return 0
+def stop_session(procs: list[subprocess.Popen]) -> None:
+    """Terminate only the processes this script started; other DayZDiag
+    instances on the machine are left alone."""
+    for proc in procs:
+        if proc.poll() is not None:
+            continue
+        proc.kill()
+        try:
+            proc.wait(timeout=STOP_TIMEOUT_S)
+            print(f"{OK} Stopped PID {proc.pid}")
+        except subprocess.TimeoutExpired:
+            print(f"{WARN} PID {proc.pid} did not exit within {STOP_TIMEOUT_S}s; close it manually.")
 
 
-def grant_admin_role(player_json: Path) -> bool:
-    """Insert 'admin' into the player's Roles list. Returns True if the file
-    was modified, False if already had it."""
+def grant_admin_role(player_json: Path) -> bool | None:
+    """Add 'admin' to the player's Roles list. Returns True if the file was
+    modified, False if it already had the role, None if it could not be read
+    or parsed (the grant failed)."""
     try:
         data = json.loads(player_json.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as e:
-        print(f"{WARN} Could not parse {player_json.name}: {e} — skipping")
-        return False
+        print(f"{FAIL} Could not parse {player_json.name}: {e}")
+        return None
     roles = data.get("Roles")
     if not isinstance(roles, list):
         roles = []
@@ -195,20 +168,18 @@ def grant_admin_role(player_json: Path) -> bool:
 
 def flip_zeros_to_twos(perms_file: Path) -> int:
     """Replace every line ending in ' 0' with ' 2' in perms_file. Returns the
-    number of lines changed. Preserves the space between perm name and digit.
-    Idempotent."""
+    number of lines changed. Keeps the space and line endings. Idempotent."""
     text = perms_file.read_text(encoding="utf-8")
     new_text, n = re.subn(r" 0(\r?\n|$)", r" 2\1", text)
-    if n == 0:
-        return 0
-    perms_file.write_text(new_text, encoding="utf-8")
+    if n:
+        perms_file.write_text(new_text, encoding="utf-8")
     return n
 
 
 def wait_for_personal_perms(perms_file: Path, timeout_s: int) -> bool:
-    """COT writes Permissions/<id>.txt at roughly the same time as Players/<id>.json
-    but not guaranteed simultaneously. Block briefly so we don't try to edit a
-    file that hasn't been created yet."""
+    """COT writes Permissions/<id>.txt around the same time as Players/<id>.json
+    but not always simultaneously. Block briefly so we don't edit a file that
+    hasn't been created yet."""
     deadline = time.time() + timeout_s
     while time.time() < deadline:
         if perms_file.exists() and perms_file.stat().st_size > 0:
@@ -217,29 +188,30 @@ def wait_for_personal_perms(perms_file: Path, timeout_s: int) -> bool:
     return False
 
 
-def edit_permissions(profile_dir: Path, triggered: list[Path]) -> None:
-    """Per-player grant only. For each triggered player JSON:
-       1. Add 'admin' to its Roles[].
-       2. Wait for the matching Permissions/<id>.txt to appear, then flip
-          ' 0' -> ' 2' in it.
+def edit_permissions(profile_dir: Path, triggered: list[Path]) -> bool:
+    """Per-player grant only. For each triggered player JSON, add 'admin' to
+    its Roles[], then flip ' 0' -> ' 2' in the matching Permissions/<id>.txt.
+    Roles/*.txt (including everyone.txt) is intentionally not touched.
 
-       Roles/*.txt (including everyone.txt) is intentionally NOT touched —
-       flipping everyone.txt would grant every connecting player admin and
-       defeats the per-player scope."""
+    Returns True only when every player got both edits (or already had them)."""
     print()
     print("[Edit] Applying COT admin permissions (per-player only)...")
     perms_dir = profile_dir / "PermissionsFramework" / "Permissions"
+    ok = True
     for json_path in triggered:
-        grant_admin_role(json_path)
+        if grant_admin_role(json_path) is None:
+            ok = False
         perms_file = perms_dir / f"{json_path.stem}.txt"
         if not wait_for_personal_perms(perms_file, timeout_s=15):
-            print(f"{WARN} Personal perms file did not appear at {perms_file} — skipping flip")
+            print(f"{FAIL} Personal perms file did not appear at {perms_file}")
+            ok = False
             continue
         n = flip_zeros_to_twos(perms_file)
         if n > 0:
             print(f"{OK} {perms_file.name}: flipped {n} line(s) from 0 -> 2")
         else:
             print(f"        {perms_file.name}: no 0 entries (already permissive or empty)")
+    return ok
 
 
 def launch_pair(
@@ -252,10 +224,11 @@ def launch_pair(
     client_diag_dir: Path,
     display: dict,
     label: str,
-) -> tuple[subprocess.Popen, subprocess.Popen]:
-    """Spawn server + client, returning both Popen handles. Mirrors the
-    /dayz-launch-test contract."""
+) -> list[subprocess.Popen]:
+    """Check the port is free, spawn server, wait for its port, then spawn the
+    client. Returns both handles. Mirrors the /dayz-launch-test contract."""
     print(f"[{label}] Launching server + client...")
+    h.gate_on_free_port(port)
     server_cmd = build_server_cmd(diag_exe, mod_arg, port, cfg_path, profile_dir, mission_path)
     client_cmd = build_client_cmd(diag_exe, mod_arg, port, client_diag_dir, display)
 
@@ -265,15 +238,16 @@ def launch_pair(
     server_proc = subprocess.Popen(server_cmd, cwd=str(game_dir))
     print(f"{OK} Server PID: {server_proc.pid}")
     sys.stdout.flush()
-    if not wait_for_server_port(port, server_proc, timeout_s=180):
-        sys.exit(f"{FAIL} Server did not bind UDP port {port} within 180s.")
+    if not wait_for_server_port(port, server_proc, timeout_s=SERVER_BIND_TIMEOUT_S):
+        stop_session([server_proc])
+        sys.exit(f"{FAIL} Server did not bind UDP port {port} within {SERVER_BIND_TIMEOUT_S}s.")
 
     print()
     print(f"[Launch] Client: {' '.join(client_cmd)}")
     sys.stdout.flush()
     client_proc = subprocess.Popen(client_cmd, cwd=str(game_dir))
     print(f"{OK} Client PID: {client_proc.pid}")
-    return server_proc, client_proc
+    return [server_proc, client_proc]
 
 
 def main() -> int:
@@ -299,14 +273,9 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    gate_on_preflight()
+    h.gate_on_preflight()
     print()
-    project_dir = cached_project_root()
-    if project_dir is None:
-        sys.exit(
-            f"{FAIL} No project cached.\n"
-            "       Run /dayz-init to set up your DayZ environment and project."
-        )
+    project_dir = h.resolve_project_dir()
     print(f"{OK} Project: {project_dir}")
 
     verify_cf_cot_subscribed()
@@ -331,28 +300,31 @@ def main() -> int:
     print("[Pass 1/2] Booting so COT can generate permission files for your character.")
     baseline = snapshot_player_files(players_dir)
     if baseline:
-        print(f"        ({len(baseline)} existing player file(s) — watching for new ones or mtime change)")
-    launch_pair(
+        print(f"        ({len(baseline)} existing player file(s) - watching for new ones or mtime change)")
+    session = launch_pair(
         diag_exe, mod_arg, args.port, cfg_path, profile_dir, mission_path,
         client_diag_dir, display, "Pass 1",
     )
 
-    triggered = wait_for_cot_player(players_dir, baseline, args.timeout)
+    triggered = wait_for_cot_player(players_dir, baseline, args.timeout, session)
     if not triggered:
-        print(f"{FAIL} Timed out after {args.timeout}s waiting for COT to register a player.")
-        print(f"       Check the server RPT in {profile_dir}\\ for errors.")
-        print(f"       Killing diag processes before exiting...")
-        kill_diag_processes()
+        print(f"       Check script.log and the server RPT in {profile_dir}\\,")
+        print(f"       and the client's script.log in {client_diag_dir}\\.")
+        print("       Stopping the pass-1 server and client before exiting...")
+        stop_session(session)
         return 1
 
-    # === Kill, edit, relaunch ===
+    # === Stop, edit, relaunch ===
     print()
-    print("[Stop] Killing pass-1 session before editing perm files...")
-    kill_diag_processes()
+    print("[Stop] Stopping the pass-1 server and client before editing perm files...")
+    stop_session(session)
     # Give Windows a moment to release file handles on the JSON we're about to rewrite.
     time.sleep(2)
 
-    edit_permissions(profile_dir, triggered)
+    if not edit_permissions(profile_dir, triggered):
+        print(f"{FAIL} The admin grant did not complete, so pass 2 was skipped.")
+        print(f"       Fix the files under {profile_dir / 'PermissionsFramework'} and rerun this skill.")
+        return 1
 
     print()
     print("[Pass 2/2] Relaunching with admin permissions applied.")

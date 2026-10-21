@@ -8,8 +8,11 @@ What it touches:
 What it leaves alone:
     workspace/, output/, .claude/local-memory/, .claude/settings.local.json, .env
 
+Applied changes are committed automatically as
+"chore: pull Agentic-Z upstream (<sha8>)".
+
 Usage:
-    python update.py [--force] [--dry-run] [--no-sync]
+    python update.py [--check [--quiet]] [--yes] [--per-file] [--force] [--dry-run] [--no-sync]
 """
 from __future__ import annotations
 
@@ -49,6 +52,7 @@ class FileStatus(enum.Enum):
     UNCHANGED = "unchanged"          # no-op
     SAFE_OVERWRITE = "safe-overwrite"  # local == baseline, take upstream
     NEW = "new"                       # baseline + local missing, take upstream
+    LOCALLY_DELETED = "locally-deleted"  # in baseline, missing locally, leave alone
     LOCAL_ONLY_EDIT = "local-only-edit"  # only the user changed it, leave alone
     CONFLICT = "conflict"             # both diverged, ask user
     DELETED_CLEAN = "deleted-clean"   # local == baseline, upstream gone, delete OK
@@ -56,13 +60,14 @@ class FileStatus(enum.Enum):
 
 
 def classify_per_file(
-    baseline: Optional[bytes],
-    local: Optional[bytes],
-    upstream: Optional[bytes],
+    baseline: Optional[bytes | str],
+    local: Optional[bytes | str],
+    upstream: Optional[bytes | str],
 ) -> FileStatus:
     """Three-way classification for a single template file.
 
-    None for any blob means "file does not exist at that revision".
+    Each argument is the file's content or git blob id at that revision; None
+    means "file does not exist at that revision".
     Returns a FileStatus enum value indicating what action (if any) to take.
     """
     # Defensive: nothing exists anywhere.
@@ -83,10 +88,9 @@ def classify_per_file(
 
     # Upstream has the file.
     if local is None:
-        # Local missing. If baseline also missing, user never had it → new.
-        # If baseline existed, user deliberately deleted it → still treat as new
-        # (re-add upstream version; user can delete again if they want).
-        return FileStatus.NEW
+        # Baseline also missing: the clone never had it, so it is new upstream.
+        # Baseline had it: the user deleted it, which is left alone by default.
+        return FileStatus.NEW if baseline is None else FileStatus.LOCALLY_DELETED
 
     # Local exists.
     if local == upstream:
@@ -125,12 +129,14 @@ def run(cmd: list[str], check: bool = True, capture: bool = False) -> subprocess
     )
 
 
-def is_git_repo() -> bool:
+def repo_root() -> Optional[Path]:
+    """Top level of the enclosing git work tree, or None outside a repo (or without git)."""
     try:
-        r = run(["git", "rev-parse", "--is-inside-work-tree"], check=False, capture=True)
-        return r.returncode == 0 and r.stdout.strip() == "true"
+        r = run(["git", "rev-parse", "--show-toplevel"], check=False, capture=True)
     except FileNotFoundError:
-        return False
+        return None
+    top = r.stdout.strip()
+    return Path(top) if r.returncode == 0 and top else None
 
 
 def working_tree_clean_for(paths: list[str]) -> tuple[bool, list[str]]:
@@ -147,19 +153,21 @@ def remote_url(name: str) -> str | None:
     return r.stdout.strip() if r.returncode == 0 else None
 
 
+def normalize_remote_url(url: str) -> str:
+    """Compare-ready form of a GitHub https URL: case-folded, no trailing '/' or '.git'."""
+    return url.strip().rstrip("/").casefold().removesuffix(".git")
+
+
 def ensure_upstream() -> bool:
     existing = remote_url(UPSTREAM_REMOTE)
     if existing is None:
         log("INFO", f"Adding {UPSTREAM_REMOTE} remote = {UPSTREAM_URL}")
         run(["git", "remote", "add", UPSTREAM_REMOTE, UPSTREAM_URL])
         return True
-    if existing.rstrip("/") != UPSTREAM_URL.rstrip("/").replace(".git", "").rstrip("/") and \
-       existing.rstrip("/") != UPSTREAM_URL.rstrip("/"):
-        # Allow .git vs no-.git but not a different repo
-        if not existing.startswith(UPSTREAM_URL.rstrip(".git")):
-            log("ERR", f"upstream remote points to {existing}, expected {UPSTREAM_URL}")
-            log("ERR", f"Fix: git remote set-url {UPSTREAM_REMOTE} {UPSTREAM_URL}")
-            return False
+    if normalize_remote_url(existing) != normalize_remote_url(UPSTREAM_URL):
+        log("ERR", f"upstream remote points to {existing}, expected {UPSTREAM_URL}")
+        log("ERR", f"Fix: git remote set-url {UPSTREAM_REMOTE} {UPSTREAM_URL}")
+        return False
     log("OK", f"upstream remote already set: {existing}")
     return True
 
@@ -179,19 +187,7 @@ def fetch_upstream() -> bool:
 
 
 def git_show_blob(ref: str, path: str) -> Optional[bytes]:
-    """Return the bytes of `path` at git ref `ref`, or None if it doesn't exist there.
-
-    `ref` is either a commit SHA, a branch name, or 'WORKING_TREE' (sentinel for the
-    current on-disk file content rather than any committed version).
-    """
-    if ref == "WORKING_TREE":
-        p = Path(path)
-        if not p.exists():
-            return None
-        try:
-            return p.read_bytes()
-        except OSError:
-            return None
+    """Return the bytes of `path` at git ref `ref`, or None if it doesn't exist there."""
     r = subprocess.run(
         ["git", "show", f"{ref}:{path}"],
         check=False,
@@ -200,6 +196,27 @@ def git_show_blob(ref: str, path: str) -> Optional[bytes]:
     if r.returncode != 0:
         return None
     return r.stdout
+
+
+def git_object_id(ref: str, path: str) -> Optional[str]:
+    """Return the blob id of `path` at `ref`, or None if it doesn't exist there.
+
+    `ref` is a commit SHA, a branch name, or 'WORKING_TREE' for the on-disk file.
+    The working-tree id comes from `git hash-object --path=<p>`, which applies the
+    same clean filters as `git add` (core.autocrlf, .gitattributes eol). Comparing
+    ids instead of raw bytes keeps a CRLF checkout of an untouched LF file from
+    looking like a local edit.
+    """
+    if ref == "WORKING_TREE":
+        if not Path(path).is_file():
+            return None
+        cmd = ["git", "hash-object", f"--path={path}", "--", path]
+    else:
+        cmd = ["git", "rev-parse", "--verify", "--quiet", f"{ref}:{path}"]
+    r = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    if r.returncode != 0:
+        return None
+    return r.stdout.strip() or None
 
 
 def _candidate_paths(baseline_sha: str, upstream_ref: str) -> set[str]:
@@ -264,27 +281,32 @@ def compute_drift(baseline_sha: Optional[str], upstream_ref: str) -> dict[str, F
     candidates = _candidate_paths(baseline_sha, upstream_ref)
     result: dict[str, FileStatus] = {}
     for path in sorted(candidates):
-        baseline_blob = git_show_blob(baseline_sha, path)
-        upstream_blob = git_show_blob(upstream_ref, path)
-        local_blob = git_show_blob("WORKING_TREE", path)
-        status = classify_per_file(baseline=baseline_blob, local=local_blob, upstream=upstream_blob)
+        status = classify_per_file(
+            baseline=git_object_id(baseline_sha, path),
+            local=git_object_id("WORKING_TREE", path),
+            upstream=git_object_id(upstream_ref, path),
+        )
         if status != FileStatus.UNCHANGED:
             result[path] = status
     return result
 
 
 def stage_and_commit(updated: list[str], upstream_sha: str) -> bool:
-    """Stage updated paths and create a single commit."""
+    """Stage the updated paths and commit only them.
+
+    `git commit --only -- <paths>` keeps anything else the user had staged out
+    of the update commit; it stays staged afterwards.
+    """
     r = run(["git", "add", "--", *updated], check=False)
     if r.returncode != 0:
         return False
-    # Skip commit if nothing actually changed.
-    diff = run(["git", "diff", "--cached", "--quiet"], check=False)
+    # Skip commit if nothing actually changed in the applied paths.
+    diff = run(["git", "diff", "--cached", "--quiet", "--", *updated], check=False)
     if diff.returncode == 0:
         log("OK", "no template changes to commit (working tree already matches upstream)")
         return True
     msg = f"chore: pull Agentic-Z upstream ({upstream_sha[:8]})"
-    r = run(["git", "commit", "-m", msg], check=False)
+    r = run(["git", "commit", "--only", "-m", msg, "--", *updated], check=False)
     if r.returncode != 0:
         log("WARN", "commit failed; staged changes left in index for manual handling")
         return False
@@ -328,7 +350,6 @@ def read_baseline() -> Optional[str]:
 def write_baseline(sha: str) -> None:
     """Atomically write the baseline SHA. Temp file + rename to avoid partial writes."""
     BASELINE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    # Use NamedTemporaryFile in same dir so rename is on the same filesystem.
     tmp = BASELINE_FILE.with_suffix(".tmp")
     tmp.write_text(sha.strip() + "\n", encoding="utf-8")
     tmp.replace(BASELINE_FILE)
@@ -435,7 +456,11 @@ def search_index_update_available() -> Optional[tuple[str, str]]:
 
 
 def _is_newer(latest: str, installed: str) -> bool:
-    """Naive tag comparison. Strips leading 'v' and compares dotted ints; falls back to string."""
+    """Naive tag comparison: strip a leading 'v', compare dot-separated parts.
+
+    Numeric parts compare as ints and sort before non-numeric parts, which
+    compare as strings, so an int is never compared against a str.
+    """
     def parse(t: str) -> tuple:
         t = t.lstrip("v")
         parts = []
@@ -445,10 +470,7 @@ def _is_newer(latest: str, installed: str) -> bool:
             except ValueError:
                 parts.append((1, p))
         return tuple(parts)
-    try:
-        return parse(latest) > parse(installed)
-    except Exception:
-        return latest != installed
+    return parse(latest) > parse(installed)
 
 
 def format_preview(drift: dict[str, FileStatus], baseline_sha: Optional[str], upstream_sha: str, quiet: bool = False) -> str:
@@ -488,6 +510,7 @@ def format_preview(drift: dict[str, FileStatus], baseline_sha: Optional[str], up
         (FileStatus.NEW, "new files added"),
         (FileStatus.DELETED_CLEAN, "deletions (clean)"),
         (FileStatus.LOCAL_ONLY_EDIT, "your local-only edits (left alone)"),
+        (FileStatus.LOCALLY_DELETED, "deleted in this clone (left alone; --per-file to restore)"),
         (FileStatus.CONFLICT, "CONFLICTS — both you and upstream edited these"),
         (FileStatus.DELETED_CONFLICT, "CONFLICTS — upstream deleted these but you edited them"),
     ]
@@ -508,6 +531,14 @@ def format_preview(drift: dict[str, FileStatus], baseline_sha: Optional[str], up
         lines.append("")
 
     return "\n".join(lines)
+
+
+# Statuses walked by --per-file. Without a "take" choice they are left alone.
+PER_FILE_STATUSES = (FileStatus.CONFLICT, FileStatus.DELETED_CONFLICT, FileStatus.LOCALLY_DELETED)
+
+# Local choices with no upstream change to bring in: they do not hold the
+# baseline back and do not count as pending changes for --check.
+LOCAL_CHOICE_STATUSES = (FileStatus.LOCAL_ONLY_EDIT, FileStatus.LOCALLY_DELETED)
 
 
 def apply_drift(drift: dict[str, FileStatus], upstream_ref: str, conflict_choices: Optional[dict[str, str]] = None) -> tuple[list[str], list[str]]:
@@ -546,7 +577,7 @@ def apply_drift(drift: dict[str, FileStatus], upstream_ref: str, conflict_choice
         elif status == FileStatus.LOCAL_ONLY_EDIT:
             # Nothing to do — user's edit is the only change.
             skipped.append(path)
-        elif status in (FileStatus.CONFLICT, FileStatus.DELETED_CONFLICT):
+        elif status in PER_FILE_STATUSES:
             choice = conflict_choices.get(path)
             if choice == "take":
                 if status == FileStatus.DELETED_CONFLICT:
@@ -590,14 +621,19 @@ def _print_diff(path: str, local: bytes, upstream: bytes) -> None:
 
 
 def resolve_conflicts_per_file(drift: dict[str, FileStatus], upstream_ref: str) -> dict[str, str]:
-    """Walk each conflict interactively. Returns a {path: 'keep'|'take'} dict."""
+    """Walk each conflict and locally deleted file interactively.
+
+    Returns a {path: 'keep'|'take'} dict. For a locally deleted file, keep
+    leaves it deleted and take restores upstream's version.
+    """
     choices: dict[str, str] = {}
-    conflicts = [p for p, s in drift.items() if s in (FileStatus.CONFLICT, FileStatus.DELETED_CONFLICT)]
+    conflicts = [p for p, s in drift.items() if s in PER_FILE_STATUSES]
     if not conflicts:
         return choices
 
     print()
-    print(f"Walking {len(conflicts)} conflict(s). For each: k=keep mine, t=take upstream, d=diff, s=skip (= keep).")
+    print(f"Walking {len(conflicts)} file(s). For each: k=keep mine, t=take upstream, d=diff, s=skip (= keep).")
+    print("For a locally-deleted file, keep leaves it deleted and take restores it.")
     for path in conflicts:
         while True:
             try:
@@ -623,6 +659,33 @@ def resolve_conflicts_per_file(drift: dict[str, FileStatus], upstream_ref: str) 
     return choices
 
 
+def finish_apply(
+    drift: dict[str, FileStatus], applied: list[str], skipped: list[str], upstream_sha: str
+) -> str:
+    """Commit the applied paths, then advance the baseline only when that is safe.
+
+    The baseline moves to upstream_sha only when the commit succeeded (or there
+    was nothing to commit) and no path that still needs upstream's version was
+    left behind: an unresolved conflict, or a safe/new/deleted path whose apply
+    failed. Advancing past such a path would make the next run misclassify it
+    and silently drop upstream's change.
+
+    Returns "advanced" (baseline moved), "pending" (unapplied upstream changes
+    remain) or "commit-failed" (git commit failed; changes left staged).
+    """
+    committed = stage_and_commit(applied, upstream_sha) if applied else True
+    pending = [p for p in skipped if drift.get(p) not in LOCAL_CHOICE_STATUSES]
+    if not committed:
+        log("WARN", "Baseline not updated: the commit failed. Commit the staged files, then rerun.")
+        return "commit-failed"
+    if pending:
+        log("WARN", "Baseline not updated: some upstream changes are still unapplied; rerun after resolving them.")
+        return "pending"
+    write_baseline(upstream_sha)
+    log("OK", "Baseline updated.")
+    return "advanced"
+
+
 def acquire_lock() -> bool:
     """Acquire the update lock. Returns True if acquired, False if another live process holds it.
 
@@ -644,12 +707,12 @@ def acquire_lock() -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Pull Agentic-Z upstream template updates.")
     parser.add_argument("--force", action="store_true", help="Skip the dirty-tree check.")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would change; don't merge.")
-    parser.add_argument("--no-sync", action="store_true", help="Skip the post-merge sync-skills run.")
+    parser.add_argument("--dry-run", action="store_true", help="Show what would change; apply nothing.")
+    parser.add_argument("--no-sync", action="store_true", help="Skip the post-update sync-skills run.")
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Preview drift only; do not apply. Exits 1 if changes pending, 0 if up to date.",
+        help="Preview drift only; writes nothing. Exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date.",
     )
     parser.add_argument(
         "--quiet",
@@ -664,7 +727,7 @@ def main() -> int:
     parser.add_argument(
         "--per-file",
         action="store_true",
-        help="Walk each conflict interactively: keep / take / diff / skip.",
+        help="Walk each conflict and locally-deleted file interactively: keep / take / diff / skip.",
     )
     args = parser.parse_args()
 
@@ -678,9 +741,12 @@ def main() -> int:
         print("Agentic-Z update")
         print()
 
-    if not is_git_repo():
+    root = repo_root()
+    if root is None:
         log("ERR", "Not a git repo. Run from inside an Agentic-Z clone.")
         return 1
+    # Template paths, the baseline and the lock are all relative to the repo root.
+    os.chdir(root)
 
     if not args.force and not args.check:
         clean, dirty = working_tree_clean_for(TEMPLATE_PATHS)
@@ -704,22 +770,14 @@ def main() -> int:
     upstream_sha = upstream_head_sha()
     baseline_sha = read_baseline()
 
-    # First-run bootstrap: if no baseline file exists, persist one immediately
-    # at the current upstream HEAD. Without this, every subsequent run would
-    # also see baseline=None, re-bootstrap to upstream, and silently report
-    # "Up to date" forever — masking real drift. Safe to do even from --check
-    # because it's idempotent and a one-time initialization.
-    if baseline_sha is None:
-        try:
-            write_baseline(upstream_sha)
-            baseline_sha = upstream_sha
-        except OSError:
-            # Read-only FS or permission issue — fall through; compute_drift's
-            # in-memory bootstrap still produces correct first-run output.
-            pass
-
     if args.check:
+        # Read-only: --check never writes the baseline. Without one there is
+        # nothing to compare against, so say so instead of reporting "Up to date".
+        if baseline_sha is None:
+            print("agentic-z: no update baseline recorded yet. Run /agentic-z-update once to initialize it.")
+            return 1
         drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")
+        drift = {p: st for p, st in drift.items() if st not in LOCAL_CHOICE_STATUSES}
         output = format_preview(drift, baseline_sha, upstream_sha, quiet=args.quiet)
         if output:
             print(output)
@@ -728,9 +786,14 @@ def main() -> int:
             print("Up to date.")
         return 0
 
-    if args.dry_run:
-        log("INFO", "--dry-run: stopping before merge.")
-        return 0
+    # First run: record the current upstream HEAD as the baseline. Files are
+    # then compared against it, so nothing is overwritten or added on this run:
+    # a template file missing locally is in the baseline, so it classifies as
+    # locally-deleted and stays deleted unless restored with --per-file.
+    if baseline_sha is None and not args.dry_run:
+        write_baseline(upstream_sha)
+        baseline_sha = upstream_sha
+        log("OK", f"Baseline initialized at upstream {upstream_sha[:7]}.")
 
     # Default flow: preview, prompt, apply.
     drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")
@@ -739,6 +802,10 @@ def main() -> int:
         return 0
 
     print(format_preview(drift, baseline_sha, upstream_sha, quiet=False))
+
+    if args.dry_run:
+        log("INFO", "--dry-run: stopping before merge.")
+        return 0
 
     if not args.yes:
         try:
@@ -764,13 +831,9 @@ def main() -> int:
             if drift.get(p) in (FileStatus.CONFLICT, FileStatus.DELETED_CONFLICT)
         ]
 
-        if applied:
-            stage_and_commit(applied, upstream_sha)
-            # Record the upstream SHA as the new baseline so the next run starts fresh.
-            write_baseline(upstream_head_sha())
-            log("OK", "Baseline updated.")
-        else:
+        if not applied:
             log("OK", "No template paths needed updating.")
+        outcome = finish_apply(drift, applied, skipped, upstream_sha)
 
         if conflicted:
             print()
@@ -788,6 +851,8 @@ def main() -> int:
     finally:
         release_lock()
 
+    if outcome == "commit-failed":
+        return 1
     print()
     log("OK", "done. Restart your agent CLIs so they pick up new agents/skills.")
     return 0

@@ -37,7 +37,7 @@ For items with `autocenter=0` in config.cpp, the Geometry LOD MUST ALSO carry
 `autocenter=0` as a named property. Config property controls the visual mesh;
 LOD property controls the collision mesh. Without both, collision is displaced.
 
-**Where**: Named property on Geometry (1e13), GeoPhys (2e13), FireGeo (3e13) LODs.
+**Where**: Named property on the Geometry LOD (1e13), and on any GeoPhys (2e13) or FireGeo (7e15) LOD the model has.
 In py3d: `lod.properties['autocenter'] = '0'`
 
 ## 4. Missing Memory LOD or Geometry LOD (CRITICAL)
@@ -54,8 +54,11 @@ collision and zero action targeting.
 
 **Recommended additional LODs:**
 
-- GeoPhys (res ~2e13) — physics collision (player walking, vehicles)
-- FireGeo (res ~3e13) — ballistic damage zones
+- ViewGeo (res ~6e15) — cursor and action raycasts; vanilla interactive items carry one
+- FireGeo (res ~7e15) — ballistic damage zones
+
+The audit reports a missing ViewGeo or FireGeo as a NOTE. It does not ask for a
+GeoPhys LOD (res 2e13): vanilla DayZ models don't use one (see the Tier 2 LOD table).
 
 ## 5. Missing `pos center` Memory Point
 

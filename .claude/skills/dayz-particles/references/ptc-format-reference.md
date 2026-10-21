@@ -1,11 +1,11 @@
-# .ptc File Format Reference — Complete Property Catalog
+# .ptc file format reference
 
 Verified from 9 vanilla particle files. Properties are per-emitter unless noted.
 All values are space-separated. Curves use keyframe pairs: `time value [time value ...]`.
 
 ---
 
-## STRUCTURE
+## Structure
 
 ```
 EffectDef {
@@ -22,7 +22,7 @@ EffectDef {
 
 ---
 
-## COMPLETE PROPERTY TABLE
+## Complete property table
 
 ### Shape & Emission
 
@@ -127,7 +127,7 @@ EffectDef {
 
 ---
 
-## VANILLA EXAMPLES (annotated)
+## Vanilla examples (annotated)
 
 ### Simplest: debug_dot.ptc (1 emitter, 478 bytes)
 

@@ -4,134 +4,107 @@ name: dayz-search-index
 
 ## Overview
 
-Index vanilla DayZ source (Enforce Script, .layout, config.cpp, .rvmat) into a per-user vector database so DayZ agents can do semantic search via the dayz-rag MCP server. One-time setup; rerun with --full after a DayZ update. Required before agents can use the search_dayz_source tool.
+Builds the semantic-search index over vanilla DayZ source on P:\ (Enforce Script, configs, layouts, rvmats, XML, JSON, CSV) by embedding chunks with Voyage AI voyage-code-3 into LanceDB, which the dayz-rag MCP server queries. Use when setting up a new machine, after a DayZ update or re-extraction of vanilla data, or when search_dayz_source reports no index.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-search-index
 
-Build a semantic-search index over vanilla DayZ source so DayZ specialist agents stop flying blind through `P:\` with `Grep`. Backs the `dayz-rag` MCP server.
+Builds the vector index behind the `dayz-rag` MCP server's `search_dayz_source` tool. Follow `.claude/skills/_shared/dayz-conventions.md`.
 
-Follow `.claude/skills/_shared/dayz-conventions.md`.
+If you only need the index and don't want to spend Voyage tokens, `/dayz-search-download` installs a prebuilt one.
 
-## What it indexes
+## Before you run
 
-| Source | Files | Chunking |
-|---|---|---|
-| `P:\scripts\**\*.c` | Enforce Script (~2,800 files) | per class/method |
-| `P:\gui\**\*.layout` | UI layouts (~210 files) | per top-level Widget block |
-| `P:\dz\**\config.cpp` | Vanilla configs (~200 files) | per `class X &#123; ... &#125;` block |
-| `P:\**\*.rvmat` | Materials (~35,000 files) | whole file, **content-deduped** by SHA-256 |
-| `P:\**\*.xml` | XML (types, etc.) | batched 50 elements/chunk |
-
-`model.cfg` is intentionally skipped — vanilla extracted data doesn't ship them.
-
-## Where the index lives
-
-`~/.claude/dayz-search-index/` (= `C:\Users\<you>\.claude\dayz-search-index\`)
-
-- `lancedb/` — vector store
-- `manifest.json` — embed model used, per-source chunk counts, indexed-at, **token usage + $ estimate**
-- `config.json` — model name the MCP server should use at query time
-
-Per-user, gitignored (lives outside the repo). Survives clones.
-
-## Embedding via Voyage AI (cloud)
-
-Embedding runs through Voyage AI's hosted API. Code-tuned model, much higher retrieval quality than local CPU options for our DayZ corpus. The trade-off is a network call per batch and an API key.
-
-**Default model: `voyage-code-3`** — code-tuned, 32k context, 1024-dim. $0.18 per 1M tokens with **200M tokens free** (Series-4 free allowance, doesn't expire when payment method is added).
-
-**Cost reality:** a full vanilla rebuild is **~12.8M tokens** across ~34,322 chunks (measured — see Output below). At `voyage-code-3`'s $0.18/M that's ~$2.31, and the **200M free tier covers ~15 rebuilds**. If cost ever matters, switch to `voyage-4-lite` ($0.02/M ≈ $0.26/rebuild) via `VOYAGE_MODEL` env var. Live token + $ counter prints during the embed loop, and final totals are saved to `manifest.json`.
-
-**Free-tier projection check:** before kicking off the embed phase, the skill estimates this build's tokens (sum of chunk text lengths ÷ chars-per-token) and projects what the cumulative monthly usage would be after this run. If the projection exceeds 80% of the 200M free tier, you get a prompt to confirm. Cumulative usage is tracked locally in `~/.claude/dayz-search-index/usage.log` (one JSONL entry per build). **Caveats:** the local counter only sees builds run via these skills — it does NOT see usage by other apps sharing your `VOYAGE_API_KEY`. The authoritative usage view is at [dash.voyageai.com](https://dash.voyageai.com). Free tier resets monthly per Voyage's billing cycle. Pass `--ignore-tier-warning` to skip the prompt (CI / scripted use). Override the budget with `VOYAGE_FREE_TIER_TOKENS=<int>` env var if you're on a non-default plan.
-
-### One-time setup
-
-1. Get a key at [dash.voyageai.com](https://dash.voyageai.com).
-2. Add it to `.env` at the repo root (gitignored — never commits):
-   ```
-   VOYAGE_API_KEY=pa-xxxxxxxxxxxx
-   ```
-3. (Optional) override the model via env var if you want a cheaper or higher-quality variant:
-   ```
-   VOYAGE_MODEL=voyage-4-lite      # cheapest ($0.02/M, 16M TPM)
-   VOYAGE_MODEL=voyage-code-3      # default, code-tuned
-   VOYAGE_MODEL=voyage-4-large     # best general quality
-   ```
-
-The indexer auto-installs `voyageai` + `python-dotenv` on first run.
+1. The indexer runs `/dayz-preflight` first and stops if it fails (`P:\` not mounted). Preflight warnings (Tools, Workshop) don't block it. `--status` skips the gate.
+2. Install the dependencies once: `pip install -r "<skill-dir>\requirements.txt"` (`lancedb`, `tqdm`, `voyageai`, `python-dotenv`). The indexer exits with that command if any are missing.
+3. Put a Voyage key in `.env` at the repo root (gitignored): `VOYAGE_API_KEY=pa-...`. Get one at [dash.voyageai.com](https://dash.voyageai.com). The key is found the same way the `dayz-rag` MCP server finds it (both use `.claude/mcp/dayz-rag/voyage_common.py`): a variable already set in the environment wins, then the nearest `.env` at or above the working directory, then the one at the repo (or plugin) root.
 
 ## How to run
 
-**First time / after DayZ update:**
 ```cmd
 python "<skill-dir>\index.py" --full
 ```
 
-**Status only:**
+Builds (or rebuilds) the whole index. Without `--full` it refuses to overwrite an existing index.
+
 ```cmd
 python "<skill-dir>\index.py" --status
 ```
 
-## When to run
+Prints `manifest.json` and exits; exits 1 if there is no index. It creates nothing on disk.
 
-- After a fresh clone, before using any DayZ specialist agent that needs vanilla source recall.
-- After a DayZ update (vanilla source on `P:\` may have changed).
-- After re-extracting vanilla data via DayZ Tools.
+Other flags: `--ignore-tier-warning` skips the free-tier prompt (needed in non-interactive shells), `--force` overrides the 150,000-chunk ceiling (`CHUNK_CEILING`). Both are explained in [reference/cost-and-free-tier.md](reference/cost-and-free-tier.md).
+
+After a build, restart Claude Code so the MCP server opens the new index.
+
+## What it indexes
+
+The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. The live index holds about 52,000 chunks from about 38,000 files (about 66M tokens); `--status` shows the current numbers.
+
+Indexes built before oversize class blocks were split into windows stored only the first 8,000 characters of each block. Run `--full` once to rebuild with windowing; expect the chunk count to rise.
+
+| File type | Chunking |
+|---|---|
+| `.c .cpp .hpp .h .cfg .layout` | one chunk per top-level `class X { ... }` block, whole file if there are none. A block or file over 6,000 characters (`EMBED_MAX_CHARS`) is split into windows of at most that size, cut at member boundaries (a method or field starting at the class's top level) where possible, otherwise at the last whole line that fits. Each window keeps the class name as parent context and its own real line range, so no script text is dropped |
+| `.rvmat` | whole file, deduplicated by SHA-256 of the content |
+| `.xml` | whole file under 4 KB, otherwise batches of 50 top-level elements (line range = first to last element in the batch) |
+| `.json .csv` | whole file |
+
+The other types are not windowed: an `.rvmat` chunk stores at most 4,000 characters, and `.xml .json .csv` chunks store at most 8,000 characters, of which the first 6,000 are embedded.
+
+Each chunk stores path, file type, parent context (class name, XML range, or rvmat hash), line range and content.
+
+## Where the index lives
+
+`~/.claude/dayz-search-index/`, per user and outside the repo:
+
+- `lancedb/` holds the `chunks` table (1024-dim vectors).
+- `manifest.json` records model, per-folder counts, rvmat duplicates skipped, total chunks, tokens used and estimated cost.
+- `config.json` tells the MCP server which model to embed queries with.
+- `usage.log` is the local token ledger used by the free-tier check.
 
 ## Output
 
 ```
 DayZ RAG indexer
 
-[OK]    P:\ mounted
+DayZ preflight
+
+[OK]    P:\ is mounted
+...     (rest of the /dayz-preflight report)
+
+Preflight complete.
+
 [OK]    Vanilla data: P:\dz
-[OK]    VOYAGE_API_KEY loaded (pa-GRJ...edF)
-[INFO]  Index: C:\Users\you\.claude\dayz-search-index\
+[OK]    VOYAGE_API_KEY loaded (pa-abc...wxyz)
+[INFO]  Index: C:\Users\you\.claude\dayz-search-index
 [INFO]  Embedding model: voyage-code-3 (1024D, via Voyage cloud)
-[INFO]  Pricing: $0.18 per 1M tokens (Series-4 includes 200M free)
+[INFO]  Estimate rate: $0.18 per 1M tokens (Voyage pricing page is authoritative)
 
 Walking vanilla folders: scripts, gui, dz, core, graphics, languagecore
-  scripts/  c=28432c/2805f
-  gui/      layout=1842c/214f
-  dz/       cpp=3201c/206f
-  core/     ...
-  rvmat dedup: 33800 duplicates (97.6%)
+Indexed extensions: .c, .cfg, .cpp, .csv, .h, .hpp, .json, .layout, .rvmat, .xml
 
-Embedding 34322 chunks via Voyage (voyage-code-3, document mode)...
-  embedding: 100%|██| 34322/34322 [03:42<00:00] 12,847,231 tok / ~$2.312
+  scripts/  c=<chunks>c/<files>f
+  ...
+  rvmat dedup:    <n> duplicates (<pct>%)
 
-[OK]    Index built: 34322 chunks
-[INFO]  Tokens used: 12,847,231  |  Estimated cost: $2.3125
-[INFO]  Embed time: 222.4s
+Embedding <n> chunks via Voyage (voyage-code-3, document mode)...
+  embedding: 100%|...| <n>/<n> [<time>] <tokens> tok / ~$<cost>
+
+[OK]    Index built: <n> chunks at C:\Users\you\.claude\dayz-search-index
+[INFO]  Tokens used: <tokens>  |  Estimated cost: $<cost>
+[INFO]  Embed time: <seconds>s
+[INFO]  Restart Claude Code so the dayz-rag MCP server picks up the new index.
 ```
 
-## Performance expectations
+## Failure modes
 
-- Full index: network-bound; the embed phase runs ~34,322 chunks at ~150 chunks/s (~4 min measured), plus time to walk and chunk ~38k files first.
-- Index disk size: ~200-400 MB for the vector store + manifest.
-- Tokens consumed: ~12.8M (~$2.31 at voyage-code-3 rates; Voyage's 200M free tier covers ~15 rebuilds).
-
-## Safety rails
-
-- Hard-fails if `VOYAGE_API_KEY` is missing — no silent partial runs.
-- Refuses to embed >150k chunks without `--force` (cost/runtime backstop).
-- Retries on 429 / transient network errors with exponential backoff.
-- Live token counter + $ estimate so an unexpected blow-up surfaces instantly.
-
-## Dependencies
-
-`pip install -r requirements.txt` (the indexer auto-installs on first run if missing).
-
-- `lancedb` — file-based vector store
-- `tqdm` — progress bars
-- `voyageai` — Voyage embedding SDK
-- `python-dotenv` — load `VOYAGE_API_KEY` from `.env`
+- Missing dependency, missing `VOYAGE_API_KEY`, `P:\` not mounted, or no chunks produced: exits 1 before any tokens are spent.
+- Transient Voyage errors (the SDK's `RateLimitError`, `Timeout`, `APIConnectionError`, `TryAgain`, `ServiceUnavailableError` and `ServerError`) are retried with exponential backoff, 5 attempts per batch. Any other embed failure (a bad or revoked key, for example), or a transient one still failing after the last attempt, prints one `[FAIL]` line naming the error and exits 1 before LanceDB is touched. Tokens already spent on the batches that succeeded are appended to `usage.log` first, so the next free-tier check still counts them. The new rows are written to a `chunks_staging` table first and only then swapped into `chunks`, so a failed write also leaves the previous index usable.
 
 ## Do not
 
-- Don't gate this skill on `/dayz-preflight`'s warnings (Tools, Workshop) — only `P:\` mounted is mandatory.
-- Don't index per clone. The index reflects the user's *machine* (their DayZ install), not the project. It lives at `~/.claude/dayz-search-index/`.
-- Don't commit `.env`. It's in `.gitignore`; keep it there.
-- Don't switch models without re-running `--full` — the LanceDB table is fixed-dim and switching providers/models will mismatch query and document vectors.
+- Don't index per clone. The index reflects this machine's DayZ install, not the project.
+- Don't commit `.env`.
+- Don't change `VOYAGE_MODEL` without a `--full` rebuild; query and document vectors must come from the same model.

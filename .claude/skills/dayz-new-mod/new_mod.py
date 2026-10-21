@@ -1,14 +1,17 @@
 """dayz-new-mod: Scaffold a new DayZ mod project under workspace/<ModName>/.
 
-Author handle resolution: --author flag -> cache file -> interactive prompt -> fail.
-The cache lives at .claude/local-memory/dayz-author.txt (gitignored, per-clone).
+Author handle resolution: the --author flag, then the cache file, then an
+interactive prompt, else fail. The cache lives at
+<project>/.claude/local-memory/dayz-author.txt (gitignored, per-clone).
+
+Besides the scaffold and the P:\\<ModName>\\ junction, a successful run points
+the /dayz-init project cache at this project.
 
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import os
 import re
 import shutil
@@ -17,14 +20,18 @@ import sys
 from pathlib import Path
 from string import Template
 
-# REPO_ROOT = where this skill ships from (plugin or template clone).
-# PROJECT_DIR = user's project (where workspace/ and local-memory/ live).
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
+# PROJECT_DIR = user's project (where workspace/ and local-memory/ live), found
+# the same way every DayZ skill finds it (dayz-init/state.py). Not
+# h.resolve_project_dir(): that requires the cache, and this skill is the one
+# that writes it on a first scaffold.
+_state = h.load_module("dayz_init_state_module", h.DAYZ_INIT_STATE)
+PROJECT_DIR = _state.PROJECT_DIR
 WORKSPACE = PROJECT_DIR / "workspace"
 LOCAL_MEMORY = PROJECT_DIR / ".claude" / "local-memory"
 AUTHOR_CACHE = LOCAL_MEMORY / "dayz-author.txt"
-PREFLIGHT = REPO_ROOT / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
 P_DRIVE = Path("P:\\")
 
 # Module name -> vanilla path it ships with in dayz.gproj. We append the mod's
@@ -38,23 +45,12 @@ WORKBENCH_MODULE_INJECTIONS = {
 
 NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
-INFO = "[INFO] "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
 
-def _load_preflight_module():
-    spec = importlib.util.spec_from_file_location("dayz_preflight_module", PREFLIGHT)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load preflight module at {PREFLIGHT}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_preflight = _load_preflight_module()
-find_dayz_tools = _preflight.find_dayz_tools
+def find_dayz_tools() -> Path | None:
+    """DayZ Tools root via /dayz-preflight's resolver (a seam tests can patch)."""
+    return h.preflight.find_dayz_tools()
 
 
 CONFIG_CPP_TEMPLATE = Template(
@@ -145,11 +141,23 @@ def validate_name(name: str) -> None:
         )
 
 
+def check_author(author: str, source: str) -> str:
+    """Refuse a handle that would break the quoted config.cpp strings it lands in."""
+    if '"' in author or not author.isprintable():
+        sys.exit(
+            f"{FAIL} Author handle from {source} contains a double quote, line break or other\n"
+            "       control character; it is written inside quoted strings in config.cpp.\n"
+            "       Use a plain handle, for example --author \"YourHandle\"."
+        )
+    return author
+
+
 def resolve_author(cli_value: str | None) -> str:
-    if cli_value:
+    if cli_value is not None:
         author = cli_value.strip()
         if not author:
             sys.exit(f"{FAIL} --author cannot be empty.")
+        check_author(author, "--author")
         AUTHOR_CACHE.parent.mkdir(parents=True, exist_ok=True)
         AUTHOR_CACHE.write_text(author + "\n", encoding="utf-8")
         return author
@@ -157,7 +165,7 @@ def resolve_author(cli_value: str | None) -> str:
     if AUTHOR_CACHE.exists():
         cached = AUTHOR_CACHE.read_text(encoding="utf-8").strip()
         if cached:
-            return cached
+            return check_author(cached, str(AUTHOR_CACHE.relative_to(PROJECT_DIR)))
 
     if sys.stdin.isatty():
         print("First-time setup: what author handle should appear in your DayZ mods?")
@@ -168,6 +176,7 @@ def resolve_author(cli_value: str | None) -> str:
             value = ""
         if not value:
             sys.exit(f"{FAIL} No author handle provided.")
+        check_author(value, "the prompt")
         AUTHOR_CACHE.parent.mkdir(parents=True, exist_ok=True)
         AUTHOR_CACHE.write_text(value + "\n", encoding="utf-8")
         return value
@@ -183,7 +192,7 @@ def resolve_author(cli_value: str | None) -> str:
 def scaffold(modname: str, author: str) -> Path:
     target = WORKSPACE / modname
     target.mkdir(parents=True)
-    print(f"{OK} Created {target.relative_to(PROJECT_DIR)}/")
+    print(f"{OK} Created {target.relative_to(PROJECT_DIR)}{os.sep}")
 
     (target / "config.cpp").write_text(
         CONFIG_CPP_TEMPLATE.substitute(modname=modname, author=author),
@@ -218,7 +227,8 @@ def scaffold_workbench(target: Path, modname: str) -> None:
     injects the mod's script paths into the gproj so Workbench compiles
     vanilla + mod scripts together. If DayZ Tools can't be located, scaffolds
     the folder with a placeholder note and warns — the rest of the mod is
-    still usable; the user can re-copy the files later.
+    still usable; /dayz-add-scaffold <ModName> --piece workbench adds the
+    files once Tools is installed.
     """
     workbench_dir = target / "workbench"
     workbench_dir.mkdir(parents=True)
@@ -229,12 +239,12 @@ def scaffold_workbench(target: Path, modname: str) -> None:
             "# Workbench files missing\n\n"
             "DayZ Tools was not detected when this mod was scaffolded, so the official\n"
             "`dayz.gproj` and `DayZSetting.xml` couldn't be copied here.\n\n"
-            "Once DayZ Tools is installed, copy them manually from:\n"
-            "  <DayZ Tools>\\Bin\\Workbench\\dayz.gproj\n"
-            "  <DayZ Tools>\\Bin\\Workbench\\DayZSetting.xml\n",
+            "Once DayZ Tools is installed, add them with:\n"
+            f"  /dayz-add-scaffold {modname} --piece workbench\n",
             encoding="utf-8",
         )
         print(f"{WARN} workbench/ created without official files (DayZ Tools not detected)")
+        print(f"       Once DayZ Tools is installed: /dayz-add-scaffold {modname} --piece workbench")
         return
 
     src_workbench = tools_root / "Bin" / "Workbench"
@@ -289,13 +299,21 @@ def rewrite_filesystem_block(text: str, modname: str) -> str:
         f'    }}\n'
         f'   }}'
     )
-    return re.sub(
+    result, replaced = re.subn(
         r'^\s*FileSystem\s*\{[^}]*?FileSystemPathClass\s*\{[^}]*?\}\s*\}',
         new_block,
         text,
         count=1,
         flags=re.MULTILINE | re.DOTALL,
     )
+    if not replaced:
+        print(
+            f"{WARN} dayz.gproj has no single-entry FileSystem block; left it unchanged.\n"
+            f"       Add FileSystemPathClass entries for P:/ and P:/{modname}/ by hand, "
+            "or Workbench may not find vanilla or mod files.",
+            file=sys.stderr,
+        )
+    return result
 
 
 def inject_mod_paths_into_gproj(text: str, modname: str) -> str:
@@ -356,47 +374,6 @@ def make_dir_link(src: Path, dst: Path) -> str:
         raise
 
 
-# Project-discovery marker. Written at P:\<ModName>\.agentic-z-project (which
-# transparently lands inside the workspace via the junction). Contains the
-# absolute path to the workspace project root. Used by /dayz-init's hub to
-# discover ALL managed projects, not just the cached current one.
-#
-# This is a SEPARATE file from build-pbo's .agentic-z-scaffold marker (which
-# lives at P:\Mods\@<ModName>\ and contains the modname for clean-workspace's
-# ownership check). Different file, different location, different purpose.
-PROJECT_MARKER = ".agentic-z-project"
-
-
-def write_project_marker(p_drive_link: Path, project_root: Path) -> None:
-    """Write P:\\<ModName>\\.agentic-z-project containing the project root path.
-
-    Idempotent — overwrites if present (path may have moved since last run).
-    Failure is non-fatal: the project still works, just won't show up in the
-    /dayz-init hub's switch-project list.
-    """
-    marker = p_drive_link / PROJECT_MARKER
-    try:
-        marker.write_text(str(project_root.resolve()) + "\n", encoding="utf-8")
-    except OSError as e:
-        print(f"{WARN} Could not write project marker {marker}: {e}")
-        print("       /dayz-init hub's switch-project won't see this mod.")
-
-
-def _link_target(path: Path) -> Path | None:
-    """Return the link target (without \\\\?\\ prefix) or None if the path is not a link."""
-    try:
-        target = os.readlink(path)
-    except OSError:
-        return None
-    if target.startswith("\\\\?\\"):
-        target = target[4:]
-    return Path(target)
-
-
-def _paths_equal(a: Path, b: Path) -> bool:
-    return os.path.normcase(os.path.normpath(str(a))) == os.path.normcase(os.path.normpath(str(b)))
-
-
 def _remove_link(path: Path) -> None:
     """Remove a directory link without descending into the target."""
     if os.name == "nt":
@@ -418,14 +395,14 @@ def check_or_clean_p_drive_link(p_drive_link: Path, workspace_target: Path) -> N
     if not os.path.lexists(p_drive_link):
         return  # nothing there
 
-    link_target = _link_target(p_drive_link)
+    link_target = h.link_target(p_drive_link)
     if link_target is None:
         sys.exit(
             f"{FAIL} {p_drive_link} exists as a real folder, not a link.\n"
             "       Refusing to clobber. Move or remove it manually and re-run."
         )
 
-    if _paths_equal(link_target, workspace_target):
+    if h.paths_equal(link_target, workspace_target):
         try:
             _remove_link(p_drive_link)
         except subprocess.CalledProcessError as e:
@@ -442,18 +419,6 @@ def check_or_clean_p_drive_link(p_drive_link: Path, workspace_target: Path) -> N
     )
 
 
-def gate_on_preflight() -> None:
-    """Every DayZ skill runs /dayz-preflight first and halts on non-zero exit."""
-    if not PREFLIGHT.exists():
-        sys.exit(
-            f"{FAIL} dayz-preflight skill not found at "
-            f"{PREFLIGHT.relative_to(REPO_ROOT)}"
-        )
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
-
-
 def sync_project_cache() -> None:
     """Point the /dayz-init project cache at this project.
 
@@ -463,18 +428,11 @@ def sync_project_cache() -> None:
     "workspace not found". Scaffolding here is an explicit signal that this is
     the active project, so repoint (visibly) rather than let that happen.
     """
-    state_py = REPO_ROOT / ".claude" / "skills" / "dayz-init" / "state.py"
-    spec = importlib.util.spec_from_file_location("dayz_init_state_module", state_py)
-    if spec is None or spec.loader is None:
-        print(f"{WARN} Could not load {state_py}; project cache not updated.")
-        return
-    state = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(state)
-
-    cached = state.cached_project_root()
+    memory = PROJECT_DIR / ".claude" / "local-memory"
+    cached = _state.cached_project_root(memory)
     if cached is not None and cached.resolve() == PROJECT_DIR:
         return
-    state.write_cached_project_root(PROJECT_DIR)
+    _state.write_cached_project_root(PROJECT_DIR, memory)
     if cached is None:
         print(f"{OK} Project cache set: {PROJECT_DIR}")
     else:
@@ -488,40 +446,50 @@ def main() -> int:
     parser.add_argument("--author", help="Author handle (cached for future runs).")
     args = parser.parse_args()
 
-    gate_on_preflight()
+    h.gate_on_preflight()
     validate_name(args.modname)
     author = resolve_author(args.author)
 
     workspace_target = WORKSPACE / args.modname
     p_drive_link = P_DRIVE / args.modname
 
-    if workspace_target.exists():
+    # lexists, so a dangling link also counts: the rollbacks below may then
+    # only ever remove a folder this run created.
+    if os.path.lexists(workspace_target):
         sys.exit(
             f"{FAIL} {workspace_target.relative_to(PROJECT_DIR)} already exists. Refusing to clobber."
         )
     check_or_clean_p_drive_link(p_drive_link, workspace_target)
 
-    target = scaffold(args.modname, author)
+    try:
+        target = scaffold(args.modname, author)
+    except Exception as e:
+        shutil.rmtree(workspace_target, ignore_errors=True)
+        sys.exit(
+            f"{FAIL} Scaffold failed: {e}\n"
+            f"       Partial {workspace_target.relative_to(PROJECT_DIR)}/ rolled back."
+        )
 
     try:
         kind = make_dir_link(target, p_drive_link)
-    except Exception as e:
+    except (OSError, subprocess.CalledProcessError) as e:
         shutil.rmtree(target, ignore_errors=True)
+        # mklink's own message ("Access is denied." etc.) is in e.stderr.
+        detail = (getattr(e, "stderr", "") or str(e)).strip()
         sys.exit(
-            f"{FAIL} Failed to create P:\\{args.modname} junction: {e}\n"
+            f"{FAIL} Failed to create P:\\{args.modname} junction: {detail}\n"
             "       Scaffold rolled back."
         )
     print(f"{OK} P:\\{args.modname} {kind} -> {target.relative_to(PROJECT_DIR)}")
 
-    write_project_marker(p_drive_link, target)
     sync_project_cache()
 
     rel = target.relative_to(PROJECT_DIR)
     print()
     print("Next steps:")
-    print(f"  - Add Enforce Script files under {rel}/scripts/3_Game (or 4_World, 5_Mission)")
-    print(f"  - Add models/textures/materials under {rel}/data")
-    print(f"  - Add UI layouts under {rel}/gui")
+    print(f"  - Add Enforce Script files under {rel / 'scripts' / '3_Game'} (or 4_World, 5_Mission)")
+    print(f"  - Add models/textures/materials under {rel / 'data'}")
+    print(f"  - Add UI layouts under {rel / 'gui'}")
     print(f"  - Open in Workbench: /dayz-launch-workbench --mod {args.modname}")
     print(f"  - When ready, /dayz-build-pbo to pack and deploy to P:\\Mods\\@{args.modname}\\Addons\\")
     return 0

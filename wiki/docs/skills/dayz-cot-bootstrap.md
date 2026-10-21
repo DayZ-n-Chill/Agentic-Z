@@ -4,96 +4,83 @@ name: dayz-cot-bootstrap
 
 ## Overview
 
-Bootstrap Community-Online-Tools (COT) admin permissions on a DayZ test server in one shot. Auto-prepends @CF + @Community-Online-Tools to the mod chain, launches the server + client, waits for your character to spawn (detected when COT writes the per-player files), kills the session, grants you the `admin` role in your Players JSON, flips every ` 0` to ` 2` in your personal `Permissions/&lt;id&gt;.txt` file, then relaunches. Per-player grant only — `Roles/everyone.txt` is never touched. Requires /dayz-init + /dayz-add-server + /dayz-build-pbo first.
+Grants the developer Community-Online-Tools (COT) admin on a local DayZ test server in one run - launches with @CF and @Community-Online-Tools prepended, waits for COT to write the player's permission files, stops that session, adds the admin role and sets every permission in the player's own file, then relaunches. Never edits Roles/everyone.txt. Use when you need COT admin on a test instance set up with /dayz-init, /dayz-add-server and /dayz-build-pbo.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
 # /dayz-cot-bootstrap
 
-One-shot workflow for getting COT admin on a fresh test instance. COT writes its `PermissionsFramework/Players/<id>.json` and `PermissionsFramework/Permissions/<id>.txt` (along with the global `Roles/&#123;admin,everyone&#125;.txt`) on first server boot once a player has loaded in; those per-player files don't exist before that and can't be edited ahead of time. So the workflow is forced into two passes:
+One-shot workflow for getting COT admin on a test instance. COT writes a player's `PermissionsFramework/Players/<id>.json` and `PermissionsFramework/Permissions/<id>.txt` only after that player has loaded in, so they cannot be edited ahead of time. The skill therefore runs two passes:
 
-1. **First pass:** boot the server + client, let your character spawn so COT generates your per-player files, then kill the session.
-2. **Edit:** add the `admin` role to **your** Players JSON, then flip ` 0` → ` 2` in **your** `Permissions/<id>.txt`. `Roles/everyone.txt` and the other `Roles/*.txt` files are left alone — this is a strictly per-player grant.
+1. **First pass:** boot server and client, wait until COT writes your per-player files, then stop the session.
+2. **Edit:** add the `admin` role to **your** Players JSON and flip ` 0` to ` 2` in **your** `Permissions/<id>.txt`. `Roles/everyone.txt` and the other `Roles/*.txt` files are never touched.
 3. **Second pass:** relaunch with the same mod chain. You're now COT admin.
 
-This skill automates all three steps. Counterpart to `/dayz-launch-test` — same launch contract, plus the COT-specific bootstrap dance.
+It uses the same launch contract as `/dayz-launch-test`.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ## How to run
 
 ```cmd
-python "<skill-dir>\bootstrap.py" <ModName> [<ModName2> ...] [--server <instance>] [--port N] [--timeout SEC]
+python "<skill-dir>\bootstrap.py" [<ModName> ...] [--server <instance>] [--port N] [--timeout SEC]
 ```
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<ModName> ...` | yes | One or more mod names already built (PBO must exist at `P:\Mods\@<ModName>\Addons\`). `@CF` and `@Community-Online-Tools` are auto-prepended to the mod chain — don't pass them yourself. |
+| `<ModName> ...` | no | Your built mods (PBO at `P:\Mods\@<ModName>\Addons\`). `@CF` and `@Community-Online-Tools` are always prepended; with no names, only those two load. |
 | `--server` | no | Server instance to launch on. Default `chernarus`. Must have been added via `/dayz-add-server`. |
 | `--port` | no | Server port. Default `2302`. |
-| `--timeout` | no | Seconds to wait for your character to load on the first pass before giving up. Default `600` (10 minutes). |
+| `--timeout` | no | Seconds to wait on the first pass for COT to register your character. Default `600`. |
 
 ## What it does
 
-1. **Preflight gate** — runs `/dayz-preflight`; halts on non-zero.
-2. **Project root** — reads `~/.claude/local-memory/dayz-current-project.txt`.
-3. **Mod check** — verifies `@CF` + `@Community-Online-Tools` are subscribed at `P:\Mods\` and that each user-passed mod has at least one PBO. Prepends CF + COT to the mod chain (dedup).
-4. **Instance check** — confirms `<project>/.server/<instance>/serverDZ.cfg` and the mission folder exist; auto-appends `allowFilePatching = 1;` if missing.
-5. **First pass: launch** — spawns server, waits for it to bind UDP port, spawns client.
-6. **Wait for COT registration** — polls `<project>/.server/<instance>/Profiles/PermissionsFramework/Players/*.json` for new files appearing. The first JSON written is COT registering your character. (Files present before launch are ignored, only newly-created or newly-modified files count.) On a solo test box there's normally exactly one player and exactly one new file.
-7. **Kill session** — `taskkill /IM DayZDiag_x64.exe /F` on both server and client.
-8. **Edit perms (per-player only)**:
-   - For each triggered Players JSON file: insert `"admin"` into its `Roles[]` array (idempotent — skips if already present).
-   - For each triggered player's `Permissions/<id>.txt`: replace every line ending in ` 0` with ` 2`. The script waits up to 15s for that file to appear (COT writes the JSON and the personal perms file close together but not always simultaneously). Space between perm name and digit is preserved.
-   - **`Roles/everyone.txt` and the rest of `Roles/*.txt` are NEVER modified.** Flipping `everyone.txt` would silently grant every connecting player full admin, which is unsafe even on a solo box and is not the COT-intended scoping.
-9. **Second pass: relaunch** — same mod chain, same instance. You're COT admin on entry.
+1. **Preflight gate**: runs `/dayz-preflight`; halts on non-zero.
+2. **Project root**: reads the root `/dayz-init` cached in `.claude/local-memory/dayz-current-project.txt`.
+3. **Mod check**: verifies `@CF` and `@Community-Online-Tools` have PBOs under `P:\Mods\`, prepends them to the chain (dropping duplicates), and checks every mod in the chain has at least one PBO.
+4. **Instance check**: the same check `/dayz-launch-test` runs (cfg `template = "...";` line, an active `allowFilePatching = 1;` line, `mission/`, and the template junction). Anything missing, including a commented-out or `0` `allowFilePatching`, refuses with a hint to run `/dayz-add-server <instance>`, which fixes the cfg.
+5. **First pass**: checks UDP `--port` is free (same check as `/dayz-launch-test`; refuses with `port <port> in use; run /dayz-stop-test or pass --port` if not), spawns the server, waits for it to bind its UDP port, spawns the client.
+6. **Wait for COT**: polls `.server/<instance>/Profiles/PermissionsFramework/Players/*.json` for a file that is new or newer than before the launch. If the server or client process exits first, the wait ends at once; on that or on timeout it stops the session and exits 1, pointing at `script.log` and the RPT in `Profiles/` and at `.server/!ClientDiagLogs/`.
+7. **Stop session**: kills only the two processes this run started (waiting up to 30 s each); other `DayZDiag_x64.exe` processes are left alone.
+8. **Edit perms (per player)**: adds `"admin"` to each triggered player's `Roles[]` (no-op if present), waits up to 15 s for that player's `Permissions/<id>.txt`, and replaces every line ending in ` 0` with ` 2`. If any JSON cannot be parsed or any perms file never appears, it exits 1 without starting pass 2.
+9. **Second pass**: checks the port again, relaunches with the same mod chain and instance, prints the PIDs, and exits 0.
 
 ## Refuses to run if
 
-- `/dayz-preflight` returns non-zero.
-- No project is cached (run `/dayz-init` first to set up the wizard cache).
-- `@CF` or `@Community-Online-Tools` is not subscribed in Steam Workshop. (Check `P:\Mods\@CF\Addons\` and `P:\Mods\@Community-Online-Tools\Addons\`.)
-- Any user-passed mod has no PBO (run `/dayz-build-pbo <ModName>` first).
+- `/dayz-preflight` returns non-zero, or no project is cached (run `/dayz-init`).
+- `@CF` or `@Community-Online-Tools` has no PBOs under `P:\Mods\` (subscribe in Steam Workshop).
+- Any mod in the chain has no PBO (run `/dayz-build-pbo <ModName>`).
 - `DayZDiag_x64.exe` is not found.
-- The selected `--server` hasn't been added yet (run `/dayz-add-server <instance>` first).
-- The first pass times out without a Players JSON appearing. Usually means the client failed to connect or your character never spawned. Check `<project>/.server/<instance>/Profiles/script.log` and the latest `DayZDiag_x64_*.RPT` (in either `Profiles/` or `<project>/.server/!ClientDiagLogs/`) for errors.
+- The `--server` instance is not set up (run `/dayz-add-server <instance>`).
+- UDP `--port` is already in use before a pass launches. Run `/dayz-stop-test` or pass another `--port`. If this happens on pass 2 (a pass-1 process did not release the port), the permission edits are already saved; rerun once the port is free.
 
-## Idempotency
+It exits 1 mid-run when the server never binds its port, when the server or client exits or no Players JSON appears before `--timeout` (check `Profiles/script.log` and the latest RPT in `Profiles/` or `.server/!ClientDiagLogs/`), or when the permission edit fails.
 
-Re-running on the same instance:
+## Re-running
 
-- If your player JSON already has `"admin"` in Roles, the JSON edit is a no-op.
-- If your personal `Permissions/<id>.txt` is already all ` 2`s, the flip is a no-op.
-- `Roles/everyone.txt` and the other `Roles/*.txt` files are not read or written, so re-runs cannot drift their contents.
-- The wait step still triggers on re-runs — COT touches your Players JSON when you reconnect, so the second pass behaves the same as the first.
+Safe on the same instance: an existing `admin` role and an all-` 2` perms file are left as they are, and `Roles/*.txt` is never read or written. COT touches your Players JSON when you reconnect, so the wait step still triggers.
 
-## Output (success)
+## Output (success, abridged)
 
 ```
-[Pass 1/2] Launching server + client to generate COT permission files...
-[OK]    Server PID: 12345    Client PID: 67890
-        Waiting up to 600s for COT to register your character...
-        (watching <project>/.server/<instance>/Profiles/PermissionsFramework/Players/)
-[OK]    Detected new player file: flFK...HTY.json
+[Pass 1/2] Booting so COT can generate permission files for your character.
+...
+[OK]    Detected player file: flFK...HTY.json
 
-[OK]    Killed 2 DayZDiag_x64.exe process(es).
+[Stop] Stopping the pass-1 server and client before editing perm files...
 
 [Edit] Applying COT admin permissions (per-player only)...
 [OK]    Granted admin to flFK...HTY
 [OK]    flFK...HTY.txt: flipped 156 line(s) from 0 -> 2
 
-[Pass 2/2] Relaunching with admin permissions...
-[OK]    Server PID: 13579    Client PID: 24680
-
-You are now COT admin on '<instance>'. Open the COT menu in-game (default keybind: BACKSPACE).
-  Server logs: <project>/.server/<instance>/Profiles
-  Client logs: <project>/.server/!ClientDiagLogs
+[Pass 2/2] Relaunching with admin permissions applied.
+...
+You are now COT admin on 'chernarus'. Open the COT menu in-game (default keybind: BACKSPACE).
 ```
 
 ## Do not
 
-- Don't pass `CF` or `Community-Online-Tools` as mod names — they're auto-prepended. Passing them manually is a no-op (dedup) but it's noise.
-- Don't run this skill if the user just wants a normal launch — that's `/dayz-launch-test`. This skill is only for the COT admin bootstrap dance.
-- Don't try to write the perm files before the first pass. They don't exist until COT initializes for a connected player; pre-creating them confuses COT and may get overwritten.
-- Don't kill the running session manually mid-skill — the skill manages its own server/client lifecycle. If something hangs, Ctrl+C the skill and run `/dayz-stop-test` to clean up.
-- Don't broaden the grant by editing `Roles/everyone.txt` (or any `Roles/*.txt`). The skill is intentionally per-player. Solo test boxes have exactly one player; grant goes to that player's JSON + `Permissions/<id>.txt` only.
+- Don't use this for a normal launch; that's `/dayz-launch-test`.
+- Don't pre-create the perm files; COT writes them for a connected player and may overwrite them.
+- Don't close the game windows mid-run; the skill manages both passes. If something hangs, Ctrl+C and run `/dayz-stop-test`.
+- Don't broaden the grant by editing `Roles/everyone.txt` (or any `Roles/*.txt`): that would make every connecting player an admin.

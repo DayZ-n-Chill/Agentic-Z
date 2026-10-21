@@ -13,21 +13,16 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
-import socket
+import re
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-# REPO_ROOT = where this skill ships from (plugin or template clone).
-# Project dir (where .server/ lives) is resolved at runtime from the
-# /dayz-init project cache; see resolve_project_dir().
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
-PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
-DAYZ_INIT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-init"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
+
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
 
@@ -42,55 +37,12 @@ DEFAULT_CLIENT_DISPLAY: dict = {
     "height": 1080,
 }
 
-# Friendly map name -> mission template folder. Used by verify_instance_environment
-# for display purposes; instance layout is flat so no template resolution needed.
-KNOWN_MAPS: dict[str, str] = {
-    "chernarus": "dayzOffline.chernarusplus",
-    "livonia": "dayzOffline.enoch",
-    "sakhal": "dayzOffline.sakhal",
-}
 DEFAULT_INSTANCE = "chernarus"
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
+SERVER_BIND_TIMEOUT_S = 180
 
-
-def _load_module_from_path(name: str, path: Path):
-    """Load a sibling-skill .py as a module by file path so static analyzers don't
-    choke on a sys.path-based sibling import."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load module at {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_preflight = _load_module_from_path("dayz_preflight_module", PREFLIGHT)
-find_dayz_diag = _preflight.find_dayz_diag
-
-# Reuse the project-root cache reader from /dayz-init so launch follows the same source of truth.
-_dayz_init_state = _load_module_from_path("dayz_init_state_module", DAYZ_INIT_DIR / "state.py")
-cached_project_root = _dayz_init_state.cached_project_root
-
-
-def resolve_project_dir() -> Path:
-    """Return the cached project root, or bail out pointing the user at /dayz-init."""
-    project = cached_project_root()
-    if project is None:
-        print("error: no project cached.", file=sys.stderr)
-        print("  Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
-        sys.exit(2)
-    return project.resolve()
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight skill not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
+find_dayz_diag = h.preflight.find_dayz_diag
 
 
 def gate_on_old_layout(project_dir: Path) -> None:
@@ -117,13 +69,13 @@ def verify_built_mods(modnames: list[str]) -> None:
         if not addons_dir.exists():
             sys.exit(
                 f"{FAIL} Mod '{name}' has no Addons folder at {addons_dir}\n"
-                f"       Run: python .claude/skills/dayz-build-pbo/build.py {name}"
+                f"       Run: /dayz-build-pbo {name}"
             )
         pbos = sorted(addons_dir.glob("*.pbo"))
         if not pbos:
             sys.exit(
                 f"{FAIL} Mod '{name}' has no .pbo files in {addons_dir}\n"
-                f"       Run: python .claude/skills/dayz-build-pbo/build.py {name}"
+                f"       Run: /dayz-build-pbo {name}"
             )
         if len(pbos) == 1:
             print(f"{OK} {name} PBO present: {pbos[0]}")
@@ -150,12 +102,24 @@ def resolve_diag_client() -> Path:
     return diag
 
 
-def verify_instance_environment(instance: str, project_dir: Path) -> tuple[Path, Path, Path, Path]:
-    """Verify .server/<instance>/ has serverDZ.cfg + mission/ + Profiles/ and that
-    the top-level .server/!ClientDiagLogs/ exists.
+def read_cfg_template(cfg_text: str) -> str | None:
+    """The mission template named by `template = "...";` in serverDZ.cfg, or None."""
+    match = re.search(r'\btemplate\s*=\s*"([^"]+)"', cfg_text)
+    return match.group(1) if match else None
 
-    Does NOT create anything (mission, cfg); that's /dayz-add-server's job.
-    Hard-fails with a hint if the instance hasn't been added yet.
+
+def verify_instance_environment(
+    instance: str, project_dir: Path, dry_run: bool = False
+) -> tuple[Path, Path, Path, Path]:
+    """Verify .server/<instance>/ was set up by /dayz-add-server.
+
+    Checks serverDZ.cfg exists, names a mission template and has an active
+    `allowFilePatching = 1;` line (missing, commented out or any other value
+    counts as missing), and that the <template>/ junction to mission/ exists.
+    Hard-fails with a hint to run /dayz-add-server if anything is missing.
+
+    Outside --dry-run it ensures the two profile dirs exist; with dry_run it
+    changes nothing.
 
     Returns (cfg_path, server_profile_dir, mission_path, client_profile_dir).
     server_profile_dir is per-instance .server/<instance>/Profiles/.
@@ -166,49 +130,45 @@ def verify_instance_environment(instance: str, project_dir: Path) -> tuple[Path,
     cfg_path = inst_dir / "serverDZ.cfg"
     server_profile_dir = inst_dir / "Profiles"
     client_profile_dir = server_root / "!ClientDiagLogs"
+    mission_dir = inst_dir / "mission"
 
     missing = []
-    if not cfg_path.exists():
+    cfg = cfg_path.read_text(encoding="utf-8") if cfg_path.is_file() else None
+    template = read_cfg_template(cfg) if cfg is not None else None
+    if cfg is None:
         missing.append(f"server cfg: {cfg_path.relative_to(project_dir)}")
-
-    # CRITICAL: -mission= must point at a path NAMED after the mission template
-    # (e.g. dayzOffline.chernarusplus), not at "mission/". The engine resolves the
-    # template name during the client connect handshake; pointing at "mission/"
-    # means the client connects but never spawns the player. /dayz-add-server
-    # creates a junction <template>/ -> mission/ so we can point at it here.
-    template_dirs = [p for p in inst_dir.glob("dayzOffline.*") if p.is_dir()]
-    if not template_dirs:
-        # Fall back to mission/ for the missing-files error message; user will be
-        # told to re-run /dayz-add-server which creates the junction.
-        mission_path = inst_dir / "mission"
-        if not mission_path.exists():
-            missing.append(f"mission folder: {mission_path.relative_to(project_dir)}")
-        else:
-            missing.append(
-                f"mission template junction (dayzOffline.<map>/ -> mission/): "
-                f"missing in {inst_dir.relative_to(project_dir)}"
-            )
     else:
-        mission_path = template_dirs[0]
+        if template is None:
+            missing.append(f'template = "..."; line in {cfg_path.relative_to(project_dir)}')
+        # Clients launch with -filePatching; without allowFilePatching = 1 the
+        # server refuses the connection (error 0x00020005).
+        setting = h.file_patching_setting(cfg)
+        if setting is None or setting.group(1) != "1":
+            missing.append(f"allowFilePatching = 1; in {cfg_path.relative_to(project_dir)}")
+    if not mission_dir.exists():
+        missing.append(f"mission folder: {mission_dir.relative_to(project_dir)}")
+
+    # -mission= must point at a path NAMED after the mission template the cfg
+    # loads (e.g. dayzOffline.chernarusplus), not at "mission/": the engine
+    # resolves the template name during the client connect handshake, and
+    # without it the client connects but never spawns. /dayz-add-server creates
+    # the <template>/ -> mission/ junction.
+    mission_path = inst_dir / template if template else mission_dir
+    if template and mission_dir.exists() and not mission_path.is_dir():
+        missing.append(
+            f"mission template junction ({template}/ -> mission/) in {inst_dir.relative_to(project_dir)}"
+        )
 
     if missing:
         details = "\n".join(f"          - {m}" for m in missing)
         sys.exit(
             f"{FAIL} Instance '{instance}' is not set up. Missing:\n{details}\n"
-            f"       Run: python .claude/skills/dayz-add-server/add_server.py {instance}"
+            f"       Run: /dayz-add-server {instance}"
         )
 
-    # Existing cfg: auto-append allowFilePatching=1 if missing (clients launch
-    # with -filePatching; without this setting the server refuses connection,
-    # error 0x00020005). This is the only mutation the launch skill performs.
-    cfg = cfg_path.read_text(encoding="utf-8")
-    if "allowFilePatching" not in cfg:
-        cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
-        cfg_path.write_text(cfg, encoding="utf-8")
-        print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(project_dir)}")
-
-    server_profile_dir.mkdir(parents=True, exist_ok=True)
-    client_profile_dir.mkdir(parents=True, exist_ok=True)
+    if not dry_run:
+        server_profile_dir.mkdir(parents=True, exist_ok=True)
+        client_profile_dir.mkdir(parents=True, exist_ok=True)
     print(f"{OK} Instance: {instance}")
     print(f"{OK} Instance dir: {inst_dir.relative_to(project_dir)}")
     return cfg_path, server_profile_dir, mission_path, client_profile_dir
@@ -240,10 +200,29 @@ def build_server_cmd(
     ]
 
 
-def read_client_display_prefs(project_dir: Path) -> dict:
+def display_prefs_problem(prefs) -> str | None:
+    """Why parsed display prefs are unusable, or None when they are fine.
+
+    Valid JSON can still have the wrong shape (a list, "width": "1920"), which
+    would crash on .get() or put a bad value on the client command line.
+    """
+    if not isinstance(prefs, dict):
+        return f"expected a JSON object, got {type(prefs).__name__}"
+    if "windowed" in prefs and not isinstance(prefs["windowed"], bool):
+        return '"windowed" must be true or false'
+    for key in ("width", "height"):
+        if key in prefs:
+            value = prefs[key]
+            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+                return f'"{key}" must be a positive whole number'
+    return None
+
+
+def read_client_display_prefs(project_dir: Path, create: bool = True) -> dict:
     """Read client display preferences (windowed/resolution) from local-memory.
 
-    Creates the file with DEFAULT_CLIENT_DISPLAY (1080p windowed) on first run.
+    Creates the file with DEFAULT_CLIENT_DISPLAY (1080p windowed) on first run,
+    unless create is False (--dry-run), which just returns the defaults.
     Per-clone, gitignored; the user's monitor setup doesn't belong in the repo.
 
     The file is JSON so the user can edit it without running any skill:
@@ -253,11 +232,17 @@ def read_client_display_prefs(project_dir: Path) -> dict:
     prefs_path = local_memory / CLIENT_DISPLAY_PREFS_NAME
     if prefs_path.exists():
         try:
-            return json.loads(prefs_path.read_text(encoding="utf-8"))
+            prefs = json.loads(prefs_path.read_text(encoding="utf-8"))
+            problem = display_prefs_problem(prefs)
         except (json.JSONDecodeError, OSError) as e:
-            print(f"{WARN} Could not parse {prefs_path.relative_to(project_dir)}: {e}")
-            print(f"{WARN} Falling back to defaults: {DEFAULT_CLIENT_DISPLAY}")
-            return dict(DEFAULT_CLIENT_DISPLAY)
+            problem = str(e)
+        if problem is None:
+            return prefs
+        print(f"{WARN} Could not use {prefs_path.relative_to(project_dir)}: {problem}")
+        print(f"{WARN} Falling back to defaults: {DEFAULT_CLIENT_DISPLAY}")
+        return dict(DEFAULT_CLIENT_DISPLAY)
+    if not create:
+        return dict(DEFAULT_CLIENT_DISPLAY)
     local_memory.mkdir(parents=True, exist_ok=True)
     prefs_path.write_text(
         json.dumps(DEFAULT_CLIENT_DISPLAY, indent=2) + "\n", encoding="utf-8"
@@ -273,9 +258,9 @@ def wait_for_server_port(port: int, server_proc: subprocess.Popen, timeout_s: in
     """Wait until the DayZ server has bound UDP `port`. Returns True when bound
     within `timeout_s`, False if it gives up.
 
-    Detection: try to bind() the same UDP port ourselves. If bind fails with
-    EADDRINUSE (or any OSError), the server is holding it; we're good. If
-    bind succeeds, the server hasn't bound yet — release and retry.
+    Detection: h.udp_port_free tries to bind the same UDP port (and always
+    closes its socket). If that bind fails, the server is holding the port;
+    we're good. If it succeeds, the server hasn't bound yet, so retry.
 
     DayZ does not respond to Source Engine Query on the game port, so packet-
     based probes don't work. Bind-collision is the reliable signal.
@@ -292,13 +277,7 @@ def wait_for_server_port(port: int, server_proc: subprocess.Popen, timeout_s: in
         if server_proc.poll() is not None:
             print(f"\n{FAIL} Server process exited unexpectedly (rc={server_proc.returncode}).")
             return False
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.bind(("0.0.0.0", port))
-            s.close()
-            # Bind succeeded => server has NOT bound yet. Keep waiting.
-        except OSError:
-            # Bind failed => something (the server) is holding the port. Ready.
+        if not h.udp_port_free(port):
             print(f"\n{OK} Server has bound UDP port {port}")
             return True
         if time.time() - last_dot > 5:
@@ -365,18 +344,18 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    project_dir = resolve_project_dir()
-    gate_on_preflight()
+    project_dir = h.resolve_project_dir()
+    h.gate_on_preflight()
     print()
     print(f"{OK} Project: {project_dir}")
     gate_on_old_layout(project_dir)
     verify_built_mods(args.modnames)
     diag_exe = resolve_diag_client()
     cfg_path, server_profile_dir, mission_path, client_profile_dir = verify_instance_environment(
-        args.server, project_dir
+        args.server, project_dir, dry_run=args.dry_run
     )
 
-    display = read_client_display_prefs(project_dir)
+    display = read_client_display_prefs(project_dir, create=not args.dry_run)
 
     # Absolute mod paths so the engine resolves -mod=<arg> correctly regardless
     # of the working directory the subprocess inherits.
@@ -392,15 +371,21 @@ def main() -> int:
         print(f"[DRY-RUN] Client cmd: {' '.join(client_cmd)}")
         return 0
 
+    # A server already on this port would make the new one fail to bind, and
+    # wait_for_server_port would mistake the old server for the new one.
+    h.gate_on_free_port(args.port)
+
     print()
     print(f"[Launch] Server: {' '.join(server_cmd)}")
     sys.stdout.flush()
     server_proc = subprocess.Popen(server_cmd)
     print(f"{OK} Server PID: {server_proc.pid}")
     sys.stdout.flush()
-    if not wait_for_server_port(args.port, server_proc, timeout_s=180):
-        print(f"{FAIL} Server did not bind to port {args.port} within 180s.")
-        print(f"       Check the server RPT in {profile_dir}\\ for errors.")
+    if not wait_for_server_port(args.port, server_proc, timeout_s=SERVER_BIND_TIMEOUT_S):
+        if server_proc.poll() is None:
+            server_proc.kill()
+            print(f"{FAIL} Server did not bind to port {args.port} within {SERVER_BIND_TIMEOUT_S}s; killed it.")
+        print(f"       Check the server RPT in {server_profile_dir}\\ for errors.")
         return 1
 
     print()

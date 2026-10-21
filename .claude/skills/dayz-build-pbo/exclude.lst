@@ -1,0 +1,40 @@
+; Passed to AddonBuilder as -exclude=. Files matching these patterns are left
+; out of the final PBO. Comment lines start with ';'.
+
+; Sprite sources for /dayz-build-imageset. Only the packed .paa atlas and
+; .imageset under gui/imagesets/ ship; the source PNGs stay out of the PBO.
+.gui-sources\*.*
+.gui-sources\*\*.*
+*\.gui-sources\*
+
+; Binarization by-products and backups
+*.dep
+*.log
+*.rpt
+*.bak
+
+; Source, doc and temp folders, archives, image sources
+*\Source\*
+*\Temp\*
+*\Doc\*
+Source\*.*
+Temp\*.*
+Doc\*.*
+*.zip
+*.7z
+*.psd
+
+; Version control
+*\.svn\*
+*\.git\*
+.svn\*.*
+.git\*.*
+*.scc
+
+; Nested packed files, editor temp files, signatures and keys
+*.pbo
+*.ebo
+*.biedi
+*.bisign
+*.bikey
+*.biprivatekey

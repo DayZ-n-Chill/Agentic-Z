@@ -12,78 +12,76 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
-# REPO_ROOT = where this skill ships from (plugin or template clone).
-# PROJECT_DIR = user's project (where workspace/ lives). Differ in plugin mode.
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
-WORKSPACE = PROJECT_DIR / "workspace"
-NEW_MOD = REPO_ROOT / ".claude" / "skills" / "dayz-new-mod" / "new_mod.py"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
 
-OK = "[OK]   "
+NEW_MOD = h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py"
+P_DRIVE = Path("P:\\")
+
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 SKIP = "[SKIP] "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
 
+# Pieces written into the mod folder; `all` runs these in order. The P:\ link
+# is not part of `all`: it changes P:\ itself, so it runs only when asked for.
 PIECES = ("config", "prefix", "workbench", "readme", "skeleton")
+JUNCTION = "junction"
+
+# Pieces whose template needs the author handle, and the file each writes.
+AUTHOR_PIECES = {"config": "config.cpp", "readme": "README.md"}
+
+# What each piece function returns.
+ADDED = "added"      # wrote at least one file or folder
+PRESENT = "present"  # everything the piece covers already exists
+SKIPPED = "skipped"  # missing, but could not be written (e.g. DayZ Tools not installed)
+
+_nm = h.load_module("dayz_new_mod_module", NEW_MOD)
 
 
-def _load_new_mod_module():
-    spec = importlib.util.spec_from_file_location("dayz_new_mod_module", NEW_MOD)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load dayz-new-mod module at {NEW_MOD}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_nm = _load_new_mod_module()
-
-
-def add_config(target: Path, modname: str, get_author) -> bool:
+def add_config(target: Path, modname: str, get_author) -> str:
     f = target / "config.cpp"
     if f.exists():
         print(f"{SKIP} config.cpp present")
-        return False
+        return PRESENT
     author = get_author()
     f.write_text(
         _nm.CONFIG_CPP_TEMPLATE.substitute(modname=modname, author=author),
         encoding="utf-8",
     )
     print(f"{OK} config.cpp written (author: {author})")
-    return True
+    return ADDED
 
 
-def add_prefix(target: Path, modname: str) -> bool:
+def add_prefix(target: Path, modname: str) -> str:
     f = target / "$PBOPREFIX$"
     if f.exists():
         print(f"{SKIP} $PBOPREFIX$ present")
-        return False
+        return PRESENT
     f.write_text(modname, encoding="utf-8")
     print(f"{OK} $PBOPREFIX$ written")
-    return True
+    return ADDED
 
 
-def add_readme(target: Path, modname: str, get_author) -> bool:
+def add_readme(target: Path, modname: str, get_author) -> str:
     f = target / "README.md"
     if f.exists():
         print(f"{SKIP} README.md present")
-        return False
+        return PRESENT
     author = get_author()
     f.write_text(
         _nm.README_TEMPLATE.substitute(modname=modname, author=author),
         encoding="utf-8",
     )
     print(f"{OK} README.md written")
-    return True
+    return ADDED
 
 
-def add_skeleton(target: Path) -> bool:
+def add_skeleton(target: Path) -> str:
     folders = ("scripts/3_Game", "scripts/4_World", "scripts/5_Mission", "data", "gui")
     added = 0
     present = 0
@@ -93,40 +91,37 @@ def add_skeleton(target: Path) -> bool:
             present += 1
             continue
         folder.mkdir(parents=True)
-        gitkeep = folder / ".gitkeep"
-        if not gitkeep.exists():
-            gitkeep.write_text("", encoding="utf-8")
+        (folder / ".gitkeep").write_text("", encoding="utf-8")
         added += 1
     if added == 0:
         print(f"{SKIP} Skeleton folders all present")
-        return False
+        return PRESENT
     print(f"{OK} Skeleton folders created ({added} added, {present} already present)")
-    return True
+    return ADDED
 
 
-def add_workbench(target: Path, modname: str) -> bool:
+def add_workbench(target: Path, modname: str) -> str:
     """Write workbench/dayz.gproj and DayZSetting.xml if missing.
 
     Uses the same vanilla-copy + injection logic as dayz-new-mod's
     scaffold_workbench(), but skips files already present instead of
-    failing on a non-empty workbench/ folder.
+    failing on a non-empty workbench/ folder. Creates workbench/ only when
+    it has a file to write into it.
     """
     workbench_dir = target / "workbench"
-    workbench_dir.mkdir(exist_ok=True)
-
     gproj = workbench_dir / "dayz.gproj"
     setting = workbench_dir / "DayZSetting.xml"
 
     if gproj.exists() and setting.exists():
         print(f"{SKIP} workbench/ present (dayz.gproj + DayZSetting.xml)")
-        return False
+        return PRESENT
 
     tools_root = _nm.find_dayz_tools()
     if tools_root is None:
         print(f"{WARN} workbench/ skipped - DayZ Tools not detected")
         print("       Re-run after installing DayZ Tools, or copy")
         print("       <DayZ Tools>\\Bin\\Workbench\\dayz.gproj manually.")
-        return False
+        return SKIPPED
 
     src_workbench = tools_root / "Bin" / "Workbench"
     src_gproj = src_workbench / "dayz.gproj"
@@ -142,6 +137,7 @@ def add_workbench(target: Path, modname: str) -> bool:
         text = src_gproj.read_text(encoding="utf-8")
         text = _nm.inject_mod_paths_into_gproj(text, modname)
         text = _nm.rewrite_filesystem_block(text, modname)
+        workbench_dir.mkdir(exist_ok=True)
         gproj.write_text(text, encoding="utf-8")
         print(f"{OK} workbench/dayz.gproj written (mod paths + filesystem mounts injected)")
         wrote_anything = True
@@ -151,20 +147,81 @@ def add_workbench(target: Path, modname: str) -> bool:
     elif not src_setting.exists():
         print(f"{WARN} {src_setting} missing - DayZSetting.xml not copied")
     else:
+        workbench_dir.mkdir(exist_ok=True)
         shutil.copyfile(src_setting, setting)
         print(f"{OK} workbench/DayZSetting.xml copied")
         wrote_anything = True
 
-    return wrote_anything
+    return ADDED if wrote_anything else SKIPPED
 
 
-PIECE_FUNCS = {
-    "config": lambda target, modname, get_author: add_config(target, modname, get_author),
-    "prefix": lambda target, modname, get_author: add_prefix(target, modname),
-    "readme": lambda target, modname, get_author: add_readme(target, modname, get_author),
-    "skeleton": lambda target, modname, get_author: add_skeleton(target),
-    "workbench": lambda target, modname, get_author: add_workbench(target, modname),
-}
+def add_junction(target: Path, modname: str) -> str:
+    """Create the P:\\<ModName>\\ link to workspace/<ModName>/, as /dayz-new-mod does.
+
+    A link that already points at this workspace folder counts as present. A
+    real folder, or a link pointing anywhere else, is refused: it may belong to
+    another project, so the user removes it by hand.
+    """
+    p_link = P_DRIVE / modname
+    shown = _display(target)
+    if os.path.lexists(p_link):
+        current = h.link_target(p_link)
+        if current is None:
+            sys.exit(
+                f"{FAIL} {p_link} exists as a real folder, not a link.\n"
+                "       Refusing to clobber. Move or remove it manually and re-run."
+            )
+        if not h.paths_equal(current, target):
+            sys.exit(
+                f"{FAIL} {p_link} is a link pointing at {current}\n"
+                f"       Remove it (cmd /c rmdir \"{p_link}\") and re-run."
+            )
+        print(f"{SKIP} {p_link} present (links to {shown})")
+        return PRESENT
+    try:
+        kind = _nm.make_dir_link(target, p_link)
+    except (OSError, subprocess.CalledProcessError) as e:
+        detail = (getattr(e, "stderr", "") or str(e)).strip()
+        sys.exit(f"{FAIL} Could not create {p_link}: {detail}")
+    print(f"{OK} {p_link} {kind} -> {shown}")
+    return ADDED
+
+
+def add_piece(piece: str, target: Path, modname: str, get_author) -> str:
+    """Add one piece; returns ADDED, PRESENT or SKIPPED. Used by /dayz-import-mod too."""
+    if piece == "config":
+        return add_config(target, modname, get_author)
+    if piece == "prefix":
+        return add_prefix(target, modname)
+    if piece == "workbench":
+        return add_workbench(target, modname)
+    if piece == "readme":
+        return add_readme(target, modname, get_author)
+    if piece == "skeleton":
+        return add_skeleton(target)
+    if piece == JUNCTION:
+        return add_junction(target, modname)
+    raise ValueError(f"unknown scaffold piece: {piece}")
+
+
+def lazy_author(cli_value: str | None):
+    """Return a get_author() that resolves the handle on first call only.
+
+    Avoids the author prompt when config.cpp / README.md already exist.
+    """
+    cache: list[str] = []
+
+    def get_author() -> str:
+        if not cache:
+            cache.append(_nm.resolve_author(cli_value))
+        return cache[0]
+
+    return get_author
+
+
+def _display(target: Path) -> Path:
+    """workspace/<ModName> as printed in output (the mod folder relative to the project)."""
+    return Path(target.parent.name) / target.name
 
 
 def main() -> int:
@@ -174,63 +231,48 @@ def main() -> int:
     parser.add_argument("modname", help="Mod name (folder under workspace/).")
     parser.add_argument(
         "--piece",
-        choices=("config", "prefix", "workbench", "readme", "skeleton", "all"),
+        choices=(*PIECES, JUNCTION, "all"),
         default="all",
-        help="Which piece to add. Default 'all' adds every missing piece.",
+        help="Which piece to add. Default 'all' adds every missing file piece; "
+             "'junction' creates the P:\\<ModName> link (never part of 'all').",
     )
     parser.add_argument("--author", help="Author handle (cached for future runs).")
     args = parser.parse_args()
 
-    _nm.gate_on_preflight()
+    h.gate_on_preflight()
     _nm.validate_name(args.modname)
 
-    target = WORKSPACE / args.modname
+    target = h.resolve_project_dir() / "workspace" / args.modname
+    rel = _display(target)
     if not target.exists():
-        try:
-            rel = target.relative_to(PROJECT_DIR)
-        except ValueError:
-            rel = target
         sys.exit(
             f"{FAIL} {rel} does not exist.\n"
             "       Use /dayz-new-mod to scaffold a fresh mod, or /dayz-import-mod\n"
             "       to import an existing folder."
         )
     if not target.is_dir():
-        sys.exit(f"{FAIL} {target.relative_to(PROJECT_DIR)} is not a directory.")
+        sys.exit(f"{FAIL} {rel} is not a directory.")
 
-    print()
-    try:
-        rel = target.relative_to(PROJECT_DIR)
-    except ValueError:
-        rel = target
-    print(f"Scaffolding {rel}/\n")
-
-    # Lazy author resolution: only prompt if a piece needing author actually has to write.
-    # Avoids the prompt when config.cpp / README.md already exist.
-    _cache: list[str] = []
-
-    def get_author() -> str:
-        if _cache:
-            return _cache[0]
-        author = _nm.resolve_author(args.author)
-        _cache.append(author)
-        return author
-
+    get_author = lazy_author(args.author)
     pieces = PIECES if args.piece == "all" else (args.piece,)
-    added = 0
-    skipped = 0
-    for piece in pieces:
-        wrote = PIECE_FUNCS[piece](target, args.modname, get_author)
-        if wrote:
-            added += 1
-        else:
-            skipped += 1
+    # Resolve the author before writing anything, so a missing handle (no
+    # flag, no cache, no TTY) exits with the folder untouched rather than
+    # after some pieces were already written.
+    if any(p in AUTHOR_PIECES and not (target / AUTHOR_PIECES[p]).exists() for p in pieces):
+        get_author()
 
     print()
-    if added == 0:
+    print(f"Scaffolding {rel}{os.sep}")
+    print()
+
+    results = [add_piece(piece, target, args.modname, get_author) for piece in pieces]
+    added, present, skipped = (results.count(s) for s in (ADDED, PRESENT, SKIPPED))
+
+    print()
+    if added == 0 and skipped == 0:
         print(f"{OK} Nothing to add - {rel} is already fully scaffolded.")
     else:
-        print(f"{OK} {added} piece(s) added, {skipped} piece(s) already present.")
+        print(f"{OK} {added} piece(s) added, {present} already present, {skipped} skipped.")
     return 0
 
 

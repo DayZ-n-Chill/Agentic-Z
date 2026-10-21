@@ -6,9 +6,9 @@
 
 ## What you get
 
-- **11 DayZ specialist agents** covering scripts, configs, assets, maps, UI, server admin, debugging, and Workbench plugins.
-- **26 slash-command skills** that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
-- **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials) plus the Bohemia community wiki, exposed to every agent through the `dayz-rag` MCP server. Embeddings via Voyage AI (`voyage-code-3`, 200M-token free tier covers ~3 full rebuilds). Or skip the build entirely with `/dayz-search-download` and pull the prebuilt index from GitHub releases.
+- **A 21-agent mod team**: an orchestrator that plans and tracks a whole mod, team leads, specialists for scripts, configs, models, textures, UI, Figma, maps, server admin and Workbench plugins, and gatekeepers that review, build and test every task in game before you see it.
+- **31 slash-command skills** that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
+- **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials) plus the Bohemia community wiki, exposed to every agent through the `dayz-rag` MCP server. Embeddings via Voyage AI (`voyage-code-3`) stored in LanceDB; needs `VOYAGE_API_KEY` in `.env`. Skip the build with `/dayz-search-download`, which pulls the prebuilt index from GitHub releases.
 - **Three-CLI support out of the box.** The same agents and skills work in Claude Code, Codex CLI, and Gemini CLI. One `sync-skills` run wires them all up.
 
 ---
@@ -42,7 +42,7 @@ Then, from your mod project in Claude Code:
 /dayz-init
 ```
 
-That's it. The wizard asks what you're doing (new mod or import), where to scaffold, what map to test on, and whether to build/launch. It auto-fixes what it can (`P:\` mount, junctions) and surfaces steam:// links for the rest. Every run after the first drops you into a mission-control hub for the cached project.
+That's it. The wizard asks what you're doing (new mod or import), the mod name, which map to test on, and whether to build and launch. It fixes what it can on its own (mounting `P:\`, the `P:\Mods` junction) and gives you the fix or a steam:// link for the rest. Every run after the first shows a status hub for the active mod (PBO age, test servers, whether DayZ Diag is running, search status) and runs the next action you pick. To work on another mod, pick "Set up or switch to another mod" in the hub. Its state lives per clone in `.claude/local-memory/` (gitignored).
 
 Power users can still call individual skills directly: `/dayz-preflight`, `/dayz-build-pbo`, `/dayz-launch-test`, etc. See the full slash-command list further down.
 
@@ -60,21 +60,21 @@ Full prerequisites, env-var overrides, and troubleshooting: **[`docs/dayz-moddin
 | **`P:\` mounted** | Engine and Tools both read from `P:\`. Mount via DayZ Tools or `/dayz-workdrive`. Doesn't auto-mount across reboots. |
 | **`P:\Mods\` junction → `<DayZ install>\!Workshop\`** | One-time `mklink /J` so built PBOs land where the engine actually loads mods. |
 | **Vanilla data on `P:\`** | DayZ Tools → "Extract Game Data". Your configs inherit from `ItemBase`, `Inventory_Base`, etc. |
-| **Python 3.8+** on `PATH` | The skills are Python scripts. |
+| **Python 3.10+** on `PATH` | The skills are Python scripts. |
 
-RAG embeddings run through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim). A free Voyage account includes 200M tokens — enough for ~3 full rebuilds of the vanilla DayZ corpus. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root before running `/dayz-search-index`. If you'd rather skip the build entirely, `/dayz-search-download` pulls the maintainer's prebuilt index from GitHub releases (~1 minute, no API key needed for download — but query-time embedding still needs the key).
+Search (optional) embeds through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim) and stores the vectors in LanceDB under `~/.claude/dayz-search-index/`, where the `dayz-rag` MCP server reads them. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root; queries need it either way. A full local build with `/dayz-search-index` embeds about 52,000 chunks from about 38,000 files (roughly 66M tokens), so check Voyage's pricing first. To skip the build, `/dayz-search-download` installs the prebuilt index from GitHub releases with no embedding cost.
 
 ---
 
-## Architecture — three layers
+## Architecture — three tiers
 
-| Layer | Scope | Where it lives |
+| Tier | Scope | Where it lives |
 |---|---|---|
 | **L1 — Default rules** | Every clone, every agent, every skill. | `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (same content; one filename per CLI) |
 | **L2 — DayZ conventions** | When working inside the DayZ domain. | `.claude/skills/_shared/dayz-conventions.md` |
 | **L3 — Specific agent / skill** | The unit of work. | `.claude/agents/<name>.md` or `.claude/skills/<name>/SKILL.md` |
 
-L3 files reference L2 in one line. The more specific layer wins ties.
+L3 files reference L2 in one line. The more specific tier wins ties. Corrections you give the team go into the right tier through `/dayz-record-correction`.
 
 ---
 
@@ -83,19 +83,20 @@ L3 files reference L2 in one line. The more specific layer wins ties.
 ```
 <repo>/
 ├── .claude/
-│   ├── agents/             # 11 DayZ specialists + agent-creator (L3)
-│   ├── skills/             # 26 slash-command skills (L3) + L2 shared conventions
+│   ├── agents/             # 21 agents: mod team, specialists, agent-creator (L3)
+│   ├── skills/             # 31 slash-command skills (L3) + L2 shared conventions
 │   │   ├── _shared/dayz-conventions.md
 │   │   ├── sync-skills/    # bootstrap: link skills into Claude/Codex/Gemini home dirs
 │   │   └── dayz-*/         # one folder per DayZ skill
 │   ├── mcp/dayz-rag/       # local RAG MCP server (search_dayz_source, get_dayz_file, ...)
-│   ├── agent-memory/       # per-agent committed memory
-│   ├── local-memory/       # gitignored, per-clone, user/machine notes only
-│   └── settings.local.json # per-clone Claude Code settings
+│   ├── agent-memory/       # gitignored, per-agent memory written at runtime
+│   ├── local-memory/       # gitignored, per-clone: user/machine notes and /dayz-init state
+│   └── settings.local.json # gitignored, per-clone Claude Code settings
 ├── CLAUDE.md / AGENTS.md / GEMINI.md   # L1 rules (one per CLI, same content)
 ├── docs/                   # deep docs (DayZ workflow, model routing)
 ├── wiki/                   # Docusaurus mirror of docs/agents/skills
-├── workspace/              # in-progress mods (workspace/<ModName>/) and _server/
+├── workspace/              # in-progress mods (workspace/<ModName>/)
+├── .server/                # local test-server instances (.server/<instance>/)
 └── output/                 # one-shot deliverables
 ```
 
@@ -103,13 +104,13 @@ L3 files reference L2 in one line. The more specific layer wins ties.
 
 ## DayZ skills (slash commands)
 
-Most skills gate on `/dayz-preflight` first per L2 conventions. Documented exceptions: `/dayz-stop-test` (escape-hatch — must work even when env is broken) and `/dayz-init` (orchestrates other skills, runs preflight on its own steps).
+Most skills gate on `/dayz-preflight` first per L2 conventions. Documented exceptions: `/dayz-stop-test` (escape hatch that must work even when the environment is broken), `/dayz-scope-mod` and `/dayz-record-correction` (they edit settings or rule files, not DayZ content), `/dayz-init` (runs preflight inside its own steps) and `/dayz-workdrive` (it mounts the `P:\` that preflight checks).
 
 ### Front door
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-init`](.claude/skills/dayz-init/SKILL.md) | Setup wizard on first run; mission-control hub on every run after. Wraps every other skill. |
+| [`/dayz-init`](.claude/skills/dayz-init/SKILL.md) | Setup wizard on first run; status hub for the active mod on every run after. Dispatches to the other skills, never replaces them. |
 
 ### Bootstrap (one-time per machine)
 
@@ -125,7 +126,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 |---|---|
 | [`/dayz-new-mod`](.claude/skills/dayz-new-mod/SKILL.md) | Scaffold `workspace/<ModName>/` + `P:\<ModName>\` junction. |
 | [`/dayz-import-mod`](.claude/skills/dayz-import-mod/SKILL.md) | Symlink an existing mod folder into the workspace + create the junction. Source folder is never moved. |
-| [`/dayz-add-scaffold`](.claude/skills/dayz-add-scaffold/SKILL.md) | Add missing scaffold pieces (config.cpp stub, gproj, etc.) to an existing mod folder. |
+| [`/dayz-add-scaffold`](.claude/skills/dayz-add-scaffold/SKILL.md) | Add missing scaffold pieces (config.cpp stub, gproj, etc.) to an existing mod folder; `--piece junction` repairs a missing `P:\<ModName>\` link. |
 | [`/dayz-scope-mod`](.claude/skills/dayz-scope-mod/SKILL.md) | Lock the agent to one mod via deny rules so it can't clobber siblings. |
 
 ### Build
@@ -133,7 +134,8 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 | Command | Purpose |
 |---|---|
 | [`/dayz-build-pbo`](.claude/skills/dayz-build-pbo/SKILL.md) | Pack and deploy to `P:\Mods\@<ModName>\Addons\<ModName>.pbo`. |
-| [`/dayz-pack-texture`](.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates `_co` / `_nohq` / `_smdi` suffix. |
+| [`/dayz-deploy-pbo`](.claude/skills/dayz-deploy-pbo/SKILL.md) | Copy prebuilt PBOs and keys from a workspace bundle to `P:\Mods\@<ModName>\` without AddonBuilder. |
+| [`/dayz-pack-texture`](.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates the suffix against the vanilla set (`_co`, `_ca`, `_nohq`, `_smdi`, `_as`, `_mc` and more). |
 | [`/dayz-build-imageset`](.claude/skills/dayz-build-imageset/SKILL.md) | Pack `.gui-sources/<setname>/*.png` into a DayZ `.imageset` + `.paa` atlas with a 10px gutter; auto-splits into multiple parts when sprites won't fit in 4096x4096. |
 
 ### Test loop
@@ -157,7 +159,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 | Command | Purpose |
 |---|---|
 | [`/dayz-edit-types`](.claude/skills/dayz-edit-types/SKILL.md) | Programmatically upsert a single `<type>` in `types.xml`. |
-| [`/dayz-split-types`](.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into 18 categorized files. |
+| [`/dayz-split-types`](.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into per-category files and point `cfgeconomycore.xml` at them. |
 
 ### Specialist tools (deep)
 
@@ -171,8 +173,14 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 | Command | Purpose |
 |---|---|
 | [`/dayz-search-download`](.claude/skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases (recommended fast path). |
-| [`/dayz-search-index`](.claude/skills/dayz-search-index/SKILL.md) | Build the vanilla-source semantic-search index yourself (~25 min, requires Voyage API key). |
+| [`/dayz-search-index`](.claude/skills/dayz-search-index/SKILL.md) | Build the vanilla-source semantic-search index yourself (requires `VOYAGE_API_KEY`). |
 | [`/dayz-search-wiki-index`](.claude/skills/dayz-search-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB. |
+
+### Team rules
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-record-correction`](.claude/skills/dayz-record-correction/SKILL.md) | Turn your correction of the mod team into a written rule in the right tier. |
 
 ### Cleanup
 
@@ -191,6 +199,22 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 
 ---
 
+## The mod team
+
+For a whole mod, start the orchestrator as your main session: `claude --agent agentic-z:dayz-orchestrator` (or `claude --agent dayz-orchestrator` inside a clone). It has the architect plan the mod, waits for your yes, then hands tasks to team leads. Every task passes the mod reviewer (and the layout check for UI work) inside its team. After each wave, the orchestrator builds the mod and loads it in game, one test session at a time. When a gate fails, the debugger reads the logs and the task goes back to its worker.
+
+| Agent | Role |
+|---|---|
+| [`dayz-orchestrator`](.claude/agents/dayz-orchestrator.md) | Plans the build with you, splits it into tasks, tracks it to a test build. |
+| [`dayz-mod-architect`](.claude/agents/dayz-mod-architect.md) | Designs the mod's classes, files and task list before work starts. |
+| [`dayz-lead`](.claude/agents/dayz-lead.md) | Runs one team (script, config, art, UI, server, release) and its gates. |
+| [`dayz-build-checker`](.claude/agents/dayz-build-checker.md) | Gate: the PBO builds with no AddonBuilder errors. |
+| [`dayz-ingame-tester`](.claude/agents/dayz-ingame-tester.md) | Gate: the mod loads on a diag server and client with clean logs. |
+| [`dayz-build-engineer`](.claude/agents/dayz-build-engineer.md) | Builds, launches test sessions and deploys after your yes. |
+| [`dayz-docs-writer`](.claude/agents/dayz-docs-writer.md) | Keeps the mod's README, changelog and classname list current. |
+
+You can still call any specialist below directly for a single task.
+
 ## DayZ specialist agents
 
 | Agent | Focus |
@@ -205,6 +229,9 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 | [`dayz-mod-debugger`](.claude/agents/dayz-mod-debugger.md) | Log/RPT/crash analysis, BattlEye diagnosis, performance profiling. |
 | [`dayz-mod-reviewer`](.claude/agents/dayz-mod-reviewer.md) | Audit `workspace/<ModName>/` for convention compliance; routes findings. |
 | [`dayz-workbench-specialist`](.claude/agents/dayz-workbench-specialist.md) | Workbench plugin development (editor-time tooling). |
+| [`figma-node-normalizer`](.claude/agents/figma-node-normalizer.md) | Cleans a Figma frame so it can be converted. |
+| [`figma-to-dayz-layout`](.claude/agents/figma-to-dayz-layout.md) | Turns a cleaned Figma frame into a DayZ `.layout`. |
+| [`dayz-layout-validator`](.claude/agents/dayz-layout-validator.md) | Checks and cleans generated `.layout` files; the UI gate. |
 
 Plus [`agent-creator`](.claude/agents/agent-creator.md) for scaffolding new agent definitions.
 
@@ -265,7 +292,7 @@ The shipped configuration is the security baseline. **Tighten it for your enviro
 
 - **`.claude/settings.json`** (committed) — narrow Bash allowlist limited to running this repo's own skills (`Bash(python .claude/skills/*)`, `Bash(npm list *)`, etc.) plus an explicit deny list that blocks the dangerous escape hatches: `Bash(python -c *)`, `Bash(python -m *)`, `Bash(node -e *)`, `Bash(node -p *)`, `Bash(npm install *)`, `Bash(npx *)`. Editing this file affects every clone — keep allows narrow and prefer deny rules over removing them.
 - **`.claude/settings.local.json`** (gitignored, per-clone) — your machine-specific overrides. **Never set `dangerouslySkipPermissions: true` in a long-lived clone**; it bypasses every prompt including the deny list. Use `/fewer-permission-prompts` to build a real allowlist incrementally as you hit prompts.
-- **`.claude/agents/*.md`** — every agent declares an explicit `tools:` allowlist. Auditor/diagnostic agents (`dayz-mod-reviewer`, `dayz-mod-debugger`) cannot Edit/Write/Bash. Authoring specialists get Read/Write/Edit/Glob/Grep plus the `dayz-rag` MCP tools but no shell or network. Subagents inherit only what's listed — no implicit full-toolset escalation.
+- **`.claude/agents/*.md`** — every agent declares an explicit `tools:` allowlist. Auditor/diagnostic agents (`dayz-mod-reviewer`, `dayz-mod-debugger`) cannot Edit/Write/Bash. The two run-only gates (`dayz-build-checker`, `dayz-ingame-tester`) and `dayz-build-engineer` get Bash and Skill to run the build and test skills but no Edit/Write. `dayz-layout-validator` keeps Edit/Write for the Figma pipeline but only reports when used as a gate. `dayz-lead` can only read and start agents; `dayz-orchestrator` has the broadest list (including Bash and Agent) because it runs as your main session. Authoring specialists get Read/Write/Edit/Glob/Grep plus the `dayz-rag` MCP tools; only `dayz-asset-specialist`, `dayz-object-builder` and `dayz-server-admin` also get Bash and Skill, to run the texture, model and types.xml skills. None has network tools. Subagents inherit only what's listed — no implicit full-toolset escalation.
 
 If you fork the repo to publish a downstream variant, run `git diff main -- .claude/settings.json .claude/agents/` before pushing and convince yourself any widened permissions are intentional.
 

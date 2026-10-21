@@ -1,11 +1,11 @@
-# Script API Reference — Particle System
+# Particle system script API reference
 
 All signatures verified from vanilla source (Particle.c, ParticleSource.c,
 ParticleManager.c, ParticleBase.c). Inheritance: ParticleBase → Particle → ParticleSource.
 
 ---
 
-## CLASS HIERARCHY
+## Class hierarchy
 
 ```
 Entity
