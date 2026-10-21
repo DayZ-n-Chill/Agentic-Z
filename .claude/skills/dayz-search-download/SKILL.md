@@ -1,6 +1,6 @@
 ---
 name: dayz-search-download
-description: Downloads the prebuilt DayZ RAG vector index (Voyage voyage-code-3 embeddings in LanceDB) from the repo's GitHub releases, verifies the SHA-256 digest GitHub publishes for it, and installs it to ~/.claude/dayz-search-index/ for the dayz-rag MCP server. Skips the download when the installed release tag already matches, unless --force. Use when setting up a fresh machine instead of building the index locally with /dayz-search-index.
+description: "Downloads the prebuilt DayZ RAG search index from the repo's GitHub releases, verifies its SHA-256 and installs it for the dayz-rag MCP server. Use when setting up a fresh machine instead of building the index locally with /dayz-search-index."
 ---
 
 <!-- skill-dir-note -->

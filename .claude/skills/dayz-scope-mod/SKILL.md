@@ -1,6 +1,6 @@
 ---
 name: dayz-scope-mod
-description: Scopes the agent to one mod under workspace/<ModName>/ by adding Edit deny rules to .claude/settings.local.json for every other mod's workspace folder, P:\<other>\ junction and P:\Mods\@<other>\ deploy folder (plus the game's real !Workshop\@<other>\ folder), so Edit and Write cannot touch sibling mods. Reads stay broad. Use when a session or subagent should work on a single mod; run --clear to lift the scope.
+description: "Restricts edits to one mod under workspace/<ModName>/ by adding Edit deny rules for every other mod's workspace, P:\\ and deploy folders; reads stay broad. Use when a session or subagent should work on a single mod, or to lift that scope again."
 ---
 
 <!-- skill-dir-note -->

@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Runs a whole DayZ mod build as the main session: turns the user's mod idea into a plan, gets their approval, splits the work into small tasks for the team leads, runs the build and in-game checks, and tracks everything to a tested PBO the user signs off on. Start it with `claude --agent agentic-z:dayz-orchestrator` (or `claude --agent dayz-orchestrator` inside a clone).
+Runs a whole DayZ mod build as the main session: plans the user's idea with dayz-mod-architect, gets approval, hands tasks to dayz-lead teams, runs the build and in-game gates each wave, and tracks it to a tested PBO. Start with `claude --agent agentic-z:dayz-orchestrator` (or `claude --agent dayz-orchestrator` in a clone).
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>

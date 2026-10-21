@@ -4,7 +4,7 @@ name: sync-skills
 
 ## Overview
 
-Links every skill in this repo's .claude/skills/ (plus the _shared/ helper folder) into each agent CLI's home skills folder (Claude Code, Codex, Gemini, or any agent added to agents.json) so all of them discover the same slash commands. Idempotent: refreshes stale links, prunes orphans, never overwrites real folders. Use when you have just cloned the repo, added, removed or renamed a skill, or moved the repo.
+Links every skill in this repo's .claude/skills/ into each agent CLI's home skills folder (Claude Code, Codex, Gemini or any in agents.json) so all of them see the same slash commands. Use when you have just cloned the repo, added, removed or renamed a skill, or moved the repo.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\<other>\`. For first-time bootstrap from a fresh clone (before any harness is loaded), run the literal command `python .claude\skills\sync-skills\sync.py` from the repo root.
 

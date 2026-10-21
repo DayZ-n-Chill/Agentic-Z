@@ -4,7 +4,7 @@ name: dayz-workdrive
 
 ## Overview
 
-Mounts P:\ as the DayZ work drive without opening the DayZ Tools GUI, using WorkDrive.exe with a subst fallback, and can unmount it. Resolves the work-drive folder from an env var, cached path, settings.ini or registry, and asks for --path when none resolves. Idempotent, Windows-only. Use when P:\ is not mounted (usually after a reboot) and before any other DayZ skill, or when the user asks to mount or unmount the work drive.
+Mounts or unmounts P:\ as the DayZ work drive without opening the DayZ Tools GUI. Windows-only and idempotent. Use when P:\ is not mounted (usually after a reboot) before any other DayZ skill, or when the user asks to mount or unmount the work drive.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

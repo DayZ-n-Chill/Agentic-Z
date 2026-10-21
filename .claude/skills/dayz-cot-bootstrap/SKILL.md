@@ -1,7 +1,7 @@
 ---
 name: dayz-cot-bootstrap
 disable-model-invocation: true
-description: Grants the developer Community-Online-Tools (COT) admin on a local DayZ test server in one run - launches with @CF and @Community-Online-Tools prepended, waits for COT to write the player's permission files, stops that session, adds the admin role and sets every permission in the player's own file, then relaunches. Never edits Roles/everyone.txt. Use when you need COT admin on a test instance set up with /dayz-init, /dayz-add-server and /dayz-build-pbo.
+description: "Grants the developer Community-Online-Tools (COT) admin on a local DayZ test server in one run: launches with COT, waits for its permission files, grants the player admin and relaunches. Never edits Roles/everyone.txt. Use when you need COT admin on a test instance after /dayz-add-server and /dayz-build-pbo."
 argument-hint: "[<ModName> ...] [--server <instance>] [--port N] [--timeout SEC]"
 ---
 

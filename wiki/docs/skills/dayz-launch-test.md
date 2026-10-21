@@ -4,7 +4,7 @@ name: dayz-launch-test
 
 ## Overview
 
-Launches a local DayZ Diag server for an instance added with /dayz-add-server, waits for it to bind its port, then starts the diag client connected to it, with the given built mods loaded and file patching on. Run-only; it does no setup. Use when you want to test built mods in game, or to check the exact launch commands with --dry-run.
+Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

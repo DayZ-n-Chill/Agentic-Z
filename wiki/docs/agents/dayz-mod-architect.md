@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Plans a DayZ mod before anything is built: which classes and files it needs, which vanilla classes to inherit from, assets, dependencies, load order, and a task list split by team with clear done checks. Use at the start of a new mod or a big new feature, or when the orchestrator needs a design decision. Writes plans, not mod files.
+Plans a DayZ mod before anything is built: classes and files, vanilla parents, assets, dependencies, load order, and a task list split by team with done checks. Writes plans, not mod files. Use at the start of a new mod or big feature, or when the orchestrator needs a design decision.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>

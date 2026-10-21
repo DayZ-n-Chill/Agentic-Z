@@ -1,6 +1,6 @@
 ---
 name: dayz-add-server
-description: Sets up an isolated DayZ test server instance under .server/<instance>/ - a mission copy from the DayZ Server install, serverDZ.cfg with file patching on, and per-instance server profiles - plus the shared client log dir. Use when you need a new test instance before /dayz-launch-test (for example chernarus, or a variant like chernarus-hardcore), or with --refresh-mission after a DayZ update.
+description: "Sets up an isolated DayZ test server instance under .server/<instance>/ with its own mission copy, serverDZ.cfg and profiles. Use when you need a new test instance before /dayz-launch-test (for example chernarus or chernarus-hardcore), or to refresh the mission after a DayZ update."
 argument-hint: "<instance> [--map <name>] [--refresh-mission]"
 ---
 

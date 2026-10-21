@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Art worker for DayZ `.p3d` models and `model.cfg`: LOD topology, named selections, hidden selections, named properties, proxies and skeletons. Object Builder edits `.p3d` files interactively, so this agent returns step-by-step Object Builder instructions plus the config lines other workers need, and writes `model.cfg` itself. Use for the art lead's model tasks.
+Art worker for DayZ `.p3d` models and `model.cfg`: LODs, named and hidden selections, named properties, proxies and skeletons. Returns step-by-step Object Builder instructions plus the config lines other workers need, and writes `model.cfg` itself. Use for the art lead's model tasks.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -23,22 +23,6 @@ Art worker for DayZ `.p3d` models and `model.cfg`: LOD topology, named selection
 <div class="agent-example__turn">
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-object-builder to give the Object Builder steps for camo1 to camo3 named selections in every visual LOD, and the matching hiddenSelections lines for the config specialist."</div>
-</div>
-</div>
-
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">Bullets pass through a custom crate.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"My crate has Geometry and ViewGeometry LODs but shots go straight through."</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll use the dayz-object-builder to walk through adding a FireGeometry LOD at the DayZ resolution 7.0e+15 with closed convex components."</div>
 </div>
 </div>
 

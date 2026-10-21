@@ -1,6 +1,6 @@
 ---
 name: dayz-clean-workspace
-description: Removes Agentic-Z mod scaffolds and their artifacts from the cached project - an import link, or a workspace folder the toolkit provably created (its P:\<ModName>\ junction or deploy ownership marker), plus that junction and the P:\Mods\@<ModName>\ deploy dir when its marker matches. Never deletes a folder containing .git, a hand-placed mod, or an imported mod's external source. Use when you want to delete a mod from the workspace or reset the project; --include-server also removes .server/.
+description: "Removes mod scaffolds the toolkit created, with their P:\\ junction and deploy folder, and optionally .server/. Never deletes a git repo, a hand-placed mod or an imported mod's source. Use when you want to delete a mod from the workspace or reset the project."
 argument-hint: "[--mod <Name>] [--include-server] [--yes] [--dry-run]"
 disable-model-invocation: true
 ---

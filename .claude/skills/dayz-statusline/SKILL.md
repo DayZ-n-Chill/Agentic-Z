@@ -1,6 +1,6 @@
 ---
 name: dayz-statusline
-description: Installs a one-line DayZ status line into the project's .claude/settings.local.json showing whether P:\ is mounted, the active mod from /dayz-init, whether DayZDiag_x64.exe is running, and the age of the RAG search index. Backs up the settings first; --remove undoes it. Use when the user wants DayZ environment state always visible instead of running /dayz-preflight or the /dayz-init hub to check it.
+description: "Installs a one-line DayZ status line showing whether P:\\ is mounted, the active mod, whether DayZDiag is running and the RAG index age, and can remove it. Use when the user wants DayZ environment state always visible instead of running /dayz-preflight or the /dayz-init hub."
 ---
 
 <!-- skill-dir-note -->

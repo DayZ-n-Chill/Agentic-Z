@@ -1,10 +1,6 @@
 ---
 name: dayz-pack-texture
-description: >-
-  Converts PNG or TGA images to DayZ `.paa` textures with DayZ Tools' ImageToPAA.exe,
-  writing each `.paa` next to its source (replacing any existing one), after checking that every filename ends in
-  a vanilla texture-role suffix such as `_co`, `_ca`, `_nohq` or `_smdi`. Use when a mod's textures need
-  packing for config.cpp, .rvmat, or hiddenSelectionsTextures references.
+description: "Converts PNG or TGA images to DayZ .paa textures with ImageToPAA, after checking each filename has a texture-role suffix such as _co, _ca, _nohq or _smdi. Use when a mod's textures need packing for config.cpp, .rvmat or hiddenSelectionsTextures references."
 argument-hint: "<image_co.png|.tga> [<image2_nohq.png> ...]"
 ---
 

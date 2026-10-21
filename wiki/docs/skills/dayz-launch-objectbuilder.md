@@ -4,7 +4,7 @@ name: dayz-launch-objectbuilder
 
 ## Overview
 
-Opens DayZ Tools' Object Builder (the .p3d model editor) from the command line, optionally on a specific .p3d or inside a mod's P:\&lt;ModName&gt;\ folder, detached so the shell returns at once. Requires /dayz-setup-objectbuilder to have run once on the machine. Use when you need to inspect or edit a .p3d model, such as adding LODs, named selections or memory points.
+Opens DayZ Tools' Object Builder (the .p3d model editor), optionally on a specific .p3d or a mod's P:\ folder. Needs /dayz-setup-objectbuilder run once. Use when you need to inspect or edit a .p3d model, such as adding LODs, named selections or memory points.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

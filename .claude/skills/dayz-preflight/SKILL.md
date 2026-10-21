@@ -1,6 +1,6 @@
 ---
 name: dayz-preflight
-description: Checks the DayZ modding environment (P:\ mounted, DayZ Tools installed, vanilla data unpacked, P:\Mods junction to the game's !Workshop folder) and creates that junction if it is missing. Use when starting DayZ work, after a reboot or fresh clone, or when another DayZ skill reports an environment problem. Hard-fails only if P:\ is not mounted; warns on the rest.
+description: "Checks the DayZ modding environment (P:\\ mounted, DayZ Tools installed, vanilla data unpacked, P:\\Mods junction) and creates the junction if it is missing. Use when starting DayZ work, after a reboot or fresh clone, or when another DayZ skill reports an environment problem."
 ---
 
 <!-- skill-dir-note -->

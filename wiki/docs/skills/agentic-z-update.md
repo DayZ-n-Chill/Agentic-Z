@@ -4,7 +4,7 @@ name: agentic-z-update
 
 ## Overview
 
-Pulls the latest Agentic-Z template files (agents, skills, conventions, docs) from upstream into the current clone (three-way per-file classification; contents are never merged), leaving workspace/ mod work untouched, and commits the result. Refuses on uncommitted template changes unless --force. Use when the user asks to update Agentic-Z or pull template improvements, or when the SessionStart nudge reports that upstream is ahead.
+Pulls the latest Agentic-Z template files (agents, skills, docs) from upstream into this clone and commits them, leaving workspace/ mod work untouched. Use when the user asks to update Agentic-Z or pull template improvements, or when the SessionStart nudge says upstream is ahead.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\<other>\`.
 

@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Builds DayZ UI: `.layout` files, widget scripts, HUD and menu logic (`UIScriptedMenu`, `ScriptedWidgetEventHandler`), and recolors of vanilla UI. Works in the UI team under `dayz-lead`, or directly for hand-described UI. Figma designs go through the Figma pipeline first; this agent wires and polishes the result.
+Builds DayZ UI: `.layout` files, widget scripts, HUD and menu logic, and recolors of vanilla UI. Works in the UI team under `dayz-lead`, or directly for hand-described UI. Figma designs go through the Figma pipeline first; this agent wires and polishes the result.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -23,22 +23,6 @@ Builds DayZ UI: `.layout` files, widget scripts, HUD and menu logic (`UIScripted
 <div class="agent-example__turn">
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-ui-specialist to write the compass .layout and the Enforce Script that updates the heading text each frame."</div>
-</div>
-</div>
-
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">User wants DayZ's red UI accent changed.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"The main menu hover color is red. Make it blue."</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll use the dayz-ui-specialist. It finds where that red is set (a .layout color or a SetColor call in 5_mission/gui), then overrides the method that calls SetColor with a modded class or ships a replacement layout. Overriding the Colors constants would do nothing."</div>
 </div>
 </div>
 

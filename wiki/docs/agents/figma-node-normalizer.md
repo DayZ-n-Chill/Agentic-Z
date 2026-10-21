@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-First stage of the Figma-to-DayZ pipeline. Fetches a Figma node tree through the Figma MCP, drops decorative wrappers, labels each node with a semantic type (button, list, panel and so on), records per-axis sizing, and returns normalized JSON inline for `figma-to-dayz-layout`. Use whenever a Figma URL, file key or node ID is the input and the goal is a DayZ `.layout`.
+First stage of the Figma-to-DayZ pipeline: fetches a Figma node tree through the Figma MCP, drops decorative wrappers, types each node and records its sizing, and returns normalized JSON for `figma-to-dayz-layout`. Use whenever a Figma URL, file key or node ID is the input and the goal is a DayZ `.layout`.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -23,22 +23,6 @@ First stage of the Figma-to-DayZ pipeline. Fetches a Figma node tree through the
 <div class="agent-example__turn">
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the figma-node-normalizer to fetch the node, flatten the decorative frames, type the button row and item list, and return the normalized JSON for figma-to-dayz-layout."</div>
-</div>
-</div>
-
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">A messy Figma file.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"Every button in this Figma is wrapped in three frames. Clean it up before we convert it."</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll use the figma-node-normalizer to collapse the redundant wrappers, keep the layout direction and spacing on the parents that matter, and return a simplified tree."</div>
 </div>
 </div>
 

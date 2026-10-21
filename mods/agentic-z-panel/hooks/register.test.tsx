@@ -53,3 +53,17 @@ test('the pane shows the state and runs the build for the active mod', async ($,
   await ui.unmount()
   expect(runs.some(argv => argv.join(' ') === 'python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest')).toBe(true)
 })
+
+test('the gate buttons run /dayz-gate build and ingame for the active mod', async ($, on) => {
+  const runs: string[][] = []
+  engine(on, runs)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await ui.press({ key: 'gatebuild' })
+  await ui.press({ key: 'gateingame' })
+  await ui.unmount()
+  const lines = runs.map(argv => argv.join(' '))
+  expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-gate\\gate.py build MyVest')
+  expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-gate\\gate.py ingame MyVest')
+})

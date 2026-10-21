@@ -7,7 +7,7 @@ color: red
 
 ## Overview
 
-Gatekeeper that packs a mod with `/dayz-build-pbo` (or checks a prebuilt PBO bundle with `/dayz-deploy-pbo`) and gives PASS or FAIL: the PBO must build and binarize cleanly, with no AddonBuilder config errors. Fallback gate: the orchestrator normally runs `/dayz-gate build`, and starts this agent only when that script itself errors (exit 2).
+Fallback build gate: packs a mod with `/dayz-build-pbo` (or checks a prebuilt bundle with `/dayz-deploy-pbo`) and gives PASS or FAIL on AddonBuilder errors. The orchestrator normally runs `/dayz-gate build` and starts this agent only when that script errors (exit 2).
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>

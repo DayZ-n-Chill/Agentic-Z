@@ -4,7 +4,7 @@ name: dayz-setup-objectbuilder
 
 ## Overview
 
-Configures Object Builder (DayZ Tools' .p3d editor) by importing the default registry settings DayZ Tools ships and setting four preferred view/renderer flags under HKCU. Use when Object Builder is opened for the first time on a machine, after a DayZ Tools reinstall, or when it opens with broken panel layouts.
+Configures Object Builder (DayZ Tools' .p3d editor) by importing DayZ Tools' default registry settings and preferred view flags. Use when Object Builder is opened for the first time on a machine, after a DayZ Tools reinstall, or when it opens with broken panel layouts.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

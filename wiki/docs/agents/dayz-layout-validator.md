@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Checks DayZ `.layout` files (property-file format, not XML) against the Figma-to-DayZ rules: well-formed braces, real widget classes, prefix-correct classes, responsive sizing, and no CSS or XML leftovers. Runs in two modes. Gate mode: `dayz-lead` (or the main session) calls it on any task that changes a `.layout`, including as the step after `figma-to-dayz-layout` in the Figma pipeline, and it reports PASS or FAIL without editing. Cleanup mode: only on a direct request to repair a file, it repairs the file in place.
+Checks DayZ `.layout` files (property-file format, not XML) against the Figma-to-DayZ rules. Gate mode: `dayz-lead` or the main session calls it on any `.layout` change, including after `figma-to-dayz-layout`, and it reports PASS or FAIL without editing. Cleanup mode, only on direct request: repairs the file in place.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -23,22 +23,6 @@ Checks DayZ `.layout` files (property-file format, not XML) against the Figma-to
 <div class="agent-example__turn">
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-layout-validator in gate mode. It reads the file, checks it against the rules doc, and returns PASS or FAIL with each problem's line, without changing the file."</div>
-</div>
-</div>
-
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">Workbench refuses to open a generated layout.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"Workbench won't load Inventory.layout. Can you clean it up?"</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll use the dayz-layout-validator in cleanup mode to find the malformed block or stray XML, repair what is safe to repair, and report every change."</div>
 </div>
 </div>
 

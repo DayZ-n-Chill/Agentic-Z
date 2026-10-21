@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Script-team worker for Enfusion Workbench plugins: editor-time tools in Enforce Script that add commands or batch automation to DayZ Tools' Workbench. Verifies every Workbench API against the installed DayZ Tools before using it. Not for in-game UI (dayz-ui-specialist). Use for the script lead's Workbench plugin tasks.
+Script-team worker for Enfusion Workbench plugins: editor-time Enforce Script tools that add commands or batch automation to DayZ Tools' Workbench, with every API verified against the installed tools. Not for in-game UI (dayz-ui-specialist). Use for the script lead's Workbench plugin tasks.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>

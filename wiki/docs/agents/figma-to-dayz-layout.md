@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Second stage of the Figma-to-DayZ pipeline. Converts the normalized JSON from `figma-node-normalizer` into a DayZ `.layout` file in the engine's property-file format (not XML): prefix-correct widget classes, responsive sizing for Fill Container children, and the vanilla absolute-position-plus-anchor idiom. Use after the normalizer has run on a Figma node.
+Second stage of the Figma-to-DayZ pipeline: converts `figma-node-normalizer`'s JSON into a DayZ `.layout` in the engine's property-file format (not XML), with prefix-correct widget classes and responsive sizing. Use after the normalizer has run on a Figma node.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -23,22 +23,6 @@ Second stage of the Figma-to-DayZ pipeline. Converts the normalized JSON from `f
 <div class="agent-example__turn">
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use figma-to-dayz-layout to map each node to its widget class (prefix first), translate sizes and anchors, and write the .layout for dayz-layout-validator to gate."</div>
-</div>
-</div>
-
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">A previous converter produced XML.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"The last converter spat out XML and Workbench rejected it. Redo it in the real format."</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll use figma-to-dayz-layout. It writes DayZ's property-file format: class names ending in Class, bare key-value properties, children nested in braces."</div>
 </div>
 </div>
 

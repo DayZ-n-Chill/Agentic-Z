@@ -1,6 +1,6 @@
 ---
 name: "dayz-build-checker"
-description: "Gatekeeper that packs a mod with `/dayz-build-pbo` (or checks a prebuilt PBO bundle with `/dayz-deploy-pbo`) and gives PASS or FAIL: the PBO must build and binarize cleanly, with no AddonBuilder config errors. Fallback gate: the orchestrator normally runs `/dayz-gate build`, and starts this agent only when that script itself errors (exit 2).\n\n<example>\nContext: `/dayz-gate build MyVest` exited 2 instead of giving a verdict.\nuser: \"The build gate script errored. Build check MyVest after the config and art wave.\"\nassistant: \"I'll use the dayz-build-checker to build MyVest's PBO and check AddonBuilder's output for errors and warnings, then return PASS or FAIL with the exact lines.\"\n</example>"
+description: "Fallback build gate: packs a mod with `/dayz-build-pbo` (or checks a prebuilt bundle with `/dayz-deploy-pbo`) and gives PASS or FAIL on AddonBuilder errors. The orchestrator normally runs `/dayz-gate build` and starts this agent only when that script errors (exit 2).\n\n<example>\nContext: `/dayz-gate build MyVest` exited 2 instead of giving a verdict.\nuser: \"The build gate script errored. Build check MyVest after the config and art wave.\"\nassistant: \"I'll use the dayz-build-checker to build MyVest's PBO and check AddonBuilder's output for errors and warnings, then return PASS or FAIL with the exact lines.\"\n</example>"
 color: red
 tools: Read, Glob, Grep, Bash, Skill
 ---

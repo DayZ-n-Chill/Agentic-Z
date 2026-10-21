@@ -4,7 +4,7 @@ name: clean-repo
 
 ## Overview
 
-Removes every template-managed artifact across all domains so the repo is clean to push. Discovers each `<domain>-clean-workspace` skill, shows their combined dry-run plan, asks once, then runs them. Use when the user wants a full pre-push reset of everything the template's skills created; for one domain or one mod, use that domain's cleanup skill instead.
+Removes every template-managed artifact across all domains by running each domain's clean-workspace skill after one combined dry run and prompt. Use when the user wants a full pre-push reset; for one domain or one mod, use that domain's cleanup skill instead.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\<other>\`.
 

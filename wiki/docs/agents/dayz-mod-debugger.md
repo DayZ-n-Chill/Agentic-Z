@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Diagnoses DayZ mod failures from what the engine wrote: `script.log`, server and client RPT files, `crash.log` and BattlEye logs. Reads the logs itself, traces the failure to a file, class and line, and returns a diagnosis that names the worker agent who should fix it. Does not fix anything. The orchestrator sends it build and in-game gate failures that `/dayz-gate` triage marks new; a `dayz-lead` sends it review-gate failures whose cause isn't clear.
+Diagnoses DayZ mod failures from engine logs (`script.log`, RPT, `crash.log`, BattlEye), traces each to a file, class and line, and names the worker who should fix it; fixes nothing. The orchestrator sends it gate failures `/dayz-gate` triage marks new; `dayz-lead` sends it unclear review-gate failures.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -23,22 +23,6 @@ Diagnoses DayZ mod failures from what the engine wrote: `script.log`, server and
 <div class="agent-example__turn">
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-mod-debugger to start from the new failure's log line and stack trace, read the server and client logs around it, trace the error to the mod file that caused them, and return a diagnosis naming the worker who owns the fix."</div>
-</div>
-</div>
-
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">A modded class has no effect.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"My modded class PlayerBase override never runs, but script.log says it compiled."</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll use the dayz-mod-debugger to check for an extends clause on the modded class, confirm the file sits in the right scripts layer, and check load order."</div>
 </div>
 </div>
 

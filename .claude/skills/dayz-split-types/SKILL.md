@@ -1,6 +1,6 @@
 ---
 name: dayz-split-types
-description: Splits a monolithic DayZ types.xml into per-category files under db/types/, registers them in cfgeconomycore.xml as <ce folder="db/types"> and empties the original so no type loads twice, backing up every file it changes first. Wraps the vendored DayZ-TypeSplitterPro script. Use when a mission's types.xml has grown too large to edit by hand or a server owner wants categorized economy files.
+description: "Splits a monolithic DayZ types.xml into per-category files under db/types/ and registers them in cfgeconomycore.xml, backing up every changed file. Use when a mission's types.xml has grown too large to edit by hand or a server owner wants categorized economy files."
 argument-hint: "<path-to-types.xml>"
 ---
 

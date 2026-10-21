@@ -4,7 +4,7 @@ name: dayz-add-server
 
 ## Overview
 
-Sets up an isolated DayZ test server instance under .server/&lt;instance&gt;/ - a mission copy from the DayZ Server install, serverDZ.cfg with file patching on, and per-instance server profiles - plus the shared client log dir. Use when you need a new test instance before /dayz-launch-test (for example chernarus, or a variant like chernarus-hardcore), or with --refresh-mission after a DayZ update.
+Sets up an isolated DayZ test server instance under .server/&lt;instance&gt;/ with its own mission copy, serverDZ.cfg and profiles. Use when you need a new test instance before /dayz-launch-test (for example chernarus or chernarus-hardcore), or to refresh the mission after a DayZ update.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

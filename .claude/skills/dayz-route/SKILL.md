@@ -1,6 +1,6 @@
 ---
 name: dayz-route
-description: Picks the skill, agent or team for a DayZ request with free keyword rules first, then TypeSafe's Jev when TYPESAFE_API_KEY is set, and says when the Haiku dayz-router agent is needed. Prints one JSON decision. Use when a new DayZ request arrives in the main session, before choosing a handler yourself.
+description: "Picks the skill, agent or team for a DayZ request with free keyword rules, then Jev when configured, and prints one JSON decision, including when the dayz-router agent is needed. Use when a new DayZ request arrives in the main session, before choosing a handler yourself."
 argument-hint: "\"<request>\" [--json]"
 ---
 

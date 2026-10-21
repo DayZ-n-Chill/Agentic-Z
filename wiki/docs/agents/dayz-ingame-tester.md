@@ -7,7 +7,7 @@ color: red
 
 ## Overview
 
-Gatekeeper that loads a built mod on a local DayZ Diag server and client, reads the server and client logs, and gives PASS or FAIL. Fallback gate: the orchestrator normally runs `/dayz-gate ingame`, and starts this agent only when that script itself errors (exit 2), after the build gate passed and never while another test session is running.
+Fallback in-game gate: loads a built mod on a local DayZ Diag server and client, reads the logs and gives PASS or FAIL. The orchestrator normally runs `/dayz-gate ingame` and starts this agent only when that script errors (exit 2), after the build gate passed and with no other test session running.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>

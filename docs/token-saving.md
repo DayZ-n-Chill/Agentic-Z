@@ -19,6 +19,8 @@ Most of what the mod team does between "the user asks" and "the user sees a resu
 | 6 | Cheaper models for simple roles | Top-model runs for mechanical agents | built |
 | 7 | Smaller rules loading (Tier 2 split by topic) | Every DayZ agent loading the whole 239-line rules file | built |
 | 8 | Launcher buttons (Claude Code mod) | Model turns to open Workbench, Object Builder, mount P:, stop a test | built |
+| 9 | A no-token wrapper for every runnable skill | Asking Claude to run a script you could run yourself | built |
+| 10 | Shorter skill and agent descriptions | Text loaded into every session | built |
 
 ## 1. Script-only gates
 
@@ -185,4 +187,31 @@ Each run shows a toast when it finishes and keeps the result line (the first `[F
 
 **Where it finds Agentic-Z:** the project itself when it is a clone, otherwise the newest version in the plugin cache.
 
-**Limits:** Windows only, like the rest of Agentic-Z. Launch uses the default server instance; pick another with `/dayz-launch-test --server`. Checked with `claude plugin validate` and a test (`claude plugin test mods/agentic-z-panel`) that draws the panel on all four surfaces and presses Build.
+**Limits:** Windows only, like the rest of Agentic-Z. Launch uses the default server instance; pick another with `/dayz-launch-test --server`. Checked with `claude plugin validate` and a test (`claude plugin test mods/agentic-z-panel`) that draws the panel on all four surfaces and presses Build. A second test presses the two check buttons.
+
+**Version 0.2.0** adds three buttons: Check build (`c`, `/dayz-gate build`), Check in game (`g`, `/dayz-gate ingame`) and Deploy prebuilt PBOs (`d`, `/dayz-deploy-pbo`).
+
+## 9. No-token wrappers
+
+**What it is:** every skill that runs a script now has a `.bat` in `scripts\dayz\`, `scripts\setup\` or `scripts\dev\`. Double-click it or run it from a terminal; no AI is involved. `scripts\README.md` lists all 35 with an example each.
+
+**New in this pass:** `status.bat`, `gate.bat`, `triage.bat`, `route.bat`, `deploy-pbo.bat`, `cot-bootstrap.bat`, `build-imageset.bat`, `p3d-audit.bat` and `setup\statusline.bat`.
+
+**Fixed:** `dayz-search.bat` (the terminal search over the RAG index) crashed on start because its script looked for the search server one folder too high. It runs again.
+
+**Kept honest by tests:** the repo integrity test now fails if a wrapper points at a script that does not exist, or if a runnable skill has no wrapper. Only the two reference-only skills (`dayz-particles`, `dayz-record-correction`) have none, because they have no script.
+
+**When to use the slash command instead:** when Claude should run the step inside a bigger task and read the result for you. The skill is the AI's manual for the script; the script is the same either way.
+
+## 10. Shorter descriptions
+
+**What it is:** Claude Code loads every skill and agent description into every session, so Claude knows they exist. The bodies load only when used. Every description was rewritten to say what it does and when to use it, without implementation detail, and each agent keeps one example instead of two or three.
+
+**Saved:** 31,301 characters down to 22,907, about 2,100 tokens off every session before any work starts.
+
+| | Before | After |
+|---|---|---|
+| 34 skills | 12,848 | 9,246 |
+| 22 agents | 18,453 | 13,661 |
+
+**Limits:** a few descriptions stay just over 300 characters where cutting would drop a trigger phrase or a who-calls-whom fact (for example `dayz-p3d-audit`'s list of symptoms).

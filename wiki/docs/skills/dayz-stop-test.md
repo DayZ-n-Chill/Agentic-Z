@@ -4,7 +4,7 @@ name: dayz-stop-test
 
 ## Overview
 
-Kills every running DayZDiag_x64.exe process (local test server and client). Use when a /dayz-launch-test session needs to stop without hunting for its windows, including when the environment is half-broken. Does not gate on /dayz-preflight.
+Kills every running DayZDiag_x64.exe process (local test server and client). Use when a /dayz-launch-test session needs to stop, including when the environment is half-broken; does not gate on /dayz-preflight.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

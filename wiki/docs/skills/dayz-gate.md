@@ -4,7 +4,7 @@ name: dayz-gate
 
 ## Overview
 
-Runs the orchestrator's build and in-game gates as plain scripts instead of agent turns. `build` packs the mod with /dayz-build-pbo (or deploys a payload bundle) and checks AddonBuilder's output; `ingame` launches server and client, reads only the new log lines, stops the session and applies the in-game tester's pass/fail rules. Every failure is triaged against known errors with the fix and owner. Use when gating a finished wave.
+Runs the orchestrator's build and in-game gates as scripts instead of agent turns: build packs the mod and checks AddonBuilder output; ingame runs a test session and checks the new log lines. Failures are triaged against known errors. Use when gating a finished wave.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

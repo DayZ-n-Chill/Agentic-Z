@@ -1,6 +1,6 @@
 ---
 name: dayz-setup-objectbuilder
-description: Configures Object Builder (DayZ Tools' .p3d editor) by importing the default registry settings DayZ Tools ships and setting four preferred view/renderer flags under HKCU. Use when Object Builder is opened for the first time on a machine, after a DayZ Tools reinstall, or when it opens with broken panel layouts.
+description: "Configures Object Builder (DayZ Tools' .p3d editor) by importing DayZ Tools' default registry settings and preferred view flags. Use when Object Builder is opened for the first time on a machine, after a DayZ Tools reinstall, or when it opens with broken panel layouts."
 ---
 
 <!-- skill-dir-note -->

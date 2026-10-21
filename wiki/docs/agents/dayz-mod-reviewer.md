@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Read-only review of a mod under `workspace/<ModName>/` against the Agentic-Z conventions and common DayZ defects: config inheritance and `CfgPatches`, hidden selections, `$PBOPREFIX$` paths, texture suffixes, `types.xml`, and modded-class mistakes. Returns PASS or FAIL with findings routed to the worker who should fix each one. `dayz-lead` runs it as the gate on every task; it can also be called directly before a build or release.
+Read-only review of a mod under `workspace/<ModName>/`: config and `CfgPatches`, hidden selections, `$PBOPREFIX$`, texture suffixes, `types.xml` and modded-class mistakes. Returns PASS or FAIL with each finding routed to its owning worker. `dayz-lead` runs it as every task's gate; it can also run before a build or release.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -23,22 +23,6 @@ Read-only review of a mod under `workspace/<ModName>/` against the Agentic-Z con
 <div class="agent-example__turn">
 <div class="agent-example__label">Assistant</div>
 <div class="agent-example__content">"I'll use the dayz-mod-reviewer to check the changed files and return PASS or FAIL, with each finding's file, line, severity and owning worker."</div>
-</div>
-</div>
-
-<div class="agent-example">
-<div class="agent-example__title">Example</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Context</div>
-<div class="agent-example__content">A player reports a conflict with another mod.</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">User</div>
-<div class="agent-example__content">"Someone says my mod conflicts with theirs. Can you check what I shipped?"</div>
-</div>
-<div class="agent-example__turn">
-<div class="agent-example__label">Assistant</div>
-<div class="agent-example__content">"I'll use the dayz-mod-reviewer to look for the usual conflict causers: a plain class where a modded class was meant, asset paths that collide with vanilla, missing CfgPatches dependencies, and broad mission overrides."</div>
 </div>
 </div>
 

@@ -13,6 +13,9 @@ const busy = atom({ plugin: 'agentic-z-panel', key: 'busy' } as const, null)
 const SKILL = {
   mount: ['dayz-workdrive', 'mount.py'],
   build: ['dayz-build-pbo', 'build.py'],
+  deploy: ['dayz-deploy-pbo', 'deploy.py'],
+  gatebuild: ['dayz-gate', 'gate.py'],
+  gateingame: ['dayz-gate', 'gate.py'],
   launch: ['dayz-launch-test', 'launch.py'],
   workbench: ['dayz-launch-workbench', 'launch.py'],
   objectbuilder: ['dayz-launch-objectbuilder', 'launch.py'],
@@ -70,7 +73,9 @@ async function runAction($: any, cwd: string, action: string) {
   } else {
     const [skill, script] = SKILL[action as keyof typeof SKILL]
     argv = ['python', join(current.root, '.claude', 'skills', skill, script)]
-    const needsMod = action === 'build' || action === 'launch'
+    if (action === 'gatebuild') argv.push('build')
+    if (action === 'gateingame') argv.push('ingame')
+    const needsMod = ['build', 'deploy', 'gatebuild', 'gateingame', 'launch'].includes(action)
     if (needsMod) {
       if (!current.mod) {
         $.ui.toast('No active mod yet. Run /dayz-init first.')
@@ -131,6 +136,9 @@ export const register: Register = on => {
         <Box flexDirection="column">
           <Button key="mount" label="Mount P:" hotkey="p" onPress={press('mount')} />
           <Button key="build" label="Build PBO" hotkey="b" onPress={press('build')} />
+          <Button key="gatebuild" label="Check build (PASS/FAIL)" hotkey="c" onPress={press('gatebuild')} />
+          <Button key="gateingame" label="Check in game (PASS/FAIL)" hotkey="g" onPress={press('gateingame')} />
+          <Button key="deploy" label="Deploy prebuilt PBOs" hotkey="d" onPress={press('deploy')} />
           <Button key="launch" label="Launch test" hotkey="l" onPress={press('launch')} />
           <Button key="stop" label="Stop test" hotkey="s" onPress={press('stop')} />
           <Button key="workbench" label="Open Workbench" hotkey="w" onPress={press('workbench')} />

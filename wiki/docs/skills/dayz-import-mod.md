@@ -4,7 +4,7 @@ name: dayz-import-mod
 
 ## Overview
 
-Links an existing DayZ mod folder that lives outside the workspace into workspace/&lt;ModName&gt;/ and creates the matching P:\&lt;ModName&gt;\ junction, so build, launch and clean skills work on it without moving or copying the source. Offers to add missing config.cpp, $PBOPREFIX$ or workbench/dayz.gproj, one y/N prompt per piece. Use when you want to work on a mod repo kept elsewhere on disk.
+Links a DayZ mod folder kept elsewhere on disk into workspace/&lt;ModName&gt;/ and creates its P:\&lt;ModName&gt;\ junction, so build, launch and clean skills work on it without moving the source, offering to add missing scaffold files. Use when you want to work on a mod repo kept outside the workspace.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

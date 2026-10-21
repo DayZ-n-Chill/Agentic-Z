@@ -4,7 +4,7 @@ name: dayz-route
 
 ## Overview
 
-Picks the skill, agent or team for a DayZ request with free keyword rules first, then TypeSafe's Jev when TYPESAFE_API_KEY is set, and says when the Haiku dayz-router agent is needed. Prints one JSON decision. Use when a new DayZ request arrives in the main session, before choosing a handler yourself.
+Picks the skill, agent or team for a DayZ request with free keyword rules, then Jev when configured, and prints one JSON decision, including when the dayz-router agent is needed. Use when a new DayZ request arrives in the main session, before choosing a handler yourself.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

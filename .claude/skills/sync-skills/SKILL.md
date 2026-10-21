@@ -1,6 +1,6 @@
 ---
 name: sync-skills
-description: "Links every skill in this repo's .claude/skills/ (plus the _shared/ helper folder) into each agent CLI's home skills folder (Claude Code, Codex, Gemini, or any agent added to agents.json) so all of them discover the same slash commands. Idempotent: refreshes stale links, prunes orphans, never overwrites real folders. Use when you have just cloned the repo, added, removed or renamed a skill, or moved the repo."
+description: "Links every skill in this repo's .claude/skills/ into each agent CLI's home skills folder (Claude Code, Codex, Gemini or any in agents.json) so all of them see the same slash commands. Use when you have just cloned the repo, added, removed or renamed a skill, or moved the repo."
 ---
 
 <!-- skill-dir-note -->

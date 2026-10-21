@@ -4,7 +4,7 @@ name: dayz-statusline
 
 ## Overview
 
-Installs a one-line DayZ status line into the project's .claude/settings.local.json showing whether P:\ is mounted, the active mod from /dayz-init, whether DayZDiag_x64.exe is running, and the age of the RAG search index. Backs up the settings first; --remove undoes it. Use when the user wants DayZ environment state always visible instead of running /dayz-preflight or the /dayz-init hub to check it.
+Installs a one-line DayZ status line showing whether P:\ is mounted, the active mod, whether DayZDiag is running and the RAG index age, and can remove it. Use when the user wants DayZ environment state always visible instead of running /dayz-preflight or the /dayz-init hub.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 

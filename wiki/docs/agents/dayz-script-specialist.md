@@ -8,7 +8,7 @@ memory: project
 
 ## Overview
 
-Script worker for DayZ Enforce Script mod code: `modded class` overrides, new item and action classes, RPCs, net sync, persistence and mission hooks under `scripts/3_Game`, `4_World` and `5_Mission`. Use for the script lead's game-logic tasks. Log diagnosis goes to dayz-mod-debugger and UI scripts to dayz-ui-specialist.
+Script worker for DayZ Enforce Script mod code: `modded class` overrides, new item and action classes, RPCs, net sync, persistence and mission hooks. Use for the script lead's game-logic tasks. Log diagnosis goes to dayz-mod-debugger and UI scripts to dayz-ui-specialist.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>

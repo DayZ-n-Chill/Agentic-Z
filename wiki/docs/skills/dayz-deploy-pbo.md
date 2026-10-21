@@ -4,7 +4,7 @@ name: dayz-deploy-pbo
 
 ## Overview
 
-Copies pre-compiled PBOs from a workspace bundle (workspace/&lt;ModName&gt;/Addons/*.pbo, Keys/*.bikey) to P:\Mods\@&lt;ModName&gt;\ without AddonBuilder. Skips unchanged files, warns on missing .bisign files, and refuses to touch a deploy dir it does not own. Use when a mod ships only PBOs (third-party or umbrella bundles), or after /dayz-build-pbo builds a bundle's linker PBO.
+Copies prebuilt PBOs and keys from a workspace bundle (workspace/&lt;ModName&gt;/Addons and Keys) to P:\Mods\@&lt;ModName&gt;\ without AddonBuilder. Use when a mod ships only PBOs (third-party or umbrella bundles), or after /dayz-build-pbo builds a bundle's linker PBO.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
