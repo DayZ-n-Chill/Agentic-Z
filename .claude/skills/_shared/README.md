@@ -75,6 +75,18 @@ Front index: `_shared/weapons/README.md`. Written for `dayz-weapon-specialist`.
 | `_shared/weapons/muzzle-effects.md` | Muzzle flash, smoke and overheating particles, shot sounds, AI hearing. |
 | `_shared/weapons/model-selections.md` | Memory points, selections and bones the weapon model must have. |
 
+### Persistence pack (`_shared/persistence`)
+
+Front index: `_shared/persistence/README.md`. Written for `dayz-persistence-specialist`.
+
+| Folder or file | Purpose |
+|---|---|
+| `_shared/persistence` | Saving data across server restarts. |
+| `_shared/persistence/save-load-contract.md` | The `OnStoreSave` and `OnStoreLoad` chain, what vanilla already saves, load hook order, persistent IDs. |
+| `_shared/persistence/versioning-and-migration.md` | Your own save version, adding and removing fields, modded vanilla class risks, data kept in files. |
+| `_shared/persistence/base-building.md` | Part ID bit masks, the `Construction` config, territory flag and lock saves. |
+| `_shared/persistence/data-audit.md` | The pre release data loss audit and its report format for the server lead. |
+
 ### Skill packs (`references/`)
 
 | Folder or file | Purpose |
