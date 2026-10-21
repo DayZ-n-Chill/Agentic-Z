@@ -11,6 +11,8 @@
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
+    "dayz-release-pack": {"kind": "skill", "description": "Write a mod's Workshop description, changelog from version history, classname list and server owner install notes"},
+    "dayz-server-kit": {"kind": "skill", "description": "Zip types.xml entries, cfgeconomycore lines, load order and the public .bikey for server owners"},
     "dayz-recipe": {"kind": "skill", "description": "Start a mod plan from a recipe: new weapon, new vest or new craftable"},
     "dayz-ask": {"kind": "skill", "description": "Answer a question about how vanilla DayZ works, with path:line citations"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
@@ -115,6 +117,18 @@
       "confidence": 0.95,
       "absorbs": true,
       "patterns": ["access violation", "unhandled exception", "exception code", "\\bSCRIPT\\s+\\(E\\)", "can't compile", "null pointer", "\\bcrash(?:es|ed|ing|\\.log)?\\b", "\\bscript\\.log\\b", "\\.rpt\\b", "\\bstack trace\\b"]
+    },
+    {
+      "route": "dayz-server-kit",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bserver[- ]?kit\\b(?:\\s+(?:for|of)\\s+(?P<mod>[A-Za-z][\\w-]*))?", "\\b(?:zip|bundle|package)\\b[^\\n]{0,80}?\\bfor\\s+server\\s+owners?\\b"]
+    },
+    {
+      "route": "dayz-release-pack",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\brelease[- ]?pack\\b(?:\\s+(?:for|of)\\s+(?P<mod>[A-Za-z][\\w-]*))?", "\\bworkshop\\s+(?:description|page|text|listing)\\b", "\\brelease\\s+(?:notes|texts?)\\b"]
     },
     {
       "route": "dayz-server-admin",

@@ -74,6 +74,11 @@ def decide(text, env=NO_KEY):
         # UI icons and the Dabs Framework MVC layer go to the UI specialist.
         ("pack my menu icons into an imageset", "dayz-ui-specialist", None),
         ("make a Dabs ScriptView for my trader panel", "dayz-ui-specialist", None),
+        # Release texts and the server kit beat the docs writer and server admin rules they overlap.
+        ("make the release pack for MyVest", "dayz-release-pack", {"mod": "MyVest"}),
+        ("write the workshop description and changelog for my vest", "dayz-release-pack", None),
+        ("build the server kit for MyVest", "dayz-server-kit", {"mod": "MyVest"}),
+        ("zip the types.xml entries and cfgeconomycore lines for server owners", "dayz-server-kit", None),
         ("start MyRifle from the new weapon recipe", "dayz-recipe", {"recipe": "weapon"}),
         ("use the vest recipe for my plate carrier mod", "dayz-recipe", {"recipe": "vest"}),
         ("run /dayz-recipe craftable MyKit", "dayz-recipe", None),

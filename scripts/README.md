@@ -30,6 +30,8 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `p3d-audit.bat` | Audit a `.p3d` model and its config | `p3d-audit.bat --help` |
 | `types-edit.bat` | Add, change or remove a `types.xml` entry | `types-edit.bat --help` |
 | `types-split.bat` | Split one big `types.xml` into category files | `types-split.bat --help` |
+| `release-pack.bat` | Write the Workshop text, changelog, classname list and install notes | `release-pack.bat MyVest --version 1.0.0` |
+| `server-kit.bat` | Zip the types entries, `cfgeconomycore.xml` lines, load order and public key | `server-kit.bat MyVest --mission chernarus` |
 | `workbench.bat` | Open Workbench | `workbench.bat --mod MyVest` |
 | `objectbuilder.bat` | Open Object Builder | `objectbuilder.bat` |
 | `route.bat` | Show who should handle a request | `route.bat "build MyVest"` |
