@@ -1,6 +1,6 @@
 ---
 name: dayz-gate
-description: "Runs the orchestrator's build, in-game and behavior gates as scripts instead of agent turns: build packs the mod and checks AddonBuilder output; ingame runs a test session and checks the new log lines; behavior runs a test mission that spawns and uses each new item and gives PASS or FAIL per check. Failures are triaged against known errors. Use when gating a finished wave."
+description: "Runs the orchestrator's build, in-game and behavior gates as scripts instead of agent turns: build packs the mod and checks AddonBuilder output; ingame runs a test session and checks the new log lines; behavior runs a test mission that spawns and uses each new item and gives PASS or FAIL per check. Failures are triaged against known errors, and every result is stored for /dayz-health. Use when gating a finished wave."
 argument-hint: "build <ModName> [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--prepare-only | --logs FILE ...] [--json]"
 ---
 
@@ -59,6 +59,8 @@ The first line is the verdict: `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit
 ```
 
 Each failure carries `triage`: `known` (with `id`, `meaning`, `fix` and `owner_agent`) or `new` (send it to `dayz-mod-debugger`). Owner `user` means the user has to act (mount `P:`, install tools); owner `dayz-orchestrator` means a skill run fixes it. On a FAIL, `source_findings` lists known defects found in the mod's source (a `modded class` with an extends clause, a `config.cpp` without `CfgPatches`); they don't change the verdict. Warnings and noise are deduplicated and capped at 30 entries each.
+
+Every `PASS` or `FAIL` is stored for `/dayz-health` under `.server/!Health/<ModName>/results/` (a `build` run stores its lint step too), and the mod's health page is rebuilt. The report then gains `"health"`, the path of the page's Markdown file. If storing fails, the report gains `"health_error"` instead and the verdict stays the same. An `ERROR` and `--prepare-only` store nothing.
 
 ## What `build` does
 

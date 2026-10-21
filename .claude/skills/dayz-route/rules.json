@@ -12,6 +12,7 @@
     "dayz-gate": {"kind": "skill", "description": "Behavior test: a test mission spawns and uses each new item and gives PASS or FAIL per check"},
     "dayz-new-mod": {"kind": "skill", "description": "Scaffold an empty new mod folder, no content"},
     "dayz-layout-preview": {"kind": "skill", "description": "Draw a .layout as PNG previews at several screen sizes"},
+    "dayz-health": {"kind": "skill", "description": "A mod's health page: last build, last test, open findings and test history"},
     "dayz-upgrade-guard": {"kind": "skill", "description": "Snapshot vanilla classes and, after a DayZ update, list mod classes whose vanilla parents changed"},
     "dayz-balance": {"kind": "skill", "description": "Compare a mod's item stats with similar vanilla items and flag outliers"},
     "dayz-release-pack": {"kind": "skill", "description": "Write a mod's Workshop description, changelog from version history, classname list and server owner install notes"},
@@ -71,6 +72,12 @@
       "confidence": 0.9,
       "absorbs": true,
       "patterns": ["\\bbehaviou?r\\s+(?:tests?|checks?|gate)\\b(?:\\s+(?:for|on|of)\\s+(?P<mod>[A-Za-z][\\w-]*))?"]
+    },
+    {
+      "route": "dayz-health",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bhealth\\s+(?:page|report)\\b(?:\\s+(?:for|of)\\s+(?P<mod>[A-Za-z][\\w-]*))?", "\\bdayz-health\\b", "\\bmod\\s+health\\b", "\\btest\\s+history\\b", "\\b(?:last|latest)\\s+(?:build|test)\\s+(?:results?|status)\\b", "\\bopen\\s+(?:review\\s+)?findings\\b"]
     },
     {
       "route": "dayz-build-pbo",

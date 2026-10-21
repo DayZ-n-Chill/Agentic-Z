@@ -75,6 +75,11 @@ def decide(text, env=NO_KEY):
         ("preview gui/layouts/compass.layout at 4k", "dayz-layout-preview", None),
         ("show me a layout preview of my HUD", "dayz-layout-preview", None),
         ("render trader_menu.layout at different screen sizes", "dayz-layout-preview", None),
+        ("show the health page for MyVest", "dayz-health", {"mod": "MyVest"}),
+        ("what are the open review findings", "dayz-health", None),
+        ("show me the last build results and the test history", "dayz-health", None),
+        # Player health in a mod is not the health page.
+        ("add a health bar to my HUD", "dayz-ui-specialist", None),
         ("run the upgrade guard on MyVest", "dayz-upgrade-guard", None),
         ("DayZ just updated, which of my classes broke?", "dayz-upgrade-guard", None),
         ("after the DayZ update, check my modded classes", "dayz-upgrade-guard", None),
