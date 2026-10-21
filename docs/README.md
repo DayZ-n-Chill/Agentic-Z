@@ -190,7 +190,6 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 |---|---|
 | [`/dayz-search-download`](../.claude/skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases (recommended fast path) |
 | [`/dayz-search-index`](../.claude/skills/dayz-search-index/SKILL.md) | Build the semantic-search index yourself (requires `VOYAGE_API_KEY`) |
-| [`/dayz-search-wiki-index`](../.claude/skills/dayz-search-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB |
 
 ### Team rules
 
@@ -219,7 +218,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the Docusaurus wiki; `--apply` writes mirrors |
 | [`/clean-repo`](../.claude/skills/clean-repo/SKILL.md) | Orchestrator — run every domain's cleanup skill |
 
-**MCP server:** [`dayz-rag`](../.claude/mcp/dayz-rag/README.md) — exposes `search_dayz_source`, `search_dayz_wiki`, `get_dayz_file` and `list_indexed_sources` to the DayZ agents. Reads the LanceDB index under `~/.claude/dayz-search-index/`, built with `/dayz-search-index` and `/dayz-search-wiki-index` or installed with `/dayz-search-download`.
+**MCP server:** [`dayz-rag`](../.claude/mcp/dayz-rag/README.md) — exposes `search_dayz_source`, `get_dayz_file` and `list_indexed_sources` to the DayZ agents. Reads the LanceDB index under `~/.claude/dayz-search-index/`, built with `/dayz-search-index` or installed with `/dayz-search-download`.
 
 **Native prereqs** (per machine, one-time install):
 

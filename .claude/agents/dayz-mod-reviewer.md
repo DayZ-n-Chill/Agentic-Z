@@ -3,7 +3,7 @@ name: "dayz-mod-reviewer"
 description: "Read-only review of a mod under `workspace/<ModName>/`: config and `CfgPatches`, hidden selections, `$PBOPREFIX$`, texture suffixes, `types.xml` and modded-class mistakes. Returns PASS or FAIL with each finding routed to its owning worker. `dayz-lead` runs it as every task's gate; it can also run before a build or release.\n\n<example>\nContext: Config lead gating a finished task.\nuser: \"Gate the MyVest config task: config.cpp and the hidden selections.\"\nassistant: \"I'll use the dayz-mod-reviewer to check the changed files and return PASS or FAIL, with each finding's file, line, severity and owning worker.\"\n</example>"
 color: pink
 memory: project
-tools: Read, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
+tools: Read, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
 maxTurns: 50
 ---
 
@@ -22,7 +22,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 7. **types.xml** (if shipped): every entry is well-formed, has its `<flags>`, and `min` is not above `nominal`.
 8. **Conflict risks.** Broad mission overrides, global state, RPC handlers that don't check the sender.
 
-Search: Grep for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). A finding about vanilla or another mod is out of scope: list it as "external" with no severity.
+Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). A finding about vanilla or another mod is out of scope: list it as "external" with no severity.
 
 ## Severity
 

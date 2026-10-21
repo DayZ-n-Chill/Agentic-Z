@@ -3,7 +3,7 @@ name: "dayz-layout-validator"
 description: "Checks DayZ `.layout` files (property-file format, not XML) against the Figma-to-DayZ rules. Gate mode: `dayz-lead` or the main session calls it on any `.layout` change, including after `figma-to-dayz-layout`, and it reports PASS or FAIL without editing. Cleanup mode, only on direct request: repairs the file in place.\n\n<example>\nContext: A UI task changed a layout and the lead is gating it.\nuser: \"Gate check workspace/MyHud/gui/layouts/compass.layout.\"\nassistant: \"I'll use the dayz-layout-validator in gate mode. It reads the file, checks it against the rules doc, and returns PASS or FAIL with each problem's line, without changing the file.\"\n</example>"
 color: yellow
 memory: project
-tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
+tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
 maxTurns: 50
 ---
 

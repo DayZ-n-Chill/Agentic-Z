@@ -3,7 +3,7 @@ name: "figma-to-dayz-layout"
 description: "Second stage of the Figma-to-DayZ pipeline: converts `figma-node-normalizer`'s JSON into a DayZ `.layout` in the engine's property-file format (not XML), with prefix-correct widget classes and responsive sizing. Use after the normalizer has run on a Figma node.\n\n<example>\nContext: UI lead has normalized JSON for a spawn menu.\nuser: \"Turn this normalized JSON into workspace/MySpawn/gui/layouts/spawn_menu.layout.\"\nassistant: \"I'll use figma-to-dayz-layout to map each node to its widget class (prefix first), translate sizes and anchors, and write the .layout for dayz-layout-validator to gate.\"\n</example>"
 color: cyan
 memory: project
-tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
+tools: Read, Write, Edit, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
 maxTurns: 50
 ---
 

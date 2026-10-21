@@ -45,12 +45,6 @@ const RAG_FEATURES = [
     body: 'Your AI can search the entire engine source: Enforce Script, configs, layouts, materials. Ask “how does the survival HUD bind player health?” and it pulls the actual vanilla code instead of guessing.',
     tool: 'search_dayz_source',
   },
-  {
-    title: 'Community Wiki Search',
-    essence: 'Bohemia’s wiki, semantically searchable.',
-    body: 'The community-maintained engine docs and scripting guides, indexed alongside the source. Ask about an Enfusion event lifecycle or a config inheritance pattern, and it pulls the wiki page that actually explains it.',
-    tool: 'search_dayz_wiki',
-  },
 ];
 
 const MOD_NAMES = [
@@ -205,9 +199,9 @@ function RagSection() {
     <section className={`${styles.section} ${styles.sectionDark}`}>
       <div className="container">
         <h2 className={styles.sectionTitle}>On-Tap Reference</h2>
-        <div className={styles.sectionSubtitle}>// vanilla source + wiki, indexed locally</div>
+        <div className={styles.sectionSubtitle}>// vanilla source, indexed locally</div>
         <p className={styles.sectionLead}>
-          Your AI doesn’t just know DayZ in general. It can read the actual engine source and the community wiki on demand, indexed locally on your machine, without you copy-pasting code into the chat.
+          Your AI doesn’t just know DayZ in general. It can read the actual engine source on demand, indexed locally on your machine, without you copy-pasting code into the chat.
         </p>
         <div className={`${styles.archGrid} ${styles.archGrid2col}`}>
           {RAG_FEATURES.map((f) => (

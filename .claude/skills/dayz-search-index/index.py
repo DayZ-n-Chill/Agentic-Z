@@ -208,10 +208,7 @@ def _require_deps() -> None:
 
 
 def _load_env_and_key() -> str:
-    """Return the Voyage API key (see voyage_common.load_api_key). Exit 1 if missing.
-
-    dayz-search-wiki-index calls this too, so keep the name.
-    """
+    """Return the Voyage API key (see voyage_common.load_api_key). Exit 1 if missing."""
     try:
         return voyage_common.load_api_key()
     except RuntimeError as exc:
@@ -621,9 +618,6 @@ def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[flo
     pbar.close()
     return vectors, total_tokens
 
-
-# dayz-search-wiki-index imports the old private name; keep it working.
-_embed_all = embed_all
 
 
 def write_table(db, rows: list[dict]) -> None:

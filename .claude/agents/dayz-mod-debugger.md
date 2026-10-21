@@ -3,7 +3,7 @@ name: "dayz-mod-debugger"
 description: "Diagnoses DayZ mod failures from engine logs (`script.log`, RPT, `crash.log`, BattlEye), traces each to a file, class and line, and names the worker who should fix it; fixes nothing. The orchestrator sends it gate failures `/dayz-gate` triage marks new; `dayz-lead` sends it unclear review-gate failures.\n\n<example>\nContext: The in-game gate failed with one failure triaged as new.\nuser: \"/dayz-gate ingame FAILED MyVest on chernarus. Here's the JSON; one failure is new.\"\nassistant: \"I'll use the dayz-mod-debugger to start from the new failure's log line and stack trace, read the server and client logs around it, trace the error to the mod file that caused them, and return a diagnosis naming the worker who owns the fix.\"\n</example>"
 color: yellow
 memory: project
-tools: Read, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__search_dayz_wiki, mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
+tools: Read, Glob, Grep, mcp__dayz-rag__search_dayz_source, mcp__plugin_agentic-z_dayz-rag__search_dayz_source, mcp__dayz-rag__get_dayz_file, mcp__plugin_agentic-z_dayz-rag__get_dayz_file, mcp__dayz-rag__list_indexed_sources, mcp__plugin_agentic-z_dayz-rag__list_indexed_sources
 maxTurns: 50
 ---
 
@@ -28,7 +28,7 @@ Read the triage first. A `/dayz-gate` report lists each failure with its log fil
    - A modded class that never runs: an extends clause on `modded class` makes it a silent no-op (Script conventions in `conventions/scripts.md`), or the file is in the wrong `scripts/` layer.
    - `Can't find` or missing class errors: a typo, a missing `CfgPatches` `requiredAddons` entry, or a path that doesn't match `$PBOPREFIX$`.
    - Connection refused with `0x00020005`: check `allowFilePatching = 1;` in the instance's `serverDZ.cfg`.
-4. To understand a vanilla class in a stack trace: Grep `P:\scripts\` for the exact name, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
+4. To understand a vanilla class in a stack trace: Grep `P:\scripts\` for the exact name, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 5. If the cause is in vanilla or another mod, say so and suggest a workaround the mod can carry.
 
 ## Who fixes what

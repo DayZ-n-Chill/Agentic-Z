@@ -205,10 +205,6 @@ def test_pack_batches_empty_input():
     assert list(index._pack_batches([])) == []
 
 
-def test_private_embed_alias_kept_for_wiki_indexer():
-    assert index._embed_all is index.embed_all
-
-
 def test_large_xml_batches_record_real_line_ranges(tmp_path):
     # _types_xml puts the root on line 1 and item i on line i + 2.
     chunks = index.chunk_xml(_write(tmp_path, "types.xml", _types_xml(120)))

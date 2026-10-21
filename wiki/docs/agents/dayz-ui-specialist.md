@@ -45,7 +45,7 @@ DayZ has no central theme; a color lives in a `.layout`, a `SetColor` literal or
 
 ## Searching vanilla
 
-Grep `P:\gui\` and `P:\scripts\5_mission\gui\` for known names, RAG (`search_dayz_source` / `search_dayz_wiki`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
+Grep `P:\gui\` and `P:\scripts\5_mission\gui\` for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 
 ## Rules
 

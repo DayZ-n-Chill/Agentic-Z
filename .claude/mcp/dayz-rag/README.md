@@ -1,11 +1,10 @@
 # dayz-rag MCP server
 
-Semantic search over vanilla DayZ source and the Bohemia community wiki, for any DayZ specialist agent. Four read-only tools (each carries the MCP `readOnlyHint` annotation):
+Semantic search over vanilla DayZ source, for any DayZ specialist agent. Three read-only tools (each carries the MCP `readOnlyHint` annotation):
 
 - `search_dayz_source(query, top_k=5, file_type=None, max_distance=None)`: vector search over the index built by `/dayz-search-index`.
-- `search_dayz_wiki(query, top_k=5, max_distance=None)`: on hold. Vector search over the wiki table (`path` is the page URL, `parent_context` is "Page > Section"). Its build skill, `/dayz-search-wiki-index`, is on hold, so unless a wiki table is already installed the tool raises "Wiki index unavailable".
 - `get_dayz_file(path, line_start=None, line_end=None)`: fetch a file or line range for follow-up. Paths must be on `P:\`; files over 200 KB need a range. The check is lexical (the path is normalised, not resolved), so a junction or symlink under `P:\`, such as `P:\Mods` or a `P:\<ModName>` junction into `workspace/`, can still lead to a file stored elsewhere.
-- `list_indexed_sources()`: returns `{"source": <manifest or null>, "wiki": <manifest or null>}`; null means that index hasn't been built.
+- `list_indexed_sources()`: returns `{"source": <manifest or null>}`; null means the index hasn't been built.
 
 Agents use these after Grep, per the search rule in `.claude/skills/_shared/dayz-conventions.md`: Grep for known symbols, `search_dayz_source` for questions by meaning, then verify a hit with `get_dayz_file` or Read before relying on it. Each search hit has `path`, `file_type`, `parent_context`, `line_start`, `line_end`, `distance` (LanceDB L2² distance, lower is closer), `snippet` and `is_stale`. Hits carry `is_stale: true` (with `stale_reason` of `modified` or `missing`) when the file on `P:\` changed after the index was built.
 
@@ -13,14 +12,14 @@ Installed as a plugin, the tools appear as `mcp__plugin_agentic-z_dayz-rag__<too
 
 ## How it works
 
-1. The indexers walk the sources, chunk them, embed each chunk with Voyage AI `voyage-code-3` (1024-dim) using `input_type="document"`, and store them in LanceDB at `~/.claude/dayz-search-index/` (table `chunks` for source, `wiki_chunks` for the wiki).
+1. The indexer walks the vanilla source, chunks it, embeds each chunk with Voyage AI `voyage-code-3` (1024-dim) using `input_type="document"`, and stores the chunks in LanceDB at `~/.claude/dayz-search-index/` (table `chunks`).
 2. This server opens LanceDB lazily, embeds each query with the same model using `input_type="query"`, and returns the nearest chunks. A `file_type` filter is a LanceDB prefilter (`where`), so `top_k` hits of that type come back even when other types rank nearer. The model comes from `config.json` written by the indexer.
 
 `list_indexed_sources` reports the current chunk and token counts. Indexed types: `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`, which are also the accepted `file_type` filter values.
 
 ## Errors
 
-Every tool reports failures the same way: it raises, and the MCP client receives a result with `isError: true` and the message. Bad arguments (unknown `file_type`, a path outside `P:\`, an invalid line range, a large file without a range) raise `ValueError`; a missing source index, table or file raises with a hint naming the skill that builds it, and a missing wiki index raises "Wiki index unavailable" (its build skill is on hold). A blank query returns an empty list.
+Every tool reports failures the same way: it raises, and the MCP client receives a result with `isError: true` and the message. Bad arguments (unknown `file_type`, a path outside `P:\`, an invalid line range, a large file without a range) raise `ValueError`; a missing source index, table or file raises with a hint naming the skill that builds it. A blank query returns an empty list.
 
 ## Setup
 
@@ -51,14 +50,13 @@ After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index
 |---|---|---|
 | `VOYAGE_API_KEY` | required | Voyage key, read from the environment or `.env` (working directory, then repo/plugin root). |
 | `VOYAGE_MODEL` | `voyage-code-3` | Query model if the index has no `config.json`; normally the indexer's choice wins. |
-| `DAYZ_RAG_MAX_DISTANCE` | unset | Default `max_distance` cutoff (on each hit's `distance`) for both search tools. Calibrate by running unfiltered queries first. |
+| `DAYZ_RAG_MAX_DISTANCE` | unset | Default `max_distance` cutoff (on each hit's `distance`) for `search_dayz_source`. Calibrate by running unfiltered queries first. |
 
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `No index at ~/.claude/dayz-search-index` | Index not built | Run `/dayz-search-index` or `/dayz-search-download` |
-| `Wiki index unavailable` | No wiki table installed | The wiki index's build skill is on hold; use `search_dayz_source` |
 | `VOYAGE_API_KEY not set` | Key missing from `.env` | Add `VOYAGE_API_KEY=pa-...` at the repo root |
 | `mcp SDK not installed` | Missing dependencies | `pip install -r .claude\mcp\dayz-rag\requirements.txt` |
 | Results look unrelated | Query model differs from index model | Check `~/.claude/dayz-search-index/config.json`; rebuild with `--full` if you changed models |

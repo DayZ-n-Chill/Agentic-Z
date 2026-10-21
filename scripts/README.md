@@ -32,7 +32,6 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `dayz-search.bat` | Search the vanilla RAG index from the terminal | `dayz-search.bat "food spoilage"` |
 | `search-download.bat` | Install the prebuilt search index | `search-download.bat` |
 | `search-index.bat` | Build the search index yourself | `search-index.bat --full` |
-| `search-wiki-index.bat` | Build the wiki index (on hold) | `search-wiki-index.bat --help` |
 
 ## Setup (`scripts\setup\`)
 

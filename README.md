@@ -7,8 +7,8 @@
 ## What you get
 
 - **A 22-agent mod team**: an orchestrator that plans and tracks a whole mod, a Haiku router that picks the handler for a request, team leads, specialists for scripts, configs, models, textures, UI, Figma, maps, server admin and Workbench plugins, and gatekeepers that review, build and test every task in game before you see it.
-- **34 slash-command skills** (30 in the plugin, plus 4 clone-only template-maintenance skills) that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
-- **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials) plus the Bohemia community wiki, exposed to every agent through the `dayz-rag` MCP server. Embeddings via Voyage AI (`voyage-code-3`) stored in LanceDB; needs `VOYAGE_API_KEY` in `.env`. Skip the build with `/dayz-search-download`, which pulls the prebuilt index from GitHub releases.
+- **33 slash-command skills** (29 in the plugin, plus 4 clone-only template-maintenance skills) that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
+- **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials), exposed to every agent through the `dayz-rag` MCP server. Embeddings via Voyage AI (`voyage-code-3`) stored in LanceDB; needs `VOYAGE_API_KEY` in `.env`. Skip the build with `/dayz-search-download`, which pulls the prebuilt index from GitHub releases.
 - **Three-CLI support out of the box.** The same agents and skills work in Claude Code, Codex CLI, and Gemini CLI. One `sync-skills` run wires them all up.
 
 ---
@@ -84,7 +84,7 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 <repo>/
 ├── .claude/
 │   ├── agents/             # 22 agents: mod team, router, specialists, agent-creator (L3)
-│   ├── skills/             # 34 slash-command skills (L3) + L2 shared conventions
+│   ├── skills/             # 33 slash-command skills (L3) + L2 shared conventions
 │   │   ├── _shared/dayz-conventions.md   # L2 core
 │   │   ├── _shared/conventions/          # L2 topic files (config, assets, scripts, ui, server)
 │   │   ├── sync-skills/    # bootstrap: link skills into Claude/Codex/Gemini home dirs
@@ -184,7 +184,6 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 |---|---|
 | [`/dayz-search-download`](.claude/skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases (recommended fast path). |
 | [`/dayz-search-index`](.claude/skills/dayz-search-index/SKILL.md) | Build the vanilla-source semantic-search index yourself (requires `VOYAGE_API_KEY`). |
-| [`/dayz-search-wiki-index`](.claude/skills/dayz-search-wiki-index/SKILL.md) | Index the Bohemia community wiki into the same DB. |
 
 ### Team rules
 
