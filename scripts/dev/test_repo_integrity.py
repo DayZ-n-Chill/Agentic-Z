@@ -134,6 +134,22 @@ def test_no_write_roles_have_no_write_tools_or_memory(name):
     assert "memory" not in _frontmatter(path)
 
 
+def test_ingame_tester_matches_gate():
+    # dayz-ingame-tester is the fallback for `/dayz-gate ingame`, so its ready line,
+    # settle time and client timeout must match the script's defaults.
+    agent = (AGENTS_DIR / "dayz-ingame-tester.md").read_text(encoding="utf-8")
+    gate = (SKILLS_DIR / "dayz-gate" / "gate.py").read_text(encoding="utf-8")
+    ready_re = re.search(r'^DEFAULT_READY_RE = r"(.+)"$', gate, re.M).group(1)
+    settle = int(re.search(r"^DEFAULT_SETTLE_S = (\d+)", gate, re.M).group(1))
+    timeout = int(re.search(r"^DEFAULT_TIMEOUT_S = (\d+)", gate, re.M).group(1))
+    assert 'add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S' in gate
+    ready_line = re.search(r"log line matching `([^`]+)`", agent).group(1)
+    assert re.search(ready_re, ready_line)
+    assert (settle, timeout) == (30, 300)
+    assert "keep reading 30 more seconds" in agent
+    assert "Give up after five minutes" in agent
+
+
 def test_layout_validator_keeps_its_gate_mode_no_edit_rule():
     # The validator holds Write and Edit for cleanup mode, so only this sentence
     # keeps it from changing a file it gates.
