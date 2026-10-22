@@ -101,13 +101,14 @@ test('the ask field runs /dayz-ask with the question and skips an empty one', as
 // --- the rest of the buttons, the guards and the plugin-cache fallback ------------------
 
 // A variant of engine() with the parts the tests below change: the files on
-// disk, the plugin-cache folders, the toasts shown, and a process call that
-// can be held open to stand for a long build.
+// disk, the plugin-cache folders, the toasts shown, a process call that can be
+// held open to stand for a long build, and a result to return for a script.
 function engineWith(on: any, runs: string[][], opts: {
   files?: Record<string, string>
   cacheDirs?: string[]
   toasts?: string[]
   hold?: (argv: string[]) => Promise<void> | undefined
+  result?: (argv: string[]) => { exitCode: number; stdout: string; stderr: string } | undefined
 } = {}) {
   const files: Record<string, string> = opts.files ?? {
     'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
@@ -134,7 +135,7 @@ function engineWith(on: any, runs: string[][], opts: {
     }
     const held = opts.hold?.(e.argv)
     if (held) await held
-    return { value: { exitCode: 0, stdout: 'INFO: No tasks are running.', stderr: '' } }
+    return { value: opts.result?.(e.argv) ?? { exitCode: 0, stdout: 'INFO: No tasks are running.', stderr: '' } }
   })
 }
 
@@ -237,4 +238,21 @@ test('with Agentic-Z nowhere, the pane says so and a press only toasts', async (
   await ui.unmount()
   expect(scriptRuns(runs)).toEqual([])
   expect(toasts).toContain('Agentic-Z not found in this project or the plugin cache.')
+})
+
+test('a failing run toasts failed and keeps its [FAIL] line in the pane', async ($, on) => {
+  const runs: string[][] = []
+  const toasts: string[] = []
+  engineWith(on, runs, {
+    toasts,
+    result: argv =>
+      argv.some(a => a.endsWith('build.py'))
+        ? { exitCode: 1, stdout: '[FAIL] lint: 2 errors\nmore', stderr: '' }
+        : undefined,
+  })
+  const ui = await openPane($)
+  await ui.press({ key: 'build' })
+  expect(toasts).toEqual(['build: failed'])
+  expect((await ui.find({ type: 'Text', text: /Last:/ }))?.text).toContain('Last: build failed [FAIL] lint: 2 errors')
+  await ui.unmount()
 })

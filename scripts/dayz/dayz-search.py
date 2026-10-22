@@ -8,8 +8,8 @@ Usage:
     dayz-search -j <query>               # raw JSON output
 
 Reuses search_dayz_source_impl from the MCP server module so behavior matches
-what agents see. A missing index, a missing VOYAGE_API_KEY or a bad argument
-prints one 'error:' line and exits 2.
+what agents see. A missing index, a missing VOYAGE_API_KEY, a missing package,
+a Voyage API error or a bad argument prints one 'error:' line and exits 2.
 """
 from __future__ import annotations
 
@@ -66,8 +66,14 @@ def main(argv: list[str]) -> int:
         hits = search_dayz_source_impl(
             query, top_k=args.top_k, file_type=args.file_type, max_distance=args.max_distance,
         )
+    except ImportError as e:  # lancedb or voyageai not installed
+        print(f"error: {e}; run pip install -r .claude\\mcp\\dayz-rag\\requirements.txt", file=sys.stderr)
+        return 2
     except (RuntimeError, ValueError, OSError) as e:  # no index, no API key, unreadable index files
         print(f"error: {e}", file=sys.stderr)
+        return 2
+    except Exception as e:  # a Voyage API error such as an invalid or expired key
+        print(f"error: {type(e).__name__}: {e}", file=sys.stderr)
         return 2
 
     if args.json:

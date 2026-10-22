@@ -4,7 +4,7 @@ What Dabs Framework adds for UI and registration: attribute classes, the MVC lay
 
 Dabs Framework is a third party mod by InclementDab, not part of the game. Everything below is a **framework** fact, not a vanilla fact. Use it only when the mod already depends on Dabs Framework or the user asks for it; plain vanilla UI is in `../references/widget_api.md`.
 
-**Where these facts come from.** The Steam Workshop copy of the mod, linked on this machine at `P:\Mods\@Dabs Framework\`. Its `addons\Scripts.pbo` holds plain script, and file paths below are paths inside that PBO (for example `3_Game\DabsFramework\MVC\ScriptView.c`). Usage examples were checked against the DayZ Editor mod (`P:\Mods\@DayZ-Editor\`), which is built on Dabs. The framework changes between releases, so open the named file again when something here does not match.
+**Where these facts come from.** The Steam Workshop copy of the mod (for example linked as `P:\Mods\@Dabs Framework\` by `/dayz-workdrive`); its `addons\Scripts.pbo` holds plain script, and file paths below are paths inside that PBO (for example `3_Game\DabsFramework\MVC\ScriptView.c`). Usage examples were checked against the DayZ Editor mod (`P:\Mods\@DayZ-Editor\`), which is built on Dabs. The framework changes between releases, so open the named file again when something here does not match.
 
 ---
 

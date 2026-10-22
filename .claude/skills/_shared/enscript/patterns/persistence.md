@@ -65,6 +65,8 @@ class MyMod_CustomCanteen : Bottle_Base // P:\scripts\4_world\entities\itembase\
 
 Same pattern. `version` is the storage version the save was written with (`GAME_STORAGE_VERSION`, `P:\scripts\3_game\global\game.c:5`), not the game version and not yours, so write your own version first. See [`../../persistence/versioning-and-migration.md`](../../persistence/versioning-and-migration.md) for why and for the upgrade paths.
 
+Adding saved fields to `PlayerBase` breaks loading on a server that already has saves, and again if the mod is removed. Ship it only on a fresh server, or use CF ModStorage (see `versioning-and-migration.md`, "Adding saved fields to a vanilla class").
+
 ```c
 modded class PlayerBase
 {
@@ -132,7 +134,7 @@ modded class ItemBase
 |---|---|
 | `super.*` FIRST on save, check return on load | Breaking this corrupts the entire entity's save data |
 | Write your own version header | Never rely on the `version` param alone: it is the game's storage version (`game.c:5`), not yours |
-| Read = exact mirror of write | Any difference = corrupted stream → entity deleted by server |
+| Read = exact mirror of write | Any difference = corrupted stream; the load fails |
 | New fields at the END | Never insert between existing fields |
-| Return `false` means "delete this entity" | Only return false if the stream is genuinely broken |
+| Return `false` means the record failed to load | What the engine then does is not visible in script, so treat it as losing the object (`save-load-contract.md`). Only return false if the stream is genuinely broken |
 | Test with fresh save AND upgrade from old save | Both paths must work before shipping |

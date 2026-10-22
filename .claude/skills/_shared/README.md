@@ -58,10 +58,10 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/patterns/netsync.md` | Checked on `P:`: net sync variables registered in the constructor, `SetSynchDirty`, `OnVariablesSynchronized`, bit packing. |
 | `_shared/enscript/patterns/persistence.md` | Checked on `P:`: `OnStoreSave` and `OnStoreLoad`, your own version header, write order. |
 | `_shared/enscript/patterns/rpc.md` | Checked on `P:`: RPC IDs, `ScriptRPC`, the `OnRPC` template, client to server validation. |
-| `_shared/enscript/patterns/singleton.md` | Checked on `P:`: static instance with lazy init, `LoadFile` and `SaveFile`, the `ScriptInvoker` shutdown null guard. |
-| `_shared/enscript/patterns/actions.md` | Checked on `P:`: action classes, condition components, stopping pickup, client and server check mismatch. |
-| `_shared/enscript/patterns/scheduler.md` | The unverified `CallLater` drift report and the `Timer` alternative, per tick allocation, call categories. |
-| `_shared/enscript/patterns/physics_items.md` | Making spawned items physics active: `ThrowPhysically` or manual dynamic physics. |
+| `_shared/enscript/patterns/singleton.md` | Checked on `P:`, with its reported `JsonSerializer` behavior marked: static instance with lazy init, `LoadFile` and `SaveFile`, the `ScriptInvoker` shutdown null guard. |
+| `_shared/enscript/patterns/actions.md` | Checked on `P:`: action classes and their `ActionConstructor` registration, condition components, stopping pickup, client and server check mismatch. |
+| `_shared/enscript/patterns/scheduler.md` | Checked on `P:`, with its one unverified report marked: the `CallLater` drift report and the `Timer` alternative, per tick allocation, call categories. |
+| `_shared/enscript/patterns/physics_items.md` | Checked on `P:`: making spawned items physics active: `ThrowPhysically` or manual dynamic physics. |
 | `_shared/enscript/patterns/json_config_migration.md` | Checked on `P:`: JSON config schema versions and forward migration with `LoadFile` and `SaveFile`. |
 | `_shared/enscript/patterns/language_workarounds.md` | Checked on `P:`: missing language features (ternary, lambdas, exceptions) and their workarounds; overloading, `auto` and `foreach` with an index, which do work. |
 | `_shared/enscript/integrations/community_framework.md` | Community Framework modules, ModStorage, `GetRPCManager()`, event handlers. Checked against the shipped CF scripts PBO. |
@@ -82,8 +82,8 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/item_api.md` | Checked on `P:`: `ItemBase` quantity, health, actions, spawning, config properties. |
 | `_shared/enscript/references/erpc_defines.md` | Checked on `P:`: `ERPCs`, `eAgents` and `eModifiers`, the modifier and agent calls; custom ID ranges (a community convention). |
 | `_shared/enscript/references/file_paths.md` | Checked on `P:`: `$profile`, `$saves` and `$mission` paths, file and JSON helpers. |
-| `_shared/enscript/references/gui_layout.md` | Checked on `P:`: `.layout` format and every widget type. |
-| `_shared/enscript/references/widget_api.md` | Widget script classes and methods, events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu`, imagesets. |
+| `_shared/enscript/references/gui_layout.md` | Checked on `P:`: `.layout` format and every widget class vanilla layouts use. |
+| `_shared/enscript/references/widget_api.md` | Checked on `P:`: widget script classes and methods, events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu`, imagesets. |
 | `_shared/enscript/examples/layouts.md` | Checked on `P:`: what the three example layouts are, with their companion scripts. |
 
 ### Physics pack (`_shared/physics`)

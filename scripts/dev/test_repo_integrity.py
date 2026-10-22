@@ -1,6 +1,6 @@
 """Repo-wide checks that keep the agent team and the plugin manifest in step.
 
-Run with: python -m pytest scripts/dev/test_repo_integrity.py
+Run with: py -m pytest scripts/dev/test_repo_integrity.py
 """
 from __future__ import annotations
 
@@ -241,8 +241,18 @@ CITATION_EXEMPT = {
     "answer-formatting.md",           # how to format answers
     "py3d-mlod-notes.md",             # notes on a Python library, not the game
     "conventions/server.md",          # the .server/ test-server layout of this repo
+    "dayz-conventions.md",            # environment and workflow rules; facts live in the topic files
+    "textures/checking-the-look.md",  # what to look at in Object Builder and in game
 }
 CITATION_EXEMPT_FOLDERS = {"enscript-style"}  # the style guide's section files
+# A citation names a vanilla file, not just the drive: a path with a line
+# (P:\scripts\...\x.c:12, x.c:12, config.cpp:40), a file on P:\ (binary .p3d
+# and .paa have no lines), or a scripts-relative file such as 3_game/global/game.c.
+CITATION_RE = re.compile(
+    r"P:\\[^\s`]+:\d+|\.c:\d+|config\.cpp:\d+"
+    r"|P:\\[^\s`]*\\[\w.-]+\.\w+"
+    r"|\b[1-5]_\w+[/\\][^\s`]*\.c\b"
+)
 
 
 def test_pack_files_cite_vanilla():
@@ -251,9 +261,9 @@ def test_pack_files_cite_vanilla():
         rel = path.relative_to(SHARED_DIR).as_posix()
         if path.name == "README.md" or rel in CITATION_EXEMPT or rel.split("/")[0] in CITATION_EXEMPT_FOLDERS:
             continue
-        if "P:\\" not in path.read_text(encoding="utf-8"):
+        if not CITATION_RE.search(path.read_text(encoding="utf-8")):
             missing.append(rel)
-    assert not missing, f"pack files with no P:\\ citation: {missing}"
+    assert not missing, f"pack files with no path:line citation of vanilla: {missing}"
 
 
 def test_citation_exemptions_exist():

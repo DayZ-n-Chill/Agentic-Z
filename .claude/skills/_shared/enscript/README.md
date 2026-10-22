@@ -14,7 +14,7 @@ This folder fills the gap between those: the recurring patterns themselves (nets
 
 Most of this folder started as a vendored mirror (see Attribution). Files are now in one of two states:
 
-- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md`, `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md`, `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md` and `scheduler.md` (which marks its one unverified report as such); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `02`, `03`, `07`, `10`, the three layouts and `layouts.md`.
+- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md`, `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md` and `scheduler.md` (which marks its one unverified report as such); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `02`, `03`, `07`, `10`, the three layouts and `layouts.md`.
 - **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`) and `integrations/dabs_framework.md` (the Dabs scripts PBO).
 - **Vendored, not yet checked on `P:\`**: examples `01`, `04`, `05`, `06`, `08` and `09`. Use them for shape only and check each call on `P:\scripts\` before you copy it.
 
@@ -37,7 +37,7 @@ enscript/
 | `persistence.md` | `OnStoreSave`/`OnStoreLoad`, your own version header (the `version` argument is the game's storage version), write-order rules |
 | `rpc.md` | `ScriptRPC`, `RPCSingleParam`, `OnRPC` switch template, client-to-server validation, **ID-collision symptom** |
 | `singleton.md` | Static `s_Instance`, lazy init, `GetInstance()`, `LoadFile`/`SaveFile`, **`ScriptInvoker` shutdown null-guard** |
-| `actions.md` | `ActionBase`, `CCINonRuined` vs `CCINone`, the condition component table, stopping pickup (`IsTakeable`, `CanPutInCargo`, `CanPutIntoHands`), client/server check-style mismatch |
+| `actions.md` | `ActionBase`, registering in `ActionConstructor`, `CCINonRuined` vs `CCINone`, the condition component table, stopping pickup (`IsTakeable`, `CanPutInCargo`, `CanPutIntoHands`), client/server check-style mismatch |
 | `scheduler.md` | The unverified `CallLater` drift report and the `Timer` alternative, per tick allocation, call categories |
 | `physics_items.md` | `ThrowPhysically` vs manual `CreateDynamicPhysics`, `SetDynamicPhysicsLifeTime` mandatory call |
 | `json_config_migration.md` | `SCHEMA_VERSION` + forward-migration, `LoadFile` parse-failure handling for admin-edited JSON |
@@ -72,7 +72,7 @@ Every file below cites the vanilla file and line on `P:\` for its facts. Start w
 | `item_api.md` | `ItemBase` quantity/health/flags, action registration, spawning, `config.cpp` properties |
 | `erpc_defines.md` | Vanilla `ERPCs`/`eAgents`/`eModifiers` tables, `ActivateModifier` and `InsertAgent`, custom ID range convention |
 | `file_paths.md` | `$profile`/`$saves`/`$mission` path tokens, `FileExist`, `MakeDirectory`, `CopyFile`, `JsonFileLoader.LoadFile`, `FileMode` |
-| `gui_layout.md` | `.layout` file format, RGBA colors, coords, all widget types, `ItemPreviewWidget`/`PlayerPreviewWidget` |
+| `gui_layout.md` | `.layout` file format, RGBA colors, coords, every widget class vanilla layouts use, `ItemPreviewWidget`/`PlayerPreviewWidget` |
 | `widget_api.md` | Widget script classes and methods, events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu`, imagesets |
 
 ### examples/
@@ -105,6 +105,7 @@ When debugging, jump to the file that owns the symptom.
 | Server compile error `Unknown type 'IngameHud'` (or `Chat` / `UiHintPanel`) | `patterns/modded_class.md` (`#ifndef NO_GUI` guard) |
 | Can't `modded class Widget` / `UIManager`, or a `UIScriptedMenu` mod hits every menu | `patterns/modded_class.md` (engine-backed classes) |
 | Custom barrel missing open/close anim | `patterns/modded_class.md` (extend script class, not config parent) |
+| `Action X dosn't exist!` in `script.log`, or a new action never appears | `patterns/actions.md` (register it in `modded class ActionConstructor`) |
 | Action shows on client, server rejects on execute | `patterns/actions.md` (check-style mismatch) |
 | Tool-in-hand action shows with a ruined tool or none | `patterns/actions.md` (`CCINonRuined` vs `CCINone`) |
 | Item placed but still draggable into inventory | `patterns/actions.md` (`CanPutInCargo` and `CanPutIntoHands`) |

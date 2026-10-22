@@ -110,8 +110,14 @@ color 0.0863 0.0863 0.0863 0.902   // dark panel background
 | `MapWidgetClass` | `MapWidget` (`P:\scripts\3_game\gameplay.c:322`) | In-game map surface | `day_z_map.layout:54` |
 | `VideoWidgetClass` | `VideoWidget` (`:543`) | Video playback | `new_ui/video_player.layout:19` |
 | `XComboBoxWidgetClass` | `XComboBoxWidget` (`:407`) | Drop-down combo box | `day_z_server_browser_new.layout:296` |
+| `SpacerWidgetClass` | `SpacerWidget` (`:465`) | Auto-layout row or column container (`Padding`, `Margin`) | `new_ui/options/msstore/keybinding_menu.layout:422` |
+| `CanvasWidgetClass` | `CanvasWidget` (`:341`) | Surface that script draws lines on | `day_z_map.layout:544` |
+| `ThreeStateCheckboxWidgetClass` | none in `P:\scripts` | Checkbox with a third, mixed state | `day_z_server_browser_new.layout:236` |
+| `EmbededWidgetClass` (vanilla spelling) | none in `P:\scripts` (`EmbededWidgetTypeID`, `:33`) | Embeds another `.layout` named by its `layout` property, with `ScriptParamsClass` values | `examples/buttontemplatetest.layout:10` |
 
 Script type lines without a file are in `P:\scripts\1_core\proto\enwidgets.c`; layout files are under `P:\gui\layouts\`.
+
+Four more classes appear in vanilla layouts but belong to the game's own screens, so a mod has no use for them: `HtmlWidgetClass` (`HtmlWidget`, `P:\scripts\3_game\gameplay.c:316`; the book and note pages, `day_z_book.layout:62`), `ServerBrowserWidgetClass` (`day_z_server_browser_new.layout:118`), `SmartPanelWidgetClass` (`xbox/day_z_title_screen.layout:13`) and `ContentWidgetClass` (`day_z_hud.layout:2345`).
 
 ---
 

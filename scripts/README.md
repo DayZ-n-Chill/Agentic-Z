@@ -1,6 +1,6 @@
 # No-token commands
 
-Every `.bat` here runs an Agentic-Z script directly (a skill script, or the repo tools in this folder). Double-click it or run it from a terminal: no AI is involved, so it costs no tokens. Each forwards its arguments to the script; add `--help` for the full options.
+Every `.bat` here runs an Agentic-Z script directly (a skill script, or the repo tools in this folder). Run it from a terminal (a double-clicked window closes before you can read the result): no AI is involved, so it costs no tokens. Each forwards its arguments to the script; add `--help` for the full options.
 
 Use the slash command instead when you want Claude to run the step as part of a bigger task and read the result for you.
 

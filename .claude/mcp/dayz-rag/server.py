@@ -61,7 +61,7 @@ def _load_default_max_distance() -> Optional[float]:
 
 DEFAULT_MAX_DISTANCE = _load_default_max_distance()
 
-# Must match EXT_TYPE_MAP in .claude/skills/dayz-search-index/index.py.
+# Must match EXT_TYPE_MAP in .claude/skills/dayz-search-index/index.py (test_server.py checks).
 VALID_FILE_TYPES = {"c", "cpp", "hpp", "h", "layout", "cfg", "rvmat", "xml", "json", "csv"}
 
 
@@ -373,22 +373,18 @@ def list_indexed_sources_impl() -> dict:
 
 # --------------- MCP wiring ---------------
 
-def main() -> int:
-    try:
-        from mcp.server.fastmcp import FastMCP
-        from mcp.types import ToolAnnotations
-    except ImportError:
-        print(
-            "mcp SDK not installed. Run: pip install -r "
-            f"{Path(__file__).parent / 'requirements.txt'}",
-            file=sys.stderr,
-        )
-        return 1
+def build_app():
+    """Build the FastMCP app with its three read-only tools. Raises ImportError
+    when the mcp SDK is missing."""
+    from mcp.server.fastmcp import FastMCP
+    from mcp.types import ToolAnnotations
 
     mcp = FastMCP("dayz-rag")
     read_only = ToolAnnotations(readOnlyHint=True)
+    # Every uncached search calls the Voyage API, so it reaches outside this machine.
+    read_only_remote = ToolAnnotations(readOnlyHint=True, openWorldHint=True)
 
-    @mcp.tool(annotations=read_only)
+    @mcp.tool(annotations=read_only_remote)
     def search_dayz_source(
         query: str,
         top_k: int = 5,
@@ -452,6 +448,19 @@ def main() -> int:
         """
         return list_indexed_sources_impl()
 
+    return mcp
+
+
+def main() -> int:
+    try:
+        mcp = build_app()
+    except ImportError:
+        print(
+            "mcp SDK not installed. Run: pip install -r "
+            f"{Path(__file__).parent / 'requirements.txt'}",
+            file=sys.stderr,
+        )
+        return 1
     mcp.run(transport="stdio")
     return 0
 

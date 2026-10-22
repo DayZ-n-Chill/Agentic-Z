@@ -12,7 +12,7 @@ ImageToPAA reads the last `_xx` of the filename and looks it up in `<DayZ Tools>
 |---|---|---|---|
 | `_co` | Color (diffuse), no alpha | `DXT1`, sRGB (`class ColorMap`) | The model face, `hiddenSelectionsTextures[]`, or `Stage3` of a Skin material |
 | `_ca` | Color with alpha | `DXT5`, sRGB (`class ColorAlphaMap`) | Same places as `_co`, when the surface needs transparency (glass, hair, straps) |
-| `_nohq` | Normal map, high quality | `DXT5`, channels swizzled so red moves to alpha (`class normalmap_hq`) | `Stage1` |
+| `_nohq` | Normal map, high quality | `DXT5`; alpha becomes 1 minus red and red becomes 1 minus alpha (`class normalmap_hq`) | `Stage1` |
 | `_smdi` | Specular | `DXT1`, red forced to 1, green and blue kept (`class specular_diffuseinverse_map`) | `Stage5` |
 | `_as` | Ambient shadow (baked occlusion) | `DXT1`, only green kept (`class ambient_shadow`) | `Stage4` of a Super material |
 | `_mc` | Macro (a color layer blended over the base) | `DXT5` (`class macro`) | `Stage3` of a Super material, `Stage2` of a Skin material |

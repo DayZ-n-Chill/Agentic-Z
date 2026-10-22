@@ -40,7 +40,7 @@ WidgetClassNameClass WidgetName {
 Three rules that cover the syntax:
 
 - Class names always end in `Class`. `FrameWidget` is wrong, `FrameWidgetClass` is right.
-- Properties are key-value pairs on their own line. No `=`, no `:`, no semicolons. The value follows the key separated by a space. Values are bare, except text strings (`text "..."`) and quoted multi-word keys.
+- Properties are key-value pairs on their own line. No `=`, no `:`, no semicolons. The value follows the key separated by a space. Values are bare, except where vanilla quotes them (`text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`); multi-word keys are quoted.
 - The child `{ }` block goes inside the parent's braces, AFTER all of the parent's own properties. A widget may have multiple child blocks (the second is conventionally for `ScriptParamsClass` parameter blocks).
 
 Multi-word property keys are quoted, values still are not:
@@ -85,7 +85,7 @@ Six properties every visible widget cares about:
 | `hexactsize` | `1` = size is pixels, `0` = fraction of parent width |
 | `vexactsize` | `1` = size is pixels, `0` = fraction of parent height |
 
-Alignment anchors place the widget against a side or center of the parent. `halign` values: `left`, `right`, `center_ref`, `left_ref`, `right_ref`. `valign` values: `top`, `bottom`, `center_ref`, `top_ref`, `bottom_ref`. The `_ref` variants use the parent's reference frame, not its raw bounds.
+Alignment anchors place the widget against a side or center of the parent. The values vanilla uses (`enscript/references/gui_layout.md`, "Common Properties"): `halign` `left`, `center_ref`, `right_ref`; `valign` `top`, `bottom`, `center_ref`, `bottom_ref` (for example `halign right_ref` and `valign bottom_ref` at `P:\gui\layouts\day_z_hud.layout:520` and `:521`).
 
 See `enscript/references/gui_layout.md` for the full property catalog (`ignorepointer`, `priority`, `disabled`, `clipchildren`, fonts, styles, etc.) and the full widget class list.
 
@@ -219,15 +219,6 @@ Use `WrapSpacerWidgetClass` or `GridSpacerWidgetClass` only when:
 
 A static row of three buttons described in Figma auto-layout is NOT a spacer case. It is three `ButtonWidgetClass` widgets with `position`/`size` derived from their Figma bounds and Figma sizing modes per the table above.
 
-### When to reach for spacer widgets
-
-Use `WrapSpacerWidgetClass` or `GridSpacerWidgetClass` only when:
-
-- The Figma frame contains a **truly dynamic** repeating list or grid (N children where N is determined at runtime by data, not designed in Figma)
-- OR the design relies on children flowing and wrapping based on container width (rare in DayZ UIs)
-
-A static row of three buttons described in Figma auto-layout is NOT a spacer case. It is three `ButtonWidgetClass` widgets with `position`/`size` derived from their Figma bounds.
-
 ### When to reach for `ScrollWidgetClass`
 
 When a Figma frame is marked as overflow-scrollable, or when its content height exceeds the visible region by design.
@@ -319,11 +310,11 @@ Surface red flags that the output is wrong. The generator must never emit these.
 
 - **XML syntax**: `<Tag>`, `</Tag>`, `/>`, `name="value"` attribute pairs, namespace prefixes.
 - **`=` between key and value.** DayZ is `key value`, not `key = value`.
-- **Quoted attribute values.** Bare values only. The exception is text strings (`text "Hello"`) and multi-word KEYS (`"exact text" 1`).
+- **Quoted values where vanilla leaves them bare.** Quote a value only where vanilla quotes it: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`. Multi-word keys are quoted too (`"exact text" 1`).
 - **Semicolons** as line terminators.
 - **CSS-flavored property names**: `borderRadius`, `border-radius`, `display`, `flex`, `flexDirection`, `justifyContent`, `alignItems`, `boxShadow`, `box-shadow`, `padding`, `margin`, `gap`.
 - **Opacity as a separate property or percentage.** Alpha lives as the fourth float on `color`.
-- **camelCase or kebab-case attribute names.** DayZ properties are lowercase single words or quoted multi-word keys.
+- **Property names vanilla does not spell that way.** Write each name exactly as vanilla spells it (`imageTexture`, `userID`, `"exact text size"`); no CSS names.
 - **Self-closing tags.** Empty widgets still need `{ }` braces.
 - **Inventing widget classes that do not end in `Class`.** Verify every unknown widget against vanilla before emitting it.
 

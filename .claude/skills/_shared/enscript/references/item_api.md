@@ -123,6 +123,8 @@ class MyMod_CustomItem : ItemBase
 }
 ```
 
+A new action class must also be inserted in a modded `ActionConstructor.RegisterActions` (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:27`). `AddAction` looks it up with `ActionManagerBase.GetAction` (`itembase.c:257`) and logs `Action ... dosn't exist!` otherwise (`:261`). See `../patterns/actions.md`.
+
 Sources: `SetActions` `P:\scripts\4_world\entities\itembase.c:246`, `AddAction(typename)` `:255`, `RemoveAction(typename)` `:295`, `InitializeActions` `:223`, `GetActions` `:235`. The action pitfalls are in `../patterns/actions.md`.
 
 ---
