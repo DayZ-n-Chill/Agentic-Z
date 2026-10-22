@@ -75,3 +75,19 @@ def test_non_vanilla_required_addons_are_listed(tmp_path, monkeypatch):
     s = hub_status.gather_status(project, mods_root=tmp_path / "Mods")
     assert s.needs == ["JM_CF_Scripts"]
     assert "Needs:   JM_CF_Scripts" in hub_status.render_status(s)
+
+
+def test_prebuilt_bundle_has_no_needs_line(tmp_path, monkeypatch):
+    # dispatch.py launch and plan.py do not ask a bundle for --deps, so the hub must not either.
+    monkeypatch.setattr(hub_status, "_diag_running", lambda: False)
+    project = tmp_path / "clone"
+    write_state(project, {"last_intent": {"mod_name": "MyBundle"}})
+    mod = project / "workspace" / "MyBundle"
+    (mod / "Addons").mkdir(parents=True)
+    (mod / "Addons" / "part.pbo").write_bytes(b"")
+    (mod / "config.cpp").write_text(
+        'class CfgPatches { class MyBundle { requiredAddons[] = {"JM_CF_Scripts"}; }; };\n', encoding="utf-8"
+    )
+    s = hub_status.gather_status(project, mods_root=tmp_path / "Mods")
+    assert s.needs == []
+    assert "Needs:" not in hub_status.render_status(s)

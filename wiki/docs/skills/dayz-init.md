@@ -103,7 +103,7 @@ Same command plus `--execute`. Each step's output streams through; the first fai
 python "<skill-dir>\hub_status.py"
 ```
 
-Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and search status. Test servers are the `.server\<instance>\` folders with a `serverDZ.cfg`; the `<instance>-behavior` copies that `/dayz-gate behavior` rebuilds are not listed. A `Needs:` line lists the active mod's `requiredAddons` that vanilla does not provide, such as `JM_CF_Scripts`. Then ask "What next?" with AskUserQuestion and dispatch the choice. Repeat until the user is done.
+Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and search status. Test servers are the `.server\<instance>\` folders with a `serverDZ.cfg`; the `<instance>-behavior` copies that `/dayz-gate behavior` rebuilds are not listed. A `Needs:` line lists the active mod's `requiredAddons` that vanilla does not provide, such as `JM_CF_Scripts`. A prebuilt bundle (`Addons\*.pbo`) gets no `Needs:` line, because its own PBOs may provide them and launch does not ask it for `--deps`. Then ask "What next?" with AskUserQuestion and dispatch the choice. Repeat until the user is done.
 
 | Choice | Do |
 |---|---|

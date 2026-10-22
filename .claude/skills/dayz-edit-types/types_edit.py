@@ -49,6 +49,23 @@ DEFAULT_FLAGS = {
 }
 
 
+# Vanilla child order of a <type>: tag sits between category and usage
+# (chernarusplus types.xml, for example <category name="tools"/><tag name="shelves"/><usage .../>).
+CHILD_ORDER = (*DEFAULTS, "flags", "category", "tag", "usage", "value")
+
+
+def _add_named(parent: ET.Element, tag: str, name: str) -> None:
+    """Insert <tag name="name"/> after the last child that comes no later in CHILD_ORDER."""
+    rank = CHILD_ORDER.index(tag)
+    pos = 0
+    for i, child in enumerate(parent):
+        if child.tag in CHILD_ORDER and CHILD_ORDER.index(child.tag) <= rank:
+            pos = i + 1
+    el = ET.Element(tag)
+    el.set("name", name)
+    parent.insert(pos, el)
+
+
 def _set_int_child(parent: ET.Element, tag: str, value: int) -> Optional[tuple[str, str]]:
     """Set <tag>value</tag> on parent. Returns (old, new) for diff reporting, or
     None if there was no change."""
@@ -73,8 +90,7 @@ def _set_named_singleton(parent: ET.Element, tag: str, name: str) -> Optional[tu
         return None
     for e in existing:
         parent.remove(e)
-    el = ET.SubElement(parent, tag)
-    el.set("name", name)
+    _add_named(parent, tag, name)
     return (old, name)
 
 
@@ -88,8 +104,7 @@ def _set_named_multi(parent: ET.Element, tag: str, names: list[str]) -> Optional
     for e in existing:
         parent.remove(e)
     for n in new_names:
-        el = ET.SubElement(parent, tag)
-        el.set("name", n)
+        _add_named(parent, tag, n)
     return (old_names, new_names)
 
 
@@ -119,12 +134,12 @@ def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> tuple[
         if args.category is not None:
             sub = ET.SubElement(type_el, "category")
             sub.set("name", args.category)
+        for tag in args.tag or []:
+            ET.SubElement(type_el, "tag").set("name", tag)
         for usage in args.usage or []:
             ET.SubElement(type_el, "usage").set("name", usage)
         for value in args.value or []:
             ET.SubElement(type_el, "value").set("name", value)
-        for tag in args.tag or []:
-            ET.SubElement(type_el, "tag").set("name", tag)
         summary = ", ".join(
             f"{tag}={type_el.findtext(tag)}" for tag in ("nominal", "min", "lifetime", "cost")
         )
@@ -230,7 +245,7 @@ LIMITS_SECTIONS = {"category": "categories", "usage": "usageflags", "value": "va
 def load_limits(types_path: Path) -> Optional[dict[str, dict[str, set[str]]]]:
     """Names defined by <types.xml>/../../cfglimitsdefinition.xml, as
     {"name": {tag: names}, "user": {tag: group names}}. The user file is
-    optional. Returns None (after a note) when the main file is absent or
+    optional: without it the "user" key is left out and user= is not checked. Returns None (after a note) when the main file is absent or
     cannot be read, so the check is skipped."""
     mission = types_path.resolve().parent.parent
     main_file = mission / LIMITS_FILE
@@ -240,6 +255,7 @@ def load_limits(types_path: Path) -> Optional[dict[str, dict[str, set[str]]]]:
     limits: dict[str, dict[str, set[str]]] = {"name": {}, "user": {}}
     for kind, file, child in (("name", main_file, None), ("user", mission / LIMITS_USER_FILE, "user")):
         if not file.is_file():
+            del limits[kind]  # no user file: user= groups are not checked
             continue
         try:
             root = ET.parse(file).getroot()
@@ -247,6 +263,7 @@ def load_limits(types_path: Path) -> Optional[dict[str, dict[str, set[str]]]]:
             print(f"{WARN} Could not parse {file}: {e}; names not checked against it.")
             if kind == "name":
                 return None
+            del limits[kind]
             continue
         for tag, section in LIMITS_SECTIONS.items():
             limits[kind][tag] = {
@@ -265,7 +282,7 @@ def undefined_limit_names(el: ET.Element, limits: dict[str, dict[str, set[str]]]
             continue
         for attr, file in (("name", LIMITS_FILE), ("user", LIMITS_USER_FILE)):
             value = child.get(attr)
-            if value and value not in limits[attr].get(child.tag, set()):
+            if value and attr in limits and value not in limits[attr].get(child.tag, set()):
                 problems.append(f'{child.tag} {attr} "{value}" is not defined in {file}')
     return problems
 

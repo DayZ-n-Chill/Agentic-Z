@@ -10,10 +10,12 @@
                  [--timeout S] [--threshold R] [--ready-pattern REGEX]
                  [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--json]
 
-All modes stop a running DayZDiag session first, run the existing skill
+Every mode that packs or launches stops a running DayZDiag session first
+(build only once lint passes; behavior --logs and --prepare-only and visual
+--compare and --accept launch nothing and leave a session alone), runs the existing skill
 scripts (/dayz-build-pbo, /dayz-deploy-pbo, /dayz-launch-test) as subprocesses,
-apply the pass/fail rules of the dayz-build-checker and dayz-ingame-tester
-agents, triage every failure against known-errors.json, and print the verdict
+applies the pass/fail rules of the dayz-build-checker and dayz-ingame-tester
+agents, triages every failure against known-errors.json, and prints the verdict
 on the first line (PASS, FAIL, or ERROR), then a summary or, with --json, JSON.
 
 Exit codes: 0 PASS, 1 FAIL, 2 usage or environment error in the gate itself
@@ -887,7 +889,11 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     try:
         args = parser.parse_args(argv)
     except SystemExit as e:
-        return 0 if e.code == 0 else 2
+        if e.code == 0:
+            return 0
+        # argparse printed usage on stderr; keep the ERROR first-line contract on stdout.
+        raw = sys.argv[1:] if argv is None else argv
+        return _error("bad arguments (usage on stderr)", "--json" in raw)
 
     try:
         if args.mode in ("ingame", "behavior", "visual"):

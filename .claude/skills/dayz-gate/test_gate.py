@@ -708,3 +708,12 @@ def test_group_entries_attaches_stack_and_stops_at_next_message(tmp_path):
              (p, 6, "scripts/3_Game/x.c:1")]
     [entry] = gate.group_entries(lines)
     assert entry["context"] == ["Function: 'Init'", "Stack trace:", "MyMod/scripts/4_World/vest.c:2"]
+
+
+@pytest.mark.parametrize("argv", [[], ["build"], ["nosuchmode", "X"], ["ingame", "X", "--port", "abc", "--json"]])
+def test_argparse_errors_still_print_error_first_line(argv, capsys):
+    assert gate.main(argv) == 2
+    out = capsys.readouterr().out.splitlines()
+    assert out[0] == "ERROR"
+    if "--json" in argv:
+        assert json.loads("\n".join(out[1:]))["verdict"] == "ERROR"
