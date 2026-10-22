@@ -72,7 +72,8 @@ Boats check only ruin, fuel and the spark plug; there is no battery (`EBoatOpera
 
 - Stops the engine when the car is destroyed, fuel is empty, engine health is `0`, or a vital plug is removed.
 - Ruins the `Engine` zone when the `FuelTank` zone is ruined and `IsVitalFuelTank()` is true.
-- Leaks coolant when the radiator is below half health, fuel when the `FuelTank` zone is damaged, oil and brake fluid when the `Engine` zone is damaged (`LeakFluid`, `carscript.c:2098`).
+- Leaks coolant when the radiator is below half health, fuel when the `FuelTank` zone is damaged, and oil when the `Engine` zone is damaged or below a quarter health (`carscript.c:893` to `:910`).
+- Calls `LeakFluid(CarFluid.BRAKE)` when the `Engine` zone is damaged (`carscript.c:904`), but `LeakFluid` only handles `COOLANT`, `OIL` and `FUEL` (`carscript.c:2098` to `:2119`), so the brake call does nothing and vanilla never leaks brake fluid. Override `LeakFluid` if your car should.
 - Damages the engine when coolant is below half and `IsVitalRadiator()` is true.
 
 Every vanilla car overrides `EOnPostSimulate` for its engine heat source without calling `super` (`civiliansedan.c:98`, `offroad_02.c:112`). Read your parent's version before overriding it, and test fuel use and leaks in game after any change.
