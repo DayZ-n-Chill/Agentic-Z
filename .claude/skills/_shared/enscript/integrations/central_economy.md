@@ -124,12 +124,14 @@ if (item)
 
 ## Runtime: `GetCEApi()`
 
-`proto native CEApi GetCEApi()` (`centraleconomy.c:746`) returns the CE API (`class CEApi`, :227). Most of it is for diagnostics and export, and several calls are marked "DEVELOPER/DIAG ONLY" in their comments, for example `SpawnDE` (:350-364). Read the comment above a call before using it on a live server. Two that mods use:
+`proto native CEApi GetCEApi()` (`centraleconomy.c:746`) returns the CE API (`class CEApi`, :227). Most of it is for diagnostics and export, and several calls are marked "DEVELOPER/DIAG ONLY" in their comments, for example `SpawnDE` (:350-364). Read the comment above a call before using it on a live server. Two spawn calls, both marked DEVELOPER/DIAG ONLY (do not rely on them on a live server):
 
 | Call | Use | Line |
 |---|---|---|
-| `Entity SpawnGroup(string sGroupName, vector vPos, float fAngle = -1)` | Spawn a map group such as a building | :347 |
-| `void SpawnLoot(string sEvName, vector vPos, float fAngle, int iCount = 1, float fRange = 1)` | Spawn loot of an event at a position | :394 |
+| `Entity SpawnGroup(string sGroupName, vector vPos, float fAngle = -1)` | Force spawns a prototype group and its loot, for testing | :335, :347 |
+| `void SpawnLoot(string sEvName, vector vPos, float fAngle, int iCount = 1, float fRange = 1)` | Spawns `iCount` of one item class (for example `"Deagle"`) in a circle of radius `fRange` | :380, :394 |
+
+To spawn on a live server, use `CreateObjectEx` with `ECE_*` flags (see [Runtime: spawn flags](#runtime-spawn-flags)).
 
 ---
 

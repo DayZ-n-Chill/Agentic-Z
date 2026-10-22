@@ -7,7 +7,7 @@ Vanilla sources:
 | API | Signature | Source |
 |---|---|---|
 | Receive on an object | `void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)` | `P:\scripts\3_game\entities\object.c:860`; `EntityAI` override at `P:\scripts\3_game\entities\entityai.c:3507` |
-| Receive with no target | `CGame.OnRPC`, same signature | `P:\scripts\3_game\global\game.c:990` |
+| Receive on the game (any target, or none) | `void OnRPC(PlayerIdentity sender, Object target, int rpc_type, ParamsReadContext ctx)` on `CGame`, overridden in `DayZGame` | `P:\scripts\3_game\global\game.c:211`; `P:\scripts\3_game\dayzgame.c:3141` (it forwards to `target.OnRPC` at :3151) |
 | Send one param | `RPCSingleParam(Object target, int rpc_type, Param param, bool guaranteed, PlayerIdentity recipient = null)` | `P:\scripts\3_game\global\game.c:1013` |
 | Send many params | `RPC(Object target, int rpcType, notnull array<ref Param> params, bool guaranteed, PlayerIdentity recipient = null)` | `P:\scripts\3_game\global\game.c:1011` |
 | Builder | `ScriptRPC.Send(Object target, int rpc_type, bool guaranteed, PlayerIdentity recipient = NULL)` | `P:\scripts\3_game\gameplay.c:117` |
