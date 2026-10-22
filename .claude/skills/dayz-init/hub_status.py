@@ -57,6 +57,26 @@ def _non_vanilla_addons(config: Path) -> list[str]:
     return names
 
 
+def launch_needs(mod_dir: Path) -> list[str]:
+    """Non-vanilla requiredAddons a launch of this mod folder must get from --deps.
+
+    Empty for a prebuilt bundle (Addons/*.pbo), whose own PBOs may provide them,
+    the same exception /dayz-gate ingame makes.
+    """
+    addons = mod_dir / "Addons"
+    if addons.is_dir() and any(addons.glob("*.pbo")):
+        return []
+    return _non_vanilla_addons(mod_dir / "config.cpp")
+
+
+def needs_message(mod: str, needs: list[str]) -> str:
+    return (
+        f"{mod}'s config.cpp requires non-vanilla addons {', '.join(needs)} but no --deps were given. "
+        "Pass the @mods under P:\\Mods\\ that provide them, in load order (for example --deps CF); "
+        "without them the mod fails to load in game."
+    )
+
+
 def _voyage_key_set(env_file: Path) -> bool:
     """The dayz-rag MCP server reads VOYAGE_API_KEY from the environment or the project .env."""
     if os.environ.get("VOYAGE_API_KEY", "").strip():

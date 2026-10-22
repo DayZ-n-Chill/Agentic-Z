@@ -31,7 +31,7 @@ audit = _load_audit()
         (1e4, "ShadowVolume"),
         (11000.0, "ShadowVolume"),
         (1e13, "Geometry"),
-        (2e13, "GeoPhys"),
+        (4e13, "GeoPhys"),
         (1e15, "Memory"),
         (2e15, "LandContact"),
         (6e15, "ViewGeo"),
@@ -42,7 +42,7 @@ def test_classify_lod_dayz_scheme(resolution, expected):
     assert audit.classify_lod(resolution) == expected
 
 
-@pytest.mark.parametrize("resolution", [3e13, 7e13, 1e10])
+@pytest.mark.parametrize("resolution", [2e13, 3e13, 7e13, 1e10])
 def test_classify_lod_rejects_arma3_ranges(resolution):
     assert audit.classify_lod(resolution).startswith("Other(")
 
@@ -60,10 +60,13 @@ class _Obj:
         self.__dict__.update(kw)
 
 
-def _stub_lod(face_indices=TETRA_FACES, selections=None, properties=None):
+PEN = r"dz\data\data\penetration\wood_desk.rvmat"
+
+
+def _stub_lod(face_indices=TETRA_FACES, selections=None, properties=None, material=PEN):
     points = [_Obj(coords=c) for c in TETRA_POINTS]
     faces = [
-        _Obj(vertices=[_Obj(point=points[i]) for i in idx])
+        _Obj(vertices=[_Obj(point=points[i]) for i in idx], material=material)
         for idx in face_indices
     ]
     sels = {}
@@ -319,6 +322,13 @@ def test_missing_py3d_exits_2_with_requirements_hint(monkeypatch, capsys):
     assert audit.REQUIREMENTS.is_file()
 
 
+def test_collision_materials_flag_faces_without_one():
+    assert audit.check_collision_materials(_stub_lod(), "Geometry") == []
+    issues = audit.check_collision_materials(_stub_lod(material=""), "FireGeo")
+    assert [sev for sev, _ in issues] == ["CRITICAL"]
+    assert "4/4 faces in the FireGeo LOD have no material" in issues[0][1]
+
+
 def test_face_winding_check_removed():
     assert not hasattr(audit, "check_face_winding")
 
@@ -329,7 +339,7 @@ def _asciiz(text: str) -> bytes:
     return text.encode("utf-8") + b"\0"
 
 
-def _write_lod(resolution, points, faces, selections=(), properties=(), masses=()):
+def _write_lod(resolution, points, faces, selections=(), properties=(), masses=(), material=PEN):
     out = bytearray(b"P3DM")
     out += struct.pack("<LL", 28, 256)
     out += struct.pack("<LLL", len(points), 0, len(faces))
@@ -341,7 +351,7 @@ def _write_lod(resolution, points, faces, selections=(), properties=(), masses=(
         for i in idx:
             out += struct.pack("<LL", i, 0) + struct.pack("ff", 0, 0)
         out += b"\0" * 16  # padding for the unused fourth vertex of a triangle
-        out += struct.pack("<L", 0) + _asciiz("") + _asciiz("")
+        out += struct.pack("<L", 0) + _asciiz("") + _asciiz(material)
     out += b"TAGG"
     for name, (pt_idx, face_idx) in selections:
         out += b"\x01" + _asciiz(name)
@@ -380,6 +390,25 @@ def test_audit_p3d_end_to_end(tmp_path, capsys):
     assert "--- Geometry LOD[2] ---" in out
     assert "--- Visual LOD[0] ---" in out  # LOD0 kept when several Visual LODs exist
     assert "RESULT: 0 CRITICAL" in out or "ALL CHECKS PASSED" in out
+
+
+def test_audit_p3d_flags_collision_lods_without_materials(tmp_path, capsys):
+    pytest.importorskip("py3d")
+    geometry = _write_lod(1e13, TETRA_POINTS, TETRA_FACES, selections=[("Component01", FULL)], material="")
+    geophys = _write_lod(4e13, TETRA_POINTS, TETRA_FACES)
+    viewgeo = _write_lod(6e15, TETRA_POINTS, TETRA_FACES, material="")
+    memory = _write_lod(1e15, [(0.0, 0.0, 0.0)], [])
+    visual = _write_lod(0.0, TETRA_POINTS, TETRA_FACES, material="")  # visual LODs are not checked
+    model = tmp_path / "bare.p3d"
+    _write_mlod(model, [visual, geometry, geophys, viewgeo, memory])
+
+    assert audit.audit_p3d(str(model)) is False
+    out = capsys.readouterr().out
+    assert "--- GeoPhys LOD[2] ---" in out
+    assert "CRITICAL: 4/4 faces in the Geometry LOD have no material" in out
+    assert "CRITICAL: 4/4 faces in the ViewGeo LOD have no material" in out
+    assert "GeoPhys LOD have no material" not in out
+    assert "RESULT: 2 CRITICAL" in out
 
 
 def test_audit_p3d_reports_geometry_mass(tmp_path, capsys):

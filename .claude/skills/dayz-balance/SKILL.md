@@ -41,7 +41,7 @@ Only stats the mod sets itself, on the item or on a mod base class above it. A s
 | `health` | `DamageSystem > GlobalHealth > Health > hitpoints` |
 | `damage.health`, `damage.blood`, `damage.shock` | `DamageApplied > Health, Blood, Shock > damage` in `CfgAmmo`, the damage a bullet or melee hit deals |
 | `protection.<kind>.<type>` | `DamageSystem > GlobalArmor > <kind> > <type> > damage`, for example `protection.projectile.health`. These are multipliers on damage taken, so a low value means more protection. |
-| `protection.<name>` | `Protection > <name>`, for example `protection.biological` on masks. These are coverage, so a high value means more protection: vanilla masks range from `0` (bandanas, shemags) through `0.25`, `0.5` and `0.75` to `1` (GasMask), per `P:\DZ\characters\masks\config.cpp`. |
+| `protection.<name>` | `Protection > <name>`, for example `protection.biological` on masks. These are coverage, so a high value means more protection: masks that set it range from `0.25` (balaclavas) through `0.5` and `0.75` to `1` (GasMask), per `P:\DZ\characters\masks\config.cpp`. Items that set nothing, such as the bandanas and shemags in `P:\DZ\characters\headgear\config.cpp`, inherit `0` from the `Inventory_Base` `Protection` block in `P:\DZ\data\config.cpp`. |
 | `capacity` | `itemsCargoSize[]`, as width times height in cells |
 | `quantity` | `varQuantityMax` |
 
@@ -52,7 +52,7 @@ An item is a class with `scope = 2` in `CfgVehicles`, `CfgWeapons` or `CfgMagazi
 1. Walk up from the mod item, past any mod base classes, to the nearest vanilla class. For a vest that inherits `PlateCarrierVest` that is `PlateCarrierVest`.
 2. The peers are that class and every vanilla item below it, each with its own inherited stats. Classes the mod redefines are left out.
 3. When fewer than `--min-peers` peers have the stat, go up one vanilla parent and try again, at most twice. If that is still too few, the stat is not judged.
-   3a. A wider group mixes item kinds (a mask's parent `Clothing` also holds backpacks, boots and belts), so after going up a parent only the peers that share an `inventorySlot[]` with the mod item are kept, and the report names the group as, for example, `Clothing in slot Mask`. When that leaves fewer than `--min-peers`, or the item has no slot, the whole group is used.
+   3a. A broad group mixes item kinds (`Clothing` holds masks, backpacks, boots and belts), so in every group, the first one included, only the peers that share an `inventorySlot[]` with the mod item are kept, and the report names the group as, for example, `Clothing in slot Mask`. This matters from the start because vanilla masks inherit `Clothing` directly (`class GasMask: Clothing` in `P:\DZ\characters\masks\config.cpp`), so a mod mask written the same way has `Clothing` as its nearest vanilla class. When that leaves fewer than `--min-peers`, or the item has no slot, the whole group is used.
 
 A value is an outlier when it is outside the peers' whole range and at least `--ratio` times away from their median.
 

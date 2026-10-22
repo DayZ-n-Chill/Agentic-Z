@@ -25,6 +25,7 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove [--dry-run]
 | `<types.xml>` | Path to the types.xml file. Typically `.server/<instance>/mission/db/types.xml`. |
 | `<ClassName>` | The `name` attribute of the `<type>` block to upsert / remove. |
 | `--remove` | Remove the entry instead of upserting. Other field flags ignored. |
+| `--merge <chunk\|->` | Instead of a `<ClassName>`: check every `<type>` in a pasted chunk (a file, or `-` for stdin) and merge them all in one write. See Merge a pasted chunk below. |
 | `--dry-run` | Works in every mode. Reports the change and the name warnings, then writes nothing (no backup either). Use it to preview an edit, since every write re-indents the whole file. |
 | `--nominal N` | Target spawn count. Default for new entries: 1. |
 | `--min N` | Minimum spawn count. Default for new entries: 0. |
@@ -80,7 +81,7 @@ Then each entry is merged: a new name is added at the end, a name already in the
 [OK]    Wrote .server\chernarus\mission\db\types.xml
 ```
 
-Formatting: comments survive the round trip, but the whole file is re-indented with 4 spaces and gets an `<?xml version='1.0' encoding='utf-8'?>` declaration. Attribute order and blank lines are not preserved, so expect a whitespace diff the first time a hand-formatted file is edited.
+Formatting: comments survive the round trip, both inside `<types>` and before or after it (such as a `<!-- MyMod types -->` header line), but the whole file is re-indented with 4 spaces and gets an `<?xml version='1.0' encoding='utf-8'?>` declaration. Attribute order and blank lines are not preserved, so expect a whitespace diff the first time a hand-formatted file is edited.
 
 ## Refuses to run if
 

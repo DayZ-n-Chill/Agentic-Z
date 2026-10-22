@@ -185,9 +185,9 @@ def build_server_cmd(
 ) -> list[str]:
     """Build the diagnostic server launch command.
 
-    Uses DayZDiag_x64.exe with `-server`; both client and server must be diag
-    for `-filePatching` to work end-to-end. The retail DayZServer_x64.exe also
-    blocks filePatching past the loading screen, same as retail DayZ_x64.exe.
+    Uses DayZDiag_x64.exe with `-server` so client and server run the same
+    diag binary; the retail client DayZ_x64.exe is the one that blocks
+    `-filePatching` past the loading screen.
 
     Server-only mods go on `-serverMod=`, not `-mod=`: mods on `-mod=` are
     advertised to connecting clients.
@@ -371,6 +371,11 @@ def main() -> int:
         help="Print resolved commands without launching anything.",
     )
     args = parser.parse_args()
+    # A mod on -mod= is advertised to clients, so one named both ways would
+    # break the reason --server-only exists.
+    both = [name for name in args.server_only if name in args.modnames]
+    if both:
+        parser.error(f"mod named both as shared and --server-only: {', '.join(both)}")
 
     project_dir = h.resolve_project_dir()
     h.gate_on_preflight()

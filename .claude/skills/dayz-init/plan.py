@@ -32,6 +32,7 @@ from pathlib import Path
 
 from dispatch import KNOWN_MAPS, DispatchError, command_for, run
 from env_check import classify, run_all
+from hub_status import launch_needs, needs_message
 from state import PROJECT_DIR, mod_exists, write_cached_project_root, write_state
 from skill_helpers import is_link  # on sys.path via env_check
 
@@ -221,6 +222,15 @@ def main(argv: list[str] | None = None, project: Path | None = None) -> int:
         server_map=args.server, build=args.build, launch=args.launch, deps=args.deps,
         spec=Spec(args.goal, args.items, args.behaviors, args.done_checks) if args.goal else None,
     )
+
+    if args.launch and not args.deps:
+        # The mod folder once it exists, else the folder being imported.
+        mod_dir = project / "workspace" / args.mod
+        source = mod_dir if mod_dir.is_dir() else Path(args.source) if args.source else None
+        needs = launch_needs(source) if source else []
+        if needs:
+            print(f"[FAIL] {needs_message(args.mod, needs)}", file=sys.stderr)
+            return 2
 
     autofix, hard = classify(run_all())
     if hard or any(i.name == "p_drive" for i in autofix):

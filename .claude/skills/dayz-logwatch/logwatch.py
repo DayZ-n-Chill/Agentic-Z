@@ -64,7 +64,8 @@ class Tail:
     """Reads the complete lines appended to the log files in some folders.
 
     Files present at the start are read from their end, unless they changed in
-    the last `since_s` seconds; files that appear later are read from the start.
+    the last `since_s` seconds; those, and files that appear later, are read
+    from the start and returned once by new_files().
     A file that shrinks (rewritten) is read again from the start.
     """
 
@@ -77,7 +78,9 @@ class Tail:
             stat = path.stat()
             if not since_s or stat.st_mtime < cutoff:
                 self.offsets[path] = stat.st_size
-        self.known_files = set(self._files())
+        # A file read from its start (changed within since_s) counts as new, so
+        # a recent crash*.log is still reported as a crash.
+        self.known_files = set(self.offsets)
 
     def _files(self) -> list[Path]:
         return [p for d in self.dirs if d.is_dir() for p in sorted(d.iterdir()) if is_log(p)]

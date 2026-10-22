@@ -65,7 +65,7 @@ A snapshot saved before config keys became case blind (format 1) is refused with
 | `members-removed` | No vanilla class in your item's config chain sets a property or subclass your item inherited and does not set itself any more. |
 | `redeclared-parent` | Your config declares a vanilla class again with the old parent, and vanilla now gives it another. |
 
-A script `modded class X` is checked against X itself; `class Y extends X` is checked against X. A class built on another class of the same mod (`MyVest extends MyVest_Base extends Clothing`) is followed through the mod's classes and checked against the first vanilla class, here `Clothing`. A config class is checked against its parent in the same `Cfg*` class. Classes built on other mods are not vanilla, so they are skipped.
+A script `modded class X` is checked against X itself; `class Y extends X` is checked against X. A script class built on another script class of the same mod (`MyVest extends MyVest_Base extends Clothing`) is followed through the mod's classes and checked against the first vanilla class, here `Clothing`. Config classes are not followed this way. A config class is checked against its direct parent in the same `Cfg*` class, so it is checked only when that parent is vanilla. A config class whose parent is a class of the mod (`MyVest_Black : MyVest_ColorBase`) is skipped and not counted; the mod base itself is checked when its own parent is vanilla. Classes built on other mods are not vanilla, so they are skipped too.
 
 ## Output and exit codes
 

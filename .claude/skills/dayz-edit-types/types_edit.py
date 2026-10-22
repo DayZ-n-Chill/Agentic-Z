@@ -404,16 +404,43 @@ def check_chunk(chunk: list[ET.Element], root: ET.Element, path: Path) -> list[s
     return warnings
 
 
+COMMENT_RE = re.compile(r"<!--(.*?)-->", re.DOTALL)
+# What may stand before the root element: the XML declaration, a DOCTYPE,
+# processing instructions, comments and whitespace.
+PROLOG_RE = re.compile(r"\A(?:\s+|<\?.*?\?>|<!DOCTYPE[^>]*>|<!--.*?-->)*", re.DOTALL)
+
+
+def _outer_comments(path: Path, root_tag: str) -> tuple[list[str], list[str]]:
+    """Comments before and after the root element.
+
+    TreeBuilder(insert_comments=True) keeps only comments inside the root, so a
+    header such as <!-- MyMod types --> above <types> would be lost on write.
+    """
+    # utf-8-sig: Windows editors (and PowerShell 5.1) often start the file with a BOM.
+    text = path.read_bytes().decode("utf-8-sig", errors="replace")
+    prolog = PROLOG_RE.match(text).group(0)
+    close = text.rfind(f"</{root_tag}>")
+    epilog = text[close + len(root_tag) + 3:] if close >= 0 else ""
+    return COMMENT_RE.findall(prolog), COMMENT_RE.findall(epilog)
+
+
 def parse_types(path: Path) -> ET.ElementTree:
-    """Parse types.xml keeping comments (the default parser drops them)."""
+    """Parse types.xml keeping comments, including those outside the root."""
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
-    return ET.parse(path, parser=parser)
+    tree = ET.parse(path, parser=parser)
+    tree.outer_comments = _outer_comments(path, tree.getroot().tag)
+    return tree
 
 
 def write_types(tree: ET.ElementTree, path: Path) -> None:
     """Write types.xml re-indented with 4 spaces, with an XML declaration."""
     ET.indent(tree, space="    ")
-    tree.write(path, encoding="utf-8", xml_declaration=True)
+    before, after = getattr(tree, "outer_comments", ([], []))
+    out = "<?xml version='1.0' encoding='utf-8'?>\n"
+    out += "".join(f"<!--{c}-->\n" for c in before)
+    out += ET.tostring(tree.getroot(), encoding="unicode")
+    out += "".join(f"\n<!--{c}-->" for c in after)
+    path.write_bytes(out.encode("utf-8"))
 
 
 def main() -> int:

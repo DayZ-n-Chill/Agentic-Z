@@ -373,14 +373,14 @@ def test_full_run_launches_the_copy_and_stops_at_done(project, capsys):
     assert (rc, first) == (0, "PASS"), data["failures"]
     launch_cmd = next(c for c in fake.calls if "launch.py" in " ".join(c))
     assert launch_cmd[2:] == ["MyMod", "--server", "chernarus-behavior", "--port", "2302"]
-    assert data["behavior"]["done"] and fake.now < 60  # the DONE line ended the wait, not the 600 s settle
+    assert data["behavior"]["done"] and fake.now < 60  # the DONE line ended the wait, not the 600 s --done-timeout
     assert fake.running == []
 
 
 def test_full_run_fails_on_checks_and_on_mod_script_errors(project, capsys):
     lines = (FIXTURES / "logs" / "script_fail.log").read_text(encoding="utf-8").splitlines()
     fake = FakeSession(project, lines)
-    rc, first, data = run_main(["behavior", "MyMod", "--json", "--settle", "6"], capsys, fake.runtime())
+    rc, first, data = run_main(["behavior", "MyMod", "--json", "--done-timeout", "6"], capsys, fake.runtime())
     assert (rc, first) == (1, "FAIL")
     categories = [f["category"] for f in data["failures"]]
     assert "null_pointer" in categories  # the in-game rules still apply
@@ -410,3 +410,38 @@ def test_full_run_without_checks_file_is_an_error(project, capsys):
     rc, first, _ = run_main(["behavior", "MyMod"], capsys, fake.runtime())
     assert (rc, first) == (2, "ERROR")
     assert fake.calls == []
+
+
+# --- the test mission never started ------------------------------------------------
+
+def test_unstarted_mission_with_a_clean_session_is_an_error_not_a_fail(project, capsys):
+    fake = FakeSession(project, ["12:00:01.204 SCRIPT       : Module: Game; loaded 415x files"])
+    rc, first, text = run_main(["behavior", "MyMod", "--done-timeout", "6"], capsys, fake.runtime())
+    assert (rc, first) == (2, "ERROR")
+    assert "not a verdict on the mod" in text and ".server/chernarus-behavior/Profiles/" in text
+    assert fake.running == []  # the session was still stopped
+    assert not (project / ".server" / "!Health" / "MyMod").exists()  # nothing stored for /dayz-health
+
+
+def test_unstarted_mission_in_logs_mode_is_an_error(project, capsys, tmp_path):
+    log = tmp_path / "script.log"
+    log.write_text("12:00:01.204 SCRIPT       : Module: Game; loaded 415x files\n", encoding="utf-8")
+    rc, first, _ = run_main(["behavior", "MyMod", "--logs", str(log)], capsys)
+    assert (rc, first) == (2, "ERROR")
+
+
+def test_unstarted_mission_with_a_mod_error_still_fails(project, capsys):
+    lines = (FIXTURES / "logs" / "script_fail.log").read_text(encoding="utf-8").splitlines()
+    lines = [t for t in lines if "[AZ-BEHAVIOR]" not in t]
+    fake = FakeSession(project, lines)
+    rc, first, data = run_main(["behavior", "MyMod", "--json", "--done-timeout", "6"], capsys, fake.runtime())
+    assert (rc, first) == (1, "FAIL")
+    assert "null_pointer" in [f["category"] for f in data["failures"]]
+    assert not data["behavior"]["started"]
+
+
+def test_behavior_wait_flag_is_not_called_settle(project, capsys):
+    # --settle means "extra seconds after ready" in ingame; behavior uses its own name.
+    assert gate.main(["behavior", "MyMod", "--settle", "6"]) == 2
+    assert "unrecognized arguments: --settle" in capsys.readouterr().err
+

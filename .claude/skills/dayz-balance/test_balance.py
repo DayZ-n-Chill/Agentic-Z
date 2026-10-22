@@ -70,11 +70,11 @@ def test_findings_carry_line_peers_and_meaning():
     lines = (FIXTURE_MOD / "config.cpp").read_text(encoding="utf-8").splitlines()
     assert "itemsCargoSize" in lines[pack["line"] - 1]
     assert pack["value"] == 100
-    assert pack["peer_base"] == "Backpack_Base"
+    assert pack["peer_base"] == "TaloonBag_ColorBase"
     assert pack["peer_count"] == 4
     assert (pack["min"], pack["median"], pack["max"]) == (20, 36, 56)
     assert pack["meaning"] == "holds more than vanilla"
-    assert {p["class"] for p in pack["peers"]} == {"TaloonPack", "HuntingPack", "MountainPack", "CourierBag"}
+    assert {p["class"] for p in pack["peers"]} == {"TaloonBag_Blue", "TaloonBag_Green", "TaloonBag_Orange", "TaloonBag_Violet"}
 
 
 def test_protection_wording_follows_the_damage_multiplier():
@@ -94,14 +94,14 @@ def test_stat_set_on_a_mod_base_class_is_compared_with_the_vanilla_peers(tmp_pat
     mod = make_mod(tmp_path, """
 class CfgVehicles
 {
-    class PlateVest;
-    class TestMod_Base: PlateVest { scope = 0; weight = 900; };
+    class PlateCarrierVest;
+    class TestMod_Base: PlateCarrierVest { scope = 0; weight = 900; };
     class TestMod_Vest: TestMod_Base { scope = 2; };
 };
 """)
     report = run(mod)
     f = report["findings"][0]
-    assert (f["item"], f["stat"], f["direction"], f["peer_base"]) == ("TestMod_Vest", "weight", "low", "PlateVest")
+    assert (f["item"], f["stat"], f["direction"], f["peer_base"]) == ("TestMod_Vest", "weight", "low", "PlateCarrierVest")
     assert f["line"] == 5
 
 
@@ -109,8 +109,8 @@ def test_inherited_vanilla_stats_are_not_judged(tmp_path):
     mod = make_mod(tmp_path, """
 class CfgVehicles
 {
-    class PlateVest;
-    class TestMod_Vest: PlateVest { scope = 2; };
+    class PlateCarrierVest;
+    class TestMod_Vest: PlateCarrierVest { scope = 2; };
 };
 """)
     report = run(mod)
@@ -119,16 +119,17 @@ class CfgVehicles
 
 
 def test_too_few_peers_widens_to_the_next_vanilla_parent(tmp_path):
-    # PressVest has one scope 2 item under it, so the group widens to Vest_Base.
+    # PressVest_ColorBase has one scope 2 item under it, so the group widens to
+    # Clothing, where only the vests share the Vest slot.
     mod = make_mod(tmp_path, """
 class CfgVehicles
 {
-    class PressVest;
-    class TestMod_Vest: PressVest { scope = 2; weight = 50000; };
+    class PressVest_ColorBase;
+    class TestMod_Vest: PressVest_ColorBase { scope = 2; weight = 50000; };
 };
 """)
     f = run(mod)["findings"][0]
-    assert f["peer_base"] == "Vest_Base"
+    assert f["peer_base"] == "Clothing in slot Vest"
     assert f["peer_count"] == 4
 
 
@@ -136,8 +137,8 @@ def test_no_peer_group_large_enough_skips_the_item(tmp_path):
     mod = make_mod(tmp_path, """
 class CfgVehicles
 {
-    class PressVest;
-    class TestMod_Vest: PressVest { scope = 2; weight = 50000; };
+    class PressVest_ColorBase;
+    class TestMod_Vest: PressVest_ColorBase { scope = 2; weight = 50000; };
 };
 """)
     report = run(mod, min_peers=50)
@@ -170,7 +171,7 @@ def test_widened_mask_is_compared_with_mask_slot_peers_only(tmp_path):
     # also holds backpacks that inherit biological = 0 from Inventory_Base.
     base, peers = _mask_peers(make_mod(tmp_path, MASK_MOD % "1"))
     assert base == "Clothing in slot Mask"
-    assert {name for name, _ in peers} == {"GasMask", "SurgicalMask", "NioshFaceMask", "BandanaMask"}
+    assert {name for name, _ in peers} == {"GasMask", "SurgicalMask", "NioshFaceMask", "BalaclavaMask_Black"}
     assert not any("Pack" in name or "Bag" in name for name, _ in peers)
 
 
@@ -179,7 +180,48 @@ def test_mask_far_below_the_other_masks_is_flagged_against_them(tmp_path):
     f = run(make_mod(tmp_path, MASK_MOD % "0.05"))["findings"][0]
     assert (f["stat"], f["direction"]) == ("protection.biological", "low")
     assert f["peer_base"] == "Clothing in slot Mask"
-    assert {p["class"] for p in f["peers"]} == {"GasMask", "SurgicalMask", "NioshFaceMask", "BandanaMask"}
+    assert {p["class"] for p in f["peers"]} == {"GasMask", "SurgicalMask", "NioshFaceMask", "BalaclavaMask_Black"}
+
+
+DIRECT_MASK_MOD = """
+class CfgVehicles
+{
+    class Clothing;
+    class TestMod_Mask: Clothing
+    {
+        scope = 2;
+        inventorySlot[] = {"Mask"};
+        class Protection { biological = %s; };
+    };
+};
+"""
+
+
+def test_mask_written_like_vanilla_is_compared_with_masks_from_the_first_group(tmp_path):
+    # class GasMask: Clothing is how vanilla writes masks, so Clothing is the
+    # nearest vanilla class at once. Its whole group holds vests and backpacks
+    # that inherit biological = 0, so without the slot filter the median is 0.
+    base, peers = _mask_peers(make_mod(tmp_path, DIRECT_MASK_MOD % "5"))
+    assert base == "Clothing in slot Mask"
+    assert {name for name, _ in peers} == {"GasMask", "SurgicalMask", "NioshFaceMask", "BalaclavaMask_Black"}
+
+
+def test_weak_mask_written_like_vanilla_is_flagged_against_masks(tmp_path):
+    f = run(make_mod(tmp_path, DIRECT_MASK_MOD % "0.05"))["findings"][0]
+    assert (f["item"], f["stat"], f["direction"]) == ("TestMod_Mask", "protection.biological", "low")
+    assert f["peer_base"] == "Clothing in slot Mask"
+    assert f["median"] == 0.625
+
+
+def test_group_where_every_peer_shares_the_slot_keeps_its_plain_name(tmp_path):
+    mod = make_mod(tmp_path, """
+class CfgVehicles
+{
+    class PlateCarrierVest;
+    class TestMod_Vest: PlateCarrierVest { scope = 2; weight = 900; };
+};
+""")
+    assert run(mod)["findings"][0]["peer_base"] == "PlateCarrierVest"
 
 
 def test_slot_filter_falls_back_when_too_few_share_the_slot(tmp_path):
@@ -197,15 +239,15 @@ class CfgVehicles
 """)
     base, peers = _mask_peers(mod)
     assert base == "Clothing"
-    assert any(name == "TaloonPack" for name, _ in peers)
+    assert any(name == "TaloonBag_Blue" for name, _ in peers)
 
 
 def test_value_inside_the_vanilla_range_passes(tmp_path):
     mod = make_mod(tmp_path, """
 class CfgVehicles
 {
-    class Backpack_Base;
-    class TestMod_Pack: Backpack_Base { scope = 2; weight = 1700; itemsCargoSize[] = {6, 9}; };
+    class TaloonBag_ColorBase;
+    class TestMod_Pack: TaloonBag_ColorBase { scope = 2; weight = 1700; itemsCargoSize[] = {6, 9}; };
 };
 """)
     assert run(mod)["verdict"] == "PASS"
@@ -216,8 +258,8 @@ def test_ratio_controls_how_far_out_counts(tmp_path):
     mod = make_mod(tmp_path, """
 class CfgVehicles
 {
-    class Backpack_Base;
-    class TestMod_Pack: Backpack_Base { scope = 2; itemsCargoSize[] = {7, 9}; };
+    class TaloonBag_ColorBase;
+    class TestMod_Pack: TaloonBag_ColorBase { scope = 2; itemsCargoSize[] = {7, 9}; };
 };
 """)
     assert run(mod, ratio=2.0)["verdict"] == "PASS"
@@ -228,30 +270,30 @@ def test_mod_redefinition_of_a_vanilla_item_is_not_its_own_peer(tmp_path):
     mod = make_mod(tmp_path, """
 class CfgVehicles
 {
-    class Backpack_Base;
-    class MountainPack: Backpack_Base { scope = 2; itemsCargoSize[] = {20, 20}; };
+    class TaloonBag_ColorBase;
+    class TaloonBag_Orange: TaloonBag_ColorBase { scope = 2; itemsCargoSize[] = {20, 20}; };
 };
 """)
     f = run(mod)["findings"][0]
-    assert f["item"] == "MountainPack"
-    assert "MountainPack" not in {p["class"] for p in f["peers"]}
+    assert f["item"] == "TaloonBag_Orange"
+    assert "TaloonBag_Orange" not in {p["class"] for p in f["peers"]}
     assert f["peer_count"] == 3
 
 
 def test_mod_override_without_scope_inherits_it_from_the_vanilla_class(tmp_path):
-    # The engine merges the block into vanilla MountainPack, so its scope = 2 still applies.
+    # The engine merges the block into vanilla TaloonBag_Orange, so its scope = 2 still applies.
     mod = make_mod(tmp_path, """
 class CfgVehicles
 {
-    class Backpack_Base;
-    class MountainPack: Backpack_Base { itemsCargoSize[] = {20, 20}; };
+    class TaloonBag_ColorBase;
+    class TaloonBag_Orange: TaloonBag_ColorBase { itemsCargoSize[] = {20, 20}; };
 };
 """)
     result = run(mod)
     assert result["items"] == 1
     f = result["findings"][0]
-    assert f["item"] == "MountainPack"
-    assert "MountainPack" not in {p["class"] for p in f["peers"]}
+    assert f["item"] == "TaloonBag_Orange"
+    assert "TaloonBag_Orange" not in {p["class"] for p in f["peers"]}
     assert f["peer_count"] == 3
 
 
@@ -368,3 +410,30 @@ class CfgVehicles
     assert health, report["findings"]
     assert health[0]["direction"] == "high"
     assert health[0]["peer_base"] == "PlateCarrierVest"
+
+
+@pytest.mark.skipif(not REAL_DZ.is_file(), reason="P:\\DZ is not mounted")
+def test_real_tree_compares_a_direct_clothing_mask_with_masks_only(tmp_path):
+    # Vanilla writes masks as class GasMask: Clothing, so a mod mask written the
+    # same way starts at Clothing, which also holds every backpack.
+    mod = make_mod(tmp_path, """
+class CfgVehicles
+{
+    class Clothing;
+    class TestMod_Mask: Clothing
+    {
+        scope = 2;
+        inventorySlot[] = {"Mask"};
+        class Protection { biological = 5; };
+    };
+};
+""")
+    report = balance.balance_mod(mod.name, mod, balance.P_DRIVE)
+    bio = [f for f in report["findings"] if f["stat"] == "protection.biological"]
+    assert bio, report["findings"]
+    assert bio[0]["peer_base"] == "Clothing in slot Mask"
+    # GasMask's biological = 1 is the top of the Mask slot group.
+    assert bio[0]["max"] == 1
+    # The whole Clothing group has about 786 items; the Mask slot holds far fewer.
+    assert bio[0]["peer_count"] < 100
+    assert not any("Bag" in p["class"] for p in bio[0]["peers"])

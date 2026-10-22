@@ -134,6 +134,46 @@ def test_comments_survive_round_trip(types_file):
     assert "<!-- Vanilla weapons -->" in types_file.read_text(encoding="utf-8")
 
 
+def test_comments_outside_the_root_survive_round_trip(tmp_path):
+    path = tmp_path / "types.xml"
+    path.write_text(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n'
+        "<!-- MyMod types -->\n<!-- second\n     header line -->\n"
+        + SAMPLE.split("?>\n", 1)[1].rstrip("\n")
+        + "\n<!-- end of MyMod types -->\n",
+        encoding="utf-8",
+    )
+    tree, root = _roundtrip(path)
+    te.upsert(root, "AKM", _args(nominal=11))
+    te.write_types(tree, path)
+    text = path.read_text(encoding="utf-8")
+    assert text.index("<!-- MyMod types -->") < text.index("<!-- second\n     header line -->") < text.index("<types>")
+    assert text.index("</types>") < text.index("<!-- end of MyMod types -->")
+    assert "<!-- Vanilla weapons -->" in text
+    # The written file parses, and a second round trip keeps the comments once.
+    tree, root = _roundtrip(path)
+    te.write_types(tree, path)
+    again = path.read_text(encoding="utf-8")
+    assert again == text
+    assert again.count("MyMod types") == 2
+
+
+def test_header_comment_survives_a_bom(tmp_path):
+    path = tmp_path / "types.xml"
+    path.write_bytes(("﻿<!-- MyMod types -->\n" + SAMPLE.split("?>\n", 1)[1]).encode("utf-8"))
+    tree, _ = _roundtrip(path)
+    te.write_types(tree, path)
+    assert "<!-- MyMod types -->\n<types>" in path.read_text(encoding="utf-8")
+
+
+def test_file_without_outer_comments_writes_as_before(types_file):
+    tree, _ = _roundtrip(types_file)
+    te.write_types(tree, types_file)
+    text = types_file.read_text(encoding="utf-8")
+    assert text.startswith("<?xml version='1.0' encoding='utf-8'?>\n<types>")
+    assert text.endswith("</types>")
+
+
 def _run_main(monkeypatch, argv):
     monkeypatch.setattr(te.h, "gate_on_preflight", lambda: None)
     monkeypatch.setattr("sys.argv", ["types_edit.py", *argv])
