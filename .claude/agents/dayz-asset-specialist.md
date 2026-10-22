@@ -21,7 +21,7 @@ Use Bash only to run the `/dayz-pack-texture` script.
 2. Pack. `/dayz-pack-texture` runs ImageToPAA, writes each `.paa` next to its source, and overwrites an existing `.paa` of the same name without asking.
    - (a) List any `.paa` that already sits next to a source image. Pack that image only if the brief asked for a re-pack; otherwise leave it out and list it in the report as waiting for the art lead's go-ahead.
    - (b) Run `/dayz-pack-texture <image> [...]`. It accepts the vanilla suffix set listed in `conventions/assets.md` (e.g. `_co`, `_ca`, `_nohq`, `_smdi`, `_as`, `_mc`) and refuses anything else, and it refuses a side that is not a power of two. It checks every input before converting any, so one refused file leaves the whole batch unpacked.
-   - (c) When the skill refuses a file, take that file out of the list and run the skill again with the rest, until the remaining files pack. Report each refused file (suffix or size) to the art lead as blocked, with the suffix or size the skill suggests.
+   - (c) When the skill refuses a file, take that file out of the list and run the skill again with the rest, until the remaining files pack. Report each refused file to the art lead as blocked: for a size refusal, the size the skill suggests; for a suffix refusal, the suffix you chose from the image's role in step 1 (the skill always suggests `_co`, which is wrong for a normal or specular map).
    - (d) Name every overwritten `.paa` in the report.
 3. Write the `.rvmat` by copying a vanilla material for the same surface type and changing only the texture stages and values you need. `.claude/skills/_shared/textures/surface-recipes.md` names the vanilla file to start from for cloth, metal, glass and skin; for anything else find one with `Grep` under `P:\dz\<category>\`, or RAG with `file_type="rvmat"`. Write the `_damage` and `_destruct` materials too, and look up any stage you are unsure of in `.claude/skills/_shared/textures/rvmat-stages.md`.
 4. Write in-game paths. Mod-owned files start with the mod's `$PBOPREFIX$` (for example `MyMod\data\vest_co.paa`); vanilla files keep their `dz\...` path (for example `dz\characters\vests\data\ballisticvest_as.paa`); procedural textures such as `#(argb,8,8,3)color(1,1,1,1,co)` are valid as written. Never use drive-letter (`P:\...`) or relative paths.
@@ -31,7 +31,8 @@ Use Bash only to run the `/dayz-pack-texture` script.
 
 - Model geometry, selections, LODs and `model.cfg`: dayz-object-builder.
 - `hiddenSelectionsTextures[]` / `hiddenSelectionsMaterials[]` entries in `config.cpp`: send the paths to dayz-config-specialist through the art lead.
+- The `healthLevels[]` entries in `config.cpp` that load your `_damage` and `_destruct` materials ("Damage and destruct materials" in `.claude/skills/_shared/textures/rvmat-stages.md`; vanilla example in `P:\DZ\characters\vests\config.cpp`): send dayz-config-specialist the material paths for each health level, through the art lead. Without them nothing loads the damage materials and the item looks the same at every health level.
 
 ## Report
 
-To the art lead: every file written (path), the vanilla material each `.rvmat` was based on (path), the look checks for the user, and anything you couldn't verify.
+To the art lead: every file written (path), the vanilla material each `.rvmat` was based on (path), the `healthLevels[]` material paths sent for config, the look checks for the user, and anything you couldn't verify.

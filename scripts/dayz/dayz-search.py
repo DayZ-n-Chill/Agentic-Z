@@ -65,7 +65,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("-d", "--max-distance", type=float, default=None,
                    help=f"drop hits with distance above this (default: DAYZ_RAG_MAX_DISTANCE if set, else no "
                         f"limit; now {default_limit})")
-    p.add_argument("-s", "--snippet-chars", type=int, default=400, help="snippet preview length (0 = the whole snippet, which the index caps at 1500 characters)")
+    p.add_argument("-s", "--snippet-chars", type=int, default=400, help="snippet preview length (0 = the whole snippet, which the server caps at 1500 characters)")
     p.add_argument("-j", "--json", action="store_true", help="print raw JSON instead of formatted output")
     args = p.parse_args(argv)
 

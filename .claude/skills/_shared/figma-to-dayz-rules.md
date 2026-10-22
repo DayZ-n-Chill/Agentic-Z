@@ -261,7 +261,7 @@ DayZ colors are `R G B A` space-separated floats in 0..1, lowercase keyword `col
 
 ```
 color 1 1 1 1               // white, opaque
-color 0.0863 0.0863 0.0863 0.902   // vanilla dark panel
+color 0.1569 0.1569 0.1569 0.902   // vanilla dark panel
 color 1 0.2 0.2 1           // red
 color 0 0 0 0.5             // black, 50% alpha
 ```
