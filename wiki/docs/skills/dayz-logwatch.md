@@ -27,7 +27,7 @@ python "<skill-dir>\logwatch.py" --dir <folder> [--dir <folder> ...] [--duration
 | `--dir` | Watch these folders instead of the project's session folders. |
 | `--since` | Read files changed in the last MINUTES from their start. Default 0: only lines written after the watch starts. |
 | `--duration` | Stop after S seconds. |
-| `--until-closed` | Stop once no `DayZDiag_x64.exe` is running (checked every 5 seconds). |
+| `--until-closed` | Stop once `DayZDiag_x64.exe` has been seen running and then closes (checked every 5 seconds). If it never starts within 300 seconds, stop with `session never started` and exit 2. Not allowed with `--duration`. |
 | `--interval` | Seconds between reads (default 1). |
 | `--mod` | Mod name, filled into fixes that mention `<ModName>`. |
 | `--json` | One JSON object per line instead of text. |
@@ -38,7 +38,7 @@ It watches `.server/<instance>/Profiles/` (the server's RPT and script logs) and
 
 ## When to start it
 
-DayZ writes a new RPT and script log each launch, and a file that appears after the watch starts is read from its first line. So start the watch first, then `/dayz-launch-test`, and every line of the session is seen. If the session is already running, use `--since 5` to read the files it wrote in the last five minutes from the start.
+DayZ writes a new RPT and script log each launch, and a file that appears after the watch starts is read from its first line. So start the watch first, then `/dayz-launch-test`, and every line of the session is seen. With `--until-closed` the watch waits for the game to start before it treats a missing `DayZDiag_x64.exe` as closed. If the session is already running, use `--since 5` to read the files it wrote in the last five minutes from the start.
 
 ## Output and exit codes
 
@@ -60,7 +60,7 @@ With `--json` each error is `{"event": "error", "status": "known" or "new", "id"
 
 An error line is one that triage classifies (compile errors, NULL pointers, missing classes, textures, models or config entries, crashes) or one that matches a known entry. The same error again, in any file and with any timestamp, has the same fingerprint and is only counted. A new `crash*.log` file is reported as a `new` crash for the debugger.
 
-Exit code 0 means no error line was seen, 1 means at least one was, and 2 means it could not run (no cached project and no `--dir`, no `.server/` folder, an unknown instance, or a broken known-errors file).
+Exit code 0 means no error line was seen, 1 means at least one was, and 2 means it could not run (no cached project and no `--dir`, no `.server/` folder, an unknown instance, or a broken known-errors file) or, with `--until-closed`, that the session never started.
 
 ## Then
 

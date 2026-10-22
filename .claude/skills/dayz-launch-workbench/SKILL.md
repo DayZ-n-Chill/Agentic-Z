@@ -9,7 +9,7 @@ argument-hint: "[--mod <ModName> | --gproj <path>]"
 
 # /dayz-launch-workbench
 
-Open Workbench without leaving the terminal. Default loads vanilla DayZ; `--mod <ModName>` loads the customized `dayz.gproj` that `/dayz-new-mod` (or `/dayz-add-scaffold --piece workbench`) writes into `workspace/<ModName>/workbench/`, so Workbench compiles and lints vanilla + your mod together.
+Open Workbench without leaving the terminal. Default loads vanilla DayZ; `--mod <ModName>` loads the customized `dayz.gproj` that `/dayz-new-mod` (or `/dayz-add-scaffold --piece workbench`) writes into `workspace/<ModName>/workbench/` (reached as `P:\<ModName>\workbench\` through the `/dayz-new-mod` junction), so Workbench compiles and lints vanilla + your mod together.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -21,7 +21,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
    - `--mod <ModName>` → uses `P:\<ModName>\workbench\dayz.gproj`. Fails fast if the mod folder or gproj isn't there; a missing gproj is added with `/dayz-add-scaffold <ModName> --piece workbench`.
    - `--gproj <path>` → uses an explicit `.gproj` path (escape hatch for non-scaffolded layouts).
    - Neither → no project arg; Workbench loads the default `dayz.gproj` shipped next to `workbenchApp.exe`.
-4. Spawns `workbenchApp.exe` with `cwd=<DayZ Tools>\Bin\Workbench` (so Workbench's support files resolve; see "Why cwd" below), detached so the shell returns immediately.
+4. Spawns `workbenchApp.exe`, passing any project as `-gproj=<path>` (Workbench's own switch; with no switch it loads `$CurrentDir:dayz.gproj`, the vanilla one), with `cwd=<DayZ Tools>\Bin\Workbench` (so Workbench's support files resolve; see "Why cwd" below), detached so the shell returns immediately.
 
 ## How to run
 

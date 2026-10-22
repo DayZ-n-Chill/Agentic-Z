@@ -1,6 +1,6 @@
 ---
 name: dayz-launch-objectbuilder
-description: "Opens DayZ Tools' Object Builder (the .p3d model editor), optionally on a specific .p3d or a mod's P:\\ folder. Needs /dayz-setup-objectbuilder run once. Use when you need to inspect or edit a .p3d model, such as adding LODs, named selections or memory points."
+description: "Opens DayZ Tools' Object Builder (the .p3d model editor), optionally on a specific .p3d or the one .p3d in a mod's data folder. Needs /dayz-setup-objectbuilder run once. Use when you need to inspect or edit a .p3d model, such as adding LODs, named selections or memory points."
 argument-hint: "[--file <p3d> | --mod <ModName>]"
 ---
 
@@ -9,7 +9,7 @@ argument-hint: "[--file <p3d> | --mod <ModName>]"
 
 # /dayz-launch-objectbuilder
 
-Open Object Builder without leaving the terminal. Optionally pre-loads a `.p3d`, or passes a mod's `P:\<ModName>\` folder so you start inside it.
+Open Object Builder without leaving the terminal. Optionally pre-loads a `.p3d`: one you name with `--file`, or the model in a mod's `P:\<ModName>\data\` folder with `--mod`.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -18,7 +18,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 1. Gates on `/dayz-preflight` (as `/dayz-launch-workbench` does), so an unmounted `P:\` fails with preflight's fix before `--mod` looks under it.
 2. Resolves the open target:
    - `--file <path>`: that `.p3d`. Fails if the path is missing; warns if the extension isn't `.p3d`.
-   - `--mod <ModName>`: `P:\<ModName>\`. Fails if the folder is missing.
+   - `--mod <ModName>`: the `.p3d` under `P:\<ModName>\data\` (subfolders included). Object Builder opens model files, not folders, so the skill never passes it a directory. Fails if the mod folder is missing or holds no `.p3d`; with several, it lists them and asks for `--file`.
    - Neither: no argument; Object Builder opens its last-used file.
 3. Locates `ObjectBuilder.exe` via DayZ Tools.
 4. Verifies the registry has been populated by `/dayz-setup-objectbuilder` (with that skill's own check, loaded from its `setup.py`), and fails with a hint if not.
@@ -36,11 +36,11 @@ python "<skill-dir>\launch.py"
 python "<skill-dir>\launch.py" --file P:\MyMod\data\model.p3d
 ```
 
-**Start inside a mod folder:**
+**Open a mod's model:**
 ```cmd
 python "<skill-dir>\launch.py" --mod MyMod
 ```
-(Requires `P:\MyMod\` to exist — typically created by `/dayz-new-mod`.)
+(Requires `P:\MyMod\`, typically created by `/dayz-new-mod`, with one `.p3d` under `data\`. With several, use `--file`.)
 
 ## When to run
 
@@ -73,7 +73,7 @@ Preflight complete.
 
 - `--file` and `--mod` are mutually exclusive (argparse rejects both together); pass one or neither.
 - `--file` takes an absolute path, or a path relative to the project. Warns if the extension isn't `.p3d` (Object Builder may refuse it).
-- `--mod` is just the mod name; the skill expands to `P:\<ModName>\`. Fails, right after preflight, if the folder isn't there.
+- `--mod` is just the mod name; the skill opens the single `.p3d` under `P:\<ModName>\data\`. Fails, right after preflight, if the folder isn't there or has no `.p3d`, and lists the files when there is more than one.
 
 ## Why detached
 

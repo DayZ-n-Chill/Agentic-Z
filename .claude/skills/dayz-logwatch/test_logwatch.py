@@ -194,6 +194,57 @@ def test_watch_stops_after_duration_and_reads_the_last_line(tmp_path):
     assert [e["text"] for e in events] == [NEW_ONLY]
 
 
+def _stepping_clock(step):
+    now = [-step]
+
+    def clock():
+        now[0] += step
+        return now[0]
+    return clock
+
+
+def test_watch_waits_for_the_session_to_start_before_stopping_on_close(tmp_path):
+    """Started before /dayz-launch-test: not running yet is not "closed"."""
+    tail = logwatch.Tail([tmp_path])
+    events, watcher = collect()
+    states = iter([False, False, True, True, False])
+    calls = []
+
+    def alive():
+        calls.append(1)
+        return next(states)
+
+    summary = logwatch.watch(tail, watcher, interval=0, session_alive=alive, sleep=lambda s: None,
+                             clock=_stepping_clock(logwatch.CLOSED_CHECK_S))
+    assert summary["stopped"] == "session closed"
+    assert len(calls) == 5  # kept going through both early False answers
+
+
+def test_watch_gives_up_when_the_session_never_starts(tmp_path):
+    tail = logwatch.Tail([tmp_path])
+    events, watcher = collect()
+    summary = logwatch.watch(tail, watcher, interval=0, session_alive=lambda: False, sleep=lambda s: None,
+                             clock=_stepping_clock(logwatch.CLOSED_CHECK_S))
+    assert summary["stopped"] == "session never started"
+    assert summary["seconds"] >= logwatch.START_GRACE_S
+
+
+def test_cli_session_never_started_exits_2(tmp_path, monkeypatch):
+    monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
+    monkeypatch.setattr(logwatch, "diag_running", lambda: False)
+    monkeypatch.setattr(logwatch, "START_GRACE_S", 0)
+    out = io.StringIO()
+    assert logwatch.main(["--dir", str(tmp_path), "--until-closed", "--interval", "0"], out) == 2
+    assert "Stopped (session never started)" in out.getvalue()
+
+
+def test_duration_and_until_closed_are_mutually_exclusive(capsys):
+    with pytest.raises(SystemExit) as exc:
+        logwatch.main(["--dir", ".", "--duration", "5", "--until-closed"])
+    assert exc.value.code == 2
+    assert "not allowed with" in capsys.readouterr().err
+
+
 def test_cli_streams_errors_while_a_log_is_written(tmp_path):
     """The real script, run as the .bat runs it: lines appear on stdout while the log grows."""
     log = tmp_path / "script.log"

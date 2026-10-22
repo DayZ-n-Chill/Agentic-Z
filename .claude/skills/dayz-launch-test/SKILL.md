@@ -44,7 +44,7 @@ Name a mod's dependencies before the mod, in load order, for example `/dayz-laun
 7. **Launch server**: spawns `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/<template> -mod=P:\Mods\@Mod1;P:\Mods\@Mod2 -filePatching -port=<port>`.
 8. **Wait for the port**: polls once a second, for up to 180 s, until the server has bound UDP `<port>` (a DayZ server can take 30 s or more to load the mission and mods). If the server exits, or the wait times out (the server is then killed), the skill exits 1 without starting the client.
 9. **Launch client**: spawns `DayZDiag_x64.exe -profiles=.server/!ClientDiagLogs -mod=... -connect=127.0.0.1 -port=<port> -filePatching` plus the display flags from the per-clone preferences.
-10. **Print PIDs and exit.** Both processes run independently. Close the windows to stop them, or run `/dayz-stop-test`.
+10. **Print PIDs and exit.** Both processes are spawned detached (shared `DETACH_FLAGS` in `_shared/skill_helpers.py`), so they keep running when the shell or agent that started them closes. Close the windows to stop them, or run `/dayz-stop-test`.
 
 ## Refuses to run if
 
