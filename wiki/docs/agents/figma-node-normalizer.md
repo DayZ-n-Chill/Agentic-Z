@@ -37,10 +37,10 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills
 2. **Fetch.** Call `get_design_context` under whichever name is loaded: `mcp__plugin_figma_figma__*` (Figma plugin), `mcp__figma__*` (a user-configured `figma` MCP server) or `mcp__plugin_design_figma__*` (the design plugin's Figma server). Add `get_metadata` for structure, `get_screenshot` when structure alone is ambiguous, and `get_variable_defs` only when the tree references tokens. When the caller pastes `get_metadata` or `get_design_context` output for the node, normalize that and skip the fetch.
 3. **Strip.** Drop hidden nodes, zero-opacity fills, stray divider vectors that a `spacing` value already expresses, and designer-only frames (page chrome, guides, comment pins). Keep anything on the preserve list.
 4. **Flatten.** Collapse single-child wrappers that only add padding or a background, moving their layout data onto the survivor.
-5. **Classify.** Give every surviving node a `type`:
-   - A name with a rules-doc prefix (`btn_`, `bar_`, `panel_`, `txt_`, `img_`, `edit_`, `check_`, `slider_`, `drop_`, `list_`, `grid_`, `modal_`, `preview_`) takes the prefix's type, whatever the Figma layer kind. A frame named `btn_close` is a `button`.
+5. **Name.** Strip any leading slashes or numeric IDs (rules-doc section 4), then lowercase and snake_case each name, keeping the prefix verbatim: `Btn Close` becomes `btn_close`, never `button-close`. Names survive to the `.layout`, where script finds widgets by them.
+6. **Classify.** Give every surviving node a `type`, working on the normalized name from step 5, so a name that ends up with a prefix always gets that prefix's type:
+   - A name with a rules-doc prefix (`btn_`, `bar_`, `panel_`, `txt_`, `img_`, `edit_`, `check_`, `slider_`, `drop_`, `list_`, `grid_`, `modal_`, `preview_`) takes the prefix's type, whatever the Figma layer kind. A frame named `btn_close` is a `button`, and so is one named `BTN-Close`. Match the prefix case-insensitively on the normalized name, per rules-doc section 4.
    - Otherwise: a filled shape with one text child is a `button`; three or more matching siblings stacked vertically are a `list`; a centered overlay on a dimmed background is a `modal`; a filled non-interactive container is a `panel`; leaf text and images are `text` and `image`; anything else is a `container`.
-6. **Name.** Lowercase and snake_case each name, keeping the prefix verbatim: `Btn Close` becomes `btn_close`, never `button-close`. Names survive to the `.layout`, where script finds widgets by them.
 7. **Return** the summary and the JSON.
 
 ## JSON shape
