@@ -25,7 +25,7 @@ python "<skill-dir>\release_pack.py" --mod-dir <folder> [options]
 | `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. |
 | `--mod-dir` | Use any folder instead. Its name is the mod name unless `<ModName>` is given too. |
 | `--version` | The version for the changelog heading and the Workshop text. Default `Unreleased`. |
-| `--since` | Git ref the changelog starts after. Default: the latest tag when the mod folder is its own repository; with no tag the entry lists the whole history and warns `changelog-full-history`. Inside a bigger repository (an Agentic-Z clone) it is the newest `chore(release)` commit that touched the mod folder, and the script prints which one. With no such commit the entry lists the folder's whole history and warns `changelog-full-history`. |
+| `--since` | Git ref the changelog starts after. Default: the latest tag when the mod folder is its own repository, and the script prints which one; with no tag the entry lists the whole history and warns `changelog-full-history`. Inside a bigger repository (an Agentic-Z clone) it is the newest `chore(release)` commit that touched the mod folder, and the script prints which one. With no such commit the entry lists the folder's whole history and warns `changelog-full-history`. |
 | `--deps` | Dependency mods in load order, with or without `@` (`--deps CF`). Map each non vanilla `requiredAddons` entry to the Workshop mod that ships it. |
 | `--out` | Output folder. Default `output\<ModName>-release\`. |
 | `--json` | Print the report as JSON. |

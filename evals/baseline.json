@@ -52,8 +52,8 @@
     "total": 5
   },
   "dayz-layout-validator": {
-    "score": 5,
-    "total": 5
+    "score": 6,
+    "total": 6
   },
   "dayz-ui-specialist": {
     "score": 5,
@@ -78,5 +78,13 @@
   "figma-node-normalizer": {
     "score": 5,
     "total": 5
+  },
+  "dayz-build-engineer": {
+    "score": 2,
+    "total": 2
+  },
+  "dayz-docs-writer": {
+    "score": 2,
+    "total": 2
   }
 }
