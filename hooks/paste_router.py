@@ -36,17 +36,19 @@ WORKSHOP_RE = re.compile(
     r"(?i)(?:https?://)?steamcommunity\.com/(?:sharedfiles|workshop)/filedetails/?\?\S*|steam://url/CommunityFilePage/\d+"
 )
 # Only a repo or tree link is a mod to import. The first lookahead skips
-# GitHub's own pages (github.com/orgs/..., github.com/settings/...). The
+# GitHub's own pages (github.com/orgs/..., /features/..., /trending/...). The
 # second keeps the repo name whole; the third skips pull requests, issues,
-# files, the wiki, settings and the like. The lookbehind keeps subdomains such
-# as gist. and raw. from matching.
+# files, the wiki, settings and the like. A /tree/ branch may hold slashes
+# (feature/x), so every segment after /tree/ is kept. The lookbehind keeps
+# subdomains such as gist. and raw. from matching.
 GITHUB_RE = re.compile(
     r"(?i)(?<![\w.-])(?:https?://)?(?:www\.)?github\.com/"
-    r"(?!(?:orgs|settings|sponsors|topics|marketplace|notifications|apps|users)/)"
+    r"(?!(?:orgs|settings|sponsors|topics|marketplace|notifications|apps|users|features|trending|collections"
+    r"|explore|enterprise|solutions|resources|customer-stories|readme|events|codespaces|search|login|about)/)"
     r"[\w.-]+/[\w.-]*[\w-](?![\w-]|\.[\w-])"
     r"(?!/(?:pulls?|issues|blob|commits?|releases|actions|compare|discussions|wiki|settings|projects"
     r"|security|tags|branches|milestones|labels)\b)"
-    r"(?:/tree/[\w.-]*[\w-])?"
+    r"(?:/tree/[\w.-]*[\w-](?:/[\w.-]*[\w-])*)?"
 )
 FIGMA_RE = re.compile(r"(?i)\bfigma\.com/(?:file|design|proto|board)/\S+")
 TYPE_CHUNK_RE = re.compile(r"<type\s+name\s*=")

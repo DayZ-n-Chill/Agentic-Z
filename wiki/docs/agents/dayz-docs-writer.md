@@ -43,7 +43,7 @@ Before you write, read every file the wave changed. Take the list from the relea
 
 ## For a release
 
-Run `/dayz-release-pack` first, then read what changed, then run `/dayz-server-kit`. Take `--version` from the release lead's brief; if the brief names none, ask the release lead instead of guessing. Each skill runs its script with Bash from the skill's own folder, so it works in a clone and in a plugin install. They read the mod's files and write to `output/<ModName>-release/`:
+Run `/dayz-release-pack` first, then read what changed, then run `/dayz-server-kit`. Take `--version` from the release lead's brief; if the brief names none, don't guess: stop before running either skill and report the missing version to the release lead. Each skill runs its script with Bash from the skill's own folder, so it works in a clone and in a plugin install. They read the mod's files and write to `output/<ModName>-release/`:
 
 ```text
 /dayz-release-pack <ModName> --version <x.y.z> [--deps CF]
@@ -58,7 +58,7 @@ Run `/dayz-release-pack` first, then read what changed, then run `/dayz-server-k
   - `private-key-in-mod`: report it as a release blocker.
   - `server-kit-link`: leave `SERVER_KIT_LINK` in place and tell the release lead the user must supply the address where the kit is published.
   - `placeholder-types`: report the classes whose types entries are placeholders.
-  - `changelog-full-history`: rerun with `--since <ref>` set to the commit of the last CHANGELOG.md entry.
+  - `changelog-full-history`: if `workspace/<ModName>/CHANGELOG.md` already has an entry, rerun with `--since <ref>` set to the commit that last changed it (`git -C workspace/<ModName> log -1 --format=%H -- CHANGELOG.md`). If it has no entry yet (a first release), keep the full history and say so in the report.
   - `changelog-empty`: report it; there is nothing new to release.
   - `no-git`: write the changelog entry from the files you read, and say so in the report.
 - Merge `changelog.md` into `workspace/<ModName>/CHANGELOG.md`, the classes in `classnames.md` into the README's `## Classnames` section, and `server-install.md` into the README's `## Install` section.
@@ -69,7 +69,7 @@ Run `/dayz-release-pack` first, then read what changed, then run `/dayz-server-k
 
 - Take every classname, dependency and file path from the mod's real files, never from memory.
 - Plain English, short sentences, no marketing copy.
-- Only edit docs. Never change config, script or asset files. Use Bash only to run the scripts of `/dayz-release-pack` and `/dayz-server-kit` and the read only `git -C workspace/<ModName> status -- .` and `git -C workspace/<ModName> log -- .` above.
+- Only edit docs. Never change config, script or asset files. Use Bash only to run the scripts of `/dayz-release-pack` and `/dayz-server-kit` and the read only `git -C workspace/<ModName> status -- .`, `git -C workspace/<ModName> log -- .` and `git -C workspace/<ModName> log -- CHANGELOG.md` above.
 
 ## Report
 
