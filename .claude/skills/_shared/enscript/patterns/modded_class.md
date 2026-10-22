@@ -103,6 +103,21 @@ modded class MyMod_CustomCanteen
 }
 ```
 
+A new action class must also be registered once:
+
+```c
+modded class ActionConstructor
+{
+    override void RegisterActions(TTypenameArray actions)
+    {
+        super.RegisterActions(actions);
+        actions.Insert(ActionMyMod_DrinkContaminate);
+    }
+}
+```
+
+`RegisterActions` is at `P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:27`. Without it `AddAction` logs `Action ... dosn't exist!` and returns (`itembase.c:261`). See `actions.md`.
+
 ---
 
 ## Constructor and Destructor

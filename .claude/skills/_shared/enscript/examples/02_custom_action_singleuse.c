@@ -93,10 +93,24 @@ class ActionMyMod_DrinkContaminate : ActionSingleUseBase
 }
 
 // =============================================================================
-// Registration: add the action to the item in SetActions(), the way ItemBase
-// adds its own (P:\scripts\4_world\entities\itembase.c:246-253).
-// Place this modded block in the same file or a separate one.
+// Registration takes two steps. Place these modded blocks in the same file or
+// a separate one.
+// 1. Register the class in ActionConstructor.RegisterActions, so the action
+//    manager builds it (P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:3-27).
+// 2. Add the action to the item in SetActions(), the way ItemBase adds its own
+//    (P:\scripts\4_world\entities\itembase.c:246-253).
+// Without step 1, AddAction logs "Action ActionMyMod_DrinkContaminate dosn't
+// exist!" and returns (itembase.c:255-262).
 // =============================================================================
+modded class ActionConstructor
+{
+    override void RegisterActions(TTypenameArray actions)    // actionconstructor.c:27
+    {
+        super.RegisterActions(actions);
+        actions.Insert(ActionMyMod_DrinkContaminate);
+    }
+}
+
 modded class MyMod_CustomCanteen
 {
     override void SetActions()

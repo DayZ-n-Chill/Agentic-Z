@@ -84,6 +84,29 @@ def test_search_errors_print_one_line_and_exit_2(monkeypatch, capsys, exc):
     assert err.startswith("error: ") and "Traceback" not in err
 
 
+def test_missing_package_names_the_requirements_file(monkeypatch, capsys):
+    def boom(*_a, **_k):
+        raise ImportError("No module named 'lancedb'")
+
+    monkeypatch.setattr(cli, "search_dayz_source_impl", boom)
+    assert cli.main(["q"]) == 2
+    err = capsys.readouterr().err
+    assert err.startswith("error: No module named 'lancedb'") and "requirements.txt" in err
+
+
+def test_voyage_error_prints_one_line_and_exits_2(monkeypatch, capsys):
+    class AuthenticationError(Exception):
+        """Stands in for voyageai.error.AuthenticationError."""
+
+    def boom(*_a, **_k):
+        raise AuthenticationError("invalid key")
+
+    monkeypatch.setattr(cli, "search_dayz_source_impl", boom)
+    assert cli.main(["q"]) == 2
+    err = capsys.readouterr().err
+    assert err == "error: AuthenticationError: invalid key\n"
+
+
 def test_empty_query(calls, capsys):
     assert cli.main(["   "]) == 2
     assert "empty query" in capsys.readouterr().err

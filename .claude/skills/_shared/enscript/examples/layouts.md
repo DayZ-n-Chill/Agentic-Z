@@ -4,6 +4,8 @@ The three `.layout` examples start with their root widget, like every vanilla la
 
 Copy a layout to your mod as `gui/layouts/MyMod/<name>.layout` and load it with `GetGame().GetWorkspace().CreateWidgets(path, parent)` (`GetWorkspace`, `P:\scripts\3_game\global\game.c:85`; `CreateWidgets`, `P:\scripts\1_core\proto\enwidgets.c:181`). The format is described in `../references/gui_layout.md`.
 
+Position values whose exact toggle (`hexactpos`, `vexactpos`) is 0 are fractions (0..1) of the parent, not pixels (`../references/gui_layout.md`, "Coordinate System"). A pixel offset such as `16` needs the toggle at 1. With `halign center_ref` or `right_ref` (and `valign center_ref` or `bottom_ref`) the position is an offset from that anchor, so `0` centres the widget and `16` sits 16 px in from the right or bottom edge.
+
 ## Contents
 
 - [11: HUD overlay with plain text](#11-hud-overlay-with-plain-text)

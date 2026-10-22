@@ -208,7 +208,7 @@ Each run shows a toast when it finishes and keeps the result line (the first `[F
 
 ## 9. No-token wrappers
 
-**What it is:** every skill that runs a script now has a `.bat` in `scripts\dayz\`, `scripts\setup\` or `scripts\dev\`. Double-click it or run it from a terminal; no AI is involved. `scripts\README.md` lists all 45 with an example each.
+**What it is:** every skill that runs a script now has a `.bat` in `scripts\dayz\`, `scripts\setup\` or `scripts\dev\`. Run it from a terminal; no AI is involved. `scripts\README.md` lists all 45 with an example each.
 
 **New in this pass:** `status.bat`, `gate.bat`, `triage.bat`, `route.bat`, `deploy-pbo.bat`, `cot-bootstrap.bat`, `build-imageset.bat`, `p3d-audit.bat` and `setup\statusline.bat`.
 

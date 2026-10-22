@@ -1,10 +1,37 @@
 # Pattern: actions (`ActionBase`)
 
-Custom actions: the "Hold F to do something" UI elements players see when looking at an item. Three traps regularly produce *"my action doesn't show"* or *"my action shows but the server rejects it"* symptoms.
+Custom actions: the "Hold F to do something" UI elements players see when looking at an item. Four traps regularly produce *"my action doesn't show"* or *"my action shows but the server rejects it"* symptoms.
 
 `ActionBase` is in `P:\scripts\4_world\classes\useractionscomponent\actionbase.c` (class at :51). The item condition classes are in `P:\scripts\4_world\classes\useractionscomponent\itemconditioncomponents\`, the target ones in `...\targetconditionscomponents\`.
 
 See also: `examples/02_custom_action_singleuse.c` and `examples/03_continuous_action.c` for full action implementations.
+
+---
+
+## ⚠️ Register the action class
+
+A new action class must be inserted once in a modded `ActionConstructor.RegisterActions`. Adding it to an item in `SetActions` is not enough.
+
+```c
+modded class ActionConstructor
+{
+    override void RegisterActions(TTypenameArray actions)
+    {
+        super.RegisterActions(actions);
+        actions.Insert(ActionMyMod_DrinkContaminate);
+    }
+}
+```
+
+`ActionConstructor.ConstructActions` builds an action object only for the classes that `RegisterActions` inserts (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:3-27`; `RegisterActions` is at `:27`). `ActionManagerBase.GetAction` looks an action up in that map (`actionmanagerbase.c:214`). `ItemBase.AddAction` calls it, and for a class that was never registered it logs an error and returns, so the action never appears (`P:\scripts\4_world\entities\itembase.c:255-262`).
+
+The error goes through `Debug.LogError`, which writes only when the game runs with `-doLogs` and one of `-logToScript` (`script.log`), `-logToFile` (`$profile:scriptExt.log`) or `-logToRpt` (`P:\scripts\3_game\tools\debug.c:594-596`, `646-663`, `719-723`; `constants.c:256`). On a normal launch nothing is logged and the action silently never appears. With logging on, the line ends in:
+
+```
+Action ActionMyMod_DrinkContaminate dosn't exist!
+```
+
+(`dosn't` is vanilla's spelling, `itembase.c:261`.)
 
 ---
 

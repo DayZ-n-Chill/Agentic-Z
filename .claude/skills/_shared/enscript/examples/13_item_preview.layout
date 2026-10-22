@@ -35,7 +35,7 @@ FrameWidgetClass InspectRoot {
      "text valign" center
     }
     ItemPreviewWidgetClass ItemRender {
-     position 50 44
+     position 0 44
      size 280 236
      halign center_ref
      hexactpos 1

@@ -122,19 +122,21 @@ class MyMod_SpawnConfig
 
 ## Rules
 
+`LoadFile` and `SaveFile` hand the object to `JsonSerializer`, whose reading and writing is native (`ReadFromString` in `jsonfileloader.c`), so the field rules below cannot be read from script. Rows marked **Reported, not checked on `P:\`** come from modders' reports; test them in your own mod before you rely on them.
+
 | Rule | Detail |
 |---|---|
-| All serialized fields must be **public** | `private` / `protected` fields are silently skipped |
-| Nested objects must be `ref` | Value-type nesting does not serialize correctly |
-| Extra JSON keys are ignored | Safe to add new fields in config without breaking old saves |
+| All serialized fields must be **public** | Reported, not checked on `P:\` (`JsonSerializer` is native): `private` / `protected` fields are silently skipped |
+| Nested objects must be `ref` | Reported, not checked on `P:\` (`JsonSerializer` is native): value-type nesting does not serialize correctly |
+| Extra JSON keys are ignored | Reported, not checked on `P:\` (`JsonSerializer` is native): safe to add new fields in config without breaking old saves |
 | Missing keys keep defaults | Rename fields = default on next load; document field renames |
-| Arrays serialize as JSON arrays | `ref array<string>` works; use `{}` not `new array<string>()` for literal init |
+| Arrays serialize as JSON arrays | `ref array<string>` works. `{}` and `new array<string>()` are both valid ways to create it |
 
 ---
 
 ## ⚠️ Static `ScriptInvoker` shutdown crash
 
-A common cleanup pattern null-derefs on shutdown because static invokers don't have a stable destructor order:
+Reported, not checked on `P:\`: the teardown order of statics is engine behavior that script does not show. The report is that a common cleanup pattern null-derefs on shutdown because static invokers don't have a stable destructor order:
 
 ```c
 // CRASHES if the static invoker was already torn down

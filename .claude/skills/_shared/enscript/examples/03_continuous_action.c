@@ -104,8 +104,21 @@ class ActionMyMod_RepairCanteen : ActionContinuousBase
 }
 
 // =============================================================================
-// Registration: add the action in SetActions() (itembase.c:246-255).
+// Registration takes two steps, as in 02_custom_action_singleuse.c:
+// 1. Register the class in ActionConstructor.RegisterActions
+//    (P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:27).
+//    Without it AddAction finds no action and the hold-to-repair never appears.
+// 2. Add the action in SetActions() (itembase.c:246-255).
 // =============================================================================
+modded class ActionConstructor
+{
+    override void RegisterActions(TTypenameArray actions)
+    {
+        super.RegisterActions(actions);
+        actions.Insert(ActionMyMod_RepairCanteen);
+    }
+}
+
 modded class MyMod_CustomCanteen
 {
     override void SetActions()

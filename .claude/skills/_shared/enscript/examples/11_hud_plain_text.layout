@@ -13,7 +13,7 @@ FrameWidgetClass HudOverlay {
    position 16 16
    size 200 24
    halign right_ref
-   hexactpos 0
+   hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
@@ -30,7 +30,7 @@ FrameWidgetClass HudOverlay {
    position 16 44
    size 200 20
    halign right_ref
-   hexactpos 0
+   hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
@@ -50,7 +50,7 @@ FrameWidgetClass HudOverlay {
    halign center_ref
    valign bottom_ref
    hexactpos 0
-   vexactpos 0
+   vexactpos 1
    hexactsize 1
    vexactsize 1
    text "WARNING: LOW HEALTH"

@@ -1,6 +1,6 @@
 # dayz-rag MCP server
 
-Semantic search over vanilla DayZ source, for any DayZ specialist agent. Three read-only tools (each carries the MCP `readOnlyHint` annotation):
+Semantic search over vanilla DayZ source, for any DayZ specialist agent. Three read-only tools (each carries the MCP `readOnlyHint` annotation; `search_dayz_source` also carries `openWorldHint`, since an uncached search calls the Voyage API):
 
 - `search_dayz_source(query, top_k=5, file_type=None, max_distance=None)`: vector search over the index built by `/dayz-search-index`.
 - `get_dayz_file(path, line_start=None, line_end=None)`: fetch a file or line range for follow-up. Paths must be on `P:\`; files over 200 KB need a range. The check is lexical (the path is normalised, not resolved), so a junction or symlink under `P:\`, such as `P:\Mods` or a `P:\<ModName>` junction into `workspace/`, can still lead to a file stored elsewhere.

@@ -162,7 +162,8 @@ def test_github_tree_link_keeps_the_branch(tmp_path):
                                   "https://github.com/Owner/MyVest/issues/3",
                                   "https://github.com/Owner/MyVest/blob/main/config.cpp",
                                   "https://github.com/Owner/My.Vest/commit/abc123",
-                                  "https://github.com/Owner/MyVest/releases"])
+                                  "https://github.com/Owner/MyVest/releases",
+                                  "https://gist.github.com/Owner/abc123"])
 def test_github_link_that_is_not_a_repo_adds_no_context(tmp_path, link):
     assert _context(_run(f"review {link}", tmp_path)) is None
 

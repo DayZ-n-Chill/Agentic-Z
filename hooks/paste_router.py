@@ -37,8 +37,9 @@ WORKSHOP_RE = re.compile(
 )
 # Only a repo or tree link is a mod to import. The first lookahead keeps the
 # repo name whole; the second skips pull requests, issues, files and the like.
+# The lookbehind keeps subdomains such as gist. and raw. from matching.
 GITHUB_RE = re.compile(
-    r"(?i)(?:https?://)?(?:www\.)?github\.com/[\w.-]+/[\w.-]*[\w-](?![\w-]|\.[\w-])"
+    r"(?i)(?<![\w.-])(?:https?://)?(?:www\.)?github\.com/[\w.-]+/[\w.-]*[\w-](?![\w-]|\.[\w-])"
     r"(?!/(?:pulls?|issues|blob|commits?|releases|actions|compare|discussions)\b)"
     r"(?:/tree/[\w.-]*[\w-])?"
 )

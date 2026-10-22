@@ -427,3 +427,22 @@ def test_query_gives_up_after_last_attempt(monkeypatch, no_sleep):
     with pytest.raises(errors.APIConnectionError):
         server._embed_query("q")
     assert client.calls == server.QUERY_ATTEMPTS
+
+
+def test_valid_file_types_match_the_indexer():
+    index_py = Path(__file__).resolve().parents[2] / "skills" / "dayz-search-index" / "index.py"
+    spec = importlib.util.spec_from_file_location("dayz_search_index_for_server_test", index_py)
+    index = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(index)
+    assert set(index.EXT_TYPE_MAP.values()) == server.VALID_FILE_TYPES
+
+
+def test_app_registers_three_read_only_tools():
+    pytest.importorskip("mcp")
+    import asyncio
+
+    tools = {t.name: t for t in asyncio.run(server.build_app().list_tools())}
+    assert set(tools) == {"search_dayz_source", "get_dayz_file", "list_indexed_sources"}
+    for tool in tools.values():
+        assert tool.annotations is not None and tool.annotations.readOnlyHint is True
+    assert tools["search_dayz_source"].annotations.openWorldHint is True

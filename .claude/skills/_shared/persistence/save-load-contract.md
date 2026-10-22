@@ -14,7 +14,7 @@ Both hooks run on the server only. The engine calls `OnStoreSave` to collect an 
 | After load, for linked systems | `void EEOnAfterLoad()` | `P:\scripts\3_game\entities\entityai.c:1381` |
 | A child could not be put back | `void OnBinLoadItemsDropped()` | `P:\scripts\3_game\entities\entityai.c:1424` |
 
-`ParamsWriteContext` and `ParamsReadContext` are both `Serializer` (`P:\scripts\3_game\gameplay.c:15` and `:16`). `Write` and `Read` take any value and return `bool` (`P:\scripts\1_core\proto\serializer.c:57` and `:58`). Vanilla writes ints, floats, bools, strings and vectors this way; the player writes its ladder logout position as a vector (`P:\scripts\4_world\entities\manbase\playerbase.c:7384`).
+`ParamsWriteContext` and `ParamsReadContext` are both `Serializer` (`P:\scripts\3_game\gameplay.c:15` and `:16`). `Write` and `Read` take any value and return `bool` (`P:\scripts\1_core\proto\serializer.c:57` and `:58`). Vanilla writes ints, floats, bools, strings and vectors this way; the player writes its ladder logout position as a vector (`P:\scripts\4_world\entities\manbase\playerbase.c:7385`).
 
 ## One stream per entity
 

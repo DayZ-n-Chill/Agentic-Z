@@ -19,6 +19,14 @@
 // ---- Persistence version for MY mod's player data --------------------------
 const int MYMOD_PLAYER_STORE_VERSION = 2;
 
+// ---- RPC IDs used by OnRPC below -------------------------------------------
+// The same enum as 04_rpc_patterns.c. A mod declares it once, so keep a single
+// copy if you take both files.
+enum MyMod_ERPCs
+{
+    RPC_SHOW_NOTIFICATION = 20000,
+}
+
 // ---- Shared between server and client via NetSync --------------------------
 enum MyMod_PlayerSyncFlags
 {
@@ -59,25 +67,31 @@ modded class PlayerBase
     }
 
     // -----------------------------------------------------------------------
-    // NetSync encode (server): call whenever any flag changes
+    // NetSync encode (server): builds the flags and marks the player dirty
+    // only when they changed, since this runs on every scheduled tick
+    // (netsync.md: never call SetSynchDirty every frame).
     // -----------------------------------------------------------------------
     void MyMod_UpdateSyncFlags()
     {
         if (!GetGame().IsServer())
             return;
 
-        m_MyMod_SyncFlags = 0;
+        int flags = 0;
 
         EntityAI held = GetItemInHands();   // P:\scripts\4_world\entities\manbase\playerbase.c:6733
         if (held && held.IsInherited(MyMod_CustomCanteen))
-            m_MyMod_SyncFlags |= MyMod_PlayerSyncFlags.HAS_CANTEEN;
+            flags |= MyMod_PlayerSyncFlags.HAS_CANTEEN;
 
         if (GetSingleAgentCount(eAgents.FOOD_POISON) > 200)
-            m_MyMod_SyncFlags |= MyMod_PlayerSyncFlags.IS_POISONED;
+            flags |= MyMod_PlayerSyncFlags.IS_POISONED;
 
         if (GetStaminaHandler().GetStamina() < 10)   // playerbase.c:2042, staminahandler.c:1081
-            m_MyMod_SyncFlags |= MyMod_PlayerSyncFlags.IS_EXHAUSTED;
+            flags |= MyMod_PlayerSyncFlags.IS_EXHAUSTED;
 
+        if (flags == m_MyMod_SyncFlags)
+            return;
+
+        m_MyMod_SyncFlags = flags;
         SetSynchDirty();
     }
 
@@ -119,6 +133,15 @@ modded class PlayerBase
     }
 
     // -----------------------------------------------------------------------
+    // WARNING: saved fields on a vanilla class. Ship this only on a fresh
+    // server. On a server with existing saves the first ctx.Read(myVersion)
+    // reads another class's data and the player record fails to load; removing
+    // the mod later breaks loading again. Otherwise use CF ModStorage. See
+    // _shared/persistence/versioning-and-migration.md, "Adding saved fields to
+    // a vanilla class".
+    // -----------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
     // Persistence – SAVE
     // Write fields in a stable order; never re-order between versions.
     // -----------------------------------------------------------------------
@@ -145,9 +168,6 @@ modded class PlayerBase
         int myVersion;
         if (!ctx.Read(myVersion))
             return false;
-
-        if (myVersion < 1)
-            return true;
 
         if (!ctx.Read(m_MyMod_Points))    return false;
         if (!ctx.Read(m_MyMod_Reputation)) return false;

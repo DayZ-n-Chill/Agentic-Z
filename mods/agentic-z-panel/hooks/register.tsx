@@ -89,17 +89,22 @@ async function refresh($: any, cwd: string): Promise<PanelStatus> {
 }
 
 // One action at a time: a second press would start a second AddonBuilder run
-// or a second DayZ session beside the first.
+// or a second DayZ session beside the first. The lock is checked and taken
+// before any await, so two quick presses cannot both get past it; the busy
+// atom only drives the "Running..." line in the pane.
+let running: string | null = null
+
 async function runAction($: any, cwd: string, action: string, question?: string) {
-  const running = await read($, busy)
   if (running) {
     $.ui.toast(`${running} is still running`)
     return
   }
-  await update($, busy, () => action)
+  running = action
   try {
+    await update($, busy, () => action)
     await runNow($, cwd, action, question)
   } finally {
+    running = null
     await update($, busy, () => null)
   }
 }
