@@ -438,15 +438,8 @@ def check_visual_lod(lod):
             f"{p_drive_count} faces reference P:\\ drive paths in textures/materials. "
             f"These work in dev but break on distribution. Usually OK for MLOD source files."))
 
-    # Autocenter impact analysis
-    if len(lod.points) > 0:
-        ys = [pt.coords[1] for pt in lod.points]
-        centroid_y = sum(ys) / len(ys)
-        if centroid_y > 1.0:
-            issues.append(("NOTE",
-                f"Vertex centroid at Y={centroid_y:.1f}m. Without autocenter=0, "
-                f"model would sink ~{centroid_y:.1f}m into ground."))
-
+    # No autocenter advice here: config.cpp decides whether a model needs
+    # autocenter = 0 (check_autocenter_prop), and kits and ordinary items must not use it.
     return issues
 
 
@@ -457,8 +450,9 @@ def check_p_drive_paths_in_file(filepath):
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             lines = f.readlines()
         for i, line in enumerate(lines, 1):
-            # Match P:\ or P:/ paths (case-insensitive)
-            matches = re.findall(r'["\']?(P:[\\\/][^"\';\s]+)', line, re.IGNORECASE)
+            # Match P:\ or P:/ paths (case-insensitive), but not the "p://" inside a
+            # URL such as url = "http://www.dayzgame.com" in CfgMods.
+            matches = re.findall(r'(?<![A-Za-z0-9])(P:[\\\/][^"\';\s]+)', line, re.IGNORECASE)
             for m in matches:
                 issues.append(("WARNING",
                     f"Line {i}: Absolute P:\\ path '{m}': breaks on other machines. "

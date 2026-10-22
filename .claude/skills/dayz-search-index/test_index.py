@@ -55,10 +55,59 @@ def test_block_chunks_falls_back_to_whole_file(tmp_path):
     assert chunks[0]["content"] == src
 
 
-def test_block_chunks_stops_at_unbalanced_braces(tmp_path):
-    src = "class Good { }\nclass Broken {\n"
+def test_block_chunks_keeps_unclosed_class_as_file_scope_text(tmp_path):
+    src = "class Good { }\nclass Broken {\n  int x;\n"
     chunks = index._block_chunks(_write(tmp_path, "c.c", src), "c")
-    assert [c["parent_context"] for c in chunks] == ["Good"]
+    assert [c["parent_context"] for c in chunks] == ["Good", ""]
+    assert chunks[1]["content"] == "class Broken {\n  int x;\n"
+    assert chunks[1]["line_start"] == 2
+
+
+def test_braces_in_comments_and_strings_do_not_end_a_class(tmp_path):
+    src = (
+        "class A\n{\n"
+        "  // a stray } in a comment\n"
+        "  /* and { another */\n"
+        '  string s = "}}";\n'
+        '  string t = "say \\"}\\" here";\n'
+        "  void M() { }\n"
+        "}\n"
+        "// class Fake {\n"
+        "class B { }\n"
+    )
+    chunks = index._block_chunks(_write(tmp_path, "s.c", src), "c")
+    assert [c["parent_context"] for c in chunks] == ["A", "B"]
+    assert (chunks[0]["line_start"], chunks[0]["line_end"]) == (1, 8)
+    assert chunks[0]["content"].rstrip().endswith("void M() { }\n}")
+
+
+def test_code_between_classes_is_indexed(tmp_path):
+    src = (
+        "// file header\n"
+        "enum EColor\n{\n  RED,\n  BLUE\n}\n\n"
+        "class A { }\n"
+        "\n"
+        "typedef array<int> TIntArray;\n"
+        "void GlobalHelper()\n{\n  Print(1);\n}\n"
+        "class B { }\n"
+        "const int LAST = 1;\n"
+    )
+    chunks = index._block_chunks(_write(tmp_path, "g.c", src), "c")
+    assert [c["parent_context"] for c in chunks] == ["", "A", "", "B", ""]
+    assert "enum EColor" in chunks[0]["content"]
+    assert chunks[2]["content"].startswith("typedef array<int>")
+    assert chunks[2]["line_start"] == 10
+    assert "void GlobalHelper()" in chunks[2]["content"]
+    assert chunks[4]["content"].strip() == "const int LAST = 1;"
+    # Every non-blank line of the file lands in some chunk.
+    joined = "".join(c["content"] for c in chunks)
+    assert all(line in joined for line in src.splitlines() if line.strip())
+
+
+def test_comment_only_gap_is_not_a_chunk(tmp_path):
+    src = "class A { }\n// just a note\n/* and a block */\nclass B { }\n"
+    chunks = index._block_chunks(_write(tmp_path, "n.c", src), "c")
+    assert [c["parent_context"] for c in chunks] == ["A", "B"]
 
 
 def test_block_chunks_default_window_is_embed_limit(tmp_path):

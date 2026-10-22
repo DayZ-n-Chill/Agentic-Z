@@ -47,7 +47,7 @@ python "<skill-dir>\upgrade_guard.py" diff [--old <snapshot> --new <snapshot>] [
 | Kind | Read from | Kept per class |
 |---|---|---|
 | Script | every `.c` under `P:\scripts\` and `P:\DZ\` | parent, file and line, every method with its signature (default values and `override` dropped). Vanilla `modded class` parts are merged into the class. |
-| Config | every `config.cpp` under `P:\DZ\` | the classes one level inside each `Cfg*` class, keyed in lower case as `cfgvehicles/clothing`, since config class names ignore case (vanilla writes both `CfgVehicles` and `cfgVehicles`): the name as vanilla spells it, parent, file and line, the names of the properties and subclasses it sets. A class that several addons extend is merged. |
+| Config | every `config.cpp` under `P:\DZ\` | the classes one level inside each top level class (the `Cfg*` classes, and other containers such as `BillboardPresets`), keyed in lower case as `cfgvehicles/clothing`, since config class names ignore case (vanilla writes both `CfgVehicles` and `cfgVehicles`): the name as vanilla spells it, parent, file and line, the names of the properties and subclasses it sets. A class that several addons extend is merged. |
 
 A snapshot of the full game data takes about ten seconds and is about 10 MB.
 

@@ -8,7 +8,9 @@ learned file). A known error prints its fix and owner; a new one is flagged for
 dayz-mod-debugger. The same error again (same fingerprint) is only counted.
 
 Usage:
-  python logwatch.py [--server <instance> ...] [--dir DIR ...] [--since MINUTES]
+  python logwatch.py [--server <instance> ...] [--since MINUTES]
+                     [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
+  python logwatch.py --dir DIR [--dir DIR ...] [--since MINUTES]
                      [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
 
 Exit codes: 0 no error lines seen, 1 at least one error line, 2 cannot run
@@ -37,6 +39,7 @@ CLIENT_DIR = "!ClientDiagLogs"
 DIAG_EXE = "DayZDiag_x64.exe"
 DEBUGGER = "dayz-mod-debugger"
 POLL_S = 1.0
+MIN_INTERVAL_S = 0.1
 CLOSED_CHECK_S = 5.0  # how often --until-closed asks whether the DayZ Diag client still runs
 START_GRACE_S = 300.0  # how long --until-closed waits for the DayZ Diag client to start before giving up
 SERVER_FLAG = re.compile(r"(?i)(?:^|\s)-server(?:\s|$)")
@@ -319,12 +322,16 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
     stop_on.add_argument("--duration", type=float, metavar="S", help="Stop after S seconds.")
     stop_on.add_argument("--until-closed", action="store_true",
                          help=f"Stop once the {DIAG_EXE} client (no -server) seen running has closed.")
-    parser.add_argument("--interval", type=float, default=POLL_S, metavar="S", help="Seconds between reads (default 1).")
+    parser.add_argument("--interval", type=float, default=POLL_S, metavar="S",
+                        help=f"Seconds between reads (default 1, at least {MIN_INTERVAL_S}).")
     parser.add_argument("--mod", help="Mod name, filled into fixes that mention <ModName>.")
     parser.add_argument("--json", action="store_true", help="Print one JSON object per line instead of text.")
     args = parser.parse_args(argv)
     if args.server and args.dir:
         parser.error("give --server or --dir, not both")
+    # 0 would spin a CPU core and a negative value crashes time.sleep.
+    if not args.interval >= MIN_INTERVAL_S:
+        parser.error(f"--interval must be at least {MIN_INTERVAL_S} seconds")
 
     project = triage.cached_project_dir()
     if args.dir:
