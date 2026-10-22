@@ -55,9 +55,10 @@ SCAFFOLD_CHECKS = (
 _WORKSHOP_RE = re.compile(
     r"(?i)(?:steamcommunity\.com/(?:sharedfiles|workshop)/filedetails|steam://url/CommunityFilePage/\d)"
 )
-# github.com/<owner>/<repo>[.git][/tree/<branch>], with or without https://
+# github.com/<owner>/<repo>[.git][/tree/<branch>], with or without https://;
+# the branch may hold slashes (feature/x)
 _GITHUB_RE = re.compile(
-    r"(?i)^(?:https?://)?(?:www\.)?github\.com/([\w.-]+)/([\w.-]+?)(?:\.git)?(?:/tree/([^/\s?#]+))?/?(?:[?#]\S*)?$"
+    r"(?i)^(?:https?://)?(?:www\.)?github\.com/([\w.-]+)/([\w.-]+?)(?:\.git)?(?:/tree/([^\s?#]+?))?/?(?:[?#]\S*)?$"
 )
 # Any other git remote: https://host/path/repo.git or git@host:path/repo.git
 _GIT_URL_RE = re.compile(r"(?i)^(?:https://\S+?|git@[\w.-]+:\S+?)/?([\w.-]+?)\.git$")
