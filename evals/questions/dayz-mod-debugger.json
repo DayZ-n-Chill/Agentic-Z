@@ -1,0 +1,58 @@
+{
+  "agent": "dayz-mod-debugger",
+  "questions": [
+    {
+      "id": "modded-class-extends-noop",
+      "question": "Answer only, do not edit any file, do not open workspace/ or .server/, and diagnose only from what is shown. The mod is MyMod. My OnConnect override never runs, and script.log shows no error for it:\n\nSCRIPT       : Creating script module 'MyMod/scripts/4_World' ...\n\nFile scripts/4_World/MyMod/playerbase.c:\n\nmodded class PlayerBase extends PlayerBase\n{\n    override void OnConnect()\n    {\n        super.OnConnect();\n        Print(\"[MyMod] player connected\");\n    }\n}\n\nReturn your usual report.",
+      "must_include": [
+        "re:Owner[^\\n]*dayz-script-specialist",
+        "extends"
+      ],
+      "verified": ".claude/agents/dayz-mod-debugger.md usual causes (an extends clause on modded class is a silent no-op) and Who fixes what; .claude/skills/dayz-gate/known-errors.json modded-class-extends (owner dayz-script-specialist); P:/scripts/4_world/entities/manbase/playerbase.c:49 (class PlayerBase)"
+    },
+    {
+      "id": "cant-find-required-addons",
+      "question": "Answer only, do not edit any file, do not open workspace/ or .server/, and diagnose only from what is shown. The mod is MyMod. The server RPT says, as pasted:\n\nWarning: Can't find base class 'Hoodie_ColorBase' for 'MyMod_Hoodie' (MyMod\\config.cpp/CfgVehicles/MyMod_Hoodie)\n\nFile config.cpp:\n\nclass CfgPatches\n{\n    class MyMod\n    {\n        units[] = {\"MyMod_Hoodie\"};\n        weapons[] = {};\n        requiredVersion = 0.1;\n        requiredAddons[] = {\"DZ_Data\"};\n    };\n};\nclass CfgVehicles\n{\n    class Hoodie_ColorBase;\n    class MyMod_Hoodie: Hoodie_ColorBase\n    {\n        scope = 2;\n    };\n};\n\nThe class name is spelled as in vanilla. Return your usual report.",
+      "must_include": [
+        "re:Owner[^\n]*(dayz-config-specialist|dayz-wearables-specialist)",
+        "requiredAddons",
+        "DZ_Characters_Tops"
+      ],
+      "verified": ".claude/agents/dayz-mod-debugger.md usual causes (a missing CfgPatches requiredAddons entry) and Who fixes what (dayz-config-specialist for config.cpp); P:/DZ/characters/tops/config.cpp:3 (DZ_Characters_Tops) and :2479 (class Hoodie_ColorBase); the owner may be dayz-config-specialist or, for a clothing class, dayz-wearables-specialist (Who fixes what: name the specialist when the class is in its area)"
+    },
+    {
+      "id": "filepatching-0x00020005",
+      "question": "Answer only, do not edit any file, do not open workspace/ or .server/, and diagnose only from what is shown. The mod is MyMod on instance chernarus. The client RPT in .server/!ClientDiagLogs/ ends with, as pasted:\n\nConnection failed: the server does not support the client's current filePatching setting (0x00020005)\n\nThe server log shows no script errors. Return your usual report.",
+      "must_include": [
+        "re:Owner[^\\n]*dayz-orchestrator",
+        "allowFilePatching"
+      ],
+      "must_not_include": [
+        "re:Owner[^\\n]*dayz-server-admin"
+      ],
+      "verified": ".claude/agents/dayz-mod-debugger.md Who fixes what (environment faults go to dayz-orchestrator); .claude/skills/dayz-gate/known-errors.json filepatching-0x00020005 (owner dayz-orchestrator, fix: re-run /dayz-add-server so serverDZ.cfg has allowFilePatching = 1;)"
+    },
+    {
+      "id": "onstoreload-read-failure",
+      "question": "Answer only, do not edit any file, do not open workspace/ or .server/, and diagnose only from what is shown. The mod is MyMod. After a server restart every MyMod_Crate is gone. script.log, as pasted:\n\nSCRIPT       : [MyMod] MyMod_Crate OnStoreLoad: ctx.Read(m_Locked) failed\n\nFile scripts/4_World/MyMod/mymod_crate.c:\n\nclass MyMod_Crate extends WoodenCrate\n{\n    int m_Charges;\n    bool m_Locked;\n\n    override void OnStoreSave(ParamsWriteContext ctx)\n    {\n        super.OnStoreSave(ctx);\n        ctx.Write(m_Charges);\n    }\n\n    override bool OnStoreLoad(ParamsReadContext ctx, int version)\n    {\n        if (!super.OnStoreLoad(ctx, version))\n            return false;\n        if (!ctx.Read(m_Charges))\n            return false;\n        if (!ctx.Read(m_Locked))\n        {\n            Print(\"[MyMod] MyMod_Crate OnStoreLoad: ctx.Read(m_Locked) failed\");\n            return false;\n        }\n        return true;\n    }\n}\n\nReturn your usual report.",
+      "must_include": [
+        "re:Owner[^\\n]*dayz-persistence-specialist",
+        "m_Locked"
+      ],
+      "verified": ".claude/agents/dayz-mod-debugger.md Who fixes what (dayz-persistence-specialist for OnStoreSave and OnStoreLoad); P:/scripts/3_game/entities/entityai.c:2910 (OnStoreSave) and .claude/skills/_shared/enscript/patterns/persistence.md (OnStoreLoad returning false)"
+    },
+    {
+      "id": "review-gate-no-log",
+      "question": "Answer only, do not edit any file, do not open workspace/ or .server/, and diagnose only from what is shown. The mod is MyMod. There are no engine logs: the review gate failed before any build. dayz-mod-reviewer report, as pasted:\n\nFAIL\nCRITICAL scripts/3_Game/MyMod/hudhelper.c:4: uses PlayerBase, which is not visible from 3_Game\n\nFile scripts/3_Game/MyMod/hudhelper.c:\n\nclass MyMod_HudHelper\n{\n    void Show(PlayerBase player)\n    {\n        Print(player.GetIdentity().GetName());\n    }\n}\n\nReturn your usual report.",
+      "must_include": [
+        "re:Owner[^\\n]*dayz-script-specialist",
+        "re:4_World"
+      ],
+      "must_not_include": [
+        "re:script[^\\n]*\\.log:\\d+",
+        "re:\\.RPT:\\d+"
+      ],
+      "verified": ".claude/agents/dayz-mod-debugger.md Where the logs are (review-gate failures have no engine logs) and Who fixes what; P:/scripts/4_world/entities/manbase/playerbase.c:49 (PlayerBase lives in 4_World)"
+    }
+  ]
+}
