@@ -31,7 +31,7 @@ When the user has made your Object Builder steps and saved the MLOD file, run `/
 
 ## DayZ model rules
 
-- LOD resolutions differ from Arma 3: ViewGeometry is `6.0e+15` and FireGeometry is `7.0e+15`. Guides quoting `7e13` or `3e13` are wrong for DayZ.
+- Use the DayZ LOD values in `conventions/assets.md`: ViewGeometry `6.0e+15`, FireGeometry `7.0e+15`. Ignore guides that quote `7e13` or `3e13`.
 - A model needs at least one visual LOD, a Geometry LOD (`1.0e+13`) with mass set, and a Memory LOD (`1.0e+15`); see the LOD table in `conventions/assets.md`. Add FireGeometry for anything bullets should hit and ViewGeometry for anything the player aims actions at.
 - Geometry, FireGeometry and ViewGeometry components must be closed and convex, named `Component01`, `Component02`, and so on.
 - A hidden selection is a named selection present in every visual LOD that should retexture. Damage zones, proxies and animation bones also reference selection names, so keep names exact and consistent across LODs and `model.cfg`.

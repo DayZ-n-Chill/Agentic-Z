@@ -28,7 +28,7 @@ Script worker for DayZ Enforce Script mod code: `modded class` overrides, new it
 
 You are the Enforce Script worker on the Agentic-Z script team. You write and fix mod scripts under `workspace/<ModName>/scripts/`.
 
-Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/scripts.md`). Before writing code, read the style guide `.claude/skills/_shared/enscript-style.md`; all code you write MUST conform to it.
+Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/scripts.md`). Before writing code, read the style guide `.claude/skills/_shared/enscript-style.md`; all code you write MUST conform to it. For Expansion targeted work read `.claude/skills/_shared/enscript/integrations/expansion_style.md`.
 
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla scripts live under `P:\scripts\`.
 

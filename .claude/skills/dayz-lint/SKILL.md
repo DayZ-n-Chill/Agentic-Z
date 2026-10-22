@@ -57,7 +57,7 @@ Each rule has a `lint-<rule>` entry in `.claude/skills/dayz-gate/known-errors.js
 
 ## Rules
 
-Errors fail the lint. Warnings are listed and do not.
+A finding is an error only when it stops the mod packing or loading. Everything else is a warning. Errors fail the lint, and so the gate and the build. Warnings are listed and do not.
 
 | Rule | Severity | Finds |
 |---|---|---|
@@ -65,7 +65,8 @@ Errors fail the lint. Warnings are listed and do not.
 | `config-syntax` | error | Unbalanced braces, a missing `;` or `};`, an array without `[]`, `;` between array elements. Same grammar as the edit hook (`hooks/edit_check.py`). The structure rules below wait until the syntax is fixed. |
 | `cfgpatches-missing`, `cfgpatches-empty` | error | No `class CfgPatches`, or one with no patch class inside. |
 | `cfgpatches-field` | error | `units`, `weapons` or `requiredAddons` written without `[]`, so it is not an array. |
-| `cfgpatches-field-missing` | warning | A patch class without `units[]`, `weapons[]` or `requiredAddons[]`. Vanilla loads such classes (`DZ_data_aiconfigs` in `P:\DZ\data\aiconfigs\config.cpp` has an empty body), but without `requiredAddons[]` the load order is not guaranteed. |
+| `cfgpatches-field-missing` | warning | A patch class without `units[]` or `weapons[]`. The engine tolerates it: vanilla `DZ_data_aiconfigs` in `P:\DZ\data\aiconfigs\config.cpp` has an empty body. |
+| `required-addons-missing` | error | A patch class without `requiredAddons[]`, so its config can load before the vanilla classes it changes. |
 | `required-addon-name` | error | An entry that is not a class name (a path, a `.pbo`, an `@mod` folder, a space), the mod's own patch class, or a `DZ_` name that no vanilla config on `P:\DZ\` or `P:\scripts\` declares. |
 | `required-addon-duplicate` | warning | The same entry twice. |
 | `pboprefix-missing`, `pboprefix-mismatch` | error | No `$PBOPREFIX$`, or one that does not hold exactly the mod name, which `/dayz-build-pbo` needs. |
@@ -73,7 +74,7 @@ Errors fail the lint. Warnings are listed and do not.
 | `p-not-mounted` | warning | `P:\` is not mounted, so the link and the vanilla `DZ_` names were not checked. |
 | `script-module-path` | error | A `CfgMods` script module lists a folder outside the mod or one that does not exist. |
 | `script-module-layer` | error | A module lists another layer's folder, for example `worldScriptModule` with `3_Game`. |
-| `script-module-unlisted` | error | A `scripts/` folder holds `.c` files that no module lists, so they never compile. |
+| `script-module-unlisted` | warning | A `scripts/` folder holds `.c` files that no module lists. The mod still loads; the engine just ignores those files. |
 | `modded-class-extends` | error | `modded class Foo extends Foo` or `modded class Foo: Foo`, a silent no-op. |
 | `script-suffix` | warning | A file under `scripts/` that is not `.c`, so it is never compiled. Dot files such as `.gitkeep` are skipped. |
 | `missing-model`, `missing-texture`, `missing-file` | error | A path in `config.cpp` or a `.rvmat` that starts with the prefix but names a file that is not in the mod. Paths into vanilla or other mods are not checked. |
