@@ -138,12 +138,27 @@ def test_autocenter_property_not_needed_without_config_autocenter():
 
 def test_config_sets_autocenter_zero(tmp_path):
     cfg = tmp_path / "config.cpp"
-    cfg.write_text("class CfgVehicles { class Inventory_Base; class MyCrate: Inventory_Base "
-                   "{ autocenter = 0; }; };", encoding="utf-8")
-    assert audit.config_sets_autocenter_zero(str(cfg)) is True
-    cfg.write_text("class CfgVehicles { class MyKit { autocenter = 1; }; };", encoding="utf-8")
-    assert audit.config_sets_autocenter_zero(str(cfg)) is False
-    assert audit.config_sets_autocenter_zero(None) is False
+    cfg.write_text('class CfgVehicles { class Inventory_Base; class MyCrate: Inventory_Base '
+                   '{ model = "\\MyMod\\crate.p3d"; autocenter = 0; }; };', encoding="utf-8")
+    assert audit.config_sets_autocenter_zero(str(cfg), "P:/MyMod/crate.p3d") is True
+    cfg.write_text('class CfgVehicles { class MyKit { model = "\\MyMod\\kit.p3d"; autocenter = 1; }; };',
+                   encoding="utf-8")
+    assert audit.config_sets_autocenter_zero(str(cfg), "P:/MyMod/kit.p3d") is False
+    assert audit.config_sets_autocenter_zero(None, "kit.p3d") is False
+
+
+def test_config_autocenter_only_counts_classes_using_this_model(tmp_path):
+    # Like P:\DZ\gear\camping\config.cpp: a proxy sets autocenter = 0, the kit does not.
+    cfg = tmp_path / "config.cpp"
+    cfg.write_text('class CfgVehicles { class Inventory_Base; '
+                   'class TentKit: Inventory_Base { model = "\\DZ\\gear\\camping\\kit.p3d"; }; '
+                   'class ProxyTent: Inventory_Base { model = "\\DZ\\gear\\camping\\proxy.p3d"; autocenter = 0; }; '
+                   'class BaseCrate: Inventory_Base { model = "\\DZ\\gear\\camping\\crate.p3d"; autocenter = 0; }; '
+                   'class CrateGreen: BaseCrate {}; };', encoding="utf-8")
+    assert audit.config_sets_autocenter_zero(str(cfg), "P:/DZ/gear/camping/kit.p3d") is False
+    assert audit.config_sets_autocenter_zero(str(cfg), "P:/DZ/gear/camping/proxy.p3d") is True
+    assert audit.config_sets_autocenter_zero(str(cfg), "P:/DZ/gear/camping/crate.p3d") is True
+    assert audit.config_sets_autocenter_zero(str(cfg), "P:/DZ/gear/camping/other.p3d") is False
 
 
 def test_geometry_mass_reported():
@@ -567,7 +582,7 @@ def test_autocenter_checked_only_on_geometry_lod(tmp_path, monkeypatch, capsys):
         return stub
 
     config = tmp_path / "config.cpp"
-    config.write_text("class CfgVehicles { class MyCrate { autocenter = 0; }; };", encoding="utf-8")
+    config.write_text("class CfgVehicles { class MyCrate { model = \"\\MyMod\\m.p3d\"; autocenter = 0; }; };", encoding="utf-8")
 
     def run(geometry_props, cfg=str(config)):
         lods = [
@@ -619,6 +634,6 @@ def test_ordinary_item_without_pos_center_passes_and_autocenter_item_does_not(tm
     assert "ALL CHECKS PASSED" in out
 
     config = tmp_path / "config.cpp"
-    config.write_text("class CfgVehicles { class MyCrate { autocenter = 0; }; };", encoding="utf-8")
+    config.write_text("class CfgVehicles { class MyCrate { model = \"\\MyMod\\m.p3d\"; autocenter = 0; }; };", encoding="utf-8")
     audit.audit_p3d(str(model), config=str(config))
     assert "WARNING: Missing 'pos center'" in capsys.readouterr().out

@@ -761,7 +761,15 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         args = parser.parse_args(argv)
     except SystemExit as e:
-        return 0 if e.code == 0 else 2
+        if e.code == 0:
+            return 0
+        # argparse printed usage on stderr; keep the ERROR first-line contract on stdout.
+        raw = sys.argv[1:] if argv is None else argv
+        as_json = "--json" in raw
+        print("ERROR")
+        message = "bad arguments (usage on stderr)"
+        print(json.dumps({"verdict": "ERROR", "error": message}, indent=2) if as_json else f"  {message}")
+        return 2
     as_json = getattr(args, "json", False)
 
     try:

@@ -495,3 +495,12 @@ def test_parse_config_records_classes_in_any_top_level_container():
     text = "class BillboardPresets { class Default { a = 1; }; }; class CfgVehicles { class V { b = 1; }; };"
     assert [(d["container"], d["name"]) for d in guard.parse_config(text)] == [
         ("BillboardPresets", "Default"), ("CfgVehicles", "V")]
+
+
+@pytest.mark.parametrize("argv", [["check", "--bogus"], [], ["diff", "--json", "--bogus"]])
+def test_argparse_errors_still_print_error_first_line(argv, capsys):
+    assert guard.main(argv) == 2
+    out = capsys.readouterr().out.splitlines()
+    assert out[0] == "ERROR"
+    if "--json" in argv:
+        assert json.loads("\n".join(out[1:]))["verdict"] == "ERROR"
