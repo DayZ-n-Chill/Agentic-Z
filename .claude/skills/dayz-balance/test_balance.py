@@ -1,4 +1,8 @@
-"""Tests for balance.py against the fixture vanilla tree and fixture mod. No DayZ, no real P:\\."""
+"""Tests for balance.py against the fixture vanilla tree and fixture mod.
+
+No DayZ is needed. One test also runs against the real P:\\DZ tree and is
+skipped when that tree is absent.
+"""
 from __future__ import annotations
 
 import importlib.util
@@ -339,3 +343,28 @@ def test_cli_error_exits_two(tmp_path):
 
 def test_cli_without_a_mod_exits_two():
     assert _cli().returncode == 2
+
+
+# --- the real vanilla tree -------------------------------------------------------
+
+REAL_DZ = balance.P_DRIVE / "DZ" / "characters" / "vests" / "config.cpp"
+
+
+@pytest.mark.skipif(not REAL_DZ.is_file(), reason="P:\\DZ is not mounted")
+def test_real_tree_flags_a_tough_plate_carrier(tmp_path):
+    mod = make_mod(tmp_path, """
+class CfgVehicles
+{
+    class PlateCarrierVest;
+    class TestMod_Vest: PlateCarrierVest
+    {
+        scope = 2;
+        class DamageSystem { class GlobalHealth { class Health { hitpoints = 5000; }; }; };
+    };
+};
+""")
+    report = balance.balance_mod(mod.name, mod, balance.P_DRIVE)
+    health = [f for f in report["findings"] if f["item"] == "TestMod_Vest" and f["stat"] == "health"]
+    assert health, report["findings"]
+    assert health[0]["direction"] == "high"
+    assert health[0]["peer_base"] == "PlateCarrierVest"

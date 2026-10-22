@@ -212,15 +212,18 @@ class TestComputeDriftSmoke(unittest.TestCase):
 
     def test_compute_drift_returns_dict(self):
         # compute_drift uses git diff against the current repo; needs a git tree.
-        if not Path(".git").exists():
-            self.skipTest("not a git repo; skipping compute_drift smoke")
+        # A repo with no commits has .git but no HEAD, so ask git for HEAD
+        # instead of looking for the folder.
+        try:
+            r = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True)
+        except OSError:
+            self.skipTest("git not installed; skipping compute_drift smoke")
+        if r.returncode != 0:
+            self.skipTest("no git HEAD here; skipping compute_drift smoke")
         from update import compute_drift
         # Pass current HEAD as both baseline and upstream — diff is empty,
         # so the candidate set is empty and the result must be {}.
-        head = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True, text=True, check=True,
-        ).stdout.strip()
+        head = r.stdout.strip()
         drift = compute_drift(baseline_sha=head, upstream_ref=head)
         # May contain entries for locally-modified files (test edits, etc.) but
         # the test environment is generally clean; allow any dict, just verify type.

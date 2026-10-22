@@ -56,6 +56,11 @@ def validate_instance(instance: str) -> str:
             f"'{instance}' is reserved: names ending in '-behavior' are the copies "
             "/dayz-gate behavior makes and replaces on every run."
         )
+    if not re.search(r"[A-Za-z0-9]", instance):
+        raise argparse.ArgumentTypeError(
+            f"'{instance}' needs at least one letter or digit: the server's shardId "
+            "is built from them."
+        )
     return instance
 
 
@@ -249,8 +254,9 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
 
 def default_server_cfg(instance: str, template: str) -> str:
     # The engine needs a six-char alphanumeric shardId: keep only the instance
-    # name's letters and digits, pad with "shard", truncate to six.
-    shard = (re.sub(r"[^A-Za-z0-9]", "", instance) + "shard")[:6].lower()
+    # name's letters and digits, pad with "shard0", truncate to six. The pad is
+    # six characters on its own, so the result is always six long.
+    shard = (re.sub(r"[^A-Za-z0-9]", "", instance) + "shard0")[:6].lower()
     return dedent(
         f"""\
         hostname = "Local Test ({instance})";   // Server name

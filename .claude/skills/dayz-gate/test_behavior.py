@@ -335,9 +335,10 @@ def test_prepare_only(project, capsys):
 class FakeSession:
     """No DayZ: the fake launch writes the client ready line and the test mission's lines."""
 
-    def __init__(self, project: Path, server_lines: list[str]):
+    def __init__(self, project: Path, server_lines: list[str], ready_line: str = READY):
         self.project = project
         self.server_lines = server_lines
+        self.ready_line = ready_line
         self.calls: list[list[str]] = []
         self.running: list[int] = []
         self.now = 0.0
@@ -358,7 +359,7 @@ class FakeSession:
         client = self.project / ".server" / "!ClientDiagLogs"
         (server / "DayZDiag_x64_2026-10-20_12-00-00.RPT").write_text("CLI params: server mod P:\\Mods\\@MyMod\n", encoding="utf-8")
         (server / "script_2026-10-20_12-00-02.log").write_text("\n".join(self.server_lines) + "\n", encoding="utf-8")
-        (client / "script_2026-10-20_12-00-31.log").write_text(READY + "\n", encoding="utf-8")
+        (client / "script_2026-10-20_12-00-31.log").write_text(self.ready_line + "\n", encoding="utf-8")
         return 0, "[OK]    Server PID: 111\n[OK]    Client PID: 222\n"
 
     def sleep(self, seconds: float) -> None:
@@ -384,6 +385,23 @@ def test_full_run_fails_on_checks_and_on_mod_script_errors(project, capsys):
     categories = [f["category"] for f in data["failures"]]
     assert "null_pointer" in categories  # the in-game rules still apply
     assert [f["check"] for f in data["failures"] if f["category"] == "behavior"] == ["vest-wear", "vest-pouch", "knife-hands"]
+
+
+def test_full_run_uses_the_ready_pattern(project, capsys):
+    """A mod that replaces CreateMission prints its own ready line; --ready-pattern finds it."""
+    lines = (FIXTURES / "logs" / "script_pass.log").read_text(encoding="utf-8").splitlines()
+    fake = FakeSession(project, lines, ready_line="SCRIPT : [MyMod] ready")
+    rc, first, data = run_main(["behavior", "MyMod", "--json", "--ready-pattern", r"\[MyMod\] ready"],
+                               capsys, fake.runtime())
+    assert (rc, first) == (0, "PASS"), data["failures"]
+    assert data["ready"]["text"] == "SCRIPT : [MyMod] ready"
+
+
+def test_bad_ready_pattern_is_an_error_before_launch(project, capsys):
+    fake = FakeSession(project, [])
+    rc, first, _ = run_main(["behavior", "MyMod", "--ready-pattern", "("], capsys, fake.runtime())
+    assert (rc, first) == (2, "ERROR")
+    assert fake.calls == []
 
 
 def test_full_run_without_checks_file_is_an_error(project, capsys):

@@ -19,10 +19,10 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ```cmd
 python "<skill-dir>\gate.py" build <ModName> [--json]
 python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
-python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--json]
+python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --prepare-only
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --logs [FILE ...] [--json]
-python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--json]
+python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--ready-pattern REGEX] [--json]
 python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--threshold R] --compare [DIR] [--json]
 python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] --accept [DIR] [--shot ID ...] [--json]
 ```
@@ -34,14 +34,14 @@ python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] --accept [DIR] [--s
 | `--server` | `ingame`, `behavior`, `visual`: instance added with `/dayz-add-server` (default `chernarus`). `--port` default `2302`. |
 | `--timeout` | `ingame`, `behavior`, `visual`: seconds to wait for the client to reach the mission (default 300). |
 | `--settle` | `ingame`: seconds to keep reading after that, to catch spawn-time errors (default 30). `behavior`: the most seconds to wait for the test mission's `DONE` line after the client joins (default 600); the gate stops as soon as that line appears. `visual` has no `--settle`: it reads until its last shot is taken. |
-| `--ready-pattern` | `ingame`: regex in the client script log that means the mission is running. Default `Creating Mission: mpmissions\__cur_mp.`, printed by vanilla `CreateMission()` (`P:\scripts\5_mission\somemission.c`) when the client joins. |
+| `--ready-pattern` | `ingame`, `behavior` and `visual` in-game runs: regex in the client script log that means the mission is running. Default `Creating Mission: mpmissions\__cur_mp.`, printed by vanilla `CreateMission()` (`P:\scripts\5_mission\somemission.c`) when the client joins. |
 | `--checks` | `behavior`: the checks file. Default `output/<ModName>-plan/behavior-checks.json`, which `dayz-mod-architect` writes with the plan. |
 | `--prepare-only` | `behavior`: write the instance copy and stop. The first line is `PREPARED` (exit 0). |
 | `--logs` | `behavior`: judge the logs of a session that already ran instead of launching one. With no files it reads the copy's server script logs. |
 | `--shots` | `visual`: the shots file. Default `output/<ModName>-plan/visual-shots.json`. |
 | `--threshold` | `visual`: the share of pixels, 0 to 1, that may differ for a shot that sets no threshold of its own. It beats the shots file's `threshold`; the default is 0.01. |
 | `--compare` | `visual`: compare captures already taken instead of launching. With no folder it uses the newest run. |
-| `--accept` | `visual`: copy captures into the baselines. With no folder it uses the newest run; `--shot` limits it to some shots. The first line is `ACCEPTED` (exit 0). |
+| `--accept` | `visual`: copy captures into the baselines. With no folder it uses the newest run; `--shot` limits it to some shots (`--shot` without `--accept` is refused, exit 2). The first line is `ACCEPTED` (exit 0). |
 | `--json` | Print the full report as JSON after the verdict line. |
 
 ## Output and exit codes

@@ -25,6 +25,7 @@ runs first, creates it when it is missing.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -161,6 +162,10 @@ def execute(steps: list[Step], intent: Intent, project: Path) -> int:
     return 0
 
 
+# The mod name rule SKILL.md states: it becomes a folder, a PBO name and a CfgPatches class.
+MOD_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]*")
+
+
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Plan and run /dayz-init setup.")
     parser.add_argument("--mod", required=True, help="Mod name (folder under workspace/)")
@@ -186,6 +191,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
                              "does not provide (repeatable)")
     parser.add_argument("--execute", action="store_true", help="Run the plan instead of printing it")
     args = parser.parse_args(argv)
+    if not MOD_NAME_RE.fullmatch(args.mod):
+        parser.error(f"--mod {args.mod!r}: use letters, digits and underscores, starting with a letter")
     if args.launch and not args.server:
         parser.error("--launch needs --server")
     if args.deps and not args.launch:
