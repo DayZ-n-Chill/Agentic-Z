@@ -17,12 +17,12 @@ The jobs in this table are **model knowledge**. The script side confirms the spl
 
 ## Rules for the collision LODs
 
-These come from the model rules in `.claude/agents/dayz-object-builder.md` and the audit references. Check them on the mod's MLOD model with `/dayz-p3d-audit`; never on a vanilla ODOL model.
+These come from the model pack (`.claude/skills/_shared/models/`) and the audit references. Check them on the mod's MLOD model with `/dayz-p3d-audit`; never on a vanilla ODOL model.
 
 - The Geometry LOD exists and carries the mass (`p3d-killers.md` section 4; the audit prints the mass, see `mass-and-weight.md`).
 - Each component in Geometry, Fire Geometry and View Geometry is closed and convex, named `Component01`, `Component02` and so on with a capital C (`p3d-killers.md` sections 2, 8 and 9).
 - Every face in a collision LOD has a penetration material, or bullets and footsteps find no surface (`p3d-killers.md` section 10).
-- `autocenter = 0` is for placed objects only, never kits or handheld items, which then float when dropped (`p3d-killers.md` section 3 and the rule in `dayz-object-builder.md`).
+- `autocenter = 0` is for placed objects only, never kits or handheld items, which then float when dropped (`p3d-killers.md` section 3 and the autocenter rule in `.claude/skills/_shared/models/named-properties.md`).
 - A thin wall or floor needs real thickness in the Geometry LOD. A body that moves further in one step than the wall is thick can pass through it; see "Fast bodies" in `drop-and-throw.md`.
 
 ## Fire Geometry and damage zones
