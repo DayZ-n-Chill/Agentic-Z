@@ -341,4 +341,4 @@ If you fork the repo to publish a downstream variant, run `git diff main -- .cla
 
 ## License
 
-See [`LICENSE`](LICENSE). Copyright (c) 2026 DayZ n Chill. Free to use for developing DayZ modifications.
+See [`LICENSE`](LICENSE). Copyright (c) 2026 DayZ n' Chill. Free to use for developing DayZ modifications.
