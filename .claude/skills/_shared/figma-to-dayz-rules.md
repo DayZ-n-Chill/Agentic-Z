@@ -353,20 +353,33 @@ Frame "StatusCard"  auto-layout vertical
   "name": "status_card",
   "type": "panel",
   "layout": "vertical",
+  "spacing": 4,
   "padding": { "top": 8, "right": 8, "bottom": 8, "left": 8 },
   "size": { "width": 320, "height": 120 },
+  "sizing": { "width": "fixed", "height": "fixed" },
   "style": { "color": "#161616", "alpha": 0.8 },
   "anchor": { "halign": "right", "valign": "bottom", "offsetX": 24, "offsetY": 24 },
   "children": [
-    { "name": "txt_title", "type": "text", "text": "Status: OK",
-      "font": "metron_book_18_bold" },
-    { "name": "txt_body",  "type": "text", "text": "Subtitle",
-      "font": "metron_light_12" },
-    { "name": "btn_close", "type": "button", "text": "Close",
-      "font": "metron_book_14" }
+    { "name": "txt_title", "type": "text", "layout": "none", "spacing": 0,
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "size": { "width": 304, "height": 24 },
+      "sizing": { "width": "fixed", "height": "hug" },
+      "text": "Status: OK", "font": "metron_book_18_bold", "children": [] },
+    { "name": "txt_body", "type": "text", "layout": "none", "spacing": 0,
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "size": { "width": 304, "height": 18 },
+      "sizing": { "width": "fixed", "height": "hug" },
+      "text": "Subtitle", "font": "metron_light_12", "children": [] },
+    { "name": "btn_close", "type": "button", "layout": "none", "spacing": 0,
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "size": { "width": 80, "height": 28 },
+      "sizing": { "width": "hug", "height": "hug" },
+      "text": "Close", "font": "metron_book_14", "children": [] }
   ]
 }
 ```
+
+Every node, leaves included, carries the eight core fields: `name`, `type`, `layout`, `spacing`, `padding`, `size`, `sizing` and `children`. The generator reads `sizing` on each axis to pick the size toggle (section 5), so a node without it cannot be made responsive. The other fields (`text`, `font`, `style`, `anchor`) appear only when the source node carries that data.
 
 ### Generator output (`.layout`, property-file)
 

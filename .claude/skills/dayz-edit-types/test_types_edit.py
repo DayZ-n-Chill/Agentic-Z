@@ -350,3 +350,71 @@ def test_main_needs_exactly_one_of_classname_or_merge(types_file, monkeypatch, a
     with pytest.raises(SystemExit) as exc:
         _run_main(monkeypatch, [str(types_file), *argv])
     assert exc.value.code == 2
+
+
+# --- names checked against the mission's cfglimitsdefinition.xml --------------------
+
+FIXTURE_MISSION = Path(__file__).with_name("fixtures") / "mission"
+
+
+@pytest.fixture
+def mission_types(tmp_path):
+    """<mission>/db/types.xml with the fixture limits files next to db/."""
+    import shutil
+    mission = tmp_path / "mission"
+    shutil.copytree(FIXTURE_MISSION, mission)
+    (mission / "db").mkdir()
+    path = mission / "db" / "types.xml"
+    path.write_text(SAMPLE, encoding="utf-8")
+    return path
+
+
+def test_load_limits_reads_both_files(mission_types):
+    limits = te.load_limits(mission_types)
+    assert "Military" in limits["name"]["usage"] and "Tier3" in limits["name"]["value"]
+    assert limits["name"]["category"] == {"clothes", "weapons"}
+    assert limits["user"]["usage"] == {"TownVillage"} and limits["user"]["value"] == {"Tier12"}
+
+
+def test_load_limits_skips_with_a_note_when_absent(types_file, capsys):
+    assert te.load_limits(types_file) is None
+    assert "names not checked" in capsys.readouterr().out
+
+
+def test_undefined_limit_names_flags_each_unknown_name(mission_types):
+    limits = te.load_limits(mission_types)
+    el = te.parse_chunk(_entry("X", extra='<usage name="Militar"/><value name="Tier9"/><tag name="roof"/>'
+                                          '<usage user="TownVillage"/><value user="Tier99"/>'))[0]
+    assert te.undefined_limit_names(el, limits) == [
+        'usage name "Militar" is not defined in cfglimitsdefinition.xml',
+        'value name "Tier9" is not defined in cfglimitsdefinition.xml',
+        'tag name "roof" is not defined in cfglimitsdefinition.xml',
+        'value user "Tier99" is not defined in cfglimitsdefinitionuser.xml',
+    ]
+
+
+def test_main_upsert_warns_on_undefined_usage_and_still_writes(mission_types, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(mission_types), "AKM", "--usage", "Militar", "--category", "weapon"]) == 0
+    out = capsys.readouterr().out
+    assert f"{te.WARN} " + 'usage name "Militar" is not defined in cfglimitsdefinition.xml' in out
+    assert f"{te.WARN} " + 'category name "weapon" is not defined in cfglimitsdefinition.xml' in out
+    assert 'name="Militar"' in mission_types.read_text(encoding="utf-8")
+
+
+def test_main_upsert_with_known_names_has_no_limits_warning(mission_types, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(mission_types), "AKM", "--usage", "Police", "--value", "Tier2"]) == 0
+    assert "not defined in" not in capsys.readouterr().out
+
+
+def test_main_merge_warns_on_undefined_names(mission_types, tmp_path, monkeypatch, capsys):
+    chunk = _entry("MyMod_Vest", extra='<value name="Tier7"/>')
+    assert _run_main(monkeypatch, [str(mission_types), "--merge", _chunk_file(tmp_path, chunk)]) == 0
+    out = capsys.readouterr().out
+    assert f"{te.WARN} " + 'MyMod_Vest: value name "Tier7" is not defined in cfglimitsdefinition.xml' in out
+    assert 'Added <type name="MyMod_Vest">' in out
+
+
+def test_main_skips_the_limits_check_outside_a_mission(types_file, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(types_file), "AKM", "--usage", "Militar"]) == 0
+    out = capsys.readouterr().out
+    assert "names not checked" in out and "not defined in" not in out

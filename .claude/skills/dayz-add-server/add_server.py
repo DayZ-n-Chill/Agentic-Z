@@ -93,6 +93,11 @@ def resolve_mission_template(map_name: str) -> str:
     return KNOWN_MAPS.get(map_name, map_name)
 
 
+# A serverDZ.cfg hand-edited in an ANSI editor may hold bytes that are not UTF-8
+# (an accented hostname). surrogateescape carries them through a read and write
+# unchanged instead of crashing.
+CFG_ENCODING = {"encoding": "utf-8", "errors": "surrogateescape"}
+
 # The active `template = "..."` line in serverDZ.cfg (a commented-out line does not count).
 TEMPLATE_RE = re.compile(r'^\s*template\s*=\s*"([^"]*)"', re.MULTILINE)
 
@@ -105,7 +110,7 @@ def gate_on_template_mismatch(cfg_path: Path, template: str, instance: str) -> N
     """
     if not cfg_path.exists():
         return
-    match = TEMPLATE_RE.search(cfg_path.read_text(encoding="utf-8"))
+    match = TEMPLATE_RE.search(cfg_path.read_text(**CFG_ENCODING))
     if match is None or match.group(1) == template:
         return
     sys.exit(
@@ -153,7 +158,9 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir:
 
     mission_dir.parent.mkdir(parents=True, exist_ok=True)
     action = "Copied"
-    if mission_dir.exists():
+    if mission_dir.exists() and not already_present:
+        mission_dir.rmdir()  # empty folder: nothing to keep
+    elif mission_dir.exists():
         backup = backup_mission(mission_dir)
         print(f"{OK} Kept previous mission as {backup.relative_to(project_dir)}")
         action = "Refreshed"
@@ -201,16 +208,16 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
         cfg_path.write_text(default_server_cfg(instance, template), encoding="utf-8")
         print(f"{OK} Wrote default {cfg_path.relative_to(project_dir)}")
     else:
-        cfg = cfg_path.read_text(encoding="utf-8")
+        cfg = cfg_path.read_text(**CFG_ENCODING)
         setting = h.file_patching_setting(cfg)
         if setting is None:
             cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
-            cfg_path.write_text(cfg, encoding="utf-8")
+            cfg_path.write_text(cfg, **CFG_ENCODING)
             print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(project_dir)}")
         elif setting.group(1) != "1":
             # Clients launch with -filePatching and cannot join a server without it.
             cfg = cfg[: setting.start(1)] + "1" + cfg[setting.end(1):]
-            cfg_path.write_text(cfg, encoding="utf-8")
+            cfg_path.write_text(cfg, **CFG_ENCODING)
             print(f"{OK} Set allowFilePatching = 1 in {cfg_path.relative_to(project_dir)} (was {setting.group(1)})")
         else:
             print(f"{OK} {cfg_path.relative_to(project_dir)} unchanged (already configured)")

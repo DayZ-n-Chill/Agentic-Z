@@ -91,6 +91,13 @@ def test_component_naming_lowercase_is_critical():
     assert _severities(issues) == ["CRITICAL"]
 
 
+@pytest.mark.parametrize("name", ["COMPONENT01", "component01", "ComPonent01"])
+def test_component_naming_any_wrong_case_is_critical(name):
+    issues = audit.check_component_naming(_stub_lod(selections={name: FULL}))
+    assert _severities(issues) == ["CRITICAL"]
+    assert f"'{name}'" in issues[0][1]
+
+
 def test_component_naming_missing_is_critical():
     assert _severities(audit.check_component_naming(_stub_lod())) == ["CRITICAL"]
 
@@ -112,8 +119,23 @@ def test_component_coverage_ignores_non_component_selections():
 
 
 def test_autocenter_property():
-    assert audit.check_autocenter_prop(_stub_lod(properties={"autocenter": "0"})) == []
-    assert _severities(audit.check_autocenter_prop(_stub_lod())) == ["WARNING"]
+    assert audit.check_autocenter_prop(_stub_lod(properties={"autocenter": "0"}), True) == []
+    assert _severities(audit.check_autocenter_prop(_stub_lod(), True)) == ["WARNING"]
+
+
+def test_autocenter_property_not_needed_without_config_autocenter():
+    assert audit.check_autocenter_prop(_stub_lod()) == []
+    assert audit.check_autocenter_prop(_stub_lod(), False) == []
+
+
+def test_config_sets_autocenter_zero(tmp_path):
+    cfg = tmp_path / "config.cpp"
+    cfg.write_text("class CfgVehicles { class Inventory_Base; class MyCrate: Inventory_Base "
+                   "{ autocenter = 0; }; };", encoding="utf-8")
+    assert audit.config_sets_autocenter_zero(str(cfg)) is True
+    cfg.write_text("class CfgVehicles { class MyKit { autocenter = 1; }; };", encoding="utf-8")
+    assert audit.config_sets_autocenter_zero(str(cfg)) is False
+    assert audit.config_sets_autocenter_zero(None) is False
 
 
 def test_geometry_mass_reported():
@@ -472,7 +494,10 @@ def test_autocenter_checked_only_on_geometry_lod(tmp_path, monkeypatch, capsys):
         stub.resolution = resolution
         return stub
 
-    def run(geometry_props):
+    config = tmp_path / "config.cpp"
+    config.write_text("class CfgVehicles { class MyCrate { autocenter = 0; }; };", encoding="utf-8")
+
+    def run(geometry_props, cfg=str(config)):
         lods = [
             lod(1e13, selections={"Component01": FULL}, properties=geometry_props),
             lod(7e15),  # FireGeo with no autocenter property: valid on its own
@@ -482,7 +507,7 @@ def test_autocenter_checked_only_on_geometry_lod(tmp_path, monkeypatch, capsys):
         monkeypatch.setattr(audit, "load_py3d", lambda: fake_py3d)
         model = tmp_path / "m.p3d"
         model.write_bytes(b"MLOD" + b"\0" * 8)
-        audit.audit_p3d(str(model))
+        audit.audit_p3d(str(model), config=cfg)
         return capsys.readouterr().out
 
     out = run({"autocenter": "0"})
@@ -491,3 +516,7 @@ def test_autocenter_checked_only_on_geometry_lod(tmp_path, monkeypatch, capsys):
 
     out = run({})  # the Geometry LOD still gets the check
     assert out.count("autocenter=0' LOD property") == 1
+
+    out = run({}, cfg=None)  # no config.cpp sets autocenter = 0: kits and items get no warning
+    assert "autocenter=0' LOD property" not in out
+    assert "WARNING:" not in out

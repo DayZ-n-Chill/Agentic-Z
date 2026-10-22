@@ -3,7 +3,8 @@
 Usage:
     python plan.py --mod NAME [--import-from PATH [--scaffold | --no-scaffold]]
                    [--author HANDLE] [--goal TEXT [--item TEXT]... [--behavior TEXT]...
-                   [--done-check TEXT]...] [--server MAP] [--build] [--launch] [--execute]
+                   [--done-check TEXT]...] [--server MAP] [--build] [--launch [--deps MOD ...]]
+                   [--execute]
 
 Without --execute: prints the plan and exits 0.
 With --execute: runs each step in order and stops at the first failure,
@@ -17,7 +18,7 @@ Steps, in order (each skipped when not needed):
   3. record          write the per-clone project cache and the active mod
   4. add-server      --server
   5. build           --build, or implied by --launch
-  6. launch          --launch (needs --server)
+  6. launch          --launch (needs --server); --deps mods load before the mod
 The P:\\Mods junction is not a step: /dayz-preflight, which every child skill
 runs first, creates it when it is missing.
 """
@@ -54,6 +55,7 @@ class Intent:
     server_map: str | None = None
     build: bool = False
     launch: bool = False
+    deps: list[str] = field(default_factory=list)  # launch: @mods the mod's requiredAddons need
     spec: Spec | None = None
 
 
@@ -99,10 +101,12 @@ def build_steps(
     if intent.build or intent.launch:
         steps.append(Step("build", f"Build {mod}.pbo", {"mod": mod}))
     if intent.launch:
-        steps.append(Step(
-            "launch", f"Launch DayZ Diag with {mod} on {intent.server_map}",
-            {"mod": mod, "server": intent.server_map},
-        ))
+        params = {"mod": mod, "server": intent.server_map}
+        with_deps = ""
+        if intent.deps:
+            params["deps"] = list(intent.deps)
+            with_deps = f" (after {', '.join(intent.deps)})"
+        steps.append(Step("launch", f"Launch DayZ Diag with {mod}{with_deps} on {intent.server_map}", params))
     return steps
 
 
@@ -177,10 +181,15 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--server", choices=KNOWN_MAPS, help="Set up a test server on this map")
     parser.add_argument("--build", action="store_true", help="Build the PBO")
     parser.add_argument("--launch", action="store_true", help="Launch DayZ Diag (implies --build)")
+    parser.add_argument("--deps", action="extend", nargs="+", default=[], metavar="MOD",
+                        help="Launch: dependency @mods in load order, for requiredAddons that vanilla "
+                             "does not provide (repeatable)")
     parser.add_argument("--execute", action="store_true", help="Run the plan instead of printing it")
     args = parser.parse_args(argv)
     if args.launch and not args.server:
         parser.error("--launch needs --server")
+    if args.deps and not args.launch:
+        parser.error("--deps only applies with --launch")
     if args.scaffold is not None and not args.source:
         parser.error("--scaffold/--no-scaffold only apply with --import-from")
     if args.source and args.scaffold is None:
@@ -202,7 +211,7 @@ def main(argv: list[str] | None = None, project: Path | None = None) -> int:
     project = project or PROJECT_DIR
     intent = Intent(
         mod_name=args.mod, source=args.source, scaffold=args.scaffold, author=args.author,
-        server_map=args.server, build=args.build, launch=args.launch,
+        server_map=args.server, build=args.build, launch=args.launch, deps=args.deps,
         spec=Spec(args.goal, args.items, args.behaviors, args.done_checks) if args.goal else None,
     )
 

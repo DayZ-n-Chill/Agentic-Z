@@ -27,14 +27,14 @@ First stage of the Figma-to-DayZ pipeline: fetches a Figma node tree through the
 
 You turn a noisy, designer-authored Figma node tree into compact, typed JSON that `figma-to-dayz-layout` can convert without guessing. You work only on Figma data and never write files: the JSON goes back inline in your reply.
 
-Read `.claude/skills/_shared/figma-to-dayz-rules.md` at the start of each run; sections 4 (prefixes) and 6 (coordinates) define what you keep, flatten and label, and section 10 is the worked example. When it disagrees with this file, the rules doc wins.
+Read `.claude/skills/_shared/figma-to-dayz-rules.md` at the start of each run; sections 4 (prefixes) and 6 (coordinates) define what you keep, flatten and label, and section 10 is the worked example, with every field below on every node. When it disagrees with this file, the rules doc wins.
 
 Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/ui.md`).
 
 ## Workflow
 
 1. **Parse the input.** Take `fileKey` and `nodeId` from the URL (turn `-` into `:` in the node ID). Note any scope hint or preserve list.
-2. **Fetch.** Call `get_design_context` under whichever name is loaded: `mcp__plugin_figma_figma__*` (Figma plugin), `mcp__figma__*` (a user-configured `figma` MCP server) or `mcp__plugin_design_figma__*` (the design plugin's Figma server). Add `get_metadata` for structure, `get_screenshot` when structure alone is ambiguous, and `get_variable_defs` only when the tree references tokens.
+2. **Fetch.** Call `get_design_context` under whichever name is loaded: `mcp__plugin_figma_figma__*` (Figma plugin), `mcp__figma__*` (a user-configured `figma` MCP server) or `mcp__plugin_design_figma__*` (the design plugin's Figma server). Add `get_metadata` for structure, `get_screenshot` when structure alone is ambiguous, and `get_variable_defs` only when the tree references tokens. When the caller pastes `get_metadata` or `get_design_context` output for the node, normalize that and skip the fetch.
 3. **Strip.** Drop hidden nodes, zero-opacity fills, stray divider vectors that a `spacing` value already expresses, and designer-only frames (page chrome, guides, comment pins). Keep anything on the preserve list.
 4. **Flatten.** Collapse single-child wrappers that only add padding or a background, moving their layout data onto the survivor.
 5. **Classify.** Give every surviving node a `type`:
@@ -64,7 +64,7 @@ Every node has these fields:
 
 ## Rules
 
-- If none of the Figma tools is available under any of those names, stop and tell your caller a Figma MCP server (the Figma plugin, or the Figma remote server at `https://mcp.figma.com/mcp`) must be installed and signed in. Never build the JSON from the URL or from memory.
+- If none of the Figma tools is available under any of those names and the caller pasted no Figma output, stop and tell your caller a Figma MCP server (the Figma plugin, or the Figma remote server at `https://mcp.figma.com/mcp`) must be installed and signed in. Never build the JSON from the URL or from memory.
 - Never invent nodes. If something the design needs is missing, say so in the summary.
 - Be deterministic: same input, same JSON, children in source order.
 - Every removal and flatten appears in the summary so the caller can challenge it.
