@@ -165,17 +165,35 @@ SCREENSHOT_CONTEXT = (
 )
 
 
+# First segments that start a branch with a slash (feature/x, release/1.2).
+# The hook cannot ask the remote which part of a tree path is the branch, so a
+# path that starts with one of these is read as that two-segment branch.
+BRANCH_PREFIXES = {
+    "feature", "features", "feat", "fix", "fixes", "bugfix", "hotfix", "release", "releases",
+    "chore", "refactor", "docs", "test", "tests", "experiment", "experimental", "wip", "user", "users",
+}
+
+
+def tree_subfolder(tree: list[str]) -> list[str]:
+    """The subfolder segments of a /tree/ path, or [] when the whole path is
+    the branch (tree/dev, tree/feature/x)."""
+    branch_len = 2 if len(tree) >= 2 and tree[0].lower() in BRANCH_PREFIXES else 1
+    return tree[branch_len:]
+
+
 def name_arg(link: str) -> str:
     """' --name <Valid>' when the name import_mod.py derives from the link fails
-    its rule (DayZ-Expansion has a hyphen), else ''. A tree link with a
-    subfolder (tree/main/MyMod) is named after its last segment."""
+    its rule (DayZ-Expansion has a hyphen), else ''. The name comes from the
+    subfolder when the link has one (tree/main/MyMod), else the repo name, so
+    a slash branch with no subfolder (tree/feature/x) is named after the repo."""
     path = re.sub(r"(?i)^(?:https?://)?(?:www\.)?github\.com/", "", link).rstrip("/").split("/")
     repo = re.sub(r"(?i)\.git$", "", path[1])
     tree = path[3:] if len(path) > 3 and path[2].lower() == "tree" else []
-    name = tree[-1] if len(tree) >= 2 else repo
+    subfolder = tree_subfolder(tree)
+    name = subfolder[-1] if subfolder else repo
     if MOD_NAME_RE.match(name) and MOD_NAME_RE.match(repo):
         return ""
-    valid = re.sub(r"^[^A-Za-z]+", "", re.sub(r"\W", "", name))[:64] or "MyMod"
+    valid = re.sub(r"^[^A-Za-z]+", "", re.sub(r"[^A-Za-z0-9_]", "", name))[:64] or "MyMod"
     return f" --name {valid}"
 
 

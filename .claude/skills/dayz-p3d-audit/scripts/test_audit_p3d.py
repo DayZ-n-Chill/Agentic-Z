@@ -641,3 +641,13 @@ def test_ordinary_item_without_pos_center_passes_and_autocenter_item_does_not(tm
     config.write_text("class CfgVehicles { class MyCrate { model = \"\\MyMod\\m.p3d\"; autocenter = 0; }; };", encoding="utf-8")
     audit.audit_p3d(str(model), config=str(config))
     assert "WARNING: Missing 'pos center'" in capsys.readouterr().out
+
+
+def test_component_coverage_matches_lowercase_components():
+    # Binarized models store 'component01'; the coverage check must still run on them.
+    lod = _stub_lod(selections={"component01": ([0, 1, 2], [0])})
+    issues = audit.check_component_coverage(lod)
+    assert _severities(issues) == ["WARNING", "WARNING"]
+    assert "cover 3/4 vertices" in issues[0][1]
+    full = _stub_lod(selections={"component01": ([0, 1, 2], [0]), "COMPONENT02": ([0, 1, 3, 2], [1, 2, 3])})
+    assert audit.check_component_coverage(full) == []
