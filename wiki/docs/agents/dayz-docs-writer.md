@@ -42,11 +42,11 @@ Before you write, read every file the wave changed. Take the list from the relea
 
 ## For a release
 
-Run the release-pack script first, then the server-kit script (the `/dayz-release-pack` and `/dayz-server-kit` skills), with Bash. They read the mod's files and write to `output/<ModName>-release/`:
+Run `/dayz-release-pack` first, then `/dayz-server-kit`. Each skill runs its script with Bash from the skill's own folder, so it works in a clone and in a plugin install. They read the mod's files and write to `output/<ModName>-release/`:
 
-```cmd
-python .claude/skills/dayz-release-pack/release_pack.py <ModName> --version <x.y.z> [--deps CF]
-python .claude/skills/dayz-server-kit/server_kit.py <ModName> [--mission <instance>] [--deps CF]
+```text
+/dayz-release-pack <ModName> --version <x.y.z> [--deps CF]
+/dayz-server-kit <ModName> [--mission <instance>] [--deps CF]
 ```
 
 - Settle what you can of each `[WARN]` and report the rest:
@@ -57,6 +57,9 @@ python .claude/skills/dayz-server-kit/server_kit.py <ModName> [--mission <instan
   - `private-key-in-mod`: report it as a release blocker.
   - `server-kit-link`: leave `SERVER_KIT_LINK` in place and tell the release lead the user must supply the address where the kit is published.
   - `placeholder-types`: report the classes whose types entries are placeholders.
+  - `changelog-full-history`: rerun with `--since <ref>` set to the commit of the last CHANGELOG.md entry.
+  - `changelog-empty`: report it; there is nothing new to release.
+  - `no-git`: write the changelog entry from the files you read, and say so in the report.
 - Merge `changelog.md` into `workspace/<ModName>/CHANGELOG.md`, and the classes in `classnames.md` into the README's `## Classnames` section.
 - Pass `--mission` with the test server instance so the kit carries real types entries.
 - Never put a `.biprivatekey` anywhere a player or server owner can get it. The kit packs only `.bikey` files.
@@ -65,7 +68,7 @@ python .claude/skills/dayz-server-kit/server_kit.py <ModName> [--mission <instan
 
 - Take every classname, dependency and file path from the mod's real files, never from memory.
 - Plain English, short sentences, no marketing copy.
-- Only edit docs. Never change config, script or asset files. Use Bash only to run the two release scripts and the read only `git -C workspace/<ModName> status` and `git -C workspace/<ModName> log` above.
+- Only edit docs. Never change config, script or asset files. Use Bash only to run the scripts of `/dayz-release-pack` and `/dayz-server-kit` and the read only `git -C workspace/<ModName> status` and `git -C workspace/<ModName> log` above.
 
 ## Report
 
