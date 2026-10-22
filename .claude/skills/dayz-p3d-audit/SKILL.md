@@ -51,8 +51,9 @@ the model's folder or the nearest parent folder. Without a model.cfg, animations
 not checked.
 
 The Geometry LOD `autocenter` property is checked only when the config.cpp (`--config`,
-or under `--scan-dir` the nearest one found the same way) has a class with
-`autocenter = 0`. Kits and ordinary items do not use it, so they get no finding. The
+or under `--scan-dir` the nearest one found the same way) has a class whose
+`model` is this p3d and that sets `autocenter = 0` (either one may come from a parent class in
+the same file). Kits and ordinary items do not use it, so they get no finding. The
 same config decides the `pos center` checks: a missing `pos center` (WARNING) or one far
 from the origin (NOTE) is reported only for those autocenter=0 items. The missing `box_placing_min/max` NOTE
 appears only for a model with no Geometry LOD (the hologram uses the Geometry LOD

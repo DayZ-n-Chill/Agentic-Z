@@ -285,19 +285,45 @@ def check_component_coverage(lod):
     return issues
 
 
-def config_sets_autocenter_zero(config_path):
-    """True when some class in the config.cpp sets autocenter = 0."""
-    if not config_path:
+def config_sets_autocenter_zero(config_path, p3d_path):
+    """True when a class whose model= is this p3d sets autocenter = 0.
+
+    Only the classes that use this model count, so a kit sharing a config.cpp
+    with a proxy that sets autocenter = 0 is not flagged. Both model and
+    autocenter are inherited from parent classes defined in the same file.
+    """
+    if not config_path or not p3d_path:
         return False
     try:
         text = Path(config_path).read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return False
 
-    def walk(node):
-        return node.props.get("autocenter") == "0" or any(walk(c) for c in node.classes.values())
+    classes = {}
 
-    return walk(parse_cfg(text))
+    def collect(node):
+        for key, child in node.classes.items():
+            classes.setdefault(key, child)
+            collect(child)
+
+    collect(parse_cfg(text))
+
+    def inherited(node, prop):
+        seen = set()
+        while node is not None and id(node) not in seen:
+            seen.add(id(node))
+            if prop in node.props:
+                return node.props[prop]
+            node = classes.get((node.parent or "").lower())
+        return None
+
+    target = Path(p3d_path).name.lower()
+    for node in classes.values():
+        model = inherited(node, "model")
+        if model and model.replace("\\", "/").rsplit("/", 1)[-1].lower() == target \
+                and inherited(node, "autocenter") == "0":
+            return True
+    return False
 
 
 def check_autocenter_prop(lod, config_wants_zero=False):
@@ -508,7 +534,7 @@ def audit_p3d(filepath, model_cfg=None, config=None):
     all_issues.extend(check_required_lods(lod_map))
 
     # Decided once: gates the autocenter property and the 'pos center' checks.
-    wants_zero = config_sets_autocenter_zero(config)
+    wants_zero = config_sets_autocenter_zero(config, filepath)
 
     # Collision LODs
     for lt in ["Geometry", "GeoPhys", "FireGeo", "ViewGeo"]:

@@ -38,7 +38,7 @@ After a build, restart Claude Code so the MCP server opens the new index.
 
 ## What it indexes
 
-The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. Run `--status` to see the current chunk, file and token counts (a full build of vanilla came to 61,160 chunks when counted on 2026-10-22, with XML, JSON and CSV windowed too).
+The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. Run `--status` to see the current chunk, file and token counts (a full build of vanilla came to 61,757 chunks when counted on 2026-10-22, with XML, JSON and CSV windowed too).
 
 Indexes built before windowing stored only the first 8,000 characters of each oversize class block, XML batch, JSON file or CSV file, so most stringtable rows were never searchable. Run `--full` once to rebuild with windowing; expect the chunk count to rise.
 
