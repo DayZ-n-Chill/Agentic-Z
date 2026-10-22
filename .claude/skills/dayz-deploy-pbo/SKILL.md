@@ -1,6 +1,7 @@
 ---
 name: dayz-deploy-pbo
 description: "Copies prebuilt PBOs and keys from a workspace bundle (workspace/<ModName>/Addons and Keys) to P:\\Mods\\@<ModName>\\ without AddonBuilder. Use when a mod ships only PBOs (third-party or umbrella bundles), or after /dayz-build-pbo builds a bundle's linker PBO."
+argument-hint: "<ModName>"
 ---
 
 <!-- skill-dir-note -->

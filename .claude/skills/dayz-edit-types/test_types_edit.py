@@ -57,14 +57,19 @@ def test_upsert_new_entry_gets_defaults_and_survives_write(types_file):
     tree, root = _roundtrip(types_file)
     changed, msg = te.upsert(root, "MyMod_Vest", _args(nominal=3, usage=["Police", "Military"]))
     assert changed
-    assert msg == 'Added <type name="MyMod_Vest"> nominal=3, min=0, lifetime=3888000, cost=100'
+    assert msg == 'Added <type name="MyMod_Vest"> nominal=3, min=0, lifetime=14400, cost=100'
     te.write_types(tree, types_file)
 
     _, root = _roundtrip(types_file)
     vest = _find(root, "MyMod_Vest")
     assert vest.findtext("nominal") == "3"
     assert vest.findtext("restock") == "0"
-    assert vest.find("flags").get("count_in_cargo") == "1"
+    assert vest.find("flags").get("count_in_cargo") == "0"
+    assert vest.findtext("lifetime") == "14400"
+    assert dict(vest.find("flags").attrib) == {
+        "count_in_cargo": "0", "count_in_hoarder": "0", "count_in_map": "1",
+        "count_in_player": "0", "crafted": "0", "deloot": "0",
+    }
     assert sorted(u.get("name") for u in vest.findall("usage")) == ["Military", "Police"]
 
 

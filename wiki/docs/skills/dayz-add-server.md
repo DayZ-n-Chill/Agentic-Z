@@ -25,7 +25,7 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 | Argument | Required? | Notes |
 |---|---|---|
 | `<instance>` | yes | Free-form instance name. Becomes the folder name under `.server/`, so it must be a single folder name (no `/`, `\`, `:`, `..`, or any of the characters Windows forbids in file names, such as `*`, `?` and `"`). Examples: `chernarus`, `chernarus-hardcore`, `loot-test`, `livonia-pvp`. |
-| `--map` | no | Map alias (`chernarus`, `livonia`, `sakhal`) or full mission template folder name (e.g. `dayzOffline.namalsk`). When omitted, `<instance>` is used as the map alias if it matches a known one; otherwise the skill fails and asks for `--map`. |
+| `--map` | no | Map alias (`chernarus`, `livonia`, `sakhal`, `nasdara`) or full mission template folder name (e.g. `dayzOffline.namalsk`). When omitted, `<instance>` is used as the map alias if it matches a known one; otherwise the skill fails and asks for `--map`. |
 | `--refresh-mission` | no | Re-copy the mission folder from the DayZ Server install. The current `mission/` is first renamed to `mission.bak-<YYYYMMDD-HHMMSS>/` so your edits stay recoverable. Use after a DayZ update brings new mission content. Without this flag, an existing mission folder is left alone. |
 
 ## What it does
@@ -48,6 +48,7 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 - `workspace/_server/` still exists. Delete it manually; the legacy layout is no longer supported.
 - DayZ Server install isn't found AND the mission isn't already in `.server/<instance>/mission/`. (Install DayZ Server free from Steam appid 223350 for the initial copy. Once the mission is local, DayZ Server is no longer required.)
 - `<instance>` contains a path separator, a drive colon, one of `* ? " < > |`, or is `.`/`..` (argparse rejects it, exit 2).
+- `<instance>` starts with `!` (reserved for shared `.server` folders such as `!ClientDiagLogs` and `!Health`) or ends in `-behavior` (reserved for `/dayz-gate` behavior copies). Argparse rejects it, exit 2.
 - The instance already exists and its `serverDZ.cfg` `template = "..."` line names a different mission template than this run resolved (for example `chernarus` rerun with `--map livonia`). Add a new instance for the other map, or set the `template =` line yourself and rerun with `--refresh-mission` to swap the mission (the old one is kept as a backup).
 - `<instance>` isn't a known map alias and `--map` wasn't given. (We have no way to guess the mission template from a free-form name.)
 - DayZ Server install lacks the requested mission template (e.g. `--map dayzOffline.namalsk` but DayZ Server doesn't ship namalsk; either provide the mission manually under `.server/<instance>/mission/` or correct the name).

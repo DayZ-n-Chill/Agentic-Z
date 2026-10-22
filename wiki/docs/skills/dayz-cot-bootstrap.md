@@ -76,7 +76,7 @@ Safe on the same instance: an existing `admin` role and an all-` 2` perms file a
 
 [Pass 2/2] Relaunching with admin permissions applied.
 ...
-You are now COT admin on 'chernarus'. Open the COT menu in-game (default keybind: BACKSPACE).
+You are now COT admin on 'chernarus'. In game, press Y to open the COT menu (End turns COT on or off; both can be rebound in Controls).
 ```
 
 ## Do not

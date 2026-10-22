@@ -208,6 +208,18 @@ def test_instance_name_rejects_windows_forbidden_chars(bad):
         srv.validate_instance(bad)
 
 
+@pytest.mark.parametrize("bad", ["!ClientDiagLogs", "!Health", "!mine"])
+def test_instance_name_rejects_shared_bang_folders(bad):
+    with pytest.raises(srv.argparse.ArgumentTypeError, match="reserved"):
+        srv.validate_instance(bad)
+
+
+@pytest.mark.parametrize("bad", ["chernarus-behavior", "x-behavior"])
+def test_instance_name_rejects_gate_behavior_copies(bad):
+    with pytest.raises(srv.argparse.ArgumentTypeError, match="dayz-gate"):
+        srv.validate_instance(bad)
+
+
 @pytest.mark.parametrize("good", ["chernarus", "chernarus-hardcore", "loot_test.2"])
 def test_instance_name_accepts_folder_names(good):
     assert srv.validate_instance(good) == good

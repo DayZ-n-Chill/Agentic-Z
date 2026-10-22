@@ -44,7 +44,7 @@ A missing `P:\Mods` is not an issue when the DayZ install's `!Workshop` folder e
 Ask with one AskUserQuestion call (up to 4 questions), putting the usual choice first:
 
 1. New mod or import an existing mod folder?
-2. Test server: chernarus, livonia, sakhal, or none. Other maps need `/dayz-add-server` with the mission folder name.
+2. Test server: chernarus, livonia, sakhal, nasdara, or none. AskUserQuestion shows at most 4 options, so offer chernarus, livonia, sakhal and none, and accept nasdara when the user types it as the other answer. Any other map needs `/dayz-add-server` with the mission folder name.
 3. Build the PBO now? (yes / no)
 4. Launch DayZ Diag now? (yes / no; only offered when a server was picked; launching implies building)
 
