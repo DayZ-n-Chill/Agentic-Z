@@ -38,13 +38,17 @@ WORKSHOP_RE = re.compile(
 # Only a repo or tree link is a mod to import. The first lookahead skips
 # GitHub's own pages (github.com/orgs/..., /features/..., /trending/...). The
 # second keeps the repo name whole; the third skips pull requests, issues,
-# files, the wiki, settings and the like. A /tree/ branch may hold slashes
-# (feature/x), so every segment after /tree/ is kept. The lookbehind keeps
-# subdomains such as gist. and raw. from matching.
+# files, the wiki, settings and the like. Every segment after /tree/ is kept,
+# since it may be a branch with slashes (feature/x) or a branch plus a
+# subfolder (main/MyMod); import_mod.py's resolve_branch asks the remote which
+# part is the branch. The lookbehind keeps subdomains such as gist. and raw.
+# from matching.
 GITHUB_RE = re.compile(
     r"(?i)(?<![\w.-])(?:https?://)?(?:www\.)?github\.com/"
     r"(?!(?:orgs|settings|sponsors|topics|marketplace|notifications|apps|users|features|trending|collections"
-    r"|explore|enterprise|solutions|resources|customer-stories|readme|events|codespaces|search|login|about)/)"
+    r"|explore|enterprise|solutions|resources|customer-stories|readme|events|codespaces|search|login|about"
+    r"|advisories|logout|signup|join|pricing|site|contact|new|account|dashboard|watching|stars|team"
+    r"|security|sessions|password_reset|organizations|github-copilot|copilot|premium-support|education)/)"
     r"[\w.-]+/[\w.-]*[\w-](?![\w-]|\.[\w-])"
     r"(?!/(?:pulls?|issues|blob|commits?|releases|actions|compare|discussions|wiki|settings|projects"
     r"|security|tags|branches|milestones|labels)\b)"

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import subprocess
 import sys
@@ -329,8 +330,8 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
     args = parser.parse_args(argv)
     if args.server and args.dir:
         parser.error("give --server or --dir, not both")
-    # 0 would spin a CPU core and a negative value crashes time.sleep.
-    if not args.interval >= MIN_INTERVAL_S:
+    # 0 would spin a CPU core, a negative value crashes time.sleep and inf overflows it.
+    if not (math.isfinite(args.interval) and args.interval >= MIN_INTERVAL_S):
         parser.error(f"--interval must be at least {MIN_INTERVAL_S} seconds")
 
     project = triage.cached_project_dir()

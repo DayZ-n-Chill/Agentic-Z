@@ -44,6 +44,8 @@ The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and 
 
 Indexes built before windowing stored only the first 8,000 characters of each oversize class block, XML batch, JSON file or CSV file, so most stringtable rows were never searchable. Run `--full` once to rebuild with windowing; expect the chunk count to rise.
 
+An existing or downloaded index has none of the file-scope chunks (code between classes, such as enums, typedefs and globals) until it is rebuilt with `--full`, which is a paid embedding run.
+
 | File type | Chunking |
 |---|---|
 | `.c .cpp .hpp .h .cfg .layout` | one chunk per top-level `class X { ... }` block, whole file if there are none. The code between classes (global functions, enums, typedefs, constants, and the rest of the file after a class that never closes) gets its own chunks with an empty parent context; a gap of only comments is skipped. Braces and `class` words inside comments and strings are ignored, so a `}` in a comment does not end a class early. A block or file over 6,000 characters (`EMBED_MAX_CHARS`) is split into windows of at most that size, cut at member boundaries (a method or field starting at the class's top level) where possible, otherwise at the last whole line that fits. Each window keeps the class name as parent context and its own real line range, so no script text is dropped |

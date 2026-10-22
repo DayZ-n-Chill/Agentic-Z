@@ -55,8 +55,9 @@ SCAFFOLD_CHECKS = (
 _WORKSHOP_RE = re.compile(
     r"(?i)(?:steamcommunity\.com/(?:sharedfiles|workshop)/filedetails|steam://url/CommunityFilePage/\d)"
 )
-# github.com/<owner>/<repo>[.git][/tree/<branch>], with or without https://;
-# the branch may hold slashes (feature/x)
+# github.com/<owner>/<repo>[.git][/tree/<ref path>], with or without https://.
+# The ref path is the branch, which may hold slashes (feature/x), optionally
+# followed by a subfolder (main/MyMod); resolve_branch splits the two.
 _GITHUB_RE = re.compile(
     r"(?i)^(?:https?://)?(?:www\.)?github\.com/([\w.-]+)/([\w.-]+?)(?:\.git)?(?:/tree/([^\s?#]+?))?/?(?:[?#]\S*)?$"
 )
@@ -101,13 +102,37 @@ def parse_git_source(raw: str) -> Optional[GitSource]:
     return None
 
 
+def resolve_branch(git: str, url: str, ref_path: str) -> str:
+    """The branch named by a /tree/ ref path. The path may be a branch with
+    slashes (feature/x) or a branch plus a subfolder (main/MyMod), so the
+    longest leading run of segments that is a real head on the remote wins.
+    With no match (a tag, or ls-remote failed) the first segment is used."""
+    segments = ref_path.split("/")
+    if len(segments) == 1:
+        return ref_path
+    result = subprocess.run([git, "ls-remote", "--heads", url], capture_output=True, text=True)
+    heads = set()
+    if result.returncode == 0:
+        for line in (result.stdout or "").splitlines():
+            if "\t" in line:
+                heads.add(line.split("\t", 1)[1].removeprefix("refs/heads/"))
+    for n in range(len(segments), 0, -1):
+        candidate = "/".join(segments[:n])
+        if candidate in heads:
+            return candidate
+    return segments[0]
+
+
 def clone_repo(src: GitSource, target: Path) -> None:
     """git clone the repo into target, or exit with git's own message."""
     git = shutil.which("git")
     if git is None:
         sys.exit(f"{FAIL} git was not found on PATH. Install Git for Windows (https://git-scm.com) and re-run.")
-    cmd = [git, "clone"] + (["--branch", src.branch] if src.branch else []) + [src.url, str(target)]
-    print(f"{INFO} Cloning {src.url}{f' (branch {src.branch})' if src.branch else ''} ...")
+    branch = resolve_branch(git, src.url, src.branch) if src.branch else None
+    if branch and branch != src.branch:
+        print(f"{INFO} The link points at {src.branch[len(branch) + 1:]} inside branch {branch}; the whole repo is cloned.")
+    cmd = [git, "clone"] + (["--branch", branch] if branch else []) + [src.url, str(target)]
+    print(f"{INFO} Cloning {src.url}{f' (branch {branch})' if branch else ''} ...")
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         remove_clone(target)
