@@ -130,7 +130,8 @@ CASES = [
      "workspace/MyMod/config.cpp", 1),
     ("cfgpatches-field-missing", "warning", cfg_edit('        units[] = {"MyMod_Vest"};\n', ""), "workspace/MyMod/config.cpp", 3),
     ("cfgpatches-field", "error", cfg_edit("weapons[] = {};", 'weapons = "";'), "workspace/MyMod/config.cpp", 6),
-    ("cfgpatches-field-missing", "warning", cfg_edit('        requiredAddons[] = {"DZ_Data", "DZ_Scripts"};\n', ""), "workspace/MyMod/config.cpp", 3),
+    ("cfgpatches-field-missing", "warning", cfg_edit('        weapons[] = {};\n', ""), "workspace/MyMod/config.cpp", 3),
+    ("required-addons-missing", "error", cfg_edit('        requiredAddons[] = {"DZ_Data", "DZ_Scripts"};\n', ""), "workspace/MyMod/config.cpp", 3),
     ("required-addon-name", "error", cfg_edit('"DZ_Scripts"', '"@CF"'), "workspace/MyMod/config.cpp", 8),
     ("required-addon-name", "error", cfg_edit('"DZ_Scripts"', '"DZ\\gear\\vests"'), "workspace/MyMod/config.cpp", 8),
     ("required-addon-name", "error", cfg_edit('"DZ_Scripts"', '"MyMod"'), "workspace/MyMod/config.cpp", 8),
@@ -141,7 +142,7 @@ CASES = [
     ("script-module-path", "error", cfg_edit('"MyMod/scripts/5_Mission"', '"OtherMod/scripts/5_Mission"'), "workspace/MyMod/config.cpp", 21),
     ("script-module-path", "error", cfg_edit('"MyMod/scripts/5_Mission"', '"MyMod/scripts/5_Misson"'), "workspace/MyMod/config.cpp", 21),
     ("script-module-layer", "error", cfg_edit('{"MyMod/scripts/3_Game"}', '{"MyMod/scripts/4_World"}'), "workspace/MyMod/config.cpp", 19),
-    ("script-module-unlisted", "error", cfg_edit('            class worldScriptModule { value = ""; files[] = {"MyMod/scripts/4_World"}; };\n', ""),
+    ("script-module-unlisted", "warning", cfg_edit('            class worldScriptModule { value = ""; files[] = {"MyMod/scripts/4_World"}; };\n', ""),
      "workspace/MyMod/config.cpp", 11),
     ("modded-class-extends", "error", write("scripts/4_World/vest.c", "class A {}\nmodded class PlayerBase extends PlayerBase\n{\n}\n"),
      "workspace/MyMod/scripts/4_World/vest.c", 2),
@@ -284,14 +285,29 @@ def test_empty_script_folder_needs_no_module(mod, p_drive):
     assert run(mod, p_drive)["findings"] == []
 
 
-def test_empty_patch_class_like_vanilla_passes_with_warnings(mod, p_drive):
+def test_patch_class_without_units_or_weapons_passes_with_warnings(mod, p_drive):
     # Vanilla P:\DZ\data\aiconfigs\config.cpp: class DZ_data_aiconfigs {}; loads with no arrays at all.
+    edit(mod / "config.cpp", '        units[] = {"MyMod_Vest"};\n        weapons[] = {};\n', "")
+    report = run(mod, p_drive)
+    assert report["verdict"] == "PASS" and report["errors"] == 0
+    assert [(f["rule"], f["severity"], f["line"]) for f in report["findings"]] == [("cfgpatches-field-missing", "warning", 3)] * 2
+
+
+def test_patch_class_without_required_addons_fails(mod, p_drive):
     edit(mod / "config.cpp",
          '        units[] = {"MyMod_Vest"};\n        weapons[] = {};\n        requiredVersion = 0.1;\n'
          '        requiredAddons[] = {"DZ_Data", "DZ_Scripts"};\n', "")
     report = run(mod, p_drive)
-    assert report["verdict"] == "PASS" and report["errors"] == 0
-    assert [(f["rule"], f["severity"], f["line"]) for f in report["findings"]] == [("cfgpatches-field-missing", "warning", 3)] * 3
+    assert (report["verdict"], report["errors"], report["warnings"]) == ("FAIL", 1, 2)
+    assert [(f["rule"], f["severity"]) for f in report["findings"]] == [
+        ("required-addons-missing", "error"), ("cfgpatches-field-missing", "warning"), ("cfgpatches-field-missing", "warning")]
+
+
+def test_unlisted_script_folder_is_only_a_warning(mod, p_drive):
+    edit(mod / "config.cpp", '            class worldScriptModule { value = ""; files[] = {"MyMod/scripts/4_World"}; };\n', "")
+    report = run(mod, p_drive)
+    assert (report["verdict"], report["errors"]) == ("PASS", 0)
+    assert [f["rule"] for f in report["findings"]] == ["script-module-unlisted"]
 
 
 def test_patch_names_reads_only_cfgpatches_children():
