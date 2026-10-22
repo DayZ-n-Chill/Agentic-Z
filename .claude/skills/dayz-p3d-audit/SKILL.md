@@ -9,7 +9,7 @@ description: "Audits DayZ .p3d models and their config.cpp, model.cfg and .rvmat
 # /dayz-p3d-audit
 
 Validates .p3d model files, config.cpp, model.cfg, and .rvmat materials against
-DayZ engine requirements — targeting the failure modes that produce zero engine
+DayZ engine requirements, targeting the failure modes that produce zero engine
 errors but break collision, targeting, animation, or textures.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`. The script runs `/dayz-preflight` first and stops if it fails.
@@ -89,12 +89,12 @@ references below.
 
 4. Do debug Print() in ActionCondition appear in script log?
    YES → ActionCondition rejecting. Read prints to find which check fails
-   NO  ↓ (P3D Geometry LOD issue — engine can't raycast)
+   NO  ↓ (P3D Geometry LOD issue: engine can't raycast)
 
 5. Run audit_p3d.py and check:
    a. Face winding outward?      → Verify per references/winding-methodology.md
                                     (the script deliberately omits the naive
-                                    centroid check — it false-positives on DayZ)
+                                    centroid check: it false-positives on DayZ)
    b. Component01 uppercase C?   → If wrong case: rename
    c. autocenter=0 LOD property? → If missing: add (checked only when config.cpp
                                     sets autocenter = 0)
@@ -129,13 +129,13 @@ references below.
 
 Deep material lives in `<skill-dir>\references\`:
 
-- **`references/p3d-killers.md`** — the 10 silent P3D killers (inverted winding,
+- **`references/p3d-killers.md`**: the 10 silent P3D killers (inverted winding,
   Component01 case, autocenter LOD property, missing LODs, memory points, animation
   selections, collision-LOD surface materials, …) plus Blender export pitfalls and
   script-side gotchas that co-occur during debugging.
-- **`references/config-rvmat-checks.md`** — config.cpp checks (P:\ paths, placed-object
+- **`references/config-rvmat-checks.md`**: config.cpp checks (P:\ paths, placed-object
   properties, AnimationSources, hiddenSelections) and .rvmat checks (paths, plus the
   Super-shader stage layout to review by hand).
-- **`references/winding-methodology.md`** — how to actually verify face winding
+- **`references/winding-methodology.md`**: how to actually verify face winding
   (edge-pair topology, averaged-normal checks), which heuristics mislead and why,
   known traps, and the full Blender-import checklist.

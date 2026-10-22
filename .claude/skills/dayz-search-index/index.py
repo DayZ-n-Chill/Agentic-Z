@@ -106,7 +106,7 @@ def _read_logged_usage_tokens() -> int:
     Voyage's pricing page gives the free tokens per account and names no
     monthly reset, so every logged build counts against them.
 
-    Doesn't fail on missing file or malformed lines — those are treated as
+    Doesn't fail on missing file or malformed lines: those are treated as
     zero contribution. We'd rather under-warn than crash.
     """
     path = _usage_log_path()
@@ -165,10 +165,10 @@ def _check_voyage_tier(
     if pct_projected > 1.0:
         rate = _rate(model)
         if rate is None:
-            print(f"        Past free tier — no local rate for {model}; check Voyage pricing.")
+            print(f"        Past free tier: no local rate for {model}; check Voyage pricing.")
         else:
             cost_over = ((projected - budget) / 1_000_000) * rate
-            print(f"        Past free tier — estimated overage: ${cost_over:.2f}")
+            print(f"        Past free tier, estimated overage: ${cost_over:.2f}")
     print()
     print("        Caveats:")
     print("        - Counter is local. Other apps using your VOYAGE_API_KEY are NOT counted.")
@@ -524,7 +524,7 @@ def chunk_whole_file(path: Path, file_type: str) -> list[dict]:
 # --------------- walk config ---------------
 
 # Top-level vanilla folders to scan under P:\. Mods, junctions to user mod
-# projects, and DayZ Tools binary dirs are NOT in this list — that's the
+# projects, and DayZ Tools binary dirs are NOT in this list: that's the
 # implicit exclusion.
 VANILLA_FOLDERS = ["scripts", "gui", "dz", "core", "graphics", "languagecore"]
 
@@ -559,7 +559,7 @@ def _estimate_tokens(text: str) -> int:
 def _pack_batches(texts: list[str]) -> Iterator[list[str]]:
     """Yield batches that respect both Voyage limits: max TEXT_LIMIT_PER_BATCH
     items AND max ~TOKEN_BUDGET_PER_BATCH tokens (estimated locally as
-    len/CHARS_PER_TOKEN_EST). Single oversize chunks pass through alone —
+    len/CHARS_PER_TOKEN_EST). Single oversize chunks pass through alone;
     truncation=True on the API call handles the actual cap."""
     batch: list[str] = []
     batch_tokens = 0
@@ -619,7 +619,7 @@ def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[flo
     """Embed all texts via Voyage in dynamically-packed batches. Returns
     (vectors, total_tokens).
 
-    - Uses input_type="document" (asymmetric retrieval — matches "query" at search time)
+    - Uses input_type="document" (asymmetric retrieval: matches "query" at search time)
     - truncation=True so over-context single inputs don't 400
     - Retries transient Voyage errors (voyage_common.is_transient: rate limit,
       timeout, connection, server) with exponential backoff, EMBED_ATTEMPTS per batch
@@ -651,7 +651,7 @@ def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[flo
                 if attempt == EMBED_ATTEMPTS - 1 or not transient:
                     pbar.close()
                     raise EmbedError(exc, total_tokens, transient) from exc
-                pbar.write(f"{WARN} {exc} — retry in {delay:.0f}s (attempt {attempt + 1}/{EMBED_ATTEMPTS})")
+                pbar.write(f"{WARN} {exc}: retry in {delay:.0f}s (attempt {attempt + 1}/{EMBED_ATTEMPTS})")
                 time.sleep(delay)
                 delay *= 2
         if cost_per_m is None:
@@ -711,7 +711,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     if vanilla:
         print(f"{OK} Vanilla data: {vanilla}")
     else:
-        print(f"{WARN} vanilla data not detected — config.cpp scope will be empty")
+        print(f"{WARN} vanilla data not detected: config.cpp scope will be empty")
 
     _require_deps()
     api_key = _load_env_and_key()
@@ -751,7 +751,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     for folder in VANILLA_FOLDERS:
         root = P_ROOT / folder
         if not root.exists():
-            print(f"  {folder}/  (skipped — not present)")
+            print(f"  {folder}/  (skipped: not present)")
             counts_by_folder[folder] = {}
             continue
 
@@ -827,7 +827,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         )
         return 1
 
-    # Drop chunks with no embeddable content — Voyage returns 400 on empty inputs.
+    # Drop chunks with no embeddable content: Voyage returns 400 on empty inputs.
     nonempty_chunks = [c for c in chunks if c.get("content", "").strip()]
     dropped = len(chunks) - len(nonempty_chunks)
     if dropped:

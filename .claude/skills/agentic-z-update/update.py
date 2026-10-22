@@ -829,6 +829,14 @@ def main() -> int:
     # Template paths, the baseline and the lock are all relative to the repo root.
     os.chdir(root)
 
+    # Checked before the dirty-tree gate: a merge leaves template paths dirty,
+    # and that message's "--force" advice would not get past this refusal.
+    if not args.check and not args.dry_run:
+        op = git_operation_in_progress()
+        if op:
+            log("ERR", f"A git {op} is in progress. Finish or abort it first (git {op} --continue or --abort), then rerun.")
+            return 1
+
     if not args.force and not args.check:
         clean, dirty = working_tree_clean_for(TEMPLATE_PATHS)
         if not clean:
@@ -836,12 +844,6 @@ def main() -> int:
             for p in dirty:
                 print(f"      {p}")
             log("ERR", "Commit or stash, or pass --force to override.")
-            return 1
-
-    if not args.check and not args.dry_run:
-        op = git_operation_in_progress()
-        if op:
-            log("ERR", f"A git {op} is in progress. Finish or abort it first (git {op} --continue or --abort), then rerun.")
             return 1
 
     if not ensure_upstream():

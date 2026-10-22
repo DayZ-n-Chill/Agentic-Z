@@ -452,8 +452,11 @@ def diff_snapshots(old: dict, new: dict) -> dict:
         changes = {"removed": sorted(label(a, k) for k in set(a) - set(b)),
                    "added": sorted(label(b, k) for k in set(b) - set(a)), "parent": [], field: []}
         for name in sorted(set(a) & set(b)):
-            moved = a[name]["parent"] != b[name]["parent"] if kind == "script" \
-                else not _same_parent(a[name]["parent"], b[name]["parent"])
+            old_p, new_p = a[name]["parent"], b[name]["parent"]
+            if kind == "script":
+                moved = old_p != new_p  # script class names are exact
+            else:
+                moved = not _same_parent(old_p, new_p)  # config class names ignore case
             if moved:
                 changes["parent"].append({"class": label(b, name), "old": a[name]["parent"], "new": b[name]["parent"]})
             if kind == "script":
