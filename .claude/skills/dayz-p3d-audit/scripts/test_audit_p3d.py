@@ -288,6 +288,12 @@ def test_box_placing_note_only_without_geometry_lod():
     assert audit.check_memory_lod(vanilla, has_geometry=False) == []
 
 
+def test_memory_lod_faces_warning_text():
+    lod = _points_lod([(0.0, 0.0, 0.0)], {"pos center": [0]}, faces=[object(), object()])
+    assert audit.check_memory_lod(lod) == [("WARNING",
+        "Memory LOD has 2 faces; it should have 0. Only single-vertex points belong in Memory LOD.")]
+
+
 def test_memory_axis_without_model_cfg_is_not_guessed():
     # Without model.cfg nothing is inferred from names such as door_axis.
     assert audit.check_memory_lod(_memory({"door_axis": [1]})) == []

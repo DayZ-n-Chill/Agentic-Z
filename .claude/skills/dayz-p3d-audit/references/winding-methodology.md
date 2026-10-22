@@ -1,17 +1,17 @@
-# Winding Diagnostics — Deep Methodology
+# Winding Diagnostics: Deep Methodology
 
 Field-verified winding-validation methodology from production DayZ mod debugging
 (a crate mod and a vanilla-overriding lamp mod). Complements killer #1 ("Inverted
 Face Winding") in `p3d-killers.md` with validation methodology, known traps, and a
 complete Blender-import checklist.
 
-## How NOT to verify — heuristics that mislead
+## How NOT to verify: heuristics that mislead
 
 **Centroid-based check (`cross(e1, e2) · (face_centroid - LOD_centroid) > 0`):**
 
 - It is **right-handed** (Three.js / OpenGL convention). DayZ is **left-handed**. A
   CORRECT post-flip model shows up as "winding inward" under this check while its
-  declared normals point outward — that is not an inconsistency, it is the opposite
+  declared normals point outward: that is not an inconsistency, it is the opposite
   sign of the cross product between coordinate systems.
 - It assumes **convex geometry** (compares against the LOD centroid). For hollow
   boxes with thick walls, correct interior faces get flagged as "inverted".
@@ -35,7 +35,7 @@ compare the wrong things.
 
 ## How to verify correctly
 
-1. **Check A — winding vs averaged corner normal, per face (DIAGNOSTIC).** For each
+1. **Check A: winding vs averaged corner normal, per face (DIAGNOSTIC).** For each
    face compute `n_winding = normalize(cross(v1-v0, v2-v0))` and compare it with the
    normalized average of `face.vertices[i].normal` over the corners. The percentage
    of faces with `dot < -0.5` indicates the handedness state:
@@ -50,13 +50,13 @@ compare the wrong things.
 
    Coordinate-system-agnostic.
 
-2. **Check B — edge-pair topology (THE MOST RELIABLE).** Two manifold faces that
+2. **Check B: edge-pair topology (THE MOST RELIABLE).** Two manifold faces that
    share an edge must traverse it in opposite directions. If `face1` traverses
    `(A→B)` and `face2` also traverses `(A→B)`, one of the two is flipped.
    Coordinate-system-agnostic and independent of the modeler's intent. **Best tool
    for detecting mixed winding after a flip.**
 
-3. **Check C — comparison against vanilla.** Match faces between the target and a
+3. **Check C: comparison against vanilla.** Match faces between the target and a
    geometrically similar vanilla model (e.g. `DZ/gear/camping/wooden_case.p3d`) by
    centroid proximity, then compare winding-derived normals. Only applicable when a
    close vanilla equivalent exists.
@@ -71,10 +71,10 @@ compare the wrong things.
   (idempotent modulo 2). Always write a backup (e.g. `.p3d.bak_pre_winding_flip`)
   before flipping; if the backup exists, the flip was applied at least once.
   Note: the flip helper scripts referenced by the original project are NOT bundled
-  with this skill — the operation is simply swapping `vertices[1]`/`vertices[2]` on
+  with this skill: the operation is simply swapping `vertices[1]`/`vertices[2]` on
   every face via py3d.
 - **Negating the `lod.facenormals` pool** ("renegate normals" style scripts) is
-  based on a misunderstanding of the format — do not do it. If it was applied, the
+  based on a misunderstanding of the format: do not do it. If it was applied, the
   pool normals are wrongly negated; revert by negating them again.
 - **One field-verified crate model has mixed winding in its Visual LOD** (~38.6% bad
   edges under Check B) yet **DayZ tolerates it in rendering** (verified in-game:
