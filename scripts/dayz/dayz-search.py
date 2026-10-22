@@ -28,13 +28,16 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP_DIR = REPO_ROOT / ".claude" / "mcp" / "dayz-rag"
 sys.path.insert(0, str(MCP_DIR))
 
-from server import DEFAULT_MAX_DISTANCE, VALID_FILE_TYPES, search_dayz_source_impl  # noqa: E402
+from server import DEFAULT_MAX_DISTANCE, MAX_TOP_K, VALID_FILE_TYPES, search_dayz_source_impl  # noqa: E402
 
 
-def _print_hits(hits: list[dict], snippet_chars: int, threshold: Optional[float] = None) -> None:
+def _print_hits(hits: list[dict], snippet_chars: int, threshold: Optional[float] = None,
+                from_flag: bool = False) -> None:
     if not hits:
         if threshold is None:
             print("(no hits)")
+        elif from_flag:
+            print(f"(no hits within distance {threshold:g}; raise it with -d or drop the -d flag)")
         else:
             print(f"(no hits within distance {threshold:g}; raise it with -d, or unset DAYZ_RAG_MAX_DISTANCE)")
         return
@@ -73,6 +76,8 @@ def main(argv: list[str]) -> int:
     if not query:
         print("error: empty query", file=sys.stderr)
         return 2
+    if args.top_k > MAX_TOP_K:
+        print(f"note: -k {args.top_k} is above the maximum; showing at most {MAX_TOP_K} hits", file=sys.stderr)
 
     try:
         hits = search_dayz_source_impl(
@@ -91,8 +96,9 @@ def main(argv: list[str]) -> int:
     if args.json:
         print(json.dumps(hits, indent=2))
     else:
-        threshold = args.max_distance if args.max_distance is not None else DEFAULT_MAX_DISTANCE
-        _print_hits(hits, args.snippet_chars, threshold)
+        from_flag = args.max_distance is not None
+        threshold = args.max_distance if from_flag else DEFAULT_MAX_DISTANCE
+        _print_hits(hits, args.snippet_chars, threshold, from_flag)
     return 0
 
 

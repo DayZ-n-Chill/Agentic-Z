@@ -81,6 +81,18 @@ def test_braces_in_comments_and_strings_do_not_end_a_class(tmp_path):
     assert chunks[0]["content"].rstrip().endswith("void M() { }\n}")
 
 
+def test_config_backslash_is_not_an_escape(tmp_path):
+    # The closing brace shares the line with the path, so an escaping
+    # backslash would swallow it and run class A on into class B.
+    src = 'class A { file = "MyMod\\"; };\nclass B { };\n'
+    chunks = index._block_chunks(_write(tmp_path, "config.cpp", src), "cpp")
+    assert [c["parent_context"] for c in chunks if c["parent_context"]] == ["A", "B"]
+    assert (chunks[0]["line_start"], chunks[0]["line_end"]) == (1, 1)
+    # In a .c file the same backslash is an escape.
+    escaped = index._block_chunks(_write(tmp_path, "a.c", src), "c")
+    assert [c["parent_context"] for c in escaped] != ["A", "B"]
+
+
 def test_code_between_classes_is_indexed(tmp_path):
     src = (
         "// file header\n"

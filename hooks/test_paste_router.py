@@ -198,7 +198,13 @@ def test_github_tree_link_keeps_a_branch_with_a_slash(tmp_path):
                                   "https://github.com/features/actions",
                                   "https://github.com/trending/python",
                                   "https://github.com/collections/machine-learning",
-                                  "https://gist.github.com/Owner/abc123"])
+                                  "https://gist.github.com/Owner/abc123",
+                                  "https://github.com/advisories/GHSA-abcd-1234",
+                                  "https://github.com/sponsors/Owner",
+                                  "https://github.com/marketplace/actions",
+                                  "https://github.com/notifications/beta",
+                                  "https://github.com/login/oauth",
+                                  "https://github.com/organizations/plan"])
 def test_github_link_that_is_not_a_repo_adds_no_context(tmp_path, link):
     assert _context(_run(f"review {link}", tmp_path)) is None
 

@@ -234,12 +234,14 @@ _BODY_RE = re.compile(r'//|/\*|"|[{}]')
 _COMMENTS_RE = re.compile(r"//[^\n]*|/\*.*?(?:\*/|\Z)", re.DOTALL)
 
 
-def _skip_literal(text: str, i: int) -> int:
+def _skip_literal(text: str, i: int, escapes: bool = True) -> int:
     """Index just past the comment or string that starts at i.
 
     A string ends at its closing quote or at the end of its line, so a stray
-    quote never swallows the rest of the file. \\" (Enforce Script) and ""
-    (config.cpp) both work: "" closes the string and opens the next one.
+    quote never swallows the rest of the file. \\" is an escape only when
+    escapes is set (Enforce Script .c files); in config.cpp a backslash is a
+    path separator, so "MyMod\\" ends at its quote. "" closes the string and
+    opens the next one.
     """
     if text.startswith("//", i):
         j = text.find("\n", i)
@@ -250,7 +252,7 @@ def _skip_literal(text: str, i: int) -> int:
     j = i + 1  # a double-quoted string
     while j < len(text):
         c = text[j]
-        if c == "\\":
+        if c == "\\" and escapes:
             j += 2
             continue
         if c in '"\n':
@@ -273,7 +275,7 @@ def _gap(text: str, a: int, b: int) -> Optional[tuple[str, int, int, str]]:
     return "", start_line, start_line + body.count("\n"), body
 
 
-def _walk_class_blocks(text: str) -> Iterator[tuple[str, int, int, str]]:
+def _walk_class_blocks(text: str, escapes: bool = True) -> Iterator[tuple[str, int, int, str]]:
     """Yield (name, start_line, end_line, body) for top-level class blocks, and
     ("", ...) for the code between them. Braces and class headers inside comments
     and strings are ignored. An unclosed class is yielded as file-scope text."""
@@ -284,7 +286,7 @@ def _walk_class_blocks(text: str) -> Iterator[tuple[str, int, int, str]]:
         if not m:
             break
         if m.group("name") is None:
-            pos = _skip_literal(text, m.start())
+            pos = _skip_literal(text, m.start(), escapes)
             continue
         depth, i = 1, m.end()
         while depth:
@@ -299,7 +301,7 @@ def _walk_class_blocks(text: str) -> Iterator[tuple[str, int, int, str]]:
                 depth -= 1
                 i = b.end()
             else:
-                i = _skip_literal(text, b.start())
+                i = _skip_literal(text, b.start(), escapes)
         if depth:
             break
         gap = _gap(text, gap_start, m.start())
@@ -381,7 +383,7 @@ def _block_chunks(path: Path, file_type: str, max_chars: int = EMBED_MAX_CHARS) 
     text = _read_text(path)
     if not text:
         return []
-    blocks = list(_walk_class_blocks(text)) or [("", 1, text.count("\n") + 1, text)]
+    blocks = list(_walk_class_blocks(text, escapes=file_type == "c")) or [("", 1, text.count("\n") + 1, text)]
     return [
         {
             "path": str(path),

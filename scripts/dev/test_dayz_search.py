@@ -71,8 +71,22 @@ def test_no_hits_names_the_server_default_limit(monkeypatch, capsys):
 
 def test_no_hits_names_the_d_limit(monkeypatch, capsys):
     monkeypatch.setattr(cli, "search_dayz_source_impl", lambda *a, **k: [])
-    assert cli.main(["-d", "0.3", "q"]) == 0
-    assert "(no hits within distance 0.3" in capsys.readouterr().out
+    monkeypatch.setattr(cli, "DEFAULT_MAX_DISTANCE", None)
+    assert cli.main(["-d", "0.0001", "q"]) == 0
+    out = capsys.readouterr().out
+    assert "(no hits within distance 0.0001" in out and "-d flag" in out
+    assert "DAYZ_RAG_MAX_DISTANCE" not in out
+
+
+def test_top_k_above_the_maximum_prints_a_notice(calls, capsys):
+    assert cli.main(["-k", "40", "q"]) == 0
+    err = capsys.readouterr().err
+    assert "-k 40" in err and "25" in err and len(err.strip().splitlines()) == 1
+
+
+def test_top_k_within_the_maximum_prints_no_notice(calls, capsys):
+    assert cli.main(["-k", "25", "q"]) == 0
+    assert capsys.readouterr().err == ""
 
 
 def test_help_names_the_default_limit(capsys):

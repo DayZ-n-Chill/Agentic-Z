@@ -331,6 +331,56 @@ def test_clone_repo_runs_git_and_failed_clone_leaves_nothing(tmp_path):
     assert not target.exists()
 
 
+class _Run:
+    def __init__(self, returncode=0, stdout="", stderr=""):
+        self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
+
+
+@pytest.fixture
+def fake_git(monkeypatch):
+    """subprocess.run for git with two heads on the remote: main and feature/x."""
+    calls = []
+
+    def run(cmd, **_kw):
+        calls.append(cmd)
+        if cmd[1] == "ls-remote":
+            return _Run(stdout="abc\trefs/heads/main\ndef\trefs/heads/feature/x\n")
+        Path(cmd[-1]).mkdir(parents=True)
+        return _Run()
+
+    monkeypatch.setattr(imp.shutil, "which", lambda _name: "git")
+    monkeypatch.setattr(imp.subprocess, "run", run)
+    return calls
+
+
+def _clone_cmd(calls):
+    return next(c for c in calls if c[1] == "clone")
+
+
+def test_subfolder_tree_link_clones_the_real_branch(fake_git, tmp_path, capsys):
+    src = imp.parse_git_source("https://github.com/Owner/Mods/tree/main/MyMod")
+    assert src.branch == "main/MyMod"
+    imp.clone_repo(src, tmp_path / "MyMod")
+    assert _clone_cmd(fake_git)[:4] == ["git", "clone", "--branch", "main"]
+    assert "MyMod inside branch main" in capsys.readouterr().out
+
+
+def test_slash_branch_tree_link_keeps_the_whole_branch(fake_git, tmp_path):
+    imp.clone_repo(imp.parse_git_source("https://github.com/Owner/MyMod/tree/feature/x"), tmp_path / "MyMod")
+    assert _clone_cmd(fake_git)[:4] == ["git", "clone", "--branch", "feature/x"]
+
+
+def test_slash_branch_with_a_subfolder(fake_git, tmp_path):
+    imp.clone_repo(imp.parse_git_source("https://github.com/Owner/MyMod/tree/feature/x/addons"), tmp_path / "MyMod")
+    assert _clone_cmd(fake_git)[:4] == ["git", "clone", "--branch", "feature/x"]
+
+
+def test_single_segment_branch_skips_ls_remote(fake_git, tmp_path):
+    imp.clone_repo(imp.parse_git_source("https://github.com/Owner/MyMod/tree/dev"), tmp_path / "MyMod")
+    assert [c[1] for c in fake_git] == ["clone"]
+    assert _clone_cmd(fake_git)[:4] == ["git", "clone", "--branch", "dev"]
+
+
 # --- finish: an existing $PBOPREFIX$ must be the mod name ----------------------------
 
 def _finish(tmp_path, prefix):
