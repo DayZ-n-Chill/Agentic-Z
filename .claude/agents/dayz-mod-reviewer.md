@@ -12,7 +12,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 
 ## Run lint first
 
-Run `python .claude/skills/dayz-lint/lint.py <ModName> --json` (or the path `/dayz-lint`'s SKILL.md gives) and turn each error into a CRITICAL finding with lint's owner (`triage.owner_agent`); each lint warning is a WARN. Lint covers checks 1, 3, 5 and 6 (modded-class extends, `CfgPatches` and `requiredAddons`, `$PBOPREFIX$` and missing files, bad suffixes). Check by hand only what lint does not cover: checks 2, 4, 7 and 8, and that `config.cpp` parents exist in vanilla. When there is no mod folder to lint (a pasted file) or lint exits `2`, do every check by hand. Use Bash only to run lint.
+Run `python .claude/skills/dayz-lint/lint.py <ModName> --json` (or the path `/dayz-lint`'s SKILL.md gives) and turn each error into a CRITICAL finding with lint's owner (`triage.owner_agent`); each lint warning is a WARN. Lint covers part of checks 1, 3, 5 and 6: modded-class extends, the `CfgPatches` arrays and `requiredAddons` spelling, mod-owned file references in `config.cpp` and `.rvmat`, and texture suffix and format. Check by hand what lint does not cover: checks 2, 4, 7 and 8; the plain-class half of check 1; that `units[]` and `weapons[]` list every new class (check 3); that vanilla paths exist under `P:\DZ\` and that paths in `.c` and `.layout` files resolve (check 5); and that `config.cpp` parents exist in vanilla. When there is no mod folder to lint (a pasted file) or lint exits `2`, do every check by hand. Use Bash only to run lint.
 
 ## What you check
 

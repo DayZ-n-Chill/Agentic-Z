@@ -260,8 +260,9 @@ def test_accept_refuses_unknown_shots_and_empty_runs(project, capsys):
 class FakeSession:
     """No DayZ: the fake launch writes the client ready line; the fake capture copies fixture images."""
 
-    def __init__(self, project: Path, source: str = "run_pass", fail_capture: bool = False):
+    def __init__(self, project: Path, source: str = "run_pass", fail_capture: bool = False, ready_line: str = READY):
         self.project = project
+        self.ready_line = ready_line
         self.source = source
         self.fail_capture = fail_capture
         self.calls: list[list[str]] = []
@@ -284,7 +285,7 @@ class FakeSession:
         server = self.project / ".server" / "chernarus" / "Profiles"
         client = self.project / ".server" / "!ClientDiagLogs"
         (server / "DayZDiag_x64_2026-10-21_12-00-00.RPT").write_text("CLI params: server mod P:\\Mods\\@MyMod\n", encoding="utf-8")
-        (client / "script_2026-10-21_12-00-31.log").write_text(READY + "\n", encoding="utf-8")
+        (client / "script_2026-10-21_12-00-31.log").write_text(self.ready_line + "\n", encoding="utf-8")
         return 0, "[OK]    Server PID: 111\n[OK]    Client PID: 222\n"
 
     def capture(self, pid: int, out: Path) -> None:
@@ -321,6 +322,22 @@ def test_full_run_capture_failure_is_a_missing_shot(project, capsys):
     assert (rc, first) == (1, "FAIL")
     assert {f["triage"]["id"] for f in data["failures"]} == {"visual-no-capture"}
     assert data["shots"][0]["reason"] == "capture failed: DayZ client PID 222 has no visible window"
+
+
+def test_full_run_uses_the_ready_pattern(project, capsys):
+    fake = FakeSession(project, ready_line="SCRIPT : [MyMod] ready")
+    rc, first, data = run_main(["visual", "MyMod", "--json", "--ready-pattern", r"\[MyMod\] ready"],
+                               capsys, fake.runtime())
+    assert (rc, first) == (0, "PASS"), data["failures"]
+    assert data["ready"]["text"] == "SCRIPT : [MyMod] ready"
+
+
+def test_shot_without_accept_is_refused(project, capsys):
+    fake = FakeSession(project)
+    rc, first, rest = run_main(["visual", "MyMod", "--shot", "hud"], capsys, fake.runtime())
+    assert (rc, first) == (2, "ERROR")
+    assert "--shot works with --accept only" in rest
+    assert fake.calls == []
 
 
 def test_full_run_without_shots_file_is_an_error(project, capsys):

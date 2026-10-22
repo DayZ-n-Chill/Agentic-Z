@@ -142,6 +142,18 @@ def test_unmounted_p_refuses(monkeypatch, runs, tmp_path):
     assert runs["argv"] == []
 
 
+@pytest.mark.parametrize("name", ["1Mod", "_Mod", "My-Mod", "My Mod", "Mod.v2", ""])
+def test_bad_mod_name_is_a_usage_error(name):
+    with pytest.raises(SystemExit) as exc:
+        plan.parse_args(["--mod", name])
+    assert exc.value.code == 2
+
+
+@pytest.mark.parametrize("name", ["M", "MyMod", "My_Mod_2"])
+def test_good_mod_names_are_accepted(name):
+    assert plan.parse_args(["--mod", name]).mod == name
+
+
 def test_launch_without_server_is_a_usage_error():
     with pytest.raises(SystemExit) as exc:
         plan.parse_args(["--mod", "M", "--launch"])

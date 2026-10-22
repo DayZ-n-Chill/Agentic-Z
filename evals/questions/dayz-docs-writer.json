@@ -1,0 +1,31 @@
+{
+  "agent": "dayz-docs-writer",
+  "questions": [
+    {
+      "id": "classnames-only-scope-2",
+      "question": "Answer only, do not edit any file. Release team: update the MyVest docs. The mod's config is .claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp. Read it from disk. Which classes from CfgVehicles go under the README's ## Classnames section, and which do you leave out and why?",
+      "must_include": [
+        "MyVest_Black",
+        "MyVest_Green",
+        "re:MyVest_Base[^\\n]{0,160}(scope\\s*=?\\s*0|\\bbase\\b|skip|leave|left out|not spawnable|exclude)|(scope\\s*=?\\s*0|skip|leave|left out|not spawnable|exclude)[^\\n]{0,160}MyVest_Base"
+      ],
+      "must_not_include": [],
+      "unchanged": [
+        ".claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp"
+      ],
+      "verified": ".claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp (MyVest_Base scope = 0, MyVest_Black and MyVest_Green scope = 2); /dayz-release-pack on that fixture lists MyVest_Black, MyVest_Green and MyVest_Pouch as spawnable; .claude/agents/dayz-docs-writer.md 'What you keep current' (only scope = 2 classes, skip scope 0 and 1)"
+    },
+    {
+      "id": "private-key-is-a-release-blocker",
+      "question": "Answer only, do not edit any file. Release team: /dayz-release-pack MyVest --version 1.0.0 printed this line: [WARN] private-key-in-mod: ['workspace/MyVest/Keys/MyVest.biprivatekey'] is a private key. It is never packed; move it out of the mod folder so it can never ship. Can the release go ahead, and what do you report?",
+      "must_include": [
+        "re:blocker|\\bblock",
+        "re:biprivatekey|private key"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "verified": ".claude/skills/dayz-release-pack/release_pack.py:230 (private-key-in-mod warning text); .claude/agents/dayz-docs-writer.md 'For a release' (private-key-in-mod: report it as a release blocker)"
+    }
+  ]
+}
