@@ -18,6 +18,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from hub_status import launch_needs, needs_message
 from state import PROJECT_DIR, active_mod
 
 SKILLS_DIR = Path(__file__).resolve().parents[1]
@@ -132,10 +133,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.list or not args.action:
         print("\n".join(HUB_ACTIONS))
         return 0
+    mod = args.mod or active_mod(PROJECT_DIR)
     try:
-        cmd = command_for(args.action, mod=args.mod or active_mod(PROJECT_DIR), server=args.server, deps=args.deps)
+        cmd = command_for(args.action, mod=mod, server=args.server, deps=args.deps)
     except DispatchError as exc:
         print(f"[FAIL] {exc}", file=sys.stderr)
+        return 2
+    # gate-ingame refuses this itself; launch.py does not, so check here.
+    needs = launch_needs(PROJECT_DIR / "workspace" / mod) if args.action == "launch" and not args.deps else []
+    if needs:
+        print(f"[FAIL] {needs_message(mod, needs)}", file=sys.stderr)
         return 2
     return run(cmd)
 

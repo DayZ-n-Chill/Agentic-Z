@@ -1,4 +1,4 @@
-// Test fixture: vests. Values are made up.
+// Test fixture: vests. Class names and parents are vanilla; values are made up.
 class CfgPatches
 {
     class DZ_Characters_Vests
@@ -11,13 +11,10 @@ class CfgPatches
 class CfgVehicles
 {
     class Clothing;
-    class Vest_Base: Clothing
-    {
-        scope = 0;
-    };
-    class PlateVest: Vest_Base
+    class PlateCarrierVest: Clothing
     {
         scope = 2;
+        inventorySlot[] = {"Vest"};
         weight = 10000;
         itemsCargoSize[] = {0, 0};
         class DamageSystem
@@ -41,18 +38,19 @@ class CfgVehicles
             };
         };
     };
-    class PlateVest_Black: PlateVest
+    class PlateCarrierVest_Black: PlateCarrierVest
     {
         scope = 2;
     };
-    class PlateVest_Green: PlateVest
+    class PlateCarrierVest_Green: PlateCarrierVest
     {
         scope = 2;
         weight = 10500;
     };
-    class PressVest: Vest_Base
+    class PressVest_ColorBase: Clothing
     {
-        scope = 2;
+        scope = 0;
+        inventorySlot[] = {"Vest"};
         weight = 2000;
         class DamageSystem
         {
@@ -68,5 +66,9 @@ class CfgVehicles
                 };
             };
         };
+    };
+    class PressVest_Blue: PressVest_ColorBase
+    {
+        scope = 2;
     };
 };

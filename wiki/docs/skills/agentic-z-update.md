@@ -32,7 +32,7 @@ python "<skill-dir>\update.py" [--check] [--quiet] [--yes] [--per-file] [--force
 | `--check` | Preview only: fetches upstream (adding the upstream remote if it is missing) and writes no files; exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (`local-only-edit` and `locally-deleted` files do not count) |
 | `--quiet` | With `--check`: single-line output for hooks, and always exits 0 so the hook shows the line. Rejected without `--check` |
 | `--yes` | Skip the confirmation prompt (CI / scripted use) |
-| `--per-file` | Walk each conflict and `locally-deleted` file interactively: keep / take / diff / skip |
+| `--per-file` | Walk each conflict and `locally-deleted` file interactively: keep / take / diff / skip. Keep is a decision: the file stays yours and no longer holds the baseline back. Skip (also Enter, or no terminal) decides later: the file is offered again on the next run |
 | `--force` | Override the dirty-tree check |
 | `--dry-run` | Show preview, do not apply (and do not record a first baseline) |
 | `--no-sync` | Skip the post-update `sync-skills` run (useful when Claude Code is the only agent CLI in use) |
@@ -45,7 +45,7 @@ When at least one file is applied, the skill stages exactly the applied paths an
 chore: pull Agentic-Z upstream (<first 8 chars of upstream SHA>)
 ```
 
-It then records the upstream SHA in `.claude/.upstream-baseline`, but only when the commit succeeded and nothing upstream changed is still unapplied (an unresolved `conflict` or `deleted-conflict`, or a file whose checkout or delete failed; `local-only-edit` and `locally-deleted` files do not hold it back). Otherwise the baseline stays put and the next run offers those files again. If `git commit` fails (for example, a pre-commit hook rejects it), the changes stay staged, the skill prints a warning and exits 1; nothing is rolled back. Unresolved conflicts are never part of the commit. Tell the user about this commit when reporting results.
+It then records the upstream SHA in `.claude/.upstream-baseline`, but only when the commit succeeded and nothing upstream changed is still unapplied (a `conflict` or `deleted-conflict` that was skipped or never walked, or a file whose checkout or delete failed; `local-only-edit` and `locally-deleted` files, and conflicts you chose to keep in `--per-file`, do not hold it back). Otherwise the baseline stays put and the next run offers those files again. If `git commit` fails (for example, a pre-commit hook rejects it), the changes stay staged, the skill prints a warning and exits 1; nothing is rolled back. Unresolved conflicts are never part of the commit. Tell the user about this commit when reporting results.
 
 ## Per-file status meanings
 
@@ -112,7 +112,7 @@ output/                     # one-shot deliverables
 
 ## When not to run
 
-- Mid-merge or mid-rebase.
+- Mid-merge, mid-rebase, mid-cherry-pick or mid-revert (it refuses; finish or abort first).
 - With uncommitted changes to template files (it refuses; commit first, or pass `--force`).
 - On a fork that has diverged heavily from upstream main (manual cherry-pick is safer).
 
@@ -142,6 +142,7 @@ To skip the check: ensure `~/.claude/dayz-search-index/release-tag.txt` doesn't 
 
 - Not a git repo: "Run from inside an Agentic-Z clone." With `--check --quiet` this prints that one line and exits 0, so the hook shows it.
 - Uncommitted changes in template paths (skipped with `--force`, and not checked by `--check`). Nothing is fetched or changed.
+- A merge, rebase, cherry-pick or revert is in progress (checked even with `--force`; not checked by `--check` or `--dry-run`, which write nothing). Its commit would fail and leave the applied files staged inside your operation, so nothing is fetched or changed.
 - The `upstream` remote points somewhere else: prints the `git remote set-url` fix. With `--check --quiet` the fix is one line and the exit is 0.
 - `git fetch` fails (with `--check --quiet` this exits 0 silently so the hook stays quiet).
 - Non-interactive shell at the confirmation prompt without `--yes`.

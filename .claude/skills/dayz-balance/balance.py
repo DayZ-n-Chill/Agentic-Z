@@ -437,9 +437,12 @@ class Balance:
                     peers.append(peer)
                     if wanted & {s.lower() for s in self.vanilla_slots(section, key)}:
                         same_slot.append(peer)
-            # A wider group mixes item kinds (a mask's parent Clothing also holds
+            # A broad group mixes item kinds (a mask's parent Clothing also holds
             # backpacks and boots), so keep the peers that go in the same slot.
-            if depth > 0 and slots and len(same_slot) >= self.min_peers:
+            # This applies from the first group on: vanilla masks inherit Clothing
+            # directly (class GasMask: Clothing in P:\DZ\characters\masks\config.cpp),
+            # so a mod mask written the same way starts at Clothing.
+            if slots and self.min_peers <= len(same_slot) < len(peers):
                 return f"{base.name} in slot {', '.join(sorted(slots))}", same_slot
             if len(peers) >= self.min_peers:
                 return base.name, peers
@@ -466,9 +469,11 @@ def meaning(stat: str, direction: str) -> str:
             # lower lets less damage through.
             return "less protection than vanilla" if direction == "high" else "more protection than vanilla"
         # Protection class values (protection.<name>, such as biological on masks)
-        # are coverage: higher keeps more out. Vanilla masks range from 0 (bandanas,
-        # shemags) through 0.25, 0.5 and 0.75 to 1 (GasMask), per
-        # P:\DZ\characters\masks\config.cpp.
+        # are coverage: higher keeps more out. Masks that set it range from 0.25
+        # (balaclavas) through 0.5 and 0.75 to 1 (GasMask), per
+        # P:\DZ\characters\masks\config.cpp. Items that set nothing, such as the
+        # bandanas and shemags in P:\DZ\characters\headgear\config.cpp, inherit 0
+        # from the Inventory_Base Protection block in P:\DZ\data\config.cpp.
         return "more protection than vanilla" if direction == "high" else "less protection than vanilla"
     words = {
         "weight": ("heavier", "lighter"),

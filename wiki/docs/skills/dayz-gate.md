@@ -19,7 +19,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ```cmd
 python "<skill-dir>\gate.py" build <ModName> [--json]
 python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
-python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
+python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --prepare-only
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --logs [FILE ...] [--json]
 python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--ready-pattern REGEX] [--json]
@@ -33,7 +33,8 @@ python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] --accept [DIR] [--s
 | `--deps` | `ingame`, `behavior`, `visual`: dependency mods in load order, with or without `@` (`--deps CF`). Required when `config.cpp`'s `requiredAddons` lists anything not starting with `DZ_`; map each to the `@mod` under `P:\Mods\` that ships it. |
 | `--server` | `ingame`, `behavior`, `visual`: instance added with `/dayz-add-server` (default `chernarus`). `--port` default `2302`. |
 | `--timeout` | `ingame`, `behavior`, `visual`: seconds to wait for the client to reach the mission (default 300). |
-| `--settle` | `ingame`: seconds to keep reading after that, to catch spawn-time errors (default 30). `behavior`: the most seconds to wait for the test mission's `DONE` line after the client joins (default 600); the gate stops as soon as that line appears. `visual` has no `--settle`: it reads until its last shot is taken. |
+| `--settle` | `ingame` only: seconds to keep reading after that, to catch spawn-time errors (default 30). `visual` has no `--settle`: it reads until its last shot is taken. |
+| `--done-timeout` | `behavior` only: the most seconds to wait for the test mission's `DONE` line after the client joins (default 600). The gate stops as soon as that line appears. |
 | `--ready-pattern` | `ingame`, `behavior` and `visual` in-game runs: regex in the client script log that means the mission is running. Default `Creating Mission: mpmissions\__cur_mp.`, printed by vanilla `CreateMission()` (`P:\scripts\5_mission\somemission.c`) when the client joins. |
 | `--checks` | `behavior`: the checks file. Default `output/<ModName>-plan/behavior-checks.json`, which `dayz-mod-architect` writes with the plan. |
 | `--prepare-only` | `behavior`: write the instance copy and stop. The first line is `PREPARED` (exit 0). |
@@ -98,7 +99,7 @@ Every `PASS` or `FAIL` is stored for `/dayz-health` under `.server/!Health/<ModN
    [AZ-BEHAVIOR] DONE
    ```
 
-5. Reads those lines. A check passes only on its `PASS` line. A `FAIL` line, or no line at all (the mission never started, or a script error stopped it first), fails the check. A new `START` line starts over, so the newest run in the logs wins.
+5. Reads those lines. A check passes only on its `PASS` line. A `FAIL` line, or no line at all (the mission never started, or a script error stopped it first), fails the check. A new `START` line starts over, so the newest run in the logs wins. When there is no `START` line at all and the session shows nothing else wrong (the client joined, no crash, no script error), the verdict is `ERROR`, not `FAIL`: the gate's own test mission did not run, so it says nothing about the mod.
 
 The report adds `checks` (one entry per check with `status`, `reason`, `file` and `line`) and `behavior` (`started`, `done`, and `unexpected` ids that are not in the checks file). Each failed check is a failure with category `behavior` and its `check` id; triage marks it `new`, so it goes to `dayz-mod-debugger` with the reason line.
 
@@ -168,8 +169,8 @@ An existing `<id>` lends its meaning, fix and owner; a new id needs all three. L
 - Dependency mapping from `requiredAddons` to `@mods` is not automatic; pass `--deps`.
 - The behavior test mission only knows the five actions above. A feature that needs more (driving, firing, eating) has no check yet; say so in the plan.
 - The test player is stripped once before the checks and each check deletes what it made, so no check can prove two items work together on the player.
-- The test mission's engine calls are checked against vanilla `P:\scripts`, and the injector and parser are tested on fixture missions and logs, but the mission has not yet run in a live session.
-- The visual compare and baselines are tested on fixture images. The window capture is Windows only and has not yet run against a live client. It copies what is on screen, so the client must run windowed (the `/dayz-launch-test` default) and stay uncovered while the gate runs.
+- The test mission's engine calls are checked against vanilla `P:\scripts`, and the injector and parser are tested on fixture missions and logs, but the mission has not yet run in a live session. If it fails to start there (for example an Enforce compile error in the injected `AZ_BehaviorTest` class), the gate reports `ERROR` rather than failing the mod, unless the session also shows a mod error.
+- The visual compare and baselines are tested on fixture images. The window capture is Windows only and has not yet run against a live client. It copies what is on screen, so the client must run windowed (the `/dayz-launch-test` default) and stay uncovered while the gate runs. It captures only the visible window of the client's own process, and when Windows will not bring that window to the front the shot is `MISSING`, not compared against something else.
 - A shot is taken at a time, not at a game event, and the test player stands where the server spawns it. Shots that need the player in one place or a menu open need the mod (or a future test mission) to put them there; screens that move on their own need a higher threshold or `ignore` areas.
 - The visual gate needs Pillow: `py -m pip install -r "<skill-dir>\requirements.txt"`.
 
