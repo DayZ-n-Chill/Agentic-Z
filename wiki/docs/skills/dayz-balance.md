@@ -74,7 +74,7 @@ With `--json` each finding has `item`, `section`, `stat`, `value`, `file`, `line
 ## After the run
 
 - For each outlier, tell the user the item, the stat, the vanilla median and the closest vanilla items, and ask whether it is intended. Do not change a value on your own.
-- When the user wants a value changed, hand the class to its owner: clothing and vests to `dayz-wearables-specialist`, firearms, magazines and ammo to `dayz-weapon-specialist`, everything else to `dayz-config-specialist`.
+- When the user wants a value changed, hand the class to its owner: clothing and vests to `dayz-wearables-specialist`, firearms, magazines and ammo to `dayz-weapon-specialist`, vehicles (`CfgVehicles` classes under the `Car` or `Boat` bases, or a modded `Helicopter` base) to `dayz-vehicle-specialist`, everything else to `dayz-config-specialist`.
 
 ## Limits
 

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<lists>
+    <categories>
+        <category name="clothes"/>
+        <category name="weapons"/>
+    </categories>
+    <tags>
+        <tag name="floor"/>
+        <tag name="shelves"/>
+    </tags>
+    <usageflags>
+        <usage name="Military"/>
+        <usage name="Police"/>
+        <usage name="Town"/>
+        <usage name="Village"/>
+    </usageflags>
+    <valueflags>
+        <value name="Tier1"/>
+        <value name="Tier2"/>
+        <value name="Tier3"/>
+    </valueflags>
+</lists>

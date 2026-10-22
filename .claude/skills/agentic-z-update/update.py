@@ -58,6 +58,11 @@ TEMPLATE_PATHS = [
     "package.json",
     "package-lock.json",
     ".github",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    ".markdownlint.json",
+    ".markdownlint-cli2.jsonc",
+    ".markdownlintignore",
 ]
 
 
@@ -752,7 +757,7 @@ def main() -> int:
     parser.add_argument(
         "--quiet",
         action="store_true",
-        help="With --check: silent on no-change, single line on drift, always exits 0. Used by SessionStart hook.",
+        help="With --check: silent on no-change, single line on drift or setup problem, always exits 0. Used by SessionStart hook. Rejected without --check.",
     )
     parser.add_argument(
         "--yes",
@@ -765,6 +770,8 @@ def main() -> int:
         help="Walk each conflict and locally-deleted file interactively: keep / take / diff / skip.",
     )
     args = parser.parse_args()
+    if args.quiet and not args.check:
+        parser.error("--quiet only works with --check")
 
     # Quiet mode (used by SessionStart hook): suppress all log() output and
     # capture git fetch's stderr. Only the final preview line (or nothing) prints.
@@ -778,6 +785,10 @@ def main() -> int:
 
     root = repo_root()
     if root is None:
+        if args.quiet:
+            # Hook: log() is muted, so print one line and exit 0 so it shows.
+            print("agentic-z: not a git repo, update check skipped. Run /agentic-z-update from inside an Agentic-Z clone.")
+            return 0
         log("ERR", "Not a git repo. Run from inside an Agentic-Z clone.")
         return 1
     # Template paths, the baseline and the lock are all relative to the repo root.
@@ -793,6 +804,12 @@ def main() -> int:
             return 1
 
     if not ensure_upstream():
+        if args.quiet:
+            print(
+                f"agentic-z: upstream remote points to {remote_url(UPSTREAM_REMOTE)}; "
+                f"run git remote set-url {UPSTREAM_REMOTE} {UPSTREAM_URL}"
+            )
+            return 0
         return 1
 
     if not fetch_upstream():

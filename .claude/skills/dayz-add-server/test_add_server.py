@@ -84,6 +84,17 @@ def test_refresh_renames_old_mission_instead_of_deleting(server_install, tmp_pat
     assert (backups[0] / "init.c").read_text(encoding="utf-8") == "// my edits"
 
 
+def test_empty_mission_folder_is_copied_not_backed_up(server_install, tmp_path, capsys):
+    project = tmp_path / "project"
+    mission_dir = project / ".server" / "chernarus" / "mission"
+    mission_dir.mkdir(parents=True)
+    srv.ensure_mission("dayzOffline.chernarusplus", mission_dir, refresh=False, project_dir=project)
+    assert (mission_dir / "init.c").read_text(encoding="utf-8") == "// vanilla"
+    assert not list(mission_dir.parent.glob("mission.bak-*"))
+    out = capsys.readouterr().out
+    assert "Copied" in out and "Refreshed" not in out and "Kept previous" not in out
+
+
 def test_backup_names_never_collide(tmp_path):
     first = tmp_path / "mission"
     first.mkdir()
@@ -138,6 +149,28 @@ def test_explicit_allow_file_patching_zero_is_turned_back_on(tmp_path):
     cfg_path.write_text('hostname = "mine";\nallowFilePatching = 0;   // mine\n', encoding="utf-8")
     srv.setup_instance_dir("test", "dayzOffline.chernarusplus", tmp_path)
     assert cfg_path.read_text(encoding="utf-8") == 'hostname = "mine";\nallowFilePatching = 1;   // mine\n'
+
+
+def test_cp1252_cfg_is_repaired_without_crashing_and_keeps_its_bytes(tmp_path):
+    cfg_path = tmp_path / ".server" / "test" / "serverDZ.cfg"
+    cfg_path.parent.mkdir(parents=True)
+    hostname = 'hostname = "Café Zoë";'.encode("cp1252")
+    cfg_path.write_bytes(hostname + b'\ntemplate = "dayzOffline.chernarusplus";\n')
+
+    srv.gate_on_template_mismatch(cfg_path, "dayzOffline.chernarusplus", "test")
+    srv.setup_instance_dir("test", "dayzOffline.chernarusplus", tmp_path)
+
+    data = cfg_path.read_bytes()
+    assert data.startswith(hostname)
+    assert b"allowFilePatching = 1;" in data
+
+
+def test_cp1252_cfg_still_refuses_a_template_mismatch(tmp_path):
+    cfg_path = tmp_path / "serverDZ.cfg"
+    cfg_path.write_bytes('hostname = "Zoë";\ntemplate = "dayzOffline.enoch";\n'.encode("cp1252"))
+    with pytest.raises(SystemExit) as exc:
+        srv.gate_on_template_mismatch(cfg_path, "dayzOffline.chernarusplus", "test")
+    assert "dayzOffline.enoch" in str(exc.value.code)
 
 
 def test_rerun_with_different_template_refuses(tmp_path):
