@@ -316,15 +316,24 @@ def test_first_run_refused_while_another_update_holds_the_lock(in_tmp, monkeypat
 
 # ---------- the template path list covers every tracked template folder ----------
 
+def _tracked_files() -> list[str]:
+    """Files git tracks in this repo; skips the test in an exported tree with no git."""
+    root = Path(__file__).resolve().parents[3]
+    try:
+        r = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True, text=True)
+    except OSError:
+        pytest.skip("git not installed")
+    if r.returncode != 0 or not r.stdout.strip():
+        pytest.skip("not a git checkout; git ls-files has nothing to compare")
+    return r.stdout.splitlines()
+
+
 # Tracked top-level folders that belong to the upstream repo itself, not the template.
 NOT_TEMPLATE: set[str] = set()
 
 
 def test_template_paths_cover_every_tracked_top_level_folder():
-    root = Path(__file__).resolve().parents[3]
-    files = subprocess.run(
-        ["git", "ls-files"], cwd=root, check=True, capture_output=True, text=True
-    ).stdout.splitlines()
+    files = _tracked_files()
     folders = {f.split("/", 1)[0] for f in files if "/" in f}
     folders |= {"/".join(f.split("/", 2)[:2]) for f in files if f.startswith(".claude/")}
     folders.discard(".claude")
@@ -345,10 +354,7 @@ LEAVE_ALONE_ROOT_FILES: set[str] = set()
 
 
 def test_template_paths_cover_every_tracked_root_file():
-    root = Path(__file__).resolve().parents[3]
-    files = subprocess.run(
-        ["git", "ls-files"], cwd=root, check=True, capture_output=True, text=True
-    ).stdout.splitlines()
+    files = _tracked_files()
     root_files = {f for f in files if "/" not in f}
     missing = sorted(root_files - set(update.TEMPLATE_PATHS) - LEAVE_ALONE_ROOT_FILES)
     assert not missing, f"tracked root files neither in TEMPLATE_PATHS nor left alone: {missing}"
@@ -469,6 +475,44 @@ def test_commit_excludes_other_staged_changes(tmp_path, monkeypatch):
     assert update.stage_and_commit(["docs/a.md"], "d" * 40) is True
     assert _git(tmp_path, "show", "--name-only", "--format=", "HEAD").split() == ["docs/a.md"]
     assert _git(tmp_path, "diff", "--cached", "--name-only").split() == ["notes.txt"]
+
+
+@pytest.mark.parametrize("args", [[], ["--per-file"]])
+def test_local_only_drift_neither_prompts_nor_fails_without_a_tty(in_tmp, monkeypatch, capsys, args):
+    """A customised clone with nothing new upstream is up to date, even in CI without --yes."""
+    _stub_apply_flow(monkeypatch, in_tmp)
+    update.write_baseline("b" * 40)
+    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: {"CLAUDE.md": S.LOCAL_ONLY_EDIT})
+
+    def no_tty(prompt=""):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", no_tty)
+    monkeypatch.setattr(update, "apply_drift", lambda *a, **k: pytest.fail("nothing may be applied"))
+    monkeypatch.setattr(sys, "argv", ["update.py", *args])
+    assert update.main() == 0
+    out = capsys.readouterr().out
+    assert "Up to date." in out
+    assert "Apply these changes?" not in out
+    assert "CLAUDE.md" in out  # still listed, as information
+    assert update.read_baseline() == "b" * 40
+
+
+def test_locally_deleted_with_per_file_still_prompts(in_tmp, monkeypatch):
+    """--per-file is how a locally deleted file gets restored, so it still reaches the prompt."""
+    _stub_apply_flow(monkeypatch, in_tmp)
+    update.write_baseline("b" * 40)
+    monkeypatch.setattr(update, "compute_drift", lambda baseline, ref: {"docs/gone.md": S.LOCALLY_DELETED})
+    asked = []
+
+    def answer(prompt=""):
+        asked.append(prompt)
+        return "n"
+
+    monkeypatch.setattr("builtins.input", answer)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--per-file"])
+    assert update.main() == 0
+    assert asked == ["Apply these changes? [y/N]: "]
 
 
 def test_later_run_applies_new_files(in_tmp, monkeypatch):

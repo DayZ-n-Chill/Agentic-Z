@@ -466,7 +466,9 @@ def meaning(stat: str, direction: str) -> str:
             # lower lets less damage through.
             return "less protection than vanilla" if direction == "high" else "more protection than vanilla"
         # Protection class values (protection.<name>, such as biological on masks)
-        # are coverage: higher keeps more out. The best vanilla mask has biological=1.
+        # are coverage: higher keeps more out. Vanilla masks range from 0 (bandanas,
+        # shemags) through 0.25, 0.5 and 0.75 to 1 (GasMask), per
+        # P:\DZ\characters\masks\config.cpp.
         return "more protection than vanilla" if direction == "high" else "less protection than vanilla"
     words = {
         "weight": ("heavier", "lighter"),

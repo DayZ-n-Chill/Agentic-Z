@@ -41,7 +41,7 @@ Only stats the mod sets itself, on the item or on a mod base class above it. A s
 | `health` | `DamageSystem > GlobalHealth > Health > hitpoints` |
 | `damage.health`, `damage.blood`, `damage.shock` | `DamageApplied > Health, Blood, Shock > damage` in `CfgAmmo`, the damage a bullet or melee hit deals |
 | `protection.<kind>.<type>` | `DamageSystem > GlobalArmor > <kind> > <type> > damage`, for example `protection.projectile.health`. These are multipliers on damage taken, so a low value means more protection. |
-| `protection.<name>` | `Protection > <name>`, for example `protection.biological` on masks. These are coverage, so a high value means more protection: the best vanilla mask has `biological=1` and weaker ones `0.25`. |
+| `protection.<name>` | `Protection > <name>`, for example `protection.biological` on masks. These are coverage, so a high value means more protection: vanilla masks range from `0` (bandanas, shemags) through `0.25`, `0.5` and `0.75` to `1` (GasMask), per `P:\DZ\characters\masks\config.cpp`. |
 | `capacity` | `itemsCargoSize[]`, as width times height in cells |
 | `quantity` | `varQuantityMax` |
 

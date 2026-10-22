@@ -41,16 +41,16 @@ A missing `P:\Mods` is not an issue when the DayZ install's `!Workshop` folder e
 
 ## Step 3: setup questions
 
-Ask with one AskUserQuestion call (up to 4 questions), putting the usual choice first:
+Ask questions 1 to 3 in one AskUserQuestion call, putting the usual choice first:
 
 1. New mod or import an existing mod folder?
 2. Test server: chernarus, livonia, sakhal, nasdara, or none. AskUserQuestion shows at most 4 options, so offer chernarus, livonia, sakhal and none, and accept nasdara when the user types it as the other answer. Any other map needs `/dayz-add-server` with the mission folder name.
 3. Build the PBO now? (yes / no)
-4. Launch DayZ Diag now? (yes / no; only offered when a server was picked; launching implies building)
+4. Launch DayZ Diag now? (yes / no; launching implies building). Ask this in a second AskUserQuestion call, and only when question 2 picked a server: `plan.py` refuses `--launch` without `--server`.
 
 Then ask in chat for the free-text values:
 
-- Mod name (letters, digits and underscores, starting with a letter). For an import, offer the source folder's name as the default.
+- Mod name (letters, digits and underscores, starting with a letter; `plan.py` refuses any other name). For an import, offer the source folder's name as the default.
 - Import only: the source folder path, and whether to write missing scaffold pieces into it (`--scaffold`) or only link it (`--no-scaffold`).
 - New mod, or import with `--scaffold`, when `.claude/local-memory/dayz-author.txt` does not exist: the author handle shown in mod descriptions (a scaffolded import writes it into `config.cpp`). Pass it as `--author`.
 - Optional spec, only when `workspace\<ModName>\spec.md` does not exist and the mod is not a `--no-scaffold` import: "What should the mod do? Say skip to leave it for later." This is the only spec question. If the user skips, pass no spec flags. Otherwise turn the answer into one `--goal` sentence plus `--item` (each item or class the mod adds), `--behavior` (each thing a player can do or see in game) and `--done-check` (each check that proves it works), all repeatable. Use the user's own words and don't invent features they did not ask for. The plan writes these to `spec.md`, and dayz-mod-architect reads it first when it plans the mod.

@@ -27,11 +27,13 @@ WARN = h.WARN
 FAIL = h.FAIL
 
 # DayZ defaults for a new <type> entry. 14400 s = 4 h, the most common vanilla loot lifetime (chernarusplus types.xml).
+# The key order is the vanilla child order (nominal, lifetime, restock, min, quantmin,
+# quantmax, cost), so a new block reads like its neighbours.
 DEFAULTS = {
     "nominal": 1,
-    "min": 0,
     "lifetime": 14400,
     "restock": 0,
+    "min": 0,
     # -1 means "not a quantity item"; every vanilla <type> carries both tags.
     "quantmin": -1,
     "quantmax": -1,
@@ -422,7 +424,7 @@ def main() -> int:
         "--merge", metavar="CHUNK",
         help="Check every <type> in a pasted chunk (a file, or - for stdin) and merge them all.",
     )
-    parser.add_argument("--dry-run", action="store_true", help="With --merge: check and report, write nothing.")
+    parser.add_argument("--dry-run", action="store_true", help="Check and report the change, write nothing.")
     parser.add_argument(
         "--remove", action="store_true",
         help="Remove the entry instead of upserting. Field flags (--nominal, --usage, ...) are ignored.",
@@ -439,8 +441,6 @@ def main() -> int:
     args = parser.parse_args()
     if (args.classname is None) == (args.merge is None):
         parser.error("give a ClassName, or --merge CHUNK (not both)")
-    if args.dry_run and args.merge is None:
-        parser.error("--dry-run works with --merge only")
 
     h.gate_on_preflight()
     print()
@@ -475,7 +475,9 @@ def main() -> int:
         target = next(t for t in root.findall("type") if t.get("name") == args.classname)
         for problem in undefined_limit_names(target, limits) if limits else []:
             print(f"{WARN} {problem}")
-    if changed:
+    if args.dry_run:
+        print(f"{OK} Dry run: {args.path} was not changed.")
+    elif changed:
         backup_and_write(tree, args.path)
     return 0
 
