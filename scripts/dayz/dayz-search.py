@@ -12,8 +12,9 @@ Without -d, the server's DAYZ_RAG_MAX_DISTANCE env var, when set, still drops
 the far hits, as it does for agents; '(no hits)' then names that limit.
 
 Reuses search_dayz_source_impl from the MCP server module so behavior matches
-what agents see. A missing index, a missing VOYAGE_API_KEY, a missing package
-or a Voyage API error prints one 'error:' line and exits 2. A bad argument
+what agents see. An empty query, a -k below 1, a -d of 0 or below, a negative
+-s, a missing index, a missing VOYAGE_API_KEY, a missing package or a Voyage
+API error prints one 'error:' line and exits 2. A bad argument
 exits 2 with argparse's usage line and a 'dayz-search: error:' line.
 """
 from __future__ import annotations
@@ -85,6 +86,15 @@ def main(argv: list[str]) -> int:
     query = " ".join(args.query).strip()
     if not query:
         print("error: empty query", file=sys.stderr)
+        return 2
+    if args.top_k < 1:
+        print(f"error: -k must be 1 or more, got {args.top_k}", file=sys.stderr)
+        return 2
+    if args.max_distance is not None and args.max_distance <= 0:
+        print(f"error: -d must be above 0, got {args.max_distance:g}", file=sys.stderr)
+        return 2
+    if args.snippet_chars < 0:
+        print(f"error: -s must be 0 or more, got {args.snippet_chars}", file=sys.stderr)
         return 2
     if args.top_k > MAX_TOP_K:
         print(f"note: -k {args.top_k} is above the maximum; showing at most {MAX_TOP_K} hits", file=sys.stderr)

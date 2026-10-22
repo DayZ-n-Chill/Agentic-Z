@@ -275,9 +275,10 @@ def check_component_coverage(lod):
     """Check the ComponentNN selections together cover all vertices and faces.
 
     A non-convex Geometry LOD is split into convex Component01..ComponentNN
-    pieces, so coverage is the union of every component, not Component01 alone."""
+    pieces, so coverage is the union of every component, not Component01 alone.
+    The match ignores case, since binarized models store 'component01'."""
     issues = []
-    comps = [sel for name, sel in lod.selections.items() if re.fullmatch(r'Component\d+', name)]
+    comps = [sel for name, sel in lod.selections.items() if re.fullmatch(r'component\d+', name, re.IGNORECASE)]
     if not comps:
         return issues
     points = set().union(*(sel.points for sel in comps))

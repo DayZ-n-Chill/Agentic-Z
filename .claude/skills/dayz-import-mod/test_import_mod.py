@@ -325,7 +325,7 @@ def test_subfolder_link_imports_the_subfolder_not_the_root(subfolder_project, mo
     monkeypatch.setattr(imp._scaffold._nm, "find_dayz_tools", lambda: None)
     rc = _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/MyVest", "--scaffold")
     out = capsys.readouterr().out
-    clone = subfolder_project["imports"] / "Mods"
+    clone = subfolder_project["imports"] / "Owner__Mods__main"
     target = subfolder_project["workspace"] / "MyVest"
     assert subfolder_project["clones"] == [(imp.GitSource("https://github.com/Owner/Mods.git", "Mods", "main"), clone)]
     # workspace/MyVest is the subfolder, and the scaffold check and writes happen there.
@@ -342,7 +342,7 @@ def test_subfolder_link_with_a_missing_folder_removes_the_clone(subfolder_projec
     with pytest.raises(SystemExit) as exc:
         _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/Other", "--no-scaffold")
     assert "Other is not in branch main" in str(exc.value.code)
-    assert not (subfolder_project["imports"] / "Mods").exists()
+    assert not (subfolder_project["imports"] / "Owner__Mods__main").exists()
     assert not (subfolder_project["workspace"] / "Other").exists()
 
 
@@ -482,3 +482,39 @@ def test_project_found_from_subfolder_without_claude_project_dir(tmp_path, monke
     assert (project / "workspace" / "NewMod" / "config.cpp").is_file()
     assert not (other / "workspace").exists()
     assert (p_drive / "NewMod").exists()
+
+
+@pytest.mark.parametrize("url, key", [
+    ("https://github.com/Owner/Mods.git", "Owner__Mods__main"),
+    ("https://github.com/Fork/Mods.git", "Fork__Mods__main"),
+    ("git@github.com:Owner/Mods.git", "Owner__Mods__main"),
+])
+def test_clone_dir_is_keyed_by_owner_repo_and_branch(subfolder_project, url, key):
+    assert imp.clone_dir(imp.GitSource(url, "Mods", "main")) == subfolder_project["imports"] / key
+    slash = imp.clone_dir(imp.GitSource(url, "Mods", "feature/x"))
+    assert slash == subfolder_project["imports"] / f"{key[:-len('main')]}feature__x"
+
+
+def test_second_branch_and_fork_get_their_own_clones(subfolder_project, monkeypatch, capsys):
+    # A clone of Owner/Mods on main already exists; another branch or a fork must not reuse it.
+    (subfolder_project["imports"] / "Owner__Mods__main" / "MyVest").mkdir(parents=True)
+    monkeypatch.setattr(imp, "resolve_branch", lambda git, url, ref: "dev")
+    assert _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/dev/MyVest", "--no-scaffold") == 0
+    monkeypatch.setattr(imp, "resolve_branch", lambda git, url, ref: "main")
+    assert _main(monkeypatch, "--source", "https://github.com/Fork/Mods/tree/main/MyVest",
+                 "--name", "ForkVest", "--no-scaffold") == 0
+    imports = subfolder_project["imports"]
+    assert [target for _src, target in subfolder_project["clones"]] == [
+        imports / "Owner__Mods__dev", imports / "Fork__Mods__main"]
+    assert "Reusing the clone" not in capsys.readouterr().out
+
+
+def test_reused_clone_missing_the_folder_says_to_update_it(subfolder_project, monkeypatch):
+    clone = subfolder_project["imports"] / "Owner__Mods__main"
+    (clone / "MyVest").mkdir(parents=True)
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/Other", "--no-scaffold")
+    msg = str(exc.value.code)
+    assert "Other is not in branch main" in msg and "came from an earlier import" in msg and "pull" in msg
+    assert clone.is_dir()  # an earlier import's clone is never deleted
+    assert subfolder_project["clones"] == []

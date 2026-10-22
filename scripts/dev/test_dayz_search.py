@@ -172,3 +172,21 @@ def test_voyage_error_prints_one_line_and_exits_2(monkeypatch, capsys):
 def test_empty_query(calls, capsys):
     assert cli.main(["   "]) == 2
     assert "empty query" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("argv, flag", [
+    (["-k", "0", "q"], "-k must be 1 or more"),
+    (["-k", "-3", "q"], "-k must be 1 or more"),
+    (["-d", "0", "q"], "-d must be above 0"),
+    (["-d", "-0.5", "q"], "-d must be above 0"),
+    (["-s", "-1", "q"], "-s must be 0 or more"),
+])
+def test_out_of_range_numbers_print_one_line_and_exit_2(calls, capsys, argv, flag):
+    assert cli.main(argv) == 2
+    err = capsys.readouterr().err
+    assert err.startswith(f"error: {flag}") and err.count("\n") == 1
+    assert calls == []  # rejected before the search runs
+
+
+def test_whole_snippet_flag_is_still_accepted(calls):
+    assert cli.main(["-s", "0", "q"]) == 0

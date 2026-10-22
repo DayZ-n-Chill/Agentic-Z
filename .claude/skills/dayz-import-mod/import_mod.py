@@ -484,9 +484,20 @@ def split_subfolder(src: GitSource) -> tuple[GitSource, Optional[str]]:
     return src._replace(branch=branch), src.branch[len(branch) + 1:].strip("/") or None
 
 
+def clone_dir(src: GitSource) -> Path:
+    """.imports/<owner>__<repo>__<branch>: one clone per owner, repo and branch,
+    so a second branch or a fork with the same repo name never reuses another
+    clone's files. Slashes in the branch become __ and any other character
+    Windows refuses in a folder name becomes _."""
+    parts = src.url.rstrip("/").removesuffix(".git").replace(":", "/").split("/")
+    owner = parts[-2] if len(parts) >= 2 else ""
+    pieces = (owner, src.repo, *(src.branch or "").split("/"))
+    return IMPORTS / "__".join(re.sub(r"[^\w.-]", "_", piece) for piece in pieces if piece)
+
+
 def import_git_subfolder(src: GitSource, subfolder: str, args: argparse.Namespace) -> int:
-    """A tree link to a subfolder: the repo is cloned to .imports/<repo>/ (outside
-    workspace/), and the subfolder is linked and scaffold-checked as the mod,
+    """A tree link to a subfolder: the repo is cloned to .imports/<owner>__<repo>__<branch>/
+    (outside workspace/), and the subfolder is linked and scaffold-checked as the mod,
     the same way a local folder import is. Nothing is written at the repo root."""
     print(f"{INFO} The link points at {subfolder} inside branch {src.branch}; that folder is imported as the mod.")
     modname = derive_modname(Path(subfolder), args.name)
@@ -496,7 +507,7 @@ def import_git_subfolder(src: GitSource, subfolder: str, args: argparse.Namespac
     check_workspace_target(workspace_target)
     _nm.check_or_clean_p_drive_link(p_drive_link, workspace_target)
 
-    clone = IMPORTS / src.repo
+    clone = clone_dir(src)
     made_clone = not clone.exists()
     if made_clone:
         IMPORTS.mkdir(exist_ok=True)
@@ -513,7 +524,10 @@ def import_git_subfolder(src: GitSource, subfolder: str, args: argparse.Namespac
 
     source = clone / subfolder
     if not source.is_dir():
-        undo(f"{FAIL} The link's folder {subfolder} is not in branch {src.branch} of {src.url}.")
+        stale = "" if made_clone else (
+            f"\n       The clone at {_display(clone)} came from an earlier import; if the folder was added"
+            f"\n       since, update it first: git -C \"{clone}\" pull")
+        undo(f"{FAIL} The link's folder {subfolder} is not in branch {src.branch} of {src.url}.{stale}")
     missing = detect_missing_pieces(source)
     try:
         require_scaffold_decision(missing, args.scaffold, args.no_scaffold, sys.stdin.isatty())

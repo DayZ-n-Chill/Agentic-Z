@@ -201,6 +201,27 @@ def test_hyphenated_subfolder_is_named_after_the_subfolder():
     assert pr.name_arg("github.com/Owner/my-mods/tree/main/Vest") == " --name Vest"
 
 
+@pytest.mark.parametrize("link, expected", [
+    # A slash branch with no subfolder is named after the repo, not the branch's last part.
+    ("https://github.com/salutesh/DayZ-Expansion/tree/feature/x", " --name DayZExpansion"),
+    ("https://github.com/salutesh/DayZ-Expansion/tree/release/1.2", " --name DayZExpansion"),
+    ("https://github.com/Owner/MyVest/tree/feature/x", ""),
+    # A slash branch plus a subfolder is named after the subfolder.
+    ("https://github.com/Owner/my-mods/tree/feature/x/My-Vest", " --name MyVest"),
+    ("https://github.com/Owner/my-mods/tree/feature/x/Vest", " --name Vest"),
+    # A one-segment branch is never mistaken for the name.
+    ("https://github.com/Owner/my-mods/tree/dev", " --name mymods"),
+    ("https://github.com/Owner/my-mods/tree/main/Pack/9Vest", " --name Vest"),
+])
+def test_name_comes_from_the_subfolder_or_the_repo(link, expected):
+    assert pr.name_arg(link) == expected
+
+
+def test_hyphenated_repo_on_a_slash_branch_gets_the_repo_name(tmp_path):
+    context = _context(_run("import https://github.com/salutesh/DayZ-Expansion/tree/feature/x please", tmp_path))
+    assert "--source https://github.com/salutesh/DayZ-Expansion/tree/feature/x --name DayZExpansion " in context
+
+
 def test_mod_name_rule_matches_import_mod():
     new_mod = Path(__file__).resolve().parents[1] / ".claude" / "skills" / "dayz-new-mod" / "new_mod.py"
     assert pr.MOD_NAME_RE.pattern in new_mod.read_text(encoding="utf-8")
@@ -298,3 +319,7 @@ def test_hook_is_registered_for_plugin_and_clone(config, root):
     hooks = json.loads((REPO / config).read_text(encoding="utf-8"))["hooks"]["UserPromptSubmit"]
     commands = [h["command"] for entry in hooks for h in entry["hooks"]]
     assert f'python "{root}/hooks/paste_router.py"' in commands
+
+
+def test_suggested_name_is_cleaned_to_ascii():
+    assert pr.name_arg("https://github.com/Owner/my-mods/tree/main/Vést") == " --name Vst"
