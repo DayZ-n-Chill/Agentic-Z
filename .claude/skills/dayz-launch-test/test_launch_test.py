@@ -35,6 +35,26 @@ def test_build_server_cmd():
     ]
 
 
+def test_build_server_cmd_puts_server_only_mods_on_server_mod():
+    cmd = launch.build_server_cmd(
+        DIAG, "P:\Mods\@A", 2302,
+        Path("cfg/serverDZ.cfg"), Path("inst/Profiles"), Path("inst/dayzOffline.chernarusplus"),
+        server_mod_arg="P:\Mods\@S",
+    )
+    assert "-mod=P:\Mods\@A" in cmd
+    assert "-serverMod=P:\Mods\@S" in cmd
+    assert not any(a.startswith("-mod=") and "@S" in a for a in cmd)
+
+
+def test_main_keeps_server_only_mods_off_mod_list(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "--server-only", "SrvMod", "--dry-run"])
+    assert launch.main() == 0
+    server_line = next(l for l in capsys.readouterr().out.splitlines() if "Server cmd:" in l)
+    assert f"-mod={launch.MODS_ROOT / '@MyMod'} " in server_line
+    assert f"-serverMod={launch.MODS_ROOT / '@SrvMod'} " in server_line
+
+
 def test_build_client_cmd_with_display_prefs():
     cmd = launch.build_client_cmd(
         DIAG, "P:\\Mods\\@A", 2302, Path("logs"), {"windowed": True, "width": 2560, "height": 1440}
@@ -204,6 +224,37 @@ def test_server_and_client_spawn_detached(monkeypatch, tmp_path):
     for kwargs in spawns:
         assert kwargs["creationflags"] == launch.h.DETACH_FLAGS
         assert kwargs["close_fds"] is True
+
+
+def test_client_spawn_failure_kills_server(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod"])
+    procs = []
+
+    def fake_popen(cmd, **kwargs):
+        if procs:
+            raise OSError("access denied")
+        procs.append(_FakeProc())
+        return procs[-1]
+
+    monkeypatch.setattr(launch.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(launch, "wait_for_server_port", lambda port, proc, timeout_s: True)
+    assert launch.main() == 1
+    assert procs[0].killed
+    out = capsys.readouterr().out
+    assert launch.FAIL in out and "Failed to spawn DayZDiag_x64.exe: access denied" in out
+
+
+def test_server_spawn_failure_exits_1(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod"])
+
+    def fake_popen(cmd, **kwargs):
+        raise OSError("not found")
+
+    monkeypatch.setattr(launch.subprocess, "Popen", fake_popen)
+    assert launch.main() == 1
+    assert "Failed to spawn DayZDiag_x64.exe: not found" in capsys.readouterr().out
 
 
 def test_wait_for_port_defaults_to_bind_timeout():

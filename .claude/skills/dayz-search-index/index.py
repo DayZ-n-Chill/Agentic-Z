@@ -201,7 +201,7 @@ def _require_deps() -> None:
         print(
             f"{FAIL} Missing Python dependency: {exc.name}\n"
             f"        Install the indexer's requirements first:\n"
-            f"            pip install -r \"{_HERE / 'requirements.txt'}\"",
+            f"            python -m pip install -r \"{_HERE / 'requirements.txt'}\"",
             file=sys.stderr,
         )
         sys.exit(1)
