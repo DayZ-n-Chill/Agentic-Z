@@ -41,6 +41,7 @@ enscript/
 |---|---|
 | `community_framework.md` | CF module system, `ModStorage` persistence, event bus, inter-mod events |
 | `dabs_framework.md` | Dabs Framework (third party): attributes, `ScriptView` MVC, layout bindings, `ScriptViewMenu` |
+| `expansion_style.md` | Expansion targeted work only: prefixes, settings and module patterns, and where they differ from the vanilla style guide |
 | `vanilla_plugins.md` | `PluginBase` lifecycle, `GetPlugin()`, service-locator isolation |
 | `central_economy.md` | CE XML format, runtime CE with `SpawnObject`/`DeleteObject`, `cfgeconomycore.xml` |
 | `input_bindings.md` | `inputs.xml`, `UAInput` API, `GetUApi()`, context guards |
