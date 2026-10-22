@@ -1,6 +1,6 @@
 # Data loss audit
 
-The check run before a release so no saved data is lost or misread, and the report format handed to the server lead.
+The check run before a release so no saved data is lost or misread, and the report format that reaches the server lead.
 
 ## When to run it
 
@@ -25,7 +25,7 @@ Run it on every release that touches a class with `OnStoreSave` or `OnStoreLoad`
 
 ## Report format
 
-Hand this to the server lead as markdown. Keep one section per saving class.
+Put this, unchanged, at the end of your report to the script lead; the orchestrator passes it to the server lead before the test build. Keep one section per saving class.
 
 ```markdown
 # Data audit: <ModName> <new version> (from <last released version>)
@@ -65,4 +65,4 @@ Findings: none
 - <each path that was not run in game, or "none">
 ```
 
-A FAIL names the class, the row and the fix, and goes back to the persistence specialist through the script lead. A PASS goes to the server lead, who keeps it with the release notes and passes any server action to the user.
+A FAIL names the class, the row and the fix, and goes back to the persistence specialist through the script lead. A PASS reaches the server lead through the orchestrator; the server lead keeps it with the release notes and passes any server action to the user.

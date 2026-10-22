@@ -4,6 +4,7 @@ Usage:
     dayz-search <query>                  # source corpus, top 5
     dayz-search -k 3 <query>             # top 3
     dayz-search -t c <query>             # filter to file_type=c (Enforce Script)
+    dayz-search -d 0.9 <query>           # drop hits with distance above 0.9
     dayz-search -s 800 <query>           # snippet preview length (default 400)
     dayz-search -j <query>               # raw JSON output
 
@@ -53,7 +54,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("-t", "--file-type", default=None, choices=sorted(VALID_FILE_TYPES),
                    help="source filter: " + " | ".join(sorted(VALID_FILE_TYPES)))
     p.add_argument("-d", "--max-distance", type=float, default=None, help="drop hits with distance above this")
-    p.add_argument("-s", "--snippet-chars", type=int, default=400, help="snippet preview length (0 = full)")
+    p.add_argument("-s", "--snippet-chars", type=int, default=400, help="snippet preview length (0 = the whole snippet, which the index caps at 1500 characters)")
     p.add_argument("-j", "--json", action="store_true", help="print raw JSON instead of formatted output")
     args = p.parse_args(argv)
 

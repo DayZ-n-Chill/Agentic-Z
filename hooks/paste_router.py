@@ -197,7 +197,7 @@ def main() -> int:
     if shadowed_by_project():
         return 0
     try:
-        data = json.loads(sys.stdin.read() or "{}")
+        data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace") or "{}")
         prompt = data.get("prompt") or ""
         project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd())
         context = build_context(prompt, project) if prompt else None

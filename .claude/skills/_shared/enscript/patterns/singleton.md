@@ -1,6 +1,6 @@
 # Pattern: Singleton Config
 
-A static, lazily-initialized configuration class loaded from a JSON file on the server profile directory. The singleton lives in `3_Game` (loads on both server and client) or `5_Mission` for server-only data.
+A static, lazily-initialized configuration class loaded from a JSON file on the server profile directory. The singleton lives in `3_Game` (visible to every later layer) or `5_Mission`; neither is server-only, so guard server work with `GetGame().IsServer()` or `#ifdef SERVER`.
 
 It loads with `JsonFileLoader<T>.LoadFile(path, data, errorMessage)` and saves with `SaveFile(path, data, errorMessage)`, which return `bool` and say what went wrong (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`). Do not use `JsonLoadFile` or `JsonSaveFile`: they return nothing, so a broken file is only an `ErrorEx` in the log, and vanilla marks them "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`).
 
@@ -129,8 +129,8 @@ class MyMod_SpawnConfig
 | All serialized fields must be **public** | Reported, not checked on `P:\` (`JsonSerializer` is native): `private` / `protected` fields are silently skipped |
 | Nested objects must be `ref` | Reported, not checked on `P:\` (`JsonSerializer` is native): value-type nesting does not serialize correctly |
 | Extra JSON keys are ignored | Reported, not checked on `P:\` (`JsonSerializer` is native): safe to add new fields in config without breaking old saves |
-| Missing keys keep defaults | Rename fields = default on next load; document field renames |
-| Arrays serialize as JSON arrays | `ref array<string>` works. `{}` and `new array<string>()` are both valid ways to create it |
+| Missing keys keep defaults | Reported, not checked on `P:\` (`JsonSerializer` is native): rename fields = default on next load; document field renames |
+| Arrays serialize as JSON arrays | Reported, not checked on `P:\` (`JsonSerializer` is native): `ref array<string>` works. `{}` and `new array<string>()` are both valid ways to create it |
 
 ---
 

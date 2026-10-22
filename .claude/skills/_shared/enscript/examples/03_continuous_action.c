@@ -108,7 +108,9 @@ class ActionMyMod_RepairCanteen : ActionContinuousBase
 // 1. Register the class in ActionConstructor.RegisterActions
 //    (P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:27).
 //    Without it AddAction finds no action and the hold-to-repair never appears.
-// 2. Add the action in SetActions() (itembase.c:246-255).
+// 2. Add the action in SetActions() (itembase.c:246-255). Add both actions in
+//    the one SetActions() of MyMod_CustomCanteen; do not add a modded class of
+//    your own class.
 // =============================================================================
 modded class ActionConstructor
 {
@@ -119,11 +121,6 @@ modded class ActionConstructor
     }
 }
 
-modded class MyMod_CustomCanteen
-{
-    override void SetActions()
-    {
-        super.SetActions();
-        AddAction(ActionMyMod_RepairCanteen);
-    }
-}
+// AddAction(ActionMyMod_RepairCanteen) goes in the SetActions() override inside
+// the class MyMod_CustomCanteen declaration (01_custom_item.c), next to the
+// action from 02_custom_action_singleuse.c; that file shows the full override.

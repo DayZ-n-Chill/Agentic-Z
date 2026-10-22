@@ -18,11 +18,14 @@ pr = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(pr)
 
 
-def _run(prompt, project: Path, raw: str | None = None) -> subprocess.CompletedProcess:
+def _run(prompt, project: Path, raw: str | bytes | None = None) -> subprocess.CompletedProcess:
     payload = raw if raw is not None else json.dumps({
         "session_id": "s", "cwd": str(project), "hook_event_name": "UserPromptSubmit", "prompt": prompt,
     })
     env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project)}
+    if isinstance(payload, bytes):  # raw bytes, as Claude Code pipes them, whatever the locale codec
+        r = subprocess.run([sys.executable, str(SCRIPT)], input=payload, capture_output=True, env=env, timeout=30)
+        return subprocess.CompletedProcess(r.args, r.returncode, r.stdout.decode("utf-8"), r.stderr.decode("utf-8", "replace"))
     return subprocess.run([sys.executable, str(SCRIPT)], input=payload, capture_output=True, text=True,
                           env=env, timeout=30)
 
@@ -98,6 +101,15 @@ def test_pasted_log_is_triaged_and_only_new_lines_go_to_the_debugger(tmp_path):
 def test_all_known_log_needs_no_debugger(tmp_path):
     context = _context(_run("10:01:02 SCRIPT    (E): NULL pointer to instance", tmp_path))
     assert "dayz-mod-debugger is not needed" in context
+
+
+def test_non_ascii_paste_is_read_as_utf8(tmp_path):
+    prompt = "10:01:02 SCRIPT    (E): NULL pointer to instance ”ok”"
+    raw = json.dumps({"session_id": "s", "cwd": str(tmp_path), "hook_event_name": "UserPromptSubmit",
+                      "prompt": prompt}, ensure_ascii=False).encode("utf-8")
+    context = _context(_run(None, tmp_path, raw=raw))
+    assert "”ok" in context
+    assert "â€" not in context
 
 
 def test_learned_errors_of_the_project_count_as_known(tmp_path):

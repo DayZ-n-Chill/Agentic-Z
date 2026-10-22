@@ -265,16 +265,16 @@ ppw.Refresh();
 
 ```c
 // In UIScriptedMenu.Init():
-layoutRoot = GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/my_menu.layout");
+layoutRoot = GetGame().GetWorkspace().CreateWidgets("MyMod/gui/layouts/my_menu.layout");
 
 // Inside another widget:
-Widget panel = GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/my_panel.layout", parentWidget);
+Widget panel = GetGame().GetWorkspace().CreateWidgets("MyMod/gui/layouts/my_panel.layout", parentWidget);
 
 // Get a widget after loading:
 TextWidget label = TextWidget.Cast(layoutRoot.FindAnyWidget("LabelTitle"));
 ```
 
-Path is relative to the game data root (PBO packing root). Use forward slashes.
+The path starts with the mod's `$PBOPREFIX$` (the mod name for a `/dayz-new-mod` scaffold), then the folder inside the PBO; use forward slashes.
 
 ---
 

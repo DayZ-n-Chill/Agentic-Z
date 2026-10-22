@@ -32,18 +32,21 @@ const LOGWATCH_SECONDS = '3'
 
 const join = (...parts: string[]) => parts.join('\\')
 
-// The clone that holds cwd: cwd itself or the nearest parent with Agentic-Z's
-// skills, so a session started in a subfolder (workspace\MyVest) still finds it.
-async function findClone($: any, cwd: string): Promise<string | null> {
+// cwd itself or the nearest parent that holds the given path, so a session
+// started in a subfolder (workspace\MyVest) still finds the project.
+async function findUp($: any, cwd: string, rel: string): Promise<string | null> {
   let dir = cwd.replace(/\//g, '\\').replace(/\\+$/, '')
   while (dir) {
-    if (await $.fs.exists(join(dir, '.claude', 'skills', 'dayz-preflight', 'preflight.py'))) return dir
+    if (await $.fs.exists(join(dir, rel))) return dir
     const cut = dir.lastIndexOf('\\')
     if (cut < 0) return null
     dir = dir.slice(0, cut)
   }
   return null
 }
+
+// The clone that holds cwd: the nearest folder with Agentic-Z's skills.
+const findClone = ($: any, cwd: string) => findUp($, cwd, join('.claude', 'skills', 'dayz-preflight', 'preflight.py'))
 
 // Agentic-Z lives in the project itself (a clone) or in the plugin cache.
 async function findRoot($: any, cwd: string): Promise<string | null> {
@@ -60,8 +63,13 @@ async function findRoot($: any, cwd: string): Promise<string | null> {
   return versions.length ? join(cache, versions[versions.length - 1]) : null
 }
 
+// The state file of the clone, or with no clone (a plugin install) of the
+// nearest folder above cwd that has one, as dayz-init's state.py finds it.
 async function activeMod($: any, cwd: string): Promise<string | null> {
-  const file = join((await findClone($, cwd)) ?? cwd, '.claude', 'local-memory', 'dayz-init-state.json')
+  const state = join('.claude', 'local-memory', 'dayz-init-state.json')
+  const project = (await findClone($, cwd)) ?? (await findUp($, cwd, state))
+  if (!project) return null
+  const file = join(project, state)
   if (!(await $.fs.exists(file))) return null
   try {
     return JSON.parse(await $.fs.read(file))?.last_intent?.mod_name ?? null
@@ -110,7 +118,8 @@ async function runAction($: any, cwd: string, action: string, question?: string)
 }
 
 async function runNow($: any, cwd: string, action: string, question?: string) {
-  const current = (await read($, status)) ?? (await refresh($, cwd))
+  // Read the state afresh: /dayz-init may have run since the pane last refreshed.
+  const current = await refresh($, cwd)
   if (!current.root) {
     $.ui.toast('Agentic-Z not found in this project or the plugin cache.')
     return
