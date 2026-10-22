@@ -37,12 +37,12 @@ def test_build_server_cmd():
 
 def test_build_server_cmd_puts_server_only_mods_on_server_mod():
     cmd = launch.build_server_cmd(
-        DIAG, "P:\Mods\@A", 2302,
+        DIAG, "P:\\Mods\\@A", 2302,
         Path("cfg/serverDZ.cfg"), Path("inst/Profiles"), Path("inst/dayzOffline.chernarusplus"),
-        server_mod_arg="P:\Mods\@S",
+        server_mod_arg="P:\\Mods\\@S",
     )
-    assert "-mod=P:\Mods\@A" in cmd
-    assert "-serverMod=P:\Mods\@S" in cmd
+    assert "-mod=P:\\Mods\\@A" in cmd
+    assert "-serverMod=P:\\Mods\\@S" in cmd
     assert not any(a.startswith("-mod=") and "@S" in a for a in cmd)
 
 
