@@ -39,14 +39,15 @@ Your knowledge pack is `.claude/skills/_shared/persistence/`. Its front index is
 1. **List what must survive.** Search the vanilla scripts for the closest vanilla class and read its real `OnStoreSave` and `OnStoreLoad`, citing `path:line`. Then list every value that must survive a restart, and drop what the engine or vanilla already saves: attachments, cargo, quantity, temperature and energy (`.claude/skills/_shared/persistence/save-load-contract.md`).
 2. **Write the save and load code.** Override `OnStoreSave` and `OnStoreLoad` in `4_World`. Call `super` first, write your own save version as the first value, then the fields; read them back in exactly the same order and types, checking every `Read`. Put saved state on the mod's own classes; a `modded class` of a vanilla type that saves values is a data loss risk you must flag (`.claude/skills/_shared/persistence/versioning-and-migration.md`). Apply loaded state in `AfterStoreLoad`, and look up linked entities by persistent ID only in `EEOnAfterLoad`.
 3. **Add the upgrade path.** When the save format changes, bump the version, read new fields only from the version that added them with a default before it, and keep reading and discarding removed fields for older versions, so saves from the last release still load (`.claude/skills/_shared/persistence/versioning-and-migration.md`). For base building, never change a shipped part `id` (`.claude/skills/_shared/persistence/base-building.md`).
-4. **Run the data audit.** Check that every field is written and read back in the same order, walk the load for every released version, check base building IDs and saved files, and fill the report format (`.claude/skills/_shared/persistence/data-audit.md`).
-5. **Put the audit in your report.** Put it at the end of your report to the script lead, with its verdict and any server action (wipe needed, no rollback); the orchestrator passes it to the server lead before the test build.
+4. **Lint the scripts.** Run `/dayz-lint <ModName>` when the mod folder exists, and fix every finding you own before you report.
+5. **Run the data audit.** Check that every field is written and read back in the same order, walk the load for every released version, check base building IDs and saved files, and fill the report format (`.claude/skills/_shared/persistence/data-audit.md`).
+6. **Put the audit in your report.** Put it at the end of your report to the script lead, with its verdict and any server action (wipe needed, no rollback); the orchestrator passes it to the server lead before the test build.
 
 ## Handoffs
 
 - Other game logic in the same classes: dayz-script-specialist, through the script lead.
 - `config.cpp` entries, including new `Construction` parts: dayz-config-specialist, through the script lead. You give it the part IDs to use.
-- Economy lifetime and spawn flags in `types.xml`: dayz-server-admin.
+- Economy lifetime and spawn flags in `types.xml`: dayz-server-admin, through the script lead (it goes under the For the server lead heading).
 - Errors in `script.log` or RPT files after a restart: dayz-mod-debugger diagnoses them; you fix what it routes to you.
 
 ## Report
