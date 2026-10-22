@@ -266,6 +266,7 @@ def _stub_apply_flow(monkeypatch, root):
     _stub_remote(monkeypatch, root)
     monkeypatch.setattr(update, "_QUIET", False)  # an earlier --quiet test sets the global
     monkeypatch.setattr(update, "working_tree_clean_for", lambda paths: (True, []))
+    monkeypatch.setattr(update, "git_operation_in_progress", lambda: None)
     monkeypatch.setattr(update, "run_sync_skills", lambda: None)
 
 
@@ -672,3 +673,102 @@ def test_first_run_in_old_clone_offers_upstream_changes_since_clone(tmp_path, mo
         "docs/a.md": S.SAFE_OVERWRITE,
         ".claude/skills/new-skill/SKILL.md": S.NEW,
     }
+
+
+# ---------- per-file keep is a decision, skip defers ----------
+
+def test_per_file_skip_differs_from_keep(monkeypatch):
+    answers = iter(["k", "s", ""])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(answers))
+    drift = {"docs/a.md": S.CONFLICT, "docs/b.md": S.CONFLICT, "docs/c.md": S.DELETED_CONFLICT}
+    assert update.resolve_conflicts_per_file(drift, REF) == {
+        "docs/a.md": "keep", "docs/b.md": "skip", "docs/c.md": "skip",
+    }
+
+
+def test_per_file_non_interactive_skips(monkeypatch):
+    def eof(prompt):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", eof)
+    monkeypatch.setattr(update, "_QUIET", True)
+    assert update.resolve_conflicts_per_file({"docs/c.md": S.CONFLICT}, REF) == {"docs/c.md": "skip"}
+
+
+@pytest.mark.parametrize("status", [S.CONFLICT, S.DELETED_CONFLICT])
+def test_explicit_keep_advances_baseline(in_tmp, monkeypatch, status):
+    monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: True)
+    update.write_baseline("b" * 40)
+    drift = {"docs/c.md": status}
+    assert update.finish_apply(drift, [], ["docs/c.md"], "a" * 40, kept=["docs/c.md"]) == "advanced"
+    assert update.read_baseline() == "a" * 40
+
+
+def test_skipped_conflict_still_holds_baseline(in_tmp, monkeypatch):
+    monkeypatch.setattr(update, "stage_and_commit", lambda applied, sha: True)
+    update.write_baseline("b" * 40)
+    drift = {"docs/c.md": S.CONFLICT, "docs/k.md": S.CONFLICT}
+    assert update.finish_apply(drift, [], ["docs/c.md", "docs/k.md"], "a" * 40, kept=["docs/k.md"]) == "pending"
+    assert update.read_baseline() == "b" * 40
+
+
+def test_kept_conflict_is_local_only_edit_after_advance():
+    # Once the baseline is upstream's version, the kept file differs only locally.
+    assert update.classify_per_file(baseline=b"up", local=b"mine", upstream=b"up") == S.LOCAL_ONLY_EDIT
+    assert update.classify_per_file(baseline=None, local=b"mine", upstream=None) == S.LOCAL_ONLY_EDIT
+
+
+# ---------- refuse during a merge, rebase, cherry-pick or revert ----------
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
+def test_detects_merge_in_progress(tmp_path, monkeypatch):
+    _git(tmp_path, "init", "-q", "-b", "main")
+    for key, val in [("user.name", "t"), ("user.email", "t@example.com"),
+                     ("commit.gpgsign", "false"), ("core.hooksPath", ".no-hooks")]:
+        _git(tmp_path, "config", key, val)
+    (tmp_path / "f.txt").write_text("base\n", encoding="utf-8")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "base")
+    _git(tmp_path, "switch", "-q", "-c", "other")
+    (tmp_path / "f.txt").write_text("other\n", encoding="utf-8")
+    _git(tmp_path, "commit", "-q", "-am", "other")
+    _git(tmp_path, "switch", "-q", "main")
+    (tmp_path / "f.txt").write_text("main\n", encoding="utf-8")
+    _git(tmp_path, "commit", "-q", "-am", "main")
+
+    monkeypatch.chdir(tmp_path)
+    assert update.git_operation_in_progress() is None
+    subprocess.run(["git", "merge", "other"], cwd=tmp_path, capture_output=True, text=True)
+    assert update.git_operation_in_progress() == "merge"
+    _git(tmp_path, "merge", "--abort")
+    assert update.git_operation_in_progress() is None
+
+
+@pytest.mark.parametrize("extra", [[], ["--force"]])
+def test_main_refuses_mid_merge_before_touching_remote(monkeypatch, capsys, extra):
+    monkeypatch.setattr(sys, "argv", ["update.py", "--yes", *extra])
+    monkeypatch.setattr(update, "_QUIET", False)  # an earlier --quiet test sets the global
+    monkeypatch.setattr(update, "repo_root", lambda: Path.cwd())
+    monkeypatch.setattr(update, "working_tree_clean_for", lambda paths: (True, []))
+    monkeypatch.setattr(update, "git_operation_in_progress", lambda: "merge")
+
+    def must_not_run():
+        raise AssertionError("ensure_upstream should not run mid-merge")
+
+    monkeypatch.setattr(update, "ensure_upstream", must_not_run)
+    assert update.main() == 1
+    assert "git merge is in progress" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("flag", ["--check", "--dry-run"])
+def test_read_only_modes_ignore_merge_state(monkeypatch, flag):
+    monkeypatch.setattr(sys, "argv", ["update.py", flag])
+    monkeypatch.setattr(update, "repo_root", lambda: Path.cwd())
+    monkeypatch.setattr(update, "working_tree_clean_for", lambda paths: (True, []))
+
+    def must_not_check():
+        raise AssertionError(f"{flag} writes nothing, so it should not check merge state")
+
+    monkeypatch.setattr(update, "git_operation_in_progress", must_not_check)
+    monkeypatch.setattr(update, "ensure_upstream", lambda: False)  # stop right after
+    assert update.main() == 1

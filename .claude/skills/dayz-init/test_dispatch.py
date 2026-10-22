@@ -107,6 +107,38 @@ def test_known_maps_come_from_add_server():
     assert dispatch.KNOWN_MAPS == tuple(add_server.KNOWN_MAPS)
 
 
+def _mod_needing_cf(project: Path, name: str = "CfMod") -> Path:
+    mod_dir = project / "workspace" / name
+    mod_dir.mkdir(parents=True)
+    (mod_dir / "config.cpp").write_text(
+        'class CfgPatches { class CfMod { requiredAddons[] = {"DZ_Data", "JM_CF_Scripts"}; }; };\n',
+        encoding="utf-8",
+    )
+    return mod_dir
+
+
+def test_hub_launch_refuses_missing_deps_before_running(monkeypatch, tmp_path, capsys):
+    _mod_needing_cf(tmp_path)
+    monkeypatch.setattr(dispatch, "PROJECT_DIR", tmp_path)
+    monkeypatch.setattr(dispatch, "active_mod", lambda project: "CfMod")
+    monkeypatch.setattr(dispatch.subprocess, "run", lambda argv: pytest.fail("nothing may launch"))
+    assert dispatch.main(["launch", "--server", "chernarus"]) == 2
+    assert "JM_CF_Scripts" in capsys.readouterr().err
+
+
+def test_hub_launch_with_deps_or_a_prebuilt_bundle_runs(monkeypatch, tmp_path):
+    mod_dir = _mod_needing_cf(tmp_path)
+    seen = []
+    monkeypatch.setattr(dispatch, "PROJECT_DIR", tmp_path)
+    monkeypatch.setattr(dispatch, "active_mod", lambda project: "CfMod")
+    monkeypatch.setattr(dispatch.subprocess, "run", lambda argv: seen.append(argv) or SimpleNamespace(returncode=0))
+    assert dispatch.main(["launch", "--server", "chernarus", "--deps", "CF"]) == 0
+    (mod_dir / "Addons").mkdir()
+    (mod_dir / "Addons" / "CfMod.pbo").write_bytes(b"")
+    assert dispatch.main(["launch", "--server", "chernarus"]) == 0
+    assert len(seen) == 2
+
+
 def test_hub_launch_passes_deps_before_the_mod(monkeypatch):
     seen = []
     monkeypatch.setattr(dispatch, "active_mod", lambda project: "ActiveMod")

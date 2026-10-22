@@ -64,6 +64,22 @@ def validate_instance(instance: str) -> str:
     return instance
 
 
+def validate_map(map_arg: str) -> str:
+    """argparse type for --map: an alias or one mission folder name.
+
+    The value is joined into <DayZServer>/mpmissions/<template> and into the
+    junction path .server/<instance>/<template>, so a path such as ..\\..\\x
+    would reach outside both folders.
+    """
+    if map_arg in ("", ".", "..") or any(c in map_arg for c in '/\\:*?"<>|'):
+        raise argparse.ArgumentTypeError(
+            f"'{map_arg}' is not a valid map: use an alias ({', '.join(KNOWN_MAPS)}) or a "
+            "single mission folder name such as dayzOffline.namalsk (no path separators, "
+            "drive letters, '..', or the characters * ? \" < > |)."
+        )
+    return map_arg
+
+
 def gate_on_old_layout(project_dir: Path) -> None:
     """Refuse to run if workspace/_server/ still exists. Forces explicit migration."""
     legacy_server_root = project_dir / "workspace" / "_server"
@@ -326,6 +342,7 @@ def main() -> int:
         "--map",
         dest="map_arg",
         default=None,
+        type=validate_map,
         help=(
             f"Map alias (one of: {', '.join(KNOWN_MAPS)}) or full mission template "
             "folder name (e.g. dayzOffline.namalsk). Defaults to <instance> when "

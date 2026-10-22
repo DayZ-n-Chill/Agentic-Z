@@ -230,6 +230,30 @@ def test_template_junction_created_when_mission_present(monkeypatch, tmp_path):
     assert calls[0][4].endswith("dayzOffline.chernarusplus")
 
 
+@pytest.mark.parametrize("bad", ["", ".", "..", "..\\..\\x", "../x", "a/b", "C:x", "a*b", 'a"b'])
+def test_map_rejects_paths(bad):
+    with pytest.raises(srv.argparse.ArgumentTypeError):
+        srv.validate_map(bad)
+
+
+@pytest.mark.parametrize("good", ["chernarus", "dayzOffline.namalsk", "dayzOffline.chernarusplus"])
+def test_map_accepts_aliases_and_folder_names(good):
+    assert srv.validate_map(good) == good
+
+
+def test_main_rejects_map_path_before_any_work(monkeypatch, capsys):
+    monkeypatch.setattr(srv.sys, "argv", ["add_server.py", "test", "--map", "..\\..\\x"])
+
+    def must_not_run(*a, **k):
+        raise AssertionError("nothing may run with a bad --map")
+
+    monkeypatch.setattr(srv.h, "resolve_project_dir", must_not_run)
+    with pytest.raises(SystemExit) as exc:
+        srv.main()
+    assert exc.value.code == 2
+    assert "not a valid map" in capsys.readouterr().err
+
+
 @pytest.mark.parametrize("bad", ["", ".", "..", "../x", "a/b", "a\\b", "C:x"])
 def test_instance_name_rejects_paths(bad):
     with pytest.raises(srv.argparse.ArgumentTypeError):
