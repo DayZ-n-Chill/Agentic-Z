@@ -130,9 +130,9 @@ def test_gates_cannot_edit(name):
     assert "memory" not in _frontmatter(path)
 
 
-# Roles that run others and write nothing themselves. Setting `memory` auto-enables
-# Read, Write and Edit, so these must also carry no memory.
-NO_WRITE_ROLES = {"dayz-lead"}
+# Roles that run others or only diagnose, and write nothing themselves. Setting
+# `memory` auto-enables Read, Write and Edit, so these must also carry no memory.
+NO_WRITE_ROLES = {"dayz-lead", "dayz-physics-specialist"}
 
 
 @pytest.mark.parametrize("name", sorted(NO_WRITE_ROLES))

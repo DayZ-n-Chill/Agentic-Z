@@ -22,6 +22,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 
 - Before writing the script that drives a layout, read `.claude/skills/_shared/enscript/references/widget_api.md`. It covers each widget class's methods, the events of `ScriptedWidgetEventHandler`, `scriptclass` and `OnWidgetScriptInit`, loading layouts, and opening a `UIScriptedMenu` by ID.
 - A full menu to start from is `.claude/skills/_shared/enscript/examples/08_gui_menu.c`.
+- After writing or changing script, run `/dayz-lint <ModName>` when the mod folder exists, and fix every finding you own before you report.
 - Use Dabs Framework only when the mod already requires it (`DF_Scripts` in `requiredAddons[]`) or the brief asks for it. Then read `.claude/skills/_shared/enscript/integrations/dabs_framework.md` before writing a `ScriptView`, a `ViewController` or a binding. Its facts are framework facts, so say so in your report.
 
 ## Icons and imagesets
@@ -54,4 +55,4 @@ Grep `P:\gui\` and `P:\scripts\5_mission\gui\` for known names, RAG (`search_day
 
 ## Report
 
-To the UI lead or your caller: the files you wrote or changed, how the UI is opened from script, any imageset you built and where it is registered, anything you couldn't verify against vanilla (and any Dabs Framework facts you relied on), and what to look at in game.
+To the UI lead or your caller: the files you wrote or changed, the `/dayz-lint` result (or that the mod folder does not exist yet), how the UI is opened from script, any imageset you built and where it is registered, anything you couldn't verify against vanilla (and any Dabs Framework facts you relied on), and what to look at in game.
