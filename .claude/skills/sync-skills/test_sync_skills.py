@@ -55,6 +55,23 @@ def test_first_run_links_everything_then_second_run_is_ok(env):
     assert counts["ok"] == 3 and counts["linked"] == 0
 
 
+def test_failed_junction_shows_the_mklink_error(env, monkeypatch, capsys):
+    _, _, target_dir, cfg = env
+
+    def no_symlink(*a, **k):
+        raise OSError("symlink needs elevation")
+
+    def mklink_fails(cmd, **kwargs):
+        raise sync.subprocess.CalledProcessError(1, cmd, output="", stderr="Access is denied.\n")
+
+    monkeypatch.setattr(sync.os, "symlink", no_symlink)
+    monkeypatch.setattr(sync.os, "name", "nt")
+    monkeypatch.setattr(sync.subprocess, "run", mklink_fails)
+    counts = sync.sync_one(cfg, sync.list_repo_skills(), dry_run=False, force=False)
+    assert counts["failed"] == 3 and counts["linked"] == 0
+    assert "[FAILED]  alpha: mklink /J failed: Access is denied." in capsys.readouterr().out
+
+
 def test_dry_run_writes_nothing(env):
     _, _, target_dir, cfg = env
     counts = sync.sync_one(cfg, sync.list_repo_skills(), dry_run=True, force=False)

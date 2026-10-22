@@ -127,10 +127,14 @@ def make_link(src: Path, dst: Path) -> str:
         return "symlink"
     except OSError:
         if os.name == "nt":
-            subprocess.run(
-                ["cmd", "/c", "mklink", "/J", str(dst), str(src)],
-                check=True, capture_output=True, text=True,
-            )
+            try:
+                subprocess.run(
+                    ["cmd", "/c", "mklink", "/J", str(dst), str(src)],
+                    check=True, capture_output=True, text=True,
+                )
+            except subprocess.CalledProcessError as e:
+                # Keep mklink's own message (access denied, path in use) for the [FAILED] line.
+                raise OSError(f"mklink /J failed: {(e.stderr or e.stdout or '').strip()}") from e
             return "junction"
         raise
 

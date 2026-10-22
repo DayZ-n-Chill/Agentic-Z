@@ -40,7 +40,7 @@ python "<skill-dir>\upgrade_guard.py" diff [--old <snapshot> --new <snapshot>] [
 | `<ModName>` | A mod under `workspace/` in the project cached by `/dayz-init`. With no name and no `--mod-dir`, every mod in `workspace/` is checked. |
 | `--mod-dir` | Check this folder too. Repeat it for more folders. |
 | `--reindex` | With `check`: when vanilla changed, rebuild the search index (`/dayz-search-index --full`) so search answers match the new files. It uses Voyage tokens, so it only runs when you ask. |
-| `--json` | Print the full report as JSON after the verdict line. |
+| `--json` | Print the full report as JSON after the verdict line. Stdout then holds only those two parts; the reindex note and the indexer's output go to stderr. |
 | `--store`, `--p-root` | Another snapshot folder (default `~/.claude/dayz-upgrade-guard/`) or game data root (default `P:\`). |
 
 ## What a snapshot holds

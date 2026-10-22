@@ -23,7 +23,8 @@ All Enforce Script (`.c`) work follows `.claude/skills/_shared/enscript-style.md
   - `/dayz-ask` only reads vanilla files. It checks that `P:\` is mounted itself and needs none of the rest of preflight.
   - `/dayz-preflight` is the gate itself.
   - `/dayz-gate` gates through the scripts it runs: the build gate calls `/dayz-build-pbo` and the game gates call `/dayz-launch-test`, and both gate on preflight.
-  - `/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-upgrade-guard`, `/dayz-recipe` and `/dayz-layout-preview` only read files and write a report. The ones that read `P:\` say so themselves when it is not mounted.
+  - `/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe` and `/dayz-layout-preview` only read files and write a report. The ones that read `P:\` say so themselves when it is not mounted.
+  - `/dayz-upgrade-guard` reads files and writes a report, saves its snapshots under `~/.claude/dayz-upgrade-guard/`, and rebuilds the search index only with `--reindex`. It says so itself when `P:\` is not mounted.
   - `/dayz-release-pack` and `/dayz-server-kit` only read the mod's own files and write texts or a zip under `output/`.
   - `/dayz-health` and `/dayz-logwatch` only read gate results and logs.
   - `/dayz-route` only classifies the text of a request.

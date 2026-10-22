@@ -26,7 +26,7 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-health` (skill): show a mod's health page with the last build, the last test, open findings and test history. Put the mod name in `args.mod` when it is given.
 - `dayz-recipe` (skill): start a mod plan from a recipe, a new weapon, new vest or new craftable. Put the recipe in `args.recipe` when it is named. A crafting recipe inside a mod is script work, not this.
 - `dayz-layout-preview` (skill): draw a `.layout` as PNG previews at several screen sizes, to see how it holds up at other resolutions.
-- `dayz-upgrade-guard` (skill): before a DayZ update, snapshot the vanilla classes; after it, list the mod classes whose vanilla parents changed and rebuild the search index.
+- `dayz-upgrade-guard` (skill): before a DayZ update, snapshot the vanilla classes; after it, list the mod classes whose vanilla parents changed and, with `--reindex`, rebuild the search index.
 - `dayz-release-pack` (skill): write a mod's Steam Workshop description, changelog, classname list and server owner install notes in one go. Put the mod name in `args.mod` when it is given.
 - `dayz-server-kit` (skill): zip a mod's types.xml entries, cfgeconomycore lines, load order and public key for server owners. Put the mod name in `args.mod` when it is given.
 - `dayz-ask` (skill): answer a question about how vanilla DayZ does something or where it lives, with `path:line` citations. Changing anything goes to the matching specialist instead.
