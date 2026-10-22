@@ -90,6 +90,31 @@ def test_foreign_link_is_left_alone_unless_forced(env, tmp_path):
     assert other_clone.is_dir()  # the other clone's files are untouched
 
 
+def test_link_into_a_worktree_of_this_repo_is_foreign(env, capsys):
+    repo, skills, target_dir, cfg = env
+    worktree_skill = repo / ".claude" / "worktrees" / "x" / ".claude" / "skills" / "alpha"
+    worktree_skill.mkdir(parents=True)
+    target_dir.mkdir(parents=True)
+    sync.make_link(worktree_skill, target_dir / "alpha")
+
+    counts = sync.sync_one(cfg, sync.list_repo_skills(), dry_run=False, force=False)
+    assert counts["skipped"] == 1 and counts["refreshed"] == 0
+    assert "[FOREIGN] alpha" in capsys.readouterr().out
+    assert _target(target_dir / "alpha") == worktree_skill.resolve()
+
+
+def test_unwritable_skills_folder_fails_without_a_traceback(env, monkeypatch, capsys):
+    _, _, target_dir, cfg = env
+
+    def refuse(self, *a, **k):
+        raise PermissionError("access denied")
+
+    monkeypatch.setattr(sync.Path, "mkdir", refuse)
+    counts = sync.sync_one(cfg, sync.list_repo_skills(), dry_run=False, force=False)
+    assert counts["failed"] == 1 and counts["linked"] == 0
+    assert f"[FAILED]  cannot create {target_dir}: access denied" in capsys.readouterr().out
+
+
 def test_real_folder_is_never_clobbered(env):
     _, _, target_dir, cfg = env
     real = target_dir / "alpha"

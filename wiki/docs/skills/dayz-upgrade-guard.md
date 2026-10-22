@@ -63,11 +63,11 @@ A snapshot of the full game data takes about ten seconds and is about 8 MB.
 | `members-removed` | A vanilla config parent no longer sets a property or subclass your item inherited. |
 | `redeclared-parent` | Your config declares a vanilla class again with the old parent, and vanilla now gives it another. |
 
-A script `modded class X` is checked against X itself; `class Y extends X` is checked against X. A config class is checked against its parent in the same `Cfg*` class. Classes built on other mods are not vanilla, so they are skipped.
+A script `modded class X` is checked against X itself; `class Y extends X` is checked against X. A class built on another class of the same mod (`MyVest extends MyVest_Base extends Clothing`) is followed through the mod's classes and checked against the first vanilla class, here `Clothing`. A config class is checked against its parent in the same `Cfg*` class. Classes built on other mods are not vanilla, so they are skipped.
 
 ## Output and exit codes
 
-The first line is the verdict: `PASS` (exit 0, no mod class affected), `FAIL` (exit 1, at least one) or `ERROR` (exit 2: bad arguments, no game data on `P:\`, fewer than two snapshots to diff, or a mod folder that does not exist). `snapshot` prints the saved path instead.
+The first line is the verdict: `PASS` (exit 0, no mod class affected), `FAIL` (exit 1, at least one) or `ERROR` (exit 2: bad arguments, no game data on `P:\`, fewer than two snapshots to diff, or a mod folder that does not exist). A missing mod folder is caught before `check` saves anything, so a mistyped name never uses up the update. `snapshot` prints the saved path instead. With `--json`, the first `check` prints `{"verdict": "PASS", "baseline": "<path>"}` after the verdict line.
 
 ```
 FAIL
@@ -91,6 +91,7 @@ FAIL
 - It compares class shapes, not behaviour. A method that keeps its signature but works differently is not flagged; `/dayz-gate ingame` and `/dayz-gate behavior` catch that.
 - Config property values are not compared, only whether a property is still set.
 - `#ifdef` branches are read as if all were on.
+- `check` always compares with the newest saved snapshot. After an update the first `check` saves the new snapshot, so running `check` again says the vanilla classes did not change. Use `diff` to see the update report again.
 
 ## Do not
 

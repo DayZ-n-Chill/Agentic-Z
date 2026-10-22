@@ -1,8 +1,9 @@
 """Drift detector + applier for docs <-> wiki sync.
 
 Compares canonical source files (.claude/agents/, .claude/skills/, docs/,
-.claude/skills/_shared/dayz-conventions.md) to their Docusaurus wiki mirrors
-under wiki/docs/.
+.claude/skills/_shared/dayz-conventions.md and the Tier 2 topic files in
+.claude/skills/_shared/conventions/) to their Docusaurus wiki mirrors under
+wiki/docs/. A fixed doc mirror whose source is gone is reported as an orphan.
 
 Modes:
   --check (default)    Detect drift (missing mirror, mirror content differs
@@ -69,29 +70,41 @@ def find_canonical_targets() -> list[tuple[Path, Path, str]]:
             if src.is_file():
                 targets.append((src, skills_dst / f"{skill_dir.name}.md", "skill"))
 
-    flat_pairs = [
-        (REPO_ROOT / ".claude" / "skills" / "_shared" / "dayz-conventions.md",
-         REPO_ROOT / "wiki" / "docs" / "dayz-conventions.md", "doc"),
-        (REPO_ROOT / "docs" / "dayz-modding.md",
-         REPO_ROOT / "wiki" / "docs" / "dayz-modding.md", "doc"),
-        (REPO_ROOT / "docs" / "model-routing.md",
-         REPO_ROOT / "wiki" / "docs" / "model-routing.md", "doc"),
-    ]
-    for src, dst, kind in flat_pairs:
+    for src, dst in fixed_doc_pairs():
         if src.is_file():
-            targets.append((src, dst, kind))
+            targets.append((src, dst, "doc"))
+
+    conventions_src = REPO_ROOT / ".claude" / "skills" / "_shared" / "conventions"
+    conventions_dst = REPO_ROOT / "wiki" / "docs" / "conventions"
+    if conventions_src.is_dir():
+        for src in sorted(conventions_src.glob("*.md")):
+            targets.append((src, conventions_dst / src.name, "doc"))
 
     return targets
 
 
-def find_orphans(seen_mirrors: set[Path]) -> list[Path]:
-    """Return agent/skill wiki pages that no canonical source maps to.
+def fixed_doc_pairs() -> list[tuple[Path, Path]]:
+    """The single docs mirrored by name: (canonical, wiki mirror)."""
+    return [
+        (REPO_ROOT / ".claude" / "skills" / "_shared" / "dayz-conventions.md",
+         REPO_ROOT / "wiki" / "docs" / "dayz-conventions.md"),
+        (REPO_ROOT / "docs" / "dayz-modding.md",
+         REPO_ROOT / "wiki" / "docs" / "dayz-modding.md"),
+        (REPO_ROOT / "docs" / "model-routing.md",
+         REPO_ROOT / "wiki" / "docs" / "model-routing.md"),
+    ]
 
-    `_*.md` files and the hand-written about.md are not auto-mirrors and are
-    never reported or pruned.
+
+def find_orphans(seen_mirrors: set[Path]) -> list[Path]:
+    """Return wiki mirrors that no canonical source maps to.
+
+    Covers the agent, skill and conventions folders, plus each fixed doc
+    mirror whose source was deleted or renamed. `_*.md` files and the
+    hand-written about.md are not auto-mirrors and are never reported or pruned.
     """
     orphans: list[Path] = []
-    for wiki_dir in (REPO_ROOT / "wiki" / "docs" / "agents", REPO_ROOT / "wiki" / "docs" / "skills"):
+    for wiki_dir in (REPO_ROOT / "wiki" / "docs" / "agents", REPO_ROOT / "wiki" / "docs" / "skills",
+                     REPO_ROOT / "wiki" / "docs" / "conventions"):
         if not wiki_dir.is_dir():
             continue
         for mirror in sorted(wiki_dir.glob("*.md")):
@@ -99,6 +112,9 @@ def find_orphans(seen_mirrors: set[Path]) -> list[Path]:
                 continue
             if mirror not in seen_mirrors:
                 orphans.append(mirror)
+    for _, mirror in fixed_doc_pairs():
+        if mirror.is_file() and mirror not in seen_mirrors:
+            orphans.append(mirror)
     return orphans
 
 

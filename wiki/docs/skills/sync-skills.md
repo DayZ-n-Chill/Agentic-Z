@@ -64,11 +64,13 @@ For every folder under `.claude/skills/<name>/` containing `SKILL.md`, plus `_sh
 | Existing state in `<home>/skills/<name>` | Action |
 |---|---|
 | Link already points at the repo skill | `[OK]` no-op |
-| Link points at a different path inside this repo (stale) | `[REFRESH]` retarget to the right skill |
-| Link points outside this repo (another clone, or the repo's old location) | `[FOREIGN]` left alone and counted as skipped; with `--force` it is retargeted (`[REFRESH]`) |
+| Link points at a different path inside this checkout's `.claude/skills/` (stale) | `[REFRESH]` retarget to the right skill |
+| Link points anywhere else (another clone, a git worktree under `.claude/worktrees/`, or the repo's old location) | `[FOREIGN]` left alone and counted as skipped; with `--force` it is retargeted (`[REFRESH]`) |
 | Path doesn't exist | `[LINK]` create new link |
 | Real folder, not a link | `[SKIP]` warn — don't clobber user-installed skills |
-| Orphan link in target dir, points back into this repo at a path that's gone | `[PRUNE]` remove the link |
+| Orphan link in target dir, points into this checkout's `.claude/skills/` at a path that's gone | `[PRUNE]` remove the link |
+
+Ownership is decided against this checkout's `.claude/skills/` folder, not the repo root. A worktree under `<repo>/.claude/worktrees/` is another checkout with its own sessions, so its links count as foreign.
 
 Link targets are compared after normalising separators and, on Windows, case (`os.path.normcase`), so `C:\Repo` and `c:\repo` count as the same place.
 
@@ -100,7 +102,7 @@ Summary
       failed: 0
 ```
 
-Exits 1 if any link operation failed, and 2 if `agents.json` is missing or malformed, `--agents`/`--skip` names an unknown agent, or the repo's `.claude/skills/` folder is missing.
+Exits 1 if any link operation failed or an agent's skills folder could not be created (printed as `[FAILED] cannot create <dir>: <error>`; that agent is skipped and the others still run), and 2 if `agents.json` is missing or malformed, `--agents`/`--skip` names an unknown agent, or the repo's `.claude/skills/` folder is missing.
 
 ## Steps
 
