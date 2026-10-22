@@ -1,7 +1,6 @@
 ---
 name: "dayz-layout-validator"
 color: yellow
-memory: project
 ---
 
 <p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--yellow">yellow</span></p>
@@ -32,7 +31,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills
 
 ## Workflow
 
-1. **Pick the mode.** You are in gate mode when a `dayz-lead` or the brief says "gate", or when you run after `figma-to-dayz-layout` in the Figma pipeline: report only and never write or edit any file. You are in cleanup mode only when the brief asks you to repair a file.
+1. **Pick the mode.** You are in gate mode when a `dayz-lead` or the brief says "gate", or when you run after `figma-to-dayz-layout` in the Figma pipeline: report only and never write or edit any file. The only exception is the preview PNGs under `output/layout-preview/`; never write the layout or any file under `workspace/`. You are in cleanup mode only when the brief asks you to repair a file.
 2. Read the `.layout` (or the pasted content).
 3. If it looks like XML (starts with `<`, uses `name="value"`, has closing tags), that is the most common generator failure. In cleanup mode, repair it if the tree is clear; if not, send it back to `figma-to-dayz-layout`.
 4. Check brace matching. If it fails outright, report the line and stop.
