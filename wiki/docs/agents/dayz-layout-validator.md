@@ -31,17 +31,16 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills
 
 ## Workflow
 
-1. **Gate mode only.** You always run in gate mode: report only and never write or edit any file. The preview PNGs under `output/layout-preview/` are written by the `/dayz-layout-preview` script, not by you. Use Bash only to run `layout_preview.py` from the `/dayz-layout-preview` skill, never to install anything. If a brief asks you to repair a file, say so in the report and name `figma-to-dayz-layout` in repair mode as the fixer.
-2. Read the `.layout` (or the pasted content).
-3. If it looks like XML (starts with `<`, uses `name="value"`, has closing tags), that is the most common generator failure: FAIL, with `figma-to-dayz-layout` as the fixer.
-4. Check brace matching. If it fails outright, report the line and stop.
-5. Walk the tree top-down and run every check below.
-6. Report.
+1. **Gate mode only.** You always run in gate mode: report only and never write or edit any file. The preview PNGs under `output/layout-preview/` are written by the `/dayz-layout-preview` script, not by you. Use Bash only to run `hooks/edit_check.py` and `layout_preview.py` from the `/dayz-layout-preview` skill, never to install anything. If a brief asks you to repair a file, say so in the report and name `figma-to-dayz-layout` in repair mode as the fixer.
+2. Read the `.layout` file. You gate files on disk. If the brief only pastes content, don't write it anywhere: run the Checks by reading it, report both scripts as not run, and tell the caller to save it under the mod and gate the file for the final verdict.
+3. Run the syntax script: `python hooks/edit_check.py --file <file.layout>` from the repo root (in a plugin install, `hooks\` sits three folders above the `/dayz-layout-preview` `<skill-dir>`). It exits 0 when clean, or 1 with `<file>:<line>: <problem>` lines for XML, unbalanced braces, a missing or second root widget, or a child outside the parent's `{ }` children block. Each line is a FAIL; XML (the most common generator failure) and unbalanced braces stop the walk there, with `figma-to-dayz-layout` as the fixer. If the script can't run, make those checks by reading the file.
+4. Walk the tree top-down and run every check below that the script does not cover.
+5. Report.
 
 ## Checks
 
-- Every block's braces match. Properties come before the child `{ }` block, and children nest inside the parent's braces.
-- One root widget of any vanilla-verified class (vanilla roots include `FrameWidgetClass`, `PanelWidgetClass`, `WindowWidgetClass` and `ImageWidgetClass`). No orphan blocks outside it.
+- Every block's braces match. Properties come before the child `{ }` block, and children nest inside the parent's braces. (The syntax script checks this.)
+- One root widget of any vanilla-verified class (vanilla roots include `FrameWidgetClass`, `PanelWidgetClass`, `WindowWidgetClass` and `ImageWidgetClass`). No orphan blocks outside it. (The script checks the count; you check the class.)
 - Every class ends in `Class` and exists in vanilla (rules doc sections 3 and 4; verify unfamiliar ones).
 - **Prefix is authoritative.** A `btn_`, `bar_`, `panel_`, `txt_` or other prefixed widget must use the class the prefix maps to (rules doc section 4). `FrameWidgetClass btn_close` is a FAIL.
 - **Fill Container stays relative.** Siblings in a stacked container that all share the container's inner pixel width with `hexactsize 1` are almost always mis-translated Fill Container children; the correct form is `size 1 H` with `hexactsize 0` (rules doc section 5). You can't recover the Figma sizing from the file alone, so flag it and recommend regenerating from the Figma node.
@@ -54,7 +53,7 @@ Search: Grep `P:\gui\` for known names, RAG (`search_dayz_source` with `file_typ
 ## Rules
 
 - You don't author or repair layouts (`figma-to-dayz-layout`) or write widget scripts (`dayz-ui-specialist`).
-- For each FAIL, name the fix: a repair by `figma-to-dayz-layout` in repair mode for local problems (Hard NO properties, XML tokens, a missing `Class` suffix, indentation), or regenerating from the Figma node when the damage is structural (unknown classes across the tree, more than one root, broad malformation).
+- For each FAIL, name the fix: a repair by `figma-to-dayz-layout` in repair mode for local problems (Hard NO properties, XML tokens, a missing `Class` suffix), or regenerating from the Figma node when the damage is structural (unknown classes across the tree, more than one root, broad malformation).
 
 ## Report
 

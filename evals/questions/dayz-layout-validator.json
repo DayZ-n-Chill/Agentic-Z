@@ -92,6 +92,27 @@
         "evals/fixtures/dayz-layout-validator/text_shadow_opacity.layout"
       ],
       "verified": "Vanilla TextWidgetClass carries \"shadow opacity\" 0.5 at P:/gui/layouts/day_z_hud_watermark.layout:55 and :79; .claude/agents/dayz-layout-validator.md Hard NO check and .claude/skills/_shared/figma-to-dayz-rules.md section 9 ban only a bare opacity key"
+    },
+    {
+      "id": "syntax-script-runs-first",
+      "question": "Answer only, do not edit any file and do not run anything. In gate mode on workspace/MyHud/gui/layouts/compass.layout, which script do you run first, before you walk the widget tree, and what does it check?",
+      "must_include": [
+        "edit_check.py",
+        "re:XML|brace|root"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-layout-validator.md workflow step 3 (python hooks/edit_check.py --file <file.layout> first: XML, unbalanced braces, root widget count, children nesting); hooks/edit_check.py:17 (manual use --file <path>, exit 1 on a problem)"
+    },
+    {
+      "id": "pasted-content-not-written",
+      "question": "Answer only, do not edit any file. The dayz-lead pastes this layout text into the brief with no file path and asks for a gate verdict: FrameWidgetClass root { size 1 1 }. How do you handle a pasted layout?",
+      "must_include": [
+        "re:save|on disk|a file|file path"
+      ],
+      "must_not_include": [
+        "re:\\bI (will |'ll )?(write|save|create) (it|the (content|text|layout)|a (temp|temporary))"
+      ],
+      "verified": ".claude/agents/dayz-layout-validator.md workflow step 2 (pasted content: never write it anywhere, check it by reading, report both scripts as not run, ask the caller to save it under the mod and gate the file)"
     }
   ]
 }
