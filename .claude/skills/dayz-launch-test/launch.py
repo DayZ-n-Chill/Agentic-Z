@@ -331,6 +331,14 @@ def build_client_cmd(
     return cmd
 
 
+def port(value: str) -> int:
+    """argparse type for --port: a whole number from 1 to 65535."""
+    n = int(value)
+    if not 1 <= n <= 65535:
+        raise argparse.ArgumentTypeError("port must be 1-65535")
+    return n
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Launch local DayZ server + client with one or more built mods."
@@ -356,7 +364,7 @@ def main() -> int:
             "Must have been added via /dayz-add-server."
         ),
     )
-    parser.add_argument("--port", type=int, default=2302, help="Server port (default: 2302).")
+    parser.add_argument("--port", type=port, default=2302, help="Server port (default: 2302).")
     parser.add_argument(
         "--dry-run",
         action="store_true",

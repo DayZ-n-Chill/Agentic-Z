@@ -66,7 +66,9 @@ python -m pytest -q .claude scripts/dev hooks
 python .claude/skills/docs-sync/sync.py --check
 ```
 
-An edit to an agent file or a rules file can break the repo tests (for example `test_route.py` checks the agent list against `rules.json`). If either command fails, fix the problem or revert the edit, then run both again.
+The root `pytest.ini` skips `.claude/worktrees/`, where Claude Code keeps full copies of the repo for its worktree sessions, so the run sees only this checkout.
+
+An edit to an agent file or a rules file can break the repo tests (for example `test_route.py` checks the agent list against `rules.json`). If either command fails because of your edit, fix the problem or revert the edit, then run both again. A failure in a test file outside the area you edited (for example a copy under `.claude/worktrees/`) is not a reason to revert; report it instead.
 
 ## 4. Say what changed
 

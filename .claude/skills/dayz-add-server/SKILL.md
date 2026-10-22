@@ -23,7 +23,7 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<instance>` | yes | Free-form instance name. Becomes the folder name under `.server/`, so it must be a single folder name (no `/`, `\`, `:`, `..`, or any of the characters Windows forbids in file names, such as `*`, `?` and `"`). Examples: `chernarus`, `chernarus-hardcore`, `loot-test`, `livonia-pvp`. |
+| `<instance>` | yes | Free-form instance name. Becomes the folder name under `.server/`, so it must be a single folder name (no `/`, `\`, `:`, `..`, or any of the characters Windows forbids in file names, such as `*`, `?` and `"`). It must contain at least one letter or digit, because the server's six character `shardId` is built from them. Examples: `chernarus`, `chernarus-hardcore`, `loot-test`, `livonia-pvp`. |
 | `--map` | no | Map alias (`chernarus`, `livonia`, `sakhal`, `nasdara`) or full mission template folder name (e.g. `dayzOffline.namalsk`). When omitted, `<instance>` is used as the map alias if it matches a known one; otherwise the skill fails and asks for `--map`. |
 | `--refresh-mission` | no | Re-copy the mission folder from the DayZ Server install. The current `mission/` is first renamed to `mission.bak-<YYYYMMDD-HHMMSS>/` so your edits stay recoverable. Use after a DayZ update brings new mission content. Without this flag, an existing mission folder is left alone. |
 

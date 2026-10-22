@@ -608,14 +608,28 @@ def check_mod(name: str, mod_dir: Path, old: dict, new: dict, display_root: Opti
             continue
         if on_vanilla:
             reasons += _chain_changes(old_c, new_c, start, prefix)
-            for cls in _chain(old_c, start, prefix):
-                key = prefix + cls
-                if key in new_c:
-                    gone = _gone_members(old_c[key]["members"], new_c[key]["members"])
-                    if gone:
-                        shown = _shown(old_c, key, cls)
-                        reasons.append({"reason": "members-removed", "class": shown, "members": gone,
-                                        "message": f"vanilla {shown} no longer sets {', '.join(gone)}"})
+            # Compare what the whole chain gives the item, so a property that moved to
+            # another ancestor, or one the mod sets itself, is not reported.
+            old_chain = _chain(old_c, start, prefix)
+            new_inherited = {m.lower() for cls in _chain(new_c, start, prefix)
+                             for m in new_c[prefix + cls]["members"]}
+            mod_own = {m.lower() for m in d["members"]}
+            gone_by_class: dict[str, list[str]] = {}
+            seen: set[str] = set()
+            for cls in old_chain:  # nearest first, so each name goes to the nearest ancestor that set it
+                for m in old_c[prefix + cls]["members"]:
+                    low = m.lower()
+                    if low in seen:
+                        continue
+                    seen.add(low)
+                    if low not in new_inherited and low not in mod_own:
+                        gone_by_class.setdefault(cls, []).append(m)
+            for cls in old_chain:
+                gone = sorted(gone_by_class.get(cls, []), key=str.lower)
+                if gone:
+                    shown = _shown(old_c, prefix + cls, cls)
+                    reasons.append({"reason": "members-removed", "class": shown, "members": gone,
+                                    "message": f"vanilla {shown} no longer sets {', '.join(gone)}"})
         checked += 1
         if reasons:
             findings.append({"kind": "config", "class": f"{d['container']}/{d['name']}", "modded": False,

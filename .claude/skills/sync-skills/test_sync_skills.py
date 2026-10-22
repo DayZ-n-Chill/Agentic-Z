@@ -250,3 +250,13 @@ def test_claude_home_follows_claude_config_dir(tmp_path, monkeypatch):
     assert sync.home_for(claude) == tmp_path / "claude-work"
     monkeypatch.delenv("CLAUDE_CONFIG_DIR")
     assert sync.home_for(claude) == Path.home() / ".claude"
+
+
+def test_gemini_home_follows_gemini_cli_home(tmp_path, monkeypatch):
+    # Gemini reads $GEMINI_CLI_HOME/.gemini/skills, not $GEMINI_CLI_HOME/skills.
+    gemini = next(a for a in sync.load_agents_config() if a["name"] == "gemini")
+    assert gemini["env_home_vars"] == ["GEMINI_CLI_HOME"]
+    monkeypatch.setenv("GEMINI_CLI_HOME", str(tmp_path))
+    assert sync.home_for(gemini) / gemini["skills_subdir"] == tmp_path / ".gemini" / "skills"
+    monkeypatch.delenv("GEMINI_CLI_HOME")
+    assert sync.home_for(gemini) / gemini["skills_subdir"] == Path.home() / ".gemini" / "skills"

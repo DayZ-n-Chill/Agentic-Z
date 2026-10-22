@@ -1,0 +1,29 @@
+{
+  "agent": "dayz-build-engineer",
+  "questions": [
+    {
+      "id": "instance-without-map-stops",
+      "question": "Answer only, do not edit any file and do not run anything. Release team brief: build MyVest and start a test session on the server instance chernarus-hardcore. The instance does not exist yet. The brief names no map and no dependencies are needed. What do you do?",
+      "must_include": [
+        "re:\\bstop|\\bhalt|won't|will not|do not add|don't add|cannot add|can't add",
+        "re:\\bmap\\b",
+        "re:release lead"
+      ],
+      "must_not_include": [
+        "re:--map\\s+chernarus\\b"
+      ],
+      "verified": ".claude/agents/dayz-build-engineer.md step 3 (an instance name that is not a map alias needs --map; with no map in the brief, stop and report it to the release lead); .claude/skills/dayz-add-server/SKILL.md --map row (aliases chernarus, livonia, sakhal, nasdara; any other name fails without --map)"
+    },
+    {
+      "id": "non-dz-addon-without-deps-stops",
+      "question": "Answer only, do not edit any file and do not run anything. Release team brief: build MyVest and start a test session on chernarus. The brief gives no dependency list. MyVest's config.cpp has requiredAddons[] = {\"DZ_Data\", \"DZ_Characters_Vests\", \"JM_CF_Scripts\"}; in its CfgPatches. What do you do?",
+      "must_include": [
+        "JM_CF_Scripts",
+        "re:\\bstop|\\bhalt|won't launch|will not launch|do not launch|don't launch|not launch",
+        "re:dependenc"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-build-engineer.md step 4 (no dependency list and a requiredAddons entry without the DZ_ prefix: stop and report instead of launching); every vanilla CfgPatches class under P:/DZ starts with DZ_, and JM_CF_Scripts is the Community Framework addon used in .claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp:8"
+    }
+  ]
+}

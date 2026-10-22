@@ -364,7 +364,7 @@ def chunk_rvmat(path: Path, seen_hashes: set[str]) -> list[dict] | None:
     ]
 
 
-XML_BATCH_SIZE = 50  # max top-level elements grouped into one chunk
+XML_BATCH_SIZE = 50  # max top-level elements in one chunk; EMBED_MAX_CHARS also caps it
 
 
 def _xml_child_line_spans(text: str) -> list[tuple[int, int]]:
@@ -396,14 +396,48 @@ def _xml_child_line_spans(text: str) -> list[tuple[int, int]]:
     return spans
 
 
+def _window_chunks(path: Path, file_type: str, text: str, header: str = "") -> list[dict]:
+    """Whole-file chunks for text with no class blocks: one chunk when it fits in
+    EMBED_MAX_CHARS, else windows from _split_windows with their real line ranges.
+
+    header (a CSV header line) is repeated at the top of every window so each
+    one still names its columns; the line range is that of the window's rows.
+    """
+    if len(text) <= EMBED_MAX_CHARS:
+        windows = [(1, text.count("\n") + 1, text)]
+    elif header and len(header) <= EMBED_MAX_CHARS // 2:
+        body = text[len(header):]
+        windows = [(ws, we, header + w) for ws, we, w in _split_windows(body, 2, EMBED_MAX_CHARS - len(header))]
+    else:
+        windows = _split_windows(text, 1, EMBED_MAX_CHARS)
+    return [
+        {
+            "path": str(path),
+            "file_type": file_type,
+            "parent_context": "",
+            "line_start": ws,
+            "line_end": we,
+            "content": window,
+        }
+        for ws, we, window in windows
+    ]
+
+
+def _xml_name(el) -> str:
+    return el.get("name") or el.get("Name") or el.tag
+
+
 def chunk_xml(path: Path, file_type: str = "xml", batch_size: int = XML_BATCH_SIZE) -> list[dict]:
     """Chunk XML by groups of top-level child elements. Caps explosion on
-    types.xml-style files (one chunk per ~50 entries instead of per entry).
+    types.xml-style files (many entries per chunk instead of one per entry).
 
     - Small files (<4KB): one whole-file chunk
-    - Files with many children: batched 50 per chunk by default, each chunk
-      carrying the real line range of its first and last element
-    - Parse errors: fall back to whole-file truncated
+    - Files with many children: consecutive elements are batched until the next
+      one would push the chunk past EMBED_MAX_CHARS (or past batch_size
+      elements), each chunk carrying the real line range of its first and last
+      element. An element larger than EMBED_MAX_CHARS on its own is windowed
+      with _split_windows. No text is cut.
+    - Parse errors: fall back to whole-file windows (_window_chunks)
     """
     text = _read_text(path)
     if not text:
@@ -417,7 +451,7 @@ def chunk_xml(path: Path, file_type: str = "xml", batch_size: int = XML_BATCH_SI
                 "parent_context": "",
                 "line_start": 1,
                 "line_end": total_lines,
-                "content": text[:8000],
+                "content": text,
             }
         ]
     try:
@@ -430,57 +464,62 @@ def chunk_xml(path: Path, file_type: str = "xml", batch_size: int = XML_BATCH_SI
         if len(spans) != len(children):  # never mislabel lines; fall back to the whole file
             spans = [(1, total_lines)] * len(children)
         if len(children) >= 5:
-            chunks = []
-            for i in range(0, len(children), batch_size):
-                batch = children[i : i + batch_size]
-                batch_spans = spans[i : i + batch_size]
-                snippets = [ET.tostring(c, encoding="unicode") for c in batch]
-                first_name = batch[0].get("name") or batch[0].get("Name") or batch[0].tag
-                last_name = batch[-1].get("name") or batch[-1].get("Name") or batch[-1].tag
-                if len(batch) == 1:
-                    parent_context = f"{root.tag} > {first_name}"
-                else:
-                    parent_context = f"{root.tag} > {first_name}..{last_name} ({len(batch)} items)"
+            chunks: list[dict] = []
+            batch: list[tuple] = []  # (element, (line_start, line_end), serialized text)
+            size = 0
+
+            def add(parent_context: str, line_start: int, line_end: int, content: str) -> None:
                 chunks.append(
                     {
                         "path": str(path),
                         "file_type": file_type,
                         "parent_context": parent_context,
-                        "line_start": batch_spans[0][0],
-                        "line_end": batch_spans[-1][1],
-                        "content": ("\n".join(snippets))[:8000],
+                        "line_start": line_start,
+                        "line_end": line_end,
+                        "content": content,
                     }
                 )
+
+            def flush() -> None:
+                nonlocal batch, size
+                if not batch:
+                    return
+                first, last = _xml_name(batch[0][0]), _xml_name(batch[-1][0])
+                if len(batch) == 1:
+                    parent_context = f"{root.tag} > {first}"
+                else:
+                    parent_context = f"{root.tag} > {first}..{last} ({len(batch)} items)"
+                add(parent_context, batch[0][1][0], batch[-1][1][1], "\n".join(b[2] for b in batch))
+                batch, size = [], 0
+
+            for child, span in zip(children, spans):
+                snippet = ET.tostring(child, encoding="unicode")
+                if len(snippet) > EMBED_MAX_CHARS:
+                    flush()
+                    for ws, we, window in _split_windows(snippet, span[0], EMBED_MAX_CHARS):
+                        add(f"{root.tag} > {_xml_name(child)}", min(ws, span[1]), min(we, span[1]), window)
+                    continue
+                if batch and (size + 1 + len(snippet) > EMBED_MAX_CHARS or len(batch) >= batch_size):
+                    flush()
+                size += len(snippet) + (1 if batch else 0)
+                batch.append((child, span, snippet))
+            flush()
             return chunks
     except ET.ParseError:
         pass
-    return [
-        {
-            "path": str(path),
-            "file_type": file_type,
-            "parent_context": "",
-            "line_start": 1,
-            "line_end": total_lines,
-            "content": text[:8000],
-        }
-    ]
+    return _window_chunks(path, file_type, text)
 
 
 def chunk_whole_file(path: Path, file_type: str) -> list[dict]:
-    """One chunk per file. Used for json/csv/small text."""
+    """json/csv: one chunk per file, windowed when it passes EMBED_MAX_CHARS.
+
+    A CSV's header line is repeated at the top of each window.
+    """
     text = _read_text(path)
     if not text:
         return []
-    return [
-        {
-            "path": str(path),
-            "file_type": file_type,
-            "parent_context": "",
-            "line_start": 1,
-            "line_end": text.count("\n") + 1,
-            "content": text[:8000],
-        }
-    ]
+    header = text.splitlines(keepends=True)[0] if file_type == "csv" else ""
+    return _window_chunks(path, file_type, text, header)
 
 
 # --------------- walk config ---------------
@@ -813,6 +852,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 1
     embeddings, total_tokens = embedded
     elapsed = time.time() - started
+    cost_estimate_usd = round((total_tokens / 1_000_000) * (cost_per_m or 0), 4)
+    # The tokens are billed now, so log them before anything below can fail:
+    # the next run's tier check reads this log.
+    _append_usage_entry(total_tokens, cost_estimate_usd, "dayz-search-index")
 
     if len(embeddings) != len(chunks):
         print(
@@ -822,8 +865,6 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 1
     for c, vec in zip(chunks, embeddings):
         c["vector"] = vec
-
-    cost_estimate_usd = round((total_tokens / 1_000_000) * (cost_per_m or 0), 4)
 
     INDEX_ROOT.mkdir(parents=True, exist_ok=True)
     write_table(lancedb.connect(str(db_path)), chunks)
@@ -854,10 +895,6 @@ def main(argv: Optional[list[str]] = None) -> int:
         json.dumps({"embed_model": embed_model, "embed_provider": "voyage"}, indent=2),
         encoding="utf-8",
     )
-
-    # Track this run in the local Voyage usage log so the next run's
-    # tier check has accurate cumulative numbers.
-    _append_usage_entry(total_tokens, cost_estimate_usd, "dayz-search-index")
 
     print(f"\n{OK} Index built: {len(chunks)} chunks at {INDEX_ROOT}")
     print(f"{INFO} Tokens used: {total_tokens:,}  |  Estimated cost: ${cost_estimate_usd:.4f}")

@@ -274,6 +274,31 @@ def test_client_running_ignores_the_server_process(monkeypatch):
     assert logwatch.client_running() is False
 
 
+def test_client_running_keeps_watching_when_the_query_fails(monkeypatch):
+    monkeypatch.setattr(logwatch.subprocess, "run",
+                        lambda *a, **k: subprocess.CompletedProcess(a, 1, stdout="", stderr="CIM timeout"))
+    assert logwatch.client_running() is True
+
+    def missing(*a, **k):
+        raise FileNotFoundError("powershell")
+
+    monkeypatch.setattr(logwatch.subprocess, "run", missing)
+    assert logwatch.client_running() is True
+
+
+@pytest.mark.parametrize("entries", [
+    [{"id": "bad-regex", "pattern": "Unknown type ('"}],
+    [{"id": "no-pattern", "fix": "x"}],
+], ids=["bad regex", "missing pattern"])
+def test_cli_broken_known_errors_file_exits_2(tmp_path, monkeypatch, capsys, entries):
+    shipped = tmp_path / "known-errors.json"
+    shipped.write_text(json.dumps(entries), encoding="utf-8")
+    monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
+    monkeypatch.setattr(logwatch.triage, "KNOWN_ERRORS", shipped)
+    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0", "--interval", "0"], io.StringIO()) == 2
+    assert "Could not load known errors" in capsys.readouterr().err
+
+
 def test_duration_and_until_closed_are_mutually_exclusive(capsys):
     with pytest.raises(SystemExit) as exc:
         logwatch.main(["--dir", ".", "--duration", "5", "--until-closed"])

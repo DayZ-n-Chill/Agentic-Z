@@ -17,8 +17,8 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python "<skill-dir>\types_edit.py" <types.xml> <ClassName> [options]
-python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove
+python "<skill-dir>\types_edit.py" <types.xml> <ClassName> [options] [--dry-run]
+python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove [--dry-run]
 ```
 
 | Argument | Notes |
@@ -26,6 +26,7 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove
 | `<types.xml>` | Path to the types.xml file. Typically `.server/<instance>/mission/db/types.xml`. |
 | `<ClassName>` | The `name` attribute of the `<type>` block to upsert / remove. |
 | `--remove` | Remove the entry instead of upserting. Other field flags ignored. |
+| `--dry-run` | Works in every mode. Reports the change and the name warnings, then writes nothing (no backup either). Use it to preview an edit, since every write re-indents the whole file. |
 | `--nominal N` | Target spawn count. Default for new entries: 1. |
 | `--min N` | Minimum spawn count. Default for new entries: 0. |
 | `--lifetime S` | Despawn timeout in seconds. Default for new entries: 14400 (4 hours, the usual vanilla loot lifetime; storage items such as barrels use 3888000). |
@@ -43,10 +44,10 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove
 2. Read and parse `<types.xml>` (comments are kept). Locate the `<type name="<ClassName>">` block.
 3. Upsert mode (default):
    - If the block exists, update only the fields passed. Untouched fields stay as-is.
-   - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the vanilla standard flags (`count_in_map=1`, everything else 0).
+   - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the vanilla standard flags (`count_in_map=1`, everything else 0). Children are written in vanilla order: `nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`, then `category`, `usage`, `value`, `tag`.
 4. Remove mode (`--remove`): delete the block.
 5. Name check (upsert mode): the entry's `<category>`, `<usage>`, `<value>` and `<tag>` names are checked against the mission's `cfglimitsdefinition.xml`, found next to `db/` (`<types.xml>\..\..\`). A `user=` group is checked against `cfglimitsdefinitionuser.xml` when it exists. Each name the file does not define prints `[WARN] usage name "Militar" is not defined in cfglimitsdefinition.xml`, because the Central Economy ignores or rejects it. The edit still goes ahead. When `cfglimitsdefinition.xml` is not there (a types file kept in a mod folder), the check is skipped with a note.
-6. If nothing changed (entry already matches, or the entry to remove is absent), stop: no backup, no write.
+6. If nothing changed (entry already matches, or the entry to remove is absent), or `--dry-run` was passed, stop: no backup, no write.
 7. Otherwise copy the file to `<types.xml>.bak` (overwriting any prior backup) and write the updated tree back.
 
 ## Merge a pasted chunk

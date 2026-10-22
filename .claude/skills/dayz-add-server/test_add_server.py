@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from pathlib import Path
 
 import pytest
@@ -266,6 +267,19 @@ def test_shard_id_is_six_chars():
 def test_shard_id_keeps_only_alphanumerics():
     cfg = srv.default_server_cfg("a-b_c.d", "t")
     assert 'shardId = "abcdsh";' in cfg
+
+
+@pytest.mark.parametrize("bad", ["-", "__", "-._"])
+def test_instance_name_needs_a_letter_or_digit(bad):
+    with pytest.raises(srv.argparse.ArgumentTypeError, match="letter or digit"):
+        srv.validate_instance(bad)
+
+
+@pytest.mark.parametrize("instance", ["-", "a", "abcdefgh"])
+def test_shard_id_is_always_six_chars(instance):
+    cfg = srv.default_server_cfg(instance, "t")
+    shard = re.search(r'shardId = "([^"]*)";', cfg).group(1)
+    assert len(shard) == 6 and shard.isalnum()
 
 
 def test_commented_out_allow_file_patching_counts_as_missing(tmp_path):

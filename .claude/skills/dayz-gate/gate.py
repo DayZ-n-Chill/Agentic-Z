@@ -4,9 +4,11 @@
   gate.py ingame <ModName> [--deps CF ...] [--server <instance>] [--port N]
                  [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
   gate.py behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>]
-                 [--port N] [--timeout S] [--settle S] [--prepare-only | --logs FILE ...] [--json]
+                 [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX]
+                 [--prepare-only | --logs FILE ...] [--json]
   gate.py visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N]
-                 [--timeout S] [--threshold R] [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--json]
+                 [--timeout S] [--threshold R] [--ready-pattern REGEX]
+                 [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--json]
 
 All modes stop a running DayZDiag session first, run the existing skill
 scripts (/dayz-build-pbo, /dayz-deploy-pbo, /dayz-launch-test) as subprocesses,
@@ -617,13 +619,14 @@ def gate_behavior(
     port: int = 2302,
     timeout: float = DEFAULT_TIMEOUT_S,
     settle: float = BEHAVIOR_SETTLE_S,
+    ready_pattern: str = DEFAULT_READY_RE,
 ) -> dict:
     """Copy the instance with the test mission injected, run the in-game flow on it, judge the checks."""
     checks = behavior.load_checks(checks_path or behavior.default_checks_path(project_dir, mod))
     stop_session(rt)  # a running session can hold the old copy's files open
     prepared = behavior.prepare_instance(project_dir, instance, checks)
     report, lines = ingame_session(
-        mod, project_dir, rt, deps, prepared["instance"], port, timeout, settle, DEFAULT_READY_RE,
+        mod, project_dir, rt, deps, prepared["instance"], port, timeout, settle, ready_pattern,
         mode="behavior", done_re=behavior.DONE_RE,
     )
     add_behavior_results(report, behavior.parse_lines(lines, checks), project_dir)
@@ -670,13 +673,14 @@ def gate_visual(
     port: int = 2302,
     timeout: float = DEFAULT_TIMEOUT_S,
     threshold: Optional[float] = None,
+    ready_pattern: str = DEFAULT_READY_RE,
 ) -> dict:
     """Run the in-game flow, capture each shot at its second, compare the captures with the baselines."""
     spec = visual.load_shots(shots_path or visual.default_shots_path(project_dir, mod))
     run_dir = visual.new_run_dir(project_dir, mod)
     capturer = visual.Capturer(spec["shots"], run_dir, rt.capture)
     report, _ = ingame_session(
-        mod, project_dir, rt, deps, instance, port, timeout, visual.last_shot_at(spec) + POLL_S, DEFAULT_READY_RE,
+        mod, project_dir, rt, deps, instance, port, timeout, visual.last_shot_at(spec) + POLL_S, ready_pattern,
         mode="visual", on_poll=capturer,
     )
     capturer.finish()
@@ -839,6 +843,7 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     v.add_argument("--port", type=int, default=2302)
     v.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S, help="Seconds to wait for the client to reach the mission.")
     v.add_argument("--settle", type=float, default=BEHAVIOR_SETTLE_S, help="Most seconds to wait after that for the DONE line.")
+    v.add_argument("--ready-pattern", default=DEFAULT_READY_RE, help="Regex in the client script log that means the mission is running.")
     only = v.add_mutually_exclusive_group()
     only.add_argument("--prepare-only", action="store_true", help="Write the behavior instance copy and stop.")
     only.add_argument("--logs", nargs="*", type=Path, metavar="FILE",
@@ -852,6 +857,7 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     s.add_argument("--port", type=int, default=2302)
     s.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S, help="Seconds to wait for the client to reach the mission.")
     s.add_argument("--threshold", type=float, help="Share of pixels allowed to differ, 0 to 1, for shots without their own.")
+    s.add_argument("--ready-pattern", default=DEFAULT_READY_RE, help="Regex in the client script log that means the mission is running.")
     offline = s.add_mutually_exclusive_group()
     offline.add_argument("--compare", nargs="?", const=True, type=Path, metavar="DIR",
                          help="Compare captures already taken (no folder: the newest run).")
@@ -865,8 +871,10 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
         return 0 if e.code == 0 else 2
 
     try:
-        if args.mode == "ingame":
+        if args.mode in ("ingame", "behavior", "visual"):
             re.compile(args.ready_pattern)
+        if args.mode == "visual" and args.shot and args.accept is None:
+            raise GateError("--shot works with --accept only")
         if args.mode == "visual" and args.threshold is not None and not 0 <= args.threshold <= 1:
             raise GateError("--threshold must be from 0 to 1")
         project_dir = h.resolve_project_dir()
@@ -884,10 +892,12 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
         elif args.mode == "visual":
             report = gate_visual(
                 args.mod, project_dir, rt, args.shots, args.deps, args.server, args.port, args.timeout, args.threshold,
+                args.ready_pattern,
             )
         elif args.mode == "behavior":
             report = gate_behavior(
                 args.mod, project_dir, rt, args.checks, args.deps, args.server, args.port, args.timeout, args.settle,
+                args.ready_pattern,
             )
         else:
             report = gate_ingame(
@@ -898,6 +908,8 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
         return _error("no usable project: run /dayz-init", args.json)
     except (GateError, OSError, ValueError, re.error) as e:
         return _error(str(e), args.json)
+    except Exception as e:  # any other crash is ERROR (exit 2), never a FAIL
+        return _error(f"gate crashed: {type(e).__name__}: {e}", args.json)
     save_health(report, project_dir)
     emit(report, args.json)
     return 0 if report["verdict"] == "PASS" else 1

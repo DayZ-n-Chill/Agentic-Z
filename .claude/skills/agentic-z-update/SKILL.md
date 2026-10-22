@@ -27,7 +27,7 @@ python "<skill-dir>\update.py" [--check] [--quiet] [--yes] [--per-file] [--force
 
 | Flag | Behavior |
 |---|---|
-| (default) | Preview drift, prompt y/N, apply safe changes (conflicts left alone) |
+| (default) | Preview drift, prompt y/N, apply safe changes (conflicts left alone). When the only drift is `local-only-edit` or `locally-deleted` files, it lists them, says `Up to date.` and exits 0 without prompting (with `--per-file`, a `locally-deleted` file still gets the prompt so it can be restored) |
 | `--check` | Preview only: fetches upstream (adding the upstream remote if it is missing) and writes no files; exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (`local-only-edit` and `locally-deleted` files do not count) |
 | `--quiet` | With `--check`: single-line output for hooks, and always exits 0 so the hook shows the line. Rejected without `--check` |
 | `--yes` | Skip the confirmation prompt (CI / scripted use) |
@@ -81,6 +81,7 @@ AGENTS.md
 GEMINI.md
 README.md
 .gitignore
+pytest.ini
 .env.example
 package.json
 package-lock.json
@@ -121,7 +122,7 @@ output/                     # one-shot deliverables
 
 ## SessionStart hook
 
-A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead, if a newer prebuilt search index is available, or if no baseline has been recorded yet (run `/agentic-z-update` once to record it). Silent on no-change. It always exits 0: Claude Code drops plain output from a hook that exits non-zero, so a failing exit code would hide the nudge. Configured in `.claude/settings.json`.
+A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead, if a newer prebuilt search index is available, or if no baseline has been recorded yet (run `/agentic-z-update` once to record it). Silent on no-change. The hook has a 20 second timeout, which leaves room for the `git fetch` plus the 5 second GitHub release check on a slow network. It always exits 0: Claude Code drops plain output from a hook that exits non-zero, so a failing exit code would hide the nudge. Configured in `.claude/settings.json`.
 
 To disable temporarily: comment out the `SessionStart` block in `.claude/settings.json`.
 

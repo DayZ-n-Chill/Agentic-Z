@@ -312,8 +312,9 @@ Surface red flags that the output is wrong. The generator must never emit these.
 - **`=` between key and value.** DayZ is `key value`, not `key = value`.
 - **Quoted values where vanilla leaves them bare.** Quote string values the way vanilla does: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`, `items`, `layout`, `Mask` and `ScriptParamsClass` values (for example `items` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`). Numbers, flags and enum words such as `style`, `halign` and `valign` stay bare. Multi-word keys are quoted too (`"exact text" 1`).
 - **Semicolons** as line terminators.
-- **CSS-flavored property names**, spelled exactly as CSS spells them (case sensitive): `borderRadius`, `border-radius`, `display`, `flex`, `flexDirection`, `justifyContent`, `alignItems`, `boxShadow`, `box-shadow`, `padding`, `margin`, `gap`. Spacer widgets' vanilla `Padding` and `Margin` (capitalized, for example `P:\gui\layouts\new_ui\options\msstore\keybinding_menu.layout`) are valid and must be kept.
-- **Opacity as a separate property or percentage.** Alpha lives as the fourth float on `color`.
+- **CSS-flavored property names**, spelled exactly as CSS spells them (case sensitive): `borderRadius`, `border-radius`, `display`, `flex`, `flexDirection`, `justifyContent`, `alignItems`, `boxShadow`, `box-shadow`, `padding`, `margin`, `gap`. Spacer widgets' vanilla `Padding` and `Margin` (capitalized, for example `P:\gui\layouts
+ew_ui\options\msstore\keybinding_menu.layout`) are valid and must be kept.
+- **Opacity as a separate property or percentage.** Alpha lives as the fourth float on `color`. This bans a bare `opacity` key only; quoted vanilla keys that contain the word, such as `"shadow opacity"` (`P:\gui\layouts\day_z_hud_watermark.layout:55`), are valid.
 - **Property names vanilla does not spell that way.** Write each name exactly as vanilla spells it (`imageTexture`, `userID`, `"exact text size"`); no CSS names.
 - **Self-closing tags.** Empty widgets still need `{ }` braces.
 - **Inventing widget classes that do not end in `Class`.** Verify every unknown widget against vanilla before emitting it.

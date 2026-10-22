@@ -51,9 +51,9 @@ Resolved from `agents.json`. Defaults:
 |--------|------------------------------------------|--------------|
 | Claude | `CLAUDE_CONFIG_DIR`                     | `~/.claude/skills` |
 | Codex  | none (`CODEX_HOME` does not move skills) | `~/.agents/skills` |
-| Gemini | `GEMINI_CLI_HOME` then `GEMINI_HOME`    | `~/.gemini/skills` |
+| Gemini | `GEMINI_CLI_HOME` (skills then live in `$GEMINI_CLI_HOME/.gemini/skills`) | `~/.gemini/skills` |
 
-Gemini also reads `~/.agents/skills/`, so after a full run it finds each skill there and in `~/.gemini/skills/`; the `.agents` copy wins. Both are links to the same folder, so they never differ.
+When `GEMINI_CLI_HOME` is unset, Gemini also reads `~/.agents/skills/`, so after a full run it finds each skill there and in `~/.gemini/skills/`; the `.agents` copy wins. Both are links to the same folder, so they never differ. With `GEMINI_CLI_HOME` set, Gemini reads `$GEMINI_CLI_HOME/.agents/skills/` instead, so this overlap does not apply.
 
 To support a new agent later, append an entry to `.claude/skills/sync-skills/agents.json` — no code change needed.
 
