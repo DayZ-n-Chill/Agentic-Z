@@ -12,6 +12,8 @@ Usage:
 
 With a model.cfg (--model-cfg, or the nearest one under --scan-dir) each
 animation in CfgModels > <model> > Animations is checked against the model.
+The Geometry LOD autocenter property is only checked when the config.cpp
+(--config, or the nearest one under --scan-dir) has a class with autocenter = 0.
 
 Gates on /dayz-preflight. Requires py3d for .p3d parsing
 (python -m pip install -r ../requirements.txt); exits 2 when it is missing.
@@ -172,11 +174,14 @@ def check_animations(anims, lod_map):
     return issues
 
 
-def find_model_cfg(p3d_path, root):
-    """The model.cfg that binarize uses for a model: in its folder or the nearest parent, up to root."""
+def find_model_cfg(p3d_path, root, name="model.cfg"):
+    """The model.cfg that binarize uses for a model: in its folder or the nearest parent, up to root.
+
+    With name="config.cpp" it finds the nearest config.cpp the same way.
+    """
     folder, root = Path(p3d_path).resolve().parent, Path(root).resolve()
     while True:
-        cfg = folder / "model.cfg"
+        cfg = folder / name
         if cfg.is_file():
             return str(cfg)
         if folder == root or folder.parent == folder:
@@ -242,12 +247,13 @@ def check_component_naming(lod):
     issues = []
     sels = list(lod.selections.keys())
     has_correct = 'Component01' in sels
-    has_lowercase = 'component01' in sels
+    wrong_case = [s for s in sels if s.lower() == 'component01' and s != 'Component01']
     has_any = any(s.lower().startswith('component') for s in sels)
-    if has_lowercase and not has_correct:
+    if wrong_case and not has_correct:
+        label = " (lowercase)" if wrong_case[0] == 'component01' else ""
         issues.append(("CRITICAL",
-            "Found 'component01' (lowercase). Engine requires 'Component01' (uppercase C). "
-            "Collision silently fails with wrong case."))
+            f"Found '{wrong_case[0]}'{label}. Engine requires exactly 'Component01' (uppercase C, "
+            "lowercase rest). Collision silently fails with wrong case."))
     elif not has_any:
         issues.append(("CRITICAL",
             "No Component selection found. Geometry LOD requires 'Component01' for collision."))
@@ -279,9 +285,30 @@ def check_component_coverage(lod):
     return issues
 
 
-def check_autocenter_prop(lod):
-    """Check autocenter=0 LOD property."""
+def config_sets_autocenter_zero(config_path):
+    """True when some class in the config.cpp sets autocenter = 0."""
+    if not config_path:
+        return False
+    try:
+        text = Path(config_path).read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return False
+
+    def walk(node):
+        return node.props.get("autocenter") == "0" or any(walk(c) for c in node.classes.values())
+
+    return walk(parse_cfg(text))
+
+
+def check_autocenter_prop(lod, config_wants_zero=False):
+    """Check autocenter=0 LOD property, needed only when config.cpp sets autocenter = 0.
+
+    Kits and ordinary items must not use autocenter = 0, so a model whose config
+    does not set it gets no finding.
+    """
     issues = []
+    if not config_wants_zero:
+        return issues
     props = dict(lod.properties) if lod.properties else {}
     if 'autocenter' not in props:
         issues.append(("WARNING",
@@ -420,8 +447,12 @@ def check_p_drive_paths_in_file(filepath):
 # MAIN AUDIT
 # ============================================================================
 
-def audit_p3d(filepath, model_cfg=None):
-    """Full audit of one P3D file; model_cfg is the model.cfg whose animations are checked."""
+def audit_p3d(filepath, model_cfg=None, config=None):
+    """Full audit of one P3D file.
+
+    model_cfg is the model.cfg whose animations are checked; config is the
+    config.cpp that decides whether the autocenter LOD property is needed.
+    """
     print(f"\n{'='*70}")
     print(f"AUDITING P3D: {filepath}")
     print(f"{'='*70}")
@@ -474,8 +505,9 @@ def audit_p3d(filepath, model_cfg=None):
         # the centroid heuristic flags every Blender export (left-handed transform);
         # see references/winding-methodology.md for the manual method.
         if lt == "Geometry":
+            wants_zero = config_sets_autocenter_zero(config)
             check_fns = [check_component_naming, check_component_coverage,
-                         check_autocenter_prop, check_geometry_mass, check_watertight,
+                         lambda g: check_autocenter_prop(g, wants_zero), check_geometry_mass, check_watertight,
                          check_degenerate_faces]
         else:
             check_fns = [check_watertight, check_degenerate_faces]
@@ -558,7 +590,7 @@ def scan_directory(dirpath):
     # P3D files
     p3d_files = glob.glob(os.path.join(dirpath, '**', '*.p3d'), recursive=True)
     for f in sorted(p3d_files):
-        if not audit_p3d(f, find_model_cfg(f, dirpath)):
+        if not audit_p3d(f, find_model_cfg(f, dirpath), find_model_cfg(f, dirpath, "config.cpp")):
             all_pass = False
 
     # config.cpp
@@ -585,8 +617,10 @@ def scan_directory(dirpath):
 def main(argv=None):
     parser = argparse.ArgumentParser(description="DayZ P3D Audit — Complete Model Validator")
     parser.add_argument('files', nargs='*', help='.p3d files (or text files) to audit')
-    parser.add_argument('--config', help='config.cpp to check for absolute P-drive paths')
-    parser.add_argument('--model-cfg', help='model.cfg to check for absolute P-drive paths')
+    parser.add_argument('--config', help='config.cpp to check for absolute P-drive paths '
+                        '(also decides whether the Geometry LOD needs the autocenter property)')
+    parser.add_argument('--model-cfg', help='model.cfg whose CfgModels animations are checked against '
+                        'the .p3d (also scanned for absolute P-drive paths)')
     parser.add_argument('--rvmat', nargs='*', default=[], help='.rvmat files to check for absolute P-drive paths')
     parser.add_argument('--scan-dir', help='Scan a whole mod directory (ignores the other inputs)')
     args = parser.parse_args(argv)
@@ -617,7 +651,8 @@ def main(argv=None):
                 all_pass = False
             elif label is None and f.lower().endswith('.p3d'):
                 cfg = args.model_cfg if args.model_cfg and os.path.isfile(args.model_cfg) else None
-                if not audit_p3d(f, cfg):
+                config = args.config if args.config and os.path.isfile(args.config) else None
+                if not audit_p3d(f, cfg, config):
                     all_pass = False
             elif not audit_text_file(f, label or "file"):
                 all_pass = False

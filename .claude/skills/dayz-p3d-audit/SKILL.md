@@ -50,6 +50,10 @@ points exist there. The model.cfg comes from `--model-cfg`, or under `--scan-dir
 the model's folder or the nearest parent folder. Without a model.cfg, animations are
 not checked.
 
+The Geometry LOD `autocenter` property is checked only when the config.cpp (`--config`,
+or under `--scan-dir` the nearest one found the same way) has a class with
+`autocenter = 0`. Kits and ordinary items do not use it, so they get no finding.
+
 Exit codes:
 
 - **0**: no CRITICAL finding and no `P:\` path. WARNING and NOTE findings on .p3d files
@@ -88,7 +92,8 @@ references below.
                                     (the script deliberately omits the naive
                                     centroid check — it false-positives on DayZ)
    b. Component01 uppercase C?   → If wrong case: rename
-   c. autocenter=0 LOD property? → If missing: add
+   c. autocenter=0 LOD property? → If missing: add (checked only when config.cpp
+                                    sets autocenter = 0)
    d. pos center in Memory?      → If missing: add at (0,0,0)
    e. Components cover all?      → The Component selections together cover
                                     every vertex and face; each component is

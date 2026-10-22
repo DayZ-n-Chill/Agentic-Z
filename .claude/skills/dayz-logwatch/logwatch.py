@@ -12,13 +12,14 @@ Usage:
                      [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
 
 Exit codes: 0 no error lines seen, 1 at least one error line, 2 cannot run
-(or --until-closed saw no session start).
+(or --until-closed saw no session start and no error line).
 See SKILL.md for details.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -36,8 +37,9 @@ CLIENT_DIR = "!ClientDiagLogs"
 DIAG_EXE = "DayZDiag_x64.exe"
 DEBUGGER = "dayz-mod-debugger"
 POLL_S = 1.0
-CLOSED_CHECK_S = 5.0  # how often --until-closed asks tasklist whether DayZ Diag still runs
-START_GRACE_S = 300.0  # how long --until-closed waits for DayZ Diag to start before giving up
+CLOSED_CHECK_S = 5.0  # how often --until-closed asks whether the DayZ Diag client still runs
+START_GRACE_S = 300.0  # how long --until-closed waits for the DayZ Diag client to start before giving up
+SERVER_FLAG = re.compile(r"(?i)(?:^|\s)-server(?:\s|$)")
 
 
 def is_log(path: Path) -> bool:
@@ -176,12 +178,31 @@ class Watcher:
         }
 
 
-def diag_running() -> bool:
+def is_client(command_line: str) -> bool:
+    """True unless the DayZDiag_x64.exe command line carries the -server switch.
+
+    /dayz-launch-test runs the server and the client from the same binary, and the
+    server keeps running after the player closes the client window.
+    """
+    return not SERVER_FLAG.search(command_line)
+
+
+def client_running() -> bool:
+    """True while a DayZDiag_x64.exe without -server (the game client) is running.
+
+    tasklist cannot show command lines, so this asks Win32_Process. Each process
+    prints one "proc:" line; one whose command line Windows will not show counts
+    as a client, so the watch never stops early on a process it cannot read.
+    """
+    query = (
+        f"Get-CimInstance Win32_Process -Filter \"Name='{DIAG_EXE}'\" "
+        "| ForEach-Object { 'proc:' + $_.CommandLine }"
+    )
     out = subprocess.run(
-        ["tasklist", "/FI", f"IMAGENAME eq {DIAG_EXE}", "/FO", "CSV", "/NH"],
+        ["powershell", "-NoProfile", "-NonInteractive", "-Command", query],
         capture_output=True, text=True, errors="replace",
     ).stdout
-    return DIAG_EXE.lower() in out.lower()
+    return any(is_client(line[5:]) for line in out.splitlines() if line.startswith("proc:"))
 
 
 def watch(
@@ -288,7 +309,7 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
     stop_on = parser.add_mutually_exclusive_group()
     stop_on.add_argument("--duration", type=float, metavar="S", help="Stop after S seconds.")
     stop_on.add_argument("--until-closed", action="store_true",
-                         help=f"Stop once the {DIAG_EXE} seen running has closed.")
+                         help=f"Stop once the {DIAG_EXE} client (no -server) seen running has closed.")
     parser.add_argument("--interval", type=float, default=POLL_S, metavar="S", help="Seconds between reads (default 1).")
     parser.add_argument("--mod", help="Mod name, filled into fixes that mention <ModName>.")
     parser.add_argument("--json", action="store_true", help="Print one JSON object per line instead of text.")
@@ -330,9 +351,10 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
         Watcher(known, {"ModName": args.mod}, emit),
         interval=args.interval,
         duration=args.duration,
-        session_alive=diag_running if args.until_closed else None,
+        session_alive=client_running if args.until_closed else None,
     )
     print_summary(summary, out, args.json)
+    # Errors seen (for example read with --since) win over "session never started".
     if summary["errors"]:
         return 1
     return 2 if summary["stopped"] == "session never started" else 0

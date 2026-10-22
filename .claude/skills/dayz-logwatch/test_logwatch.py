@@ -231,11 +231,47 @@ def test_watch_gives_up_when_the_session_never_starts(tmp_path):
 
 def test_cli_session_never_started_exits_2(tmp_path, monkeypatch):
     monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
-    monkeypatch.setattr(logwatch, "diag_running", lambda: False)
+    monkeypatch.setattr(logwatch, "client_running", lambda: False)
     monkeypatch.setattr(logwatch, "START_GRACE_S", 0)
     out = io.StringIO()
     assert logwatch.main(["--dir", str(tmp_path), "--until-closed", "--interval", "0"], out) == 2
     assert "Stopped (session never started)" in out.getvalue()
+
+
+def test_cli_errors_win_over_session_never_started(tmp_path, monkeypatch):
+    monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
+    monkeypatch.setattr(logwatch, "client_running", lambda: False)
+    monkeypatch.setattr(logwatch, "START_GRACE_S", 0)
+    append(tmp_path / "script.log", UNKNOWN_TYPE)
+    out = io.StringIO()
+    args = ["--dir", str(tmp_path), "--until-closed", "--since", "5", "--interval", "0"]
+    assert logwatch.main(args, out) == 1
+    assert "Stopped (session never started)" in out.getvalue()
+
+
+@pytest.mark.parametrize("cmdline, client", [
+    ('"C:/DayZ/DayZDiag_x64.exe" -profiles=x -mod=P:/Mods/@A -connect=127.0.0.1 -port=2302', True),
+    ('"C:/DayZ/DayZDiag_x64.exe" -server -config=c -mod=P:/Mods/@A -port=2302', False),
+    ('"C:/DayZ/DayZDiag_x64.exe" -SERVER -config=c', False),
+    ("", True),  # command line hidden: assume the client, never stop early
+])
+def test_is_client_looks_for_the_server_switch(cmdline, client):
+    assert logwatch.is_client(cmdline) is client
+
+
+def test_client_running_ignores_the_server_process(monkeypatch):
+    server = 'proc:"C:/DayZ/DayZDiag_x64.exe" -server -config=c -serverMod=P:/Mods/@S'
+    client = 'proc:"C:/DayZ/DayZDiag_x64.exe" -connect=127.0.0.1'
+
+    def fake_run(stdout):
+        return lambda *a, **k: subprocess.CompletedProcess(a, 0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(logwatch.subprocess, "run", fake_run(server + "\n"))
+    assert logwatch.client_running() is False  # server left running after the client window closed
+    monkeypatch.setattr(logwatch.subprocess, "run", fake_run(server + "\n" + client + "\n"))
+    assert logwatch.client_running() is True
+    monkeypatch.setattr(logwatch.subprocess, "run", fake_run(""))
+    assert logwatch.client_running() is False
 
 
 def test_duration_and_until_closed_are_mutually_exclusive(capsys):
