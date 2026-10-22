@@ -48,6 +48,7 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 4. Put code in the right layer: `3_Game` for engine-level types and constants, `4_World` for entities, items and actions, `5_Mission` for mission and UI-flow code. A layer can only use types from its own layer or a lower one.
 5. Override with `modded class Foo { ... }` and no `extends` clause (it compiles but silently does nothing). Call `super` unless you mean to replace vanilla behavior.
 6. Gate authority (server) logic with `GetGame().IsServer()` and client-only UI, sounds and particles with `!GetGame().IsDedicatedServer()` (`conventions/scripts.md`, side checks); keep RPCs and `SetSynchDirty()` calls to what the feature needs.
+7. Run `/dayz-lint <ModName>` when the mod folder exists, and fix every finding you own before you report.
 
 ## Handoffs
 

@@ -55,7 +55,9 @@ def test_classnames_follow_scope_through_parents(mod, tmp_path):
     assert "| `MyVest_Black` | CfgVehicles | MyVest_Base | Tactical Vest (Black) |" in table
     assert "MyVest_Hidden" not in table and "`MyVest_Base`" not in table
     assert "- `MyVest_Patch` (parent `Armband_ColorBase`)" in table
-    assert any(w.startswith("scope-unknown") for w in report["warnings"])
+    [warning] = [w for w in report["warnings"] if w.startswith("scope-unknown")]
+    assert "set an explicit scope in config.cpp" in warning and "by hand" not in warning
+    assert "by hand" not in table
 
 
 def test_workshop_text_uses_mod_cpp_and_bbcode(mod, tmp_path):
@@ -65,6 +67,13 @@ def test_workshop_text_uses_mod_cpp_and_bbcode(mod, tmp_path):
     assert "[*]Tactical Vest (Black) (MyVest_Black)" in text
     assert "[*]MyVest_Green\n" in text  # a stringtable key is not a name a player reads
     assert "[*]@CF" in text
+
+
+def test_server_kit_line_is_a_link_to_fill_in(mod, tmp_path):
+    report, files = pack(mod, tmp_path)
+    assert "[url=SERVER_KIT_LINK]server kit[/url]" in files["workshop-description.txt"]
+    assert "The server kit has" not in files["workshop-description.txt"]
+    assert any(w.startswith("server-kit-link") for w in report["warnings"])
 
 
 def test_summary_falls_back_to_readme_then_placeholder(mod, tmp_path):
@@ -124,6 +133,16 @@ def test_changelog_from_git_groups_conventional_commits(mod, tmp_path):
     # HEAD~2..HEAD holds "update notes" and the skipped release commit.
     report, files = pack(mod, tmp_path, version="1.1.0", since="HEAD~2")
     assert report["changes"]["commits"] == 1
+
+
+def test_own_repo_without_tags_warns_full_history(mod, tmp_path):
+    git(mod, "init", "-q")
+    commit(mod, mod / "config.cpp", "feat: add the black vest")
+    commit(mod, mod / "config.cpp", "feat: add the green vest")
+    report, files = pack(mod, tmp_path)
+    assert report["changes"] == {"since": None, "from": None, "commits": 2}
+    [warning] = [w for w in report["warnings"] if w.startswith("changelog-full-history")]
+    assert "git tag v<version>" in warning and "--since" in warning
 
 
 def test_mod_inside_a_bigger_repo_ignores_its_tags(tmp_path):

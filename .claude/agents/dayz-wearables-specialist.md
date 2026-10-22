@@ -22,7 +22,7 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 3. Set hidden selections so one model carries every color: a `_ColorBase` class with `scope=0` lists `hiddenSelections[]` once, and each color class has `scope=2` and one texture per selection in the same order (`.claude/skills/_shared/wearables/references/color-variants.md`). Prefix every new class with the mod name (`MyMod_`).
 4. Note the proxy positions for the Object Builder specialist: the ground and worn model paths, the selection each model needs, each attachment proxy with its slot and place, and any `headSelectionsToHide[]` entry (`.claude/skills/_shared/wearables/references/models-and-proxies.md`).
 5. Check before you report: braces balance and every entry ends with `;`; every vanilla path exists under `P:\DZ\`; every mod path starts with the mod's `$PBOPREFIX$`. Run `/dayz-lint` on the mod when its folder exists.
-6. Write the in-game checks for `/dayz-gate behavior`: one `wear` check for each color class, plus a `cargo` or `attach` check for what it holds. The gate proves each color can be worn; it cannot see the texture, so list the colors a person must look at in game.
+6. Return the in-game checks for `/dayz-gate behavior` as JSON entries in the format of `.claude/skills/dayz-gate/checks-file.md`, for the orchestrator to add to `output/<ModName>-plan/behavior-checks.json`; never overwrite that file yourself. Give one `wear` check for each color class, plus a `cargo` or `attach` check for what it holds. The gate proves each color can be worn; it cannot see the texture, so list the colors a person must look at in game.
 
 ## Handoffs
 

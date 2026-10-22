@@ -182,7 +182,8 @@ def env(tmp_path, monkeypatch):
             state["configured"] = False
         return state["delete_rc"]
 
-    state.update(backups=0, backup_fails=False, delete_rc=0, order=[])
+    state.update(backups=0, backup_fails=False, delete_rc=0, order=[], running=False)
+    monkeypatch.setattr(setup, "objectbuilder_running", lambda: state["running"])
     monkeypatch.setattr(setup, "delete_objectbuilder_key", fake_delete)
     monkeypatch.setattr(setup, "apply_preferences", fake_prefs)
     monkeypatch.setattr(setup, "backup_registry", fake_backup)
@@ -202,6 +203,32 @@ def test_main_already_configured_skips_import(env):
     state["configured"] = True
     assert setup.main([]) == 0
     assert state["imports"] == 0 and state["prefs"] == 1
+
+
+@pytest.mark.parametrize("configured, argv", [(False, []), (True, []), (True, ["--force", "--yes"])])
+def test_main_refuses_while_objectbuilder_runs(env, capsys, configured, argv):
+    _, state = env
+    state.update(running=True, configured=configured)
+    assert setup.main(argv) == 1
+    assert "Close Object Builder first" in capsys.readouterr().err
+    assert state["imports"] == 0 and state["prefs"] == 0 and state["order"] == []
+
+
+@pytest.mark.parametrize("stdout, running", [
+    ("ObjectBuilder.exe             1234 Console    1     85,000 K\n", True),
+    ("INFO: No tasks are running which match the specified criteria.\n", False),
+])
+def test_objectbuilder_running_reads_tasklist(monkeypatch, stdout, running):
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return types.SimpleNamespace(returncode=0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(setup.sys, "platform", "win32")
+    monkeypatch.setattr(setup.subprocess, "run", fake_run)
+    assert setup.objectbuilder_running() is running
+    assert calls == [["tasklist", "/FI", "IMAGENAME eq ObjectBuilder.exe", "/NH"]]
 
 
 def test_main_missing_exe_fails(env, capsys):

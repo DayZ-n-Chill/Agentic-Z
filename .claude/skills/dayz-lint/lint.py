@@ -407,7 +407,10 @@ class Lint:
                 self.add("script-suffix", WARNING, path, None,
                          f"{path.name} is under scripts/ but is not a .c file, so it is never compiled.")
                 continue
-            for number, text in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+            source = path.read_text(encoding="utf-8", errors="replace")
+            # Drop // and /* */ comments but keep their newlines, so line numbers stay right.
+            source = re.sub(r"//[^\n]*|/\*.*?\*/", lambda m: "\n" * m.group().count("\n"), source, flags=re.DOTALL)
+            for number, text in enumerate(source.splitlines(), 1):
                 if MODDED_EXTENDS_RE.search(text):
                     self.add("modded-class-extends", ERROR, path, number,
                              f"{text.strip()}: a modded class with an extends clause is a silent no-op.")

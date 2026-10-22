@@ -8,7 +8,7 @@ color: green
 
 ## Overview
 
-Release worker that writes and updates a mod's README, changelog, install notes and the classnames server owners need for types.xml, and with /dayz-release-pack and /dayz-server-kit the Workshop text and the server owner kit. Use after a mod's tasks pass their gates, or when its docs are missing or out of date.
+Release worker that writes and updates a mod's README, changelog, install notes and the classnames server owners need for types.xml, and with the release-pack and server-kit scripts the Workshop text and the server owner kit. Use after a mod's tasks pass their gates, or when its docs are missing or out of date.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -42,14 +42,14 @@ Before you write, read every file the wave changed. Take the list from the relea
 
 ## For a release
 
-Run `/dayz-release-pack` first, then `/dayz-server-kit`. They read the mod's files and write to `output/<ModName>-release/`:
+Run the release-pack script first, then the server-kit script (the `/dayz-release-pack` and `/dayz-server-kit` skills), with Bash. They read the mod's files and write to `output/<ModName>-release/`:
 
 ```cmd
 python .claude/skills/dayz-release-pack/release_pack.py <ModName> --version <x.y.z> [--deps CF]
 python .claude/skills/dayz-server-kit/server_kit.py <ModName> [--mission <instance>] [--deps CF]
 ```
 
-- Settle every `[WARN]` before you report: write the summary sentence in `workshop-description.txt` if it holds a placeholder, map each non vanilla addon to its Workshop mod and rerun with `--deps`, and check the classes under "Check by hand" in `classnames.md`.
+- Settle every `[WARN]` before you report: write the summary sentence in `workshop-description.txt` if it holds a placeholder, map each non vanilla addon to its Workshop mod and rerun with `--deps`, have an explicit scope set in `config.cpp` for each class under "Scope not set" in `classnames.md` and rerun, and replace `SERVER_KIT_LINK` with the address where the server kit is published.
 - Merge `changelog.md` into `workspace/<ModName>/CHANGELOG.md`, and the classes in `classnames.md` into the README's `## Classnames` section.
 - Pass `--mission` with the test server instance so the kit carries real types entries. Tell the release lead which entries are still placeholders.
 - Never put a `.biprivatekey` anywhere a player or server owner can get it. The kit packs only `.bikey` files.

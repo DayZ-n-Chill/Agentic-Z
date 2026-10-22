@@ -258,18 +258,23 @@ def check_component_naming(lod):
 
 
 def check_component_coverage(lod):
-    """Check Component01 covers all vertices and faces."""
+    """Check the ComponentNN selections together cover all vertices and faces.
+
+    A non-convex Geometry LOD is split into convex Component01..ComponentNN
+    pieces, so coverage is the union of every component, not Component01 alone."""
     issues = []
-    if 'Component01' not in lod.selections:
+    comps = [sel for name, sel in lod.selections.items() if re.fullmatch(r'Component\d+', name)]
+    if not comps:
         return issues
-    sel = lod.selections['Component01']
-    if len(sel.points) < len(lod.points):
+    points = set().union(*(sel.points for sel in comps))
+    faces = set().union(*(sel.faces for sel in comps))
+    if len(points) < len(lod.points):
         issues.append(("WARNING",
-            f"Component01 covers {len(sel.points)}/{len(lod.points)} vertices. "
+            f"The Component selections cover {len(points)}/{len(lod.points)} vertices. "
             f"Uncovered vertices won't participate in collision."))
-    if len(sel.faces) < len(lod.faces):
+    if len(faces) < len(lod.faces):
         issues.append(("WARNING",
-            f"Component01 covers {len(sel.faces)}/{len(lod.faces)} faces. "
+            f"The Component selections cover {len(faces)}/{len(lod.faces)} faces. "
             f"Uncovered faces won't register raycasts."))
     return issues
 

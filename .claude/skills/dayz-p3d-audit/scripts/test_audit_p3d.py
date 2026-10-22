@@ -100,6 +100,17 @@ def test_component_coverage_partial_warns():
     assert _severities(audit.check_component_coverage(lod)) == ["WARNING", "WARNING"]
 
 
+def test_component_coverage_counts_every_component():
+    # A non-convex Geometry LOD split into two convex pieces is fully covered.
+    lod = _stub_lod(selections={"Component01": ([0, 1, 2], [0]), "Component02": ([0, 1, 3, 2], [1, 2, 3])})
+    assert audit.check_component_coverage(lod) == []
+
+
+def test_component_coverage_ignores_non_component_selections():
+    lod = _stub_lod(selections={"Component01": ([0, 1, 2], [0]), "camo": FULL})
+    assert _severities(audit.check_component_coverage(lod)) == ["WARNING", "WARNING"]
+
+
 def test_autocenter_property():
     assert audit.check_autocenter_prop(_stub_lod(properties={"autocenter": "0"})) == []
     assert _severities(audit.check_autocenter_prop(_stub_lod())) == ["WARNING"]
