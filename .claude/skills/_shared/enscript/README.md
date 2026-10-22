@@ -41,6 +41,7 @@ enscript/
 |---|---|
 | `community_framework.md` | CF module system, `ModStorage` persistence, event bus, inter-mod events |
 | `dabs_framework.md` | Dabs Framework (third party): attributes, `ScriptView` MVC, layout bindings, `ScriptViewMenu` |
+| `expansion_style.md` | Expansion targeted work only: prefixes, settings and module patterns, and where they differ from the vanilla style guide |
 | `vanilla_plugins.md` | `PluginBase` lifecycle, `GetPlugin()`, service-locator isolation |
 | `central_economy.md` | CE XML format, runtime CE with `SpawnObject`/`DeleteObject`, `cfgeconomycore.xml` |
 | `input_bindings.md` | `inputs.xml`, `UAInput` API, `GetUApi()`, context guards |
@@ -149,4 +150,4 @@ When SWARM updates upstream, re-run the import and re-apply our additions.
 
 Source: [`SWARMDayZ/dayz-enfusion-skills`](https://github.com/SWARMDayZ/dayz-enfusion-skills). Vendored with verbal permission from the author (granted via YouTube video accompanying the repo). No license file is published upstream; treat this content as "use for whatever" per the author's public grant.
 
-Original layout and prose by SWARM; modifications and integration into Agentic-Z by DayZ-n-Chill.
+Original layout and prose by SWARM; modifications and integration into Agentic-Z by DayZ n' Chill.
