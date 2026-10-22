@@ -216,6 +216,58 @@ INT_CHILDREN = ("nominal", "lifetime", "restock", "min", "cost")
 NAMED_CHILDREN = ("category", "usage", "value", "tag")
 FLAG_NAMES = tuple(DEFAULT_FLAGS)
 
+# The mission files that define the names a <type> may use. They sit next to
+# db/ in every vanilla mission; a name they do not define is ignored by the
+# Central Economy.
+LIMITS_FILE = "cfglimitsdefinition.xml"
+LIMITS_USER_FILE = "cfglimitsdefinitionuser.xml"
+# Section of cfglimitsdefinition.xml (and of the user file) for each child tag.
+LIMITS_SECTIONS = {"category": "categories", "usage": "usageflags", "value": "valueflags", "tag": "tags"}
+
+
+def load_limits(types_path: Path) -> Optional[dict[str, dict[str, set[str]]]]:
+    """Names defined by <types.xml>/../../cfglimitsdefinition.xml, as
+    {"name": {tag: names}, "user": {tag: group names}}. The user file is
+    optional. Returns None (after a note) when the main file is absent or
+    cannot be read, so the check is skipped."""
+    mission = types_path.resolve().parent.parent
+    main_file = mission / LIMITS_FILE
+    if not main_file.is_file():
+        print(f"{OK} No {LIMITS_FILE} at {main_file}; category, usage, value and tag names not checked.")
+        return None
+    limits: dict[str, dict[str, set[str]]] = {"name": {}, "user": {}}
+    for kind, file, child in (("name", main_file, None), ("user", mission / LIMITS_USER_FILE, "user")):
+        if not file.is_file():
+            continue
+        try:
+            root = ET.parse(file).getroot()
+        except ET.ParseError as e:
+            print(f"{WARN} Could not parse {file}: {e}; names not checked against it.")
+            if kind == "name":
+                return None
+            continue
+        for tag, section in LIMITS_SECTIONS.items():
+            limits[kind][tag] = {
+                el.get("name") for el in root.findall(f"{section}/{child or tag}") if el.get("name")
+            }
+    return limits
+
+
+def undefined_limit_names(el: ET.Element, limits: dict[str, dict[str, set[str]]]) -> list[str]:
+    """One message per category, usage, value or tag name of a <type> that the
+    mission's limits files do not define. name= is checked against
+    cfglimitsdefinition.xml, user= against the user file's groups."""
+    problems = []
+    for child in el:
+        if child.tag not in LIMITS_SECTIONS:
+            continue
+        for attr, file in (("name", LIMITS_FILE), ("user", LIMITS_USER_FILE)):
+            value = child.get(attr)
+            if value and value not in limits[attr].get(child.tag, set()):
+                problems.append(f'{child.tag} {attr} "{value}" is not defined in {file}')
+    return problems
+
+
 _DECL_RE = re.compile(r"^\s*<\?xml[^>]*\?>", re.IGNORECASE)
 _TYPES_TAG_RE = re.compile(r"</?types\b[^>]*>", re.IGNORECASE)
 
@@ -418,6 +470,11 @@ def main() -> int:
                     f"       Pass values with min <= nominal. {args.path} was not changed."
                 )
     print(f"{OK} {msg}")
+    if not args.remove:
+        limits = load_limits(args.path)
+        target = next(t for t in root.findall("type") if t.get("name") == args.classname)
+        for problem in undefined_limit_names(target, limits) if limits else []:
+            print(f"{WARN} {problem}")
     if changed:
         backup_and_write(tree, args.path)
     return 0
@@ -449,6 +506,10 @@ def run_merge(tree: ET.ElementTree, args: argparse.Namespace) -> int:
         sys.exit(f"{FAIL} Could not parse the chunk: {e}\n       {args.path} was not changed.")
     for warning in check_chunk(chunk, root, args.path):
         print(f"{WARN} {warning}")
+    limits = load_limits(args.path)
+    for el in chunk if limits else []:
+        for problem in undefined_limit_names(el, limits):
+            print(f"{WARN} {el.get('name')}: {problem}")
     print(f"{OK} Checked {len(chunk)} <type> entr{'y' if len(chunk) == 1 else 'ies'}")
     changed, lines = merge(root, chunk)
     for line in lines:
