@@ -281,7 +281,7 @@ The 30 agents live under `.claude/agents/`. The mod team runs a whole mod; the s
 | `dayz-audio-fx-specialist` | Sound shaders, sound sets and particle effects; any lead can call it |
 | `dayz-physics-specialist` | Weight, collision LODs, dropping, throwing and contact; any lead can call it |
 | `figma-node-normalizer` | Cleans a Figma frame so it can be converted |
-| `figma-to-dayz-layout` | Turns a cleaned Figma frame into a DayZ `.layout` |
-| `dayz-layout-validator` | Checks and cleans generated `.layout` files; the UI gate |
+| `figma-to-dayz-layout` | Turns a cleaned Figma frame into a DayZ `.layout`, and repairs one the validator failed |
+| `dayz-layout-validator` | Checks generated `.layout` files without editing them; the UI gate |
 
 Plus `agent-creator` for scaffolding new agent definitions to the standard template.
