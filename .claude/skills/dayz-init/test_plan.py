@@ -53,6 +53,32 @@ def test_full_plan_order_and_launch_implies_build():
     assert steps[-1].params == {"mod": "MyMod", "server": "chernarus"}
 
 
+def test_launch_step_carries_deps():
+    intent = Intent("M", source="D:/src", scaffold=False, server_map="chernarus", launch=True, deps=["@CF", "Dabs"])
+    launch = build_steps(intent, False)[-1]
+    assert launch.action == "launch"
+    assert launch.params == {"mod": "M", "server": "chernarus", "deps": ["@CF", "Dabs"]}
+    assert "after @CF, Dabs" in launch.label
+
+
+def test_execute_launches_import_after_its_deps(env_ok, runs, tmp_path):
+    rc = plan.main(
+        ["--mod", "M", "--import-from", "D:/src", "--no-scaffold", "--server", "chernarus", "--launch",
+         "--deps", "@CF", "--deps", "Dabs", "--execute"],
+        project=tmp_path,
+    )
+    assert rc == 0
+    launch = runs["argv"][-1]
+    assert Path(launch[1]).parent.name == "dayz-launch-test"
+    assert launch[2:] == ["CF", "Dabs", "M", "--server", "chernarus"]
+
+
+def test_deps_without_launch_is_a_usage_error():
+    with pytest.raises(SystemExit) as exc:
+        plan.parse_args(["--mod", "M", "--server", "chernarus", "--deps", "CF"])
+    assert exc.value.code == 2
+
+
 def test_record_precedes_server_and_build():
     # add-server, build and launch read the project cache written by "record".
     actions = _actions(build_steps(Intent("M", server_map="sakhal", build=True), False))

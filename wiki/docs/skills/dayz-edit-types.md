@@ -45,8 +45,9 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove
    - If the block exists, update only the fields passed. Untouched fields stay as-is.
    - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the vanilla standard flags (`count_in_map=1`, everything else 0).
 4. Remove mode (`--remove`): delete the block.
-5. If nothing changed (entry already matches, or the entry to remove is absent), stop: no backup, no write.
-6. Otherwise copy the file to `<types.xml>.bak` (overwriting any prior backup) and write the updated tree back.
+5. Name check (upsert mode): the entry's `<category>`, `<usage>`, `<value>` and `<tag>` names are checked against the mission's `cfglimitsdefinition.xml`, found next to `db/` (`<types.xml>\..\..\`). A `user=` group is checked against `cfglimitsdefinitionuser.xml` when it exists. Each name the file does not define prints `[WARN] usage name "Militar" is not defined in cfglimitsdefinition.xml`, because the Central Economy ignores or rejects it. The edit still goes ahead. When `cfglimitsdefinition.xml` is not there (a types file kept in a mod folder), the check is skipped with a note.
+6. If nothing changed (entry already matches, or the entry to remove is absent), stop: no backup, no write.
+7. Otherwise copy the file to `<types.xml>.bak` (overwriting any prior backup) and write the updated tree back.
 
 ## Merge a pasted chunk
 
@@ -67,7 +68,7 @@ The chunk can be bare `<type>` blocks or a whole `<types>` file, with or without
 - a `<category>`, `<usage>`, `<value>` or `<tag>` without a name
 - a name the target file already lists twice
 
-A missing standard child (`nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`), an unknown element or an unknown flag is a `[WARN]` and does not stop the merge.
+A missing standard child (`nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`), an unknown element or an unknown flag is a `[WARN]` and does not stop the merge. So is a category, usage, value or tag name that the mission's `cfglimitsdefinition.xml` does not define (the same name check as upsert mode, skipped with a note when that file is absent).
 
 Then each entry is merged: a new name is added at the end, a name already in the file has its whole block replaced where it stands, and an identical block is left alone. The file is backed up to `types.xml.bak` once and written once. `--dry-run` checks and reports the same lines and writes nothing.
 

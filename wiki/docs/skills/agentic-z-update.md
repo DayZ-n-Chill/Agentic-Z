@@ -30,7 +30,7 @@ python "<skill-dir>\update.py" [--check] [--quiet] [--yes] [--per-file] [--force
 |---|---|
 | (default) | Preview drift, prompt y/N, apply safe changes (conflicts left alone) |
 | `--check` | Preview only: fetches upstream (adding the upstream remote if it is missing) and writes no files; exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (`local-only-edit` and `locally-deleted` files do not count) |
-| `--quiet` | With `--check`: single-line output for hooks, and always exits 0 so the hook shows the line |
+| `--quiet` | With `--check`: single-line output for hooks, and always exits 0 so the hook shows the line. Rejected without `--check` |
 | `--yes` | Skip the confirmation prompt (CI / scripted use) |
 | `--per-file` | Walk each conflict and `locally-deleted` file interactively: keep / take / diff / skip |
 | `--force` | Override the dirty-tree check |
@@ -86,6 +86,11 @@ README.md
 package.json
 package-lock.json
 .github/
+CONTRIBUTING.md
+LICENSE
+.markdownlint.json
+.markdownlint-cli2.jsonc
+.markdownlintignore
 ```
 
 What stays untouched:
@@ -134,9 +139,9 @@ To skip the check: ensure `~/.claude/dayz-search-index/release-tag.txt` doesn't 
 
 ## Refuse rules (exit 1)
 
-- Not a git repo: "Run from inside an Agentic-Z clone."
+- Not a git repo: "Run from inside an Agentic-Z clone." With `--check --quiet` this prints that one line and exits 0, so the hook shows it.
 - Uncommitted changes in template paths (skipped with `--force`, and not checked by `--check`). Nothing is fetched or changed.
-- The `upstream` remote points somewhere else: prints the `git remote set-url` fix.
+- The `upstream` remote points somewhere else: prints the `git remote set-url` fix. With `--check --quiet` the fix is one line and the exit is 0.
 - `git fetch` fails (with `--check --quiet` this exits 0 silently so the hook stays quiet).
 - Non-interactive shell at the confirmation prompt without `--yes`.
 - `git commit` of the applied files fails (changes left staged, baseline not moved).
