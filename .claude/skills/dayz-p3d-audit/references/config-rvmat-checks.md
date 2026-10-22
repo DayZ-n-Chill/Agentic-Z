@@ -10,10 +10,10 @@ number, and any WARNING in a text file makes the run exit 1. Convert them to
 game-relative paths:
 
 ```cpp
-// WRONG — breaks on any other machine:
+// WRONG: breaks on any other machine:
 hiddenSelectionsTextures[] = {"P:\DZ\gear\consumables\data\rag_co.paa"};
 
-// CORRECT — works everywhere:
+// CORRECT: works everywhere:
 hiddenSelectionsTextures[] = {"DZ\gear\consumables\data\rag_co.paa"};
 ```
 
@@ -28,7 +28,7 @@ workbench with P: drive mounted. They must be stripped for distribution/PBO pack
 ```cpp
 class MyPlacedObject: Inventory_Base
 {
-    autocenter = 0;        // MANDATORY — prevents visual mesh burial
+    autocenter = 0;        // MANDATORY: prevents visual mesh burial
     model = "\ModName\data\model.p3d";  // Backslash prefix = addon root
     // For kits (handheld items): do NOT set autocenter=0
 };
