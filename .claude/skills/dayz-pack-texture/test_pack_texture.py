@@ -12,6 +12,20 @@ pt = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(pt)
 
 
+def _png(width, height):
+    """The first 24 bytes of a PNG: signature, IHDR length and type, width, height."""
+    return pt.PNG_SIGNATURE + (13).to_bytes(4, "big") + b"IHDR" + width.to_bytes(4, "big") + height.to_bytes(4, "big")
+
+
+def _tga(width, height):
+    """An 18 byte TGA header: width at bytes 12 and 13, height at 14 and 15, little endian."""
+    return bytes(12) + width.to_bytes(2, "little") + height.to_bytes(2, "little") + bytes(2)
+
+
+def _image(name, width=1024, height=1024):
+    return _tga(width, height) if name.lower().endswith(".tga") else _png(width, height)
+
+
 @pytest.mark.parametrize("stem", ["vest_co", "vest_camo_nohq", "vest_smdi", "VEST_CO", "a_b_NoHQ"])
 def test_suffix_re_accepts_core_suffixes(stem):
     assert pt.SUFFIX_RE.search(stem)
@@ -36,8 +50,37 @@ def test_suffix_re_rejects_other_names(stem):
 @pytest.mark.parametrize("name", ["vest_co.png", "vest_nohq.TGA", "vest_smdi.Png", "glass_ca.png", "vest_as.tga"])
 def test_validate_input_accepts(tmp_path, name):
     path = tmp_path / name
-    path.write_bytes(b"")
+    path.write_bytes(_image(name))
     pt.validate_input(path)  # no SystemExit
+
+
+def test_validate_input_refuses_png_that_is_not_a_power_of_two(tmp_path):
+    path = tmp_path / "vest_co.png"
+    path.write_bytes(_png(1000, 1000))
+    with pytest.raises(SystemExit) as exc:
+        pt.validate_input(path)
+    assert "1000 x 1000 is not a power of two" in str(exc.value)
+    assert "1024 x 1024" in str(exc.value)
+
+
+def test_validate_input_accepts_tga_with_unequal_power_of_two_sides(tmp_path):
+    path = tmp_path / "shirt_co.tga"
+    path.write_bytes(_tga(1024, 512))
+    assert pt.image_size(path) == (1024, 512)
+    pt.validate_input(path)  # no SystemExit
+
+
+def test_validate_input_refuses_unreadable_header(tmp_path):
+    path = tmp_path / "vest_co.png"
+    path.write_bytes(b"not a png")
+    with pytest.raises(SystemExit) as exc:
+        pt.validate_input(path)
+    assert "cannot read the image size" in str(exc.value)
+
+
+@pytest.mark.parametrize("side,nearest", [(1000, 1024), (700, 512), (3000, 2048), (50, 64), (768, 1024)])
+def test_nearest_vanilla_size(side, nearest):
+    assert pt.nearest_vanilla_size(side) == nearest
 
 
 @pytest.mark.parametrize(
@@ -159,7 +202,7 @@ def test_main_exits_1_on_partial_failure(monkeypatch, tmp_path, capsys):
     good = tmp_path / "good_co.png"
     bad = tmp_path / "bad_nohq.png"
     for p in (good, bad):
-        p.write_bytes(b"")
+        p.write_bytes(_png(512, 512))
     monkeypatch.setattr(pt.h, "gate_on_preflight", lambda: None)
     monkeypatch.setattr(pt, "resolve_image_to_paa", lambda: tmp_path / "ImageToPAA.exe")
     monkeypatch.setattr(pt, "pack_one", lambda exe, src: src == good)

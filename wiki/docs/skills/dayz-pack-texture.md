@@ -42,7 +42,7 @@ python "<skill-dir>\pack_texture.py" <input1> [<input2> ...]
 ## What it does
 
 1. Preflight gate.
-2. Validate every input before converting any: the file exists, the extension is `.png` or `.tga` (any case), and the basename ends with one of the suffixes above (any case) before the extension.
+2. Validate every input before converting any: the file exists, the extension is `.png` or `.tga` (any case), the basename ends with one of the suffixes above (any case) before the extension, and both sides of the image are powers of two (read from the PNG `IHDR` chunk or the TGA header).
 3. Resolve `ImageToPAA.exe` from DayZ Tools (env / registry / Steam paths) via `find_dayz_tools()`.
 4. For each input, invoke `ImageToPAA.exe <input> <output.paa>`, overwriting any existing `.paa`. Streams the tool's output live. A conversion counts as failed if the tool exits non-zero, if no `.paa` appears, or if an existing `.paa` was left unchanged (its modification time did not move), so a stale file from an earlier run is never reported as packed.
 5. Report a summary of successes and failures. Exit non-zero if any failed.
@@ -54,6 +54,7 @@ python "<skill-dir>\pack_texture.py" <input1> [<input2> ...]
 - An input file doesn't exist.
 - An input doesn't end in `.png` or `.tga`.
 - An input's basename doesn't end with one of the suffixes above. ImageToPAA picks the compression from the suffix, and the rest of the pipeline (rvmat stages, reviewers) relies on it to tell what the texture is for.
+- An input's width or height is not a power of two, or its size cannot be read from the header. The message names the nearest vanilla size from `.claude/skills/_shared/textures/suffixes-and-sizes.md` (for example 1000 x 1000 becomes 1024 x 1024). Nothing is converted until every input passes.
 
 ## Output
 

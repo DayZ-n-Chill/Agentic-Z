@@ -67,4 +67,4 @@ Answers vary a little from run to run. When a question fails once and passes on 
 
 ## Adding questions
 
-Every agent should get its own question file, and every new specialist ships with one. 20 of the 30 agents have one so far; `evals/README.md` lists the ones still missing. Add five questions at a time, each checked on `P:\` first and recorded in `verified`. Run the new questions, then record the baseline with `--agent <name> --update-baseline` and commit it with the question file. The unit tests in `scripts/dev/test_run_evals.py` check that every question file is valid; they never call `claude`.
+Every agent should get its own question file, and every new specialist ships with one. 22 of the 30 agents have one so far; `evals/README.md` lists the ones still missing. Add five questions at a time, each checked on `P:\` first and recorded in `verified`. Run the new questions, then record the baseline with `--agent <name> --update-baseline` and commit it with the question file. The unit tests in `scripts/dev/test_run_evals.py` check that every question file is valid; they never call `claude`.
