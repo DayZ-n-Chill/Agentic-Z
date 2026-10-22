@@ -45,8 +45,11 @@ modded class PlayerBase
     protected int   m_MyMod_Points;
     protected float m_MyMod_Reputation;
     protected bool  m_MyMod_IsBanned;
+    protected int   m_MyMod_QuestsDone;     // added in store version 2
 
-    // Synced to clients
+    // Synced to clients. Derived state: rebuilt from the player on every
+    // scheduled tick, so it is never saved (saving it would only grow every
+    // player record).
     protected int   m_MyMod_SyncFlags;      // bitfield
 
     // Client-side only (visual)
@@ -144,6 +147,7 @@ modded class PlayerBase
     // -----------------------------------------------------------------------
     // Persistence – SAVE
     // Write fields in a stable order; never re-order between versions.
+    // Save only state the server cannot rebuild; m_MyMod_SyncFlags is not saved.
     // -----------------------------------------------------------------------
     override void OnStoreSave(ParamsWriteContext ctx)
     {
@@ -154,7 +158,7 @@ modded class PlayerBase
         ctx.Write(m_MyMod_Reputation);
         ctx.Write(m_MyMod_IsBanned);
         // v2 fields:
-        ctx.Write(m_MyMod_SyncFlags);
+        ctx.Write(m_MyMod_QuestsDone);
     }
 
     // -----------------------------------------------------------------------
@@ -174,9 +178,9 @@ modded class PlayerBase
         if (!ctx.Read(m_MyMod_IsBanned))  return false;
 
         if (myVersion < 2)
-            return true;  // m_MyMod_SyncFlags not in older saves; keep default
+            return true;  // m_MyMod_QuestsDone not in older saves; keep default
 
-        if (!ctx.Read(m_MyMod_SyncFlags)) return false;
+        if (!ctx.Read(m_MyMod_QuestsDone)) return false;
 
         return true;
     }

@@ -83,7 +83,8 @@ async function refresh($: any, cwd: string): Promise<PanelStatus> {
     findRoot($, cwd),
     activeMod($, cwd),
     $.fs.exists('P:\\'),
-    $.process.run(['tasklist', '/FI', 'IMAGENAME eq DayZDiag_x64.exe', '/NH']),
+    // A failed tasklist call means the session state is unknown, not an error.
+    $.process.run(['tasklist', '/FI', 'IMAGENAME eq DayZDiag_x64.exe', '/NH']).catch(() => ({ stdout: '' })),
   ])
   const next: PanelStatus = {
     root,
@@ -119,7 +120,14 @@ async function runAction($: any, cwd: string, action: string, question?: string)
 
 async function runNow($: any, cwd: string, action: string, question?: string) {
   // Read the state afresh: /dayz-init may have run since the pane last refreshed.
-  const current = await refresh($, cwd)
+  let current: PanelStatus
+  try {
+    current = await refresh($, cwd)
+  } catch (err) {
+    await update($, lastRun, () => ({ action, ok: false, outcome: 'failed', detail: `status check failed: ${err}` }))
+    $.ui.toast(`${action}: failed (status check: ${err})`)
+    return
+  }
   if (!current.root) {
     $.ui.toast('Agentic-Z not found in this project or the plugin cache.')
     return
@@ -157,19 +165,27 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
     const result = await $.process.run(argv, { cwd, timeoutMs: 600_000 })
     const lines = (result.stdout + '\n' + result.stderr).trim().split(/\r?\n/)
     const failLine = lines.find((l: string) => l.startsWith('[FAIL]'))
-    // An answer is the verdict and its citations; everything else is one line.
+    // An answer is the verdict, its reason or notes (the lines indented two
+    // spaces under it) and the citation headers; everything else is one line.
     const detail =
       action === 'ask'
-        ? lines.filter((l: string) => /^(EVIDENCE|NONE|ERROR|\[\d+\])/.test(l)).slice(0, 6).join('\n')
+        ? lines.filter((l: string) => /^(EVIDENCE|NONE|ERROR|\[\d+\]| {2}\S)/.test(l)).slice(0, 8).join('\n')
         : (failLine ?? lines[lines.length - 1] ?? '')
-    run = { action, ok: result.exitCode === 0, detail }
+    // ask.py exits 1 for NONE: the search worked and found nothing.
+    const nothingFound = action === 'ask' && result.exitCode === 1
+    const ok = result.exitCode === 0 || nothingFound
+    run = { action, ok, outcome: nothingFound ? 'nothing found' : ok ? 'done' : 'failed', detail }
   } catch (err) {
-    run = { action, ok: false, detail: String(err) }
+    run = { action, ok: false, outcome: 'failed', detail: String(err) }
   }
   await update($, lastRun, () => run)
-  $.ui.toast(`${action}: ${run.ok ? 'done' : 'failed'}`)
-  await refresh($, cwd)
+  $.ui.toast(`${action}: ${run.outcome}`)
+  await refreshQuietly($, cwd)
 }
+
+// A status refresh nobody waits on must not throw: a failed process call
+// would otherwise be an unhandled rejection.
+const refreshQuietly = ($: any, cwd: string) => refresh($, cwd).catch(() => null)
 
 export const register: Register = on => {
   let cwd = '.'
@@ -177,7 +193,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     cwd = e.cwd
     await $.command.register({ name: 'dayz-panel', description: 'Open the Agentic-Z panel' })
-    void refresh($, cwd)
+    void refreshQuietly($, cwd)
     return next(e)
   })
 
@@ -215,7 +231,7 @@ export const register: Register = on => {
           <Button key="logwatch" label="Check test logs" hotkey="t" onPress={press('logwatch')} />
           <Button key="health" label="Health page" hotkey="h" onPress={press('health')} />
           <Button key="releasepack" label="Release pack" hotkey="k" onPress={press('releasepack')} />
-          <Button key="refresh" label="Refresh" hotkey="r" onPress={() => refresh($, cwd)} />
+          <Button key="refresh" label="Refresh" hotkey="r" onPress={() => refreshQuietly($, cwd)} />
         </Box>
         {Input && (
           <Input
@@ -229,7 +245,7 @@ export const register: Register = on => {
         {working && <Text dimColor>Running {working}...</Text>}
         {run && (
           <Text dimColor>
-            Last: {run.action} {run.ok ? 'done' : 'failed'} {run.detail}
+            Last: {run.action} {run.outcome} {run.detail}
           </Text>
         )}
       </Box>

@@ -128,7 +128,7 @@ Four more classes appear in vanilla layouts but belong to the game's own screens
 visible 1          // show (1) or hide (0) on load
 ignorepointer 1    // passes mouse events through (for overlays)
 disabled 1         // greys out and blocks input
-priority 5         // z-order (higher = in front); default 0
+priority 5         // z-order (higher = in front); vanilla uses 0 to 4000
 draggable 1        // widget can be dragged
 
 // Alignment (relative to parent bounds)
@@ -149,8 +149,8 @@ font "gui/fonts/sdf_MetronBook24"
 image0 "set:dayz_gui image:DayZLogo"
 mode blend             // vanilla uses: blend, additive, opaque
 "src alpha" 1
-"clamp mode" clamp     // vanilla uses: clamp, border, wrap
-"stretch mode" stretch_w_h   // vanilla uses: stretch_w_h, fit_w_center, none
+"clamp mode" clamp     // vanilla uses: clamp, border, wrap, invalid
+"stretch mode" stretch_w_h   // vanilla uses: stretch_w_h, fit_w_center, none, invalid
 
 // Style (look and feel from looknfeel/ files)
 style Default
@@ -167,7 +167,7 @@ scriptclass "MyMod_BehaviourClass"   // calls a class by name at runtime
 userID 1                              // integer ID readable via widget.GetUserID()
 ```
 
-Every property and value above appears in `P:\gui\layouts\`, and the value lists are every value vanilla uses there. Examples: `ignorepointer` `consolecursor.layout:2`, `draggable` `day_z_book.layout:35`, `"exact text size"` `day_z_chat_item.layout:23`, `"stretch mode"` `day_z_digital_lock.layout:51`, `scriptclass` `day_z_digital_lock.layout:28`, `userID` `day_z_assignments.layout:89`. `GetUserID()` is `P:\scripts\1_core\proto\enwidgets.c:136`.
+Every property and value above appears in `P:\gui\layouts\`, and the value lists are every value vanilla uses there. Examples: `ignorepointer` `consolecursor.layout:2`, `draggable` `day_z_book.layout:35`, `"exact text size"` `day_z_chat_item.layout:23`, `"stretch mode"` `day_z_digital_lock.layout:51`, `scriptclass` `day_z_digital_lock.layout:28`, `userID` `day_z_assignments.layout:89`, `priority 0` `day_z_assignments.layout:20` and `priority 4000` `day_z_license_dialog.layout:12`, `"clamp mode" invalid` and `"stretch mode" invalid` `day_z_hud_watermark.layout:37-38`. `GetUserID()` is `P:\scripts\1_core\proto\enwidgets.c:136`.
 
 ---
 
@@ -184,11 +184,13 @@ TextListboxWidgetClass MyList {
  hexactsize 1
  vexactsize 1
  "title visible" 0
- colums "Name;70;Value;30"   // "ColName;widthPercent;ColName;widthPercent;..."
+ colums "Name;70;Value;30"   // "ColName;width;ColName;width;..."
  font "gui/fonts/sdf_MetronLight24"
  lines 20                    // max visible rows hint
 }
 ```
+
+The column widths are not percentages: vanilla's `colums "Item;80;Value;50;"` (`P:\gui\layouts\debug\day_z_debug_remoteinfo.layout:38`) sums to 130. The unit is set by the engine and not documented in script, so check the result in Workbench.
 
 Script API:
 ```c

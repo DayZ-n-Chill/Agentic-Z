@@ -109,6 +109,7 @@ function engineWith(on: any, runs: string[][], opts: {
   toasts?: string[]
   hold?: (argv: string[]) => Promise<void> | undefined
   result?: (argv: string[]) => { exitCode: number; stdout: string; stderr: string } | undefined
+  clockFails?: () => boolean
 } = {}) {
   const files: Record<string, string> = opts.files ?? {
     'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
@@ -127,7 +128,10 @@ function engineWith(on: any, runs: string[][], opts: {
   on('fs.list', () => ({
     value: (opts.cacheDirs ?? []).map(name => ({ name, kind: 'dir', size: 0, modifiedAt: 0 })),
   }))
-  on('clock.now', () => ({ value: 0 }))
+  on('clock.now', () => {
+    if (opts.clockFails?.()) throw new Error('clock gone')
+    return { value: 0 }
+  })
   on('process.run', async (_: unknown, e: any) => {
     runs.push(e.argv)
     if (e.argv.join(' ') === 'cmd /c echo %USERPROFILE%') {
@@ -292,4 +296,81 @@ test('a failing run toasts failed and keeps its [FAIL] line in the pane', async 
   expect(toasts).toEqual(['build: failed'])
   expect((await ui.find({ type: 'Text', text: /Last:/ }))?.text).toContain('Last: build failed [FAIL] lint: 2 errors')
   await ui.unmount()
+})
+
+test('an ask ERROR keeps its reason line in the pane', async ($, on) => {
+  const runs: string[][] = []
+  const toasts: string[] = []
+  engineWith(on, runs, {
+    toasts,
+    result: argv =>
+      argv.some(a => a.endsWith('ask.py'))
+        ? { exitCode: 2, stdout: "ERROR\n  P:\\ is not mounted, so vanilla files can't be read. Run /dayz-workdrive.\n", stderr: '' }
+        : undefined,
+  })
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does food spoil' })
+  expect(toasts).toEqual(['ask: failed'])
+  const last = (await ui.find({ type: 'Text', text: /Last:/ }))?.text
+  expect(last).toContain('Last: ask failed ERROR')
+  expect(last).toContain('P:\\ is not mounted')
+  await ui.unmount()
+})
+
+test('an ask that finds nothing says so instead of failed', async ($, on) => {
+  const runs: string[][] = []
+  const toasts: string[] = []
+  engineWith(on, runs, {
+    toasts,
+    result: argv =>
+      argv.some(a => a.endsWith('ask.py'))
+        ? { exitCode: 1, stdout: 'NONE\n  note: no vanilla file matched the question\n', stderr: '' }
+        : undefined,
+  })
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how do unicorns fly' })
+  expect(toasts).toEqual(['ask: nothing found'])
+  const last = (await ui.find({ type: 'Text', text: /Last:/ }))?.text
+  expect(last).toContain('Last: ask nothing found NONE')
+  expect(last).toContain('note: no vanilla file matched')
+  await ui.unmount()
+})
+
+test('a failing tasklist call does not stop a press', async ($, on) => {
+  const runs: string[][] = []
+  const toasts: string[] = []
+  engineWith(on, runs, {
+    toasts,
+    hold: argv => (argv[0] === 'tasklist' ? Promise.reject(new Error('tasklist missing')) : undefined),
+  })
+  const ui = await openPane($)
+  expect((await ui.find({ type: 'Text', text: /Test session/ }))?.text).toBe('Test session: stopped')
+  await ui.press({ key: 'build' })
+  await ui.unmount()
+  expect(toasts).toEqual(['build: done'])
+  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest'])
+})
+
+test('a failing status check toasts, runs nothing and frees the lock', async ($, on) => {
+  const runs: string[][] = []
+  const toasts: string[] = []
+  let broken = false
+  engineWith(on, runs, { toasts, clockFails: () => broken })
+  const ui = await openPane($)
+  broken = true
+  await ui.press({ key: 'build' })
+  expect(scriptRuns(runs)).toEqual([])
+  expect(toasts.length).toBe(1)
+  expect(toasts[0]).toContain('build: failed (status check')
+  broken = false
+  await ui.press({ key: 'build' })
+  await ui.unmount()
+  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest'])
+  expect(toasts[1]).toBe('build: done')
+})
+
+test('a status check that fails at session start is not an unhandled rejection', async ($, on) => {
+  const runs: string[][] = []
+  engineWith(on, runs, { clockFails: () => true })
+  await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
 })

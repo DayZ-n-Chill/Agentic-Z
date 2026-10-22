@@ -153,6 +153,17 @@ def test_unparseable_types_chunk_says_so(tmp_path):
     assert "do not parse as XML" in context
 
 
+@pytest.mark.parametrize("prompt", ['in my types.xml <type name="X"> has nominal 0, why?',
+                                    'what does <type name = "AK101"> mean in types.xml?'])
+def test_type_named_in_prose_is_not_a_paste(tmp_path, prompt):
+    assert _context(_run(prompt, tmp_path)) is None
+
+
+@pytest.mark.parametrize("chunk", ['<type name="X"/>', '<type name="X">\n  <nominal>5</nominal>'])
+def test_self_closing_or_cut_off_entries_are_still_checked(tmp_path, chunk):
+    assert "<type> entr" in _context(_run(chunk, tmp_path))
+
+
 # --- links ---------------------------------------------------------------------------
 
 def test_figma_link_starts_the_pipeline(tmp_path):
@@ -175,9 +186,38 @@ def test_github_tree_link_keeps_the_branch(tmp_path):
                                   "https://github.com/Owner/MyVest/blob/main/config.cpp",
                                   "https://github.com/Owner/My.Vest/commit/abc123",
                                   "https://github.com/Owner/MyVest/releases",
+                                  "https://github.com/Owner/MyVest/wiki/Setup",
+                                  "https://github.com/Owner/MyVest/settings",
+                                  "https://github.com/orgs/DayZ-n-Chill/repositories",
+                                  "https://github.com/settings/profile",
                                   "https://gist.github.com/Owner/abc123"])
 def test_github_link_that_is_not_a_repo_adds_no_context(tmp_path, link):
     assert _context(_run(f"review {link}", tmp_path)) is None
+
+
+def test_plugin_copy_steps_aside_for_the_project_copy(tmp_path, monkeypatch, capsys):
+    (tmp_path / "hooks").mkdir()
+    (tmp_path / "hooks" / "paste_router.py").write_text("", encoding="utf-8")
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    assert pr.shadowed_by_project()  # this copy lives outside tmp_path, like a plugin copy
+    monkeypatch.setattr("sys.stdin", __import__("io").StringIO(json.dumps({"prompt": "https://github.com/O/R"})))
+    assert pr.main() == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_project_copy_does_not_step_aside(monkeypatch):
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(SCRIPT.parents[1]))
+    assert not pr.shadowed_by_project()
+
+
+def test_a_bug_in_the_shadow_check_never_blocks(monkeypatch, capsys):
+    def boom():
+        raise OSError("bad path")
+
+    monkeypatch.setattr(pr, "shadowed_by_project", boom)
+    monkeypatch.setattr("sys.stdin", __import__("io").StringIO(json.dumps({"prompt": "SCRIPT (E): x"})))
+    assert pr.main() == 0
+    assert capsys.readouterr().out == ""
 
 
 def test_one_failing_detector_keeps_the_others(monkeypatch):

@@ -6,7 +6,12 @@ export type PanelStatus = {
   checkedAt: number
 }
 
-export type PanelRun = { action: string; ok: boolean; detail: string } | null
+export type PanelRun = {
+  action: string
+  ok: boolean
+  outcome: 'done' | 'failed' | 'nothing found'
+  detail: string
+} | null
 
 declare module 'claude-code' {
   interface PluginState {

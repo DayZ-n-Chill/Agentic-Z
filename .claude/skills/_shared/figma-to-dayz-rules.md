@@ -43,7 +43,7 @@ Three rules that cover the syntax:
 - Properties are key-value pairs on their own line. No `=`, no `:`, no semicolons. The value follows the key separated by a space. Quote string values the way vanilla does: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`, `items`, `layout`, `Mask` and `ScriptParamsClass` values (for example `items` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`). Numbers, flags and enum words such as `style`, `halign` and `valign` stay bare. Multi-word keys are quoted too (`"exact text" 1`).
 - The child `{ }` block goes inside the parent's braces, AFTER all of the parent's own properties. A widget may have multiple child blocks (the second is conventionally for `ScriptParamsClass` parameter blocks).
 
-Multi-word property keys are quoted, values still are not:
+Multi-word property keys are quoted. String values are quoted, and numbers and enum words stay bare:
 
 ```
 text "Status: OK"
@@ -170,7 +170,7 @@ All widget names end in `Class`.
 
 This is the section most likely to be mishandled. Read it once carefully.
 
-**The vanilla DayZ idiom is absolute pixel positioning with alignment anchors.** Every shipping vanilla `.layout` under `P:\gui\` and every example layout in this repo uses absolute `position`/`size` plus `halign`/`valign` anchors. Spacer widgets exist but are reserved for cases the anchor system genuinely cannot express.
+**Vanilla DayZ places most widgets with `position`/`size` plus `halign`/`valign` anchors, and uses spacer widgets for content that flows or repeats.** Both are common: 149 of the 227 vanilla `.layout` files under `P:\gui\layouts` hold a `GridSpacerWidgetClass`, `WrapSpacerWidgetClass` or `SpacerWidgetClass`, and some have a spacer as the root (`WrapSpacerWidgetClass ChatItemWidget` at `P:\gui\layouts\day_z_chat_item.layout:1`). A spacer places its own children; every other widget takes its place from position, size and anchors. For a Figma design, start from position and anchors and add a spacer for the cases listed under "When to reach for spacer widgets" below.
 
 ### Default: absolute + anchor, but honor Figma sizing modes
 
@@ -306,14 +306,13 @@ The font's name suffix (e.g. `24`) is the SDF generation size, not the render si
 
 ## 9. Hard NO list
 
-Surface red flags that the output is wrong. The generator must never emit these. The validator must strip them on contact.
+Surface red flags that the output is wrong. The generator must never emit these. The validator, a read-only gate, fails the layout on any of them and reports each with its line, and `figma-to-dayz-layout` fixes them in repair mode.
 
 - **XML syntax**: `<Tag>`, `</Tag>`, `/>`, `name="value"` attribute pairs, namespace prefixes.
 - **`=` between key and value.** DayZ is `key value`, not `key = value`.
 - **Quoted values where vanilla leaves them bare.** Quote string values the way vanilla does: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`, `items`, `layout`, `Mask` and `ScriptParamsClass` values (for example `items` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`). Numbers, flags and enum words such as `style`, `halign` and `valign` stay bare. Multi-word keys are quoted too (`"exact text" 1`).
 - **Semicolons** as line terminators.
-- **CSS-flavored property names**, spelled exactly as CSS spells them (case sensitive): `borderRadius`, `border-radius`, `display`, `flex`, `flexDirection`, `justifyContent`, `alignItems`, `boxShadow`, `box-shadow`, `padding`, `margin`, `gap`. Spacer widgets' vanilla `Padding` and `Margin` (capitalized, for example `P:\gui\layouts
-ew_ui\options\msstore\keybinding_menu.layout`) are valid and must be kept.
+- **CSS-flavored property names**, spelled exactly as CSS spells them (case sensitive): `borderRadius`, `border-radius`, `display`, `flex`, `flexDirection`, `justifyContent`, `alignItems`, `boxShadow`, `box-shadow`, `padding`, `margin`, `gap`. Spacer widgets' vanilla `Padding` and `Margin` (capitalized, for example `Padding 0` at `P:\gui\layouts\new_ui\options\msstore\keybinding_menu.layout:61`) are valid and must be kept.
 - **Opacity as a separate property or percentage.** Alpha lives as the fourth float on `color`. This bans a bare `opacity` key only; quoted vanilla keys that contain the word, such as `"shadow opacity"` (`P:\gui\layouts\day_z_hud_watermark.layout:55`), are valid.
 - **Property names vanilla does not spell that way.** Write each name exactly as vanilla spells it (`imageTexture`, `userID`, `"exact text size"`); no CSS names.
 - **Self-closing tags.** Empty widgets still need `{ }` braces.
@@ -456,6 +455,6 @@ Each stage's shape mirrors the next: the Figma frame becomes the normalized JSON
 
 - **`figma-node-normalizer`** uses sections 4 (prefixes) and 6 to decide what to keep, what to flatten, what to label. Its output JSON should carry enough metadata that the generator never has to re-guess.
 - **`figma-to-dayz-layout`** uses every section. The widget mapping table is its primary lookup. Section 5 is the most common place to go wrong, treat it as required reading.
-- **`dayz-layout-validator`** uses section 9 (Hard NO list) as its strip list, sections 1 and 2 to verify well-formedness, and sections 3 and 4 to confirm widget classes against the catalog.
+- **`dayz-layout-validator`** uses section 9 (Hard NO list) as its list of failures to report (it changes no file), sections 1 and 2 to verify well-formedness, and sections 3 and 4 to confirm widget classes against the catalog.
 
 When the format claims in any individual agent's `.md` file disagree with this doc, this doc wins. The agents are documentation; this is the spec.
