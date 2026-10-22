@@ -415,7 +415,7 @@ def check_memory_lod(lod, wants_zero=False, has_geometry=True):
     # Faces in Memory LOD (should be zero)
     if len(lod.faces) > 0:
         issues.append(("WARNING",
-            f"Memory LOD has {len(lod.faces)} faces; it should have 0."
+            f"Memory LOD has {len(lod.faces)} faces; it should have 0. "
             f"Only single-vertex points belong in Memory LOD."))
 
     return issues
