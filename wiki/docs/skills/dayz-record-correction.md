@@ -30,7 +30,7 @@ Pick the tier by scope:
 - **Tier 2**: true for all DayZ work (Enforce Script style, config patterns, asset rules). Goes in `.claude/skills/_shared/dayz-conventions.md` if every DayZ agent needs it, otherwise in the matching topic file under `.claude/skills/_shared/conventions/` (config, assets, scripts, ui, server).
 - **Tier 3**: about one kind of work. Goes in that agent's file under `.claude/agents/` or the matching knowledge pack under `.claude/skills/_shared/`.
 
-Once you have picked a tier, search all three tiers for a rule that overlaps (Grep the key words across `CLAUDE.md`, `.claude/skills/_shared/dayz-conventions.md`, `.claude/skills/_shared/conventions/*.md`, `.claude/agents/*.md` and `.claude/skills/_shared/*.md`, all relative to the Agentic-Z repo root that step 3 shows how to find):
+Once you have picked a tier, search all three tiers for a rule that overlaps (Grep the key words across `CLAUDE.md`, `.claude/skills/_shared/dayz-conventions.md`, `.claude/skills/_shared/conventions/*.md`, `.claude/agents/*.md` and `.claude/skills/_shared/**/*.md` (the knowledge packs live in subfolders such as `_shared/enscript/`), all relative to the Agentic-Z repo root that step 3 shows how to find):
 
 - An overlapping rule in the right tier: propose an edit to that rule instead of a new one.
 - An overlapping rule in the wrong tier (for example a DayZ-wide rule sitting in one agent's file): propose moving it to the right tier and merging the correction into it, so the rule lives in one place.
@@ -54,7 +54,7 @@ python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "<skill-dir>"
 - Ending in `\.claude\skills\dayz-record-correction`: a clone. The Agentic-Z repo root is three levels up from it (the folder that holds `.claude\`), and every file the tiers name (`CLAUDE.md`, `.claude\skills\_shared\dayz-conventions.md`, `.claude\agents\...`) is relative to that root, not to the current project.
 
 - In a clone, edit the file the tier names under that repo root, even when the session was started in another project. Keep the edit small and in the file's existing style.
-- In a clone, if the edited file is under `.claude\agents\` or `.claude\skills\` (a `SKILL.md` or the shared conventions in `.claude\skills\_shared\dayz-conventions.md`), run `/docs-sync` so the wiki mirror under `wiki\docs\` stays in sync. Otherwise the Stop hook reports wiki drift at the end of the session.
+- In a clone, if the edited file is under `.claude\agents\` or `.claude\skills\` (a `SKILL.md`, `.claude\skills\_shared\dayz-conventions.md` or a topic file under `.claude\skills\_shared\conventions\`), run `/docs-sync` so the wiki mirror under `wiki\docs\` stays in sync. Otherwise the Stop hook reports wiki drift at the end of the session.
 - In a plugin install, the plugin's files are replaced on every update. Write the rule under a `## Agentic-Z rules` heading in whichever of the project's `CLAUDE.md`, `AGENTS.md` and `GEMINI.md` exist, with the same text in each, and say that's why. For a Tier 1 rule, create any of the three that are missing, so Claude Code, Codex and Gemini all see it.
 
 ## 3b. Check it (clones only)

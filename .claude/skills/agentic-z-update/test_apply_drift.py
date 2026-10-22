@@ -339,6 +339,64 @@ def test_template_paths_cover_every_tracked_top_level_folder():
         assert f in update.TEMPLATE_PATHS
 
 
+# Tracked root-level files that a clone keeps as its own. Empty today: every
+# root file in the template is template-managed.
+LEAVE_ALONE_ROOT_FILES: set[str] = set()
+
+
+def test_template_paths_cover_every_tracked_root_file():
+    root = Path(__file__).resolve().parents[3]
+    files = subprocess.run(
+        ["git", "ls-files"], cwd=root, check=True, capture_output=True, text=True
+    ).stdout.splitlines()
+    root_files = {f for f in files if "/" not in f}
+    missing = sorted(root_files - set(update.TEMPLATE_PATHS) - LEAVE_ALONE_ROOT_FILES)
+    assert not missing, f"tracked root files neither in TEMPLATE_PATHS nor left alone: {missing}"
+    for f in ("CONTRIBUTING.md", "LICENSE", ".markdownlint.json", ".markdownlint-cli2.jsonc",
+              ".markdownlintignore"):
+        assert f in update.TEMPLATE_PATHS
+
+
+# ---------- --quiet never fails the SessionStart hook ----------
+
+def test_quiet_check_outside_a_repo_prints_one_line_and_exits_0(in_tmp, monkeypatch, capsys):
+    monkeypatch.setattr(update, "repo_root", lambda: None)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check", "--quiet"])
+    assert update.main() == 0
+    out = capsys.readouterr().out.strip().splitlines()
+    assert len(out) == 1 and "not a git repo" in out[0]
+
+
+def test_check_outside_a_repo_exits_1_without_quiet(in_tmp, monkeypatch):
+    monkeypatch.setattr(update, "_QUIET", False)
+    monkeypatch.setattr(update, "repo_root", lambda: None)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check"])
+    assert update.main() == 1
+
+
+def test_quiet_check_with_wrong_upstream_prints_set_url_fix_and_exits_0(in_tmp, monkeypatch, capsys):
+    monkeypatch.setattr(update, "repo_root", lambda: in_tmp)
+    monkeypatch.setattr(update, "remote_url", lambda name: "https://example.com/fork.git")
+
+    def no_fetch():
+        raise AssertionError("must not fetch from a wrong upstream")
+
+    monkeypatch.setattr(update, "fetch_upstream", no_fetch)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check", "--quiet"])
+    assert update.main() == 0
+    out = capsys.readouterr().out.strip().splitlines()
+    assert len(out) == 1
+    assert "https://example.com/fork.git" in out[0]
+    assert f"git remote set-url upstream {update.UPSTREAM_URL}" in out[0]
+
+
+def test_quiet_without_check_is_rejected(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["update.py", "--quiet"])
+    with pytest.raises(SystemExit) as exc:
+        update.main()
+    assert exc.value.code == 2
+
+
 # ---------- locally-deleted ----------
 
 def test_locally_deleted_classification():

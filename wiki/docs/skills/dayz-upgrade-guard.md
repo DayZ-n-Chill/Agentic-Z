@@ -48,9 +48,11 @@ python "<skill-dir>\upgrade_guard.py" diff [--old <snapshot> --new <snapshot>] [
 | Kind | Read from | Kept per class |
 |---|---|---|
 | Script | every `.c` under `P:\scripts\` and `P:\DZ\` | parent, file and line, every method with its signature (default values and `override` dropped). Vanilla `modded class` parts are merged into the class. |
-| Config | every `config.cpp` under `P:\DZ\` | the classes one level inside each `Cfg*` class, keyed as `CfgVehicles/Clothing`: parent, file and line, the names of the properties and subclasses it sets. A class that several addons extend is merged. |
+| Config | every `config.cpp` under `P:\DZ\` | the classes one level inside each `Cfg*` class, keyed in lower case as `cfgvehicles/clothing`, since config class names ignore case (vanilla writes both `CfgVehicles` and `cfgVehicles`): the name as vanilla spells it, parent, file and line, the names of the properties and subclasses it sets. A class that several addons extend is merged. |
 
-A snapshot of the full game data takes about ten seconds and is about 8 MB.
+A snapshot of the full game data takes about ten seconds and is about 10 MB.
+
+A snapshot saved before config keys became case blind (format 1) is refused with an ERROR. Take a new snapshot; if the game has already been updated, the new one becomes the baseline for the next update.
 
 ## What it flags
 

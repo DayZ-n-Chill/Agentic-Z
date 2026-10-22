@@ -26,4 +26,10 @@ Physics uses the sum of the point masses on the Geometry LOD, which Object Build
 
 ## autocenter
 
-Follow the placed object rule in `.claude/agents/dayz-object-builder.md`: placed objects get `autocenter` = `0` on the Geometry LOD and on any GeoPhys or Fire Geometry LOD, a `pos center` memory point, and `autocenter = 0;` in `config.cpp`. The audit checks the LOD property (`check_autocenter_prop`) and the reasons are in `dayz-p3d-audit/references/p3d-killers.md` sections 3 and 5.
+`autocenter = 0` is for placed objects only. Never set it on kits or handheld items: on those it makes the item float when dropped (`.claude/skills/dayz-p3d-audit/references/p3d-killers.md` section 3).
+
+A placed object needs all three:
+
+1. The `autocenter` = `0` named property on the Geometry LOD, and on any GeoPhys or Fire Geometry LOD the model has. The audit checks it (`check_autocenter_prop` in `.claude/skills/dayz-p3d-audit/scripts/audit_p3d.py`).
+2. A `pos center` memory point at `(0,0,0)` in the Memory LOD (`p3d-killers.md` section 5, and `memory-points.md`).
+3. `autocenter = 0;` in the object's class in `config.cpp` (`.claude/skills/dayz-p3d-audit/references/config-rvmat-checks.md`, "Required Properties for Placed Objects"). dayz-object-builder sends this line to dayz-config-specialist.

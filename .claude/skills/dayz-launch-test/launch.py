@@ -181,23 +181,29 @@ def build_server_cmd(
     cfg_path: Path,
     profile_dir: Path,
     mission_path: Path,
+    server_mod_arg: str = "",
 ) -> list[str]:
     """Build the diagnostic server launch command.
 
     Uses DayZDiag_x64.exe with `-server`; both client and server must be diag
     for `-filePatching` to work end-to-end. The retail DayZServer_x64.exe also
     blocks filePatching past the loading screen, same as retail DayZ_x64.exe.
+
+    Server-only mods go on `-serverMod=`, not `-mod=`: mods on `-mod=` are
+    advertised to connecting clients.
     """
-    return [
+    cmd = [
         str(diag_exe),
         "-server",
         f"-config={cfg_path}",
         f"-profiles={profile_dir}",
         f"-mission={mission_path}",
         f"-mod={mod_arg}",
-        "-filePatching",
-        f"-port={port}",
     ]
+    if server_mod_arg:
+        cmd.append(f"-serverMod={server_mod_arg}")
+    cmd += ["-filePatching", f"-port={port}"]
+    return cmd
 
 
 def display_prefs_problem(prefs) -> str | None:
@@ -372,14 +378,14 @@ def main() -> int:
     display = read_client_display_prefs(project_dir, create=not args.dry_run)
 
     # Absolute mod paths so the engine resolves -mod=<arg> correctly regardless
-    # of the working directory the subprocess inherits. Server-only mods stay off
-    # the client: some call RequestExit when they find themselves client-side.
+    # of the working directory the subprocess inherits. Server-only mods go on
+    # -serverMod= and stay off the client: some call RequestExit when they find
+    # themselves client-side.
     client_mod_arg = ";".join(str(MODS_ROOT / f"@{name}") for name in args.modnames)
-    server_mod_arg = ";".join(
-        str(MODS_ROOT / f"@{name}") for name in args.modnames + args.server_only
-    )
+    server_mod_arg = ";".join(str(MODS_ROOT / f"@{name}") for name in args.server_only)
     server_cmd = build_server_cmd(
-        diag_exe, server_mod_arg, args.port, cfg_path, server_profile_dir, mission_path
+        diag_exe, client_mod_arg, args.port, cfg_path, server_profile_dir, mission_path,
+        server_mod_arg=server_mod_arg,
     )
     client_cmd = build_client_cmd(diag_exe, client_mod_arg, args.port, client_profile_dir, display)
 
@@ -398,7 +404,11 @@ def main() -> int:
     sys.stdout.flush()
     # Detached (shared DETACH_FLAGS) so closing or killing the agent's shell
     # does not take the server and client down with it.
-    server_proc = subprocess.Popen(server_cmd, close_fds=True, creationflags=h.DETACH_FLAGS)
+    try:
+        server_proc = subprocess.Popen(server_cmd, close_fds=True, creationflags=h.DETACH_FLAGS)
+    except OSError as err:
+        print(f"{FAIL} Failed to spawn DayZDiag_x64.exe: {err}")
+        return 1
     print(f"{OK} Server PID: {server_proc.pid}")
     sys.stdout.flush()
     if not wait_for_server_port(args.port, server_proc, timeout_s=SERVER_BIND_TIMEOUT_S):
@@ -411,7 +421,13 @@ def main() -> int:
     print()
     print(f"[Launch] Client: {' '.join(client_cmd)}")
     sys.stdout.flush()
-    client_proc = subprocess.Popen(client_cmd, close_fds=True, creationflags=h.DETACH_FLAGS)
+    try:
+        client_proc = subprocess.Popen(client_cmd, close_fds=True, creationflags=h.DETACH_FLAGS)
+    except OSError as err:
+        # Don't leave a server running with no client to use it.
+        server_proc.kill()
+        print(f"{FAIL} Failed to spawn DayZDiag_x64.exe: {err}")
+        return 1
     print(f"{OK} Client PID: {client_proc.pid}")
 
     print()

@@ -70,5 +70,13 @@
   "dayz-server-admin": {
     "score": 3,
     "total": 5
+  },
+  "dayz-mod-debugger": {
+    "score": 5,
+    "total": 5
+  },
+  "figma-node-normalizer": {
+    "score": 5,
+    "total": 5
   }
 }

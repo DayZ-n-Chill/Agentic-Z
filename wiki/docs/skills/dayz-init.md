@@ -57,11 +57,12 @@ Then ask in chat for the free-text values:
 - New mod, or import with `--scaffold`, when `.claude/local-memory/dayz-author.txt` does not exist: the author handle shown in mod descriptions (a scaffolded import writes it into `config.cpp`). Pass it as `--author`.
 - Optional spec, only when `workspace\<ModName>\spec.md` does not exist and the mod is not a `--no-scaffold` import: "What should the mod do? Say skip to leave it for later." This is the only spec question. If the user skips, pass no spec flags. Otherwise turn the answer into one `--goal` sentence plus `--item` (each item or class the mod adds), `--behavior` (each thing a player can do or see in game) and `--done-check` (each check that proves it works), all repeatable. Use the user's own words and don't invent features they did not ask for. The plan writes these to `spec.md`, and dayz-mod-architect reads it first when it plans the mod.
 - The spec question is not asked when `workspace\<ModName>` is a linked import, because `plan.py` never writes into a linked source folder on a re-run.
+- Import with launch: read the source folder's `config.cpp` `requiredAddons[]` (the same check as the hub's `Needs:` line). When it lists anything that does not start with `DZ_`, such as `JM_CF_Scripts`, ask which `@mods` under `P:\Mods\` provide those addons, in load order, and pass them as `--deps`. Without them the mod fails to load on the first launch.
 
 ## Step 4: show the plan
 
 ```
-python "<skill-dir>\plan.py" --mod <ModName> [--import-from <path> --scaffold|--no-scaffold] [--author <handle>] [--goal <text> [--item <text>]... [--behavior <text>]... [--done-check <text>]...] [--server <map>] [--build] [--launch]
+python "<skill-dir>\plan.py" --mod <ModName> [--import-from <path> --scaffold|--no-scaffold] [--author <handle>] [--goal <text> [--item <text>]... [--behavior <text>]... [--done-check <text>]...] [--server <map>] [--build] [--launch [--deps <mod> ...]]
 ```
 
 Prints the numbered plan, for example:
@@ -92,7 +93,7 @@ Same command plus `--execute`. Each step's output streams through; the first fai
 | record | writes the two state files above |
 | add-server | `dayz-add-server\add_server.py <map> --map <map>` |
 | build | `dayz-build-pbo\build.py <ModName>` |
-| launch | `dayz-launch-test\launch.py <ModName> --server <map>` |
+| launch | `dayz-launch-test\launch.py <ModName> --server <map>`, with the `--deps` mods loaded first |
 
 `/dayz-new-mod` creates the `P:\<ModName>` junction itself. When the plan succeeds, go to Step 6.
 

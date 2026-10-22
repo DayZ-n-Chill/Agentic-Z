@@ -7,7 +7,7 @@ What goes in the Memory LOD (`1.0e+15`), the names vanilla script looks up, and 
 - The Memory LOD holds points only. Each named selection is one point, or two points for an axis. The audit warns when the LOD has faces (`check_memory_lod` in `.claude/skills/dayz-p3d-audit/scripts/audit_p3d.py`).
 - An axis is a selection of exactly two points, named after the bone it turns: bone `doors5` uses `doors5_axis` in `houseblock_3f_corner1.p3d`. The audit checks that every `<name>_axis` in the Memory LOD has a `<name>` selection in the visual LOD and reports CRITICAL when it does not.
 - Script finds points by name with `GetMemoryPointPos`, `MemoryPointExists` and `GetMemoryPointIndex` (`P:\scripts\3_game\entities\object.c:451` to `:454`). Spell the name exactly as the script or config that uses it.
-- Placed objects need `pos center` at `(0,0,0)` (`dayz-p3d-audit/references/p3d-killers.md` section 5, and the placed object rule in `.claude/agents/dayz-object-builder.md`).
+- Placed objects need `pos center` at `(0,0,0)` (`dayz-p3d-audit/references/p3d-killers.md` section 5, and the autocenter rule in `named-properties.md`).
 
 ## Names vanilla looks up
 

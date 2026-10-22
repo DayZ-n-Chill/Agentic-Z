@@ -1,0 +1,58 @@
+{
+  "agent": "figma-node-normalizer",
+  "questions": [
+    {
+      "id": "prefix-typing-btn-close",
+      "question": "Answer only, do not edit any file, and do not call any Figma MCP tool: the node tree below is the get_metadata output, already fetched. Normalize it for figma-to-dayz-layout.\n\n<frame id=\"10:42\" name=\"Trader Menu\" x=\"0\" y=\"0\" width=\"400\" height=\"300\" layout=\"vertical\">\n  <frame id=\"10:43\" name=\"Btn Close\" x=\"352\" y=\"8\" width=\"40\" height=\"24\" sizing=\"hug,hug\">\n    <text id=\"10:44\" name=\"Label\" x=\"8\" y=\"4\" width=\"24\" height=\"16\">X</text>\n  </frame>\n</frame>\n\nReturn your usual report.",
+      "must_include": [
+        "re:\"name\"\\s*:\\s*\"btn_close\"",
+        "re:\"btn_close\"[^}]*\"type\"\\s*:\\s*\"button\""
+      ],
+      "must_not_include": [
+        "button-close",
+        "re:\"name\"\\s*:\\s*\"Btn Close\""
+      ],
+      "verified": ".claude/agents/figma-node-normalizer.md Classify (a name with a rules-doc prefix takes the prefix's type) and Name (Btn Close becomes btn_close); .claude/skills/_shared/figma-to-dayz-rules.md section 4"
+    },
+    {
+      "id": "sizing-on-every-node",
+      "question": "Answer only, do not edit any file, and do not call any Figma MCP tool: the node tree below is the get_metadata output, already fetched. Normalize it for figma-to-dayz-layout.\n\n<frame id=\"20:1\" name=\"panel_status\" x=\"0\" y=\"0\" width=\"320\" height=\"120\" layout=\"vertical\" sizing=\"fixed,fixed\">\n  <text id=\"20:2\" name=\"txt_title\" x=\"8\" y=\"8\" width=\"304\" height=\"24\" sizing=\"fill,hug\">Status</text>\n  <text id=\"20:3\" name=\"txt_body\" x=\"8\" y=\"36\" width=\"304\" height=\"18\" sizing=\"fill,hug\">Subtitle</text>\n</frame>\n\nReturn your usual report.",
+      "must_include": [
+        "re:(?s)(\"sizing\".*){3}",
+        "re:(?s)\"txt_title\".*?\"sizing\"\\s*:\\s*\\{\\s*\"width\"\\s*:\\s*\"fill\""
+      ],
+      "verified": ".claude/agents/figma-node-normalizer.md JSON shape (sizing is required on every node) and .claude/skills/_shared/figma-to-dayz-rules.md section 10 (every node carries sizing)"
+    },
+    {
+      "id": "children-source-order",
+      "question": "Answer only, do not edit any file, and do not call any Figma MCP tool: the node tree below is the get_metadata output, already fetched. Normalize it for figma-to-dayz-layout.\n\n<frame id=\"30:1\" name=\"panel_item\" x=\"0\" y=\"0\" width=\"300\" height=\"90\" layout=\"vertical\" sizing=\"fixed,hug\">\n  <text id=\"30:2\" name=\"txt_price\" x=\"0\" y=\"0\" width=\"300\" height=\"24\" sizing=\"fill,hug\">120</text>\n  <text id=\"30:3\" name=\"txt_name\" x=\"0\" y=\"30\" width=\"300\" height=\"24\" sizing=\"fill,hug\">Hoodie</text>\n  <text id=\"30:4\" name=\"txt_weight\" x=\"0\" y=\"60\" width=\"300\" height=\"24\" sizing=\"fill,hug\">0.8 kg</text>\n</frame>\n\nReturn your usual report.",
+      "must_include": [
+        "re:(?s)\"txt_price\".*\"txt_name\".*\"txt_weight\""
+      ],
+      "verified": ".claude/agents/figma-node-normalizer.md Rules (children in source order)"
+    },
+    {
+      "id": "removal-in-summary",
+      "question": "Answer only, do not edit any file, and do not call any Figma MCP tool: the node tree below is the get_metadata output, already fetched. Normalize it for figma-to-dayz-layout.\n\n<frame id=\"40:1\" name=\"panel_main\" x=\"0\" y=\"0\" width=\"400\" height=\"200\" layout=\"vertical\" sizing=\"fixed,fixed\">\n  <frame id=\"40:2\" name=\"Guide Overlay\" x=\"0\" y=\"0\" width=\"400\" height=\"200\" visible=\"false\"/>\n  <text id=\"40:3\" name=\"txt_title\" x=\"8\" y=\"8\" width=\"384\" height=\"24\" sizing=\"fill,hug\">Main</text>\n</frame>\n\nReturn your usual report.",
+      "must_include": [
+        "re:remov|dropp|strip",
+        "re:guide[ _]overlay"
+      ],
+      "must_not_include": [
+        "re:\"name\"\\s*:\\s*\"guide_overlay\""
+      ],
+      "verified": ".claude/agents/figma-node-normalizer.md Strip (drop hidden nodes and designer-only frames) and Rules (every removal appears in the summary)"
+    },
+    {
+      "id": "no-figma-tool",
+      "question": "Answer only, do not edit any file. Assume no Figma MCP tool is loaded in this session under any name, and no node tree has been pasted. Normalize https://www.figma.com/design/abc123/Trader?node-id=10-42 for the trader menu layout.",
+      "must_include": [
+        "re:Figma MCP|MCP server|Figma plugin|mcp\\.figma\\.com"
+      ],
+      "must_not_include": [
+        "re:\"name\"\\s*:\\s*\""
+      ],
+      "verified": ".claude/agents/figma-node-normalizer.md Rules (with no Figma tool available and no pasted tree, stop and say a Figma MCP server must be installed and signed in; never build the JSON from the URL or from memory)"
+    }
+  ]
+}

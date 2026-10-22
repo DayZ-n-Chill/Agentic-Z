@@ -4,11 +4,11 @@ color: orange
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--orange">orange</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">inherit</span><span class="agent-color-badge agent-color-badge--orange">orange</span></p>
 
 ## Overview
 
-Art worker for DayZ `.p3d` models and `model.cfg`: LODs, named and hidden selections, named properties, proxies and skeletons. Returns step-by-step Object Builder instructions plus the config lines other workers need, and writes `model.cfg` itself. Use for the art lead's model tasks. Moving parts' bones and animations go to dayz-animation-specialist; dayz-physics-specialist diagnoses collision and mass faults and hands the model fix back here; dayz-wearables-specialist sends proxy notes for clothing.
+Art worker for DayZ `.p3d` models and `model.cfg`: LODs, named and hidden selections, named properties, proxies and skeletons. Returns step-by-step Object Builder instructions plus the config lines other workers need, and writes `model.cfg` itself. Use for the art lead's model tasks. Moving parts go to dayz-animation-specialist; physics faults come back from dayz-physics-specialist.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -46,7 +46,7 @@ The model and LOD pack is `.claude/skills/_shared/models/` (front index `README.
 
 ## After the user saves the model
 
-When the user has made your Object Builder steps and saved the MLOD file, run `/dayz-p3d-audit` on it, with `--model-cfg` and `--config` when the model has them. Read the findings against `dayz-p3d-audit/references/p3d-killers.md`. A CRITICAL finding means the work is not done: give the user the fix steps and audit again. Put the final audit result in your report.
+When the user has made your Object Builder steps and saved the MLOD file, run `/dayz-p3d-audit` on it, with `--model-cfg` and `--config` when the model has them. Read the findings against `.claude/skills/dayz-p3d-audit/references/p3d-killers.md`. A CRITICAL finding means the work is not done: give the user the fix steps and audit again. Put the final audit result in your report.
 
 ## DayZ model rules
 
@@ -56,8 +56,8 @@ When the user has made your Object Builder steps and saved the MLOD file, run `/
 - A hidden selection is a named selection present in every visual LOD that should retexture. Damage zones, proxies and animation bones also reference selection names, so keep names exact and consistent across LODs and `model.cfg`.
 - Proxies are named `proxy:<path to the model without .p3d>.<index>`, for example `proxy:\dz\gear\camping\combination_lock3.001`, and point at the attachment model (`_shared/models/proxies.md`).
 - Mass is the sum of the point masses on the Geometry LOD, set with Object Builder's mass tool; the audit prints it. Other LOD settings such as `map` are named properties (`_shared/models/named-properties.md`). Take values from an MLOD sample model or the matching vanilla `config.cpp` (`search_dayz_source`) rather than guessing; vanilla `.p3d` files are ODOL, which `dayz-p3d-audit` can't read.
-- A door is a bone per leaf in every LOD that moves, a `<bone>_axis` and a `<door>_action` point in the Memory LOD, and per door a convex View Geometry ComponentNN part plus a named selection named after the door that holds it (`_shared/models/doors.md`). You do the model side and the skeleton class; dayz-animation-specialist writes the door bones and animations in `model.cfg`, and dayz-config-specialist writes `class Doors`.
-- `autocenter = 0` is for placed objects only, never kits or handheld items (on those it makes the item float when dropped). A placed object needs all three, per the `dayz-p3d-audit` references (`references/p3d-killers.md` sections 3 and 5, `references/config-rvmat-checks.md` "Required Properties for Placed Objects"): the `autocenter` = `0` named property on the Geometry LOD and on any GeoPhys or FireGeometry LOD the model has; a `pos center` memory point at `(0,0,0)` in the Memory LOD; and `autocenter = 0;` in the class in `config.cpp`, which you send to dayz-config-specialist with the other config lines.
+- A door needs a bone per leaf, axis and action memory points and a View Geometry component per door; follow `_shared/models/doors.md` for the names and for who writes each part (you do the model side and the skeleton class).
+- `autocenter = 0` is for placed objects only, never kits or handheld items; follow the full rule in `.claude/skills/_shared/models/named-properties.md` ("autocenter"), which cites `.claude/skills/dayz-p3d-audit/references/p3d-killers.md` sections 3 and 5 and `.claude/skills/dayz-p3d-audit/references/config-rvmat-checks.md` ("Required Properties for Placed Objects"), and send the `config.cpp` line to dayz-config-specialist.
 - Never modify vanilla files under `P:\dz\`.
 
 ## Report

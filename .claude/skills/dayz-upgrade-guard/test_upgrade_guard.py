@@ -77,7 +77,7 @@ def test_config_redeclared_with_an_old_parent(tmp_path):
         "class CfgVehicles\n{\n    class Clothing_Base;\n    class Clothing: Clothing_Base\n    {\n        itemSize[] = {2,2};\n    };\n};\n",
         encoding="utf-8")
     new = json.loads(json.dumps(NEW))
-    new["config"]["CfgVehicles/Clothing"]["parent"] = "Inventory_Base"
+    new["config"]["cfgvehicles/clothing"]["parent"] = "Inventory_Base"
     report = guard.check_mod("Redeclare", tmp_path, OLD, new)
     assert _reasons(report)["CfgVehicles/Clothing"][0] == "redeclared-parent"
 
@@ -98,9 +98,43 @@ def test_override_in_a_class_two_steps_below_vanilla(tmp_path):
     assert report["classes_checked"] == 2
 
 
-def test_missing_mod_folder_is_an_error(tmp_path):
-    with pytest.raises(guard.GuardError):
-        guard.check_mod("Gone", tmp_path / "Gone", OLD, NEW)
+def test_missing_mod_folder_is_an_error(tmp_path, capsys):
+    args = ["diff", "--old", str(FIXTURES / "snapshot_old.json"), "--new", str(FIXTURES / "snapshot_new.json"),
+            "--mod-dir", str(tmp_path / "Gone")]
+    assert guard.main(args) == 2
+    assert capsys.readouterr().out.startswith("ERROR")
+
+
+def test_config_class_names_ignore_case(tmp_path):
+    # Vanilla writes CfgVehicles in one config.cpp and cfgVehicles in another; both are one class.
+    def p_root(root: Path, second: str) -> Path:
+        (root / "scripts").mkdir(parents=True)
+        for addon, body in (("a", "class CfgVehicles { class Clothing { a = 1; }; };\n"), ("b", second)):
+            (root / "DZ" / addon).mkdir(parents=True)
+            (root / "DZ" / addon / "config.cpp").write_text(body, encoding="utf-8")
+        return root
+
+    old = guard.take_snapshot(p_root(tmp_path / "old", "class cfgVehicles { class Clothing { b = 1; }; };\n"))
+    new = guard.take_snapshot(p_root(tmp_path / "new", "class cfgVehicles { class Clothing {}; };\n"))
+    assert list(old["config"]) == ["cfgvehicles/clothing"]
+    assert old["config"]["cfgvehicles/clothing"]["name"] == "CfgVehicles/Clothing"
+    assert old["config"]["cfgvehicles/clothing"]["members"] == ["a", "b"]
+    mod = tmp_path / "MyBag"
+    mod.mkdir()
+    (mod / "config.cpp").write_text("class CfgVehicles { class MyBag: clothing {}; };\n", encoding="utf-8")
+    report = guard.check_mod("MyBag", mod, old, new)
+    assert _reasons(report) == {"CfgVehicles/MyBag": ["members-removed"]}
+    assert report["findings"][0]["reasons"][0]["members"] == ["b"]
+    assert report["findings"][0]["reasons"][0]["message"] == "vanilla Clothing no longer sets b"
+
+
+def test_a_snapshot_from_before_the_case_fix_is_refused(tmp_path):
+    old = json.loads(json.dumps(OLD))
+    old["format"] = 1
+    path = tmp_path / "old.json"
+    path.write_text(json.dumps(old), encoding="utf-8")
+    with pytest.raises(guard.GuardError, match="Take a new snapshot"):
+        guard.load_snapshot(str(path), tmp_path)
 
 
 # --- parsing ----------------------------------------------------------------------
@@ -195,8 +229,9 @@ def test_snapshot_reads_a_fake_p_root(tmp_path):
     assert snap["script"]["ItemBase"]["parent"] == "InventoryItem"
     assert set(snap["script"]["ItemBase"]["methods"]) == {"SetActions", "GetQuickBarBonus", "Extra"}
     assert snap["script"]["ItemBase"]["file"] == "scripts/4_world/itembase.c"
-    assert snap["config"]["CfgVehicles/Clothing"] == {
-        "parent": "Clothing_Base", "file": "DZ/characters/config.cpp", "line": 1, "members": ["itemSize"]}
+    assert snap["config"]["cfgvehicles/clothing"] == {
+        "name": "CfgVehicles/Clothing", "parent": "Clothing_Base", "file": "DZ/characters/config.cpp", "line": 1,
+        "members": ["itemSize"]}
     assert snap["skipped"] == ["DZ/characters/broken/config.cpp"]
 
 

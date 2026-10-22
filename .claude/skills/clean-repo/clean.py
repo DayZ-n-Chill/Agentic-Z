@@ -10,6 +10,8 @@ Each domain owns its own cleanup logic; this skill just runs them all.
 Maintainer rules: keep domain-specific knowledge out of this file (it belongs
 in each <domain>-clean-workspace skill), and pass children nothing beyond
 --include-server plus --dry-run or --yes, the contract every child accepts.
+The one allowed exception: cached_project() reads /dayz-init's cached project
+only to name it in the prompt.
 
 See SKILL.md for full usage.
 """
@@ -40,6 +42,8 @@ def cached_project() -> Path | None:
     if not state_py.is_file():
         return None
     spec = importlib.util.spec_from_file_location("clean_repo_dayz_init_state", state_py)
+    if spec is None or spec.loader is None:
+        return None
     state = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(state)
     root = state.cached_project_root()

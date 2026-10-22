@@ -103,12 +103,16 @@ def test_referenced_slash_skills_exist(path):
         assert (SKILLS_DIR / ref / "SKILL.md").exists(), f"{path.name} names unknown skill /{ref}"
 
 
-def test_lead_workers_are_agents():
+def _lead_workers():
     text = (AGENTS_DIR / "dayz-lead.md").read_text(encoding="utf-8")
     section = text.split("## Your workers", 1)[1].split("\n## ", 1)[0]
     table = "\n".join(line for line in section.splitlines() if line.startswith("|"))
     assert table
-    for ref in re.findall(r"`([a-z-]+)`", table):
+    return set(re.findall(r"`([a-z-]+)`", table))
+
+
+def test_lead_workers_are_agents():
+    for ref in _lead_workers():
         assert ref in AGENT_NAMES, f"lead lists unknown worker {ref}"
 
 
@@ -121,6 +125,16 @@ READ_ONLY_GATES = {
     "dayz-layout-validator",
 }
 
+# Agents a lead never starts: they plan, route or run the leads.
+NOT_LEAD_WORKERS = {"dayz-lead", "dayz-orchestrator", "dayz-router", "dayz-mod-architect"}
+
+
+def test_every_dayz_worker_is_in_the_lead_table():
+    workers = _lead_workers()
+    for name in sorted(AGENT_NAMES):
+        if name.startswith("dayz-") and name not in READ_ONLY_GATES | NOT_LEAD_WORKERS:
+            assert name in workers, f"{name} is missing from dayz-lead's worker table"
+
 
 @pytest.mark.parametrize("name", sorted(READ_ONLY_GATES))
 def test_gates_cannot_edit(name):
@@ -130,9 +144,9 @@ def test_gates_cannot_edit(name):
     assert "memory" not in _frontmatter(path)
 
 
-# Roles that run others and write nothing themselves. Setting `memory` auto-enables
-# Read, Write and Edit, so these must also carry no memory.
-NO_WRITE_ROLES = {"dayz-lead"}
+# Roles that run others or only diagnose, and write nothing themselves. Setting
+# `memory` auto-enables Read, Write and Edit, so these must also carry no memory.
+NO_WRITE_ROLES = {"dayz-lead", "dayz-physics-specialist"}
 
 
 @pytest.mark.parametrize("name", sorted(NO_WRITE_ROLES))

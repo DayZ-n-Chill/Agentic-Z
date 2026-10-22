@@ -31,13 +31,13 @@ zero components and ignores ALL collision geometry.
 
 Field-verified: production placed-object models all use `Component01`.
 
-## 3. Missing `autocenter=0` LOD Property (CRITICAL for Inventory_Base)
+## 3. Missing `autocenter=0` LOD property (WARNING; matters only when config.cpp sets autocenter=0)
 
 For items with `autocenter=0` in config.cpp, the Geometry LOD MUST ALSO carry
 `autocenter=0` as a named property. Config property controls the visual mesh;
 LOD property controls the collision mesh. Without both, collision is displaced.
 
-**Where**: Named property on the Geometry LOD (1e13), and on any GeoPhys (2e13) or FireGeo (7e15) LOD the model has.
+**Where**: Named property on the Geometry LOD (1e13).
 In py3d: `lod.properties['autocenter'] = '0'`
 
 ## 4. Missing Memory LOD or Geometry LOD (CRITICAL)

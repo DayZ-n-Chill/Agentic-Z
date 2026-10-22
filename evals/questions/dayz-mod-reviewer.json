@@ -16,16 +16,16 @@
     },
     {
       "id": "hidden-selection-mismatch",
-      "question": "Gate review of a pasted file; review only what is shown, do not open workspace/, and assume every referenced file exists. The mod is MyMod with $PBOPREFIX$ MyMod. File config.cpp:\n\nclass CfgPatches\n{\n    class MyMod\n    {\n        units[] = {\"MyMod_Hoodie\"};\n        weapons[] = {};\n        requiredVersion = 0.1;\n        requiredAddons[] = {\"DZ_Characters_Tops\"};\n    };\n};\nclass CfgVehicles\n{\n    class Hoodie_ColorBase;\n    class MyMod_Hoodie: Hoodie_ColorBase\n    {\n        scope = 2;\n        hiddenSelections[] = {\"camoGround\", \"camoMale\", \"camoFemale\"};\n        hiddenSelectionsTextures[] = {\"MyMod\\data\\hoodie_co.paa\", \"MyMod\\data\\hoodie_co.paa\"};\n    };\n};\n\nReturn your verdict in your usual report format.",
+      "question": "Gate review of a pasted file; review only what is shown, do not open workspace/, and assume every referenced file exists. The mod is MyMod with $PBOPREFIX$ MyMod. MyMod_Hoodie exists to retexture the vanilla hoodie on the ground, male and female models. File config.cpp:\n\nclass CfgPatches\n{\n    class MyMod\n    {\n        units[] = {\"MyMod_Hoodie\"};\n        weapons[] = {};\n        requiredVersion = 0.1;\n        requiredAddons[] = {\"DZ_Characters_Tops\"};\n    };\n};\nclass CfgVehicles\n{\n    class Hoodie_ColorBase;\n    class MyMod_Hoodie: Hoodie_ColorBase\n    {\n        scope = 2;\n        hiddenSelections[] = {\"camoGround\", \"camoMale\", \"camoFemale\"};\n        hiddenSelectionsTextures[] = {\"MyMod\\data\\hoodie_co.paa\", \"MyMod\\data\\hoodie_co.paa\"};\n    };\n};\n\nReturn your verdict in your usual report format.",
       "must_include": [
         "re:\\A\\W*FAIL",
         "CRITICAL",
-        "dayz-config-specialist"
+        "re:dayz-config-specialist|dayz-wearables-specialist"
       ],
       "must_not_include": [
         "re:\\A\\W*PASS\\b"
       ],
-      "verified": ".claude/agents/dayz-mod-reviewer.md check 4; P:/DZ/characters/tops/config.cpp:3 (DZ_Characters_Tops), :2479 (class Hoodie_ColorBase: Clothing) and :2506-2508 (camoGround, camoMale, camoFemale)"
+      "verified": ".claude/agents/dayz-mod-reviewer.md check 4 (a retexture class that leaves a camo* selection untextured is CRITICAL) and Severity; P:/DZ/characters/tops/config.cpp:3 (DZ_Characters_Tops), :2479 (class Hoodie_ColorBase: Clothing) and :2506-2508 (camoGround, camoMale, camoFemale); the owner may be dayz-config-specialist or, for a wearable, dayz-wearables-specialist (reviewer Report: name a specialist when the finding is in its area)"
     },
     {
       "id": "texture-suffix-warn",

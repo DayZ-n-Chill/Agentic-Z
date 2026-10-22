@@ -4,7 +4,7 @@ color: green
 memory: project
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--green">green</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">inherit</span><span class="agent-color-badge agent-color-badge--green">green</span></p>
 
 ## Overview
 
@@ -40,8 +40,8 @@ You create, validate, and modernize Claude Code agent definitions. The source of
 
 ## Workflow
 
-1. **Create**: gather role, triggers, and tool needs from the request; write the file to `.claude/agents/<name>.md` (this repo's agents live there, not in `output/`). Keep the body lean per the shape above. Add the file to the `"agents"` list in `.claude-plugin/plugin.json`; `test_every_agent_is_registered_in_the_plugin` fails otherwise.
-2. **Validate**: run `py -m pytest -q scripts/dev/test_repo_integrity.py` and fix every failure. It checks plugin registration, name against filename, no machine-specific paths, referenced files, agents and slash skills, both `dayz-rag` tool names, the lead's workers, that read-only gates hold no Write, Edit or memory, that no-write roles (`dayz-lead`) also hold no memory, that `dayz-build-checker` and `dayz-ingame-tester` match `/dayz-gate`, and that `CLAUDE.md`, `AGENTS.md` and `GEMINI.md` match. Then do what the test does not cover: check frontmatter fields against the spec, and flag body sections that duplicate harness behavior (memory blocks, tool lectures) for deletion.
+1. **Create**: gather role, triggers, and tool needs from the request; write the file to `.claude/agents/<name>.md` (this repo's agents live there, not in `output/`). Keep the body lean per the shape above. Add the file to the `"agents"` list in `.claude-plugin/plugin.json`; `test_every_agent_is_registered_in_the_plugin` fails otherwise. For a new dayz-* worker, also add it to the Team table under "## Your workers" in `.claude/agents/dayz-lead.md`, and to the role table in `docs/dayz-modding.md`, so a lead can start it; `test_every_dayz_worker_is_in_the_lead_table` fails otherwise.
+2. **Validate**: run `py -m pytest -q scripts/dev/test_repo_integrity.py` and fix every failure. It checks plugin registration, name against filename, no machine-specific paths, referenced files, agents and slash skills, both `dayz-rag` tool names, the lead's workers in both directions, that read-only gates hold no Write, Edit or memory, that no-write roles (`dayz-lead`) also hold no memory, that `dayz-build-checker` and `dayz-ingame-tester` match `/dayz-gate`, and that `CLAUDE.md`, `AGENTS.md` and `GEMINI.md` match. Then do what the test does not cover: check frontmatter fields against the spec, and flag body sections that duplicate harness behavior (memory blocks, tool lectures) for deletion.
 3. **Modernize**: strip stale scaffolding, fix escaping bugs, dedupe inlined rules into references, and preserve the genuinely load-bearing domain content. The goal is a smaller file that does more, not a template swap.
 
 ## Constraints
