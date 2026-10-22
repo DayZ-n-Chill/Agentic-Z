@@ -107,6 +107,10 @@ references below.
    g. Geometry LOD exists?       → If missing: create one
    h. Geometry LOD mass set?     → The audit prints the mass as a NOTE, or says
                                     the LOD has none
+   i. Collision faces have a     → CRITICAL when any face in the Geometry,
+      material?                     GeoPhys, FireGeo or ViewGeo LOD has none:
+                                    assign a penetration .rvmat
+                                    (references/p3d-killers.md section 10)
 
 6. Animations not playing?
    → Run audit_p3d.py with --model-cfg: the selection each model.cfg

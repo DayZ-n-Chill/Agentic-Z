@@ -100,8 +100,11 @@ def _usage_log_path() -> Path:
     return INDEX_ROOT / USAGE_LOG_NAME
 
 
-def _read_monthly_usage_tokens() -> int:
-    """Sum tokens used in the current calendar month from usage.log (UTC).
+def _read_logged_usage_tokens() -> int:
+    """Sum every token logged in usage.log.
+
+    Voyage's pricing page gives the free tokens per account and names no
+    monthly reset, so every logged build counts against them.
 
     Doesn't fail on missing file or malformed lines — those are treated as
     zero contribution. We'd rather under-warn than crash.
@@ -109,18 +112,14 @@ def _read_monthly_usage_tokens() -> int:
     path = _usage_log_path()
     if not path.exists():
         return 0
-    now = time.gmtime()
     total = 0
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
             continue
         try:
-            entry = json.loads(line)
-            ts = time.gmtime(int(entry.get("timestamp_unix", 0)))
-            if ts.tm_year == now.tm_year and ts.tm_mon == now.tm_mon:
-                total += int(entry.get("tokens", 0))
-        except (json.JSONDecodeError, ValueError, TypeError):
+            total += int(json.loads(line).get("tokens", 0))
+        except (json.JSONDecodeError, ValueError, TypeError, AttributeError):
             continue
     return total
 
@@ -150,7 +149,7 @@ def _check_voyage_tier(
     See references/cost-and-free-tier.md for caveats.
     """
     budget = int(os.environ.get("VOYAGE_FREE_TIER_TOKENS", VOYAGE_FREE_TIER_BUDGET))
-    used = _read_monthly_usage_tokens()
+    used = _read_logged_usage_tokens()
     projected = used + estimated_tokens
     pct_projected = projected / budget if budget > 0 else 0
 
@@ -160,7 +159,7 @@ def _check_voyage_tier(
     pct_used = used / budget if budget > 0 else 0
     print()
     print(f"{WARN} Voyage free-tier projection:")
-    print(f"        This month so far: {used:,} tokens ({pct_used*100:.1f}% of {budget/1_000_000:.0f}M)")
+    print(f"        Logged so far:     {used:,} tokens ({pct_used*100:.1f}% of {budget/1_000_000:.0f}M)")
     print(f"        This build est:    {estimated_tokens:,} tokens")
     print(f"        Projected total:   {projected:,} tokens ({pct_projected*100:.1f}% of free tier)")
     if pct_projected > 1.0:
@@ -174,7 +173,7 @@ def _check_voyage_tier(
     print("        Caveats:")
     print("        - Counter is local. Other apps using your VOYAGE_API_KEY are NOT counted.")
     print("        - Authoritative usage at https://dash.voyageai.com")
-    print("        - Free tier resets monthly per Voyage's billing cycle.")
+    print("        - Voyage gives free tokens per account and names no monthly reset.")
     print()
 
     if ignore_warning:

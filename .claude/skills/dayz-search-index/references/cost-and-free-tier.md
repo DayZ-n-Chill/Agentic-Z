@@ -4,7 +4,7 @@ Embedding goes through Voyage AI's hosted API, so a rebuild consumes tokens on y
 
 ## How big a rebuild is
 
-A class-block windowed vanilla build comes to 58,658 chunks (counted on 2026-10-22 without embedding). The indexer's local estimate for it is about 89M tokens, but that estimate runs high: the last embedded build (2026-08-10, before windowing) was 52,048 chunks and Voyage reported about 66M tokens. Most of the tokens come from unique `.rvmat` files and XML. `--status` shows the real chunk and token totals after your build. A search query costs a few hundred tokens.
+A full vanilla build, with class blocks, XML, JSON and CSV windowed, comes to 61,160 chunks (counted on 2026-10-22 without embedding). The indexer's local estimate for it is about 96M tokens, but that estimate runs high: the last embedded build (2026-08-10, before windowing) was 52,048 chunks and Voyage reported about 66M tokens. Most of the tokens come from unique `.rvmat` files and XML. `--status` shows the real chunk and token totals after your build. A search query costs a few hundred tokens.
 
 ## What the indexer reports
 
@@ -14,7 +14,7 @@ A class-block windowed vanilla build comes to 58,658 chunks (counted on 2026-10-
 
 ## The pre-build projection check
 
-Before embedding, the indexer estimates this build's tokens (total characters divided by `CHARS_PER_TOKEN_EST`) and adds this calendar month's total from `usage.log`. If the projection reaches 80% of the budget, it shows the numbers (with an overage estimate at the selected model's rate from `COST_PER_MTOKEN`) and asks to continue. In a non-interactive shell it refuses unless you pass `--ignore-tier-warning`.
+Before embedding, the indexer estimates this build's tokens (total characters divided by `CHARS_PER_TOKEN_EST`) and adds every token logged in `usage.log`. Voyage's pricing page gives the free tokens (200M for `voyage-code-3`) per account and names no monthly reset, so all past builds count, not only this month's. If the projection reaches 80% of the budget, it shows the numbers (with an overage estimate at the selected model's rate from `COST_PER_MTOKEN`) and asks to continue. In a non-interactive shell it refuses unless you pass `--ignore-tier-warning`.
 
 - Override the budget with `VOYAGE_FREE_TIER_TOKENS=<int>` if your plan differs from the default.
 - The counter is local: it only sees builds run through `/dayz-search-index`, not other apps sharing the same key.

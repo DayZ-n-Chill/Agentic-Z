@@ -196,8 +196,8 @@ def classify_lod(resolution):
 
     DayZ scheme (Tier 2, .claude/skills/_shared/conventions/assets.md, "LOD
     canonical resolutions"): Visual < 1000, ShadowVolume 10000-19999 (10000
-    shadow volume, 11000 shadow buffer), Geometry 1e13, GeoPhys 2e13, Memory
-    1e15, LandContact 2e15, ViewGeo 6e15, FireGeo 7e15.
+    shadow volume, 11000 shadow buffer), Geometry 1e13, GeoPhys 4e13 (the
+    PhysX geometry), Memory 1e15, LandContact 2e15, ViewGeo 6e15, FireGeo 7e15.
     """
     if resolution < 1000:
         return "Visual"
@@ -205,7 +205,7 @@ def classify_lod(resolution):
         return "ShadowVolume"
     if 9.9e12 <= resolution <= 1.1e13:
         return "Geometry"
-    if 1.9e13 <= resolution <= 2.1e13:
+    if 3.9e13 <= resolution <= 4.1e13:
         return "GeoPhys"
     if 6.9e15 <= resolution <= 7.1e15:
         return "FireGeo"
@@ -224,7 +224,7 @@ def classify_lod(resolution):
 def check_required_lods(lod_map):
     """Check that required LODs exist and note missing recommended ones.
 
-    GeoPhys (2e13) is not checked: vanilla DayZ models don't ship one (see the
+    GeoPhys (4e13) is not checked: few vanilla DayZ models ship one (see the
     LOD table in .claude/skills/_shared/conventions/assets.md), so its absence is normal.
     """
     issues = []
@@ -322,6 +322,18 @@ def check_autocenter_prop(lod, config_wants_zero=False):
     return issues
 
 
+def check_collision_materials(lod, lod_type):
+    """Check every face of a collision LOD has a material (references/p3d-killers.md
+    section 10). Without one the engine finds no surface: bullets pass through and
+    footstep sounds and the action cursor can fail."""
+    missing = sum(1 for face in lod.faces if not (face.material or "").strip())
+    if not missing:
+        return []
+    return [("CRITICAL",
+             f"{missing}/{len(lod.faces)} faces in the {lod_type} LOD have no material. Assign a "
+             "penetration .rvmat (e.g. dz\\data\\data\\penetration\\wood_desk.rvmat) to every face.")]
+
+
 def check_geometry_mass(lod):
     """Report the Geometry LOD mass (sum of point masses), the mass physics uses."""
     if not lod.mass:
@@ -375,13 +387,11 @@ def check_memory_lod(lod, wants_zero=False, has_geometry=True):
     sels = list(lod.selections.keys())
 
     # pos center, for autocenter=0 items only
-    if not wants_zero:
-        pass
-    elif 'pos center' not in sels:
+    if wants_zero and 'pos center' not in sels:
         issues.append(("WARNING",
             "Missing 'pos center' memory point. Engine auto-calculates bounding center, "
             "which may be wrong for tall/asymmetric objects. Add at (0,0,0)."))
-    else:
+    elif wants_zero:
         sel = lod.selections['pos center']
         for pt, w in sel.points.items():
             c = pt.coords
@@ -507,7 +517,7 @@ def audit_p3d(filepath, model_cfg=None, config=None):
     wants_zero = config_sets_autocenter_zero(config)
 
     # Collision LODs
-    for lt in ["Geometry", "GeoPhys", "FireGeo"]:
+    for lt in ["Geometry", "GeoPhys", "FireGeo", "ViewGeo"]:
         if lt not in lod_map:
             continue
         idx, lod = lod_map[lt]
@@ -522,12 +532,16 @@ def audit_p3d(filepath, model_cfg=None, config=None):
         # running those checks on GeoPhys/FireGeo flags valid vanilla models. There is no winding check:
         # the centroid heuristic flags every Blender export (left-handed transform);
         # see references/winding-methodology.md for the manual method.
+        # Every collision LOD needs a material on each face (killer 10); ViewGeo gets only that check.
         if lt == "Geometry":
             check_fns = [check_component_naming, check_component_coverage,
                          lambda g: check_autocenter_prop(g, wants_zero), check_geometry_mass, check_watertight,
                          check_degenerate_faces]
+        elif lt == "ViewGeo":
+            check_fns = []
         else:
             check_fns = [check_watertight, check_degenerate_faces]
+        check_fns.append(lambda g, lt=lt: check_collision_materials(g, lt))
         for check_fn in check_fns:
             results = check_fn(lod)
             for sev, msg in results:
