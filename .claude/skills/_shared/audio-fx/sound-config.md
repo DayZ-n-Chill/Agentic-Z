@@ -24,7 +24,7 @@ A mod declares its own `CfgSoundShaders` and `CfgSoundSets` at the root of its `
 
 ## CfgPatches
 
-Put `DZ_Sounds_Effects` in `requiredAddons[]` whenever a shader or set inherits from a vanilla one (for example `baseCharacter_SoundSet`), so the vanilla class is loaded first. Sound classes are not listed in `units[]`; that list is for `CfgVehicles` classes.
+Whenever a shader or set inherits from a vanilla one, put the `CfgPatches` class of the file that defines the parent in `requiredAddons[]`, so the vanilla class is loaded first: `DZ_Sounds_Effects` for a class in `P:\DZ\sounds\hpp\config.cpp` (for example `baseCharacter_SoundSet`), `DZ_Sounds_Bliss` for a class in `P:\DZ\sounds_bliss\config.cpp`. Sound classes are not listed in `units[]`; that list is for `CfgVehicles` classes.
 
 ## Sound shader (`CfgSoundShaders`)
 
@@ -164,5 +164,5 @@ To make it carry further, raise `range`. To make it louder up close without carr
 
 1. Every `soundShaders[]` name matches a shader class, and every curve, filter and 3D processor name matches a class that exists (vanilla or yours).
 2. Every sample path starts with the mod prefix (or `DZ\` for a vanilla sample that exists under `P:\DZ\`) and the `.ogg` exists under `workspace/<ModName>/`.
-3. `DZ_Sounds_Effects` is in `requiredAddons[]` when anything inherits a vanilla sound class.
+3. When anything inherits a vanilla sound class, `requiredAddons[]` holds the `CfgPatches` class of the file that defines the parent: `DZ_Sounds_Effects` for `sounds\hpp\config.cpp`, `DZ_Sounds_Bliss` for `sounds_bliss\config.cpp`.
 4. Class names carry the mod prefix (`MyMod_`), so they never collide with vanilla or another mod.

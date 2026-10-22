@@ -113,7 +113,13 @@ def test_lead_workers_are_agents():
 
 
 # Gatekeepers check and report; they must not be able to change what they judge.
-READ_ONLY_GATES = {"dayz-mod-reviewer", "dayz-mod-debugger", "dayz-build-checker", "dayz-ingame-tester"}
+READ_ONLY_GATES = {
+    "dayz-mod-reviewer",
+    "dayz-mod-debugger",
+    "dayz-build-checker",
+    "dayz-ingame-tester",
+    "dayz-layout-validator",
+}
 
 
 @pytest.mark.parametrize("name", sorted(READ_ONLY_GATES))
@@ -148,14 +154,24 @@ def test_ingame_tester_matches_gate():
     assert (settle, timeout) == (30, 300)
     assert "keep reading 30 more seconds" in agent
     assert "Give up after five minutes" in agent
+    # judge_entries: NULL pointer and Can't find lines that don't name the mod never fail.
+    assert re.search(r'^MOD_QUALIFIED = \{"null_pointer", "cant_find"\}$', gate, re.M)
+    assert (
+        "A `NULL pointer` or `Can't find` line that names nothing of the mod is never a failure: "
+        "report it as a warning when it is not in the vanilla-only run." in agent
+    )
 
 
-def test_layout_validator_keeps_its_gate_mode_no_edit_rule():
-    # The validator holds Write and Edit for cleanup mode, so only this sentence
-    # keeps it from changing a file it gates.
-    text = (AGENTS_DIR / "dayz-layout-validator.md").read_text(encoding="utf-8")
-    assert "gate mode" in text
-    assert "report only and never write or edit any file" in text
+def test_build_checker_matches_gate():
+    # dayz-build-checker is the fallback for `/dayz-gate build`: lint first, then stop the
+    # session and build, and a bundle's payload is checked with /dayz-deploy-pbo.
+    agent = (AGENTS_DIR / "dayz-build-checker.md").read_text(encoding="utf-8")
+    gate = (SKILLS_DIR / "dayz-gate" / "gate.py").read_text(encoding="utf-8")
+    build = gate.split("def gate_build(", 1)[1].split("\ndef ", 1)[0]
+    assert build.index("run_lint(") < build.index("stop_session(") < build.index("BUILD_PY")
+    for needle in ("/dayz-lint", "/dayz-deploy-pbo", ".bisign"):
+        assert needle in agent
+    assert agent.index("/dayz-lint") < agent.index("/dayz-stop-test") < agent.index("`/dayz-build-pbo <ModName>` succeeds")
 
 
 BAT_FILES = sorted((REPO / "scripts").glob("*/*.bat"))
