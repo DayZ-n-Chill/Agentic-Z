@@ -3,7 +3,7 @@ name: "dayz-mod-reviewer"
 color: pink
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--pink">pink</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">inherit</span><span class="agent-color-badge agent-color-badge--pink">pink</span></p>
 
 ## Overview
 

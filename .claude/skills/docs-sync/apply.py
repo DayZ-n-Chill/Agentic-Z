@@ -16,7 +16,9 @@ Three transform kinds, mirroring docs-sync's `find_canonical_targets`:
         literal `<example>...</example>` strings (defensive against MDX
         treating them as components).
 
-  - doc (docs/*.md, .claude/skills/_shared/*.md -> wiki/docs/<name>.md)
+  - doc (docs/dayz-modding.md, docs/model-routing.md and
+        .claude/skills/_shared/dayz-conventions.md -> wiki/docs/<name>.md;
+        .claude/skills/_shared/conventions/*.md -> wiki/docs/conventions/<name>.md)
         Frontmatter copied verbatim; body gets the same MDX-safety pass as
         skills (HTML comments dropped, curly braces escaped outside code).
 
@@ -90,7 +92,7 @@ _COMMENTARY_BLOCK = re.compile(r"<commentary>.*?</commentary>", re.DOTALL)
 
 
 def _normalize_turn_text(text: str) -> str:
-    """Collapse whitespace, strip outer quotes preserved from `user:` / `assistant:`."""
+    """Drop commentary and collapse whitespace."""
     text = _COMMENTARY_BLOCK.sub("", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
@@ -336,7 +338,8 @@ def transform_skill(canonical_text: str) -> str:
 def transform_agent(canonical_text: str) -> str:
     fm, body = split_frontmatter(canonical_text)
     description = fm.get("description", "")
-    model = fm.get("model", "opus")
+    # An agent with no model field inherits the caller's model in Claude Code.
+    model = fm.get("model", "inherit")
     color = fm.get("color", "")
     trimmed_fm = {k: fm[k] for k in _AGENT_FM_KEEP if k in fm}
 

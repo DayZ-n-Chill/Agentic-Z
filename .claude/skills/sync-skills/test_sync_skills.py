@@ -1,7 +1,7 @@
 """Tests for sync.py: link, refresh, foreign, prune and config errors.
 
 Everything happens under tmp_path: a fake repo and a fake agent home. The
-real ~/.claude, ~/.codex and ~/.gemini folders are never touched.
+real ~/.claude, ~/.agents and ~/.gemini folders are never touched.
 """
 from __future__ import annotations
 
@@ -128,8 +128,18 @@ def test_unwritable_skills_folder_fails_without_a_traceback(env, monkeypatch, ca
 
     monkeypatch.setattr(sync.Path, "mkdir", refuse)
     counts = sync.sync_one(cfg, sync.list_repo_skills(), dry_run=False, force=False)
-    assert counts["failed"] == 1 and counts["linked"] == 0
+    assert counts["failed"] == 1 and counts["linked"] == 0 and counts["mkdir_failed"] == 1
     assert f"[FAILED]  cannot create {target_dir}: access denied" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("counts, note", [({"failed": 1, "mkdir_failed": 1}, False), ({"failed": 1}, True)])
+def test_junction_note_only_follows_a_failed_link(monkeypatch, env, capsys, counts, note):
+    monkeypatch.setattr(sync, "load_agents_config", lambda: [{"name": "codex"}])
+    monkeypatch.setattr(sync, "sync_one", lambda cfg, *a: dict(counts))
+    monkeypatch.setattr(sync.os, "name", "nt")
+    monkeypatch.setattr(sync.sys, "argv", ["sync.py"])
+    assert sync.main() == 1
+    assert ("junction fallback" in capsys.readouterr().out) is note
 
 
 def test_real_folder_is_never_clobbered(env):
@@ -176,8 +186,11 @@ def test_malformed_agents_json_exits_2(tmp_path, monkeypatch, capsys, content):
 
 
 def test_shipped_agents_json_is_valid():
-    names = [a["name"] for a in sync.load_agents_config()]
-    assert names == ["claude", "codex", "gemini"]
+    agents = sync.load_agents_config()
+    assert [a["name"] for a in agents] == ["claude", "codex", "gemini"]
+    # Codex reads user skills from $HOME/.agents/skills, not ~/.codex/skills.
+    codex = agents[1]
+    assert (codex["default_home"], codex["skills_subdir"], codex["env_home_vars"]) == ("~/.agents", "skills", [])
 
 
 def _run_main(monkeypatch, env, argv):

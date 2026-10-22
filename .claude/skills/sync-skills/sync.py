@@ -164,6 +164,7 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
             except OSError as e:
                 print(f"  [FAILED]  cannot create {target_dir}: {e}")
                 counts["failed"] += 1
+                counts["mkdir_failed"] = 1  # not a link failure, so main skips the junction note
                 return counts
 
     # Ownership is decided against this checkout's skills folder, not the repo
@@ -291,20 +292,22 @@ def main() -> int:
         print(f"  - {s.name}")
 
     totals: dict[str, int] = {}
-    failed_any = False
+    failed_any = link_failed = False
     for agent_cfg in agents:
         c = sync_one(agent_cfg, skills, args.dry_run, args.force)
         for k, v in c.items():
             totals[k] = totals.get(k, 0) + v
         if c["failed"] > 0:
             failed_any = True
+        if c["failed"] > c.get("mkdir_failed", 0):
+            link_failed = True
 
     print()
     print("Summary")
     for k in ("linked", "ok", "refreshed", "skipped", "pruned", "failed"):
         print(f"  {k:>10}: {totals.get(k, 0)}")
 
-    if failed_any and os.name == "nt":
+    if link_failed and os.name == "nt":
         print()
         print("Note: a link only fails after the junction fallback has failed too, so Developer Mode")
         print("      is not the cause. Check that you can write to the target skills folder and that")

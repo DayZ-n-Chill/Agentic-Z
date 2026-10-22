@@ -352,6 +352,13 @@ def test_transform_agent_trims_frontmatter_and_injects_badges():
     assert "## NAME" in out
 
 
+def test_transform_agent_without_a_model_shows_inherit():
+    out = transform_agent("---\nname: x\ndescription: Does x.\n---\n\nBody.\n")
+    assert '<span class="badge badge--secondary">inherit</span>' in out
+    assert "opus" not in out
+    assert "model:" not in out
+
+
 def test_transform_agent_with_examples():
     src = (
         "---\n"

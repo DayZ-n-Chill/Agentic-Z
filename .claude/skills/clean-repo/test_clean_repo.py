@@ -147,6 +147,12 @@ def test_cached_project_equal_to_this_checkout_does_not_warn(skills_dir, calls, 
     assert "[WARN]" not in capsys.readouterr().out
 
 
+def test_unloadable_state_module_means_no_cached_project(skills_dir, tmp_path, monkeypatch):
+    _cache_project(skills_dir, tmp_path)
+    monkeypatch.setattr(clean.importlib.util, "spec_from_file_location", lambda *a, **k: None)
+    assert clean.cached_project() is None
+
+
 def test_status_lines_have_a_single_space_after_the_label(skills_dir, calls, capsys):
     assert clean.main(["--yes"]) == 0
     assert "[OK]   No domain cleanup skills found." in capsys.readouterr().out

@@ -3,7 +3,7 @@ name: "figma-node-normalizer"
 color: purple
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--purple">purple</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">inherit</span><span class="agent-color-badge agent-color-badge--purple">purple</span></p>
 
 ## Overview
 
