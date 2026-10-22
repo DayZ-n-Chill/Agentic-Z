@@ -62,7 +62,7 @@ A snapshot saved before config keys became case blind (format 1) is refused with
 | `parent-changed` | A vanilla class in your class's chain now extends something else. |
 | `override-removed` | Your class overrides a method that no vanilla class in its chain has any more. |
 | `override-changed` | The vanilla method your class overrides has a new signature. |
-| `members-removed` | A vanilla config parent no longer sets a property or subclass your item inherited. |
+| `members-removed` | No vanilla class in your item's config chain sets a property or subclass your item inherited and does not set itself any more. |
 | `redeclared-parent` | Your config declares a vanilla class again with the old parent, and vanilla now gives it another. |
 
 A script `modded class X` is checked against X itself; `class Y extends X` is checked against X. A class built on another class of the same mod (`MyVest extends MyVest_Base extends Clothing`) is followed through the mod's classes and checked against the first vanilla class, here `Clothing`. A config class is checked against its parent in the same `Cfg*` class. Classes built on other mods are not vanilla, so they are skipped.

@@ -59,7 +59,7 @@ def home_for(agent_cfg: dict) -> Path:
     for env_var in agent_cfg.get("env_home_vars", []):
         v = os.environ.get(env_var)
         if v:
-            return Path(os.path.expanduser(v))
+            return Path(os.path.expanduser(v)) / agent_cfg.get("env_home_subdir", "")
     return Path(os.path.expanduser(agent_cfg.get("default_home", "")))
 
 
