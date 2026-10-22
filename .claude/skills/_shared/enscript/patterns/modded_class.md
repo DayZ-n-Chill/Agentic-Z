@@ -1,6 +1,6 @@
 # Pattern: modded class
 
-`modded class` is the only mechanism for extending vanilla (or another mod's) classes without a separate inheritance chain. There is a single class in the final binary: the vanilla class effectively becomes the base layer. Vanilla documents it for modders but compiles no `modded class` of its own: `modded class ParticleList` (`P:\scripts\3_game\particles\particlelist.c:5`) sits in a `/* */` block labelled "Example how to register particles from a mod" (`:3-9`), and `modded class PluginDiagMenu` (`P:\scripts\4_world\plugins\pluginbase\plugindiagmenu\plugindiagmenumodding.c:21`) sits in a file wrapped in `#ifdef DOXYGEN` (`:8`), so it only feeds the documentation build.
+`modded class` is the only mechanism for extending vanilla (or another mod's) classes without a separate inheritance chain. There is a single class in the final binary: the vanilla class effectively becomes the base layer. Vanilla documents it for modders but compiles no `modded class` of its own: `modded class ParticleList` (`P:\scripts\3_game\particles\particlelist.c:5`) sits in a `/* */` block labelled "Example how to register particles from a mod" (`:3-9`), and `modded class PluginDiagMenu` (`P:\scripts\4_world\plugins\pluginbase\plugindiagmenu\plugindiagmenumodding.c:21`) is the `#else` branch of an `#ifdef DOXYGEN` (`:18-21`) in a file wrapped in `#ifdef DOXYGEN` (`:8`), so no build compiles it.
 
 ## Contents
 
@@ -150,7 +150,7 @@ modded class SomeEntity
 | Always call `super.*` on overrides | Skip only when deliberately blocking |
 | Prefix all field names with your mod tag | Avoids name collisions across mods |
 | modded class lives in the matching script module layer | A modded `PlayerBase` (`P:\scripts\4_world\...`) must be in `Scripts/4_World/` |
-| For a class your mod declares, put its members in the declaration | `modded class` is for classes you do not own. Vanilla's DiagMenu example layers `modded class PluginDiagMenu` (`plugindiagmenumodding.c:21`) on a class declared in another file of the same module (`P:\scripts\4_world\plugins\pluginbase\plugindiagmenu\plugindiagmenu.c:29`), so the two can share a module. For your own class, though, splitting it over `class X` and `modded class X` leaves one class in two places and makes the result depend on file load order |
+| For a class your mod declares, put its members in the declaration | `modded class` is for classes you do not own. Vanilla's DiagMenu example (documentation only, see top of file) layers `modded class PluginDiagMenu` (`plugindiagmenumodding.c:21`) on a class declared in another file of the same module (`P:\scripts\4_world\plugins\pluginbase\plugindiagmenu\plugindiagmenu.c:29`), so vanilla does not rule the split out. For your own class, though, splitting it over `class X` and `modded class X` leaves one class in two places and makes the result depend on file load order |
 | modded class cannot change the class's parent | You can only extend, not re-parent |
 | Never write `modded class Foo extends ...` | Base class is implicit; reported to be a silent no-op (see top of file) |
 
