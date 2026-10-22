@@ -303,6 +303,49 @@ def test_non_tty_git_import_without_decision_removes_the_clone(git_project, monk
     assert not (git_project["p"] / "MyMod").exists()
 
 
+@pytest.fixture
+def subfolder_project(git_project, monkeypatch, tmp_path):
+    """A tree link to Owner/Mods/tree/main/<sub>: the remote has a head named main,
+    and the fake clone holds MyVest/ with config.cpp but no $PBOPREFIX$."""
+    imports = tmp_path / "project" / ".imports"
+    monkeypatch.setattr(imp, "IMPORTS", imports)
+    monkeypatch.setattr(imp.shutil, "which", lambda _name: "git")
+    monkeypatch.setattr(imp, "resolve_branch", lambda git, url, ref: "main")
+
+    def fake_clone(src, target):
+        git_project["clones"].append((src, target))
+        (target / "MyVest").mkdir(parents=True)
+        (target / "MyVest" / "config.cpp").write_text("x", encoding="utf-8")
+
+    monkeypatch.setattr(imp, "clone_repo", fake_clone)
+    return {**git_project, "imports": imports}
+
+
+def test_subfolder_link_imports_the_subfolder_not_the_root(subfolder_project, monkeypatch, capsys):
+    monkeypatch.setattr(imp._scaffold._nm, "find_dayz_tools", lambda: None)
+    rc = _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/MyVest", "--scaffold")
+    out = capsys.readouterr().out
+    clone = subfolder_project["imports"] / "Mods"
+    target = subfolder_project["workspace"] / "MyVest"
+    assert subfolder_project["clones"] == [(imp.GitSource("https://github.com/Owner/Mods.git", "Mods", "main"), clone)]
+    # workspace/MyVest is the subfolder, and the scaffold check and writes happen there.
+    assert target.resolve() == (clone / "MyVest").resolve()
+    assert (git_project_p := subfolder_project["p"] / "MyVest").exists()
+    assert (clone / "MyVest" / "$PBOPREFIX$").read_text(encoding="utf-8").strip() == "MyVest"
+    assert not (clone / "$PBOPREFIX$").exists() and not (clone / "config.cpp").exists()
+    assert "config.cpp present" in out
+    assert rc == 1  # workbench/ cannot be written without DayZ Tools; the links stay
+    assert git_project_p.exists()
+
+
+def test_subfolder_link_with_a_missing_folder_removes_the_clone(subfolder_project, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/Other", "--no-scaffold")
+    assert "Other is not in branch main" in str(exc.value.code)
+    assert not (subfolder_project["imports"] / "Mods").exists()
+    assert not (subfolder_project["workspace"] / "Other").exists()
+
+
 def test_clone_repo_runs_git_and_failed_clone_leaves_nothing(tmp_path):
     import shutil
     import subprocess

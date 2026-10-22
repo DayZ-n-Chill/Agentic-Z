@@ -28,7 +28,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP_DIR = REPO_ROOT / ".claude" / "mcp" / "dayz-rag"
 sys.path.insert(0, str(MCP_DIR))
 
-from server import DEFAULT_MAX_DISTANCE, MAX_TOP_K, VALID_FILE_TYPES, search_dayz_source_impl  # noqa: E402
+from server import (  # noqa: E402
+    DEFAULT_MAX_DISTANCE, INDEX_ROOT, MAX_TOP_K, VALID_FILE_TYPES, search_dayz_source_impl,
+)
+
+NO_HASHES_NOTE = (
+    "note: this index has no file_hashes.json, so a file's freshness can only be judged by its date and every "
+    "P:\\ file changed after the build shows as [STALE]; a rebuild with /dayz-search-index clears it."
+)
 
 
 def _print_hits(hits: list[dict], snippet_chars: int, threshold: Optional[float] = None,
@@ -41,13 +48,16 @@ def _print_hits(hits: list[dict], snippet_chars: int, threshold: Optional[float]
         else:
             print(f"(no hits within distance {threshold:g}; raise it with -d, or unset DAYZ_RAG_MAX_DISTANCE)")
         return
+    if any(h.get("is_stale") for h in hits) and not (INDEX_ROOT / "file_hashes.json").is_file():
+        print(NO_HASHES_NOTE)
     for i, h in enumerate(hits, 1):
         path = h.get("path", "")
         ls = h.get("line_start", 0)
         le = h.get("line_end", 0)
         distance = h.get("distance", 0.0)
         ctx = h.get("parent_context", "")
-        stale = " [STALE]" if h.get("is_stale") else ""
+        reason = h.get("stale_reason")
+        stale = (f" [STALE: {reason}]" if reason else " [STALE]") if h.get("is_stale") else ""
         print(f"\n[{i}] {path}:{ls}-{le}  distance={distance:.3f}{stale}")
         if ctx:
             print(f"    {ctx}")

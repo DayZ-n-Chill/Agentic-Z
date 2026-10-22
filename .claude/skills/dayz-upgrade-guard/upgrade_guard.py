@@ -3,6 +3,7 @@
   upgrade_guard.py snapshot [--label <text>]
   upgrade_guard.py check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--json]
   upgrade_guard.py diff [--old <snapshot> --new <snapshot>] [<ModName> ...] [--mod-dir <folder>] [--json]
+  upgrade_guard.py reindex
 
 A snapshot records every vanilla class on P:\\: script classes from the .c
 files (parent and method signatures) and config classes from config.cpp
@@ -12,7 +13,9 @@ with the newest earlier one and lists the mod classes whose vanilla parents
 changed: a parent that is gone, a class higher up the chain that now extends
 something else, an overridden method that is gone or has a new signature, a
 config property a parent no longer sets. `--reindex` then rebuilds the search
-index so the RAG answers match the new game files.
+index so the RAG answers match the new game files; `reindex` does the same on
+its own after a check that ran without it (a second check sees no change,
+since the first saved the new snapshot as the baseline).
 
 The first output line is the verdict: PASS (exit 0, no mod class affected),
 FAIL (exit 1, at least one) or ERROR (exit 2: bad arguments, P:\\ not mounted,
@@ -746,6 +749,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     snap_p = sub.add_parser("snapshot", parents=[common], help="Save a snapshot of the vanilla classes on P:\\.")
     snap_p.add_argument("--label", default="", help="Text added to the file name, for example the game version.")
+    # check saves the new snapshot as the baseline, so a second check --reindex
+    # sees no change; this command rebuilds the index on its own afterwards.
+    sub.add_parser("reindex", help="Rebuild the search index after a check found vanilla changes (uses Voyage tokens).")
     for name, text in (("check", "Snapshot now, diff with the newest earlier snapshot and check mods."),
                        ("diff", "Diff two saved snapshots (default: the two newest) and check mods.")):
         p = sub.add_parser(name, parents=[common], help=text)
@@ -772,6 +778,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 2
     as_json = getattr(args, "json", False)
 
+    if args.command == "reindex":
+        code = run_reindex()
+        if code != 0:
+            print(f"  The search index rebuild exited with {code}; the old index is still in place.")
+        return code
+
     try:
         if args.command == "snapshot":
             snap = take_snapshot(args.p_root, args.label)
@@ -785,6 +797,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         for _, mod_dir in mods:
             if not mod_dir.is_dir():
                 raise GuardError(f"Mod folder {mod_dir} does not exist.")
+        if args.command == "check" and not mods and project is None:
+            # Saving a snapshot here would use up the update with nothing checked.
+            raise GuardError("No mod to check and no project cached. Name the mod (check <ModName>), pass "
+                             "--mod-dir <folder>, or run /dayz-init first. Nothing was saved.")
         if args.command == "diff":
             saved = stored_snapshots(args.store)
             if args.old and args.new:
@@ -830,8 +846,9 @@ def main(argv: Optional[list[str]] = None) -> int:
             if code != 0:
                 print(f"  The search index rebuild exited with {code}; the old index is still in place.", file=notes)
         else:
-            print("  Vanilla changed: rebuild the search index with check --reindex or /dayz-search-index --full.",
-                  file=notes)
+            print("  Vanilla changed: rebuild the search index with upgrade_guard.py reindex (or "
+                  "/dayz-search-index --full). This check saved the new snapshot as the baseline, so running "
+                  "check --reindex again would see no change.", file=notes)
     return 0 if report["verdict"] == "PASS" else 1
 
 

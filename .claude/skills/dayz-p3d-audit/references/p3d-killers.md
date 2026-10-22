@@ -23,13 +23,14 @@ models. Use the edge-pair topology and averaged-normal checks described in
 **Why Visual LOD isn't affected**: Visual and Geometry LODs have independent face data.
 The renderer draws both sides; collision only detects the "front" face.
 
-## 2. Component Selection Case Sensitivity (CRITICAL)
+## 2. Component Selection Name (NOTE for lowercase, WARNING for other spellings)
 
-Geometry LOD component MUST be `Component01` (uppercase C). The engine string-matches
-exactly. `component01`, `COMPONENT01`, or any variation silently fails: engine finds
-zero components and ignores ALL collision geometry.
-
-Field-verified: production placed-object models all use `Component01`.
+The Geometry LOD needs a `Component01` selection (then `Component02` and so on). Object
+Builder spells it `Component01`, but lowercase `component01` works too: every binarized
+vanilla model on `P:\` stores it in lowercase, so the audit reports lowercase only as a
+NOTE. Another spelling such as `COMPONENT01` is a WARNING (it does not fail the run):
+rename it to `Component01` to match vanilla. A Geometry LOD with no component selection
+at all is CRITICAL, since it has no collision.
 
 ## 3. Missing `autocenter=0` LOD property (WARNING; matters only when config.cpp sets autocenter=0)
 
@@ -155,7 +156,8 @@ material), so this can be missed until in-game ballistic test.
 3. **py3d read-write cycles** preserve validity but change file size (~800 bytes per
    property change). This is normal.
 4. **Addon Builder binarizes MLOD → ODOL**: all MLOD issues persist into builds
-5. **Named selections are case-sensitive** in MLOD format. `Component01` ≠ `component01`
+5. **Keep selection names as vanilla spells them**: `Component01` in the MLOD source
+   (binarized vanilla models store `component01`, which also works)
 6. **Memory LOD must have zero faces**: only single-vertex points. Faces in Memory LOD
    may confuse the engine.
 7. **Animation axis points must be in the SAME named selection**: both points of

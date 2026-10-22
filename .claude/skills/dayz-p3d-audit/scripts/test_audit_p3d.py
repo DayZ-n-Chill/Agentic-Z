@@ -89,15 +89,17 @@ def test_component_naming_ok():
     assert audit.check_component_naming(_stub_lod(selections={"Component01": FULL})) == []
 
 
-def test_component_naming_lowercase_is_critical():
+def test_component_naming_lowercase_is_only_a_note():
+    # Every binarized vanilla model on P:\ stores component01 in lowercase.
     issues = audit.check_component_naming(_stub_lod(selections={"component01": FULL}))
-    assert _severities(issues) == ["CRITICAL"]
+    assert _severities(issues) == ["NOTE"]
+    assert "silently" not in issues[0][1]
 
 
-@pytest.mark.parametrize("name", ["COMPONENT01", "component01", "ComPonent01"])
-def test_component_naming_any_wrong_case_is_critical(name):
+@pytest.mark.parametrize("name", ["COMPONENT01", "ComPonent01"])
+def test_component_naming_other_case_is_a_warning(name):
     issues = audit.check_component_naming(_stub_lod(selections={name: FULL}))
-    assert _severities(issues) == ["CRITICAL"]
+    assert _severities(issues) == ["WARNING"]
     assert f"'{name}'" in issues[0][1]
 
 
@@ -447,16 +449,18 @@ def test_audit_p3d_reports_geometry_mass(tmp_path, capsys):
     assert "NOTE: Geometry LOD mass: 10.000" in capsys.readouterr().out
 
 
-def test_audit_p3d_flags_lowercase_component(tmp_path, capsys):
+def test_audit_p3d_passes_lowercase_component(tmp_path, capsys):
     pytest.importorskip("py3d")
     geometry = _write_lod(1e13, TETRA_POINTS, TETRA_FACES, selections=[("component01", FULL)])
     memory = _write_lod(1e15, [(0.0, 0.0, 0.0)], [])
     visual = _write_lod(0.0, TETRA_POINTS, TETRA_FACES)
-    model = tmp_path / "bad.p3d"
+    model = tmp_path / "lower.p3d"
     _write_mlod(model, [visual, geometry, memory])
 
-    assert audit.audit_p3d(str(model)) is False
-    assert "'component01' (lowercase)" in capsys.readouterr().out
+    assert audit.audit_p3d(str(model)) is True
+    out = capsys.readouterr().out
+    assert "NOTE: Found 'component01' (lowercase). That is fine" in out
+    assert "CRITICAL" not in out
 
 
 def test_audit_p3d_checks_model_cfg_animations(tmp_path, capsys):

@@ -1,5 +1,8 @@
 /node_modules
 
+# Whole-repo clones made by /dayz-import-mod for a GitHub tree link to a subfolder
+/.imports/
+
 # Python
 __pycache__/
 *.pyc

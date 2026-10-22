@@ -54,6 +54,31 @@ def test_snippet_is_cut(calls, capsys):
     assert "    | void ..." in capsys.readouterr().out
 
 
+def _stale_hits(monkeypatch, tmp_path, with_hashes):
+    if with_hashes:
+        (tmp_path / "file_hashes.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(cli, "INDEX_ROOT", tmp_path)
+    stale = {**HIT, "is_stale": True, "stale_reason": "modified"}
+    monkeypatch.setattr(cli, "search_dayz_source_impl", lambda *a, **k: [stale, dict(stale)])
+
+
+def test_stale_hits_without_hash_file_explain_once(monkeypatch, tmp_path, capsys):
+    _stale_hits(monkeypatch, tmp_path, with_hashes=False)
+    assert cli.main(["q"]) == 0
+    out = capsys.readouterr().out
+    assert out.count("no file_hashes.json") == 1
+    assert "/dayz-search-index clears it" in out
+    assert out.count("[STALE: modified]") == 2
+
+
+def test_stale_hits_with_hash_file_need_no_note(monkeypatch, tmp_path, capsys):
+    _stale_hits(monkeypatch, tmp_path, with_hashes=True)
+    cli.main(["q"])
+    out = capsys.readouterr().out
+    assert "file_hashes.json" not in out
+    assert "[STALE: modified]" in out
+
+
 def test_no_hits(monkeypatch, capsys):
     monkeypatch.setattr(cli, "search_dayz_source_impl", lambda *a, **k: [])
     assert cli.main(["q"]) == 0

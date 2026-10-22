@@ -66,7 +66,8 @@ Exit codes:
 - **0**: no CRITICAL finding and no `P:\` path. WARNING and NOTE findings on .p3d files
   are printed but don't fail the run.
 - **1**: any .p3d has a CRITICAL finding, any text file has a `P:\` path, or a file or
-  the `--scan-dir` folder is missing or unreadable.
+  the `--scan-dir` folder is missing or unreadable. A binarized ODOL .p3d (not MLOD) and
+  a .p3d that cannot be read also give exit 1, with a `[FAIL]` line naming why.
 - **2**: no input was given, or py3d is not installed. The second case prints the
   `python -m pip install -r` line above.
 
@@ -98,7 +99,9 @@ references below.
    a. Face winding outward?      → Verify per references/winding-methodology.md
                                     (the script deliberately omits the naive
                                     centroid check: it false-positives on DayZ)
-   b. Component01 uppercase C?   → If wrong case: rename
+   b. Component01 present?       → Lowercase component01 is fine (a NOTE;
+                                    vanilla binarized models use it). Another
+                                    spelling is a WARNING: rename to Component01
    c. autocenter=0 LOD property? → If missing: add (checked only when config.cpp
                                     sets autocenter = 0)
    d. pos center in Memory? (autocenter=0 items only) → If missing: add at (0,0,0)
@@ -133,7 +136,7 @@ references below.
 Deep material lives in `<skill-dir>\references\`:
 
 - **`references/p3d-killers.md`**: the 10 silent P3D killers (inverted winding,
-  Component01 case, autocenter LOD property, missing LODs, memory points, animation
+  Component01 naming, autocenter LOD property, missing LODs, memory points, animation
   selections, collision-LOD surface materials, …) plus Blender export pitfalls and
   script-side gotchas that co-occur during debugging.
 - **`references/config-rvmat-checks.md`**: config.cpp checks (P:\ paths, placed-object

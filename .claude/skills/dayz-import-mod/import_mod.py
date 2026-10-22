@@ -36,6 +36,8 @@ _nm = h.load_module("dayz_new_mod_module", NEW_MOD)
 # taken from dayz-new-mod so import, new-mod and the project cache always agree.
 PROJECT_DIR = _nm.PROJECT_DIR
 WORKSPACE = PROJECT_DIR / "workspace"
+# Whole-repo clones for tree links to a subfolder; workspace/<Name> links to the subfolder.
+IMPORTS = PROJECT_DIR / ".imports"
 ADD_SCAFFOLD = h.SKILLS_DIR / "dayz-add-scaffold" / "add_scaffold.py"
 P_DRIVE = Path("P:\\")
 
@@ -130,7 +132,8 @@ def clone_repo(src: GitSource, target: Path) -> None:
         sys.exit(f"{FAIL} git was not found on PATH. Install Git for Windows (https://git-scm.com) and re-run.")
     branch = resolve_branch(git, src.url, src.branch) if src.branch else None
     if branch and branch != src.branch:
-        print(f"{INFO} The link points at {src.branch[len(branch) + 1:]} inside branch {branch}; the whole repo is cloned.")
+        print(f"{INFO} The link points at {src.branch[len(branch) + 1:]} inside branch {branch}; "
+              "the whole repo is cloned and that folder is the mod.")
     cmd = [git, "clone"] + (["--branch", branch] if branch else []) + [src.url, str(target)]
     print(f"{INFO} Cloning {src.url}{f' (branch {branch})' if branch else ''} ...")
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -346,6 +349,15 @@ def main() -> int:
     # Reuses dayz-new-mod's stale-junction auto-clean / refuse-on-mismatch logic.
     _nm.check_or_clean_p_drive_link(p_drive_link, workspace_target)
 
+    link_source(source, workspace_target, p_drive_link)
+    # Same rule as /dayz-new-mod: importing here makes this the active project.
+    _nm.sync_project_cache()
+    return finish(source, workspace_target, modname, missing, args,
+                  f"Remove the import (keeps your source intact): /dayz-clean-workspace --mod {modname}")
+
+
+def link_source(source: Path, workspace_target: Path, p_drive_link: Path) -> None:
+    """workspace/<Name> -> source and P:\\<Name> -> workspace/<Name>, or exit."""
     WORKSPACE.mkdir(exist_ok=True)
 
     try:
@@ -366,11 +378,6 @@ def main() -> int:
             rollback = f"Could not roll back {workspace_target}; remove it with: cmd /c rmdir \"{workspace_target}\""
         sys.exit(f"{FAIL} Failed to create {p_drive_link} junction: {e}\n       {rollback}")
     print(f"{OK} {p_drive_link} -> {_display(workspace_target)} ({kind_p})")
-
-    # Same rule as /dayz-new-mod: importing here makes this the active project.
-    _nm.sync_project_cache()
-    return finish(source, workspace_target, modname, missing, args,
-                  f"Remove the import (keeps your source intact): /dayz-clean-workspace --mod {modname}")
 
 
 def finish(source: Path, workspace_target: Path, modname: str, missing: list, args: argparse.Namespace,
@@ -425,7 +432,11 @@ def check_prefix(prefix_file: Path, modname: str) -> bool:
 def import_from_git(src: GitSource, args: argparse.Namespace) -> int:
     """Clone the repo into workspace/<ModName>/, link P:\\<ModName>\\ to it and
     check the scaffold. Anything this run made is removed again if a later step
-    refuses, so a retry starts clean."""
+    refuses, so a retry starts clean. A tree link to a subfolder goes to
+    import_git_subfolder instead."""
+    src, subfolder = split_subfolder(src)
+    if subfolder:
+        return import_git_subfolder(src, subfolder, args)
     modname = derive_modname(Path(src.repo), args.name)
     print(f"{INFO} {'Mod name (override)' if args.name else 'Derived mod name'}: {modname}")
     workspace_target = WORKSPACE / modname
@@ -458,6 +469,62 @@ def import_from_git(src: GitSource, args: argparse.Namespace) -> int:
                   "    worth keeping, then delete it by hand:\n"
                   f"    cmd /c rmdir \"{p_drive_link}\"\n"
                   f"    cmd /c rmdir /s /q \"{_display(workspace_target)}\"")
+
+
+def split_subfolder(src: GitSource) -> tuple[GitSource, Optional[str]]:
+    """Split a /tree/ ref path into the real branch and the subfolder after it
+    (tree/main/MyMod gives main and MyMod); the subfolder is None when the
+    whole path is the branch."""
+    if not src.branch or "/" not in src.branch:
+        return src, None
+    git = shutil.which("git")
+    if git is None:
+        return src, None  # clone_repo reports the missing git
+    branch = resolve_branch(git, src.url, src.branch)
+    return src._replace(branch=branch), src.branch[len(branch) + 1:].strip("/") or None
+
+
+def import_git_subfolder(src: GitSource, subfolder: str, args: argparse.Namespace) -> int:
+    """A tree link to a subfolder: the repo is cloned to .imports/<repo>/ (outside
+    workspace/), and the subfolder is linked and scaffold-checked as the mod,
+    the same way a local folder import is. Nothing is written at the repo root."""
+    print(f"{INFO} The link points at {subfolder} inside branch {src.branch}; that folder is imported as the mod.")
+    modname = derive_modname(Path(subfolder), args.name)
+    print(f"{INFO} {'Mod name (override)' if args.name else 'Mod name from the subfolder'}: {modname}")
+    workspace_target = WORKSPACE / modname
+    p_drive_link = P_DRIVE / modname
+    check_workspace_target(workspace_target)
+    _nm.check_or_clean_p_drive_link(p_drive_link, workspace_target)
+
+    clone = IMPORTS / src.repo
+    made_clone = not clone.exists()
+    if made_clone:
+        IMPORTS.mkdir(exist_ok=True)
+        clone_repo(src, clone)
+        print(f"{OK} Cloned into {_display(clone)}")
+    else:
+        print(f"{INFO} Reusing the clone at {_display(clone)}")
+
+    def undo(msg: str):
+        if made_clone:
+            remove_clone(clone)
+            msg += f"\n       Removed the clone at {_display(clone)} so the retry starts clean."
+        sys.exit(msg)
+
+    source = clone / subfolder
+    if not source.is_dir():
+        undo(f"{FAIL} The link's folder {subfolder} is not in branch {src.branch} of {src.url}.")
+    missing = detect_missing_pieces(source)
+    try:
+        require_scaffold_decision(missing, args.scaffold, args.no_scaffold, sys.stdin.isatty())
+    except SystemExit as e:
+        undo(str(e.code))
+
+    link_source(source, workspace_target, p_drive_link)
+    _nm.sync_project_cache()
+    return finish(source, workspace_target, modname, missing, args,
+                  f"Remove the import: /dayz-clean-workspace --mod {modname} removes the links;\n"
+                  f"    the clone stays at {_display(clone)} (push anything worth keeping, then delete it by hand).")
 
 
 if __name__ == "__main__":
