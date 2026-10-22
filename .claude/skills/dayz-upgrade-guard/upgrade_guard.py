@@ -516,9 +516,11 @@ def _chain_changes(old_t: dict, new_t: dict, start: str, prefix: str = "") -> li
                             "message": f"vanilla {shown} no longer exists"})
             break
         old_p, new_p = old_t[key]["parent"], new_t[key]["parent"]
-        # Config parents compare case blind (prefix set); script parents exactly.
-        same = _same_parent(old_p, new_p) if prefix else old_p == new_p
-        if not same:
+        if prefix:
+            changed = not _same_parent(old_p, new_p)  # config class names ignore case
+        else:
+            changed = old_p != new_p  # script class names are exact
+        if changed:
             reasons.append({"reason": "parent-changed", "class": shown,
                             "message": f"vanilla {shown} now extends {new_p or 'nothing'} (was {old_p or 'nothing'})"})
     return reasons
