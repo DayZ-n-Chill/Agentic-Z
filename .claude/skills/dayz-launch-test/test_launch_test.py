@@ -186,6 +186,17 @@ def test_dry_run_is_side_effect_free(monkeypatch, tmp_path):
     assert _snapshot(tmp_path) == before  # no Profiles/, no prefs file
 
 
+@pytest.mark.parametrize("extra", [[], ["--dry-run"]])
+def test_port_out_of_range_exits_2(monkeypatch, tmp_path, capsys, extra):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "--port", "70000", *extra])
+    monkeypatch.setattr(launch.subprocess, "Popen", lambda *a, **k: pytest.fail("spawned with a bad port"))
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    assert exc.value.code == 2
+    assert "port must be 1-65535" in capsys.readouterr().err
+
+
 class _FakeProc:
     def __init__(self):
         self.pid = 4242

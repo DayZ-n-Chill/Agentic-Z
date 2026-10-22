@@ -310,10 +310,15 @@ def check_autocenter_prop(lod, config_wants_zero=False):
     if not config_wants_zero:
         return issues
     props = dict(lod.properties) if lod.properties else {}
-    if 'autocenter' not in props:
+    value = props.get('autocenter')
+    if value is None:
         issues.append(("WARNING",
             "Missing 'autocenter=0' LOD property. For Inventory_Base items with "
             "autocenter=0 in config.cpp, this property must ALSO be in the LOD."))
+    elif value != '0':
+        issues.append(("WARNING",
+            f"Geometry LOD has autocenter={value}, but config.cpp sets autocenter = 0. "
+            "Set the 'autocenter=0' LOD property so the two agree."))
     return issues
 
 
@@ -358,13 +363,21 @@ def check_degenerate_faces(lod):
     return issues
 
 
-def check_memory_lod(lod):
-    """Check Memory LOD for required points and structure."""
+def check_memory_lod(lod, wants_zero=False, has_geometry=True):
+    """Check Memory LOD for required points and structure.
+
+    wants_zero (config.cpp sets autocenter = 0) gates the 'pos center' checks:
+    references/p3d-killers.md section 5 applies them to autocenter=0 items only.
+    has_geometry gates the box_placing note: the hologram uses the Geometry LOD
+    bounding box first and box_placing_min/max only as a fallback (section 7).
+    """
     issues = []
     sels = list(lod.selections.keys())
 
-    # pos center
-    if 'pos center' not in sels:
+    # pos center, for autocenter=0 items only
+    if not wants_zero:
+        pass
+    elif 'pos center' not in sels:
         issues.append(("WARNING",
             "Missing 'pos center' memory point. Engine auto-calculates bounding center, "
             "which may be wrong for tall/asymmetric objects. Add at (0,0,0)."))
@@ -383,9 +396,11 @@ def check_memory_lod(lod):
     if has_min != has_max:
         issues.append(("WARNING",
             f"Only one of box_placing_min/max found. Both are needed for hologram placement."))
-    elif not has_min and not has_max:
+    elif not has_min and not has_geometry and not (
+            'boundingbox_min' in sels and 'boundingbox_max' in sels):
         issues.append(("NOTE",
-            "No box_placing_min/max points. Needed for deployable items with hologram placement."))
+            "No box_placing_min/max points and no Geometry LOD. Deployable items need one "
+            "of them for hologram placement."))
 
     # Faces in Memory LOD (should be zero)
     if len(lod.faces) > 0:
@@ -488,6 +503,9 @@ def audit_p3d(filepath, model_cfg=None, config=None):
     # Required LODs
     all_issues.extend(check_required_lods(lod_map))
 
+    # Decided once: gates the autocenter property and the 'pos center' checks.
+    wants_zero = config_sets_autocenter_zero(config)
+
     # Collision LODs
     for lt in ["Geometry", "GeoPhys", "FireGeo"]:
         if lt not in lod_map:
@@ -505,7 +523,6 @@ def audit_p3d(filepath, model_cfg=None, config=None):
         # the centroid heuristic flags every Blender export (left-handed transform);
         # see references/winding-methodology.md for the manual method.
         if lt == "Geometry":
-            wants_zero = config_sets_autocenter_zero(config)
             check_fns = [check_component_naming, check_component_coverage,
                          lambda g: check_autocenter_prop(g, wants_zero), check_geometry_mass, check_watertight,
                          check_degenerate_faces]
@@ -521,7 +538,7 @@ def audit_p3d(filepath, model_cfg=None, config=None):
     if "Memory" in lod_map:
         idx, lod = lod_map["Memory"]
         print(f"\n  --- Memory LOD[{idx}] ---")
-        results = check_memory_lod(lod)
+        results = check_memory_lod(lod, wants_zero, "Geometry" in lod_map)
         for sev, msg in results:
             print(f"  {sev}: {msg}")
             all_issues.append((sev, msg))

@@ -52,7 +52,11 @@ not checked.
 
 The Geometry LOD `autocenter` property is checked only when the config.cpp (`--config`,
 or under `--scan-dir` the nearest one found the same way) has a class with
-`autocenter = 0`. Kits and ordinary items do not use it, so they get no finding.
+`autocenter = 0`. Kits and ordinary items do not use it, so they get no finding The same config decides the
+`pos center` checks: a missing `pos center` (WARNING) or one far from the origin (NOTE)
+is reported only for those autocenter=0 items. The missing `box_placing_min/max` NOTE
+appears only for a model with no Geometry LOD (the hologram uses the Geometry LOD
+bounding box first) and never when `boundingbox_min/max` are present.
 
 Exit codes:
 
@@ -94,7 +98,7 @@ references below.
    b. Component01 uppercase C?   → If wrong case: rename
    c. autocenter=0 LOD property? → If missing: add (checked only when config.cpp
                                     sets autocenter = 0)
-   d. pos center in Memory?      → If missing: add at (0,0,0)
+   d. pos center in Memory? (autocenter=0 items only) → If missing: add at (0,0,0)
    e. Components cover all?      → The Component selections together cover
                                     every vertex and face; each component is
                                     one convex closed piece. If some are left
