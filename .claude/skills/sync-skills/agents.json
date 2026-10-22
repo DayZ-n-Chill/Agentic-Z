@@ -8,8 +8,8 @@
     },
     {
       "name": "codex",
-      "env_home_vars": ["CODEX_HOME"],
-      "default_home": "~/.codex",
+      "env_home_vars": [],
+      "default_home": "~/.agents",
       "skills_subdir": "skills"
     },
     {

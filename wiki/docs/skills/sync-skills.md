@@ -12,7 +12,7 @@ Links every skill in this repo's .claude/skills/ into each agent CLI's home skil
 
 The bootstrap. **Links, not copies.** The single source of truth is `<repo>/.claude/skills/`; this skill creates symlinks (or junctions on Windows) in each agent CLI's home so every agent discovers the same slash commands. Nothing is copied, no skill content lives outside the repo, and editing a skill in the repo is instantly live in every agent.
 
-The reason the agent home dirs are involved at all: Claude Code reads the repo's `.claude/skills/` directly, but Codex and Gemini only scan their own home dirs. The links bridge that gap without duplicating files.
+The reason the agent home dirs are involved at all: Claude Code reads the repo's `.claude/skills/` directly, but the others do not. Codex reads `.agents/skills/` in the repo and `~/.agents/skills/`. Gemini reads `.gemini/skills/` or `.agents/skills/` in the workspace and `~/.gemini/skills/` or `~/.agents/skills/` in the home folder. The links bridge that gap without duplicating files.
 
 ## Side effect for Claude Code: the skills become global
 
@@ -25,7 +25,7 @@ To keep Claude Code project-scoped, leave it out: `python "<skill-dir>\sync.py" 
 
 ## When to run it
 
-- **Right after cloning the repo** — step two, before doing real work. None of the slash commands work in Codex or Gemini until this runs (Claude Code reads from the repo's `.claude/skills/` directly, but Codex and Gemini only read from their home dirs).
+- **Right after cloning the repo**, as step two, before doing real work. None of the slash commands work in Codex or Gemini until this runs (Claude Code reads from the repo's `.claude/skills/` directly; Codex and Gemini do not read that folder).
 - **After adding a new skill** to `.claude/skills/`.
 - **After deleting a skill** — orphan links pointing at the now-missing source get pruned.
 - **After moving the repo** to a different path. Links still pointing at the old location are reported as `[FOREIGN]`; rerun with `--force` to retarget them.
@@ -52,8 +52,10 @@ Resolved from `agents.json`. Defaults:
 | Agent  | Env var(s) checked first                | Default path |
 |--------|------------------------------------------|--------------|
 | Claude | `CLAUDE_CONFIG_DIR`                     | `~/.claude/skills` |
-| Codex  | `CODEX_HOME`                            | `~/.codex/skills`  |
+| Codex  | none (`CODEX_HOME` does not move skills) | `~/.agents/skills` |
 | Gemini | `GEMINI_CLI_HOME` then `GEMINI_HOME`    | `~/.gemini/skills` |
+
+Gemini also reads `~/.agents/skills/`, so after a full run it finds each skill there and in `~/.gemini/skills/`; the `.agents` copy wins. Both are links to the same folder, so they never differ.
 
 To support a new agent later, append an entry to `.claude/skills/sync-skills/agents.json` — no code change needed.
 
@@ -89,7 +91,7 @@ Repo skills: <N>  (H:\Projects\Agentic-Z\.claude\skills)
   [LINK]    dayz-new-skill  (junction)
   ...
 
-[codex] C:\Users\you\.codex\skills
+[codex] C:\Users\you\.agents\skills
   [FOREIGN] dayz-preflight: points at D:\old-clone\.claude\skills\dayz-preflight; rerun with --force to take ownership
   ...
 

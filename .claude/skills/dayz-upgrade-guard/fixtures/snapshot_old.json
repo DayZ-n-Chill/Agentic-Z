@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "created": "2026-10-01T12:00:00",
   "label": "before",
   "p_root": "P:\\",
@@ -14,11 +14,11 @@
     "PlayerBase": {"parent": "EntityAI", "file": "scripts/4_world/entities/manbase/playerbase.c", "line": 1, "methods": {"OnConnect": "void OnConnect()"}}
   },
   "config": {
-    "CfgVehicles/Bandana_ColorBase": {"parent": "Clothing", "file": "DZ/characters/headgear/config.cpp", "line": 900, "members": ["displayName", "model"]},
-    "CfgVehicles/Clothing": {"parent": "Clothing_Base", "file": "DZ/characters/config.cpp", "line": 20, "members": ["inventorySlot", "itemInfo", "itemSize"]},
-    "CfgVehicles/Clothing_Base": {"parent": "Inventory_Base", "file": "DZ/characters/config.cpp", "line": 10, "members": []},
-    "CfgVehicles/Inventory_Base": {"parent": null, "file": "DZ/data/config.cpp", "line": 1, "members": ["scope"]},
-    "CfgVehicles/PlateCarrierVest": {"parent": "Clothing", "file": "DZ/characters/vests/config.cpp", "line": 300, "members": ["displayName", "hiddenSelections", "itemSize", "model"]}
+    "cfgvehicles/bandana_colorbase": {"name": "CfgVehicles/Bandana_ColorBase", "parent": "Clothing", "file": "DZ/characters/headgear/config.cpp", "line": 900, "members": ["displayName", "model"]},
+    "cfgvehicles/clothing": {"name": "CfgVehicles/Clothing", "parent": "Clothing_Base", "file": "DZ/characters/config.cpp", "line": 20, "members": ["inventorySlot", "itemInfo", "itemSize"]},
+    "cfgvehicles/clothing_base": {"name": "CfgVehicles/Clothing_Base", "parent": "Inventory_Base", "file": "DZ/characters/config.cpp", "line": 10, "members": []},
+    "cfgvehicles/inventory_base": {"name": "CfgVehicles/Inventory_Base", "parent": null, "file": "DZ/data/config.cpp", "line": 1, "members": ["scope"]},
+    "cfgvehicles/platecarriervest": {"name": "CfgVehicles/PlateCarrierVest", "parent": "Clothing", "file": "DZ/characters/vests/config.cpp", "line": 300, "members": ["displayName", "hiddenSelections", "itemSize", "model"]}
   },
   "skipped": []
 }

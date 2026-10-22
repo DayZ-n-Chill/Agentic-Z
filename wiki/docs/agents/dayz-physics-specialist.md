@@ -3,7 +3,7 @@ name: "dayz-physics-specialist"
 color: yellow
 ---
 
-<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--yellow">yellow</span></p>
+<p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">inherit</span><span class="agent-color-badge agent-color-badge--yellow">yellow</span></p>
 
 ## Overview
 

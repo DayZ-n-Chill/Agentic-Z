@@ -41,7 +41,8 @@ import edit_check  # noqa: E402  (the config tokenizer the edit hook and /dayz-l
 P_DRIVE = Path("P:\\")
 STORE = Path.home() / ".claude" / "dayz-upgrade-guard"
 INDEXER = SKILLS_DIR / "dayz-search-index" / "index.py"
-FORMAT = 1
+# 2: config keys are lower case, since DayZ config class names ignore case.
+FORMAT = 2
 
 # Vanilla script files live under P:\scripts\ and a few DLC folders under P:\DZ\ (data_sakhal/scripts/4_World).
 SCRIPT_ROOTS = ("scripts", "DZ")
@@ -193,7 +194,7 @@ def parse_method(segment: str) -> Optional[tuple[str, str, bool]]:
 
 def class_methods(body: str) -> dict[str, tuple[str, bool]]:
     """Methods declared directly in a class body (between its braces)."""
-    flat, depth, k = [], 0, 0
+    flat, k = [], 0
     while k < len(body):
         ch = body[k]
         if ch == "{":
@@ -214,7 +215,7 @@ def class_methods(body: str) -> dict[str, tuple[str, bool]]:
 def parse_script(text: str) -> list[dict]:
     """Top level class declarations in one .c file: name, parent, modded, line, methods."""
     clean = clean_script(text)
-    found, depth, k, n = [], 0, 0, len(clean)
+    found, k, n = [], 0, len(clean)
     while k < n:
         ch = clean[k]
         if ch == "{":
@@ -311,6 +312,29 @@ def _files(root: Path, pattern: str) -> Iterable[Path]:
         return
 
 
+def config_key(container: str, name: str) -> str:
+    """Snapshot key of a config class. DayZ config class names ignore case (vanilla writes both CfgVehicles and cfgVehicles)."""
+    return f"{container}/{name}".lower()
+
+
+def _merge_members(*lists: Iterable[str]) -> list[str]:
+    """Member names with case duplicates dropped (the first spelling stays), sorted ignoring case."""
+    seen: dict[str, str] = {}
+    for names in lists:
+        for m in names:
+            seen.setdefault(m.lower(), m)
+    return sorted(seen.values(), key=str.lower)
+
+
+def _gone_members(old: Iterable[str], new: Iterable[str]) -> list[str]:
+    now = {m.lower() for m in new}
+    return sorted((m for m in old if m.lower() not in now), key=str.lower)
+
+
+def _same_parent(a: Optional[str], b: Optional[str]) -> bool:
+    return (a or "").lower() == (b or "").lower()
+
+
 def take_snapshot(p_root: Path, label: str = "") -> dict:
     """Read every vanilla class on p_root. Raises GuardError when there are no vanilla scripts."""
     if not (p_root / "scripts").is_dir():
@@ -350,14 +374,15 @@ def take_snapshot(p_root: Path, label: str = "") -> dict:
             skipped.append(rel)
             continue
         for d in decls:
-            key = f"{d['container']}/{d['name']}"
+            key = config_key(d["container"], d["name"])
             entry = config.get(key)
             if entry is None:
-                config[key] = {"parent": d["parent"], "file": rel, "line": d["line"], "members": d["members"]}
-            else:  # vanilla addons extend the same class from many config.cpp files
+                config[key] = {"name": f"{d['container']}/{d['name']}", "parent": d["parent"], "file": rel,
+                               "line": d["line"], "members": _merge_members(d["members"])}
+            else:  # vanilla addons extend the same class from many config.cpp files, in any case
                 if d["parent"]:
                     entry["parent"] = d["parent"]
-                entry["members"] = sorted(set(entry["members"]) | set(d["members"]), key=str.lower)
+                entry["members"] = _merge_members(entry["members"], d["members"])
     return {
         "format": FORMAT,
         "created": datetime.now().isoformat(timespec="seconds"),
@@ -407,8 +432,10 @@ def load_snapshot(ref: str, store: Path) -> tuple[dict, Path]:
         snap = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
         raise GuardError(f"Cannot read snapshot {path}: {e}") from e
-    if snap.get("format") != FORMAT or "script" not in snap or "config" not in snap:
+    if "script" not in snap or "config" not in snap:
         raise GuardError(f"{path} is not an upgrade guard snapshot.")
+    if snap.get("format") != FORMAT:
+        raise GuardError(f"{path} was saved by an older version of the guard. Take a new snapshot.")
     return snap, path
 
 
@@ -419,10 +446,16 @@ def diff_snapshots(old: dict, new: dict) -> dict:
     out: dict = {}
     for kind, field in (("script", "methods"), ("config", "members")):
         a, b = old[kind], new[kind]
-        changes = {"removed": sorted(set(a) - set(b)), "added": sorted(set(b) - set(a)), "parent": [], field: []}
+        def label(table: dict, key: str) -> str:
+            return table[key].get("name", key)
+
+        changes = {"removed": sorted(label(a, k) for k in set(a) - set(b)),
+                   "added": sorted(label(b, k) for k in set(b) - set(a)), "parent": [], field: []}
         for name in sorted(set(a) & set(b)):
-            if a[name]["parent"] != b[name]["parent"]:
-                changes["parent"].append({"class": name, "old": a[name]["parent"], "new": b[name]["parent"]})
+            moved = a[name]["parent"] != b[name]["parent"] if kind == "script" \
+                else not _same_parent(a[name]["parent"], b[name]["parent"])
+            if moved:
+                changes["parent"].append({"class": label(b, name), "old": a[name]["parent"], "new": b[name]["parent"]})
             if kind == "script":
                 gone = sorted(set(a[name]["methods"]) - set(b[name]["methods"]))
                 changed = sorted(m for m in set(a[name]["methods"]) & set(b[name]["methods"])
@@ -430,9 +463,9 @@ def diff_snapshots(old: dict, new: dict) -> dict:
                 if gone or changed:
                     changes[field].append({"class": name, "removed": gone, "changed": changed})
             else:
-                gone = sorted(set(a[name]["members"]) - set(b[name]["members"]), key=str.lower)
+                gone = _gone_members(a[name]["members"], b[name]["members"])
                 if gone:
-                    changes[field].append({"class": name, "removed": gone})
+                    changes[field].append({"class": label(b, name), "removed": gone})
         out[kind] = changes
     return out
 
@@ -442,13 +475,26 @@ def diff_is_empty(diff: dict) -> bool:
 
 
 def _chain(table: dict, start: str, prefix: str = "") -> list[str]:
-    """start and its vanilla ancestors, nearest first. Config keys carry a 'CfgX/' prefix."""
-    chain, seen, cur = [], set(), start
+    """start and its vanilla ancestors, nearest first.
+
+    Config keys carry a lower case 'cfgx/' prefix; with a prefix the names are
+    lower cased too, since config class names ignore case.
+    """
+    def norm(name: Optional[str]) -> Optional[str]:
+        return name.lower() if prefix and name else name
+
+    chain, seen, cur = [], set(), norm(start)
     while cur and prefix + cur in table and cur not in seen:
         seen.add(cur)
         chain.append(cur)
-        cur = table[prefix + cur]["parent"]
+        cur = norm(table[prefix + cur]["parent"])
     return chain
+
+
+def _shown(table: dict, key: str, cls: str) -> str:
+    """The class name as vanilla spells it (config entries keep it in 'name')."""
+    name = table[key].get("name")
+    return name.split("/", 1)[1] if name else cls
 
 
 def _find_method(table: dict, chain: list[str], method: str) -> Optional[tuple[str, str]]:
@@ -464,13 +510,15 @@ def _chain_changes(old_t: dict, new_t: dict, start: str, prefix: str = "") -> li
     reasons = []
     for cls in _chain(old_t, start, prefix):
         key = prefix + cls
+        shown = _shown(old_t, key, cls)
         if key not in new_t:
-            reasons.append({"reason": "parent-removed", "class": cls,
-                            "message": f"vanilla {cls} no longer exists"})
+            reasons.append({"reason": "parent-removed", "class": shown,
+                            "message": f"vanilla {shown} no longer exists"})
             break
-        if old_t[key]["parent"] != new_t[key]["parent"]:
-            reasons.append({"reason": "parent-changed", "class": cls,
-                            "message": f"vanilla {cls} now extends {new_t[key]['parent'] or 'nothing'} (was {old_t[key]['parent'] or 'nothing'})"})
+        old_p, new_p = old_t[key]["parent"], new_t[key]["parent"]
+        if not _same_parent(old_p, new_p) if prefix else old_p != new_p:
+            reasons.append({"reason": "parent-changed", "class": shown,
+                            "message": f"vanilla {shown} now extends {new_p or 'nothing'} (was {old_p or 'nothing'})"})
     return reasons
 
 
@@ -495,9 +543,7 @@ def scan_mod(mod_dir: Path) -> dict:
 
 
 def check_mod(name: str, mod_dir: Path, old: dict, new: dict, display_root: Optional[Path] = None) -> dict:
-    """Mod classes whose vanilla parents changed between old and new."""
-    if not mod_dir.is_dir():
-        raise GuardError(f"Mod folder {mod_dir} does not exist.")
+    """Mod classes whose vanilla parents changed between old and new. main checks that mod_dir exists."""
     mod = scan_mod(mod_dir)
     old_s, new_s, old_c, new_c = old["script"], new["script"], old["config"], new["config"]
     findings, checked = [], 0
@@ -547,16 +593,17 @@ def check_mod(name: str, mod_dir: Path, old: dict, new: dict, display_root: Opti
                              "where": where(d), "reasons": reasons})
 
     for d in mod["config"]:
-        prefix = d["container"] + "/"
+        # Config class names ignore case, so every lookup uses the lower case key.
+        prefix = d["container"].lower() + "/"
+        own = config_key(d["container"], d["name"])
         reasons, start = [], d["parent"]
-        if d["parent"] is None and prefix + d["name"] in old_c:
+        if d["parent"] is None and own in old_c:
             start = d["name"]  # the mod adds to a vanilla class without restating its parent
-        own = prefix + d["name"]
-        if d["parent"] and own in old_c and own in new_c and new_c[own]["parent"] != d["parent"] \
-                and old_c[own]["parent"] != new_c[own]["parent"]:
+        if d["parent"] and own in old_c and own in new_c and not _same_parent(new_c[own]["parent"], d["parent"]) \
+                and not _same_parent(old_c[own]["parent"], new_c[own]["parent"]):
             reasons.append({"reason": "redeclared-parent", "class": d["name"],
                             "message": f"the mod declares {d['name']} with parent {d['parent']} but vanilla now gives it {new_c[own]['parent'] or 'none'}"})
-        on_vanilla = bool(start) and prefix + start in old_c
+        on_vanilla = bool(start) and prefix + start.lower() in old_c
         if not on_vanilla and not reasons:
             continue
         if on_vanilla:
@@ -564,10 +611,11 @@ def check_mod(name: str, mod_dir: Path, old: dict, new: dict, display_root: Opti
             for cls in _chain(old_c, start, prefix):
                 key = prefix + cls
                 if key in new_c:
-                    gone = sorted(set(old_c[key]["members"]) - set(new_c[key]["members"]), key=str.lower)
+                    gone = _gone_members(old_c[key]["members"], new_c[key]["members"])
                     if gone:
-                        reasons.append({"reason": "members-removed", "class": cls, "members": gone,
-                                        "message": f"vanilla {cls} no longer sets {', '.join(gone)}"})
+                        shown = _shown(old_c, key, cls)
+                        reasons.append({"reason": "members-removed", "class": shown, "members": gone,
+                                        "message": f"vanilla {shown} no longer sets {', '.join(gone)}"})
         checked += 1
         if reasons:
             findings.append({"kind": "config", "class": f"{d['container']}/{d['name']}", "modded": False,
