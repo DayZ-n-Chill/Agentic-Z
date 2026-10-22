@@ -23,7 +23,9 @@ modded class ActionConstructor
 }
 ```
 
-`ActionConstructor.ConstructActions` builds an action object only for the classes that `RegisterActions` inserts (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:3-27`; `RegisterActions` is at `:27`). `ActionManagerBase.GetAction` looks an action up in that map (`actionmanagerbase.c:214`). `ItemBase.AddAction` calls it, and for a class that was never registered it logs an error and returns, so the action never appears (`P:\scripts\4_world\entities\itembase.c:255-262`). The line in `script.log` reads:
+`ActionConstructor.ConstructActions` builds an action object only for the classes that `RegisterActions` inserts (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:3-27`; `RegisterActions` is at `:27`). `ActionManagerBase.GetAction` looks an action up in that map (`actionmanagerbase.c:214`). `ItemBase.AddAction` calls it, and for a class that was never registered it logs an error and returns, so the action never appears (`P:\scripts\4_world\entities\itembase.c:255-262`).
+
+The error goes through `Debug.LogError`, which writes only when the game runs with `-doLogs` and one of `-logToScript` (`script.log`), `-logToFile` (`$profile:scriptExt.log`) or `-logToRpt` (`P:\scripts\3_game\tools\debug.c:594-596`, `646-663`, `719-723`; `constants.c:256`). On a normal launch nothing is logged and the action silently never appears. With logging on, the line ends in:
 
 ```
 Action ActionMyMod_DrinkContaminate dosn't exist!

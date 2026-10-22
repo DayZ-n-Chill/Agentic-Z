@@ -40,7 +40,7 @@ WidgetClassNameClass WidgetName {
 Three rules that cover the syntax:
 
 - Class names always end in `Class`. `FrameWidget` is wrong, `FrameWidgetClass` is right.
-- Properties are key-value pairs on their own line. No `=`, no `:`, no semicolons. The value follows the key separated by a space. Values are bare, except where vanilla quotes them (`text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`); multi-word keys are quoted.
+- Properties are key-value pairs on their own line. No `=`, no `:`, no semicolons. The value follows the key separated by a space. Quote string values the way vanilla does: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`, `items`, `layout`, `Mask` and `ScriptParamsClass` values (for example `items` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`). Numbers, flags and enum words such as `style`, `halign` and `valign` stay bare. Multi-word keys are quoted too (`"exact text" 1`).
 - The child `{ }` block goes inside the parent's braces, AFTER all of the parent's own properties. A widget may have multiple child blocks (the second is conventionally for `ScriptParamsClass` parameter blocks).
 
 Multi-word property keys are quoted, values still are not:
@@ -310,7 +310,7 @@ Surface red flags that the output is wrong. The generator must never emit these.
 
 - **XML syntax**: `<Tag>`, `</Tag>`, `/>`, `name="value"` attribute pairs, namespace prefixes.
 - **`=` between key and value.** DayZ is `key value`, not `key = value`.
-- **Quoted values where vanilla leaves them bare.** Quote a value only where vanilla quotes it: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`. Multi-word keys are quoted too (`"exact text" 1`).
+- **Quoted values where vanilla leaves them bare.** Quote string values the way vanilla does: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`, `items`, `layout`, `Mask` and `ScriptParamsClass` values (for example `items` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`). Numbers, flags and enum words such as `style`, `halign` and `valign` stay bare. Multi-word keys are quoted too (`"exact text" 1`).
 - **Semicolons** as line terminators.
 - **CSS-flavored property names**: `borderRadius`, `border-radius`, `display`, `flex`, `flexDirection`, `justifyContent`, `alignItems`, `boxShadow`, `box-shadow`, `padding`, `margin`, `gap`.
 - **Opacity as a separate property or percentage.** Alpha lives as the fourth float on `color`.

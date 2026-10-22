@@ -105,7 +105,7 @@ When debugging, jump to the file that owns the symptom.
 | Server compile error `Unknown type 'IngameHud'` (or `Chat` / `UiHintPanel`) | `patterns/modded_class.md` (`#ifndef NO_GUI` guard) |
 | Can't `modded class Widget` / `UIManager`, or a `UIScriptedMenu` mod hits every menu | `patterns/modded_class.md` (engine-backed classes) |
 | Custom barrel missing open/close anim | `patterns/modded_class.md` (extend script class, not config parent) |
-| `Action X dosn't exist!` in `script.log`, or a new action never appears | `patterns/actions.md` (register it in `modded class ActionConstructor`) |
+| A new action never appears (with `-doLogs -logToScript`, `script.log` shows `Action X dosn't exist!`) | `patterns/actions.md` (register it in `modded class ActionConstructor`) |
 | Action shows on client, server rejects on execute | `patterns/actions.md` (check-style mismatch) |
 | Tool-in-hand action shows with a ruined tool or none | `patterns/actions.md` (`CCINonRuined` vs `CCINone`) |
 | Item placed but still draggable into inventory | `patterns/actions.md` (`CanPutInCargo` and `CanPutIntoHands`) |
