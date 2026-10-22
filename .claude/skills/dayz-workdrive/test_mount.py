@@ -52,7 +52,6 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.delenv("DAYZ_WORK_DRIVE", raising=False)
     monkeypatch.setattr(mount, "CACHE", tmp_path / "cache" / "dayz-work-drive.json")
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: None)
-    monkeypatch.setattr(mount, "read_registry_string", lambda *a: None)
     return tmp_path
 
 
@@ -93,22 +92,19 @@ def test_cache_beats_settings_ini(isolated, monkeypatch):
     assert mount.find_work_drive() == cached
 
 
-def test_settings_ini_beats_registry_and_default(isolated, monkeypatch):
+def test_settings_ini_path_is_used_when_nothing_earlier_resolves(isolated, monkeypatch):
     ini = _dir(isolated, "ini")
-    reg = _dir(isolated, "reg")
     tools = _tools_with_ini_and_default(isolated, ini)
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
-    monkeypatch.setattr(mount, "read_registry_string", lambda *a: str(reg))
     assert mount.find_work_drive() == ini
 
 
-@pytest.mark.skipif(mount.sys.platform != "win32", reason="registry lookup is Windows-only")
-def test_registry_used_when_settings_ini_has_no_path(isolated, monkeypatch):
-    reg = _dir(isolated, "reg")
+def test_registry_is_not_a_source(isolated, monkeypatch):
+    # The DayZ Tools registry keys hold the install path, never a work drive folder.
     tools = _tools_with_ini_and_default(isolated, None)
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
-    monkeypatch.setattr(mount, "read_registry_string", lambda *a: str(reg))
-    assert mount.find_work_drive() == reg
+    assert not hasattr(mount, "read_registry_string")
+    assert mount.find_work_drive() is None
 
 
 def test_tools_binaries_folder_is_never_a_candidate(isolated, monkeypatch):
@@ -143,6 +139,7 @@ def test_candidates_that_do_not_exist_are_skipped(isolated, monkeypatch):
 # ---------- invoke_mount subst fallback ----------
 
 def test_subst_failure_reports_exit_code(monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(mount, "find_dayz_tools", lambda: None)
     monkeypatch.setattr(mount, "find_workdrive_exe", lambda: None)
     monkeypatch.setattr(mount, "is_p_mounted", lambda: False)
     monkeypatch.setattr(mount.subprocess, "run", lambda *a, **k: SimpleNamespace(returncode=5))
@@ -157,6 +154,7 @@ def test_subst_success_returns_true(monkeypatch, tmp_path):
         state["mounted"] = True
         return SimpleNamespace(returncode=0)
 
+    monkeypatch.setattr(mount, "find_dayz_tools", lambda: None)
     monkeypatch.setattr(mount, "find_workdrive_exe", lambda: None)
     monkeypatch.setattr(mount, "is_p_mounted", lambda: state["mounted"])
     monkeypatch.setattr(mount.subprocess, "run", fake_run)
@@ -183,9 +181,48 @@ def fake_drive(monkeypatch, tmp_path):
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr(mount, "find_workdrive_exe", lambda: exe)
+    monkeypatch.setattr(mount, "find_dayz_tools", lambda: None)  # no settings.ini, so Letter= is P
     monkeypatch.setattr(mount, "is_p_mounted", lambda: state["mounted"])
     monkeypatch.setattr(mount.subprocess, "run", fake_run)
     return exe, state
+
+
+def test_settings_ini_reads_projectdrive_letter(tmp_path):
+    _write_ini(tmp_path, "[ProjectDrive]\npath=C:\\Work\nLetter=q:\n")
+    assert mount.read_settings_ini_letter(tmp_path) == "Q"
+
+
+def test_letter_other_than_p_skips_workdrive_exe(fake_drive, monkeypatch, tmp_path, capsys):
+    exe, state = fake_drive
+    tools = tmp_path / "tools"
+    _write_ini(tools, "[ProjectDrive]\npath=C:\\Work\nLetter=Q\n")
+    monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
+    state["effects"]["subst"] = True
+    assert mount.invoke_mount(tmp_path) is True
+    assert state["calls"] == [["subst", "P:", str(tmp_path)]]
+    out = capsys.readouterr().out
+    assert "[WARN]" in out and "mount Q:" in out and "WorkDrive.exe will not create P:" in out
+
+
+def test_letter_p_still_uses_workdrive_exe(fake_drive, monkeypatch, tmp_path):
+    exe, state = fake_drive
+    tools = tmp_path / "tools"
+    _write_ini(tools, "[ProjectDrive]\npath=C:\\Work\nLetter=P\n")
+    monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
+    state["effects"][str(exe)] = True
+    assert mount.invoke_mount(tmp_path) is True
+    assert state["calls"] == [[str(exe), "/Mount", str(tmp_path)]]
+
+
+def test_unmount_with_letter_other_than_p_uses_subst_d(fake_drive, monkeypatch, tmp_path):
+    exe, state = fake_drive
+    tools = tmp_path / "tools"
+    _write_ini(tools, "[ProjectDrive]\nLetter=Q\n")
+    monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
+    state["mounted"] = True
+    state["effects"]["subst"] = False
+    assert mount.invoke_unmount() == 0
+    assert state["calls"] == [["subst", "P:", "/D"]]
 
 
 def test_workdrive_exe_success_skips_subst(fake_drive, tmp_path):

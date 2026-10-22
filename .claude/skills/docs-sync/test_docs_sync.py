@@ -165,6 +165,22 @@ def test_dry_run_without_apply_is_usage_error(capsys):
     assert "--dry-run only works with --apply" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("argv", [["--check", "--apply"], ["--check", "--map"], ["--apply", "--map"]])
+def test_more_than_one_mode_is_usage_error(argv, capsys):
+    with pytest.raises(SystemExit) as exc:
+        sync.main(argv)
+    assert exc.value.code == 2
+    assert "not allowed with argument" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("argv", [["--apply", "--quiet"], ["--map", "--quiet"]])
+def test_quiet_outside_check_mode_is_usage_error(argv, capsys):
+    with pytest.raises(SystemExit) as exc:
+        sync.main(argv)
+    assert exc.value.code == 2
+    assert "--quiet only works in check mode" in capsys.readouterr().err
+
+
 def _hide_yaml(monkeypatch):
     real = sync.importlib.util.find_spec
     monkeypatch.setattr(

@@ -47,7 +47,7 @@ Any lead can start the two "Any team" workers when one of its tasks needs a phys
 
 For a Figma design, run the UI steps in order: `figma-node-normalizer` returns JSON, `figma-to-dayz-layout` writes the `.layout`, `dayz-layout-validator` gates it in gate mode, then `dayz-ui-specialist` adds the widget script.
 
-Your gates are `dayz-mod-reviewer` for every task and `dayz-layout-validator` in gate mode for any task that changes a `.layout`. They check files without running the game. The orchestrator runs the build and in-game gates after the whole wave reports, so never start `/dayz-gate`, `dayz-build-checker`, `dayz-ingame-tester` or `/dayz-launch-test` yourself.
+Your gates are `dayz-mod-reviewer` for every task and `dayz-layout-validator` in gate mode for any task that changes a `.layout`. They check files without running the game. A `dayz-build-engineer` task has no file gate: it passes when the engineer reports every step succeeded and the PBO path exists. Give its brief the server map and the mod's dependency list in load order. `dayz-docs-writer` tasks still go through `dayz-mod-reviewer`. The orchestrator runs the build and in-game gates after the whole wave reports, so never start `/dayz-gate`, `dayz-build-checker`, `dayz-ingame-tester` or `/dayz-launch-test` yourself.
 
 ## How you run a task
 

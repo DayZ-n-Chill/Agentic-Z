@@ -56,7 +56,7 @@ python "<skill-dir>\sync.py" --map
 |---|---|
 | 0 | The wiki is in sync, `--apply` wrote everything, or `--quiet` was set (the Stop hook never fails a session). |
 | 1 | `--check` found drift, PyYAML is missing, or `--apply` hit a read, parse or write error. |
-| 2 | Usage error, such as `--dry-run` without `--apply`. |
+| 2 | Usage error, such as `--dry-run` without `--apply`, more than one of `--check`, `--apply` and `--map`, or `--quiet` with `--apply` or `--map`. |
 
 CI runs `sync.py --check` in `.github/workflows/tests.yml`, so a stale wiki fails the build. Run `--apply` and commit the mirrors to fix it.
 
@@ -79,8 +79,8 @@ The Docusaurus transform (`apply.py`):
 - Frontmatter is parsed as YAML (PyYAML), so folded `>` / `>-` descriptions render as plain text.
 - Skills: frontmatter trimmed to `name`; the description becomes an `## Overview` section.
 - Agents: frontmatter trimmed to `name`, `model`, `color`, `memory`; a badge row is injected; `<example>` blocks in the description become styled example cards (`<commentary>` dropped). The description prose and the example text are escaped like skill descriptions (`&`, `<`, `>`, `{`, `}` outside inline code).
-- Bodies: HTML comments, including ones spanning several lines, are stripped and curly braces in prose are escaped so MDX can render the page. Fenced code (backtick or `~~~` fences) and inline code are left as written. Agent bodies also escape literal `<example>`/`<commentary>` tags.
-- Docs: frontmatter kept verbatim; the body gets the same HTML-comment and curly-brace pass.
+- Bodies: HTML comments, including ones spanning several lines, are stripped, and curly braces and placeholder tags such as `<ModName>` in prose are escaped so MDX can render the page (real HTML tags such as `<div>`, `<br>` or `<details>` are kept). Fenced code (backtick or `~~~` fences) and inline code are left as written. Agent bodies also escape literal `<example>`/`<commentary>` tags.
+- Docs: frontmatter kept verbatim; the body gets the same HTML-comment, curly-brace and placeholder-tag pass.
 
 ## Stop hook integration
 

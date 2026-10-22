@@ -46,10 +46,11 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 
 ## exclude.lst
 
-`exclude.lst` (next to `build.py`) is passed as `-exclude=`. AddonBuilder leaves files matching its patterns (one per line, `;` starts a comment) out of the final PBO. It drops `.gui-sources\` (the sprite source PNGs for `/dayz-build-imageset`; only the packed atlas and `.imageset` under `gui/imagesets/` ship), version-control folders, binarization logs, archives, signatures and keys, and source, doc and temp folders.
+`exclude.lst` (next to `build.py`) is passed as `-exclude=`. AddonBuilder leaves files matching its patterns (one per line, `;` starts a comment) out of the final PBO. It drops `.gui-sources\` (the sprite source PNGs for `/dayz-build-imageset`; only the packed atlas and `.imageset` under `gui/imagesets/` ship), the `workbench\` folder, version-control folders, binarization logs, archives, signatures and keys, and source, doc and temp folders.
 
 ## Refuses to run if
 
+- `<ModName>` fails the mod name pattern (a letter first, then letters, digits and underscores, at most 64 characters), so a name such as `..\Other` never reaches the disk. This check runs first.
 - No project is cached (run `/dayz-init`).
 - `/dayz-preflight` fails, or `P:\Mods\` is not a valid junction to `!Workshop`.
 - `workspace/<ModName>/`, its `config.cpp`, or its `$PBOPREFIX$` is missing (`/dayz-add-scaffold` adds the files).

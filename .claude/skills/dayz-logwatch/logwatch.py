@@ -9,9 +9,10 @@ dayz-mod-debugger. The same error again (same fingerprint) is only counted.
 
 Usage:
   python logwatch.py [--server <instance> ...] [--dir DIR ...] [--since MINUTES]
-                     [--duration S] [--until-closed] [--interval S] [--mod <ModName>] [--json]
+                     [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
 
-Exit codes: 0 no error lines seen, 1 at least one error line, 2 cannot run.
+Exit codes: 0 no error lines seen, 1 at least one error line, 2 cannot run
+(or --until-closed saw no session start).
 See SKILL.md for details.
 """
 from __future__ import annotations
@@ -36,6 +37,7 @@ DIAG_EXE = "DayZDiag_x64.exe"
 DEBUGGER = "dayz-mod-debugger"
 POLL_S = 1.0
 CLOSED_CHECK_S = 5.0  # how often --until-closed asks tasklist whether DayZ Diag still runs
+START_GRACE_S = 300.0  # how long --until-closed waits for DayZ Diag to start before giving up
 
 
 def is_log(path: Path) -> bool:
@@ -189,16 +191,24 @@ def watch(
     interval: float = POLL_S,
     duration: Optional[float] = None,
     session_alive: Optional[Callable[[], bool]] = None,
+    start_grace: Optional[float] = None,
     sleep: Callable[[float], None] = time.sleep,
     clock: Callable[[], float] = time.monotonic,
 ) -> dict:
     """Poll until the duration ends, the session closes (session_alive False) or Ctrl+C.
+
+    A session counts as closed only after it has been seen running, so a watch
+    started before /dayz-launch-test waits for the game. If it never starts
+    within start_grace seconds (default START_GRACE_S), the watch stops with
+    reason "session never started".
 
     One last read after stopping catches the lines written at the end, including a
     last line without a newline.
     """
     started = clock()
     last_check = None
+    seen_alive = False
+    grace = START_GRACE_S if start_grace is None else start_grace
     reason = "interrupted"
     try:
         while True:
@@ -210,8 +220,13 @@ def watch(
                 break
             if session_alive is not None and (last_check is None or now - last_check >= CLOSED_CHECK_S):
                 last_check = now
-                if not session_alive():
+                if session_alive():
+                    seen_alive = True
+                elif seen_alive:
                     reason = "session closed"
+                    break
+                elif now - started >= grace:
+                    reason = "session never started"
                     break
             sleep(interval)
     except KeyboardInterrupt:
@@ -270,8 +285,10 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
                         help="Watch this folder instead of the project's session folders (repeatable).")
     parser.add_argument("--since", type=float, default=0, metavar="MINUTES",
                         help="Read files changed in the last MINUTES from their start (default 0: only new lines).")
-    parser.add_argument("--duration", type=float, metavar="S", help="Stop after S seconds.")
-    parser.add_argument("--until-closed", action="store_true", help=f"Stop once no {DIAG_EXE} is running.")
+    stop_on = parser.add_mutually_exclusive_group()
+    stop_on.add_argument("--duration", type=float, metavar="S", help="Stop after S seconds.")
+    stop_on.add_argument("--until-closed", action="store_true",
+                         help=f"Stop once the {DIAG_EXE} seen running has closed.")
     parser.add_argument("--interval", type=float, default=POLL_S, metavar="S", help="Seconds between reads (default 1).")
     parser.add_argument("--mod", help="Mod name, filled into fixes that mention <ModName>.")
     parser.add_argument("--json", action="store_true", help="Print one JSON object per line instead of text.")
@@ -316,7 +333,9 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
         session_alive=diag_running if args.until_closed else None,
     )
     print_summary(summary, out, args.json)
-    return 1 if summary["errors"] else 0
+    if summary["errors"]:
+        return 1
+    return 2 if summary["stopped"] == "session never started" else 0
 
 
 if __name__ == "__main__":

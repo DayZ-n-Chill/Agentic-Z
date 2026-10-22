@@ -182,10 +182,35 @@ def test_server_killed_on_bind_timeout(monkeypatch, tmp_path):
     _instance(tmp_path)
     _patch_main(monkeypatch, tmp_path, ["MyMod"])
     procs = []
-    monkeypatch.setattr(launch.subprocess, "Popen", lambda cmd: procs.append(_FakeProc()) or procs[-1])
+    monkeypatch.setattr(launch.subprocess, "Popen", lambda cmd, **k: procs.append(_FakeProc()) or procs[-1])
     monkeypatch.setattr(launch, "wait_for_server_port", lambda port, proc, timeout_s: False)
     assert launch.main() == 1
     assert len(procs) == 1 and procs[0].killed  # server killed, client never started
+
+
+def test_server_and_client_spawn_detached(monkeypatch, tmp_path):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod"])
+    spawns = []
+
+    def fake_popen(cmd, **kwargs):
+        spawns.append(kwargs)
+        return _FakeProc()
+
+    monkeypatch.setattr(launch.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(launch, "wait_for_server_port", lambda port, proc, timeout_s: True)
+    assert launch.main() == 0
+    assert len(spawns) == 2  # server, then client
+    for kwargs in spawns:
+        assert kwargs["creationflags"] == launch.h.DETACH_FLAGS
+        assert kwargs["close_fds"] is True
+
+
+def test_wait_for_port_defaults_to_bind_timeout():
+    import inspect
+
+    default = inspect.signature(launch.wait_for_server_port).parameters["timeout_s"].default
+    assert default == launch.SERVER_BIND_TIMEOUT_S
 
 
 def test_port_in_use_refuses_before_spawning(monkeypatch, tmp_path):

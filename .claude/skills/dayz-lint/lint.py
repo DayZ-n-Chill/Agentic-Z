@@ -46,7 +46,7 @@ ERROR, WARNING = "error", "warning"
 # Every rule lint can report; each has a "lint-<rule>" entry in dayz-gate/known-errors.json.
 RULES = (
     "config-missing", "config-syntax", "cfgpatches-missing", "cfgpatches-empty", "cfgpatches-field",
-    "cfgpatches-field-missing", "required-addon-name", "required-addon-duplicate", "pboprefix-missing", "pboprefix-mismatch",
+    "cfgpatches-field-missing", "required-addons-missing", "required-addon-name", "required-addon-duplicate", "pboprefix-missing", "pboprefix-mismatch",
     "p-link", "p-not-mounted", "script-module-path", "script-module-layer", "script-module-unlisted",
     "modded-class-extends", "script-suffix", "missing-model", "missing-texture", "missing-file",
     "absolute-path", "texture-format", "texture-suffix", "rvmat-syntax",
@@ -268,8 +268,12 @@ class Lint:
         for patch in patches.classes:
             for field in ("units", "weapons", "requiredAddons"):
                 prop = patch.props.get(field.lower())
-                if prop is None:
-                    # Vanilla loads patch classes without these arrays (P:\DZ\data\aiconfigs\config.cpp,
+                if prop is None and field == "requiredAddons":
+                    # Without it the mod's config can load before the vanilla classes it changes.
+                    self.add("required-addons-missing", ERROR, cfg, patch.line,
+                             f"CfgPatches class {patch.name} has no requiredAddons[] array, so its load order is not guaranteed.")
+                elif prop is None:
+                    # Vanilla loads patch classes without units[] or weapons[] (P:\DZ\data\aiconfigs\config.cpp,
                     # class DZ_data_aiconfigs has an empty body), so a missing one is only a warning.
                     self.add("cfgpatches-field-missing", WARNING, cfg, patch.line, f"CfgPatches class {patch.name} has no {field}[] array.")
                 elif not prop[2]:
@@ -342,9 +346,9 @@ class Lint:
             low = rel.lower()
             if not any(entry == low or entry.startswith(low + "/") or low.startswith(entry + "/") for entry in listed):
                 module = MODULE_SPELLING.get(LAYER_MODULE.get(folder.name.lower(), ""), "a script module")
-                self.add("script-module-unlisted", ERROR, cfg, mods.line if mods is not None else None,
+                self.add("script-module-unlisted", WARNING, cfg, mods.line if mods is not None else None,
                          f"{rel}/ holds scripts, but no CfgMods defs entry lists {self.prefix}/{rel}; "
-                         f"add it to {module} or the scripts never compile.")
+                         f"add it to {module} or the engine ignores those files.")
 
     def in_mod(self, value: str) -> Optional[str]:
         """The mod-relative path of a config path that starts with the prefix, else None."""

@@ -115,6 +115,43 @@ def test_confirmed_run_reports_child_failure(skills_dir, calls, monkeypatch):
     assert _modes(calls)[-1] == ("a-clean-workspace", "--yes")
 
 
+def _cache_project(skills_dir: Path, project: Path) -> None:
+    """A dayz-init/state.py stand in whose cached project root is `project`."""
+    d = skills_dir / "dayz-init"
+    d.mkdir()
+    (d / "state.py").write_text(
+        "from pathlib import Path\n"
+        f"def cached_project_root():\n    return Path({str(project)!r})\n",
+        encoding="utf-8",
+    )
+
+
+def test_other_cached_project_warns_and_is_named_in_the_prompt(skills_dir, calls, monkeypatch, tmp_path, capsys):
+    _skill(skills_dir, "a-clean-workspace")
+    other = tmp_path / "other-clone"
+    other.mkdir()
+    _cache_project(skills_dir, other)
+    prompts = []
+    monkeypatch.setattr(clean.sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda prompt: prompts.append(prompt) or "n")
+    assert clean.main([]) == 0
+    out = capsys.readouterr().out
+    assert f"[WARN] Cleanup targets the cached project {other.resolve()}, not this checkout {clean.REPO_ROOT}" in out
+    assert prompts == [f"Remove everything listed above from {other.resolve()}? [y/N]: "]
+
+
+def test_cached_project_equal_to_this_checkout_does_not_warn(skills_dir, calls, monkeypatch, capsys):
+    _skill(skills_dir, "a-clean-workspace")
+    _cache_project(skills_dir, clean.REPO_ROOT)
+    assert clean.main(["--dry-run"]) == 0
+    assert "[WARN]" not in capsys.readouterr().out
+
+
+def test_status_lines_have_a_single_space_after_the_label(skills_dir, calls, capsys):
+    assert clean.main(["--yes"]) == 0
+    assert "[OK]   No domain cleanup skills found." in capsys.readouterr().out
+
+
 def test_no_cleanup_skills_is_ok(skills_dir, calls):
     assert clean.main(["--yes"]) == 0
     assert calls["cmds"] == []

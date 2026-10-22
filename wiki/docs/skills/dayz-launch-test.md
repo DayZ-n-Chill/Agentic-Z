@@ -30,6 +30,10 @@ python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server-only <ModNam
 | `--port` | no | Server port. Default `2302`. |
 | `--dry-run` | no | Run every check, print the resolved server and client commands, then exit 0. Writes nothing: no profile dirs, no display-prefs file, no processes. |
 
+## Mods with dependencies
+
+Name a mod's dependencies before the mod, in load order, for example `/dayz-launch-test CF <ModName> --server <instance>`. The skill joins the names into `-mod=` in the order given and refuses any name with no `.pbo` in `P:\Mods\@<name>\Addons\`. To build the list, take every non-vanilla `requiredAddons` entry in the mod's `CfgPatches` (vanilla ones start with `DZ_`) and map it to the `@<mod>` under `P:\Mods\` that ships it. If you can't map a dependency to an `@mod`, stop and report it instead of launching without it.
+
 ## What it does
 
 1. **Preflight gate**: runs `/dayz-preflight`; halts on non-zero.
@@ -41,7 +45,7 @@ python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server-only <ModNam
 7. **Launch server**: spawns `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/<template> -mod=P:\Mods\@Mod1;P:\Mods\@Mod2 -filePatching -port=<port>`.
 8. **Wait for the port**: polls once a second, for up to 180 s, until the server has bound UDP `<port>` (a DayZ server can take 30 s or more to load the mission and mods). If the server exits, or the wait times out (the server is then killed), the skill exits 1 without starting the client.
 9. **Launch client**: spawns `DayZDiag_x64.exe -profiles=.server/!ClientDiagLogs -mod=... -connect=127.0.0.1 -port=<port> -filePatching` plus the display flags from the per-clone preferences.
-10. **Print PIDs and exit.** Both processes run independently. Close the windows to stop them, or run `/dayz-stop-test`.
+10. **Print PIDs and exit.** Both processes are spawned detached (shared `DETACH_FLAGS` in `_shared/skill_helpers.py`), so they keep running when the shell or agent that started them closes. Close the windows to stop them, or run `/dayz-stop-test`.
 
 ## Refuses to run if
 

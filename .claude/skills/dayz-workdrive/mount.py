@@ -1,6 +1,6 @@
 r"""dayz-workdrive: Mount P:\ as the DayZ work drive without DayZ Tools' GUI.
 
-Resolves the work-drive folder (env var, cache, settings.ini, registry)
+Resolves the work-drive folder (env var, cache, settings.ini)
 and mounts it via DayZ Tools' WorkDrive.exe /Mount, falling back to Windows'
 built-in subst command. Idempotent: exits OK if already mounted.
 
@@ -41,7 +41,6 @@ CMD = "[CMD]  "
 
 # Reuse preflight's resolvers (loading the module does not run its checks).
 find_dayz_tools = h.preflight.find_dayz_tools
-read_registry_string = h.preflight.read_registry_string
 paths_equal = h.preflight.paths_equal
 
 
@@ -86,8 +85,8 @@ def set_cached_path(p: Path) -> None:
     CACHE.write_text(json.dumps({"work_drive_path": str(p)}), encoding="utf-8")
 
 
-def read_settings_ini_path(tools_root: Path) -> Optional[Path]:
-    """Parse <tools>/settings.ini for the [ProjectDrive] path= line."""
+def _read_projectdrive_value(tools_root: Path, name: str) -> Optional[str]:
+    """Return a non-empty [ProjectDrive] <name>= value from <tools>/settings.ini."""
     ini = tools_root / "settings.ini"
     if not ini.exists():
         return None
@@ -100,13 +99,36 @@ def read_settings_ini_path(tools_root: Path) -> Optional[Path]:
                 continue
             if section == "projectdrive" and "=" in t:
                 key, _, value = t.partition("=")
-                if key.strip().lower() == "path":
+                if key.strip().lower() == name:
                     v = value.strip().strip('"').strip("'")
                     if v:
-                        return Path(v)
+                        return v
     except OSError:
         return None
     return None
+
+
+def read_settings_ini_path(tools_root: Path) -> Optional[Path]:
+    """Parse <tools>/settings.ini for the [ProjectDrive] path= line."""
+    v = _read_projectdrive_value(tools_root, "path")
+    return Path(v) if v else None
+
+
+def read_settings_ini_letter(tools_root: Path) -> Optional[str]:
+    """Parse <tools>/settings.ini for the [ProjectDrive] Letter= line, upper-cased without a colon."""
+    v = _read_projectdrive_value(tools_root, "letter")
+    return v.rstrip(":").upper() if v else None
+
+
+def workdrive_letter_is_not_p() -> Optional[str]:
+    """The letter DayZ Tools is set to mount when it is not P, else None.
+
+    WorkDrive.exe mounts the letter in settings.ini, so with another letter it
+    never creates P:\\ and running it would only add a second mount.
+    """
+    tools = find_dayz_tools()
+    letter = read_settings_ini_letter(tools) if tools else None
+    return letter if letter and letter != "P" else None
 
 
 def find_work_drive() -> Optional[Path]:
@@ -116,10 +138,9 @@ def find_work_drive() -> Optional[Path]:
       1. $DAYZ_WORK_DRIVE env var
       2. Cached path from prior run
       3. <DayZ Tools>/settings.ini [ProjectDrive] path=
-      4. Registry values WorkDrive / WorkDrivePath / P_Drive / PDrive under
-         3 well-known DayZ Tools keys (HKCU + HKLM 64-bit + HKLM 32-bit)
 
-    There is no default: <DayZ Tools>/Bin/WorkDrive holds WorkDrive.exe itself,
+    The DayZ Tools registry keys hold no work-drive folder (HKCU only has
+    path, exe, version and patch), so they are not a source. There is no default: <DayZ Tools>/Bin/WorkDrive holds WorkDrive.exe itself,
     not a project drive, so mounting it would be wrong. Returns None instead and
     the caller asks for --path.
     """
@@ -138,23 +159,6 @@ def find_work_drive() -> Optional[Path]:
         ini_path = read_settings_ini_path(tools)
         if ini_path:
             candidates.append(ini_path)
-
-    if sys.platform == "win32":
-        try:
-            import winreg
-        except ImportError:
-            winreg = None  # type: ignore[assignment]
-        if winreg is not None:
-            registry_keys = [
-                (winreg.HKEY_CURRENT_USER, r"Software\Bohemia Interactive\DayZ Tools"),
-                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\bohemia interactive\dayz tools"),
-                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\bohemia interactive\dayz tools"),
-            ]
-            for hive, subkey in registry_keys:
-                for value_name in ("WorkDrive", "WorkDrivePath", "P_Drive", "PDrive"):
-                    val = read_registry_string(hive, subkey, value_name)
-                    if val:
-                        candidates.append(Path(val))
 
     for c in candidates:
         if c and c.is_dir():
@@ -188,8 +192,12 @@ def _run_workdrive(args: list[str]) -> tuple[int, str, str]:
 
 
 def invoke_mount(target: Path) -> bool:
-    exe = find_workdrive_exe()
-    if exe:
+    other = workdrive_letter_is_not_p()
+    exe = None if other else find_workdrive_exe()
+    if other:
+        print(f"{WARN}DayZ Tools is set to mount {other}: ([ProjectDrive] Letter= in settings.ini), "
+              "so WorkDrive.exe will not create P:\\; using subst")
+    elif exe:
         print(f'{CMD}"{exe}" /Mount "{target}"')
         rc, _stdout, stderr = _run_workdrive([str(exe), "/Mount", str(target)])
         if is_p_mounted():
@@ -213,7 +221,8 @@ def invoke_unmount() -> int:
         print(f"{INFO}P:\\ is not currently mounted")
         return 0
 
-    exe = find_workdrive_exe()
+    # With another letter in settings.ini, WorkDrive.exe /Dismount would target that letter, not P:.
+    exe = None if workdrive_letter_is_not_p() else find_workdrive_exe()
     if exe:
         print(f'{CMD}"{exe}" /Dismount')
         rc, _stdout, stderr = _run_workdrive([str(exe), "/Dismount"])
@@ -275,7 +284,7 @@ def main() -> int:
         if not work:
             print(f"{FAIL}Could not resolve a work drive folder.", file=sys.stderr)
             print(
-                "       Tried: $DAYZ_WORK_DRIVE, cached path, settings.ini, registry.",
+                "       Tried: $DAYZ_WORK_DRIVE, cached path, settings.ini.",
                 file=sys.stderr,
             )
             print(

@@ -254,7 +254,9 @@ def read_client_display_prefs(project_dir: Path, create: bool = True) -> dict:
     return dict(DEFAULT_CLIENT_DISPLAY)
 
 
-def wait_for_server_port(port: int, server_proc: subprocess.Popen, timeout_s: int = 180) -> bool:
+def wait_for_server_port(
+    port: int, server_proc: subprocess.Popen, timeout_s: int = SERVER_BIND_TIMEOUT_S
+) -> bool:
     """Wait until the DayZ server has bound UDP `port`. Returns True when bound
     within `timeout_s`, False if it gives up.
 
@@ -394,7 +396,9 @@ def main() -> int:
     print()
     print(f"[Launch] Server: {' '.join(server_cmd)}")
     sys.stdout.flush()
-    server_proc = subprocess.Popen(server_cmd)
+    # Detached (shared DETACH_FLAGS) so closing or killing the agent's shell
+    # does not take the server and client down with it.
+    server_proc = subprocess.Popen(server_cmd, close_fds=True, creationflags=h.DETACH_FLAGS)
     print(f"{OK} Server PID: {server_proc.pid}")
     sys.stdout.flush()
     if not wait_for_server_port(args.port, server_proc, timeout_s=SERVER_BIND_TIMEOUT_S):
@@ -407,7 +411,7 @@ def main() -> int:
     print()
     print(f"[Launch] Client: {' '.join(client_cmd)}")
     sys.stdout.flush()
-    client_proc = subprocess.Popen(client_cmd)
+    client_proc = subprocess.Popen(client_cmd, close_fds=True, creationflags=h.DETACH_FLAGS)
     print(f"{OK} Client PID: {client_proc.pid}")
 
     print()

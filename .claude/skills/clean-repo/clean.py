@@ -16,6 +16,8 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -24,7 +26,28 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 
 OK = "[OK]   "
+WARN = "[WARN] "
 FAIL = "[FAIL] "
+
+
+def cached_project() -> Path | None:
+    """The project root cached by /dayz-init, which the children clean. None when nothing is cached.
+
+    Children resolve their project through dayz-init/state.py with the same
+    working directory and environment, so this names the folder they will clean.
+    """
+    state_py = SKILLS_DIR / "dayz-init" / "state.py"
+    if not state_py.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("clean_repo_dayz_init_state", state_py)
+    state = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(state)
+    root = state.cached_project_root()
+    return root.resolve() if root else None
+
+
+def same_path(a: Path, b: Path) -> bool:
+    return os.path.normcase(str(a.resolve())) == os.path.normcase(str(b.resolve()))
 
 
 def find_cleanup_skills(skills_dir: Path | None = None) -> list[Path]:
@@ -77,34 +100,38 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if not args.dry_run and not args.yes and not sys.stdin.isatty():
-        print(f"{FAIL} Refusing to proceed without --yes when stdin is not a TTY.", file=sys.stderr)
+        print(f"{FAIL}Refusing to proceed without --yes when stdin is not a TTY.", file=sys.stderr)
         return 2
 
     skills = find_cleanup_skills()
     if not skills:
-        print(f"{OK} No domain cleanup skills found.")
+        print(f"{OK}No domain cleanup skills found.")
         return 0
 
+    project = cached_project()
+    if project and not same_path(project, REPO_ROOT):
+        print(f"{WARN}Cleanup targets the cached project {project}, not this checkout {REPO_ROOT}")
     print(f"Plan from {len(skills)} cleanup skill(s): {', '.join('/' + s.name for s in skills)}")
     failed = run_children(skills, "--dry-run")
     print()
     if failed:
-        print(f"{FAIL} Dry run failed for: {', '.join(failed)}. Nothing was removed.", file=sys.stderr)
+        print(f"{FAIL}Dry run failed for: {', '.join(failed)}. Nothing was removed.", file=sys.stderr)
         return 1
     if args.dry_run:
-        print(f"{OK} Dry run complete. Nothing was removed.")
+        print(f"{OK}Dry run complete. Nothing was removed.")
         return 0
 
-    if not args.yes and not confirm("Remove everything listed above? [y/N]: "):
+    where = f" from {project}" if project else ""
+    if not args.yes and not confirm(f"Remove everything listed above{where}? [y/N]: "):
         print("Aborted. Nothing was removed.")
         return 0
 
     failed = run_children(skills, "--yes")
     print()
     if failed:
-        print(f"{FAIL} {len(failed)} cleanup skill(s) failed: {', '.join(failed)}", file=sys.stderr)
+        print(f"{FAIL}{len(failed)} cleanup skill(s) failed: {', '.join(failed)}", file=sys.stderr)
         return 1
-    print(f"{OK} All cleanup skills completed.")
+    print(f"{OK}All cleanup skills completed.")
     return 0
 
 

@@ -66,6 +66,7 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/patterns/language_workarounds.md` | Checked on `P:`: missing language features (ternary, lambdas, exceptions) and their workarounds; overloading, `auto` and `foreach` with an index, which do work. |
 | `_shared/enscript/integrations/community_framework.md` | Community Framework modules, ModStorage, `GetRPCManager()`, event handlers. Checked against the shipped CF scripts PBO. |
 | `_shared/enscript/integrations/dabs_framework.md` | Dabs Framework (third party): attributes, `ScriptView` and `ViewController` MVC, layout bindings, `ScriptViewMenu`. Checked against the mod's own scripts. |
+| `_shared/enscript/integrations/expansion_style.md` | Naming and structure for mods that extend or sit beside DayZ Expansion. Expansion targeted work only; the vanilla style guide is the default. |
 | `_shared/enscript/integrations/vanilla_plugins.md` | Checked on `P:`: registering a plugin in `PluginManager.Init`, its lifecycle, `GetPlugin()`, `PluginAdminLog`. |
 | `_shared/enscript/integrations/central_economy.md` | Checked on `P:` and the vanilla mission: `types.xml`, `cfgspawnabletypes.xml` and `<ce folder>` registration, spawn flags, `GetCEApi()`, ObjectSpawner. |
 | `_shared/enscript/integrations/input_bindings.md` | Checked on `P:`: `inputs.xml` format, the `CfgMods` line, `UAInput` API, context guards. |

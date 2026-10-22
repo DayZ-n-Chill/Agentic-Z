@@ -59,10 +59,10 @@ python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "<skill-dir>"
 
 ## 3b. Check it (clones only)
 
-From the repo root, run the tests and the wiki drift check:
+From the repo root, run the tests and the wiki drift check. They need pytest and pyyaml once: `python -m pip install pytest pyyaml`.
 
 ```cmd
-py -m pytest -q .claude scripts/dev hooks
+python -m pytest -q .claude scripts/dev hooks
 python .claude/skills/docs-sync/sync.py --check
 ```
 

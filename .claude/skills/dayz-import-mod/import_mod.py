@@ -29,10 +29,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
-# PROJECT_DIR is the user's project (where workspace/ and .claude/local-memory/ live).
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
-WORKSPACE = PROJECT_DIR / "workspace"
 NEW_MOD = h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py"
+_nm = h.load_module("dayz_new_mod_module", NEW_MOD)
+
+# PROJECT_DIR is the user's project (where workspace/ and .claude/local-memory/ live),
+# taken from dayz-new-mod so import, new-mod and the project cache always agree.
+PROJECT_DIR = _nm.PROJECT_DIR
+WORKSPACE = PROJECT_DIR / "workspace"
 ADD_SCAFFOLD = h.SKILLS_DIR / "dayz-add-scaffold" / "add_scaffold.py"
 P_DRIVE = Path("P:\\")
 
@@ -59,7 +62,6 @@ _GITHUB_RE = re.compile(
 # Any other git remote: https://host/path/repo.git or git@host:path/repo.git
 _GIT_URL_RE = re.compile(r"(?i)^(?:https://\S+?|git@[\w.-]+:\S+?)/?([\w.-]+?)\.git$")
 
-_nm = h.load_module("dayz_new_mod_module", NEW_MOD)
 _scaffold = h.load_module("dayz_add_scaffold_module", ADD_SCAFFOLD)
 
 

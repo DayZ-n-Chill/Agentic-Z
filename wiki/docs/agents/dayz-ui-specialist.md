@@ -49,7 +49,7 @@ When the UI needs its own icons:
 
 1. Ask the caller for the PNG sprites, or check that they are in `workspace/<ModName>/.gui-sources/<setname>/`. One file per icon, and each file name is the image name the layout will use (letters, digits and underscores).
 2. Run `/dayz-build-imageset workspace/<ModName>`. It writes `gui/imagesets/<setname>.imageset` and its `.paa`. If it fails, report its output to your caller and stop; do not write an `.imageset` by hand.
-3. Register the imageset in `config.cpp` under `CfgMods` `defs` `imageSets`. That is `dayz-config-specialist` work when the team has one; otherwise add the entry yourself, as shown in `widget_api.md` ("Imagesets in layouts and script").
+3. Register the imageset in `config.cpp` under `CfgMods` `defs` `imageSets`. Send the `CfgMods` > `defs` > `imageSets` entry to `dayz-config-specialist` through your lead (under the lead's handoff block). Add it yourself only when called directly with no lead, as shown in `widget_api.md` ("Imagesets in layouts and script").
 4. Reference each icon as `image0 "set:<setname> image:<file stem>"` in the layout, or with `ImageWidget.LoadImageFile(0, "set:<setname> image:<file stem>")` in script.
 
 ## Figma input
