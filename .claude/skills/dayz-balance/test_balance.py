@@ -437,3 +437,12 @@ class CfgVehicles
     # The whole Clothing group has about 786 items; the Mask slot holds far fewer.
     assert bio[0]["peer_count"] < 100
     assert not any("Bag" in p["class"] for p in bio[0]["peers"])
+
+
+@pytest.mark.parametrize("argv", [[], ["--mod-dir", "x", "--ratio", "abc"], ["--json"]])
+def test_argparse_errors_still_print_error_first_line(argv, capsys):
+    assert balance.main(argv) == 2
+    out = capsys.readouterr().out.splitlines()
+    assert out[0] == "ERROR"
+    if "--json" in argv:
+        assert json.loads("\n".join(out[1:]))["verdict"] == "ERROR"

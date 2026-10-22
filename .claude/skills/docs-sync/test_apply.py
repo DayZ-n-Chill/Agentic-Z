@@ -155,6 +155,11 @@ def test_strip_inline_comment_keeps_text():
     assert strip_html_comments_outside_fences("keep <!-- x --> this\n") == "keep  this\n"
 
 
+def test_comment_inside_inline_code_span_is_kept():
+    body = "such as a `<!-- MyMod types -->` header line <!-- gone -->\n"
+    assert strip_html_comments_outside_fences(body) == "such as a `<!-- MyMod types -->` header line \n"
+
+
 def test_strip_does_not_join_two_comments_across_text():
     body = "<!-- a --> keep\n<!-- b -->\n"
     assert strip_html_comments_outside_fences(body) == " keep\n"

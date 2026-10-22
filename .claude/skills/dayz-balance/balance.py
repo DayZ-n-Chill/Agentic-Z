@@ -574,7 +574,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         if not args.mod and not args.mod_dir:
             parser.error("give a <ModName> or --mod-dir")
     except SystemExit as e:
-        return 0 if e.code == 0 else 2
+        if e.code == 0:
+            return 0
+        # argparse printed usage on stderr; keep the ERROR first-line contract on stdout.
+        raw = sys.argv[1:] if argv is None else argv
+        return _error("bad arguments (usage on stderr)", "--json" in raw)
 
     try:
         if args.mod_dir:

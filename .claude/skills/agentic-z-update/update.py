@@ -544,7 +544,12 @@ def format_preview(drift: dict[str, FileStatus], baseline_sha: Optional[str], up
             parts.append(f"new search index {sidx[1]}")
         if not parts:
             return ""
-        return f"agentic-z: {' + '.join(parts)} available. Run /agentic-z-update or /dayz-search-download."
+        runs = []
+        if n:
+            runs.append("/agentic-z-update")
+        if sidx:
+            runs.append("/dayz-search-download")
+        return f"agentic-z: {' + '.join(parts)} available. Run {' and '.join(runs)}."
 
     if not drift and not sidx:
         return ""
@@ -716,6 +721,16 @@ def resolve_conflicts_per_file(drift: dict[str, FileStatus], upstream_ref: str) 
                 continue
             print("    invalid choice; try k/t/d/s")
     return choices
+
+
+def per_file_command() -> str:
+    """The --per-file rerun command, runnable from the cwd (main() has chdir'd to the repo root)."""
+    script = Path(__file__).resolve()
+    try:
+        shown = script.relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        shown = str(script)
+    return f'python "{shown}" --per-file'
 
 
 def finish_apply(
@@ -957,7 +972,7 @@ def main() -> int:
                 print(f"      {p}")
             print()
             print("Resolve options:")
-            print("      python update.py --per-file   # interactive per-file picker")
+            print(f"      {per_file_command()}   # interactive per-file picker")
             print("      git checkout upstream/main -- <path>   # take upstream version")
             print("      git checkout HEAD -- <path>            # keep your version")
 

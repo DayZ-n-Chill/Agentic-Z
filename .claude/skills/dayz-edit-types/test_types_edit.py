@@ -486,3 +486,22 @@ def test_main_skips_the_limits_check_outside_a_mission(types_file, monkeypatch, 
     assert _run_main(monkeypatch, [str(types_file), "AKM", "--usage", "Militar"]) == 0
     out = capsys.readouterr().out
     assert "names not checked" in out and "not defined in" not in out
+
+
+def test_new_and_updated_entries_put_tag_between_category_and_usage(types_file):
+    _, root = _roundtrip(types_file)
+    te.upsert(root, "MyMod_Crate", _args(category="tools", usage=["Industrial"], value=["Tier1"], tag=["shelves"]))
+    named = [c.tag for c in _find(root, "MyMod_Crate") if c.tag in te.NAMED_CHILDREN]
+    assert named == ["category", "tag", "usage", "value"]
+    te.upsert(root, "AKM", _args(tag=["floor"]))
+    named = [c.tag for c in _find(root, "AKM") if c.tag in te.NAMED_CHILDREN]
+    assert named == ["category", "tag", "usage", "value"]
+
+
+def test_user_groups_not_checked_without_the_user_file(mission_types):
+    (mission_types.parent.parent / te.LIMITS_USER_FILE).unlink()
+    limits = te.load_limits(mission_types)
+    assert "user" not in limits
+    el = te.ET.fromstring('<type name="X"><usage user="AnyGroup"/><usage name="Militar"/></type>')
+    problems = te.undefined_limit_names(el, limits)
+    assert problems == ['usage name "Militar" is not defined in cfglimitsdefinition.xml']

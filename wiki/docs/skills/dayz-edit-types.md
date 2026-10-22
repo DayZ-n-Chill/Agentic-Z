@@ -45,9 +45,9 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove [--dry-run]
 2. Read and parse `<types.xml>` (comments are kept). Locate the `<type name="<ClassName>">` block.
 3. Upsert mode (default):
    - If the block exists, update only the fields passed. Untouched fields stay as-is.
-   - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the vanilla standard flags (`count_in_map=1`, everything else 0). Children are written in vanilla order: `nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`, then `category`, `usage`, `value`, `tag`.
+   - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the vanilla standard flags (`count_in_map=1`, everything else 0). Children are written in vanilla order: `nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`, then `category`, `tag`, `usage`, `value`. An edit that adds a name puts it in the same place among the existing children.
 4. Remove mode (`--remove`): delete the block.
-5. Name check (upsert mode): the entry's `<category>`, `<usage>`, `<value>` and `<tag>` names are checked against the mission's `cfglimitsdefinition.xml`, found next to `db/` (`<types.xml>\..\..\`). A `user=` group is checked against `cfglimitsdefinitionuser.xml` when it exists. Each name the file does not define prints `[WARN] usage name "Militar" is not defined in cfglimitsdefinition.xml`, because the Central Economy ignores or rejects it. The edit still goes ahead. When `cfglimitsdefinition.xml` is not there (a types file kept in a mod folder), the check is skipped with a note.
+5. Name check (upsert mode): the entry's `<category>`, `<usage>`, `<value>` and `<tag>` names are checked against the mission's `cfglimitsdefinition.xml`, found next to `db/` (`<types.xml>\..\..\`). A `user=` group is checked against `cfglimitsdefinitionuser.xml` when it exists; without that file `user=` groups are not checked. Each name the file does not define prints `[WARN] usage name "Militar" is not defined in cfglimitsdefinition.xml`, because the Central Economy ignores or rejects it. The edit still goes ahead. When `cfglimitsdefinition.xml` is not there (a types file kept in a mod folder), the check is skipped with a note.
 6. If nothing changed (entry already matches, or the entry to remove is absent), or `--dry-run` was passed, stop: no backup, no write.
 7. Otherwise copy the file to `<types.xml>.bak` (overwriting any prior backup) and write the updated tree back.
 
@@ -82,7 +82,7 @@ Then each entry is merged: a new name is added at the end, a name already in the
 [OK]    Wrote .server\chernarus\mission\db\types.xml
 ```
 
-Formatting: comments survive the round trip, both inside `<types>` and before or after it (such as a `` header line), but the whole file is re-indented with 4 spaces and gets an `<?xml version='1.0' encoding='utf-8'?>` declaration. Attribute order and blank lines are not preserved, so expect a whitespace diff the first time a hand-formatted file is edited.
+Formatting: comments survive the round trip, both inside `<types>` and before or after it (such as a `<!-- MyMod types -->` header line), but the whole file is re-indented with 4 spaces and gets an `<?xml version='1.0' encoding='utf-8'?>` declaration. Attribute order and blank lines are not preserved, so expect a whitespace diff the first time a hand-formatted file is edited.
 
 ## Refuses to run if
 

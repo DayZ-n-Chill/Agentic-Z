@@ -115,7 +115,7 @@ def gather_status(project: Path, mods_root: Path = Path("P:\\Mods")) -> Status:
         diag_running=_diag_running(),
         voyage_key=_voyage_key_set(project / ".env"),
         search_index=SEARCH_INDEX.is_dir(),
-        needs=_non_vanilla_addons(project / "workspace" / mod / "config.cpp") if mod else [],
+        needs=launch_needs(project / "workspace" / mod) if mod else [],  # same rule launch applies
     )
 
 

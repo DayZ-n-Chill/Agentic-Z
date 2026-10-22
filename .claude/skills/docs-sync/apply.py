@@ -221,8 +221,9 @@ def _map_prose(body: str, fn) -> str:
 
 def _strip_comments(prose: str) -> str:
     # Lines that hold only a comment (one line or several) are dropped whole;
-    # comments sharing a line with text are cut out of it.
-    return _HTML_COMMENT.sub("", _HTML_COMMENT_LINES.sub("", prose))
+    # comments sharing a line with text are cut out of it, unless they sit in
+    # an inline code span (`<!-- x -->`), which MDX shows as literal code.
+    return _outside_code_spans(_HTML_COMMENT_LINES.sub("", prose), lambda t: _HTML_COMMENT.sub("", t))
 
 
 def strip_html_comments_outside_fences(body: str) -> str:
