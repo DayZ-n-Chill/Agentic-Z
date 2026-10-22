@@ -495,6 +495,8 @@ def render_text(report: dict) -> str:
     if report["changes"]["from"] == "release-commit":
         out.append(f"       changelog starts after {report['changes']['since']}, "
                    "the newest chore(release) commit in the mod folder")
+    elif report["changes"]["from"] == "tag":
+        out.append(f"       changelog starts after {report['changes']['since']}, the latest tag in the mod's repository")
     out += [f"[WARN] {w}" for w in report["warnings"]]
     return "\n".join(out)
 

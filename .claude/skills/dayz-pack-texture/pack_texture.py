@@ -2,8 +2,8 @@
 
 Validates that each input ends in a texture-role suffix used by vanilla DayZ
 (_co, _nohq, _smdi and the rest of ALLOWED_SUFFIXES) so ImageToPAA and the
-engine treat the texture as the right kind. An existing .paa next to the source is
-overwritten.
+engine treat the texture as the right kind, and that both sides of the image are
+powers of two. An existing .paa next to the source is overwritten.
 
 See SKILL.md for full usage.
 """
@@ -34,6 +34,9 @@ ALLOWED_SUFFIXES = (
 SUFFIX_RE = re.compile(
     "(" + "|".join(re.escape(s) for s in ALLOWED_SUFFIXES) + ")$", re.IGNORECASE
 )
+# Texture sides vanilla uses (.claude/skills/_shared/textures/suffixes-and-sizes.md).
+VANILLA_SIZES = (64, 128, 256, 512, 1024, 2048)
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
 def resolve_image_to_paa() -> Path:
@@ -50,6 +53,27 @@ def resolve_image_to_paa() -> Path:
     return exe
 
 
+def image_size(path: Path) -> tuple[int, int] | None:
+    """Width and height from the PNG IHDR chunk or the TGA header, or None if unreadable."""
+    with path.open("rb") as f:
+        head = f.read(24)
+    if path.suffix.lower() == ".png":
+        if len(head) < 24 or not head.startswith(PNG_SIGNATURE) or head[12:16] != b"IHDR":
+            return None
+        return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+    if len(head) < 18:
+        return None
+    return int.from_bytes(head[12:14], "little"), int.from_bytes(head[14:16], "little")
+
+
+def is_power_of_two(n: int) -> bool:
+    return n > 0 and n & (n - 1) == 0
+
+
+def nearest_vanilla_size(n: int) -> int:
+    return min(VANILLA_SIZES, key=lambda size: (abs(size - n), -size))
+
+
 def validate_input(path: Path) -> None:
     if not path.exists():
         sys.exit(f"{h.FAIL} Input not found: {path}")
@@ -64,6 +88,17 @@ def validate_input(path: Path) -> None:
             f"{', '.join(ALLOWED_SUFFIXES)} before the extension.\n"
             f"       The DayZ engine uses this suffix to assign the texture role.\n"
             f"       Rename to e.g. {path.stem}_co{path.suffix} (color/diffuse)."
+        )
+    size = image_size(path)
+    if size is None:
+        sys.exit(f"{h.FAIL} {path.name}: cannot read the image size from its header.")
+    width, height = size
+    if not (is_power_of_two(width) and is_power_of_two(height)):
+        sys.exit(
+            f"{h.FAIL} {path.name}: {width} x {height} is not a power of two on every side.\n"
+            f"       Resize to the nearest vanilla size: "
+            f"{nearest_vanilla_size(width)} x {nearest_vanilla_size(height)} "
+            "(see .claude/skills/_shared/textures/suffixes-and-sizes.md)."
         )
 
 

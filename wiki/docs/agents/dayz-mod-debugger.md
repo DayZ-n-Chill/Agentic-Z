@@ -32,7 +32,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 ## Where the logs are
 
 - Server: `.server/<instance>/Profiles/` (`script*.log`, `*.RPT`, `crash*.log`, BattlEye state).
-- Client: `.server/!ClientDiagLogs/` (client RPT and script logs). UI and `5_Mission` errors only appear here.
+- Client: `.server/!ClientDiagLogs/` (client RPT and script logs). UI errors and client-side `5_Mission` errors (MissionGameplay, menus, HUD) only appear here; server-side `5_Mission` code (MissionServer) logs to the server Profiles folder.
 - Build failures: the AddonBuilder lines quoted in the `/dayz-gate build` JSON (or the `dayz-build-checker` report).
 - Review-gate failures: there are no engine logs; diagnose from the `dayz-mod-reviewer` gate report and the files the task changed.
 
