@@ -1,5 +1,6 @@
-"""Repo-wide checks: agent team and plugin manifest, no-token .bat wrappers, the knowledge-pack index
-and citations, the preflight gate list, the Tier 1 files and the panel's skill scripts.
+"""Repo-wide checks: agent team and plugin manifest, the references in agents, skills and packs,
+no-token .bat wrappers, the knowledge-pack index and citations (and, with P:\\ mounted, that each
+cited vanilla line exists), the preflight gate list, the Tier 1 files and the panel's skill scripts.
 
 Run with: py -m pytest scripts/dev/test_repo_integrity.py
 """
@@ -81,27 +82,41 @@ def test_agents_have_no_machine_specific_paths(path):
     assert not re.findall(r"\b[A-OQ-Z]:\\", text)
 
 
-@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+# Every file an agent follows: the agents, the skills and the knowledge packs.
+# A dead script, agent or skill name in any of them sends a user nowhere.
+REF_FILES = sorted(
+    set(AGENT_FILES)
+    | set(SKILLS_DIR.glob("*/SKILL.md"))
+    | set((SKILLS_DIR / "_shared").rglob("*.md"))
+    | set(SKILLS_DIR.glob("*/reference*/**/*.md"))
+)
+
+
+def _ref_id(path: Path) -> str:
+    return path.relative_to(REPO).as_posix()
+
+
+@pytest.mark.parametrize("path", REF_FILES, ids=_ref_id)
 def test_referenced_repo_files_exist(path):
     text = path.read_text(encoding="utf-8")
     for ref in re.findall(r"(?:\.claude/(?:skills|agents|mcp)|scripts)/[\w./-]+\.(?:md|py|bat)", text):
-        assert (REPO / ref).exists(), f"{path.name} points at missing {ref}"
+        assert (REPO / ref).exists(), f"{_ref_id(path)} points at missing {ref}"
 
 
-@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", REF_FILES, ids=_ref_id)
 def test_referenced_agents_exist(path):
     text = path.read_text(encoding="utf-8")
     for ref in re.findall(r"`((?:dayz|figma)-[a-z-]+)`", text):
         if ref == "dayz-rag":
             continue
-        assert ref in AGENT_NAMES or (SKILLS_DIR / ref).exists(), f"{path.name} names unknown agent {ref}"
+        assert ref in AGENT_NAMES or (SKILLS_DIR / ref).exists(), f"{_ref_id(path)} names unknown agent {ref}"
 
 
-@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", REF_FILES, ids=_ref_id)
 def test_referenced_slash_skills_exist(path):
     text = path.read_text(encoding="utf-8")
     for ref in re.findall(r"(?<![\w/.])/((?:dayz|agentic|docs|sync|clean)-[a-z0-9-]+)", text):
-        assert (SKILLS_DIR / ref / "SKILL.md").exists(), f"{path.name} names unknown skill /{ref}"
+        assert (SKILLS_DIR / ref / "SKILL.md").exists(), f"{_ref_id(path)} names unknown skill /{ref}"
 
 
 def _lead_workers():
@@ -137,10 +152,18 @@ def test_every_dayz_worker_is_in_the_lead_table():
             assert name in workers, f"{name} is missing from dayz-lead's worker table"
 
 
+def _explicit_tools(path: Path) -> set[str]:
+    # With no `tools:` line a subagent inherits every tool, Edit and Write
+    # included, so a read-only role must list its tools.
+    tools = set(_tools(path))
+    assert tools, f"{path.name} has no tools: line, so it inherits Edit and Write"
+    return tools
+
+
 @pytest.mark.parametrize("name", sorted(READ_ONLY_GATES))
 def test_gates_cannot_edit(name):
     path = AGENTS_DIR / f"{name}.md"
-    assert not set(_tools(path)) & {"Edit", "Write", "NotebookEdit"}
+    assert not _explicit_tools(path) & {"Edit", "Write", "NotebookEdit"}
     # Setting `memory` auto-enables Write and Edit for any path.
     assert "memory" not in _frontmatter(path)
 
@@ -153,8 +176,15 @@ NO_WRITE_ROLES = {"dayz-lead", "dayz-physics-specialist"}
 @pytest.mark.parametrize("name", sorted(NO_WRITE_ROLES))
 def test_no_write_roles_have_no_write_tools_or_memory(name):
     path = AGENTS_DIR / f"{name}.md"
-    assert not set(_tools(path)) & {"Edit", "Write", "NotebookEdit"}
+    assert not _explicit_tools(path) & {"Edit", "Write", "NotebookEdit"}
     assert "memory" not in _frontmatter(path)
+
+
+def test_a_role_with_no_tools_line_fails_the_read_only_checks(tmp_path):
+    agent = tmp_path / "dayz-gate-x.md"
+    agent.write_text("---\nname: dayz-gate-x\ndescription: d\n---\nbody\n", encoding="utf-8")
+    with pytest.raises(AssertionError, match="inherits Edit and Write"):
+        _explicit_tools(agent)
 
 
 def test_ingame_tester_matches_gate():
@@ -279,6 +309,26 @@ def test_pack_files_cite_vanilla_at_least_once():
         if not CITATION_RE.search(path.read_text(encoding="utf-8")):
             missing.append(rel)
     assert not missing, f"pack files with no path:line citation of vanilla: {missing}"
+
+
+# P:\...\file.ext:N or :N-M. A cited file must exist and reach the cited line.
+CITED_LINE_RE = re.compile(r"(P:\\[^\s`:*?\"<>|()]+\.\w+):(\d+)(?:-(\d+))?")
+
+
+@pytest.mark.skipif(not Path("P:/scripts").is_dir(), reason="P:\\ is not mounted with vanilla scripts")
+def test_cited_vanilla_lines_exist_on_p():
+    lines: dict[str, int | None] = {}
+    bad = []
+    for path in REF_FILES + sorted(SKILLS_DIR.rglob("*.c")):
+        for m in CITED_LINE_RE.finditer(path.read_text(encoding="utf-8", errors="replace")):
+            cited, last = m.group(1), int(m.group(3) or m.group(2))
+            if cited not in lines:
+                file = Path(cited)
+                lines[cited] = len(file.read_bytes().splitlines()) if file.is_file() else None
+            if lines[cited] is None or last > lines[cited]:
+                found = "missing" if lines[cited] is None else f"has {lines[cited]} lines"
+                bad.append(f"{_ref_id(path)}: {m.group(0)} ({found})")
+    assert not bad, "citations of vanilla lines that do not exist:\n" + "\n".join(bad)
 
 
 def test_citation_exemptions_exist():

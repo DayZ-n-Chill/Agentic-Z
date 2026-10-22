@@ -1,6 +1,6 @@
 # Pattern: Singleton Config
 
-A static, lazily-initialized configuration class loaded from a JSON file on the server profile directory. The singleton lives in `3_Game` (visible to every later layer) or `5_Mission`; neither is server-only, so guard server work with `GetGame().IsServer()` or `#ifdef SERVER`.
+A static, lazily-initialized configuration class loaded from a JSON file on the server profile directory. The singleton lives in `3_Game` (visible to every later layer) or `5_Mission`; neither is server-only, so guard server work with `GetGame().IsServer()`. Do not use `#ifdef SERVER` for it: `SERVER` is defined only on a dedicated server (`P:\scripts\1_core\defines.c:106`, `:112` to `:115`), so config code inside it does not exist in offline or single player testing (`../references/language_compile.md`).
 
 It loads with `JsonFileLoader<T>.LoadFile(path, data, errorMessage)` and saves with `SaveFile(path, data, errorMessage)`, which return `bool` and say what went wrong (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`). Do not use `JsonLoadFile` or `JsonSaveFile`: they return nothing, so a broken file is only an `ErrorEx` in the log, and vanilla marks them "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`).
 

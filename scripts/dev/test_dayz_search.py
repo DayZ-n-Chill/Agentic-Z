@@ -60,6 +60,27 @@ def test_no_hits(monkeypatch, capsys):
     assert "(no hits)" in capsys.readouterr().out
 
 
+def test_no_hits_names_the_server_default_limit(monkeypatch, capsys):
+    # Without -d the server still applies DAYZ_RAG_MAX_DISTANCE; the user must see why nothing came back.
+    monkeypatch.setattr(cli, "search_dayz_source_impl", lambda *a, **k: [])
+    monkeypatch.setattr(cli, "DEFAULT_MAX_DISTANCE", 0.6)
+    assert cli.main(["q"]) == 0
+    out = capsys.readouterr().out
+    assert "(no hits within distance 0.6" in out and "DAYZ_RAG_MAX_DISTANCE" in out
+
+
+def test_no_hits_names_the_d_limit(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "search_dayz_source_impl", lambda *a, **k: [])
+    assert cli.main(["-d", "0.3", "q"]) == 0
+    assert "(no hits within distance 0.3" in capsys.readouterr().out
+
+
+def test_help_names_the_default_limit(capsys):
+    with pytest.raises(SystemExit):
+        cli.main(["--help"])
+    assert "DAYZ_RAG_MAX_DISTANCE" in " ".join(capsys.readouterr().out.split())
+
+
 @pytest.mark.parametrize("ft", ["cpp", "hpp", "h", "c", "layout"])
 def test_every_server_file_type_is_accepted(calls, ft):
     assert cli.main(["-t", ft, "q"]) == 0
@@ -70,6 +91,8 @@ def test_bad_file_type_is_an_argparse_error(calls, capsys):
         cli.main(["-t", "config.cpp", "q"])
     assert e.value.code == 2
     assert calls == []
+    err = capsys.readouterr().err  # as the docstring says: usage line, then the argparse error
+    assert err.startswith("usage: dayz-search") and "dayz-search: error: argument -t/--file-type" in err
 
 
 @pytest.mark.parametrize("exc", [RuntimeError("no index, run /dayz-search-index"), ValueError("bad"),

@@ -8,9 +8,13 @@ Usage:
     dayz-search -s 800 <query>           # snippet preview length (default 400)
     dayz-search -j <query>               # raw JSON output
 
+Without -d, the server's DAYZ_RAG_MAX_DISTANCE env var, when set, still drops
+the far hits, as it does for agents; '(no hits)' then names that limit.
+
 Reuses search_dayz_source_impl from the MCP server module so behavior matches
-what agents see. A missing index, a missing VOYAGE_API_KEY, a missing package,
-a Voyage API error or a bad argument prints one 'error:' line and exits 2.
+what agents see. A missing index, a missing VOYAGE_API_KEY, a missing package
+or a Voyage API error prints one 'error:' line and exits 2. A bad argument
+exits 2 with argparse's usage line and a 'dayz-search: error:' line.
 """
 from __future__ import annotations
 
@@ -18,17 +22,21 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP_DIR = REPO_ROOT / ".claude" / "mcp" / "dayz-rag"
 sys.path.insert(0, str(MCP_DIR))
 
-from server import VALID_FILE_TYPES, search_dayz_source_impl  # noqa: E402
+from server import DEFAULT_MAX_DISTANCE, VALID_FILE_TYPES, search_dayz_source_impl  # noqa: E402
 
 
-def _print_hits(hits: list[dict], snippet_chars: int) -> None:
+def _print_hits(hits: list[dict], snippet_chars: int, threshold: Optional[float] = None) -> None:
     if not hits:
-        print("(no hits)")
+        if threshold is None:
+            print("(no hits)")
+        else:
+            print(f"(no hits within distance {threshold:g}; raise it with -d, or unset DAYZ_RAG_MAX_DISTANCE)")
         return
     for i, h in enumerate(hits, 1):
         path = h.get("path", "")
@@ -53,7 +61,10 @@ def main(argv: list[str]) -> int:
     p.add_argument("-k", "--top-k", type=int, default=5, help="max hits (default 5, max 25)")
     p.add_argument("-t", "--file-type", default=None, choices=sorted(VALID_FILE_TYPES),
                    help="source filter: " + " | ".join(sorted(VALID_FILE_TYPES)))
-    p.add_argument("-d", "--max-distance", type=float, default=None, help="drop hits with distance above this")
+    default_limit = f"{DEFAULT_MAX_DISTANCE:g} from DAYZ_RAG_MAX_DISTANCE" if DEFAULT_MAX_DISTANCE else "no limit"
+    p.add_argument("-d", "--max-distance", type=float, default=None,
+                   help=f"drop hits with distance above this (default: DAYZ_RAG_MAX_DISTANCE if set, else no "
+                        f"limit; now {default_limit})")
     p.add_argument("-s", "--snippet-chars", type=int, default=400, help="snippet preview length (0 = the whole snippet, which the index caps at 1500 characters)")
     p.add_argument("-j", "--json", action="store_true", help="print raw JSON instead of formatted output")
     args = p.parse_args(argv)
@@ -80,7 +91,8 @@ def main(argv: list[str]) -> int:
     if args.json:
         print(json.dumps(hits, indent=2))
     else:
-        _print_hits(hits, args.snippet_chars)
+        threshold = args.max_distance if args.max_distance is not None else DEFAULT_MAX_DISTANCE
+        _print_hits(hits, args.snippet_chars, threshold)
     return 0
 
 

@@ -35,16 +35,24 @@ MAX_CONTEXT = 9000  # characters of context added
 WORKSHOP_RE = re.compile(
     r"(?i)(?:https?://)?steamcommunity\.com/(?:sharedfiles|workshop)/filedetails/?\?\S*|steam://url/CommunityFilePage/\d+"
 )
-# Only a repo or tree link is a mod to import. The first lookahead keeps the
-# repo name whole; the second skips pull requests, issues, files and the like.
-# The lookbehind keeps subdomains such as gist. and raw. from matching.
+# Only a repo or tree link is a mod to import. The first lookahead skips
+# GitHub's own pages (github.com/orgs/..., github.com/settings/...). The
+# second keeps the repo name whole; the third skips pull requests, issues,
+# files, the wiki, settings and the like. The lookbehind keeps subdomains such
+# as gist. and raw. from matching.
 GITHUB_RE = re.compile(
-    r"(?i)(?<![\w.-])(?:https?://)?(?:www\.)?github\.com/[\w.-]+/[\w.-]*[\w-](?![\w-]|\.[\w-])"
-    r"(?!/(?:pulls?|issues|blob|commits?|releases|actions|compare|discussions)\b)"
+    r"(?i)(?<![\w.-])(?:https?://)?(?:www\.)?github\.com/"
+    r"(?!(?:orgs|settings|sponsors|topics|marketplace|notifications|apps|users)/)"
+    r"[\w.-]+/[\w.-]*[\w-](?![\w-]|\.[\w-])"
+    r"(?!/(?:pulls?|issues|blob|commits?|releases|actions|compare|discussions|wiki|settings|projects"
+    r"|security|tags|branches|milestones|labels)\b)"
     r"(?:/tree/[\w.-]*[\w-])?"
 )
 FIGMA_RE = re.compile(r"(?i)\bfigma\.com/(?:file|design|proto|board)/\S+")
 TYPE_CHUNK_RE = re.compile(r"<type\s+name\s*=")
+# A pasted entry, not a type named in prose: a closing </type>, a self-closing
+# <type name="X"/>, or an opening tag followed by a child tag.
+TYPE_ENTRY_RE = re.compile(r"</type>|<type\s+name\s*=[^<>]*(?:/>|>\s*<)")
 IMAGE_RE = re.compile(r"\[Image #\d+\]")
 SCREENSHOT_FILE_RE = re.compile(r"(?i)\bscreen\s*shot.*\.(?:png|jpe?g|bmp|webp)\b|\.(?:png|jpe?g|bmp|webp)\b.*\bscreen\s*shot")
 # Error lines the engine writes; the same families triage.py classifies.
@@ -160,7 +168,7 @@ def build_context(prompt: str, project: Path) -> Optional[str]:
     if FIGMA_RE.search(prompt):
         parts.append(FIGMA_CONTEXT)
     # The types and log detectors load other modules; one failing must not drop the rest.
-    if TYPE_CHUNK_RE.search(prompt):
+    if TYPE_ENTRY_RE.search(prompt) and TYPE_CHUNK_RE.search(prompt):
         try:
             parts.append(types_context(prompt))
         except Exception:
@@ -194,9 +202,9 @@ def shadowed_by_project() -> bool:
 
 
 def main() -> int:
-    if shadowed_by_project():
-        return 0
     try:
+        if shadowed_by_project():
+            return 0
         data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace") or "{}")
         prompt = data.get("prompt") or ""
         project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd())

@@ -112,8 +112,10 @@ modded class ActionConstructor
 }
 
 // Step 2 goes inside the class MyMod_CustomCanteen declaration
-// (01_custom_item.c), not in a modded class: modded_class.md says not to
-// declare class X and modded class X in the same mod.
+// (01_custom_item.c), not in a modded class. The class is this mod's own,
+// so its members belong in its declaration: modded class is for classes
+// you do not own, and splitting one class over two files makes it depend
+// on file load order (modded_class.md, Rules).
 //
 // In MyMod_CustomCanteen (01_custom_item.c):
 //     override void SetActions()

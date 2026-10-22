@@ -1,6 +1,6 @@
 # Pattern: modded class
 
-`modded class` is the only mechanism for extending vanilla (or another mod's) classes without a separate inheritance chain. There is a single class in the final binary: the vanilla class effectively becomes the base layer. Vanilla itself uses it: `modded class ParticleList` (`P:\scripts\3_game\particles\particlelist.c:5`) and `modded class PluginDiagMenu` (`P:\scripts\4_world\plugins\pluginbase\plugindiagmenu\plugindiagmenumodding.c:21`).
+`modded class` is the only mechanism for extending vanilla (or another mod's) classes without a separate inheritance chain. There is a single class in the final binary: the vanilla class effectively becomes the base layer. Vanilla documents it for modders but compiles no `modded class` of its own: `modded class ParticleList` (`P:\scripts\3_game\particles\particlelist.c:5`) sits in a `/* */` block labelled "Example how to register particles from a mod" (`:3-9`), and `modded class PluginDiagMenu` (`P:\scripts\4_world\plugins\pluginbase\plugindiagmenu\plugindiagmenumodding.c:21`) sits in a file wrapped in `#ifdef DOXYGEN` (`:8`), so it only feeds the documentation build.
 
 ## Contents
 
@@ -27,7 +27,9 @@ modded class PlayerBase extends PlayerBase { }
 modded class PlayerBase { }
 ```
 
-`modded class Foo extends Foo` (or `extends` anything) compiles cleanly and produces no warnings, but the class never participates in the merged stack. This is the **#1 cause** of *"my override isn't running"*. The base class is implicit; do not write it. None of the vanilla `modded class` lines above has an `extends`.
+The base class is implicit; do not write it. None of the vanilla `modded class` examples above has an `extends`.
+
+**Reported, not checked on `P:\`** (the compiler is native, and vanilla compiles no `modded class` to read): `modded class Foo extends Foo` (or `extends` anything) compiles cleanly and produces no warnings, but the class never joins the merged stack, so the override never runs. Modders report it as the most common cause of *"my override isn't running"*. Test it in your own mod before you rely on the exact behavior; the rule (no `extends`) holds either way.
 
 ---
 
@@ -90,10 +92,10 @@ modded class ItemBase
 
 ## Adding Actions to an Item
 
-Override `SetActions()` and call `AddAction(typename)` after `super.SetActions()`. That is how `ItemBase` adds its own actions (`P:\scripts\4_world\entities\itembase.c:246-253`); `GetActions` only reads the map those calls build (`itembase.c:235`).
+Override `SetActions()` and call `AddAction(typename)` after `super.SetActions()`. That is how `ItemBase` adds its own actions (`P:\scripts\4_world\entities\itembase.c:246-253`); `GetActions` only reads the map those calls build (`itembase.c:235`). To add an action to a vanilla item, mod its class (`Canteen` at `P:\scripts\4_world\entities\itembase\edible_base\bottle_base\canteen.c:1`, whose parent `Bottle_Base` overrides `SetActions` at `bottle_base.c:356`). For an item class your mod declares, override `SetActions` in its own declaration instead.
 
 ```c
-modded class MyMod_CustomCanteen
+modded class Canteen
 {
     override void SetActions()
     {
@@ -127,8 +129,7 @@ modded class SomeEntity
 {
     void SomeEntity()
     {
-        // Runs after the constructors of the layers below this one
-        // (vanilla and the mods loaded before yours), so their fields are set.
+        // Your layer's constructor: set up your own fields here.
     }
 
     void ~SomeEntity()
@@ -137,6 +138,8 @@ modded class SomeEntity
     }
 }
 ```
+
+**Reported, not checked on `P:\`** (constructor chaining is native): each layer's constructor runs after the constructors of the layers below it (vanilla and the mods loaded before yours), so their fields are already set when yours runs. Do not depend on another mod's constructor having run; test the order in your own mod if you need it.
 
 ---
 
@@ -147,9 +150,9 @@ modded class SomeEntity
 | Always call `super.*` on overrides | Skip only when deliberately blocking |
 | Prefix all field names with your mod tag | Avoids name collisions across mods |
 | modded class lives in the matching script module layer | A modded `PlayerBase` (`P:\scripts\4_world\...`) must be in `Scripts/4_World/` |
-| Do not declare `class X` and `modded class X` in the same mod | One or the other; never both for the same name |
+| For a class your mod declares, put its members in the declaration | `modded class` is for classes you do not own. Vanilla's DiagMenu example layers `modded class PluginDiagMenu` (`plugindiagmenumodding.c:21`) on a class declared in another file of the same module (`P:\scripts\4_world\plugins\pluginbase\plugindiagmenu\plugindiagmenu.c:29`), so the two can share a module. For your own class, though, splitting it over `class X` and `modded class X` leaves one class in two places and makes the result depend on file load order |
 | modded class cannot change the class's parent | You can only extend, not re-parent |
-| Never write `modded class Foo extends ...` | Silent no-op; base class is implicit (see top of file) |
+| Never write `modded class Foo extends ...` | Base class is implicit; reported to be a silent no-op (see top of file) |
 
 ---
 
@@ -216,7 +219,7 @@ class MyMod_FancyBarrel : ItemBase
 
 The script class name often differs from the config class name. Search by config parent: if your `config.cpp` has `class MyBarrel : Barrel_ColorBase`, the script file is `barrel_colorbase.c` somewhere under `P:\scripts\4_world\`.
 
-Also remember to add the vanilla addon to your `requiredAddons[]` if the script class isn't in core:
+`requiredAddons[]` is about the config parent, not the script class. Every vanilla script class ships in the scripts module, but your `config.cpp` class inherits a config class from a vanilla addon, so list the `CfgPatches` class that defines that parent. `Barrel_ColorBase`'s config class is in `DZ_Gear_Containers` (`P:\DZ\gear\containers\config.cpp:3`, the class at `:19`), so a barrel mod needs:
 
 ```cpp
 class CfgPatches

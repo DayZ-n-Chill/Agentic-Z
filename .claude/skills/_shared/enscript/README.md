@@ -14,7 +14,7 @@ This folder fills the gap between those: the recurring patterns themselves (nets
 
 Most of this folder started as a vendored mirror (see Attribution). Files are now in one of two states:
 
-- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md`, `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md` and `scheduler.md` (which marks its one unverified report as such); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `02`, `03`, `07`, `10`, the three layouts and `layouts.md`.
+- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md` (which marks its two native compiler reports as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md` and `scheduler.md` (which marks its one unverified report as such); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `02`, `03`, `07`, `10`, the three layouts and `layouts.md`.
 - **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`) and `integrations/dabs_framework.md` (the Dabs scripts PBO).
 - **Vendored, not yet checked on `P:\`**: examples `01`, `04`, `05`, `06`, `08` and `09`. Use them for shape only and check each call on `P:\scripts\` before you copy it.
 
@@ -34,7 +34,7 @@ enscript/
 |---|---|
 | `modded_class.md` | `super.*` rules, field injection, mod load order, **no-extends rule, NO_GUI guard, engine-backed classes not to mod, extend script class not config parent** |
 | `netsync.md` | `RegisterNetSyncVariable*` in the constructor, `SetSynchDirty`, `OnVariablesSynchronized`, bitfield packing |
-| `persistence.md` | `OnStoreSave`/`OnStoreLoad`, your own version header (the `version` argument is the game's storage version), write-order rules |
+| `persistence.md` | `OnStoreSave`/`OnStoreLoad`, your own version header (the `version` argument is the game's storage version), write-order rules. For saved fields on a modded vanilla class, migrations and data loss, read the deeper `_shared/persistence/` pack (`versioning-and-migration.md`) |
 | `rpc.md` | `ScriptRPC`, `RPCSingleParam`, `OnRPC` switch template, client-to-server validation, **ID-collision symptom** |
 | `singleton.md` | Static `s_Instance`, lazy init, `GetInstance()`, `LoadFile`/`SaveFile`, **`ScriptInvoker` shutdown null-guard** |
 | `actions.md` | `ActionBase`, registering in `ActionConstructor`, `CCINonRuined` vs `CCINone`, the condition component table, stopping pickup (`IsTakeable`, `CanPutInCargo`, `CanPutIntoHands`), conditions that read unsynced state |
@@ -110,6 +110,7 @@ When debugging, jump to the file that owns the symptom.
 | Tool-in-hand action shows with a ruined tool or none | `patterns/actions.md` (`CCINonRuined` vs `CCINone`) |
 | Item placed but still draggable into inventory | `patterns/actions.md` (`CanPutInCargo` and `CanPutIntoHands`) |
 | `OnStoreLoad` `version` looks like a game version | `patterns/persistence.md` (it is the storage version) |
+| Saved fields on a `modded class ItemBase` or `PlayerBase` load wrong, or old saves break after an update | `_shared/persistence/versioning-and-migration.md` ("Adding saved fields to a vanilla class") |
 | `override void Init()` on an item does not compile | `patterns/netsync.md` (register in the constructor) |
 | `GetPlugin(MyPlugin)` returns `null` | `integrations/vanilla_plugins.md` (register it in `PluginManager.Init`) |
 | Items declared in `config.cpp` never spawn | `integrations/central_economy.md` (the CE reads mission XML only) |

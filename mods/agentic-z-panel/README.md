@@ -35,7 +35,7 @@ Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ te
 | Ask vanilla (a text field) | Enter | `dayz-ask/ask.py "<question>"` |
 | Refresh | `r` | re-checks the state |
 
-One action runs at a time; a second press while one runs only shows a toast. Every press reads the state again first, so a mod picked with `/dayz-init` after the panel opened is used without pressing Refresh. Each run shows a toast when it ends and keeps its result line in the panel.
+One action runs at a time; a second press while one runs only shows a toast. Every press reads the state again first, so a mod picked with `/dayz-init` after the panel opened is used without pressing Refresh. Each run shows a toast when it ends and keeps its result line in the panel. An ask keeps its verdict with the reason or notes under it, and one that finds nothing (`NONE`) shows "nothing found", not "failed".
 
 ## Where it finds Agentic-Z
 
