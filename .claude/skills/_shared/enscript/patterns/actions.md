@@ -84,14 +84,14 @@ To hide an action from the wheel for another reason, `ItemBase.RemoveAction(type
 
 ---
 
-## ⚠️ Client/server check style must match
+## ⚠️ Base the condition on synced state only
 
-The same `ActionCondition` runs on the client to show the action and on the server to accept it (see above). Keep every check in `ActionCondition` and use the same check style throughout: if one path uses `IsKindOf()` and another uses `GetType() == "..."`, the action can render but be rejected on execute (or the reverse).
+`ActionCondition` runs on the client to show the action and again on the server before it runs (`actionmanagerserver.c:168`, `actionbase.c:954`). If it reads client-only or unsynced state (a local variable, a value never net-synced, a `GetGame().IsClient()` branch), the client shows the action and the server rejects it. Base conditions on synced state only.
 
-`IsKindOf()` is preferred because it respects inheritance: `GetType() == "MyMod_FancyKnife"` won't match subclasses of `MyMod_FancyKnife`, while `IsKindOf("MyMod_FancyKnife")` will.
+A separate tip on inheritance: prefer `IsKindOf()` to `GetType()`. `GetType() == "MyMod_FancyKnife"` won't match subclasses of `MyMod_FancyKnife`, while `IsKindOf("MyMod_FancyKnife")` will.
 
 ```c
-// CORRECT: one condition, one check style, on the item in hand and the target
+// CORRECT: one condition on synced state, on the item in hand and the target
 override bool ActionCondition(PlayerBase player, ActionTarget target, ItemBase item)
 {
     if (!item || !item.IsKindOf("MyMod_FancyKnife"))
@@ -103,7 +103,7 @@ override bool ActionCondition(PlayerBase player, ActionTarget target, ItemBase i
 
 The vanilla signature is `protected bool ActionCondition(PlayerBase player, ActionTarget target, ItemBase item)` (`actionbase.c:441`).
 
-Symptom of mismatch: action renders for the player but fails silently on execute. Look in `script.log` for the action's `OnExecuteServer` not firing.
+Symptom of a condition that differs between client and server: the action renders for the player but fails silently on execute. Look in `script.log` for the action's `OnExecuteServer` not firing.
 
 ---
 
@@ -111,8 +111,8 @@ Symptom of mismatch: action renders for the player but fails silently on execute
 
 | Type | Base class | Used for | Source |
 |---|---|---|---|
-| Single-use | `ActionSingleUseBase` | Tap-to-do (drink, eat one bite, throw) | `actions\actionsingleusebase.c:29` |
+| Single-use | `ActionSingleUseBase` | Tap-to-do (take pills with `ActionConsumeSingle`, open with `ActionOpen`, drop with `ActionDropItem`, all under `actions\singleuse\`) | `actions\actionsingleusebase.c:29` |
 | Continuous | `ActionContinuousBase` | Hold-to-complete with progress bar (bandage, build, repair) | `actions\actioncontinuousbase.c:120` |
 | Interactive | `ActionInteractBase` | Target-driven actions (interact with another entity) | `actions\actioninteractbase.c:38` |
 
-All three are under `P:\scripts\4_world\classes\useractionscomponent\`. Pick the base that matches your interaction model: wrong base = wrong UI affordance.
+All three are under `P:\scripts\4_world\classes\useractionscomponent\`. Drinking is continuous, not single-use (`actions\continuous\actiondrink.c:9`, `ActionDrink: ActionConsume`). Pick the base that matches your interaction model: wrong base = wrong UI affordance.

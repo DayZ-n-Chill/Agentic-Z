@@ -1,14 +1,14 @@
 // =============================================================================
 // MyMod_PlayerBase.c
 // Comprehensive modded PlayerBase showing:
-//   1. Member variable declaration (server + client, guarded by macros)
+//   1. Member variables (server state, a synced bitfield, a client-only timer)
 //   2. Init + NetSync registration
 //   3. OnStoreSave / OnStoreLoad with version guard
 //   4. OnRPC additions
-//   5. Stats manipulation (health, blood, energy, water)
-//   6. Agents and modifiers access
+//   5. Stat reads (health, blood, energy, stamina)
+//   6. Reading an agent count
 //   7. Inventory queries
-//   8. Server/client guards in every method
+//   8. Server guards on the methods that change state
 //
 // Placement: Scripts/4_World/Entities/ManBase/MyMod_PlayerBase.c
 //

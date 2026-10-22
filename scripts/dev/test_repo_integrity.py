@@ -1,4 +1,5 @@
-"""Repo-wide checks that keep the agent team and the plugin manifest in step.
+"""Repo-wide checks: agent team and plugin manifest, no-token .bat wrappers, the knowledge-pack index
+and citations, the preflight gate list, the Tier 1 files and the panel's skill scripts.
 
 Run with: py -m pytest scripts/dev/test_repo_integrity.py
 """
@@ -269,7 +270,7 @@ CITATION_RE = re.compile(
 )
 
 
-def test_pack_files_cite_vanilla():
+def test_pack_files_cite_vanilla_at_least_once():
     missing = []
     for path in sorted(SHARED_DIR.rglob("*.md")):
         rel = path.relative_to(SHARED_DIR).as_posix()

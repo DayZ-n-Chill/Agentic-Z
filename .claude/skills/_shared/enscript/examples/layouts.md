@@ -2,7 +2,7 @@
 
 The three `.layout` examples start with their root widget, like every vanilla layout in `P:\gui\layouts\`: no BOM and no comment lines. Their notes and companion scripts live here instead, so a copied layout passes the repo's `.layout` check (`hooks/edit_check.py`) unchanged.
 
-Copy a layout to your mod as `gui/layouts/MyMod/<name>.layout` and load it with `GetGame().GetWorkspace().CreateWidgets(path, parent)` (`GetWorkspace`, `P:\scripts\3_game\global\game.c:85`; `CreateWidgets`, `P:\scripts\1_core\proto\enwidgets.c:181`). The format is described in `../references/gui_layout.md`.
+Copy a layout to your mod as `MyMod/gui/layouts/<name>.layout` (the `gui/` folder at the root of a `/dayz-new-mod` scaffold, whose `$PBOPREFIX$` is the mod name) and load that same path with `GetGame().GetWorkspace().CreateWidgets(path, parent)` (`GetWorkspace`, `P:\scripts\3_game\global\game.c:85`; `CreateWidgets`, `P:\scripts\1_core\proto\enwidgets.c:181`). The format is described in `../references/gui_layout.md`.
 
 Position values whose exact toggle (`hexactpos`, `vexactpos`) is 0 are fractions (0..1) of the parent, not pixels (`../references/gui_layout.md`, "Coordinate System"). A pixel offset such as `16` needs the toggle at 1. With `halign center_ref` or `right_ref` (and `valign center_ref` or `bottom_ref`) the position is an offset from that anchor, so `0` centres the widget and `16` sits 16 px in from the right or bottom edge.
 
@@ -16,7 +16,7 @@ Position values whose exact toggle (`hexactpos`, `vexactpos`) is 0 are fractions
 
 ## 11: HUD overlay with plain text
 
-`11_hud_plain_text.layout`: three text labels (`LabelMain`, `LabelSub`, `LabelWarning`) that a modded HUD updates each frame. Save it as `gui/layouts/MyMod/mymod_hud_overlay.layout`.
+`11_hud_plain_text.layout`: three text labels (`LabelMain`, `LabelSub`, `LabelWarning`) that a modded HUD updates each frame. Save it as `MyMod/gui/layouts/mymod_hud_overlay.layout`.
 
 Mod `IngameHud`, not `Hud`. `Hud.Init` is an empty base method (`P:\scripts\3_game\gameplay.c:640`) and `IngameHud.Init` does not call `super` (`P:\scripts\5_mission\gui\ingamehud.c:143`), so a `modded class Hud` override never runs. `IngameHud.Update(float timeslice)` is at `ingamehud.c:1141`. Wrap the class in `#ifndef NO_GUI` (see `../patterns/modded_class.md`).
 
@@ -32,7 +32,7 @@ modded class IngameHud
     override void Init(Widget hud_panel_widget)
     {
         super.Init(hud_panel_widget);
-        Widget overlay = GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/mymod_hud_overlay.layout", hud_panel_widget);
+        Widget overlay = GetGame().GetWorkspace().CreateWidgets("MyMod/gui/layouts/mymod_hud_overlay.layout", hud_panel_widget);
         m_MyMod_LblStatus = TextWidget.Cast(overlay.FindAnyWidget("LabelMain"));
         m_MyMod_LblSub    = TextWidget.Cast(overlay.FindAnyWidget("LabelSub"));
         m_MyMod_LblWarn   = TextWidget.Cast(overlay.FindAnyWidget("LabelWarning"));
@@ -58,7 +58,7 @@ modded class IngameHud
 
 ## 12: Menu with a filter, a list and buttons
 
-`12_menu_interactions.layout`: an `EditBoxWidgetClass` filter (`EditFilter`), a two-column `TextListboxWidgetClass` (`ItemList`), a detail label (`LabelDetail`) and two buttons (`BtnRefresh`, and `BtnClose` with `userID 1`). Save it as `gui/layouts/MyMod/mymod_itembrowser.layout`.
+`12_menu_interactions.layout`: an `EditBoxWidgetClass` filter (`EditFilter`), a two-column `TextListboxWidgetClass` (`ItemList`), a detail label (`LabelDetail`) and two buttons (`BtnRefresh`, and `BtnClose` with `userID 1`). Save it as `MyMod/gui/layouts/mymod_itembrowser.layout`.
 
 The event handlers are the `UIScriptedMenu` ones: `OnClick(Widget w, int x, int y, int button)`, `OnChange(Widget w, int x, int y, bool finished)` and `OnItemSelected(Widget w, int x, int y, int row, int column, int oldRow, int oldColumn)` (`P:\scripts\3_game\tools\uiscriptedmenu.c:238`, `:478` and `:298`).
 
@@ -72,7 +72,7 @@ class MyMod_ItemBrowserMenu : UIScriptedMenu
 
     override Widget Init()
     {
-        layoutRoot = GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/mymod_itembrowser.layout");
+        layoutRoot = GetGame().GetWorkspace().CreateWidgets("MyMod/gui/layouts/mymod_itembrowser.layout");
         m_Filter = EditBoxWidget.Cast(layoutRoot.FindAnyWidget("EditFilter"));
         m_List   = TextListboxWidget.Cast(layoutRoot.FindAnyWidget("ItemList"));
         m_Detail = TextWidget.Cast(layoutRoot.FindAnyWidget("LabelDetail"));
@@ -129,7 +129,7 @@ class MyMod_ItemBrowserMenu : UIScriptedMenu
 
 ## 13: Item inspect panel
 
-`13_item_preview.layout`: an `ItemPreviewWidgetClass` (`ItemRender`) that renders an item in 3D, two labels and three buttons (`BtnRotateLeft`, `BtnRotateRight`, `BtnClose`). Save it as `gui/layouts/MyMod/mymod_inspect.layout`.
+`13_item_preview.layout`: an `ItemPreviewWidgetClass` (`ItemRender`) that renders an item in 3D, two labels and three buttons (`BtnRotateLeft`, `BtnRotateRight`, `BtnClose`). Save it as `MyMod/gui/layouts/mymod_inspect.layout`.
 
 The engine draws the model; script sets the item with `ItemPreviewWidget.SetItem(EntityAI object)` and turns it with `SetModelOrientation(vector vOrientation)` (`P:\scripts\3_game\gameplay.c:288` and `:280`), as the vanilla inventory does (`P:\scripts\3_game\gui\inventorygrid.c:673`).
 
@@ -144,7 +144,7 @@ class MyMod_InspectMenu : UIScriptedMenu
 
     override Widget Init()
     {
-        layoutRoot    = GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/mymod_inspect.layout");
+        layoutRoot    = GetGame().GetWorkspace().CreateWidgets("MyMod/gui/layouts/mymod_inspect.layout");
         m_Preview     = ItemPreviewWidget.Cast(layoutRoot.FindAnyWidget("ItemRender"));
         m_LabelName   = TextWidget.Cast(layoutRoot.FindAnyWidget("LabelItemName"));
         m_LabelHealth = TextWidget.Cast(layoutRoot.FindAnyWidget("LabelHealth"));

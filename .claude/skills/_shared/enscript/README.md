@@ -37,7 +37,7 @@ enscript/
 | `persistence.md` | `OnStoreSave`/`OnStoreLoad`, your own version header (the `version` argument is the game's storage version), write-order rules |
 | `rpc.md` | `ScriptRPC`, `RPCSingleParam`, `OnRPC` switch template, client-to-server validation, **ID-collision symptom** |
 | `singleton.md` | Static `s_Instance`, lazy init, `GetInstance()`, `LoadFile`/`SaveFile`, **`ScriptInvoker` shutdown null-guard** |
-| `actions.md` | `ActionBase`, registering in `ActionConstructor`, `CCINonRuined` vs `CCINone`, the condition component table, stopping pickup (`IsTakeable`, `CanPutInCargo`, `CanPutIntoHands`), client/server check-style mismatch |
+| `actions.md` | `ActionBase`, registering in `ActionConstructor`, `CCINonRuined` vs `CCINone`, the condition component table, stopping pickup (`IsTakeable`, `CanPutInCargo`, `CanPutIntoHands`), conditions that read unsynced state |
 | `scheduler.md` | The unverified `CallLater` drift report and the `Timer` alternative, per tick allocation, call categories |
 | `physics_items.md` | `ThrowPhysically` vs manual `CreateDynamicPhysics`, `SetDynamicPhysicsLifeTime` mandatory call |
 | `json_config_migration.md` | `SCHEMA_VERSION` + forward-migration, `LoadFile` parse-failure handling for admin-edited JSON |
@@ -102,11 +102,11 @@ When debugging, jump to the file that owns the symptom.
 | Symptom | File |
 |---|---|
 | `modded class Foo` override never runs | `patterns/modded_class.md` (no-extends rule) |
-| Server compile error `Unknown type 'IngameHud'` (or `Chat` / `UiHintPanel`) | `patterns/modded_class.md` (`#ifndef NO_GUI` guard) |
+| HUD code runs or errors on the dedicated server | `patterns/modded_class.md` (`#ifndef NO_GUI` guard, as vanilla does in `dayzgame.c:1061` and `missionserver.c:59`) |
 | Can't `modded class Widget` / `UIManager`, or a `UIScriptedMenu` mod hits every menu | `patterns/modded_class.md` (engine-backed classes) |
 | Custom barrel missing open/close anim | `patterns/modded_class.md` (extend script class, not config parent) |
 | A new action never appears (with `-doLogs -logToScript`, `script.log` shows `Action X dosn't exist!`) | `patterns/actions.md` (register it in `modded class ActionConstructor`) |
-| Action shows on client, server rejects on execute | `patterns/actions.md` (check-style mismatch) |
+| Action shows on client, server rejects on execute | `patterns/actions.md` (condition reads client-only or unsynced state) |
 | Tool-in-hand action shows with a ruined tool or none | `patterns/actions.md` (`CCINonRuined` vs `CCINone`) |
 | Item placed but still draggable into inventory | `patterns/actions.md` (`CanPutInCargo` and `CanPutIntoHands`) |
 | `OnStoreLoad` `version` looks like a game version | `patterns/persistence.md` (it is the storage version) |
@@ -157,7 +157,7 @@ The vendored content was modified to add Agentic-Z gotchas and, for the files li
 - **`references/language_*.md` and `references/api_*.md`** *(new)*: the language and core API reference, every fact checked on `P:\scripts\` with the line cited
 - **`references/types_collections.md`**: corrected against vanilla (no `set.Contains`, no `StartsWith`, `Sort(true)` is descending, `Copy` direction, `Cross` is an instance method); also `string.ToLower/ToUpper` mutation, `Math`/`string` API existence table, `int.MIN` quirk
 
-When SWARM updates upstream, re-run the import and re-apply our additions.
+When SWARM updates upstream, compare the changes by hand, port only what still holds, and check each ported fact on `P:\` before marking the file checked. Never re-import over a checked file.
 
 ## Attribution
 

@@ -228,6 +228,43 @@ test('a session started in a subfolder of the clone finds the clone and its acti
   expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest'])
 })
 
+test('a press reads the active mod afresh, so /dayz-init after the pane opened needs no Refresh', async ($, on) => {
+  const runs: string[][] = []
+  const toasts: string[] = []
+  const files: Record<string, string> = {
+    'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
+    'P:\\': '',
+  }
+  engineWith(on, runs, { toasts, files })
+  const ui = await openPane($)
+  expect((await ui.find({ type: 'Text', text: /Active mod:/ }))?.text).toBe('Active mod: none (run /dayz-init)')
+  files['C:\\proj\\.claude\\local-memory\\dayz-init-state.json'] = '{"last_intent": {"mod_name": "MyVest"}}'
+  await ui.press({ key: 'build' })
+  await ui.unmount()
+  expect(toasts).not.toContain('No active mod yet. Run /dayz-init first.')
+  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest'])
+})
+
+test('without a clone, a session in a subfolder finds the project state file above it', async ($, on) => {
+  const runs: string[][] = []
+  engineWith(on, runs, {
+    cacheDirs: ['1.10.0'],
+    files: {
+      'C:\\Users\\me\\.claude\\plugins\\cache\\dayz-n-chill\\agentic-z': '',
+      'C:\\proj\\.claude\\local-memory\\dayz-init-state.json': '{"last_intent": {"mod_name": "MyVest"}}',
+    },
+  })
+  await $.session.start({ cwd: 'C:\\proj\\workspace\\MyVest', surface: 'desktop', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /Active mod:/ }))?.text).toBe('Active mod: MyVest')
+  await ui.press({ key: 'build' })
+  await ui.unmount()
+  expect(scriptRuns(runs)).toEqual([
+    'python C:\\Users\\me\\.claude\\plugins\\cache\\dayz-n-chill\\agentic-z\\1.10.0\\.claude\\skills\\dayz-build-pbo\\build.py MyVest',
+  ])
+})
+
 test('with Agentic-Z nowhere, the pane says so and a press only toasts', async ($, on) => {
   const runs: string[][] = []
   const toasts: string[] = []

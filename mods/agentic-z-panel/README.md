@@ -35,11 +35,13 @@ Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ te
 | Ask vanilla (a text field) | Enter | `dayz-ask/ask.py "<question>"` |
 | Refresh | `r` | re-checks the state |
 
-One action runs at a time; a second press while one runs only shows a toast. Each run shows a toast when it ends and keeps its result line in the panel.
+One action runs at a time; a second press while one runs only shows a toast. Every press reads the state again first, so a mod picked with `/dayz-init` after the panel opened is used without pressing Refresh. Each run shows a toast when it ends and keeps its result line in the panel.
 
 ## Where it finds Agentic-Z
 
 The clone that holds the session folder (that folder or the nearest parent with `.claude\skills\dayz-preflight\preflight.py`), otherwise the newest version in the plugin cache under `%USERPROFILE%\.claude\plugins\cache\dayz-n-chill\agentic-z`.
+
+The active mod comes from `.claude\local-memory\dayz-init-state.json` in that clone. With no clone (a plugin install), it comes from the nearest folder at or above the session folder that holds that file.
 
 ## Tests
 

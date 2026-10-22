@@ -169,7 +169,7 @@ Being rooted at `Managed` is not the test. `Managed` (`P:\scripts\1_core\proto\e
 
 ## GUI-extending modded classes need `#ifndef NO_GUI` guards
 
-Server builds define `NO_GUI` and `NO_GUI_INGAME` (`P:\scripts\1_core\defines.c:29` and `:34`, "Present for server builds"), and vanilla wraps its own GUI code in `#ifndef NO_GUI` (for example `P:\scripts\3_game\dayzgame.c:1061`). Any `modded class IngameHud` (`P:\scripts\5_mission\gui\ingamehud.c:1`) or `modded class Chat` (`P:\scripts\5_mission\gui\chat\chat.c:14`) (and similar GUI types) referenced from a server-side compile path can fail with `Unknown type 'IngameHud'`. Wrap GUI-extending modded classes in a preprocessor guard:
+Server builds define `NO_GUI` and `NO_GUI_INGAME` (`P:\scripts\1_core\defines.c:29` and `:34`, "Present for server builds"). The HUD classes still compile there: `IngameHud` (`P:\scripts\5_mission\gui\ingamehud.c:1`) and `Chat` (`P:\scripts\5_mission\gui\chat\chat.c:14`) are declared with no guard. But their GUI calls do nothing useful on a server, so vanilla wraps GUI work in `#ifndef NO_GUI` (`P:\scripts\3_game\dayzgame.c:1061`, `P:\scripts\5_mission\mission\missionserver.c:59`). Do the same for a modded `IngameHud` or `Chat`:
 
 ```c
 #ifndef NO_GUI
@@ -184,7 +184,7 @@ modded class IngameHud
 #endif
 ```
 
-This applies to any class that exists only in client-side script layers. If you're not sure whether a class is server-aware, search for it under `P:\scripts\`: if it only appears under `5_mission/gui/` it's client-only and needs the guard.
+To decide whether another class needs the guard, check whether vanilla itself guards the class or its callers with `NO_GUI` (search `P:\scripts\` for `NO_GUI` near its uses).
 
 ---
 

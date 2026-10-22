@@ -93,8 +93,8 @@ class ActionMyMod_DrinkContaminate : ActionSingleUseBase
 }
 
 // =============================================================================
-// Registration takes two steps. Place these modded blocks in the same file or
-// a separate one.
+// Registration takes two steps. Place the modded ActionConstructor block in
+// the same file or a separate one.
 // 1. Register the class in ActionConstructor.RegisterActions, so the action
 //    manager builds it (P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:3-27).
 // 2. Add the action to the item in SetActions(), the way ItemBase adds its own
@@ -111,11 +111,14 @@ modded class ActionConstructor
     }
 }
 
-modded class MyMod_CustomCanteen
-{
-    override void SetActions()
-    {
-        super.SetActions();
-        AddAction(ActionMyMod_DrinkContaminate);    // itembase.c:255
-    }
-}
+// Step 2 goes inside the class MyMod_CustomCanteen declaration
+// (01_custom_item.c), not in a modded class: modded_class.md says not to
+// declare class X and modded class X in the same mod.
+//
+// In MyMod_CustomCanteen (01_custom_item.c):
+//     override void SetActions()
+//     {
+//         super.SetActions();
+//         AddAction(ActionMyMod_DrinkContaminate);    // itembase.c:255
+//         AddAction(ActionMyMod_RepairCanteen);       // 03_continuous_action.c
+//     }
