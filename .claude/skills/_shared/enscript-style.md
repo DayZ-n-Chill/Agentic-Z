@@ -29,7 +29,7 @@ The guide is long. Find the task below and read that section; you do not need th
 
 ## Introduction
 
-EnScript (Enforce Script) is the object-oriented scripting language used by the Enfusion engine in DayZ Standalone. This style guide is based on conventions observed in the official Bohemia Interactive DayZ Script Diff and the DayZ Expansion mod codebase.
+EnScript (Enforce Script) is the object-oriented scripting language used by the Enfusion engine in DayZ Standalone. This style guide is based on conventions observed in the official Bohemia Interactive DayZ Script Diff and in widely used community mods. Every example below is built on vanilla classes and APIs that can be checked under `P:\scripts\`.
 
 ---
 
@@ -59,15 +59,15 @@ Scripts are typically organized by layer inside a root folder called `Scripts/`:
 **PascalCase** for all class names:
 
 ```
-class ExpansionGarageSettings
+class CfgGameplayJson
 class PlayerBase
 class ItemBase
-class ExpansionAIPatrolBase
+class PluginAdminLog
 ```
 
 **Prefixes:**
 
-- Module/mod-specific prefixes are common (e.g., `Expansion`, `SCR_`)
+- Module/mod-specific prefixes are common (e.g., vanilla's `ITEM_` data classes such as `ITEM_StaminaData`, `SCR_`, or your own mod tag)
 - Base classes often end with `Base`
 - Abstract classes may start with `Abstract`
 
@@ -79,14 +79,14 @@ class ExpansionAIPatrolBase
 // CORRECT - Prefixed members in modded class
 modded class ItemBase
 {
-    bool m_Expansion_CustomFlag;
-    int m_Expansion_CustomValue;
+    bool m_YourMod_CustomFlag;
+    int m_YourMod_CustomValue;
 }
 
 // CORRECT - Prefixed members in inherited class
-class ExpansionSomeItem : ItemBase
+class YourMod_SomeItem : ItemBase
 {
-    bool m_Expansion_SpecialProperty;
+    bool m_YourMod_SpecialProperty;
 }
 ```
 
@@ -101,8 +101,8 @@ This prevents name conflicts with vanilla code or other mods.
 
 ```
 bool m_IsLoaded;
-ExpansionMarkerModule m_MarkerModule;
-ref MapMenu m_Expansion_MapMenu;
+PluginAdminLog m_AdminLog;
+ref Timer m_YourMod_RefreshTimer;
 ```
 
 **Static Variables:**
@@ -111,7 +111,7 @@ ref MapMenu m_Expansion_MapMenu;
 - Use PascalCase after the prefix
 
 ```
-static ref array<EffectArea> s_Expansion_DangerousAreas;
+static ref array<PlayerBase> s_YourMod_TrackedPlayers;
 ```
 
 **Local Variables:**
@@ -121,7 +121,7 @@ static ref array<EffectArea> s_Expansion_DangerousAreas;
 
 ```
 int bitmask;
-string lootingBehavior;
+string itemType;
 vector hitPosition;
 ```
 
@@ -130,10 +130,10 @@ vector hitPosition;
 **PascalCase** for method names:
 
 ```
-void SetDefaultLootingBehaviour()
-int GetLootingBehaviour()
-void OnSend(ParamsWriteContext ctx)
-bool OnRecieve(ParamsReadContext ctx)
+void InitServer()
+bool ValidateServer()
+void OnStoreSave(ParamsWriteContext ctx)
+bool OnStoreLoad(ParamsReadContext ctx, int version)
 ```
 
 **Override Methods:**
@@ -141,8 +141,8 @@ bool OnRecieve(ParamsReadContext ctx)
 - Always use the `override` keyword when overriding parent methods
 
 ```
-override void OnSend(ParamsWriteContext ctx)
-override bool OnRecieve(ParamsReadContext ctx)
+override void OnStoreSave(ParamsWriteContext ctx)
+override bool OnStoreLoad(ParamsReadContext ctx, int version)
 ```
 
 **Proto Methods vs Custom Methods:**
@@ -249,8 +249,8 @@ const int VEHICLE_TYPE_HELICOPTER = 2;
 Use UPPERCASE for preprocessor defines:
 
 ```
-#define EXPANSION_MARKER_VIS_WORLD
-#define EXPANSIONMODVEHICLE
+#define ENABLE_CAROUSEL
+#define BROADCAST_BUNKER_SP_VIS_ENABLED
 ```
 
 **Config Class Name Defines (DayZ 1.26+):**
@@ -296,8 +296,8 @@ class ClassName : ParentClass
 
     // Public member variables
     bool PublicEnabled;
-    int MaxStorableVehicles;
-    float VehicleSearchRadius;
+    int MaxItemCount;
+    float SpawnSearchRadius;
 
     // Non-serialized members
     [NonSerialized()]
@@ -422,8 +422,8 @@ array<string> stringArray = new array<string>;
 **Type Definitions:**
 
 ```
-TStringArray entityWhitelist;  // typedef array<string>
-autoptr TVectorArray waypoints; // autoptr for managed arrays
+TStringArray allowedTypes;     // typedef array<string>
+autoptr TVectorArray spawnPoints; // autoptr for managed arrays
 ```
 
 ### References
@@ -431,8 +431,8 @@ autoptr TVectorArray waypoints; // autoptr for managed arrays
 Use `ref` or `autoptr` for managed references on member variables:
 
 ```
-ref MapMenu m_Expansion_MapMenu;
-autoptr TVectorArray Waypoints;
+ref Timer m_RefreshTimer;
+autoptr TVectorArray m_SpawnPoints;
 ```
 
 **Understanding `ref` vs `autoptr`:**
@@ -486,8 +486,8 @@ Both methods are valid - `CastTo` combines the cast and check in one line, while
 Use `new` keyword (with or without trailing parentheses for constructors without arguments):
 
 ```
-EntityWhitelist = new TStringArray;             // Valid
-m_MarkerModule = new ExpansionMarkerModule();   // Valid
+m_AllowedTypes = new TStringArray;   // Valid
+m_RefreshTimer = new Timer();        // Valid
 ```
 
 Both forms are acceptable - choose one style and be consistent.
@@ -786,10 +786,10 @@ foreach (string item : collection)
 ### Foreach Loops
 
 ```
-foreach (string lootingBehavior : lootingBehaviors)
+foreach (string levelName : levelNames)
 {
-    lootingBehavior.TrimInPlace();
-    int value = typename.StringToEnum(eAILootingBehavior, lootingBehavior);
+    levelName.TrimInPlace();
+    int value = typename.StringToEnum(EStatLevels, levelName);
     // Process value
 }
 ```
@@ -908,8 +908,8 @@ if (!list[1])  // Evaluates to true for both null and out-of-bounds
 ### Conditional Compilation
 
 ```
-#ifdef EXPANSIONMODGROUPS
-    // Group-specific code
+#ifdef PLATFORM_CONSOLE
+    // Console-only code
 #endif
 
 #ifdef SERVER
@@ -955,8 +955,8 @@ Empty `#ifdef`/`#ifndef` blocks cause segfaults, even if they only contain comme
 - Module-specific prefixes recommended
 
 ```
-#define EXPANSION_VEHICLE_TOWING
-#define EXPANSIONMODMARKET
+#define YOURMOD_VEHICLE_TOWING
+#define YOURMOD_FEATURE_X
 ```
 
 **Note:** `#define` creates preprocessor macros, not constants. For actual constants, use `const` or enums.
@@ -990,8 +990,8 @@ Use `/* */` for multi-line comments:
 Use `//!` for documentation comments:
 
 ```
-//! Enable/Disable garage market mod features
-bool EnableMarketFeatures;
+//! Stamina consumed by melee attacks and evasion, as a multiplier
+float meleeStaminaModifier = 1;
 
 //! @note can't check inheritance against dangerous area types on client
 void CheckTypes()
@@ -1003,10 +1003,10 @@ For class and method documentation:
 
 ```
 /**
- * @class ExpansionGarageSettings
- * @brief Settings for the garage system
+ * @class ITEM_StaminaData
+ * @brief Stamina values read from cfggameplay.json
  */
-class ExpansionGarageSettings
+class ITEM_StaminaData : ITEM_DataBase
 ```
 
 ### Comment Style
@@ -1017,14 +1017,14 @@ class ExpansionGarageSettings
 - Use comments to mark sections of code
 
 ```
-//! Map Menu
-if (input.LocalPress("UAExpansionMapToggle", false) && !viewMenu)
+//! Close the open menu
+if (input.LocalPress("UAUIBack", false) && menu)
 {
-    ToggleMapMenu(player);
+    menu.Close();
 }
 
-//! GPS
-if (input.LocalPress("UAExpansionGPSToggle", false))
+//! Inventory
+if (input.LocalPress("UAGear", false))
 {
     // Implementation
 }
@@ -1043,9 +1043,9 @@ modded class MissionGameplay
 {
     // Additional members and methods
 
-    override void Expansion_OnUpdate(float timeslice, PlayerBase player)
+    override void OnUpdate(float timeslice)
     {
-        super.Expansion_OnUpdate(timeslice, player);
+        super.OnUpdate(timeslice);
         // Additional implementation
     }
 }
@@ -1109,9 +1109,9 @@ modded class VanillaClass
 Use `super` to call parent implementations:
 
 ```
-override void OnSend(ParamsWriteContext ctx)
+override void OnStoreSave(ParamsWriteContext ctx)
 {
-    super.OnSend(ctx);
+    super.OnStoreSave(ctx);
     // Additional serialization
 }
 ```
@@ -1225,28 +1225,32 @@ int value = instance.GetPublicValue();
 ### Common Pattern
 
 ```
-override void OnSend(ParamsWriteContext ctx)
+modded class ItemBase
 {
-    ctx.Write(Enabled);
-    ctx.Write(GarageMode);
-    ctx.Write(MaxStorableVehicles);
+    bool m_YourMod_IsArmed;
+    int m_YourMod_Charges;
 
-    #ifdef EXPANSIONMODGROUPS
-        ctx.Write(EnableGroupFeatures);
-    #endif
-}
+    override void OnStoreSave(ParamsWriteContext ctx)
+    {
+        super.OnStoreSave(ctx);
 
-override bool OnRecieve(ParamsReadContext ctx)
-{
-    ctx.Read(Enabled);
-    ctx.Read(GarageMode);
-    ctx.Read(MaxStorableVehicles);
+        ctx.Write(m_YourMod_IsArmed);
+        ctx.Write(m_YourMod_Charges);
+    }
 
-    #ifdef EXPANSIONMODGROUPS
-        ctx.Read(EnableGroupFeatures);
-    #endif
+    override bool OnStoreLoad(ParamsReadContext ctx, int version)
+    {
+        if (!super.OnStoreLoad(ctx, version))
+            return false;
 
-    return true;
+        if (!ctx.Read(m_YourMod_IsArmed))
+            return false;
+
+        if (!ctx.Read(m_YourMod_Charges))
+            return false;
+
+        return true;
+    }
 }
 ```
 
@@ -1257,9 +1261,10 @@ override bool OnRecieve(ParamsReadContext ctx)
 ### Standard Pattern
 
 ```
-if (input.LocalPress("UAExpansionMapToggle", false) && !viewMenu)
+Input input = g_Game.GetInput();
+if (input.LocalPress("UAUIBack", false) && menu)
 {
-    ToggleMapMenu(player);
+    menu.Close();
 }
 ```
 
@@ -1269,39 +1274,41 @@ if (input.LocalPress("UAExpansionMapToggle", false) && !viewMenu)
 
 ### Module Registration
 
+Vanilla registers script services as plugins and looks them up by type:
+
 ```
-CF_Modules<ExpansionMarkerModule>.Get(m_MarkerModule);
+PluginAdminLog adminLog = PluginAdminLog.Cast(GetPlugin(PluginAdminLog));
 ```
 
 ### Module Callbacks
 
+Callbacks go through a `ScriptInvoker`, the same type vanilla uses for its update queues:
+
 ```
-ExpansionSettings.SI_Garage.Invoke();
+static ref ScriptInvoker s_YourMod_OnSettingsLoaded = new ScriptInvoker();
+
+s_YourMod_OnSettingsLoaded.Invoke();
 ```
 
 ---
 
 ## Debugging and Tracing
 
-### Debug Traces (Expansion-Specific)
+### Debug Traces
 
 ```
-// Using EXTrace (preferred - minimal overhead when disabled)
-auto trace = EXTrace.Start(EXTrace.GENERAL, this, "MethodName");
-
-// Alternative (older pattern with overhead)
-#ifdef EXPANSIONTRACE
-    auto trace = CF_Trace_0(ExpansionTracing.SETTINGS, this, "MethodName");
+#ifdef DIAG_DEVELOPER
+    Debug.Log("Entered MethodName", "YourMod");
 #endif
 ```
 
-**Note:** `EXTrace.Start` is the better implementation with much less overhead when tracing is disabled (essentially a no-op). It doesn't need to be `#ifdef`'d unless in performance-critical code sections.
+**Note:** Wrap trace calls in a define such as `DIAG_DEVELOPER` or your own `YOURMOD_DEBUG`. The calls are then compiled out of release builds and cost nothing there. `Debug.Log` also prints nothing unless script logs are enabled.
 
 ### Logging
 
 ```
-EXError.Error(this, "Invalid looting behaviour " + lootingBehavior, {});
-EXTrace.Print(EXTrace.AI, this, "Debug message");
+ErrorEx("Invalid stat level " + levelName, ErrorExSeverity.WARNING);
+Debug.Log("Debug message", "YourMod");
 ```
 
 ### Error Logs
@@ -1311,8 +1318,8 @@ EXTrace.Print(EXTrace.AI, this, "Debug message");
 ### Debug Defines
 
 ```
-//#define EXPANSION_CARKEY_LOGGING
-//#define EXPANSION_VEHICLE_SKIN_LOGGING
+//#define CODELOCKCOMPONENT_LOG
+//#define ITEM_SOUND_EVENTS_DEBUG
 ```
 
 Comment out defines that should not be in production code.
@@ -1392,14 +1399,14 @@ bool IsPlayerWearingSunglasses(notnull PlayerBase player)
 ### Value Validation
 
 ```
-int value = typename.StringToEnum(eAILootingBehavior, lootingBehavior);
+int value = typename.StringToEnum(EStatLevels, levelName);
 if (value == -1)
 {
-    EXError.Error(this, "Invalid looting behaviour " + lootingBehavior, {});
+    ErrorEx("Invalid stat level " + levelName, ErrorExSeverity.WARNING);
 }
 else
 {
-    bitmask |= value;
+    m_Level = value;
 }
 ```
 
@@ -1436,12 +1443,12 @@ if (g_Game.IsServer() && !g_Game.IsMultiplayer())
 
 ```
 // Good
-float VehicleSearchRadius;
-bool CanStoreWithCargo;
+float SpawnSearchRadius;
+bool AllowCargoTransfer;
 
 // Avoid
-float vsr;
-bool cswc;
+float ssr;
+bool act;
 ```
 
 ### 2. Keep Methods Focused
@@ -1449,12 +1456,12 @@ bool cswc;
 Each method should do one thing well:
 
 ```
-void SetDefaultLootingBehaviour()
+override bool ValidateServer()
 {
-    if (Behaviour == "ROAMING")
-        LootingBehaviour = "ALL";
-    else
-        LootingBehaviour = "DEFAULT";
+    if (staminaMax == 0.0)
+        return false;
+
+    return true;
 }
 ```
 
@@ -1462,11 +1469,10 @@ void SetDefaultLootingBehaviour()
 
 ```
 // Good
-const int DEFAULT_MAX_VEHICLES = 10;
-MaxStorableVehicles = DEFAULT_MAX_VEHICLES;
+staminaMax = GameConstants.STAMINA_MAX;
 
 // Avoid
-MaxStorableVehicles = 10;
+staminaMax = 100;
 ```
 
 ### 4. Initialize Member Variables
@@ -1474,9 +1480,9 @@ MaxStorableVehicles = 10;
 Initialize in constructor or at declaration:
 
 ```
-void ExpansionGarageSettings()
+void YourModSettings()
 {
-    EntityWhitelist = new TStringArray;
+    m_AllowedTypes = new TStringArray;
     m_IsLoaded = false;
 }
 ```
@@ -1484,12 +1490,11 @@ void ExpansionGarageSettings()
 ### 5. Document Complex Logic
 
 ```
-//! Toggle between hidden and previously set visibility state for each marker category
-int visibility;
-int previousVisibility;
+//! Place on the ground with physics, and skip the Central Economy lifetime so cleanup never removes it
+int flags = ECE_PLACE_ON_SURFACE;
+flags |= ECE_NOLIFETIME;
 
-visibility |= m_MarkerModule.GetVisibility(ExpansionMapMarkerType.SERVER);
-previousVisibility |= m_MarkerModule.GetPreviousVisibility(ExpansionMapMarkerType.SERVER);
+Object apple = g_Game.CreateObjectEx("Apple", position, flags);
 ```
 
 ### 6. Use Bitwise Operations Appropriately
@@ -1499,14 +1504,14 @@ layerMask |= PhxInteractionLayers.BUILDING;
 layerMask |= PhxInteractionLayers.VEHICLE;
 layerMask |= PhxInteractionLayers.TERRAIN;
 
-visibility &= EXPANSION_MARKER_VIS_WORLD;
+flags &= ~ECE_DYNAMIC_PERSISTENCY;
 ```
 
 ### 7. Leverage Type Safety
 
 ```
 // Use enums
-eAILootingBehavior behavior;
+EStatLevels level;
 
 // Use proper casting
 PlayerBase player = PlayerBase.Cast(entity);
@@ -1627,5 +1632,4 @@ This style guide reflects the conventions used in professional DayZ modding. Con
 ### References
 
 - [DayZ Script Diff (Bohemia Interactive)](https://github.com/BohemiaInteractive/DayZ-Script-Diff)
-- [DayZ Expansion Scripts](https://github.com/salutesh/DayZ-Expansion-Scripts)
 - [Bohemia Interactive Community Wiki - Enforce Script](https://community.bistudio.com/wiki/DayZ:Enforce_Script_Syntax)
