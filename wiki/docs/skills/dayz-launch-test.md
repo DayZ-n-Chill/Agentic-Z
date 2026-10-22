@@ -27,7 +27,7 @@ python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server-only <ModNam
 | Argument | Required? | Notes |
 |---|---|---|
 | `<ModName> ...` | yes | Mod names loaded on **both** client and server. Each must have at least one `.pbo` at `P:\Mods\@<ModName>\Addons\` (build with `/dayz-build-pbo` first). |
-| `--server-only` | no | Mod names loaded on the **server only**, passed with the server's `-serverMod=` switch and never added to either `-mod=` list (mods on `-mod=` are advertised to clients). Use for a mod that self-terminates when it detects itself running outside the dedicated server (e.g. a `CfgMods` server-marker `defines[]` entry guarding a `RequestExit()` call). Same `.pbo`-presence requirement as above. |
+| `--server-only` | no | Mod names loaded on the **server only**, passed with the server's `-serverMod=` switch and never added to either `-mod=` list (mods on `-mod=` are advertised to clients). Use for a mod that self-terminates when it detects itself running outside the dedicated server (e.g. a `CfgMods` server-marker `defines[]` entry guarding a `RequestExit()` call). Same `.pbo`-presence requirement as above. A name given both here and as a shared mod exits 2 with `mod named both as shared and --server-only`, also with `--dry-run`. |
 | `--server` | no | Server instance to launch on. Default `chernarus`. Must have been added via `/dayz-add-server`. |
 | `--port` | no | Server port, 1 to 65535. Default `2302`. Any other value exits 2 with `port must be 1-65535`, also with `--dry-run`. |
 | `--dry-run` | no | Run every check, print the resolved server and client commands, then exit 0. Writes nothing of its own (no profile dirs, no display-prefs file, no processes); `/dayz-preflight` may still create the `P:\Mods` junction if it is missing. |
@@ -41,7 +41,7 @@ Name a mod's dependencies before the mod, in load order, for example `/dayz-laun
 1. **Preflight gate**: runs `/dayz-preflight`; halts on non-zero.
 2. **Old-layout gate**: refuses if `workspace/_server/` still exists. Delete the folder manually; that layout is no longer supported.
 3. **Built-mod check**: for each mod, verifies at least one `.pbo` exists in `P:\Mods\@<ModName>\Addons\`. Fails fast with a hint to run `/dayz-build-pbo` if missing.
-4. **Diag client resolution**: finds `DayZDiag_x64.exe` via `find_dayz_diag()` (env var, DayZ game install, Steam paths). Both client and server run from this binary; the server adds `-server`. Retail `DayZ_x64.exe` and `DayZServer_x64.exe` are not used; both block past the loading screen with `-filePatching` enabled.
+4. **Diag client resolution**: finds `DayZDiag_x64.exe` via `find_dayz_diag()` (env var, DayZ game install, Steam paths). Both client and server run from this binary; the server adds `-server`. Retail `DayZ_x64.exe` blocks past the loading screen with `-filePatching` enabled, so the client must be diag, and the server runs the same diag binary so both sides match. Retail `DayZServer_x64.exe` is not used.
 5. **Instance check**: reads the mission template from the `template = "...";` line in `.server/<instance>/serverDZ.cfg`, confirms the cfg has an active `allowFilePatching = 1;` line (without it the server refuses `-filePatching` clients with error `0x00020005`; a missing line, a commented-out line or any other value counts as missing), and confirms `mission/` and the `<template>/` junction to it exist. The server's `-mission=` points at that junction (the engine resolves the template name during the connect handshake; without it the client connects but never spawns). Anything missing fails with a hint to run `/dayz-add-server <instance>`, which also sets `allowFilePatching = 1;`. This skill never edits the cfg. Outside `--dry-run` it creates the two profile dirs if absent.
 6. **Port check** (skipped with `--dry-run`): tries to bind UDP `<port>`; if something already holds it (usually a server left running), refuses with `port <port> in use; run /dayz-stop-test or pass --port` before spawning anything.
 7. **Launch server**: spawns `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/<template> -mod=P:\Mods\@Mod1;P:\Mods\@Mod2 [-serverMod=P:\Mods\@ServerOnly1;...] -filePatching -port=<port>`. `-mod=` holds the shared mods; `--server-only` mods go on `-serverMod=` so clients are not told to load them. If the server cannot be spawned, the skill prints `[FAIL] Failed to spawn DayZDiag_x64.exe: <error>` and exits 1.
@@ -55,6 +55,7 @@ Name a mod's dependencies before the mod, in load order, for example `/dayz-laun
 - `/dayz-preflight` returns non-zero.
 - `workspace/_server/` still exists.
 - Any named mod has no `.pbo` at `P:\Mods\@<ModName>\Addons\`.
+- A mod is named both as a shared mod and under `--server-only` (exit 2).
 - `DayZDiag_x64.exe` is not found.
 - The `--server` instance is not set up: `serverDZ.cfg` missing, without a `template = "...";` line, or without an active `allowFilePatching = 1;` line; `mission/` missing; or the `<template>/` junction missing. Run `/dayz-add-server <instance>`.
 - UDP `--port` is already in use (not checked with `--dry-run`). Run `/dayz-stop-test` or pass another `--port`.
@@ -71,6 +72,7 @@ Preflight complete.
 [OK]    Diag client: C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZDiag_x64.exe
 [OK]    Instance: chernarus
 [OK]    Instance dir: .server\chernarus
+[OK]    Wrote default client display prefs to .claude\local-memory\dayz-client-display.json
 [OK]    UDP port 2302 is free
 
 [Launch] Server: DayZDiag_x64.exe -server -config=...\chernarus\serverDZ.cfg -profiles=...\chernarus\Profiles -mission=...\chernarus\dayzOffline.chernarusplus -mod=P:\Mods\@BuildTest -filePatching -port=2302
@@ -88,7 +90,7 @@ Both running. Close the windows manually to stop.
   Client logs: .server\!ClientDiagLogs
 ```
 
-With `--dry-run`, the output is the same through the instance check, then the two `[DRY-RUN] Server cmd:` / `[DRY-RUN] Client cmd:` lines, and exit 0.
+The `Wrote default client display prefs` line appears only on the first real launch, when that file does not exist yet. With `--dry-run`, the output is the same through the instance check (never with that line), then the two `[DRY-RUN] Server cmd:` / `[DRY-RUN] Client cmd:` lines, and exit 0.
 
 ## Client display preferences
 

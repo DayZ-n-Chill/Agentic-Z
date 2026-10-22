@@ -152,6 +152,19 @@ def test_a_new_crash_log_is_flagged(tmp_path):
     assert len(events) == 1
 
 
+
+def test_since_reports_a_recent_crash_log_but_not_an_old_one(tmp_path):
+    old, recent = tmp_path / "crash_2026-10-21_09-00-00.log", tmp_path / "crash_2026-10-21_10-00-00.log"
+    append(old, "old crash")
+    append(recent, "recent crash")
+    os.utime(old, (time.time() - 3600, time.time() - 3600))
+    events, watcher = collect()
+    tail = logwatch.Tail([tmp_path], since_s=600)
+    watcher.feed_files(tail.new_files())
+    assert [e["file"] for e in events] == [str(recent)]
+    watcher.feed_files(tail.new_files())
+    assert len(events) == 1
+
 # --- watching a log while it is written ----------------------------------------
 
 def test_watch_flags_errors_written_while_it_runs(tmp_path):

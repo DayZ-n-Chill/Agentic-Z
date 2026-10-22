@@ -1,7 +1,7 @@
 ---
 name: dayz-logwatch
 description: "Watches the server and client script and RPT logs of a running test session and triages each new error line the moment it appears: a known error prints its fix and owner, a new one is flagged for dayz-mod-debugger. Use while you play a test session started with /dayz-launch-test."
-argument-hint: "[--server <instance>] [--since MINUTES] [--duration S | --until-closed] [--mod <ModName>] [--json] | --dir <folder> ..."
+argument-hint: "[--server <instance>] [--since MINUTES] [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json] | --dir <folder> ..."
 ---
 
 <!-- skill-dir-note -->
@@ -16,7 +16,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python "<skill-dir>\logwatch.py" [--server <instance>] [--since MINUTES] [--duration S | --until-closed] [--mod <ModName>] [--json]
+python "<skill-dir>\logwatch.py" [--server <instance>] [--since MINUTES] [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
 python "<skill-dir>\logwatch.py" --dir <folder> [--dir <folder> ...] [--duration S] [--json]
 ```
 
@@ -57,7 +57,7 @@ Stopped (session closed) after 312 s: 2 error(s), 1 known, 1 new, 4 repeat(s) no
 
 With `--json` each error is `{"event": "error", "status": "known" or "new", "id", "meaning", "fix", "owner_agent", "file", "line", "text", "category", "fingerprint", "count"}` (`count` is always 1 here, on the first sighting; repeats are only counted in the summary) and the last line is `{"event": "summary", "stopped", "seconds", "errors", "known", "new", "repeats"}`. A `new` error has `owner_agent` set to `dayz-mod-debugger` and no `id`, `meaning` or `fix`.
 
-An error line is one that triage classifies (compile errors, NULL pointers, missing classes, textures, models or config entries, crashes) or one that matches a known entry. The same error again, in any file and with any timestamp, has the same fingerprint and is only counted. A new `crash*.log` file is reported as a `new` crash for the debugger.
+An error line is one that triage classifies (compile errors, NULL pointers, missing classes, textures, models or config entries, crashes) or one that matches a known entry. The same error again, in any file and with any timestamp, has the same fingerprint and is only counted. A new `crash*.log` file is reported as a `new` crash for the debugger, and so is one written in the last MINUTES with `--since`.
 
 Exit code 0 means no error line was seen, 1 means at least one was, and 2 means it could not run (no cached project and no `--dir`, no `.server/` folder, an unknown instance, or a broken known-errors or learned file: bad JSON, a bad regex, or a shipped entry without `pattern`) or, with `--until-closed`, that the session never started. Exit 1 takes precedence: if errors were seen (for example with `--since`) before the session failed to start, the exit code is 1.
 

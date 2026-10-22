@@ -55,6 +55,17 @@ def test_main_keeps_server_only_mods_off_mod_list(monkeypatch, tmp_path, capsys)
     assert f"-serverMod={launch.MODS_ROOT / '@SrvMod'} " in server_line
 
 
+
+def test_main_refuses_mod_named_shared_and_server_only(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "SrvMod", "--server-only", "SrvMod", "--dry-run"])
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert "mod named both as shared and --server-only: SrvMod" in captured.err
+    assert "Server cmd:" not in captured.out
+
 def test_build_client_cmd_with_display_prefs():
     cmd = launch.build_client_cmd(
         DIAG, "P:\\Mods\\@A", 2302, Path("logs"), {"windowed": True, "width": 2560, "height": 1440}

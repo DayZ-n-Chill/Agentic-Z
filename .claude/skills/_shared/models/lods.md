@@ -19,7 +19,8 @@ A scan of every `.p3d` under `P:\DZ\` read the LOD list at the start of each fil
 | LandContact | `2.0e+15` | 980 | `P:\DZ\gear\camping\wooden_case.p3d` |
 | Paths | `4.0e+15` | 260 | `P:\DZ\structures\specific\churches\chapel.p3d` |
 | Hit points | `5.0e+15` | 201 | `P:\DZ\vehicles\wheeled\transitbus\transitbus.p3d` |
-| GeoPhys | `2.0e+13` | 1 | `P:\DZ\vehicles\water\boat_01\boat_01.p3d` |
+| GeoPhys (PhysX geometry) | `4.0e+13` | 8 | `P:\DZ\structures\furniture\beds\pillow_grey.p3d`, `P:\DZ\structures\furniture\beds\stretcher_green.p3d` |
+| Buoyancy geometry | `2.0e+13` | 1 | `P:\DZ\vehicles\water\boat_01\boat_01.p3d` |
 
 No vanilla model has a ShadowVolume LOD (`10000` to `19999`). Do not add one unless the user asks.
 

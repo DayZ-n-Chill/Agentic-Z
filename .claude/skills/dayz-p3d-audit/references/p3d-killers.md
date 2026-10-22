@@ -58,7 +58,7 @@ collision and zero action targeting.
 - FireGeo (res ~7e15) — ballistic damage zones
 
 The audit reports a missing ViewGeo or FireGeo as a NOTE. It does not ask for a
-GeoPhys LOD (res 2e13): vanilla DayZ models don't use one (see the LOD table in `.claude/skills/_shared/conventions/assets.md`).
+GeoPhys LOD (res 4e13, the PhysX geometry): only 8 vanilla DayZ models carry one (see the LOD table in `.claude/skills/_shared/conventions/assets.md`). When a model has one, the audit runs the watertight, degenerate face and material checks on it.
 
 ## 5. Missing `pos center` Memory Point
 
@@ -128,7 +128,8 @@ Vanilla items always ship this — verifiable via `strings <p3d> | grep penetrat
 | `sea_chest`      | `dz\data\data\penetration\wood_desk.rvmat` + `wood_desk.bisurf` |
 | `MilitaryCrate` (a6_base_storage) | `dz\data\data\penetration\plastic.rvmat` + `plastic.bisurf` |
 
-Detection (py3d):
+`audit_p3d.py` runs this check on the Geometry, GeoPhys, FireGeo and ViewGeo LODs and
+reports any face with no material as CRITICAL. Detection (py3d):
 
 ```python
 for lod in p.lods:
