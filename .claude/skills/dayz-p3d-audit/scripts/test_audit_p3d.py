@@ -485,6 +485,19 @@ def test_audit_text_file_flags_p_drive_path(tmp_path, capsys):
     assert "Line 1: Absolute P:" in capsys.readouterr().out
 
 
+def test_url_in_cfgmods_is_not_a_p_drive_path(tmp_path):
+    cfg = tmp_path / "config.cpp"
+    cfg.write_text('class CfgMods { class MyMod { action = "http://www.dayzgame.com"; url = "HTTPS://x.org"; }; };\n'
+                   'model = "p:/MyMod/box.p3d";', encoding="utf-8")
+    issues = audit.check_p_drive_paths_in_file(str(cfg))
+    assert len(issues) == 1 and "Line 2" in issues[0][1] and "p:/MyMod/box.p3d" in issues[0][1]
+
+
+def test_high_visual_lod_gets_no_autocenter_note():
+    raised = [(x, y + 5.0, z) for x, y, z in TETRA_POINTS]
+    assert audit.check_visual_lod(_points_lod(raised, {})) == []
+
+
 def test_audit_text_file_read_error_fails(tmp_path, monkeypatch):
     monkeypatch.setattr(
         audit, "check_p_drive_paths_in_file", lambda path: [("ERROR", f"Cannot read {path}: boom")]

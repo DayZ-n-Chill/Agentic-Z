@@ -245,7 +245,8 @@ def parse_script(text: str) -> list[dict]:
 # --- config.cpp ---------------------------------------------------------------
 
 def parse_config(text: str) -> list[dict]:
-    """Classes one level inside each top level Cfg class: container, name, parent, line, members.
+    """Classes one level inside each top level class (CfgVehicles, but also containers such
+    as BillboardPresets): container, name, parent, line, members.
 
     A forward declaration (`class Foo;`) is skipped. Members are the property
     and subclass names set directly in the class body.
@@ -529,11 +530,15 @@ def _chain_changes(old_t: dict, new_t: dict, start: str, prefix: str = "") -> li
     return reasons
 
 
+def _hidden(path: Path, root: Path) -> bool:
+    return any(part.startswith(".") for part in path.relative_to(root).parts)
+
+
 def scan_mod(mod_dir: Path) -> dict:
     """Script and config classes a mod declares. Files that cannot be read are skipped."""
     scripts, configs = [], []
     for path in _files(mod_dir, "*.c"):
-        if any(part.startswith(".") for part in path.relative_to(mod_dir).parts):
+        if _hidden(path, mod_dir):
             continue
         try:
             for d in parse_script(path.read_text(encoding="utf-8", errors="replace")):
@@ -541,6 +546,8 @@ def scan_mod(mod_dir: Path) -> dict:
         except OSError:
             continue
     for path in _files(mod_dir, "config.cpp"):
+        if _hidden(path, mod_dir):  # .history/, .git/ and other backup copies
+            continue
         try:
             for d in parse_config(path.read_text(encoding="utf-8", errors="replace")):
                 configs.append({**d, "file": path})

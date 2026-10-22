@@ -18,7 +18,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ```cmd
 python "<skill-dir>\logwatch.py" [--server <instance>] [--since MINUTES] [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
-python "<skill-dir>\logwatch.py" --dir <folder> [--dir <folder> ...] [--duration S] [--json]
+python "<skill-dir>\logwatch.py" --dir <folder> [--dir <folder> ...] [--since MINUTES] [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
 ```
 
 | Argument | Notes |
@@ -28,7 +28,7 @@ python "<skill-dir>\logwatch.py" --dir <folder> [--dir <folder> ...] [--duration
 | `--since` | Read files changed in the last MINUTES from their start. Default 0: only lines written after the watch starts. |
 | `--duration` | Stop after S seconds. |
 | `--until-closed` | Stop once the game client has been seen running and then closes (checked every 5 seconds). The client is the `DayZDiag_x64.exe` whose command line has no `-server`, so a server left running after you close the client window does not keep the watch going. If the client never starts within 300 seconds, stop with `session never started`. Not allowed with `--duration`. |
-| `--interval` | Seconds between reads (default 1). |
+| `--interval` | Seconds between reads (default 1). Must be at least 0.1; a smaller or negative value stops with exit 2. |
 | `--mod` | Mod name, filled into fixes that mention `<ModName>`. |
 | `--json` | One JSON object per line instead of text. |
 
