@@ -13,7 +13,9 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from state import PROJECT_DIR, active_mod
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+from skill_helpers import strip_cpp_comments  # noqa: E402
+from state import PROJECT_DIR, active_mod  # noqa: E402
 
 SEARCH_INDEX = Path.home() / ".claude" / "dayz-search-index" / "lancedb"
 
@@ -48,7 +50,7 @@ def _non_vanilla_addons(config: Path) -> list[str]:
     """requiredAddons[] names in config.cpp that are not vanilla DZ_* patches."""
     if not config.is_file():
         return []
-    text = re.sub(r"//[^\n]*|/\*.*?\*/", "", config.read_text(encoding="utf-8", errors="replace"), flags=re.DOTALL)
+    text = strip_cpp_comments(config.read_text(encoding="utf-8", errors="replace"))
     names: list[str] = []
     for block in re.findall(r"requiredAddons\s*\[\]\s*=\s*\{([^}]*)\}", text):
         for name in re.findall(r'"([^"]+)"', block):

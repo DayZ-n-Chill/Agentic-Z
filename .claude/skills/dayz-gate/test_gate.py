@@ -638,6 +638,26 @@ def test_ingame_non_vanilla_required_addons_need_deps(project, capsys):
     assert not fake.ran("launch.py")
 
 
+def test_ingame_commented_out_required_addons_need_no_deps(project, capsys):
+    cfg = project / "workspace" / "MyMod" / "config.cpp"
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace(
+        '\t\trequiredAddons[] = {"DZ_Data"};',
+        '\t\t// requiredAddons[]={"JM_CF_Scripts"};\n\t\t/* requiredAddons[] = {"Other_Mod"}; */\n'
+        '\t\trequiredAddons[] = {"DZ_Data"};',
+    ), encoding="utf-8")
+    assert gate.mod_identity("MyMod", cfg.parent).required_addons == ["DZ_Data"]
+    fake = FakeRuntime({"launch.py": launch_ok()})
+    session(fake, project)
+    rc, _, data = ingame(fake, capsys)
+    assert rc == 0, data
+    assert fake.ran("launch.py")
+
+
+def test_strip_cpp_comments_keeps_slashes_inside_strings():
+    text = 'url = "http://x/y"; // gone\nrequiredAddons[] = {"A" /* "B" */};'
+    assert gate.h.strip_cpp_comments(text) == 'url = "http://x/y"; \nrequiredAddons[] = {"A" };'
+
+
 def test_ingame_stop_failure_after_session_exits_2(project, capsys):
     fake = FakeRuntime({"launch.py": launch_ok()})
     session(fake, project)
