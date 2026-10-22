@@ -345,11 +345,39 @@ def test_main_merge_refuses_unparseable_chunk(types_file, tmp_path, monkeypatch)
     assert "Could not parse the chunk" in str(exc.value.code)
 
 
-@pytest.mark.parametrize("argv", [[], ["AKM", "--merge", "-"], ["AKM", "--dry-run"]])
+@pytest.mark.parametrize("argv", [[], ["AKM", "--merge", "-"], ["--dry-run"]])
 def test_main_needs_exactly_one_of_classname_or_merge(types_file, monkeypatch, argv):
     with pytest.raises(SystemExit) as exc:
         _run_main(monkeypatch, [str(types_file), *argv])
     assert exc.value.code == 2
+
+
+@pytest.mark.parametrize("argv", [["AKM", "--nominal", "12"], ["MyMod_Vest", "--nominal", "2"], ["AKM", "--remove"]])
+def test_main_dry_run_reports_upsert_or_remove_and_writes_nothing(types_file, monkeypatch, capsys, argv):
+    before = types_file.read_bytes()
+    assert _run_main(monkeypatch, [str(types_file), *argv, "--dry-run"]) == 0
+    out = capsys.readouterr().out
+    assert "Dry run" in out
+    assert any(word in out for word in ("Added", "Updated", "Removed"))
+    assert types_file.read_bytes() == before
+    assert not types_file.with_suffix(".xml.bak").exists()
+
+
+def test_main_dry_run_still_refuses_min_above_nominal(types_file, monkeypatch):
+    before = types_file.read_bytes()
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "AKM", "--min", "99", "--dry-run"])
+    assert "min (99)" in str(exc.value.code)
+    assert types_file.read_bytes() == before
+
+
+def test_new_entry_children_follow_vanilla_order(types_file):
+    _, root = _roundtrip(types_file)
+    te.upsert(root, "MyMod_Rifle", _args(category="weapons", usage=["Military"], value=["Tier4"]))
+    # Child order of the AKM block in vanilla chernarusplus db/types.xml.
+    vanilla = ["nominal", "lifetime", "restock", "min", "quantmin", "quantmax", "cost",
+               "flags", "category", "usage", "value"]
+    assert [c.tag for c in _find(root, "MyMod_Rifle")] == vanilla
 
 
 # --- names checked against the mission's cfglimitsdefinition.xml --------------------

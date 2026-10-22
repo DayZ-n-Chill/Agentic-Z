@@ -123,6 +123,11 @@ def test_autocenter_property():
     assert _severities(audit.check_autocenter_prop(_stub_lod(), True)) == ["WARNING"]
 
 
+def test_autocenter_property_with_wrong_value_is_flagged():
+    issues = audit.check_autocenter_prop(_stub_lod(properties={"autocenter": "1"}), True)
+    assert _severities(issues) == ["WARNING"] and "autocenter=1" in issues[0][1]
+
+
 def test_autocenter_property_not_needed_without_config_autocenter():
     assert audit.check_autocenter_prop(_stub_lod()) == []
     assert audit.check_autocenter_prop(_stub_lod(), False) == []
@@ -259,6 +264,25 @@ def test_animation_axis_missing_and_begin_end_points():
     lid = {"lid": {"selection": "LID", "axis": "", "begin": "lid_begin", "end": "lid_end"}}
     issues = audit.check_animations(lid, _anim_lods({"lid": [0]}, {"lid_begin": [1]}))
     assert [m for _, m in issues] == ["Animation 'lid': Memory LOD has no 'lid_end' point (end of the axis)."]
+
+
+def test_pos_center_checked_only_for_autocenter_zero_items():
+    no_center = _points_lod([(0.0, 0.0, 0.0)], {"box_placing_min": [0], "box_placing_max": [0]})
+    assert audit.check_memory_lod(no_center) == []  # ordinary item or kit
+    issues = audit.check_memory_lod(no_center, wants_zero=True)
+    assert _severities(issues) == ["WARNING"] and "pos center" in issues[0][1]
+    off_origin = _points_lod([(0.0, 2.0, 0.0)], {"pos center": [0]})
+    assert audit.check_memory_lod(off_origin) == []
+    assert _severities(audit.check_memory_lod(off_origin, wants_zero=True)) == ["NOTE"]
+
+
+def test_box_placing_note_only_without_geometry_lod():
+    bare = _points_lod([(0.0, 0.0, 0.0)], {"pos center": [0]})
+    assert audit.check_memory_lod(bare, has_geometry=True) == []
+    issues = audit.check_memory_lod(bare, has_geometry=False)
+    assert _severities(issues) == ["NOTE"] and "box_placing" in issues[0][1]
+    vanilla = _points_lod([(0.0, 0.0, 0.0)], {"boundingbox_min": [0], "boundingbox_max": [0]})
+    assert audit.check_memory_lod(vanilla, has_geometry=False) == []
 
 
 def test_memory_axis_without_model_cfg_is_not_guessed():
@@ -520,3 +544,33 @@ def test_autocenter_checked_only_on_geometry_lod(tmp_path, monkeypatch, capsys):
     out = run({}, cfg=None)  # no config.cpp sets autocenter = 0: kits and items get no warning
     assert "autocenter=0' LOD property" not in out
     assert "WARNING:" not in out
+
+
+
+def test_ordinary_item_without_pos_center_passes_and_autocenter_item_does_not(tmp_path, monkeypatch, capsys):
+    def lod(resolution, **kw):
+        stub = _stub_lod(**kw)
+        stub.resolution = resolution
+        return stub
+
+    lods = [
+        lod(0.0),
+        lod(1e13, selections={"Component01": FULL}, properties={"autocenter": "0"}),
+        lod(6e15), lod(7e15),
+        lod(1e15, face_indices=[], selections={}),  # no pos center, no box_placing
+    ]
+    fake_py3d = type("FakePy3d", (), {"P3D": staticmethod(lambda f: _Obj(lods=lods))})
+    monkeypatch.setattr(audit, "load_py3d", lambda: fake_py3d)
+    monkeypatch.setattr(audit, "check_visual_lod", lambda lod: [])  # stub faces carry no textures
+    model = tmp_path / "m.p3d"
+    model.write_bytes(b"MLOD" + b"\0" * 8)
+
+    audit.audit_p3d(str(model))
+    out = capsys.readouterr().out
+    assert "pos center" not in out and "box_placing" not in out
+    assert "ALL CHECKS PASSED" in out
+
+    config = tmp_path / "config.cpp"
+    config.write_text("class CfgVehicles { class MyCrate { autocenter = 0; }; };", encoding="utf-8")
+    audit.audit_p3d(str(model), config=str(config))
+    assert "WARNING: Missing 'pos center'" in capsys.readouterr().out

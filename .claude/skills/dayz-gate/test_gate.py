@@ -405,6 +405,17 @@ def test_usage_error_exits_2(capsys):
     assert gate.main(["ingame", "MyMod", "--ready-pattern", "("], rt=FakeRuntime().runtime()) == 2
 
 
+def test_unexpected_crash_is_error_exit_2(project, monkeypatch, capsys):
+    """Any exception the gate does not expect is ERROR (exit 2), never Python's exit 1 (FAIL)."""
+    def crash(*a, **k):
+        raise KeyError("verdict")
+
+    monkeypatch.setattr(gate, "gate_build", crash)
+    rc, first, data = run_main(["build", "MyMod", "--json"], FakeRuntime(), capsys)
+    assert (rc, first) == (2, "ERROR")
+    assert data["error"] == "gate crashed: KeyError: 'verdict'"
+
+
 # --- in-game gate ------------------------------------------------------------------
 
 def session(fake: FakeRuntime, proj: Path, server_lines=(), client_lines=(), ready_at: float | None = 4,

@@ -54,3 +54,6 @@ output/*-visual/runs/
 # Private working docs: never pushed
 docs/.updates/
 docs/superpowers/
+
+# Claude Code worktrees: full copies of the repo, one per isolated agent session
+.claude/worktrees/

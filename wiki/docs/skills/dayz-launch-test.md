@@ -16,6 +16,8 @@ Run-only: launches a local DayZ test session for one or more built mods. Always 
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
+**Before you launch:** to see every error as you play, start `/dayz-logwatch --until-closed` in the background first (it reads each log from its first line once the file appears), then run this skill.
+
 ## How to run
 
 ```cmd
@@ -27,7 +29,7 @@ python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server-only <ModNam
 | `<ModName> ...` | yes | Mod names loaded on **both** client and server. Each must have at least one `.pbo` at `P:\Mods\@<ModName>\Addons\` (build with `/dayz-build-pbo` first). |
 | `--server-only` | no | Mod names loaded on the **server only**, passed with the server's `-serverMod=` switch and never added to either `-mod=` list (mods on `-mod=` are advertised to clients). Use for a mod that self-terminates when it detects itself running outside the dedicated server (e.g. a `CfgMods` server-marker `defines[]` entry guarding a `RequestExit()` call). Same `.pbo`-presence requirement as above. |
 | `--server` | no | Server instance to launch on. Default `chernarus`. Must have been added via `/dayz-add-server`. |
-| `--port` | no | Server port. Default `2302`. |
+| `--port` | no | Server port, 1 to 65535. Default `2302`. Any other value exits 2 with `port must be 1-65535`, also with `--dry-run`. |
 | `--dry-run` | no | Run every check, print the resolved server and client commands, then exit 0. Writes nothing of its own (no profile dirs, no display-prefs file, no processes); `/dayz-preflight` may still create the `P:\Mods` junction if it is missing. |
 
 ## Mods with dependencies
@@ -45,7 +47,7 @@ Name a mod's dependencies before the mod, in load order, for example `/dayz-laun
 7. **Launch server**: spawns `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/<template> -mod=P:\Mods\@Mod1;P:\Mods\@Mod2 [-serverMod=P:\Mods\@ServerOnly1;...] -filePatching -port=<port>`. `-mod=` holds the shared mods; `--server-only` mods go on `-serverMod=` so clients are not told to load them. If the server cannot be spawned, the skill prints `[FAIL] Failed to spawn DayZDiag_x64.exe: <error>` and exits 1.
 8. **Wait for the port**: polls once a second, for up to 180 s, until the server has bound UDP `<port>` (a DayZ server can take 30 s or more to load the mission and mods). If the server exits, or the wait times out (the server is then killed), the skill exits 1 without starting the client.
 9. **Launch client**: spawns `DayZDiag_x64.exe -profiles=.server/!ClientDiagLogs -mod=... -connect=127.0.0.1 -port=<port> -filePatching` plus the display flags from the per-clone preferences. If the client cannot be spawned, the server is killed and the skill exits 1 with the same `[FAIL]` line.
-10. **Print PIDs and exit.** Both processes are spawned detached (shared `DETACH_FLAGS` in `_shared/skill_helpers.py`), so they keep running when the shell or agent that started them closes. Close the windows to stop them, or run `/dayz-stop-test`.
+10. **Print PIDs and exit.** Both processes are spawned detached (shared `DETACH_FLAGS` in `_shared/skill_helpers.py`), so they keep running when the shell or agent that started them closes. Close the windows to stop them, or run `/dayz-stop-test`. Follow the logs with `/dayz-logwatch`; stop the session with `/dayz-stop-test`.
 
 ## Refuses to run if
 

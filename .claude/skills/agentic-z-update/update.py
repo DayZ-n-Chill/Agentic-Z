@@ -1,11 +1,12 @@
 """Pull Agentic-Z template updates from upstream into the current clone.
 
-What it touches:
+What it touches (TEMPLATE_PATHS):
     .claude/agents/, .claude/skills/, .claude/mcp/, .claude/settings.json
     .claude-plugin/, .mcp.json, hooks/, mods/, evals/
     docs/, wiki/, scripts/
-    CLAUDE.md, AGENTS.md, GEMINI.md, README.md
-    .gitignore, .env.example, package.json, package-lock.json, .github/
+    CLAUDE.md, AGENTS.md, GEMINI.md, README.md, CONTRIBUTING.md, LICENSE
+    .gitignore, pytest.ini, .env.example, package.json, package-lock.json, .github/
+    .markdownlint.json, .markdownlint-cli2.jsonc, .markdownlintignore
 
 What it leaves alone:
     workspace/, output/, .claude/local-memory/, .claude/settings.local.json, .env
@@ -54,6 +55,7 @@ TEMPLATE_PATHS = [
     "GEMINI.md",
     "README.md",
     ".gitignore",
+    "pytest.ini",
     ".env.example",
     "package.json",
     "package-lock.json",
@@ -862,7 +864,13 @@ def main() -> int:
 
     # Default flow: preview, prompt, apply.
     drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")
-    if not drift:
+    # Local choices bring nothing in from upstream, so on their own they must
+    # not prompt. The exception is --per-file with a locally deleted file,
+    # which the user may want to restore.
+    restorable = args.per_file and FileStatus.LOCALLY_DELETED in drift.values()
+    if not restorable and all(st in LOCAL_CHOICE_STATUSES for st in drift.values()):
+        if drift:
+            print(format_preview(drift, baseline_sha, upstream_sha, quiet=False))
         log("INFO", "Up to date.")
         return 0
 

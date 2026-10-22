@@ -40,18 +40,18 @@ After a build, restart Claude Code so the MCP server opens the new index.
 
 ## What it indexes
 
-The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. Run `--status` to see the current chunk, file and token counts (a windowed full build of vanilla came to about 58,700 chunks when counted on 2026-10-22).
+The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. Run `--status` to see the current chunk, file and token counts (a full build of vanilla came to about 61,200 chunks when counted on 2026-10-22, with XML, JSON and CSV windowed too).
 
-Indexes built before oversize class blocks were split into windows stored only the first 8,000 characters of each block. Run `--full` once to rebuild with windowing; expect the chunk count to rise.
+Indexes built before windowing stored only the first 8,000 characters of each oversize class block, XML batch, JSON file or CSV file, so most stringtable rows were never searchable. Run `--full` once to rebuild with windowing; expect the chunk count to rise.
 
 | File type | Chunking |
 |---|---|
 | `.c .cpp .hpp .h .cfg .layout` | one chunk per top-level `class X { ... }` block, whole file if there are none. A block or file over 6,000 characters (`EMBED_MAX_CHARS`) is split into windows of at most that size, cut at member boundaries (a method or field starting at the class's top level) where possible, otherwise at the last whole line that fits. Each window keeps the class name as parent context and its own real line range, so no script text is dropped |
 | `.rvmat` | whole file, deduplicated by SHA-256 of the content |
-| `.xml` | whole file under 4 KB, otherwise batches of 50 top-level elements (line range = first to last element in the batch) |
-| `.json .csv` | whole file |
+| `.xml` | whole file under 4 KB, otherwise batches of consecutive top-level elements, each batch filled until the next element would pass 6,000 characters (at most 50 elements). An element over 6,000 characters on its own is split into windows. Line range = first to last element in the batch. A file that does not parse is windowed like JSON |
+| `.json .csv` | whole file up to 6,000 characters, otherwise windows of at most that size with their real line ranges. Each CSV window starts with the file's header line, so a stringtable row still names its language columns |
 
-The other types are not windowed: an `.rvmat` chunk stores at most 4,000 characters, and `.xml .json .csv` chunks store at most 8,000 characters, of which the first 6,000 are embedded.
+Only `.rvmat` is cut: a chunk stores at most 4,000 characters of the material. Every other chunk is at most 6,000 characters, so all of it is stored and embedded.
 
 Each chunk stores path, file type, parent context (class name, XML range, or rvmat hash), line range and content.
 
@@ -63,7 +63,7 @@ Each chunk stores path, file type, parent context (class name, XML range, or rvm
 - `manifest.json` records model, per-folder counts, rvmat duplicates skipped, total chunks, tokens used and estimated cost.
 - `file_hashes.json` records the sha256 of every indexed file, so the MCP server flags a hit stale only when the file's content changed.
 - `config.json` tells the MCP server which model to embed queries with.
-- `usage.log` is the local token ledger used by the free-tier check.
+- `usage.log` is the local token ledger used by the free-tier check. A build appends its tokens as soon as the embed returns, before the table and manifest are written, so tokens already billed are logged even if a later step fails.
 
 ## Output
 

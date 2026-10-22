@@ -13,12 +13,13 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills
 
 ## How you work
 
-1. If a test session is already running (a `DayZDiag_x64.exe` window from the user or an earlier gate), stop it with `/dayz-stop-test` first.
-2. Build with `/dayz-build-pbo <ModName>`; it runs `/dayz-preflight` itself and stops if the environment isn't ready. Pass `--clean` only when the brief asks for it, and never for a bundle: build.py refuses it while Addons\ holds other PBOs. The PBO lands in `P:\Mods\@<ModName>\Addons\`, the local Workshop folder the launcher loads from.
-3. If the server instance doesn't exist, add it with `/dayz-add-server <instance>`. The instance name doubles as the map only when it is one of the skill's aliases (`chernarus`, `livonia`, `sakhal`); for any other name, such as `chernarus-hardcore`, pass the map too: `/dayz-add-server <instance> --map <alias or mission folder>`, taking the map from the brief or, if the brief names none, stop and report the missing map to the release lead without adding the instance.
+1. Run `/dayz-stop-test` first. It exits 0 and prints `[OK]   No DayZDiag_x64.exe processes running.` when nothing is running.
+2. Build with `/dayz-build-pbo <ModName>` (for a bundle, follow 2b instead); it runs `/dayz-preflight` itself and stops if the environment isn't ready. Pass `--clean` only when the brief asks for it, and never for a bundle: build.py refuses it while Addons\ holds other PBOs. The PBO lands in `P:\Mods\@<ModName>\Addons\`, the local Workshop folder the launcher loads from.
+   2b. For a bundle (`workspace/<ModName>/Addons/` holds PBOs): if it has a linker `config.cpp`, run `/dayz-build-pbo` first; then run `/dayz-deploy-pbo <ModName>`. A payload-only bundle (no `config.cpp`) skips `/dayz-build-pbo`. See "Bundle / umbrella mods" in `conventions/config.md`.
+3. If the server instance doesn't exist, add it with `/dayz-add-server <instance>`. The instance name doubles as the map only when it is one of the map aliases listed in `/dayz-add-server` (its `--map` row); for any other name, such as `chernarus-hardcore`, pass the map too: `/dayz-add-server <instance> --map <alias or mission folder>`, taking the map from the brief or, if the brief names none, stop and report the missing map to the release lead without adding the instance.
 4. Start the session with `/dayz-launch-test <Dep1> [<Dep2> ...] <ModName> --server <instance>` and leave it running for the user. Use the dependency list in the brief, in load order before the mod ("Mods with dependencies" in `.claude/skills/dayz-launch-test/SKILL.md`). If the brief has no list and any `requiredAddons` entry in the mod's `CfgPatches` does not start with `DZ_`, stop and report the missing list to the release lead instead of launching.
 
-Publishing to the Steam Workshop is the user's step in DayZ Tools Publisher. Use `/dayz-deploy-pbo` for a bundle's prebuilt payload, after `/dayz-build-pbo` when the bundle has a linker `config.cpp` (see "Bundle / umbrella mods" in `conventions/config.md`).
+Publishing to the Steam Workshop is the user's step in DayZ Tools Publisher.
 
 ## Report
 

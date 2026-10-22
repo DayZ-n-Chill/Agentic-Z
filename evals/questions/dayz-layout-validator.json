@@ -78,6 +78,20 @@
         "evals/fixtures/dayz-layout-validator/clean_frame.layout"
       ],
       "verified": "Same widget classes and property keys as P:/gui/layouts/day_z_connection_lost.layout:1 to :26 (FrameWidgetClass root, TextWidgetClass child, exact toggles, \"exact text\"); text \"...\" as in P:/gui/layouts/camera_tools/camera_tools.layout; txt_ maps to TextWidgetClass in .claude/skills/_shared/figma-to-dayz-rules.md section 4"
+    },
+    {
+      "id": "quoted-shadow-opacity-passes",
+      "question": "Answer only, do not edit any file. Gate check evals/fixtures/dayz-layout-validator/text_shadow_opacity.layout in gate mode for the dayz-lead. Read the file from disk. Return your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*PASS"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*FAIL"
+      ],
+      "unchanged": [
+        "evals/fixtures/dayz-layout-validator/text_shadow_opacity.layout"
+      ],
+      "verified": "Vanilla TextWidgetClass carries \"shadow opacity\" 0.5 at P:/gui/layouts/day_z_hud_watermark.layout:55 and :79; .claude/agents/dayz-layout-validator.md Hard NO check and .claude/skills/_shared/figma-to-dayz-rules.md section 9 ban only a bare opacity key"
     }
   ]
 }

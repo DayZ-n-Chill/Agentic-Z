@@ -32,12 +32,13 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 
 ## Read what changed first
 
-Before you write, read every file the wave changed. Take the list from the release lead's brief, or run `git -C workspace/<ModName> status --short` and `git -C workspace/<ModName> log --name-only` back to the last changelog entry. Both work for a mod inside this repo and for a mod with its own repo (a clone or linked folder from `/dayz-import-mod`). Read each changed `config.cpp`, script, layout and `types.xml` file, and write only about what they actually add, change or remove.
+Before you write, read every file the wave changed. Take the list from the release lead's brief, or run `git -C workspace/<ModName> status --short` and `git -C workspace/<ModName> log --name-only <ref>..HEAD`. Use the start ref that `/dayz-release-pack` prints (latest tag or newest `chore(release)` commit), or the `--since` ref you pass it, so you document the same changes the generated entry covers. Both work for a mod inside this repo and for a mod with its own repo (a clone or linked folder from `/dayz-import-mod`). Read each changed `config.cpp`, script, layout and `types.xml` file, and write only about what they actually add, change or remove.
 
 ## What you keep current
 
 - `workspace/<ModName>/README.md`: what the mod adds, its dependencies (`CfgPatches` `requiredAddons`), and load order.
 - A `## Classnames` section in that README for server owners: every spawnable class (`scope = 2`) from the mod's `config.cpp`, skipping `scope = 0` and `scope = 1` base classes, each with a sample `types.xml` entry. Copy each sample from the mission's real types entries when one exists for the class; otherwise mark the values as placeholders for server owners to tune. Search `db/types.xml` (for example `.server/<instance>/mission/db/types.xml`) and every file the mission's `cfgeconomycore.xml` lists in its `<ce folder="...">` blocks: after `/dayz-split-types`, `types.xml` is an empty stub and the entries live in `db/types/*.xml`.
+- An `## Install` section in that README for players and server owners.
 - `workspace/<ModName>/CHANGELOG.md`: one entry per release, newest first.
 
 ## For a release
@@ -60,7 +61,7 @@ Run `/dayz-release-pack` first, then `/dayz-server-kit`. Each skill runs its scr
   - `changelog-full-history`: rerun with `--since <ref>` set to the commit of the last CHANGELOG.md entry.
   - `changelog-empty`: report it; there is nothing new to release.
   - `no-git`: write the changelog entry from the files you read, and say so in the report.
-- Merge `changelog.md` into `workspace/<ModName>/CHANGELOG.md`, and the classes in `classnames.md` into the README's `## Classnames` section.
+- Merge `changelog.md` into `workspace/<ModName>/CHANGELOG.md`, the classes in `classnames.md` into the README's `## Classnames` section, and `server-install.md` into the README's `## Install` section.
 - Pass `--mission` with the test server instance so the kit carries real types entries.
 - Never put a `.biprivatekey` anywhere a player or server owner can get it. The kit packs only `.bikey` files.
 
