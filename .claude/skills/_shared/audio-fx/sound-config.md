@@ -6,7 +6,7 @@ All line numbers below are in `P:\DZ\sounds\hpp\config.cpp` unless another file 
 
 ## Where the classes live
 
-`P:\DZ\sounds\hpp\config.cpp` holds every vanilla sound class at the root of the config, next to `CfgVehicles`:
+Vanilla sound classes are in two files, so search both: `P:\DZ\sounds\hpp\config.cpp` and `P:\DZ\sounds_bliss\config.cpp`. The main file declares them at the root of the config, next to `CfgVehicles`:
 
 | Root class | Line | What it holds |
 |---|---|---|
@@ -20,7 +20,7 @@ All line numbers below are in `P:\DZ\sounds\hpp\config.cpp` unless another file 
 
 The `CfgPatches` class in that file is `DZ_Sounds_Effects` (line 3).
 
-A mod declares its own `CfgSoundShaders` and `CfgSoundSets` at the root of its `config.cpp`, outside `CfgVehicles`. Vanilla does the same in a second addon: `P:\DZ\sounds_bliss\config.cpp` declares `CfgSoundShaders` at line 6237 and `CfgSoundSets` at line 13028, and its `CfgPatches` class `DZ_Sounds_Bliss` lists `DZ_Sounds_Effects` in `requiredAddons[]` (lines 3 to 13).
+A mod declares its own `CfgSoundShaders` and `CfgSoundSets` at the root of its `config.cpp`, outside `CfgVehicles`. Vanilla does the same in its second addon: `P:\DZ\sounds_bliss\config.cpp` declares `CfgSoundShaders` at line 6237, `CfgSoundSets` at line 13028 and `CfgSoundCurves` at line 27840, and its `CfgPatches` class `DZ_Sounds_Bliss` lists `DZ_Sounds_Effects` in `requiredAddons[]` (lines 3 to 13).
 
 ## CfgPatches
 

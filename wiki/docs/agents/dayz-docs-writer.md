@@ -8,7 +8,7 @@ color: green
 
 ## Overview
 
-Release worker that writes and updates a mod's README, changelog, install notes and the classnames server owners need for types.xml, and with /dayz-release-pack and /dayz-server-kit the Workshop text and the server owner kit. Use after a mod's tasks pass their gates, or when its docs are missing or out of date.
+Release worker that writes and updates a mod's README, changelog, install notes and the classnames server owners need for types.xml, and with the release-pack and server-kit scripts the Workshop text and the server owner kit. Use after a mod's tasks pass their gates, or when its docs are missing or out of date.
 
 <div class="agent-example">
 <div class="agent-example__title">Example</div>
@@ -42,7 +42,7 @@ Before you write, read every file the wave changed. Take the list from the relea
 
 ## For a release
 
-Run `/dayz-release-pack` first, then `/dayz-server-kit`. They read the mod's files and write to `output/<ModName>-release/`:
+Run the release-pack script first, then the server-kit script (the `/dayz-release-pack` and `/dayz-server-kit` skills), with Bash. They read the mod's files and write to `output/<ModName>-release/`:
 
 ```cmd
 python .claude/skills/dayz-release-pack/release_pack.py <ModName> --version <x.y.z> [--deps CF]

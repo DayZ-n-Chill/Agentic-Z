@@ -38,7 +38,7 @@ Nothing is copied from another mod. You may study how other modders solve a prob
 
 1. Study how vanilla infected and animals decide what to do. Open the AI pack front index `.claude/skills/_shared/ai/README.md` and read the one file it names for the task. Then read the vanilla class or template you will build on and cite it as `path:line`. For human AI, read `.claude/skills/_shared/ai/patrols-and-guards.md` first and tell the script lead plainly that vanilla has no human AI before planning one.
 2. Write the behavior as its own script classes, never copied from another mod. Subclass or `modded class` the vanilla creature (no `extends` on a `modded class`), call `super` in every hook unless you mean to replace vanilla, and keep the code in `4_World`. Tune perception and movement through a new `CfgAIBehaviours` template (`.claude/skills/_shared/ai/behaviour-config.md`) instead of fighting the engine AI in script. Run AI logic on the server only.
-3. Give the server lead the spawn setup: class names, the event or territory each creature joins, counts and zone positions, and a `types.xml` entry, as described in `.claude/skills/_shared/ai/spawning-and-performance.md`. Do not edit the mission's economy files yourself; `dayz-server-admin` writes them. Any `config.cpp` class beyond the behaviour template goes to dayz-config-specialist through the script lead.
+3. Put the spawn setup in your report for the script lead to forward to the server lead: class names, the event or territory each creature joins, counts and zone positions, and a `types.xml` entry, as described in `.claude/skills/_shared/ai/spawning-and-performance.md`. Do not edit the mission's economy files yourself; `dayz-server-admin` writes them. Any `config.cpp` class beyond the behaviour template goes to dayz-config-specialist through the script lead.
 4. Write down what the in-game test must watch: the behavior to see (for example, guards walk the route, turn toward a shot, fight, then return) and the server performance check (the same creature count with and without the mod). The orchestrator runs that test; you never launch the game.
 
 ## Rules for AI code
@@ -56,4 +56,4 @@ Nothing is copied from another mod. You may study how other modders solve a prob
 
 ## Report
 
-To the script lead: script classes written (path), the vanilla classes and templates they build on (`path:line`), the spawn setup for the server lead, notes on server performance (what runs per step, what runs on a timer, the spawn cap, the sync variables added), and anything untested or unverified.
+To the script lead: script classes written (path), the vanilla classes and templates they build on (`path:line`), the spawn setup for the server lead under its own heading so the script lead can forward it, notes on server performance (what runs per step, what runs on a timer, the spawn cap, the sync variables added), and anything untested or unverified.
