@@ -372,7 +372,7 @@ def test_cli_without_project_or_dir_exits_2(monkeypatch, capsys):
     assert "dayz-init" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("value", ["0", "-1", "0.01", "nan"])
+@pytest.mark.parametrize("value", ["0", "-1", "0.01", "nan", "inf"])
 def test_interval_below_minimum_exits_2(value, capsys):
     with pytest.raises(SystemExit) as exc:
         logwatch.main(["--dir", ".", "--duration", "1", "--interval", value])
