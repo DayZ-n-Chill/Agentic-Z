@@ -42,7 +42,10 @@ def _tools(path: Path) -> list[str]:
 
 def test_every_agent_is_registered_in_the_plugin():
     registered = {Path(p).stem for p in PLUGIN["agents"]}
-    assert registered == AGENT_NAMES
+    assert registered == AGENT_NAMES, (
+        f"agents missing from .claude-plugin/plugin.json: {sorted(AGENT_NAMES - registered)}; "
+        f"registered but not on disk: {sorted(registered - AGENT_NAMES)}"
+    )
 
 
 def test_every_user_skill_is_registered_in_the_plugin():
@@ -79,7 +82,8 @@ def test_agents_have_no_machine_specific_paths(path):
     # P:\ is the DayZ Tools work drive every user mounts; any other drive letter
     # is one person's machine.
     text = path.read_text(encoding="utf-8")
-    assert not re.findall(r"\b[A-OQ-Z]:\\", text)
+    found = re.findall(r"\b[A-OQ-Z]:\\", text)
+    assert not found, f"{path.name} has machine-specific drive paths {found}; only P:\\ is shared"
 
 
 # Every file an agent follows: the agents, the skills and the knowledge packs.
@@ -163,9 +167,10 @@ def _explicit_tools(path: Path) -> set[str]:
 @pytest.mark.parametrize("name", sorted(READ_ONLY_GATES))
 def test_gates_cannot_edit(name):
     path = AGENTS_DIR / f"{name}.md"
-    assert not _explicit_tools(path) & {"Edit", "Write", "NotebookEdit"}
+    write_tools = _explicit_tools(path) & {"Edit", "Write", "NotebookEdit"}
+    assert not write_tools, f"gate {name} must not change what it judges, but has {sorted(write_tools)}"
     # Setting `memory` auto-enables Write and Edit for any path.
-    assert "memory" not in _frontmatter(path)
+    assert "memory" not in _frontmatter(path), f"gate {name} sets memory, which enables Write and Edit"
 
 
 # Roles that run others or only diagnose, and write nothing themselves. Setting
@@ -176,8 +181,9 @@ NO_WRITE_ROLES = {"dayz-lead", "dayz-physics-specialist"}
 @pytest.mark.parametrize("name", sorted(NO_WRITE_ROLES))
 def test_no_write_roles_have_no_write_tools_or_memory(name):
     path = AGENTS_DIR / f"{name}.md"
-    assert not _explicit_tools(path) & {"Edit", "Write", "NotebookEdit"}
-    assert "memory" not in _frontmatter(path)
+    write_tools = _explicit_tools(path) & {"Edit", "Write", "NotebookEdit"}
+    assert not write_tools, f"{name} writes nothing itself, but has {sorted(write_tools)}"
+    assert "memory" not in _frontmatter(path), f"{name} sets memory, which enables Write and Edit"
 
 
 def test_a_role_with_no_tools_line_fails_the_read_only_checks(tmp_path):
