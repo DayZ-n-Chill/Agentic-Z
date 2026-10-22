@@ -140,12 +140,12 @@ modded class SomeEntity
 
 ## Engine-backed classes you should not mod
 
-Some classes are made and driven by the engine, not by script. Their constructor is `proto private` or their methods are `proto native`, so there is no script body for a modded layer to wrap. Do not `modded class` them; use the script class that owns them.
+Some classes are made and driven by the engine, not by script. Their constructor is `proto private`, or their real work is `proto native`, so a modded layer either cannot be built or reaches every caller at once. Do not `modded class` them; use the script class that owns them.
 
 | Class | What vanilla shows | Use instead |
 |---|---|---|
 | `Widget` and every widget class (`TextWidget`, `ButtonWidget`, `ImageWidget`, ...) | `class Widget: Managed` with `proto private void Widget()` (`P:\scripts\1_core\proto\enwidgets.c:107-110`); `TextWidget` at :189, `ButtonWidget` at :381 | Call the widget's script API (`SetText`, `SetColor`, `SetPos`) from the menu or HUD that owns it, or attach a `ScriptedWidgetEventHandler` (`enwidgets.c:656`) |
-| `UIManager` | The engine's menu manager; its methods are `proto native` (`P:\scripts\3_game\tools\uimanager.c:1-12`) | Mod the concrete menu, or the mission that opens it |
+| `UIManager` | The engine's menu manager. Its menu calls are `proto native` (`EnterScriptedMenu`, `CreateScriptedMenu`, `ShowScriptedMenu`, `HideScriptedMenu` at `P:\scripts\3_game\tools\uimanager.c:4-10`, `GetMenu` at :59). Its script helpers (`Back` :62, `CloseMenu` :117, `IsMenuOpen` :154) have bodies, but every menu goes through them, so a modded layer changes all menus at once. | Mod the concrete menu, or the mission that opens it |
 | `UIScriptedMenu` | A script class (`P:\scripts\3_game\tools\uiscriptedmenu.c:66`), but the base of every menu, so a change there reaches all of them and is not a hook for one menu | `modded class InventoryMenu` (`P:\scripts\5_mission\gui\inventorymenu.c:8`) or the one menu you need |
 
 Being rooted at `Managed` is not the test. `Managed` (`P:\scripts\1_core\proto\enscript.c:117`) is the root of most script classes, including `Hud` (`P:\scripts\3_game\gameplay.c:637`), and `IngameHud extends Hud` (`P:\scripts\5_mission\gui\ingamehud.c:1`) is the usual HUD hook.

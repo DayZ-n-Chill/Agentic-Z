@@ -81,7 +81,7 @@ This works because the mission calls `PluginManagerInit()` (`P:\scripts\5_missio
 
 ## Accessing from Anywhere
 
-`GetPlugin(typename plugin_type)` (`pluginmanager.c:326`) returns the instance, or `null` and a "not Registred in PluginManager.c" print when the class was never registered (:339). `GetPluginSafe` (:350) returns `null` without the print.
+`GetPlugin(typename plugin_type)` (`pluginmanager.c:326`) returns the instance, or `null` when the class was never registered. Only a `DIAG_DEVELOPER` build also prints "not Registred in PluginManager.c" (:336-342); retail builds stay silent. `GetPluginSafe` (:350) never prints.
 
 ```c
 // Retrieve the singleton with a safe cast
