@@ -1,0 +1,58 @@
+{
+  "agent": "agent-creator",
+  "questions": [
+    {
+      "id": "gate-gets-no-write-or-memory",
+      "question": "Answer only, do not edit any file. I want a new agent that gates a mod's stringtable.csv: it reports PASS or FAIL and never changes the file. Which tools and memory setting should its frontmatter have, and which list in the integrity test does its name go in?",
+      "must_include": [
+        "READ_ONLY_GATES",
+        "re:(\\bno\\b|\\bnot\\b|n't|never|without|omit|leave out|drop)[^.\\n]*\\b(Write|Edit)\\b|\\b(Write|Edit)\\b[^.\\n]*(\\bno\\b|\\bnot\\b|n't|never|without|omit|leave out|drop)"
+      ],
+      "must_not_include": [
+        "re:^\\s*tools:[^\\n]*\\b(Write|Edit)\\b",
+        "re:^\\s*memory:\\s*project"
+      ],
+      "verified": ".claude/agents/agent-creator.md 'What a good agent file looks like', Tools (gate agents get no Write, Edit or memory; READ_ONLY_GATES checks them); scripts/dev/test_repo_integrity.py READ_ONLY_GATES"
+    },
+    {
+      "id": "model-is-omitted",
+      "question": "Answer only, do not edit any file. Should a new agent file set a model in its frontmatter, for example model: opus? Say what to do by default and when a pin is acceptable.",
+      "must_include": [
+        "re:omit|leave (it )?out|inherit|no `?model`?|don't set|do not set",
+        "re:cost"
+      ],
+      "verified": ".claude/agents/agent-creator.md Model (omit model so the agent inherits the session model; pin only as a deliberate cost decision, with a comment saying so)"
+    },
+    {
+      "id": "no-memory-section-in-body",
+      "question": "Answer only, do not edit any file. A teammate's agent file has memory: project in its frontmatter and also a '## Memory' section in the body that lists the memory folder path and how to update MEMORY.md. Should that body section stay?",
+      "must_include": [
+        "re:\\bno\\b|remove|delete|drop|strip|should not|shouldn't|not stay",
+        "re:memory: project|frontmatter"
+      ],
+      "verified": ".claude/agents/agent-creator.md Memory (memory: project in frontmatter is the complete setup; never write a memory section in the body; the harness injects paths and MEMORY.md)"
+    },
+    {
+      "id": "new-worker-registration",
+      "question": "Answer only, do not edit any file. I'm adding a new worker agent, dayz-stringtable-specialist, that a lead will start. Besides writing .claude/agents/dayz-stringtable-specialist.md, which other files must change so the integrity test passes?",
+      "must_include": [
+        "plugin.json",
+        "dayz-lead.md",
+        "re:docs/dayz-modding\\.md|dayz-modding\\.md"
+      ],
+      "verified": ".claude/agents/agent-creator.md Workflow step 1 (plugin.json agents list, the Team table in dayz-lead.md and the role table in docs/dayz-modding.md); scripts/dev/test_repo_integrity.py test_every_agent_is_registered_in_the_plugin and test_every_dayz_worker_is_in_the_lead_table"
+    },
+    {
+      "id": "baseline-via-runner",
+      "question": "Answer only, do not edit any file. I wrote evals/questions/dayz-stringtable-specialist.json for a new agent. How do I record its score in evals/baseline.json?",
+      "must_include": [
+        "--update-baseline",
+        "re:evals\\.bat|run_evals\\.py"
+      ],
+      "must_not_include": [
+        "re:\"score\"\\s*:\\s*\\d"
+      ],
+      "verified": ".claude/agents/agent-creator.md Workflow step 1 (run scripts\\dev\\evals.bat --agent <name> --update-baseline; never edit baseline.json by hand); docs/evals.md 'Adding questions'"
+    }
+  ]
+}
