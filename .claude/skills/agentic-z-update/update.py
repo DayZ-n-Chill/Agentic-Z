@@ -5,7 +5,7 @@ What it touches (TEMPLATE_PATHS):
     .claude-plugin/, .mcp.json, hooks/, mods/, evals/
     docs/, wiki/, scripts/
     CLAUDE.md, AGENTS.md, GEMINI.md, README.md, CONTRIBUTING.md, LICENSE
-    .gitignore, .env.example, package.json, package-lock.json, .github/
+    .gitignore, pytest.ini, .env.example, package.json, package-lock.json, .github/
     .markdownlint.json, .markdownlint-cli2.jsonc, .markdownlintignore
 
 What it leaves alone:

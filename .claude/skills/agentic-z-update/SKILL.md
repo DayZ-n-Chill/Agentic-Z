@@ -81,6 +81,7 @@ AGENTS.md
 GEMINI.md
 README.md
 .gitignore
+pytest.ini
 .env.example
 package.json
 package-lock.json
