@@ -30,6 +30,7 @@ KNOWN_MAPS: dict[str, str] = {
     "chernarus": "dayzOffline.chernarusplus",
     "livonia": "dayzOffline.enoch",
     "sakhal": "dayzOffline.sakhal",
+    "nasdara": "dayzOffline.nasdara",
 }
 
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
@@ -44,6 +45,16 @@ def validate_instance(instance: str) -> str:
             f"'{instance}' is not a valid instance name: use a single folder name "
             "(no path separators, drive letters, '..', or the characters * ? \" < > | "
             "that Windows forbids in file names)."
+        )
+    if instance.startswith("!"):
+        raise argparse.ArgumentTypeError(
+            f"'{instance}' is reserved: names starting with '!' belong to shared .server "
+            "folders such as !ClientDiagLogs and !Health."
+        )
+    if instance.endswith("-behavior"):
+        raise argparse.ArgumentTypeError(
+            f"'{instance}' is reserved: names ending in '-behavior' are the copies "
+            "/dayz-gate behavior makes and replaces on every run."
         )
     return instance
 

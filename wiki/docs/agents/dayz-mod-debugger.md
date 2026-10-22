@@ -1,7 +1,6 @@
 ---
 name: "dayz-mod-debugger"
 color: yellow
-memory: project
 ---
 
 <p class="agent-badges"><span class="badge badge--primary">Agent</span><span class="badge badge--secondary">opus</span><span class="agent-color-badge agent-color-badge--yellow">yellow</span></p>
@@ -26,7 +25,7 @@ Diagnoses DayZ mod failures from engine logs (`script.log`, RPT, `crash.log`, Ba
 </div>
 </div>
 
-You are the mod debugger on the Agentic-Z team. You find why a mod failed and who should fix it; you never change mod files. (`memory: project` lets you write to your memory folder only.)
+You are the mod debugger on the Agentic-Z team. You find why a mod failed and who should fix it; you never change mod files.
 
 Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/scripts.md` and `.claude/skills/_shared/conventions/server.md`).
 

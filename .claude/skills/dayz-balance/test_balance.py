@@ -136,9 +136,64 @@ class CfgVehicles
     class TestMod_Vest: PressVest { scope = 2; weight = 50000; };
 };
 """)
-    report = run(mod, min_peers=10)
+    report = run(mod, min_peers=50)
     assert report["verdict"] == "PASS"
-    assert "fewer than 10 vanilla peers" in report["skipped"][0]["reason"]
+    assert "fewer than 50 vanilla peers" in report["skipped"][0]["reason"]
+
+
+MASK_MOD = """
+class CfgVehicles
+{
+    class SurgicalMask;
+    class TestMod_Mask: SurgicalMask
+    {
+        scope = 2;
+        class Protection { biological = %s; };
+    };
+};
+"""
+
+
+def _mask_peers(mod_dir: Path):
+    bal = balance.Balance(balance.load_mod(mod_dir), balance.load_vanilla(VANILLA), 1.5, 3)
+    node = bal.mod.sections["cfgvehicles"]["testmod_mask"]
+    slots = bal.r.slots("cfgvehicles", node, mod_first=True)
+    return bal.peer_values("cfgvehicles", bal.ancestors("cfgvehicles", node), "protection.biological", slots)
+
+
+def test_widened_mask_is_compared_with_mask_slot_peers_only(tmp_path):
+    # SurgicalMask alone is too few peers, so the group widens to Clothing, which
+    # also holds backpacks that inherit biological = 0 from Inventory_Base.
+    base, peers = _mask_peers(make_mod(tmp_path, MASK_MOD % "1"))
+    assert base == "Clothing in slot Mask"
+    assert {name for name, _ in peers} == {"GasMask", "SurgicalMask", "NioshFaceMask", "BandanaMask"}
+    assert not any("Pack" in name or "Bag" in name for name, _ in peers)
+
+
+def test_mask_far_below_the_other_masks_is_flagged_against_them(tmp_path):
+    # Against the whole Clothing group the median is 0, so a weak mask would pass.
+    f = run(make_mod(tmp_path, MASK_MOD % "0.05"))["findings"][0]
+    assert (f["stat"], f["direction"]) == ("protection.biological", "low")
+    assert f["peer_base"] == "Clothing in slot Mask"
+    assert {p["class"] for p in f["peers"]} == {"GasMask", "SurgicalMask", "NioshFaceMask", "BandanaMask"}
+
+
+def test_slot_filter_falls_back_when_too_few_share_the_slot(tmp_path):
+    mod = make_mod(tmp_path, """
+class CfgVehicles
+{
+    class SurgicalMask;
+    class TestMod_Mask: SurgicalMask
+    {
+        scope = 2;
+        inventorySlot[] = {"Eyewear"};
+        class Protection { biological = 1; };
+    };
+};
+""")
+    base, peers = _mask_peers(mod)
+    assert base == "Clothing"
+    assert any(name == "TaloonPack" for name, _ in peers)
 
 
 def test_value_inside_the_vanilla_range_passes(tmp_path):

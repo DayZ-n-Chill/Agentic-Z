@@ -24,18 +24,24 @@ The script reads .p3d files with py3d. Install it once:
 python -m pip install -r "<skill-dir>\requirements.txt"
 ```
 
-```bash
-# Audit one or more models (MLOD source, not binarized ODOL):
-python <skill-dir>/scripts/audit_p3d.py path/to/model.p3d [more.p3d ...]
+**Audit one or more models** (MLOD source, not binarized ODOL):
+```cmd
+python "<skill-dir>\scripts\audit_p3d.py" path\to\model.p3d [more.p3d ...]
+```
 
-# Include config/model.cfg path checks and the model.cfg animation check:
-python <skill-dir>/scripts/audit_p3d.py model.p3d --config path/to/config.cpp --model-cfg path/to/model.cfg
+**Include config/model.cfg path checks and the model.cfg animation check:**
+```cmd
+python "<skill-dir>\scripts\audit_p3d.py" model.p3d --config path\to\config.cpp --model-cfg path\to\model.cfg
+```
 
-# Check .rvmat materials for P:\ paths:
-python <skill-dir>/scripts/audit_p3d.py --rvmat path/to/a.rvmat path/to/b.rvmat
+**Check .rvmat materials for P:\ paths:**
+```cmd
+python "<skill-dir>\scripts\audit_p3d.py" --rvmat path\to\a.rvmat path\to\b.rvmat
+```
 
-# Full mod sweep (all .p3d, config.cpp, .rvmat, model.cfg; other inputs are ignored):
-python <skill-dir>/scripts/audit_p3d.py --scan-dir path/to/mod/
+**Full mod sweep** (all .p3d, config.cpp, .rvmat, model.cfg; other inputs are ignored):
+```cmd
+python "<skill-dir>\scripts\audit_p3d.py" --scan-dir path\to\mod\
 ```
 
 Animations are checked from model.cfg. The script finds the `CfgModels` class named

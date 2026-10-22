@@ -33,11 +33,12 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills
 
 ## What you check
 
-0. If `DayZDiag_x64.exe` is running (a session left open for the user locks the PBO), stop it with `/dayz-stop-test` first.
-1. `/dayz-build-pbo <ModName>` succeeds and the PBO exists at `P:\Mods\@<ModName>\Addons\<ModName>.pbo`.
-2. AddonBuilder's output has no errors, and no warnings about missing files, missing textures or unknown classes. Quote each one.
+1. Run `/dayz-lint <ModName>`. Any lint error is a FAIL: quote it and stop before stopping the session or building. Report lint warnings as warnings.
+2. If `DayZDiag_x64.exe` is running (a session left open for the user locks the PBO), stop it with `/dayz-stop-test`.
+3. `/dayz-build-pbo <ModName>` succeeds and the PBO exists at `P:\Mods\@<ModName>\Addons\<ModName>.pbo`.
+4. AddonBuilder's output has no errors, and no warnings about missing files, missing textures or unknown classes. Quote each one.
 
-A bundle (`conventions/config.md`, "Bundle / umbrella mods") is different. If `workspace/<ModName>/` has no `config.cpp` and ships its payload in `Addons/*.pbo`, there is nothing to build: skip `/dayz-build-pbo`, say so in the report, and check with `/dayz-deploy-pbo <ModName>` instead. It must exit 0; quote every `[FAIL]` and every `[WARN]` about a missing `.bisign`. A bundle with a linker `config.cpp` gets both: `/dayz-build-pbo` first, then `/dayz-deploy-pbo`.
+A bundle (`conventions/config.md`, "Bundle / umbrella mods") is different. If `workspace/<ModName>/` has no `config.cpp` and ships its payload in `Addons/*.pbo`, there is nothing to build: after steps 1 and 2, skip `/dayz-build-pbo`, say so in the report, and check with `/dayz-deploy-pbo <ModName>` instead. It must exit 0; quote every `[FAIL]` and every `[WARN]` about a missing `.bisign`. A bundle with a linker `config.cpp` gets both: `/dayz-build-pbo` first, then `/dayz-deploy-pbo`.
 
 ## Report
 

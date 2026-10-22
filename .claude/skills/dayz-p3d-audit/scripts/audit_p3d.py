@@ -32,7 +32,7 @@ def load_py3d():
     try:
         import py3d
     except ImportError:
-        print("ERROR: py3d not installed.")
+        print(f"{h.FAIL} py3d not installed.")
         print(f'Run: python -m pip install -r "{REQUIREMENTS}"')
         sys.exit(2)
     return py3d
@@ -430,12 +430,12 @@ def audit_p3d(filepath, model_cfg=None):
         with open(filepath, 'rb') as f:
             sig = f.read(4)
             if sig != b'MLOD':
-                print(f"  ERROR: Not MLOD format (sig={sig}). Cannot audit ODOL. Provide source MLOD.")
+                print(f"  {h.FAIL} Not MLOD format (sig={sig}). Cannot audit ODOL. Provide source MLOD.")
                 return False
             f.seek(0)
             p = load_py3d().P3D(f)
     except Exception as e:
-        print(f"  ERROR: Failed to read: {e}")
+        print(f"  {h.FAIL} Failed to read: {e}")
         return False
 
     size = os.path.getsize(filepath)
@@ -595,7 +595,7 @@ def main(argv=None):
         parser.error("nothing to audit: give .p3d files, --config, --model-cfg, --rvmat or --scan-dir")
 
     if args.scan_dir and not os.path.isdir(args.scan_dir):
-        print(f"ERROR: Directory not found: {args.scan_dir}")
+        print(f"{h.FAIL} Directory not found: {args.scan_dir}")
         sys.exit(1)
 
     h.gate_on_preflight()
@@ -613,7 +613,7 @@ def main(argv=None):
         targets.extend((rv, ".rvmat") for rv in args.rvmat)
         for f, label in targets:
             if not os.path.isfile(f):
-                print(f"ERROR: File not found: {f}")
+                print(f"{h.FAIL} File not found: {f}")
                 all_pass = False
             elif label is None and f.lower().endswith('.p3d'):
                 cfg = args.model_cfg if args.model_cfg and os.path.isfile(args.model_cfg) else None

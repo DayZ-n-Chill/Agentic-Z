@@ -26,11 +26,11 @@ OK = h.OK
 WARN = h.WARN
 FAIL = h.FAIL
 
-# DayZ defaults for a new <type> entry. 3888000s = 45 days (vanilla typical).
+# DayZ defaults for a new <type> entry. 14400 s = 4 h, the most common vanilla loot lifetime (chernarusplus types.xml).
 DEFAULTS = {
     "nominal": 1,
     "min": 0,
-    "lifetime": 3888000,
+    "lifetime": 14400,
     "restock": 0,
     # -1 means "not a quantity item"; every vanilla <type> carries both tags.
     "quantmin": -1,
@@ -38,8 +38,8 @@ DEFAULTS = {
     "cost": 100,
 }
 DEFAULT_FLAGS = {
-    "count_in_cargo": "1",
-    "count_in_hoarder": "1",
+    "count_in_cargo": "0",
+    "count_in_hoarder": "0",
     "count_in_map": "1",
     "count_in_player": "0",
     "crafted": "0",

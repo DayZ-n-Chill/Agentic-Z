@@ -212,6 +212,7 @@ def _stub_remote(monkeypatch, root):
     monkeypatch.setattr(update, "ensure_upstream", lambda: True)
     monkeypatch.setattr(update, "fetch_upstream", lambda: True)
     monkeypatch.setattr(update, "upstream_head_sha", lambda: "c" * 40)
+    monkeypatch.setattr(update, "merge_base_sha", lambda: None)
     monkeypatch.setattr(update, "search_index_update_available", lambda: None)
 
 
@@ -316,7 +317,7 @@ def test_first_run_refused_while_another_update_holds_the_lock(in_tmp, monkeypat
 # ---------- the template path list covers every tracked template folder ----------
 
 # Tracked top-level folders that belong to the upstream repo itself, not the template.
-NOT_TEMPLATE = {".github"}
+NOT_TEMPLATE: set[str] = set()
 
 
 def test_template_paths_cover_every_tracked_top_level_folder():
@@ -333,7 +334,8 @@ def test_template_paths_cover_every_tracked_top_level_folder():
 
     missing = sorted(f for f in folders if f not in NOT_TEMPLATE and not covered(f))
     assert not missing, f"tracked template folders missing from TEMPLATE_PATHS: {missing}"
-    for f in ("hooks", ".claude/settings.json", "mods", "evals", ".claude-plugin", ".mcp.json"):
+    for f in ("hooks", ".claude/settings.json", "mods", "evals", ".claude-plugin", ".mcp.json",
+              ".gitignore", ".env.example", "package.json", "package-lock.json", ".github"):
         assert f in update.TEMPLATE_PATHS
 
 
@@ -511,3 +513,60 @@ def test_crlf_working_copy_is_not_a_local_edit(tmp_path, monkeypatch):
 
     (tmp_path / "docs" / "a.md").write_bytes(b"one\r\nlocal\r\n")  # a real local edit
     assert update.compute_drift(baseline, "up") == {"docs/a.md": S.CONFLICT}
+
+
+# ---------- first run in an old clone uses the merge base ----------
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
+def test_first_run_in_old_clone_offers_upstream_changes_since_clone(tmp_path, monkeypatch, capsys):
+    """Clone at C0, upstream moves to C1 (one file edited, one added). The first
+    run must use the merge base C0, so the edit is safe-overwrite and the added
+    skill is new, not local-only-edit and locally-deleted."""
+    up = tmp_path / "upstream"
+    up.mkdir()
+    _git(up, "init", "-q", "-b", "main")
+    for key, val in [("user.name", "t"), ("user.email", "t@example.com"),
+                     ("commit.gpgsign", "false"), ("core.autocrlf", "false")]:
+        _git(up, "config", key, val)
+    (up / "docs").mkdir()
+    (up / "docs/a.md").write_text("v0\n", encoding="utf-8")
+    _git(up, "add", ".")
+    _git(up, "commit", "-q", "-m", "C0")
+    c0 = _git(up, "rev-parse", "HEAD").strip()
+
+    clone = tmp_path / "clone"
+    _git(tmp_path, "clone", "-q", str(up), str(clone))
+    _git(clone, "config", "core.autocrlf", "false")
+    _git(clone, "remote", "add", "upstream", str(up))
+
+    (up / "docs/a.md").write_text("v1\n", encoding="utf-8")
+    (up / ".claude/skills/new-skill").mkdir(parents=True)
+    (up / ".claude/skills/new-skill/SKILL.md").write_text("new\n", encoding="utf-8")
+    _git(up, "add", ".")
+    _git(up, "commit", "-q", "-m", "C1")
+    _git(clone, "fetch", "-q", "upstream", "main")
+
+    monkeypatch.chdir(clone)
+    monkeypatch.setattr(update, "_QUIET", False)
+    monkeypatch.setattr(update, "ensure_upstream", lambda: True)
+    monkeypatch.setattr(update, "fetch_upstream", lambda: True)
+    monkeypatch.setattr(update, "search_index_update_available", lambda: None)
+    monkeypatch.setattr(update, "run_sync_skills", lambda: None)
+    seen = {}
+    real_drift = update.compute_drift
+
+    def spy_drift(baseline, ref):
+        seen["baseline"] = baseline
+        seen["drift"] = real_drift(baseline, ref)
+        return seen["drift"]
+
+    monkeypatch.setattr(update, "compute_drift", spy_drift)
+    monkeypatch.setattr(update, "apply_drift", lambda drift, ref, conflict_choices=None: ([], list(drift)))
+    monkeypatch.setattr(sys, "argv", ["update.py", "--yes", "--no-sync"])
+    update.main()
+
+    assert seen["baseline"] == c0
+    assert seen["drift"] == {
+        "docs/a.md": S.SAFE_OVERWRITE,
+        ".claude/skills/new-skill/SKILL.md": S.NEW,
+    }

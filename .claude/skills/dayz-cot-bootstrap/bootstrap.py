@@ -357,7 +357,7 @@ def main() -> int:
     )
 
     print()
-    print(f"You are now COT admin on '{args.server}'. Open the COT menu in-game (default keybind: BACKSPACE).")
+    print(f"You are now COT admin on '{args.server}'. In game, press Y to open the COT menu (End turns COT on or off; both can be rebound in Controls).")
     print(f"  Server PID: {server_proc.pid}    Client PID: {client_proc.pid}")
     print(f"  Server logs: {profile_dir}")
     print(f"  Client logs: {client_diag_dir}")

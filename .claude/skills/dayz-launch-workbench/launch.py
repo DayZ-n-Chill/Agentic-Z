@@ -1,6 +1,6 @@
 r"""dayz-launch-workbench: Open Enfusion Workbench, optionally on a mod's gproj.
 
-Verifies the environment, then spawns workbenchApp.exe detached with
+Verifies the environment, then spawns workbenchApp.exe -gproj=<path> detached with
 cwd=<DayZ Tools>\Bin\Workbench so Workbench's support files (dta, platforms,
 ToolAddons) and its bundled dayz.gproj resolve. Launching from anywhere else
 (including P:\) errors with "cannot find file dayz.gproj".
@@ -101,7 +101,10 @@ def main() -> int:
 
     cmd: list[str] = [str(wb_exe)]
     if gproj is not None:
-        cmd.append(str(gproj))
+        # The project goes through the -gproj switch (a string in
+        # workbenchApp.exe); its default is $CurrentDir:dayz.gproj, so a bare
+        # path argument would leave Workbench on the vanilla project.
+        cmd.append(f"-gproj={gproj}")
         print(f"{INFO} Project: {gproj}")
     else:
         print(f"{INFO} No --mod/--gproj; Workbench loads its bundled dayz.gproj.")

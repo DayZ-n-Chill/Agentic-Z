@@ -47,16 +47,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     target.add_argument(
         "--mod",
-        help=r"Mod name; passes P:\<ModName>\ to Object Builder so you start inside your mod",
+        help=r"Mod name; opens the one .p3d under P:\<ModName>\data\ (lists them and asks for --file when there are several)",
     )
     return parser
 
 
 def resolve_target(file_arg: Optional[str], mod_arg: Optional[str]) -> Optional[Path]:
-    """Decide which file or folder to pass to ObjectBuilder.exe.
+    """Decide which .p3d to pass to ObjectBuilder.exe.
 
     The parser makes --file and --mod mutually exclusive. With neither there is
     no argument, and Object Builder opens its last-used file (or nothing).
+    --mod resolves to a file, never a folder: Object Builder opens model files,
+    and nothing shows that it accepts a directory argument.
     """
     if file_arg:
         p = Path(file_arg)
@@ -75,7 +77,19 @@ def resolve_target(file_arg: Optional[str], mod_arg: Optional[str]) -> Optional[
                 f"{FAIL} --mod path does not exist: {mod_root}\n"
                 f"       Did you run /dayz-new-mod {mod_arg}?"
             )
-        return mod_root
+        data_dir = mod_root / "data"
+        models = sorted(data_dir.rglob("*.p3d")) if data_dir.is_dir() else []
+        if not models:
+            sys.exit(
+                f"{FAIL} No .p3d under {data_dir}\n"
+                f"       Run without flags to open Object Builder empty, or pass --file <p3d>."
+            )
+        if len(models) > 1:
+            listing = "\n".join(f"         {m}" for m in models)
+            sys.exit(
+                f"{FAIL} {len(models)} .p3d files under {data_dir}; pick one with --file:\n{listing}"
+            )
+        return models[0]
 
     return None
 
