@@ -35,10 +35,11 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 ## Workflow
 
 1. Confirm the terrain's size, grid and cell size before touching images. Heightmap, satellite and mask images must match the Terrain Builder project's dimensions.
-2. Write `layers.cfg` so each mask color maps to a surface layer, and each layer's `texture` and `material` paths exist: mod-owned files under the mod's `$PBOPREFIX$`, vanilla ones as `dz\...` paths that exist under `P:\DZ\`. Vanilla terrains under `P:\DZ\worlds\` ship no `layers.cfg`, and neither does DayZ Tools. Ask the user for the `layers.cfg` from their Terrain Builder project and keep its structure.
+2. Write `layers.cfg` so each mask color maps to a surface layer, and each layer's `texture` and `material` paths exist: mod-owned files under the mod's `$PBOPREFIX$`, vanilla ones as `dz\...` paths that exist under `P:\DZ\`. Vanilla terrains under `P:\DZ\worlds\` ship no `layers.cfg`, and neither does DayZ Tools. If the task did not include the `layers.cfg` from the user's Terrain Builder project, stop and list it in your report as needed from the user; when you have it, keep its structure.
 3. Define surfaces and clutter in the terrain's config. Vanilla `CfgSurfaces`, the `Clutter` classes (`CfgWorlds` > `CAWorld` > `Clutter`) and `CfgSurfaceCharacters` are in `P:\DZ\surfaces\config.cpp` (plus `surfaces_bliss` and `surfaces_sakhal`); the world class itself is in `P:\DZ\worlds\<map>\world\config.cpp`.
 4. Terrain Builder and DayZ Editor are interactive: give numbered steps for import, export and generation, and write only the config files yourself.
+5. Check before you report: braces balance, every entry ends with `;`, every vanilla path exists under `P:\DZ\` and every mod path starts with the mod's `$PBOPREFIX$`.
 
 ## Report
 
-To the server lead: files written (path), the steps the user must run in Terrain Builder or DayZ Editor, and anything unverified.
+To the server lead: files written (path), the steps the user must run in Terrain Builder or DayZ Editor, anything needed from the user (such as the `layers.cfg`), and anything unverified.
