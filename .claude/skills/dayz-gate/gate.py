@@ -303,7 +303,7 @@ def mod_identity(mod: str, mod_dir: Path) -> ModIdentity:
     required: list[str] = []
     cfg = mod_dir / "config.cpp"
     if cfg.is_file():
-        text = cfg.read_text(encoding="utf-8", errors="replace")
+        text = h.strip_cpp_comments(cfg.read_text(encoding="utf-8", errors="replace"))
         classes |= config_classes(text)
         for block in re.findall(r"requiredAddons\s*\[\]\s*=\s*\{([^}]*)\}", text):
             required += re.findall(r'"([^"]+)"', block)
@@ -321,7 +321,7 @@ def config_classes(text: str) -> set[str]:
     Nested helper classes (DamageSystem, Cargo) and forward declarations of
     vanilla parents (`class Vest_Base;`) are left out: they are not the mod's.
     """
-    text = re.sub(r"//[^\n]*|/\*.*?\*/", "", text, flags=re.DOTALL)
+    text = h.strip_cpp_comments(text)
     classes, depth = set(), 0
     for m in re.finditer(r"\bclass\s+(\w+)[^;{}]*[;{]|[{}]", text):
         token = m.group(0)

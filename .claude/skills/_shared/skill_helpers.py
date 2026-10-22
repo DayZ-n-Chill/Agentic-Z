@@ -47,6 +47,19 @@ DETACH_FLAGS = 0x00000008 | 0x00000200
 # of a line, so a commented-out `// allowFilePatching = 1;` does not count.
 ALLOW_FILE_PATCHING_RE = re.compile(r"^\s*allowFilePatching\s*=\s*(\d+)", re.MULTILINE)
 
+# A `//` line comment, a `/* */` block comment, or a "..." string literal.
+# Strings are matched so a `//` inside one (a URL, a path) is not taken as a comment.
+_CPP_COMMENT_RE = re.compile(r'"(?:[^"\\\n]|\\.)*"|//[^\n]*|/\*.*?\*/', re.DOTALL)
+
+
+def strip_cpp_comments(text: str) -> str:
+    """config.cpp text with `//` and `/* */` comments removed, string literals kept.
+
+    Shared by /dayz-gate and /dayz-init so both read the same requiredAddons.
+    """
+    return _CPP_COMMENT_RE.sub(lambda m: m.group(0) if m.group(0).startswith('"') else "", text)
+
+
 OK = "[OK]   "
 WARN = "[WARN] "
 FAIL = "[FAIL] "
