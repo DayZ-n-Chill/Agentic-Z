@@ -30,10 +30,9 @@ python "<skill-dir>\mount.py" --unmount
    2. `$DAYZ_WORK_DRIVE`
    3. The path cached by a previous successful run in `<project>\.claude\local-memory\dayz-work-drive.json`, where `<project>` is `$CLAUDE_PROJECT_DIR`, else the nearest folder at or above the current directory whose `.claude\local-memory\` holds the `/dayz-init` project cache, else the current directory (the same rule `/dayz-init` uses, so a plugin install caches per project and a run from `scripts\setup\` or `workspace\<mod>\` still finds the project)
    4. `[ProjectDrive] path=` in `<DayZ Tools>\settings.ini`
-   5. Registry values `WorkDrive`, `WorkDrivePath`, `P_Drive` or `PDrive` under the DayZ Tools keys (HKCU, then HKLM 64-bit and 32-bit)
 
-   If none of these exists the skill exits 1 and asks for `--path`. It never falls back to `<DayZ Tools>\Bin\WorkDrive`: that folder holds `WorkDrive.exe` itself, not a project drive.
-3. Prints and runs `WorkDrive.exe /Mount "<folder>"`. If `P:\` still is not visible (or WorkDrive.exe is missing), falls back to `subst P: "<folder>"`.
+   If none of these exists the skill exits 1 and asks for `--path`. It never falls back to `<DayZ Tools>\Bin\WorkDrive`: that folder holds `WorkDrive.exe` itself, not a project drive. The DayZ Tools registry keys are not a source: they hold the install path, not the work drive folder.
+3. Prints and runs `WorkDrive.exe /Mount "<folder>"`. If `P:\` still is not visible (or WorkDrive.exe is missing), falls back to `subst P: "<folder>"`. When `[ProjectDrive] Letter=` in `settings.ini` is not `P`, WorkDrive.exe would mount that letter instead, so the skill prints a `[WARN]` naming the letter and goes straight to `subst P:`. `--unmount` then skips WorkDrive.exe the same way.
 4. On success, caches the folder for the next run.
 
 DayZ Tools is located with the shared `find_dayz_tools()` resolver from `dayz-preflight/preflight.py`.
@@ -55,7 +54,7 @@ When nothing resolves it prints, on stderr:
 
 ```
 [FAIL] Could not resolve a work drive folder.
-       Tried: $DAYZ_WORK_DRIVE, cached path, settings.ini, registry.
+       Tried: $DAYZ_WORK_DRIVE, cached path, settings.ini.
        Pass --path "C:\path\to\workdrive" with the folder P:\ should show (it is cached for later runs).
 ```
 

@@ -651,11 +651,15 @@ def _cached_project() -> Optional[Path]:
     return project.resolve() if project is not None and project.is_dir() else None
 
 
-def run_reindex() -> int:
-    """Rebuild the vanilla search index (dayz-search-index --full). Returns its exit code."""
-    print(f"  Rebuilding the search index: {INDEXER} --full")
-    sys.stdout.flush()
-    return subprocess.run([sys.executable, str(INDEXER), "--full"]).returncode
+def run_reindex(out=None) -> int:
+    """Rebuild the vanilla search index (dayz-search-index --full). Returns its exit code.
+
+    Progress goes to `out` (default stdout); --json passes stderr so stdout stays one JSON document.
+    """
+    out = out or sys.stdout
+    print(f"  Rebuilding the search index: {INDEXER} --full", file=out)
+    out.flush()
+    return subprocess.run([sys.executable, str(INDEXER), "--full"], stdout=out).returncode
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -735,12 +739,15 @@ def main(argv: Optional[list[str]] = None) -> int:
     print(report["verdict"])
     print(json.dumps(report, indent=2) if as_json else render_text(report))
     if args.command == "check" and report["vanilla_changed"]:
+        # With --json, notes go to stderr so stdout holds only the verdict line and the report.
+        notes = sys.stderr if as_json else sys.stdout
         if args.reindex:
-            code = run_reindex()
+            code = run_reindex(notes)
             if code != 0:
-                print(f"  The search index rebuild exited with {code}; the old index is still in place.")
+                print(f"  The search index rebuild exited with {code}; the old index is still in place.", file=notes)
         else:
-            print("  Vanilla changed: rebuild the search index with check --reindex or /dayz-search-index --full.")
+            print("  Vanilla changed: rebuild the search index with check --reindex or /dayz-search-index --full.",
+                  file=notes)
     return 0 if report["verdict"] == "PASS" else 1
 
 

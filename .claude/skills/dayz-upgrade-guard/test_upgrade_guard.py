@@ -210,7 +210,7 @@ def test_check_before_and_after_an_update(tmp_path, capsys, monkeypatch):
     mod = tmp_path / "MyVest"
     shutil.copytree(MOD, mod)
     reindexed = []
-    monkeypatch.setattr(guard, "run_reindex", lambda: reindexed.append(True) or 0)
+    monkeypatch.setattr(guard, "run_reindex", lambda out=None: reindexed.append(True) or 0)
     before = _fake_p(tmp_path / "before", "Clothing_Base", True)
     after = _fake_p(tmp_path / "after", "ItemBase", False)
     common = ["--store", str(store), "--mod-dir", str(mod)]
@@ -229,7 +229,7 @@ def test_check_before_and_after_an_update(tmp_path, capsys, monkeypatch):
     assert guard.main(["check", "--p-root", str(after), "--reindex", "--json", *common]) == 1
     out = capsys.readouterr().out
     assert out.startswith("FAIL")
-    report = json.loads(out[out.index("{"):out.rindex("}") + 1])
+    report = json.loads(out.split("\n", 1)[1])  # stdout is the verdict line plus one JSON document
     assert _reasons(report["mods"][0]) == {"MyVest_Base": ["parent-changed"], "ItemBase": ["override-removed"]}
     assert len(guard.stored_snapshots(store)) == 2 and reindexed == [True]
 
@@ -324,6 +324,26 @@ def test_a_failed_reindex_keeps_the_verdict_exit_code(tmp_path, capsys, monkeypa
     assert out.startswith("FAIL")
     assert "The search index rebuild exited with 3; the old index is still in place." in out
     assert len(fake.calls) == 1
+
+
+@pytest.mark.parametrize("reindex", [False, True])
+def test_json_stdout_is_only_the_verdict_and_the_report(tmp_path, capsys, monkeypatch, reindex):
+    fake = _FakeRun(3)
+    monkeypatch.setattr(guard.subprocess, "run", fake)
+    store = tmp_path / "store"
+    common = ["--store", str(store), "--mod-dir", str(MOD), "--json"] + (["--reindex"] if reindex else [])
+
+    guard.main(["check", "--p-root", str(_fake_p(tmp_path / "before", "Clothing_Base", True)), *common])
+    capsys.readouterr()
+    guard.main(["check", "--p-root", str(_fake_p(tmp_path / "after", "ItemBase", False)), *common])
+    captured = capsys.readouterr()
+    verdict, body = captured.out.split("\n", 1)
+    assert verdict == "FAIL"
+    assert json.loads(body)["vanilla_changed"] is True
+    note = "old index is still in place" if reindex else "Vanilla changed: rebuild the search index"
+    assert note in captured.err
+    if reindex:
+        assert "Rebuilding the search index" in captured.err
 
 
 def test_diff_with_the_fixture_snapshots_from_the_cli(capsys):

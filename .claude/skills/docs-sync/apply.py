@@ -279,6 +279,40 @@ def escape_mdx_curlies_outside_fences(body: str) -> str:
     ))
 
 
+# Real HTML tags that wiki bodies may use on purpose; MDX renders these.
+_HTML_TAG_ALLOW = frozenset({
+    "a", "b", "br", "code", "details", "div", "em", "hr", "i", "img", "kbd",
+    "li", "ol", "p", "pre", "span", "strong", "sub", "summary", "sup", "table",
+    "tbody", "td", "th", "thead", "tr", "ul",
+})
+# `<` then an optional `/` and a name, up to an optional `>` on the same line.
+_BARE_TAG = re.compile(r"<(/?)([A-Za-z][\w.:-]*)([^<>\n]*)(>?)")
+
+
+def _bare_tags(text: str) -> str:
+    def sub(m: re.Match) -> str:
+        if m.group(2).lower() in _HTML_TAG_ALLOW:
+            return m.group(0)
+        return f"&lt;{m.group(1)}{m.group(2)}{m.group(3)}{'&gt;' if m.group(4) else ''}"
+    return _BARE_TAG.sub(sub, text)
+
+
+def escape_bare_tags_outside_fences(body: str) -> str:
+    """Escape placeholder tags like `<ModName>` in prose outside fenced and inline code.
+
+    MDX reads `<Name>` in prose as a JSX tag, and an unclosed one breaks the
+    wiki build. Real HTML tags in the allowlist are kept; code is literal in
+    MDX 3, so it is left alone.
+    """
+    return _map_prose(body, lambda prose: "".join(
+        _outside_code_spans(line, _bare_tags) for line in prose.splitlines(keepends=True)
+    ))
+
+
+def _mdx_safe_body(body: str) -> str:
+    return escape_mdx_curlies_outside_fences(escape_bare_tags_outside_fences(body))
+
+
 # --- transforms --------------------------------------------------------
 
 _SKILL_FM_KEEP = ("name",)
@@ -295,7 +329,7 @@ def transform_skill(canonical_text: str) -> str:
     if description:
         overview = f"\n## Overview\n\n{escape_description(description)}\n\n"
 
-    safe_body = escape_mdx_curlies_outside_fences(strip_html_comments_outside_fences(body))
+    safe_body = _mdx_safe_body(strip_html_comments_outside_fences(body))
     return render_frontmatter(trimmed_fm) + overview + safe_body.lstrip("\n")
 
 
@@ -321,9 +355,7 @@ def transform_agent(canonical_text: str) -> str:
     else:
         overview = f"\n{badges}\n\n"
 
-    safe_body = escape_mdx_curlies_outside_fences(
-        escape_mdx_tags_in_body(strip_html_comments_outside_fences(body))
-    )
+    safe_body = _mdx_safe_body(escape_mdx_tags_in_body(strip_html_comments_outside_fences(body)))
 
     return render_frontmatter(trimmed_fm, keys_quoted=_AGENT_FM_QUOTED) + overview + safe_body.lstrip("\n")
 
@@ -332,4 +364,4 @@ def transform_doc(canonical_text: str) -> str:
     """Doc files (docs/*.md, _shared/*.md): frontmatter verbatim, MDX-safe body."""
     m = _FM_PATTERN.match(canonical_text)
     head, body = (canonical_text[:m.end()], canonical_text[m.end():]) if m else ("", canonical_text)
-    return head + escape_mdx_curlies_outside_fences(strip_html_comments_outside_fences(body))
+    return head + _mdx_safe_body(strip_html_comments_outside_fences(body))

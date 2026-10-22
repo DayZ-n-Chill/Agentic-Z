@@ -15,6 +15,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from apply import (
+    escape_bare_tags_outside_fences,
     escape_mdx_curlies_outside_fences,
     escape_mdx_tags_in_body,
     html_escape,
@@ -396,3 +397,27 @@ def test_transform_doc_makes_body_mdx_safe():
     assert out.startswith('---\ntitle: "{keep}"\n---\n')
     assert "<!--" not in out
     assert "Use &#123;name&#125; here." in out
+
+
+# ---------- bare placeholder tags in body prose ----------
+
+def test_bare_placeholder_tags_are_escaped_in_prose_only():
+    body = (
+        "Mods live in workspace/<ModName>/ and `workspace/<ModName>/`.\n"
+        "Run from <skill-dir> or </Close>.\n"
+        "```\nworkspace/<ModName>/\n```\n"
+        "Keep <details><summary>More</summary> and <br> as HTML.\n"
+        "Arrows <- and a < b stay.\n"
+    )
+    out = escape_bare_tags_outside_fences(body)
+    assert "Mods live in workspace/&lt;ModName&gt;/ and `workspace/<ModName>/`." in out
+    assert "Run from &lt;skill-dir&gt; or &lt;/Close&gt;." in out
+    assert "```\nworkspace/<ModName>/\n```\n" in out
+    assert "Keep <details><summary>More</summary> and <br> as HTML." in out
+    assert "Arrows <- and a < b stay." in out
+
+
+def test_transforms_escape_bare_tags_in_body():
+    assert "workspace/&lt;ModName&gt;/" in transform_skill("---\nname: x\n---\n\nSee workspace/<ModName>/.\n")
+    assert "workspace/&lt;ModName&gt;/" in transform_agent("---\nname: x\n---\n\nSee workspace/<ModName>/.\n")
+    assert "workspace/&lt;ModName&gt;/" in transform_doc("See workspace/<ModName>/.\n")

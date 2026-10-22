@@ -283,14 +283,17 @@ def apply_all(dry_run: bool = False) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--check", action="store_true", help="Report drift (default)")
-    p.add_argument("--quiet", action="store_true", help="Stop hook mode: silent when in sync, otherwise one JSON systemMessage line")
-    p.add_argument("--map", action="store_true", help="Print canonical->mirror map and exit")
-    p.add_argument("--apply", action="store_true", help="Apply Docusaurus transform and write all mirrors")
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument("--check", action="store_true", help="Report drift (default)")
+    mode.add_argument("--map", action="store_true", help="Print canonical->mirror map and exit")
+    mode.add_argument("--apply", action="store_true", help="Apply Docusaurus transform and write all mirrors")
+    p.add_argument("--quiet", action="store_true", help="Stop hook mode (check only): silent when in sync, otherwise one JSON systemMessage line")
     p.add_argument("--dry-run", action="store_true", help="With --apply: preview what would change without writing (requires --apply)")
     args = p.parse_args(argv)
     if args.dry_run and not args.apply:
         p.error("--dry-run only works with --apply")
+    if args.quiet and (args.apply or args.map):
+        p.error("--quiet only works in check mode")
 
     if args.map:
         return print_map()
