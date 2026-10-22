@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 lint = h.load_module("dayz_build_pbo_lint", Path(__file__).resolve().parents[1] / "dayz-lint" / "lint.py")
+_nm = h.load_module("dayz_new_mod_module", h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py")
 
 INCLUDE_LIST = Path(__file__).resolve().parent / "include.lst"
 # Patterns left out of the PBO, including .gui-sources/ (imageset sprite sources).
@@ -206,6 +207,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    _nm.validate_name(args.modname)
     project_dir = h.resolve_project_dir()
     gate_on_lint(args.modname, project_dir)
     h.gate_on_preflight()

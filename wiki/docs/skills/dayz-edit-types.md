@@ -28,7 +28,7 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove
 | `--remove` | Remove the entry instead of upserting. Other field flags ignored. |
 | `--nominal N` | Target spawn count. Default for new entries: 1. |
 | `--min N` | Minimum spawn count. Default for new entries: 0. |
-| `--lifetime S` | Despawn timeout in seconds. Default for new entries: 3888000 (45 days). |
+| `--lifetime S` | Despawn timeout in seconds. Default for new entries: 14400 (4 hours, the usual vanilla loot lifetime; storage items such as barrels use 3888000). |
 | `--restock S` | Restock interval in seconds. Default for new entries: 0. |
 | `--cost N` | Spawn cost / weight. Default for new entries: 100. |
 | (no flag) | New entries also get `<quantmin>-1</quantmin>` and `<quantmax>-1</quantmax>` (not a quantity item), as every vanilla `<type>` has. Existing entries keep their values. |
@@ -43,7 +43,7 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove
 2. Read and parse `<types.xml>` (comments are kept). Locate the `<type name="<ClassName>">` block.
 3. Upsert mode (default):
    - If the block exists, update only the fields passed. Untouched fields stay as-is.
-   - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the standard `<flags .../>` element.
+   - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the vanilla standard flags (`count_in_map=1`, everything else 0).
 4. Remove mode (`--remove`): delete the block.
 5. If nothing changed (entry already matches, or the entry to remove is absent), stop: no backup, no write.
 6. Otherwise copy the file to `<types.xml>.bak` (overwriting any prior backup) and write the updated tree back.
@@ -97,7 +97,7 @@ Formatting: comments survive the round trip, but the whole file is re-indented w
 Add a new entry:
 
 ```
-[OK]    Added <type name="MyMod_Vest"> nominal=1, min=0, lifetime=3888000, cost=100
+[OK]    Added <type name="MyMod_Vest"> nominal=1, min=0, lifetime=14400, cost=100
 [OK]    Backup: .server\chernarus\mission\db\types.xml.bak
 [OK]    Wrote .server\chernarus\mission\db\types.xml
 ```
@@ -105,7 +105,7 @@ Add a new entry:
 Update an existing entry:
 
 ```
-[OK]    Updated <type name="MyMod_Vest">: nominal 1 -> 5, lifetime 3888000 -> 7776000
+[OK]    Updated <type name="MyMod_Vest">: nominal 1 -> 5, lifetime 14400 -> 28800
 [OK]    Backup: .server\chernarus\mission\db\types.xml.bak
 [OK]    Wrote .server\chernarus\mission\db\types.xml
 ```

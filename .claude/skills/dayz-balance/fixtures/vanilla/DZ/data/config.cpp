@@ -15,6 +15,11 @@ class CfgVehicles
     {
         scope = 0;
         weight = 100;
+        // Every item inherits this, so backpacks and boots carry biological = 0 too.
+        class Protection
+        {
+            biological = 0;
+        };
     };
     class Clothing_Base: Inventory_Base
     {

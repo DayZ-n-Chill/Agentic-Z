@@ -5,6 +5,7 @@ What it touches:
     .claude-plugin/, .mcp.json, hooks/, mods/, evals/
     docs/, wiki/, scripts/
     CLAUDE.md, AGENTS.md, GEMINI.md, README.md
+    .gitignore, .env.example, package.json, package-lock.json, .github/
 
 What it leaves alone:
     workspace/, output/, .claude/local-memory/, .claude/settings.local.json, .env
@@ -52,6 +53,11 @@ TEMPLATE_PATHS = [
     "AGENTS.md",
     "GEMINI.md",
     "README.md",
+    ".gitignore",
+    ".env.example",
+    "package.json",
+    "package-lock.json",
+    ".github",
 ]
 
 
@@ -324,6 +330,13 @@ def stage_and_commit(updated: list[str], upstream_sha: str) -> bool:
 def upstream_head_sha() -> str:
     r = run(["git", "rev-parse", f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}"], capture=True)
     return r.stdout.strip()
+
+
+def merge_base_sha() -> Optional[str]:
+    """The commit this clone shares with upstream main, or None with no shared history."""
+    r = run(["git", "merge-base", "HEAD", f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}"], check=False, capture=True)
+    sha = r.stdout.strip()
+    return sha if r.returncode == 0 and sha else None
 
 
 def run_sync_skills() -> None:
@@ -734,7 +747,7 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Preview drift only; writes nothing. Exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (always 0 with --quiet).",
+        help="Preview drift only: fetches upstream (adding the upstream remote if it is missing) and writes no files. Exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (always 0 with --quiet).",
     )
     parser.add_argument(
         "--quiet",
@@ -810,19 +823,25 @@ def main() -> int:
             print("Up to date.")
         return 0
 
-    # First run: record the current upstream HEAD as the baseline. Files are
-    # then compared against it, so nothing is overwritten or added on this run:
-    # a template file missing locally is in the baseline, so it classifies as
+    # First run: record the commit the clone was made from (its merge base with
+    # upstream main) as the baseline, so upstream changes made since the clone
+    # are offered. A copy with no shared history ("Use this template") records
+    # upstream HEAD instead, so nothing is overwritten or added on this run: a
+    # template file missing locally is in the baseline, so it classifies as
     # locally-deleted and stays deleted unless restored with --per-file.
     if baseline_sha is None and not args.dry_run:
         if not acquire_lock():
             return 1
+        first = merge_base_sha() or upstream_sha
         try:
-            write_baseline(upstream_sha)
+            write_baseline(first)
         finally:
             release_lock()
-        baseline_sha = upstream_sha
-        log("OK", f"Baseline initialized at upstream {upstream_sha[:7]}.")
+        baseline_sha = first
+        if first == upstream_sha:
+            log("OK", f"Baseline initialized at upstream {upstream_sha[:7]}.")
+        else:
+            log("OK", f"Baseline initialized at {first[:7]}, the commit this clone shares with upstream.")
 
     # Default flow: preview, prompt, apply.
     drift = compute_drift(baseline_sha, f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}")

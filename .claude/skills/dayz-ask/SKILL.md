@@ -30,7 +30,7 @@ python "<skill-dir>\ask.py" "<question>" [--json]
 
 ## What the script does
 
-1. Runs `search_dayz_source` from the `dayz-rag` server when the index is built and `VOYAGE_API_KEY` is set. A question asked again is answered from the server's cache until the index is rebuilt.
+1. Runs `search_dayz_source` from the `dayz-rag` server when the index is built and `VOYAGE_API_KEY` is set. Each run is a new process, so the dayz-rag server's in-memory cache does not carry over between `/dayz-ask` runs; the MCP tool `search_dayz_source` in a session does reuse it.
 2. Reads every hit's lines from `P:\`. A hit is `verified` when the cited lines still hold the indexed text, or `moved` when the text now sits at other lines, in which case the citation points at the new lines. A hit whose text is gone is dropped and listed under `dropped`.
 3. Falls back to Grep when there is no key, no index, the search fails, or no hit survives the check. It splits the question into search terms, scans the vanilla folders, and ranks files by how many of the rarer terms they hold. Grep citations are lines read from disk, so they count as checked.
 

@@ -147,6 +147,21 @@ def test_build_cmd_passes_exclude_list_that_drops_gui_sources():
     ]
     assert ".gui-sources\\*.*" in patterns and "*\\.gui-sources\\*" in patterns
     assert "*\\.git\\*" in patterns
+    assert "workbench\\*.*" in patterns and "*\\workbench\\*" in patterns
+
+
+@pytest.mark.parametrize("bad", ["..", "../Other", r"..\Other", r"..\..\Windows", "My Mod", "@MyMod", "1Mod"])
+def test_main_refuses_invalid_mod_name_before_touching_disk(p_drive, tmp_path, monkeypatch, bad):
+    monkeypatch.setattr(build.h, "resolve_project_dir", lambda: pytest.fail("resolved the project for a bad name"))
+    monkeypatch.setattr(build, "gate_on_lint", lambda *a: pytest.fail("linted a bad name"))
+    monkeypatch.setattr(build, "TEMP_ROOT", tmp_path / "temp")
+    monkeypatch.setattr(build.subprocess, "run", lambda *a, **k: pytest.fail("ran a command for a bad name"))
+    monkeypatch.setattr("sys.argv", ["build.py", bad])
+    with pytest.raises(SystemExit) as exc:
+        build.main()
+    assert "Invalid mod name" in str(exc.value.code)
+    assert not (p_drive / "Mods").exists()
+    assert not (tmp_path / "temp").exists()
 
 
 def test_include_list_exists_and_covers_scripts():
