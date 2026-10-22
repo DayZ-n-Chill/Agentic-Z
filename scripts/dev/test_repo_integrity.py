@@ -51,7 +51,11 @@ def test_every_agent_is_registered_in_the_plugin():
 def test_every_user_skill_is_registered_in_the_plugin():
     registered = {Path(p).name for p in PLUGIN["skills"]}
     on_disk = {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
-    assert registered == on_disk - TEMPLATE_ONLY_SKILLS
+    assert registered == on_disk - TEMPLATE_ONLY_SKILLS, (
+        f"every user skill must be registered in .claude-plugin/plugin.json; missing: "
+        f"{sorted(on_disk - TEMPLATE_ONLY_SKILLS - registered)}; registered but not on disk: "
+        f"{sorted(registered - (on_disk - TEMPLATE_ONLY_SKILLS))}"
+    )
 
 
 def test_registered_paths_exist():
@@ -61,7 +65,7 @@ def test_registered_paths_exist():
 
 @pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
 def test_agent_name_matches_filename(path):
-    assert _frontmatter(path)["name"] == path.stem
+    assert _frontmatter(path)["name"] == path.stem, f"agent name must match its filename: {path.name}"
 
 
 @pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
@@ -72,9 +76,13 @@ def test_search_tools_work_in_clones_and_plugin_installs(path):
     tools = set(_tools(path))
     for tool in tools:
         if tool.startswith("mcp__dayz-rag__"):
-            assert tool.replace("mcp__dayz-rag__", "mcp__plugin_agentic-z_dayz-rag__") in tools
+            assert tool.replace("mcp__dayz-rag__", "mcp__plugin_agentic-z_dayz-rag__") in tools, (
+                f"{path.stem}: every clone search tool needs its plugin twin: {tool}"
+            )
         if tool.startswith("mcp__plugin_agentic-z_dayz-rag__"):
-            assert tool.replace("mcp__plugin_agentic-z_dayz-rag__", "mcp__dayz-rag__") in tools
+            assert tool.replace("mcp__plugin_agentic-z_dayz-rag__", "mcp__dayz-rag__") in tools, (
+                f"{path.stem}: every plugin search tool needs its clone twin: {tool}"
+            )
 
 
 @pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
@@ -127,7 +135,7 @@ def _lead_workers():
     text = (AGENTS_DIR / "dayz-lead.md").read_text(encoding="utf-8")
     section = text.split("## Your workers", 1)[1].split("\n## ", 1)[0]
     table = "\n".join(line for line in section.splitlines() if line.startswith("|"))
-    assert table
+    assert table, "dayz-lead.md must have a workers table under ## Your workers"
     return set(re.findall(r"`([a-z-]+)`", table))
 
 
@@ -201,18 +209,18 @@ def test_ingame_tester_matches_gate():
     ready_re = re.search(r'^DEFAULT_READY_RE = r"(.+)"$', gate, re.M).group(1)
     settle = int(re.search(r"^DEFAULT_SETTLE_S = (\d+)", gate, re.M).group(1))
     timeout = int(re.search(r"^DEFAULT_TIMEOUT_S = (\d+)", gate, re.M).group(1))
-    assert 'add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S' in gate
+    assert 'add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S' in gate, "gate.py --timeout must default to DEFAULT_TIMEOUT_S"
     ready_line = re.search(r"log line matching `([^`]+)`", agent).group(1)
-    assert re.search(ready_re, ready_line)
-    assert (settle, timeout) == (30, 300)
-    assert "keep reading 30 more seconds" in agent
-    assert "Give up after five minutes" in agent
+    assert re.search(ready_re, ready_line), "dayz-ingame-tester ready line must match gate.py DEFAULT_READY_RE"
+    assert (settle, timeout) == (30, 300), "gate.py settle and timeout defaults must stay 30 s and 300 s, as dayz-ingame-tester states"
+    assert "keep reading 30 more seconds" in agent, "dayz-ingame-tester must state the 30 second settle time"
+    assert "Give up after five minutes" in agent, "dayz-ingame-tester must state the five minute client timeout"
     # judge_entries: NULL pointer and Can't find lines that don't name the mod never fail.
-    assert re.search(r'^MOD_QUALIFIED = \{"null_pointer", "cant_find"\}$', gate, re.M)
+    assert re.search(r'^MOD_QUALIFIED = \{"null_pointer", "cant_find"\}$', gate, re.M), "gate.py MOD_QUALIFIED must be null_pointer and cant_find"
     assert (
         "A `NULL pointer` or `Can't find` line that names nothing of the mod is never a failure: "
         "report it as a warning when it is not in the vanilla-only run." in agent
-    )
+    ), "dayz-ingame-tester must state that unqualified NULL pointer and Can't find lines are warnings"
 
 
 def test_build_checker_matches_gate():
@@ -221,10 +229,12 @@ def test_build_checker_matches_gate():
     agent = (AGENTS_DIR / "dayz-build-checker.md").read_text(encoding="utf-8")
     gate = (SKILLS_DIR / "dayz-gate" / "gate.py").read_text(encoding="utf-8")
     build = gate.split("def gate_build(", 1)[1].split("\ndef ", 1)[0]
-    assert build.index("run_lint(") < build.index("stop_session(") < build.index("BUILD_PY")
+    assert build.index("run_lint(") < build.index("stop_session(") < build.index("BUILD_PY"), "gate_build must lint, then stop the session, then build"
     for needle in ("/dayz-lint", "/dayz-deploy-pbo", ".bisign"):
-        assert needle in agent
-    assert agent.index("/dayz-lint") < agent.index("/dayz-stop-test") < agent.index("`/dayz-build-pbo <ModName>` succeeds")
+        assert needle in agent, f"dayz-build-checker must mention {needle}"
+    assert agent.index("/dayz-lint") < agent.index("/dayz-stop-test") < agent.index("`/dayz-build-pbo <ModName>` succeeds"), (
+        "dayz-build-checker must lint, then stop the session, then build, in the same order as gate_build"
+    )
 
 
 BAT_FILES = sorted((REPO / "scripts").glob("*/*.bat"))
@@ -247,7 +257,9 @@ def test_every_runnable_skill_has_a_bat_wrapper():
     for bat in BAT_FILES:
         wrapped.update(re.findall(r"skills\\([a-z0-9-]+)\\", bat.read_text(encoding="utf-8", errors="replace")))
     skills = {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
-    assert skills - wrapped - RUNNABLE_WITHOUT_BAT == set()
+    assert skills - wrapped - RUNNABLE_WITHOUT_BAT == set(), (
+        f"every runnable skill needs a .bat wrapper under scripts/: {sorted(skills - wrapped - RUNNABLE_WITHOUT_BAT)}"
+    )
 
 
 SHARED_DIR = SKILLS_DIR / "_shared"
@@ -375,7 +387,7 @@ def test_preflight_exceptions_are_real_skills():
 
 def test_tier_one_files_match():
     texts = {name: (REPO / name).read_text(encoding="utf-8") for name in ("CLAUDE.md", "AGENTS.md", "GEMINI.md")}
-    assert len(set(texts.values())) == 1
+    assert len(set(texts.values())) == 1, "CLAUDE.md, AGENTS.md and GEMINI.md must hold the same text"
 
 
 PANEL = REPO / "mods" / "agentic-z-panel" / "hooks" / "register.tsx"
