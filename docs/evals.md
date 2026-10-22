@@ -52,7 +52,7 @@ scripts\dev\evals.bat --agent dayz-config-specialist
 scripts\dev\evals.bat --baseline
 ```
 
-`--dry-run` checks every question file and lists the calls without asking anything. A real run sends each question to `claude -p --agent <name>` with read-only tools (`Read`, `Glob`, `Grep` and the search tools). `--allowedTools` only grants tools, so the runner also removes `Edit`, `Write`, `MultiEdit`, `NotebookEdit`, `Bash`, `PowerShell`, `Agent`, `Task`, `WebFetch` and `WebSearch` with `--disallowedTools`. The agent can look things up on `P:\` but cannot edit, run commands, hand the question to a subagent or answer from the web. It writes the answers and scores to `output/evals/results-<time>.json` (or `--out`). A run costs tokens: one agent session per question.
+`--dry-run` checks every question file and lists the calls without asking anything. A real run sends each question to `claude -p --agent <name>` with read-only tools (`Read`, `Glob`, `Grep` and the search tools). `--allowedTools` only grants tools, so the runner also removes `Edit`, `Write`, `NotebookEdit`, `Bash`, `PowerShell`, `Agent`, `Task`, `WebFetch` and `WebSearch` with `--disallowedTools`. The agent can look things up on `P:\` but cannot edit, run commands, hand the question to a subagent or answer from the web. It writes the answers and scores to `output/evals/results-<time>.json` (or `--out`). A run costs tokens: one agent session per question.
 
 Exit codes: `0` passed, `1` a score went below the baseline, `2` a question file is invalid or an agent name is unknown.
 

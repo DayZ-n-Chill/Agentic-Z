@@ -122,10 +122,15 @@ def test_ask_builds_read_only_claude_command(monkeypatch):
 
 
 def test_command_removes_editing_and_shell_tools():
-    """--allowedTools alone does not take an agent's own Edit and Write away."""
+    """--allowedTools alone does not take an agent's own Edit and Write away.
+
+    MultiEdit must not be denied: Claude Code dropped that tool, and since
+    2.1.308 a deny rule for an unknown tool makes every eval call exit 1.
+    """
     cmd = run_evals.build_command("claude", "dayz-config-specialist", model="opus")
     denied = cmd[cmd.index("--disallowedTools") + 1].split(",")
-    for tool in ("Edit", "Write", "MultiEdit", "NotebookEdit", "Bash", "PowerShell", "Agent", "Task", "WebFetch", "WebSearch"):
+    assert "MultiEdit" not in denied
+    for tool in ("Edit", "Write", "NotebookEdit", "Bash", "PowerShell", "Agent", "Task", "WebFetch", "WebSearch"):
         assert tool in denied
     allowed = cmd[cmd.index("--allowedTools") + 1].split(",")
     assert not set(allowed) & set(denied)

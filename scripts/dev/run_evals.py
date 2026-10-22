@@ -31,13 +31,15 @@ RESULTS_DIR = REPO / "output" / "evals"
 # removed with --disallowedTools. Then an eval run cannot edit the repo. The
 # Agent (Task) tool goes too, since a subagent brings its own edit and shell
 # tools, and so do the web tools: an answer must come from P:\, not the web.
+# MultiEdit is not listed: Claude Code no longer has that tool, and since
+# 2.1.308 a deny rule naming an unknown tool makes `claude -p --agent` exit 1.
 READ_ONLY_TOOLS = [
     "Read", "Glob", "Grep",
     "mcp__dayz-rag__search_dayz_source", "mcp__plugin_agentic-z_dayz-rag__search_dayz_source",
     "mcp__dayz-rag__get_dayz_file", "mcp__plugin_agentic-z_dayz-rag__get_dayz_file",
     "mcp__dayz-rag__list_indexed_sources", "mcp__plugin_agentic-z_dayz-rag__list_indexed_sources",
 ]
-DENIED_TOOLS = ["Edit", "Write", "MultiEdit", "NotebookEdit", "Bash", "PowerShell", "Agent", "Task", "WebFetch", "WebSearch"]
+DENIED_TOOLS = ["Edit", "Write", "NotebookEdit", "Bash", "PowerShell", "Agent", "Task", "WebFetch", "WebSearch"]
 
 REGEX_PREFIX = "re:"
 
