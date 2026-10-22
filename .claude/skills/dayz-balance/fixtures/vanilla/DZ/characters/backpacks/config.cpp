@@ -1,4 +1,4 @@
-// Test fixture: backpacks. Values are made up.
+// Test fixture: backpacks. Class names and parents are vanilla; values are made up.
 class CfgPatches
 {
     class DZ_Characters_Backpacks
@@ -11,29 +11,30 @@ class CfgPatches
 class CfgVehicles
 {
     class Clothing;
-    class Backpack_Base: Clothing
+    class TaloonBag_ColorBase: Clothing
     {
         scope = 0;
         weight = 1000;
+        inventorySlot[] = {"Back"};
     };
-    class TaloonPack: Backpack_Base
+    class TaloonBag_Blue: TaloonBag_ColorBase
     {
         scope = 2;
         itemsCargoSize[] = {5, 6};
     };
-    class HuntingPack: Backpack_Base
+    class TaloonBag_Green: TaloonBag_ColorBase
     {
         scope = 2;
         weight = 1400;
         itemsCargoSize[] = {6, 7};
     };
-    class MountainPack: Backpack_Base
+    class TaloonBag_Orange: TaloonBag_ColorBase
     {
         scope = 2;
         weight = 1800;
         itemsCargoSize[] = {7, 8};
     };
-    class CourierBag: Backpack_Base
+    class TaloonBag_Violet: TaloonBag_ColorBase
     {
         scope = 2;
         weight = 600;

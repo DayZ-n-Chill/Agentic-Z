@@ -4,7 +4,7 @@
   gate.py ingame <ModName> [--deps CF ...] [--server <instance>] [--port N]
                  [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
   gate.py behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>]
-                 [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX]
+                 [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX]
                  [--prepare-only | --logs FILE ...] [--json]
   gate.py visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N]
                  [--timeout S] [--threshold R] [--ready-pattern REGEX]
@@ -57,7 +57,7 @@ DIAG_EXE = "DayZDiag_x64.exe"
 
 DEFAULT_TIMEOUT_S = 300  # dayz-ingame-tester gives the client five minutes
 DEFAULT_SETTLE_S = 30    # keep reading after the ready signal to catch spawn-time errors
-BEHAVIOR_SETTLE_S = 600  # behavior: upper bound after the ready signal; the test mission's DONE line ends it sooner
+BEHAVIOR_DONE_TIMEOUT_S = 600  # behavior: upper bound after the ready signal; the test mission's DONE line ends it sooner
 POLL_S = 2
 MAX_LISTED = 30          # cap per list in the report; the rest is counted
 
@@ -618,7 +618,7 @@ def gate_behavior(
     instance: str = "chernarus",
     port: int = 2302,
     timeout: float = DEFAULT_TIMEOUT_S,
-    settle: float = BEHAVIOR_SETTLE_S,
+    done_timeout: float = BEHAVIOR_DONE_TIMEOUT_S,
     ready_pattern: str = DEFAULT_READY_RE,
 ) -> dict:
     """Copy the instance with the test mission injected, run the in-game flow on it, judge the checks."""
@@ -626,10 +626,11 @@ def gate_behavior(
     stop_session(rt)  # a running session can hold the old copy's files open
     prepared = behavior.prepare_instance(project_dir, instance, checks)
     report, lines = ingame_session(
-        mod, project_dir, rt, deps, prepared["instance"], port, timeout, settle, ready_pattern,
+        mod, project_dir, rt, deps, prepared["instance"], port, timeout, done_timeout, ready_pattern,
         mode="behavior", done_re=behavior.DONE_RE,
     )
     add_behavior_results(report, behavior.parse_lines(lines, checks), project_dir)
+    refuse_unstarted_mission(report, prepared["instance"])
     return finish(report, project_dir, {"instance": prepared["instance"]})
 
 
@@ -644,6 +645,7 @@ def gate_behavior_logs(mod: str, project_dir: Path, checks_path: Optional[Path],
     report = new_report("behavior", mod)
     report["steps"].append({"step": "read-logs", "result": f"{len(files)} file(s)"})
     add_behavior_results(report, behavior.parse_lines(behavior.read_logs(files), checks), project_dir)
+    refuse_unstarted_mission(report, copy)
     return finish(report, project_dir, {"instance": copy})
 
 
@@ -659,6 +661,22 @@ def add_behavior_results(report: dict, parsed: dict, project_dir: Path) -> None:
             finding["check"] = r["id"]
             report["failures"].append(finding)
     report["behavior"] = {"started": parsed["started"], "done": parsed["done"], "unexpected": parsed["unexpected"]}
+
+
+def refuse_unstarted_mission(report: dict, copy: str) -> None:
+    """ERROR, not FAIL, when the test mission never ran and nothing else went wrong.
+
+    Without a START line every check fails, but when the session shows no other
+    problem (the client joined, no crash, no script error) the cause is the
+    gate's own injected mission, so judging the mod on it would mislead.
+    """
+    if report["behavior"]["started"] or any(f["category"] != "behavior" for f in report["failures"]):
+        return
+    raise GateError(
+        f"the behavior test mission never printed {behavior.TAG} START, yet the session shows no mod error, "
+        f"so this is not a verdict on the mod. Look for an init.c error in the server script log under "
+        f".server/{copy}/Profiles/ and report it against /dayz-gate."
+    )
 
 
 # --- visual gate ----------------------------------------------------------------
@@ -842,7 +860,8 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     v.add_argument("--server", default="chernarus", help="Server instance to copy (default chernarus).")
     v.add_argument("--port", type=int, default=2302)
     v.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S, help="Seconds to wait for the client to reach the mission.")
-    v.add_argument("--settle", type=float, default=BEHAVIOR_SETTLE_S, help="Most seconds to wait after that for the DONE line.")
+    v.add_argument("--done-timeout", type=float, default=BEHAVIOR_DONE_TIMEOUT_S,
+                   help="Most seconds to wait after the client joins for the test mission's DONE line.")
     v.add_argument("--ready-pattern", default=DEFAULT_READY_RE, help="Regex in the client script log that means the mission is running.")
     only = v.add_mutually_exclusive_group()
     only.add_argument("--prepare-only", action="store_true", help="Write the behavior instance copy and stop.")
@@ -896,8 +915,8 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
             )
         elif args.mode == "behavior":
             report = gate_behavior(
-                args.mod, project_dir, rt, args.checks, args.deps, args.server, args.port, args.timeout, args.settle,
-                args.ready_pattern,
+                args.mod, project_dir, rt, args.checks, args.deps, args.server, args.port, args.timeout,
+                args.done_timeout, args.ready_pattern,
             )
         else:
             report = gate_ingame(

@@ -55,7 +55,7 @@ python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "<skill-dir>"
 
 - In a clone, edit the file the tier names under that repo root, even when the session was started in another project. Keep the edit small and in the file's existing style.
 - In a clone, if the edited file is under `.claude\agents\` or `.claude\skills\` (a `SKILL.md`, `.claude\skills\_shared\dayz-conventions.md` or a topic file under `.claude\skills\_shared\conventions\`), run `/docs-sync` so the wiki mirror under `wiki\docs\` stays in sync. Otherwise the Stop hook reports wiki drift at the end of the session.
-- In a plugin install, the plugin's files are replaced on every update. Write the rule under a `## Agentic-Z rules` heading in whichever of the project's `CLAUDE.md`, `AGENTS.md` and `GEMINI.md` exist, with the same text in each, and say that's why. For a Tier 1 rule, create any of the three that are missing, so Claude Code, Codex and Gemini all see it.
+- In a plugin install, the plugin's files are replaced on every update. Write the rule under a `## Agentic-Z rules` heading in whichever of the project's `CLAUDE.md`, `AGENTS.md` and `GEMINI.md` exist, with the same text in each, and say that's why. For a Tier 1 rule, create any of the three that are missing, so Claude Code, Codex and Gemini all see it. For a Tier 2 or Tier 3 rule, create all three the same way when none of them exists.
 
 ## 3b. Check it (clones only)
 
@@ -68,7 +68,7 @@ python .claude/skills/docs-sync/sync.py --check
 
 The root `pytest.ini` skips `.claude/worktrees/`, where Claude Code keeps full copies of the repo for its worktree sessions, so the run sees only this checkout.
 
-An edit to an agent file or a rules file can break the repo tests (for example `test_route.py` checks the agent list against `rules.json`). If either command fails because of your edit, fix the problem or revert the edit, then run both again. A failure in a test file outside the area you edited (for example a copy under `.claude/worktrees/`) is not a reason to revert; report it instead.
+An edit to an agent file or a rules file can break the repo tests (for example `test_route.py` checks the agent list against `rules.json`). If either command fails because of your edit, fix the problem or revert the edit, then run both again. A failure in a test file outside the area you edited (for example a skill test that also fails with your edit undone) is not a reason to revert; report it instead.
 
 ## 4. Say what changed
 

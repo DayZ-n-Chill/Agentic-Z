@@ -1,5 +1,6 @@
-// Test fixture: masks. They sit right under Clothing with backpacks, so only the
-// Mask slot tells them apart. Values are made up.
+// Test fixture: masks. As in vanilla they sit right under Clothing with the
+// backpacks and vests, so only the Mask slot tells them apart. Class names and
+// parents are vanilla; values follow P:\DZ\characters\masks\config.cpp.
 class CfgPatches
 {
     class DZ_Characters_Masks
@@ -30,10 +31,14 @@ class CfgVehicles
         inventorySlot[] = {"Mask"};
         class Protection { biological = 0.75; };
     };
-    class BandanaMask: Clothing
+    class BalaclavaMask_ColorBase: Clothing
     {
-        scope = 2;
+        scope = 0;
         inventorySlot = "Mask";
         class Protection { biological = 0.25; };
+    };
+    class BalaclavaMask_Black: BalaclavaMask_ColorBase
+    {
+        scope = 2;
     };
 };

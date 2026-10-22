@@ -5,7 +5,9 @@ Pure functions only: no P:\\ drive, no Voyage key, no LanceDB.
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -342,6 +344,19 @@ def test_tier_overage_uses_model_rate(tmp_path, monkeypatch, capsys):
     assert "estimated overage: $0.18" in capsys.readouterr().out
     assert index._check_voyage_tier(2_000_000, True, "some-new-model")
     assert "no local rate for some-new-model" in capsys.readouterr().out
+
+
+def test_usage_counts_every_logged_build_not_only_this_month(tmp_path, monkeypatch):
+    # Voyage's free tokens are per account with no monthly reset, so an old build still counts.
+    monkeypatch.setattr(index, "INDEX_ROOT", tmp_path)
+    old = int(time.time()) - 90 * 86400
+    (tmp_path / index.USAGE_LOG_NAME).write_text(
+        json.dumps({"timestamp_unix": old, "tokens": 150_000_000}) + "\n"
+        + json.dumps({"timestamp_unix": int(time.time()), "tokens": 1_000}) + "\n"
+        + "not json\n",
+        encoding="utf-8",
+    )
+    assert index._read_logged_usage_tokens() == 150_001_000
 
 
 # --------------- staged table write ---------------

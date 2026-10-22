@@ -150,7 +150,8 @@ def capture_window(pid: int, out: Path) -> None:
 
     The window is brought to the front first, because the grab copies what is on
     screen. Raises VisualError when the process has no visible window or the
-    window is minimized.
+    window is minimized, or when Windows keeps another window in front (the grab
+    would copy that window instead).
     """
     import ctypes
     from ctypes import wintypes
@@ -181,6 +182,12 @@ def capture_window(pid: int, out: Path) -> None:
     if user32.GetForegroundWindow() != hwnd:
         user32.SetForegroundWindow(hwnd)
         time.sleep(0.5)  # let the window draw a frame on top
+        # Windows can refuse the switch (its foreground lock), so check it took.
+        if user32.GetForegroundWindow() != hwnd:
+            raise VisualError(
+                f"the DayZ client window (PID {pid}) could not be brought to the front; "
+                "click it and keep it uncovered while the gate runs"
+            )
     user32.GetClientRect(hwnd, ctypes.byref(rect))
     origin = wintypes.POINT(0, 0)
     user32.ClientToScreen(hwnd, ctypes.byref(origin))
