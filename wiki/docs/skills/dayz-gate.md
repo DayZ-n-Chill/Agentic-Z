@@ -109,7 +109,7 @@ The report adds `checks` (one entry per check with `status`, `reason`, `file` an
 
 ### Running it by hand
 
-`--prepare-only` writes the copy. Launch it with `/dayz-launch-test <ModName> --server <instance>-behavior`, stop it with `/dayz-stop-test`, then judge it with `behavior <ModName> --logs`.
+`--prepare-only` writes the copy. Launch it with `/dayz-launch-test <Dep1> [<Dep2> ...] <ModName> --server <instance>-behavior`, listing the same dependency mods you would pass to `--deps`, in load order before the mod (the launch script takes them as names ahead of the mod, not as a `--deps` flag), stop it with `/dayz-stop-test`, then judge it with `behavior <ModName> --logs`.
 
 ## What `visual` does
 
