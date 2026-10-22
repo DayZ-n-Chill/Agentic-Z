@@ -253,7 +253,7 @@ def test_lint_gate_passes_a_clean_scaffold(p_drive, tmp_path, capsys):
     assert "/dayz-lint passed" in capsys.readouterr().out
 
 
-def test_main_stops_on_lint_errors_before_preflight(p_drive, tmp_path, monkeypatch):
+def test_main_stops_on_lint_errors_before_preflight(p_drive, tmp_path, monkeypatch, capsys):
     project = tmp_path / "proj"
     mod = _scaffold(project)
     (mod / "scripts" / "4_World").mkdir(parents=True)
@@ -265,7 +265,9 @@ def test_main_stops_on_lint_errors_before_preflight(p_drive, tmp_path, monkeypat
     with pytest.raises(SystemExit) as exc:
         build.main()
     message = str(exc.value.code)
-    assert "/dayz-lint found 2 error(s)" in message
+    assert "/dayz-lint found 1 error(s)" in message
     assert "workspace/MyMod/scripts/4_World/x.c:1" in message
-    assert "no CfgMods defs entry" in message
+    # An unlisted scripts folder does not stop loading, so it is a warning, not one of the errors.
+    assert "no CfgMods defs entry" not in message
+    assert "[WARN]  lint workspace/MyMod/config.cpp: scripts/4_World/ holds scripts" in capsys.readouterr().out
     assert called == []

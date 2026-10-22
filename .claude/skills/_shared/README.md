@@ -50,6 +50,7 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/patterns/language_workarounds.md` | Missing language features (ternary, lambdas, exceptions, overloading) and their workarounds; `auto` type inference. |
 | `_shared/enscript/integrations/community_framework.md` | Community Framework modules, storage, event bus. |
 | `_shared/enscript/integrations/dabs_framework.md` | Dabs Framework (third party): attributes, `ScriptView` and `ViewController` MVC, layout bindings, `ScriptViewMenu`. Checked against the mod's own scripts. |
+| `_shared/enscript/integrations/expansion_style.md` | Naming and structure for mods that extend or sit beside DayZ Expansion. Expansion targeted work only; the vanilla style guide is the default. |
 | `_shared/enscript/integrations/vanilla_plugins.md` | Vanilla `PluginBase` lifecycle and `GetPlugin()`. |
 | `_shared/enscript/integrations/central_economy.md` | Central Economy XML and runtime spawning. |
 | `_shared/enscript/integrations/input_bindings.md` | `inputs.xml`, `UAInput`, context guards. |
