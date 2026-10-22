@@ -50,3 +50,5 @@ Status is `passed` or `blocked`. For each blocked task, add a line after the tab
 When the last `dayz-mod-reviewer` report of a task lists findings (WARN and NIT count too), quote it after the table unchanged: its `PASS` or `FAIL` line and its finding lines. The orchestrator stores it on the mod's health page.
 
 When a script task produced a persistence data audit with a PASS verdict, add it after the table as the persistence worker wrote it, so the orchestrator can pass it to the server lead. A FAIL audit goes back to the persistence worker as a failed task.
+
+When a worker's report holds work for another team (spawn setup, `types.xml` entries, a spawn parts list), copy it after the table under a "For the server lead" heading, naming the task it came from.

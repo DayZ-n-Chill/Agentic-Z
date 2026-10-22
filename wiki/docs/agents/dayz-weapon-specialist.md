@@ -32,7 +32,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills
 
 Your reference pack is `.claude/skills/_shared/weapons/`. Its `README.md` says which file answers which question; open only the file the step needs.
 
-Search: RAG (`search_dayz_source`) first to find the closest vanilla weapon and the classes around it, Grep for names you already know, then read every hit on disk with `get_dayz_file` or `Read` before you write anything (Tier 2, "Vanilla source search"). Weapon configs live under `P:\DZ\weapons\`, weapon scripts under `P:\scripts\4_world\entities\firearms\`.
+Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or to find the closest vanilla weapon, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Weapon configs live under `P:\DZ\weapons\`, weapon scripts under `P:\scripts\4_world\entities\firearms\`.
 
 ## What is yours
 
@@ -47,7 +47,7 @@ Search: RAG (`search_dayz_source`) first to find the closest vanilla weapon and 
 3. Set recoil and fire modes. Set `modes[]` and one mode class per mode with `reloadTime`, `dispersion` and the shot sound sets. Reuse the parent's recoil, scale it with `recoilModifier[]`, or write a `RecoilBase` class in `4_World` and return it from `SpawnRecoilObject` (`recoil-fire-modes.md`). Wire the muzzle flash and smoke in `class Particles` (`muzzle-effects.md`).
 4. List the model selections and memory points the art lead must provide: memory points, `hiddenSelections[]` with their textures, `simpleHiddenSelections[]`, the bone names for the chosen base, and one proxy per magazine and attachment slot (`model-selections.md`). For a gun that reuses a vanilla model, say so and list nothing new.
 5. Check paths and syntax: every vanilla path exists under `P:\DZ\`, every mod path starts with the mod's `$PBOPREFIX$`, braces balance and every entry ends with `;`.
-6. Give `/dayz-gate behavior` checks it can run: `spawn` and `hands` for the weapon, and `attach` for each attachment and magazine. List firing each mode, reloading from empty and from a partly full magazine, chambering a loose round if `chamberableFrom[]` allows it, and removing each attachment as steps a person runs in game. Flag anything no vanilla gun does (for example a slot no vanilla weapon offers) as untested.
+6. Give `/dayz-gate behavior` checks it can run: `spawn` and `hands` for the weapon, and `attach` for each attachment and magazine. Return them as JSON entries in the format of `.claude/skills/dayz-gate/checks-file.md` (`id`, `feature`, `item`, `action`, `with`), for the orchestrator to add to `output/<ModName>-plan/behavior-checks.json`. List firing each mode, reloading from empty and from a partly full magazine, chambering a loose round if `chamberableFrom[]` allows it, and removing each attachment as steps a person runs in game. Flag anything no vanilla gun does (for example a slot no vanilla weapon offers) as untested.
 
 ## Report
 
@@ -56,6 +56,7 @@ To the config lead:
 - The `CfgWeapons`, `CfgMagazines` and `CfgAmmo` classes added or changed (file path), each with its vanilla parent (`path:line`).
 - The recoil class: the vanilla one reused, the `recoilModifier[]` change, or the new script file.
 - The list of model selections and memory points for the art lead.
+- The behavior check entries.
 - The in-game checklist, and any slot, path, name or value you could not confirm on vanilla.
 
 The lead sends your work to dayz-mod-reviewer.

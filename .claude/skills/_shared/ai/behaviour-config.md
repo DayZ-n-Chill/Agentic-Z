@@ -21,10 +21,10 @@ The templates live in `class CfgAIBehaviours` in `P:\DZ\AI\config.cpp:14` (addon
 
 Templates by family, all in `P:\DZ\AI\config.cpp`:
 
-- Ambient life (hen, hare, fox): `AmbientLife` (`:16`) and its children, `teamName="AmbientLife"`.
-- Herbivores: `Herbivores` (`:585`) and species children such as `Herbivores_CervusElaphus` (`:4883`), `teamName="BigGame"`.
+- Ambient life (hen, hare, fox): `AmbientLife` (`:16`), `AmbientLife_Gallus_Gallus_Domesticus` (`:155`), `AmbientLife_Lepus_Europaeus` (`:294`) and `AmbientLife_Vulpes_Vulpes` (`:440`). Each is declared with no parent and sets its own `teamName="AmbientLife"`.
+- Herbivores: `Herbivores` (`:585`) and species classes such as `Herbivores_CervusElaphus` (`:4883`). Each is declared with no parent and sets its own `teamName="BigGame"`.
 - Wolf: `Predators_Wolf` (`:5420`), `teamName="Predator"`.
-- Infected: `Infected` (`:6214`), `teamName="Zombies"`, with children from `InfectedFemale` (`:6397`) to `InfectedMMummy` (`:6861`), for example `InfectedMSoldier` (`:6477`) and `InfectedRunner` (`:6797`).
+- Infected: `Infected` (`:6214`), `teamName="Zombies"`. These are the only templates that inherit from each other, with children from `InfectedFemale` (`:6397`) to `InfectedMMummy` (`:6861`), for example `InfectedMSoldier` (`:6477`) and `InfectedRunner` (`:6797`).
 
 Animal templates also name a group behaviour with `defaultGroupTemplateName`, for example `DZDeerGroupBeh` (`:589`) and `DZWolfGroupBeh` (`:5424`). The infected template has none. The group templates themselves, including the infected pack template `DZInfectedPackBeh`, are defined in `P:\DZ\data\aiconfigs\config.cpp` (see `patrols-and-guards.md`).
 
