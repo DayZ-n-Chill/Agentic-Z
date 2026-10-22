@@ -16,7 +16,7 @@ Vanilla logs with `Print(...)` and reports errors with `ErrorEx(string err, Erro
 
 ```
 Print("[MyMod] loaded " + count + " entries");
-ErrorEx("[MyMod] invalid looting behaviour " + lootingBehavior);
+ErrorEx("[MyMod] unknown state " + stateName);
 ErrorEx("[MyMod] config uses a removed key", ErrorExSeverity.WARNING);
 ```
 
@@ -29,8 +29,8 @@ More on logging and when `Debug.Log` prints: `../enscript/references/api_game.md
 ### Debug Defines
 
 ```
-//#define MYMOD_CARKEY_LOGGING
-//#define MYMOD_VEHICLE_SKIN_LOGGING
+//#define MYMOD_SETTINGS_LOGGING
+//#define MYMOD_RPC_LOGGING
 ```
 
 Comment out defines that should not be in production code.
@@ -110,14 +110,14 @@ bool IsPlayerWearingSunglasses(notnull PlayerBase player)
 ### Value Validation
 
 ```
-int value = typename.StringToEnum(EMyMod_LootingBehavior, lootingBehavior);
+int value = typename.StringToEnum(EMyMod_State, stateName);
 if (value == -1)
 {
-    ErrorEx("[MyMod] invalid looting behaviour " + lootingBehavior);
+    ErrorEx("[MyMod] unknown state " + stateName);
 }
 else
 {
-    bitmask |= value;
+    m_State = value;
 }
 ```
 

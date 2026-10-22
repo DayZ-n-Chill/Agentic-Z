@@ -17,8 +17,8 @@ class ClassName : ParentClass
 
     // Public member variables
     bool PublicEnabled;
-    int MaxStorableVehicles;
-    float VehicleSearchRadius;
+    int MaxItems;
+    float WelcomeDelaySeconds;
 
     // Non-serialized members
     [NonSerialized()]
@@ -54,7 +54,7 @@ class ClassName : ParentClass
 
 **Tabs vs Spaces:**
 
-- Use **tabs** for indentation (observed standard in both repositories)
+- Use **tabs** for indentation (the standard in the vanilla scripts)
 
 **Braces:**
 
@@ -121,11 +121,11 @@ Use `/* */` for multi-line comments:
 Use `//!` for documentation comments:
 
 ```
-//! Enable/Disable garage market mod features
-bool EnableMarketFeatures;
+//! Show the welcome message when a player connects
+bool EnableWelcomeMsg;
 
-//! @note can't check inheritance against dangerous area types on client
-void CheckTypes()
+//! @note runs on the server only; clients never load the settings file
+void LoadSettings()
 ```
 
 ### Doxygen-style Comments
@@ -134,10 +134,10 @@ For class and method documentation:
 
 ```
 /**
- * @class MyMod_GarageSettings
- * @brief Settings for the garage system
+ * @class MyMod_Settings
+ * @brief Settings loaded from the server profile folder
  */
-class MyMod_GarageSettings
+class MyMod_Settings
 ```
 
 ### Comment Style
@@ -148,14 +148,14 @@ class MyMod_GarageSettings
 - Use comments to mark sections of code
 
 ```
-//! Map Menu
-if (input.LocalPress("UAMyModMapToggle", false) && !viewMenu)
+//! Settings menu
+if (input.LocalPress("UAMyModOpenMenu", false) && !menuOpen)
 {
-    ToggleMapMenu(player);
+    OpenSettingsMenu();
 }
 
-//! GPS
-if (input.LocalPress("UAMyModGPSToggle", false))
+//! Help overlay
+if (input.LocalPress("UAMyModToggleHelp", false))
 {
     // Implementation
 }

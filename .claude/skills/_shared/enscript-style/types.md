@@ -53,8 +53,8 @@ array<string> stringArray = new array<string>;
 **Type Definitions:**
 
 ```
-TStringArray entityWhitelist;  // typedef array<string>, P:\scripts\1_core\proto\enscript.c:731
-autoptr TVectorArray waypoints; // autoptr for managed arrays
+TStringArray allowedItems;     // typedef array<string>, P:\scripts\1_core\proto\enscript.c:731
+autoptr TVectorArray spawnPoints; // autoptr for managed arrays
 ```
 
 ### References
@@ -62,8 +62,8 @@ autoptr TVectorArray waypoints; // autoptr for managed arrays
 Use `ref` or `autoptr` for managed references on member variables:
 
 ```
-ref MapMenu m_MyMod_MapMenu;
-autoptr TVectorArray Waypoints;
+ref MyMod_SettingsMenu m_MyMod_SettingsMenu;
+autoptr TVectorArray SpawnPoints;
 ```
 
 **Understanding `ref` vs `autoptr`:**

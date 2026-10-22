@@ -62,10 +62,10 @@ foreach (string item : collection)
 ### Foreach Loops
 
 ```
-foreach (string lootingBehavior : lootingBehaviors)
+foreach (string stateName : stateNames)
 {
-    lootingBehavior.TrimInPlace();
-    int value = typename.StringToEnum(EMyMod_LootingBehavior, lootingBehavior);
+    stateName.TrimInPlace();
+    int value = typename.StringToEnum(EMyMod_State, stateName);
     // Process value
 }
 ```
@@ -231,8 +231,8 @@ Empty `#ifdef`/`#ifndef` blocks cause segfaults, even if they only contain comme
 - Module-specific prefixes recommended
 
 ```
-#define MYMOD_VEHICLE_TOWING
-#define MYMOD_MARKET
+#define MYMOD_DEBUG
+#define MYMOD_FEATURE_X
 ```
 
 **Note:** `#define` creates preprocessor macros, not constants. For actual constants, use `const` or enums.

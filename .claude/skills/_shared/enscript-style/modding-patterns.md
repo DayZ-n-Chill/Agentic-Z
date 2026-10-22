@@ -197,25 +197,27 @@ int value = instance.GetPublicValue();
 ### Common Pattern
 
 ```
-override void OnSend(ParamsWriteContext ctx)
+// Write and read the same fields in the same order on both sides
+void WriteTo(ParamsWriteContext ctx)
 {
-    ctx.Write(Enabled);
-    ctx.Write(GarageMode);
-    ctx.Write(MaxStorableVehicles);
+    ctx.Write(MaxItems);
+    ctx.Write(EnableWelcomeMsg);
 
-    #ifdef MYMOD_GROUPS
-        ctx.Write(EnableGroupFeatures);
+    #ifdef MYMOD_FEATURE_X
+        ctx.Write(FeatureXLevel);
     #endif
 }
 
-override bool OnReceive(ParamsReadContext ctx)
+bool ReadFrom(ParamsReadContext ctx)
 {
-    ctx.Read(Enabled);
-    ctx.Read(GarageMode);
-    ctx.Read(MaxStorableVehicles);
+    if (!ctx.Read(MaxItems))
+        return false;
+    if (!ctx.Read(EnableWelcomeMsg))
+        return false;
 
-    #ifdef MYMOD_GROUPS
-        ctx.Read(EnableGroupFeatures);
+    #ifdef MYMOD_FEATURE_X
+        if (!ctx.Read(FeatureXLevel))
+            return false;
     #endif
 
     return true;
@@ -229,9 +231,9 @@ override bool OnReceive(ParamsReadContext ctx)
 ### Standard Pattern
 
 ```
-if (input.LocalPress("UAMyModMapToggle", false) && !viewMenu)
+if (input.LocalPress("UAMyModOpenMenu", false) && !menuOpen)
 {
-    ToggleMapMenu(player);
+    OpenSettingsMenu();
 }
 ```
 

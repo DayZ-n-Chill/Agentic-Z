@@ -10,12 +10,12 @@ Vanilla facts: Engine traps are filed with the API they belong to; `../enscript/
 
 ```
 // Good
-float VehicleSearchRadius;
-bool CanStoreWithCargo;
+float WelcomeDelaySeconds;
+bool EnableWelcomeMsg;
 
 // Avoid
-float vsr;
-bool cswc;
+float wds;
+bool ewm;
 ```
 
 ### 2. Keep Methods Focused
@@ -23,12 +23,10 @@ bool cswc;
 Each method should do one thing well:
 
 ```
-void SetDefaultLootingBehaviour()
+void SetDefaults()
 {
-    if (Behaviour == "ROAMING")
-        LootingBehaviour = "ALL";
-    else
-        LootingBehaviour = "DEFAULT";
+    MaxItems = DEFAULT_MAX_ITEMS;
+    EnableWelcomeMsg = true;
 }
 ```
 
@@ -36,11 +34,11 @@ void SetDefaultLootingBehaviour()
 
 ```
 // Good
-const int DEFAULT_MAX_VEHICLES = 10;
-MaxStorableVehicles = DEFAULT_MAX_VEHICLES;
+const int DEFAULT_MAX_ITEMS = 10;
+MaxItems = DEFAULT_MAX_ITEMS;
 
 // Avoid
-MaxStorableVehicles = 10;
+MaxItems = 10;
 ```
 
 ### 4. Initialize Member Variables
@@ -48,9 +46,9 @@ MaxStorableVehicles = 10;
 Initialize in constructor or at declaration:
 
 ```
-void MyMod_GarageSettings()
+void MyMod_Settings()
 {
-    EntityWhitelist = new TStringArray;
+    AllowedItems = new TStringArray;
     m_IsLoaded = false;
 }
 ```
@@ -58,29 +56,27 @@ void MyMod_GarageSettings()
 ### 5. Document Complex Logic
 
 ```
-//! Toggle between hidden and previously set visibility state for each marker category
-int visibility;
-int previousVisibility;
-
-visibility |= m_MarkerModule.GetVisibility(MyMod_MarkerType.SERVER);
-previousVisibility |= m_MarkerModule.GetPreviousVisibility(MyMod_MarkerType.SERVER);
+//! Keep the old value so a reload can tell whether the limit changed
+int oldMaxItems = MaxItems;
+Load();
+if (MaxItems != oldMaxItems)
+    OnMaxItemsChanged(oldMaxItems);
 ```
 
 ### 6. Use Bitwise Operations Appropriately
 
 ```
 layerMask |= PhxInteractionLayers.BUILDING;
-layerMask |= PhxInteractionLayers.VEHICLE;
 layerMask |= PhxInteractionLayers.TERRAIN;
 
-visibility &= MYMOD_MARKER_VIS_WORLD;
+flags &= ~MYMOD_FLAG_HIDDEN;
 ```
 
 ### 7. Leverage Type Safety
 
 ```
 // Use enums
-EMyMod_LootingBehavior behavior;
+EMyMod_State state;
 
 // Use proper casting
 PlayerBase player = PlayerBase.Cast(entity);

@@ -6,7 +6,7 @@ Vanilla facts: the vanilla calls named here (`GetGame()`, native calls, `[Obsole
 
 ## Introduction
 
-EnScript (Enforce Script) is the object-oriented scripting language used by the Enfusion engine in DayZ Standalone. This style guide is based on conventions observed in the official Bohemia Interactive DayZ Script Diff and in large community mods.
+EnScript (Enforce Script) is the object-oriented scripting language used by the Enfusion engine in DayZ Standalone. This style guide is based on conventions observed in the vanilla DayZ scripts.
 
 ---
 
@@ -36,10 +36,10 @@ Scripts are typically organized by layer inside a root folder called `Scripts/`:
 **PascalCase** for all class names:
 
 ```
-class MyMod_GarageSettings
+class MyMod_Settings
 class PlayerBase
 class ItemBase
-class MyMod_PatrolBase
+class MyMod_ToolBase
 ```
 
 **Prefixes:**
@@ -78,8 +78,8 @@ This prevents name conflicts with vanilla code or other mods.
 
 ```
 bool m_IsLoaded;
-MyMod_MarkerModule m_MarkerModule;
-ref MapMenu m_MyMod_MapMenu;
+MyMod_Settings m_Settings;
+ref MyMod_SettingsMenu m_MyMod_SettingsMenu;
 ```
 
 **Static Variables:**
@@ -88,7 +88,7 @@ ref MapMenu m_MyMod_MapMenu;
 - Use PascalCase after the prefix
 
 ```
-static ref array<EffectArea> s_MyMod_DangerousAreas;
+static ref array<EntityAI> s_MyMod_TrackedItems;
 ```
 
 **Local Variables:**
@@ -98,7 +98,7 @@ static ref array<EffectArea> s_MyMod_DangerousAreas;
 
 ```
 int bitmask;
-string lootingBehavior;
+string itemName;
 vector hitPosition;
 ```
 
@@ -107,8 +107,8 @@ vector hitPosition;
 **PascalCase** for method names:
 
 ```
-void SetDefaultLootingBehaviour()
-int GetLootingBehaviour()
+void SetDefaults()
+int GetMaxItems()
 void OnSend(ParamsWriteContext ctx)
 bool OnReceive(ParamsReadContext ctx)
 ```
@@ -181,9 +181,9 @@ static vector GetPlacementPosition(vector pos)
 Use `const` for class-specific constants, or enums for grouped constants:
 
 ```
-class VehicleManager
+class MyMod_ItemTracker
 {
-    const int MAX_VEHICLES = 10;
+    const int MAX_ITEMS = 10;
     const float SEARCH_RADIUS = 100.0;
 }
 ```
@@ -194,25 +194,25 @@ Use enums to group related constants: **avoid creating many similarly named glob
 
 ```
 // PREFERRED: Grouped with enum
-enum EVehicleType
+enum EMyMod_State
 {
-    Car,
-    Truck,
-    Helicopter
+    Idle,
+    Running,
+    Stopped
 }
 
 // ALSO ACCEPTABLE: PASCAL_CASE enums
-enum EVehicleType
+enum EMyMod_State
 {
-    CAR,
-    TRUCK,
-    HELICOPTER
+    IDLE,
+    RUNNING,
+    STOPPED
 }
 
 // AVOID: Multiple global constants
-const int VEHICLE_TYPE_CAR = 0;
-const int VEHICLE_TYPE_TRUCK = 1;
-const int VEHICLE_TYPE_HELICOPTER = 2;
+const int MYMOD_STATE_IDLE = 0;
+const int MYMOD_STATE_RUNNING = 1;
+const int MYMOD_STATE_STOPPED = 2;
 ```
 
 **Enum Naming:**
@@ -226,8 +226,8 @@ const int VEHICLE_TYPE_HELICOPTER = 2;
 Use UPPERCASE for preprocessor defines:
 
 ```
-#define MYMOD_MARKER_VIS_WORLD
-#define MYMOD_VEHICLES
+#define MYMOD_DEBUG
+#define MYMOD_FEATURE_X
 ```
 
 **Config Class Name Defines (DayZ 1.26+):**

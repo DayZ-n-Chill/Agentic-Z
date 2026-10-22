@@ -11,8 +11,8 @@ Vanilla facts: The checked lifetime facts (`Class` against `Managed`, `ref`, `au
 Use `new` keyword (with or without trailing parentheses for constructors without arguments):
 
 ```
-EntityWhitelist = new TStringArray;             // Valid
-m_MarkerModule = new MyMod_MarkerModule();   // Valid
+AllowedItems = new TStringArray;      // Valid
+m_Settings = new MyMod_Settings();    // Valid
 ```
 
 Both forms are acceptable: choose one style and be consistent.
@@ -163,18 +163,18 @@ m_Member = new MyClass();
 Hold only ONE explicit strong reference (using `ref` keyword) when possible:
 
 ```
-class VehicleManager
+class MyMod_ItemTracker
 {
     // GOOD: Single strong reference on member
-    ref array<EntityAI> m_Vehicles;
+    ref array<EntityAI> m_Items;
 
-    void AddVehicle(EntityAI vehicle)
+    void AddItem(EntityAI item)
     {
         // CORRECT: No ref on parameter or local var
-        if (!m_Vehicles)
-            m_Vehicles = new array<EntityAI>;
+        if (!m_Items)
+            m_Items = new array<EntityAI>;
 
-        m_Vehicles.Insert(vehicle);
+        m_Items.Insert(item);
     }
 }
 ```
@@ -216,7 +216,7 @@ EnScript's reference counting works best when you don't over-specify references:
 
 ```
 // PREFERRED: Let the engine manage it
-array<EntityAI> GetVehicles()
+array<EntityAI> GetItems()
 {
     array<EntityAI> result = {};
     // populate result
@@ -224,7 +224,7 @@ array<EntityAI> GetVehicles()
 }
 
 // AVOID: Over-specified refs
-ref array<EntityAI> GetVehicles()
+ref array<EntityAI> GetItems()
 {
     ref array<EntityAI> result = new ref array<EntityAI>;
     return result;
