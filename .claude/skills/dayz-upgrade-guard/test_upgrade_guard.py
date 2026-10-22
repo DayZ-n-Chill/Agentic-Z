@@ -128,6 +128,44 @@ def test_config_class_names_ignore_case(tmp_path):
     assert report["findings"][0]["reasons"][0]["message"] == "vanilla Clothing no longer sets b"
 
 
+def _config_chain(clothing_base: list[str], clothing: list[str]) -> dict:
+    def entry(name: str, parent, members: list[str]) -> dict:
+        return {"name": f"CfgVehicles/{name}", "parent": parent, "members": members}
+    return {"script": {}, "config": {
+        "cfgvehicles/clothing_base": entry("Clothing_Base", None, clothing_base),
+        "cfgvehicles/clothing": entry("Clothing", "Clothing_Base", clothing)}}
+
+
+def _bag(tmp_path: Path, body: str = "") -> Path:
+    (tmp_path / "config.cpp").write_text(
+        "class CfgVehicles { class Clothing; class MyBag: Clothing { " + body + " }; };" + chr(10),
+        encoding="utf-8")
+    return tmp_path
+
+
+def test_a_property_that_moves_up_the_chain_is_not_removed(tmp_path):
+    old = _config_chain(["scope"], ["itemSize", "weight"])
+    new = _config_chain(["scope", "itemSize", "weight"], [])
+    report = guard.check_mod("MyBag", _bag(tmp_path), old, new)
+    assert report["findings"] == []
+
+
+def test_a_property_the_mod_sets_itself_is_not_removed(tmp_path):
+    old = _config_chain(["scope"], ["itemSize", "weight"])
+    new = _config_chain(["scope"], ["weight"])
+    report = guard.check_mod("MyBag", _bag(tmp_path, "itemSize[] = {2,2};"), old, new)
+    assert report["findings"] == []
+
+
+def test_a_property_gone_from_the_whole_chain_is_removed(tmp_path):
+    old = _config_chain(["scope", "quickBarBonus"], ["itemSize", "weight"])
+    new = _config_chain(["scope"], ["itemSize"])
+    report = guard.check_mod("MyBag", _bag(tmp_path), old, new)
+    assert _reasons(report) == {"CfgVehicles/MyBag": ["members-removed", "members-removed"]}
+    messages = [r["message"] for r in report["findings"][0]["reasons"]]
+    assert messages == ["vanilla Clothing no longer sets weight", "vanilla Clothing_Base no longer sets quickBarBonus"]
+
+
 def test_a_snapshot_from_before_the_case_fix_is_refused(tmp_path):
     old = json.loads(json.dumps(OLD))
     old["format"] = 1
