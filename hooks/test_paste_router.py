@@ -186,6 +186,26 @@ def test_github_tree_link_keeps_a_branch_with_a_slash(tmp_path):
     assert "--source https://github.com/Owner/MyVest/tree/feature/x " in context
 
 
+def test_hyphenated_repo_gets_a_valid_name(tmp_path):
+    context = _context(_run("import https://github.com/salutesh/DayZ-Expansion please", tmp_path))
+    assert "--source https://github.com/salutesh/DayZ-Expansion --name DayZExpansion " in context
+
+
+def test_valid_repo_gets_no_name():
+    assert pr.name_arg("https://github.com/Owner/MyVest") == ""
+    assert pr.name_arg("https://github.com/Owner/Mods/tree/main/MyMod") == ""
+
+
+def test_hyphenated_subfolder_is_named_after_the_subfolder():
+    assert pr.name_arg("https://github.com/Owner/Mods/tree/main/my-vest") == " --name myvest"
+    assert pr.name_arg("github.com/Owner/my-mods/tree/main/Vest") == " --name Vest"
+
+
+def test_mod_name_rule_matches_import_mod():
+    new_mod = Path(__file__).resolve().parents[1] / ".claude" / "skills" / "dayz-new-mod" / "new_mod.py"
+    assert pr.MOD_NAME_RE.pattern in new_mod.read_text(encoding="utf-8")
+
+
 @pytest.mark.parametrize("link", ["https://github.com/DayZ-n-Chill/Agentic-Z/pull/86",
                                   "https://github.com/Owner/MyVest/issues/3",
                                   "https://github.com/Owner/MyVest/blob/main/config.cpp",

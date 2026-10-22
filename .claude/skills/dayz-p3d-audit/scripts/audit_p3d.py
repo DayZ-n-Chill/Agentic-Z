@@ -243,17 +243,25 @@ def check_required_lods(lod_map):
 
 
 def check_component_naming(lod):
-    """Check Component01 uses correct case."""
+    """Check the Geometry LOD has a Component01 selection.
+
+    Lowercase 'component01' is fine: every binarized vanilla model on P:\\
+    stores it that way, so it is only a NOTE. Other spellings (COMPONENT01)
+    are a WARNING to check, which does not fail the run."""
     issues = []
     sels = list(lod.selections.keys())
     has_correct = 'Component01' in sels
     wrong_case = [s for s in sels if s.lower() == 'component01' and s != 'Component01']
     has_any = any(s.lower().startswith('component') for s in sels)
     if wrong_case and not has_correct:
-        label = " (lowercase)" if wrong_case[0] == 'component01' else ""
-        issues.append(("CRITICAL",
-            f"Found '{wrong_case[0]}'{label}. Engine requires exactly 'Component01' (uppercase C, "
-            "lowercase rest). Collision silently fails with wrong case."))
+        if wrong_case[0] == 'component01':
+            issues.append(("NOTE",
+                "Found 'component01' (lowercase). That is fine: binarized vanilla models store it in "
+                "lowercase too. Object Builder's own spelling is 'Component01'."))
+        else:
+            issues.append(("WARNING",
+                f"Found '{wrong_case[0]}'. Vanilla models use 'Component01' (or 'component01' once "
+                "binarized); rename it to 'Component01' to be safe."))
     elif not has_any:
         issues.append(("CRITICAL",
             "No Component selection found. Geometry LOD requires 'Component01' for collision."))

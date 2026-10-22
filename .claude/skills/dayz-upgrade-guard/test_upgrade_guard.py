@@ -468,6 +468,41 @@ def test_no_mods_named_and_no_project_checks_vanilla_only(tmp_path, capsys, monk
     assert "No mods checked" in capsys.readouterr().out
 
 
+def test_check_with_no_mod_and_no_project_is_an_error_and_saves_nothing(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(guard, "_cached_project", lambda: None)
+    store = tmp_path / "store"
+    args = ["check", "--p-root", str(_fake_p(tmp_path / "p", "Clothing_Base", True)), "--store", str(store)]
+    assert guard.main(args) == 2
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "ERROR"
+    assert "Name the mod" in out and "Nothing was saved" in out
+    assert guard.stored_snapshots(store) == []
+
+
+def test_reindex_command_rebuilds_after_a_check_that_saved_the_new_baseline(tmp_path, capsys, monkeypatch):
+    fake = _FakeRun(0)
+    monkeypatch.setattr(guard.subprocess, "run", fake)
+    store = tmp_path / "store"
+    common = ["--store", str(store), "--mod-dir", str(MOD)]
+    guard.main(["check", "--p-root", str(_fake_p(tmp_path / "before", "Clothing_Base", True)), *common])
+    after = _fake_p(tmp_path / "after", "ItemBase", False)
+    assert guard.main(["check", "--p-root", str(after), *common]) == 1
+    out = capsys.readouterr().out
+    assert "upgrade_guard.py reindex" in out and "check --reindex again would see no change" in out
+    # The second check sees the saved baseline, so --reindex there does nothing...
+    guard.main(["check", "--p-root", str(after), "--reindex", *common])
+    assert fake.calls == []
+    # ...and the reindex command rebuilds the index on its own.
+    assert guard.main(["reindex"]) == 0
+    assert len(fake.calls) == 1 and fake.calls[0][1:] == [str(guard.INDEXER), "--full"]
+
+
+def test_reindex_command_passes_on_a_failed_rebuild(capsys, monkeypatch):
+    monkeypatch.setattr(guard.subprocess, "run", _FakeRun(3))
+    assert guard.main(["reindex"]) == 3
+    assert "old index is still in place" in capsys.readouterr().out
+
+
 def test_every_mod_in_the_workspace_is_checked_by_default(tmp_path, capsys, monkeypatch):
     shutil.copytree(MOD, tmp_path / "workspace" / "MyVest")
     (tmp_path / "workspace" / "Empty").mkdir()

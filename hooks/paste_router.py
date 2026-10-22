@@ -54,6 +54,9 @@ GITHUB_RE = re.compile(
     r"|security|tags|branches|milestones|labels)\b)"
     r"(?:/tree/[\w.-]*[\w-](?:/[\w.-]*[\w-])*)?"
 )
+# import_mod.py's mod name rule (dayz-new-mod's NAME_PATTERN). A link whose
+# derived name fails it gets a ready --name in the suggested command.
+MOD_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
 FIGMA_RE = re.compile(r"(?i)\bfigma\.com/(?:file|design|proto|board)/\S+")
 TYPE_CHUNK_RE = re.compile(r"<type\s+name\s*=")
 # A pasted entry, not a type named in prose: a closing </type>, a self-closing
@@ -151,8 +154,8 @@ WORKSHOP_CONTEXT = (
 )
 GITHUB_CONTEXT = (
     "Agentic-Z paste-in: the prompt holds a GitHub link ({link}). If it is a DayZ mod the user wants to work on, "
-    "import it with /dayz-import-mod --source {link} (clones it into workspace\\, links P:\\ and checks the "
-    "standard pieces)."
+    "import it with /dayz-import-mod --source {link}{name_arg} (clones it into workspace\\, links P:\\ and "
+    "checks the standard pieces)."
 )
 SCREENSHOT_CONTEXT = (
     "Agentic-Z paste-in: the prompt has a screenshot. If it shows a DayZ bug, name what is wrong on screen and "
@@ -160,6 +163,20 @@ SCREENSHOT_CONTEXT = (
     "texture or material to dayz-asset-specialist; an error message or wrong behavior to dayz-script-specialist. "
     "Error text on screen can be triaged first with triage.py --text."
 )
+
+
+def name_arg(link: str) -> str:
+    """' --name <Valid>' when the name import_mod.py derives from the link fails
+    its rule (DayZ-Expansion has a hyphen), else ''. A tree link with a
+    subfolder (tree/main/MyMod) is named after its last segment."""
+    path = re.sub(r"(?i)^(?:https?://)?(?:www\.)?github\.com/", "", link).rstrip("/").split("/")
+    repo = re.sub(r"(?i)\.git$", "", path[1])
+    tree = path[3:] if len(path) > 3 and path[2].lower() == "tree" else []
+    name = tree[-1] if len(tree) >= 2 else repo
+    if MOD_NAME_RE.match(name) and MOD_NAME_RE.match(repo):
+        return ""
+    valid = re.sub(r"^[^A-Za-z]+", "", re.sub(r"\W", "", name))[:64] or "MyMod"
+    return f" --name {valid}"
 
 
 def build_context(prompt: str, project: Path) -> Optional[str]:
@@ -170,7 +187,7 @@ def build_context(prompt: str, project: Path) -> Optional[str]:
         parts.append(WORKSHOP_CONTEXT.format(link=workshop.group(0)))
     github = GITHUB_RE.search(prompt)
     if github:
-        parts.append(GITHUB_CONTEXT.format(link=github.group(0)))
+        parts.append(GITHUB_CONTEXT.format(link=github.group(0), name_arg=name_arg(github.group(0))))
     if FIGMA_RE.search(prompt):
         parts.append(FIGMA_CONTEXT)
     # The types and log detectors load other modules; one failing must not drop the rest.

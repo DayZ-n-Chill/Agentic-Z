@@ -1,7 +1,7 @@
 ---
 name: dayz-upgrade-guard
 description: "Snapshots every vanilla class on P:\\ (script classes with their parent and method signatures, config classes with their parent and the properties they set). After a DayZ update it takes a new snapshot, diffs it with the last one and lists the mod classes whose vanilla parents changed, with file:line and the reason. Can rebuild the search index afterwards. Use before and after a DayZ update, or when a mod broke after one."
-argument-hint: "snapshot [--label <text>] | check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--json] | diff [--old <a> --new <b>] [<ModName> ...] [--mod-dir <folder>] [--json]"
+argument-hint: "snapshot [--label <text>] | check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--json] | diff [--old <a> --new <b>] [<ModName> ...] [--mod-dir <folder>] [--json] | reindex"
 ---
 
 <!-- skill-dir-note -->
@@ -29,6 +29,7 @@ If there is no earlier snapshot, `check` saves the first one as the baseline and
 python "<skill-dir>\upgrade_guard.py" snapshot [--label 1.28]
 python "<skill-dir>\upgrade_guard.py" check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--json]
 python "<skill-dir>\upgrade_guard.py" diff [--old <snapshot> --new <snapshot>] [<ModName> ...] [--mod-dir <folder>] [--json]
+python "<skill-dir>\upgrade_guard.py" reindex
 ```
 
 | Argument | Notes |
@@ -36,7 +37,8 @@ python "<skill-dir>\upgrade_guard.py" diff [--old <snapshot> --new <snapshot>] [
 | `snapshot` | Read every vanilla class and save a snapshot. `--label` adds text to the file name, such as the game version. |
 | `check` | Take a snapshot now, diff it with the newest saved one and check the mods. When nothing changed it keeps the old snapshot instead of saving a copy. `--label` adds text to the new snapshot's file name. |
 | `diff` | Compare two saved snapshots without reading `P:\`. With no `--old` and `--new` it uses the two newest. Use it to see a report again. |
-| `<ModName>` | A mod under `workspace/` in the project cached by `/dayz-init`. With no name and no `--mod-dir`, every mod in `workspace/` is checked. |
+| `reindex` | Rebuild the search index (`/dayz-search-index --full`) on its own. Use it after a `check` without `--reindex` reported that vanilla changed: that check saved the new snapshot as the baseline, so a second `check --reindex` sees no change and rebuilds nothing. Exits with the indexer's code. |
+| `<ModName>` | A mod under `workspace/` in the project cached by `/dayz-init`. With no name and no `--mod-dir`, every mod in `workspace/` is checked. With no name, no `--mod-dir` and no cached project, `check` stops with an ERROR (exit 2) asking for the mod and saves nothing; `diff` then reports the vanilla changes only. |
 | `--mod-dir` | Check this folder too. Repeat it for more folders. |
 | `--reindex` | With `check`: when vanilla changed, rebuild the search index (`/dayz-search-index --full`) so search answers match the new files. It uses Voyage tokens, so it only runs when you ask. |
 | `--json` | Print the full report as JSON after the verdict line. Stdout then holds only those two parts; the reindex note and the indexer's output go to stderr. |
@@ -68,7 +70,7 @@ A script `modded class X` is checked against X itself; `class Y extends X` is ch
 
 ## Output and exit codes
 
-The first line is the verdict: `PASS` (exit 0, no mod class affected), `FAIL` (exit 1, at least one) or `ERROR` (exit 2: bad arguments, no game data on `P:\`, fewer than two snapshots to diff, or a mod folder that does not exist). A missing mod folder is caught before `check` saves anything, so a mistyped name never uses up the update. `snapshot` prints the saved path instead. With `--json`, the first `check` prints `{"verdict": "PASS", "baseline": "<path>"}` after the verdict line.
+The first line is the verdict: `PASS` (exit 0, no mod class affected), `FAIL` (exit 1, at least one) or `ERROR` (exit 2: bad arguments, no game data on `P:\`, fewer than two snapshots to diff, a mod folder that does not exist, or a `check` with no mod to check and no cached project). A missing mod folder is caught before `check` saves anything, so a mistyped name never uses up the update. `snapshot` prints the saved path instead. With `--json`, the first `check` prints `{"verdict": "PASS", "baseline": "<path>"}` after the verdict line.
 
 ```
 FAIL
