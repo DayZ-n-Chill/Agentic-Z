@@ -166,6 +166,19 @@ def test_a_property_gone_from_the_whole_chain_is_removed(tmp_path):
     assert messages == ["vanilla Clothing no longer sets weight", "vanilla Clothing_Base no longer sets quickBarBonus"]
 
 
+def test_a_config_class_built_on_a_mod_base_is_not_followed(tmp_path):
+    # Config classes are checked against their direct parent only: the mod base is
+    # checked, its child (MyBag_Black : MyBag_ColorBase) is skipped, as SKILL.md says.
+    (tmp_path / "config.cpp").write_text(
+        "class CfgVehicles { class Clothing; class MyBag_ColorBase: Clothing {}; "
+        "class MyBag_Black: MyBag_ColorBase {}; };" + chr(10), encoding="utf-8")
+    old = _config_chain(["scope"], ["itemSize", "weight"])
+    new = _config_chain(["scope"], ["itemSize"])
+    report = guard.check_mod("MyBag", tmp_path, old, new)
+    assert _reasons(report) == {"CfgVehicles/MyBag_ColorBase": ["members-removed"]}
+    assert report["classes_checked"] == 1
+
+
 def test_a_snapshot_from_before_the_case_fix_is_refused(tmp_path):
     old = json.loads(json.dumps(OLD))
     old["format"] = 1
@@ -271,6 +284,19 @@ def test_snapshot_reads_a_fake_p_root(tmp_path):
         "name": "CfgVehicles/Clothing", "parent": "Clothing_Base", "file": "DZ/characters/config.cpp", "line": 1,
         "members": ["itemSize"]}
     assert snap["skipped"] == ["DZ/characters/broken/config.cpp"]
+
+
+def test_snapshot_command_saves_and_prints_counts(tmp_path, capsys):
+    store = tmp_path / "store"
+    p_root = _fake_p(tmp_path / "p", "Clothing_Base", True)
+    assert guard.main(["snapshot", "--p-root", str(p_root), "--store", str(store), "--label", "1.28"]) == 0
+    out = capsys.readouterr().out.splitlines()
+    saved = guard.stored_snapshots(store)
+    assert len(saved) == 1 and saved[0].name.endswith("-1.28.json")
+    snap = json.loads(saved[0].read_text(encoding="utf-8"))
+    assert out[0] == f"Snapshot saved: {saved[0]}"
+    assert out[1] == (f"  {len(snap['script'])} script classes, {len(snap['config'])} config classes, "
+                      f"{len(snap['skipped'])} file(s) skipped")
 
 
 def test_snapshot_without_game_data_is_an_error(tmp_path, capsys):

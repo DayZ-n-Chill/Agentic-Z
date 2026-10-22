@@ -516,7 +516,9 @@ def _chain_changes(old_t: dict, new_t: dict, start: str, prefix: str = "") -> li
                             "message": f"vanilla {shown} no longer exists"})
             break
         old_p, new_p = old_t[key]["parent"], new_t[key]["parent"]
-        if not _same_parent(old_p, new_p) if prefix else old_p != new_p:
+        # Config parents compare case blind (prefix set); script parents exactly.
+        same = _same_parent(old_p, new_p) if prefix else old_p == new_p
+        if not same:
             reasons.append({"reason": "parent-changed", "class": shown,
                             "message": f"vanilla {shown} now extends {new_p or 'nothing'} (was {old_p or 'nothing'})"})
     return reasons
@@ -752,8 +754,8 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     try:
         if args.command == "snapshot":
-            path = save_snapshot(take_snapshot(args.p_root, args.label), args.store)
-            snap = json.loads(path.read_text(encoding="utf-8"))
+            snap = take_snapshot(args.p_root, args.label)
+            path = save_snapshot(snap, args.store)
             print(f"Snapshot saved: {path}")
             print(f"  {len(snap['script'])} script classes, {len(snap['config'])} config classes, {len(snap['skipped'])} file(s) skipped")
             return 0
