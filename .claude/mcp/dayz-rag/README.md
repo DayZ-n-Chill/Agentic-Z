@@ -42,7 +42,7 @@ It waits silently for MCP traffic on stdin when healthy; a missing `mcp` package
 
 ## Rebuilding
 
-After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index.py --full`. The server sees the new `manifest.json` on its next search and reopens the index, so no restart is needed. Changing `VOYAGE_MODEL` also needs a `--full` rebuild. Token costs and the free-tier check are covered in `.claude/skills/dayz-search-index/references/cost-and-free-tier.md`.
+After a DayZ update, rebuild with `python .claude\skills\dayz-search-index\index.py --full`. The server sees the new `manifest.json` on its next search, reopens the index and reads the embed model again from the index's `config.json`, so no restart is needed. Changing `VOYAGE_MODEL` also needs a `--full` rebuild; after it, queries use the new model. Token costs and the free-tier check are covered in `.claude/skills/dayz-search-index/references/cost-and-free-tier.md`.
 
 ## Environment variables
 

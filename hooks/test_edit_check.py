@@ -117,6 +117,20 @@ def test_valid_layout_is_clean():
     assert _problems(GOOD_LAYOUT, "layout") == []
 
 
+def test_layout_with_bom_is_clean():
+    assert _problems("﻿" + GOOD_LAYOUT, "layout") == []
+
+
+def test_layout_with_bom_and_comment_header_is_clean():
+    assert _problems("﻿// HUD example\n// second note\n" + GOOD_LAYOUT, "layout") == []
+
+
+def test_layout_file_saved_with_bom_is_clean(tmp_path):
+    f = tmp_path / "hud.layout"
+    f.write_text(GOOD_LAYOUT, encoding="utf-8-sig")
+    assert ec.check_file(f) == []
+
+
 @pytest.mark.parametrize(
     "broken, line, fragment",
     [
@@ -207,3 +221,12 @@ def test_manual_file_mode(tmp_path):
     r = subprocess.run([sys.executable, str(SCRIPT), "--file", str(f)], capture_output=True, text=True, timeout=30)
     assert r.returncode == 1
     assert "this is XML" in r.stdout
+
+
+def test_manual_file_mode_survives_a_cp1252_console(tmp_path):
+    f = tmp_path / "hud.layout"
+    f.write_text("FrameWidgetClass root {\n {\n  größe 1 1\n }\n}\n", encoding="utf-8")
+    env = {**__import__("os").environ, "PYTHONIOENCODING": "cp1252"}
+    r = subprocess.run([sys.executable, str(SCRIPT), "--file", str(f)], capture_output=True, timeout=30, env=env)
+    assert r.returncode == 1, r.stderr
+    assert "größe".encode("utf-8") in r.stdout

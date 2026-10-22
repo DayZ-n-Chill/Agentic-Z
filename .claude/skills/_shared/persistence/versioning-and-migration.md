@@ -2,6 +2,15 @@
 
 How to stamp your own save version, change what you save without breaking old saves, and where data that is not tied to one object belongs.
 
+## Contents
+
+- [Two version numbers](#two-version-numbers)
+- [Your own version, written first](#your-own-version-written-first)
+- [Changing what you save](#changing-what-you-save)
+- [Adding saved fields to a vanilla class](#adding-saved-fields-to-a-vanilla-class)
+- [Config changes that need a reset](#config-changes-that-need-a-reset)
+- [Data outside the object store](#data-outside-the-object-store)
+
 ## Two version numbers
 
 The `version` argument of `OnStoreLoad` is the game's storage version, not yours. The game sets it from `GAME_STORAGE_VERSION` (144 on this build, `P:\scripts\3_game\global\game.c:5`) by calling `StorageVersion` at startup (`:50`, native at `:425`). `LoadVersion()` and `SaveVersion()` return the version being loaded and saved (`:430` and `:435`).

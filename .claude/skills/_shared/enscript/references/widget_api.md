@@ -15,6 +15,15 @@ Check a method against `enwidgets.c` before you rely on it. DayZ updates add and
 
 ---
 
+## Contents
+
+- [Widget classes](#widget-classes)
+- [Methods on every widget](#methods-on-every-widget)
+- [Widget events and ScriptedWidgetEventHandler](#widget-events-and-scriptedwidgeteventhandler)
+- [Loading layouts](#loading-layouts)
+- [UIScriptedMenu: full screen menus](#uiscriptedmenu-full-screen-menus)
+- [Imagesets in layouts and script](#imagesets-in-layouts-and-script)
+
 ## Widget classes
 
 Script classes and their parents, from `enwidgets.c`. The layout class is the script class name plus `Class` (`TextWidget` is `TextWidgetClass` in a `.layout`). Cast with `Type.Cast(root.FindAnyWidget("name"))`.

@@ -1,0 +1,50 @@
+{
+  "agent": "dayz-workbench-specialist",
+  "questions": [
+    {
+      "id": "plugin-skeleton",
+      "question": "Answer only, do not edit any file. What is the minimal skeleton of a Workbench plugin that adds a command to the Script Tools menu? Name the attribute and the base class, and the method that runs when the command is clicked.",
+      "must_include": [
+        "WorkbenchPluginAttribute",
+        "re::\\s*WorkbenchPlugin\\b",
+        "re:\\bRun\\s*\\("
+      ],
+      "verified": "P:/scripts/1_core/workbenchapi.c:106-111 (class WorkbenchPlugin : Managed { event void Run(); }) and :137-145 (WorkbenchPluginAttribute(string name, string description, string shortcut, string icon, array<string> wbModules)); example P:/scripts/editor/workbench/opendir.c:1-4"
+    },
+    {
+      "id": "run-external-command",
+      "question": "Answer only, do not edit any file. From a Workbench plugin, how do I run an external program (for example open a folder in Explorer)? Name the call.",
+      "must_include": [
+        "RunCmd"
+      ],
+      "verified": "P:/scripts/1_core/workbenchapi.c:14 (static proto native int RunCmd(string command, bool wait = false)); used in P:/scripts/editor/workbench/opendir.c"
+    },
+    {
+      "id": "script-editor-current-file",
+      "question": "Answer only, do not edit any file. In a Workbench plugin, how do I get the path of the file open in the Script Editor?",
+      "must_include": [
+        "GetModule",
+        "ScriptEditor",
+        "GetCurrentFile"
+      ],
+      "verified": "P:/scripts/1_core/workbenchapi.c:8 (static WBModuleDef GetModule(string type)) and :31 (ScriptEditor.GetCurrentFile(out string filename)); example P:/scripts/editor/workbench/opendir.c:6-10"
+    },
+    {
+      "id": "plugin-settings-dialog",
+      "question": "Answer only, do not edit any file. My Workbench plugin needs a settings dialog the user can open. Which WorkbenchPlugin method do I override, and which Workbench call shows the dialog?",
+      "must_include": [
+        "Configure",
+        "ScriptDialog"
+      ],
+      "verified": "P:/scripts/1_core/workbenchapi.c:113 (event void Configure()) and :12 (static proto int ScriptDialog(string caption, string text, Class data))"
+    },
+    {
+      "id": "resource-context-menu",
+      "question": "Answer only, do not edit any file. I want my Workbench plugin to act on the files the user right-clicks in the Resource Browser. Which WorkbenchPlugin event receives them?",
+      "must_include": [
+        "OnResourceContextMenu"
+      ],
+      "verified": "P:/scripts/1_core/workbenchapi.c:114 (event void OnResourceContextMenu(notnull array<ResourceName> resources))"
+    }
+  ]
+}

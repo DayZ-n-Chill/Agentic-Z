@@ -397,7 +397,8 @@ def check_layout(text: str) -> list[Problem]:
         if len(problems) < MAX_PROBLEMS:
             problems.append(Problem(line, msg))
 
-    first = text.lstrip("﻿ \t\r\n")
+    text = text.lstrip("﻿")  # a UTF-8 BOM is not part of the first widget header
+    first = text.lstrip(" \t\r\n")
     if first.startswith("<"):
         line = text[: len(text) - len(first)].count("\n") + 1
         return [Problem(line, "this is XML; DayZ .layout files use the brace format: "
@@ -515,6 +516,7 @@ def main(argv: list[str]) -> int:
         path = Path(argv[1])
         problems = check_file(path)
         if problems:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # a cp1252 console cannot print every message
             print(format_reason(path, problems))
             return 1
         return 0

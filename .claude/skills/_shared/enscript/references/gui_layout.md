@@ -6,6 +6,19 @@ Every class, property and value below was checked against the vanilla layouts in
 
 ---
 
+## Contents
+
+- [File Format](#file-format)
+- [Coordinate System](#coordinate-system)
+- [Colors](#colors)
+- [Widget Class Names](#widget-class-names)
+- [Common Properties](#common-properties)
+- [TextListboxWidget — Columns](#textlistboxwidget--columns)
+- [ItemPreviewWidget — 3D Item Display](#itempreviewwidget--3d-item-display)
+- [PlayerPreviewWidget — 3D Player/Character Display](#playerpreviewwidget--3d-playercharacter-display)
+- [Loading Layout Files in Script](#loading-layout-files-in-script)
+- [Available Fonts (common choices)](#available-fonts-common-choices)
+
 ## File Format
 
 ```

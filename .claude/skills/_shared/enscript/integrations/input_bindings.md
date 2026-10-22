@@ -1,160 +1,169 @@
 # Custom Input Bindings
 
-DayZ input is driven by the `inputs.xml` file inside your mod's PBO and the `UAInput` / `Input` API at runtime. Custom keybinds appear in **Options → Controls** just like vanilla bindings.
+A custom keybind has three parts: an `inputs.xml` that declares the input and its default key, a `CfgMods` line in `config.cpp` that points the game at that file, and script that reads the input through the `UAInput` API. The bound input then shows in **Options → Controls** like a vanilla one.
+
+The script API is vanilla: `UAInput` and `UAInputAPI` in `P:\scripts\3_game\inputapi\uainput.c`, and `Input` in `P:\scripts\3_game\tools\input.c`. Vanilla ships no `inputs.xml` of its own on `P:\`; the file format below is the one shipped mods use, for example `Inputs\inputs.xml` inside `P:\Mods\@AutoCarFlip\Addons\HB_FlipVehicle.pbo` and `data\Inputs.xml` inside `P:\Mods\@AreaTitles\Addons\AreaTitles.pbo`.
+
+## Contents
+
+- [inputs.xml: declaring custom inputs](#inputsxml-declaring-custom-inputs)
+- [config.cpp: registering inputs.xml](#configcpp-registering-inputsxml)
+- [Reading input in script](#reading-input-in-script)
+- [UAInput API Reference](#uainput-api-reference)
+- [Axis / Mouse Input](#axis--mouse-input)
+- [Restricting Input by Context](#restricting-input-by-context)
+- [Silent-fail traps: "my keybind does nothing"](#silent-fail-traps-my-keybind-does-nothing)
 
 ---
 
-## inputs.xml — Declaring Custom Actions
-
-Place `inputs.xml` at the root of your mod's data folder (same level as `config.cpp`):
+## inputs.xml: declaring custom inputs
 
 ```xml
-<!-- MyMod/inputs.xml -->
-<Inputs>
-
-    <!-- A toggle-style key action (fires once on press) -->
-    <Input name="UAMyMod_OpenMenu" >
-        <Devices>
-            <Device type="keyboard">
-                <Key code="KeyCode.KC_END" />
-            </Device>
-        </Devices>
-        <IsToggle>0</IsToggle>         <!-- 0 = momentary, 1 = toggle -->
-        <ShortLabel>Open Menu</ShortLabel>
-        <LongLabel>Open MyMod Menu</LongLabel>
-        <Category>32</Category>         <!-- 32 = "Gameplay" section in UI -->
-    </Input>
-
-    <!-- A hold action (continuous while held) -->
-    <Input name="UAMyMod_HoldRepair" >
-        <Devices>
-            <Device type="keyboard">
-                <Key code="KeyCode.KC_HOME" />
-            </Device>
-        </Devices>
-        <IsToggle>0</IsToggle>
-        <ShortLabel>Repair (hold)</ShortLabel>
-        <LongLabel>Hold to repair item in hands</LongLabel>
-        <Category>32</Category>
-    </Input>
-
-</Inputs>
+<?xml version="1.0" encoding="UTF-8"?>
+<modded_inputs>
+    <inputs>
+        <actions>
+            <input name="UAMyModOpenMenu" loc="MyMod: Open menu" />
+            <input name="UAMyModHoldRepair" loc="MyMod: Repair (hold)" />
+        </actions>
+    </inputs>
+    <preset>
+        <!-- default keys; players can rebind them under Controls -->
+        <input name="UAMyModOpenMenu">
+            <btn name="kF7"/>
+        </input>
+        <input name="UAMyModHoldRepair">
+            <btn name="kF8"/>
+        </input>
+    </preset>
+</modded_inputs>
 ```
+
+- The root is `<modded_inputs>`, with `<inputs><actions>` for the declarations and `<preset>` for default keys.
+- `loc` is the label shown in Controls (a string or a stringtable key).
+- Key names follow the `k` + key form of the shipped example (`<btn name="kF6">`).
+- An empty `<preset>` is fine: the input exists and players bind it themselves, as `@AreaTitles` does.
 
 ---
 
-## Reading Input in Script (MissionGameplay / Player)
+## config.cpp: registering inputs.xml
 
-### Polling from MissionGameplay.OnKeyPress
+The game finds the file through the `inputs` entry of your `CfgMods` class. The path starts at your PBO prefix:
+
+```cpp
+class CfgMods
+{
+    class MyMod
+    {
+        dir    = "MyMod";
+        type   = "mod";
+        inputs = "MyMod/data/inputs.xml";
+        // ... defs / script modules ...
+    };
+};
+```
+
+Both mods named above use this form: `inputs = "HB_FlipVehicle/Inputs/inputs.xml"` and `inputs="AreaTitles/data/Inputs.xml"` in their `config.cpp`.
+
+---
+
+## Reading input in script
+
+Read inputs on the client, once per frame. Vanilla does it in `MissionGameplay.OnUpdate(float timeslice)` (`P:\scripts\5_mission\mission\missiongameplay.c:287`), for example `GetUApi().GetInputByID(UAVoiceModifierHelper).LocalValue()` (:359). A custom input has no `UA...` ID constant, so look it up by name with `GetUApi().GetInputByName(string)` (`uainput.c:218`, `GetUApi()` at :279):
 
 ```c
 modded class MissionGameplay
 {
-    override void OnKeyPress(int key)
+    override void OnUpdate(float timeslice)
     {
-        super.OnKeyPress(key);
+        super.OnUpdate(timeslice);
 
-        if (key == KeyCode.KC_END)
-        {
-            // Toggle menu visibility
-            UIMenuPanel menuPanel = GetGame().GetUIManager().GetMenu();
-            if (!GetGame().GetUIManager().IsMenuOpen(MenuID.MYMOD_INVENTORY))
-                GetGame().GetUIManager().EnterScriptedMenu(MenuID.MYMOD_INVENTORY, null);
-            else
-                GetGame().GetUIManager().Back();
-        }
+        if (!MyMod_ShouldProcessInput())
+            return;
+
+        UAInput openMenu = GetUApi().GetInputByName("UAMyModOpenMenu");
+        if (openMenu && openMenu.LocalPress())
+            MyMod_ToggleMenu();
+
+        UAInput holdRepair = GetUApi().GetInputByName("UAMyModHoldRepair");
+        if (holdRepair && holdRepair.LocalHold())
+            MyMod_OnHoldRepair(timeslice);   // every frame while held
+    }
+
+    void MyMod_ToggleMenu()
+    {
+        // open or close your menu; send an RPC if the server must know
+    }
+
+    void MyMod_OnHoldRepair(float dt)
+    {
+        // client feedback only; the real repair runs server-side, e.g. as an action
     }
 }
 ```
 
-### Polling from PlayerBase via UAInput
+`MissionGameplay` exists only on clients, so this code never runs on a dedicated server. Do not poll in `PlayerBase.OnScheduledTick`: that tick drives the server-side modifiers and notifiers (`P:\scripts\4_world\entities\manbase\playerbase.c:3007-3016`).
 
-```c
-modded class PlayerBase
-{
-    override void OnScheduledTick(float deltaTime)
-    {
-        super.OnScheduledTick(deltaTime);
-
-        // Client-only input polling; never run on server
-        if (GetGame().IsServer())
-            return;
-
-        UAInput uaInput = GetUApi().GetInputByName("UAMyMod_OpenMenu");
-        if (!uaInput)
-            return;
-
-        // LocalPress fires exactly once per press cycle
-        if (uaInput.LocalPress())
-        {
-            MyMod_OnOpenMenuPressed();
-            return;
-        }
-
-        UAInput holdInput = GetUApi().GetInputByName("UAMyMod_HoldRepair");
-        if (holdInput && holdInput.LocalHold())
-        {
-            // Fires every tick while held; add accumulation yourself
-            MyMod_OnHoldRepair(deltaTime);
-        }
-    }
-
-    private void MyMod_OnOpenMenuPressed()
-    {
-        // Trigger a client-side menu; can also send RPC to server
-    }
-
-    private void MyMod_OnHoldRepair(float dt)
-    {
-        // Client feedback; actual repair triggered server-side via action
-    }
-}
-```
+`OnKeyPress(int key)` (`missiongameplay.c:742`) gives raw `KeyCode` values. It ignores the player's bindings, so use it only for debug keys.
 
 ---
 
 ## UAInput API Reference
 
-```c
-UAInput ua = GetUApi().GetInputByName("UAMyMod_OpenMenu");
+All on `UAInput` in `P:\scripts\3_game\inputapi\uainput.c`:
 
-ua.LocalPress()     // bool – true on first frame of press (one-shot)
-ua.LocalRelease()   // bool – true on first frame of release
-ua.LocalHold()      // bool – true every frame while held
-ua.LocalValue()     // float – analog value (0..1 for axes, 0/1 for keys)
-ua.SuppressNextFrame()  // stop the input from propagating this frame
-```
+| Call | Returns | Line |
+|---|---|---|
+| `LocalValue()` | `float`: the analog value (0 or 1 for a key) | :58 |
+| `LocalPress()` | `bool`: pressed this frame | :60 |
+| `LocalRelease()` | `bool`: released this frame | :61 |
+| `LocalHold()` | `bool`: held | :62 |
+| `LocalHoldBegin()` | `bool`: the hold started this frame | :63 |
+| `LocalClick()`, `LocalDoubleClick()` | `bool` | :65, :64 |
+| `Supress()` | Suppress the press event for the next frame (vanilla spelling) | :84 |
+| `Lock()`, `Unlock()`, `IsLocked()` | Turn the input off and on again | :88, :89, :87 |
+| `ForceDisable(bool bEnable)`, `ForceEnable(bool bEnable)` | Force the input off or on | :94, :93 |
+
+`Input` (`GetGame().GetInput()`, `P:\scripts\3_game\global\game.c:728`) has the same reads by ID or name: `LocalValue_ID(int action, bool check_focus = true)` and `LocalValue(string action, bool check_focus = true)` (`P:\scripts\3_game\tools\input.c:50-51`), plus `LocalPress(string action, ...)`, used as `input.LocalPress("UAUIBack", false)` in `P:\scripts\5_mission\gui\digitalcodelockui.c:375`.
 
 ---
 
 ## Axis / Mouse Input
 
-For custom mouse or gamepad axis polling:
+Read an axis through its input, as vanilla does for the spectator camera (`P:\scripts\4_world\entities\dayzspectator.c:39-40`):
 
 ```c
-// Mouse delta since last frame
-float mx = GetGame().GetInput().GetActionValue(UAMouseX);
-float my = GetGame().GetInput().GetActionValue(UAMouseY);
+float yaw   = GetUApi().GetInputByID(UAAimLeft).LocalValue() - GetUApi().GetInputByID(UAAimRight).LocalValue();
+float pitch = GetUApi().GetInputByID(UAAimDown).LocalValue() - GetUApi().GetInputByID(UAAimUp).LocalValue();
 ```
+
+There is no `UAMouseX` input in vanilla; the aim inputs carry the mouse and the stick.
 
 ---
 
 ## Restricting Input by Context
 
-Inputs should only fire when appropriate. Guard with context checks:
+Skip your inputs while a menu or the chat is open, or the player is dead. Each check below exists in vanilla. Put the method in the same `modded class MissionGameplay` as `OnUpdate` above:
 
 ```c
-bool ShouldProcessInput()
+bool MyMod_ShouldProcessInput()
 {
-    // Don't capture keys in scripted menus
-    if (GetGame().GetUIManager().IsMenuOpen(MenuID.SELECT_RESPAWN))
+    UIManager ui = GetGame().GetUIManager();
+
+    // Any menu open (inventory, map, pause, ...): GetMenu(), P:\scripts\3_game\tools\uimanager.c:59
+    if (ui.GetMenu())
         return false;
 
-    // Don't capture when chat is open
-    if (GetGame().GetMission().IsChatInputActive())
+    // Chat input open: IsMenuOpen(int id), uimanager.c:154; MENU_CHAT_INPUT = 17, constants.c:192
+    if (ui.IsMenuOpen(MENU_CHAT_INPUT))
         return false;
 
-    // Don't capture on a dead player
+    // Controls disabled by the game: Mission.IsControlDisabled(), gameplay.c:792,
+    // overridden in missiongameplay.c:1119 (true while an input exclude is active)
+    if (IsControlDisabled())
+        return false;
+
+    // IsAlive(), P:\scripts\3_game\entities\object.c:517
     PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
     if (!player || !player.IsAlive())
         return false;
@@ -163,66 +172,16 @@ bool ShouldProcessInput()
 }
 ```
 
----
-
-## config.cpp: Declaring the inputs.xml
-
-Reference the file in `CfgPatches` so the engine loads it:
-
-```cpp
-class CfgPatches
-{
-    class MyMod_Core
-    {
-        units[]    = {};
-        weapons[]  = {};
-        requiredVersion  = 0.1;
-        requiredAddons[] = { "DZ_Scripts" };
-    };
-};
-
-// Tell the engine where your inputs live
-class CfgMods
-{
-    class MyMod
-    {
-        dir    = "MyMod";
-        inputs = "inputs.xml";
-    };
-};
-```
+`MENU_*` constants are in `P:\scripts\3_game\constants.c` (for example `MENU_INGAME = 9` at :184). There is no `MenuID` enum in vanilla.
 
 ---
 
-## ⚠️ Silent-fail traps — "my keybind does nothing"
+## Silent-fail traps: "my keybind does nothing"
 
-Custom keybinds require a specific 3-piece setup. Missing any one piece results in *"keybind does nothing"* with **no log error** — the engine silently drops the action.
+A keybind needs all three parts. A wrong part gives no log error; the input just never fires.
 
-1. **`inputs.xml` root tag.** Some builds (and the `<modded_inputs>` variant for overriding existing actions) require a specific root tag. Wrong root tag = silently ignored. The simpler bindings-only form looks like:
+1. **The root tag and layout of `inputs.xml`.** It must be `<modded_inputs>` with `<inputs><actions><input name=... loc=.../>`. An `<Inputs>`/`<Input>` file with `<Devices>` and `<Category>` is not this format and is ignored.
+2. **The `inputs` path in `CfgMods`.** It is relative to the PBO prefix (`MyMod/data/inputs.xml`), and the `CfgMods` class must be in a PBO that loads.
+3. **The name in script.** `GetInputByName` must use the exact `name` from `inputs.xml`. A typo returns `null`, which the `if (openMenu && ...)` guard above turns into "does nothing".
 
-   ```xml
-   <?xml version="1.0" encoding="UTF-8"?>
-   <modded_inputs>
-       <action name="UAMyModToggleHud" preset="default">
-           <key name="KC_F4"/>
-       </action>
-   </modded_inputs>
-   ```
-
-   Use this form when you only need to bind a key to an action; use the full `<Inputs>` form above when you need to declare a new action with labels and devices.
-
-2. **`config.cpp` must register the file.** The path is backslash-escaped relative to PBO prefix:
-
-   ```cpp
-   class CfgMods
-   {
-       class MyMod
-       {
-           inputs = "MyMod\\inputs.xml";   // backslash-escaped
-       };
-   };
-   ```
-
-3. **Script reads via the right call.** `LocalPress` fires once on key-down; `LocalRelease` fires once on key-up; `LocalHold` fires every frame while held. Using `LocalRelease` when you meant `LocalPress` is a silent failure with no log warning.
-
-All three pieces must align. If any are wrong: no log error, no engine warning, the keybind just doesn't fire.
+Also check the read: `LocalPress` is one frame on key-down, `LocalRelease` one frame on key-up, `LocalHold` every frame while held.

@@ -4,6 +4,15 @@ How to write `CfgSoundShaders` and `CfgSoundSets` entries in a mod's `config.cpp
 
 All line numbers below are in `P:\DZ\sounds\hpp\config.cpp` unless another file is named.
 
+## Contents
+
+- [Where the classes live](#where-the-classes-live)
+- [CfgPatches](#cfgpatches)
+- [Sound shader (`CfgSoundShaders`)](#sound-shader-cfgsoundshaders)
+- [Sound set (`CfgSoundSets`)](#sound-set-cfgsoundsets)
+- [Worked example: a generator running loop](#worked-example-a-generator-running-loop)
+- [Checks before handing back](#checks-before-handing-back)
+
 ## Where the classes live
 
 Vanilla sound classes are in two files, so search both: `P:\DZ\sounds\hpp\config.cpp` and `P:\DZ\sounds_bliss\config.cpp`. The main file declares them at the root of the config, next to `CfgVehicles`:

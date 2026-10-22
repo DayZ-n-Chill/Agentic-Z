@@ -130,6 +130,12 @@ def test_types_chunk_problems_are_listed(tmp_path):
     assert "MyMod_Vest: min (9) is greater than nominal (5)" in context
 
 
+def test_types_chunk_with_trailing_prose_holding_a_bracket(tmp_path):
+    context = _context(_run(f"{GOOD}\nthen merge -> chernarus, like `type a > b`", tmp_path))
+    assert "1 types.xml <type> entry" in context
+    assert "do not parse as XML" not in context
+
+
 def test_unparseable_types_chunk_says_so(tmp_path):
     context = _context(_run('<type name="X"><nominal>5</type>', tmp_path))
     assert "do not parse as XML" in context

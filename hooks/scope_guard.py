@@ -10,6 +10,11 @@ scope was set:
   - <project>/workspace/<Other>/...   any folder other than the active mod
   - P:\\<Other>\\... and P:\\Mods\\@<Other>\\...   when <Other> is a mod in workspace/
 
+The hook matches Edit, Write and MultiEdit only. Shell commands are not
+checked: a Bash or PowerShell copy, redirect, sed -i or Set-Content into
+another mod's folder is not seen here (the Edit deny rules from scope.py
+cover some of those).
+
 No scope file means no scope: the hook exits silently. A malformed hook input
 or state file also exits silently, so the hook never blocks on its own bug.
 Output format: https://code.claude.com/docs/en/hooks#pretooluse-decision-control

@@ -215,6 +215,35 @@ def test_pack_index_paths_exist():
         assert (SKILLS_DIR / ref).exists(), f"pack index names missing {ref}"
 
 
+# _shared/README.md: "Facts about the game cite the vanilla file on P:\". These files
+# hold no game facts of their own (style, answer format, tool notes, repo layout).
+CITATION_EXEMPT = {
+    "enscript-style.md",              # style guide index; facts live in enscript/references/
+    "answer-formatting.md",           # how to format answers
+    "py3d-mlod-notes.md",             # notes on a Python library, not the game
+    "conventions/server.md",          # the .server/ test-server layout of this repo
+}
+CITATION_EXEMPT_FOLDERS = {"enscript-style"}  # the style guide's section files
+
+
+def test_pack_files_cite_vanilla():
+    missing = []
+    for path in sorted(SHARED_DIR.rglob("*.md")):
+        rel = path.relative_to(SHARED_DIR).as_posix()
+        if path.name == "README.md" or rel in CITATION_EXEMPT or rel.split("/")[0] in CITATION_EXEMPT_FOLDERS:
+            continue
+        if "P:\\" not in path.read_text(encoding="utf-8"):
+            missing.append(rel)
+    assert not missing, f"pack files with no P:\\ citation: {missing}"
+
+
+def test_citation_exemptions_exist():
+    for rel in CITATION_EXEMPT:
+        assert (SHARED_DIR / rel).is_file(), f"stale citation exemption {rel}"
+    for folder in CITATION_EXEMPT_FOLDERS:
+        assert (SHARED_DIR / folder).is_dir(), f"stale citation exemption {folder}/"
+
+
 CONVENTIONS = SHARED_DIR / "dayz-conventions.md"
 
 
@@ -247,3 +276,17 @@ def test_preflight_exceptions_are_real_skills():
 def test_tier_one_files_match():
     texts = {name: (REPO / name).read_text(encoding="utf-8") for name in ("CLAUDE.md", "AGENTS.md", "GEMINI.md")}
     assert len(set(texts.values())) == 1
+
+
+PANEL = REPO / "mods" / "agentic-z-panel" / "hooks" / "register.tsx"
+
+
+def test_panel_buttons_name_existing_skill_scripts():
+    """CI runs pytest only, so this catches a renamed script that would silently break a panel button."""
+    text = PANEL.read_text(encoding="utf-8")
+    block = text.split("const SKILL = {", 1)[1].split("} as const", 1)[0]
+    pairs = re.findall(r"\w+:\s*\['([\w-]+)',\s*'([\w.]+)'\]", block)
+    assert len(pairs) >= 10, "could not read the SKILL map in register.tsx"
+    pairs += re.findall(r"join\(current\.root, '\.claude', 'skills', '([\w-]+)', '([\w.]+)'\)", text)
+    missing = [f"{skill}/{script}" for skill, script in pairs if not (SKILLS_DIR / skill / script).is_file()]
+    assert not missing, f"panel buttons name missing scripts: {missing}"

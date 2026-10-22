@@ -1,39 +1,3 @@
-﻿// Item inspect panel — uses ItemPreviewWidgetClass for live 3D item display.
-// The engine rotates the item model; script controls orientation via SetModelOrientation.
-//
-// Script companion (Scripts/5_Mission/GUI/MyMod_InspectMenu.c):
-//   class MyMod_InspectMenu : UIScriptedMenu {
-//     protected ItemPreviewWidget m_Preview;
-//     protected TextWidget        m_LabelName;
-//     protected TextWidget        m_LabelHealth;
-//     protected float             m_RotY = 0;
-//     override Widget Init() {
-//       layoutRoot = GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/mymod_inspect.layout");
-//       m_Preview    = ItemPreviewWidget.Cast(layoutRoot.FindAnyWidget("ItemRender"));
-//       m_LabelName  = TextWidget.Cast(layoutRoot.FindAnyWidget("LabelItemName"));
-//       m_LabelHealth = TextWidget.Cast(layoutRoot.FindAnyWidget("LabelHealth"));
-//       layoutRoot.FindAnyWidget("BtnRotateLeft").SetHandler(this);
-//       layoutRoot.FindAnyWidget("BtnRotateRight").SetHandler(this);
-//       layoutRoot.FindAnyWidget("BtnClose").SetHandler(this);
-//       return layoutRoot;
-//     }
-//     void SetItem(EntityAI item) {
-//       m_Preview.SetItem(item);
-//       m_LabelName.SetText(item.GetDisplayName());
-//       m_LabelHealth.SetText("Condition: " + item.GetHealthLevel().ToString()); // adjust cast as needed
-//     }
-//     override bool OnClick(Widget w, int x, int y, int button) {
-//       if (w.GetName() == "BtnRotateLeft")  { Rotate(-15); return true; }
-//       if (w.GetName() == "BtnRotateRight") { Rotate(15);  return true; }
-//       if (w.GetName() == "BtnClose")       { GetGame().GetUIManager().HideScriptedMenu(this); return true; }
-//       return false;
-//     }
-//     void Rotate(float delta) {
-//       m_RotY += delta;
-//       m_Preview.SetModelOrientation(Vector(m_RotY, 0, 0));
-//     }
-//   }
-
 FrameWidgetClass InspectRoot {
  position 0 0
  size 1 1

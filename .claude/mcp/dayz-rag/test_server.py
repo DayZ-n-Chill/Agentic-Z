@@ -193,6 +193,29 @@ def test_reindex_reopens_the_table(monkeypatch, tmp_path):
     assert server._table is None
 
 
+def test_reindex_reloads_embed_model(monkeypatch, tmp_path):
+    models = []
+
+    class _Client:
+        def embed(self, **kwargs):
+            models.append(kwargs["model"])
+            return SimpleNamespace(embeddings=[[0.1]])
+
+    monkeypatch.setattr(server, "INDEX_ROOT", tmp_path)
+    monkeypatch.setattr(server, "_manifest_stamp", None)
+    monkeypatch.setattr(server, "_embed_model", None)
+    monkeypatch.setattr(server, "_get_client", lambda: _Client())
+    (tmp_path / "config.json").write_text(json.dumps({"embed_model": "voyage-old"}), encoding="utf-8")
+    _write_manifest(tmp_path, 100, 1_000_000_000)
+    server._sync_with_index()
+    server._embed_query("q")
+    (tmp_path / "config.json").write_text(json.dumps({"embed_model": "voyage-new"}), encoding="utf-8")
+    _write_manifest(tmp_path, 200, 2_000_000_000)
+    server._sync_with_index()
+    server._embed_query("q")
+    assert models == ["voyage-old", "voyage-new"]
+
+
 def test_cache_is_bounded(fake_table, monkeypatch):
     monkeypatch.setattr(server, "CACHE_MAX", 2)
     for q in ("a", "b", "c"):

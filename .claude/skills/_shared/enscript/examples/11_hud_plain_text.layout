@@ -1,28 +1,3 @@
-﻿// HUD overlay — three text labels updated each frame by a modded Hud class.
-// Load via: GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/mymod_hud_overlay.layout", hudRoot)
-//
-// Script companion (Scripts/5_Mission/MyMod_Hud.c):
-//   modded class Hud {
-//     protected TextWidget m_lblStatus;
-//     protected TextWidget m_lblSub;
-//     protected TextWidget m_lblWarn;
-//     override void Init(Widget hud_panel_w) {
-//       super.Init(hud_panel_w);
-//       Widget overlay = GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/mymod_hud_overlay.layout", hud_panel_w);
-//       m_lblStatus = TextWidget.Cast(overlay.FindAnyWidget("LabelMain"));
-//       m_lblSub    = TextWidget.Cast(overlay.FindAnyWidget("LabelSub"));
-//       m_lblWarn   = TextWidget.Cast(overlay.FindAnyWidget("LabelWarning"));
-//     }
-//     override void Update(float timeslice) {
-//       super.Update(timeslice);
-//       PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
-//       if (!player) return;
-//       m_lblStatus.SetText(string.Format("HP: %1", Math.Round(player.GetHealth("", "Health"))));
-//       m_lblSub.SetText(string.Format("Blood: %1", Math.Round(player.GetHealth("", "Blood"))));
-//       m_lblWarn.Show(player.GetHealth("", "Health") < 20.0);
-//     }
-//   }
-
 FrameWidgetClass HudOverlay {
  ignorepointer 1
  position 0 0

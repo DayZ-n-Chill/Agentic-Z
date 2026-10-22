@@ -215,6 +215,18 @@ test('without a clone, the panel uses the newest plugin cache version by number'
   ])
 })
 
+test('a session started in a subfolder of the clone finds the clone and its active mod', async ($, on) => {
+  const runs: string[][] = []
+  engineWith(on, runs, { cacheDirs: ['1.10.0'] })
+  await $.session.start({ cwd: 'C:\\proj\\workspace\\MyVest', surface: 'desktop', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /Active mod: MyVest/ }))?.text).toBe('Active mod: MyVest')
+  await ui.press({ key: 'build' })
+  await ui.unmount()
+  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest'])
+})
+
 test('with Agentic-Z nowhere, the pane says so and a press only toasts', async ($, on) => {
   const runs: string[][] = []
   const toasts: string[] = []

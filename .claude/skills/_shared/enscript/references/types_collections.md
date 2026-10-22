@@ -2,6 +2,19 @@
 
 Quick examples. Every method below was checked against its declaration on `P:\scripts\1_core\proto\` (the file and first line are given under each block). The longer reference is `language_types.md`.
 
+## Contents
+
+- [Primitive Types](#primitive-types)
+- [string API](#string-api)
+- [array\<T\>](#arrayt)
+- [map\<K, V\>](#mapk-v)
+- [set\<T\>](#sett)
+- [vector API](#vector-api)
+- [Math API (Math class)](#math-api-math-class)
+- [⚠️ `string.ToLower()` / `ToUpper()` mutate in place](#-stringtolower--toupper-mutate-in-place)
+- [Existence — these vanilla helpers DO exist](#existence--these-vanilla-helpers-do-exist)
+- [Reported: `int.MIN` comparison quirk](#reported-intmin-comparison-quirk)
+
 ## Primitive Types
 
 | Type | Default | Notes |
