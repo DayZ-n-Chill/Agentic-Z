@@ -182,8 +182,68 @@ def test_large_xml_batches_top_level_elements(tmp_path):
 def test_unparseable_large_xml_falls_back_to_whole_file(tmp_path):
     text = _types_xml(120).replace("</types>", "")  # unclosed root
     chunks = index.chunk_xml(_write(tmp_path, "bad.xml", text))
-    assert len(chunks) == 1
-    assert chunks[0]["parent_context"] == ""
+    assert all(c["parent_context"] == "" for c in chunks)
+    # Whole-file windows: nothing cut, every window within the embed limit.
+    assert "".join(c["content"] for c in chunks) == text
+    assert all(len(c["content"]) <= index.EMBED_MAX_CHARS for c in chunks)
+    assert chunks[0]["line_start"] == 1 and chunks[-1]["line_end"] == len(text.splitlines())
+
+
+def test_20k_xml_loses_no_text_and_batches_by_size(tmp_path):
+    items = "\n".join(
+        f'  <type name="Item{i:03d}"><nominal>{i}</nominal>' + "<usage name=\"Military\"/>" * 8 + "</type>"
+        for i in range(90)
+    )
+    text = f"<types>\n{items}\n</types>\n"
+    assert len(text) >= 20_000
+    chunks = index.chunk_xml(_write(tmp_path, "types.xml", text))
+    assert all(len(c["content"]) <= index.EMBED_MAX_CHARS for c in chunks)
+    joined = "\n".join(c["content"] for c in chunks)
+    assert all(f'name="Item{i:03d}"' in joined for i in range(90))
+    assert sum(len(c["content"]) for c in chunks) >= len(items) - 90 * 3  # only the joins between items differ
+    # Batches stop at the size limit, not at a fixed 50 elements.
+    assert all("(50 items)" not in c["parent_context"] for c in chunks)
+
+
+def test_xml_element_larger_than_embed_limit_is_windowed(tmp_path):
+    import xml.etree.ElementTree as ET
+
+    big = "<event name=\"Big\">\n" + "".join(f"  <pos x=\"{i}\" z=\"{i}\"/>\n" for i in range(900)) + "</event>"
+    small = "\n".join(f'<event name="E{i}"><nominal>1</nominal></event>' for i in range(5))
+    text = f"<events>\n{small}\n{big}\n</events>\n"
+    chunks = index.chunk_xml(_write(tmp_path, "events.xml", text))
+    big_chunks = [c for c in chunks if c["parent_context"] == "events > Big"]
+    assert len(big_chunks) > 1
+    assert all(len(c["content"]) <= index.EMBED_MAX_CHARS for c in big_chunks)
+    root = ET.fromstring(text)
+    assert "".join(c["content"] for c in big_chunks) == ET.tostring(root[-1], encoding="unicode")
+    assert big_chunks[0]["line_start"] == 7 and big_chunks[-1]["line_end"] == 7 + 901
+
+
+def test_20k_csv_loses_no_rows_and_repeats_the_header(tmp_path):
+    header = "Language,original,english,czech\n"
+    rows = "".join(f"STR_ITEM_{i:04d},Item {i},Item {i},Predmet {i}\n" for i in range(500))
+    text = header + rows
+    assert len(text) >= 20_000
+    chunks = index.chunk_whole_file(_write(tmp_path, "stringtable.csv", text), "csv")
+    assert len(chunks) > 1
+    assert all(c["content"].startswith(header) for c in chunks)
+    assert all(len(c["content"]) <= index.EMBED_MAX_CHARS for c in chunks)
+    assert "".join(c["content"][len(header):] for c in chunks) == rows
+    lines = text.splitlines(keepends=True)
+    for c in chunks:  # each chunk's line range is the rows it holds
+        assert "".join(lines[c["line_start"] - 1 : c["line_end"]]) == c["content"][len(header):]
+
+
+def test_large_json_is_windowed_not_cut(tmp_path):
+    import json
+
+    text = json.dumps({f"key{i}": {"value": i, "note": "x" * 40} for i in range(400)}, indent=2)
+    assert len(text) > index.EMBED_MAX_CHARS
+    chunks = index.chunk_whole_file(_write(tmp_path, "big.json", text), "json")
+    assert len(chunks) > 1
+    assert "".join(c["content"] for c in chunks) == text
+    assert all(len(c["content"]) <= index.EMBED_MAX_CHARS for c in chunks)
 
 
 # --------------- batch packing ---------------
@@ -494,3 +554,29 @@ def test_missing_key_exits_1_with_fail_line(monkeypatch, capsys):
         index._load_env_and_key()
     assert exc.value.code == 1
     assert "VOYAGE_API_KEY not set" in capsys.readouterr().err
+
+
+def test_usage_is_logged_even_when_the_table_write_fails(tmp_path, monkeypatch):
+    """Tokens are billed once the embed returns, so a LanceDB failure after it must not lose them."""
+    p_root = tmp_path / "P"
+    (p_root / "scripts").mkdir(parents=True)
+    _write(p_root / "scripts", "a.c", "class A { int x; };\n")
+    monkeypatch.setattr(index, "P_ROOT", p_root)
+    monkeypatch.setattr(index, "INDEX_ROOT", tmp_path / "idx")
+    monkeypatch.setattr(index.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(index.h.preflight, "find_vanilla_data", lambda: None)
+    monkeypatch.setattr(index, "_require_deps", lambda: None)
+    monkeypatch.setattr(index, "_load_env_and_key", lambda: "pa-test-key-1234")
+    monkeypatch.setitem(sys.modules, "lancedb", SimpleNamespace(connect=lambda _p: object()))
+    monkeypatch.setitem(sys.modules, "tqdm", SimpleNamespace(tqdm=lambda it=None, **_k: it))
+    monkeypatch.setattr(index, "embed_or_fail", lambda texts, model, key: ([[0.0]] * len(texts), 1234))
+
+    def broken_write(_db, _rows):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(index, "write_table", broken_write)
+    with pytest.raises(OSError):
+        index.main(["--full", "--ignore-tier-warning"])
+    entries = _usage_entries(tmp_path / "idx" / index.USAGE_LOG_NAME)
+    assert [e["tokens"] for e in entries] == [1234]
+    assert not (tmp_path / "idx" / "manifest.json").exists()

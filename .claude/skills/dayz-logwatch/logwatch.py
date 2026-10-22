@@ -192,17 +192,23 @@ def client_running() -> bool:
 
     tasklist cannot show command lines, so this asks Win32_Process. Each process
     prints one "proc:" line; one whose command line Windows will not show counts
-    as a client, so the watch never stops early on a process it cannot read.
+    as a client, and so does a query that fails, so the watch never stops early
+    on a process it cannot read.
     """
     query = (
         f"Get-CimInstance Win32_Process -Filter \"Name='{DIAG_EXE}'\" "
         "| ForEach-Object { 'proc:' + $_.CommandLine }"
     )
-    out = subprocess.run(
-        ["powershell", "-NoProfile", "-NonInteractive", "-Command", query],
-        capture_output=True, text=True, errors="replace",
-    ).stdout
-    return any(is_client(line[5:]) for line in out.splitlines() if line.startswith("proc:"))
+    try:
+        proc = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", query],
+            capture_output=True, text=True, errors="replace",
+        )
+    except OSError:  # PowerShell missing from PATH: cannot tell, so keep watching
+        return True
+    if proc.returncode != 0:  # the query failed (CIM timeout and the like): keep watching
+        return True
+    return any(is_client(line[5:]) for line in proc.stdout.splitlines() if line.startswith("proc:"))
 
 
 def watch(
@@ -332,7 +338,7 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
     learned = triage.learned_path(project) if project else None
     try:
         known = triage.load_known(triage.KNOWN_ERRORS, learned)
-    except (ValueError, json.JSONDecodeError) as e:
+    except (ValueError, json.JSONDecodeError, re.error, KeyError, TypeError) as e:
         print(f"{h.FAIL} Could not load known errors: {e}", file=sys.stderr)
         return 2
 
