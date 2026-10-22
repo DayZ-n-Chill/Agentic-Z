@@ -54,10 +54,35 @@ def test_non_p3d_file_warns(tmp_path, capsys):
     assert "not a .p3d" in capsys.readouterr().out
 
 
-def test_mod_target_is_p_drive_folder(tmp_path, monkeypatch):
+def test_mod_target_is_the_one_p3d_in_data(tmp_path, monkeypatch):
     monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
-    (tmp_path / "MyMod").mkdir()
-    assert ob.resolve_target(None, "MyMod") == tmp_path / "MyMod"
+    model = tmp_path / "MyMod" / "data" / "vest" / "vest.p3d"
+    model.parent.mkdir(parents=True)
+    model.write_bytes(b"")
+    (tmp_path / "MyMod" / "data" / "vest" / "vest.rvmat").write_text("")
+    target = ob.resolve_target(None, "MyMod")
+    assert target == model and target.is_file()  # a file, never the mod folder
+
+
+def test_mod_without_p3d_exits(tmp_path, monkeypatch):
+    monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
+    (tmp_path / "MyMod" / "data").mkdir(parents=True)
+    with pytest.raises(SystemExit) as exc:
+        ob.resolve_target(None, "MyMod")
+    assert "No .p3d under" in str(exc.value.code) and "--file" in str(exc.value.code)
+
+
+def test_mod_with_several_p3d_lists_them_and_asks_for_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
+    data = tmp_path / "MyMod" / "data"
+    data.mkdir(parents=True)
+    for name in ("a.p3d", "b.p3d"):
+        (data / name).write_bytes(b"")
+    with pytest.raises(SystemExit) as exc:
+        ob.resolve_target(None, "MyMod")
+    msg = str(exc.value.code)
+    assert "2 .p3d files" in msg and "--file" in msg
+    assert str(data / "a.p3d") in msg and str(data / "b.p3d") in msg
 
 
 def test_missing_mod_folder_exits(tmp_path, monkeypatch):

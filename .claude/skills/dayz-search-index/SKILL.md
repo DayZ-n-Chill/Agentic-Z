@@ -38,7 +38,7 @@ After a build, restart Claude Code so the MCP server opens the new index.
 
 ## What it indexes
 
-The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. The live index holds about 52,000 chunks from about 38,000 files (about 66M tokens); `--status` shows the current numbers.
+The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. Run `--status` to see the current chunk, file and token counts (a full build was about 52,000 chunks in 2026-08).
 
 Indexes built before oversize class blocks were split into windows stored only the first 8,000 characters of each block. Run `--full` once to rebuild with windowing; expect the chunk count to rise.
 
