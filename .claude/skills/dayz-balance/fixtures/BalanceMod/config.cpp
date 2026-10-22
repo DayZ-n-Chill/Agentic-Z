@@ -11,13 +11,13 @@ class CfgPatches
 };
 class CfgVehicles
 {
-    class PlateVest;
-    class PressVest;
-    class Backpack_Base;
+    class PlateCarrierVest;
+    class PressVest_ColorBase;
+    class TaloonBag_ColorBase;
     class Bottle_Base;
     class Inventory_Base;
-    // A mod base class between the items and vanilla: peers still come from PlateVest.
-    class BalanceMod_PlateBase: PlateVest
+    // A mod base class between the items and vanilla: peers still come from PlateCarrierVest.
+    class BalanceMod_PlateBase: PlateCarrierVest
     {
         scope = 0;
         weight = 9800;
@@ -40,12 +40,12 @@ class CfgVehicles
             };
         };
     };
-    class BalanceMod_FairPress: PressVest
+    class BalanceMod_FairPress: PressVest_ColorBase
     {
         scope = 2;
         weight = 2100;
     };
-    class BalanceMod_HugePack: Backpack_Base
+    class BalanceMod_HugePack: TaloonBag_ColorBase
     {
         scope = 2;
         weight = 1500;
@@ -58,7 +58,7 @@ class CfgVehicles
         varQuantityMax = 9000;
     };
     // Inherits everything: nothing the mod sets, so nothing to compare.
-    class BalanceMod_PlainPlate: PlateVest
+    class BalanceMod_PlainPlate: PlateCarrierVest
     {
         scope = 2;
     };

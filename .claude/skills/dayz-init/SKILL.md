@@ -55,7 +55,7 @@ Then ask in chat for the free-text values:
 - New mod, or import with `--scaffold`, when `.claude/local-memory/dayz-author.txt` does not exist: the author handle shown in mod descriptions (a scaffolded import writes it into `config.cpp`). Pass it as `--author`.
 - Optional spec, only when `workspace\<ModName>\spec.md` does not exist and the mod is not a `--no-scaffold` import: "What should the mod do? Say skip to leave it for later." This is the only spec question. If the user skips, pass no spec flags. Otherwise turn the answer into one `--goal` sentence plus `--item` (each item or class the mod adds), `--behavior` (each thing a player can do or see in game) and `--done-check` (each check that proves it works), all repeatable. Use the user's own words and don't invent features they did not ask for. The plan writes these to `spec.md`, and dayz-mod-architect reads it first when it plans the mod.
 - The spec question is not asked when `workspace\<ModName>` is a linked import, because `plan.py` never writes into a linked source folder on a re-run.
-- Import with launch: read the source folder's `config.cpp` `requiredAddons[]` (the same check as the hub's `Needs:` line). When it lists anything that does not start with `DZ_`, such as `JM_CF_Scripts`, ask which `@mods` under `P:\Mods\` provide those addons, in load order, and pass them as `--deps`. Without them the mod fails to load on the first launch.
+- Import with launch: read the source folder's `config.cpp` `requiredAddons[]` (the same check as the hub's `Needs:` line). When it lists anything that does not start with `DZ_`, such as `JM_CF_Scripts`, ask which `@mods` under `P:\Mods\` provide those addons, in load order, and pass them as `--deps`. Without them the mod fails to load on the first launch, so `plan.py` refuses `--launch` (exit 2, naming the addons) until `--deps` is given. A prebuilt bundle (an `Addons\*.pbo` folder) is not checked, the same as `/dayz-gate ingame`.
 
 ## Step 4: show the plan
 
@@ -105,7 +105,7 @@ Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and s
 
 | Choice | Do |
 |---|---|
-| Build and launch | `dispatch.py build`, then `dispatch.py launch --server <instance> [--deps CF ...]` (ask for the instance if there are several; offer add-server if there are none). When the status has a `Needs:` line, ask which `@mods` provide those addons, in load order, and pass them as `--deps` |
+| Build and launch | `dispatch.py build`, then `dispatch.py launch --server <instance> [--deps CF ...]` (ask for the instance if there are several; offer add-server if there are none). When the status has a `Needs:` line, ask which `@mods` provide those addons, in load order, and pass them as `--deps`; `dispatch.py launch` refuses without them (exit 2) |
 | Lint the mod | `dispatch.py lint` (`/dayz-lint`) |
 | Gate the build | `dispatch.py gate-build` (`/dayz-gate build`: lint, build and a stored result) |
 | Gate in game | `dispatch.py gate-ingame --server <instance> [--deps CF ...]` (`/dayz-gate ingame`; ask for `--deps` as for launch) |

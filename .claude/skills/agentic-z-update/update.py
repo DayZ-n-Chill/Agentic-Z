@@ -29,7 +29,7 @@ import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
 
 UPSTREAM_URL = "https://github.com/DayZ-n-Chill/Agentic-Z.git"
 UPSTREAM_REMOTE = "upstream"
@@ -334,6 +334,27 @@ def stage_and_commit(updated: list[str], upstream_sha: str) -> bool:
     return True
 
 
+# Marker files git leaves in the git dir while an operation is half done.
+# During any of these, `git commit --only` refuses, which would leave the
+# applied files staged inside the user's operation.
+GIT_OPERATION_MARKERS = (
+    ("MERGE_HEAD", "merge"),
+    ("rebase-merge", "rebase"),
+    ("rebase-apply", "rebase"),
+    ("CHERRY_PICK_HEAD", "cherry-pick"),
+    ("REVERT_HEAD", "revert"),
+)
+
+
+def git_operation_in_progress() -> Optional[str]:
+    """Name of the merge, rebase, cherry-pick or revert in progress, or None."""
+    for marker, name in GIT_OPERATION_MARKERS:
+        r = run(["git", "rev-parse", "--git-path", marker], check=False, capture=True)
+        if r.returncode == 0 and r.stdout.strip() and Path(r.stdout.strip()).exists():
+            return name
+    return None
+
+
 def upstream_head_sha() -> str:
     r = run(["git", "rev-parse", f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}"], capture=True)
     return r.stdout.strip()
@@ -577,9 +598,9 @@ LOCAL_CHOICE_STATUSES = (FileStatus.LOCAL_ONLY_EDIT, FileStatus.LOCALLY_DELETED)
 def apply_drift(drift: dict[str, FileStatus], upstream_ref: str, conflict_choices: Optional[dict[str, str]] = None) -> tuple[list[str], list[str]]:
     """Apply changes from a drift dict.
 
-    `conflict_choices` is an optional {path: 'keep'|'take'} dict for resolving
-    conflicts. Paths missing from conflict_choices are LEFT ALONE (default
-    bulk-apply behavior).
+    `conflict_choices` is an optional {path: 'keep'|'take'|'skip'} dict for
+    resolving conflicts. Paths missing from conflict_choices are LEFT ALONE
+    (default bulk-apply behavior).
 
     Returns (applied, skipped) — lists of paths.
     """
@@ -629,7 +650,7 @@ def apply_drift(drift: dict[str, FileStatus], upstream_ref: str, conflict_choice
                     else:
                         skipped.append(path)
             else:
-                # 'keep' or no choice → leave alone
+                # 'keep', 'skip' or no choice: leave alone
                 skipped.append(path)
     return applied, skipped
 
@@ -656,8 +677,10 @@ def _print_diff(path: str, local: bytes, upstream: bytes) -> None:
 def resolve_conflicts_per_file(drift: dict[str, FileStatus], upstream_ref: str) -> dict[str, str]:
     """Walk each conflict and locally deleted file interactively.
 
-    Returns a {path: 'keep'|'take'} dict. For a locally deleted file, keep
-    leaves it deleted and take restores upstream's version.
+    Returns a {path: 'keep'|'take'|'skip'} dict. For a locally deleted file,
+    keep leaves it deleted and take restores upstream's version. 'keep' is a
+    decision (the baseline may move past the file); 'skip' defers it, so the
+    file is offered again on the next run.
     """
     choices: dict[str, str] = {}
     conflicts = [p for p, s in drift.items() if s in PER_FILE_STATUSES]
@@ -665,18 +688,21 @@ def resolve_conflicts_per_file(drift: dict[str, FileStatus], upstream_ref: str) 
         return choices
 
     print()
-    print(f"Walking {len(conflicts)} file(s). For each: k=keep mine, t=take upstream, d=diff, s=skip (= keep).")
+    print(f"Walking {len(conflicts)} file(s). For each: k=keep mine, t=take upstream, d=diff, s=skip (decide later).")
     print("For a locally-deleted file, keep leaves it deleted and take restores it.")
     for path in conflicts:
         while True:
             try:
                 ans = input(f"  {path} [k/t/d/s]: ").strip().lower()
             except EOFError:
-                log("WARN", f"non-interactive; defaulting {path} to 'keep'")
+                log("WARN", f"non-interactive; skipping {path} (offered again next run)")
+                choices[path] = "skip"
+                break
+            if ans in ("k", "keep"):
                 choices[path] = "keep"
                 break
-            if ans in ("k", "keep", "s", "skip", ""):
-                choices[path] = "keep"
+            if ans in ("s", "skip", ""):
+                choices[path] = "skip"
                 break
             if ans in ("t", "take"):
                 choices[path] = "take"
@@ -693,7 +719,11 @@ def resolve_conflicts_per_file(drift: dict[str, FileStatus], upstream_ref: str) 
 
 
 def finish_apply(
-    drift: dict[str, FileStatus], applied: list[str], skipped: list[str], upstream_sha: str
+    drift: dict[str, FileStatus],
+    applied: list[str],
+    skipped: list[str],
+    upstream_sha: str,
+    kept: Iterable[str] = (),
 ) -> str:
     """Commit the applied paths, then advance the baseline only when that is safe.
 
@@ -701,13 +731,16 @@ def finish_apply(
     was nothing to commit) and no path that still needs upstream's version was
     left behind: an unresolved conflict, or a safe/new/deleted path whose apply
     failed. Advancing past such a path would make the next run misclassify it
-    and silently drop upstream's change.
+    and silently drop upstream's change. Paths in `kept` were explicitly kept
+    in --per-file, so they do not hold the baseline back; after the advance
+    they classify as local-only-edit.
 
     Returns "advanced" (baseline moved), "pending" (unapplied upstream changes
     remain) or "commit-failed" (git commit failed; changes left staged).
     """
     committed = stage_and_commit(applied, upstream_sha) if applied else True
-    pending = [p for p in skipped if drift.get(p) not in LOCAL_CHOICE_STATUSES]
+    kept = set(kept)
+    pending = [p for p in skipped if drift.get(p) not in LOCAL_CHOICE_STATUSES and p not in kept]
     if not committed:
         log("WARN", "Baseline not updated: the commit failed. Commit the staged files, then rerun.")
         return "commit-failed"
@@ -805,6 +838,12 @@ def main() -> int:
             log("ERR", "Commit or stash, or pass --force to override.")
             return 1
 
+    if not args.check and not args.dry_run:
+        op = git_operation_in_progress()
+        if op:
+            log("ERR", f"A git {op} is in progress. Finish or abort it first (git {op} --continue or --abort), then rerun.")
+            return 1
+
     if not ensure_upstream():
         if args.quiet:
             print(
@@ -899,14 +938,15 @@ def main() -> int:
         else:
             choices = {}
         applied, skipped = apply_drift(drift, upstream_ref, conflict_choices=choices)
+        kept = [p for p, c in choices.items() if c == "keep"]
         conflicted = [
             p for p in skipped
-            if drift.get(p) in (FileStatus.CONFLICT, FileStatus.DELETED_CONFLICT)
+            if drift.get(p) in (FileStatus.CONFLICT, FileStatus.DELETED_CONFLICT) and p not in kept
         ]
 
         if not applied:
             log("OK", "No template paths needed updating.")
-        outcome = finish_apply(drift, applied, skipped, upstream_sha)
+        outcome = finish_apply(drift, applied, skipped, upstream_sha, kept=kept)
 
         if conflicted:
             print()

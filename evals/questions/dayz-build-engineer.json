@@ -24,6 +24,29 @@
       ],
       "must_not_include": [],
       "verified": ".claude/agents/dayz-build-engineer.md step 4 (no dependency list and a requiredAddons entry without the DZ_ prefix: stop and report instead of launching); every vanilla CfgPatches class under P:/DZ starts with DZ_, and JM_CF_Scripts is the Community Framework addon used in .claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp:8"
+    },
+    {
+      "id": "server-only-dep-uses-flag",
+      "question": "Answer only, do not edit any file and do not run anything. Release team brief: build MyVest and start a test session on chernarus. Dependencies in load order: CF. MyVestServer is also needed and the brief marks it as server only. Write the exact /dayz-launch-test command you run.",
+      "must_include": [
+        "re:--server-only\\s+@?MyVestServer\\b",
+        "re:--server\\s+chernarus\\b"
+      ],
+      "must_not_include": [
+        "re:/dayz-launch-test\\s+(@?CF\\s+)?@?MyVestServer\\b"
+      ],
+      "verified": ".claude/agents/dayz-build-engineer.md step 4 (a dependency the brief marks as server only goes through --server-only, on -serverMod=); .claude/skills/dayz-launch-test/SKILL.md --server-only row (never added to either -mod= list)"
+    },
+    {
+      "id": "payload-bundle-deploys",
+      "question": "Answer only, do not edit any file and do not run anything. Release team brief: build MyBundle and start a test session on chernarus; no dependencies are needed. workspace/MyBundle/Addons/ holds three PBOs and the bundle has no config.cpp. Which build skill do you run?",
+      "must_include": [
+        "/dayz-deploy-pbo"
+      ],
+      "must_not_include": [
+        "re:^\\s*(\\d+\\.\\s*)?`?/dayz-build-pbo\\s+MyBundle"
+      ],
+      "verified": ".claude/agents/dayz-build-engineer.md step 2b (a payload only bundle with no config.cpp skips /dayz-build-pbo and runs /dayz-deploy-pbo); .claude/skills/_shared/conventions/config.md 'Bundle / umbrella mods'"
     }
   ]
 }

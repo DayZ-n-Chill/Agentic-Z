@@ -73,6 +73,43 @@ def test_execute_launches_import_after_its_deps(env_ok, runs, tmp_path):
     assert launch[2:] == ["CF", "Dabs", "M", "--server", "chernarus"]
 
 
+def _cf_source(folder: Path) -> Path:
+    folder.mkdir(parents=True)
+    (folder / "config.cpp").write_text(
+        'class CfgPatches { class M { requiredAddons[] = {"DZ_Data", "JM_CF_Scripts"}; }; };\n', encoding="utf-8"
+    )
+    return folder
+
+
+def test_import_launch_without_deps_refuses(env_ok, runs, tmp_path, capsys):
+    src = _cf_source(tmp_path / "src")
+    rc = plan.main(
+        ["--mod", "M", "--import-from", str(src), "--no-scaffold", "--server", "chernarus", "--launch", "--execute"],
+        project=tmp_path,
+    )
+    assert rc == 2
+    assert runs["argv"] == []
+    assert "JM_CF_Scripts" in capsys.readouterr().err
+
+
+def test_existing_mod_launch_without_deps_refuses(env_ok, runs, tmp_path, capsys):
+    _cf_source(tmp_path / "workspace" / "M")
+    rc = plan.main(["--mod", "M", "--server", "chernarus", "--launch"], project=tmp_path)
+    assert rc == 2
+    assert "JM_CF_Scripts" in capsys.readouterr().err
+
+
+def test_import_launch_with_deps_runs(env_ok, runs, tmp_path):
+    src = _cf_source(tmp_path / "src")
+    rc = plan.main(
+        ["--mod", "M", "--import-from", str(src), "--no-scaffold", "--server", "chernarus", "--launch",
+         "--deps", "CF", "--execute"],
+        project=tmp_path,
+    )
+    assert rc == 0
+    assert runs["argv"][-1][2:] == ["CF", "M", "--server", "chernarus"]
+
+
 def test_deps_without_launch_is_a_usage_error():
     with pytest.raises(SystemExit) as exc:
         plan.parse_args(["--mod", "M", "--server", "chernarus", "--deps", "CF"])

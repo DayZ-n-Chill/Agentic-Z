@@ -362,3 +362,70 @@ def test_the_real_capture_is_the_default():
     rt = gate.real_runtime()
     assert rt.capture is visual.capture_window
     assert sys.platform != "win32" or callable(visual.capture_window)
+
+
+class _NoShcore:
+    def SetProcessDpiAwareness(self, level):
+        raise OSError("no shcore")
+
+
+class _FakeUser32:
+    """Just enough of user32 for capture_window: one visible client window."""
+
+    def __init__(self, pid: int, switch_works: bool):
+        self.pid, self.switch_works, self.front = pid, switch_works, 1
+
+    def SetProcessDPIAware(self):
+        return 1
+
+    def EnumWindows(self, callback, _):
+        callback(42, 0)
+        return 1
+
+    def GetWindowThreadProcessId(self, hwnd, out):
+        out._obj.value = self.pid
+        return 1
+
+    def IsWindowVisible(self, hwnd):
+        return 1
+
+    def GetClientRect(self, hwnd, rect):
+        rect._obj.right, rect._obj.bottom = 64, 48
+        return 1
+
+    def IsIconic(self, hwnd):
+        return 0
+
+    def GetForegroundWindow(self):
+        return self.front
+
+    def SetForegroundWindow(self, hwnd):
+        if self.switch_works:
+            self.front = hwnd
+        return int(self.switch_works)
+
+    def ClientToScreen(self, hwnd, point):
+        return 1
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="capture_window is Windows only")
+@pytest.mark.parametrize("switch_works", [False, True])
+def test_capture_refuses_when_another_window_stays_in_front(monkeypatch, tmp_path, switch_works):
+    import ctypes
+
+    fake = _FakeUser32(222, switch_works)
+    monkeypatch.setattr(ctypes.windll, "user32", fake, raising=False)
+    monkeypatch.setattr(ctypes.windll, "shcore", _NoShcore(), raising=False)
+    monkeypatch.setattr(visual.time, "sleep", lambda s: None)
+    grabbed = []
+    import PIL.ImageGrab
+
+    monkeypatch.setattr(PIL.ImageGrab, "grab", lambda bbox, all_screens: grabbed.append(bbox) or Image.new("RGB", (64, 48)))
+    if switch_works:
+        visual.capture_window(222, tmp_path / "hud.png")
+        assert grabbed == [(0, 0, 64, 48)] and (tmp_path / "hud.png").exists()
+    else:
+        with pytest.raises(visual.VisualError, match="could not be brought to the front"):
+            visual.capture_window(222, tmp_path / "hud.png")
+        assert grabbed == []  # nothing else on screen was copied
+
