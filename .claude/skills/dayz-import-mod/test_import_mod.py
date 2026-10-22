@@ -205,6 +205,7 @@ def test_author_flag_reaches_resolve_author(tmp_path, monkeypatch):
     ("https://github.com/Owner/MyMod.git", ("https://github.com/Owner/MyMod.git", "MyMod", None)),
     ("github.com/Owner/MyMod/", ("https://github.com/Owner/MyMod.git", "MyMod", None)),
     ("https://www.github.com/Owner/MyMod/tree/dev", ("https://github.com/Owner/MyMod.git", "MyMod", "dev")),
+    ("https://github.com/Owner/MyMod/tree/feature/x", ("https://github.com/Owner/MyMod.git", "MyMod", "feature/x")),
     ("https://github.com/Owner/MyMod?tab=readme", ("https://github.com/Owner/MyMod.git", "MyMod", None)),
     ("https://gitlab.com/group/sub/MyMod.git", ("https://gitlab.com/group/sub/MyMod.git", "MyMod", None)),
     ("git@github.com:Owner/MyMod.git", ("git@github.com:Owner/MyMod.git", "MyMod", None)),

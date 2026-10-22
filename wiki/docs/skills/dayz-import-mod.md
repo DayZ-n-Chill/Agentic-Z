@@ -59,7 +59,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 `--source` also takes a git link:
 
 - `https://github.com/<owner>/<repo>`, with or without `.git` or `https://`
-- `https://github.com/<owner>/<repo>/tree/<branch>` clones that branch
+- `https://github.com/<owner>/<repo>/tree/<branch>` clones that branch (a branch name with a slash, such as feature/x, works)
 - any other `https://.../<repo>.git` or `git@host:.../<repo>.git` remote
 
 The mod name comes from the repo name (or `--name`). The repo is cloned with `git` straight into `workspace/<ModName>/` as a real folder, because a clone has no other home on disk. It then gets the same `P:\<ModName>\` junction, project cache update and scaffold check as a folder import, and accepted pieces are written into the clone. The same refusals apply before anything is cloned (the name, an existing `workspace/<Name>/`, a `P:\<Name>\` that points elsewhere). If a later step refuses (a non-TTY run with missing pieces and no `--scaffold` or `--no-scaffold`, or the junction fails), the clone is deleted again so a retry starts clean. `git` must be on `PATH`, and a private repo needs your usual git credentials. The scaffold check looks at the repo root, so a repo that keeps the mod in a subfolder needs a folder import of that subfolder instead.

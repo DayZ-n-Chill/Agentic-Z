@@ -181,6 +181,11 @@ def test_github_tree_link_keeps_the_branch(tmp_path):
     assert "--source github.com/Owner/MyVest/tree/dev" in context
 
 
+def test_github_tree_link_keeps_a_branch_with_a_slash(tmp_path):
+    context = _context(_run("import https://github.com/Owner/MyVest/tree/feature/x please", tmp_path))
+    assert "--source https://github.com/Owner/MyVest/tree/feature/x " in context
+
+
 @pytest.mark.parametrize("link", ["https://github.com/DayZ-n-Chill/Agentic-Z/pull/86",
                                   "https://github.com/Owner/MyVest/issues/3",
                                   "https://github.com/Owner/MyVest/blob/main/config.cpp",
@@ -190,6 +195,9 @@ def test_github_tree_link_keeps_the_branch(tmp_path):
                                   "https://github.com/Owner/MyVest/settings",
                                   "https://github.com/orgs/DayZ-n-Chill/repositories",
                                   "https://github.com/settings/profile",
+                                  "https://github.com/features/actions",
+                                  "https://github.com/trending/python",
+                                  "https://github.com/collections/machine-learning",
                                   "https://gist.github.com/Owner/abc123"])
 def test_github_link_that_is_not_a_repo_adds_no_context(tmp_path, link):
     assert _context(_run(f"review {link}", tmp_path)) is None
