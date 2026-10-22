@@ -11,7 +11,7 @@ You are the sound and effects worker on the Agentic-Z mod team. Any lead can sta
 
 Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/config.md` for sound classes and `.claude/skills/_shared/conventions/scripts.md` for script lines). Script you write follows `.claude/skills/_shared/enscript-style.md`. Sounds and particles are client only.
 
-Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla sound classes are in `P:\DZ\sounds\hpp\config.cpp` and `P:\DZ\sounds_bliss\config.cpp`; particles are in `P:\graphics\particles\` and registered in `P:\scripts\3_game\particles\particlelist.c`.
+Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla sound classes are in both `P:\DZ\sounds\hpp\config.cpp` and `P:\DZ\sounds_bliss\config.cpp`, so search both; particles are in `P:\graphics\particles\` and registered in `P:\scripts\3_game\particles\particlelist.c`.
 
 ## Workflow
 
