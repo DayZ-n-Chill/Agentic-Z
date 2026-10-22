@@ -183,12 +183,12 @@ def test_github_tree_link_keeps_the_branch(tmp_path):
 
 def test_github_tree_link_keeps_a_branch_with_a_slash(tmp_path):
     context = _context(_run("import https://github.com/Owner/MyVest/tree/feature/x please", tmp_path))
-    assert "--source https://github.com/Owner/MyVest/tree/feature/x " in context
+    assert "--source https://github.com/Owner/MyVest/tree/feature/x." in context
 
 
 def test_hyphenated_repo_gets_a_valid_name(tmp_path):
     context = _context(_run("import https://github.com/salutesh/DayZ-Expansion please", tmp_path))
-    assert "--source https://github.com/salutesh/DayZ-Expansion --name DayZExpansion " in context
+    assert "--source https://github.com/salutesh/DayZ-Expansion --name DayZExpansion." in context
 
 
 def test_valid_repo_gets_no_name():
@@ -196,30 +196,66 @@ def test_valid_repo_gets_no_name():
     assert pr.name_arg("https://github.com/Owner/Mods/tree/main/MyMod") == ""
 
 
-def test_hyphenated_subfolder_is_named_after_the_subfolder():
-    assert pr.name_arg("https://github.com/Owner/Mods/tree/main/my-vest") == " --name myvest"
-    assert pr.name_arg("github.com/Owner/my-mods/tree/main/Vest") == " --name Vest"
-
-
 @pytest.mark.parametrize("link, expected", [
-    # A slash branch with no subfolder is named after the repo, not the branch's last part.
+    # A tree path of two or more segments may be all branch or branch plus subfolder;
+    # the hook cannot ask the remote, so a needed name always comes from the repo.
+    ("https://github.com/salutesh/DayZ-Expansion/tree/dev/x", " --name DayZExpansion"),
     ("https://github.com/salutesh/DayZ-Expansion/tree/feature/x", " --name DayZExpansion"),
     ("https://github.com/salutesh/DayZ-Expansion/tree/release/1.2", " --name DayZExpansion"),
     ("https://github.com/Owner/MyVest/tree/feature/x", ""),
-    # A slash branch plus a subfolder is named after the subfolder.
-    ("https://github.com/Owner/my-mods/tree/feature/x/My-Vest", " --name MyVest"),
-    ("https://github.com/Owner/my-mods/tree/feature/x/Vest", " --name Vest"),
+    ("https://github.com/Owner/MyVest/tree/dev/x", ""),
+    ("https://github.com/Owner/Mods/tree/main/my-vest", " --name Mods"),
+    ("https://github.com/Owner/my-mods/tree/main/Vest", " --name mymods"),
+    ("https://github.com/Owner/my-mods/tree/feature/x/My-Vest", " --name mymods"),
+    ("https://github.com/Owner/my-mods/tree/main/Pack/9Vest", " --name mymods"),
     # A one-segment branch is never mistaken for the name.
     ("https://github.com/Owner/my-mods/tree/dev", " --name mymods"),
-    ("https://github.com/Owner/my-mods/tree/main/Pack/9Vest", " --name Vest"),
+    ("https://github.com/Owner/9-/tree/dev/x", " --name MyMod"),
 ])
-def test_name_comes_from_the_subfolder_or_the_repo(link, expected):
+def test_ambiguous_tree_path_is_named_after_the_repo(link, expected):
     assert pr.name_arg(link) == expected
+
+
+def test_hyphenated_repo_on_an_unlisted_slash_branch_gets_the_repo_name(tmp_path):
+    # dev/x may be a real branch, so the name must not be taken from x.
+    context = _context(_run("import https://github.com/salutesh/DayZ-Expansion/tree/dev/x please", tmp_path))
+    assert "--source https://github.com/salutesh/DayZ-Expansion/tree/dev/x --name DayZExpansion." in context
+    assert "--name x" not in context
+    assert "fits whichever part turns out to be the branch" in context
+
+
+def test_repo_link_context_says_it_clones_into_workspace(tmp_path):
+    context = _context(_run("import https://github.com/Owner/MyVest please", tmp_path))
+    assert "clones the repo into workspace\\<Name>\\." in context
+    assert ".imports" not in context
+
+
+def test_one_segment_tree_link_context_says_it_clones_into_workspace(tmp_path):
+    context = _context(_run("import https://github.com/Owner/MyVest/tree/dev please", tmp_path))
+    assert "clones the repo into workspace\\<Name>\\." in context
+    assert ".imports" not in context
+
+
+def test_subfolder_tree_link_context_names_the_imports_clone(tmp_path):
+    context = _context(_run("import https://github.com/Owner/Mods/tree/main/MyVest please", tmp_path))
+    assert "git ls-remote" in context
+    assert "clones the whole repo into .imports\\<owner>__<repo>__<branch>\\" in context
+    assert "links workspace\\<Name> to that subfolder" in context
+    assert "If the whole path is the branch, it clones the repo into workspace\\<Name>\\." in context
+    assert "fits whichever part" not in context  # no --name suggested, so no note about it
+
+
+def test_context_matches_import_mod_layout():
+    import_mod = (Path(__file__).resolve().parents[1] / ".claude" / "skills" / "dayz-import-mod"
+                  / "import_mod.py").read_text(encoding="utf-8")
+    assert 'IMPORTS = PROJECT_DIR / ".imports"' in import_mod
+    assert '"__".join(' in import_mod and "(owner, src.repo, *(src.branch" in import_mod
+    assert '"ls-remote", "--heads"' in import_mod
 
 
 def test_hyphenated_repo_on_a_slash_branch_gets_the_repo_name(tmp_path):
     context = _context(_run("import https://github.com/salutesh/DayZ-Expansion/tree/feature/x please", tmp_path))
-    assert "--source https://github.com/salutesh/DayZ-Expansion/tree/feature/x --name DayZExpansion " in context
+    assert "--source https://github.com/salutesh/DayZ-Expansion/tree/feature/x --name DayZExpansion." in context
 
 
 def test_mod_name_rule_matches_import_mod():
@@ -322,4 +358,4 @@ def test_hook_is_registered_for_plugin_and_clone(config, root):
 
 
 def test_suggested_name_is_cleaned_to_ascii():
-    assert pr.name_arg("https://github.com/Owner/my-mods/tree/main/Vést") == " --name Vst"
+    assert pr.name_arg("https://github.com/Owner/my-modés") == " --name mymods"

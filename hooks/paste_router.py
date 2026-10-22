@@ -5,7 +5,10 @@
   - A types.xml chunk (<type name=...> blocks): checked here, then merged with
     /dayz-edit-types --merge.
   - A Figma link: the Figma pipeline.
-  - A GitHub link: /dayz-import-mod --source <link> clones it into workspace/.
+  - A GitHub link: /dayz-import-mod --source <link>. A repo link is cloned
+    into workspace/<Name>/; a tree link to a subfolder is cloned into
+    .imports/<owner>__<repo>__<branch>/ with workspace/<Name> linked to the
+    subfolder.
   - A Steam Workshop link: refused (packed, binarized, often protected content).
   - A screenshot: a short rule picks the ui, asset or script specialist.
 
@@ -154,9 +157,17 @@ WORKSHOP_CONTEXT = (
 )
 GITHUB_CONTEXT = (
     "Agentic-Z paste-in: the prompt holds a GitHub link ({link}). If it is a DayZ mod the user wants to work on, "
-    "import it with /dayz-import-mod --source {link}{name_arg} (clones it into workspace\\, links P:\\ and "
-    "checks the standard pieces)."
+    "import it with /dayz-import-mod --source {link}{name_arg}. {where} It then links P:\\<Name> and checks "
+    "the standard pieces."
 )
+# Where import_mod.py puts each kind of link.
+REPO_WHERE = "It clones the repo into workspace\\<Name>\\."
+TREE_WHERE = (
+    "It asks the remote (git ls-remote) which part of the tree path is the branch. If the whole path is the "
+    "branch, it clones the repo into workspace\\<Name>\\. If a subfolder follows the branch, it clones the whole "
+    "repo into .imports\\<owner>__<repo>__<branch>\\ and links workspace\\<Name> to that subfolder."
+)
+REPO_NAME_NOTE = " The --name comes from the repo, so it fits whichever part turns out to be the branch."
 SCREENSHOT_CONTEXT = (
     "Agentic-Z paste-in: the prompt has a screenshot. If it shows a DayZ bug, name what is wrong on screen and "
     "route by it: a widget, menu, HUD or text problem to dayz-ui-specialist; a wrong, missing or stretched "
@@ -165,36 +176,37 @@ SCREENSHOT_CONTEXT = (
 )
 
 
-# First segments that start a branch with a slash (feature/x, release/1.2).
-# The hook cannot ask the remote which part of a tree path is the branch, so a
-# path that starts with one of these is read as that two-segment branch.
-BRANCH_PREFIXES = {
-    "feature", "features", "feat", "fix", "fixes", "bugfix", "hotfix", "release", "releases",
-    "chore", "refactor", "docs", "test", "tests", "experiment", "experimental", "wip", "user", "users",
-}
-
-
-def tree_subfolder(tree: list[str]) -> list[str]:
-    """The subfolder segments of a /tree/ path, or [] when the whole path is
-    the branch (tree/dev, tree/feature/x)."""
-    branch_len = 2 if len(tree) >= 2 and tree[0].lower() in BRANCH_PREFIXES else 1
-    return tree[branch_len:]
+def tree_path(link: str) -> tuple[str, list[str]]:
+    """The repo name and the segments after /tree/ ([] for a repo link)."""
+    path = re.sub(r"(?i)^(?:https?://)?(?:www\.)?github\.com/", "", link).rstrip("/").split("/")
+    repo = re.sub(r"(?i)\.git$", "", path[1])
+    return repo, path[3:] if len(path) > 3 and path[2].lower() == "tree" else []
 
 
 def name_arg(link: str) -> str:
-    """' --name <Valid>' when the name import_mod.py derives from the link fails
-    its rule (DayZ-Expansion has a hyphen), else ''. The name comes from the
-    subfolder when the link has one (tree/main/MyMod), else the repo name, so
-    a slash branch with no subfolder (tree/feature/x) is named after the repo."""
-    path = re.sub(r"(?i)^(?:https?://)?(?:www\.)?github\.com/", "", link).rstrip("/").split("/")
-    repo = re.sub(r"(?i)\.git$", "", path[1])
-    tree = path[3:] if len(path) > 3 and path[2].lower() == "tree" else []
-    subfolder = tree_subfolder(tree)
-    name = subfolder[-1] if subfolder else repo
-    if MOD_NAME_RE.match(name) and MOD_NAME_RE.match(repo):
+    """' --name <Valid>' when a name import_mod.py could derive from the link
+    fails its rule (DayZ-Expansion has a hyphen), else ''. A repo link or a
+    one-segment tree link is named after the repo. A tree path of two or more
+    segments is ambiguous: import_mod.py asks the remote which part is the
+    branch and names the mod after the repo when the whole path is a branch
+    (dev/x), or after the last segment when a subfolder follows (main/MyMod).
+    The hook cannot ask, so when either name fails the rule it suggests the
+    repo name cleaned to the rule, which is right for both readings."""
+    repo, tree = tree_path(link)
+    names = [repo] + ([tree[-1]] if len(tree) >= 2 else [])
+    if all(MOD_NAME_RE.match(n) for n in names):
         return ""
-    valid = re.sub(r"^[^A-Za-z]+", "", re.sub(r"[^A-Za-z0-9_]", "", name))[:64] or "MyMod"
+    valid = re.sub(r"^[^A-Za-z]+", "", re.sub(r"[^A-Za-z0-9_]", "", repo))[:64] or "MyMod"
     return f" --name {valid}"
+
+
+def github_context(link: str) -> str:
+    arg = name_arg(link)
+    if len(tree_path(link)[1]) >= 2:
+        where = TREE_WHERE + (REPO_NAME_NOTE if arg else "")
+    else:
+        where = REPO_WHERE
+    return GITHUB_CONTEXT.format(link=link, name_arg=arg, where=where)
 
 
 def build_context(prompt: str, project: Path) -> Optional[str]:
@@ -205,7 +217,7 @@ def build_context(prompt: str, project: Path) -> Optional[str]:
         parts.append(WORKSHOP_CONTEXT.format(link=workshop.group(0)))
     github = GITHUB_RE.search(prompt)
     if github:
-        parts.append(GITHUB_CONTEXT.format(link=github.group(0), name_arg=name_arg(github.group(0))))
+        parts.append(github_context(github.group(0)))
     if FIGMA_RE.search(prompt):
         parts.append(FIGMA_CONTEXT)
     # The types and log detectors load other modules; one failing must not drop the rest.
