@@ -48,12 +48,12 @@
     "total": 5
   },
   "dayz-asset-specialist": {
-    "score": 5,
-    "total": 5
+    "score": 7,
+    "total": 7
   },
   "dayz-layout-validator": {
-    "score": 6,
-    "total": 6
+    "score": 8,
+    "total": 8
   },
   "dayz-ui-specialist": {
     "score": 5,
@@ -80,11 +80,15 @@
     "total": 5
   },
   "dayz-build-engineer": {
-    "score": 2,
-    "total": 2
+    "score": 4,
+    "total": 4
   },
   "dayz-docs-writer": {
-    "score": 2,
-    "total": 2
+    "score": 4,
+    "total": 4
+  },
+  "agent-creator": {
+    "score": 5,
+    "total": 5
   }
 }

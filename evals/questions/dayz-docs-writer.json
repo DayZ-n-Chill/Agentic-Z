@@ -26,6 +26,28 @@
         "re:\\A\\W*yes\\b"
       ],
       "verified": ".claude/skills/dayz-release-pack/release_pack.py:230 (private-key-in-mod warning text); .claude/agents/dayz-docs-writer.md 'For a release' (private-key-in-mod: report it as a release blocker)"
+    },
+    {
+      "id": "git-limited-to-mod-folder",
+      "question": "Answer only, do not edit any file and do not run anything. Release team: update the MyVest docs. The brief gives no list of changed files. MyVest lives at workspace/MyVest inside this repo, and its last release is the tag v1.0.0. Write the exact git commands you use to find what changed.",
+      "must_include": [
+        "re:git -C workspace[\\\\/]MyVest",
+        "re:--\\s+\\."
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-docs-writer.md 'Read what changed first' (git -C workspace/<ModName> status --short -- . and log --name-only <ref>..HEAD -- .; the -- . limits both to the mod folder); .claude/skills/dayz-release-pack/release_pack.py:257 to :281 (_git runs git -C on the mod folder)"
+    },
+    {
+      "id": "summary-missing-goes-in-readme",
+      "question": "Answer only, do not edit any file and do not run anything. Release team: /dayz-release-pack MyVest --version 1.1.0 printed: [WARN] summary-missing: no overview in mod.cpp and no first paragraph in README.md, so the Workshop text has a placeholder line to replace. Which file do you change to settle it, and what do you do after?",
+      "must_include": [
+        "README.md",
+        "re:\\brerun|re-run|run (it |the (skill|script|release pack) )?again"
+      ],
+      "must_not_include": [
+        "re:^(?!.*\\b(never|not|don't|do not|overwrit|regenerat|generated)\\b).*\\b(edit|write|change|replace)\\b[^.\\n]{0,60}workshop-description\\.txt"
+      ],
+      "verified": ".claude/skills/dayz-release-pack/release_pack.py:210 to :217 (summary from mod.cpp overview or the README's first paragraph; summary-missing text); .claude/agents/dayz-docs-writer.md 'For a release' summary-missing bullet (write it into README.md and rerun; never edit workshop-description.txt)"
     }
   ]
 }

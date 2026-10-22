@@ -35,3 +35,4 @@ To the lead that called you:
 - The fix for dayz-object-builder (Geometry and mass changes) and the config lines for dayz-config-specialist, each marked with who owns it.
 - The in-game test steps: drop, throw and shoot, with the expected result of each.
 - Anything you couldn't check, such as a vanilla model's mass that only an in-game reading can give.
+- A physics lesson worth keeping, if you found one, in one sentence with its evidence, for the caller to save with `/dayz-record-correction` into `.claude/skills/_shared/physics/`. Leave it out when there is none.

@@ -58,6 +58,33 @@
         "re:\\A\\W*yes\\b"
       ],
       "verified": ".claude/agents/dayz-asset-specialist.md workflow step 2; .claude/skills/_shared/textures/suffixes-and-sizes.md:29 (every side a power of two)"
+    },
+    {
+      "id": "refused-size-reruns-the-rest",
+      "question": "Answer only, do not edit any file and do not run anything. Art team: pack workspace/MyVest/data/vest_co.png, vest_nohq.png and vest_smdi.png. /dayz-pack-texture refused vest_smdi.png because it is 300 x 256 pixels, and it packed none of the three. What do you do next, and what do you report?",
+      "must_include": [
+        "re:(\\brun|\\brerun|re-run|again)[^.\\n]*(vest_co|vest_nohq|other two|remaining|the rest|without vest_smdi)|(vest_co|vest_nohq|other two|remaining|the rest|without vest_smdi)[^.\\n]*(\\brun|\\brerun|re-run|again)",
+        "vest_smdi",
+        "re:art lead|blocked"
+      ],
+      "must_not_include": [
+        "re:\\bI (have |will |'ll )?resized\\b"
+      ],
+      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 2(b) and 2(c) (one refused file leaves the batch unpacked; take it out and rerun with the rest, report it as blocked); .claude/skills/dayz-pack-texture/SKILL.md 'Nothing is converted until every input passes' and the power of two refusal"
+    },
+    {
+      "id": "smdi-is-specular",
+      "question": "Answer only, do not edit any file. What does a texture with the _smdi suffix hold, and what do its green and blue channels control?",
+      "must_include": [
+        "re:specular",
+        "re:green",
+        "re:blue",
+        "re:gloss"
+      ],
+      "must_not_include": [
+        "re:_smdi[^\\n]{0,40}/\\s*mask\\b"
+      ],
+      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 1 (_smdi is specular: green is highlight strength, blue is gloss); .claude/skills/_shared/textures/suffixes-and-sizes.md _smdi row"
     }
   ]
 }
