@@ -52,7 +52,7 @@ scripts\dev\evals.bat --agent dayz-config-specialist
 scripts\dev\evals.bat --baseline
 ```
 
-`--dry-run` checks every question file and lists the calls without asking anything. A real run sends each question to `claude -p --agent <name>` with read-only tools (`Read`, `Glob`, `Grep` and the search tools). `--allowedTools` only grants tools, so the runner also removes `Edit`, `Write`, `MultiEdit`, `NotebookEdit`, `Bash` and `PowerShell` with `--disallowedTools`. The agent can look things up on `P:\` but cannot edit or run commands. It writes the answers and scores to `output/evals/results-<time>.json` (or `--out`). A run costs tokens: one agent session per question.
+`--dry-run` checks every question file and lists the calls without asking anything. A real run sends each question to `claude -p --agent <name>` with read-only tools (`Read`, `Glob`, `Grep` and the search tools). `--allowedTools` only grants tools, so the runner also removes `Edit`, `Write`, `MultiEdit`, `NotebookEdit`, `Bash`, `PowerShell`, `Agent`, `Task`, `WebFetch` and `WebSearch` with `--disallowedTools`. The agent can look things up on `P:\` but cannot edit, run commands, hand the question to a subagent or answer from the web. It writes the answers and scores to `output/evals/results-<time>.json` (or `--out`). A run costs tokens: one agent session per question.
 
 Exit codes: `0` passed, `1` a score went below the baseline, `2` a question file is invalid or an agent name is unknown.
 
@@ -67,4 +67,4 @@ Answers vary a little from run to run. When a question fails once and passes on 
 
 ## Adding questions
 
-Every agent should get its own question file, and every new specialist ships with one. Add five questions at a time, each checked on `P:\` first and recorded in `verified`. Run the new questions, then record the baseline with `--agent <name> --update-baseline` and commit it with the question file. The unit tests in `scripts/dev/test_run_evals.py` check that every question file is valid; they never call `claude`.
+Every agent should get its own question file, and every new specialist ships with one. 18 of the 30 agents have one so far; `evals/README.md` lists the ones still missing. Add five questions at a time, each checked on `P:\` first and recorded in `verified`. Run the new questions, then record the baseline with `--agent <name> --update-baseline` and commit it with the question file. The unit tests in `scripts/dev/test_run_evals.py` check that every question file is valid; they never call `claude`.

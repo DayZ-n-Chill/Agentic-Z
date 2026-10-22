@@ -4,6 +4,14 @@ How Enforce Script plays, loops, fades and stops a sound set, and how to clean i
 
 Sounds are client only (Tier 2, `conventions/scripts.md`, "Client and server ownership"). PlaySoundSet, PlaySoundSetLoop and StopSoundSet do nothing on a dedicated server (object.c:1249, 1316). The memory point helpers (lines 1279 to 1311) have no server check, so put them behind `!GetGame().IsDedicatedServer()` yourself. The code around any helper (timers, fields, particles) needs the check too.
 
+## Contents
+
+- [The helpers on every Object](#the-helpers-on-every-object)
+- [SEffectManager](#seffectmanager)
+- [EffectSound](#effectsound)
+- [Worked example: start, loop and stop](#worked-example-start-loop-and-stop)
+- [Starting a sound from the server](#starting-a-sound-from-the-server)
+
 ## The helpers on every Object
 
 `P:\scripts\3_game\entities\object.c`:

@@ -2,6 +2,19 @@
 
 Built in types, classes, enums, casting, parameters, arrays, maps, sets and templates. Every fact cites the vanilla file on `P:\scripts\` it was checked against. Line numbers are from game storage version 144 (`P:\scripts\3_game\global\game.c:5`); after a game update, search for the name if a line has moved.
 
+## Contents
+
+- [Built in types](#built-in-types)
+- [Type inference with `auto`](#type-inference-with-auto)
+- [Classes and members](#classes-and-members)
+- [Enums](#enums)
+- [Casting](#casting)
+- [Parameters](#parameters)
+- [Static arrays](#static-arrays)
+- [Dynamic containers](#dynamic-containers)
+- [Templates](#templates)
+- [Strings](#strings)
+
 ## Built in types
 
 | Type | What it is | Source |

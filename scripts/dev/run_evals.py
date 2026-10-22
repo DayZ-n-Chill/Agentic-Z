@@ -28,14 +28,16 @@ RESULTS_DIR = REPO / "output" / "evals"
 # --allowedTools only grants these without a prompt; it does not take the other
 # tools away. The agent keeps its own tools (Edit and Write for the specialists)
 # and the project's allow rules, so the editing and shell tools are also
-# removed with --disallowedTools. Then an eval run cannot edit the repo.
+# removed with --disallowedTools. Then an eval run cannot edit the repo. The
+# Agent (Task) tool goes too, since a subagent brings its own edit and shell
+# tools, and so do the web tools: an answer must come from P:\, not the web.
 READ_ONLY_TOOLS = [
     "Read", "Glob", "Grep",
     "mcp__dayz-rag__search_dayz_source", "mcp__plugin_agentic-z_dayz-rag__search_dayz_source",
     "mcp__dayz-rag__get_dayz_file", "mcp__plugin_agentic-z_dayz-rag__get_dayz_file",
     "mcp__dayz-rag__list_indexed_sources", "mcp__plugin_agentic-z_dayz-rag__list_indexed_sources",
 ]
-DENIED_TOOLS = ["Edit", "Write", "MultiEdit", "NotebookEdit", "Bash", "PowerShell"]
+DENIED_TOOLS = ["Edit", "Write", "MultiEdit", "NotebookEdit", "Bash", "PowerShell", "Agent", "Task", "WebFetch", "WebSearch"]
 
 REGEX_PREFIX = "re:"
 

@@ -125,7 +125,7 @@ def test_command_removes_editing_and_shell_tools():
     """--allowedTools alone does not take an agent's own Edit and Write away."""
     cmd = run_evals.build_command("claude", "dayz-config-specialist", model="opus")
     denied = cmd[cmd.index("--disallowedTools") + 1].split(",")
-    for tool in ("Edit", "Write", "MultiEdit", "NotebookEdit", "Bash", "PowerShell"):
+    for tool in ("Edit", "Write", "MultiEdit", "NotebookEdit", "Bash", "PowerShell", "Agent", "Task", "WebFetch", "WebSearch"):
         assert tool in denied
     allowed = cmd[cmd.index("--allowedTools") + 1].split(",")
     assert not set(allowed) & set(denied)

@@ -8,6 +8,14 @@ Dabs Framework is a third party mod by InclementDab, not part of the game. Every
 
 ---
 
+## Contents
+
+- [Depending on it](#depending-on-it)
+- [Attributes](#attributes)
+- [MVC: ScriptView and ViewController](#mvc-scriptview-and-viewcontroller)
+- [ScriptViewMenu](#scriptviewmenu)
+- [Traps](#traps)
+
 ## Depending on it
 
 - `CfgPatches` class: `DF_Scripts`, which itself requires `DZ_Scripts` and `DF_GUI`. Add `"DF_Scripts"` to your `requiredAddons[]`.

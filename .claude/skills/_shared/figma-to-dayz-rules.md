@@ -4,6 +4,21 @@ Canonical translation rules for the Figma-to-DayZ pipeline (`figma-node-normaliz
 
 For the exhaustive widget catalog and property reference, see [`enscript/references/gui_layout.md`](enscript/references/gui_layout.md). This doc covers translation rules only.
 
+## Contents
+
+1. [The format is not XML](#1-the-format-is-not-xml)
+2. [Format cheat sheet](#2-format-cheat-sheet)
+3. [Figma to DayZ widget mapping](#3-figma-to-dayz-widget-mapping)
+4. [Naming prefix taxonomy](#4-naming-prefix-taxonomy)
+5. [Layout translation: anchors first, spacers only when needed](#5-layout-translation-anchors-first-spacers-only-when-needed)
+6. [Coordinate translation](#6-coordinate-translation)
+7. [Color translation](#7-color-translation)
+8. [Font translation](#8-font-translation)
+9. [Hard NO list](#9-hard-no-list)
+10. [Worked example](#10-worked-example)
+
+Then [Agent usage](#agent-usage): which agent reads which section.
+
 ---
 
 ## 1. The format is not XML
@@ -25,7 +40,7 @@ WidgetClassNameClass WidgetName {
 Three rules that cover the syntax:
 
 - Class names always end in `Class`. `FrameWidget` is wrong, `FrameWidgetClass` is right.
-- Properties are bare key-value pairs on their own line. No `=`, no `:`, no semicolons, no quoted attribute values. The value follows the key separated by a space.
+- Properties are key-value pairs on their own line. No `=`, no `:`, no semicolons. The value follows the key separated by a space. Values are bare, except text strings (`text "..."`) and quoted multi-word keys.
 - The child `{ }` block goes inside the parent's braces, AFTER all of the parent's own properties. A widget may have multiple child blocks (the second is conventionally for `ScriptParamsClass` parameter blocks).
 
 Multi-word property keys are quoted, values still are not:

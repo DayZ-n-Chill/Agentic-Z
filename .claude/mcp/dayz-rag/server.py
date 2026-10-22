@@ -114,18 +114,20 @@ def _manifest_mtime() -> Optional[int]:
 
 
 def _sync_with_index() -> None:
-    """Forget cached answers, the open table and the build time once the index is rebuilt.
+    """Forget cached answers, the open table, the build time and the embed model once the index is rebuilt.
 
     The indexer writes manifest.json last, so a changed manifest mtime means a
-    new index. Checking it costs one stat per search.
+    new index. Checking it costs one stat per search. A --full rebuild may use a
+    different VOYAGE_MODEL, so the query model is read again from config.json.
     """
-    global _manifest_stamp, _table, _index_built_at, _file_hashes
+    global _manifest_stamp, _table, _index_built_at, _file_hashes, _embed_model
     stamp = _manifest_mtime()
     if stamp != _manifest_stamp:
         _search_cache.clear()
         _table = None
         _index_built_at = None
         _file_hashes = None
+        _embed_model = None
         _manifest_stamp = stamp
 
 
@@ -142,14 +144,13 @@ def _get_file_hashes() -> dict:
 
 
 def _get_client():
-    global _voyage_client, _embed_model
+    global _voyage_client
     if _voyage_client is None:
         import voyageai
         api_key = voyage_common.load_api_key()
         # timeout is mandatory: without it a network hang never raises, so the
         # retry loop in _embed_query never fires and searches hang forever (#51)
         _voyage_client = voyageai.Client(api_key=api_key, timeout=30)
-        _embed_model = _load_embed_model_name()
     return _voyage_client
 
 
@@ -158,7 +159,10 @@ QUERY_ATTEMPTS = 4
 
 def _embed_query(text: str) -> list[float]:
     """Embed a search query via Voyage, retrying transient Voyage errors with backoff."""
+    global _embed_model
     client = _get_client()
+    if _embed_model is None:  # first query, or the index was rebuilt (see _sync_with_index)
+        _embed_model = _load_embed_model_name()
     text = text or " "
     delay = 1.0
     for attempt in range(QUERY_ATTEMPTS):

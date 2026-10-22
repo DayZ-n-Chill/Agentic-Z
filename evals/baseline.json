@@ -54,5 +54,21 @@
   "dayz-layout-validator": {
     "score": 5,
     "total": 5
+  },
+  "dayz-ui-specialist": {
+    "score": 5,
+    "total": 5
+  },
+  "dayz-map-specialist": {
+    "score": 5,
+    "total": 5
+  },
+  "dayz-workbench-specialist": {
+    "score": 5,
+    "total": 5
+  },
+  "dayz-server-admin": {
+    "score": 3,
+    "total": 5
   }
 }

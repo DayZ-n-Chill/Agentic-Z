@@ -93,9 +93,16 @@ def log_context(prompt: str, project: Path) -> str:
 def types_context(prompt: str) -> str:
     te = _load("agentic_z_paste_types", TYPES_EDIT)
     starts = [i for i in (prompt.find("<?xml"), prompt.find("<types"), TYPE_CHUNK_RE.search(prompt).start()) if i >= 0]
-    start, end = min(starts), prompt.rfind(">")
+    start = min(starts)
+    # End at the last closing tag, not the last '>': prose after the paste may hold one ("merge -> chernarus").
+    ends = [prompt.rfind(tag) + len(tag) for tag in ("</types>", "</type>") if tag in prompt]
+    if not ends:  # only self-closing entries: <type name="X"/>
+        last = list(TYPE_CHUNK_RE.finditer(prompt))[-1].start()
+        close = prompt.find("/>", last)
+        ends = [close + 2 if close >= 0 else len(prompt)]
+    end = max(ends)
     try:
-        chunk = te.parse_chunk(prompt[start:end + 1])
+        chunk = te.parse_chunk(prompt[start:end])
     except Exception as e:  # ParseError, or text around the chunk
         return ("Agentic-Z paste-in: the prompt holds types.xml <type> entries, but they do not parse as XML "
                 f"({e}). Show the user the problem, or save just the <type> blocks and run /dayz-edit-types "

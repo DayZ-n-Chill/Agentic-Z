@@ -1,0 +1,51 @@
+{
+  "agent": "dayz-server-admin",
+  "questions": [
+    {
+      "id": "ce-not-in-config",
+      "question": "Answer only, do not edit any file. A guide told me to add `class CfgSpawnablesTypes { class MyMod_Canteen { nominal = 15; min = 5; }; };` to my mod's config.cpp, but the item never spawns as loot. Where do the nominal and min values for loot really go? Answer in a few lines; you do not need to search all of P:\\ to prove the class is missing.",
+      "must_include": [
+        "types.xml",
+        "re:mission"
+      ],
+      "verified": "No CfgSpawnablesTypes or CfgRandomPresence class exists in any config.cpp or script under P:/DZ or P:/scripts; the CE values are read from the mission's types.xml (CEItemProfile comments, P:/scripts/3_game/ce/centraleconomy.c:754-765)"
+    },
+    {
+      "id": "objectspawner-json",
+      "question": "Answer only, do not edit any file. I want to place fixed props on the map with the vanilla object spawner. Which cfggameplay.json key lists the spawner files, and what is the top-level key inside each spawner JSON file?",
+      "must_include": [
+        "objectSpawnersArr",
+        "re:\\bObjects\\b"
+      ],
+      "verified": "P:/scripts/3_game/cfggameplaydatajson.c:195 (ref array<string> objectSpawnersArr) and P:/scripts/3_game/objectspawner.c:95-97 (class ObjectSpawnerJson { ref array<ref ITEM_SpawnerObject> Objects; })"
+    },
+    {
+      "id": "types-restock",
+      "question": "Answer only, do not edit any file. What does the <restock> value of a types.xml entry control, and how is it different from <lifetime>?",
+      "must_include": [
+        "re:respawn",
+        "re:delet|despawn|clean"
+      ],
+      "verified": "P:/scripts/3_game/ce/centraleconomy.c:762 (lifetime: idle before an abandoned item gets deleted) and :763 (restock: idle before the item is allowed to respawn when required)"
+    },
+    {
+      "id": "spawn-not-saved",
+      "question": "Answer only, do not edit any file. My init.c spawns a temporary prop with CreateObjectEx and I do not want it saved in the server storage. Which ECE flag do I add?",
+      "must_include": [
+        "ECE_NOPERSISTENCY_WORLD"
+      ],
+      "verified": "P:/scripts/3_game/ce/centraleconomy.c:31 (const int ECE_NOPERSISTENCY_WORLD = 8388608; // do not save this object in world)"
+    },
+    {
+      "id": "mission-path-token",
+      "question": "Answer only, do not edit any file. In server script I want to open a JSON file that sits in the mission folder. What path prefix do I use?",
+      "must_include": [
+        "$mission:"
+      ],
+      "must_not_include": [
+        "$missions:"
+      ],
+      "verified": "P:/scripts/3_game/cfgbunkerbroadcasthandler.c:23 (string.Format(\"$mission:%1\", m_ConfigFilePath)) and P:/scripts/3_game/objectspawner.c:18"
+    }
+  ]
+}

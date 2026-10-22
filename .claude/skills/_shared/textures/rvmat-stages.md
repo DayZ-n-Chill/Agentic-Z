@@ -2,6 +2,15 @@
 
 What each key and stage of a DayZ `.rvmat` does, for the two shaders mod items use: Super (gear, weapons, clothing, vehicles) and Skin (character bodies and heads).
 
+## Contents
+
+- [Which shader](#which-shader)
+- [The keys above the stages](#the-keys-above-the-stages)
+- [Super stages](#super-stages)
+- [Skin stages](#skin-stages)
+- [Damage and destruct materials](#damage-and-destruct-materials)
+- [Thermal stage](#thermal-stage)
+
 ## Which shader
 
 `PixelShaderID` and `VertexShaderID` name the shader. A scan of the 34,899 `.rvmat` files under `P:\DZ` finds:

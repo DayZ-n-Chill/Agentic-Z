@@ -8,7 +8,7 @@ When answering a DayZ question (especially RAG-grounded ones), use the full mark
 - **Numbered lists for flow.** "Damage hits → server adds bit → bit syncs → client spawns particle" is a flow, not a paragraph. Number each step. Readers can map cause/effect immediately.
 - **Headers for major sections.** `##` for the top-level subject, `###` for subsystems within. Don't over-section; 3-5 headers in a normal-sized answer is the ceiling.
 - **Cite `path:line_start-line_end`** inline (already required by Tier 2's cite-then-verify rule) — this also doubles as visual anchoring.
-- **Don't paraphrase the snippet block.** The MCP tool result already shows the user the raw snippets. The follow-up answer should synthesize, contrast, or explain — not restate. Brief synthesis only.
+- **Quote the few lines the answer depends on** in a fenced block with its `path:line`; do not paste whole snippets. Tool results are collapsed in Claude Code and are not what the user reads, so the lines that carry the answer must be in the answer itself.
 
 What not to use: colors (not rendered), images (not rendered), HTML (escaped), collapsible sections (not supported), ANSI escapes (not supported). Stick to CommonMark + GFM.
 

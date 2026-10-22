@@ -4,6 +4,19 @@
 
 ---
 
+## Contents
+
+- [Quantity (liquid, stackable)](#quantity-liquid-stackable)
+- [Health (damage zones)](#health-damage-zones)
+- [Wetness and temperature](#wetness-and-temperature)
+- [Inventory position and attachments](#inventory-position-and-attachments)
+- [Spawning items](#spawning-items)
+- [Registering actions](#registering-actions)
+- [config.cpp properties](#configcpp-properties)
+- [Casts](#casts)
+- [Magazines: `ServerSetAmmoCount`, not `SetQuantity`](#magazines-serversetammocount-not-setquantity)
+- [`SetObjectTexture`](#setobjecttexture)
+
 ## Quantity (liquid, stackable)
 
 | Call | What it does | Source |

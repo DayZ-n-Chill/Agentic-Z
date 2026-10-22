@@ -32,9 +32,23 @@ const LOGWATCH_SECONDS = '3'
 
 const join = (...parts: string[]) => parts.join('\\')
 
+// The clone that holds cwd: cwd itself or the nearest parent with Agentic-Z's
+// skills, so a session started in a subfolder (workspace\MyVest) still finds it.
+async function findClone($: any, cwd: string): Promise<string | null> {
+  let dir = cwd.replace(/\//g, '\\').replace(/\\+$/, '')
+  while (dir) {
+    if (await $.fs.exists(join(dir, '.claude', 'skills', 'dayz-preflight', 'preflight.py'))) return dir
+    const cut = dir.lastIndexOf('\\')
+    if (cut < 0) return null
+    dir = dir.slice(0, cut)
+  }
+  return null
+}
+
 // Agentic-Z lives in the project itself (a clone) or in the plugin cache.
 async function findRoot($: any, cwd: string): Promise<string | null> {
-  if (await $.fs.exists(join(cwd, '.claude', 'skills', 'dayz-preflight', 'preflight.py'))) return cwd
+  const clone = await findClone($, cwd)
+  if (clone) return clone
   const home = (await $.process.run(['cmd', '/c', 'echo %USERPROFILE%'])).stdout.trim()
   const cache = join(home, '.claude', 'plugins', 'cache', 'dayz-n-chill', 'agentic-z')
   if (!(await $.fs.exists(cache))) return null
@@ -47,7 +61,7 @@ async function findRoot($: any, cwd: string): Promise<string | null> {
 }
 
 async function activeMod($: any, cwd: string): Promise<string | null> {
-  const file = join(cwd, '.claude', 'local-memory', 'dayz-init-state.json')
+  const file = join((await findClone($, cwd)) ?? cwd, '.claude', 'local-memory', 'dayz-init-state.json')
   if (!(await $.fs.exists(file))) return null
   try {
     return JSON.parse(await $.fs.read(file))?.last_intent?.mod_name ?? null

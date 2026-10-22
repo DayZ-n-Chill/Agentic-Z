@@ -2,6 +2,15 @@
 
 A static, lazily-initialized configuration class loaded from a JSON file on the server profile directory. The singleton lives in `3_Game` (loads on both server and client) or `5_Mission` for server-only data.
 
+It loads with `JsonFileLoader<T>.LoadFile(path, data, errorMessage)` and saves with `SaveFile(path, data, errorMessage)`, which return `bool` and say what went wrong (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`). Do not use `JsonLoadFile` or `JsonSaveFile`: they return nothing, so a broken file is only an `ErrorEx` in the log, and vanilla marks them "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`).
+
+## Contents
+
+- [Implementation](#implementation)
+- [Nested Sub-Config](#nested-sub-config)
+- [Rules](#rules)
+- [Static `ScriptInvoker` shutdown crash](#-static-scriptinvoker-shutdown-crash)
+
 ---
 
 ## Implementation
@@ -28,10 +37,7 @@ class MyMod_Config
     static MyMod_Config GetInstance()
     {
         if (!s_Instance)
-        {
-            s_Instance = new MyMod_Config();
-            s_Instance.Load();
-        }
+            s_Instance = LoadFromDisk();
         return s_Instance;
     }
 
@@ -41,23 +47,33 @@ class MyMod_Config
         s_Instance = null;
     }
 
-    void Load()
+    static MyMod_Config LoadFromDisk()
     {
-        if (!FileExist(FOLDER))
-            MakeDirectory(FOLDER);
-
+        MyMod_Config cfg = new MyMod_Config();
         string path = FOLDER + FILE;
-        if (FileExist(path))
-            JsonFileLoader<MyMod_Config>.JsonLoadFile(path, this);
-        else
-            Save(); // write defaults on first run
+        if (!FileExist(path))
+        {
+            cfg.Save(); // write defaults on first run
+            return cfg;
+        }
+
+        string err;
+        if (!JsonFileLoader<MyMod_Config>.LoadFile(path, cfg, err))
+        {
+            // Keep the admin's file; run on defaults and say why.
+            Print("[MyMod] config.json not loaded, using defaults: " + err);
+            cfg = new MyMod_Config();
+        }
+        return cfg;
     }
 
     void Save()
     {
         if (!FileExist(FOLDER))
             MakeDirectory(FOLDER);
-        JsonFileLoader<MyMod_Config>.JsonSaveFile(FOLDER + FILE, this);
+        string err;
+        if (!JsonFileLoader<MyMod_Config>.SaveFile(FOLDER + FILE, this, err))
+            Print("[MyMod] config.json not saved: " + err);
     }
 
     bool IsAdmin(string uid)
@@ -66,7 +82,7 @@ class MyMod_Config
     }
 }
 
-// Global accessor — clean call-site: GetMyModConfig().EnableWelcomeMsg
+// Global accessor: clean call-site: GetMyModConfig().EnableWelcomeMsg
 MyMod_Config GetMyModConfig()
 {
     return MyMod_Config.GetInstance();
@@ -124,9 +140,9 @@ A common cleanup pattern null-derefs on shutdown because static invokers don't h
 // CRASHES if the static invoker was already torn down
 MyClass.Event_PowerChanged.Remove(m_Callback);
 
-// CORRECT — null-check first
+// CORRECT: null-check first
 if (MyClass.Event_PowerChanged)
     MyClass.Event_PowerChanged.Remove(m_Callback);
 ```
 
-Assume static invokers may already be null during your destructor or mission cleanup. The fix is always the null-guard — don't try to reorder destruction.
+Assume static invokers may already be null during your destructor or mission cleanup. The fix is always the null-guard: don't try to reorder destruction.

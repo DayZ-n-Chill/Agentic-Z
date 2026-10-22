@@ -10,7 +10,7 @@ This file is the one index of every pack. Paths are relative to `.claude/skills/
 - **File naming.** Lowercase, words joined with `-` or `_` to match the neighbouring files, ending in `.md`. Name the file after its subject (`ptc-format-reference.md`, `singleton.md`), not after a ticket or a date.
 - **Front index.** Every pack folder has one front index that says which file to open for which question. For a `_shared/` folder it is the folder's `README.md`; for a skill's `references/` folder it is the table in that skill's `SKILL.md`. Each pack file opens with a title and one line saying what it covers.
 - **Loaded only when needed.** Agents and skills name the pack file they need at the step that needs it. They never tell a worker to read a whole pack up front.
-- **Checked against vanilla.** Facts about the game cite the vanilla file on `P:\` they came from, so a reviewer can check them.
+- **Checked against vanilla.** Facts about the game cite the vanilla file on `P:\` they came from, so a reviewer can check them. The integrity test fails when a pack file names no `P:\` path at all, except the files it lists as exempt: the style guide, the answer format note, the py3d notes, the server layout notes and the folder indexes. A file still marked "vendored, not yet checked on `P:\`" below is mirrored content that has not been checked line by line; treat its facts as leads, not answers.
 - **Registered here.** A new pack gets a row in this index in the same change.
 
 ## Index
@@ -19,11 +19,27 @@ This file is the one index of every pack. Paths are relative to `.claude/skills/
 
 | Pack | Purpose |
 |---|---|
-| `_shared/enscript-style.md` | Enforce Script code style: naming, `ref` and `autoptr`, null checks, `modded class` patterns, segfault traps. Every script task. |
+| `_shared/enscript-style.md` | Enforce Script code style, front index. Every script task opens it, then reads only the one file below that the task needs. |
 | `_shared/answer-formatting.md` | How to format answers grounded in vanilla source. |
 | `_shared/container-base.md` | Custom `Container_Base` config requirements (damage, bullets, interaction). |
 | `_shared/figma-to-dayz-rules.md` | Translation rules for the Figma to DayZ `.layout` pipeline. |
 | `_shared/py3d-mlod-notes.md` | Reading MLOD `.p3d` files with py3d, used by `/dayz-p3d-audit`. |
+
+### Enforce Script style guide (`_shared/enscript-style`)
+
+Front index: `_shared/enscript-style.md`. Style only; the facts behind it are in the checked `_shared/enscript/references/` files.
+
+| Folder or file | Purpose |
+|---|---|
+| `_shared/enscript-style` | The style guide, one file per section group. |
+| `_shared/enscript-style/naming.md` | File organization and naming: classes, members, methods, constants, defines. |
+| `_shared/enscript-style/layout-and-comments.md` | Class layout, braces and spacing, comment styles. |
+| `_shared/enscript-style/types.md` | Types, instances and `typename`, collections, casting. |
+| `_shared/enscript-style/memory.md` | Object creation, `ref` and `autoptr` rules, `delete`. |
+| `_shared/enscript-style/control-flow-and-preprocessor.md` | Conditionals, loops, `switch`, bounds checks, `#ifdef` and `#define`. |
+| `_shared/enscript-style/modding-patterns.md` | `modded class`, `super`, singletons and globals, getters, serialization, input, modules. |
+| `_shared/enscript-style/debugging-and-errors.md` | Logging, debug defines, null checks, value checks, client and server checks; the Expansion only trace helpers. |
+| `_shared/enscript-style/best-practices.md` | Review checklist, compiler and segfault pitfalls, key takeaways. |
 
 ### Enforce Script pack (`_shared/enscript`)
 
@@ -34,26 +50,26 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/patterns` | Recurring implementation patterns. |
 | `_shared/enscript/integrations` | Outside frameworks and vanilla systems. |
 | `_shared/enscript/references` | API surface by topic. |
-| `_shared/enscript/examples` | Complete `.c` and `.layout` files to start from. |
+| `_shared/enscript/examples` | Complete `.c` and `.layout` files to start from. Checked on `P:`: `02`, `03`, `07`, `10` and the three layouts. Vendored, not yet checked on `P:\`: `01`, `04`, `05`, `06`, `08`, `09`. |
 
 | File | Purpose |
 |---|---|
-| `_shared/enscript/patterns/modded_class.md` | `modded class` rules: `super`, no `extends`, `NO_GUI` guard, engine classes that cannot be modded. |
-| `_shared/enscript/patterns/netsync.md` | Net sync variables, `SetSynchDirty`, `OnVariablesSynchronized`, bit packing. |
-| `_shared/enscript/patterns/persistence.md` | `OnStoreSave` and `OnStoreLoad`, version header, write order. |
-| `_shared/enscript/patterns/rpc.md` | RPC IDs, `ScriptRPC`, the `OnRPC` template, client to server validation. |
-| `_shared/enscript/patterns/singleton.md` | Static instance with lazy init, `GetInstance()`, the `ScriptInvoker` shutdown null guard. |
-| `_shared/enscript/patterns/actions.md` | Action classes, condition components, stopping pickup, client and server check mismatch. |
+| `_shared/enscript/patterns/modded_class.md` | Checked on `P:`: `modded class` rules: `super`, no `extends`, `NO_GUI` guard, engine-backed classes not to mod. |
+| `_shared/enscript/patterns/netsync.md` | Checked on `P:`: net sync variables registered in the constructor, `SetSynchDirty`, `OnVariablesSynchronized`, bit packing. |
+| `_shared/enscript/patterns/persistence.md` | Checked on `P:`: `OnStoreSave` and `OnStoreLoad`, your own version header, write order. |
+| `_shared/enscript/patterns/rpc.md` | Checked on `P:`: RPC IDs, `ScriptRPC`, the `OnRPC` template, client to server validation. |
+| `_shared/enscript/patterns/singleton.md` | Checked on `P:`: static instance with lazy init, `LoadFile` and `SaveFile`, the `ScriptInvoker` shutdown null guard. |
+| `_shared/enscript/patterns/actions.md` | Checked on `P:`: action classes, condition components, stopping pickup, client and server check mismatch. |
 | `_shared/enscript/patterns/scheduler.md` | The unverified `CallLater` drift report and the `Timer` alternative, per tick allocation, call categories. |
 | `_shared/enscript/patterns/physics_items.md` | Making spawned items physics active: `ThrowPhysically` or manual dynamic physics. |
-| `_shared/enscript/patterns/json_config_migration.md` | JSON config schema versions and forward migration. |
-| `_shared/enscript/patterns/language_workarounds.md` | Missing language features (ternary, lambdas, exceptions, overloading) and their workarounds; `auto` type inference. |
-| `_shared/enscript/integrations/community_framework.md` | Community Framework modules, storage, event bus. |
+| `_shared/enscript/patterns/json_config_migration.md` | Checked on `P:`: JSON config schema versions and forward migration with `LoadFile` and `SaveFile`. |
+| `_shared/enscript/patterns/language_workarounds.md` | Checked on `P:`: missing language features (ternary, lambdas, exceptions) and their workarounds; overloading, `auto` and `foreach` with an index, which do work. |
+| `_shared/enscript/integrations/community_framework.md` | Community Framework modules, ModStorage, `GetRPCManager()`, event handlers. Checked against the shipped CF scripts PBO. |
 | `_shared/enscript/integrations/dabs_framework.md` | Dabs Framework (third party): attributes, `ScriptView` and `ViewController` MVC, layout bindings, `ScriptViewMenu`. Checked against the mod's own scripts. |
 | `_shared/enscript/integrations/expansion_style.md` | Naming and structure for mods that extend or sit beside DayZ Expansion. Expansion targeted work only; the vanilla style guide is the default. |
-| `_shared/enscript/integrations/vanilla_plugins.md` | Vanilla `PluginBase` lifecycle and `GetPlugin()`. |
-| `_shared/enscript/integrations/central_economy.md` | Central Economy XML and runtime spawning. |
-| `_shared/enscript/integrations/input_bindings.md` | `inputs.xml`, `UAInput`, context guards. |
+| `_shared/enscript/integrations/vanilla_plugins.md` | Checked on `P:`: registering a plugin in `PluginManager.Init`, its lifecycle, `GetPlugin()`, `PluginAdminLog`. |
+| `_shared/enscript/integrations/central_economy.md` | Checked on `P:` and the vanilla mission: `types.xml`, `cfgspawnabletypes.xml` and `<ce folder>` registration, spawn flags, `GetCEApi()`, ObjectSpawner. |
+| `_shared/enscript/integrations/input_bindings.md` | Checked on `P:`: `inputs.xml` format, the `CfgMods` line, `UAInput` API, context guards. |
 | `_shared/enscript/references/language_types.md` | Checked on `P:`: built in types, `auto`, classes, enums, casting, parameters, containers, templates, strings. |
 | `_shared/enscript/references/language_memory.md` | Checked on `P:`: `Managed`, `ref` and weak references, `autoptr`, `delete`, deleting entities. |
 | `_shared/enscript/references/language_compile.md` | Checked on `P:`: script layers, `modded class`, attributes, preprocessor defines. |
@@ -64,10 +80,11 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/api_player.md` | Checked on `P:`: finding players, identities, connect hooks, health, stats. |
 | `_shared/enscript/references/types_collections.md` | Checked on `P:`: primitive types, strings, arrays, maps, sets, vectors, `Math`. |
 | `_shared/enscript/references/item_api.md` | Checked on `P:`: `ItemBase` quantity, health, actions, spawning, config properties. |
-| `_shared/enscript/references/erpc_defines.md` | Vanilla RPC, agent and modifier ID tables; custom ID ranges. |
-| `_shared/enscript/references/file_paths.md` | `$profile` and `$saves` paths, file and JSON helpers. |
+| `_shared/enscript/references/erpc_defines.md` | Checked on `P:`: `ERPCs`, `eAgents` and `eModifiers`, the modifier and agent calls; custom ID ranges (a community convention). |
+| `_shared/enscript/references/file_paths.md` | Checked on `P:`: `$profile`, `$saves` and `$mission` paths, file and JSON helpers. |
 | `_shared/enscript/references/gui_layout.md` | Checked on `P:`: `.layout` format and every widget type. |
 | `_shared/enscript/references/widget_api.md` | Widget script classes and methods, events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu`, imagesets. |
+| `_shared/enscript/examples/layouts.md` | Checked on `P:`: what the three example layouts are, with their companion scripts. |
 
 ### Physics pack (`_shared/physics`)
 

@@ -45,7 +45,9 @@ modded class PlayerBase
     protected float m_MyMod_LocalGlowTimer;
 
     // -----------------------------------------------------------------------
-    // Init: register NetSync variables HERE, always after super()
+    // Init: register NetSync variables HERE, always after super().
+    // PlayerBase has its own Init(), called from its constructor
+    // (P:\scripts\4_world\entities\manbase\playerbase.c:359-364).
     // -----------------------------------------------------------------------
     override void Init()
     {
@@ -66,14 +68,14 @@ modded class PlayerBase
 
         m_MyMod_SyncFlags = 0;
 
-        EntityAI held = GetHeldItem();
+        EntityAI held = GetItemInHands();   // P:\scripts\4_world\entities\manbase\playerbase.c:6733
         if (held && held.IsInherited(MyMod_CustomCanteen))
             m_MyMod_SyncFlags |= MyMod_PlayerSyncFlags.HAS_CANTEEN;
 
         if (GetSingleAgentCount(eAgents.FOOD_POISON) > 200)
             m_MyMod_SyncFlags |= MyMod_PlayerSyncFlags.IS_POISONED;
 
-        if (GetStamina() < 10)
+        if (GetStaminaHandler().GetStamina() < 10)   // playerbase.c:2042, staminahandler.c:1081
             m_MyMod_SyncFlags |= MyMod_PlayerSyncFlags.IS_EXHAUSTED;
 
         SetSynchDirty();
@@ -190,14 +192,12 @@ modded class PlayerBase
         return GetHealth("", "");
     }
 
-    // Get blood volume (0..5000 ml)
+    // Get blood volume (0..5000 ml). Blood is a health type, not a player stat:
+    // vanilla reads it with GetHealth("GlobalHealth", "Blood")
+    // (P:\scripts\4_world\classes\playermodifiers\modifiers\bloodregen.c:14).
     float MyMod_GetBlood()
     {
-        PlayerStat<float> stat;
-        if (!m_PlayerStats)
-            return 5000;
-        // PlayerStats exposes individual stats via GetStatObject
-        return GetStatBlood().Get();
+        return GetHealth("GlobalHealth", "Blood");
     }
 
     // Get energy (0..5000 kcal)
