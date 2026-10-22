@@ -220,42 +220,98 @@ def _load_env_and_key() -> str:
 # Enforce Script (.c), config.cpp, and .layout all share a `class X { ... }`
 # top-level block structure. One walker handles all three.
 
-_CLASS_HEADER_RE = re.compile(
-    r"(?:modded\s+)?class\s+(?P<name>[A-Za-z_]\w*)"
+_CLASS_HEADER = (
+    r"\b(?:modded\s+)?class\s+(?P<name>[A-Za-z_]\w*)"
     r"(?:\s*:\s*[A-Za-z_]\w*)?"
     r"(?:\s+extends\s+[A-Za-z_]\w*)?"
-    r"\s*\{",
-    re.IGNORECASE,
+    r"\s*\{"
 )
+# At file scope: a comment, a string or a class header, whichever comes first.
+_TOP_RE = re.compile(r'//|/\*|"|' + _CLASS_HEADER, re.IGNORECASE)
+# Inside a class body: a comment, a string or a brace.
+_BODY_RE = re.compile(r'//|/\*|"|[{}]')
+# What is left of a gap once comments are removed; empty means nothing to index.
+_COMMENTS_RE = re.compile(r"//[^\n]*|/\*.*?(?:\*/|\Z)", re.DOTALL)
+
+
+def _skip_literal(text: str, i: int) -> int:
+    """Index just past the comment or string that starts at i.
+
+    A string ends at its closing quote or at the end of its line, so a stray
+    quote never swallows the rest of the file. \\" (Enforce Script) and ""
+    (config.cpp) both work: "" closes the string and opens the next one.
+    """
+    if text.startswith("//", i):
+        j = text.find("\n", i)
+        return len(text) if j < 0 else j
+    if text.startswith("/*", i):
+        j = text.find("*/", i + 2)
+        return len(text) if j < 0 else j + 2
+    j = i + 1  # a double-quoted string
+    while j < len(text):
+        c = text[j]
+        if c == "\\":
+            j += 2
+            continue
+        if c in '"\n':
+            return j + 1
+        j += 1
+    return len(text)
+
+
+def _gap(text: str, a: int, b: int) -> Optional[tuple[str, int, int, str]]:
+    """File-scope text between classes (global functions, enums, typedefs), or
+    None when it holds only whitespace, comments and the `;` that closes a
+    config.cpp class. Leading blank lines are cut."""
+    body = text[a:b]
+    if not _COMMENTS_RE.sub("", body).replace(";", "").strip():
+        return None
+    k = a + len(body) - len(body.lstrip())
+    a = max(a, text.rfind("\n", a, k) + 1)
+    body = text[a:b]
+    start_line = text.count("\n", 0, a) + 1
+    return "", start_line, start_line + body.count("\n"), body
 
 
 def _walk_class_blocks(text: str) -> Iterator[tuple[str, int, int, str]]:
-    """Yield (name, start_line, end_line, body) for top-level class blocks."""
-    pos = 0
+    """Yield (name, start_line, end_line, body) for top-level class blocks, and
+    ("", ...) for the code between them. Braces and class headers inside comments
+    and strings are ignored. An unclosed class is yielded as file-scope text."""
+    pos = gap_start = 0
     n = len(text)
     while pos < n:
-        m = _CLASS_HEADER_RE.search(text, pos)
+        m = _TOP_RE.search(text, pos)
         if not m:
-            return
-        name = m.group("name")
-        brace_start = m.end() - 1
-        depth = 1
-        i = brace_start + 1
-        while i < n and depth > 0:
-            c = text[i]
-            if c == "{":
+            break
+        if m.group("name") is None:
+            pos = _skip_literal(text, m.start())
+            continue
+        depth, i = 1, m.end()
+        while depth:
+            b = _BODY_RE.search(text, i)
+            if not b:
+                break
+            tok = b.group()
+            if tok == "{":
                 depth += 1
-            elif c == "}":
+                i = b.end()
+            elif tok == "}":
                 depth -= 1
-            i += 1
-        if depth != 0:
-            return
-        block_start = m.start()
-        block_end = i
-        start_line = text.count("\n", 0, block_start) + 1
-        end_line = text.count("\n", 0, block_end) + 1
-        yield name, start_line, end_line, text[block_start:block_end]
-        pos = block_end
+                i = b.end()
+            else:
+                i = _skip_literal(text, b.start())
+        if depth:
+            break
+        gap = _gap(text, gap_start, m.start())
+        if gap:
+            yield gap
+        start_line = text.count("\n", 0, m.start()) + 1
+        end_line = text.count("\n", 0, i) + 1
+        yield m.group("name"), start_line, end_line, text[m.start():i]
+        pos = gap_start = i
+    gap = _gap(text, gap_start, n)
+    if gap:
+        yield gap
 
 
 def file_sha256(path: Path) -> Optional[str]:

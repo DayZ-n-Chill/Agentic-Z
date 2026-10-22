@@ -247,7 +247,7 @@ def test_cli_session_never_started_exits_2(tmp_path, monkeypatch):
     monkeypatch.setattr(logwatch, "client_running", lambda: False)
     monkeypatch.setattr(logwatch, "START_GRACE_S", 0)
     out = io.StringIO()
-    assert logwatch.main(["--dir", str(tmp_path), "--until-closed", "--interval", "0"], out) == 2
+    assert logwatch.main(["--dir", str(tmp_path), "--until-closed", "--interval", "0.1"], out) == 2
     assert "Stopped (session never started)" in out.getvalue()
 
 
@@ -257,7 +257,7 @@ def test_cli_errors_win_over_session_never_started(tmp_path, monkeypatch):
     monkeypatch.setattr(logwatch, "START_GRACE_S", 0)
     append(tmp_path / "script.log", UNKNOWN_TYPE)
     out = io.StringIO()
-    args = ["--dir", str(tmp_path), "--until-closed", "--since", "5", "--interval", "0"]
+    args = ["--dir", str(tmp_path), "--until-closed", "--since", "5", "--interval", "0.1"]
     assert logwatch.main(args, out) == 1
     assert "Stopped (session never started)" in out.getvalue()
 
@@ -308,7 +308,7 @@ def test_cli_broken_known_errors_file_exits_2(tmp_path, monkeypatch, capsys, ent
     shipped.write_text(json.dumps(entries), encoding="utf-8")
     monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
     monkeypatch.setattr(logwatch.triage, "KNOWN_ERRORS", shipped)
-    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0", "--interval", "0"], io.StringIO()) == 2
+    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0", "--interval", "0.1"], io.StringIO()) == 2
     assert "Could not load known errors" in capsys.readouterr().err
 
 
@@ -346,7 +346,7 @@ def test_cli_text_output_and_exit_code(tmp_path, monkeypatch):
     monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
     out = io.StringIO()
     append(tmp_path / "script.log", "nothing wrong here")
-    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0", "--interval", "0"], out) == 0
+    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0", "--interval", "0.1"], out) == 0
     assert "Watching 1 folder(s)" in out.getvalue() and "0 error(s)" in out.getvalue()
 
     log = tmp_path / "later" / "script.log"
@@ -360,7 +360,7 @@ def test_cli_text_output_and_exit_code(tmp_path, monkeypatch):
 
     monkeypatch.setattr(logwatch, "Tail", tail_then_write)
     out = io.StringIO()
-    assert logwatch.main(["--dir", str(tmp_path / "later"), "--duration", "0", "--interval", "0", "--mod", "MyVest"], out) == 1
+    assert logwatch.main(["--dir", str(tmp_path / "later"), "--duration", "0", "--interval", "0.1", "--mod", "MyVest"], out) == 1
     text = out.getvalue()
     assert "known script-unknown-type -> dayz-script-specialist" in text
     assert "fix: " in text and "1 known, 0 new" in text
@@ -370,3 +370,11 @@ def test_cli_without_project_or_dir_exits_2(monkeypatch, capsys):
     monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
     assert logwatch.main([]) == 2
     assert "dayz-init" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("value", ["0", "-1", "0.01", "nan"])
+def test_interval_below_minimum_exits_2(value, capsys):
+    with pytest.raises(SystemExit) as exc:
+        logwatch.main(["--dir", ".", "--duration", "1", "--interval", value])
+    assert exc.value.code == 2
+    assert "--interval must be at least" in capsys.readouterr().err

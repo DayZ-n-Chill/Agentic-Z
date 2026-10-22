@@ -477,3 +477,21 @@ def test_every_mod_in_the_workspace_is_checked_by_default(tmp_path, capsys, monk
     out = capsys.readouterr().out
     assert "Empty: 0 class(es)" in out
     assert "workspace/MyVest/scripts/4_World/MyVest.c:3" in out
+
+
+def test_scan_mod_skips_config_copies_in_dot_folders(tmp_path):
+    mod = tmp_path / "MyVest"
+    shutil.copytree(MOD, mod)
+    real = guard.scan_mod(mod)["config"]
+    backup = mod / ".history" / "config.cpp"
+    backup.parent.mkdir()
+    backup.write_text("class CfgVehicles { class Clothing; class Stale_Vest : Clothing { scope = 2; }; };", encoding="utf-8")
+    configs = guard.scan_mod(mod)["config"]
+    assert configs == real
+    assert not any(d["name"] == "Stale_Vest" for d in configs)
+
+
+def test_parse_config_records_classes_in_any_top_level_container():
+    text = "class BillboardPresets { class Default { a = 1; }; }; class CfgVehicles { class V { b = 1; }; };"
+    assert [(d["container"], d["name"]) for d in guard.parse_config(text)] == [
+        ("BillboardPresets", "Default"), ("CfgVehicles", "V")]
