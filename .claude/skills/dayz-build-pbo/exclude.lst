@@ -7,6 +7,10 @@
 .gui-sources\*\*.*
 *\.gui-sources\*
 
+; Workbench project files (dayz.gproj, DayZSetting.xml) are for the editor, not the game
+workbench\*.*
+*\workbench\*
+
 ; Binarization by-products and backups
 *.dep
 *.log

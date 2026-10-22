@@ -306,6 +306,13 @@ class Resolver:
             out[key] = {"value": value, "line": line, "file": owner.file, "from_mod": is_mod}
         return out
 
+    def slots(self, section: str, node: Node, mod_first: bool) -> frozenset[str]:
+        """The inventorySlot[] names a class goes into (empty when it has none)."""
+        hit = self.find(self.chain(section, node, mod_first), ("inventorySlot",))
+        if hit is None:
+            return frozenset()
+        return frozenset(v.strip('"') for v in hit[0] if isinstance(v, str))
+
     def scope(self, section: str, node: Node, mod_first: bool) -> Optional[float]:
         hit = self.find(self.chain(section, node, mod_first), ("scope",))
         if hit is None:
@@ -325,6 +332,7 @@ class Balance:
         self.r = Resolver(mod, vanilla)
         self._children: dict[str, dict[str, list[str]]] = {}
         self._stats: dict[tuple[str, str], dict] = {}
+        self._slots: dict[tuple[str, str], frozenset[str]] = {}
 
     def children(self, section: str) -> dict[str, list[str]]:
         if section not in self._children:
@@ -340,6 +348,12 @@ class Balance:
             node = self.vanilla.sections[section][key]
             self._stats[(section, key)] = self.r.stats(section, node, mod_first=False)
         return self._stats[(section, key)]
+
+    def vanilla_slots(self, section: str, key: str) -> frozenset[str]:
+        if (section, key) not in self._slots:
+            node = self.vanilla.sections[section][key]
+            self._slots[(section, key)] = self.r.slots(section, node, mod_first=False)
+        return self._slots[(section, key)]
 
     def is_item(self, section: str, node: Node, mod_first: bool) -> bool:
         if section == "cfgammo":
@@ -376,10 +390,11 @@ class Balance:
         ancestors = self.ancestors(section, node)
         if not ancestors:
             return [], f"has no vanilla parent (parent {node.parent or 'none'})"
+        slots = self.r.slots(section, node, mod_first=True)
         findings = []
         compared = 0
         for stat, mine in own.items():
-            group = self.peer_values(section, ancestors, stat)
+            group = self.peer_values(section, ancestors, stat, slots)
             if group is None:
                 continue
             compared += 1
@@ -409,13 +424,23 @@ class Balance:
             return [], f"has fewer than {self.min_peers} vanilla peers with the same stats"
         return findings, None
 
-    def peer_values(self, section: str, ancestors: list[Node], stat: str) -> Optional[tuple[str, list[tuple[str, float]]]]:
-        for base in ancestors[: MAX_WIDEN + 1]:
-            peers = []
+    def peer_values(
+        self, section: str, ancestors: list[Node], stat: str, slots: frozenset[str] = frozenset()
+    ) -> Optional[tuple[str, list[tuple[str, float]]]]:
+        for depth, base in enumerate(ancestors[: MAX_WIDEN + 1]):
+            wanted = {s.lower() for s in slots}
+            peers, same_slot = [], []
             for key in self.descendants(section, base.name.lower()):
                 hit = self.vanilla_stats(section, key).get(stat)
                 if hit is not None:
-                    peers.append((self.vanilla.sections[section][key].name, hit["value"]))
+                    peer = (self.vanilla.sections[section][key].name, hit["value"])
+                    peers.append(peer)
+                    if wanted & {s.lower() for s in self.vanilla_slots(section, key)}:
+                        same_slot.append(peer)
+            # A wider group mixes item kinds (a mask's parent Clothing also holds
+            # backpacks and boots), so keep the peers that go in the same slot.
+            if depth > 0 and slots and len(same_slot) >= self.min_peers:
+                return f"{base.name} in slot {', '.join(sorted(slots))}", same_slot
             if len(peers) >= self.min_peers:
                 return base.name, peers
         return None

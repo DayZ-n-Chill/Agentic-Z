@@ -270,8 +270,8 @@ You can still call any specialist below directly for a single task.
 | [`dayz-audio-fx-specialist`](.claude/agents/dayz-audio-fx-specialist.md) | Sound shaders, sound sets and particle effects. Any lead. |
 | [`dayz-physics-specialist`](.claude/agents/dayz-physics-specialist.md) | Weight, collision LODs, dropping, throwing and contact. Any lead. |
 | [`figma-node-normalizer`](.claude/agents/figma-node-normalizer.md) | Cleans a Figma frame so it can be converted. |
-| [`figma-to-dayz-layout`](.claude/agents/figma-to-dayz-layout.md) | Turns a cleaned Figma frame into a DayZ `.layout`. |
-| [`dayz-layout-validator`](.claude/agents/dayz-layout-validator.md) | Checks and cleans generated `.layout` files; the UI gate. |
+| [`figma-to-dayz-layout`](.claude/agents/figma-to-dayz-layout.md) | Turns a cleaned Figma frame into a DayZ `.layout`, and repairs one the validator failed. |
+| [`dayz-layout-validator`](.claude/agents/dayz-layout-validator.md) | Checks generated `.layout` files without editing them; the UI gate. |
 
 Plus [`agent-creator`](.claude/agents/agent-creator.md) for scaffolding new agent definitions.
 
@@ -333,7 +333,7 @@ The shipped configuration is the security baseline. **Tighten it for your enviro
 
 - **`.claude/settings.json`** (committed) — narrow Bash allowlist limited to running this repo's own skills (`Bash(python .claude/skills/*)`, `Bash(npm list *)`, etc.) plus an explicit deny list that blocks the dangerous escape hatches: `Bash(python -c *)`, `Bash(python -m *)`, `Bash(node -e *)`, `Bash(node -p *)`, `Bash(npm install *)`, `Bash(npx *)`. Editing this file affects every clone — keep allows narrow and prefer deny rules over removing them.
 - **`.claude/settings.local.json`** (gitignored, per-clone) — your machine-specific overrides. **Never set `dangerouslySkipPermissions: true` in a long-lived clone**; it bypasses every prompt including the deny list. Use `/fewer-permission-prompts` to build a real allowlist incrementally as you hit prompts.
-- **`.claude/agents/*.md`** — every agent declares an explicit `tools:` allowlist. Auditor/diagnostic agents (`dayz-mod-reviewer`, `dayz-mod-debugger`) cannot Edit/Write/Bash. The two run-only gates (`dayz-build-checker`, `dayz-ingame-tester`) and `dayz-build-engineer` get Bash and Skill to run the build and test skills but no Edit/Write. `dayz-layout-validator` keeps Edit/Write for the Figma pipeline but only reports when used as a gate. `dayz-lead` can only read and start agents; `dayz-orchestrator` has the broadest list (including Bash and Agent) because it runs as your main session. Authoring specialists get Read/Write/Edit/Glob/Grep plus the `dayz-rag` MCP tools; `dayz-asset-specialist`, `dayz-object-builder`, `dayz-server-admin` and `dayz-ui-specialist` also get Bash and Skill, to run the texture, model, types.xml, imageset and layout preview skills. `dayz-physics-specialist` gets Bash and Skill without Edit or Write, to run the model audit. `dayz-docs-writer` gets Bash for the release scripts and a read only git log. None has network tools. Subagents inherit only what's listed — no implicit full-toolset escalation.
+- **`.claude/agents/*.md`** — every agent declares an explicit `tools:` allowlist. Auditor/diagnostic agents (`dayz-mod-reviewer`, `dayz-mod-debugger`) cannot Edit/Write/Bash. The two run-only gates (`dayz-build-checker`, `dayz-ingame-tester`) and `dayz-build-engineer` get Bash and Skill to run the build and test skills but no Edit/Write. `dayz-layout-validator` gets Bash to run the layout preview but no Edit/Write; repairs go to `figma-to-dayz-layout`. `dayz-lead` can only read and start agents; `dayz-orchestrator` has the broadest list (including Bash and Agent) because it runs as your main session. Authoring specialists get Read/Write/Edit/Glob/Grep plus the `dayz-rag` MCP tools; `dayz-asset-specialist`, `dayz-object-builder`, `dayz-server-admin` and `dayz-ui-specialist` also get Bash and Skill, to run the texture, model, types.xml, imageset and layout preview skills. `dayz-physics-specialist` gets Bash and Skill without Edit or Write, to run the model audit. `dayz-docs-writer` gets Bash for the release scripts and a read only git log. None has network tools. Subagents inherit only what's listed — no implicit full-toolset escalation.
 
 If you fork the repo to publish a downstream variant, run `git diff main -- .claude/settings.json .claude/agents/` before pushing and convince yourself any widened permissions are intentional.
 
@@ -341,4 +341,4 @@ If you fork the repo to publish a downstream variant, run `git diff main -- .cla
 
 ## License
 
-See [`LICENSE`](LICENSE). Copyright (c) 2026 DayZ n Chill. Free to use for developing DayZ modifications.
+See [`LICENSE`](LICENSE). Copyright (c) 2026 DayZ n' Chill. Free to use for developing DayZ modifications.

@@ -354,3 +354,37 @@ def test_finish_accepts_prefix_equal_to_the_mod_name(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "will refuse" not in out
     assert "  - Build: /dayz-build-pbo MyMod" in out
+
+
+def test_project_found_from_subfolder_without_claude_project_dir(tmp_path, monkeypatch):
+    """Without CLAUDE_PROJECT_DIR, a run from workspace/Other still links into the
+    cached project's workspace/, the same root dayz-new-mod and the cache use."""
+    project = tmp_path / "project"
+    memory = project / ".claude" / "local-memory"
+    memory.mkdir(parents=True)
+    (memory / "dayz-current-project.txt").write_text(str(project), encoding="utf-8")
+    other = project / "workspace" / "Other"
+    other.mkdir(parents=True)
+    source = tmp_path / "src" / "NewMod"
+    (source / "workbench").mkdir(parents=True)
+    for name in ("config.cpp", "$PBOPREFIX$", "workbench/dayz.gproj"):
+        (source / name).write_text("NewMod", encoding="utf-8")
+    p_drive = tmp_path / "P"
+    p_drive.mkdir()
+
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(other)
+    spec = importlib.util.spec_from_file_location("dayz_import_mod_subfolder", HERE / "import_mod.py")
+    fresh = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fresh)
+    assert fresh.PROJECT_DIR == project.resolve()
+
+    monkeypatch.setattr(fresh, "P_DRIVE", p_drive)
+    monkeypatch.setattr(fresh.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(fresh._nm, "sync_project_cache", lambda: None)
+    monkeypatch.setattr(fresh.sys, "stdin", _NoTTY())
+    monkeypatch.setattr("sys.argv", ["import_mod.py", "--source", str(source), "--no-scaffold"])
+    assert fresh.main() == 0
+    assert (project / "workspace" / "NewMod" / "config.cpp").is_file()
+    assert not (other / "workspace").exists()
+    assert (p_drive / "NewMod").exists()

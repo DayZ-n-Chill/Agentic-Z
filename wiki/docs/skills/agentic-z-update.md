@@ -16,7 +16,7 @@ Pull template improvements (agents, skills, conventions, docs) from upstream `Da
 2. **Local customizations to template files are not overwritten silently.** A three-way per-file classification (local file, file at the baseline, upstream file) detects when both the clone and upstream edited the same file and leaves it alone unless the user picks "take" in `--per-file` mode. File contents are never merged: each file is either kept or replaced whole.
 3. **No two updates can apply at once.** A PID-based lock covers the first-run baseline write and the apply phase (checkout, delete, commit, baseline write); previews and `--check` do not take it. The lock file is created atomically, so two runs that start together cannot both get it. A lock left by a dead process is taken over.
 
-The first applying run in a clone records a baseline (the SHA of upstream `main` at that moment) and adds or overwrites nothing. A template file that is in the baseline but missing locally is treated as one you deleted on purpose (`locally-deleted`): it is left alone and offered for restore in `--per-file`. Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file. The comparison uses git blob ids, with the local file hashed through the clone's line-ending settings (`git hash-object --path`), so a CRLF checkout under `core.autocrlf=true` is not mistaken for a local edit. The script works from the repo root (`git rev-parse --show-toplevel`), so it can be started from any subfolder.
+The first run records the commit your clone was made from (the merge base with upstream main) as the baseline, so changes upstream made since you cloned are offered; with no shared history it records upstream HEAD and adds nothing. A template file that is in the baseline but missing locally is treated as one you deleted on purpose (`locally-deleted`): it is left alone and offered for restore in `--per-file`. Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file. The comparison uses git blob ids, with the local file hashed through the clone's line-ending settings (`git hash-object --path`), so a CRLF checkout under `core.autocrlf=true` is not mistaken for a local edit. The script works from the repo root (`git rev-parse --show-toplevel`), so it can be started from any subfolder.
 
 ## How to run
 
@@ -29,7 +29,7 @@ python "<skill-dir>\update.py" [--check] [--quiet] [--yes] [--per-file] [--force
 | Flag | Behavior |
 |---|---|
 | (default) | Preview drift, prompt y/N, apply safe changes (conflicts left alone) |
-| `--check` | Preview only and writes nothing; exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (`local-only-edit` and `locally-deleted` files do not count) |
+| `--check` | Preview only: fetches upstream (adding the upstream remote if it is missing) and writes no files; exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (`local-only-edit` and `locally-deleted` files do not count) |
 | `--quiet` | With `--check`: single-line output for hooks, and always exits 0 so the hook shows the line |
 | `--yes` | Skip the confirmation prompt (CI / scripted use) |
 | `--per-file` | Walk each conflict and `locally-deleted` file interactively: keep / take / diff / skip |
@@ -81,6 +81,11 @@ CLAUDE.md
 AGENTS.md
 GEMINI.md
 README.md
+.gitignore
+.env.example
+package.json
+package-lock.json
+.github/
 ```
 
 What stays untouched:

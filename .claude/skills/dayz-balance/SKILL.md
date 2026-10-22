@@ -52,6 +52,7 @@ An item is a class with `scope = 2` in `CfgVehicles`, `CfgWeapons` or `CfgMagazi
 1. Walk up from the mod item, past any mod base classes, to the nearest vanilla class. For a vest that inherits `PlateCarrierVest` that is `PlateCarrierVest`.
 2. The peers are that class and every vanilla item below it, each with its own inherited stats. Classes the mod redefines are left out.
 3. When fewer than `--min-peers` peers have the stat, go up one vanilla parent and try again, at most twice. If that is still too few, the stat is not judged.
+   3a. A wider group mixes item kinds (a mask's parent `Clothing` also holds backpacks, boots and belts), so after going up a parent only the peers that share an `inventorySlot[]` with the mod item are kept, and the report names the group as, for example, `Clothing in slot Mask`. When that leaves fewer than `--min-peers`, or the item has no slot, the whole group is used.
 
 A value is an outlier when it is outside the peers' whole range and at least `--ratio` times away from their median.
 
