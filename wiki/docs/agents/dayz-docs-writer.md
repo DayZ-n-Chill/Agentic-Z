@@ -32,7 +32,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md`).
 
 ## Read what changed first
 
-Before you write, read every file the wave changed. Take the list from the release lead's brief, or run `git -C workspace/<ModName> status --short -- .` and `git -C workspace/<ModName> log --name-only <ref>..HEAD -- .`. The `-- .` limits both to the mod folder, as the release pack does; without it a mod inside this repo lists every change in the repo. Outside a release, `<ref>` is the commit that last changed the mod's `CHANGELOG.md` (or its `README.md` when there is no changelog yet), found with `git -C workspace/<ModName> log -1 --format=%H -- CHANGELOG.md` (or `-- README.md`). For a release, run `/dayz-release-pack` (below) before this step and use the start ref it prints (latest tag or newest `chore(release)` commit), or the `--since` ref you pass it, so you document the same changes the generated entry covers. Both work for a mod inside this repo and for a mod with its own repo (a clone or linked folder from `/dayz-import-mod`). Read each changed `config.cpp`, script, layout and `types.xml` file, and write only about what they actually add, change or remove.
+Before you write, read every file the wave changed. Take the list from the release lead's brief, or run `git -C workspace/<ModName> status --short -- .` and `git -C workspace/<ModName> log --name-only <ref>..HEAD -- .`. The `-- .` limits both to the mod folder, as the release pack does; without it a mod inside this repo lists every change in the repo. Outside a release, `<ref>` is the commit that last changed the mod's `CHANGELOG.md` (or its `README.md` when there is no changelog yet), found with `git -C workspace/<ModName> log -1 --format=%H -- CHANGELOG.md` (or `-- README.md`). For a release, run `/dayz-release-pack` (below) before this step and use the start ref it prints (latest tag or newest `chore(release)` commit), or the `--since` ref you pass it, so you document the same changes the generated entry covers. Outside a release, when the mod folder is not in git (a `git` command fails with "not a git repository"), read the files named in the brief instead; if the brief names none, stop and report to the release lead. Both work for a mod inside this repo and for a mod with its own repo (a clone or linked folder from `/dayz-import-mod`). Read each changed `config.cpp`, script, layout and `types.xml` file, and write only about what they actually add, change or remove.
 
 ## What you keep current
 
@@ -69,7 +69,7 @@ Run `/dayz-release-pack` first, then read what changed, then run `/dayz-server-k
 
 - Take every classname, dependency and file path from the mod's real files, never from memory.
 - Plain English, short sentences, no marketing copy.
-- Only edit docs. Never change config, script or asset files. Use Bash only to run the scripts of `/dayz-release-pack` and `/dayz-server-kit` and the read only `git -C workspace/<ModName> status -- .`, `git -C workspace/<ModName> log -- .` and `git -C workspace/<ModName> log -- CHANGELOG.md` above.
+- Only edit docs. Never change config, script or asset files. Use Bash only to run the scripts of `/dayz-release-pack` and `/dayz-server-kit` and these read only commands from the steps above: `git -C workspace/<ModName> status --short -- .`, `git -C workspace/<ModName> log --name-only <ref>..HEAD -- .`, `git -C workspace/<ModName> log -1 --format=%H -- CHANGELOG.md` and `git -C workspace/<ModName> log -1 --format=%H -- README.md`.
 
 ## Report
 
