@@ -165,6 +165,16 @@ def delete_objectbuilder_key() -> int:
     return result.returncode
 
 
+def objectbuilder_running() -> bool:
+    """True when ObjectBuilder.exe is running. It writes its settings back to HKCU
+    when it closes, which would undo any reset or preference written now."""
+    if sys.platform != "win32":
+        return False
+    result = subprocess.run(["tasklist", "/FI", "IMAGENAME eq ObjectBuilder.exe", "/NH"],
+                            capture_output=True, text=True)
+    return "objectbuilder.exe" in result.stdout.lower()
+
+
 def confirm_reset(assume_yes: bool) -> bool:
     """Ask before --force wipes an existing Object Builder configuration."""
     if assume_yes:
@@ -219,6 +229,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         print("        Reinstall DayZ Tools to restore it.", file=sys.stderr)
         return 1
     print(f"{h.OK} Default settings file: {ob_reg.name}")
+
+    if objectbuilder_running():
+        print(f"{h.FAIL} Close Object Builder first; it rewrites these settings on exit.", file=sys.stderr)
+        return 1
 
     already_configured = registry_has_objectbuilder_settings()
 

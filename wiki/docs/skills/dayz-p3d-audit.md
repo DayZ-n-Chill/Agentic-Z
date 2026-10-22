@@ -4,7 +4,7 @@ name: dayz-p3d-audit
 
 ## Overview
 
-Audits DayZ .p3d models and their config.cpp, model.cfg and .rvmat for collision, action, physics, animation and path problems (report only). Use when an object has no collision or actions, players walk through it, a Blender export fails, textures are missing, animations don't play, or the user asks to review, check or audit a p3d or mod.
+Audits DayZ .p3d models and their config.cpp, model.cfg and .rvmat for collision, action, physics, animation and path problems (report only). Use when an object has no collision or actions, players walk through it, a Blender export fails, textures are missing, animations don't play, or the user asks to review, check or audit a .p3d model, its model.cfg or its .rvmat.
 
 > **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
 
@@ -86,7 +86,10 @@ references below.
    b. Component01 uppercase C?   → If wrong case: rename
    c. autocenter=0 LOD property? → If missing: add
    d. pos center in Memory?      → If missing: add at (0,0,0)
-   e. Component01 covers all?    → If partial: extend selection
+   e. Components cover all?      → The Component selections together cover
+                                    every vertex and face; each component is
+                                    one convex closed piece. If some are left
+                                    out: add them to a component
    f. Mesh watertight?           → If open: close gaps
    g. Geometry LOD exists?       → If missing: create one
    h. Geometry LOD mass set?     → The audit prints the mass as a NOTE, or says

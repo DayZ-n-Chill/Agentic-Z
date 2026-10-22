@@ -39,7 +39,7 @@ python "<skill-dir>\setup.py" --force
 
 On an already-configured machine `--force` asks `[y/N]`, backs up the current settings, deletes the whole Object Builder key (including saved `MainFrame-*` toolbar layouts, `HistoryPaths` recent files, and any value the shipped `.reg` doesn't set), then imports the defaults into the empty tree. To undo the reset, run `reg import` on the backup file it printed. Without a terminal (an agent's Bash call) it refuses unless `--yes` is also given, so get the user's go-ahead first and then run `--force --yes`.
 
-Exits 1 if DayZ Tools, `ObjectBuilder.exe` or the `.reg` is missing, the `.reg` touches a key outside `HKEY_CURRENT_USER`, the reset is not confirmed, the backup export or the key delete fails, or the keys are still missing after import; a failed `reg import` returns its own exit code.
+Exits 1 if DayZ Tools, `ObjectBuilder.exe` or the `.reg` is missing, Object Builder is running (it writes its settings back to the registry when it closes, so close it first), the `.reg` touches a key outside `HKEY_CURRENT_USER`, the reset is not confirmed, the backup export or the key delete fails, or the keys are still missing after import; a failed `reg import` returns its own exit code.
 
 ## When to run
 

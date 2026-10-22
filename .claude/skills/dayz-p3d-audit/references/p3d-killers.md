@@ -97,10 +97,13 @@ back to `box_placing_*`. Vanilla deployables (`55galdrum`, `wooden_case`, `sea_c
 names — NOT `box_placing_*` — and rely on the Geometry LOD bbox. So this rule fires only
 for items without a proper Geometry LOD or with broken `GetCollisionBox()` data.
 
-## 8. Incomplete Component01 Coverage
+## 8. Incomplete Component Coverage
 
-`Component01` must include ALL vertices AND ALL faces of the Geometry LOD with weight=1.
-Partial coverage means partial collision — some faces won't register raycasts.
+The Component selections (`Component01` to `ComponentNN`) together cover every vertex and
+face of the Geometry LOD, with weight=1. Each component is one convex closed piece. A
+non-convex shape is split into several convex components (Object Builder's Find Components),
+so do not merge them into one. Anything no component covers is partial collision: those
+faces won't register raycasts.
 
 ## 9. Non-Watertight Collision Mesh
 
