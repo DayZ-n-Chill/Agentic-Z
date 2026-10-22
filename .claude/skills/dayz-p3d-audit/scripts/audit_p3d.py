@@ -259,7 +259,7 @@ def check_component_naming(lod):
             "No Component selection found. Geometry LOD requires 'Component01' for collision."))
     elif not has_correct:
         found = [s for s in sels if s.lower().startswith('component')]
-        issues.append(("WARNING", f"Component selection '{found[0]}' — verify exact case is 'Component01'."))
+        issues.append(("WARNING", f"Component selection '{found[0]}': verify exact case is 'Component01'."))
     return issues
 
 
@@ -352,7 +352,7 @@ def check_watertight(lod):
             edge_count[edge] = edge_count.get(edge, 0) + 1
     boundary = sum(1 for c in edge_count.values() if c == 1)
     if boundary > 0:
-        issues.append(("WARNING", f"{boundary} boundary edges — mesh not watertight (has holes)."))
+        issues.append(("WARNING", f"{boundary} boundary edges: mesh not watertight (has holes)."))
     return issues
 
 
@@ -397,7 +397,7 @@ def check_memory_lod(lod, wants_zero=False, has_geometry=True):
             c = pt.coords
             if abs(c[0]) > 0.5 or abs(c[1]) > 0.5 or abs(c[2]) > 0.5:
                 issues.append(("NOTE",
-                    f"pos center at ({c[0]:.2f}, {c[1]:.2f}, {c[2]:.2f}) — "
+                    f"pos center at ({c[0]:.2f}, {c[1]:.2f}, {c[2]:.2f}): "
                     f"for autocenter=0 items this should be near (0,0,0)."))
 
     # box_placing_min / box_placing_max
@@ -415,7 +415,7 @@ def check_memory_lod(lod, wants_zero=False, has_geometry=True):
     # Faces in Memory LOD (should be zero)
     if len(lod.faces) > 0:
         issues.append(("WARNING",
-            f"Memory LOD has {len(lod.faces)} faces — should have 0. "
+            f"Memory LOD has {len(lod.faces)} faces; it should have 0."
             f"Only single-vertex points belong in Memory LOD."))
 
     return issues
@@ -461,7 +461,7 @@ def check_p_drive_paths_in_file(filepath):
             matches = re.findall(r'["\']?(P:[\\\/][^"\';\s]+)', line, re.IGNORECASE)
             for m in matches:
                 issues.append(("WARNING",
-                    f"Line {i}: Absolute P:\\ path '{m}' — breaks on other machines. "
+                    f"Line {i}: Absolute P:\\ path '{m}': breaks on other machines. "
                     f"Use game-relative path (remove 'P:\\' prefix)."))
     except Exception as e:
         issues.append(("ERROR", f"Cannot read {filepath}: {e}"))
@@ -646,7 +646,7 @@ def scan_directory(dirpath):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="DayZ P3D Audit — Complete Model Validator")
+    parser = argparse.ArgumentParser(description="DayZ P3D Audit: Complete Model Validator")
     parser.add_argument('files', nargs='*', help='.p3d files (or text files) to audit')
     parser.add_argument('--config', help='config.cpp to check for absolute P-drive paths '
                         '(also decides whether the Geometry LOD needs the autocenter property)')
@@ -689,7 +689,7 @@ def main(argv=None):
                 all_pass = False
 
     print(f"\n{'='*70}")
-    print(f"OVERALL: {'ALL PASSED' if all_pass else 'ISSUES FOUND — fix before building PBO'}")
+    print(f"OVERALL: {'ALL PASSED' if all_pass else 'ISSUES FOUND: fix before building PBO'}")
     print(f"{'='*70}")
     sys.exit(0 if all_pass else 1)
 
