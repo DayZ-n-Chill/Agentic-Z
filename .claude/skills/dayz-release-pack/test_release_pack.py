@@ -128,6 +128,7 @@ def test_changelog_from_git_groups_conventional_commits(mod, tmp_path):
     assert "black vest" not in entry  # before the latest tag
     assert "1.1.0" not in entry.split("\n", 1)[1]  # the release commit is left out
     assert report["changes"] == {"since": "v1.0.0", "from": "tag", "commits": 3}
+    assert "changelog starts after v1.0.0, the latest tag" in rp.render_text(report)
     assert "[h2]Changes in 1.1.0[/h2]" in files["workshop-description.txt"]
 
     # HEAD~2..HEAD holds "update notes" and the skipped release commit.

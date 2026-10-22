@@ -1,0 +1,22 @@
+FrameWidgetClass rootFrame {
+ size 270 40
+ halign center_ref
+ valign center_ref
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ {
+  TextWidgetClass txt_title {
+   position 0 0
+   size 1 1
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   text "Connection lost"
+   "shadow opacity" 0.5
+   "exact text" 1
+  }
+ }
+}
