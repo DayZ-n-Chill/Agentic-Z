@@ -43,4 +43,4 @@ When the user has made your Object Builder steps and saved the MLOD file, run `/
 
 ## Report
 
-To the art lead: the Object Builder steps given, files written (path), the selection names and config lines for the config specialist, the `/dayz-p3d-audit` result on the saved model (or that the user has not saved it yet), and anything the user still has to do by hand.
+To the art lead: the Object Builder steps given, files written (path), the selection names and config lines for the worker who owns the class's `config.cpp`, the `/dayz-p3d-audit` result on the saved model (or that the user has not saved it yet), and anything the user still has to do by hand.
