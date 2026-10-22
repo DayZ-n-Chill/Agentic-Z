@@ -2,7 +2,6 @@
 name: "figma-node-normalizer"
 description: "First stage of the Figma-to-DayZ pipeline: fetches a Figma node tree through the Figma MCP, drops decorative wrappers, types each node and records its sizing, and returns normalized JSON for `figma-to-dayz-layout`. Use whenever a Figma URL, file key or node ID is the input and the goal is a DayZ `.layout`.\n\n<example>\nContext: UI lead starting a Figma task.\nuser: \"Normalize https://figma.com/design/abc123/Trader?node-id=10-42 for the trader menu layout.\"\nassistant: \"I'll use the figma-node-normalizer to fetch the node, flatten the decorative frames, type the button row and item list, and return the normalized JSON for figma-to-dayz-layout.\"\n</example>"
 color: purple
-memory: project
 tools: Read, Glob, Grep, mcp__plugin_figma_figma__get_design_context, mcp__figma__get_design_context, mcp__plugin_design_figma__get_design_context, mcp__plugin_figma_figma__get_metadata, mcp__figma__get_metadata, mcp__plugin_design_figma__get_metadata, mcp__plugin_figma_figma__get_screenshot, mcp__figma__get_screenshot, mcp__plugin_design_figma__get_screenshot, mcp__plugin_figma_figma__get_variable_defs, mcp__figma__get_variable_defs, mcp__plugin_design_figma__get_variable_defs
 maxTurns: 50
 ---

@@ -118,8 +118,10 @@ READ_ONLY_GATES = {"dayz-mod-reviewer", "dayz-mod-debugger", "dayz-build-checker
 
 @pytest.mark.parametrize("name", sorted(READ_ONLY_GATES))
 def test_gates_cannot_edit(name):
-    tools = set(_tools(AGENTS_DIR / f"{name}.md"))
-    assert not tools & {"Edit", "Write", "NotebookEdit"}
+    path = AGENTS_DIR / f"{name}.md"
+    assert not set(_tools(path)) & {"Edit", "Write", "NotebookEdit"}
+    # Setting `memory` auto-enables Write and Edit for any path.
+    assert "memory" not in _frontmatter(path)
 
 
 # Roles that run others and write nothing themselves. Setting `memory` auto-enables
