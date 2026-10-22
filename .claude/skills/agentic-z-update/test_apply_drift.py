@@ -760,6 +760,20 @@ def test_main_refuses_mid_merge_before_touching_remote(monkeypatch, capsys, extr
     assert "git merge is in progress" in capsys.readouterr().out
 
 
+def test_mid_merge_refusal_comes_before_dirty_tree_advice(monkeypatch, capsys):
+    # A conflicted merge leaves template paths dirty; the user must not be told
+    # to pass --force, which would still be refused.
+    monkeypatch.setattr(sys, "argv", ["update.py", "--yes"])
+    monkeypatch.setattr(update, "_QUIET", False)
+    monkeypatch.setattr(update, "repo_root", lambda: Path.cwd())
+    monkeypatch.setattr(update, "working_tree_clean_for", lambda paths: (False, ["CLAUDE.md"]))
+    monkeypatch.setattr(update, "git_operation_in_progress", lambda: "merge")
+    assert update.main() == 1
+    out = capsys.readouterr().out
+    assert "git merge is in progress" in out
+    assert "--force" not in out
+
+
 @pytest.mark.parametrize("flag", ["--check", "--dry-run"])
 def test_read_only_modes_ignore_merge_state(monkeypatch, flag):
     monkeypatch.setattr(sys, "argv", ["update.py", flag])
