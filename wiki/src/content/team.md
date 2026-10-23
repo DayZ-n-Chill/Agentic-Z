@@ -435,7 +435,7 @@ Every token saver and workflow in this section is new. Each one is built and tes
 | --- | --- |
 | Paste in | Crash log or RPT; screenshot of a bug; Figma link; GitHub link; types.xml excerpt |
 | Build faster | Mod recipes; live log watch; behavior and visual gates; release pack |
-| Stay healthy | Upgrade guard; conflict check with CF, COT and Expansion; balance sheet against vanilla; health page for each mod |
+| Stay healthy | Upgrade guard; conflict check with CF, COT and Expansion if your mod uses them; balance sheet against vanilla; health page for each mod |
 | Serve owners | Server kit; cited answers about vanilla; answer tests; layout preview |
 
 ## Growing the team: new specialists

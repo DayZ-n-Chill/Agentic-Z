@@ -418,7 +418,7 @@ List the mod's addons in `requiredAddons[]` in your mod's `config.cpp`, the same
 
 Three tools also help when your mod sits next to community mods:
 
-- `/dayz-conflict-check` looks for prefix, path and class collisions with CF, COT and Expansion.
+- `/dayz-conflict-check` looks for prefix, path and class collisions with the community mods your mod uses, such as CF, COT and Expansion.
 - `/dayz-gate` loads the addons your mod needs on the test server. Pass them with `--deps`, for example `/dayz-gate ingame <ModName> --deps CF`.
 - `/dayz-cot-bootstrap` gives you admin rights in Community Online Tools on your test server.
 
