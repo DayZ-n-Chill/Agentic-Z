@@ -56,11 +56,21 @@ Agentic-Z turns Claude Code, Codex CLI and Gemini CLI into a DayZ modding partne
 
 It's built for production-ready mods. Work goes through the same checks a careful team runs before a release: a code review, a layout check, a build check and an in-game test. Read-only gate agents run them, and the orchestrator runs the gates before it marks work as done.
 
-> [!WARNING]
-> AI can make mistakes, and the gates are AI too. They catch a lot, but review every change yourself and test your mod in game before you publish it.
-
 > [!NOTE]
 > Codex CLI and Gemini CLI get the skills and the rules files (see [Which AI tools it works with](#which-ai-tools-it-works-with)).
+
+### Why vanilla: the game's code is the source of truth
+
+Ask ten modders how to do something in DayZ and you can get ten answers. One tutorial says to do it this way, a forum post says another, and an old video uses a method that no longer works. Agentic-Z doesn't take anyone's word for it, including ours.
+
+Every answer comes from the game itself. The vanilla scripts, configs, layouts and materials on your P: drive are the reference, and Bohemia's own tools build and test the mod. That's why the core is built on vanilla DayZ and leaves community mods out.
+
+- **It reads the code:** before an agent writes anything, it searches the vanilla files and opens the real file. A search result is only a lead until the agent has read it.
+- **It shows its work:** answers cite the file and line they came from, as `path:line`, so you can open it and check.
+- **It builds on what's there:** new items inherit from the closest vanilla class, so they behave the way the base game does.
+- **It proves it:** the gates check the result with a code review, a layout check, a build check and an in-game test before the work counts as done.
+
+The result is code that matches how DayZ is actually built, not how someone remembers it.
 
 ### What it includes
 
@@ -81,6 +91,9 @@ The agents, the hooks and RAG search work only in Claude Code. Codex CLI and Gem
 You work with your AI tool. Agentic-Z gives that tool rules, agents, skills and a search server. Together, these act on your mod folder, the P: drive, DayZ Tools and the game.
 
 ![How Agentic-Z fits together](images/guide-01-1.svg)
+
+> [!WARNING]
+> AI can make mistakes, and the gates are AI too. They catch a lot, but review every change yourself and test your mod in game before you publish it.
 
 ## Before you start
 
@@ -390,7 +403,7 @@ Agentic-Z also recognizes the following content when it is pasted into a session
 
 ## Community mods and add-ons
 
-Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose. Every rule and reference pack is checked against the vanilla game files, and nothing in the core depends on a community mod. Community mods can still be added. This page covers using them in your mod, teaching Agentic-Z about a new one, and connecting an outside tool as an add-on.
+Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose (see [Why vanilla](#why-vanilla-the-games-code-is-the-source-of-truth)). Every rule and reference pack is checked against the vanilla game files, and nothing in the core depends on a community mod. Community mods can still be added. This page covers using them in your mod, teaching Agentic-Z about a new one, and connecting an outside tool as an add-on.
 
 ### Using a community mod in your mod
 
@@ -908,7 +921,7 @@ The skills also write to three places outside these folders:
 | Does it cost money? | Agentic-Z is free to use for DayZ mods (see LICENSE). You need your own AI tool. RAG search requires a Voyage AI key. The last full index build embedded about 66M tokens, and the current indexer creates more chunks, so check Voyage pricing. `/dayz-search-download` avoids the build by downloading a prebuilt index. That index is older than the current indexer, and searching still requires the key to embed your questions. |
 | Which AI tools does it work with? | See "Which AI tools it works with" under "What Agentic-Z is". |
 | Should I install the plugin or clone the repository? | See "Install and first setup". |
-| Does it use Expansion, CF or other community mods? | Not in the core: Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose. Your mod can still use them, and you can teach Agentic-Z about new ones. See "Community mods and add-ons". |
+| Does it use Expansion, CF or other community mods? | Not in the core: Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose (see [Why vanilla](#why-vanilla-the-games-code-is-the-source-of-truth)). Your mod can still use them, and you can teach Agentic-Z about new ones. See "Community mods and add-ons". |
 | Will it change my other mods? | No. Skills write only to your mod and to their own state, as listed in "Where everything lives". `/agentic-z-update` also checks out updated template files into your clone and commits them. |
 | Does it publish to the Workshop? | No. Builds go to `P:\Mods\@<ModName>`, which the launcher loads. Publish with DayZ Tools Publisher. |
 | Can I work on several mods? | Yes. Each mod has its own folder at `workspace\<ModName>`. To change mods, choose "Set up or switch to another mod" in the `/dayz-init` hub. |
