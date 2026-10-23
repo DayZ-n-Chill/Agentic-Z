@@ -39,8 +39,8 @@ const specialistCycle = {
 const versions = {
   type: 'versions',
   versions: [
-    { label: 'v1.6.0', note: 'Released', built: 51, top: 0, tests: '84 tests' },
-    { label: 'v1.7.0', note: 'Agent team', built: 51, top: 20 },
+    { label: 'v1.0.0', note: 'Released', built: 51, top: 0, tests: '84 tests' },
+    { label: 'v1.5.0', note: 'Agent team', built: 51, top: 20 },
     { label: 'v2.0.0', note: 'Final', built: 163, top: 163, tests: '2,884 tests' },
   ],
   total: 163,

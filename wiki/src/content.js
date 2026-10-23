@@ -99,7 +99,7 @@ const GROUPS = [
 ];
 
 // Project-tracking chapters from the team doc. They describe the build, not how to use it, so the wiki leaves them out.
-const HIDDEN = new Set(['status-and-next-steps', 'open-items-and-decisions', 'what-changed-from-agentic-z-160']);
+const HIDDEN = new Set(['status-and-next-steps', 'open-items-and-decisions', 'what-changed-from-agentic-z-100']);
 
 const all = [...guidePages, ...teamPages];
 const bySlug = Object.fromEntries(all.map((p) => [p.slug, p]));

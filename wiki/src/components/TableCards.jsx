@@ -31,10 +31,10 @@ const plain = (s) => s.replace(/[`*]/g, '');
 
 // Subtle report-card colors: A green, B teal, C amber, D orange, F red. Anything else stays neutral.
 const GRADE_HUES = {
-  A: { dark: '#6FBF73', light: '#2E7D32' },
+  A: { dark: '#6FBF73', light: '#2A7230' },
   B: { dark: '#5FB3B3', light: '#1F6F6F' },
-  C: { dark: '#E2A33B', light: '#A8670F' },
-  D: { dark: '#E07B3C', light: '#B4531A' },
+  C: { dark: '#E2A33B', light: '#8A520A' },
+  D: { dark: '#E07B3C', light: '#9E4914' },
   F: { dark: '#E5645A', light: '#B3261E' },
 };
 
@@ -191,12 +191,14 @@ export default function TableCards({ source, renderInline }) {
 // Tables whose other columns are all short (grades, statuses): one even column per value.
 function Matrix({ header, groups, renderInline }) {
   const cols = header.length - 1;
+  // Wide enough for the longest column header on one line (about 7.5px per character at this size).
+  const colWidth = Math.max(112, Math.ceil(Math.max(...header.slice(1).map((h) => plain(h).length)) * 7.5) + 8);
   const grid = {
     display: 'grid',
     alignItems: 'center',
     columnGap: 2,
     rowGap: 0.75,
-    gridTemplateColumns: { xs: `repeat(${cols}, minmax(0, 1fr))`, sm: `minmax(0, 1fr) repeat(${cols}, 112px)` },
+    gridTemplateColumns: { xs: `repeat(${cols}, minmax(0, 1fr))`, sm: `minmax(0, 1fr) repeat(${cols}, ${colWidth}px)` },
   };
   const nameSx = { gridColumn: { xs: '1 / -1', sm: 'auto' } };
   return (
@@ -207,11 +209,16 @@ function Matrix({ header, groups, renderInline }) {
             <Typography variant="overline" color="text.secondary" sx={{ ...nameSx, lineHeight: 1.6 }}>
               {g.title ? `${g.title} · ${g.rows.length}` : plain(header[0])}
             </Typography>
-            {header.slice(1).map((h) => (
-              <Typography key={h} sx={{ fontFamily: fonts.mono, fontSize: '0.64rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary', lineHeight: 1.3 }}>
-                {plain(h)}
-              </Typography>
-            ))}
+            {header.slice(1).map((h) => {
+              // On phones only the first word shows ("v1.5.0"), so every header stays on one line.
+              const [first, ...rest] = plain(h).split(' ');
+              return (
+                <Typography key={h} sx={{ fontFamily: fonts.mono, fontSize: '0.64rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary', lineHeight: 1.3, whiteSpace: 'nowrap' }}>
+                  {first}
+                  {rest.length > 0 && <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}> {rest.join(' ')}</Box>}
+                </Typography>
+              );
+            })}
           </Box>
           <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
             {g.rows.map((row, ri) => (

@@ -14,6 +14,7 @@ import {
   InputAdornment,
   Link,
   List,
+  ListItem,
   ListItemButton,
   ListItemText,
   ListSubheader,
@@ -66,9 +67,11 @@ function NavList({ slug, onNavigate }) {
   return (
     <Box component="nav" aria-label="Wiki pages" sx={{ px: 1.5, pb: 4 }}>
       <List dense disablePadding>
-        <ListItemButton selected={!slug} onClick={() => onNavigate('')} sx={{ mt: 1.5 }}>
-          <ListItemText primary="Overview" primaryTypographyProps={{ fontWeight: 600 }} />
-        </ListItemButton>
+        <ListItem disablePadding>
+          <ListItemButton selected={!slug} aria-current={!slug ? 'page' : undefined} onClick={() => onNavigate('')} sx={{ mt: 1.5 }}>
+            <ListItemText primary="Overview" primaryTypographyProps={{ fontWeight: 600 }} />
+          </ListItemButton>
+        </ListItem>
       </List>
       {groups.map((g) => (
         <List
@@ -95,9 +98,11 @@ function NavList({ slug, onNavigate }) {
           }
         >
           {g.pages.map((p) => (
-            <ListItemButton key={p.slug} selected={p.slug === slug} onClick={() => onNavigate(p.slug)}>
-              <ListItemText primary={p.title} primaryTypographyProps={{ fontSize: '0.875rem' }} />
-            </ListItemButton>
+            <ListItem key={p.slug} disablePadding>
+              <ListItemButton selected={p.slug === slug} aria-current={p.slug === slug ? 'page' : undefined} onClick={() => onNavigate(p.slug)}>
+                <ListItemText primary={p.title} primaryTypographyProps={{ fontSize: '0.875rem' }} />
+              </ListItemButton>
+            </ListItem>
           ))}
         </List>
       ))}
@@ -234,7 +239,7 @@ const STATS = [
   ['30', 'agents'],
   ['44', 'skills'],
   ['3', 'hooks'],
-  ['163', 'every element graded A+'],
+  ['163', 'graded elements'],
 ];
 
 function Home({ onNavigate }) {

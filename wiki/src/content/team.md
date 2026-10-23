@@ -26,7 +26,7 @@ This document describes the Agentic-Z mod team: the 30 agents and 44 skills that
 - [Open items and decisions](#open-items-and-decisions)
     - [Roadmap](#roadmap)
     - [What we take and what we leave](#what-we-take-and-what-we-leave)
-- [What changed from Agentic-Z 1.6.0](#what-changed-from-agentic-z-160)
+- [What changed from Agentic-Z 1.0.0](#what-changed-from-agentic-z-160)
 - [The agents](#the-agents)
 - [The skills](#the-skills)
     - [Specialist workflows](#specialist-workflows)
@@ -120,13 +120,13 @@ The status column uses three values:
 
 The final grades cover 163 items, and all 163 are at A+: 30 of the 30 agents, 44 of the 44 skills and 89 of the 89 shared items. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and the grading method note. The final review graded every item, and each item shows its latest grade. The grades come from `final_grades.json` and `final_grades_shared.json`. The `clean-repo` skill was graded twice and counts once.
 
-Independent reviewers graded every agent and skill at v1.6.0, at v1.7.0 and in the current Agentic-Z (see "How the grading works"). All three columns are their grades, and the final column is the final grade, not a target. The final grades also cover the hooks, the search server, the scripts, the answer tests and every shared reference folder under `_shared/`. An item that did not exist yet at a version shows "not built". A shared file that was not graded at a version shows "n/a".
+Independent reviewers graded every agent and skill at v1.0.0, at v1.5.0 and in the current Agentic-Z (see "How the grading works"). All three columns are their grades, and the final column is the final grade, not a target. The final grades also cover the hooks, the search server, the scripts, the answer tests and every shared reference folder under `_shared/`. An item that did not exist yet at a version shows "not built". A shared file that was not graded at a version shows "n/a".
 
 ![Agentic-Z versions and grades](images/team-02-1.svg)
 
-The test suite grew from 84 tests at v1.6.0 to 2,884 tests now.
+The test suite grew from 84 tests at v1.0.0 to 2,884 tests now.
 
-| Item | v1.6.0 released | v1.7.0 agent team | v2.0.0 final |
+| Item | v1.0.0 released | v1.5.0 agent team | v2.0.0 final |
 | --- | --- | --- | --- |
 | Agents | | | |
 | `agent-creator` | A- | A+ | A+ |
@@ -308,7 +308,7 @@ The final grade count opens the "Quality by version" section.
 
 ### Who grades
 
-- Each round starts new, independent Claude reviewers with no memory of earlier rounds. The final review used six reviewers: two for the agents, three for the skills and one for all shared items. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and this method note. For the files that were not graded, see "Files not graded" under "Open items and decisions".
+- Each round starts new, independent Claude reviewers with no memory of earlier rounds. The final review used six reviewers: two for the agents, three for the skills and one for all shared items. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and this method note.
 - Reviewers are read-only and cannot edit files. They read every file, run the tests where the session allows it, and check claims against the code and the vanilla DayZ files on the P: drive. Three skill reviewers could not run pytest because their sessions denied it, and they stated this in their reasons. These reviewers graded `dayz-launch-objectbuilder`, `dayz-launch-workbench` and `dayz-search-download`.
 - Separate fixers correct what the reviewers find. The fixers are different agents, and each one owns its own files. A fixer never grades its own work.
 - New reviewers grade again after every fix round. An item counts as A+ only when an independent reviewer gives it A+.
@@ -599,7 +599,7 @@ Each specialist follows its own steps inside the team workflow described in [The
 | Answer tests for seven agents | The build checker, in-game tester, architect, lead, orchestrator, router and Figma to layout agent have no question file yet. | Write their question files and record a baseline. |
 | Files not graded | Nine answer test files, `expansion_style.md`, `examples/layouts.md` and the nine `enscript-style/` section files have no grade yet. | Grade them in the next independent round. |
 | Preflight exception list | `docs/dayz-modding.md` still lists five, which no longer matches the DayZ rules file (see The skills). | Bring `docs/dayz-modding.md` in line with the rules file. |
-| RAG search | The installed plugin (1.6.0) has the search timeout bug. The fix is in the current Agentic-Z. | The updated plugin, a Voyage API key in `.env`, and a full re-index. |
+| RAG search | The installed plugin (1.0.0) has the search timeout bug. The fix is in the current Agentic-Z. | The updated plugin, a Voyage API key in `.env`, and a full re-index. |
 
 ### Roadmap
 
@@ -608,7 +608,7 @@ Each specialist follows its own steps inside the team workflow described in [The
 3. **Grade the files not yet graded.** See Open items and decisions.
 4. **Add-ons plugin.** An optional `agentic-z-addons` plugin for outside tools. It will be built only after the core is complete, and only for the add-ons the user names.
 
-## What changed from Agentic-Z 1.6.0
+## What changed from Agentic-Z 1.0.0
 
 Each change comes from the quality review or the build.
 

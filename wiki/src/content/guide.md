@@ -148,11 +148,11 @@ The wizard asks whether you are starting a new mod or importing one, the mod nam
 
 Describe what you want, and Claude picks the right specialist. You can also name an agent directly, for example "use the dayz-config-specialist to...".
 
-Agentic-Z has 30 agents. "New" marks an agent added since version 1.6.0.
+Agentic-Z has 30 agents. "New" marks an agent added since version 1.0.0.
 
 ### All agents
 
-| Agent | What it does | Example request | Since 1.6.0 |
+| Agent | What it does | Example request | Since 1.0.0 |
 | --- | --- | --- | --- |
 | **Plan** | | | |
 | **Mod orchestrator** `dayz-orchestrator` | Plans the mod with the user, splits it into small tasks, assigns them to leads, runs the gates and tracks completed work. | See [The mod team](#the-mod-team). | New |
@@ -337,7 +337,7 @@ The final review graded every item. Fresh graders then regraded items after each
 
 ### Who grades
 
-- **Independent reviewers:** each round starts new Claude reviewers with no memory of earlier rounds. The final review used six: two for the agents, three for the skills, and one for everything shared. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the shared reference packs and this note. A few shared files were not graded; they are listed under "Files not graded" in "Open items and decisions".
+- **Independent reviewers:** each round starts new Claude reviewers with no memory of earlier rounds. The final review used six: two for the agents, three for the skills, and one for everything shared. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the shared reference packs and this note.
 - **Read-only access:** reviewers cannot edit files. They read every file, run the tests where the session allows it, and check claims against the code and the vanilla DayZ files on the P: drive. The skill reviewer for `dayz-launch-objectbuilder`, `dayz-launch-workbench` and `dayz-search-download` could not run pytest for them, because its session denied it. The reviewer stated this in its reasons.
 - **Separate fixers:** different agents fix the problems the reviewers find, and each fixer owns its own files. A fixer never grades its own work.
 - **Regrading:** new reviewers grade again after every fix round. An item counts as A+ only when an independent reviewer gives it A+.
@@ -455,13 +455,13 @@ Output a table: Item | Grade | Why | To reach A+.
 Because each run uses a new reviewer, two runs can word their findings differently, and a stricter reviewer can find a new edge case. This is intended. The grading found real bugs, and each one was fixed and covered by a test.
 ### Quality by version
 
-This table lists the grade of each agent, skill and shared item at three releases. Independent AI reviewers assigned every grade: at v1.6.0, after the v1.7.0 grading rounds, and for the final release. The final grades also cover the hooks, the search server, the scripts, the answer tests and every specialist reference folder. For the final totals, see "The final count".
+This table lists the grade of each agent, skill and shared item at three releases. Independent AI reviewers assigned every grade: at v1.0.0, after the v1.5.0 grading rounds, and for the final release. The final grades also cover the hooks, the search server, the scripts, the answer tests and every specialist reference folder. For the final totals, see "The final count".
 
 ![Agentic-Z versions and grades](images/guide-05-1.svg)
 
 Two values in the table are not grades. "Not built" means that the item did not exist yet at that version. "n/a" means that the shared file was not graded at that version. The last column is the final grade, not a target.
 
-| Item | v1.6.0 released | v1.7.0 agent team | v2.0.0 final |
+| Item | v1.0.0 released | v1.5.0 agent team | v2.0.0 final |
 | --- | --- | --- | --- |
 | **Agents** | | | |
 | `agent-creator` | A- | A+ | A+ |
