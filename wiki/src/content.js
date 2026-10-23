@@ -93,7 +93,7 @@ const GROUPS = [
   {
     id: 'help',
     title: 'Help',
-    slugs: ['troubleshooting', 'faq', 'safety', 'getting-help-and-contributing'],
+    slugs: ['safety', 'faq', 'troubleshooting', 'getting-help-and-contributing'],
   },
 ];
 
