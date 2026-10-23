@@ -79,9 +79,9 @@ const GROUPS = [
     title: 'Skills & knowledge',
     slugs: [
       'one-source-of-truth',
+      'the-three-tiers-of-rules',
       'the-skills',
       'rag-search',
-      'the-three-tiers-of-rules',
       'token-savers-and-workflows',
       'community-mods-and-add-ons',
     ],
