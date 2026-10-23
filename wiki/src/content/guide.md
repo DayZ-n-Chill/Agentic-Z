@@ -780,7 +780,7 @@ The skills also write to three places outside these folders:
 
 | Question | Answer |
 | --- | --- |
-| Does it cost money? | Agentic-Z is free to use for DayZ mods (see LICENSE). You need your own AI tool. RAG search requires a Voyage AI key. The last full index build embedded about 66M tokens, and the current indexer creates more chunks, so check Voyage pricing. `/dayz-search-download` avoids the build by downloading a prebuilt index. That index is older than the current indexer, and searching still requires the key to embed your questions. |
+| Does it cost money? | Agentic-Z is free to use for DayZ mods. It is source-available: see [License](#license). You need your own AI tool. RAG search requires a Voyage AI key. The last full index build embedded about 66M tokens, and the current indexer creates more chunks, so check Voyage pricing. `/dayz-search-download` avoids the build by downloading a prebuilt index. That index is older than the current indexer, and searching still requires the key to embed your questions. |
 | Which AI tools does it work with? | See "Which AI tools it works with" under "What Agentic-Z is". |
 | Should I install the plugin or clone the repository? | See "Install and first setup". |
 | Does it use Expansion, CF or other community mods? | Not in the core: Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose (see [One source of truth](#one-source-of-truth)). Your mod can still use them, and you can teach Agentic-Z about new ones. See "Community mods and add-ons". |
@@ -797,3 +797,13 @@ The skills also write to three places outside these folders:
 ## Getting help and contributing
 
 For help, join the DayZ n' Chill Discord at `discord.gg/dayznchill`. The repository is at `github.com/DayZ-n-Chill/Agentic-Z`. To contribute, create a branch with a name that starts with `feature/`, `fix/`, `docs/` or `chore/`, and open a pull request.
+
+### License
+
+Agentic-Z is source-available, not open source. The code is public so you can read it, use it and change it, but it comes with limits. The full terms are in [LICENSE](https://github.com/DayZ-n-Chill/Agentic-Z/blob/main/LICENSE).
+
+- **You can:** use, modify and run Agentic-Z to build DayZ mods and related content.
+- **Your mods are yours:** anything you build with it is yours to share or sell. The license puts no limits on your mods.
+- **You can share it for free:** pass on Agentic-Z, changed or unchanged, at no charge, as long as the license and copyright notice stay with it.
+- **You can't sell it:** you may not sell, license or otherwise make money from Agentic-Z itself, in whole or in large part. That includes its code, agents, skills, prompts and documentation, changed or not.
+- **You can't build a paid product on it:** you may not offer it as a paid product, template or service, or as any offering where Agentic-Z is the main value. For example, you can't wrap it in an app or agent system and charge for that.
