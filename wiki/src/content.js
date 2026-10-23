@@ -78,11 +78,12 @@ const GROUPS = [
     id: 'knowledge',
     title: 'Skills & knowledge',
     slugs: [
+      'one-source-of-truth',
       'the-skills',
       'rag-search',
       'the-three-tiers-of-rules',
       'token-savers-and-workflows',
-      'one-source-of-truth', 'community-mods-and-add-ons',
+      'community-mods-and-add-ons',
     ],
   },
   {
