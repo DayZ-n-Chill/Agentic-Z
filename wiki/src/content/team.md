@@ -330,7 +330,7 @@ The final grade count opens the "Quality by version" section.
 
 ### The rubric for everything else
 
-The 90 shared items are neither agents nor skills, so reviewers judge each type of item by its own purpose.
+The 89 shared items are neither agents nor skills, so reviewers judge each type of item by its own purpose.
 
 | Item type | What the reviewer checks |
 | --- | --- |

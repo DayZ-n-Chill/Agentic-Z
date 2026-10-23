@@ -360,7 +360,7 @@ The final review graded every item. Fresh graders then regraded items after each
 
 ### The rubric for everything else
 
-The 90 shared items are neither agents nor skills, so the reviewer judges each kind of item against criteria suited to it.
+The 89 shared items are neither agents nor skills, so the reviewer judges each kind of item against criteria suited to it.
 
 | Kind of item | What the reviewer checks |
 | --- | --- |
