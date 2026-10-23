@@ -31,7 +31,7 @@ This guide explains how to install, set up and use Agentic-Z, the AI agent stack
     - [How each specialist works](#how-each-specialist-works)
     - [How every specialist's knowledge is checked](#how-every-specialists-knowledge-is-checked)
     - [Paste it in](#paste-it-in)
-- [Why vanilla](#why-vanilla)
+- [One source of truth](#one-source-of-truth)
 - [Community mods and add-ons](#community-mods-and-add-ons)
 - [How the grading works](#how-the-grading-works)
     - [The final count](#the-final-count)
@@ -389,7 +389,7 @@ Agentic-Z also recognizes the following content when it is pasted into a session
 | A Steam Workshop link | Refused, with the reason stated: Workshop content is packed, binarized and often protected. |
 | A types.xml chunk | Checks the entries, lists any problems, and suggests `/dayz-edit-types --merge` to merge them. |
 
-## Why vanilla
+## One source of truth
 
 Ask ten modders how to do something in DayZ and you can get ten answers. One tutorial says to do it this way, a forum post says another, and an old video uses a method that no longer works. Agentic-Z doesn't take anyone's word for it, including ours.
 
@@ -404,7 +404,7 @@ The result is code that matches how DayZ is actually built, not how someone reme
 
 ## Community mods and add-ons
 
-Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose (see [Why vanilla](#why-vanilla)). Every rule and reference pack is checked against the vanilla game files, and nothing in the core depends on a community mod. Community mods can still be added. This page covers using them in your mod, teaching Agentic-Z about a new one, and connecting an outside tool as an add-on.
+Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose (see [One source of truth](#one-source-of-truth)). Every rule and reference pack is checked against the vanilla game files, and nothing in the core depends on a community mod. Community mods can still be added. This page covers using them in your mod, teaching Agentic-Z about a new one, and connecting an outside tool as an add-on.
 
 ### Using a community mod in your mod
 
@@ -922,7 +922,7 @@ The skills also write to three places outside these folders:
 | Does it cost money? | Agentic-Z is free to use for DayZ mods (see LICENSE). You need your own AI tool. RAG search requires a Voyage AI key. The last full index build embedded about 66M tokens, and the current indexer creates more chunks, so check Voyage pricing. `/dayz-search-download` avoids the build by downloading a prebuilt index. That index is older than the current indexer, and searching still requires the key to embed your questions. |
 | Which AI tools does it work with? | See "Which AI tools it works with" under "What Agentic-Z is". |
 | Should I install the plugin or clone the repository? | See "Install and first setup". |
-| Does it use Expansion, CF or other community mods? | Not in the core: Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose (see [Why vanilla](#why-vanilla)). Your mod can still use them, and you can teach Agentic-Z about new ones. See "Community mods and add-ons". |
+| Does it use Expansion, CF or other community mods? | Not in the core: Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose (see [One source of truth](#one-source-of-truth)). Your mod can still use them, and you can teach Agentic-Z about new ones. See "Community mods and add-ons". |
 | Will it change my other mods? | No. Skills write only to your mod and to their own state, as listed in "Where everything lives". `/agentic-z-update` also checks out updated template files into your clone and commits them. |
 | Does it publish to the Workshop? | No. Builds go to `P:\Mods\@<ModName>`, which the launcher loads. Publish with DayZ Tools Publisher. |
 | Can I work on several mods? | Yes. Each mod has its own folder at `workspace\<ModName>`. To change mods, choose "Set up or switch to another mod" in the `/dayz-init` hub. |
