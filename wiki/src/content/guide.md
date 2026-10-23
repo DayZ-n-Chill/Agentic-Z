@@ -806,4 +806,5 @@ Agentic-Z is source-available, not open source. The code is public so you can re
 - **Your mods are yours:** anything you build with it is yours to share or sell. The license puts no limits on your mods.
 - **You can share it for free:** pass on Agentic-Z, changed or unchanged, at no charge, as long as the license and copyright notice stay with it.
 - **You can't sell it:** you may not sell, license or otherwise make money from Agentic-Z itself, in whole or in large part. That includes its code, agents, skills, prompts and documentation, changed or not.
-- **You can't build a paid product on it:** you may not offer it as a paid product, template or service, or as any offering where Agentic-Z is the main value. For example, you can't wrap it in an app or agent system and charge for that.
+- **You can't build a paid product on it:** you may not offer it as a paid product, template or service, or put it inside any paid or monetized app, agent system or service, even as just one part of it.
+- **Only for DayZ modding:** the license covers building DayZ mods and related content. It gives no permission to use Agentic-Z for anything else.
