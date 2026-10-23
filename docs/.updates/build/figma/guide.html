@@ -1,0 +1,3488 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Agentic-Z Guide</title><base href="/"><style>/* Print stylesheet for the Agentic-Z PDFs. Letter, continuous book flow. */
+@page { size: Letter; margin: 0.75in 0.75in 0.85in; }
+@page :first { margin: 0; }
+
+:root {
+  --ink: #1d2733;
+  --muted: #5b6673;
+  --navy: #1f3a5f;
+  --accent: #b5652b;
+  --rule: #d5dae1;
+  --tint: #f3f5f8;
+  --head: #e9edf2;
+}
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  margin: 0; background: #fff; color: var(--ink);
+  font: 10.5pt/1.5 Cambria, Georgia, "Times New Roman", serif;
+  orphans: 3; widows: 3;
+  hyphens: manual;
+}
+
+/* Cover */
+.cover {
+  height: 11in; box-sizing: border-box; padding: 2.6in 1in 1in;
+  break-after: page; position: relative;
+  border-top: 0.32in solid var(--navy);
+}
+.cover .brand { font: 600 11pt "Segoe UI", Arial, sans-serif; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); }
+.cover h1 { font: 600 38pt/1.1 "Segoe UI", Arial, sans-serif; color: var(--navy); margin: 14pt 0 6pt; }
+.cover .sub { font: 300 18pt "Segoe UI", Arial, sans-serif; color: var(--muted); }
+.cover .rule { width: 1.2in; height: 3pt; background: var(--accent); margin: 28pt 0 22pt; }
+.cover .lede { font-size: 12.5pt; line-height: 1.55; max-width: 5.6in; margin: 0; }
+.cover .meta { position: absolute; left: 1in; bottom: 1in; font: 9pt/1.7 "Segoe UI", Arial, sans-serif; color: var(--muted); }
+
+/* Contents */
+.toc { break-after: page; }
+.toc-h { margin-top: 0 !important; }
+.toc ol { list-style: none; margin: 0; padding: 0; }
+.toc li { break-inside: avoid; }
+.toc a { display: flex; align-items: baseline; color: inherit; text-decoration: none; }
+.toc .dots { flex: 1; border-bottom: 1px dotted #9aa3ae; margin: 0 6pt; transform: translateY(-3pt); }
+.toc .p { font: 10pt "Segoe UI", Arial, sans-serif; min-width: 18pt; text-align: right; }
+.toc li.l1 { font: 600 11pt/1.4 "Segoe UI", Arial, sans-serif; color: var(--navy); margin-top: 9pt; }
+.toc li.l2 { font-size: 10.5pt; line-height: 1.55; padding-left: 16pt; }
+.toc li.l2 .p { font-weight: 400; color: var(--muted); }
+
+/* Headings: sans, navy, always kept with what follows */
+h2, h3, h4 { font-family: "Segoe UI", Arial, sans-serif; color: var(--navy); break-after: avoid; break-inside: avoid; }
+h2 {
+  font-size: 18pt; font-weight: 600; line-height: 1.2;
+  margin: 30pt 0 10pt; padding-top: 10pt; border-top: 2pt solid var(--navy);
+}
+h3 { font-size: 12.5pt; font-weight: 600; margin: 20pt 0 6pt; }
+h4 { font-size: 10.5pt; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; margin: 14pt 0 4pt; }
+main > :first-child, main > .keep:first-child h2 { margin-top: 0; }
+.keep { break-inside: avoid; }
+.keep > p:last-child { margin-bottom: 0; }
+.keep + * { margin-top: 8pt; }
+
+p { margin: 0 0 8pt; }
+a { color: var(--navy); text-decoration: none; }
+strong { font-weight: 700; }
+ul, ol { margin: 0 0 10pt; padding-left: 20pt; }
+li { margin: 0 0 3pt; break-inside: avoid; }
+li > ul, li > ol { margin: 3pt 0 0; }
+
+code {
+  font: 8.8pt Consolas, "Cascadia Mono", monospace;
+  background: var(--tint); padding: 0.5pt 3pt; border-radius: 2pt;
+}
+pre {
+  font: 8.6pt/1.45 Consolas, "Cascadia Mono", monospace;
+  background: var(--tint); border-left: 3pt solid var(--navy);
+  padding: 8pt 12pt; margin: 6pt 0 12pt; white-space: pre-wrap; break-inside: avoid;
+}
+pre code { background: none; padding: 0; font: inherit; }
+
+/* Tables: sans, compact, row-level breaks with repeated header */
+table {
+  width: 100%; border-collapse: collapse; margin: 6pt 0 14pt;
+  font: 8.6pt/1.42 "Segoe UI", Arial, sans-serif;
+}
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th {
+  background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+  padding: 5pt 7pt; vertical-align: bottom;
+}
+th code { background: none; color: #fff; padding: 0; }
+td { padding: 4.5pt 7pt; border-bottom: 0.6pt solid var(--rule); vertical-align: top; }
+tbody tr:nth-child(even) td { background: #f7f8fa; }
+td code { font-size: 8.2pt; background: none; padding: 0; color: #24405f; }
+tr.grp td {
+  background: var(--head) !important; font-weight: 700; color: var(--navy);
+  padding-top: 6pt; border-bottom: 0.8pt solid #aeb7c2;
+}
+tr.grp { break-after: avoid; }
+/* Grade tables: the grade columns stay narrow and centered */
+table[data-cols="4"] td:nth-child(n+2):not(:last-child) { white-space: nowrap; }
+table[data-cols="3"] td:nth-child(2) { white-space: nowrap; }
+/* Spec cards: two columns, label column narrow */
+table.card { break-inside: avoid; }
+table.card td:first-child { width: 22%; font-weight: 600; color: var(--navy); }
+
+/* Figures */
+figure { margin: 8pt 0 14pt; break-inside: avoid; text-align: center; }
+figure img { width: 100%; max-height: 5.4in; object-fit: contain; display: block; margin: 0 auto; }
+figcaption {
+  font: italic 8.6pt "Segoe UI", Arial, sans-serif; color: var(--muted);
+  margin-top: 4pt; text-align: center;
+}
+
+@page { @bottom-left { content: "Agentic-Z  |  " string(doctitle); font: 7.5pt "Segoe UI", Arial, sans-serif; color: #6b7684; }
+        @bottom-right { content: counter(page); font: 7.5pt "Segoe UI", Arial, sans-serif; color: #6b7684; } }
+@page :first { @bottom-left { content: none; } @bottom-right { content: none; } }
+.cover h1 { string-set: doctitle content(text); }
+.toc .p::after { content: target-counter(attr(href url), page); }
+@media screen {
+  html, body { background: #e6e8ec; }
+  .pagedjs_pages { display: flex; flex-direction: column; align-items: center; gap: 48px; padding: 48px 0; }
+  .pagedjs_page { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+}
+</style><script src="https://unpkg.com/pagedjs@0.4.3/dist/paged.polyfill.js"></script><script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script></head><body><section class="cover"><div class="brand">Agentic-Z</div><h1>Agentic-Z Guide</h1><div class="sub">User Guide</div><div class="rule"></div><p class="lede">This guide explains how to install, set up and use Agentic-Z, the AI agent stack for DayZ modding. Agentic-Z includes 30 agents, 44 skills, three hooks and a side panel.</p><div class="meta">Version 2.0.0 &nbsp;&middot;&nbsp; October 2026<br>DayZ n' Chill &nbsp;&middot;&nbsp; github.com/DayZ-n-Chill/Agentic-Z</div></section><section class="toc"><h2 class="toc-h">Contents</h2><ol><li class="l1"><a href="#what-agentic-z-is"><span class="t">What Agentic-Z is</span><span class="dots"></span><span class="p" href="#what-agentic-z-is"></span></a></li><li class="l2"><a href="#what-it-includes"><span class="t">What it includes</span><span class="dots"></span><span class="p" href="#what-it-includes"></span></a></li><li class="l2"><a href="#which-ai-tools-it-works-with"><span class="t">Which AI tools it works with</span><span class="dots"></span><span class="p" href="#which-ai-tools-it-works-with"></span></a></li><li class="l2"><a href="#how-it-fits-together"><span class="t">How it fits together</span><span class="dots"></span><span class="p" href="#how-it-fits-together"></span></a></li><li class="l1"><a href="#before-you-start"><span class="t">Before you start</span><span class="dots"></span><span class="p" href="#before-you-start"></span></a></li><li class="l2"><a href="#what-you-need"><span class="t">What you need</span><span class="dots"></span><span class="p" href="#what-you-need"></span></a></li><li class="l2"><a href="#optional-extras"><span class="t">Optional extras</span><span class="dots"></span><span class="p" href="#optional-extras"></span></a></li><li class="l1"><a href="#install-and-first-setup"><span class="t">Install and first setup</span><span class="dots"></span><span class="p" href="#install-and-first-setup"></span></a></li><li class="l2"><a href="#option-a-clone-as-a-template"><span class="t">Option A: clone as a template</span><span class="dots"></span><span class="p" href="#option-a-clone-as-a-template"></span></a></li><li class="l2"><a href="#option-b-install-as-a-claude-code-plugin"><span class="t">Option B: install as a Claude Code plugin</span><span class="dots"></span><span class="p" href="#option-b-install-as-a-claude-code-plugin"></span></a></li><li class="l2"><a href="#run-the-setup-wizard"><span class="t">Run the setup wizard</span><span class="dots"></span><span class="p" href="#run-the-setup-wizard"></span></a></li><li class="l1"><a href="#your-daily-loop"><span class="t">Your daily loop</span><span class="dots"></span><span class="p" href="#your-daily-loop"></span></a></li><li class="l1"><a href="#agents"><span class="t">Agents</span><span class="dots"></span><span class="p" href="#agents"></span></a></li><li class="l2"><a href="#all-agents"><span class="t">All agents</span><span class="dots"></span><span class="p" href="#all-agents"></span></a></li><li class="l1"><a href="#the-mod-team"><span class="t">The mod team</span><span class="dots"></span><span class="p" href="#the-mod-team"></span></a></li><li class="l2"><a href="#team-structure"><span class="t">Team structure</span><span class="dots"></span><span class="p" href="#team-structure"></span></a></li><li class="l2"><a href="#starting-the-team"><span class="t">Starting the team</span><span class="dots"></span><span class="p" href="#starting-the-team"></span></a></li><li class="l2"><a href="#how-the-team-checks-work"><span class="t">How the team checks work</span><span class="dots"></span><span class="p" href="#how-the-team-checks-work"></span></a></li><li class="l2"><a href="#rag-search"><span class="t">RAG search</span><span class="dots"></span><span class="p" href="#rag-search"></span></a></li><li class="l1"><a href="#the-three-tiers-of-rules"><span class="t">The three tiers of rules</span><span class="dots"></span><span class="p" href="#the-three-tiers-of-rules"></span></a></li><li class="l2"><a href="#token-savers"><span class="t">Token savers</span><span class="dots"></span><span class="p" href="#token-savers"></span></a></li><li class="l2"><a href="#each-specialist-in-detail"><span class="t">Each specialist in detail</span><span class="dots"></span><span class="p" href="#each-specialist-in-detail"></span></a></li><li class="l2"><a href="#how-each-specialist-works"><span class="t">How each specialist works</span><span class="dots"></span><span class="p" href="#how-each-specialist-works"></span></a></li><li class="l2"><a href="#how-every-specialists-knowledge-is-checked"><span class="t">How every specialist's knowledge is checked</span><span class="dots"></span><span class="p" href="#how-every-specialists-knowledge-is-checked"></span></a></li><li class="l2"><a href="#paste-it-in"><span class="t">Paste it in</span><span class="dots"></span><span class="p" href="#paste-it-in"></span></a></li><li class="l1"><a href="#add-ons-planned"><span class="t">Add-ons (planned)</span><span class="dots"></span><span class="p" href="#add-ons-planned"></span></a></li><li class="l1"><a href="#how-the-grading-works"><span class="t">How the grading works</span><span class="dots"></span><span class="p" href="#how-the-grading-works"></span></a></li><li class="l2"><a href="#the-final-count"><span class="t">The final count</span><span class="dots"></span><span class="p" href="#the-final-count"></span></a></li><li class="l2"><a href="#who-grades"><span class="t">Who grades</span><span class="dots"></span><span class="p" href="#who-grades"></span></a></li><li class="l2"><a href="#what-they-grade-against"><span class="t">What they grade against</span><span class="dots"></span><span class="p" href="#what-they-grade-against"></span></a></li><li class="l2"><a href="#the-rubric-for-agents-and-skills"><span class="t">The rubric for agents and skills</span><span class="dots"></span><span class="p" href="#the-rubric-for-agents-and-skills"></span></a></li><li class="l2"><a href="#the-rubric-for-everything-else"><span class="t">The rubric for everything else</span><span class="dots"></span><span class="p" href="#the-rubric-for-everything-else"></span></a></li><li class="l2"><a href="#the-scale"><span class="t">The scale</span><span class="dots"></span><span class="p" href="#the-scale"></span></a></li><li class="l2"><a href="#run-it-yourself"><span class="t">Run it yourself</span><span class="dots"></span><span class="p" href="#run-it-yourself"></span></a></li><li class="l2"><a href="#quality-by-version"><span class="t">Quality by version</span><span class="dots"></span><span class="p" href="#quality-by-version"></span></a></li><li class="l1"><a href="#why-each-item-got-its-grade"><span class="t">Why each item got its grade</span><span class="dots"></span><span class="p" href="#why-each-item-got-its-grade"></span></a></li><li class="l2"><a href="#real-bugs-the-grading-found-and-fixed"><span class="t">Real bugs the grading found and fixed</span><span class="dots"></span><span class="p" href="#real-bugs-the-grading-found-and-fixed"></span></a></li><li class="l2"><a href="#every-skill"><span class="t">Every skill</span><span class="dots"></span><span class="p" href="#every-skill"></span></a></li><li class="l1"><a href="#where-everything-lives"><span class="t">Where everything lives</span><span class="dots"></span><span class="p" href="#where-everything-lives"></span></a></li><li class="l2"><a href="#folders"><span class="t">Folders</span><span class="dots"></span><span class="p" href="#folders"></span></a></li><li class="l2"><a href="#settings-you-might-need"><span class="t">Settings you might need</span><span class="dots"></span><span class="p" href="#settings-you-might-need"></span></a></li><li class="l1"><a href="#safety"><span class="t">Safety</span><span class="dots"></span><span class="p" href="#safety"></span></a></li><li class="l1"><a href="#troubleshooting"><span class="t">Troubleshooting</span><span class="dots"></span><span class="p" href="#troubleshooting"></span></a></li><li class="l1"><a href="#faq"><span class="t">FAQ</span><span class="dots"></span><span class="p" href="#faq"></span></a></li><li class="l1"><a href="#getting-help-and-contributing"><span class="t">Getting help and contributing</span><span class="dots"></span><span class="p" href="#getting-help-and-contributing"></span></a></li></ol></section><main><div class="keep"><h2 id="what-agentic-z-is">What Agentic-Z is</h2><p>Agentic-Z turns Claude Code into a DayZ modding partner. It provides specialist agents for DayZ, slash commands that run DayZ Tools for you, house rules that keep mods clean, and a search over the vanilla game files. With that search, the AI looks up facts instead of guessing.</p></div>
+<div class="keep"><h3 id="what-it-includes">What it includes</h3>
+<h4 id="specialists">Specialists</h4>
+<ul>
+<li>Scripts, configs and UI</li>
+<li>Models and textures</li>
+<li>Maps and servers</li>
+<li>Saved data and AI</li>
+<li>Vehicles and weapons</li>
+<li>Wearables and animation</li>
+<li>Audio, effects and physics</li>
+<li>Review and debugging</li>
+</ul>
+<h4 id="skills">Skills</h4>
+<ul>
+<li>Setup wizard</li>
+<li>Lint and PBO builds</li>
+<li>Test launches and gates</li>
+<li>types.xml</li>
+<li>Textures and layouts</li>
+<li>Release pack</li>
+</ul>
+<h4 id="rag-search_h4">RAG search</h4>
+<ul>
+<li>Vanilla scripts</li>
+<li>Configs</li>
+<li>Layouts</li>
+<li>Materials</li>
+</ul>
+<h3 id="which-ai-tools-it-works-with">Which AI tools it works with</h3>
+<table data-cols="3">
+<thead>
+<tr>
+<th>AI tool</th>
+<th>What it gets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Code</td>
+<td>Everything</td>
+</tr>
+<tr>
+<td>Codex CLI</td>
+<td>Skills and rules files</td>
+</tr>
+<tr>
+<td>Gemini CLI</td>
+<td>Skills and rules files</td>
+</tr>
+</tbody>
+</table>
+<p>The agents, the hooks and RAG search work only in Claude Code. Codex CLI and Gemini CLI get the skills, which <code>/sync-skills</code> links into all three tools, and the rules files, which are <code>AGENTS.md</code> and <code>GEMINI.md</code>.</p>
+<h3 id="how-it-fits-together">How it fits together</h3><p>You work with your AI tool. Agentic-Z gives that tool rules, agents, skills and a search server. Together, these act on your mod folder, the P: drive, DayZ Tools and the game.</p></div>
+<figure><img src="images/guide-01-1.svg" alt="How Agentic-Z fits together"><figcaption>How Agentic-Z fits together</figcaption></figure>
+<div class="keep"><h2 id="before-you-start">Before you start</h2>
+<h3 id="what-you-need">What you need</h3>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows</td>
+<td>DayZ Tools and the P: drive run only on Windows.</td>
+</tr>
+<tr>
+<td>DayZ (Steam)</td>
+<td>The diag client ships with the game and runs your tests.</td>
+</tr>
+<tr>
+<td>DayZ Tools (Steam, free)</td>
+<td>Provides AddonBuilder, P: drive mounting and ImageToPAA.</td>
+</tr>
+<tr>
+<td>DayZ Server (Steam)</td>
+<td><code>/dayz-add-server</code> copies its mission into each new test instance, and again with <code>--refresh-mission</code>.</td>
+</tr>
+<tr>
+<td>P: mounted, with vanilla data extracted</td>
+<td>Configs inherit from the vanilla classes on P:.</td>
+</tr>
+<tr>
+<td>Python 3.10+ on PATH</td>
+<td>The skills are Python scripts.</td>
+</tr>
+<tr>
+<td>Claude Code (or Codex CLI or Gemini CLI)</td>
+<td>Your AI tool (see <a href="#what-agentic-z-is">What Agentic-Z is</a>).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="optional-extras">Optional extras</h3><p>The core runs on DayZ Tools, the vanilla game files, Python and Claude Code. Some features need more:</p></div>
+<ul>
+<li>RAG search needs a Voyage AI key. Install its Python packages with <code>pip install -r .claude\mcp\dayz-rag\requirements.txt</code>. To build the index, also install <code>.claude\skills\dayz-search-index\requirements.txt</code>. Then add <code>VOYAGE_API_KEY=pa-...</code> to <code>.env</code> at the repository root.</li>
+<li>The Figma pipeline needs a Figma MCP server.</li>
+<li><code>/dayz-p3d-audit</code> needs py3d.</li>
+<li><code>/dayz-build-imageset</code>, <code>/dayz-layout-preview</code> and <code>/dayz-gate visual</code> need Pillow.</li>
+<li><code>/dayz-cot-bootstrap</code> needs the CF and COT mods.</li>
+</ul>
+<div class="keep"><h2 id="install-and-first-setup">Install and first setup</h2>
+<figure><img src="images/guide-01-2.svg" alt="Setup steps"><figcaption>Setup steps</figcaption></figure>
+<p>Choose one installation option only. If you install both the clone and the plugin, every skill loads twice.</p>
+<h3 id="option-a-clone-as-a-template">Option A: clone as a template</h3><p>Use this option to start a new mod project.</p></div>
+<pre><code>git clone https://github.com/DayZ-n-Chill/Agentic-Z.git my-dayz-mod
+cd my-dayz-mod
+python .claude\skills\sync-skills\sync.py
+</code></pre>
+<div class="keep"><h3 id="option-b-install-as-a-claude-code-plugin">Option B: install as a Claude Code plugin</h3><p>Use this option to add Agentic-Z to an existing project.</p></div>
+<pre><code>/plugin marketplace add DayZ-n-Chill/Agentic-Z
+/plugin install agentic-z@dayz-n-chill
+</code></pre>
+<p>Plugin skills appear with an <code>agentic-z:</code> prefix, for example <code>/agentic-z:dayz-build-pbo</code>.</p>
+<div class="keep"><h3 id="run-the-setup-wizard">Run the setup wizard</h3>
+<pre><code>/dayz-init
+</code></pre>
+<p>The wizard asks whether you are starting a new mod or importing one, the mod name, which map to test on, and whether to build and launch. It fixes what it can, such as mounting P: and creating the <code>P:\Mods</code> link, and explains how to fix the rest. On every later run, it shows a status hub for your active mod.</p>
+<h2 id="your-daily-loop">Your daily loop</h2>
+<figure><img src="images/guide-01-3.svg" alt="Daily loop"><figcaption>Daily loop</figcaption></figure>
+<ol>
+<li>Ask an agent for the change, for example "add a hidden selection for the camo".</li>
+<li>Run <code>/dayz-build-pbo &lt;ModName&gt;</code> to pack the mod into <code>P:\Mods\@&lt;ModName&gt;\Addons\</code>.</li>
+<li>Run <code>/dayz-launch-test &lt;ModName&gt; --server &lt;instance&gt;</code> to start a diag server and client with your mod loaded.</li>
+<li>Check the logs, or hand them to <code>dayz-mod-debugger</code>.</li>
+<li>Run <code>/dayz-stop-test</code> to close DayZ. Fix any problems and repeat.</li>
+</ol>
+<h2 id="agents">Agents</h2><p>Describe what you want, and Claude picks the right specialist. You can also name an agent directly, for example "use the dayz-config-specialist to...".</p></div>
+<div class="keep"><h3 id="all-agents">All agents</h3>
+<table data-cols="4">
+<thead>
+<tr>
+<th>Agent</th>
+<th>What it does</th>
+<th>Example request</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dayz-script-specialist</code></td>
+<td>Writes Enforce Script: modded classes, RPCs and game logic.</td>
+<td>"Make my medkit heal over 30 seconds."</td>
+</tr>
+<tr>
+<td><code>dayz-config-specialist</code></td>
+<td>Writes config.cpp, CfgPatches, inheritance and hidden selections.</td>
+<td>"Write the CfgVehicles entry for my vest."</td>
+</tr>
+<tr>
+<td><code>dayz-asset-specialist</code></td>
+<td>Handles textures (.paa) and materials (.rvmat).</td>
+<td>"Pack vest_camo_co.png and make an rvmat."</td>
+</tr>
+<tr>
+<td><code>dayz-object-builder</code></td>
+<td>Handles .p3d models: LODs, selections and Object Builder steps.</td>
+<td>"Set up hidden selections on my vest model."</td>
+</tr>
+<tr>
+<td><code>dayz-ui-specialist</code></td>
+<td>Writes .layout files and HUD and menu scripts.</td>
+<td>"Add a compass to the HUD."</td>
+</tr>
+<tr>
+<td><code>dayz-map-specialist</code></td>
+<td>Handles Terrain Builder, layers.cfg, surfaces and clutter.</td>
+<td>"Export my base from DayZ Editor to Terrain Builder."</td>
+</tr>
+<tr>
+<td><code>dayz-server-admin</code></td>
+<td>Handles types.xml, events, init.c and cfggameplay.</td>
+<td>"Make my vest spawn rarely in military zones."</td>
+</tr>
+<tr>
+<td><code>dayz-workbench-specialist</code></td>
+<td>Writes Workbench plugins (editor tools).</td>
+<td>"A plugin that checks texture suffixes."</td>
+</tr>
+<tr>
+<td><code>dayz-mod-debugger</code></td>
+<td>Reads logs and crash files to find the cause of a failure.</td>
+<td>"My server crashes on start, here is the RPT."</td>
+</tr>
+<tr>
+<td><code>dayz-mod-reviewer</code></td>
+<td>Audits a mod before you build and returns PASS or FAIL.</td>
+<td>"Review workspace/MyVest before I build."</td>
+</tr>
+<tr>
+<td><code>figma-node-normalizer</code>, <code>figma-to-dayz-layout</code>, <code>dayz-layout-validator</code></td>
+<td>Optional. Turn a Figma frame into a .layout. The validator checks the result without editing it.</td>
+<td>"Turn this Figma frame into a DayZ menu."</td>
+</tr>
+<tr>
+<td><code>dayz-orchestrator</code> and team</td>
+<td>Plans a whole mod and runs the leads, workers and checks.</td>
+<td>See <a href="#the-mod-team">The mod team</a>.</td>
+</tr>
+<tr>
+<td><code>dayz-mod-architect</code></td>
+<td>Plans a mod: classes, files, assets and a task list.</td>
+<td>Started by the orchestrator.</td>
+</tr>
+<tr>
+<td><code>dayz-lead</code></td>
+<td>Runs one team (script, config, art, UI, server or release) and its review checks.</td>
+<td>Started by the orchestrator.</td>
+</tr>
+<tr>
+<td><code>dayz-build-checker</code>, <code>dayz-ingame-tester</code></td>
+<td>Provide backup checks when <code>/dayz-gate</code> itself fails.</td>
+<td>Started by the orchestrator.</td>
+</tr>
+<tr>
+<td><code>dayz-build-engineer</code></td>
+<td>Builds the PBO (or deploys a prebuilt bundle) and starts a test session.</td>
+<td>"Build MyVest and start a test on chernarus."</td>
+</tr>
+<tr>
+<td><code>dayz-docs-writer</code></td>
+<td>Writes the mod README, changelog and classname list.</td>
+<td>"Update the MyVest docs."</td>
+</tr>
+<tr>
+<td><code>dayz-persistence-specialist</code></td>
+<td>Saved data across restarts. See <a href="#each-specialist-in-detail">Each specialist in detail</a>.</td>
+<td>"Make my safe keep its code and contents after a restart."</td>
+</tr>
+<tr>
+<td><code>dayz-ai-specialist</code></td>
+<td>Infected, animals and human AI. See <a href="#each-specialist-in-detail">Each specialist in detail</a>.</td>
+<td>"Add guards that patrol my base and react to gunfire."</td>
+</tr>
+<tr>
+<td><code>dayz-vehicle-specialist</code></td>
+<td>Cars, boats and helicopters. See <a href="#each-specialist-in-detail">Each specialist in detail</a>.</td>
+<td>"Add a four door pickup with a bigger fuel tank."</td>
+</tr>
+<tr>
+<td><code>dayz-weapon-specialist</code></td>
+<td>Weapons, magazines and ammunition. See <a href="#each-specialist-in-detail">Each specialist in detail</a>.</td>
+<td>"Add a hunting rifle that takes a five round magazine."</td>
+</tr>
+<tr>
+<td><code>dayz-wearables-specialist</code></td>
+<td>Clothing, characters and inventory slots. See <a href="#each-specialist-in-detail">Each specialist in detail</a>.</td>
+<td>"Make a plate carrier in three colors."</td>
+</tr>
+<tr>
+<td><code>dayz-animation-specialist</code></td>
+<td>model.cfg animations and RTM files. See <a href="#each-specialist-in-detail">Each specialist in detail</a>.</td>
+<td>"Make my bunker doors open and close."</td>
+</tr>
+<tr>
+<td><code>dayz-audio-fx-specialist</code></td>
+<td>Sounds and particle effects. See <a href="#each-specialist-in-detail">Each specialist in detail</a>.</td>
+<td>"Give my generator a running sound and exhaust smoke."</td>
+</tr>
+<tr>
+<td><code>dayz-physics-specialist</code></td>
+<td>Weight, collision and contact. See <a href="#each-specialist-in-detail">Each specialist in detail</a>.</td>
+<td>"My crate falls through the floor. Fix it."</td>
+</tr>
+<tr>
+<td><code>dayz-router</code></td>
+<td>A low-cost Haiku agent that decides who handles a request.</td>
+<td>Used by <code>/dayz-route</code>.</td>
+</tr>
+<tr>
+<td><code>agent-creator</code></td>
+<td>Writes and checks new agent files.</td>
+<td>"Create an agent that reviews RPC security."</td>
+</tr>
+</tbody>
+</table>
+<h2 id="the-mod-team">The mod team</h2>
+<h3 id="team-structure">Team structure</h3>
+<ul>
+<li>You</li>
+<li>Planning</li>
+<li>Team leads</li>
+<li>Workers (one per task)</li>
+<li>Gatekeepers</li>
+<li>Playbook and reference files</li>
+</ul>
+<figure><img src="images/guide-01-4.svg" alt="Diagram"></figure>
+<h3 id="starting-the-team">Starting the team</h3><p>To start the team after a plugin install, run <code>claude --agent agentic-z:dayz-orchestrator</code>. In a clone, run <code>claude --agent dayz-orchestrator</code>.</p></div>
+<p>The orchestrator plans the mod with you and waits for your approval. It then runs the work in waves.</p>
+<div class="keep"><h3 id="how-the-team-checks-work">How the team checks work</h3><p>Checks happen at two levels. The leads run the mod review and the layout check on each task. The orchestrator runs the gates once per wave, one at a time, because there is only one mod folder and one test session. Workers run at the same time only when their tasks touch different files.</p></div>
+<p>Each wave goes through these gates:</p>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Gate</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Build check (<code>/dayz-gate build</code>)</td>
+<td>Runs <code>/dayz-lint</code> first, then builds the mod and reports PASS or FAIL.</td>
+</tr>
+<tr>
+<td>In-game test (<code>/dayz-gate ingame</code>)</td>
+<td>Loads the mod in game, checks that the logs are clean and reports PASS or FAIL.</td>
+</tr>
+<tr>
+<td>Behavior test (<code>/dayz-gate behavior</code>)</td>
+<td>Runs only when <code>output\&lt;ModName&gt;-plan\behavior-checks.json</code> exists. A scripted test mission spawns and uses each new item and reports PASS or FAIL for each feature.</td>
+</tr>
+<tr>
+<td>Visual check (<code>/dayz-gate visual</code>)</td>
+<td>Takes screenshots during the in-game test and compares them with stored baselines.</td>
+</tr>
+</tbody>
+</table>
+<p>Nothing reaches you until the mod builds, loads in game with clean logs and, when the plan lists behavior checks, passes the behavior test.</p>
+<p>The behavior and visual gates have been tested only with fixtures. They have not yet run in a live DayZ session.</p>
+<figure><img src="images/guide-01-5.svg" alt="One wave of work"><figcaption>One wave of work</figcaption></figure>
+<h id="rag-search">RAG search</h2>
+<figure><img src="images/guide-01-6.svg" alt="RAG search pipeline"><figcaption>RAG search pipeline</figcaption></figure>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Tool</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>search_dayz_source</code></td>
+<td>Searches vanilla scripts, configs, layouts and materials by meaning.</td>
+</tr>
+<tr>
+<td><code>get_dayz_file</code></td>
+<td>Opens an exact file and line range on P:.</td>
+</tr>
+<tr>
+<td><code>list_indexed_sources</code></td>
+<td>Shows what is indexed and when.</td>
+</tr>
+</tbody>
+</table>
+<p>Agents use Grep first when they know an exact class or symbol name. They use RAG search for questions by meaning. A search hit is only a lead until the agent opens the real file, so every answer includes <code>path:line</code> references you can check.</p>
+<div class="keep"><h2 id="the-three-tiers-of-rules">The three tiers of rules</h2>
+<figure><img src="images/guide-01-7.svg" alt="Three tiers"><figcaption>Three tiers</figcaption></figure>
+<h3 id="token-savers">Token savers</h3><p>These features move mechanical work out of the AI. The AI then spends tokens only on work that needs judgment: planning, writing code and configs, review and real diagnosis.</p></div>
+<figure><img src="images/guide-01-8.svg" alt="Router"><figcaption>Router</figcaption></figure>
+<table data-cols="4">
+<thead>
+<tr>
+<th>Feature</th>
+<th>What it does</th>
+<th>How to use it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Script-only checks</td>
+<td>Run the build and in-game checks with no AI involved, which saves tokens.</td>
+<td><code>/dayz-gate build &lt;ModName&gt;</code>, <code>/dayz-gate ingame &lt;ModName&gt;</code></td>
+</tr>
+<tr>
+<td>Log triage</td>
+<td>Matches failures against 52 known errors, each with its fix and owner. Only new errors go to the debugger.</td>
+<td>Runs inside <code>/dayz-gate</code>. Use <code>triage.py --learn</code> to add your own.</td>
+</tr>
+<tr>
+<td>Router</td>
+<td>Decides who handles a request: keyword rules first, then Jev, then a low-cost Haiku router.</td>
+<td><code>/dayz-route "&lt;request&gt;"</code> (the AI runs it first)</td>
+</tr>
+<tr>
+<td>Edit hooks</td>
+<td>Check <code>config.cpp</code> and <code>.layout</code> syntax after every edit, and block edits to other mods while a scope is set.</td>
+<td>Automatic with the plugin or a clone.</td>
+</tr>
+<tr>
+<td>Paste-in router</td>
+<td>Reads what you paste and starts the matching workflow.</td>
+<td>Automatic. See <a href="#paste-it-in">Paste it in</a>.</td>
+</tr>
+<tr>
+<td>Status line</td>
+<td>Shows the state of P:, the active mod, whether DayZ Diag is running and the age of the search index.</td>
+<td>Run <code>/dayz-statusline</code> once per project.</td>
+</tr>
+<tr>
+<td>Launcher panel</td>
+<td>Adds a panel beside the chat. It has buttons to mount P:, build, run the build and in-game checks, deploy, launch, stop, open Workbench and Object Builder, view test logs, open the health page and create the release pack. It also has a field that sends questions to <code>/dayz-ask</code>.</td>
+<td>Run <code>/plugin install agentic-z-panel@dayz-n-chill</code>, then <code>/dayz-panel</code>.</td>
+</tr>
+<tr>
+<td>Lower-cost models</td>
+<td>The build engineer and the router run on Haiku. The docs writer runs on Sonnet.</td>
+<td>Automatic.</td>
+</tr>
+<tr>
+<td>Smaller rules</td>
+<td>The DayZ rules file is split into a 143-line core and five topic files of 24 to 56 lines. Most skills read only the core, which is 40% less than the old 239-line file. <code>/dayz-deploy-pbo</code> and <code>/dayz-gate</code> also read the bundle mods section of the config topic file. Each agent reads the core plus the topic files its job needs. With one topic file, an agent reads 17% to 30% less than before. With two, the result depends on which two. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and effects specialists (251 lines) read more, as does the mod reviewer, which reads three topic files (283 lines).</td>
+<td>Automatic.</td>
+</tr>
+<tr>
+<td>No-token wrappers</td>
+<td>Provide a <code>.bat</code> file for every runnable skill, so you can run it yourself with no AI involved.</td>
+<td>See <code>scripts\README.md</code>.</td>
+</tr>
+<tr>
+<td>Shorter descriptions</td>
+<td>Every skill and agent description loads into every session. The descriptions were shortened to save about 2,100 tokens.</td>
+<td>Automatic.</td>
+</tr>
+</tbody>
+</table>
+<div class="keep"><h3 id="each-specialist-in-detail">Each specialist in detail</h3><p>In addition to the specialists for scripts, configs, art, UI, maps and servers, Agentic-Z includes specialists for saved data, vehicles, weapons, wearables, animation, audio, physics and AI. Each one works under a team lead and has its own reference pack. Every pack is checked against the vanilla game files, and a specialist loads its pack only when a task needs it. For the checks that run before a mod is packed, see <a href="#how-the-team-checks-work">How the team checks work</a>.</p></div>
+<figure><img src="images/guide-02-1.svg" alt="Where the new specialists join the team"><figcaption>Where the new specialists join the team</figcaption></figure>
+<table data-cols="3" class="card">
+<thead>
+<tr>
+<th><code>dayz-persistence-specialist</code></th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it does</td>
+<td>Makes modded items and systems keep their data across server restarts. It writes the save and load code (OnStoreSave and OnStoreLoad) and stamps every save with a version number. It also writes the upgrade path, so old saves still load after the mod changes. It covers base building parts that must survive restarts. Before release, it runs a data audit that confirms every saved field is written and read back in the same order.</td>
+</tr>
+<tr>
+<td>Example request</td>
+<td>"Make my safe keep its code and contents after a restart, and do not break saves from the last version."</td>
+</tr>
+<tr>
+<td>Works under</td>
+<td>Script lead (the release audit goes to the server lead)</td>
+</tr>
+<tr>
+<td>Hands back</td>
+<td>Save and load code with a version number, a migration note for old saves, and an audit report for the server lead.</td>
+</tr>
+</tbody>
+</table>
+<table data-cols="3" class="card">
+<thead>
+<tr>
+<th><code>dayz-vehicle-specialist</code></th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it does</td>
+<td>Builds cars, boats and helicopters. It sets up the vehicle class and its simulation (engine, gearbox, axles and wheels). It also sets up the parts that attach to the vehicle (doors, hood, trunk, wheels, battery and spark plug), its fluids (fuel, oil, coolant and brake fluid), its seats and crew positions, and how it takes damage. Vanilla DayZ ships native helicopter base classes (Helicopter, HelicopterAuto and HelicopterScript) but no flyable helicopter. The specialist builds flyable helicopters on those classes with your own code and never copies code from another mod.</td>
+</tr>
+<tr>
+<td>Example request</td>
+<td>"Add a four door pickup with its own doors and a bigger fuel tank."</td>
+</tr>
+<tr>
+<td>Works under</td>
+<td>Config lead</td>
+</tr>
+<tr>
+<td>Hands back</td>
+<td>CfgVehicles entries, the CarScript, BoatScript or HelicopterScript class, attachment slots, and a types.xml entry for the server lead.</td>
+</tr>
+</tbody>
+</table>
+<table data-cols="3" class="card">
+<thead>
+<tr>
+<th><code>dayz-weapon-specialist</code></th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it does</td>
+<td>Builds firearms and everything that goes with them: the weapon class, magazines, ammunition, attachment slots for optics, suppressors, stocks and handguards, recoil, fire modes and muzzle effects. It inherits from the closest vanilla weapon, so reloading, jamming and damage behave as they do in the base game.</td>
+</tr>
+<tr>
+<td>Example request</td>
+<td>"Add a scoped hunting rifle that takes a five round magazine and the vanilla long range optics."</td>
+</tr>
+<tr>
+<td>Works under</td>
+<td>Config lead</td>
+</tr>
+<tr>
+<td>Hands back</td>
+<td>CfgWeapons, CfgMagazines and CfgAmmo entries, a recoil class, and a list of the model selections that the art lead must provide.</td>
+</tr>
+</tbody>
+</table>
+<table data-cols="3" class="card">
+<thead>
+<tr>
+<th><code>dayz-wearables-specialist</code></th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it does</td>
+<td>Builds clothing, gear and characters. It sets which inventory slot an item uses, how many slots it holds, and its protection and insulation. It sets the hidden selections that let one model carry several textures, and it defines how the item appears on the character through proxies. It also covers new survivor characters.</td>
+</tr>
+<tr>
+<td>Example request</td>
+<td>"Make a plate carrier with three colors that fits the vest slot and holds six items."</td>
+</tr>
+<tr>
+<td>Works under</td>
+<td>Art lead</td>
+</tr>
+<tr>
+<td>Hands back</td>
+<td>Config entries, hidden selection names, texture slots for each color, and proxy notes for the Object Builder specialist.</td>
+</tr>
+</tbody>
+</table>
+<table data-cols="3" class="card">
+<thead>
+<tr>
+<th><code>dayz-animation-specialist</code></th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it does</td>
+<td>Makes objects move: doors, lids, hatches, triggers and other moving parts. It writes the skeletonBones for the moving parts and the class Animations block in model.cfg (rotations, movements and hidden parts). The Object Builder specialist maintains the rest of model.cfg. It handles .rtm animation files. For models built in Blender, it writes the handoff so that bones and selections line up when the model reaches Object Builder.</td>
+</tr>
+<tr>
+<td>Example request</td>
+<td>"Make the doors on my bunker open and close when a player uses them."</td>
+</tr>
+<tr>
+<td>Works under</td>
+<td>Art lead</td>
+</tr>
+<tr>
+<td>Hands back</td>
+<td>The skeletonBones and class Animations entries for model.cfg, the selection and bone names that the model needs, and the script hook that plays the animation, which the script specialist writes.</td>
+</tr>
+</tbody>
+</table>
+<table data-cols="3" class="card">
+<thead>
+<tr>
+<th><code>dayz-audio-fx-specialist</code></th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it does</td>
+<td>Handles sound and visual effects: sound shaders and sound sets, how loud a sound is and how far it carries, and particle effects such as smoke, sparks and muzzle flashes. It uses the /dayz-particles skill for particle files.</td>
+</tr>
+<tr>
+<td>Example request</td>
+<td>"Give my generator a running sound that fades with distance and a puff of exhaust smoke."</td>
+</tr>
+<tr>
+<td>Works under</td>
+<td>Any lead that needs it</td>
+</tr>
+<tr>
+<td>Hands back</td>
+<td>CfgSoundShaders and CfgSoundSets entries, particle files, and the script lines that play them.</td>
+</tr>
+</tbody>
+</table>
+<table data-cols="3" class="card">
+<thead>
+<tr>
+<th><code>dayz-physics-specialist</code></th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it does</td>
+<td>Makes objects behave physically. It sets their weight and their collision shapes in the Geometry and Fire Geometry LODs. It also controls how objects land when dropped or thrown and how they push against players and vehicles. It catches common faults, such as items that fall through floors or bullets that pass through walls.</td>
+</tr>
+<tr>
+<td>Example request</td>
+<td>"My crate falls through the floor when I drop it. Fix it."</td>
+</tr>
+<tr>
+<td>Works under</td>
+<td>Any lead that needs it</td>
+</tr>
+<tr>
+<td>Hands back</td>
+<td>Geometry and mass fixes for the Object Builder specialist, and config lines for the worker who owns the class's config.</td>
+</tr>
+</tbody>
+</table>
+<table data-cols="3" class="card">
+<thead>
+<tr>
+<th><code>dayz-ai-specialist</code></th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it does</td>
+<td>Builds behavior for computer controlled characters: infected, animals and human AI such as patrols and guards. It studies how other modders build these behaviors to learn the patterns, and then writes your own version. It copies nothing from another mod.</td>
+</tr>
+<tr>
+<td>Example request</td>
+<td>"Add a patrol of guards that walk a route around my military base and react to gunfire."</td>
+</tr>
+<tr>
+<td>Works under</td>
+<td>Script lead</td>
+</tr>
+<tr>
+<td>Hands back</td>
+<td>Script classes for the behavior, the config that the server lead needs to spawn the characters, and notes on server performance.</td>
+</tr>
+</tbody>
+</table>
+<div class="keep"><h3 id="how-each-specialist-works">How each specialist works</h3><p>Each specialist follows its own steps inside the team workflow described in <a href="#the-mod-team">The mod team</a>. The specialists that write DayZ content look up the vanilla files first, using the method in <a href="#rag-search">RAG search</a>. The build engineer, docs writer, build checker, in-game tester and Figma cleaner have no RAG tool. They work from the mod, its logs or the Figma file.</p></div>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Specialist</th>
+<th>Steps</th>
+</tr>
+</thead>
+<tbody>
+<tr class="grp"><td colspan="2"><strong>Script lead</strong></td></tr>
+<tr>
+<td><code>dayz-script-specialist</code></td>
+<td>1. Searches the vanilla scripts for the class it will change and reads the real file. 2. Writes a <code>modded class</code> in the correct layer (3_Game, 4_World or 5_Mission) and calls <code>super</code>. 3. Adds RPCs only where the client and server must communicate, and confirms which side runs each line. 4. <code>/dayz-lint</code> and the build gate check and pack the mod (nothing compiles Enforce Script at this stage). The in-game gate catches compile errors and reads script.log.</td>
+</tr>
+<tr>
+<td><code>dayz-workbench-specialist</code></td>
+<td>1. Reads how vanilla Workbench plugins are registered. 2. Writes the plugin script using only the classes, methods and attributes it found there, and cites each one as <code>path:line</code>. 3. Never opens Workbench itself. Instead, it tells you to open Workbench with <code>/dayz-launch-workbench --mod &lt;ModName&gt;</code>. 4. Returns the plugin and the steps to load and run it.</td>
+</tr>
+<tr>
+<td><code>dayz-persistence-specialist</code></td>
+<td>1. Lists every value that must survive a restart. 2. Writes OnStoreSave and OnStoreLoad. 3. Adds the upgrade path for old saves. 4. Runs the data audit. 5. Places the audit at the end of its report to the script lead. The orchestrator passes the audit to the server lead before the test build.</td>
+</tr>
+<tr>
+<td><code>dayz-ai-specialist</code></td>
+<td>1. Studies how vanilla infected and animals decide what to do. 2. Writes the behavior as its own script classes. 3. Gives the server lead the spawn setup. 4. The in-game test checks the behavior and server performance.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Config lead</strong></td></tr>
+<tr>
+<td><code>dayz-config-specialist</code></td>
+<td>1. Finds the closest vanilla parent class and reads its definition on disk, cited as <code>path:line</code>. 2. Writes CfgPatches with the correct requiredAddons, and then the class itself. 3. Matches hiddenSelections to the names in the model. 4. <code>/dayz-lint</code> and the build gate confirm that the mod loads.</td>
+</tr>
+<tr>
+<td><code>dayz-vehicle-specialist</code></td>
+<td>1. Selects the closest vanilla vehicle as the parent. 2. Writes the vehicle class and its simulation. 3. Adds the attachment slots and the fluids. 4. Writes the CarScript, BoatScript or HelicopterScript class for seats, doors and damage. 5. Gives the server lead a types.xml entry. The behavior gate spawns the vehicle, and a person-run checklist covers driving.</td>
+</tr>
+<tr>
+<td><code>dayz-weapon-specialist</code></td>
+<td>1. Selects the closest vanilla weapon as the parent. 2. Writes the weapon, magazine and ammo classes and the attachment slots. 3. Sets recoil and fire modes. 4. Lists the model selections and memory points that the art lead must provide. 5. The behavior gate spawns the weapon and fits each attachment. A person-run checklist covers firing and reloading.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Art lead</strong></td></tr>
+<tr>
+<td><code>dayz-object-builder</code></td>
+<td>1. Specifies the LODs (visual, geometry, fire geometry, view geometry and memory) as numbered Object Builder steps. You build them, because the specialist cannot edit a .p3d. 2. Names the selections and memory points that the config and animations need, and writes model.cfg. 3. Runs <code>/dayz-p3d-audit</code> after you save the model. 4. Sends the selection names and config lines, through the art lead, to the worker who owns the class's config.</td>
+</tr>
+<tr>
+<td><code>dayz-asset-specialist</code></td>
+<td>1. Confirms that each texture has the correct suffix (_co, _nohq, _smdi and the others). 2. Packs the textures with <code>/dayz-pack-texture</code>. 3. Writes the .rvmat for each material. 4. Writes a visual checklist for you to review in Object Builder or in game. It never launches either one.</td>
+</tr>
+<tr>
+<td><code>dayz-wearables-specialist</code></td>
+<td>1. Selects the inventory slot and the closest vanilla item as the parent. 2. Sets the slots held, protection and insulation. 3. Sets hidden selections so that one model carries every color. 4. Records the proxy positions for the Object Builder specialist. 5. The behavior gate wears each color class, and a person checks in game how each color looks.</td>
+</tr>
+<tr>
+<td><code>dayz-animation-specialist</code></td>
+<td>1. Lists the moving parts and their bones. 2. Writes its model.cfg entries (see <a href="#each-specialist-in-detail">Each specialist in detail</a>). 3. Gives you the bone and selection names for your own Blender export. 4. Names the script hook that plays the animation. The script specialist writes that code, and the in-game test uses it.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>UI lead</strong></td></tr>
+<tr>
+<td><code>dayz-ui-specialist</code></td>
+<td>1. Reads the vanilla layout closest to the new screen. 2. Writes the .layout and the script class that drives it. 3. Builds icons into an imageset with <code>/dayz-build-imageset</code>. 4. The layout checker checks the layout against the Figma-to-DayZ rules, and <code>/dayz-layout-preview</code> renders it. The in-game test opens it.</td>
+</tr>
+<tr>
+<td><code>figma-node-normalizer</code></td>
+<td>1. Reads the Figma frame. 2. Cleans up layer names and structure so that they map to DayZ widgets. 3. Returns the clean tree as JSON to its caller and names the layout converter as the next stage.</td>
+</tr>
+<tr>
+<td><code>figma-to-dayz-layout</code></td>
+<td>1. Converts the clean tree into a DayZ .layout. 2. Uses only widget types that the game supports. 3. Writes the file and names the layout checker as the next stage.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Server lead</strong></td></tr>
+<tr>
+<td><code>dayz-server-admin</code></td>
+<td>1. Writes types.xml entries with <code>/dayz-edit-types</code>. 2. Adds events, spawn points and gameplay settings where needed. 3. Splits large economy files with <code>/dayz-split-types</code>. 4. Sets up a missing test server instance with <code>/dayz-add-server</code>, which starts nothing. It gives you the <code>/dayz-launch-test</code> command instead of starting the server itself.</td>
+</tr>
+<tr>
+<td><code>dayz-map-specialist</code></td>
+<td>1. Writes layers.cfg and the surface and clutter configs. If it needs your own layers.cfg and the file is missing, it stops and asks you for it. 2. Provides numbered steps for the DayZ Editor export and the Terrain Builder import and generation, which you carry out. 3. Returns the files and the steps to rebuild the map.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Release lead</strong></td></tr>
+<tr>
+<td><code>dayz-build-engineer</code></td>
+<td>1. Packs the mod with <code>/dayz-build-pbo</code>. 2. Starts the test session with <code>/dayz-launch-test</code>. 3. Reports the build result to the release lead, who passes it to the orchestrator.</td>
+</tr>
+<tr>
+<td><code>dayz-docs-writer</code></td>
+<td>1. Reads what changed in the wave. 2. Updates the README, changelog and class name list. 3. Writes the Workshop text and server owner notes with <code>/dayz-release-pack</code>.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Any lead</strong></td></tr>
+<tr>
+<td><code>dayz-audio-fx-specialist</code></td>
+<td>1. Reads the vanilla sound or particle closest to the request. 2. Writes the sound shader and sound set, or writes the particle with <code>/dayz-particles</code>. 3. Adds the script line that plays it. 4. The in-game test checks how it sounds and looks.</td>
+</tr>
+<tr>
+<td><code>dayz-physics-specialist</code></td>
+<td>1. Reads the model's geometry LODs and mass. 2. Identifies the fault: missing geometry, incorrect mass or faulty collision. 3. Hands the fix, through the lead that called it, to the Object Builder specialist or to the worker who owns the class's config. It never edits files. 4. A person-run in-game test drops, throws and shoots the object, which the behavior gate cannot do.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Checks and fixes</strong></td></tr>
+<tr>
+<td><code>dayz-mod-reviewer</code></td>
+<td>1. Reviews the finished task against the DayZ rules file. 2. Lists each problem with the specialist who owns it. 3. Never edits files.</td>
+</tr>
+<tr>
+<td><code>dayz-layout-validator</code></td>
+<td>1. Checks the .layout against the Figma-to-DayZ rules: file format and widget classes. 2. Reports PASS or FAIL with each problem and its line number. It never edits files.</td>
+</tr>
+<tr>
+<td><code>dayz-build-checker</code></td>
+<td>1. Runs only when <code>/dayz-gate build</code> itself fails. 2. Reads the AddonBuilder output and names the failing file.</td>
+</tr>
+<tr>
+<td><code>dayz-ingame-tester</code></td>
+<td>1. Runs only when <code>/dayz-gate ingame</code> itself fails. 2. Reads the logs from the test session and reports what failed.</td>
+</tr>
+<tr>
+<td><code>dayz-mod-debugger</code></td>
+<td>1. Receives new errors that triage does not recognize. 2. Traces script.log, RPT and crash files back to the line that failed. 3. Reports the cause, evidence, location and fix to its caller (the orchestrator or a lead), and names the worker agent that owns the fix.</td>
+</tr>
+</tbody>
+</table>
+<div class="keep"><h3 id="how-every-specialists-knowledge-is-checked">How every specialist's knowledge is checked</h3>
+<figure><img src="images/guide-02-2.svg" alt="Cycle for every new specialist"><figcaption>Cycle for every new specialist</figcaption></figure>
+<p>The existing specialists also have deeper coverage: a full Enforce Script reference, Dabs and widget UI coverage, a texture and material cookbook, model and LOD rules, animated doors, a short specification step in <code>/dayz-init</code> before building, and a layout preview at several screen sizes.</p>
+<h3 id="paste-it-in">Paste it in</h3><p>Workflow skills are ready-made jobs for routine modding tasks. Each one runs as a script where possible and asks the AI only for decisions that need judgment. Each workflow skill is described in the <a href="#every-skill">Every skill</a> table.</p></div>
+<p>Agentic-Z also recognizes the following content when it is pasted into a session.</p>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Pasted content</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A crash log or RPT file</td>
+<td>Triage matches it against known errors, names the cause and the fix, and passes any new error to the debugger.</td>
+</tr>
+<tr>
+<td>A screenshot of a bug</td>
+<td>The paste hook suggests a specialist: the UI specialist for a UI problem, the asset specialist for a texture or material problem, and the script specialist for an error message or incorrect behavior. For an error message shown on screen, the router agent sends the screenshot to the mod debugger (or to gate triage) instead, so the two can disagree in that case.</td>
+</tr>
+<tr>
+<td>A Figma link</td>
+<td>Runs the Figma pipeline and returns a checked <code>.layout</code> file.</td>
+</tr>
+<tr>
+<td>A GitHub link</td>
+<td>Suggests <code>/dayz-import-mod --source &lt;link&gt;</code>, which imports the mod into <code>workspace\</code> and can add any missing standard parts.</td>
+</tr>
+<tr>
+<td>A Steam Workshop link</td>
+<td>Refused, with the reason stated: Workshop content is packed, binarized and often protected.</td>
+</tr>
+<tr>
+<td>A types.xml chunk</td>
+<td>Checks the entries, lists any problems, and suggests <code>/dayz-edit-types --merge</code> to merge them.</td>
+</tr>
+</tbody>
+</table>
+<div class="keep"><h2 id="add-ons-planned">Add-ons (planned)</h2><p>An optional <code>agentic-z-addons</code> plugin for other tools, such as Blender, an AI 3D generator or another MCP server, is planned. No add-on ships yet, and the plugin marketplace lists only <code>agentic-z</code> and <code>agentic-z-panel</code>. Each add-on will be a workflow that connects the outside tool at one point in the loop. Usually it will hand a finished model to the Object Builder specialist, so the standard gates can check it like any other work. For the optional dependencies of the core, see <a href="#optional-extras">Optional extras</a>.</p></div>
+<p>Add-ons will follow these rules:</p>
+<ul>
+<li><strong>Optional:</strong> the core never loads an add-on unless the user installs it.</li>
+<li><strong>Same gates:</strong> everything an add-on produces goes through the mod review, the build check and the in-game test.</li>
+<li><strong>No reverse engineering:</strong> no add-on unpacks protected mods or converts binarized models back into editable ones.</li>
+</ul>
+<div class="keep"><h2 id="how-the-grading-works">How the grading works</h2><p>The author does not set the grades. Separate AI reviewers grade every agent, skill and shared file against Anthropic's published best practices for Claude Code. The reviewers are Claude instances started fresh for the job. They see the files, the rubric and the standards, but never the earlier grades or the author's opinion. This is not an official Anthropic rating. It is a repeatable review that anyone can run again with the prompts below.</p></div>
+<p>Answer tests (evals) check 23 of the 30 agents, and a change may only keep or raise a score. Claude Code handles prompt caching on its own, so Agentic-Z has no rule or test of its own for it.</p>
+<div class="keep"><h3 id="the-final-count">The final count</h3><p>The final grades cover 164 items. All 164 are at A+: 30 of the 30 agents, 44 of the 44 skills and 90 of the 90 shared items. The shared items are the hooks, the search server, the panel, scripts and wrappers, answer tests, rules files, the shared reference packs and this method note.</p></div>
+<p>The final review graded every item. Fresh graders then regraded items after each fix round. Each item shows its latest grade. The grades come from <code>final_grades.json</code> and <code>final_grades_shared.json</code>. The <code>clean-repo</code> item was graded twice and counts once.</p>
+<div class="keep"><h3 id="who-grades">Who grades</h3>
+<ul>
+<li><strong>Independent reviewers:</strong> each round starts new Claude reviewers with no memory of earlier rounds. The final review used six: two for the agents, three for the skills, and one for everything shared. The shared items are the hooks, the search server, the panel, the scripts and wrappers, the answer tests, the rules files, the shared reference packs and this note. A few shared files were not graded; they are listed under "Files not graded" in "Open items and decisions".</li>
+<li><strong>Read-only access:</strong> reviewers cannot edit files. They read every file, run the tests where the session allows it, and check claims against the code and the vanilla DayZ files on the P: drive. The skill reviewer for <code>dayz-launch-objectbuilder</code>, <code>dayz-launch-workbench</code> and <code>dayz-search-download</code> could not run pytest for them, because its session denied it. The reviewer stated this in its reasons.</li>
+<li><strong>Separate fixers:</strong> different agents fix the problems the reviewers find, and each fixer owns its own files. A fixer never grades its own work.</li>
+<li><strong>Regrading:</strong> new reviewers grade again after every fix round. An item counts as A+ only when an independent reviewer gives it A+.</li>
+</ul>
+<h3 id="what-they-grade-against">What they grade against</h3>
+<ul>
+<li><strong>Anthropic's standards:</strong> the Claude Code subagent documentation (code.claude.com/docs/en/sub-agents), the Agent Skills best practices (docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices), the Claude Code hooks reference (code.claude.com/docs/en/hooks) and the plugins reference (code.claude.com/docs/en/plugins-reference). For the search server, the reviewers also use the Model Context Protocol tool guidance.</li>
+<li><strong>Agentic-Z's own rules:</strong> <code>CLAUDE.md</code> (Tier 1), the DayZ rules file and its topic files (Tier 2), the agent standard in <code>agent-creator.md</code>, and <code>docs/prompt-conventions.md</code>.</li>
+<li><strong>The real game:</strong> DayZ facts are checked against the vanilla files on P:. Examples include which file holds CfgSurfaces, which texture suffixes exist, and which widget classes can be the root of a layout. Six Enforce Script worked examples (01, 04, 05, 06, 08 and 09) are still marked as vendored and have not been checked on P:.</li>
+</ul>
+<h3 id="the-rubric-for-agents-and-skills">The rubric for agents and skills</h3>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Agents</th>
+<th>Skills</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Description:</strong> a precise contract, written in the third person, that states what the agent does and when to use it, with a realistic example and valid YAML.</td>
+<td><strong>Frontmatter:</strong> the name matches the folder, and the description states what the skill does and when to use it, in the third person and kept short.</td>
+</tr>
+<tr>
+<td><strong>Tools:</strong> only the tools the role needs, and every tool the instructions require. Read-only roles cannot edit.</td>
+<td><strong>Instructions:</strong> concise and accurate to the code, with every claim and sample output checked against the script, and a clear section on how to run it.</td>
+</tr>
+<tr>
+<td><strong>Body:</strong> Lean and specific. It points to shared rules instead of repeating them and uses rules written in capital letters sparingly.</td>
+<td><strong>Script:</strong> Readable, with clear error messages, a nonzero exit code on failure, no dead code and reuse of shared helpers. The environment check runs first where the rules require it.</td>
+</tr>
+<tr>
+<td><strong>Correct and consistent:</strong> Every path, skill, agent and tool it names exists and is used correctly. Nothing contradicts the rules or the team flow, and DayZ facts are verified.</td>
+<td><strong>Tests:</strong> Tests exist, cover the risky logic and pass.</td>
+</tr>
+<tr>
+<td><strong>Handoffs:</strong> It states what it returns and to whom.</td>
+<td><strong>Safety:</strong> Every destructive step is guarded by a backup, a dry run or a confirmation.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-rubric-for-everything-else">The rubric for everything else</h3><p>The 90 shared items are neither agents nor skills, so the reviewer judges each kind of item against criteria suited to it.</p></div>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Kind of item</th>
+<th>What the reviewer checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hooks</td>
+<td>The output JSON is correct for the hook event, a bug in a hook never blocks the session, the plugin and clone wiring match, and tests pass the hook input through stdin.</td>
+</tr>
+<tr>
+<td>Search server</td>
+<td>Every tool carries read-only annotations, the tool descriptions are clear, errors are returned as <code>isError</code> results, and tests cover the tools.</td>
+</tr>
+<tr>
+<td>Panel plugin</td>
+<td>The plugin manifest and hook wiring follow the plugins reference, and the plugin's own tests pass.</td>
+</tr>
+<tr>
+<td>Rules files</td>
+<td>Every rule is true of the code, no rule repeats another tier, and every named path and skill exists.</td>
+</tr>
+<tr>
+<td>Specialist reference files</td>
+<td>Each game fact cites a P: file and line or is marked as unverified, the cited lines hold when opened on P:, and nothing contradicts the checked references.</td>
+</tr>
+<tr>
+<td>Scripts, wrappers and repository tests</td>
+<td>The tests run and pass, the documentation and help text match the code, and failures exit with a nonzero code and a clear message.</td>
+</tr>
+<tr>
+<td>Answer tests (evals)</td>
+<td>The cases test what the agent is for, the runner and baselines match, and a change can only keep or raise a score. Answer tests cover 23 of the 30 agents.</td>
+</tr>
+<tr>
+<td>This method note</td>
+<td>The note states the rubric for every kind of item and gives the grading prompts. Every count, source and claim in it matches the repository and the grade files.</td>
+</tr>
+</tbody>
+</table>
+<div class="keep"><h3 id="the-scale">The scale</h3>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Grade</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A+</td>
+<td>Can ship unchanged as an example of best practice. The reviewer found nothing concrete to fix.</td>
+</tr>
+<tr>
+<td>A, A-</td>
+<td>Very good, with one or two concrete defects that a user could encounter.</td>
+</tr>
+<tr>
+<td>B+ to B-</td>
+<td>Works, but has real gaps, such as claims that do not match the code, missing tests or unclear handoffs.</td>
+</tr>
+<tr>
+<td>C+ to D</td>
+<td>Wrong or risky in ways that users will encounter, or built on an approach that cannot reach A.</td>
+</tr>
+</tbody>
+</table>
+<p>Every grade below A+ must name the concrete defect and the exact fix. Style preferences alone cannot lower a grade.</p>
+<h3 id="run-it-yourself">Run it yourself</h3><p>Anyone can repeat the review. Start a new Claude Code session in the repository and give it one of the following four prompts.</p></div>
+<p>Use this prompt for agents:</p>
+<pre><code>Read-only grading task. Do not edit files. Be strict and independent; you have
+not seen earlier grades. Grade every file in .claude/agents/*.md against
+Anthropic's current Claude Code subagent standards and the repo's agent standard
+in .claude/agents/agent-creator.md: precise third-person description with an
+example; minimal tools that cover the body; lean body with references over
+inlining; every path, skill, agent and DayZ fact correct and consistent with
+CLAUDE.md, .claude/skills/_shared/dayz-conventions.md and the team flow; a Report
+naming its recipient. Scale A+ to D. A+ means nothing concrete left to fix. For
+anything lower, name a concrete defect a user would actually hit.
+Output a table: Agent | Grade | Why | To reach A+.
+</code></pre>
+<p>Use this prompt for skills:</p>
+<pre><code>Read-only grading task. Do not edit files. Be strict and independent; you have
+not seen earlier grades. Grade every skill in .claude/skills/*/ (SKILL.md, its
+scripts and its tests) against Anthropic's Agent Skills best practices and the
+repo's rules: name matches the folder; third-person description of what it does
+and when to use it; instructions accurate to the script; readable script with
+clear errors and non-zero exit on failure; preflight first where the rules
+require; tests that cover the risky logic and pass; destructive steps guarded
+by a backup, dry run or confirmation. Run py -m pytest -q on the skill's tests.
+Scale A+ to D. A+ means nothing concrete left to fix. For anything lower, name a
+concrete defect a user would actually hit.
+Output a table: Skill | Grade | Why | To reach A+.
+</code></pre>
+<p>Use this prompt for everything else:</p>
+<pre><code>Read-only grading task. Do not edit files. Be strict and independent; you have
+not seen earlier grades. Grade every hook in hooks/, the MCP server in
+.claude/mcp/dayz-rag/, the panel plugin in mods/agentic-z-panel/, every wrapper
+in scripts/, the answer tests in evals/, the rules files and every specialist
+reference file under .claude/skills/_shared/. Hooks: correct output JSON for the event,
+never block on their own bug, tests through stdin. MCP server: read-only
+annotations, clear tool descriptions, errors returned as isError, tests. Panel:
+follows the plugins reference, its tests pass. Rules files: every rule true of
+the code. Reference files: game facts cite a P: file and line or are marked
+unverified, and the cited lines hold (open them on P:). Scripts and answer
+tests: tests run, documentation matches the code. Run
+py -m pytest -q .claude scripts/dev hooks. Scale A+ to D. A+ means nothing
+concrete left to fix. For anything lower, name a concrete defect a user would
+actually hit. Output a table: Item | Grade | Why | To reach A+.
+</code></pre>
+<p>Use this prompt for this method note:</p>
+<pre><code>Read-only grading task. Do not edit files. Be strict and independent; you have
+not seen earlier grades. Grade the &quot;How the grading works&quot; section of the
+Agentic-Z agent team guide. Check that it states the rubric for every kind of
+item graded (agents, skills, hooks, search server, panel, rules files,
+specialist reference files, scripts, answer tests and this note); that it gives the
+grading prompt for every kind; and that every count matches final_grades.json
+and final_grades_shared.json. Scale A+
+to D. A+ means nothing concrete left to fix. For anything lower, name a
+concrete defect a reader would actually hit.
+Output a table: Item | Grade | Why | To reach A+.
+</code></pre>
+<p>Because each run uses a new reviewer, two runs can word their findings differently, and a stricter reviewer can find a new edge case. This is intended. The grading found real bugs, and each one is listed in "Real bugs the grading found and fixed".</p>
+<div class="keep"><h3 id="quality-by-version">Quality by version</h3><p>This table lists the grade of each agent, skill and shared item at three releases. Independent AI reviewers assigned every grade: at v1.6.0, after the v1.7.0 grading rounds, and for the final release. The final grades also cover the hooks, the search server, the panel, the scripts, the answer tests and every specialist reference folder. For the final totals, see "The final count". For the reasons behind each grade, see "Why each item got its grade".</p></div>
+<figure><img src="images/guide-05-1.svg" alt="Agentic-Z versions and grades"><figcaption>Agentic-Z versions and grades</figcaption></figure>
+<p>Two values in the table are not grades. "Not built" means that the item did not exist yet at that version. "n/a" means that the shared file was not graded at that version. The last column is the final grade, not a target.</p>
+<table data-cols="5">
+<thead>
+<tr>
+<th>Item</th>
+<th>v1.6.0 released</th>
+<th>v1.7.0 agent team</th>
+<th>v2.0.0 final</th>
+</tr>
+</thead>
+<tbody>
+<tr class="grp"><td colspan="4"><strong>Agents</strong></td></tr>
+<tr>
+<td><code>agent-creator</code></td>
+<td>A-</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-ai-specialist</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-animation-specialist</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-asset-specialist</code></td>
+<td>C+</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-audio-fx-specialist</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-build-checker</code></td>
+<td>A</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-build-engineer</code></td>
+<td>A-</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-config-specialist</code></td>
+<td>C+</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-docs-writer</code></td>
+<td>A-</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-ingame-tester</code></td>
+<td>A</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-layout-validator</code></td>
+<td>B-</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-lead</code></td>
+<td>A-</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-map-specialist</code></td>
+<td>C+</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-mod-architect</code></td>
+<td>A-</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-mod-debugger</code></td>
+<td>B-</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-mod-reviewer</code></td>
+<td>B</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-object-builder</code></td>
+<td>B-</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-orchestrator</code></td>
+<td>A-</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-persistence-specialist</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-physics-specialist</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-router</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-script-specialist</code></td>
+<td>B-</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-server-admin</code></td>
+<td>C+</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-ui-specialist</code></td>
+<td>C</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-vehicle-specialist</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-weapon-specialist</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-wearables-specialist</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-workbench-specialist</code></td>
+<td>C+</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>figma-node-normalizer</code></td>
+<td>B-</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>figma-to-dayz-layout</code></td>
+<td>C+</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr class="grp"><td colspan="4"><strong>Skills</strong></td></tr>
+<tr>
+<td><code>agentic-z-update</code></td>
+<td>B+</td>
+<td>B+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>clean-repo</code></td>
+<td>B</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-add-scaffold</code></td>
+<td>B+</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-add-server</code></td>
+<td>B+</td>
+<td>B+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-ask</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-balance</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-build-imageset</code></td>
+<td>B</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-build-pbo</code></td>
+<td>B</td>
+<td>B</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-clean-workspace</code></td>
+<td>B-</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-conflict-check</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-cot-bootstrap</code></td>
+<td>B</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-deploy-pbo</code></td>
+<td>A-</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-edit-types</code></td>
+<td>C+</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-gate</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-health</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-import-mod</code></td>
+<td>B+</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-init</code></td>
+<td>C</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-launch-objectbuilder</code></td>
+<td>A-</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-launch-test</code></td>
+<td>B+</td>
+<td>B+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-launch-workbench</code></td>
+<td>B+</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-layout-preview</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-lint</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-logwatch</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-new-mod</code></td>
+<td>B</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-p3d-audit</code></td>
+<td>B</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-pack-texture</code></td>
+<td>B+</td>
+<td>B+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-particles</code></td>
+<td>B+</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-preflight</code></td>
+<td>B</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-recipe</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-record-correction</code></td>
+<td>A-</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-release-pack</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-route</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-scope-mod</code></td>
+<td>B</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-search-download</code></td>
+<td>B-</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-search-index</code></td>
+<td>C+</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-server-kit</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-setup-objectbuilder</code></td>
+<td>B-</td>
+<td>A</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-split-types</code></td>
+<td>B</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-statusline</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-stop-test</code></td>
+<td>A-</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-upgrade-guard</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>dayz-workdrive</code></td>
+<td>B+</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>docs-sync</code></td>
+<td>B</td>
+<td>A-</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>sync-skills</code></td>
+<td>B+</td>
+<td>A+</td>
+<td>A+</td>
+</tr>
+<tr class="grp"><td colspan="4"><strong>Rules and shared files</strong></td></tr>
+<tr>
+<td><code>.claude/skills/_shared/dayz-conventions.md (Tier 2 core)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/conventions/config.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/conventions/assets.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/conventions/scripts.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/conventions/server.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/conventions/ui.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/container-base.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/py3d-mlod-notes.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/skill_helpers.py + test_skill_helpers.py</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/enscript-style.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/answer-formatting.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td>Grading method note (the "How the grading works" section of this guide)</td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>.claude/skills/_shared/README.md (index of shared reference folders)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/figma-to-dayz-rules.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr class="grp"><td colspan="4"><strong>Specialist files</strong></td></tr>
+<tr>
+<td><code>_shared/ai (README + 5 files)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/animation (README + 5 files)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/models (README + 5 files)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/physics (README + 4 files)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/vehicles (README + 6 files)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/weapons (README + 7 files)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/wearables (README + 6 reference files)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/audio-fx (README + 3 files)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/textures (README + 4 files)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>_shared/persistence (README + 4 files)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr class="grp"><td colspan="4"><strong>Enforce Script files</strong></td></tr>
+<tr>
+<td><code>enscript/patterns/scheduler.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/physics_items.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/references/api_entities_inventory.md, api_game.md, api_network.md, api_player.md, api_scheduling.md, language_compile.md, language_memory.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/examples/01_custom_item.c, 04_rpc_patterns.c, 05_mission_server.c, 06_json_config.c, 08_gui_menu.c, 09_scheduler_timer.c</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/netsync.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/json_config_migration.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/rpc.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/language_workarounds.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/integrations/central_economy.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/integrations/vanilla_plugins.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/integrations/input_bindings.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/integrations/community_framework.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/references/erpc_defines.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/references/file_paths.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/references/language_types.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/references/types_collections.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/references/widget_api.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/examples/07_agent_modifier.c</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/examples/12_menu_interactions.layout</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/persistence.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/integrations/dabs_framework.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/references/item_api.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/examples/11_hud_plain_text.layout</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/examples/13_item_preview.layout</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/README.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/modded_class.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/actions.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/singleton.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/references/gui_layout.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/examples/02_custom_action_singleuse.c</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/examples/03_continuous_action.c</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>enscript/examples/10_modded_playerbase.c</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr class="grp"><td colspan="4"><strong>Hooks</strong></td></tr>
+<tr>
+<td><code>hooks/hooks.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>hooks/test_plugin_copy.py</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>hooks/edit_check.py (+ test_edit_check.py)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>hooks/scope_guard.py (+ test_scope_guard.py)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>hooks/paste_router.py (+ test_paste_router.py)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr class="grp"><td colspan="4"><strong>Search server and panel</strong></td></tr>
+<tr>
+<td><code>dayz-rag MCP server (server.py, voyage_common.py, README, tests)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>mods/agentic-z-panel (plugin.json, hooks.json, register.tsx, register.test.tsx, types)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr class="grp"><td colspan="4"><strong>Answer tests (evals)</strong></td></tr>
+<tr>
+<td><code>evals/baseline.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/fixtures/dayz-layout-validator/*.layout</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-ai-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-animation-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-asset-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-audio-fx-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-config-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-layout-validator.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-mod-reviewer.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-object-builder.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-persistence-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-physics-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-script-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-vehicle-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-weapon-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-wearables-specialist.json</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>scripts/dev/test_run_evals.py</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>evals/README.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>scripts/dev/run_evals.py</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr class="grp"><td colspan="4"><strong>Scripts and repo tests</strong></td></tr>
+<tr>
+<td><code>scripts/dev/evals.bat, clean-repo.bat, docs-sync.bat</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>scripts/setup/preflight.bat, workdrive.bat, setup-objectbuilder.bat, statusline.bat, sync-skills.bat</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>scripts/dayz/*.bat (the other 35 wrappers: add-scaffold, add-server, ask, balance, build-imageset, build-pbo, clean-workspace, conflict-check, cot-bootstrap, deploy-pbo, gate, health, import-mod, launch-test, layout-preview, lint, logwatch, new-mod, objectbuilder, p3d-audit, pack-texture, recipe, release-pack, route, scope-mod, search-download, search-index, server-kit, status, stop-test, triage, types-edit, types-split, upgrade-guard, workbench)</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>scripts/README.md</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>scripts/dayz/dayz-search.bat</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>scripts/setup/agentic-z-update.bat</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>scripts/dev/test_repo_integrity.py</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+<tr>
+<td><code>scripts/dayz/dayz-search.py</code></td>
+<td>not built</td>
+<td>not built</td>
+<td>A+</td>
+</tr>
+</tbody>
+</table>
+<div class="keep"><h2 id="why-each-item-got-its-grade">Why each item got its grade</h2><p>Every item in this table is graded A+. An A+ means that the grader found nothing concrete to fix. The Why column gives the latest independent grader's reason for each grade, edited for consistent style.</p></div>
+<table data-cols="4">
+<thead>
+<tr>
+<th>Item</th>
+<th>v2.0.0</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr class="grp"><td colspan="3"><strong>Agents</strong></td></tr>
+<tr>
+<td><code>agent-creator</code></td>
+<td>A+</td>
+<td>The description is a clear trigger with an example, and the tools fit the agent's job. Every path, list and test it names exists, and every integrity assert now names its rule. It runs the answer tests with py scripts/dev/run_evals.py, which works from Bash. The integrity test passes.</td>
+</tr>
+<tr>
+<td><code>dayz-ai-specialist</code></td>
+<td>A+</td>
+<td>The description is a clear contract with an example. The tools are minimal: there is no Bash, and both dayz-rag names are present. Handoffs to the server admin, the debugger and the script specialist are explicit, and the Report names the script lead. Every P: fact the grader checked is correct. DZInfectedPackBeh is at P:\DZ\data\aiconfigs\config.cpp:304. CfgAIBehaviours is at line 14 of both P:\DZ\AI\config.cpp and P:\DZ\AI_bliss\config.cpp. The three vanilla script folders exist. ModCommandHandlerBefore, Inside and After are declared in dayzanimal.c and overridden in zombiebase.c. OverrideMovementSpeed and OverrideAlertLevel are in dayzcreatureaiinputcontroller.c. The file uses one MUST, which is within the budget for capitalized words. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-animation-specialist</code></td>
+<td>A+</td>
+<td>Ownership is split precisely with dayz-object-builder. This agent owns skeletonBones and class Animations, while the skeleton class, sections[] and the .p3d stay with dayz-object-builder. Each step points to its own file in the animation pack, and every referenced pack file exists. The claim that vanilla ships no model.cfg text holds, because no model.cfg exists under P:\DZ. Out-of-scope work (.anm and graph changes) is stated, and the Report names its recipient and every item it returns. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-asset-specialist</code></td>
+<td>A+</td>
+<td>Both earlier defects are fixed. The agent sends dayz-config-specialist the healthLevels[] material paths, which P:\DZ\characters\vests\config.cpp uses, and it no longer forwards the skill's suggested _co suffix for normal or specular maps. The suffix set, the refusal of sizes that are not a power of two and the overwrite behavior match pack_texture.py. Every pack section it cites exists.</td>
+</tr>
+<tr>
+<td><code>dayz-audio-fx-specialist</code></td>
+<td>A+</td>
+<td>Every DayZ fact checked out on P:. Both sound config files exist, and their CfgPatches classes are DZ_Sounds_Effects and DZ_Sounds_Bliss. particlelist.c and P:\graphics\particles exist. powergenerator.c plays a start, loop and stop sound with PlaySoundSet, PlaySoundSetLoop and StopSoundSet, and it plays its smoke with SEffectManager.PlayOnObject. Object.c defines all three sound helpers. The tools are the minimum the job needs (no Bash), and the handoffs are clear. The agent states plainly that no file gate can hear or see the result, and it names the recipient of its report. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-build-checker</code></td>
+<td>A+</td>
+<td>It matches gate_build in gate.py. Lint runs first, then the session stops, then the build runs. A payload-only bundle skips the build, and a bundle with a linker config.cpp gets both a build and a deploy (FAIL lines and missing-.bisign WARN lines). test_build_checker_matches_gate enforces this order. The agent has read-only tools and no memory (it is in READ_ONLY_GATES), and the PBO path matches build.py. The verdict comes first, and the agent names the recipient of its report. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-build-engineer</code></td>
+<td>A+</td>
+<td>Every skill it names exists with the flags and behavior it describes. These include the /dayz-stop-test OK line, /dayz-build-pbo refusing --clean when other PBOs are present, and the --server-only flag. Its use of Bash is narrowly limited. It stops and reports to the release lead whenever the map or the dependency list is missing.</td>
+</tr>
+<tr>
+<td><code>dayz-config-specialist</code></td>
+<td>A+</td>
+<td>Ownership boundaries with the weapon, vehicle, wearables and audio specialists are sharp, and handbacks go through the config lead. Every section it cites exists: 'Config conventions', the inventorySlot string-versus-array bug (T148506) in conventions/config.md, and container-base.md. The workflow covers vanilla parent citation, the requiredAddons ordering, forward declarations, the rule to redeclare only changed entries, path checks for $PBOPREFIX$ and \DZ, and a syntax check. The tools are minimal. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-docs-writer</code></td>
+<td>A+</td>
+<td>Every flag it passes to /dayz-release-pack and /dayz-server-kit is real, and the output files it merges are the ones those scripts write. Its warning list matches both skills. Its git commands are read-only and limited to the mod folder. It stops and reports when there is no git repository or no version.</td>
+</tr>
+<tr>
+<td><code>dayz-ingame-tester</code></td>
+<td>A+</td>
+<td>It matches gate.py. The ready pattern is DEFAULT_READY_RE, and the line comes from vanilla P:\scripts\5_mission\somemission.c:3, as cited. The settle time is 30 seconds and the timeout is 300 seconds. MOD_QUALIFIED covers NULL pointer and Can't find. The vanilla-only baseline uses the two newest sessions whose CLI params line lacks the mod. test_ingame_tester_matches_gate enforces this. The agent has read-only tools and no memory, always stops the session, puts the verdict first and names the recipient of its report. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-layout-validator</code></td>
+<td>A+</td>
+<td>Semicolons and = signs inside quotes are allowed, and the agent cites vanilla lines that exist on P: (remoteinfo:38, camera_tools:98, watermark:55). Step 3 matches what edit_check.py does with a missing file, a file over 2 MB and the cap of five problems. The agent runs only as a gate and has no write tools, which matches READ_ONLY_GATES.</td>
+</tr>
+<tr>
+<td><code>dayz-lead</code></td>
+<td>A+</td>
+<td>Every worker in the table is a real agent (test_lead_workers_are_agents), and the lead has no write tools and no memory (NO_WRITE_ROLES). Starting workers from a lead is valid under the current specification, which allows a subagent with the Agent tool to start its own subagents up to three levels deep. The specification ignores a type list here, so a bare Agent tool is correct. The table columns match the orchestrator's task table. The persistence audit, the For the server lead block and the health-page quote all agree with the orchestrator and persistence-specialist files. The Figma steps follow the order in CLAUDE.md, and the gate boundaries are clear. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-map-specialist</code></td>
+<td>A+</td>
+<td>The trigger and example for the server team are clear, the write tools fit the role, and the Report names the server lead. These facts were checked on P: and hold. P:\DZ\surfaces\config.cpp holds CfgWorlds &gt; CAWorld &gt; Clutter (line 20), CfgSurfaceCharacters (257) and CfgSurfaces (613). surfaces_bliss and surfaces_sakhal exist. No layers.cfg exists anywhere under P:\DZ\worlds. The world config is at P:\DZ\worlds\chernarusplus\world\config.cpp. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-mod-architect</code></td>
+<td>A+</td>
+<td>It is a planning role with Write and no Edit. The recipe draft marker matches DRAFT_MARK in dayz-recipe/recipe.py. The behavior actions match ACTIONS in dayz-gate/behavior.py (spawn, hands, wear, attach, cargo), and the ID rule matches ID_RE. The Report names the orchestrator and the output paths. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-mod-debugger</code></td>
+<td>A+</td>
+<td>It is read-only, which suits a role that fixes nothing. When triage has not run, it checks both known-errors.json and the learned file that triage.py loads, and it quotes pasted logs as &lt;pasted&gt;:&lt;line&gt;. Every owner agent it names exists, and its DayZ facts check out.</td>
+</tr>
+<tr>
+<td><code>dayz-mod-reviewer</code></td>
+<td>A+</td>
+<td>Lint findings keep the owner that lint assigns, so setup faults go to dayz-orchestrator and an unmounted P: goes to the user, which matches known-errors.json. The lint rule names, the --json flag and exit code 2 match lint.py. The hidden selection examples are true on P:.</td>
+</tr>
+<tr>
+<td><code>dayz-object-builder</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The description is clear about ownership, including the animation and physics handoffs, and it has a realistic example. That example's config owner, dayz-wearables-specialist, agrees with line 22. The tools fit a worker that writes model.cfg and runs /dayz-p3d-audit. Every referenced pack file and section exists: models/README.md, lods.md, memory-points.md, named-properties.md, proxies.md and doors.md; sections 3 and 5 of p3d-killers.md; and the 'Required Properties for Placed Objects' section of config-rvmat-checks.md. The LOD values (Geometry 1.0e+13, Memory 1.0e+15, ViewGeometry 6.0e+15, FireGeometry 7.0e+15) match conventions/assets.md. The proxy example points to P:\DZ\gear\camping\combination_lock3.p3d, which exists. dBodyGetMass exists (P:\scripts\1_core\proto\enphysics.c:122). The mass and autocenter rules match named-properties.md and mass-and-weight.md. The agent states the ODOL-versus-MLOD limit and the step where the user must save in Object Builder, and its report covers both.</td>
+</tr>
+<tr>
+<td><code>dayz-orchestrator</code></td>
+<td>A+</td>
+<td>The contract for the main session is clear. The Agent() list carries both the plain names and the agentic-z: names. Every skill call matches its argument-hint: /dayz-gate build, ingame and behavior with --deps, --server and --json; /dayz-new-mod --author with the cached dayz-author.txt (new_mod.py:34); /dayz-recipe &lt;weapon|vest|craftable&gt; &lt;ModName&gt;; /dayz-health record &lt;ModName&gt; review reading standard input (health.py:467); and triage.py --learn. Gate routing, fallbacks and the stop after three rounds are consistent with dayz-lead and dayz-gate. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-persistence-specialist</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The description is a precise trigger with a realistic example. The agent has the minimum tools for a worker that writes scripts, with Bash and Skill for /dayz-lint. The workflow runs scripts first (lint) and includes a verification step (the data audit from data-audit.md). Every pack file it names exists. The vanilla hooks check out against P:/scripts/3_game/entities/entityai.c (OnStoreLoad :2978, EEOnAfterLoad :1381, AfterStoreLoad :1419). The audit route agrees with step 6 of dayz-orchestrator and the 'For the server lead' heading in dayz-lead. The report names its recipient, and the answer tests pass 5 of 5.</td>
+</tr>
+<tr>
+<td><code>dayz-physics-specialist</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. It is a diagnosis-only role with no Edit, Write or memory, which NO_WRITE_ROLES in test_repo_integrity.py enforces. Bash is limited to the audit script. The agent is never named as an owner, which matches the debugger and the reviewer. All pack files exist, and the README's symptom table matches the workflow. Its DayZ facts check out on P:. WoodenCrate is at P:\DZ\gear\camping\config.cpp:10157. dBodyGetMass, dBodyIsDynamic, RaycastRV and ObjIntersectFire are all in P:\scripts. The claim that neither /dayz-gate behavior nor dayz-ingame-tester can drop, throw or shoot matches the behavior gate's actions (spawn, hands, wear, attach, cargo). Its config handoffs match the 'Any team' table in dayz-lead. The agent states plainly that the in-game test steps need a live diagnostic session. It has answer-test questions in evals/questions/dayz-physics-specialist.json.</td>
+</tr>
+<tr>
+<td><code>dayz-router</code></td>
+<td>A+</td>
+<td>The tools are minimal (Read only), the Haiku pin is documented as a cost decision, and the output is a single JSON line. Its 41 routes match the rules.json targets exactly in both names and kinds, as a script confirmed, and the args keys agree with dayz-route/SKILL.md. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-script-specialist</code></td>
+<td>A+</td>
+<td>It has a precise reference map, a correct layer rule, side checks that match lines 20 to 24 of conventions/scripts.md, a /dayz-lint step with the Bash and Skill tools it needs, and complete handoffs. P:\scripts\3_game\colors.c and 5_mission\gui\ exist. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-server-admin</code></td>
+<td>A+</td>
+<td>The table of tasks and done checks matches the skills. test_types_edit.py covers the claim that /dayz-edit-types makes a backup only when something changes. The /dayz-add-server --map and /dayz-launch-test --server arguments match their argument-hints. The cfgeconomycore folder rule matches split-types, and the audit intake matches data-audit.md. The agent never starts the server itself. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-ui-specialist</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The description is in the third person, says when to use the agent, and sends Figma input back to the pipeline, as the routing rule in CLAUDE.md requires. Every path exists: the Figma rules, gui_layout.md, widget_api.md with its 'Imagesets in layouts and script' section, 08_gui_menu.c, the numbered .layout examples, dabs_framework.md, and the 'UI scripting realities' section of ui.md. The /dayz-layout-preview sizes and finding names match its SKILL.md. The /dayz-build-imageset .gui-sources flow matches its SKILL.md. The P: facts hold: P:\gui\layouts exists, LoadImageFile(int, string) is in enwidgets.c:257, and 'set:dayz_gui image:' is used in ingamehud.c and in vanilla layouts. The tools fit the role, and the report names its recipient.</td>
+</tr>
+<tr>
+<td><code>dayz-vehicle-specialist</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. Its ownership boundary with dayz-config-specialist is clear, handoffs go through the config lead, the workflow ends with lint and behavior checks, and the Report names the config lead. The answer tests pass 5 of 5. Every pack file exists. The DayZ facts were spot-checked on P:, and all hold: CfgPatches DZ_Vehicles_Wheeled, DZ_Vehicles_Water and DZ_Vehicles_Parts; the native Transport, Car, Boat and Helicopter classes in P:\bin\config.cpp:1404-1563; CfgSlots in P:\scripts\config.cpp:11; Helicopter, HelicopterAuto and HelicopterScript in scripts/3_game/vehicles/helicopter.c and 4_world/entities/vehicles/helicopterscript.c; and MotorbikeScript and P:\DZ\vehicles\singletrack. GetAnimInstance, GetSeatAnimationType and CrewCanGetThrough are in inheritedcars/civiliansedan.c. The IsVital* methods, script that reads the 'Engine' and 'FuelTank' zones by name, the Engine, Gearbox and Propeller of the boat SimulationModule, and GUIInventoryAttachmentsProps and fuelCapacity in the wheeled config are all present.</td>
+</tr>
+<tr>
+<td><code>dayz-weapon-specialist</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The description is a precise trigger with an example. The agent has the minimum tools for a writer of configs and scripts. Its ownership boundary with dayz-config-specialist is clear, and every pack file it names exists. Its DayZ facts check out on P:. Weapon classes go in units[] with weapons[] empty, which matches P:/DZ/weapons/firearms/mosin9130/config.cpp and weapon-config.md. chamberableFrom, spawnPileType, ammoItems, recoilModifier, simpleHiddenSelections and class Particles are vanilla keys. RecoilBase and SpawnRecoilObject are in 4_world. The agent checks its work by script (/dayz-lint) and returns behavior checks in the checks-file format with only supported actions (spawn, hands, attach). It gives a checklist for a person to run for what the gate cannot test, and it names its recipient. Its answer tests pass 5 of 5.</td>
+</tr>
+<tr>
+<td><code>dayz-wearables-specialist</code></td>
+<td>A+</td>
+<td>The contract for the art team is clear, and every reference file exists. These P: paths were verified: CfgSlots in P:\scripts\config.cpp, and the clothing scripts in 4_world/entities/itembase/clothing and clothing_base.c. The agent runs /dayz-lint with the tools it needs, and it returns behavior checks without overwriting the plan file. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-workbench-specialist</code></td>
+<td>A+</td>
+<td>It follows a verify-before-write rule with real sources: P:\scripts\editor\plugins, editor\workbench and 1_core\workbenchapi.c all exist. The launch commands match /dayz-launch-workbench --mod and /dayz-add-scaffold --piece workbench, and scripts/dayz/workbench.bat exists. The agent never opens Workbench itself. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>figma-node-normalizer</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. It follows least privilege: it has read-only tools plus the Figma MCP tools under all three server names, and it writes no files. The trigger matches the pipeline rule in CLAUDE.md. It stops if no Figma tool is loaded, and it never builds JSON from memory. Its 13 prefixes match section 4 of the rules document exactly (bar_ maps to progress). The JSON shape matches the eight core fields in section 10 of the rules document. The agent is deterministic and lists every removal in its summary. The Report names the caller and the next stage (figma-to-dayz-layout). The answer tests pass 5 of 5.</td>
+</tr>
+<tr>
+<td><code>figma-to-dayz-layout</code></td>
+<td>A+</td>
+<td>Prefix-first mapping and per-axis sizing match sections 3 to 9 of figma-to-dayz-rules.md. The claim of one-space indentation is verified against P:\gui\layouts\camera_checkerboard.layout. The file_type="layout" filter exists in the dayz-rag server. The agent hands off to dayz-layout-validator in gate mode, then to dayz-ui-specialist. Nothing concrete to fix.</td>
+</tr>
+<tr class="grp"><td colspan="3"><strong>Skills</strong></td></tr>
+<tr>
+<td><code>agentic-z-update</code></td>
+<td>A+</td>
+<td>The resolve command for each file is now built relative to the repository root that the script runs from, and the quiet reminder names only the commands that apply. The SessionStart hook matches the SKILL.md, with a timeout of 20 seconds and an exit code that is always 0. All 98 tests pass.</td>
+</tr>
+<tr>
+<td><code>clean-repo</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. disable-model-invocation is set, which suits a destructive wipe of the whole repository. The description says what the skill does and when to use it, and it points cleanups of a single domain to that domain's skill. The orchestrator stays independent of any domain. Every child dry run finishes before anything is removed, and any dry-run failure aborts the run with nothing removed. A run without --yes in a non-TTY shell is refused (exit 2) before anything runs. The prompt names the cached project and warns when that project is not this checkout. The 'From an agent shell' steps give the correct flow for confirming in chat. The child contract (--include-server, --dry-run, --yes) matches dayz-clean-workspace/clean.py, which runs its own preflight gate (h.gate_on_preflight), as the SKILL.md says. The 13 tests cover each of these paths and pass, and the .bat wrapper matches.</td>
+</tr>
+<tr>
+<td><code>dayz-add-scaffold</code></td>
+<td>A+</td>
+<td>Every claim checked against add_scaffold.py holds. Pieces run in the documented order, and the author is resolved before anything is written. --piece junction is never part of all, and a real folder or a foreign link is refused. The skill is idempotent, and the SKIP and OK lines match the samples. The templates come from new_mod.py. The skill gates on preflight first and has 34 tests. Nothing concrete to fix in this skill. The DayZSetting.xml it writes ends up packed into the PBO, but that is fixed in dayz-build-pbo.</td>
+</tr>
+<tr>
+<td><code>dayz-add-server</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The map aliases match the real DayZ Server mpmissions folders on the grading machine (chernarusplus, enoch, sakhal, nasdara), and Steam appid 223350 is correct. The output samples and the refusal list in the SKILL.md match add_server.py. A refresh keeps a timestamped backup. The template-mismatch gate, the reserved-name checks (! and -behavior), the ANSI-safe config rewrite and the exit on junction failure all exist and are tested.</td>
+</tr>
+<tr>
+<td><code>dayz-ask</code></td>
+<td>A+</td>
+<td>The trigger description is precise, and the work runs scripts first: RAG search, then a check of every hit against P:, then a Grep fallback. The verdict line and exit codes match the code. The JSON keys, the cap of 60 lines per excerpt, the default folders and the --top-k bounds all match ask.py. The rules for ready-made answers forbid answering from memory. Tests cover verified, moved and dropped hits, every fallback reason, ranking and the CLI. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-balance</code></td>
+<td>A+</td>
+<td>A bad argument now prints ERROR on stdout and exits with code 2, as SKILL.md says. The mask facts check out on P:, including GasMask at line 21 and Inventory_Base biological=0. All 34 tests pass.</td>
+</tr>
+<tr>
+<td><code>dayz-build-imageset</code></td>
+<td>A+</td>
+<td>The structure of the generated .imageset (ImageSetClass, RefSize, ImageSetTextureClass with mpix 0, and ImageSetDefClass with Name, Pos, Size and Flags 0) matches the vanilla files in P:\gui\imagesets\ line for line. The code matches the documentation: rectangular atlases with power-of-two sizes, a 10px gutter, next-fit splitting, removal of stale outputs only after every atlas has converted, detection of an unchanged .paa, and identifier checks on sprite names. Preflight runs first, there is a requirements.txt, and there are 31 tests. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-build-pbo</code></td>
+<td>A+</td>
+<td>Every numbered step matches the order in main() in build.py: name check, project, lint gate, preflight, P:\Mods junction, workspace and prefix, junction, tools, ownership gate, clean gate, marker before the build, AddonBuilder, and then a check for a fresh PBO and cleanup. The guards on destructive steps (the ownership marker and the refusal of --clean while payload PBOs exist) are tested. include.lst and exclude.lst match their descriptions. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-clean-workspace</code></td>
+<td>A+</td>
+<td>The ownership rules require proof: a link, or a folder without .git that either has a junction pointing at it or carries an ownership marker. Links are removed with cmd /c rmdir and never with rmtree. The plan order, the cleanup of the health folder, the dry-run flow for agents, the stop on the first failure and the warnings all match clean.py. Destructive actions are guarded by a dry run, a prompt and disable-model-invocation, and there are 26 tests. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-conflict-check</code></td>
+<td>A+</td>
+<td>Run read-only against the real P:\Mods (@CF, @Community-Online-Tools, and @DayZ-Expansion-Bundle with 246 PBO headers), it finished in 0.67 s, which matches 'about a second'. Bundle-only selection, script-name matching from PBO headers, owner and fix lines, and the rule never to extract all behave as documented. The folder names in the documentation match P:\Mods. The limits are stated plainly. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-cot-bootstrap</code></td>
+<td>A+</td>
+<td>It is correctly marked disable-model-invocation, because it launches the game. The edit applies strictly to one player and never touches Roles/*.txt. The timings (600 s, 15 s, 30 s) match the constants, and the skill kills only the processes it started. Pass 2 runs only after a successful edit. The keybinds were checked against the COT scripts.pbo on P:\Mods: UACOTToggleButtons is kY and UACOTModuleToggleCOT is kEnd, which matches the closing message. The tests are thorough. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-deploy-pbo</code></td>
+<td>A+</td>
+<td>It performs a purely additive copy with an ownership gate. It is idempotent by size plus a 2 s mtime tolerance, handles a locked-file failure while still writing the marker, and warns about an unsigned PBO. The &lt;name&gt;.pbo.&lt;key&gt;.bisign pattern was confirmed against real Workshop folders on P:\Mods. The documentation matches deploy.py line for line, and the tests cover each refusal. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-edit-types</code></td>
+<td>A+</td>
+<td>Child elements are written in the vanilla order of category, tag, usage and value, which matches the Chernarus types.xml. Without cfglimitsdefinitionuser.xml, user= groups are skipped instead of producing a warning. A dry run on the vanilla mission flagged only the real misspelling Militar, and all 64 tests pass.</td>
+</tr>
+<tr>
+<td><code>dayz-gate</code></td>
+<td>A+</td>
+<td>All gate logic lives in scripts, and the 227 tests run against fixture missions, logs and images. Every option in SKILL.md matches gate.py. Bad arguments exit with code 2 and a clear ERROR line, and commented-out requiredAddons lines are ignored. The Limits section states plainly which parts have not yet run against live DayZ.</td>
+</tr>
+<tr>
+<td><code>dayz-health</code></td>
+<td>A+</td>
+<td>Checked against health.py: KEEP=200 and HISTORY_ROWS=50 match the documentation, and 'show' is inserted as the default command. Findings close when a newer result from the same gate drops them, and ERROR reports are refused. The stored folder is ignored by git through .server/*/*, and both page files are rebuilt on every record. The skill starts no process and has 34 tests. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-import-mod</code></td>
+<td>A+</td>
+<td>The trigger is clear, including the GitHub and Workshop cases. The Workshop refusal happens before preflight, and the non-TTY decision check happens before any link is made. The workspace link is rolled back when the P: junction fails, and the clone is removed if a later step refuses. The $PBOPREFIX$ mismatch warning matches the build-pbo rule, and the code matches the documentation. 63 tests cover the risky paths. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-init</code></td>
+<td>A+</td>
+<td>The hub, plan.py and the launch dispatch share one rule, so the skill no longer asks for dependencies of prebuilt bundles. Every dispatch action exists, bad input gets clear messages, and the four maps match the installed missions. All 109 tests pass.</td>
+</tr>
+<tr>
+<td><code>dayz-launch-objectbuilder</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The trigger description is clear, and every claim in SKILL.md matches launch.py. Preflight runs first, and --file and --mod are mutually exclusive. --mod opens the single .p3d under data/, or lists several and asks for --file. The registry check is reused from setup.py, the launch is detached with the correct working directory, and OSError is handled. The sample output matches the print statements. The 17 tests cover the risky paths. On disk, the grader confirmed that ObjectBuilder.exe exists under DayZ Tools\Bin\ObjectBuilder and that /dayz-new-mod scaffolds data/. The grader did not run the tests, because pytest was not permitted in that session.</td>
+</tr>
+<tr>
+<td><code>dayz-launch-test</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. Every claim in SKILL.md was checked against launch.py and the shared skill_helpers.py, and all of them match. These include the step order, the dry run that writes nothing, exit code 2 for bad ports and for a mod named both ways, the port gate, the 180 s wait for the bind with a kill on timeout, the server being killed when the client fails to start, detached processes and the fallback for display preferences. The sample output matches the real prefixes. The 38 tests cover the risky paths, and all 181 tests across the four scripted skills pass. The wiki mirror is identical. The remaining limits (a live server bind and the in-game connection) need a live DayZ session, which the skill already depends on.</td>
+</tr>
+<tr>
+<td><code>dayz-launch-workbench</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The description is precise, and the documentation matches the code. Preflight runs first, then the check for the executable, then gproj resolution with distinct errors for a missing mod folder and a missing gproj. The launch is then detached with cwd set to Bin\Workbench. The DayZ facts were spot-checked in the real binary: WorkbenchApp.exe contains the '-gproj' switch and the 'CurrentDir:dayz.gproj' default, and dta/, platforms/, ToolAddons/ and dayz.gproj sit next to it. The 10 tests cover flag handling, cwd and the -gproj= argument. The grader did not run the tests, because pytest was not permitted.</td>
+</tr>
+<tr>
+<td><code>dayz-layout-preview</code></td>
+<td>A+</td>
+<td>The trigger is clear, and the work runs scripts first: the AI only reads the PNG files. The exit codes (0, 1, 2) match main(). The limits are stated plainly: the 1080 reference for 'scaled 1', and plain halign values treated like the _ref values. A spot check on P:\gui\layouts confirms that plain 'right' and 'center' appear in vanilla (390 and 287 uses), so handling them is necessary. The skill has fixtures and tests, and it is listed as a preflight exception in dayz-conventions.md. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-lint</code></td>
+<td>A+</td>
+<td>RULES in lint.py matches the table in SKILL.md and the lint-* entries in dayz-gate/known-errors.json one to one (25 rules each, counting required-addon-duplicate). The claim that /dayz-build-pbo lints before preflight matches build.py (gate_on_lint runs before h.gate_on_preflight). The DayZ facts check out on P:\: DZ_data_aiconfigs has an empty body in P:\DZ\data\aiconfigs\config.cpp, and P:\DZ\data_sakhal\config.cpp maps worldScriptModule to scripts/4_World. Procedural #(...) textures are correctly skipped. The skill has 359 lines of tests. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-logwatch</code></td>
+<td>A+</td>
+<td>An interval of zero, a negative value, nan or inf now stops the run with a clear error and exit code 2, and the usage line lists every flag. The SKILL.md matches logwatch.py on folders, crash logs, exit codes and JSON fields. All tests pass.</td>
+</tr>
+<tr>
+<td><code>dayz-new-mod</code></td>
+<td>A+</td>
+<td>The description is precise and routes to sibling skills. The skill covers refusal cases, cleans a stale junction automatically with rollback on partial failure, validates the author handle and has 357 lines of tests. The workbench/dayz.gproj and DayZSetting.xml it copies exist in DayZ Tools\Bin\Workbench on the grading machine. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-p3d-audit</code></td>
+<td>A+</td>
+<td>All 71 tests pass, and the exit codes behave as documented, including a clear Not MLOD failure for a vanilla ODOL file. The P: path check skips URLs, and kits get no autocenter finding. Component names match regardless of case, so the coverage check always runs. The penetration rvmats and bisurfs that its references cite exist on P:.</td>
+</tr>
+<tr>
+<td><code>dayz-pack-texture</code></td>
+<td>A+</td>
+<td>The suffix table was checked against DayZ Tools\Bin\ImageToPAA\TexConvert.cfg on the grading machine, and every accepted suffix has a rule there, as the skill claims. The skill refuses a stale .paa whose modification time did not change, validates every input before converting any, gates on preflight and is tested. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-particles</code></td>
+<td>A+</td>
+<td>It is a reference skill that explains why it has no preflight gate. These facts were checked on P:\: POOL_SIZE 10000 is at particlemanager.c:25, GetInstance() returns null on headless or dedicated servers, the StopParticleFlags enum exists in particlesource.c, the two-argument RegisterParticle(root_path, file_name) form exists in particlelist.c:452, and vanilla uses ScaleParticleParamFromOriginal. Unverified items are marked as unverified. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-preflight</code></td>
+<td>A+</td>
+<td>Its only repair (mklink /J when P:\Mods is missing) is narrow and justified. The resolver order is documented, the resolvers are shared, and there are 285 lines of tests. A run on the grading machine found P:\ mounted and DayZ Tools at the default Steam path, which matches the documented resolution. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-recipe</code></td>
+<td>A+</td>
+<td>It runs scripts first and verifies against P:. It writes nothing on failure, protects existing plans with --force and hands off clearly to dayz-mod-architect. Every default was checked on P:\: AKM (akm/config.cpp:191), AK_WoodBttstck, Mag_AKM_30Rnd, SmershVest, SmershBag, RecipeBase, PluginRecipesManager, RegisterRecipies (pluginrecipesmanagerbase.c:14) and CraftRagRope. The skill is listed as a preflight exception and has 406 lines of tests. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-record-correction</code></td>
+<td>A+</td>
+<td>In a plugin install, step 1 now also searches the Agentic-Z rules section of the project's CLAUDE.md, AGENTS.md and GEMINI.md. Every path it names exists, and its step 3b check passed on a copy of the repository.</td>
+</tr>
+<tr>
+<td><code>dayz-release-pack</code></td>
+<td>A+</td>
+<td>Every fact comes from the mod's files, each warning states an action, the contract for exit codes is clear, and the handoff to /dayz-server-kit is explicit. The mapping of scope keywords (public, protected, private = 2, 1, 0) matches the DayZ config defines. The skill has fixtures and 229 lines of tests, and it is in the preflight exception list. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-route</code></td>
+<td>A+</td>
+<td>route.py does exactly what the documentation describes. Rules run first, with conflict_factor 0.5, absorbs and the threshold of 0.8 from rules.json. Jev runs next, only when a key is set, and the final result is a null/next dayz-router result. The skill states that request text goes to api.typesafe.ai. test_route.py keeps rules.json in sync with dayz-router.md, and that agent exists. This matches the routing rule in CLAUDE.md. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-scope-mod</code></td>
+<td>A+</td>
+<td>It applies least privilege correctly. It adds deny rules only and records exactly what it added, so --clear removes only those rules. It refuses names that would be read as pattern syntax, and it states what it does not protect. The scope_guard hook backs it up for mods created later. The skill is a listed preflight exception and has tests. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-search-download</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The script uses only the standard library, is safe and matches the documentation exactly. It is idempotent by tag through release-tag.txt, refuses an asset with no digest before downloading it, checks SHA-256, extracts tar files safely (with the data filter or a manual check), swaps in a staged copy with a restore path, handles network errors clearly, and exits with code 1 when the prompt is declined or the session is non-interactive. The release claims were checked against the live GitHub API. 1.4.0, 1.1.0, 1.0.1, v1.0.0 and v0.1.0 ship dayz-rag-index-v0.1.0.tar.gz; 1.2.0 and 1.2.1 ship dayz-search-index-&lt;ver&gt;.tar.gz; 1.2.2 has no asset; and every asset has a sha256 digest. The 1.4.0 asset has the same digest as v0.1.0, which supports the claim that the release index predates windowing. The 30 tests cover the risky paths. The grader did not run the tests, because pytest was not permitted.</td>
+</tr>
+<tr>
+<td><code>dayz-search-index</code></td>
+<td>A+</td>
+<td>All 49 tests pass, and --status and the refusal to overwrite an existing index behave and exit as documented, with no cost incurred. Running the chunker over P: without embedding produced exactly the 61,757 chunks that the documentation claims, with no chunk over 6,000 characters. The six vanilla folders it names exist, and the cost rates and free tier logic match its reference.</td>
+</tr>
+<tr>
+<td><code>dayz-server-kit</code></td>
+<td>A+</td>
+<td>The code refuses to zip a .biprivatekey (ReleaseError), as the documentation states. The placeholder entries (nominal 0) are commented and listed in README.txt. The source order for types is documented, and the code matches it. --mission accepts an instance name. Tests exist. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-setup-objectbuilder</code></td>
+<td>A+</td>
+<td>The destructive --force option is guarded by a prompt (or by --yes when there is no terminal), a reg export backup, a check that only HKCU is changed, and a refusal while Object Builder is running. These facts were checked on the grading machine: ObjectBuilder_defaultSettings.reg is in Bin\ObjectBuilder, the CConfig key exists, and '#View background LOD' = 1 matches the preferred flags. The skill has 414 lines of tests. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-split-types</code></td>
+<td>A+</td>
+<td>It is a thin wrapper around a vendored tool, with timestamped backups and the &lt;ce folder&gt; fix. A result check decides success, because the upstream script always exits with code 0. The vendored typeSplitter.py was checked and defines exactly the 19 categories listed. Tests exist. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-statusline</code></td>
+<td>A+</td>
+<td>It edits only settings.local.json and keeps a backup. It records the status line it replaced so that --remove restores it, refuses invalid JSON, and fails quietly with 'DayZ status unavailable'. The RAG age segment reads the indexed_at field, which exists in the real manifest. The skill is a listed preflight exception and has tests. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-stop-test</code></td>
+<td>A+</td>
+<td>A simple .bat file is the right tool for one taskkill call, which matches the repository's tooling rule. The handling of errorlevel 128 and the pass-through of stderr match the table in the documentation exactly. The skill is a documented preflight exception and is tested with a taskkill stub. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>dayz-upgrade-guard</code></td>
+<td>A+</td>
+<td>All 39 tests pass and cover all six finding reasons. A real snapshot of P: took 9.6 seconds and came to 10 MB with no files skipped, which matches the documentation. The check, diff, missing project, older format and bad argument paths all print the documented verdict first with the correct exit code. A separate reindex command rebuilds the search index after a failed check.</td>
+</tr>
+<tr>
+<td><code>dayz-workdrive</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The description is a clear trigger. The skill runs scripts first, and it explains well why it does not gate on preflight. The order in which it searches for the work-drive folder matches the code. Both the WorkDrive.exe route and the subst fallback check whether P:\ is actually present instead of trusting the return code. The skill warns when settings.ini names a letter other than P. The exit codes match the table in SKILL.md. The 33 tests pass. The DayZ facts were checked on the grading machine: DayZ Tools\Bin\WorkDrive\WorkDrive.exe exists, and settings.ini has [ProjectDrive] path= and Letter=P, exactly as the skill reads them.</td>
+</tr>
+<tr>
+<td><code>docs-sync</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The description is in the third person and says both what the skill does and when to use it. Everything runs from a script, and the SKILL.md matches the code: the modes, the exit codes 0, 1 and 2, the mirror map, the orphan rules (about.md and files prefixed with _ are kept), and the behavior when YAML is missing under --quiet. The Stop hook is wired in .claude/settings.json as 'sync.py --check --quiet' with a timeout of 15 seconds. It prints a valid systemMessage JSON line, never fails the session, and took 0.23 seconds. CI runs 'sync.py --check' in .github/workflows/tests.yml. 'sync.py --check' reports the wiki in sync, and the 60 tests across test_apply.py and test_docs_sync.py pass. Dry runs cover --apply. The em dash characters in apply.py are valid UTF-8, not mojibake.</td>
+</tr>
+<tr>
+<td><code>sync-skills</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. The description says what the skill does and when to use it. The instructions match sync.py: the OK, REFRESH, FOREIGN, LINK, SKIP and PRUNE states; the --force takeover; the rule that links into a worktree count as foreign; normalization of case and separators in paths; exit code 1 on a failed link or folder creation; exit code 2 on a bad agents.json, an unknown agent name or a missing skills folder; and the sample '[FAILED] cannot create' line. The paths for each agent in SKILL.md and agents.json (Claude through CLAUDE_CONFIG_DIR or ~/.claude/skills, Codex at ~/.agents/skills, and Gemini through GEMINI_CLI_HOME/.gemini or ~/.gemini/skills) agree with the skill discovery paths in the repository's CLAUDE.md, AGENTS.md and GEMINI.md. The script never deletes a real folder, has a dry run, and leaves the links of another clone alone unless --force is given. It also tells the user how to reload each agent CLI and how to check the skill counts afterward. All 26 of its pytest tests pass. They cover foreign links, worktrees, orphan pruning, real folders, a malformed agents.json, the --skip and --agents options, and the environment variables that move each agent's home folder. The thin wrapper at scripts/setup/sync-skills.bat forwards its arguments correctly.</td>
+</tr>
+<tr class="grp"><td colspan="3"><strong>Rules and shared files</strong></td></tr>
+<tr>
+<td><code>.claude/skills/_shared/dayz-conventions.md (Tier 2 core)</code></td>
+<td>A+</td>
+<td>The preflight exceptions match the skills, the RAG facts match server.py, the search rule is clear, and there are no stale references to the wiki.</td>
+</tr>
+<tr>
+<td><code>_shared/conventions/config.md</code></td>
+<td>A+</td>
+<td>GlowPlug (string form, parts config:822-831) and WoodenCrate (array form, camping config:10157) were verified on P:.</td>
+</tr>
+<tr>
+<td><code>_shared/conventions/assets.md</code></td>
+<td>A+</td>
+<td>The LOD table and the suffix set agree with the textures pack and the p3d audit. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>_shared/conventions/scripts.md</code></td>
+<td>A+</td>
+<td>The file is correct and cites P:\, for example the IsServerCheck message at entityai.c:2763 and net sync registered in the constructor, as in barrel_colorbase.c:21. It contradicts enscript/patterns/netsync.md, but the fault is in netsync.md.</td>
+</tr>
+<tr>
+<td><code>_shared/conventions/server.md</code></td>
+<td>A+</td>
+<td>It matches the .server/ layout and the division of work between the add-server and launch-test skills.</td>
+</tr>
+<tr>
+<td><code>_shared/conventions/ui.md</code></td>
+<td>A+</td>
+<td>actionmenu.c:74 SetColor(0xFFFFEC44) and mainmenupromo.c:157 COLOR_DAYZ_RED were verified.</td>
+</tr>
+<tr>
+<td><code>_shared/container-base.md</code></td>
+<td>A+</td>
+<td>The citations were verified (WoodenCrate class Cargo at camping config 10261-10266).</td>
+</tr>
+<tr>
+<td><code>_shared/py3d-mlod-notes.md</code></td>
+<td>A+</td>
+<td>These are library notes for py3d, so no P:\ citation is needed. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>_shared/skill_helpers.py + test_skill_helpers.py</code></td>
+<td>A+</td>
+<td>The allowFilePatching regular expression ignores commented-out lines. It has 27 tests.</td>
+</tr>
+<tr>
+<td><code>_shared/enscript-style.md</code></td>
+<td>A+</td>
+<td>It is a lean front index that sends the reader to one section file per task and states that facts live in the checked references. Its one citation (gameplay.c:636) is correct.</td>
+</tr>
+<tr>
+<td><code>_shared/answer-formatting.md</code></td>
+<td>A+</td>
+<td>The formatting rules are short and actionable, they match what Claude Code renders, and the file states its tier correctly.</td>
+</tr>
+<tr>
+<td>Grading method note (the "How the grading works" section of this document)</td>
+<td>A+</td>
+<td>The rubric covers every kind of item, and four grading prompts are given, including one for the note itself. The counts match the grade files, and every cross-reference to another section exists. Since this grade, that section has been rewritten in this document to add real test counts, all six reviewers, the references to hooks and plugins, a rubric for the items that are not agents or skills, the grading prompts and the caveat about unchecked examples. The rewritten section has not been regraded since.</td>
+</tr>
+<tr>
+<td><code>.claude/skills/_shared/README.md (shared file index)</code></td>
+<td>A+</td>
+<td>Every pack folder and file is listed, and the index test passes. The exemption list matches CITATION_EXEMPT exactly. Its statement of what the integrity test checks (citation presence only) is accurate, and the checked and vendored status of the examples matches enscript/README.md. Every named agent exists. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>_shared/figma-to-dayz-rules.md</code></td>
+<td>A+</td>
+<td>The vanilla dark panel is now color 0.1569 0.1569 0.1569 0.902, which appears 225 times on P:. Every P: citation holds when the file is opened, the spacer count of 149 of 227 is exact, and every widget class, alignment, style and font it names exists in vanilla.</td>
+</tr>
+<tr class="grp"><td colspan="3"><strong>Specialist files</strong></td></tr>
+<tr>
+<td><code>_shared/ai (README + 5 files)</code></td>
+<td>A+</td>
+<td>The files are heavily cited, and the samples were verified (CalculateVisibilityForAI at playerbase.c:5405, SetVisibilityCoef at :5438, and CfgAIBehaviours). All files are under 100 lines.</td>
+</tr>
+<tr>
+<td><code>_shared/animation (README + 5 files)</code></td>
+<td>A+</td>
+<td>The citations were verified (OpenFence at fence.c:488, ActionOpenDoors at playerbase.c:1697, and Wall_Gate_Rotate).</td>
+</tr>
+<tr>
+<td><code>_shared/models (README + 5 files)</code></td>
+<td>A+</td>
+<td>Every sampled citation matched. All files are short.</td>
+</tr>
+<tr>
+<td><code>_shared/physics (README + 4 files)</code></td>
+<td>A+</td>
+<td>The citations were verified (dBodyGetMass at enphysics.c:122, GetMass at physics.c:69, and ThrowPhysically).</td>
+</tr>
+<tr>
+<td><code>_shared/vehicles (README + 6 files)</code></td>
+<td>A+</td>
+<td>The citations were verified (Helicopter: Air at bin config:1563, simulation at :1568, and RotorLibHelicopterProperties at :1673).</td>
+</tr>
+<tr>
+<td><code>_shared/weapons (README + 7 files)</code></td>
+<td>A+</td>
+<td>The citations were verified (HuntingOptic inventorySlot at optics config:1443, and Slot_weaponBayonet at scripts config:219).</td>
+</tr>
+<tr>
+<td><code>_shared/wearables (README + 6 reference files)</code></td>
+<td>A+</td>
+<td>The citations were verified (CanPutInCargoClothingConditions at clothing_base.c:38, and PlateCarrierVest).</td>
+</tr>
+<tr>
+<td><code>_shared/audio-fx (README + 3 files)</code></td>
+<td>A+</td>
+<td>About 50 line citations were spot-checked in P:\DZ\sounds\hpp\config.cpp, sounds_bliss, object.c, effectmanager.c, effectsound.c, powergenerator.c and particlelist.c, and every one matched. The pack marks unverified readings as unverified, tells the user how to free sounds created through the manager, and gives a handoff for the in-game test.</td>
+</tr>
+<tr>
+<td><code>_shared/textures (README + 4 files)</code></td>
+<td>A+</td>
+<td>Checked on P: and against the real TexConvert.cfg: the _co/_ca DXT1/DXT5 classes and their sRGB comments, the _nohq 1-R/1-A swizzle, _smdi with R=1 and G and B kept, _as green only, _dt alpha only, and _mc DXT5. The bomberjacket _damage values (specular 0.4745, specularPower 55, fresnel(1.28,0.5), Stage7 color 0.15, tops_damage_mc) match, as do the TacticalGoggles healthLevels at glasses\config.cpp:598 and the pcu5jacket StageTI. Lines about tool knowledge are labeled, and the symptom table points to the right files. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>_shared/persistence (README + 4 files)</code></td>
+<td>A+</td>
+<td>About 90 cited lines were opened on P:, and all of them hold what the pack says. These include GAME_STORAGE_VERSION 144 at game.c:5, the OnStoreSave and OnStoreLoad chain in entityai.c, the version gates (2981, 3053, itembase 3103, and combinationlock 160 and 169), the BaseBuildingBase masks (143, 150, 157 and the part_id comment at 139), Fence id=1 at gear/camping/config.cpp:4537, the 500 ms EEOnAfterLoad retry at basebuildingbase.c:505, the PIN length at codelockcomponent.c:23-24, the ECE flags and JsonFileLoader. The analysis of data loss from a modded vanilla class is correct. The audit's handoff (script lead, then orchestrator, then server lead) matches dayz-persistence-specialist, dayz-lead and dayz-orchestrator. Nothing concrete to fix.</td>
+</tr>
+<tr class="grp"><td colspan="3"><strong>Enforce Script files</strong></td></tr>
+<tr>
+<td><code>enscript/patterns/scheduler.md</code></td>
+<td>A+</td>
+<td>It marks the report of CallLater drift as unverified and cites tools.c:61.</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/physics_items.md</code></td>
+<td>A+</td>
+<td>It is cited and verified (ThrowPhysically at inventoryitem.c:26).</td>
+</tr>
+<tr>
+<td><code>enscript/references/api_entities_inventory.md, api_game.md, api_network.md, api_player.md, api_scheduling.md, language_compile.md, language_memory.md</code></td>
+<td>A+</td>
+<td>Every identifier resolves in P:\scripts, and the sampled line citations matched. All files are under 100 lines.</td>
+</tr>
+<tr>
+<td><code>enscript/examples/01_custom_item.c, 04_rpc_patterns.c, 05_mission_server.c, 06_json_config.c, 08_gui_menu.c, 09_scheduler_timer.c</code></td>
+<td>A+</td>
+<td>Every vanilla name used exists on P:. The unknown names are the mod's own IDs and widgets.</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/netsync.md</code></td>
+<td>A+</td>
+<td>Every API line checked matched (entityai.c:2832-3069, playerbase.c:359-364 and 558-565, and InitItemVariables). The claim that ItemBase has no Init() checks out. The rules are correct and cited.</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/json_config_migration.md</code></td>
+<td>A+</td>
+<td>It gives a correct LoadFile/SaveFile pattern (jsonfileloader.c:7, 42 and 104) and does not overwrite the file on a parse error. Migration is incremental, and the vanilla CfgGameplayHandler citations match (cfggameplayhandler.c:70-72, cfggameplaydatajson.c:4).</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/rpc.md</code></td>
+<td>A+</td>
+<td>All signature citations matched (object.c:860, entityai.c:3507, game.c:211, 1011 and 1013, dayzgame.c:3141 and 3151, gameplay.c:117, and erpcs.c:1, 7 and 225). It labels the convention of high IDs as a community convention and says to validate everything a client sends.</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/language_workarounds.md</code></td>
+<td>A+</td>
+<td>Each 'not supported' claim is defined as 'not used in vanilla', and each replacement is cited. The auto, Format, ScriptCaller/ScriptInvoker, overloading and foreach-with-index lines were checked, and all matched.</td>
+</tr>
+<tr>
+<td><code>enscript/integrations/central_economy.md</code></td>
+<td>A+</td>
+<td>The ECE flag values and lines, CreateObjectEx, GetEconomyProfile, CEApi, ObjectSpawner and the cfggameplay field all match P:. It labels calls for developers only correctly and points to the right skills.</td>
+</tr>
+<tr>
+<td><code>enscript/integrations/vanilla_plugins.md</code></td>
+<td>A+</td>
+<td>The citations for PluginManager registration, the lifecycle, GetPlugin/GetPluginSafe and PluginAdminLog all matched (pluginmanager.c:57, 104, 193, 222, 297, 326 and 350, and missionbase.c:21 and 61).</td>
+</tr>
+<tr>
+<td><code>enscript/integrations/input_bindings.md</code></td>
+<td>A+</td>
+<td>The UAInput and Input API lines, the MissionGameplay hooks, the menu and chat guards and the spectator axis example all match P:. The inputs.xml format is taken from named shipped mods that exist under P:\Mods.</td>
+</tr>
+<tr>
+<td><code>enscript/integrations/community_framework.md</code></td>
+<td>A+</td>
+<td>It states clearly that CF is not vanilla and that its source is P:\Mods\@CF\Addons\scripts.pbo. The names checked in the PBO (EnableInvokeConnect, EnableClientReady, CF_RegisterModule, CF_OnStoreSave, CF_ModuleWorld, GetRPCManager, CF_EventPlayerArgs) are all present.</td>
+</tr>
+<tr>
+<td><code>enscript/references/erpc_defines.md</code></td>
+<td>A+</td>
+<td>The ERPCs, the agent and modifier calls and the positions of the RPC flags matched P:\ (playerbase.c:8115, brokenlegs.c:81, modifiersmanager.c:227, game.c:1013, gameplay.c:117). It labels the ID ranges as a community convention.</td>
+</tr>
+<tr>
+<td><code>enscript/references/file_paths.md</code></td>
+<td>A+</td>
+<td>The $saves and $mission tokens and the JsonFileLoader citations matched P:\ (pluginconfigscene.c:3, cfgbunkerbroadcasthandler.c:23, jsonfileloader.c:7).</td>
+</tr>
+<tr>
+<td><code>enscript/references/language_types.md</code></td>
+<td>A+</td>
+<td>All 48 P:\ citations resolve to existing files and lines, and the sampled citations matched. It works well as the companion to language_workarounds.md that lists what exists.</td>
+</tr>
+<tr>
+<td><code>enscript/references/types_collections.md</code></td>
+<td>A+</td>
+<td>The corrections are verified: set has no Contains, string has no StartsWith, Sort(bool reverse) is at enscript.c:493, Copy(from) exists, vector.Cross is an instance method, Math.Clamp is at enmath.c:540, and int.MIN is at enconvert.c:28. The 'reported' quirks are labeled as reported.</td>
+</tr>
+<tr>
+<td><code>enscript/references/widget_api.md</code></td>
+<td>A+</td>
+<td>29 of the methods, classes and flags it names were checked in enwidgets.c (SetTextProportion, ElideText, SetHideText, AddChildAfter, FindAnyWidgetById, RTTextureWidget, OnModalResult, SOURCEALPHA and others), and all are present. The guidance on handlers and menus is correct.</td>
+</tr>
+<tr>
+<td><code>enscript/examples/07_agent_modifier.c</code></td>
+<td>A+</td>
+<td>Verified against modifiersmanager.c: modifiers are kept in a map by ID, the ID must be 1 or higher, AddModifier takes an instance, and on load the time value of an unknown saved ID cannot be skipped. That makes m_TrackActivatedTime=false correct, and the file explains it well. The agent and modifier calls match playerbase.c:8102, 8115 and 8121.</td>
+</tr>
+<tr>
+<td><code>enscript/examples/12_menu_interactions.layout</code></td>
+<td>A+</td>
+<td>The format is valid, and the anchors and exact toggles are consistent. The colums spelling matches vanilla, the button offsets from right_ref/bottom_ref are correct, and the companion script in layouts.md is cited.</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/persistence.md</code></td>
+<td>A+</td>
+<td>All citations match P: (entityai.c:2910/:2978, itembase.c:3190/:3089, playerbase.c:7353/:7408, game.c:5 GAME_STORAGE_VERSION=144, bottle_base.c:7). The version-header pattern is correct. It agrees with the persistence pack (the warning about a modded PlayerBase, and false meaning a lost record), and it points to the pack for depth. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>enscript/integrations/dabs_framework.md</code></td>
+<td>A+</td>
+<td>Every framework fact that was spot-checked is in P:\Mods\@Dabs Framework\addons\Scripts.pbo: 'Attempted to create layout on SERVER', 'Invalid layout file', the DF_Scripts and DF_GUI patches, RegisterPluginAttribute, RegisterProfileSettingSlider, Two_Way_Binding, Relay_Command, ReloadAll, UseUpdateLoop, StringEvaluater, ScriptViewMenu, HidesParentMenu, GetInputExcludes and SwapItems. It is clearly scoped as third party, and it states what it could not confirm (line 55). Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>enscript/references/item_api.md</code></td>
+<td>A+</td>
+<td>Every cited line opened on P: matches: itembase.c:23/223/3315/3389/3416/3435/3470/3481/3486/3688/3717/3867/3883; object.c:132/981/994-1062/1105/1171/1219; entityai.c:646/882/885/2138/2293/2307-2308/2327/2442/2881/2884/3883; inventory.c:184/205/220/397/876; magazine.c:1/:38/:70; constants.c:909/913; and the food config lines. The claim about SetActions for each type matches InitializeActions and m_ItemTypeActionsMap. The one engine behavior it cannot observe is marked as reported. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>enscript/examples/11_hud_plain_text.layout</code></td>
+<td>A+</td>
+<td>It is well formed in the vanilla property format and starts at the root widget, with no BOM or comments. gui_layout.md shows vanilla using every property and value in it (ignorepointer, halign right_ref, valign bottom_ref, 'exact text', 'exact text size', 'bold text', 'text halign' right/center, and the sdf_Metron fonts). The exact-position toggles match the explanation of offsets in layouts.md. Nothing concrete to fix in the layout itself. The loading path in its companion text is covered under gui_layout.md.</td>
+</tr>
+<tr>
+<td><code>enscript/examples/13_item_preview.layout</code></td>
+<td>A+</td>
+<td>The structure is valid. ItemPreviewWidgetClass, PanelWidgetClass with style rover_sim_colorable (used in vanilla camera_tools.layout and day_z_book.layout), ButtonWidgetClass with styles Default and Editor, and the combinations of font, text, alignment and toggles all appear in vanilla. The widget names match the companion script in layouts.md. Nothing concrete to fix in the layout itself.</td>
+</tr>
+<tr>
+<td><code>enscript/README.md</code></td>
+<td>A+</td>
+<td>The index matches the folder: every file in patterns, integrations, references and examples is listed. The 'checked on P:' list agrees with what each file says about itself (the singleton and modded_class markers). The cross-references in the symptom table exist: conventions/config.md T148506, the persistence section 'Adding saved fields to a vanilla class', ServerSetAmmoCount, the GetScreenPos z check, and the + "" copy. The NO_GUI citations at dayzgame.c:1061 and missionserver.c:59 are correct. The examples not yet checked are clearly marked as vendored. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/modded_class.md</code></td>
+<td>A+</td>
+<td>Every citation was opened on P:, and all are correct: particlelist.c:3-9 (a commented-out example); plugindiagmenumodding.c:8 #ifdef DOXYGEN and :21; playerbase.c:3007; itembase.c:235/246-253/261; canteen.c:1; bottle_base.c:356; actionconstructor.c:27; plugindiagmenu.c:29; enwidgets.c:107-110/189/381/656; uimanager.c:4-10/59/62/117/154; uiscriptedmenu.c:66; inventorymenu.c:8; enscript.c:117; gameplay.c:637; ingamehud.c:1/1141; defines.c:29/34; chat.c:14; dayzgame.c:1061; missionserver.c:59; and DZ\gear\containers\config.cpp:3/19. A grep confirms that vanilla compiles no modded class. Claims about native behavior are marked as reported. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/actions.md</code></td>
+<td>A+</td>
+<td>Every cited line was checked on P:, and each one holds: actionbase.c:51/245/441/951/954, actionconstructor.c:3, actionmanagerbase.c:214, the re-check at actionmanagerserver.c:168, itembase.c:255-262/295, the logging gates in debug.c and constants.c:256, the IsTakeable checks in actiontakeitem.c:36 and actiontakeitemtohands.c:38, the three PowerGeneratorStatic overrides, and the base-class lines. The table of condition components matches all eight files exactly, including CCINotRuinedAndEmpty meaning quantity &gt; 0 and CCINone also overriding CanContinue. ActionDrink is an ActionConsume. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>enscript/patterns/singleton.md</code></td>
+<td>A+</td>
+<td>The citations are correct: defines.c:106 ('Only defined when CGame.IsDedicatedServer') and :112-115 (#define SERVER); jsonfileloader.c:7 LoadFile and :42 SaveFile, both returning bool with errorMessage; and :104-105 'use JsonFileLoader::LoadFile instead'. The deprecated JsonLoadFile does only an ErrorEx. The <code>ref array&lt;string&gt; X = {};</code> field initializer has a vanilla precedent (worldsmenu.c:16). The rules for JsonSerializer and static teardown are marked as reported, not checked, because the serializer is native. The code resets cfg after a failed load. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>enscript/references/gui_layout.md</code></td>
+<td>A+</td>
+<td>A script checked 92 of its citations against P:, and all matched. These cover every 'first vanilla use' file:line for the widget classes, the script types and methods in enwidgets.c and gameplay.c (TextListbox AddItem/SetItem/GetItemText and BaseListbox members, and ItemPreview/PlayerPreview members), the property examples, the colums lines and the first uses of fonts. The value lists are the complete vanilla sets: mode blend/additive/opaque; clamp mode clamp/border/wrap/invalid; stretch mode stretch_w_h/fit_w_center/none/invalid; fixaspect fixwidth/inside/outside/none; priority 0..4000; and text valign center only. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>enscript/examples/02_custom_action_singleuse.c</code></td>
+<td>A+</td>
+<td>Every cited line is correct: actionsingleusebase.c:1/:29; actionbase.c:51/245/259/441/954; animatedactionbase.c:179/183; itembase.c:3315/3486/246-253/255-262; playerbase.c:5773, where RPC_USER_ACTION_MESSAGE leads to MessageAction; and actionconstructor.c:3-27. actionmanagerserver.c:168 calls Can(), which reaches ActionCondition at actionbase.c:954. All the identifiers exist: CMD_ACTIONMOD_EAT, CCINonRuined, CCTNone, m_StanceMask and m_Text. The code follows the shape of the vanilla ActionTurnOnWhileInHands, and it puts SetActions in the item's own declaration, as modded_class.md requires. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>enscript/examples/03_continuous_action.c</code></td>
+<td>A+</td>
+<td>It mirrors ActionCraftArmband line for line (CMD_ACTIONFB_CRAFTING at :14, m_FullBody, STANCEMASK_CROUCH, CCINonRuined and CCTSelf at :23-24, and HasTarget false). Every cited line holds: actioncontinuousbase.c:1/120/208/228/289, cacontinuoustime.c:1 and :9, object.c:1001 GetHealth01, object.c:1105 SetHealthMax and playerbase.c:5773. The registration steps are correct. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>enscript/examples/10_modded_playerbase.c</code></td>
+<td>A+</td>
+<td>The citations hold: playerbase.c:359-364 (the constructor calls Init, where vanilla registers its own net-sync variables); :6733 GetItemInHands; :2042 GetStaminaHandler; staminahandler.c:1081 GetStamina; and bloodregen.c:14 GetHealth("GlobalHealth","Blood"). The stated ranges match vanilla: STAMINA_MAX 100, SL_ENERGY_MAX 5000 and blood 5000. The APIs all exist (GetSingleAgentCount, eAgents.FOOD_POISON, GetStatEnergy, m_StaminaHandler, EnumerateInventory with INORDER, MessageAction), and the overridden signatures match playerbase.c. SetSynchDirty runs only when the flags change, the synced field is not saved, and the warning about saved fields on a vanilla class is present. Nothing concrete to fix.</td>
+</tr>
+<tr class="grp"><td colspan="3"><strong>Hooks</strong></td></tr>
+<tr>
+<td><code>hooks/hooks.json</code></td>
+<td>A+</td>
+<td>The plugin hook wiring matches .claude/settings.json and uses ${CLAUDE_PLUGIN_ROOT}. Each hook has a timeout. test_paste_router and test_plugin_copy cover both wirings.</td>
+</tr>
+<tr>
+<td><code>hooks/test_plugin_copy.py</code></td>
+<td>A+</td>
+<td>It covers the plugin copy standing aside for the project copy for all three hooks, both alone and when shadowed.</td>
+</tr>
+<tr>
+<td><code>hooks/edit_check.py (+ test_edit_check.py)</code></td>
+<td>A+</td>
+<td>The PostToolUse output format is correct, and the hook exits silently if the checker itself fails. Messages give the file, the line and the fix. The tests are thorough and pass. A run on 208 vanilla config.cpp files and 228 vanilla .layout files from P:\ flagged none of them.</td>
+</tr>
+<tr>
+<td><code>hooks/scope_guard.py (+ test_scope_guard.py)</code></td>
+<td>A+</td>
+<td>The PreToolUse deny output is correct, and the reason tells Claude what to do. The gap for shell commands is documented. The hook covers mod folders created after the scope was set, all forms of P: paths and corrupt state files, and the tests pass.</td>
+</tr>
+<tr>
+<td><code>hooks/paste_router.py (+ test_paste_router.py)</code></td>
+<td>A+</td>
+<td>All 141 tests across the hook and the importer pass. A branch link that contains a slash stays whole, and GitHub's own pages, pull requests and gists get no suggestion. The hook's text about where each kind of link ends up matches import_mod.py, which asks git ls-remote for the branch and links a subfolder from its own clone. The suggested --name follows the importer's naming rule.</td>
+</tr>
+<tr class="grp"><td colspan="3"><strong>Search server and panel</strong></td></tr>
+<tr>
+<td><code>dayz-rag MCP server (server.py, voyage_common.py, README, tests)</code></td>
+<td>A+</td>
+<td>Nothing concrete to fix. All three tools carry readOnlyHint, and search also carries openWorldHint. The tool descriptions are clear, and errors are raised so that FastMCP returns them as isError results. The P: path check is lexical and documented, the cache is cleared when the index is rebuilt, and transient Voyage errors are retried with a client timeout. The README matches the code (.mcp.json, enabledMcpjsonServers, the plugin.json mcpServers block and cost-and-free-tier.md). All server and voyage_common tests pass, including the check that the file-type list matches the indexer.</td>
+</tr>
+<tr>
+<td><code>mods/agentic-z-panel (plugin.json, hooks.json, register.tsx, register.test.tsx, types)</code></td>
+<td>A+</td>
+<td><code>claude plugin test mods/agentic-z-panel</code> passes 18 of 18. The argv of every button matches its script's argparse definition: gate.py build/ingame &lt;mod&gt;; launch.py modnames; deploy.py and build.py modname; health.py takes a bare mod and inserts 'show' itself; release_pack.py mod; workbench --mod; logwatch --since/--duration/--mod; and ask.py exits with code 1 on NONE, which the panel shows as 'nothing found'. The run timeout of 600 s covers the gate's 300 s plus the 30 s in-game wait. The plugin cache path matches the marketplace name dayz-n-chill/agentic-z, and the versions in plugin.json and marketplace.json both read 0.3.0. The README table and the note that the panel runs only on Windows match the code. The lock is taken before any await, and the test_repo_integrity test checks the button scripts. Nothing concrete to fix.</td>
+</tr>
+<tr class="grp"><td colspan="3"><strong>Answer tests (evals)</strong></td></tr>
+<tr>
+<td><code>evals/baseline.json</code></td>
+<td>A+</td>
+<td>It has one entry per question file, and test_shipped_baseline_* enforces that.</td>
+</tr>
+<tr>
+<td><code>evals/fixtures/dayz-layout-validator/*.layout</code></td>
+<td>A+</td>
+<td>The fixtures match the 'unchanged' lists in the questions, and the clean fixture follows the format of the vanilla day_z_connection_lost.layout.</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-ai-specialist.json</code></td>
+<td>A+</td>
+<td>Every verified citation resolves on P:\ to the cited symbol (eagents, CfgAIBehaviours, noise.c and others).</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-animation-specialist.json</code></td>
+<td>A+</td>
+<td>The citations were verified: fence.c:12, camping config 4450, and barrel_colorbase.c:21/148.</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-asset-specialist.json</code></td>
+<td>A+</td>
+<td>The citations were verified (hoodie.rvmat:15).</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-audio-fx-specialist.json</code></td>
+<td>A+</td>
+<td>The citations were verified (sounds/hpp config, object.c:1273, particlelist.c).</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-config-specialist.json</code></td>
+<td>A+</td>
+<td>The citations were verified (GlowPlug at parts config 822/831, DZ_Characters_Vests at :3, PlateCarrierVest at :24).</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-layout-validator.json</code></td>
+<td>A+</td>
+<td>The citations were verified against a vanilla layout, and the fixtures are protected with 'unchanged'.</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-mod-reviewer.json</code></td>
+<td>A+</td>
+<td>The citations were verified.</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-object-builder.json</code></td>
+<td>A+</td>
+<td>The citations were verified (building.c:27, actionopendoors.c:40).</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-persistence-specialist.json</code></td>
+<td>A+</td>
+<td>The citations were verified (GAME_STORAGE_VERSION = 144 at game.c:5, combinationlock.c:160).</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-physics-specialist.json</code></td>
+<td>A+</td>
+<td>The citations were verified.</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-script-specialist.json</code></td>
+<td>A+</td>
+<td>The citations were verified.</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-vehicle-specialist.json</code></td>
+<td>A+</td>
+<td>The citations were verified (transport.c, carscript.c:1752, CfgSlots).</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-weapon-specialist.json</code></td>
+<td>A+</td>
+<td>The citations were verified (cz527.c, Mag_CZ527_5rnd, Slot_weaponOpticsLRS).</td>
+</tr>
+<tr>
+<td><code>evals/questions/dayz-wearables-specialist.json</code></td>
+<td>A+</td>
+<td>The citations were verified (ENVIRO_ISOLATION_WETFACTOR_DRENCHED, noHelmet).</td>
+</tr>
+<tr>
+<td><code>scripts/dev/test_run_evals.py</code></td>
+<td>A+</td>
+<td>31 tests cover validation, scoring, detection of unchanged files, the baseline gate and the shipped files, including 'verified'.</td>
+</tr>
+<tr>
+<td><code>evals/README.md</code></td>
+<td>A+</td>
+<td>It is accurate: 23 question files and 7 named uncovered agents add up to the 30 agents. The runner, the format document and the scoring rule are all linked correctly.</td>
+</tr>
+<tr>
+<td><code>scripts/dev/run_evals.py</code></td>
+<td>A+</td>
+<td>It applies least privilege: read-only tools are allowed, and the edit, shell, Agent and web tools are explicitly denied. The question is sent on stdin, files listed as 'unchanged' are checked by hash, and question files are validated. The baseline can only stay the same or rise, and results go to output/. It has tests.</td>
+</tr>
+<tr class="grp"><td colspan="3"><strong>Scripts and repository tests</strong></td></tr>
+<tr>
+<td><code>scripts/dev/evals.bat, clean-repo.bat, docs-sync.bat</code></td>
+<td>A+</td>
+<td>These are thin wrappers. The targets exist, and the usage comments match the CLIs.</td>
+</tr>
+<tr>
+<td><code>scripts/setup/preflight.bat, workdrive.bat, setup-objectbuilder.bat, statusline.bat, sync-skills.bat</code></td>
+<td>A+</td>
+<td>The targets exist, and the documented flags (--path, --unmount, --remove, --status) exist in the scripts.</td>
+</tr>
+<tr>
+<td><code>scripts/dayz/*.bat (the other 35 wrappers: add-scaffold, add-server, ask, balance, build-imageset, build-pbo, clean-workspace, conflict-check, cot-bootstrap, deploy-pbo, gate, health, import-mod, launch-test, layout-preview, lint, logwatch, new-mod, objectbuilder, p3d-audit, pack-texture, recipe, release-pack, route, scope-mod, search-download, search-index, server-kit, status, stop-test, triage, types-edit, types-split, upgrade-guard, workbench)</code></td>
+<td>A+</td>
+<td>Every target script exists. The usage lines that were checked match the argparse definitions: gate build/ingame/behavior/visual, health record, objectbuilder --file/--mod, and workbench --mod/--gproj.</td>
+</tr>
+<tr>
+<td><code>scripts/README.md</code></td>
+<td>A+</td>
+<td>Every .bat file in scripts/dayz, scripts/setup and scripts/dev is listed, and every listed file exists (a script checked both directions). The integrity test confirms that each wrapper's target exists. The examples match the scripts' command lines; for example, health.bat MyVest works because health.py inserts 'show'. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>scripts/dayz/dayz-search.bat</code></td>
+<td>A+</td>
+<td>It is a thin wrapper. It uses setlocal plus PYTHONIOENCODING=utf-8 so that redirected output does not crash on non-ASCII text. The target is found relative to the script folder and checked by the integrity test, and all arguments are passed on. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>scripts/setup/agentic-z-update.bat</code></td>
+<td>A+</td>
+<td>The relative target is correct (.....claude\skills\agentic-z-update\update.py, checked by the integrity test). It uses setlocal plus UTF-8 output and passes all arguments on. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>scripts/dev/test_repo_integrity.py</code></td>
+<td>A+</td>
+<td>All its tests pass, including test_cited_vanilla_lines_exist_on_p, which ran because P: is mounted (no skip). The docstring matches what the file checks. The read-only, no-write and memory rules match the subagent documentation (memory turns on Write and Edit). The citation and exemption lists check themselves for stale entries. The panel SKILL map is parsed, so a renamed script fails CI. The grader checked the references outside .md files that the test does not scan (.c, .json and .layout files under .claude/skills, scripts/, hooks/ and mods/). The only unmatched ones are paths relative to a mod, such as scripts/4_World/Vest.c, so the gap does not hide a dead link. Nothing concrete to fix.</td>
+</tr>
+<tr>
+<td><code>scripts/dayz/dayz-search.py</code></td>
+<td>A+</td>
+<td>All 29 tests pass, and a live query returned real hits whose files exist on P:. Every error path prints one clear line and exits with code 2, including -k 0, an empty query, a missing index and an invalid key. The help for -s matches the server's cap of 1500 characters. When no file_hashes.json exists, the run explains why every hit shows as stale.</td>
+</tr>
+</tbody>
+</table>
+<div class="keep"><h3 id="real-bugs-the-grading-found-and-fixed">Real bugs the grading found and fixed</h3><p>An independent reviewer found each of these bugs, a separate fixer corrected it, and a test now covers it.</p></div>
+<table data-cols="4">
+<thead>
+<tr>
+<th>Bug</th>
+<th>Impact</th>
+<th>Found in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Search tools missing after install</td>
+<td>Agents installed from the plugin had no RAG search tools.</td>
+<td>v1.7.0</td>
+</tr>
+<tr>
+<td>Cleanup could delete a mod</td>
+<td><code>/dayz-clean-workspace</code> could delete a mod that was cloned in by hand, including its git history.</td>
+<td>v1.7.0</td>
+</tr>
+<tr>
+<td>Update included unrelated changes</td>
+<td><code>/agentic-z-update</code> could add unrelated staged changes to its own commit.</td>
+<td>v1.7.0</td>
+</tr>
+<tr>
+<td>Index download never worked</td>
+<td><code>/dayz-search-download</code> looked for a file name that no release uses.</td>
+<td>v1.7.0</td>
+</tr>
+<tr>
+<td>RAG search skipped large classes</td>
+<td>About 39% of the code in large script classes, such as PlayerBase, was never searchable.</td>
+<td>v1.7.0</td>
+</tr>
+<tr>
+<td>Server could not find split types</td>
+<td><code>/dayz-split-types</code> pointed the economy at the wrong folder and loaded entries twice.</td>
+<td>v1.7.0</td>
+</tr>
+<tr>
+<td>Failed build blocked rebuilds</td>
+<td>A single failed first build caused every later build to refuse.</td>
+<td>v1.7.0</td>
+</tr>
+<tr>
+<td>Line endings broke updates</td>
+<td>On Windows, every upstream change appeared to be a local edit.</td>
+<td>v1.7.0</td>
+</tr>
+<tr>
+<td>Port already in use</td>
+<td>A second test session connected to the old server instead of failing with a clear message.</td>
+<td>v1.7.0</td>
+</tr>
+<tr>
+<td>Old textures and atlases reported as new</td>
+<td>A stale <code>.paa</code> from an earlier run was reported as newly built.</td>
+<td>v1.7.0</td>
+</tr>
+<tr>
+<td>Wrong project selected</td>
+<td>With two Agentic-Z projects on one machine, a skill could work in the other project's workspace.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>UI styles missing from the PBO</td>
+<td><code>/dayz-build-pbo</code> did not pack <code>.styles</code> files, so menus that use them shipped without their styles.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>Server-only mods sent to clients</td>
+<td><code>/dayz-launch-test</code> had no way to keep a server-only mod off the client.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>Lint blocked valid mods</td>
+<td><code>/dayz-lint</code> failed builds on findings that do not prevent a mod from loading.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>Unsafe names in the behavior gate</td>
+<td>A crafted instance or template name could point the behavior test outside its folder.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>Spec written into an imported mod</td>
+<td>Running <code>/dayz-init</code> again could write <code>spec.md</code> into a linked mod that had been imported.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>Balance compared the wrong items</td>
+<td><code>/dayz-balance</code> missed mod overrides of a vanilla class with the same name.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>Upgrade guard missed changes</td>
+<td><code>/dayz-upgrade-guard</code> missed inherited members and config keys written in a different case.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>Conflict check refused linked mods</td>
+<td><code>/dayz-conflict-check --ingame</code> refused <code>@mods</code> that were links.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>Requests routed to the wrong owner</td>
+<td><code>/dayz-route</code> sent spawn and modded class requests to object specialists instead of their owners.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>Incorrect vanilla facts in the new reference files</td>
+<td>The vehicle, wearables, audio, AI and animation reference files contained incorrect line citations and class facts. All were corrected against the P: drive.</td>
+<td>Agentic-Z</td>
+</tr>
+<tr>
+<td>Gates kept memory</td>
+<td>The read-only gates had a memory folder, which a gate that only judges should not have.</td>
+<td>Agentic-Z</td>
+</tr>
+</tbody>
+</table>
+<div class="keep"><h3 id="every-skill">Every skill</h3><p>Agentic-Z provides 44 slash commands. Forty ship in the plugin, and four are available in clones only. A person can run every command. Agents can run all of them except <code>/dayz-clean-workspace</code>, <code>/dayz-cot-bootstrap</code> and <code>/clean-repo</code>, which only a person can start.</p></div>
+<p>Of the 40 plugin DayZ skills, 18 check the environment first with <code>/dayz-preflight</code>, which is itself the check. The DayZ rules file has 14 exception entries that name 21 skills, each with its reason. <code>/dayz-particles</code> is a reference skill with no script. Some of the exempt skills still read the P: drive. <code>/dayz-lint</code>, <code>/dayz-balance</code>, <code>/dayz-conflict-check</code>, <code>/dayz-recipe</code>, <code>/dayz-layout-preview</code> and <code>/dayz-upgrade-guard</code> only read files and write a report, and <code>/dayz-ask</code> only checks that the P: drive is mounted. <code>/dayz-gate</code> relies on the checks in the scripts it calls. <code>/dayz-stop-test</code> skips the check so that it still works as an emergency stop.</p>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Skill</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="grp"><td colspan="2"><strong>Setup</strong></td></tr>
+<tr>
+<td><code>/dayz-init</code></td>
+<td>Runs the setup wizard on first use, with an optional spec step. After that, it serves as a status hub for the active mod.</td>
+</tr>
+<tr>
+<td><code>/dayz-preflight</code></td>
+<td>Checks the P: drive, DayZ Tools, the vanilla data and the Workshop link.</td>
+</tr>
+<tr>
+<td><code>/dayz-workdrive</code></td>
+<td>Mounts the P: drive after a reboot without opening DayZ Tools.</td>
+</tr>
+<tr>
+<td><code>/dayz-setup-objectbuilder</code></td>
+<td>Configures Object Builder on a new machine.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Mods</strong></td></tr>
+<tr>
+<td><code>/dayz-new-mod</code></td>
+<td>Creates a new mod with the standard folders and files.</td>
+</tr>
+<tr>
+<td><code>/dayz-import-mod</code></td>
+<td>Imports an existing mod folder or a GitHub repository into the workspace.</td>
+</tr>
+<tr>
+<td><code>/dayz-add-scaffold</code></td>
+<td>Adds missing standard pieces to an existing mod.</td>
+</tr>
+<tr>
+<td><code>/dayz-recipe</code></td>
+<td>Starts a plan from a recipe ("new weapon", "new vest" or "new craftable") for the architect to complete.</td>
+</tr>
+<tr>
+<td><code>/dayz-scope-mod</code></td>
+<td>Restricts editing to one mod.</td>
+</tr>
+<tr>
+<td><code>/dayz-clean-workspace</code></td>
+<td>Removes the mods it created, together with their builds.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Build</strong></td></tr>
+<tr>
+<td><code>/dayz-lint</code></td>
+<td>Finds errors that would prevent a mod from loading, before packing. It runs first inside the build gate and <code>/dayz-build-pbo</code>.</td>
+</tr>
+<tr>
+<td><code>/dayz-build-pbo</code></td>
+<td>Packs a mod into a PBO with AddonBuilder.</td>
+</tr>
+<tr>
+<td><code>/dayz-deploy-pbo</code></td>
+<td>Copies prebuilt PBOs and keys into place without AddonBuilder.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Test</strong></td></tr>
+<tr>
+<td><code>/dayz-add-server</code></td>
+<td>Sets up a local test server instance.</td>
+</tr>
+<tr>
+<td><code>/dayz-launch-test</code></td>
+<td>Starts a diag server and client with the selected mods.</td>
+</tr>
+<tr>
+<td><code>/dayz-stop-test</code></td>
+<td>Stops the test session.</td>
+</tr>
+<tr>
+<td><code>/dayz-cot-bootstrap</code></td>
+<td>Grants admin rights in Community Online Tools on the test server.</td>
+</tr>
+<tr>
+<td><code>/dayz-logwatch</code></td>
+<td>Watches the logs during a test session and triages each new error as it appears.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Checks, routing and status</strong></td></tr>
+<tr>
+<td><code>/dayz-gate</code></td>
+<td>Runs the build, in-game, behavior and visual checks as scripts that print PASS or FAIL, with triage of known errors. <code>/dayz-gate behavior</code> runs a test mission that spawns and uses each new item and reports PASS or FAIL per feature. <code>/dayz-gate visual</code> takes screenshots during the in-game test and compares them with stored baselines.</td>
+</tr>
+<tr>
+<td><code>/dayz-conflict-check</code></td>
+<td>Finds prefix, path and class collisions with CF, COT and Expansion without extracting them. For packed mods (the usual Workshop install), it reads only the PBO headers, so it compares prefixes, paths and script file names. Config and script classes are compared only for unpacked mods. <code>--ingame</code> loads the mods together in a test session, which is how class clashes with packed mods show up.</td>
+</tr>
+<tr>
+<td><code>/dayz-upgrade-guard</code></td>
+<td>Takes a snapshot of vanilla before a DayZ update, then lists the mod classes whose vanilla parents changed. It can also rebuild the search index.</td>
+</tr>
+<tr>
+<td><code>/dayz-balance</code></td>
+<td>Compares item stats with similar vanilla items and flags outliers.</td>
+</tr>
+<tr>
+<td><code>/dayz-health</code></td>
+<td>Produces a page for each mod with the last build, the last test, open findings and the history of every gate run.</td>
+</tr>
+<tr>
+<td><code>/dayz-route</code></td>
+<td>Shows which skill, specialist or team should handle a request.</td>
+</tr>
+<tr>
+<td><code>/dayz-statusline</code></td>
+<td>Installs a status line that shows the P: drive, the active mod, DayZ Diag and the index age.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Art and UI</strong></td></tr>
+<tr>
+<td><code>/dayz-pack-texture</code></td>
+<td>Converts images to <code>.paa</code> and checks their suffixes.</td>
+</tr>
+<tr>
+<td><code>/dayz-build-imageset</code></td>
+<td>Packs UI sprites into an imageset.</td>
+</tr>
+<tr>
+<td><code>/dayz-layout-preview</code></td>
+<td>Renders a <code>.layout</code> as PNG images at several screen sizes and flags widgets that fall off screen.</td>
+</tr>
+<tr>
+<td><code>/dayz-p3d-audit</code></td>
+<td>Finds collision, physics and structure problems in models.</td>
+</tr>
+<tr>
+<td><code>/dayz-particles</code></td>
+<td>Provides reference material for creating particle effects without Workbench.</td>
+</tr>
+<tr>
+<td><code>/dayz-launch-objectbuilder</code></td>
+<td>Opens Object Builder on a model.</td>
+</tr>
+<tr>
+<td><code>/dayz-launch-workbench</code></td>
+<td>Opens Workbench on a mod's project.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Server economy</strong></td></tr>
+<tr>
+<td><code>/dayz-edit-types</code></td>
+<td>Adds, changes, removes or merges <code>types.xml</code> entries.</td>
+</tr>
+<tr>
+<td><code>/dayz-split-types</code></td>
+<td>Splits one large <code>types.xml</code> into 19 category files.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Release</strong></td></tr>
+<tr>
+<td><code>/dayz-release-pack</code></td>
+<td>Writes the Workshop description, a changelog entry, the classname list and installation notes for server owners.</td>
+</tr>
+<tr>
+<td><code>/dayz-server-kit</code></td>
+<td>Creates a zip file for server owners with the types.xml entries, the cfgeconomycore lines, the load order and the public <code>.bikey</code>. It never packs a <code>.biprivatekey</code>.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>RAG search</strong></td></tr>
+<tr>
+<td><code>/dayz-search-index</code></td>
+<td>Builds the index of the game files.</td>
+</tr>
+<tr>
+<td><code>/dayz-search-download</code></td>
+<td>Downloads a prebuilt index instead of building one.</td>
+</tr>
+<tr>
+<td><code>/dayz-ask</code></td>
+<td>Answers a plain-English question about vanilla DayZ with checked <code>path:line</code> citations.</td>
+</tr>
+<tr class="grp"><td colspan="2"><strong>Team and repository</strong></td></tr>
+<tr>
+<td><code>/dayz-record-correction</code></td>
+<td>Turns a user correction into a team rule.</td>
+</tr>
+<tr>
+<td><code>/sync-skills</code></td>
+<td>Links the skills into Claude Code, Codex and Gemini (clones only).</td>
+</tr>
+<tr>
+<td><code>/agentic-z-update</code></td>
+<td>Pulls template updates into a clone (clones only).</td>
+</tr>
+<tr>
+<td><code>/docs-sync</code></td>
+<td>Keeps the documentation wiki in line with the source files (clones only).</td>
+</tr>
+<tr>
+<td><code>/clean-repo</code></td>
+<td>Runs a cleanup across every domain of the repository (clones only).</td>
+</tr>
+</tbody>
+</table>
+<p>The side panel is a separate plugin, not a skill. See <a href="#token-savers">Token savers</a>.</p>
+<div class="keep"><h2 id="where-everything-lives">Where everything lives</h2><p>This section lists your own files and the main locations where the skills write. The repository's internal tool folders are not shown.</p></div>
+<div class="keep"><h3 id="folders">Folders</h3>
+<pre><code>&lt;repo&gt;\
+  workspace\&lt;ModName&gt;\           mod source
+  .server\&lt;instance&gt;\            local test server (mission, serverDZ.cfg, Profiles = server logs)
+  .server\&lt;instance&gt;-behavior\   copy of the instance that the behavior gate runs in
+  .server\!ClientDiagLogs\       client logs
+  .server\!Health\&lt;ModName&gt;\     stored gate results and the health page for /dayz-health
+  .claude\local-memory\          author handle, active project and wizard state
+  .claude\settings.local.json    local settings
+  .claude\.upstream-baseline     written by /agentic-z-update
+  .claude\.upstream-update.lock  written by /agentic-z-update
+  output\&lt;ModName&gt;-plan\         the plan, the behavior checks and the visual shots list
+  output\&lt;ModName&gt;-visual\       screenshots for each run, and the baselines to keep
+  output\&lt;ModName&gt;-release\      release texts, release pack and server kit zip
+  output\layout-preview\         layout preview images
+  output\evals\                  answer test results
+  output\                        other one-off deliverables
+~\.claude\dayz-search-index\     RAG search index
+~\.claude\dayz-upgrade-guard\    vanilla snapshots for /dayz-upgrade-guard (about 10 MB each)
+P:\
+  &lt;ModName&gt;\                     link to workspace\&lt;ModName&gt;
+  Mods\@&lt;ModName&gt;\Addons\        built PBO (Mods links to DayZ\!Workshop)
+  dz\                            vanilla data, extracted once
+  scripts\                       vanilla scripts, also read by the skills
+</code></pre>
+<p>The skills also write to three places outside these folders:</p>
+<ul>
+<li>Object Builder settings in the Windows registry.</li>
+<li>The skill links that <code>/sync-skills</code> creates.</li>
+<li>Rule files, which <code>/dayz-record-correction</code> updates only after you approve the change.</li>
+</ul>
+<h3 id="settings-you-might-need">Settings you might need</h3>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Variable</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DAYZ_TOOLS_PATH</code></td>
+<td>Location of the DayZ Tools installation, which contains Bin\AddonBuilder.</td>
+</tr>
+<tr>
+<td><code>DAYZ_GAME_PATH</code></td>
+<td>Location of the DayZ game installation, which contains DayZ_x64.exe and its !Workshop folder.</td>
+</tr>
+<tr>
+<td><code>DAYZ_DIAG_PATH</code></td>
+<td>Location of DayZDiag_x64.exe, when it is not in the game folder.</td>
+</tr>
+<tr>
+<td><code>DAYZ_VANILLA_DATA_PATH</code></td>
+<td>Location of the extracted vanilla data, when it is not at P:\dz.</td>
+</tr>
+<tr>
+<td><code>DAYZ_WORK_DRIVE</code></td>
+<td>The work drive folder that /dayz-workdrive mounts as P:.</td>
+</tr>
+<tr>
+<td><code>DAYZ_SERVER_PATH</code></td>
+<td>Location of the DayZ Server installation, used by /dayz-add-server.</td>
+</tr>
+<tr>
+<td><code>VOYAGE_API_KEY</code></td>
+<td>The Voyage AI key for RAG search, stored in .env.</td>
+</tr>
+<tr>
+<td><code>VOYAGE_MODEL</code></td>
+<td>The Voyage embedding model for the index and for searches. The default is voyage-code-3.</td>
+</tr>
+<tr>
+<td><code>VOYAGE_FREE_TIER_TOKENS</code></td>
+<td>Your Voyage token budget, when your plan differs from the default budget that the indexer warns against.</td>
+</tr>
+<tr>
+<td><code>DAYZ_RAG_MAX_DISTANCE</code></td>
+<td>The default distance cutoff for search hits. It is not set by default.</td>
+</tr>
+<tr>
+<td><code>TYPESAFE_API_KEY</code></td>
+<td>Turns on Jev in /dayz-route.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="safety">Safety</h2>
+<ul>
+<li>In a clone, the shipped <code>.claude/settings.json</code> allows the repository's own skills and scripts. It also allows plain <code>npm install</code> and <code>npm ci</code>, which install from the lockfile. It denies <code>python -c</code>, <code>python -m</code>, <code>node -e</code>, <code>node -p</code>, <code>npx</code>, and <code>npm install</code> or <code>npm i</code> with a package name. Other inline forms, such as <code>py -c</code>, are not on the allow list, so Claude Code asks you before it runs them. A plugin installation does not include this file, because plugins cannot ship permissions.</li>
+<li>Every agent has an explicit tool list. The five gate agents (mod reviewer, layout validator, build checker, in-game tester and debugger) have no Edit or Write tools. Four of them have Bash to run their checks; only the debugger has no Bash. Two agents have general web or remote design access: <code>agent-creator</code> has WebFetch, and <code>figma-node-normalizer</code> uses the remote Figma MCP tools. The 21 agents that use RAG search also send text off the machine, because <code>search_dayz_source</code> embeds each query through the hosted Voyage AI API.</li>
+<li><code>/dayz-scope-mod &lt;ModName&gt;</code> blocks edits to every other mod in <code>workspace\</code>. Start Claude Code from the project root for the block to apply. <code>--clear</code> removes it.</li>
+<li>Cleanup removes only what the toolkit created. Destructive steps ask for confirmation first or require <code>--yes</code>.</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table data-cols="4">
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[FAIL] P:\ is NOT mounted</code></td>
+<td>P: is not mounted. The mount does not survive a reboot.</td>
+<td>Mount P: in DayZ Tools, or run <code>/dayz-workdrive</code>.</td>
+</tr>
+<tr>
+<td><code>[WARN] DayZ Tools not detected</code></td>
+<td>DayZ Tools is not installed, or it is installed in an unusual location.</td>
+<td>Install DayZ Tools from Steam (under Tools), or set <code>DAYZ_TOOLS_PATH</code>.</td>
+</tr>
+<tr>
+<td><code>[WARN] Vanilla DayZ data not detected on P:\</code></td>
+<td>The game data has not been extracted.</td>
+<td>In DayZ Tools, run Extract Game Data. Repeat this once after each Tools update.</td>
+</tr>
+<tr>
+<td><code>P:\Mods\</code> is missing, is a real folder, or is a broken link</td>
+<td>Built PBOs must go to the Workshop folder.</td>
+<td>Run <code>cmd /c mklink /J P:\Mods "&lt;DayZ install&gt;\!Workshop"</code>.</td>
+</tr>
+<tr>
+<td><code>Connection failed 0x00020005</code></td>
+<td>serverDZ.cfg does not contain <code>allowFilePatching = 1;</code>.</td>
+<td>Run <code>/dayz-add-server &lt;instance&gt;</code> again.</td>
+</tr>
+<tr>
+<td>"Mission script has no main function"</td>
+<td>The server found no valid mission folder.</td>
+<td>Run <code>/dayz-add-server &lt;instance&gt; --refresh-mission</code>.</td>
+</tr>
+<tr>
+<td><code>[FAIL] DayZDiag_x64.exe not found</code></td>
+<td>The DayZ installation is incomplete.</td>
+<td>Verify the DayZ files in Steam. The Diag executable ships in the same folder as DayZ_x64.exe.</td>
+</tr>
+<tr>
+<td><code>[FAIL] P:\&lt;ModName&gt; exists as a real folder, not a link</code>, or <code>is a link pointing at ...</code></td>
+<td>A folder, or a link to another location, already exists at that path.</td>
+<td>Move the folder. If it is a stray link, remove it with <code>cmd /c rmdir P:\&lt;ModName&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>[FAIL] Mod '&lt;ModName&gt;' has no Addons folder at ...</code>, or <code>has no .pbo files in ...</code></td>
+<td>The mod was launched before it was built.</td>
+<td>Run <code>/dayz-build-pbo &lt;ModName&gt;</code> first.</td>
+</tr>
+<tr>
+<td><code>[FAIL] P:\&lt;ModName&gt; junction is missing</code></td>
+<td>The P: link to the mod folder no longer exists.</td>
+<td>Run <code>/dayz-add-scaffold &lt;ModName&gt; --piece junction</code>.</td>
+</tr>
+<tr>
+<td><code>ERROR</code> from <code>/dayz-gate</code> that asks for <code>--deps</code></td>
+<td>The mod's config.cpp requires non-vanilla addons, such as CF.</td>
+<td>Pass the addons to the gate, for example <code>/dayz-gate ingame &lt;ModName&gt; --deps CF</code>.</td>
+</tr>
+<tr>
+<td><code>FAIL</code> from <code>/dayz-lint</code> before a build</td>
+<td>The linter found an error that would stop the mod from loading.</td>
+<td>Fix the problem at the <code>file:line</code> location it reports. Each finding names the agent that owns the fix.</td>
+</tr>
+<tr>
+<td>The mod does not load in the game</td>
+<td>One of the setup steps is incorrect.</td>
+<td>Run <code>/dayz-preflight</code>. Then check the junction, the CfgPatches entry, the PBO date and the server <code>script*.log</code>, and confirm that the client used <code>-mod=P:\Mods\@&lt;ModName&gt;</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="faq">FAQ</h2>
+<table data-cols="3">
+<thead>
+<tr>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Does it cost money?</td>
+<td>Agentic-Z is free to use for DayZ mods (see LICENSE). You need your own AI tool. RAG search requires a Voyage AI key. The last full index build embedded about 66M tokens, and the current indexer creates more chunks, so check Voyage pricing. <code>/dayz-search-download</code> avoids the build by downloading a prebuilt index. That index is older than the current indexer, and searching still requires the key to embed your questions.</td>
+</tr>
+<tr>
+<td>Which AI tools does it work with?</td>
+<td>See "Which AI tools it works with" under "What Agentic-Z is".</td>
+</tr>
+<tr>
+<td>Should I install the plugin or clone the repository?</td>
+<td>See "Install and first setup".</td>
+</tr>
+<tr>
+<td>Will it change my other mods?</td>
+<td>No. Skills write only to your mod and to their own state, as listed in "Where everything lives". <code>/agentic-z-update</code> also checks out updated template files into your clone and commits them.</td>
+</tr>
+<tr>
+<td>Does it publish to the Workshop?</td>
+<td>No. Builds go to <code>P:\Mods\@&lt;ModName&gt;</code>, which the launcher loads. Publish with DayZ Tools Publisher.</td>
+</tr>
+<tr>
+<td>Can I work on several mods?</td>
+<td>Yes. Each mod has its own folder at <code>workspace\&lt;ModName&gt;</code>. To change mods, choose "Set up or switch to another mod" in the <code>/dayz-init</code> hub.</td>
+</tr>
+<tr>
+<td>Where are the logs?</td>
+<td>See the <code>.server</code> folders in "Where everything lives".</td>
+</tr>
+<tr>
+<td>Does P: stay mounted?</td>
+<td>No. See the first row of "Troubleshooting".</td>
+</tr>
+<tr>
+<td>Do I need the DayZ Server?</td>
+<td>Yes. It must be installed whenever you add a test server instance or refresh its mission. <code>/dayz-add-server</code> copies the mission template from the DayZ Server installation each time it creates an instance, and again for <code>--refresh-mission</code>.</td>
+</tr>
+<tr>
+<td>How do I update?</td>
+<td>For a plugin installation, update through the Claude Code plugin marketplace. For a clone, run <code>/agentic-z-update</code>.</td>
+</tr>
+<tr>
+<td>Is it safe to run?</td>
+<td>Yes. See "Safety".</td>
+</tr>
+<tr>
+<td>Can I teach it my style?</td>
+<td>Yes. Correct it once, then run <code>/dayz-record-correction</code>. The rule is saved after you approve it.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="getting-help-and-contributing">Getting help and contributing</h2><p>For help, join the DayZ n' Chill Discord at <code>discord.gg/dayznchill</code>. The repository is at <code>github.com/DayZ-n-Chill/Agentic-Z</code>. To contribute, create a branch with a name that starts with <code>feature/</code>, <code>fix/</code>, <code>docs/</code> or <code>chore/</code>, and open a pull request.</p></div></main></body></html>
