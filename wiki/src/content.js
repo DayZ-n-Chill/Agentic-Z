@@ -82,7 +82,7 @@ const GROUPS = [
       'rag-search',
       'the-three-tiers-of-rules',
       'token-savers-and-workflows',
-      'add-ons-planned',
+      'community-mods-and-add-ons',
     ],
   },
   {

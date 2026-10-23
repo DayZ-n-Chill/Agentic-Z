@@ -31,7 +31,7 @@ This guide explains how to install, set up and use Agentic-Z, the AI agent stack
     - [How each specialist works](#how-each-specialist-works)
     - [How every specialist's knowledge is checked](#how-every-specialists-knowledge-is-checked)
     - [Paste it in](#paste-it-in)
-- [Add-ons (planned)](#add-ons-planned)
+- [Community mods and add-ons](#community-mods-and-add-ons)
 - [How the grading works](#how-the-grading-works)
     - [The final count](#the-final-count)
     - [Who grades](#who-grades)
@@ -383,11 +383,47 @@ Agentic-Z also recognizes the following content when it is pasted into a session
 | A Steam Workshop link | Refused, with the reason stated: Workshop content is packed, binarized and often protected. |
 | A types.xml chunk | Checks the entries, lists any problems, and suggests `/dayz-edit-types --merge` to merge them. |
 
-## Add-ons (planned)
+## Community mods and add-ons
 
-An optional `agentic-z-addons` plugin for other tools, such as Blender, an AI 3D generator or another MCP server, is planned. No add-on ships yet, and the plugin marketplace lists only `agentic-z`. Each add-on will be a workflow that connects the outside tool at one point in the loop. Usually it will hand a finished model to the Object Builder specialist, so the standard gates can check it like any other work. For the optional dependencies of the core, see [Optional extras](#optional-extras).
+Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose. Every rule and reference pack is checked against the vanilla game files, and nothing in the core depends on a community mod. Community mods can still be added. This page covers using them in your mod, teaching Agentic-Z about a new one, and connecting an outside tool as an add-on.
 
-Add-ons will follow these rules:
+### Using a community mod in your mod
+
+List the mod's addons in `requiredAddons[]` in your mod's `config.cpp`, the same as without Agentic-Z. The agent doing the work then reads the matching reference pack, only for mods that use that community mod:
+
+| Community mod | Reference pack |
+| --- | --- |
+| Community Framework (CF) | `.claude\skills\_shared\enscript\integrations\community_framework.md` |
+| Dabs Framework | `.claude\skills\_shared\enscript\integrations\dabs_framework.md` |
+| DayZ Expansion | `.claude\skills\_shared\enscript\integrations\expansion_style.md` |
+
+Three tools also help when your mod sits next to community mods:
+
+- `/dayz-conflict-check` looks for prefix, path and class collisions with CF, COT and Expansion.
+- `/dayz-gate` loads the addons your mod needs on the test server. Pass them with `--deps`, for example `/dayz-gate ingame <ModName> --deps CF`.
+- `/dayz-cot-bootstrap` gives you admin rights in Community Online Tools on your test server.
+
+### Teaching Agentic-Z a new community mod
+
+This works in a clone of the repository. A plugin install replaces its files on every update.
+
+1. Write a reference pack for the mod at `.claude\skills\_shared\enscript\integrations\<mod>.md`. Start with a title and one line on what it covers.
+2. Base every fact on the mod's own scripts, and cite the file and line it came from, for example `CF_ModuleWorld.c:3`. The repository test fails when a pack cites nothing.
+3. Describe the mod's API in your own words with short original examples. Never paste the mod's code into the pack: community mods ship under their own licenses.
+4. Add a row for the pack in `.claude\skills\_shared\README.md`. The repository test fails when a pack is missing from that index.
+5. Tell the agent that does the work when to read it. Add one line to its file in `.claude\agents\`, the way the UI specialist names Dabs Framework: use it only when the mod lists the community mod in `requiredAddons[]`, and then read the pack first.
+6. Run the tests: `py -m pytest -q .claude scripts/dev hooks`.
+
+### Adding a rule or a specialist
+
+- **A rule:** correct the AI once, then run `/dayz-record-correction`. It saves the rule in the right tier after you approve it.
+- **A specialist:** ask the agent creator, for example "Create an agent that builds Expansion market configs." It writes the agent file and checks it against the agent standard. Then add the new agent to "All agents" on the Agents page and update the count on the home page. `/docs-sync` reports anything you missed.
+
+### Making an add-on
+
+An add-on connects an outside tool, such as Blender, an AI 3D generator or another MCP server, at one point in the loop. Usually it hands a finished model to the Object Builder specialist, so the standard gates check it like any other work. Add-ons will ship in an optional `agentic-z-addons` plugin. That plugin is planned: no add-on ships yet, and the plugin marketplace lists only `agentic-z`. For the optional dependencies of the core, see [Optional extras](#optional-extras).
+
+Every add-on follows these rules:
 
 - **Optional:** the core never loads an add-on unless the user installs it.
 - **Same gates:** everything an add-on produces goes through the mod review, the build check and the in-game test.
@@ -852,7 +888,7 @@ The skills also write to three places outside these folders:
 | Does it cost money? | Agentic-Z is free to use for DayZ mods (see LICENSE). You need your own AI tool. RAG search requires a Voyage AI key. The last full index build embedded about 66M tokens, and the current indexer creates more chunks, so check Voyage pricing. `/dayz-search-download` avoids the build by downloading a prebuilt index. That index is older than the current indexer, and searching still requires the key to embed your questions. |
 | Which AI tools does it work with? | See "Which AI tools it works with" under "What Agentic-Z is". |
 | Should I install the plugin or clone the repository? | See "Install and first setup". |
-| Does it use Expansion, CF or other community mods? | No, on purpose. Agentic-Z sticks to vanilla DayZ and Bohemia's own tools. Every rule and reference pack is checked against the vanilla game files, and nothing depends on a community framework. A few tools work alongside community mods when your mod uses them: `/dayz-cot-bootstrap` sets up COT admin rights on your test server, `/dayz-conflict-check` looks for collisions with CF, COT and Expansion, and `/dayz-gate` takes `--deps` for addons your mod requires. |
+| Does it use Expansion, CF or other community mods? | Not in the core: Agentic-Z is built on vanilla DayZ and Bohemia's own tools on purpose. Your mod can still use them, and you can teach Agentic-Z about new ones. See "Community mods and add-ons". |
 | Will it change my other mods? | No. Skills write only to your mod and to their own state, as listed in "Where everything lives". `/agentic-z-update` also checks out updated template files into your clone and commits them. |
 | Does it publish to the Workshop? | No. Builds go to `P:\Mods\@<ModName>`, which the launcher loads. Publish with DayZ Tools Publisher. |
 | Can I work on several mods? | Yes. Each mod has its own folder at `workspace\<ModName>`. To change mods, choose "Set up or switch to another mod" in the `/dayz-init` hub. |
