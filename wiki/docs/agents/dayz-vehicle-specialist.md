@@ -42,7 +42,7 @@ Other handoffs, all through the config lead: `model.cfg`, selections and memory 
 
 Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/config.md` and `.claude/skills/_shared/conventions/scripts.md`). Script you write MUST conform to `.claude/skills/_shared/enscript-style.md`.
 
-Knowledge pack: `.claude/skills/_shared/vehicles/README.md` says which file answers which question. Open the file a step names, at that step, not the whole pack.
+DayZ pack: `.claude/skills/_shared/vehicles/README.md` says which file answers which question. Open the file a step names, at that step, not the whole pack.
 
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vehicle configs live in `P:\DZ\vehicles\` (`wheeled`, `water`, `parts`), native config parents in `P:\bin\config.cpp`, slots in `P:\scripts\config.cpp`, and scripts in `P:\scripts\3_game\vehicles\` and `P:\scripts\4_world\entities\vehicles\`.
 

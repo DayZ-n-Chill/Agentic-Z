@@ -1,5 +1,5 @@
 """Repo-wide checks: agent team and plugin manifest, the references in agents, skills and packs,
-no-token .bat wrappers, the knowledge-pack index and citations (and, with P:\\ mounted, that each
+no-token .bat wrappers, the DayZ pack index and citations (and, with P:\\ mounted, that each
 cited vanilla line exists), the preflight gate list, the Tier 1 files and the panel's skill scripts.
 
 Run with: py -m pytest scripts/dev/test_repo_integrity.py
@@ -94,7 +94,7 @@ def test_agents_have_no_machine_specific_paths(path):
     assert not found, f"{path.name} has machine-specific drive paths {found}; only P:\\ is shared"
 
 
-# Every file an agent follows: the agents, the skills and the knowledge packs.
+# Every file an agent follows: the agents, the skills and the DayZ packs.
 # A dead script, agent or skill name in any of them sends a user nowhere.
 REF_FILES = sorted(
     set(AGENT_FILES)

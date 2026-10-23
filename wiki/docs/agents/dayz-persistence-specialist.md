@@ -32,7 +32,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills
 
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla scripts live under `P:\scripts\`, configs under `P:\dz\`.
 
-Your knowledge pack is `.claude/skills/_shared/persistence/`. Its front index is `.claude/skills/_shared/persistence/README.md`; open only the file a step names.
+Your DayZ pack is `.claude/skills/_shared/persistence/`. Its front index is `.claude/skills/_shared/persistence/README.md`; open only the file a step names.
 
 ## Workflow
 

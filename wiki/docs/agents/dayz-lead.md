@@ -51,7 +51,7 @@ Your gates are `dayz-mod-reviewer` for every task and `dayz-layout-validator` in
 
 ## How you run a task
 
-1. **Brief.** Write each worker a short brief: the one task, what done looks like, the files it may touch, the knowledge packs under `.claude/skills/_shared/` it should read, and anything it must not change.
+1. **Brief.** Write each worker a short brief: the one task, what done looks like, the files it may touch, the DayZ packs under `.claude/skills/_shared/` it should read, and anything it must not change.
 2. **Start.** Start one worker per task. Run workers in parallel only when their tasks touch different files; everyone shares one checkout.
 3. **Gate.** When a worker reports, send the task to your gates. Every gate must say PASS.
 4. **Fix loop.** If a gate fails, send its notes back to the worker and gate again. If the cause isn't clear, ask `dayz-mod-debugger` first. Your gates only read files and no game ran, so give it the gate's full report and the paths of the files the task changed, and tell it there are no logs for this failure. After three failed rounds, stop and report the problem instead of looping.

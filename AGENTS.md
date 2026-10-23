@@ -14,7 +14,7 @@ Every agent works from three tiers. When two disagree, the more specific tier wi
 |---|---|---|---|
 | 1 · Repo rules (L1) | How every agent works here: communication, tooling, memory, routing, file locations. | This file (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) | Every agent, every task |
 | 2 · DayZ rules (L2) | Enforce Script style, config patterns, asset rules, environment, vanilla search. | `.claude/skills/_shared/dayz-conventions.md` (core) + `.claude/skills/_shared/conventions/*.md` (topics) | All DayZ work |
-| 3 · Agents and knowledge packs | The agents in `.claude/agents/`, the skills, and the packs under `.claude/skills/_shared/` (EnScript patterns, Figma-to-DayZ rules). | Their own files | Only what the task needs |
+| 3 · Agents and DayZ packs | The agents in `.claude/agents/`, the skills, and the packs under `.claude/skills/_shared/` (EnScript patterns, Figma-to-DayZ rules). | Their own files | Only what the task needs |
 
 Corrections from the user go into the right tier through `/dayz-record-correction`.
 
