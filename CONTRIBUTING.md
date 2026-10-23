@@ -60,4 +60,4 @@ If you add or rename a skill, update:
 - `docs/dayz-modding.md` if the skill appears in the workflow section.
 - The plugin manifests in `.claude-plugin/` if the skill should be exposed to plugin users.
 
-Do not touch `wiki/` — it regenerates via `/docs-sync` from the canonical sources.
+Update the wiki by hand when you add, remove or rename an agent or skill: the skills list is `wiki/src/content/skills-table.md` and the agents table is under "All agents" in `wiki/src/content/guide.md`. Run `/docs-sync` to check that the wiki matches.

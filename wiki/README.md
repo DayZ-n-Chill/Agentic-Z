@@ -1,41 +1,14 @@
-# Website
+# Agentic-Z Wiki
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+React + MUI wiki for the Agentic-Z website. Content comes from `src/content/guide.md` and `src/content/team.md`; each `## ` heading becomes a page, and the sidebar groups are set in `src/content.js`.
 
-## Installation
-
-```bash
-yarn
+```
+npm install
+npm run dev       # local dev server
+npm run build     # static site in dist/
 ```
 
-## Local Development
-
-```bash
-yarn start
-```
-
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
-
-## Build
-
-```bash
-yarn build
-```
-
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
-
-## Deployment
-
-Using SSH:
-
-```bash
-USE_SSH=true yarn deploy
-```
-
-Not using SSH:
-
-```bash
-GIT_USER=<Your GitHub username> yarn deploy
-```
-
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+- Logo: `src/assets/logo-dark.png` and `logo-light.png` (one per theme), rendered by `src/components/Logo.jsx`. Favicons are in `public/`.
+- Colors and fonts: `src/theme.js` (`brand` and `fonts`).
+- Diagrams: the docs point to `images/*.svg`; those are redrawn as MUI components. Specs live in `src/diagrams.js`, keyed by the image file name.
+- The old Docusaurus wiki is in `archive/wiki-docusaurus/`. `/docs-sync` still targets the old `wiki/docs/` layout and will be rebuilt for this wiki.

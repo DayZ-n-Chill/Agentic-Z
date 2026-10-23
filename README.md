@@ -96,7 +96,8 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 ├── CLAUDE.md / AGENTS.md / GEMINI.md   # L1 rules (one per CLI, same content)
 ├── docs/                   # deep docs (DayZ workflow, model routing)
 ├── mods/agentic-z-panel/   # Claude Code panel plugin (one-click DayZ buttons)
-├── wiki/                   # Docusaurus mirror of docs/agents/skills
+├── wiki/                   # the Agentic-Z wiki (React + MUI)
+├── archive/wiki-docusaurus/ # the old Docusaurus wiki, no longer used
 ├── workspace/              # in-progress mods (workspace/<ModName>/)
 ├── .server/                # local test-server instances (.server/<instance>/)
 └── output/                 # one-shot deliverables
@@ -225,7 +226,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Documented excep
 |---|---|
 | [`/sync-skills`](.claude/skills/sync-skills/SKILL.md) | Link `.claude/skills/` into each agent CLI's home dir. Required after clone. |
 | [`/agentic-z-update`](.claude/skills/agentic-z-update/SKILL.md) | Pull upstream template improvements into your clone without touching `workspace/`. |
-| [`/docs-sync`](.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the Docusaurus wiki; `--apply` writes mirrors. |
+| [`/docs-sync`](.claude/skills/docs-sync/SKILL.md) | Check that the wiki's agent and skill lists and home page counts match the repo. Read only. |
 | [`/clean-repo`](.claude/skills/clean-repo/SKILL.md) | Repo-wide cleanup orchestrator across every domain. |
 
 ---
@@ -297,7 +298,7 @@ The full text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
 - **[`docs/model-routing.md`](docs/model-routing.md)** — when to use Opus / Sonnet / Haiku and the subagent patterns.
 - **[`docs/evals.md`](docs/evals.md)**: answer tests that score each agent's answers, so a change can only keep or raise the score.
 - **[`docs/prompt-conventions.md`](docs/prompt-conventions.md)** — why agent and skill files use caps the way they do (RFC 2119 directives, when to cap, when to stay lowercase).
-- **`wiki/`** — Docusaurus build of the docs (kept in sync via `/docs-sync`).
+- **`wiki/`** — the Agentic-Z wiki (React + MUI), written by hand and checked against the repo by `/docs-sync`. The old Docusaurus wiki is archived in `archive/wiki-docusaurus/`.
 
 ---
 
