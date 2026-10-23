@@ -9,9 +9,9 @@
   ],
   "ignores": [
     // Build artifacts
-    "wiki/build/**",
-    "wiki/.docusaurus/**",
-    "wiki/node_modules/**",
+    "archive/wiki-docusaurus/build/**",
+    "archive/wiki-docusaurus/.docusaurus/**",
+    "archive/wiki-docusaurus/node_modules/**",
     "node_modules/**",
     // Per-clone state (gitignored — IDE may show them anyway)
     ".claude/local-memory/**",
