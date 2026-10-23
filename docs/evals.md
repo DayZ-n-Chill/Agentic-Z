@@ -22,9 +22,7 @@ Answer tests check what an agent actually says. Each agent has a set of question
       "id": "cfgpatches-parent-addon",
       "question": "Answer only, do not edit any file. I'm adding class MyMod_PlateCarrier ...",
       "must_include": ["requiredAddons", "DZ_Characters_Vests", "re:units\\[\\]"],
-      "must_not_include": [],
-      "cite": "characters/vests/config.cpp",
-      "verified": "P:/DZ/characters/vests/config.cpp:3 and :24"
+      "verified": "P:/DZ/characters/vests/config.cpp:3 (class DZ_Characters_Vests) and :24 (class PlateCarrierVest: Clothing)"
     }
   ]
 }
@@ -37,7 +35,7 @@ Answer tests check what an agent actually says. Each agent has a set of question
 | `must_include` | yes | Checks the answer must pass. A plain string matches anywhere, ignoring case. A string that starts with `re:` is a regex, ignoring case, with `^` and `$` matching at each line. Use `\A` to anchor to the very start of the answer. |
 | `must_not_include` | no | Checks the answer must fail. Same syntax. |
 | `cite` | no | A path the answer must name. Slashes and case are ignored, so `P:\scripts\3_game\entities\entityai.c` matches `3_game/entities/entityai.c`. |
-| `unchanged` | no | Repo paths the agent must leave alone, such as a fixture a gate judges. The runner hashes each file before and after the question, and a changed file fails it. Fixtures live under `evals/fixtures/<agent>/`. |
+| `unchanged` | no | Repo paths the agent must leave alone, such as a fixture a gate judges. The runner hashes each file before and after the question, and a changed file fails it. Fixtures made only for evals live under `evals/fixtures/<agent>/`; a question may also guard an existing repo fixture, such as `.claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp`. |
 | `verified` | yes for shipped files | Where you checked the expected answer: a `P:\` path and line, or the agent rule it tests. Every fact behind a question must be checked on `P:\` or in the repo before the question goes in. |
 
 A question passes only when every check passes. An agent's score is the number of questions that passed.

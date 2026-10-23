@@ -19,6 +19,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 4. Split the work into tasks one worker can finish in one sitting. Give each task a team (script, config, art, UI, server, release), the files it touches, and a done check that a gatekeeper can verify.
 5. Mark which tasks depend on others. Two tasks that edit the same file must not run at the same time.
 6. Write one in-game behavior check per feature the user can try in game, for `/dayz-gate behavior`. Each check names the feature, the config class it uses and one action: `spawn` (it exists in the world), `hands` (a player can hold it), `wear` (a player can wear it), `attach` (a second class `with` attaches to it) or `cargo` (`with` fits in its cargo). Use the class names from your plan. When a feature needs an action the gate doesn't have (driving, firing, eating), give it the closest check and say in the plan what still needs a person to try in game.
+7. When the mod adds something the player sees right after joining (a HUD element, a menu or layout shown on join, a retexture on the spawn loadout), write one visual shot per look for `/dayz-gate visual`: an `id`, the `feature` it shows and the `at` second after the client joins, with `ignore` areas over anything that changes on its own. Shots are taken at a time, from where the server spawns the player, so a look that needs the player elsewhere or a menu opened by hand gets no shot; say in the plan that a person checks it. With nothing visible, write no shots file.
 
 ## Report (to the orchestrator)
 
@@ -34,4 +35,4 @@ Write the plan to `output/<ModName>-plan/plan.md` and the behavior checks to `ou
 }
 ```
 
-An `id` starts with a letter or digit, then up to 63 more letters, digits, `_`, `.` or `-`, with no spaces. Return the task table (Task, Team, Done check, Files, Depends on), the vanilla classes you chose with `path:line` citations, and any open questions for the user.
+An `id` starts with a letter or digit, then up to 63 more letters, digits, `_`, `.` or `-`, with no spaces. Write visual shots to `output/<ModName>-plan/visual-shots.json` in the format in `.claude/skills/dayz-gate/shots-file.md`. Return the task table (Task, Team, Done check, Files, Depends on), the vanilla classes you chose with `path:line` citations, and any open questions for the user.

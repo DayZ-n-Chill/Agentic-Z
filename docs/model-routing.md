@@ -4,11 +4,13 @@ How agents in this template should pick a model for the work in front of them. T
 
 ## The model ladder (Claude)
 
-| Model | ID | Speed | Strength | Use for |
+| Model | Alias | Speed | Strength | Use for |
 |---|---|---|---|---|
-| **Haiku 4.5** | `claude-haiku-4-5-20251001` | Fastest | Light | Pure file-find, "where is X defined", trivial lookups (1 grep, no synthesis) |
-| **Sonnet 4.6** | `claude-sonnet-4-6` | ~2–3× faster than Opus | Balanced | "Tell me about X / how does Y work" — research and synthesis across multiple sources |
-| **Opus 4.7** | `claude-opus-4-7` | Slowest | Deepest reasoning | Coding, editing, planning, debugging, design decisions |
+| **Haiku 4.5** | `haiku` | Fastest | Light | Pure file-find, "where is X defined", trivial lookups (1 grep, no synthesis) |
+| **Sonnet 4.6** | `sonnet` | ~2–3× faster than Opus | Balanced | "Tell me about X / how does Y work" — research and synthesis across multiple sources |
+| **Opus 5.5** | `opus` | Slowest | Deepest reasoning | Coding, editing, planning, debugging, design decisions |
+
+Agents set one of these aliases in their frontmatter (`model: haiku` in `dayz-router` and `dayz-build-engineer`, `model: sonnet` in `dayz-docs-writer`), or leave the model unset to inherit the session model. The repo pins no full model ID.
 
 Other CLIs (Codex, Gemini) have analogous tiers — same principle applies even if model names differ.
 
@@ -56,5 +58,5 @@ When dispatching, **bound the report**: word limit, file:line citations required
 
 ## Reading more
 
-- The agent-side rule lives in user memory: `feedback_route_searches_to_sonnet.md` (governs default behavior in every Claude Code session).
-- L1 rule reference is in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
+- This page is the source for search and subagent model routing.
+- `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` do not carry this rule; their only routing rule (line 50) covers new DayZ requests: run `/dayz-route` first, then the Haiku `dayz-router` agent.

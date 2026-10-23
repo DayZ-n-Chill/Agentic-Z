@@ -62,6 +62,6 @@ Use the slash command instead when you want Claude to run the step as part of a 
 |---|---|
 | `docs-sync.bat` | Keep the wiki matching the source files |
 | `clean-repo.bat` | Clear generated files before a push |
-| `evals.bat` | Ask agents their answer tests and compare the scores with the baseline (`--dry-run` asks nothing) |
+| `evals.bat` | Ask agents their answer tests (`--baseline` compares the scores with the baseline, `--dry-run` asks nothing) |
 
 Prefer buttons? The `agentic-z-panel` plugin puts the common ones beside the chat: `/plugin install agentic-z-panel@dayz-n-chill`, then `/dayz-panel`.

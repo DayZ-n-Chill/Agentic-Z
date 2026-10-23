@@ -41,7 +41,7 @@ This guide explains how to install, set up and use Agentic-Z, the AI agent stack
     - [The scale](#the-scale)
     - [Run it yourself](#run-it-yourself)
     - [Quality by version](#quality-by-version)
-    - [Every skill](#every-skill)
+    - [The skills](#the-skills)
 - [Where everything lives](#where-everything-lives)
     - [Folders](#folders)
     - [Settings you might need](#settings-you-might-need)
@@ -149,9 +149,9 @@ Agentic-Z has 30 agents. "New" marks an agent added since version 1.6.0.
 | Agent | What it does | Example request | Since 1.6.0 |
 | --- | --- | --- | --- |
 | **Plan** | | | |
-| **Mod orchestrator** `dayz-orchestrator` | Plans the mod with the user, splits it into small tasks, assigns them to leads, runs the gates and tracks completed work. | See [The mod team](#the-mod-team). | New |
-| **Mod architect** `dayz-mod-architect` | Plans the classes, files, assets and behavior checks before work starts. | Started by the orchestrator. | New |
-| **Lead (one agent, six teams)** `dayz-lead` | Runs one team: script, config, art, UI, server or release. Splits its share of the work into worker tasks and checks that the results fit together. | Started by the orchestrator. | New |
+| **Mod orchestrator** `dayz-orchestrator` | Plans the mod with the user and the architect, gets the user's approval of the task list, assigns tasks to leads in waves, runs the gates and tracks completed work. | See [The mod team](#the-mod-team). | New |
+| **Mod architect** `dayz-mod-architect` | Plans the classes, files, assets and behavior checks, and splits the work into small tasks for each team, before work starts. | Started by the orchestrator. | New |
+| **Lead (one agent, six teams)** `dayz-lead` | Runs one team: script, config, art, UI, server or release. Briefs a worker for each of its tasks, gates the results and checks that they fit together. | Started by the orchestrator. | New |
 | **Workers** | | | |
 | **Script engineer** `dayz-script-specialist` | Writes Enforce Script: modded classes, RPCs and game logic. | "Make my medkit heal over 30 seconds." | Kept |
 | **Workbench plugins** `dayz-workbench-specialist` | Builds tools inside Enfusion Workbench. | "A plugin that checks texture suffixes." | Kept |
@@ -166,7 +166,7 @@ Agentic-Z has 30 agents. "New" marks an agent added since version 1.6.0.
 | **Build engineer** `dayz-build-engineer` | Runs the build, test server and launch skills (Haiku). | "Build MyVest and start a test on chernarus." | New |
 | **Docs writer** `dayz-docs-writer` | Keeps the mod's README, changelog and classname list up to date (Sonnet). | "Update the MyVest docs." | New |
 | **Specialists** | | | |
-| **Saving data** `dayz-persistence-specialist` | Saving data across restarts, save versions, base building, and a data audit before release. Works under the script lead; for the data audit, works under the server lead. | "Make my safe keep its code and contents after a restart." | New |
+| **Saving data** `dayz-persistence-specialist` | Saving data across restarts, save versions, base building, and a data audit before release. Works under the script lead; its data audit report is passed on to the server lead. | "Make my safe keep its code and contents after a restart." | New |
 | **AI** `dayz-ai-specialist` | Infected, animals and human AI such as patrols and guards, written from scratch. Works under the script lead. | "Add guards that patrol my base and react to gunfire." | New |
 | **Vehicles** `dayz-vehicle-specialist` | Cars, boats and helicopters: engine, gearbox, wheels, doors, fluids, seats and damage. Works under the config lead. | "Add a four door pickup with a bigger fuel tank." | New |
 | **Weapons** `dayz-weapon-specialist` | Weapons, magazines, ammunition, attachments, recoil and fire modes. Works under the config lead. | "Add a hunting rifle that takes a five round magazine." | New |
@@ -204,7 +204,7 @@ The orchestrator plans the mod with you and waits for your approval. It then run
 
 ### How the team checks work
 
-Checks happen at two levels. The leads run the mod review and the layout check on each task. The orchestrator runs the gates once per wave, one at a time, because there is only one mod folder and one test session. Workers run at the same time only when their tasks touch different files.
+Checks happen at two levels. The leads run the mod review on each task, and the layout check on each task that changes a `.layout`. Build tasks have no file check: they pass when the build engineer reports success and the PBO exists. The orchestrator runs the gates once per wave, one at a time, because there is only one mod folder and one test session. Workers run at the same time only when their tasks touch different files.
 
 Each wave goes through these gates:
 
@@ -370,7 +370,7 @@ Each specialist follows its own steps inside the team workflow described in [The
 The existing specialists also have deeper coverage: a full Enforce Script reference, Dabs and widget UI coverage, a texture and material cookbook, model and LOD rules, animated doors, a short specification step in `/dayz-init` before building, and a layout preview at several screen sizes.
 ### Paste it in
 
-Workflow skills are ready-made jobs for routine modding tasks. Each one runs as a script where possible and asks the AI only for decisions that need judgment. Each workflow skill is described in the [Every skill](#every-skill) table.
+Workflow skills are ready-made jobs for routine modding tasks. Each one runs as a script where possible and asks the AI only for decisions that need judgment. Each workflow skill is described in the [The skills](#the-skills) table.
 
 Agentic-Z also recognizes the following content when it is pasted into a session.
 
@@ -385,7 +385,7 @@ Agentic-Z also recognizes the following content when it is pasted into a session
 
 ## Add-ons (planned)
 
-An optional `agentic-z-addons` plugin for other tools, such as Blender, an AI 3D generator or another MCP server, is planned. No add-on ships yet, and the plugin marketplace lists only `agentic-z`. Each add-on will be a workflow that connects the outside tool at one point in the loop. Usually it will hand a finished model to the Object Builder specialist, so the standard gates can check it like any other work. For the optional dependencies of the core, see [Optional extras](#optional-extras).
+An optional `agentic-z-addons` plugin for other tools, such as Blender, an AI 3D generator or another MCP server, is planned. No add-on ships yet, and the plugin marketplace lists only `agentic-z` and `agentic-z-panel`. Each add-on will be a workflow that connects the outside tool at one point in the loop. Usually it will hand a finished model to the Object Builder specialist, so the standard gates can check it like any other work. For the optional dependencies of the core, see [Optional extras](#optional-extras).
 
 Add-ons will follow these rules:
 
@@ -407,7 +407,7 @@ The final review graded every item. Fresh graders then regraded items after each
 
 ### Who grades
 
-- **Independent reviewers:** each round starts new Claude reviewers with no memory of earlier rounds. The final review used six: two for the agents, three for the skills, and one for everything shared. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the shared reference packs and this note. A few shared files were not graded; they are listed under "Files not graded" in "Open items and decisions".
+- **Independent reviewers:** each round starts new Claude reviewers with no memory of earlier rounds. The final review used six: two for the agents, three for the skills, and one for everything shared. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the shared reference packs and this note. A few shared files were not graded yet: nine answer test files, `expansion_style.md`, `examples/layouts.md`, the nine `enscript-style/` section files and `scripts/dev/test_dayz_search.py`.
 - **Read-only access:** reviewers cannot edit files. They read every file, run the tests where the session allows it, and check claims against the code and the vanilla DayZ files on the P: drive. The skill reviewer for `dayz-launch-objectbuilder`, `dayz-launch-workbench` and `dayz-search-download` could not run pytest for them, because its session denied it. The reviewer stated this in its reasons.
 - **Separate fixers:** different agents fix the problems the reviewers find, and each fixer owns its own files. A fixer never grades its own work.
 - **Regrading:** new reviewers grade again after every fix round. An item counts as A+ only when an independent reviewer gives it A+.
@@ -525,13 +525,13 @@ Output a table: Item | Grade | Why | To reach A+.
 Because each run uses a new reviewer, two runs can word their findings differently, and a stricter reviewer can find a new edge case. This is intended. The grading found real bugs, and each one was fixed and covered by a test.
 ### Quality by version
 
-This table lists the grade of each agent, skill and shared item at three releases. Independent AI reviewers assigned every grade: at v1.6.0, after the v1.7.0 grading rounds, and for the final release. The final grades also cover the hooks, the search server, the scripts, the answer tests and every specialist reference folder. For the final totals, see "The final count".
+This table lists the grade of each agent, skill and shared item at three points. Independent AI reviewers assigned every grade: on the working tree before the agent team was added (after the v1.6.0 release), after the v1.7.0 grading rounds, and for the final release. The final grades also cover the hooks, the search server, the scripts, the answer tests and every specialist reference folder. For the final totals, see "The final count".
 
 ![Agentic-Z versions and grades](images/guide-05-1.svg)
 
 Two values in the table are not grades. "Not built" means that the item did not exist yet at that version. "n/a" means that the shared file was not graded at that version. The last column is the final grade, not a target.
 
-| Item | v1.6.0 released | v1.7.0 agent team | v2.0.0 final |
+| Item | Before the agent team (after v1.6.0) | v1.7.0 agent team | v2.0.0 final |
 | --- | --- | --- | --- |
 | **Agents** | | | |
 | `agent-creator` | A- | A+ | A+ |
@@ -717,6 +717,7 @@ These trees show every folder Agentic-Z uses, in three places: the repository, t
   plugin.json
 .claude\ | Agents, skills and the search server
   agents\ | The 30 agents, one .md file each
+  agent-memory\ | Per-agent memory, one folder per agent | local
   mcp\ | MCP servers
     dayz-rag\ | The RAG search server (server.py)
   skills\ | The 44 skills, one folder each with its SKILL.md
@@ -746,30 +747,31 @@ These trees show every folder Agentic-Z uses, in three places: the repository, t
 .github\
   workflows\
     tests.yml | Runs the test suite on GitHub
-.server\ | Local test servers | local
+.imports\ | Repos cloned by /dayz-import-mod for GitHub links to a subfolder | local
+.server\ | Local test servers. Only each instance's serverDZ.cfg and mission\ are committed (not mission\storage_*)
   <instance>\ | One test server: mission, serverDZ.cfg, and Profiles with the server logs
-  <instance>-behavior\ | Copy of the instance that the behavior gate runs in
-  !ClientDiagLogs\ | Client logs
-  !Health\ | Stored gate results
+  <instance>-behavior\ | Copy of the instance that the behavior gate runs in | local
+  !ClientDiagLogs\ | Client logs | local
+  !Health\ | Stored gate results | local
     <ModName>\ | Gate results and the health page for /dayz-health
 docs\ | Project docs and release notes
 evals\ | Answer tests
   fixtures\ | Sample files the answer tests check against
-  questions\ | One question file per agent
-  baseline.json | The recorded score for each agent
-hooks\ | The three edit hooks: edit check, paste router and scope guard
-output\ | Everything the skills produce | local
+  questions\ | One question file per covered agent
+  baseline.json | The recorded score for each covered agent
+hooks\ | The three hooks: edit check and scope guard on edits, and the paste router on each prompt
+output\ | Everything the skills produce
   <ModName>-plan\ | The plan, the behavior checks and the visual shots list
   <ModName>-release\ | Release texts, release pack and server kit zip
-  <ModName>-visual\ | Screenshots for each run, and the baselines to keep
-  evals\ | Answer test results
+  <ModName>-visual\ | Screenshots for each run (runs\, not committed) and the baselines, which are committed
+  evals\ | Answer test results | local
   layout-preview\ | Layout preview images
 scripts\ | A .bat file for every runnable skill, so you can run it with no AI
   dayz\ | Modding scripts
   dev\ | Repository tools and tests
   setup\ | Setup scripts
 wiki\ | Source for the Agentic-Z docs website
-workspace\ | Your mods | local
+workspace\ | Your mods
   <ModName>\ | Mod source
 .env | Your API keys, such as VOYAGE_API_KEY | local
 .env.example | Template for .env
@@ -857,7 +859,7 @@ The skills also write to three places outside these folders:
 | Can I work on several mods? | Yes. Each mod has its own folder at `workspace\<ModName>`. To change mods, choose "Set up or switch to another mod" in the `/dayz-init` hub. |
 | Where are the logs? | See the `.server` folders in "Where everything lives". |
 | Does P: stay mounted? | No. See the first row of "Troubleshooting". |
-| Do I need the DayZ Server? | Yes. It must be installed whenever you add a test server instance or refresh its mission. `/dayz-add-server` copies the mission template from the DayZ Server installation each time it creates an instance, and again for `--refresh-mission`. |
+| Do I need the DayZ Server? | Usually. `/dayz-add-server` copies the mission template from the DayZ Server installation when the instance's `mission\` folder is missing or empty, and again for `--refresh-mission`. If you put the mission in `.server\<instance>\mission\` yourself, the DayZ Server is not needed. |
 | How do I update? | For a plugin installation, update through the Claude Code plugin marketplace. For a clone, run `/agentic-z-update`. |
 | Is it safe to run? | Yes. See "Safety". |
 | Can I teach it my style? | Yes. Correct it once, then run `/dayz-record-correction`. The rule is saved after you approve it. |

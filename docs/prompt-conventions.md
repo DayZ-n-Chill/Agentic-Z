@@ -5,19 +5,19 @@ Why agent and skill files in this repo look the way they do. Read this before wr
 ## TL;DR
 
 - **Agent file shape** follows the lean standard in `.claude/agents/agent-creator.md` ("What a good agent file looks like"): frontmatter, a role sentence, then only the sections the role needs, with plain sentence-case headings.
-- **Inline caps directives** (`MUST`, `NEVER`, `ALWAYS`, `DO NOT`, `CRITICAL`) are behavioral — they measurably increase model compliance, but only when used sparingly.
+- **Inline caps directives** (`MUST`, `NEVER`, `ALWAYS`, `DO NOT`, `CRITICAL`) are behavioral — they can help a hard rule stand out, but only when used sparingly, and overuse makes recent models over-apply rules.
 - **Lowercase prose for everything else.** Caps are a finite signal; spending them on decoration burns the budget you need for real rules.
 
 ## Why caps directives work
 
 Capitalized directives like `MUST`, `MUST NOT`, `SHALL`, `SHOULD`, and `MAY` come from **RFC 2119**, the IETF's "Key words for use in RFCs to Indicate Requirement Levels." That convention is everywhere in the training data: protocol specs, security standards, API contracts, compliance docs. Whenever a document needed an unambiguous rule that a reader couldn't talk themselves out of, the author capitalized the verb.
 
-LLMs have absorbed that pattern. Anthropic's own prompting guide explicitly recommends using caps for critical instructions, and in practice:
+LLMs have absorbed that pattern. Use caps rarely. Anthropic's prompting guide warns that recent Claude models follow the system prompt closely, so heavy emphasis ("CRITICAL: You MUST...") makes them over-apply a rule. Where a rule really is absolute, a capped verb can still help it stand out:
 
 - *"you must not delete files"* — gets rationalized away ("the user clearly wants this resolved, deleting seems necessary…")
 - *"you MUST NOT delete files"* — held to as a hard rule
 
-Same words, measurably different compliance rates. This is real, not folklore.
+Treat this as a writing habit, not a measured result.
 
 ## Why caps work *only when rare*
 
@@ -34,11 +34,10 @@ Apply this test to any directive you're tempted to capitalize:
 - **Yes** → leave it lowercase. The grammar already carries the weight.
 - **No, removing the caps would let the model rationalize an exception** → keep it capped.
 
-Examples from the existing agents that pass the test:
+Examples from the existing agents:
 
-- `DO NOT write fixes yourself` (mod-reviewer's whole identity is "audit, don't fix" — without caps the model would slip into fixing)
-- `NEVER on params/returns/locals/typedefs` (a hard EnScript rule with no exceptions)
-- `MUST conform to the style guide` (non-negotiable, blocks the work otherwise)
+- `all code you write MUST conform to it` (the style-guide rule in `dayz-script-specialist.md`, `dayz-ai-specialist.md` and `dayz-persistence-specialist.md`; non-negotiable, blocks the work otherwise) — kept capped
+- `You check; you don't fix. Never edit any file.` (`dayz-mod-reviewer.md`) — left in plain sentence case; read aloud, it is already absolute
 
 Examples that would *fail* the test (and should stay lowercase):
 
@@ -51,7 +50,7 @@ Examples that would *fail* the test (and should stay lowercase):
 The structure of an agent file is set by `agent-creator` (`.claude/agents/agent-creator.md`, section "What a good agent file looks like"). In short:
 
 - Frontmatter: `name` and a third-person `description` that works as the delegation contract, with 1 to 3 short `<example>` blocks. Descriptions load into every session, so keep them short.
-- Minimal `tools`; `memory: project` with no memory section in the body.
+- Minimal `tools`. When the role needs memory, use `memory: project` and add no memory section in the body. Gate agents get no memory, and read-only roles get it only when they need it.
 - Body: a role sentence, then only load-bearing sections (workflow, domain rules, constraints, handoffs, report), usually 10 to 60 lines.
 - No `## NAME` heading and no PURPOSE / CAPABILITIES / INPUT / OUTPUT scaffolding. Use plain sentence-case headings such as `## Workflow` or `## Report`.
 - Point at shared docs (`.claude/skills/_shared/...`) instead of pasting their rules.

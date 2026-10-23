@@ -26,7 +26,8 @@ def no_real_claude(monkeypatch):
 
 
 def _suite(tmp_path, agent="dayz-script-specialist", questions=None):
-    questions = questions or [{"id": "q1", "question": "Which layer?", "must_include": ["4_World"]}]
+    questions = questions or [{"id": "q1", "question": "Which layer?", "must_include": ["4_World"],
+                               "verified": "P:/scripts/4_World"}]
     path = tmp_path / f"{agent}.json"
     path.write_text(json.dumps({"agent": agent, "questions": questions}), encoding="utf-8")
     return path
@@ -81,6 +82,16 @@ def test_validate_accepts_good_file(tmp_path):
 def test_validate_reports_problems(tmp_path, questions, expected):
     _, problems = run_evals.validate(_suite(tmp_path, questions=questions))
     assert any(expected in p for p in problems), problems
+
+
+def test_dry_run_rejects_question_without_verified(monkeypatch, tmp_path):
+    # docs/evals.md: `verified` is required for every shipped question, for every agent.
+    _suite(tmp_path, agent="dayz-docs-writer",
+           questions=[{"id": "q", "question": "x", "must_include": ["a"]}])
+    monkeypatch.setattr(run_evals, "QUESTIONS_DIR", tmp_path)
+    _, problems = run_evals.validate(tmp_path / "dayz-docs-writer.json")
+    assert any("verified is empty" in p for p in problems), problems
+    assert run_evals.main(["--dry-run"]) == 2
 
 
 def test_validate_rejects_unknown_agent(tmp_path):

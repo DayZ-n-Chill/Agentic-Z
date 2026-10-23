@@ -112,6 +112,8 @@ def validate(path: Path) -> tuple[dict, list[str]]:
             problems.append(f"{where}: question is empty")
         if not q.get("must_include"):
             problems.append(f"{where}: must_include is empty")
+        if not q.get("verified"):
+            problems.append(f"{where}: verified is empty (name the P: path and line or the agent rule checked)")
         for check in q.get("must_include", []) + q.get("must_not_include", []):
             if check.startswith(REGEX_PREFIX):
                 try:

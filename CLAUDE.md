@@ -67,11 +67,11 @@ For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generi
 - Keep the repository root clean.
 - `output/` is the **default destination for one-shot deliverables** — documents, decks, generated files, and other artifacts the user takes elsewhere. Goes under `output/<descriptive-folder>/` unless the user names a different destination.
 - `workspace/` is for **in-progress mod projects** — anything you're actively iterating on across sessions. Each mod gets its own subfolder (`workspace/<ModName>/`).
-- `.server/` (project root) holds **DayZ test-server runtime**: one folder per instance (`.server/<instance>/{mission, serverDZ.cfg, Profiles}`) plus a shared top-level `.server/!ClientDiagLogs/` for the client `-profiles=` dir. Created by `/dayz-add-server`. Multiple instances allowed (e.g. chernarus, chernarus-hardcore). Gitignored by default except for `serverDZ.cfg` and `mission/` contents.
+- `.server/` (project root) holds **DayZ test-server runtime**: one folder per instance (`.server/<instance>/{mission, serverDZ.cfg, Profiles}`) plus a shared top-level `.server/!ClientDiagLogs/` for the client `-profiles=` dir. Created by `/dayz-add-server`. Multiple instances allowed (e.g. chernarus, chernarus-hardcore). Gitignored by default except for `serverDZ.cfg` and `mission/` contents (but not `mission/storage_*/`); the `.server/<instance>-behavior/` copies that `/dayz-gate` rebuilds are fully ignored.
 - `scripts/` is for **helper automation** — Python, PowerShell, batch, etc. that *produces* content elsewhere. Tools, not products.
 - Exceptions to the `output/` rule, none of which move:
   - Agent memory stays in `.claude/agent-memory/`.
-  - Skill-bundled helper scripts (e.g. `audit.py` next to a `SKILL.md`) stay inside their skill folder under `.claude/skills/`.
+  - Skill-bundled helper scripts (e.g. `preflight.py` next to its `SKILL.md`) stay inside their skill folder under `.claude/skills/`.
   - **DayZ mods**: project workspaces live under `workspace/<ModName>/`, and built `.pbo`s deploy to `P:\Mods\@<ModName>\Addons\` (the symlinked Workshop folder on the P-drive). Nothing under `output/`. This is inherent to how DayZ Tools and the game expect mod content to be laid out — the P-drive is mounted by DayZ Tools and is the only place the engine looks for in-development mods. DayZ skills must preflight that `P:\` is mounted and halt with a clear message if not.
 
 ## Working Conventions
@@ -89,6 +89,5 @@ For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generi
 ## Environment Notes
 
 - This is a Windows workspace.
-- `package.json` is lightweight and supports helper dependencies for sandbox scripts.
-- There is no formal app source tree or test suite here; validate changes by running the relevant helper script and checking the generated artifact.
+- There is no app source tree. Tests are pytest files placed next to the code they cover. Validate changes with `python -m pytest -q .claude scripts/dev hooks`, which is what CI runs in `.github/workflows/tests.yml`, and after agent or skill changes also run `python .claude/skills/docs-sync/sync.py --check`, which checks the React wiki under `wiki/` against the repo.
 - Slash skill discovery is agent-specific. Claude Code reads the repo's `.claude/skills/` plus `$CLAUDE_CONFIG_DIR/skills` or `$HOME/.claude/skills`. Codex reads the repo's `.agents/skills/` and `$HOME/.agents/skills`. Gemini reads the workspace's `.gemini/skills/` or `.agents/skills/` and `$HOME/.gemini/skills` or `$HOME/.agents/skills`. To make the repo's `.claude/skills/` appear in all three, run `/sync-skills` (or `python .claude/skills/sync-skills/sync.py`). It symlinks each repo skill into each agent's skills directory without moving the source files; falls back to junctions on Windows when symlinks need elevation. Afterward, restart/reload the agent session; in Gemini CLI, run `/skills reload` before `/skills list`.

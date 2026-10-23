@@ -192,7 +192,7 @@ def test_check_workshop_deploy_prints_target(p_drive, game, fake_junctions, caps
 
 def test_main_fails_without_p_drive(monkeypatch, tmp_path):
     monkeypatch.setattr(preflight, "P_DRIVE", tmp_path / "missing")
-    assert preflight.main() == 1
+    assert preflight.main([]) == 1
 
 
 def test_link_target_of_plain_folder_is_none(tmp_path):
@@ -283,3 +283,16 @@ def test_find_dayz_diag_order(no_installs, monkeypatch, tmp_path):
 
     monkeypatch.setenv("DAYZ_DIAG_PATH", str(env_exe))
     assert preflight.find_dayz_diag() == env_exe
+
+
+def test_help_prints_usage_and_runs_no_check(monkeypatch, capsys):
+    # scripts/README.md promises --help on preflight.bat; main() used to ignore it and run every
+    # check, including check_workshop_deploy(), which can create the P:\Mods junction.
+    for name in ("check_p_drive", "check_dayz_tools", "check_vanilla_data", "check_workshop_deploy"):
+        monkeypatch.setattr(preflight, name, lambda n=name: pytest.fail(f"--help ran {n}"))
+    with pytest.raises(SystemExit) as exc:
+        preflight.main(["--help"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "usage:" in out
+    assert "DayZ preflight" not in out

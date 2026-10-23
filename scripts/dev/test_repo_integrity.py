@@ -86,6 +86,19 @@ def test_search_tools_work_in_clones_and_plugin_installs(path):
 
 
 @pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+def test_rag_agents_fall_back_to_rag_after_failed_greps(path):
+    # The wiki (team.md) says every RAG-equipped specialist turns to RAG search
+    # after two or three failed greps; an agent that drops that fallback keeps
+    # grepping blindly.
+    if "mcp__dayz-rag__search_dayz_source" not in _tools(path):
+        return
+    text = path.read_text(encoding="utf-8")
+    assert "after two or three failed greps" in text, (
+        f"{path.stem}: Search line must use RAG after two or three failed greps"
+    )
+
+
+@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
 def test_agents_have_no_machine_specific_paths(path):
     # P:\ is the DayZ Tools work drive every user mounts; any other drive letter
     # is one person's machine.
@@ -235,6 +248,26 @@ def test_build_checker_matches_gate():
     assert agent.index("/dayz-lint") < agent.index("/dayz-stop-test") < agent.index("`/dayz-build-pbo <ModName>` succeeds"), (
         "dayz-build-checker must lint, then stop the session, then build, in the same order as gate_build"
     )
+
+
+def test_orchestrator_runs_every_gate_mode():
+    # The orchestrator gates each wave with /dayz-gate. Every mode gate.py offers must be in its
+    # gate step, and the plan files that switch the behavior and visual gates on must be ones
+    # the architect writes, at the names the gate reads by default.
+    gate = (SKILLS_DIR / "dayz-gate" / "gate.py").read_text(encoding="utf-8")
+    modes = re.findall(r'sub\.add_parser\("(\w+)"', gate)
+    assert modes == ["build", "ingame", "behavior", "visual"], f"gate.py modes changed: {modes}"
+    orchestrator = (AGENTS_DIR / "dayz-orchestrator.md").read_text(encoding="utf-8")
+    step = orchestrator.split("5. **Gate the wave.**", 1)[1].split("6. **Next wave.**", 1)[0]
+    for mode in modes:
+        assert f"`/dayz-gate {mode} <ModName>" in step, f"dayz-orchestrator's gate step must run /dayz-gate {mode}"
+    architect = (AGENTS_DIR / "dayz-mod-architect.md").read_text(encoding="utf-8")
+    behavior_src = (SKILLS_DIR / "dayz-gate" / "behavior.py").read_text(encoding="utf-8")
+    visual_src = (SKILLS_DIR / "dayz-gate" / "visual.py").read_text(encoding="utf-8")
+    for source in (behavior_src, visual_src):
+        name = re.search(r'^\w+_FILENAME = "([\w.-]+\.json)"', source, re.M).group(1)
+        assert f"output/<ModName>-plan/{name}" in step, f"dayz-orchestrator must gate on output/<ModName>-plan/{name}"
+        assert f"output/<ModName>-plan/{name}" in architect, f"dayz-mod-architect must write output/<ModName>-plan/{name}"
 
 
 BAT_FILES = sorted((REPO / "scripts").glob("*/*.bat"))

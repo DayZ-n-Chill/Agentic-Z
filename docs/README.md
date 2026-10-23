@@ -14,15 +14,15 @@ After that, all three supported agent CLIs (Claude Code, Codex, Gemini) discover
 
 Then walk through [`docs/dayz-modding.md`](dayz-modding.md) for prerequisites (DayZ Tools, P:\ drive setup, vanilla data extraction) and the end-to-end workflow.
 
-## Architecture — three layers
+## Architecture — three tiers
 
-| Layer | Scope | Where it lives |
+| Tier | Scope | Where it lives |
 |---|---|---|
 | **L1 — Default rules** | Apply to every clone, every agent, every skill. | `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (three filenames so each CLI finds its own; same content in each) |
 | **L2 — DayZ conventions** | Apply when working inside the DayZ domain. | `.claude/skills/_shared/dayz-conventions.md` (core, read by every DayZ agent) plus topic files in `.claude/skills/_shared/conventions/` (config, assets, scripts, ui, server) loaded per task |
-| **L3 — Specific agent or skill** | The actual unit of work. | `.claude/agents/<name>.md` or `.claude/skills/<name>/SKILL.md`, plus its scripts |
+| **L3 — Agents and knowledge packs** | Loaded only when the task needs them. | `.claude/agents/<name>.md`, `.claude/skills/<name>/SKILL.md` plus its scripts, and the packs under `.claude/skills/_shared/` (EnScript patterns, Figma-to-DayZ rules) |
 
-L3 files include a one-line reference to L2: *"Follow `.claude/skills/_shared/dayz-conventions.md`."*
+L3 files that do DayZ modding work include a one-line reference to L2: *"Follow `.claude/skills/_shared/dayz-conventions.md`."* Routing and utility files (for example `dayz-router`, `/dayz-route`, `/dayz-statusline`, `/sync-skills`) do not.
 
 ## How agents and skills find their rules
 
@@ -31,7 +31,7 @@ When invoked on a task, an agent should:
 1. Read the L1 file for the CLI in use (`CLAUDE.md` / `AGENTS.md` / `GEMINI.md`).
 2. Read the specific agent or skill being run (L3).
 3. If L3 references the DayZ conventions file (L2), read the core file and any topic files under `.claude/skills/_shared/conventions/` that L3 names.
-4. Obey all three layers; the more specific layer wins ties.
+4. Obey all three tiers; the more specific tier wins ties.
 
 ## File structure
 
@@ -49,7 +49,7 @@ When invoked on a task, an agent should:
 │   │   │   └── agents.json             # list of agent CLIs to sync into
 │   │   └── dayz-*/                     # one folder per DayZ skill
 │   │       ├── SKILL.md
-│   │       └── *.py
+│   │       └── *.py                    # helper scripts, when the skill has any
 │   ├── agent-memory/                   # gitignored, per-agent memory written at runtime
 │   ├── local-memory/                   # gitignored, per-clone: user/machine notes and skill state
 │   └── settings.local.json             # gitignored, per-clone Claude Code settings
@@ -108,8 +108,9 @@ The exact text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`. Summary:
 - **Doc maintenance — plain copies.** `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` hold the same content. Edit all three together.
 - **Bootstrap — run `/sync-skills` after cloning.** Required to make Codex and Gemini see the slash commands.
 - **Memory — local-memory only, never for rules.** User/machine notes only; rules go in the repo.
-- **Model routing — match model to task.** Searches/research → Sonnet subagent; trivial file-find → Haiku subagent; coding/design → main Opus thread. See [`docs/model-routing.md`](model-routing.md).
-- **Prompt conventions — caps are a finite signal.** Uppercase section headers are structural; inline `MUST` / `NEVER` / `ALWAYS` are behavioral and measurably affect model compliance, but only when rare. See [`docs/prompt-conventions.md`](prompt-conventions.md).
+- **Subagent routing — DayZ work goes to dayz-* specialists.** For a new DayZ request, run `/dayz-route` first; when it returns `next: dayz-router`, ask the `dayz-router` agent (Haiku) and follow its JSON. When a Superpowers workflow dispatches a subagent for DayZ work, use the matching `dayz-*` specialist instead of a generic agent. Role-to-specialist table in [`docs/dayz-modding.md`](dayz-modding.md).
+
+Further reading (not L1 rules): [`docs/model-routing.md`](model-routing.md) for matching the model to the task, and [`docs/prompt-conventions.md`](prompt-conventions.md) for caps use: headings are plain sentence case and are for the reader, since their case doesn't change behavior; inline `MUST` / `NEVER` / `ALWAYS` can help an absolute rule stand out, but only when rare (a writing habit, not a measured result).
 
 ## DayZ Modding workflow
 
@@ -183,7 +184,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-edit-types`](../.claude/skills/dayz-edit-types/SKILL.md) | Programmatically upsert a single `<type>` in `types.xml` |
+| [`/dayz-edit-types`](../.claude/skills/dayz-edit-types/SKILL.md) | Add, update or remove one `<type>` in `types.xml`, or check and merge a pasted chunk of entries (backs the file up first when it changes) |
 | [`/dayz-split-types`](../.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into per-category files and point `cfgeconomycore.xml` at them |
 
 ### Release
@@ -242,7 +243,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 - **DayZ Tools** (Steam) — for AddonBuilder, WorkDrive, ImageToPAA
 - **DayZ game** (Steam) — for the diag client used in `/dayz-launch-test`
 - **DayZ Server** (Steam appid 223350) — only for the initial mission bootstrap; can be uninstalled after
-- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3`. A full source build embeds roughly 66M tokens, so check Voyage's pricing first. Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
+- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3`. The last full source build embedded about 66M tokens (52,048 chunks, before windowing); the current indexer produces about 62K chunks, and its local estimate of about 96M tokens runs high. Check Voyage's pricing first. Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
 
 L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](../.claude/skills/_shared/dayz-conventions.md) (core) and the topic files in [`.claude/skills/_shared/conventions/`](../.claude/skills/_shared/conventions/).
 
@@ -260,16 +261,16 @@ The 30 agents live under `.claude/agents/`. The mod team runs a whole mod; the s
 | `dayz-lead` | Runs one team's workers and its review gates |
 | `dayz-build-checker` | Gate: the PBO builds with no AddonBuilder errors |
 | `dayz-ingame-tester` | Gate: the mod loads on a diag server and client with clean logs |
-| `dayz-build-engineer` | Builds, launches test sessions and deploys after your yes |
+| `dayz-build-engineer` | Builds the PBO (or deploys a bundle's PBOs), sets up the test server and launches a test session for you to play |
 | `dayz-docs-writer` | Keeps the mod's README, changelog and classname list current, and writes the Workshop text and server kit with `/dayz-release-pack` and `/dayz-server-kit` |
-| `dayz-asset-specialist` | `.p3d` / `.paa` / `.rvmat` and Workbench asset integration |
+| `dayz-asset-specialist` | `.paa` textures via `/dayz-pack-texture` and `.rvmat` materials (hands `.p3d` and `model.cfg` to `dayz-object-builder`) |
 | `dayz-config-specialist` | `config.cpp`, CfgPatches, CfgVehicles, inheritance, hidden selections |
 | `dayz-map-specialist` | Terrain Builder, DayZ Editor, map objects, clutter, surfaces |
-| `dayz-mod-debugger` | Log/RPT/crash analysis, BattlEye diagnosis, performance profiling |
+| `dayz-mod-debugger` | Traces failures in `script.log`, RPT, `crash.log` and BattlEye logs to a file and line and names the worker who fixes it; fixes nothing |
 | `dayz-mod-reviewer` | Audit `workspace/<ModName>/` for convention compliance; routes findings to the right specialist |
 | `dayz-object-builder` | `.p3d` LODs, named selections, geometry, damage zones |
 | `dayz-script-specialist` | Enforce Script — modded classes, RPCs, replication, gameplay logic |
-| `dayz-server-admin` | `types.xml`, `init.c`, `cfggameplay.json`, server performance |
+| `dayz-server-admin` | Mission and economy files: `types.xml`, `events.xml`, `cfgeventspawns.xml`, `cfgeconomycore.xml`, `cfgspawnabletypes.xml`, `cfggameplay.json`, `init.c`; receives the persistence data audit |
 | `dayz-ui-specialist` | `.layout` files, widget scripting, HUD/menu, UI theme/color |
 | `dayz-workbench-specialist` | Workbench plugin development (editor-time tooling) |
 | `dayz-persistence-specialist` | Data that survives a server restart: save and load code, save versions, base building, the data audit before release |

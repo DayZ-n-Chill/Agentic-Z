@@ -15,6 +15,7 @@ Run:
 """
 from __future__ import annotations
 
+import argparse
 import os
 import re
 import subprocess
@@ -396,7 +397,11 @@ def check_workshop_deploy() -> None:
     print(f"{WARN} {err}")
 
 
-def main() -> int:
+def main(argv: Optional[list[str]] = None) -> int:
+    argparse.ArgumentParser(
+        description="Check the P:\\ drive, DayZ Tools, vanilla data and the P:\\Mods junction "
+                    "(creates the junction when P:\\Mods is missing). Takes no options.",
+    ).parse_args(argv)
     print("DayZ preflight\n", flush=True)
     if not check_p_drive():
         return 1

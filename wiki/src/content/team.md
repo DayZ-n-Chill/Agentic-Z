@@ -27,7 +27,7 @@ This document describes the Agentic-Z mod team: the 30 agents and 44 skills that
     - [Roadmap](#roadmap)
     - [What we take and what we leave](#what-we-take-and-what-we-leave)
 - [What changed from Agentic-Z 1.6.0](#what-changed-from-agentic-z-160)
-- [The agents](#the-agents)
+- [Agents](#agents)
 - [The skills](#the-skills)
     - [Specialist workflows](#specialist-workflows)
     - [How one task moves through the team](#how-one-task-moves-through-the-team)
@@ -64,7 +64,7 @@ This table lists everything Agentic-Z gives an AI agent beyond the agents themse
 | Specialist files | DayZ reference material under `.claude/skills/_shared/`. It contains ten specialist packs, an Enforce Script pack (with references, patterns, framework guides and 13 worked examples) and the Figma rules. | Agents load only the pack their task needs, so they work from facts verified against P:. |
 | **The agent team** | | |
 | Orchestrator and leads | A planner that runs as the main session, an architect, and one lead per team. | The user describes a mod once and approves a plan. The team then splits and tracks the work. |
-| Specialists | DayZ experts for each area (see The agents). | Each task goes to an agent that knows that area of DayZ. |
+| Specialists | DayZ experts for each area (see [Agents](#agents)). | Each task goes to an agent that knows that area of DayZ. |
 | Gatekeepers | Mod review, layout check, build check, in-game test and behavior test. | No work reaches the user until it builds and loads in game with clean logs. When the plan lists behavior checks, it must also pass the behavior test. |
 | Router | `/dayz-route` keyword rules, then Jev when a TypeSafe key is set, then the Haiku `dayz-router` agent. | Most requests reach the right handler with no model tokens. |
 | Figma pipeline (optional) | Three agents that turn a Figma frame into a validated DayZ `.layout` file. | An optional extra for teams that design menus in Figma. It is unused otherwise. |
@@ -299,7 +299,7 @@ The final grade count opens the "Quality by version" section.
 ### Who grades
 
 - Each round starts new, independent Claude reviewers with no memory of earlier rounds. The final review used six reviewers: two for the agents, three for the skills and one for all shared items. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and this method note. For the files that were not graded, see "Files not graded" under "Open items and decisions".
-- Reviewers are read-only and cannot edit files. They read every file, run the tests where the session allows it, and check claims against the code and the vanilla DayZ files on the P: drive. Three skill reviewers could not run pytest because their sessions denied it, and they stated this in their reasons. These reviewers graded `dayz-launch-objectbuilder`, `dayz-launch-workbench` and `dayz-search-download`.
+- Reviewers are read-only and cannot edit files. They read every file, run the tests where the session allows it, and check claims against the code and the vanilla DayZ files on the P: drive. One skill reviewer could not run pytest because its session denied it. It said so in its reasons for the three skills it graded that way: `dayz-launch-objectbuilder`, `dayz-launch-workbench` and `dayz-search-download`.
 - Separate fixers correct what the reviewers find. The fixers are different agents, and each one owns its own files. A fixer never grades its own work.
 - New reviewers grade again after every fix round. An item counts as A+ only when an independent reviewer gives it A+.
 ### What they grade against
@@ -487,7 +487,7 @@ Each change comes from the quality review or the build.
 | Type | Change | Reason |
 | --- | --- | --- |
 | New | Orchestrator, architect and team leads | Previously, the user picked a specialist directly, and nothing split a mod into tasks or checked that the pieces fit together. |
-| New | Eight specialists with reference files | Each specialist has its own agent and reference files checked against P:. See The agents. |
+| New | Eight specialists with reference files | Each specialist has its own agent and reference files checked against P:. See [Agents](#agents). |
 | New | Script-only gates | A reviewer existed, but nothing required a check before a build. See Save tokens for how the gates work now. |
 | New | Workflows and hooks | See Workflows for the workflow list and What Agentic-Z gives an AI agent for the hooks. |
 | Moved | Debugger on the fail path | The debugger now receives only new errors. See Save tokens. |
@@ -500,7 +500,7 @@ Each change comes from the quality review or the build.
 
 Agentic-Z provides 44 slash commands that any agent or person can run. Of these, 40 ship in the plugin and four are available in clones only. Of the 40 plugin DayZ skills, 18 check the environment first with `/dayz-preflight`, which is itself the check. The DayZ rules file has 14 exception entries naming 21 skills, each with its reason. `/dayz-particles` is a reference skill with no script.
 
-Some exempt skills still read P:. `/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview` and `/dayz-upgrade-guard` only read files and write a report, and `/dayz-ask` only checks that P: is mounted. `/dayz-gate` runs its checks through the scripts it calls. `/dayz-stop-test` skips the check so that it still works as an emergency stop.
+Some exempt skills still read P:. `/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe` and `/dayz-layout-preview` only read files and write a report. `/dayz-upgrade-guard` also saves snapshots under `~/.claude/dayz-upgrade-guard/` and rebuilds the search index only with `--reindex`. `/dayz-ask` only checks that P: is mounted. `/dayz-gate` runs its checks through the scripts it calls. `/dayz-stop-test` skips the check so that it still works as an emergency stop.
 
 :::skills
 
@@ -512,7 +512,7 @@ Every task follows the team loop described in How one task moves through the tea
 | --- | --- |
 | **Script lead** | |
 | `dayz-script-specialist` | 1. Searches the vanilla scripts for the class it will change and reads the real file. 2. Writes a `modded class` in the correct layer (3\_Game, 4\_World or 5\_Mission) and calls `super`. 3. Adds RPCs only where the client and server must communicate, and checks which side runs each line. 4. `/dayz-lint` and the build gate check and pack the code. Neither compiles Enforce Script, so the in-game gate catches compile errors and reads script.log. |
-| `dayz-workbench-specialist` | 1. Reads how vanilla Workbench plugins are registered. 2. Writes the plugin script and its tool panel. 3. Never opens Workbench itself. Instead, it tells the user to open it with `/dayz-launch-workbench --mod <ModName>`. 4. Returns the plugin and the steps to load and run it. |
+| `dayz-workbench-specialist` | 1. Reads how vanilla Workbench plugins are registered. 2. Writes the plugin script, using only APIs it found in vanilla and cited as `path:line`. 3. Never opens Workbench itself. Instead, it tells the user to open it with `/dayz-launch-workbench --mod <ModName>`. 4. Returns the plugin and the steps to load and run it. |
 | `dayz-persistence-specialist` | 1. Lists every value that must survive a restart. 2. Writes OnStoreSave and OnStoreLoad, with a version number written first. 3. Adds an upgrade path so that saves from the previous version still load. 4. Runs the data audit, which confirms that every field is written and read back in the same order. 5. Places the audit at the end of its report to the script lead. The orchestrator gives the audit to the server lead before the test build. |
 | `dayz-ai-specialist` | 1. Studies how vanilla infected and animals decide what to do. 2. Writes the behavior as its own script classes, never copied from another mod. 3. Includes the spawn setup in its report, for the script lead to forward to the server lead. 4. The in-game test watches the behavior and server performance. |
 | **Config lead** | |
@@ -540,8 +540,8 @@ Every task follows the team loop described in How one task moves through the tea
 | **Checks and fixes** | |
 | `dayz-mod-reviewer` | 1. Reviews the finished task against the DayZ rules file. 2. Lists each problem with the specialist that owns it. |
 | `dayz-layout-validator` | 1. Checks the .layout file against the Figma-to-DayZ rules for file format and widget classes. 2. Reports PASS or FAIL, with each problem and its line number. |
-| `dayz-build-checker` | 1. Runs only when `/dayz-gate build` itself fails. 2. Reads the AddonBuilder output and names the failing file. |
-| `dayz-ingame-tester` | 1. Runs only when `/dayz-gate ingame` itself fails. 2. Reads the logs from the test session and reports what failed. |
+| `dayz-build-checker` | 1. Runs only when the `/dayz-gate build` script errors (exit 2) instead of giving a verdict. 2. Runs `/dayz-lint`, stops any running test session, rebuilds with `/dayz-build-pbo` (or checks a prebuilt bundle with `/dayz-deploy-pbo`), and reports PASS or FAIL with the AddonBuilder lines and the file they point to. |
+| `dayz-ingame-tester` | 1. Runs only when the `/dayz-gate ingame` script errors (exit 2) instead of giving a verdict. 2. Stops any leftover session, launches its own test session with `/dayz-launch-test`, reads the log lines written after it started, reports PASS or FAIL, and stops the session. |
 | `dayz-mod-debugger` | 1. Receives only new errors that triage does not recognize. 2. Traces script.log, RPT and crash files back to the line that failed. 3. Reports the cause, evidence, location and fix to its caller (the orchestrator or a lead), and names the worker agent that owns the fix. |
 
 ### How one task moves through the team

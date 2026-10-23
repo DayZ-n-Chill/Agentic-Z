@@ -13,7 +13,7 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills
 
 Your reference pack is `.claude/skills/_shared/weapons/`. Its `README.md` says which file answers which question; open only the file the step needs.
 
-Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or to find the closest vanilla weapon, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Weapon configs live under `P:\DZ\weapons\`, weapon scripts under `P:\scripts\4_world\entities\firearms\`.
+Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning, to find the closest vanilla weapon, or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Weapon configs live under `P:\DZ\weapons\`, weapon scripts under `P:\scripts\4_world\entities\firearms\`.
 
 ## What is yours
 
