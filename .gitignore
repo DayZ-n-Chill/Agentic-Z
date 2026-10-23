@@ -43,3 +43,6 @@ workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/
 !.server/*/serverDZ.cfg
 !.server/*/mission/
 .server/*/mission/storage_*/
+
+# Local git worktrees made by agents
+.claude/worktrees/
