@@ -46,3 +46,6 @@ workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/
 
 # Local git worktrees made by agents
 .claude/worktrees/
+
+# Local working docs, kept out of the repo
+docs/.updates/
