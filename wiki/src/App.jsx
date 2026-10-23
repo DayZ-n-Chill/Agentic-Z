@@ -255,7 +255,7 @@ function Home({ onNavigate }) {
         }}
       >
         <Stack direction={{ xs: 'column', sm: 'row' }} gap={3} alignItems={{ sm: 'center' }}>
-          <Logo size={88} />
+          <Logo size={96} />
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="overline" color="primary">
               DayZ modding · Claude Code · Codex · Gemini
@@ -377,7 +377,7 @@ export default function App() {
             onClick={() => navigate('')}
             sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}
           >
-            <Logo size={30} />
+            <Logo size={26} />
             <Typography sx={{ fontFamily: fonts.display, fontWeight: 700, fontSize: '1.15rem', display: { xs: 'none', sm: 'block' } }}>
               Agentic-Z
             </Typography>
