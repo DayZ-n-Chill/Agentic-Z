@@ -3,7 +3,7 @@ import { useTheme } from '@mui/material/styles';
 
 // Ambient WebGL layer for the home card. It sits on top of the card's CSS grid and lights it:
 //   - amber fog drifts slowly across the card and warms the grid lines it passes over;
-//   - every few seconds a scan band sweeps diagonally and brightens the lines and crossings;
+//   - a few lines at a time carry light trails that run along them, like light cycles;
 //   - now and then a single cell blinks, like a node reporting in.
 // The grid math uses the same 28px cells as the CSS background, so the glow lands on the real lines.
 // Pauses offscreen, draws one still frame under prefers-reduced-motion, and renders nothing without WebGL.
@@ -57,12 +57,33 @@ void main() {
   vec2 d = min(g, ${CELL.toFixed(1)} - g);
   float node = smoothstep(2.6, 0.0, length(d));
 
-  // Scan band: a diagonal sweep every 9 seconds, with a soft trailing edge.
-  float period = 9.0;
-  float phase = mod(t, period) / period;
-  float diag = (px.x + px.y * 0.6) / (size.x + size.y * 0.6);
-  float x = diag - (phase * 1.6 - 0.3);
-  float band = exp(-x * x * 900.0) + 0.35 * exp(-max(-x, 0.0) * 18.0) * step(x, 0.0) * step(-0.25, x);
+  // Light trails: a few grid lines carry a bright head that runs along them with a fading tail,
+  // like light cycles. Each line rolls again every lap, so different lines light up over time.
+  vec2 dl = min(g, ${CELL.toFixed(1)} - g);   // distance to the nearest vertical / horizontal line
+  float trail = 0.0;
+  float head = 0.0;
+  for (int k = 0; k < 2; k++) {
+    bool horiz = k == 0;
+    float along = horiz ? px.x : px.y;
+    float span = horiz ? size.x : size.y;
+    float across = horiz ? px.y : px.x;
+    float idx = floor((across + ${(CELL / 2).toFixed(1)}) / ${CELL.toFixed(1)});
+    float off = horiz ? dl.y : dl.x;
+    float seed = hash(vec2(idx, horiz ? 3.0 : 7.0));
+    float speed = 70.0 + 110.0 * seed;
+    float lapLen = span + 900.0;
+    float run = t * speed + seed * 4000.0;
+    float lap = floor(run / lapLen);
+    float on = step(0.8, hash(vec2(idx + lap * 17.0, horiz ? 11.0 : 5.0)));
+    float dir = hash(vec2(idx, lap + 2.0)) > 0.5 ? 1.0 : -1.0;
+    float pos = mod(run, lapLen) - 300.0;
+    float x = dir > 0.0 ? pos - along : (span - pos) - along;
+    x *= dir;                                   // x > 0 is behind the head
+    float core = smoothstep(1.6, 0.0, off);     // the 1px line plus a hair of glow
+    float tail = x >= 0.0 ? exp(-x / 80.0) : 0.0;
+    trail += on * core * tail;
+    head += on * exp(-(x * x) / 30.0 - off * off / 6.0);
+  }
 
   // Blinking cells: one random cell per slot lights up and fades.
   vec2 cell = floor(px / ${CELL.toFixed(1)});
@@ -74,8 +95,8 @@ void main() {
   float a = 0.0;
   a += fog * 0.07;                    // haze
   a += line * fog * 0.22;             // grid warmed by the fog
-  a += line * band * 0.30;            // scan lights the lines
-  a += node * band * 0.55;            // and the crossings
+  a += trail * 0.30;                  // light trails along the lines
+  a += head * 0.75;                   // bright leading point
   a += node * fog * 0.12;
   a += blink * 0.10;
   a = clamp(a * uGain, 0.0, 1.0);
@@ -147,7 +168,7 @@ export default function HeroShader() {
     let visible = true;
     const draw = (now) => {
       resize();
-      // A still frame sits mid-sweep so the scan band is visible.
+      // A still frame a few seconds in, so some trails are on the grid.
       gl.uniform1f(uTime, still ? 4.0 : (now - start) / 1000 + 4.0);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       if (!still && visible) raf = requestAnimationFrame(draw);

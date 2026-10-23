@@ -234,7 +234,7 @@ const STATS = [
   ['30', 'agents'],
   ['44', 'skills'],
   ['3', 'hooks'],
-  ['163', 'parts graded A+', 'Every agent, skill and shared file, checked by independent reviewers'],
+  ['163', 'every element graded A+'],
 ];
 
 function Home({ onNavigate }) {
@@ -283,25 +283,14 @@ function Home({ onNavigate }) {
           direction="row"
           sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider', flexWrap: 'wrap', rowGap: 2, columnGap: { xs: 3, md: 5 } }}
         >
-          {STATS.map(([n, label, note]) => (
-            <Box key={label} sx={{ maxWidth: note ? '22ch' : undefined }}>
+          {STATS.map(([n, label]) => (
+            <Box key={label}>
               <Typography sx={{ fontFamily: fonts.display, fontWeight: 700, fontSize: '1.8rem', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                 {n}
               </Typography>
               <Typography variant="overline" color="text.secondary">
                 {label}
               </Typography>
-              {note && (
-                <Link
-                  component="button"
-                  underline="hover"
-                  color="text.secondary"
-                  onClick={() => onNavigate('how-the-grading-works')}
-                  sx={{ display: 'block', textAlign: 'left', fontSize: '0.78rem', lineHeight: 1.45 }}
-                >
-                  {note}
-                </Link>
-              )}
             </Box>
           ))}
         </Stack>
