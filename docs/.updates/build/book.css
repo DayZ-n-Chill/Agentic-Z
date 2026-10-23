@@ -1,0 +1,111 @@
+/* Print stylesheet for the Agentic-Z PDFs. Letter, continuous book flow. */
+@page { size: Letter; margin: 0.75in 0.75in 0.85in; }
+@page :first { margin: 0; }
+
+:root {
+  --ink: #1d2733;
+  --muted: #5b6673;
+  --navy: #1f3a5f;
+  --accent: #b5652b;
+  --rule: #d5dae1;
+  --tint: #f3f5f8;
+  --head: #e9edf2;
+}
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  margin: 0; background: #fff; color: var(--ink);
+  font: 10.5pt/1.5 Cambria, Georgia, "Times New Roman", serif;
+  orphans: 3; widows: 3;
+  hyphens: manual;
+}
+
+/* Cover */
+.cover {
+  height: 11in; box-sizing: border-box; padding: 2.6in 1in 1in;
+  break-after: page; position: relative;
+  border-top: 0.32in solid var(--navy);
+}
+.cover .brand { font: 600 11pt "Segoe UI", Arial, sans-serif; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); }
+.cover h1 { font: 600 38pt/1.1 "Segoe UI", Arial, sans-serif; color: var(--navy); margin: 14pt 0 6pt; }
+.cover .sub { font: 300 18pt "Segoe UI", Arial, sans-serif; color: var(--muted); }
+.cover .rule { width: 1.2in; height: 3pt; background: var(--accent); margin: 28pt 0 22pt; }
+.cover .lede { font-size: 12.5pt; line-height: 1.55; max-width: 5.6in; margin: 0; }
+.cover .meta { position: absolute; left: 1in; bottom: 1in; font: 9pt/1.7 "Segoe UI", Arial, sans-serif; color: var(--muted); }
+
+/* Contents */
+.toc { break-after: page; }
+.toc-h { margin-top: 0 !important; }
+.toc ol { list-style: none; margin: 0; padding: 0; }
+.toc li { break-inside: avoid; }
+.toc a { display: flex; align-items: baseline; color: inherit; text-decoration: none; }
+.toc .dots { flex: 1; border-bottom: 1px dotted #9aa3ae; margin: 0 6pt; transform: translateY(-3pt); }
+.toc .p { font: 10pt "Segoe UI", Arial, sans-serif; min-width: 18pt; text-align: right; }
+.toc li.l1 { font: 600 11pt/1.4 "Segoe UI", Arial, sans-serif; color: var(--navy); margin-top: 9pt; }
+.toc li.l2 { font-size: 10.5pt; line-height: 1.55; padding-left: 16pt; }
+.toc li.l2 .p { font-weight: 400; color: var(--muted); }
+
+/* Headings: sans, navy, always kept with what follows */
+h2, h3, h4 { font-family: "Segoe UI", Arial, sans-serif; color: var(--navy); break-after: avoid; break-inside: avoid; }
+h2 {
+  font-size: 18pt; font-weight: 600; line-height: 1.2;
+  margin: 30pt 0 10pt; padding-top: 10pt; border-top: 2pt solid var(--navy);
+}
+h3 { font-size: 12.5pt; font-weight: 600; margin: 20pt 0 6pt; }
+h4 { font-size: 10.5pt; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; margin: 14pt 0 4pt; }
+main > :first-child, main > .keep:first-child h2 { margin-top: 0; }
+.keep { break-inside: avoid; }
+.keep > p:last-child { margin-bottom: 0; }
+.keep + * { margin-top: 8pt; }
+
+p { margin: 0 0 8pt; }
+a { color: var(--navy); text-decoration: none; }
+strong { font-weight: 700; }
+ul, ol { margin: 0 0 10pt; padding-left: 20pt; }
+li { margin: 0 0 3pt; break-inside: avoid; }
+li > ul, li > ol { margin: 3pt 0 0; }
+
+code {
+  font: 8.8pt Consolas, "Cascadia Mono", monospace;
+  background: var(--tint); padding: 0.5pt 3pt; border-radius: 2pt;
+}
+pre {
+  font: 8.6pt/1.45 Consolas, "Cascadia Mono", monospace;
+  background: var(--tint); border-left: 3pt solid var(--navy);
+  padding: 8pt 12pt; margin: 6pt 0 12pt; white-space: pre-wrap; break-inside: avoid;
+}
+pre code { background: none; padding: 0; font: inherit; }
+
+/* Tables: sans, compact, row-level breaks with repeated header */
+table {
+  width: 100%; border-collapse: collapse; margin: 6pt 0 14pt;
+  font: 8.6pt/1.42 "Segoe UI", Arial, sans-serif;
+}
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th {
+  background: var(--navy); color: #fff; text-align: left; font-weight: 600;
+  padding: 5pt 7pt; vertical-align: bottom;
+}
+th code { background: none; color: #fff; padding: 0; }
+td { padding: 4.5pt 7pt; border-bottom: 0.6pt solid var(--rule); vertical-align: top; }
+tbody tr:nth-child(even) td { background: #f7f8fa; }
+td code { font-size: 8.2pt; background: none; padding: 0; color: #24405f; }
+tr.grp td {
+  background: var(--head) !important; font-weight: 700; color: var(--navy);
+  padding-top: 6pt; border-bottom: 0.8pt solid #aeb7c2;
+}
+tr.grp { break-after: avoid; }
+/* Grade tables: the grade columns stay narrow and centered */
+table[data-cols="4"] td:nth-child(n+2):not(:last-child) { white-space: nowrap; }
+table[data-cols="3"] td:nth-child(2) { white-space: nowrap; }
+/* Spec cards: two columns, label column narrow */
+table.card { break-inside: avoid; }
+table.card td:first-child { width: 22%; font-weight: 600; color: var(--navy); }
+
+/* Figures */
+figure { margin: 8pt 0 14pt; break-inside: avoid; text-align: center; }
+figure img { width: 100%; max-height: 5.4in; object-fit: contain; display: block; margin: 0 auto; }
+figcaption {
+  font: italic 8.6pt "Segoe UI", Arial, sans-serif; color: var(--muted);
+  margin-top: 4pt; text-align: center;
+}

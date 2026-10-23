@@ -1,0 +1,263 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="960" viewBox="0 0 1140 960" role="img" aria-labelledby="svg-t svg-d"><style><![CDATA[
+/* Layout: one tall top-down flowchart, then reference sections below it (matches the Dev Agent Team page) */
+:root{
+ --bg:#f6f7f9;--surface:#ffffff;--fg:#17202b;--muted:#4f5b68;--line:#5d6977;--rule:#d9dee4;
+ --you:#fff1d6;--you-b:#b86e00;--orch:#e6e8ff;--orch-b:#4b4fc4;--lead:#dcf3ef;--lead-b:#0f7a6c;
+ --work:#ffffff;--work-b:#7b8794;--band:#eef1f4;--gate:#ffe4e6;--gate-b:#be2a44;--play:#e3f4dc;--play-b:#3c7f22;
+ --new:#b86e00;--new-fg:#ffffff;
+ --display:"Archivo",system-ui,sans-serif;--body:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --bg:#11161c;--surface:#19202a;--fg:#e9edf2;--muted:#a7b1bd;--line:#9aa5b2;--rule:#2c3541;
+ --you:#3a2a0c;--you-b:#f0a63a;--orch:#24264d;--orch-b:#9a9dff;--lead:#0e3631;--lead-b:#4fd1bd;
+ --work:#1d2530;--work-b:#7f8b98;--band:#161c24;--gate:#3d1820;--gate-b:#ff7a90;--play:#1c3414;--play-b:#86d066;
+ --new:#f0a63a;--new-fg:#1a1204;color-scheme:dark}}
+:root[data-theme="dark"]{
+ --bg:#11161c;--surface:#19202a;--fg:#e9edf2;--muted:#a7b1bd;--line:#9aa5b2;--rule:#2c3541;
+ --you:#3a2a0c;--you-b:#f0a63a;--orch:#24264d;--orch-b:#9a9dff;--lead:#0e3631;--lead-b:#4fd1bd;
+ --work:#1d2530;--work-b:#7f8b98;--band:#161c24;--gate:#3d1820;--gate-b:#ff7a90;--play:#1c3414;--play-b:#86d066;
+ --new:#f0a63a;--new-fg:#1a1204;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:48px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700}
+h3{font-size:13px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500}
+p{margin:0;max-width:65ch}
+header{display:grid;gap:10px}
+.lede{color:var(--muted);font-size:17px}
+section{display:grid;gap:18px;min-width:0}
+.chart{overflow-x:auto;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:12px}
+.chart svg{display:block;min-width:900px;width:100%;height:auto}
+svg .t{font-family:var(--display);font-weight:700;fill:var(--fg);text-anchor:middle}
+svg .s{font-family:var(--body);font-size:12px;fill:var(--muted);text-anchor:middle}
+svg .tw{font-family:var(--body);font-size:12.5px;font-weight:600;fill:var(--fg);text-anchor:middle}
+svg .chip{font-family:var(--mono);font-size:12px;fill:var(--muted);text-anchor:middle}
+svg .tspec{font-family:var(--body);font-size:13px;font-weight:600;fill:var(--fg);text-anchor:middle}
+svg .lay{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.06em;fill:var(--fg);text-anchor:end}
+svg .lays{font-family:var(--body);font-size:12px;fill:var(--muted);text-anchor:end}
+svg .note{font-family:var(--body);font-size:12px;fill:var(--muted)}
+svg .fail-t{fill:var(--gate-b);text-anchor:middle;font-weight:600}
+svg .learn-t{fill:var(--play-b);font-weight:600}
+svg .ln{stroke:var(--line);stroke-width:1.6}
+svg .ln.fail{stroke:var(--gate-b);stroke-dasharray:5 4}
+svg .ln.learn{stroke:var(--play-b);stroke-dasharray:5 4}
+svg .dash{stroke:var(--line);stroke-width:1.4;stroke-dasharray:3 4}
+svg #ah path{fill:var(--line)}
+svg .tag{fill:var(--new)}
+svg .tag-t{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.06em;fill:var(--new-fg);text-anchor:middle}
+.b-you{fill:var(--you);stroke:var(--you-b);stroke-width:2}
+.b-orch{fill:var(--orch);stroke:var(--orch-b);stroke-width:2}
+.b-orch2{fill:var(--orch);stroke:var(--orch-b);stroke-width:1.4}
+.b-lead{fill:var(--lead);stroke:var(--lead-b);stroke-width:1.6}
+.b-work{fill:var(--work);stroke:var(--work-b);stroke-width:1.2}
+.b-work-sh{fill:var(--band);stroke:var(--work-b);stroke-width:1;opacity:.8}
+.band{fill:var(--band);stroke:var(--rule);stroke-width:1}
+.b-spec{fill:var(--play);stroke:var(--play-b);stroke-width:1.2;stroke-dasharray:4 3}
+.gwrap{fill:none;stroke:var(--gate-b);stroke-width:1;stroke-dasharray:2 3}
+.b-gate{fill:var(--gate);stroke:var(--gate-b);stroke-width:1.6}
+.b-play{fill:var(--play);stroke:var(--play-b);stroke-width:2}
+.b-live{fill:var(--surface);stroke:var(--fg);stroke-width:2}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:14px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend i{width:14px;height:14px;border-radius:4px;border:2px solid;display:inline-block}
+.legend b{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.06em;background:var(--new);color:var(--new-fg);border-radius:4px;padding:1px 6px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--rule);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{text-align:left;padding:10px 16px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody th{font-weight:600;white-space:nowrap}
+thead th{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500}
+tr.grp th{background:var(--band);font-family:var(--display);font-size:14px;padding-block:8px}
+td.num{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:1px 9px;border:1px solid;white-space:nowrap}
+.pill.new{background:var(--you);border-color:var(--you-b)}
+.pill.keep{background:var(--lead);border-color:var(--lead-b)}
+.pill.fix{background:var(--gate);border-color:var(--gate-b)}
+.pill.move{background:var(--orch);border-color:var(--orch-b)}
+.pill.ok{background:var(--play);border-color:var(--play-b)}
+.pill.todo{background:var(--band);border-color:var(--work-b)}
+.pill.warn{background:var(--you);border-color:var(--you-b)}
+td code,p code{font-family:var(--mono);font-size:.9em}
+.status-key{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px;color:var(--muted)}
+.specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.sg{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:16px 18px;display:grid;gap:10px;align-content:start}
+.sg ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.sg li{font-size:13.5px;background:var(--play);border:1px solid var(--play-b);border-radius:999px;padding:2px 10px}
+ol.steps{margin:0;padding:0;list-style:none;counter-reset:s;display:grid;gap:10px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:36px 1fr;gap:12px;align-items:start;max-width:75ch}
+ol.steps li::before{content:counter(s);font-family:var(--mono);font-size:13px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--orch);color:var(--fg);border:1.5px solid var(--orch-b)}
+.foot{color:var(--muted);font-size:14px}
+ol.flow{margin:0;padding-left:1.2em}ol.flow li{margin:0 0 2px}
+]]></style><rect width="100%" height="100%" fill="#ffffff"/>
+  <title id="svg-t">Agentic-Z agent team flowchart</title>
+  <desc id="svg-d">The user approves the mod plan. The mod orchestrator, helped by the mod architect and the shared DayZ playbook, splits work across six team leads: script, config, art, UI, server and release. Each lead runs the specialist agents, which search vanilla DayZ first and follow the playbook. Each finished task passes the mod review and, for UI work, the layout check; each wave then passes the build check and an in-game test. Review failures go straight back to the worker, known errors go to the owning lead with their fix, and only new or unclear failures go to the debugger, which finds the cause. Passing work is packed into a PBO on a test server, the user gives the final yes and publishes it to the Steam Workshop. The user's corrections flow back into the playbook.</desc>
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>
+
+  <text class="lay" x="104" y="48">YOU</text>
+  <rect class="b-you" x="477.5" y="16" width="240" height="56" rx="8"/>
+  <text class="t" x="597.5" y="40" font-size="15">You (the user)</text>
+  <text class="s" x="597.5" y="58">Approves the mod plan</text>
+  <polyline class="ln" points="597.5,72 597.5,108" fill="none" marker-end="url(#ah)"/>
+
+  <text class="lay" x="104" y="140">LAYER 1</text>
+  <text class="lays" x="104" y="156">Plan</text>
+  <rect class="b-play" x="130" y="110" width="250" height="64" rx="8"/>
+  <text class="t" x="255" y="138" font-size="15">Shared playbook</text>
+  <text class="s" x="255" y="156">DayZ conventions and script style</text>
+  <rect class="b-orch" x="447.5" y="110" width="300" height="64" rx="8"/>
+  <text class="t" x="597.5" y="138" font-size="15">Mod orchestrator</text>
+  <text class="s" x="597.5" y="156">Splits the mod into small tasks</text>
+  <rect class="b-orch2" x="815" y="110" width="250" height="64" rx="8"/>
+  <text class="t" x="940" y="138" font-size="15">Mod architect</text>
+  <text class="s" x="940" y="156">Plans classes, files and assets first</text>
+  <line class="dash" x1="380" y1="142" x2="447.5" y2="142"/>
+  <line class="dash" x1="747.5" y1="142" x2="815" y2="142"/>
+
+  <polyline class="ln" points="597.5,174 597.5,200" fill="none"/>
+  <line class="ln" x1="202.5" y1="200" x2="992.5" y2="200"/>
+  <polyline class="ln" points="202.5,200 202.5,224" fill="none" marker-end="url(#ah)"/>
+  <polyline class="ln" points="360.5,200 360.5,224" fill="none" marker-end="url(#ah)"/>
+  <polyline class="ln" points="518.5,200 518.5,224" fill="none" marker-end="url(#ah)"/>
+  <polyline class="ln" points="676.5,200 676.5,224" fill="none" marker-end="url(#ah)"/>
+  <polyline class="ln" points="834.5,200 834.5,224" fill="none" marker-end="url(#ah)"/>
+  <polyline class="ln" points="992.5,200 992.5,224" fill="none" marker-end="url(#ah)"/>
+
+  <text class="lay" x="104" y="258">LAYER 2</text>
+  <text class="lays" x="104" y="274">Team leads</text>
+  <rect class="b-lead" x="130" y="226" width="145" height="60" rx="8"/>
+  <text class="t" x="202.5" y="252" font-size="14">Script lead</text>
+  <text class="s" x="202.5" y="270">Enforce Script</text>
+  <rect class="b-lead" x="288" y="226" width="145" height="60" rx="8"/>
+  <text class="t" x="360.5" y="252" font-size="14">Config lead</text>
+  <text class="s" x="360.5" y="270">config.cpp and classes</text>
+  <rect class="b-lead" x="446" y="226" width="145" height="60" rx="8"/>
+  <text class="t" x="518.5" y="252" font-size="14">Art lead</text>
+  <text class="s" x="518.5" y="270">Models and textures</text>
+  <rect class="b-lead" x="604" y="226" width="145" height="60" rx="8"/>
+  <text class="t" x="676.5" y="252" font-size="14">UI lead</text>
+  <text class="s" x="676.5" y="270">Menus and HUD</text>
+  <rect class="b-lead" x="762" y="226" width="145" height="60" rx="8"/>
+  <text class="t" x="834.5" y="252" font-size="14">Server lead</text>
+  <text class="s" x="834.5" y="270">Economy and maps</text>
+  <rect class="b-lead" x="920" y="226" width="145" height="60" rx="8"/>
+  <text class="t" x="992.5" y="252" font-size="14">Release lead</text>
+  <text class="s" x="992.5" y="270">Builds and test runs</text>
+
+  <rect class="band" x="120" y="306" width="955" height="276" rx="12"/>
+  <text class="lay" x="104" y="400">LAYER 3</text>
+  <text class="lays" x="104" y="416">Workers</text>
+  <text class="lays" x="104" y="432">(and specialists)</text>
+
+  <polyline class="ln" points="202.5,286 202.5,318" fill="none" marker-end="url(#ah)"/>
+  <rect class="b-work-sh" x="135" y="325" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="130" y="320" width="145" height="34" rx="6"/>
+  <text class="tw" x="202.5" y="342">Script engineer</text>
+  <rect class="b-work-sh" x="135" y="367" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="130" y="362" width="145" height="34" rx="6"/>
+  <text class="tw" x="202.5" y="384">Workbench plugins</text>
+
+  <polyline class="ln" points="360.5,286 360.5,318" fill="none" marker-end="url(#ah)"/>
+  <rect class="b-work-sh" x="293" y="325" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="288" y="320" width="145" height="34" rx="6"/>
+  <text class="tw" x="360.5" y="342">Config engineer</text>
+
+  <polyline class="ln" points="518.5,286 518.5,318" fill="none" marker-end="url(#ah)"/>
+  <rect class="b-work-sh" x="451" y="325" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="446" y="320" width="145" height="34" rx="6"/>
+  <text class="tw" x="518.5" y="342">Object Builder</text>
+  <rect class="b-work-sh" x="451" y="367" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="446" y="362" width="145" height="34" rx="6"/>
+  <text class="tw" x="518.5" y="384">Textures</text>
+
+  <polyline class="ln" points="676.5,286 676.5,318" fill="none" marker-end="url(#ah)"/>
+  <rect class="b-work-sh" x="609" y="325" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="604" y="320" width="145" height="34" rx="6"/>
+  <text class="tw" x="676.5" y="342">UI engineer</text>
+  <rect class="b-work-sh" x="609" y="367" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="604" y="362" width="145" height="34" rx="6"/>
+  <text class="tw" x="676.5" y="384">Figma cleaner</text>
+  <rect class="b-work-sh" x="609" y="409" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="604" y="404" width="145" height="34" rx="6"/>
+  <text class="tw" x="676.5" y="426">Figma to layout</text>
+
+  <polyline class="ln" points="834.5,286 834.5,318" fill="none" marker-end="url(#ah)"/>
+  <rect class="b-work-sh" x="767" y="325" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="762" y="320" width="145" height="34" rx="6"/>
+  <text class="tw" x="834.5" y="342">Server admin</text>
+  <rect class="b-work-sh" x="767" y="367" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="762" y="362" width="145" height="34" rx="6"/>
+  <text class="tw" x="834.5" y="384">Map builder</text>
+
+  <polyline class="ln" points="992.5,286 992.5,318" fill="none" marker-end="url(#ah)"/>
+  <rect class="b-work-sh" x="925" y="325" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="920" y="320" width="145" height="34" rx="6"/>
+  <text class="tw" x="992.5" y="342">Build engineer</text>
+  <rect class="b-work-sh" x="925" y="367" width="145" height="34" rx="6"/>
+  <rect class="b-work" x="920" y="362" width="145" height="34" rx="6"/>
+  <text class="tw" x="992.5" y="384">Docs writer</text>
+
+  <rect class="b-work-sh" x="135" y="409" width="145" height="34" rx="6"/>
+  <rect class="b-play" x="130" y="404" width="145" height="34" rx="6"/>
+  <text class="tw" x="202.5" y="426">Saving data</text>
+  <rect class="b-work-sh" x="135" y="451" width="145" height="34" rx="6"/>
+  <rect class="b-play" x="130" y="446" width="145" height="34" rx="6"/>
+  <text class="tw" x="202.5" y="468">AI</text>
+  <rect class="b-work-sh" x="293" y="367" width="145" height="34" rx="6"/>
+  <rect class="b-play" x="288" y="362" width="145" height="34" rx="6"/>
+  <text class="tw" x="360.5" y="384">Vehicles</text>
+  <rect class="b-work-sh" x="293" y="409" width="145" height="34" rx="6"/>
+  <rect class="b-play" x="288" y="404" width="145" height="34" rx="6"/>
+  <text class="tw" x="360.5" y="426">Weapons</text>
+  <rect class="b-work-sh" x="451" y="409" width="145" height="34" rx="6"/>
+  <rect class="b-play" x="446" y="404" width="145" height="34" rx="6"/>
+  <text class="tw" x="518.5" y="426">Wearables</text>
+  <rect class="b-work-sh" x="451" y="451" width="145" height="34" rx="6"/>
+  <rect class="b-play" x="446" y="446" width="145" height="34" rx="6"/>
+  <text class="tw" x="518.5" y="468">Animation</text>
+
+  <rect class="b-spec" x="135" y="530" width="925" height="40" rx="8"/>
+  <text class="tspec" x="597.5" y="555">Physics and Audio/FX serve every lead. Specialists search the vanilla game files first.</text>
+
+  <polyline class="ln" points="597.5,582 597.5,616" fill="none" marker-end="url(#ah)"/>
+  <text class="note" x="607.5" y="603" text-anchor="start">Finished task, then each finished wave</text>
+
+  <text class="lay" x="104" y="654">LAYER 4</text>
+  <text class="lays" x="104" y="670">Gatekeepers</text>
+  <rect class="gwrap" x="124" y="618" width="948" height="76" rx="12"/>
+  <rect class="b-gate" x="130" y="626" width="176" height="60" rx="8"/>
+  <text class="t" x="218" y="652" font-size="14">Mod review</text>
+  <text class="s" x="218" y="670">DayZ conventions</text>
+  <rect class="b-gate" x="318" y="626" width="176" height="60" rx="8"/>
+  <text class="t" x="406" y="652" font-size="14">Layout check</text>
+  <text class="s" x="406" y="670">Figma-to-DayZ rules</text>
+  <rect class="b-gate" x="506" y="626" width="176" height="60" rx="8"/>
+  <text class="t" x="594" y="652" font-size="14">Build check</text>
+  <text class="s" x="594" y="670">PBO packs clean</text>
+  <rect class="b-gate" x="694" y="626" width="176" height="60" rx="8"/>
+  <text class="t" x="782" y="652" font-size="14">In-game test</text>
+  <text class="s" x="782" y="670">Loads, logs clean</text>
+  <rect class="b-gate" x="882" y="626" width="176" height="60" rx="8"/>
+  <text class="t" x="970" y="652" font-size="14">Behavior test</text>
+  <text class="s" x="970" y="670">New items spawn and work</text>
+
+  <polyline class="ln fail" points="1072,656 1108,656 1108,444 1080,444" fill="none" marker-end="url(#ah)"/>
+  <text class="note fail-t" x="1124" y="550" transform="rotate(-90 1124 550)">Fails: back to the worker; debugger only for new errors</text>
+
+  <polyline class="ln" points="597.5,694 597.5,728" fill="none" marker-end="url(#ah)"/>
+  <text class="note" x="607.5" y="716" text-anchor="start">Passes every gate</text>
+
+  <text class="lay" x="104" y="758">SHIP</text>
+  <rect class="b-lead" x="447.5" y="730" width="300" height="56" rx="8"/>
+  <text class="t" x="597.5" y="754" font-size="15">PBO on a test server</text>
+  <text class="s" x="597.5" y="772">Release lead</text>
+  <polyline class="ln" points="597.5,786 597.5,818" fill="none" marker-end="url(#ah)"/>
+  <rect class="b-you" x="477.5" y="820" width="240" height="56" rx="8"/>
+  <text class="t" x="597.5" y="844" font-size="15">You (the user)</text>
+  <text class="s" x="597.5" y="862">Final yes</text>
+  <polyline class="ln" points="597.5,876 597.5,906" fill="none" marker-end="url(#ah)"/>
+  <rect class="b-live" x="497.5" y="908" width="200" height="40" rx="8"/>
+  <text class="t" x="597.5" y="933" font-size="15">You publish</text>
+
+  <polyline class="ln learn" points="477.5,848 116,848 116,142 128,142" fill="none" marker-end="url(#ah)"/>
+  <text class="note learn-t" x="130" y="838" text-anchor="start">Your corrections become playbook rules (only with your yes)</text>
+ </svg>

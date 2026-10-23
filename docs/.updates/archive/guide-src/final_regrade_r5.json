@@ -1,0 +1,27 @@
+[
+{
+"item": "dayz-upgrade-guard",
+"grade": "A+",
+"reason": "All 39 tests pass and cover all six finding reasons. A real snapshot of P: took 9.6 seconds and came to 10 MB with no files skipped, matching the docs. The check, diff, missing project, older format and bad argument paths all print the documented verdict first with the right exit code, and a separate reindex command rebuilds the search index after a failed check."
+},
+{
+"item": "scripts/dayz/dayz-search.py",
+"grade": "A+",
+"reason": "All 29 tests pass, and a live query returned real hits whose files exist on P:. Every error path prints one clear line and exits 2, including -k 0, an empty query, a missing index and an invalid key. The -s help matches the server's 1500 character cap, and when no file_hashes.json exists the run explains why every hit shows as stale."
+},
+{
+"item": "dayz-p3d-audit",
+"grade": "A+",
+"reason": "All 71 tests pass, and the exit codes behave as documented, including a clear Not MLOD failure for a vanilla ODOL file. The P: path check skips URLs, kits get no autocenter finding, and component names match in any case so the coverage check always runs. The penetration rvmats and bisurfs its references cite exist on P:."
+},
+{
+"item": "hooks/paste_router.py (+ test_paste_router.py)",
+"grade": "A+",
+"reason": "All 141 tests across the hook and the importer pass. A branch link with a slash stays whole, and GitHub's own pages, pull requests and gists get no suggestion. The hook's text about where each kind of link ends up matches import_mod.py, which asks git ls-remote for the branch and links a subfolder from its own clone, and the suggested --name follows the importer's name rule."
+},
+{
+"item": "Method note (read first)",
+"grade": "A+",
+"reason": "The rubric covers every kind of item, four grading prompts are given including one for the note itself, and every round has a row naming its PRs or saying plainly it had none. Every PR number and commit matches git log on develop, the counts match the grade files, and every cross reference to another section exists. The final count paragraph and the rounds table agree on which rounds the grades come from."
+}
+]

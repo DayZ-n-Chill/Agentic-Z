@@ -1,0 +1,128 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Agentic-Z Agent Team</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one tall top-down flowchart, then reference sections below it (matches the Dev Agent Team page) */
+/* Dark theme only: one palette for screen and print */
+:root{
+ color-scheme:dark;
+ --bg:#121419;--surface:#181b22;--fg:#e6e8ec;--muted:#a9b0bb;--line:#8d96a5;--rule:#2b303b;--band:#1e222b;
+ --accent:#4f7cff;--accent-soft:#8eaaff;--accent-bg:#17203a;
+ --you:#33260f;--you-b:#f0a63a;--you-t:#ffc978;--orch:#1a2240;--orch-b:#6f8fff;--orch-t:#a9bdff;
+ --lead:#0f2c29;--lead-b:#35bfa8;--lead-t:#7fe3d1;--work:#1b1f27;--work-b:#6c7686;
+ --gate:#361820;--gate-b:#ff6f88;--gate-t:#ffa3b3;--play:#17291a;--play-b:#6cc25a;--play-t:#a6e597;
+ --new:#f0a63a;--new-fg:#1a1204;--private:#ff6b6b;
+ --display:"Archivo",system-ui,sans-serif;--body:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;margin:0}
+a{color:var(--accent-soft)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:48px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700;border-left:4px solid var(--accent);padding-left:12px}
+h3{font-size:13px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500}
+p{margin:0;max-width:65ch}
+header{display:grid;gap:12px}
+.lede{color:var(--muted);font-size:17px}
+section{display:grid;gap:16px;min-width:0}
+/* Vertical rhythm: 16px between items, 24px after a block (diagram, table, code, list, cards), 32px above a sub-heading */
+section>:is(.chart,.tbl,pre,.specs,ul,ol)+:not(.foot){margin-top:8px}
+section>h3:not(:first-child){margin-top:16px}
+section>.chart+.foot{margin-top:-4px}
+.chart{overflow-x:auto;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:16px}
+.chart svg{display:block;min-width:900px;width:100%;height:auto}
+svg .t{font-family:var(--display);font-weight:700;fill:var(--fg);text-anchor:middle}
+svg .s{font-family:var(--body);font-size:12px;fill:var(--muted);text-anchor:middle}
+svg .tw{font-family:var(--body);font-size:12.5px;font-weight:600;fill:var(--fg);text-anchor:middle}
+svg .chip{font-family:var(--mono);font-size:12px;fill:var(--muted);text-anchor:middle}
+svg .tspec{font-family:var(--body);font-size:13px;font-weight:600;fill:var(--fg);text-anchor:middle}
+svg .lay{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.06em;fill:var(--fg);text-anchor:end}
+svg .lays{font-family:var(--body);font-size:12px;fill:var(--muted);text-anchor:end}
+svg .note{font-family:var(--body);font-size:12px;fill:var(--muted)}
+svg .fail-t{fill:var(--gate-b);text-anchor:middle;font-weight:600}
+svg .learn-t{fill:var(--play-b);font-weight:600}
+svg .ln{stroke:var(--line);stroke-width:1.6}
+svg .ln.fail{stroke:var(--gate-b);stroke-dasharray:5 4}
+svg .ln.learn{stroke:var(--play-b);stroke-dasharray:5 4}
+svg .dash{stroke:var(--line);stroke-width:1.4;stroke-dasharray:3 4}
+svg #ah path{fill:var(--line)}
+svg .tag{fill:var(--new)}
+svg .tag-t{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.06em;fill:var(--new-fg);text-anchor:middle}
+.b-you{fill:var(--you);stroke:var(--you-b);stroke-width:2}
+.b-orch{fill:var(--orch);stroke:var(--orch-b);stroke-width:2}
+.b-orch2{fill:var(--orch);stroke:var(--orch-b);stroke-width:1.4}
+.b-lead{fill:var(--lead);stroke:var(--lead-b);stroke-width:1.6}
+.b-work{fill:var(--work);stroke:var(--work-b);stroke-width:1.2}
+.b-work-sh{fill:var(--band);stroke:var(--work-b);stroke-width:1;opacity:.8}
+.band{fill:var(--band);stroke:var(--rule);stroke-width:1}
+.b-spec{fill:var(--play);stroke:var(--play-b);stroke-width:1.2;stroke-dasharray:4 3}
+.gwrap{fill:none;stroke:var(--gate-b);stroke-width:1;stroke-dasharray:2 3}
+.b-gate{fill:var(--gate);stroke:var(--gate-b);stroke-width:1.6}
+.b-play{fill:var(--play);stroke:var(--play-b);stroke-width:2}
+.b-live{fill:var(--surface);stroke:var(--fg);stroke-width:2}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend i{width:14px;height:14px;border-radius:4px;border:2px solid;display:inline-block}
+.legend b{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.06em;background:var(--new);color:var(--new-fg);border-radius:4px;padding:1px 6px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--rule);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody th{font-weight:600;white-space:normal;overflow-wrap:break-word}
+/* The .tbl card draws the outer edge; the last row needs no rule of its own */
+tbody tr:last-child>*{border-bottom:0}
+thead th{vertical-align:bottom;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500}
+tr.grp th{background:var(--band);font-family:var(--display);font-size:14px;padding-block:8px}
+td.num{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+table.rounds{table-layout:fixed}
+table.rounds .num{text-align:right;white-space:normal}
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:2px 8px;line-height:1.4;border:1px solid;white-space:nowrap}
+.pill.new{background:var(--you);border-color:var(--you-b);color:var(--you-t)}
+.pill.keep{background:var(--lead);border-color:var(--lead-b);color:var(--lead-t)}
+.pill.fix{background:var(--gate);border-color:var(--gate-b);color:var(--gate-t)}
+.pill.move{background:var(--orch);border-color:var(--orch-b);color:var(--orch-t)}
+.pill.ok{background:var(--play);border-color:var(--play-b);color:var(--play-t)}
+.pill.todo{background:var(--band);border-color:var(--work-b);color:var(--muted)}
+.pill.warn{background:var(--you);border-color:var(--you-b);color:var(--you-t)}
+td code,p code{font-family:var(--mono);font-size:.9em}
+.status-key{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px;color:var(--muted)}
+.specs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.sg{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:16px;display:grid;gap:12px;align-content:start}
+.wrap ul{margin:0;padding-left:24px;display:grid;gap:8px}
+.wrap td>ul{margin-top:8px}
+pre{background:var(--band);border:1px solid var(--rule);border-radius:10px;padding:16px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.5;margin:0}
+.wrap .sg ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.sg li{font-size:13.5px;line-height:1.4;background:var(--play);border:1px solid var(--play-b);color:var(--play-t);border-radius:8px;padding:4px 10px;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+ol.steps{margin:0;padding:0;list-style:none;counter-reset:s;display:grid;gap:12px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:26px minmax(0,1fr);column-gap:12px;align-items:baseline}
+ol.steps li::before{content:counter(s);font-family:var(--mono);font-size:12px;line-height:1;width:26px;height:26px;box-sizing:border-box;border-radius:50%;display:grid;place-items:center;background:var(--orch);color:var(--fg);border:1.5px solid var(--orch-b)}
+.foot{color:var(--muted);font-size:14px}
+ol.flow{margin:0;padding-left:24px}ol.flow li{margin:0 0 4px}ol.flow li:last-child{margin:0}
+td code,p code,li code{color:#d3dbff}
+::selection{background:var(--accent);color:#fff}
+/* Cover */
+.cover{min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;padding:72px 0 32px}
+.cover-kicker{font-family:var(--mono);font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--muted)}
+.cover-bar{width:96px;height:6px;background:var(--accent);border-radius:1px;margin:48px 0 24px}
+.cover h1.cover-title{font-family:var(--display);font-size:clamp(64px,11vw,112px);font-weight:800;letter-spacing:-.025em;line-height:1;border:0;padding:0;color:var(--fg)}
+.cover-sub{font-family:var(--display);font-size:clamp(24px,3.4vw,34px);font-weight:700;color:var(--accent);margin-top:16px}
+.cover-desc{color:var(--muted);font-size:17px;line-height:1.6;max-width:56ch;margin-top:24px}
+.cover-foot{margin-top:auto;border-top:1px solid var(--rule);padding-top:12px;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+</style>
+<style>
+@page{size:Letter;margin:0;background:#121419}
+html,body{margin:0;background:#121419;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.cover{height:100vh;min-height:0;padding:30mm 22mm 34mm}
+.cover h1.cover-title{font-size:96px}
+.cover-sub{font-size:30px}
+.cover-desc{font-size:15px}
+.cover-foot{font-size:10px}
+</style></head><body><section class="cover" aria-label="Cover">
+ <div class="cover-kicker">Agent team &middot; October 2026</div>
+ <div class="cover-bar"></div>
+ <h1 class="cover-title">Agentic-Z</h1>
+ <p class="cover-sub">The Agent Team</p>
+ <p class="cover-desc">How the 30 agents, 44 skills and DayZ knowledge base of Agentic-Z 2.0.0 work together as one DayZ modding team, and how every part is graded by independent reviewers.</p>
+ <div class="cover-foot">Agentic-Z &middot; DayZ n' Chill &middot; github.com/DayZ-n-Chill/Agentic-Z</div>
+</section></body></html>

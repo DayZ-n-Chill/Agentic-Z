@@ -1,0 +1,3824 @@
+{
+ "groups": [
+  {
+   "group": "basics",
+   "items": [
+    {
+     "claim": "What it is: works in Claude Code, Codex CLI and Gemini CLI",
+     "status": "partial",
+     "evidence": ".claude/skills/sync-skills/agents.json links skills into ~/.claude, ~/.codex, ~/.gemini; AGENTS.md and GEMINI.md exist. But agents (.claude/agents), hooks (hooks/hooks.json, .claude/settings.json) and the dayz-rag MCP server (.mcp.json, plugin.json) are Claude Code only; no codex/ or gemini/ folders, no Codex or Gemini MCP config.",
+     "work": "Either add Codex and Gemini MCP config plus agent equivalents, or reword the guide to say Codex and Gemini get the skills and rules only.",
+     "size": "M"
+    },
+    {
+     "claim": "What it is: brings DayZ specialist agents",
+     "status": "true",
+     "evidence": "22 agent files in .claude/agents/, all registered in .claude-plugin/plugin.json agents[].",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Specialists box: Scripts",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-script-specialist.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Specialists box: Configs",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-config-specialist.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Specialists box: Textures",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-asset-specialist.md (textures, rvmat, paa)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Specialists box: Models",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-object-builder.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Specialists box: UI",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-ui-specialist.md plus figma-to-dayz-layout and dayz-layout-validator",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Specialists box: Maps",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-map-specialist.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Specialists box: Server",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-server-admin.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Specialists box: Debugging",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-mod-debugger.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Skills box: Setup wizard",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-init/SKILL.md (wizard then hub), in plugin.json",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Skills box: Build PBO",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-build-pbo/SKILL.md, build.py",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Skills box: Launch test",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-launch-test/SKILL.md, launch.py",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Skills box: types.xml",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-edit-types and dayz-split-types",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Skills box: Textures",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-pack-texture and dayz-build-imageset",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "RAG search box covers vanilla scripts, configs, layouts, materials",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-search-index/index.py EXT_TYPE_MAP has .c, .cpp, .layout, .rvmat; SKILL.md line 41 lists P:\\scripts, P:\\dz, P:\\gui etc.",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Skills drive DayZ Tools for you (slash commands)",
+     "status": "true",
+     "evidence": "build-pbo runs AddonBuilder, dayz-workdrive runs WorkDrive.exe, launch-workbench, launch-objectbuilder, build-imageset uses ImageToPAA",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "House rules for clean mods (Tier 1 and Tier 2 rules)",
+     "status": "true",
+     "evidence": "CLAUDE.md/AGENTS.md/GEMINI.md; .claude/skills/_shared/dayz-conventions.md plus _shared/conventions/*.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Fit diagram: dayz-rag server provides RAG search tools",
+     "status": "true",
+     "evidence": ".claude/mcp/dayz-rag/server.py FastMCP('dayz-rag') with search_dayz_source, get_dayz_file, list_indexed_sources; wiki tool removed in PR #56",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Fit diagram: search index on disk uses LanceDB plus Voyage AI",
+     "status": "true",
+     "evidence": "index.py INDEX_ROOT ~/.claude/dayz-search-index/lancedb, DEFAULT_EMBED_MODEL voyage-code-3",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Fit diagram: your mod lives in workspace\\<ModName>",
+     "status": "true",
+     "evidence": "dayz-new-mod, dayz-init SKILL.md line 15",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Fit diagram: P: drive holds vanilla data and junctions",
+     "status": "true",
+     "evidence": "preflight.py VANILLA_DIR_NAMES (dz, DZ, dta), MODS_LINK junction; new-mod creates P:\\<ModName> junction",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Fit diagram: DayZ Tools plus game (AddonBuilder, Diag)",
+     "status": "true",
+     "evidence": "build.py AddonBuilder; launch.py DayZDiag_x64.exe",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Requirement: Windows only",
+     "status": "true",
+     "evidence": "Skills use mklink /J, WorkDrive.exe, registry (preflight.py read_registry_string)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Requirement: DayZ (Steam), diag client ships next to the game",
+     "status": "true",
+     "evidence": "launch.py find_dayz_diag message 'Lives in the DayZ game install dir alongside DayZ_x64.exe'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Requirement: DayZ Tools for AddonBuilder, P: mounting, ImageToPAA",
+     "status": "true",
+     "evidence": "build.py, dayz-workdrive/mount.py (WorkDrive.exe), dayz-build-imageset/build_imageset.py (ImageToPAA)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Requirement: DayZ Server only to copy the mission template once",
+     "status": "true",
+     "evidence": "find_dayz_server used only by dayz-add-server/add_server.py line 121; launch uses DayZDiag from the game",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Requirement: P: mounted and vanilla data extracted",
+     "status": "true",
+     "evidence": "preflight.py hard-fails on P:, checks vanilla data",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Requirement: Python 3.10+ on PATH",
+     "status": "true",
+     "evidence": "dayz-init/env_check.py line 39 checks sys.version_info < (3,10); README.md line 63",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Requirement list is complete (nothing else to install)",
+     "status": "partial",
+     "evidence": "RAG needs pip install of mcp, lancedb, voyageai, python-dotenv (.claude/mcp/dayz-rag/requirements.txt, dayz-search-index/requirements.txt); only the MCP README and search-index SKILL mention it. settings.json denies python -m, so python -m pip install is blocked.",
+     "work": "Add the pip install -r step for RAG to What you need or setup.",
+     "size": "S"
+    },
+    {
+     "claim": "RAG search is optional; add VOYAGE_API_KEY=pa-... to .env at the repo root",
+     "status": "true",
+     "evidence": "voyage_common.py dotenv_paths reads cwd .env and REPO_ROOT/.env; .env.example has VOYAGE_API_KEY=pa-your-key-here; .env gitignored",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Setup diagram step order: install, /dayz-init, /dayz-preflight, search index, new mod or import, /dayz-add-server",
+     "status": "partial",
+     "evidence": "dayz-init itself runs check_env.py (preflight-style checks) and then runs new-mod/import-mod and add-server through plan.py (SKILL.md lines 60-89); preflight runs inside each child skill. The diagram shows them as separate later steps.",
+     "work": "Redraw: /dayz-init covers preflight, mod and server; search download is a separate optional step.",
+     "size": "S"
+    },
+    {
+     "claim": "Option A: git clone https://github.com/DayZ-n-Chill/Agentic-Z.git then python .claude\\skills\\sync-skills\\sync.py",
+     "status": "true",
+     "evidence": "remote origin https://github.com/DayZ-n-Chill/Agentic-Z.git; .claude/skills/sync-skills/sync.py exists",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Option A gets the current product (clone default branch)",
+     "status": "partial",
+     "evidence": "origin HEAD is main (933e423, PR #48); develop is 26 commits ahead. A clone today gets the 1.6.0 product without gate, route, statusline, record-correction, panel.",
+     "work": "Release develop to main (Brian merges).",
+     "size": "S"
+    },
+    {
+     "claim": "Option B: /plugin marketplace add DayZ-n-Chill/Agentic-Z and /plugin install agentic-z@dayz-n-chill",
+     "status": "true",
+     "evidence": ".claude-plugin/marketplace.json name dayz-n-chill, plugin agentic-z",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Option B installs the product the guide describes",
+     "status": "false",
+     "evidence": "Marketplace reads main: origin/main plugin.json is 1.6.0 with '11 specialist subagents and 25 DayZ skills' and still lists ./.claude/skills/dayz-search-wiki-index (the Cloudflare-cookie crawler). develop plugin.json is also still version 1.6.0.",
+     "work": "Bump version (2.0.0) in plugin.json and marketplace.json and release develop to main.",
+     "size": "S"
+    },
+    {
+     "claim": "Plugin skills show with an agentic-z: prefix, e.g. /agentic-z:dayz-build-pbo",
+     "status": "true",
+     "evidence": "Claude Code namespaces plugin skills; installed skill list shows agentic-z:dayz-build-pbo",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Pick one option only (both loads every skill twice)",
+     "status": "true",
+     "evidence": "sync.py links repo skills into ~/.claude/skills; plugin adds agentic-z: copies; Brian's session lists both dayz-build-pbo and agentic-z:dayz-build-pbo",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-init asks new or import, mod name, map, build and launch",
+     "status": "true",
+     "evidence": "dayz-init/SKILL.md lines 46-55 (new/import, server chernarus/livonia/sakhal/none, build, launch, mod name, author)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-init fixes what it can: mounting P:",
+     "status": "true",
+     "evidence": "dayz-init/SKILL.md line 33 AUTO p_drive runs dispatch.py mount-p",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-init fixes the P:\\Mods link",
+     "status": "true",
+     "evidence": "SKILL.md line 40: /dayz-preflight run by the first child skill creates the junction; preflight.py ensure P:\\Mods junction",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-init tells you how to fix the rest",
+     "status": "true",
+     "evidence": "env_check.py messages with fix hints (DAYZ_TOOLS_PATH, DAYZ_GAME_PATH)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Every later /dayz-init run shows a status hub for the active mod",
+     "status": "true",
+     "evidence": "dayz-init/SKILL.md Step 6 hub, hub_status.py",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Daily loop: edit with an agent",
+     "status": "true",
+     "evidence": "specialist agents in .claude/agents",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Daily loop: /dayz-build-pbo <ModName> packs into P:\\Mods\\@<ModName>\\Addons\\",
+     "status": "true",
+     "evidence": "dayz-build-pbo/SKILL.md lines 3, 19, 37",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Daily loop: /dayz-launch-test <ModName> --server <instance> starts diag server and client",
+     "status": "true",
+     "evidence": "dayz-launch-test/SKILL.md lines 21, 28, 40, 42",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Daily loop: read logs script.log and RPT",
+     "status": "true",
+     "evidence": "server -profiles=.server/<instance>/Profiles, client -profiles=.server/!ClientDiagLogs (launch.py lines 125-132, 300)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Daily loop: hand logs to dayz-mod-debugger",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-mod-debugger.md (read-only)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Daily loop: /dayz-stop-test closes DayZ",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-stop-test kills DayZDiag_x64.exe",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Daily loop: publish with DayZ Tools Publisher (no skill publishes)",
+     "status": "true",
+     "evidence": "no publish skill in .claude/skills; FAQ consistent",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Settings: DAYZ_TOOLS_PATH points to DayZ Tools install with Bin\\AddonBuilder",
+     "status": "true",
+     "evidence": "preflight.py line 123; build.py line 103 hint",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Settings: DAYZ_GAME_PATH points to the game install (DayZ_x64.exe and DayZDiag_x64.exe)",
+     "status": "partial",
+     "evidence": "preflight.py line 157 reads DAYZ_GAME_PATH, but the Diag exe has its own override DAYZ_DIAG_PATH (preflight.py line 183) and launch.py's hint says 'Set DAYZ_DIAG_PATH'",
+     "work": "Add DAYZ_DIAG_PATH row and say DAYZ_GAME_PATH is for the game and !Workshop.",
+     "size": "S"
+    },
+    {
+     "claim": "Settings: DAYZ_SERVER_PATH used by /dayz-add-server",
+     "status": "true",
+     "evidence": "preflight.py line 211; add_server.py line 37/121",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Settings: VOYAGE_API_KEY in .env for RAG search",
+     "status": "true",
+     "evidence": "voyage_common.load_api_key",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Settings table lists the settings you might need",
+     "status": "partial",
+     "evidence": "Code also reads DAYZ_DIAG_PATH, DAYZ_VANILLA_DATA_PATH, DAYZ_WORK_DRIVE, DAYZ_RAG_MAX_DISTANCE, VOYAGE_MODEL, VOYAGE_FREE_TIER_TOKENS, TYPESAFE_API_KEY (dayz-route/jev.py)",
+     "work": "Add at least DAYZ_DIAG_PATH, DAYZ_VANILLA_DATA_PATH, VOYAGE_MODEL and TYPESAFE_API_KEY rows.",
+     "size": "S"
+    },
+    {
+     "claim": "Layout: workspace\\<ModName>\\ is your mod source",
+     "status": "true",
+     "evidence": "dayz-init SKILL.md line 15",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Layout: .server\\<instance>\\ holds mission, serverDZ.cfg, Profiles",
+     "status": "true",
+     "evidence": "dayz-add-server SKILL.md; .gitignore keeps serverDZ.cfg and mission/",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Layout: .server\\!ClientDiagLogs\\ holds client logs",
+     "status": "true",
+     "evidence": "launch.py line 132",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Layout: .claude\\local-memory\\ holds author handle, active project, wizard state",
+     "status": "true",
+     "evidence": "dayz-author.txt, dayz-current-project.txt, dayz-init-state.json (dayz-init SKILL.md lines 15, 55); gitignored",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Layout: output\\ holds plans and other one-off deliverables",
+     "status": "true",
+     "evidence": "dayz-mod-architect.md line 23 writes output/<ModName>-plan/plan.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Layout: P:\\<ModName>\\ links to workspace\\<ModName>",
+     "status": "true",
+     "evidence": "new_mod.py junction; build.py junction check",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Layout: P:\\Mods\\@<ModName>\\Addons\\ built PBO, Mods links to DayZ\\!Workshop",
+     "status": "true",
+     "evidence": "preflight.py MODS_LINK to <game>\\!Workshop",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Layout: P:\\dz\\ vanilla data extracted once",
+     "status": "true",
+     "evidence": "preflight.py VANILLA_DIR_NAMES = (dz, DZ, dta)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Layout tree covers where everything lives",
+     "status": "partial",
+     "evidence": "Omits the search index at ~/.claude/dayz-search-index/, and repo folders scripts\\ (bat wrappers), hooks\\, mods\\agentic-z-panel, docs\\, wiki\\ (Docusaurus, 120 files)",
+     "work": "Add the index path and the repo tool folders, or say the tree shows only your files.",
+     "size": "S"
+    },
+    {
+     "claim": "Safety: shipped .claude/settings.json only allows running the repo's own skills",
+     "status": "partial",
+     "evidence": "allow list also has python scripts/*, node scripts/*, npm install (bare), npm ci, version checks. Plugin installs do not get this file at all (plugins cannot ship permissions); it only applies to clones.",
+     "work": "Reword (repo's own skills and scripts) and say it applies to clones; or drop npm install/npm ci from allow.",
+     "size": "S"
+    },
+    {
+     "claim": "Safety: settings.json blocks python -c and python -m",
+     "status": "true",
+     "evidence": "deny: Bash(python -c *), Bash(python -m *)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Safety: settings.json blocks node -e",
+     "status": "true",
+     "evidence": "deny: Bash(node -e *), Bash(node -p *)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Safety: settings.json blocks package installs",
+     "status": "partial",
+     "evidence": "deny Bash(npm install *) and Bash(npm i *), but allow list explicitly permits bare Bash(npm install) and Bash(npm ci); pip install is neither allowed nor denied",
+     "work": "Either remove npm install/npm ci from allow and deny pip install, or reword to 'adding new packages'.",
+     "size": "S"
+    },
+    {
+     "claim": "Safety: settings.json blocks npx",
+     "status": "true",
+     "evidence": "deny: Bash(npx *)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Safety: every agent has an explicit tool list",
+     "status": "true",
+     "evidence": "all 22 .claude/agents/*.md have a tools: line",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Safety: the reviewer and debugger cannot edit files",
+     "status": "true",
+     "evidence": "dayz-mod-reviewer.md and dayz-mod-debugger.md tools: Read, Glob, Grep plus RAG tools only",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Safety: /dayz-scope-mod <ModName> blocks edits to every other mod",
+     "status": "partial",
+     "evidence": "scope.py adds Edit deny rules only for sibling mods under workspace/ (and their P: and !Workshop folders), not for other subscribed Workshop mods; anchored rules need Claude Code started from the project root (SKILL.md step 4)",
+     "work": "Reword to 'every other mod in workspace\\'.",
+     "size": "S"
+    },
+    {
+     "claim": "Safety: --clear lifts the scope",
+     "status": "true",
+     "evidence": "dayz-scope-mod/SKILL.md scope.py --clear",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Safety: cleanup only removes what the toolkit made",
+     "status": "true",
+     "evidence": "dayz-clean-workspace/SKILL.md lines 18, 52, 65 (junction proof or .agentic-z-scaffold marker, skips .git folders)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Safety: destructive steps ask first or need --yes",
+     "status": "true",
+     "evidence": "--yes in dayz-clean-workspace, clean-repo, agentic-z-update, dayz-setup-objectbuilder SKILL.md; non-TTY refuses without --yes",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Troubleshooting: '[FAIL] P:\\ is NOT mounted', fix mount in DayZ Tools or /dayz-workdrive",
+     "status": "true",
+     "evidence": "preflight.py line 254 exact text and hint naming /dayz-workdrive",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Troubleshooting: P: does not survive a reboot",
+     "status": "true",
+     "evidence": "dayz-workdrive SKILL.md description 'usually after a reboot'; mount.py uses WorkDrive.exe or subst",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Troubleshooting: '[FAIL] DayZ Tools not detected', fix install or set DAYZ_TOOLS_PATH",
+     "status": "partial",
+     "evidence": "preflight.py line 269 prints '[WARN] DayZ Tools not detected', not [FAIL]; init's env_check says 'DayZ Tools not found'",
+     "work": "Change the symptom text to [WARN] (or make preflight fail).",
+     "size": "S"
+    },
+    {
+     "claim": "Troubleshooting: '[FAIL] Vanilla DayZ data not detected on P:\\', fix Extract Game Data",
+     "status": "partial",
+     "evidence": "preflight.py line 280 prints it as [WARN]; hint 'Extract Game Data' matches",
+     "work": "Change the symptom text to [WARN].",
+     "size": "S"
+    },
+    {
+     "claim": "Troubleshooting: P:\\Mods missing, real folder or dangling; fix cmd /c mklink /J P:\\Mods \"<DayZ install>\\!Workshop\"",
+     "status": "true",
+     "evidence": "preflight.py line 331 fix_cmd identical; missing case is auto-created",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Troubleshooting: 'Connection failed 0x00020005' from missing allowFilePatching = 1; fix rerun /dayz-add-server",
+     "status": "true",
+     "evidence": "add_server.py lines 196-203 sets it; known-errors.json filepatching-0x00020005",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Troubleshooting: 'Mission script has no main function', fix /dayz-add-server <instance> --refresh-mission",
+     "status": "true",
+     "evidence": "known-errors.json mission-no-main; add-server --refresh-mission",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Troubleshooting: '[FAIL] DayZDiag_x64.exe not found', Diag ships next to DayZ_x64.exe",
+     "status": "true",
+     "evidence": "launch.py line 95 exact text",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Troubleshooting: '[FAIL] P:\\<ModName> already exists', move it or rmdir a stray link",
+     "status": "partial",
+     "evidence": "new_mod.py prints 'P:\\<ModName> exists as a real folder, not a link' or 'is a link pointing at ...' (lines 401, 417); the 'already exists' text is for workspace\\<ModName> (line 460)",
+     "work": "Match the real message text.",
+     "size": "S"
+    },
+    {
+     "claim": "Troubleshooting: '[FAIL] Mod has no built PBO', fix /dayz-build-pbo first",
+     "status": "partial",
+     "evidence": "launch.py lines 71, 77 print \"Mod '<name>' has no Addons folder at ...\" or \"has no .pbo files in ...\"",
+     "work": "Match the real message text.",
+     "size": "S"
+    },
+    {
+     "claim": "Troubleshooting: '[FAIL] P:\\<ModName> junction is missing', fix /dayz-add-scaffold <ModName> --piece junction",
+     "status": "true",
+     "evidence": "build.py lines 77-78",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Troubleshooting: mod does not load; check preflight, junction, CfgPatches, PBO date, server script*.log, client -mod=@<ModName>",
+     "status": "partial",
+     "evidence": "launch.py passes -mod=P:\\Mods\\@<ModName> (absolute path), not -mod=@<ModName>",
+     "work": "Change to -mod=P:\\Mods\\@<ModName>.",
+     "size": "S"
+    },
+    {
+     "claim": "FAQ: Agentic-Z is free to use for DayZ mods (see LICENSE)",
+     "status": "true",
+     "evidence": "LICENSE 'Agentic-Z License' grants free use for DayZ mod development",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: RAG search needs a Voyage AI key",
+     "status": "true",
+     "evidence": "voyage_common.load_api_key used by server.py _embed_query for every query",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: a full index build embeds about 66M tokens",
+     "status": "true",
+     "evidence": "dayz-search-index/SKILL.md line 41 and reference/cost-and-free-tier.md line 7",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: use /dayz-search-download for the prebuilt index (as an alternative to paying)",
+     "status": "partial",
+     "evidence": "Skill exists; latest GitHub release 1.4.0 has dayz-rag-index-v0.1.0.tar.gz (gh release view). The index is old and built before oversize class splitting (download SKILL.md). Searching still needs the Voyage key for query embedding, which the FAQ wording hides.",
+     "work": "Say the key is still needed for queries; publish a fresh index with the next release.",
+     "size": "M"
+    },
+    {
+     "claim": "FAQ: /sync-skills links the same skills into Claude Code, Codex and Gemini",
+     "status": "true",
+     "evidence": "sync-skills/agents.json three entries",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: plugin for existing project (skills show as /agentic-z:...), clone for new mod project, not both",
+     "status": "true",
+     "evidence": "see install items",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: skills only write to your mod, its P: link, its test server and its build folder",
+     "status": "false",
+     "evidence": "Also written: .claude/local-memory (dayz-init, setup-objectbuilder backups), .claude/settings.local.json (dayz-scope-mod, dayz-statusline), HKCU registry (dayz-setup-objectbuilder), ~/.claude/dayz-search-index (index, download), P:\\Mods junction (preflight), ~/.claude|.codex|.gemini skills (sync-skills), rule files (record-correction), output\\ plans",
+     "work": "Reword to 'never write to other mods' and list the other places, or narrow the claim.",
+     "size": "S"
+    },
+    {
+     "claim": "FAQ: /dayz-scope-mod blocks edits to every other mod",
+     "status": "partial",
+     "evidence": "Only sibling mods under workspace/ (scope.py step 3)",
+     "work": "Reword.",
+     "size": "S"
+    },
+    {
+     "claim": "FAQ: does not publish to Workshop; builds land in P:\\Mods\\@<ModName>, which the launcher loads",
+     "status": "true",
+     "evidence": "no publish skill; build output path",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: several mods each in workspace\\<ModName>; switch via 'Set up or switch to another mod' in the /dayz-init hub",
+     "status": "true",
+     "evidence": "dayz-init/SKILL.md line 109",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: server logs in .server\\<instance>\\Profiles\\, client logs in .server\\!ClientDiagLogs\\",
+     "status": "true",
+     "evidence": "launch-test SKILL.md lines 80-81",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: P: does not stay mounted; run /dayz-workdrive after booting",
+     "status": "true",
+     "evidence": "dayz-workdrive skill and bat scripts/setup/workdrive.bat",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: DayZ Server needed only once to copy the mission template",
+     "status": "true",
+     "evidence": "only add_server.py calls find_dayz_server",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: update the plugin through the marketplace",
+     "status": "partial",
+     "evidence": "Marketplace serves main, which is still 1.6.0; develop work is unreleased and versions are not bumped (plugin.json 1.6.0 on develop)",
+     "work": "Bump version and release to main so marketplace updates reach users.",
+     "size": "S"
+    },
+    {
+     "claim": "FAQ: update a clone with /agentic-z-update",
+     "status": "true",
+     "evidence": ".claude/skills/agentic-z-update/SKILL.md pulls upstream main; SessionStart hook in settings.json runs update.py --check",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "FAQ: shipped settings block arbitrary Python or Node code, package installs and npx",
+     "status": "partial",
+     "evidence": "Same as safety items: bare npm install and npm ci allowed; settings.json not applied to plugin installs",
+     "work": "Same fix as the safety rows.",
+     "size": "S"
+    },
+    {
+     "claim": "FAQ: checker agents cannot edit files",
+     "status": "partial",
+     "evidence": "dayz-layout-validator has Write and Edit (gate mode is read-only only by instruction); dayz-build-checker and dayz-ingame-tester have Bash, which can write files",
+     "work": "Split the layout validator's cleanup mode out, or drop Write/Edit; reword for Bash-holding checkers.",
+     "size": "S"
+    },
+    {
+     "claim": "FAQ: correct it once and run /dayz-record-correction; rule saved after your yes",
+     "status": "true",
+     "evidence": "dayz-record-correction/SKILL.md line 9 'Nothing is written without their yes'; in plugin.json",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Help: Discord discord.gg/dayznchill",
+     "status": "true",
+     "evidence": "README.md line 289",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Help: repo github.com/DayZ-n-Chill/Agentic-Z",
+     "status": "true",
+     "evidence": "git remote origin",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Help: branch from develop",
+     "status": "true",
+     "evidence": "CONTRIBUTING.md line 17; origin/develop exists",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Help: branches named feature/, fix/ or docs/",
+     "status": "partial",
+     "evidence": "CONTRIBUTING.md line 19 matches, but merged PRs #55 and #56 used chore/ci-tests and chore/drop-wiki-crawler",
+     "work": "Add chore/ to the guide and CONTRIBUTING, or stop using it.",
+     "size": "S"
+    },
+    {
+     "claim": "Help: open the pull request against develop",
+     "status": "true",
+     "evidence": "CONTRIBUTING.md lines 18, 26",
+     "work": "",
+     "size": "none"
+    }
+   ],
+   "stale_claims": [
+    "Handoff section 0 row 'Wiki search: tool exists; no wiki index; crawler on hold': stale. PR #56 (commit 3f5c74f) removed the crawler, search_dayz_wiki, the -w flag and agent grants. My guide sections already omit wiki search, so they are consistent.",
+    "Handoff section 2: PR #53 'open against develop' and .github/workflows/tests.yml 'untracked': stale. Both are merged (PRs #53 and #55); .github/workflows/tests.yml is tracked.",
+    "Handoff section 2: feature/specialists 'no commits': it now equals develop with #53 to #56 merged.",
+    "Repo doc docs/README.md line 3 still advertises RAG over 'the Bohemia wiki'. wiki/docs/mcp.md, .claude/skills/_shared/enscript-style.md and old wiki/blog posts also still mention wiki search.",
+    "Main branch (what plugin install and a fresh clone get) is still 1.6.0: its plugin.json describes '11 specialist subagents and 25 DayZ skills' and lists dayz-search-wiki-index. Brian's installed plugin still exposes search_dayz_wiki. Install Option A, Option B and the FAQ update rows only become true after a release.",
+    "plugin.json and marketplace.json on develop still say version 1.6.0 even though the guide implies v2.0.0.",
+    "LICENSE still lists codex/agents/, gemini/agents/ and 'the Docusaurus wiki' as parts of the Software. codex/ and gemini/ do not exist.",
+    "Latest GitHub release is 1.4.0, and its prebuilt index (dayz-rag-index-v0.1.0) predates oversize-class splitting. The FAQ pitches /dayz-search-download as the cheap path without saying the index is old."
+   ],
+   "risks": [
+    "Private debinarizer rule: docs/release-notes/1.2.0.md (line 39, plus 'P3D audit/debinariz...' at line 77) and docs/release-notes/1.6.0.md (lines 3, 41-46) name dayz-p3d-debin and the debinarizer. .claude/skills/_shared/conventions/assets.md line 30 says a vanilla p3d was 'Verified against ... (debinarized)'. The handoff says the debinarizer must never appear in any doc. Brian should decide whether removal notes count and reword the assets.md line.",
+    "No-'Brian' rule: LICENSE line 2, README.md line 319, wiki/blog/authors.yml and wiki/docusaurus.config.ts name 'Brian Orr'. docs/superpowers/specs/2026-05-14-figma-to-dayz-layout-rules-design.md line 79 names Brian. A copyright holder name may be a legal necessity, so only Brian can decide.",
+    "None of my sections mentions StarDZ or the knowledge pack's MIT label. package-lock.json MIT entries are npm dependencies, not the pack.",
+    "Release gate: Install Options A and B and the FAQ update answer are false for real users until develop is released to main. The handoff says Brian merges, and main is for releases only, so this needs his call and a version number (2.0.0?).",
+    "Contradiction: the guide's Safety section says 'the reviewer and debugger cannot edit files' (true), but the FAQ says 'checker agents cannot edit files', and dayz-layout-validator, which the handoff calls a read-only gate, holds Write and Edit.",
+    "Safety claims depend on .claude/settings.json, which only clones get. Plugin users (Option B) get the hooks (hooks/hooks.json) but none of the allow or deny rules. The guide presents both as shipped safety.",
+    "Codex and Gemini support is claimed throughout, but only skills and rule files reach them. Agents, hooks and the RAG MCP server are Claude-only. Brian should decide whether to build that support (M) or narrow the claim.",
+    "FAQ cost answer: .env.example says Voyage Series-4 models include 200M free tokens, but the default model is voyage-code-3 at $0.18 per 1M (about $12 per full build). The free tier claim and the default model should be reconciled before the FAQ promises anything about cost."
+   ]
+  },
+  {
+   "group": "team",
+   "items": [
+    {
+     "claim": "Just describe what you want and Claude picks the right specialist",
+     "status": "partial",
+     "evidence": ".claude/skills/dayz-route/rules.json routes only to 7 agents (script, config, ui, object-builder, server-admin, mod-debugger, mod-reviewer) plus orchestrator and 5 skills; .claude/agents/dayz-router.md 'Valid routes' has the same short list. Asset, map, workbench, build-engineer, docs-writer, Figma pipeline and all 8 new specialists have no route; the main session can still pick from agent descriptions",
+     "work": "Add rules.json keyword rules and dayz-router.md route lines for asset, map, workbench, build-engineer, docs-writer, the Figma pipeline and each new specialist; add test_route.py cases",
+     "size": "M"
+    },
+    {
+     "claim": "You can name a specialist directly, e.g. 'use the dayz-config-specialist to...'",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-config-specialist.md exists and is registered in .claude-plugin/plugin.json agents list",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-script-specialist: Enforce Script, modded classes, RPCs, game logic",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-script-specialist.md description: modded class overrides, RPCs, net sync, mission hooks; medkit/bandage heal-over-30s example",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-config-specialist: config.cpp, CfgPatches, inheritance, hidden selections",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-config-specialist.md description",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-asset-specialist: textures (.paa) and materials (.rvmat)",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-asset-specialist.md description uses /dayz-pack-texture and writes .rvmat; example matches 'vest_camo_co.png'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-object-builder: .p3d LODs, selections, Object Builder steps",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-object-builder.md description (LODs, named/hidden selections, proxies, model.cfg, Object Builder steps)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-ui-specialist: .layout files, HUD and menu scripts",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-ui-specialist.md description; compass example matches guide",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-map-specialist: Terrain Builder, layers.cfg, surfaces, clutter, DayZ Editor export",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-map-specialist.md description lists all of these and the Editor-to-Terrain-Builder example",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-server-admin: types.xml, events, init.c, cfggameplay",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-server-admin.md description",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-workbench-specialist: Workbench plugins (editor tools)",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-workbench-specialist.md; texture-suffix plugin example matches guide",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-mod-debugger reads logs and crash files to find the cause",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-mod-debugger.md: script.log, RPT, crash.log, BattlEye; fixes nothing, names owning worker",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-mod-reviewer audits a mod before build, PASS or FAIL",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-mod-reviewer.md: read-only, PASS or FAIL with findings routed to owner",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "figma-node-normalizer, figma-to-dayz-layout, dayz-layout-validator turn a Figma frame into a checked .layout (optional)",
+     "status": "true",
+     "evidence": "All three files in .claude/agents/; order documented in CLAUDE.md and dayz-lead.md UI row",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-orchestrator plans a whole mod and runs leads, workers and checks; start with claude --agent agentic-z:dayz-orchestrator",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-orchestrator.md description and steps 1-8; docs/dayz-modding.md line 349",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-mod-architect plans classes, files, assets and a task list; started by the orchestrator",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-mod-architect.md; listed in orchestrator Agent() tools",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-lead runs one team (script, config, art, UI, server, release) and its review checks",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-lead.md 'Your workers' table with six teams; gates mod-reviewer and layout-validator",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-build-checker and dayz-ingame-tester are backup checks used when /dayz-gate itself fails",
+     "status": "true",
+     "evidence": "Both agent descriptions say fallback on /dayz-gate exit 2; orchestrator step 5 ERROR branch",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-build-engineer builds the PBO and starts a test session",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-build-engineer.md (model: haiku); orchestrator step 7",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-docs-writer writes README, changelog and classname list",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-docs-writer.md (model: sonnet) description",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-persistence-specialist exists (saving data, save versions, base building, pre-release data audit)",
+     "status": "false",
+     "evidence": "No .claude/agents/dayz-persistence-specialist.md; not in plugin.json",
+     "work": "Write agent plus references/ pack, verify facts against P:, evals, add to script lead (audit to server lead) in dayz-lead.md, router rules.json and dayz-router.md, reviewer/debugger owner lists, triage owners, plugin.json; carve 'persistence' out of dayz-script-specialist description",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-ai-specialist exists (infected, animals, human AI patrols, written from scratch)",
+     "status": "false",
+     "evidence": "No agent file; not in plugin.json",
+     "work": "Write agent plus own reference pack (Expansion behavior learned only, no copied code), evals, script-lead wiring, router, owner lists, plugin.json",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-vehicle-specialist exists (cars, boats, helicopters)",
+     "status": "false",
+     "evidence": "No agent file; not in plugin.json",
+     "work": "Write agent plus reference pack, evals, config-lead wiring, router, owner lists, plugin.json; define split with dayz-config-specialist",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-weapon-specialist exists (weapons, mags, ammo, attachments, recoil, fire modes)",
+     "status": "false",
+     "evidence": "No agent file; not in plugin.json",
+     "work": "Write agent plus reference pack, evals, config-lead wiring, router, owner lists, plugin.json; define split with config-specialist (CfgWeapons/CfgMagazines today)",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-wearables-specialist exists (clothing, characters, slots, protection, color variants, proxies)",
+     "status": "false",
+     "evidence": "No agent file; not in plugin.json",
+     "work": "Write agent plus reference pack, evals, art-lead wiring, router, owner lists, plugin.json",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-animation-specialist exists (model.cfg animations, RTM, Blender handoff)",
+     "status": "false",
+     "evidence": "No agent file; not in plugin.json; model.cfg currently owned by dayz-object-builder",
+     "work": "Write agent plus reference pack, evals, art-lead wiring, router, owner lists, plugin.json; split model.cfg ownership with object-builder",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-audio-fx-specialist exists (sound shaders, sound sets, particle effects)",
+     "status": "false",
+     "evidence": "No agent file; /dayz-particles skill exists but no agent",
+     "work": "Write agent plus reference pack (reuse dayz-particles), evals, 'any lead' wiring, router, owner lists, plugin.json",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-physics-specialist exists (weight, collision LODs, dropping, throwing, contact)",
+     "status": "false",
+     "evidence": "No agent file; not in plugin.json",
+     "work": "Write agent plus reference pack, evals, 'any lead' wiring, router, owner lists, plugin.json; split Geometry LOD/mass with object-builder",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-router is a cheap Haiku agent used by /dayz-route",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-router.md model: haiku; dayz-route SKILL.md falls back to it",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "agent-creator writes and checks new agent files",
+     "status": "true",
+     "evidence": ".claude/agents/agent-creator.md description and RPC-style example",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Mod team chart: user approves the mod plan before work starts",
+     "status": "true",
+     "evidence": "dayz-orchestrator.md step 3 'wait for their yes before any worker starts'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Chart: shared playbook = DayZ conventions and script style",
+     "status": "true",
+     "evidence": ".claude/skills/_shared/dayz-conventions.md, conventions/*.md, enscript-style.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Chart: orchestrator splits the mod into small tasks; architect plans classes, files and assets first",
+     "status": "true",
+     "evidence": "dayz-orchestrator.md steps 2-4; dayz-mod-architect.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Chart: six team leads (script, config, art, UI, server, release)",
+     "status": "true",
+     "evidence": "dayz-lead.md workers table; one generic lead agent started per team",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Chart: script lead workers = script engineer, Workbench plugins",
+     "status": "true",
+     "evidence": "dayz-lead.md Script row",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Chart: config lead worker = config engineer",
+     "status": "true",
+     "evidence": "dayz-lead.md Config row",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Chart: art lead workers = Object Builder, Textures",
+     "status": "true",
+     "evidence": "dayz-lead.md Art row (object-builder, asset-specialist)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Chart: UI lead workers = UI engineer, Figma cleaner, Figma to layout",
+     "status": "true",
+     "evidence": "dayz-lead.md UI row",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Chart: server lead workers = server admin, map builder",
+     "status": "true",
+     "evidence": "dayz-lead.md Server row",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Chart: release lead workers = build engineer, docs writer",
+     "status": "true",
+     "evidence": "dayz-lead.md Release row",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Chart: Saving data and AI workers under the script lead",
+     "status": "false",
+     "evidence": "dayz-lead.md Script row lists only script-specialist and workbench-specialist",
+     "work": "Add persistence and AI specialists to Script row once built",
+     "size": "S"
+    },
+    {
+     "claim": "Chart: Vehicles and Weapons workers under the config lead",
+     "status": "false",
+     "evidence": "dayz-lead.md Config row lists only config-specialist",
+     "work": "Add vehicle and weapon specialists to Config row once built",
+     "size": "S"
+    },
+    {
+     "claim": "Chart: Wearables and Animation workers under the art lead",
+     "status": "false",
+     "evidence": "dayz-lead.md Art row lists only object-builder and asset-specialist",
+     "work": "Add wearables and animation specialists to Art row once built",
+     "size": "S"
+    },
+    {
+     "claim": "Chart: Physics and Audio/FX serve every lead",
+     "status": "false",
+     "evidence": "No 'any team' row in dayz-lead.md; agents do not exist",
+     "work": "Add an 'Any team' row to dayz-lead.md and orchestrator team list once agents exist",
+     "size": "S"
+    },
+    {
+     "claim": "Chart: worker copy counts per lead (script x2-6, config x1-4, art x1-4, UI x1-4, server x1-3, release x1-2)",
+     "status": "partial",
+     "evidence": "dayz-lead.md step 2 starts one worker per task, parallel only when files differ; no per-team counts or caps anywhere in .claude",
+     "work": "Either add per-team parallelism caps to dayz-lead.md or drop the numbers from the chart",
+     "size": "S"
+    },
+    {
+     "claim": "Every worker searches the game files (vanilla) first",
+     "status": "partial",
+     "evidence": "Search line (Grep, then RAG, verify with get_dayz_file) in script, config, asset, object-builder, map, server-admin, workbench, ui, architect, reviewer, debugger, layout-validator; absent from dayz-docs-writer, dayz-build-engineer, figma-node-normalizer, figma-to-dayz-layout body search rule",
+     "work": "Add a vanilla-first search line where it applies (figma-to-dayz-layout at least) or soften the guide wording",
+     "size": "S"
+    },
+    {
+     "claim": "Every worker loads the playbook (Tier 2)",
+     "status": "partial",
+     "evidence": "All DayZ agents say 'Follow Tier 2 (dayz-conventions.md ...)' except figma-node-normalizer (no conventions reference found)",
+     "work": "Add Tier 2 line to figma-node-normalizer.md",
+     "size": "S"
+    },
+    {
+     "claim": "Each finished task passes four gatekeepers: mod review, build check, layout check, in-game test",
+     "status": "true",
+     "evidence": "dayz-lead.md gates (reviewer, layout-validator); orchestrator step 5 (/dayz-gate build, /dayz-gate ingame)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Gate: mod review checks the DayZ conventions",
+     "status": "true",
+     "evidence": "dayz-mod-reviewer.md follows Tier 1 and Tier 2 plus topic files",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Gate: build check = PBO packs clean",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-gate/SKILL.md: build packs the mod and checks AddonBuilder output",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Gate: layout check = UI matches the design",
+     "status": "partial",
+     "evidence": "dayz-layout-validator.md checks .layout against the Figma-to-DayZ rules doc (format, widget classes), not visual match to the design",
+     "work": "Reword guide to 'layout follows the Figma-to-DayZ rules' or add a design comparison (visual check is a separate workflow)",
+     "size": "S"
+    },
+    {
+     "claim": "Gate: in-game test = loads in game, logs clean",
+     "status": "true",
+     "evidence": "dayz-gate SKILL.md ingame runs a test session and checks new log lines; dayz-ingame-tester fallback",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Failures go to the debugger, which finds the cause and sends it back to the worker",
+     "status": "partial",
+     "evidence": "dayz-orchestrator.md step 5: triage 'known' failures (48 entries in known-errors.json) go straight to the owning lead with the fix, only 'new' ones go to dayz-mod-debugger; debugger names owner, lead re-briefs the worker",
+     "work": "Guide wording: say known errors skip the debugger via triage",
+     "size": "S"
+    },
+    {
+     "claim": "Passing work is packed into a PBO on a test server by the release lead",
+     "status": "true",
+     "evidence": "dayz-orchestrator.md step 7 (release lead's dayz-build-engineer builds and launches a session)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "User gives the final yes and publishes to the Steam Workshop",
+     "status": "true",
+     "evidence": "dayz-orchestrator.md step 8: user publishes with DayZ Tools Publisher after their yes",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Your corrections become playbook rules, only with your yes",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-record-correction/SKILL.md line 9 'Nothing is written without their yes', step 3 'only after yes'; orchestrator Rules runs it",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Leads run the mod review and layout check on each task",
+     "status": "true",
+     "evidence": "dayz-lead.md 'Your gates' and step 3",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Orchestrator runs build check and in-game test once per wave, one at a time, because there is one mod folder and one test session",
+     "status": "true",
+     "evidence": "dayz-orchestrator.md team list and step 5; dayz-lead.md forbids leads from running /dayz-gate",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "A big mod might run 10 to 20 workers at once",
+     "status": "partial",
+     "evidence": "No number in repo; parallelism limited to tasks touching different files in one shared checkout (dayz-lead.md step 2, orchestrator step 4); never measured, no live DayZ run yet (handoff section 2)",
+     "work": "Verify on a real mod build or drop the figure",
+     "size": "S"
+    },
+    {
+     "claim": "Start the team with claude --agent agentic-z:dayz-orchestrator; it plans with you and waits for your yes, then runs waves",
+     "status": "true",
+     "evidence": "dayz-orchestrator.md description and steps 2-6",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Nothing reaches you until it builds and loads in game with clean logs",
+     "status": "true",
+     "evidence": "dayz-orchestrator.md step 7 only after every task passed both wave gates",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Wave chart: workers do one task each",
+     "status": "true",
+     "evidence": "dayz-lead.md step 2 'one worker per task'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Wave chart: layout check runs on UI tasks only",
+     "status": "true",
+     "evidence": "dayz-lead.md: layout-validator for any task that changes a .layout",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Wave chart: any FAIL goes to the debugger, then back to the worker with notes",
+     "status": "partial",
+     "evidence": "Reviewer/validator failures go back to the worker directly, debugger only if cause unclear (dayz-lead.md step 4); known gate failures skip the debugger (orchestrator step 5)",
+     "work": "Fix guide chart labels to show the direct-fix and known-error paths",
+     "size": "S"
+    },
+    {
+     "claim": "Tier 1 = CLAUDE.md, AGENTS.md, GEMINI.md, every agent, every task",
+     "status": "true",
+     "evidence": "Three files byte-identical (md5 09797f71...); CLAUDE.md tiers table",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Tier 2 = .claude/skills/_shared/dayz-conventions.md, all DayZ work",
+     "status": "true",
+     "evidence": "File exists; also split into .claude/skills/_shared/conventions/{assets,config,scripts,server,ui}.md",
+     "work": "Optionally mention the topic files in the guide chart",
+     "size": "S"
+    },
+    {
+     "claim": "Tier 3 = agents, skills, knowledge packs, only what the task needs",
+     "status": "true",
+     "evidence": ".claude/agents/, .claude/skills/, .claude/skills/_shared/enscript, figma-to-dayz-rules.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "The more specific tier wins",
+     "status": "true",
+     "evidence": "CLAUDE.md line 11",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-record-correction turns your corrections into rules",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-record-correction/SKILL.md; registered in plugin.json",
+     "work": "",
+     "size": "none"
+    }
+   ],
+   "stale_claims": [
+    "Mod team chart legend 'NEW: Not in Agentic-Z today' tags the orchestrator, mod architect, team leads, build engineer, build check and in-game test gates, but all of these exist now (dayz-orchestrator.md, dayz-mod-architect.md, dayz-lead.md, dayz-build-engineer.md, /dayz-gate); the NEW tags are stale and contradict the guide's 'finished product' framing",
+    "Chart desc says 'A new mod orchestrator ... six new team leads': 'new' is stale for the same reason",
+    "Mod team chart orders gatekeepers Mod review, Build check, Layout check, In-game test, while the wave chart and dayz-lead.md run the layout check per task before the wave build check; the first chart's order is outdated",
+    "Three tiers chart names only dayz-conventions.md for Tier 2; Tier 2 was split (PR #53) into a core file plus _shared/conventions/{config,assets,scripts,ui,server}.md",
+    "plugin.json description still says '22-agent mod team' and '29 DayZ skills' and version 1.6.0; the guide's agent table lists 30 agents, so the manifest text needs updating as specialists land"
+   ],
+   "risks": [
+    "dayz-ai-specialist 'written from scratch' must stay so: private rule forbids copied Expansion or VPP code; its reference pack must be original and verified against P:",
+    "New specialists' reference packs must not carry over the knowledge pack's MIT label or StarDZ text, structure or credits (private rules); no StarDZ, debinarizing or MIT mentions were found in agents, _shared packs, CLAUDE.md or docs/dayz-modding.md",
+    "Ownership overlap to resolve before building: dayz-script-specialist description already claims persistence; config-specialist claims CfgWeapons/CfgMagazines (weapon specialist) and vehicles; object-builder owns model.cfg (animation specialist) and Geometry LOD mass (physics specialist); /dayz-particles vs audio-fx. Router, reviewer and debugger owner lists and triage owner_agent values must be updated consistently or routing will split",
+    "Animation specialist 'Blender handoff' must not pull Blender tooling into core: handoff says Blender tools are Later/add-on only",
+    "Worker copy counts (x2-6 etc.) and '10 to 20 workers at once' are unverified; no real DayZ end-to-end run has happened yet (handoff section 2), so Brian should decide whether to keep the numbers",
+    "In-game verification of new specialists needs DayZ launched on Brian's PC: ask first (handoff section 6)"
+   ]
+  },
+  {
+   "group": "skills",
+   "items": [
+    {
+     "claim": "RAG diagram: vanilla files on P: (scripts, configs, layouts) are an indexed input",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-search-index/index.py EXT_TYPE_MAP indexes .c/.cpp/.hpp/.h/.layout/.cfg/.rvmat/.xml/.json/.csv from P:\\ vanilla folders",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "RAG diagram: Bohemia wiki DayZ pages are an indexed input",
+     "status": "false",
+     "evidence": "PR #56 (e91613b) deleted .claude/skills/dayz-search-wiki-index and the wiki code in server.py; no wiki index exists (handoff 9)",
+     "work": "Remove the Bohemia wiki box from the guide's RAG diagram",
+     "size": "S"
+    },
+    {
+     "claim": "Indexer is /dayz-search-index",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-search-index/SKILL.md, index.py; registered in .claude-plugin/plugin.json; scripts/dayz/search-index.bat",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Embeddings use Voyage AI voyage-code-3",
+     "status": "true",
+     "evidence": ".claude/mcp/dayz-rag/server.py DEFAULT_EMBED_MODEL = \"voyage-code-3\"; ~/.claude/dayz-search-index/manifest.json embed_model voyage-code-3",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Index stored in LanceDB on your disk",
+     "status": "true",
+     "evidence": "server.py INDEX_ROOT = ~/.claude/dayz-search-index, lancedb.connect(INDEX_ROOT/lancedb); local folder exists with 52,048 chunks",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-rag MCP server serves the agents",
+     "status": "true",
+     "evidence": ".claude-plugin/plugin.json mcpServers.dayz-rag -> .claude/mcp/dayz-rag/server.py; .mcp.json for clones",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Agent opens the real file to verify a hit",
+     "status": "true",
+     "evidence": "get_dayz_file tool in server.py; Tier 2 dayz-conventions.md lines 79-100 cite-then-verify rule",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-search-download installs a prebuilt index instead of building",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-search-download/download.py + SKILL.md; GitHub release 1.4.0 has dayz-rag-index-v0.1.0.tar.gz (216 MB, May 2026)",
+     "work": "Optional: publish a fresher index asset with the next release (current asset predates the Aug 2026 rebuild)",
+     "size": "S"
+    },
+    {
+     "claim": "Tool search_dayz_source searches vanilla scripts, configs, layouts and materials by meaning",
+     "status": "true",
+     "evidence": "server.py search_dayz_source docstring: Enforce Script, layouts, configs, materials; file_type filter includes rvmat",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Tool search_dayz_wiki searches the Bohemia wiki",
+     "status": "false",
+     "evidence": "server.py now defines only search_dayz_source, get_dayz_file, list_indexed_sources (PR #56 removed search_dayz_wiki)",
+     "work": "Delete the search_dayz_wiki row from the guide's RAG tool table",
+     "size": "S"
+    },
+    {
+     "claim": "Tool get_dayz_file opens an exact file and line range on P:",
+     "status": "true",
+     "evidence": "server.py get_dayz_file(path, line_start, line_end), path must be under P:\\, files over 200 KB need a range",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Tool list_indexed_sources shows what is indexed and when",
+     "status": "true",
+     "evidence": "server.py list_indexed_sources returns manifest with per-type counts, embed model, indexed_at",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Agents Grep first for exact names, RAG for questions by meaning",
+     "status": "true",
+     "evidence": ".claude/skills/_shared/dayz-conventions.md:79-80 and :130",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "A hit is only a hint until the real file is opened; answers carry path:line references",
+     "status": "true",
+     "evidence": "dayz-conventions.md:100 'Cite vanilla as path:line_start-line_end'; server.py returns is_stale and tells callers to verify",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Token savers intro: mechanical work moved out of the AI (gate, triage, route, hooks, status line, panel)",
+     "status": "true",
+     "evidence": "docs/token-saving.md; skills dayz-gate, dayz-route, dayz-statusline; hooks/hooks.json; mods/agentic-z-panel",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Routing chain: keyword rules (free), then Jev if TYPESAFE_API_KEY set, then dayz-router on Haiku; each step only if prior not confident",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-route/route.py, rules.json (threshold 0.8), jev.py skips without TYPESAFE_API_KEY, falls to next: dayz-router; .claude/agents/dayz-router.md model: haiku",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Script-only checks: /dayz-gate build <ModName> and /dayz-gate ingame <ModName> print PASS or FAIL with no AI",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-gate/gate.py subparsers build and ingame; verdict PASS/FAIL on first line, exit 0/1; scripts/dayz/gate.bat",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Log triage matches failures against 24 known errors with fix and owner",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-gate/known-errors.json has 24 entries each with meaning, fix, owner_agent",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Only new errors go to the debugger",
+     "status": "true",
+     "evidence": "triage.py docstring: everything else is 'new' and goes to dayz-mod-debugger",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Triage runs inside /dayz-gate; triage.py --learn adds your own",
+     "status": "true",
+     "evidence": "triage.py lives in dayz-gate and has learn() with --learn <id> --fingerprint, per-project gitignored file; scripts/dayz/triage.bat",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Router usage: /dayz-route \"<request>\" and the AI runs it first",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-route/SKILL.md; CLAUDE.md/AGENTS.md/GEMINI.md 'run /dayz-route before picking a handler'; scripts/dayz/route.bat",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Edit hooks check config.cpp and .layout syntax after every edit",
+     "status": "true",
+     "evidence": "hooks/hooks.json PostToolUse Edit|Write|MultiEdit -> hooks/edit_check.py (braces, semicolons, arrays, layout brace format)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Edit hooks block edits to other mods while scoped",
+     "status": "true",
+     "evidence": "hooks/hooks.json PreToolUse -> hooks/scope_guard.py reading .claude/local-memory/dayz-active-scope.json",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Edit hooks are automatic with the plugin",
+     "status": "true",
+     "evidence": "hooks/hooks.json at plugin root uses ${CLAUDE_PLUGIN_ROOT}; plugin auto-loads hooks/hooks.json",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Status line shows P:, active mod, whether DayZ Diag is running and search index age",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-statusline/statusline.py render: 'P: mounted | mod X | Diag off | RAG 3d old'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-statusline is run once per project",
+     "status": "true",
+     "evidence": "install.py writes statusLine into <project>/.claude/settings.local.json (backs up first)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Launcher panel beside the chat with buttons for mount P:, build, launch, stop, Workbench and Object Builder",
+     "status": "true",
+     "evidence": "mods/agentic-z-panel/hooks/register.tsx buttons Mount P:, Build PBO, Check build, Check in game, Deploy, Launch test, Stop test, Open Workbench, Open Object Builder, Refresh",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Panel install: /plugin install agentic-z-panel@dayz-n-chill, then /dayz-panel",
+     "status": "true",
+     "evidence": ".claude-plugin/marketplace.json name dayz-n-chill lists agentic-z-panel 0.2.0; register.tsx registers command dayz-panel",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Cheaper models: simple roles run on Haiku or Sonnet automatically",
+     "status": "true",
+     "evidence": "model: haiku in dayz-build-engineer.md and dayz-router.md; model: sonnet in dayz-docs-writer.md (only 3 of 22 agents pinned)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Smaller rules: DayZ rules split by topic; typical agent run reads 31% less",
+     "status": "true",
+     "evidence": ".claude/skills/_shared/conventions/{assets,config,scripts,server,ui}.md; docs/token-saving.md:156 '4,541 to 3,152 lines (31% less)' across 19 agents",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Every skill that does DayZ work checks the environment first with /dayz-preflight",
+     "status": "partial",
+     "evidence": "Most SKILL.md gate on preflight, but dayz-stop-test (by design), dayz-particles (reference only), dayz-route, dayz-record-correction, dayz-scope-mod and dayz-search-download do not",
+     "work": "Reword the guide intro to 'Every skill that touches P: or DayZ Tools ...' and note stop-test is the emergency exception",
+     "size": "S"
+    },
+    {
+     "claim": "Every skill: 'slash commands any agent or person can run'",
+     "status": "partial",
+     "evidence": "sync-skills, docs-sync, clean-repo and agentic-z-update exist in .claude/skills but are not in .claude-plugin/plugin.json skills, so plugin-only users do not get them; /dayz-panel only with the separate panel plugin",
+     "work": "Mark the Team and repo rows (except record-correction) as clone-only in the guide, or register them in plugin.json",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-init: setup wizard on first run, hub afterwards",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-init/SKILL.md description; plugin.json",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-preflight checks P drive, DayZ Tools, vanilla data and the Workshop link",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-preflight/SKILL.md (P:\\ mounted, DayZ Tools, vanilla data, P:\\Mods junction)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-workdrive mounts P drive without opening DayZ Tools",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-workdrive/SKILL.md description",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-setup-objectbuilder configures Object Builder on a new machine",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-setup-objectbuilder/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-new-mod creates a new mod with standard folders and files",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-new-mod/SKILL.md; scripts/dayz/new-mod.bat",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-import-mod brings an existing mod folder into the workspace",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-import-mod/SKILL.md (links it, does not move source)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-add-scaffold adds missing standard pieces to an existing mod",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-add-scaffold/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-scope-mod locks editing to one mod",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-scope-mod/SKILL.md plus hooks/scope_guard.py",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-clean-workspace removes mods it created and their builds",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-clean-workspace/SKILL.md (scaffolds, junction, deploy folder; never imported source)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-build-pbo packs a mod into a PBO with AddonBuilder",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-build-pbo/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-deploy-pbo copies an imported mod's prebuilt PBOs into place",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-deploy-pbo/SKILL.md (workspace bundle Addons and Keys to P:\\Mods\\@Mod)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-add-server sets up a local test server instance",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-add-server/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-launch-test starts a diag server and client with your mods",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-launch-test/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-stop-test stops the test session",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-stop-test/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-cot-bootstrap gives you admin in COT on the test server",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-cot-bootstrap/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-pack-texture converts images to .paa and checks suffixes",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-pack-texture/SKILL.md (ImageToPAA, _co/_ca/_nohq/_smdi check)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-build-imageset packs UI sprites into an imageset",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-build-imageset/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-p3d-audit finds collision, physics and structure problems in models",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-p3d-audit/SKILL.md (report only)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-particles builds particle effects without Workbench",
+     "status": "partial",
+     "evidence": ".claude/skills/dayz-particles/SKILL.md: 'reference only; it runs no scripts' - it guides authoring, does not build",
+     "work": "Reword the row to 'Reference for making particle effects without Workbench', or add a builder script",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-launch-objectbuilder opens Object Builder on a model",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-launch-objectbuilder/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-launch-workbench opens Workbench on a mod's project",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-launch-workbench/SKILL.md (gproj)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-edit-types adds, changes or removes a types.xml entry",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-edit-types/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-split-types splits one big types.xml into 18 category files",
+     "status": "false",
+     "evidence": ".claude/skills/dayz-split-types/SKILL.md:42 writes one file for each of 19 categories (ammo ... uncategorized)",
+     "work": "Change 18 to 19 in the guide",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-search-index builds the game-files index",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-search-index/SKILL.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-search-wiki-index builds the wiki index",
+     "status": "false",
+     "evidence": "Skill folder, wiki page and scripts/dayz/search-wiki-index.bat deleted in PR #56",
+     "work": "Delete the row from the guide",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-search-download downloads a prebuilt index",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-search-download/download.py, SHA-256 verified; release 1.4.0 asset",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-record-correction turns your correction into a team rule",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-record-correction/SKILL.md; plugin.json",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/sync-skills links skills into Claude Code, Codex and Gemini (clones only)",
+     "status": "true",
+     "evidence": ".claude/skills/sync-skills/SKILL.md, agents.json; not in plugin.json",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/agentic-z-update pulls template updates into a clone",
+     "status": "true",
+     "evidence": ".claude/skills/agentic-z-update/SKILL.md (clone only, not in plugin.json)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/docs-sync keeps the wiki matching the source files",
+     "status": "true",
+     "evidence": ".claude/skills/docs-sync/SKILL.md mirrors into Docusaurus wiki/docs/ (clone only)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/clean-repo clears generated files before a push",
+     "status": "true",
+     "evidence": ".claude/skills/clean-repo/SKILL.md 'full pre-push reset' (clone only)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-gate: build or in-game check printing PASS or FAIL with known-error triage",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-gate/gate.py, triage.py; plugin.json",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-route shows which skill, specialist or team should handle a request",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-route/SKILL.md, route.py",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-statusline installs a status line with P:, active mod, DayZ Diag and index age",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-statusline/install.py, statusline.py",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-panel opens the agentic-z-panel buttons (separate plugin)",
+     "status": "true",
+     "evidence": "mods/agentic-z-panel/hooks/register.tsx command dayz-panel; marketplace.json second plugin",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "/dayz-lint finds load-stopping errors before packing and runs inside the build check",
+     "status": "false",
+     "evidence": "No .claude/skills/dayz-lint; no lint call in dayz-gate/gate.py or dayz-build-pbo",
+     "work": "Write own linter skill (boot-time errors), call it first from /dayz-gate build and /dayz-build-pbo, feed findings to triage; .bat + scripts/README row, tests, plugin.json, rules.json, dayz-router.md",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-recipe starts a mod from a template (new weapon, new vest, new craftable) that pre-fills the plan",
+     "status": "false",
+     "evidence": "No skill folder; not in plugin.json or rules.json",
+     "work": "Build skill with three recipe templates feeding dayz-mod-architect, plus .bat, tests, registration",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-logwatch watches logs during a test and flags script errors as they appear",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Build tailing script over client/server RPT and script logs using triage.py, plus .bat, tests, registration, panel button",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-release-pack writes Workshop description, changelog, classname list and install notes",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Build skill (classname extraction from config.cpp, changelog from git, templates), .bat, tests, registration",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-server-kit zips types.xml entries, cfgeconomycore lines, load order and keys",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Build zip script over mod types and Keys, .bat, tests, registration",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-upgrade-guard re-indexes after a DayZ update and flags mod classes whose vanilla parents changed",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Build: snapshot/diff vanilla class parents (re-run index), cross-reference mod classes, .bat, tests, registration",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-conflict-check loads the mod with CF, COT and Expansion and reports collisions",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Build: static class/path collision scan plus optional /dayz-gate ingame run with deps; needs those mods on P:; .bat, tests, registration",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-balance compares item stats with similar vanilla items and flags outliers",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Build config.cpp stat parser and vanilla comparison, .bat, tests, registration",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-health shows a page per mod with last build, last test, open findings and test history",
+     "status": "false",
+     "evidence": "No skill folder; no gate history store",
+     "work": "Persist gate results per mod, build report page/skill, .bat, tests, registration",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-ask answers a plain-English vanilla question with path:line citations",
+     "status": "false",
+     "evidence": "No skill folder (capability exists via dayz-rag tools but no command)",
+     "work": "Thin skill over search_dayz_source + get_dayz_file with citation format, .bat, tests, registration",
+     "size": "S"
+    }
+   ],
+   "stale_claims": [
+    "RAG diagram lists 'Bohemia wiki DayZ pages' as an input; wiki indexing was dropped in PR #56",
+    "RAG tool table row search_dayz_wiki; the tool was removed from server.py in PR #56",
+    "Every skill table row /dayz-search-wiki-index 'Builds the wiki index'; skill deleted in PR #56",
+    "Handoff section 0 row 'Wiki search: Brian decides' is now resolved (dropped in PR #56); guide must not imply a wiki source",
+    "Handoff sections 0 and 2 say PR #53 is open; it is merged (1b893ba)",
+    "/dayz-split-types says 18 category files; the skill writes 19",
+    "Repo leftover outside the guide: docs/README.md line 3 still says the RAG covers 'the Bohemia wiki' after PR #56",
+    "plugin.json description says '29 DayZ skills' and version 1.6.0 while the guide describes the finished v2 set (39+ commands); marketplace/plugin versions not bumped",
+    "Latest GitHub release with the prebuilt index is 1.4.0 (May 2026, asset dayz-rag-index-v0.1.0.tar.gz), older than the plugin 1.6.0 and the Aug 2026 local index"
+   ],
+   "risks": [
+    "Private rule (debinarizer never in any doc): .claude/skills/_shared/conventions/assets.md:30 says a vanilla model was 'debinarized' for verification, and docs/release-notes/1.2.0.md and 1.6.0.md name dayz-p3d-debin; Brian should decide whether those mentions must be scrubbed from develop",
+    "Private-rule check of my sections: no StarDZ, MIT label or debinarizing text found in the RAG search, Token savers or Every skill sections; the only MIT hits in the repo are npm dependency licenses in package-lock.json",
+    "Every skill intro claims every DayZ skill runs /dayz-preflight first, but dayz-stop-test is designed not to; the guide should state the exception rather than change the skill",
+    "Four 'Team and repo' skills (sync-skills, agentic-z-update, docs-sync, clean-repo) are not in plugin.json, so plugin installs do not have them; Brian decides between marking them clone-only in the guide or registering them",
+    "/dayz-conflict-check needs CF, COT and Expansion present on P: and a live DayZ session; in-game testing on Brian's PC needs his go-ahead",
+    "Search needs VOYAGE_API_KEY even with the downloaded index (query embedding); no VOYAGE_API_KEY line is set in H:/Projects/Agentic-Z/.env, so RAG search does not work on this machine yet",
+    "Installed plugin on this machine is still 1.6.0 and still exposes search_dayz_wiki (mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki in this session) and the old search-hang bug until a new release ships",
+    "/dayz-particles is reference-only; guide says it 'builds' effects. Brian decides whether to reword or build a generator",
+    "The 'Workflows' commands in the Every skill table (10 items including /dayz-lint) are all unbuilt; each also needs a .bat, scripts/README row, tests, plugin.json, rules.json and dayz-router.md registration, which the repo integrity tests enforce"
+   ]
+  },
+  {
+   "group": "specialists",
+   "items": [
+    {
+     "claim": "Agentic-Z has specialists for saving data, vehicles, weapons, wearables, animation, audio, physics and AI",
+     "status": "false",
+     "evidence": ".claude/agents/ holds 22 agents; grep for persistence/vehicle/weapon/wearables/animation/audio-fx/physics/ai-specialist across the repo hits only docs/.updates/Agentic-Z Handoff.md",
+     "work": "Build all eight agents (handoff section 6 steps 4 to 11)",
+     "size": "L"
+    },
+    {
+     "claim": "Each new specialist brings its own reference pack, checked against vanilla files, loaded only when needed",
+     "status": "false",
+     "evidence": "No per-agent references/ folders exist; the only references/ folders are _shared/enscript/references, dayz-p3d-audit/references, dayz-particles/references",
+     "work": "Create one references/ pack per specialist, verified fact by fact against P: by a separate agent",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-lint runs inside /dayz-gate build and stops a mod that would fail to load before packing",
+     "status": "false",
+     "evidence": "No dayz-lint skill under .claude/skills; gate.py has only build and ingame subparsers (lines 618-622); not in plugin.json",
+     "work": "Write our own linter skill, call it first from gate.py build and dayz-build-pbo, feed findings into triage.py, add .bat, tests, plugin.json and router entries",
+     "size": "L"
+    },
+    {
+     "claim": "Team chart: the mod orchestrator is unchanged",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-orchestrator.md: plan, approve, leads, gate build then gate ingame per wave",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Team chart: Script lead runs Script engineer, Workbench plugins, Saving data, AI",
+     "status": "partial",
+     "evidence": "dayz-lead.md workers table: Script = dayz-script-specialist, dayz-workbench-specialist only",
+     "work": "Add dayz-persistence-specialist and dayz-ai-specialist to the Script row",
+     "size": "S"
+    },
+    {
+     "claim": "Team chart: Config lead runs Config engineer, Vehicles, Weapons",
+     "status": "partial",
+     "evidence": "dayz-lead.md: Config = dayz-config-specialist only",
+     "work": "Add vehicle and weapon specialists to the Config row",
+     "size": "S"
+    },
+    {
+     "claim": "Team chart: Art lead runs Object Builder, Textures, Wearables, Animation",
+     "status": "partial",
+     "evidence": "dayz-lead.md: Art = dayz-object-builder, dayz-asset-specialist",
+     "work": "Add wearables and animation specialists to the Art row",
+     "size": "S"
+    },
+    {
+     "claim": "Team chart: UI lead runs UI engineer, Figma cleaner, Figma to layout",
+     "status": "true",
+     "evidence": "dayz-lead.md: UI = dayz-ui-specialist, figma-node-normalizer, figma-to-dayz-layout",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Team chart: Server lead runs Server admin, Map builder, Data audit",
+     "status": "partial",
+     "evidence": "dayz-lead.md: Server = dayz-server-admin, dayz-map-specialist; no data audit role or step in dayz-server-admin.md",
+     "work": "Give server-admin (or server lead brief) a step to receive the persistence audit; or relabel the box",
+     "size": "S"
+    },
+    {
+     "claim": "Team chart: Release lead runs Build engineer, Docs writer",
+     "status": "true",
+     "evidence": "dayz-lead.md: Release = dayz-build-engineer, dayz-docs-writer",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Physics and Audio/FX specialists are shared by all, called by any lead that needs them",
+     "status": "false",
+     "evidence": "Agents absent; dayz-lead.md has no shared/any-lead worker row",
+     "work": "Add an 'Any team' row to dayz-lead.md workers table after the agents exist",
+     "size": "S"
+    },
+    {
+     "claim": "Same gates: /dayz-lint inside /dayz-gate build, then the in-game test",
+     "status": "partial",
+     "evidence": "gate build then gate ingame exists (dayz-gate/SKILL.md, orchestrator step 5); lint missing",
+     "work": "Covered by the /dayz-lint item",
+     "size": "M"
+    },
+    {
+     "claim": "dayz-persistence-specialist covers saving data, save versions, base building, pre-release data-loss check; under Script lead",
+     "status": "false",
+     "evidence": "No agent file; related knowledge only in _shared/enscript/patterns/persistence.md (135 lines) and json_config_migration.md",
+     "work": "Write agent plus references pack (OnStoreSave/OnStoreLoad, versioning, migration, base building), wire into lead, router, reviewer and debugger owner lists, plugin.json",
+     "size": "L"
+    },
+    {
+     "claim": "Persistence hands back versioned save/load code, a migration note, and an audit report for the server lead",
+     "status": "false",
+     "evidence": "No agent; no audit tool or report format anywhere",
+     "work": "Define report format and audit step (field write/read order check); consider a scripted audit",
+     "size": "M"
+    },
+    {
+     "claim": "Persistence workflow: list values, write OnStoreSave/OnStoreLoad with version first, upgrade path, data audit, hand audit to server lead",
+     "status": "false",
+     "evidence": "No agent",
+     "work": "Encode these steps in the agent's Workflow section",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-vehicle-specialist builds cars, boats and helicopters; under Config lead",
+     "status": "false",
+     "evidence": "No agent. Vanilla has P:/scripts/4_world/entities/vehicles/carscript.c and boatscript.c, and native Helicopter/HelicopterAuto in P:/scripts/3_game/vehicles/helicopter.c",
+     "work": "Write agent plus vehicle references pack (simulation, attachments, fluids, crew, damage)",
+     "size": "L"
+    },
+    {
+     "claim": "Vehicle specialist hands back CfgVehicles entries, CarScript or BoatScript class, attachment slots, types.xml entry for the server lead",
+     "status": "false",
+     "evidence": "No agent",
+     "work": "Encode report format in agent",
+     "size": "S"
+    },
+    {
+     "claim": "Vehicle workflow: closest vanilla parent, simulation, attachment slots and fluids, CarScript/BoatScript for seats, doors, damage, types.xml entry; in-game test spawns and drives it",
+     "status": "false",
+     "evidence": "No agent; /dayz-gate ingame only reads logs (SKILL.md 'What ingame does'), cannot spawn or drive",
+     "work": "Agent workflow plus behavior test support (/dayz-gate behavior from handoff 6b)",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-weapon-specialist builds weapons, magazines, ammo, attachments, recoil, fire modes, muzzle effects; inherits from closest vanilla weapon; under Config lead",
+     "status": "false",
+     "evidence": "No agent file",
+     "work": "Write agent plus weapons references pack",
+     "size": "L"
+    },
+    {
+     "claim": "Weapon specialist hands back CfgWeapons, CfgMagazines, CfgAmmo, recoil class, list of model selections and memory points for art",
+     "status": "false",
+     "evidence": "No agent",
+     "work": "Encode report format",
+     "size": "S"
+    },
+    {
+     "claim": "Weapon in-game test fires, reloads and fits each attachment",
+     "status": "false",
+     "evidence": "gate ingame is log-only",
+     "work": "Needs behavior tests (handoff 6b)",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-wearables-specialist builds clothing, gear, characters: slots, cargo, protection, insulation, hidden selections, proxies; under Art lead",
+     "status": "false",
+     "evidence": "No agent file",
+     "work": "Write agent plus wearables references pack",
+     "size": "L"
+    },
+    {
+     "claim": "Wearables hands back config entries, hidden selection names, texture slots per color, proxy notes for Object Builder; in-game test wears it and checks each color",
+     "status": "false",
+     "evidence": "No agent; no behavior tests",
+     "work": "Report format plus behavior test support",
+     "size": "M"
+    },
+    {
+     "claim": "dayz-animation-specialist: model.cfg animations, RTM files, Blender handoff; under Art lead",
+     "status": "false",
+     "evidence": "No agent; model.cfg currently owned by dayz-object-builder.md ('You own .p3d structure and model.cfg')",
+     "work": "Write agent plus references; move or share model.cfg ownership with object-builder and update reviewer/debugger owner lists",
+     "size": "L"
+    },
+    {
+     "claim": "Animation hands back model.cfg entries, selection and bone names, script hook that plays the animation",
+     "status": "false",
+     "evidence": "No agent",
+     "work": "Encode report format",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-audio-fx-specialist: sound shaders, sound sets, range and volume, particles; builds on /dayz-particles; any lead",
+     "status": "partial",
+     "evidence": "No agent; /dayz-particles skill exists with references/ (ptc, emat, script API, vanilla catalog) and is in plugin.json",
+     "work": "Write agent plus audio references pack (CfgSoundShaders/CfgSoundSets), reuse dayz-particles",
+     "size": "L"
+    },
+    {
+     "claim": "Audio/FX hands back CfgSoundShaders and CfgSoundSets entries, particle files, script lines to play them; in-game test listens and looks",
+     "status": "false",
+     "evidence": "No agent; gate cannot listen or look",
+     "work": "Report format; behavior or visual check (handoff 6b /dayz-gate visual)",
+     "size": "M"
+    },
+    {
+     "claim": "dayz-physics-specialist: mass, Geometry and Fire Geometry collisions, drop/throw behavior, contact; any lead",
+     "status": "partial",
+     "evidence": "No agent; some knowledge exists: _shared/enscript/patterns/physics_items.md (51 lines), object-builder LOD rules, dayz-p3d-audit references/p3d-killers.md",
+     "work": "Write agent plus physics references pack",
+     "size": "L"
+    },
+    {
+     "claim": "Physics reads the model's geometry LODs and mass, finds the fault, hands fix to Object Builder or config; in-game test drops, throws and shoots it",
+     "status": "false",
+     "evidence": "No agent; dayz-p3d-audit reads MLOD only (object-builder.md); no behavior tests",
+     "work": "Agent workflow plus behavior tests",
+     "size": "M"
+    },
+    {
+     "claim": "dayz-ai-specialist: infected, animals and human AI patrols/guards; learns other modders' patterns, writes own version; under Script lead",
+     "status": "false",
+     "evidence": "No agent file",
+     "work": "Write agent plus AI references pack from vanilla infected/animal code",
+     "size": "L"
+    },
+    {
+     "claim": "AI specialist hands back script classes, spawn config for server lead, server performance notes; in-game test watches behavior and performance",
+     "status": "false",
+     "evidence": "No agent; no behavior or performance test",
+     "work": "Report format plus behavior test support",
+     "size": "M"
+    },
+    {
+     "claim": "Knowledge check pipeline: research, own reference, separate agent verifies vs P:, answer tests (evals), wire in lead/router/reviewer, grade to A+, ship PR/guide/PDFs",
+     "status": "false",
+     "evidence": "No evals folder anywhere in repo; no verification records",
+     "work": "Create evals folder and per-agent answer tests; run the cycle for each specialist",
+     "size": "L"
+    },
+    {
+     "claim": "Existing specialists go deeper: a full Enforce Script reference",
+     "status": "partial",
+     "evidence": "_shared/enscript/ has patterns (10), integrations (5), references (7 files, ~1200 lines), examples (13); not a full reference; README line 9 still says RAG covers 'vanilla source + wiki'",
+     "work": "Extend references to full language/API coverage verified vs P:; fix stale wiki mention",
+     "size": "L"
+    },
+    {
+     "claim": "Existing specialists go deeper: Dabs and widget UI coverage",
+     "status": "partial",
+     "evidence": "_shared/enscript/integrations/dabs_framework.md (180 lines) and references/gui_layout.md (255 lines) exist; dayz-ui-specialist.md and conventions/ui.md never point to them",
+     "work": "Deepen widget coverage and wire the UI specialist to read these packs",
+     "size": "M"
+    },
+    {
+     "claim": "Existing specialists go deeper: a texture and material (rvmat) cookbook",
+     "status": "partial",
+     "evidence": "conventions/assets.md is 32 lines; dayz-p3d-audit/references/config-rvmat-checks.md exists; no cookbook file",
+     "work": "Write texture and rvmat cookbook verified against P:/dz rvmats, wire into dayz-asset-specialist",
+     "size": "M"
+    },
+    {
+     "claim": "Existing specialists go deeper: model and LOD rules",
+     "status": "partial",
+     "evidence": "dayz-object-builder.md 'DayZ model rules', conventions/assets.md LOD table, p3d-audit references exist",
+     "work": "Consolidate into a model and LOD reference pack for object-builder",
+     "size": "M"
+    },
+    {
+     "claim": "Existing specialists go deeper: animated doors",
+     "status": "false",
+     "evidence": "grep 'door' in .claude agents/skills: no door coverage (only 'front door' in dayz-init and a particle catalog hit)",
+     "work": "Add doors (model.cfg, selections, user actions, script) to object-builder or animation pack",
+     "size": "M"
+    },
+    {
+     "claim": "A short spec step in /dayz-init before building",
+     "status": "false",
+     "evidence": "dayz-init/plan.py steps: new-mod/import, record, add-server, build, launch; SKILL.md Step 4 says don't ask for yes/no",
+     "work": "Add a spec step to dayz-init SKILL.md and plan.py with tests",
+     "size": "M"
+    },
+    {
+     "claim": "A layout preview at several screen sizes",
+     "status": "false",
+     "evidence": "No preview tool or skill; 'preview' hits are unrelated (13_item_preview.layout example, update/setup skills)",
+     "work": "Build a layout preview renderer/skill with tests, .bat, registration",
+     "size": "L"
+    },
+    {
+     "claim": "Every task goes through the same loop: user approves plan, orchestrator to leads, leads to specialists, gates check",
+     "status": "true",
+     "evidence": "dayz-orchestrator.md 'How a build runs'; dayz-lead.md 'How you run a task'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Every specialist starts with a RAG search of the vanilla files and reads the real file before writing",
+     "status": "partial",
+     "evidence": "Every worker agent's Search line says Grep first, RAG only for meaning or after failed greps, then verify with get_dayz_file/Read",
+     "work": "Reword guide to 'searches the vanilla files (Grep, then RAG)' or change Tier 2 search order",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-script-specialist: searches vanilla class, reads real file, modded class in right layer, calls super",
+     "status": "true",
+     "evidence": "dayz-script-specialist.md Workflow steps 2-4",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-script-specialist: RPCs only where client and server must talk, checks which side runs each line",
+     "status": "true",
+     "evidence": "dayz-script-specialist.md step 5 (IsDedicatedServer gate, minimal RPCs)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Script: build gate compiles it",
+     "status": "partial",
+     "evidence": "gate build runs AddonBuilder only; Enforce Script compiles at game load, caught by gate ingame (gate.py line 526 'script module' compile check)",
+     "work": "Reword guide, or have /dayz-lint do a script syntax check",
+     "size": "S"
+    },
+    {
+     "claim": "Script: the in-game gate reads script.log for errors",
+     "status": "true",
+     "evidence": "dayz-gate/SKILL.md 'What ingame does'; dayz-ingame-tester.md step 4",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-workbench-specialist reads how vanilla Workbench plugins are registered",
+     "status": "true",
+     "evidence": "dayz-workbench-specialist.md 'Verify before you write' step 1",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Workbench specialist writes the plugin script and its tool panel",
+     "status": "partial",
+     "evidence": "Agent writes plugins; no mention of a tool panel",
+     "work": "Add tool panel (dialog/attributes) guidance",
+     "size": "S"
+    },
+    {
+     "claim": "Workbench specialist opens Workbench with /dayz-launch-workbench to load it",
+     "status": "false",
+     "evidence": "No agent references launch-workbench; dayz-workbench-specialist tools lack Skill and Bash",
+     "work": "Add Skill tool and the step, or reword guide to 'tells the user how to load it'",
+     "size": "S"
+    },
+    {
+     "claim": "Workbench specialist returns the plugin and how to run it",
+     "status": "true",
+     "evidence": "Report section: files, APIs, how to load the plugin",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-config-specialist finds closest vanilla parent with RAG search",
+     "status": "true",
+     "evidence": "dayz-config-specialist.md Workflow step 1 and Search line",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Config writes CfgPatches with right requiredAddons, then the class",
+     "status": "true",
+     "evidence": "Workflow steps 2-3",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Config matches hiddenSelections to names in the model",
+     "status": "true",
+     "evidence": "Workflow step 4",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Config: /dayz-lint and the build gate check it loads",
+     "status": "partial",
+     "evidence": "Build gate exists; /dayz-lint does not",
+     "work": "Covered by /dayz-lint item",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-object-builder sets up LODs: visual, geometry, fire geometry, view geometry, memory",
+     "status": "true",
+     "evidence": "dayz-object-builder.md DayZ model rules",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Object builder names selections and memory points the config and animations need",
+     "status": "true",
+     "evidence": "Hidden selections, proxies, bones, pos center memory point rules",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Object builder runs /dayz-p3d-audit on the result",
+     "status": "partial",
+     "evidence": "Agent runs p3d-audit before giving steps (read existing MLOD), not on the result",
+     "work": "Add a post-step audit, or reword",
+     "size": "S"
+    },
+    {
+     "claim": "Object builder hands selection names to the config lead",
+     "status": "partial",
+     "evidence": "Sends config lines to dayz-config-specialist through the art lead",
+     "work": "Reword guide ('through the art lead')",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-asset-specialist checks texture suffixes (_co, _nohq, _smdi and the rest)",
+     "status": "true",
+     "evidence": "dayz-asset-specialist.md Workflow step 1",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Asset specialist packs with /dayz-pack-texture",
+     "status": "true",
+     "evidence": "Workflow step 2; skill in plugin.json",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Asset specialist writes the .rvmat for each material",
+     "status": "true",
+     "evidence": "Workflow step 3",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Asset specialist checks the look in Object Builder or in game",
+     "status": "false",
+     "evidence": "Not in agent; agent cannot see either",
+     "work": "Add a step giving the user what to check, or depend on /dayz-gate visual",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-ui-specialist reads the vanilla layout closest to the new screen",
+     "status": "true",
+     "evidence": "dayz-ui-specialist.md 'Examples to mirror' and 'Searching vanilla'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "UI specialist writes the .layout and the script class that drives it",
+     "status": "true",
+     "evidence": "Agent intro and Rules",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "UI specialist builds icons into an imageset with /dayz-build-imageset",
+     "status": "false",
+     "evidence": "No agent mentions imageset; ui-specialist tools lack Skill and Bash (skill itself exists in plugin.json)",
+     "work": "Add Skill tool and an imageset step",
+     "size": "S"
+    },
+    {
+     "claim": "UI: the layout checker compares it with the design",
+     "status": "false",
+     "evidence": "dayz-layout-validator.md checks against figma-to-dayz-rules.md (syntax, classes, prefixes, Hard NO), not the design",
+     "work": "Add design comparison (Figma JSON vs layout) or reword",
+     "size": "M"
+    },
+    {
+     "claim": "UI: the in-game test opens it",
+     "status": "false",
+     "evidence": "gate ingame only reads logs",
+     "work": "Behavior tests (handoff 6b)",
+     "size": "L"
+    },
+    {
+     "claim": "figma-node-normalizer reads the frame, cleans names and structure, hands tree to the converter",
+     "status": "true",
+     "evidence": "figma-node-normalizer.md Workflow and Report",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "figma-to-dayz-layout turns tree into .layout with only supported widgets, hands to the checker",
+     "status": "true",
+     "evidence": "figma-to-dayz-layout.md Workflow, Rules, Report",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-server-admin writes types.xml entries with /dayz-edit-types",
+     "status": "true",
+     "evidence": "dayz-server-admin.md tasks table",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Server admin adds events, spawn points and gameplay settings",
+     "status": "true",
+     "evidence": "Tasks table: events.xml, cfgeventspawns.xml, cfggameplay.json",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Server admin splits large economy files with /dayz-split-types",
+     "status": "true",
+     "evidence": "Tasks table",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Server admin starts the test server with /dayz-add-server and /dayz-launch-test",
+     "status": "false",
+     "evidence": "Not in dayz-server-admin.md; dayz-lead.md forbids leads' teams starting /dayz-launch-test; build-engineer and orchestrator own sessions",
+     "work": "Reword guide (server admin sets up the instance only) or change the one-session rule",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-map-specialist exports from DayZ Editor, imports into Terrain Builder, sets layers, surfaces, clutter",
+     "status": "partial",
+     "evidence": "dayz-map-specialist.md: layers.cfg, CfgSurfaces, clutter, numbered steps for Terrain Builder/DayZ Editor; no explicit Editor export to TB import flow",
+     "work": "Add explicit Editor export and Terrain Builder import steps",
+     "size": "S"
+    },
+    {
+     "claim": "Map specialist returns the files and steps to rebuild the map",
+     "status": "true",
+     "evidence": "Report section",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-build-engineer packs with /dayz-build-pbo and starts test with /dayz-launch-test",
+     "status": "true",
+     "evidence": "dayz-build-engineer.md steps 2 and 4",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Build engineer reports the build result to the orchestrator",
+     "status": "partial",
+     "evidence": "Reports to the release lead",
+     "work": "Reword guide",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-docs-writer reads what changed in the wave",
+     "status": "partial",
+     "evidence": "Not explicit; agent keeps README/CHANGELOG current from mod files",
+     "work": "Add a 'read the wave's changed files' step",
+     "size": "S"
+    },
+    {
+     "claim": "Docs writer updates README, changelog and classname list",
+     "status": "true",
+     "evidence": "dayz-docs-writer.md 'What you keep current'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Docs writer with /dayz-release-pack writes Workshop text and server-owner notes",
+     "status": "false",
+     "evidence": "No dayz-release-pack skill; docs-writer has no Workshop text",
+     "work": "Build /dayz-release-pack (handoff 6b) and wire into docs writer",
+     "size": "M"
+    },
+    {
+     "claim": "dayz-audio-fx workflow: reads closest vanilla sound/particle, writes shader and set or particle via /dayz-particles, adds script line",
+     "status": "false",
+     "evidence": "No agent",
+     "work": "Encode in new agent",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-wearables workflow: slot and parent, slots/protection/insulation, hidden selections, proxy positions",
+     "status": "false",
+     "evidence": "No agent",
+     "work": "Encode in new agent",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-animation workflow: list moving parts/bones, skeleton and animations in model.cfg, bone names for Blender export, wire script",
+     "status": "false",
+     "evidence": "No agent",
+     "work": "Encode in new agent",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-weapon workflow: closest vanilla weapon parent, weapon/mag/ammo classes, slots, recoil, fire modes, list selections and memory points",
+     "status": "false",
+     "evidence": "No agent",
+     "work": "Encode in new agent",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-ai workflow: study vanilla infected and animal decision code, own script classes, spawn setup for server lead",
+     "status": "false",
+     "evidence": "No agent",
+     "work": "Encode in new agent",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-mod-reviewer reads finished task against DayZ rules file",
+     "status": "true",
+     "evidence": "dayz-mod-reviewer.md: Tier 2 core plus topic files",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Reviewer lists each problem with the specialist who owns it",
+     "status": "partial",
+     "evidence": "Report format names owner, but the owner list has only 9 existing workers",
+     "work": "Add the 8 new specialists to the reviewer's owner list",
+     "size": "S"
+    },
+    {
+     "claim": "Reviewer never edits files",
+     "status": "true",
+     "evidence": "Tools Read, Glob, Grep plus RAG; 'Never edit any file'; test_gates_cannot_edit in scripts/dev/test_repo_integrity.py",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-layout-validator compares .layout with the design",
+     "status": "false",
+     "evidence": "Validator checks against the rules doc, not the design",
+     "work": "Add design comparison or reword",
+     "size": "M"
+    },
+    {
+     "claim": "Layout validator reports PASS or FAIL with each difference",
+     "status": "true",
+     "evidence": "dayz-layout-validator.md Report, gate mode",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-build-checker runs only when /dayz-gate build breaks; reads AddonBuilder output and names failing file",
+     "status": "true",
+     "evidence": "dayz-build-checker.md intro and Report; orchestrator step 5 ERROR branch",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-ingame-tester runs only when /dayz-gate ingame breaks; reads logs and reports failures",
+     "status": "true",
+     "evidence": "dayz-ingame-tester.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-mod-debugger gets new errors triage does not know",
+     "status": "true",
+     "evidence": "dayz-mod-debugger.md 'Read the triage first'; orchestrator sends only 'new' entries",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Debugger reads script.log, RPT and crash files back to the failing line",
+     "status": "true",
+     "evidence": "'Where the logs are' and 'How you diagnose'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Debugger hands cause and fix to the owning lead",
+     "status": "partial",
+     "evidence": "Returns to its caller with Owner named; owner list lacks new specialists; known-errors.json owner_agent values cover only script, config, asset, server-admin, orchestrator, user",
+     "work": "Add new specialists to debugger owner list and triage owners",
+     "size": "S"
+    },
+    {
+     "claim": "New specialists are wired into the router (rules.json and dayz-router.md)",
+     "status": "false",
+     "evidence": "rules.json targets list 13 handlers; dayz-router.md valid routes same 13",
+     "work": "Add routes and keyword rules for each new specialist with router tests",
+     "size": "M"
+    },
+    {
+     "claim": "New specialists registered in plugin.json",
+     "status": "false",
+     "evidence": ".claude-plugin/plugin.json agents list 22 files; description says '22-agent mod team' and '29 DayZ skills'",
+     "work": "Register each agent; update counts in plugin.json, README.md (lines 9, 86), docs/README.md line 236",
+     "size": "S"
+    }
+   ],
+   "stale_claims": [
+    "Guide says every specialist starts with a RAG search; agents use Grep first, then RAG, then verify (Tier 2 'Vanilla source search'); the RAG server no longer searches the wiki after PR #56, so 'RAG search of the vanilla game files' is the only source",
+    "_shared/enscript/README.md line 9 still says the dayz-rag server searches 'vanilla source + wiki' although PR #56 dropped wiki search; the script reference upgrade must fix this",
+    "Guide's 'Build gate compiles it' for scripts: AddonBuilder does not compile Enforce Script; compile errors surface only in /dayz-gate ingame",
+    "Handoff section 2 lists .github/workflows/tests.yml as untracked; it now exists (PR #55 merged)",
+    "Handoff sections 0 and 2 treat PR #53 as open and wiki search as undecided; both are resolved (PR #53 merged, PR #56 dropped the crawler and wiki search)",
+    "Guide says helicopters 'are not in vanilla DayZ'; vanilla ships native Helicopter and HelicopterAuto classes in P:/scripts/3_game/vehicles/helicopter.c (no helicopter content), so the vehicle text should say it builds on those native classes",
+    "Installed plugin (1.6.0) still exposes search_dayz_wiki; the repo no longer does"
+   ],
+   "risks": [
+    "AI specialist: guide says it 'learns the patterns other modders use by studying how they work' while the Workflows table says it studies vanilla infected and animals; handoff says Expansion AI, learned only, never copied. Studying Expansion means reading licensed mod code; Brian must decide whether the source is vanilla only",
+    "Physics, wearables, vehicle and weapon specialists will want vanilla model geometry, but vanilla .p3d is ODOL and dayz-p3d-audit reads MLOD only. The private dayz-p3d-debin skill is visible in this environment; no new agent or pack may reference it or any debinarizing (private rule)",
+    "Research for the new packs uses StarDZ and the knowledge pack as maps only: no credit, no copied text, chapter layout or code samples, and never the pack's MIT label; each fact must be re-verified against P: by a separate agent",
+    "Several guide steps contradict the one-session rule: server-admin 'starts the test server with /dayz-launch-test', workbench specialist 'opens Workbench'; dayz-lead.md forbids team workers starting /dayz-launch-test. Brian decides whether to reword the guide or change the rule",
+    "Every new specialist's in-game step (drive, fire, wear, listen, drop/throw, watch AI) needs behavior tests and a visual check that do not exist; /dayz-gate ingame only reads logs. These depend on handoff 6b work",
+    "Animation specialist taking model.cfg conflicts with dayz-object-builder.md, which owns model.cfg today; ownership split needs a decision and updates to reviewer and debugger owner lists",
+    "The 'spec step in /dayz-init' conflicts with dayz-init SKILL.md Step 4 ('Don't ask for a yes/no') and may duplicate the orchestrator's architect plan and approval; scope needs Brian",
+    "Helicopter support is large: vanilla has only native HelicopterAuto with no content or config examples to verify against; Brian may want to scope it out or accept a smaller claim",
+    "The Blender handoff in the animation specialist must stay notes only; Blender tools are on the add-ons and Later list and must not enter the core",
+    "Layout preview at several screen sizes has no existing basis in the repo and may require rendering DayZ widgets outside the game; needs a design decision",
+    "In-game testing of any new specialist needs DayZ launched on Brian's PC; ask first"
+   ]
+  },
+  {
+   "group": "workflows",
+   "items": [
+    {
+     "claim": "Workflows intro: each workflow runs as a script where it can and asks the AI only for judgment",
+     "status": "partial",
+     "evidence": "Script-first pattern exists for gate.py, triage.py, route.py and the scripts/*/*.bat wrappers (scripts/README.md line 3), but none of the 16 Workflows-section items exist yet",
+     "work": "Apply the same script-first design (Python script, .bat, tests, SKILL.md) to every workflow below",
+     "size": "none"
+    },
+    {
+     "claim": "Paste-in: a crash log or RPT is triaged against known errors, cause and fix named",
+     "status": "partial",
+     "evidence": ".claude/skills/dayz-gate/triage.py matches lines against 24 entries in known-errors.json with fix and owner_agent, but it only takes log file paths (usage line 16), not pasted text. In .claude/skills/dayz-route/rules.json the crash/RPT patterns route straight to dayz-mod-debugger, not to triage first. There is no UserPromptSubmit hook in hooks/hooks.json",
+     "work": "Let triage.py read stdin or pasted text; add a route or UserPromptSubmit hook that sends pasted RPT/crash text to triage first and only the unmatched lines to the debugger; add tests",
+     "size": "M"
+    },
+    {
+     "claim": "Paste-in: anything new in a crash log is handed to dayz-mod-debugger",
+     "status": "partial",
+     "evidence": "triage.py docstring: unmatched lines are 'new' and go to dayz-mod-debugger; gate SKILL.md documents this for gate runs only, not for pasted logs",
+     "work": "Wire the pasted-log path so the 'new' results are dispatched to dayz-mod-debugger",
+     "size": "S"
+    },
+    {
+     "claim": "Paste-in: a screenshot of a bug finds the widget, texture or class on screen and routes it to the right specialist",
+     "status": "false",
+     "evidence": "No skill, hook, route rule or agent handles screenshots; 'screenshot' appears only in .claude/agents/figma-node-normalizer.md",
+     "work": "Build a screenshot workflow: identify UI widget, texture or class (layout and RAG lookups), then route to ui, asset or script specialist; tests with sample images",
+     "size": "L"
+    },
+    {
+     "claim": "Paste-in: a Figma link runs the Figma pipeline and returns a checked .layout",
+     "status": "partial",
+     "evidence": "The pipeline agents exist (.claude/agents/figma-node-normalizer.md, figma-to-dayz-layout.md, dayz-layout-validator.md) and CLAUDE.md says to run them for Figma input, but rules.json has no Figma route and dayz-router.md has no Figma mention, so a pasted link is not detected",
+     "work": "Add a figma.com URL rule to rules.json and dayz-router.md (target: pipeline team), or a prompt hook, and tests",
+     "size": "S"
+    },
+    {
+     "claim": "Paste-in: a Workshop or GitHub link imports the mod into workspace\\ and fills the missing standard pieces",
+     "status": "partial",
+     "evidence": ".claude/skills/dayz-import-mod/SKILL.md takes --source <local path> only and offers to scaffold the missing pieces; it has no URL, git clone or Workshop download support, and there is no route for such links",
+     "work": "Add GitHub clone support to import-mod (and a route rule); decide whether Workshop links are allowed at all (see risks); tests",
+     "size": "M"
+    },
+    {
+     "claim": "Paste-in: a types.xml chunk is checked and merged into the server economy",
+     "status": "partial",
+     "evidence": ".claude/skills/dayz-edit-types upserts or removes one <type> entry per call with checks (min not above nominal, duplicate names) and a .bak backup; nothing parses a pasted multi-entry chunk; types.xml text routes to dayz-server-admin in rules.json",
+     "work": "Add a chunk or merge mode to types_edit.py (parse many <type> blocks, validate each, merge with backup) plus tests and route",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-recipe starts a mod from a template (new weapon, new vest, new craftable) that pre-fills the plan",
+     "status": "false",
+     "evidence": "No dayz-recipe skill folder, no mention anywhere in the repo (grep returned nothing)",
+     "work": "New skill with recipe templates feeding dayz-mod-architect's plan; .bat, scripts/README row, plugin.json, rules.json, dayz-router.md, tests",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-gate behavior runs a test mission that spawns and uses each new item and reports PASS or FAIL per feature",
+     "status": "false",
+     "evidence": "gate.py subparsers are only 'build' and 'ingame' (gate.py lines 618 to 622); gate SKILL.md argument-hint lists build and ingame only; no test mission exists",
+     "work": "Add a behavior subcommand: inject a test mission script that spawns and exercises items and prints PASS/FAIL lines, then parse them; needs a live DayZ run",
+     "size": "L"
+    },
+    {
+     "claim": "Behavior tests: the mod architect writes one check per feature",
+     "status": "partial",
+     "evidence": ".claude/agents/dayz-mod-architect.md step 4 gives each task 'a done check that a gatekeeper can verify', but not an in-game behavior check",
+     "work": "Extend the architect's plan format with one in-game behavior check per feature, consumed by /dayz-gate behavior",
+     "size": "S"
+    },
+    {
+     "claim": "Behavior test mission writes PASS or FAIL lines to the log for /dayz-gate ingame to read",
+     "status": "false",
+     "evidence": "triage.py has a script_fail category for lines starting '[FAIL]' (pipeline script output), but in-game script log lines carry a 'SCRIPT :' prefix and no PASS parsing exists",
+     "work": "Define a log line format for behavior results and parse it in gate.py",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-logwatch watches the logs during a test session and flags script errors the moment they appear",
+     "status": "false",
+     "evidence": "No skill exists. gate.py ingame already polls new log lines every 2 seconds (gate SKILL.md 'What ingame does' step 2), which could be reused",
+     "work": "New skill that tails server and client logs during a user test session and runs classify/triage on each new line; .bat, registration, tests",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-gate visual takes screenshots during the in-game test and compares them with the expected look",
+     "status": "false",
+     "evidence": "No visual subcommand in gate.py; no screenshot capture anywhere",
+     "work": "Add a visual subcommand: capture the DayZ window at set points, compare against stored baselines; needs live DayZ",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-release-pack writes the Workshop description, changelog, classname list and server-owner install notes",
+     "status": "false",
+     "evidence": "No skill and no mention in the repo",
+     "work": "New skill: classname list from config.cpp, changelog from git, description and install notes; registration and tests",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-server-kit zips types.xml entries, cfgeconomycore lines, load order and keys for server owners",
+     "status": "false",
+     "evidence": "No skill and no mention in the repo",
+     "work": "New skill that gathers types entries, cfgeconomycore lines, load order and only public .bikey files into a zip; registration and tests",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-upgrade-guard re-indexes the game files after a DayZ update and flags mod classes whose vanilla parents changed",
+     "status": "partial",
+     "evidence": "Re-indexing exists: .claude/skills/dayz-search-index/index.py with a manifest and incremental run unless --full (line 682). No parent-class diff or guard skill exists",
+     "work": "New skill: snapshot vanilla class definitions before re-index, diff after, list mod classes inheriting from changed parents; registration and tests",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-conflict-check loads the mod with CF, COT and Expansion and reports class and path collisions",
+     "status": "false",
+     "evidence": "No skill. dayz-cot-bootstrap already prepends @CF and @Community-Online-Tools to a launch chain (its SKILL.md line 31), but nothing handles Expansion or reports collisions",
+     "work": "New skill: launch or statically scan the mod alongside CF, COT and Expansion PBO configs, report class name and $PBOPREFIX$ path collisions",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-balance compares the mod's item stats with similar vanilla items and flags outliers",
+     "status": "false",
+     "evidence": "No skill and no mention in the repo",
+     "work": "New skill: parse config.cpp stats, find vanilla peers on P:\\ (or RAG), flag outliers; registration and tests",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-health gives a page per mod with the last build, last test, open review findings and test history",
+     "status": "partial",
+     "evidence": "No skill. dayz-init hub_status.py shows the active mod, PBO age, test servers, Diag and search status (dayz-init SKILL.md line 97); no test history or review findings are stored",
+     "work": "Persist gate results and review findings per mod, build the health page skill on top; registration and tests",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-ask answers a plain English question about vanilla DayZ with path:line citations",
+     "status": "partial",
+     "evidence": "The dayz-rag MCP server provides search_dayz_source and get_dayz_file with line ranges (.claude/mcp/dayz-rag/server.py lines 313 to 363), but there is no dayz-ask skill",
+     "work": "Thin skill that runs search, verifies hits with get_dayz_file and answers with path:line citations; registration and tests",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-lint finds errors that would stop a mod from loading, before packing",
+     "status": "false",
+     "evidence": "No dayz-lint skill; grep for 'lint' in gate.py and dayz-build-pbo returns nothing",
+     "work": "Write the linter (config.cpp, CfgPatches, requiredAddons, $PBOPREFIX$, script module checks) with tests, .bat and registration",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-lint runs inside the build check (/dayz-gate build and /dayz-build-pbo call it first, findings go to triage)",
+     "status": "false",
+     "evidence": "gate SKILL.md 'What build does' steps are stop session, build-pbo, bundle deploy; no lint step. Guide line 391 and the config-specialist flow (line 469) assume it",
+     "work": "Call the linter first in gate.py build and build_pbo.py, feed findings into triage source_findings",
+     "size": "S"
+    },
+    {
+     "claim": "Common workflows are added to the agentic-z-panel",
+     "status": "false",
+     "evidence": "mods/agentic-z-panel/hooks/register.tsx lines 137 to 146 have only mount, build, check build, check in game, deploy, launch, stop, Workbench, Object Builder, refresh",
+     "work": "Add panel buttons for the common new workflows (logwatch, release pack, health) once built; update panel tests",
+     "size": "S"
+    },
+    {
+     "claim": "Every new workflow skill gets a .bat, a scripts/README.md row, tests and registration, enforced by the repo integrity tests",
+     "status": "partial",
+     "evidence": "scripts/dev/test_repo_integrity.py enforces plugin.json registration (lines 41 to 52) and bat wrappers (line 140), but not scripts/README.md rows or rules.json/dayz-router.md entries",
+     "work": "Optionally extend the integrity test to check README rows; register each new skill as it lands",
+     "size": "S"
+    },
+    {
+     "claim": "Answer tests (evals) check each agent's answers so a change can only make them better",
+     "status": "false",
+     "evidence": "No evals folder or eval file anywhere in the repo (find for *eval* returned nothing; grep 'evals' returned nothing)",
+     "work": "Create an evals folder with question and expected answer sets per agent (22 plus new specialists) and a runner, ideally in CI",
+     "size": "L"
+    },
+    {
+     "claim": "Prompt caching keeps every session cheaper",
+     "status": "partial",
+     "evidence": "Nothing in the repo configures or documents prompt caching (no matches in docs/token-saving.md or model-routing.md); Claude Code caches stable prompt prefixes automatically, so the effect exists but is not Agentic-Z's feature",
+     "work": "Document how Agentic-Z keeps big rules files stable so Claude Code's automatic caching applies, or reword the guide",
+     "size": "S"
+    },
+    {
+     "claim": "A cache of repeated search answers keeps sessions cheaper",
+     "status": "false",
+     "evidence": ".claude/mcp/dayz-rag/server.py has no result cache (functions listed lines 45 to 363; no cache matches)",
+     "work": "Add a query-result cache keyed on query text, filters and the index build time, invalidated on re-index; tests",
+     "size": "M"
+    }
+   ],
+   "stale_claims": [
+    "Guide 'Why each item got its grade' row for /dayz-lint (line 788) says 'Built and tested in v1.8.0'; it is not built anywhere in the repo, which also contradicts the 'not built' pills in the same table",
+    "Guide v1.8.0 rows assume a v1.8.0 release, but .claude-plugin/plugin.json is still version 1.6.0",
+    "Guide lists /dayz-panel among the skills (line 877); it is a command in the separate agentic-z-panel plugin (mods/agentic-z-panel), not a skill in .claude/skills",
+    "Handoff section 2 says .github/workflows/tests.yml is untracked; it is now tracked (git ls-files shows it, PR #55 merged)",
+    "Handoff section 2 says PR #53 is open; it is merged (commit 1b893ba)",
+    "Handoff section 0 says wiki search is awaiting Brian's decision; PR #56 dropped the crawler and wiki search (no wiki skill in .claude/skills, no wiki tool in server.py), though this session's installed plugin still exposes search_dayz_wiki and dayz-search-wiki-index from the old 1.6.0 install",
+    "Handoff section 3 item 9 says 35 .bat files; the repo now has 33 under scripts/*/",
+    "Handoff section 6b Paste-in assumes triage is the first stop for crash logs; rules.json currently routes crash and RPT text directly to dayz-mod-debugger"
+   ],
+   "risks": [
+    "Workshop link import: Workshop mods ship as binarized, often protected PBOs. Importing them must never unpack protected mods or debinarize models (private rule; dayz-p3d-debin must stay out). Brian should decide whether Workshop links are supported at all or only GitHub source repos",
+    "/dayz-conflict-check with Expansion: load or scan Expansion configs only; never copy or extract Expansion code (knowledge pack 'Don't take' list). Also needs CF, COT and Expansion installed under P:\\Mods on Brian's PC",
+    "/dayz-server-kit 'keys': must include only public .bikey files and never .biprivatekey files",
+    "/dayz-gate behavior, /dayz-gate visual and /dayz-logwatch can only be verified with DayZ launched on Brian's PC; handoff says ask first, and nothing has been run against live DayZ yet",
+    "/dayz-ask, /dayz-upgrade-guard and the RAG answer cache depend on the Voyage index and VOYAGE_API_KEY, which the handoff says is not on Brian's machine; a full re-index costs about $11.92",
+    "Prompt caching claim: Claude Code caches automatically, so Agentic-Z has little to build; Brian should decide whether to keep the claim as written or reword it",
+    "Evals for every agent is a large open-ended scope; a finish line (which agents, how many questions, pass threshold) needs Brian's call",
+    "Recipes, balance and release pack must be written fresh and verified against P:; no StarDZ text, layout or samples, and no knowledge pack files or MIT label carried over",
+    "Screenshot workflow scope (which bugs, what 'finds the class' means) is undefined in the guide and handoff; needs Brian to define acceptance"
+   ]
+  },
+  {
+   "group": "packs",
+   "items": [
+    {
+     "claim": "Add-ons: Agentic-Z needs no third-party tools; everything runs on DayZ Tools, the vanilla game files and Claude Code",
+     "status": "partial",
+     "evidence": "RAG search needs a Voyage AI account and VOYAGE_API_KEY (.claude/mcp/dayz-rag/README.md lines 15, 26, 51; requirements.txt lists voyageai, lancedb, mcp). /dayz-p3d-audit needs KoffeinFlummi py3d from GitHub (dayz-p3d-audit/scripts/audit_p3d.py lines 13-30). /dayz-build-imageset needs Pillow. The Figma pipeline needs a Figma MCP server (figma-node-normalizer.md line 47). /dayz-cot-bootstrap needs the CF and COT mods. The router can call TypeSafe Jev when TYPESAFE_API_KEY is set. Python is required throughout.",
+     "work": "Reword the sentence to name the real requirements (Python, a Voyage key for RAG search, a Figma MCP server for the Figma pipeline, py3d and Pillow), or label those as optional. Brian decides whether Voyage counts as a third-party tool.",
+     "size": "S"
+    },
+    {
+     "claim": "Add-ons are optional tools (Blender, AI 3D generator, other MCP servers) shipped in a separate plugin",
+     "status": "false",
+     "evidence": "No add-ons plugin exists. .claude-plugin/marketplace.json lists only agentic-z and agentic-z-panel; mods/ has only agentic-z-panel. No 'agentic-z-addons' anywhere in the repo. Handoff section 6 says to build it only after the core is done, and only with the add-ons Brian names.",
+     "work": "Create the agentic-z-addons plugin (mods/agentic-z-addons with .claude-plugin/plugin.json, a marketplace entry, tests), then one workflow per add-on that Brian names.",
+     "size": "L"
+    },
+    {
+     "claim": "An add-on is a workflow that connects the outside tool at one point in the loop, usually handing a finished model to the Object Builder specialist",
+     "status": "false",
+     "evidence": "No add-on workflows exist. dayz-object-builder.md has no intake step for an outside model (no Blender, FBX or generated-mesh handoff). Blender export pitfalls exist only as audit references (dayz-p3d-audit/references/p3d-killers.md, winding-methodology.md).",
+     "work": "Define the handoff contract (input file, format, where it lands in workspace/<ModName>/) and add an intake section to dayz-object-builder.md that runs /dayz-p3d-audit on the incoming model, then build each add-on workflow against it.",
+     "size": "M"
+    },
+    {
+     "claim": "Then the normal gates check add-on output like any other work",
+     "status": "partial",
+     "evidence": "The gates exist: dayz-mod-reviewer agent, /dayz-gate build and /dayz-gate ingame (gate.py catches missing .p3d and .paa lines, test_gate.py lines 214-452). There is no add-on output to gate yet, and dayz-mod-reviewer.md never mentions .p3d or models, so the review gate does not inspect models.",
+     "work": "When add-ons are built, route their output through the existing gates; consider adding /dayz-p3d-audit to the review for model work.",
+     "size": "S"
+    },
+    {
+     "claim": "Optional: the core never loads an add-on unless the user installs it",
+     "status": "partial",
+     "evidence": "Trivially true today because no add-on exists. The mechanism that would make it true (a separate marketplace plugin, like agentic-z-panel in marketplace.json) already exists. Core plugin.json references nothing outside its own skills and agents.",
+     "work": "Keep add-ons out of core plugin.json and add a repo integrity test that fails if core plugin.json references the add-ons plugin.",
+     "size": "S"
+    },
+    {
+     "claim": "Same gates: anything an add-on produces goes through the mod review, the build check and the in-game test",
+     "status": "partial",
+     "evidence": "The same evidence as the gate claim above: the three gates exist and the orchestrator runs /dayz-gate build and ingame once per wave (handoff section 3). Nothing enforces this for add-ons because none exist.",
+     "work": "Each add-on workflow must end by handing its output to the owning lead, so the normal wave gates run on it.",
+     "size": "S"
+    },
+    {
+     "claim": "No reverse engineering: no add-on unpacks protected mods or turns binarized models back into editable ones",
+     "status": "partial",
+     "evidence": "No add-ons exist, and the repo has no debinarizer (git ls-files has no dayz-p3d-debin; the p3d audit rejects ODOL, audit_p3d.py line 302). However, .claude/skills/_shared/conventions/assets.md line 30 says the LOD values were 'Verified against vanilla DZ\\gear\\camping\\wooden_case.p3d (debinarized)'. That is a public doc that mentions debinarizing, which the private rules forbid.",
+     "work": "Remove the '(debinarized)' wording from conventions/assets.md line 30, or re-verify the claim from a sanctioned source (the header scan or the MLOD samples). Add a test or review rule that rejects add-ons that unpack or debinarize.",
+     "size": "S"
+    },
+    {
+     "claim": "Knowledge packs: these already exist in Agentic-Z",
+     "status": "partial",
+     "evidence": "Most listed packs exist under .claude/skills/_shared/enscript/, .claude/skills/_shared/figma-to-dayz-rules.md and the art skills' references/ folders. 'Bohemia wiki' no longer exists (PR #56, commit 3f5c74f). See the per-pack items below.",
+     "work": "Remove the Bohemia wiki entry; everything else holds as listed.",
+     "size": "S"
+    },
+    {
+     "claim": "Any worker can load any knowledge pack for one task",
+     "status": "partial",
+     "evidence": "Every agent has the Read tool. Tier 2 dayz-conventions.md line 12 points every DayZ worker at _shared/enscript/. Only dayz-script-specialist and dayz-ui-specialist name enscript/ directly; only the UI and Figma agents name figma-to-dayz-rules.md. The art packs live inside skill folders (dayz-particles/references, dayz-p3d-audit/references) and no index lists them. dayz-router.md has only the Read tool and no pack pointer, which is fine.",
+     "work": "Add one short pack index (for example a 'Knowledge packs' table in dayz-conventions.md or _shared/README.md) that lists every pack and its path, so any worker can find it.",
+     "size": "S"
+    },
+    {
+     "claim": "Script patterns pack: Modded classes",
+     "status": "true",
+     "evidence": ".claude/skills/_shared/enscript/patterns/modded_class.md (223 lines)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Script patterns pack: RPCs",
+     "status": "true",
+     "evidence": "enscript/patterns/rpc.md (186 lines), plus examples/04_rpc_patterns.c and references/erpc_defines.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Script patterns pack: Network sync",
+     "status": "true",
+     "evidence": "enscript/patterns/netsync.md (115 lines)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Script patterns pack: Persistence",
+     "status": "true",
+     "evidence": "enscript/patterns/persistence.md (135 lines), covering OnStoreSave and OnStoreLoad with a version header. The deeper persistence specialist pack (handoff section 6 step 4) is a separate, unbuilt item.",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Script patterns pack: Actions",
+     "status": "true",
+     "evidence": "enscript/patterns/actions.md (88 lines), plus examples/02_custom_action_singleuse.c and examples/03_continuous_action.c",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Script patterns pack: Scheduler",
+     "status": "true",
+     "evidence": "enscript/patterns/scheduler.md (65 lines), plus examples/09_scheduler_timer.c",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Script patterns pack: JSON config",
+     "status": "true",
+     "evidence": "enscript/patterns/json_config_migration.md (99 lines), plus examples/06_json_config.c and references/file_paths.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Frameworks pack: Community Framework",
+     "status": "true",
+     "evidence": "enscript/integrations/community_framework.md (227 lines)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Frameworks pack: DABS",
+     "status": "partial",
+     "evidence": "enscript/integrations/dabs_framework.md (180 lines) exists. Handoff section 6 step 12 lists 'UI (Dabs, widgets)' as an unbuilt upgrade, and the file has not been verified against P:. One small inconsistency: the file uses CCINotRuined while the README says CCINonRuined.",
+     "work": "Do the step 12 Dabs upgrade and verify the file's facts against the real framework source.",
+     "size": "M"
+    },
+    {
+     "claim": "Frameworks pack: Central Economy",
+     "status": "true",
+     "evidence": "enscript/integrations/central_economy.md (192 lines)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Frameworks pack: Input bindings",
+     "status": "true",
+     "evidence": "enscript/integrations/input_bindings.md (228 lines)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Art and effects pack: Particles",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-particles/references/ holds five files: ptc-format-reference, emat-format-reference, script-api-reference, integration-patterns and vanilla-particle-catalog",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Art and effects pack: p3d audit",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-p3d-audit/references/ (p3d-killers.md, winding-methodology.md, config-rvmat-checks.md), plus _shared/py3d-mlod-notes.md",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Art and effects pack: Texture packing",
+     "status": "partial",
+     "evidence": ".claude/skills/dayz-pack-texture/ has only SKILL.md, pack_texture.py and a test, with no references/ folder. The texture and rvmat cookbook is an unbuilt step 12 upgrade in handoff section 6. Some texture rules live in _shared/conventions/assets.md.",
+     "work": "Either treat the skill and conventions/assets.md as the pack, or build the texture and rvmat cookbook (step 12) as dayz-pack-texture/references/.",
+     "size": "M"
+    },
+    {
+     "claim": "UI pack: GUI layouts",
+     "status": "true",
+     "evidence": "enscript/references/gui_layout.md (255 lines), plus examples/11_hud_plain_text.layout, 12_menu_interactions.layout, 13_item_preview.layout and 08_gui_menu.c",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "UI pack: Figma to DayZ rules",
+     "status": "true",
+     "evidence": ".claude/skills/_shared/figma-to-dayz-rules.md (441 lines), used by figma-node-normalizer, figma-to-dayz-layout, dayz-layout-validator and dayz-ui-specialist",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "UI pack: Imagesets",
+     "status": "partial",
+     "evidence": ".claude/skills/dayz-build-imageset/ has SKILL.md, build_imageset.py and a test, but no references/ folder. The imageset format is documented only inside SKILL.md.",
+     "work": "Accept SKILL.md as the pack, or add a short imageset format reference.",
+     "size": "S"
+    },
+    {
+     "claim": "RAG search pack: Vanilla game files",
+     "status": "true",
+     "evidence": ".claude/mcp/dayz-rag/server.py exposes search_dayz_source, get_dayz_file and list_indexed_sources; the indexer is .claude/skills/dayz-search-index/index.py",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "RAG search pack: Bohemia wiki",
+     "status": "false",
+     "evidence": "PR #56 (commit 3f5c74f) deleted .claude/skills/dayz-search-wiki-index and removed the wiki tool from server.py (96 lines removed). The repo has no search_dayz_wiki anywhere.",
+     "work": "Remove 'Bohemia wiki' from the guide's RAG search box. If wiki search should return, Brian must name a sanctioned source first.",
+     "size": "S"
+    }
+   ],
+   "stale_claims": [
+    "Knowledge packs, RAG search box lists 'Bohemia wiki'; PR #56 (commit 3f5c74f) removed the wiki crawler and the search_dayz_wiki tool.",
+    "The repo itself has gone stale too: .claude/skills/_shared/enscript/README.md line 9 still says the dayz-rag server searches 'indexed vanilla source + wiki'.",
+    "Brian's installed plugin (1.6.0) still exposes mcp__plugin_agentic-z_dayz-rag__search_dayz_wiki, so on his machine the guide's wiki claim looks true until he upgrades the plugin.",
+    "The knowledge packs list leaves out packs that do exist: patterns/singleton.md, physics_items.md and language_workarounds.md; integrations/vanilla_plugins.md; the references/ API files (player, item, game, erpc, file_paths, types_collections); enscript-style.md; py3d-mlod-notes.md; and the five Tier 2 conventions topic files. Not stale exactly, but incomplete.",
+    "Add-ons: 'needs no third-party tools' already conflicts with the RAG server's Voyage AI requirement and the Figma pipeline's Figma MCP requirement, both of which are in the repo today."
+   ],
+   "risks": [
+    "Private debinarizer rule: .claude/skills/_shared/conventions/assets.md line 30 says vanilla wooden_case.p3d was 'debinarized' to verify LOD values. This is a public doc on develop that mentions debinarizing, which the rules forbid. It needs rewording or re-verification.",
+    "Brian's global skill link ~/.claude/skills/dayz-p3d-debin points to G:/DayZ n Chill/Agentic-Z/.claude/skills/dayz-p3d-debin. In that clone (branch develop, origin DayZ-n-Chill/Agentic-Z) the folder is untracked. It is not in H:/Projects/Agentic-Z, but one careless 'git add .' in the G: clone would publish it.",
+    "Pack provenance: .claude/skills/_shared/enscript/README.md line 132 says the whole enscript pack was vendored from SWARMDayZ/dayz-enfusion-skills on verbal permission, with no license file. The guide calls these packs part of Agentic-Z, the repo ships under a custom Agentic-Z license, and the private rule says 'no sources or credits in Agentic-Z material'. Brian must decide whether to keep this credit line, rewrite the pack in our own words, or get written permission.",
+    "Credits and source links also appear in enscript-style.md line 3 (mirrored from the TrueDolphin wiki) and lines 1606-1608 (links to Expansion scripts and the BI wiki), plus framework GitHub links in community_framework.md and dabs_framework.md. These may conflict with the 'no sources or credits' rule, and the Expansion link sits uneasily with the 'never copy Expansion code' rule. Brian decides.",
+    "No StarDZ mentions and no MIT label from the knowledge pack were found in repo source; the only MIT strings are npm dependency licenses in package-lock.json.",
+    "Add-ons plugin: per handoff section 6 it is built only after the core is done, and only with the add-ons Brian names. Until he names them, the Add-ons section cannot be made fully true. Its present tense ('can add them as optional add-ons in a separate plugin') overstates what exists.",
+    "Third-party wording: Brian must decide whether Voyage AI (required for RAG search), the Figma MCP server, py3d, Pillow and TypeSafe Jev count as third-party tools. If they do, the 'needs no third-party tools' sentence has to change, or RAG search needs a non-Voyage option.",
+    "The DABS pack and the other enscript packs have not been verified fact by fact against P: (handoff section 6 requires a separate verifier for new packs). Calling them 'already exist' is fine, but their accuracy is unconfirmed."
+   ]
+  },
+  {
+   "group": "grading",
+   "items": [
+    {
+     "claim": "Method: graded by fresh independent reviewers in rounds, then separate fixers, then regrade (5 rounds)",
+     "status": "true",
+     "evidence": "Grade files grades-before-*, round2-4 (agents/skills-a/skills-b), grades-round5.md in vault folder; commits 6ea925a, 815ae3e, 8cf0ba0, ae9e7e0 ('second'..'fifth grading pass')",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "'An item only counts as A+ when an independent reviewer gives it A+'",
+     "status": "partial",
+     "evidence": "grades-round5.md: '-> all 10 non-A+ fixed after (self-assessed A+)'; no independent regrade after round-5 fixes exists",
+     "work": "Run the independent round-6 regrade of every non-A+ item (handoff 6c) before the guide shows any of them as A+",
+     "size": "M"
+    },
+    {
+     "claim": "One reviewer per group: all agents; setup/build skills; search/art skills + search server + DayZ rules file",
+     "status": "true",
+     "evidence": "File split grades-roundN-agents / -skills-a (setup/build + skill_helpers) / -skills-b (search, art, dayz-rag, Tier 2)",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Graded against Anthropic subagent docs, Agent Skills best practices, MCP tool guidance",
+     "status": "true",
+     "evidence": "agent-creator.md line 10 cites code.claude.com/docs/en/sub-agents; dayz-rag server.py uses ToolAnnotations(readOnlyHint=True) line 311",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Repo rule sources exist: CLAUDE.md, DayZ rules file + topic files, agent-creator.md, docs/prompt-conventions.md",
+     "status": "true",
+     "evidence": "CLAUDE.md; .claude/skills/_shared/dayz-conventions.md; _shared/conventions/{assets,config,scripts,server,ui}.md; .claude/agents/agent-creator.md; docs/prompt-conventions.md all present",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "'Run it yourself' prompt paths (.claude/agents/*.md, agent-creator.md, CLAUDE.md, dayz-conventions.md) are valid",
+     "status": "true",
+     "evidence": "All paths exist on feature/specialists",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Rounds table test counts 84 / 627 / 793 / 919 / 974 / 1,064 / 1,332",
+     "status": "partial",
+     "evidence": "Not recorded in repo; commit 99b361f era message says '1297 tests pass'; handoff says 1,332; static count is 869 test functions (pytest could not be run in this read-only pass). PR #56 deleted wiki tests (test_server.py -73 lines, test_index.py -4), so the current total is now below 1,332",
+     "work": "Run python -m pytest -q .claude scripts/dev hooks and update the Token savers row and v1.8.0 box with the real count",
+     "size": "S"
+    },
+    {
+     "claim": "Rubric/scale table (A+ = nothing concrete to fix, etc.) and 'every grade below A+ names defect and fix'",
+     "status": "true",
+     "evidence": "Process statement; consistent with grade files that name defects (e.g. round4 'real: release asset name mismatch')",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "v1.6.0: 0 of 55 at A+, 84 tests, mostly B and C",
+     "status": "true",
+     "evidence": "grades-before-*.md: no A+ anywhere; 21 agents + 31 skills + 3 shared = 55",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "v1.7.0: 22 of 55 at A+, mostly A and A+",
+     "status": "true",
+     "evidence": "Counting guide v1.7.0 column: 11 agents + 9 skills + 2 shared = 22, which matches grades-round5.md exactly",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Version labels v1.7.0 and v1.8.0 exist as versions",
+     "status": "false",
+     "evidence": ".claude-plugin/plugin.json and marketplace.json are version 1.6.0; git tags stop at v1.6.0; docs/release-notes only to 1.6.0.md",
+     "work": "Bump plugin.json/marketplace.json, tag and write release notes, or relabel columns as 'develop' states",
+     "size": "S"
+    },
+    {
+     "claim": "v2.0.0: 'All A+, regraded independently'",
+     "status": "false",
+     "evidence": "No grades after round 5; 32 of 54 current items are below A+ or ungraded; 25 v2.0.0 items not built",
+     "work": "Build all missing items, run independent regrade to A+, fill v2.0.0 column with real grades (handoff 6c)",
+     "size": "L"
+    },
+    {
+     "claim": "Item count of 55",
+     "status": "false",
+     "evidence": "dayz-search-wiki-index deleted in PR #56 (3f5c74f), dayz-router agent added; the graded v1.7.0 set is now 54 items",
+     "work": "Remove wiki-index row; recount everywhere ('22 of 55')",
+     "size": "S"
+    },
+    {
+     "claim": "agent-creator A+: covers memory, maxTurns, color, nested agents, two-name search rule",
+     "status": "true",
+     "evidence": "agent-creator.md frontmatter color: green, memory: project, maxTurns: 50; tools rule line 15",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-asset-specialist never renames, reports suffix to art lead",
+     "status": "true",
+     "evidence": "dayz-asset-specialist.md line 18 'Never rename the user's source images... report the file to the art lead'",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "Texture skill accepts the full vanilla suffix set",
+     "status": "true",
+     "evidence": "dayz-pack-texture/pack_texture.py ALLOWED_SUFFIXES lines 25-33 incl _ca, _lco, _as, _ads, _adshq; conventions/assets.md line 11 matches",
+     "work": "Independent regrade (round5 B+)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-build-checker checks bundles without config.cpp with /dayz-deploy-pbo and stops a running session first",
+     "status": "true",
+     "evidence": "dayz-build-checker.md lines 16 and 20",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-build-engineer launches dependencies from requiredAddons/brief and passes --map for custom instances",
+     "status": "true",
+     "evidence": "dayz-build-engineer.md lines 18-19",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-docs-writer also searches every file in cfgeconomycore.xml",
+     "status": "true",
+     "evidence": "dayz-docs-writer.md line 17",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-ingame-tester launches dependencies first; missing dependency PBO is FAIL",
+     "status": "true",
+     "evidence": "dayz-ingame-tester.md line 18",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-layout-validator allows empty spacers (note only)",
+     "status": "true",
+     "evidence": "dayz-layout-validator.md line 32",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-mod-reviewer resolves inherited hiddenSelections from parent",
+     "status": "true",
+     "evidence": "dayz-mod-reviewer.md line 19",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-object-builder: placed objects get autocenter on LOD and config.cpp; kits/handhelds never",
+     "status": "true",
+     "evidence": "dayz-object-builder.md line 34, cites p3d-audit references that exist (p3d-killers.md, config-rvmat-checks.md)",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-orchestrator reads cached author handle or asks, passes --author",
+     "status": "true",
+     "evidence": "dayz-orchestrator.md line 26 (.claude/local-memory/dayz-author.txt)",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "figma-node-normalizer lists each Figma tool under three names",
+     "status": "true",
+     "evidence": "figma-node-normalizer.md tools line 6 and line 17 (mcp__plugin_figma_figma__, mcp__figma__, mcp__plugin_design_figma__)",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "agentic-z-update compares git object ids; tested with core.autocrlf on",
+     "status": "true",
+     "evidence": "update.py git_object_id (hash-object --path) lines 201-213; test_apply_drift.py lines 412-428 autocrlf=true",
+     "work": "Independent regrade (round5 B+)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-add-scaffold uses shared project lookup; tested from a subfolder",
+     "status": "true",
+     "evidence": "add_scaffold.py imports skill_helpers; test_add_scaffold.py line 319 test_main_from_mod_subfolder_uses_cached_project",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-add-server: .gitignore fixed so serverDZ.cfg/mission tracked; Windows-illegal names refused",
+     "status": "true",
+     "evidence": ".gitignore lines 42-45 (.server/*/* with !serverDZ.cfg, !mission/); test_add_server.py line 206 test_instance_name_rejects_windows_forbidden_chars",
+     "work": "Independent regrade (round5 B+)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-build-imageset: atlas must be newer than the run; empty sets clear old outputs",
+     "status": "true",
+     "evidence": "build_imageset.py lines 177-188 mtime check, remove_stale_outputs lines 204-275",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-build-pbo marks a deploy folder it creates; tested fail-then-rebuild",
+     "status": "true",
+     "evidence": "build.py lines 195-205 gate_on_marker/write_marker; test_build_pbo.py ownership marker section line 104",
+     "work": "Independent regrade (round5 B)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-clean-workspace prints the actual delete error",
+     "status": "true",
+     "evidence": "clean.py line 223 'could not remove ({kind}) {path}: {detail}'",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-cot-bootstrap stops as soon as server or client exits",
+     "status": "true",
+     "evidence": "bootstrap.py lines 100-136 proc.poll() checks",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-deploy-pbo validates mod name like /dayz-new-mod; path traversal tested",
+     "status": "true",
+     "evidence": "deploy.py line 82 _nm.validate_name; test_deploy_pbo.py line 150 parametrize '..', '../Other'",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-edit-types refuses non-types files and duplicate target names",
+     "status": "true",
+     "evidence": "types_edit.py lines 181-196",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-import-mod: skipped piece is a failure with retry command",
+     "status": "true",
+     "evidence": "import_mod.py lines 157-185 'Retry: /dayz-add-scaffold ... --piece'",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-init imports require --scaffold or --no-scaffold; saves only used state",
+     "status": "partial",
+     "evidence": "plan.py line 4/113 and dispatch.py line 73 show the flags; 'saves only what is used' not verified in this pass",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-launch-objectbuilder loads registry check from setup skill",
+     "status": "true",
+     "evidence": "dayz-launch-objectbuilder/launch.py lines 33-34 h.load_module of setup",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-launch-test uses shared port check; bad prefs fall back with warning; wait loop tested",
+     "status": "true",
+     "evidence": "launch.py line 280 h.udp_port_free, line 392 h.gate_on_free_port, display_prefs_problem line 203",
+     "work": "Independent regrade (round5 B+)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-new-mod shows real junction error and warns when nothing rewritten",
+     "status": "true",
+     "evidence": "new_mod.py line 311 'dayz.gproj has no single-entry FileSystem block; left it unchanged'",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-p3d-audit stage table rebuilt from vanilla rvmats",
+     "status": "partial",
+     "evidence": "references/config-rvmat-checks.md line 73 'Texture Stages (Super shader, manual check)'; not re-verified against P: here",
+     "work": "Independent regrade with P: check (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-record-correction resolves the real folder through the link first",
+     "status": "true",
+     "evidence": "dayz-record-correction/SKILL.md lines 41-47 os.path.realpath",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-search-download network errors exit cleanly with URL and reason",
+     "status": "true",
+     "evidence": "download.py _reason lines 44-51 URLError handling",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-search-index: clean failure on bad key; spent tokens logged",
+     "status": "true",
+     "evidence": "index.py lines 551-564 tokens logged to usage.log on failure",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-search-wiki-index row: D, 'On hold for the user's decision'",
+     "status": "false",
+     "evidence": "Skill folder deleted in PR #56 (commit 3f5c74f); search_dayz_wiki tool removed from server.py",
+     "work": "Delete the row from all three tables and the wiki-indexer sentence",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-setup-objectbuilder --force backs up, deletes key, re-imports",
+     "status": "true",
+     "evidence": "setup.py lines 6-7, backup_registry line 138",
+     "work": "Independent regrade (round5 A)",
+     "size": "S"
+    },
+    {
+     "claim": "docs-sync reports drift through systemMessage",
+     "status": "true",
+     "evidence": "docs-sync/sync.py line 13/37, SKILL.md line 68-71; Stop hook in .claude/settings.json",
+     "work": "Independent regrade (round5 A-)",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-preflight 24 tests",
+     "status": "true",
+     "evidence": "test_preflight.py has 24 test functions, no parametrize",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-workdrive 27 tests",
+     "status": "true",
+     "evidence": "dayz-workdrive/test_mount.py 27 test functions",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "sync-skills 20 tests",
+     "status": "partial",
+     "evidence": "test_sync_skills.py 17 functions plus 1 parametrize; plausible but not run",
+     "work": "Confirm with pytest",
+     "size": "S"
+    },
+    {
+     "claim": "dayz-rag search server: read-only tools, retries with timeout, 54 tests",
+     "status": "partial",
+     "evidence": "server.py readOnlyHint line 311, timeout=30 line 103, retry line 112; but PR #56 removed wiki tests, now 27+11 functions (with 4 parametrize), so 54 is stale",
+     "work": "Recount tests and update the number",
+     "size": "S"
+    },
+    {
+     "claim": "DayZ rules file: inventorySlot example rewritten from vanilla, suffix list widened",
+     "status": "true",
+     "evidence": "conventions/config.md lines 12-20 (GlowPlug example); conventions/assets.md line 11 full suffix list",
+     "work": "Independent regrade (round5 B, never re-confirmed)",
+     "size": "S"
+    },
+    {
+     "claim": "Shared skill helpers A+, used, documented, tested",
+     "status": "true",
+     "evidence": "_shared/skill_helpers.py + test_skill_helpers.py (24 tests); round4 and round5 A+",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "dayz-router agent built and tested in v1.8.0, not yet graded",
+     "status": "true",
+     "evidence": ".claude/agents/dayz-router.md, in plugin.json; no grade file covers it",
+     "work": "Independent grade to A+",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-gate built and tested",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-gate with test_gate.py (45) and test_triage.py (26); scripts/dayz/gate.bat, triage.bat",
+     "work": "Independent grade to A+",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-route built and tested",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-route (route.py, jev.py, rules.json, test_route.py, test_jev.py); route.bat",
+     "work": "Independent grade to A+",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-statusline built and tested",
+     "status": "true",
+     "evidence": ".claude/skills/dayz-statusline with test_statusline.py (17); status.bat",
+     "work": "Independent grade to A+",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-panel built and tested",
+     "status": "true",
+     "evidence": "mods/agentic-z-panel/hooks/register.tsx line 110 registers 'dayz-panel'; register.test.tsx; panel plugin 0.2.0 in marketplace.json",
+     "work": "Independent grade to A+",
+     "size": "S"
+    },
+    {
+     "claim": "/dayz-lint 'Built and tested in v1.8.0'",
+     "status": "false",
+     "evidence": "No dayz-lint skill, script or reference anywhere in repo (only in docs/.updates handoff, which says Not built)",
+     "work": "Write our own boot-time linter; call it from /dayz-gate build and /dayz-build-pbo; feed findings into triage; .bat, tests, plugin.json, router rules.json",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-persistence-specialist exists",
+     "status": "false",
+     "evidence": "Not in .claude/agents",
+     "work": "Build per handoff section 6 step 4 with references/ pack, wire into script lead and server lead, grade to A+",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-ai-specialist exists",
+     "status": "false",
+     "evidence": "Not in .claude/agents",
+     "work": "Build (handoff step 11; learned only, no copied Expansion code), wire into script lead, grade",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-vehicle-specialist exists",
+     "status": "false",
+     "evidence": "Not in .claude/agents",
+     "work": "Build (step 5), config lead, grade",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-weapon-specialist exists",
+     "status": "false",
+     "evidence": "Not in .claude/agents",
+     "work": "Build (step 6), config lead, grade",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-wearables-specialist exists",
+     "status": "false",
+     "evidence": "Not in .claude/agents",
+     "work": "Build (step 7), art lead, grade",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-animation-specialist exists",
+     "status": "false",
+     "evidence": "Not in .claude/agents",
+     "work": "Build (step 8: model.cfg, RTM, Blender handoff), art lead, grade",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-audio-fx-specialist exists",
+     "status": "false",
+     "evidence": "Not in .claude/agents",
+     "work": "Build (step 9), any lead, grade",
+     "size": "L"
+    },
+    {
+     "claim": "dayz-physics-specialist exists",
+     "status": "false",
+     "evidence": "Not in .claude/agents",
+     "work": "Build (step 10), any lead, grade",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-recipe exists",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Skill + .bat + tests + registration (mod recipes pre-filling architect plan)",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-logwatch exists",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Skill + .bat + tests + registration (live log watch during test)",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-release-pack exists",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Skill + .bat + tests + registration",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-server-kit exists",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Skill + .bat + tests + registration",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-upgrade-guard exists",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Skill + .bat + tests + registration (re-index, diff, flag changed parents)",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-conflict-check exists",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Skill + .bat + tests + registration (CF, COT, Expansion collisions; needs live DayZ, ask Brian)",
+     "size": "L"
+    },
+    {
+     "claim": "/dayz-balance exists",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Skill + .bat + tests + registration",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-health exists",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Skill + .bat + tests + registration",
+     "size": "M"
+    },
+    {
+     "claim": "/dayz-ask exists",
+     "status": "false",
+     "evidence": "No skill folder",
+     "work": "Skill + .bat + tests + registration (path:line cited answers over RAG)",
+     "size": "M"
+    },
+    {
+     "claim": "Bug fixed: search tools missing after plugin install",
+     "status": "true",
+     "evidence": "13 agents grant mcp__plugin_agentic-z_dayz-rag__* names; the 8 that don't (lead, orchestrator, router, build-checker, build-engineer, docs-writer, ingame-tester, figma-node-normalizer) don't use search; settings.json allows both names",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: /dayz-clean-workspace could delete a hand-cloned mod with git history",
+     "status": "true",
+     "evidence": "clean.py lines 46-57 refuses folders containing .git and requires ownership marker",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: /agentic-z-update swept staged changes into its commit",
+     "status": "true",
+     "evidence": "update.py stage_and_commit line 294 'Stage the updated paths and commit only them'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: /dayz-search-download looked for a file name no release uses",
+     "status": "true",
+     "evidence": "download.py lines 29-34 ASSET_PREFIXES ('dayz-search-index-', 'dayz-rag-index-')",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: RAG skipped about 39% of big script classes",
+     "status": "true",
+     "evidence": "index.py EMBED_MAX_CHARS line 67, _walk_class_blocks and _split_windows lines 233-269; round4 grade notes the 39%",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: /dayz-split-types wrong economy folder and double load",
+     "status": "true",
+     "evidence": "split.py lines 14-17 and 86-88 rewrite <ce folder>; round3 C+ note 'ce folder path'",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: one failed first build blocked later builds",
+     "status": "true",
+     "evidence": "build.py lines 195-205 writes marker when it created the root",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: Windows line endings made upstream changes look local",
+     "status": "true",
+     "evidence": "update.py git_object_id; test_apply_drift.py autocrlf test",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: /dayz-launch-test crashed instead of reporting server never started",
+     "status": "true",
+     "evidence": "launch.py lines 400-405 kills server and prints FAIL with RPT location, returns 1",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: edit-types lost comments and rewrote unchanged file",
+     "status": "true",
+     "evidence": "types_edit.py line 5 and 207-208 insert_comments=True; 'no change' paths lines 145, 176",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: second test session connected to the old server (port in use)",
+     "status": "true",
+     "evidence": "launch.py line 392 h.gate_on_free_port before launch",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Bug fixed: stale .paa and atlases counted as new",
+     "status": "true",
+     "evidence": "pack_texture.py lines 75-85 mtime check; build_imageset.py lines 177-188",
+     "work": "",
+     "size": "none"
+    },
+    {
+     "claim": "Not yet confirmed A+ (agents, round 5): dayz-asset-specialist A, dayz-build-checker A, dayz-build-engineer A-, dayz-docs-writer A, dayz-ingame-tester A, dayz-layout-validator A-, dayz-mod-reviewer A-, dayz-object-builder A-, dayz-orchestrator A, figma-node-normalizer A",
+     "status": "false",
+     "evidence": "grades-round5.md AGENTS line; fixes self-assessed only",
+     "work": "Independent regrade of these 10 agents",
+     "size": "M"
+    },
+    {
+     "claim": "Not yet confirmed A+ (skills A group, round 5): agentic-z-update B+, dayz-add-scaffold A-, dayz-add-server B+, dayz-build-imageset A-, dayz-build-pbo B, dayz-clean-workspace A, dayz-cot-bootstrap A-, dayz-deploy-pbo A, dayz-edit-types A-, dayz-import-mod A-, dayz-init A-, dayz-launch-objectbuilder A, dayz-launch-test B+, dayz-new-mod A",
+     "status": "false",
+     "evidence": "grades-round5.md SKILLS A line",
+     "work": "Independent regrade of these 14 skills",
+     "size": "M"
+    },
+    {
+     "claim": "Not yet confirmed A+ (skills B group, round 5): dayz-p3d-audit A-, dayz-pack-texture B+, dayz-record-correction A-, dayz-search-download A, dayz-search-index A-, dayz-setup-objectbuilder A, docs-sync A-, Tier 2 rules file B",
+     "status": "false",
+     "evidence": "grades-round5.md SKILLS B line (dayz-search-wiki-index D now deleted)",
+     "work": "Independent regrade of these 8 items",
+     "size": "M"
+    },
+    {
+     "claim": "Not yet graded at all: dayz-router, /dayz-gate (incl. triage.py), /dayz-route, /dayz-statusline, /dayz-panel, plugin hooks (edit_check, scope_guard)",
+     "status": "false",
+     "evidence": "No grade file mentions them; hooks are not in the guide's grade table at all",
+     "work": "First independent grade, fix to A+; add hooks row to the table",
+     "size": "M"
+    }
+   ],
+   "stale_claims": [
+    "The 'Quality by version' note: 'The wiki indexer is on hold because it gets past the Bohemia wiki's Cloudflare check with a copied browser cookie.' PR #56 deleted the indexer and the search_dayz_wiki tool.",
+    "The dayz-search-wiki-index rows in 'Quality by version' (C+ / D / A+ goal) and 'Why each item got its grade' ('On hold for the user's decision'). The skill no longer exists, so its A+ goal can never be met.",
+    "'0 of 55' and '22 of 55' counts. With the wiki indexer gone the graded set is 54 (22 of 54 at A+).",
+    "Token savers round '1,332 tests' and the v1.8.0 box '1,332 tests'. PR #56 removed the wiki tests, so the total is now lower.",
+    "dayz-rag search server '54 tests'. PR #56 cut test_server.py by 73 lines.",
+    "/dayz-lint row in the 'Added in v1.8.0' group: 'Built and tested in v1.8.0'. Nothing exists in the repo, and the handoff says Not built.",
+    "Version labels v1.7.0 and v1.8.0. plugin.json and marketplace.json still say 1.6.0, there are no tags after v1.6.0, and there are no release notes after 1.6.0.",
+    "No guide text in these sections mentions CI, but PR #55's .github/workflows/tests.yml runs only `.claude scripts/dev` and skips `hooks`. If the guide or handoff says 'CI runs the full suite', that is not accurate."
+   ],
+   "risks": [
+    "The grading section says an item counts as A+ only when an independent reviewer gives it A+. But grades-round5.md says the 10 agent fixes were 'self-assessed A+', and the 'Done since' column reads as if they are finished. Do not show any of these as A+ until round 6 runs.",
+    "The v2.0.0 column shows every item as A+ already. That is a goal, not a grade. If the guide gets published before the regrade, it is misleading.",
+    "The table has no rows for the plugin hooks (edit_check.py, scope_guard.py), triage.py or the panel's own tests. If the guide is meant to grade everything, rows need adding.",
+    "The CI workflow skips the hooks tests, which the handoff's verify command includes. Either add `hooks` to tests.yml (needs a gh token with the workflow scope) or accept the gap.",
+    "/dayz-conflict-check, the behavior and visual gates, and the live-log checks need a real DayZ session on Brian's PC. Ask first. Nothing has been run in game yet.",
+    "dayz-ai-specialist must learn Expansion AI behavior without copying any Expansion code. All new reference packs must be written fresh and never take StarDZ wording or structure, the knowledge pack's MIT label, or credits for either. These private rules must not appear in repo text.",
+    "Debinarizing: old release notes (docs/release-notes/1.2.0.md, 1.2.1.md, 1.6.0.md) still name dayz-p3d-debin. They are historical removal notes, but Brian should decide whether those mentions stay in the public repo.",
+    "The wiki drop is decided, since PR #56 is merged. The guide's RAG and quality sections still need rewording, so Brian should confirm the wiki rows are deleted rather than shown as 'dropped'.",
+    "Brian needs to set the finish line for the A+ loop (handoff section 4 says each round finds new edge cases): one clean independent pass, or a real mod build."
+   ]
+  }
+ ],
+ "critic": {
+  "items": [
+   {
+    "claim": "Mod team chart legend: NEW means 'Not in Agentic-Z today', and it tags the mod orchestrator, mod architect, the six team leads, the build check and the in-game test gates as NEW",
+    "status": "false",
+    "evidence": ".claude/agents/dayz-orchestrator.md, dayz-mod-architect.md, dayz-lead.md, dayz-build-checker.md, dayz-ingame-tester.md and .claude/skills/dayz-gate/gate.py all exist and are registered in .claude-plugin/plugin.json",
+    "work": "Remove the NEW badges from items that already ship, or keep them only on the eight unbuilt specialists",
+    "size": "S"
+   },
+   {
+    "claim": "Team chart caption: 'A new mod orchestrator, helped by the new mod architect ... six new team leads'",
+    "status": "false",
+    "evidence": "Same agent files as above already exist; the caption describes them as future work",
+    "work": "Reword the caption to present tense with no 'new'",
+    "size": "S"
+   },
+   {
+    "claim": "Team chart caption: each lead runs copies of today's specialist agents",
+    "status": "true",
+    "evidence": ".claude/agents/dayz-lead.md team table dispatches the existing dayz-* specialists",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "Start the team with 'claude --agent agentic-z:dayz-orchestrator' (given as the only command, in the agent table and in 'How the team checks work')",
+    "status": "partial",
+    "evidence": "The agentic-z: prefix only exists for plugin installs; .claude/skills/dayz-route/SKILL.md line 34 and wiki/docs/agents/dayz-orchestrator.md say to use 'claude --agent dayz-orchestrator' in a clone",
+    "work": "Add the clone form 'claude --agent dayz-orchestrator' next to the plugin form",
+    "size": "S"
+   },
+   {
+    "claim": "Vehicle specialist: 'Helicopters are not in vanilla DayZ, so it builds them on the vanilla vehicle classes'",
+    "status": "partial",
+    "evidence": "P:\\scripts\\3_game\\vehicles\\helicopter.c defines Helicopter and HelicopterAuto, and P:\\scripts\\4_world\\entities\\vehicles\\helicopterscript.c defines HelicopterScript; no flyable vanilla helicopter ships, but the script base classes do",
+    "work": "Reword to say vanilla has HelicopterScript base classes but no flyable helicopter, and list HelicopterScript in the hand-back alongside CarScript and BoatScript",
+    "size": "S"
+   },
+   {
+    "claim": "Vehicle specialist covers cars, boats and helicopters (vehicle scope list)",
+    "status": "partial",
+    "evidence": "Vanilla also has motorbikes: P:\\scripts\\4_world\\entities\\vehicles\\motorbikescript.c (class MotorbikeScript : Motorbike); BoatScript exists at boatscript.c",
+    "work": "Add motorbikes and MotorbikeScript to the vehicle specialist's scope when it is built",
+    "size": "S"
+   },
+   {
+    "claim": "Vehicle fluids are fuel, oil, coolant and brake fluid",
+    "status": "true",
+    "evidence": "P:\\scripts\\3_game\\vehicles\\transport.c lines 52-62: enum ETransportFluid FUEL, OIL, BRAKE, COOLANT plus USER1-4",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "Quality by version: v1.7.0 at 1,064 tests and v1.8.0 / token savers at 1,332 tests",
+    "status": "partial",
+    "evidence": "Running pytest --collect-only on .claude and scripts/dev (the CI command in .github/workflows/tests.yml) collects 1,269 tests today; the wiki crawler tests left in PR #56",
+    "work": "Update the latest test count to the current suite (1,269) or note it dropped with the wiki indexer",
+    "size": "S"
+   },
+   {
+    "claim": "Skill rubric: each skill's frontmatter name matches its folder",
+    "status": "true",
+    "evidence": "Every .claude/skills/*/SKILL.md name field matches its folder name (scripted check, no mismatches)",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "Run-it-yourself prompt: agents must end with a Report naming its recipient (repo agent standard)",
+    "status": "true",
+    "evidence": ".claude/agents/agent-creator.md line 19 requires a Report section naming the recipient",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "clean-repo A+: dry runs first, one confirmation",
+    "status": "true",
+    "evidence": ".claude/skills/clean-repo/clean.py lines 4-6: runs each child with --dry-run, asks once, then --yes",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "dayz-launch-workbench A+: preflight first",
+    "status": "true",
+    "evidence": ".claude/skills/dayz-launch-workbench/launch.py line 86 h.gate_on_preflight()",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "dayz-split-types A+: backups, folder fix and verification match the code",
+    "status": "true",
+    "evidence": ".claude/skills/dayz-split-types/split.py line 11 and backup(); SKILL.md steps 5-6 (db/types folder fix, verification)",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "dayz-search-download: on a network error the old index is kept",
+    "status": "true",
+    "evidence": ".claude/skills/dayz-search-download/download.py line 6 and swap logic near line 178; test_download.py keeps-index test",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "dayz-mod-architect A+: reports to the orchestrator with citations",
+    "status": "true",
+    "evidence": ".claude/agents/dayz-mod-architect.md line 23 returns vanilla classes with path:line citations",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "dayz-cot-bootstrap previously waited out a full 10-minute timeout",
+    "status": "true",
+    "evidence": ".claude/skills/dayz-cot-bootstrap/bootstrap.py line 43 DEFAULT_TIMEOUT = 600",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "dayz-script-specialist puts code in 3_Game, 4_World or 5_Mission and calls super",
+    "status": "true",
+    "evidence": ".claude/agents/dayz-script-specialist.md lines 20-21",
+    "work": "",
+    "size": "none"
+   },
+   {
+    "claim": "Knowledge packs list shows every pack that exists",
+    "status": "partial",
+    "evidence": ".claude/skills/_shared/enscript/ also holds patterns/physics_items.md, singleton.md, language_workarounds.md, integrations/vanilla_plugins.md and references/*.md, plus _shared/container-base.md and answer-formatting.md, none of which are listed",
+    "work": "Add the missing packs (physics_items is relevant to the planned physics specialist) or say the list is a sample",
+    "size": "S"
+   },
+   {
+    "claim": "/sync-skills is marked 'clones only' (implying other skills work in both installs)",
+    "status": "partial",
+    "evidence": ".claude-plugin/plugin.json skills list also omits agentic-z-update, docs-sync and clean-repo, so those are clone-only too",
+    "work": "Mark agentic-z-update, docs-sync and clean-repo as clones only as well",
+    "size": "S"
+   },
+   {
+    "claim": "Quality by version: 'Every agent and skill has been graded at each version'",
+    "status": "false",
+    "evidence": "The same section lists dayz-router, /dayz-gate, /dayz-route, /dayz-statusline, /dayz-panel as 'not graded yet' at v1.8.0; only tag v1.6.0 exists and plugin.json and marketplace.json both say version 1.6.0",
+    "work": "Reword to 'graded at v1.6.0 and after the v1.7.0 rounds', and drop the per-version claim for v1.8.0",
+    "size": "S"
+   },
+   {
+    "claim": "Grading table lists dayz-search-wiki-index as an item with v2.0.0 goal A+",
+    "status": "false",
+    "evidence": ".claude/skills/ has no dayz-search-wiki-index folder after PR #56 (commit 3f5c74f)",
+    "work": "Remove the row from the grade table, the reasons table and the item count",
+    "size": "S"
+   }
+  ],
+  "stale_claims": [
+   "Mod team chart marks the orchestrator, architect, six team leads, build check and in-game test as NEW ('Not in Agentic-Z today'), but all of them ship today (dayz-orchestrator.md, dayz-lead.md, dayz-gate)",
+   "Chart caption calls the orchestrator, architect and team leads 'new'",
+   "'The wiki indexer is on hold because it gets past the Bohemia wiki's Cloudflare check with a copied browser cookie' (Quality by version note): the wiki indexer was dropped in PR #56",
+   "dayz-search-wiki-index rows in the grade table (C+ / D / A+) and the reasons table ('On hold for the user's decision'): the skill was removed in PR #56",
+   "Test count 1,332 for the token-saver work: the current CI suite (.github/workflows/tests.yml, pytest .claude scripts/dev) collects 1,269 tests after the wiki tests were dropped",
+   "The guide never mentions CI, although PR #55 added .github/workflows/tests.yml that runs the suite on pull requests to develop and main; the contributing section could say PRs must pass it"
+  ],
+  "risks": [
+   "Wrong status: '/dayz-split-types splits one big types.xml into 18 category files' is marked false, but the skill exists and works; only the number is wrong (SKILL.md line 42 lists 19 categories). It should be partial, with a one-word fix.",
+   "Wrong status: 'dayz-orchestrator ... start with claude --agent agentic-z:dayz-orchestrator' is marked true, but that command only works for plugin installs; clones need 'claude --agent dayz-orchestrator' (dayz-route/SKILL.md line 34). Option A clone users following the guide get an unknown agent.",
+   "The 'Item count of 55' was marked false without a reason. The guide's 55 adds up internally (21 agents, 31 skills, 3 shared items) but it leaves out dayz-router, gate, route, statusline and panel, and it still counts the removed wiki indexer. Brian should decide which count the guide reports.",
+   "Internal contradiction: 'Every agent and skill has been graded at each version' conflicts with the guide's own 'Added in v1.8.0 (not graded yet)' rows. Also, v1.7.0 and v1.8.0 exist only as labels: the only git tag is v1.6.0, and plugin.json and marketplace.json both say version 1.6.0.",
+   "The add-ons rule says no add-on turns binarized models back into editable ones. Brian's environment has a dayz-p3d-debin skill (an ODOL-to-MLOD debinarizer) installed outside this repo, and the repo ships .claude/skills/_shared/py3d-mlod-notes.md. The repo itself has no debinarizer, but Brian should confirm the guide's no-reverse-engineering promise matches what he plans to ship or link.",
+   "Brian's installed agentic-z plugin is out of date: it still exposes dayz-search-wiki-index and the search_dayz_wiki tool. This backs up the 'Option B installs the product the guide describes' = false finding: the marketplace version is still 1.6.0.",
+   "The vehicle specialist spec says vanilla has no helicopters. That is risky for a spec the Dev Team will build from, because vanilla does ship Helicopter, HelicopterAuto and HelicopterScript script classes, and it also ships MotorbikeScript, which the spec leaves out. Fix the spec before building, so the new agent does not repeat the mistake."
+  ]
+ }
+}
