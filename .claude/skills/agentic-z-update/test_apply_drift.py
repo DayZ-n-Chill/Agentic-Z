@@ -330,7 +330,7 @@ def _tracked_files() -> list[str]:
 
 
 # Tracked top-level folders that belong to the upstream repo itself, not the template.
-NOT_TEMPLATE: set[str] = set()
+NOT_TEMPLATE: set[str] = {"archive"}  # the retired Docusaurus wiki; clones never get it
 
 
 def test_template_paths_cover_every_tracked_top_level_folder():
