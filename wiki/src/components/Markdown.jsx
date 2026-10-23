@@ -152,16 +152,85 @@ export default function Markdown({ source, onNavigate }) {
         </Link>
       );
     },
+    // Lists: numbered steps get a badge each; bullets get room to breathe.
     ul: ({ children }) => (
-      <Box component="ul" sx={{ pl: 3, my: 1.5, '& li': { my: 0.5, lineHeight: 1.65 } }}>
+      <Box
+        component="ul"
+        sx={{
+          listStyle: 'none',
+          p: 0,
+          my: 2,
+          display: 'grid',
+          gap: 1.25,
+          '& > li': { position: 'relative', pl: 2.5, lineHeight: 1.7 },
+          '& > li::before': {
+            content: '""',
+            position: 'absolute',
+            left: 4,
+            top: '0.72em',
+            width: 6,
+            height: 6,
+            borderRadius: '1px',
+            bgcolor: 'primary.main',
+          },
+        }}
+      >
         {children}
       </Box>
     ),
-    ol: ({ children }) => (
-      <Box component="ol" sx={{ pl: 3, my: 1.5, '& li': { my: 0.75, lineHeight: 1.65, pl: 0.5 } }}>
+    ol: ({ children, start }) => (
+      <Box
+        component="ol"
+        start={start}
+        sx={{
+          listStyle: 'none',
+          p: 0,
+          my: 2.5,
+          display: 'grid',
+          gap: 1.5,
+          counterReset: `step ${(start || 1) - 1}`,
+          '& > li': { position: 'relative', pl: 5, minHeight: 28, lineHeight: 1.7, counterIncrement: 'step' },
+          '& > li::before': {
+            content: 'counter(step)',
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: 28,
+            height: 28,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: 1,
+            border: 1,
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+            fontFamily: fonts.mono,
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            color: 'primary.main',
+          },
+        }}
+      >
         {children}
       </Box>
     ),
+    // A bullet that opens with a bold lead ("**A rule:** text") puts the lead on its own line.
+    li: ({ children }) => {
+      const items = Array.isArray(children) ? children : [children];
+      const first = items[0];
+      const lead = first?.type === 'strong' || first?.props?.node?.tagName === 'strong';
+      if (!lead) return <li>{children}</li>;
+      const text = textOf(first.props.children).replace(/:\s*$/, '');
+      return (
+        <li>
+          <Box component="strong" sx={{ display: 'block', fontWeight: 600, color: 'text.primary' }}>
+            {text}
+          </Box>
+          <Box component="span" sx={{ color: 'text.secondary' }}>
+            {items.slice(1).map((c, i) => (i === 0 && typeof c === 'string' ? c.replace(/^\s+(\S)/, (_, ch) => ch.toUpperCase()) : c))}
+          </Box>
+        </li>
+      );
+    },
     blockquote: ({ children }) => (
       <Box
         component="blockquote"
