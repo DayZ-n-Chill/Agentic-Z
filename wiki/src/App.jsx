@@ -40,6 +40,7 @@ import { groups, pages, intro, searchIndex } from './content.js';
 import { makeTheme, fonts } from './theme.js';
 import Logo from './components/Logo.jsx';
 import Markdown from './components/Markdown.jsx';
+import RepoStats from './components/RepoStats.jsx';
 
 const DRAWER = 280;
 const REPO = 'https://github.com/DayZ-n-Chill/Agentic-Z';
@@ -454,9 +455,24 @@ export default function App() {
           </Box>
           <Box
             component="footer"
-            sx={{ borderTop: 1, borderColor: 'divider', py: 3, px: { md: 3 }, maxWidth: 1120, mx: 'auto', color: 'text.secondary', fontSize: '0.8rem' }}
+            sx={{
+              borderTop: 1,
+              borderColor: 'divider',
+              py: 3,
+              px: { md: 3 },
+              maxWidth: 1120,
+              mx: 'auto',
+              color: 'text.secondary',
+              fontSize: '0.8rem',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 2,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
           >
-            Agentic-Z: the most advanced agent stack for DayZ modding.
+            <span>Agentic-Z: a production-ready agent stack for DayZ modding.</span>
+            <RepoStats repoUrl={REPO} />
           </Box>
         </Box>
       </Box>
