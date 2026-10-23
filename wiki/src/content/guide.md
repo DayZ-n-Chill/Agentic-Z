@@ -54,6 +54,11 @@ This guide explains how to install, set up and use Agentic-Z, the AI agent stack
 
 Agentic-Z turns Claude Code, Codex CLI and Gemini CLI into a DayZ modding partner. It provides specialist agents for DayZ, slash commands that run DayZ Tools for you, house rules that keep mods clean, and a search over the vanilla game files. With that search, the AI looks up facts instead of guessing.
 
+It's built for production-ready mods. Work goes through the same checks a careful team runs before a release: a code review, a layout check, a build check and an in-game test. Read-only gate agents run them, and the orchestrator runs the gates before it marks work as done.
+
+> [!WARNING]
+> AI can make mistakes, and the gates are AI too. They catch a lot, but review every change yourself and test your mod in game before you publish it.
+
 > [!NOTE]
 > Codex CLI and Gemini CLI get the skills and the rules files (see [Which AI tools it works with](#which-ai-tools-it-works-with)).
 
@@ -428,6 +433,20 @@ Every add-on follows these rules:
 - **Optional:** the core never loads an add-on unless the user installs it.
 - **Same gates:** everything an add-on produces goes through the mod review, the build check and the in-game test.
 - **No reverse engineering:** no add-on unpacks protected mods or converts binarized models back into editable ones.
+
+### Suggested add-ons
+
+These are the outside tools we plan to connect first. Each one has an MCP server or API an agent can drive.
+
+| Tool | What it could do for a DayZ mod |
+| --- | --- |
+| **Figma MCP** | Design menus, HUD pieces and other in-game screens in Figma, then turn them into DayZ layout files. |
+| **Blender MCP** | Model, clean up and UV unwrap in Blender, then export a model ready for the Object Builder specialist. |
+| **Meshy** | Generate a first 3D model from a text prompt or an image, as a starting point to refine in Blender. |
+| **Higgsfield** | Make concept art, texture ideas and short video clips for your Workshop page and trailers. |
+
+> [!NOTE]
+> Coming soon. The workflows for these add-ons will ship in an upcoming release. Until then, nothing on this list is installed or connected by Agentic-Z.
 
 ## How the grading works
 
@@ -858,6 +877,7 @@ The skills also write to three places outside these folders:
 
 ## Safety
 
+- **Review before you ship:** AI can make mistakes. The gate agents and reviewers check every change, but they are AI too. Read the changes, test the mod in game, and only then publish it.
 - In a clone, the shipped `.claude/settings.json` allows the repository's own skills and scripts. It also allows plain `npm install` and `npm ci`, which install from the lockfile. It denies `python -c`, `python -m`, `node -e`, `node -p`, `npx`, and `npm install` or `npm i` with a package name. Other inline forms, such as `py -c`, are not on the allow list, so Claude Code asks you before it runs them. A plugin installation does not include this file, because plugins cannot ship permissions.
 - Every agent has an explicit tool list. The five gate agents (mod reviewer, layout validator, build checker, in-game tester and debugger) have no Edit or Write tools. Four of them have Bash to run their checks; only the debugger has no Bash. Two agents have general web or remote design access: `agent-creator` has WebFetch, and `figma-node-normalizer` uses the remote Figma MCP tools. The 21 agents that use RAG search also send text off the machine, because `search_dayz_source` embeds each query through the hosted Voyage AI API.
 - `/dayz-scope-mod <ModName>` blocks edits to every other mod in `workspace\`. Start Claude Code from the project root for the block to apply. `--clear` removes it.
