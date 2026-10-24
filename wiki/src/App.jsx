@@ -270,11 +270,11 @@ function Home({ onNavigate }) {
         <Stack direction={{ xs: 'column', sm: 'row' }} gap={3} alignItems={{ xs: 'flex-start', sm: 'center' }}>
           <Logo size={96} />
           <Box sx={{ minWidth: 0 }}>
-            <Typography variant="overline" color="primary">
-              DayZ modding · Claude Code · Codex · Gemini
-            </Typography>
             <Typography variant="h1" sx={{ fontSize: { xs: '2.2rem', md: '3rem' } }}>
               Agentic-Z Wiki
+            </Typography>
+            <Typography variant="overline" color="primary" sx={{ display: 'block', mt: 0.5 }}>
+              DayZ modding · Claude Code · Codex · Gemini
             </Typography>
           </Box>
         </Stack>
