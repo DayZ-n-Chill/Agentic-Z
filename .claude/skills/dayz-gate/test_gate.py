@@ -171,6 +171,16 @@ def test_stop_session_survivors_are_gate_error():
     fake.stop_leaves = [5]
     with pytest.raises(gate.GateError, match="still running"):
         gate.stop_session(fake.runtime(), started_by_gate=True)
+    assert fake.now >= gate.STOP_WAIT_S  # it waited before giving up
+
+
+def test_stop_session_waits_for_a_slow_exit():
+    # The live AZTestVest run: taskkill returned, but the server was still exiting
+    # at the single 2 s check, so the in-game gate errored three times.
+    fake = FakeRuntime(running=[5])
+    fake.stop_leaves = [5]
+    fake.at(8, lambda: setattr(fake, "running", []))
+    assert "stopped PIDs [5]" in gate.stop_session(fake.runtime(), started_by_gate=True)["result"]
 
 
 # A session the gate did not start may be the user's own play session: the gate

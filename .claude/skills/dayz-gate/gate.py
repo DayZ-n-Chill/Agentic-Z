@@ -62,6 +62,7 @@ DEFAULT_TIMEOUT_S = 300  # dayz-ingame-tester gives the client five minutes
 DEFAULT_SETTLE_S = 30    # keep reading after the ready signal to catch spawn-time errors
 BEHAVIOR_DONE_TIMEOUT_S = 600  # behavior: upper bound after the ready signal; the test mission's DONE line ends it sooner
 POLL_S = 2
+STOP_WAIT_S = 30  # how long stop_session waits for killed DayZDiag processes to exit
 MAX_LISTED = 30          # cap per list in the report; the rest is counted
 
 # The client's script log prints this when it creates the multiplayer mission
@@ -180,10 +181,17 @@ def stop_session(rt: Runtime, started_by_gate: bool = False) -> dict:
     rc, out = rt.run(["cmd", "/c", str(STOP_BAT)])
     if rc != 0:
         raise GateError(f"/dayz-stop-test exited {rc}: {out.strip()}")
+    # taskkill /F returns before Windows has torn the processes down; a DayZ server
+    # flushing its logs can take several seconds. The live AZTestVest run errored
+    # three times on a single 2 s check, so poll up to STOP_WAIT_S.
+    deadline = rt.clock() + STOP_WAIT_S
     rt.sleep(POLL_S)
     left = rt.diag_pids()
+    while left and rt.clock() < deadline:
+        rt.sleep(POLL_S)
+        left = rt.diag_pids()
     if left:
-        raise GateError(f"{DIAG_EXE} still running after /dayz-stop-test (PIDs {left})")
+        raise GateError(f"{DIAG_EXE} still running {STOP_WAIT_S}s after /dayz-stop-test (PIDs {left})")
     return {"step": "stop-session", "result": f"stopped PIDs {pids}"}
 
 
