@@ -85,7 +85,7 @@ Link targets are compared after normalising separators and, on Windows, case (`o
 One line per skill per agent, then a summary. Example (trimmed). `<N>` is the number of skill folders plus `_shared`; the summary counts are made up for illustration, and yours depend on what each agent home already holds:
 
 ```
-Repo skills: <N>  (H:\Projects\Agentic-Z\.claude\skills)
+Repo skills: <N>  (<repo>\.claude\skills)
   - _shared
   - agentic-z-update
   ...
