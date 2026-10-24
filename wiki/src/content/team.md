@@ -107,7 +107,7 @@ The status column uses three values:
 
 | Feature | Status | What was checked |
 | --- | --- | --- |
-| Test suite | Works | `py -m pytest -q .claude scripts/dev hooks`, run in a clean worktree, collects 5,007 tests. The tests confirm that every agent and skill is registered, every file and skill they name exists, gates cannot edit, tier files match, and every wrapper points to a real script. |
+| Test suite | Works | `py -m pytest -q .claude scripts/dev hooks`, run in a clean worktree, collects 5,008 tests. The tests confirm that every agent and skill is registered, every file and skill they name exists, gates cannot edit, tier files match, and every wrapper points to a real script. |
 | CI on GitHub | Works | The tests workflow passed on GitHub. |
 | Answer tests (evals) | Works | All 30 agents have a question file and a score in `evals/baseline.json`. |
 | DayZ facts in the packs | Works | For every pack, the graders opened the cited lines on P:. The Enforce Script examples are checked on P: too, and a test keeps them in step with the vanilla files. |
@@ -122,7 +122,7 @@ Independent reviewers graded every agent and skill at v1.0.0, at v1.5.0 and in t
 
 ![Agentic-Z versions and grades](images/team-02-1.svg)
 
-The test suite grew from 85 tests at v1.0.0 to 5,007 tests now.
+The test suite grew from 85 tests at v1.0.0 to 5,008 tests now.
 
 | Item | v1.0.0 released | v1.5.0 agent team | v2.0.0 final |
 | --- | --- | --- | --- |
