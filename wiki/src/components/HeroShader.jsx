@@ -155,7 +155,9 @@ export default function HeroShader() {
       cancelAnimationFrame(raf);
       io.disconnect();
       ro.disconnect();
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      // No loseContext() here: React runs this effect twice in development (StrictMode), and the
+      // second run gets the same canvas back, so a lost context left the hero blank until the
+      // theme changed. A canvas that unmounts frees its context with it.
     };
   }, [color, dark]);
 
