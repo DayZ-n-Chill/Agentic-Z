@@ -1,0 +1,48 @@
+{
+  "agent": "dayz-object-builder",
+  "questions": [
+    {
+      "id": "viewgeo-firegeo-resolutions",
+      "question": "Answer only, do not edit any file. In Object Builder, what resolution values do I give the View Geometry LOD and the Fire Geometry LOD of a DayZ model?",
+      "must_include": [
+        "re:6(\\.0)?e\\+?15",
+        "re:7(\\.0)?e\\+?15"
+      ],
+      "verified": "LOD list in the header of P:/DZ/gear/camping/wooden_case.p3d (6e+15 and 7e+15); Tier 2 table in .claude/skills/_shared/conventions/assets.md"
+    },
+    {
+      "id": "door-axis-memory-points",
+      "question": "Answer only, do not edit any file. My bunker door leaf is the bone door_1 in the visual LODs. What must I add to the Memory LOD so the door can turn, and what do I name it?",
+      "must_include": [
+        "re:door_1_axis",
+        "re:two points|2 points|exactly two|pair of points"
+      ],
+      "verified": "P:/DZ/structures/Residential/HouseBlocks/houseblock_3f_corner1.p3d stores bone doors5 with axis doors5_axis; audit_p3d.py check_visual_lod matches <name>_axis to <name>; .claude/skills/_shared/models/doors.md"
+    },
+    {
+      "id": "door-needs-view-geometry-component",
+      "question": "Answer only, do not edit any file. My building's door animates when I call OpenDoor from script, but players never get an open prompt when they look at it. Which LOD of the model is most likely wrong, and what does it need?",
+      "must_include": [
+        "re:view ?geometry|viewgeo",
+        "re:component"
+      ],
+      "verified": "P:/scripts/3_game/entities/building.c:27 to :28 (GetDoorIndex from the view geometry component index); P:/scripts/4_world/classes/useractionscomponent/actions/interact/actionopendoors.c:40"
+    },
+    {
+      "id": "audit-after-save",
+      "question": "Answer only, do not edit any file. I followed your Object Builder steps for my crate and saved the MLOD .p3d. What check do you run on it before the work goes back to the art lead?",
+      "must_include": [
+        "dayz-p3d-audit"
+      ],
+      "verified": ".claude/agents/dayz-object-builder.md section 'After the user saves the model'"
+    },
+    {
+      "id": "proxy-selection-name",
+      "question": "Answer only, do not edit any file. I want my gate model to show the vanilla combination lock \\dz\\gear\\camping\\combination_lock3.p3d through a proxy. What exactly is the proxy's named selection called in the model?",
+      "must_include": [
+        "re:proxy:[\\\\/]?dz[\\\\/]gear[\\\\/]camping[\\\\/]combination_lock3\\.\\d{3}"
+      ],
+      "verified": "P:/DZ/gear/camping/fence.p3d stores proxy:\\dz\\gear\\camping\\combination_lock3.001; .claude/skills/_shared/models/proxies.md"
+    }
+  ]
+}

@@ -10,13 +10,13 @@ cd Agentic-Z
 python .claude\skills\sync-skills\sync.py
 ```
 
-`sync-skills` symlinks (or junctions on Windows) the repo's `.claude/skills/` into Claude Code, Codex, and Gemini home dirs so all three discover the same slash commands during local testing. Restart or reload your agent session after running it.
+`sync-skills` symlinks (or junctions on Windows) the repo's `.claude/skills/` into the Codex and Gemini home dirs so they discover the same slash commands during local testing; Claude Code reads the repo's skills directly. Restart or reload your agent session after running it.
 
 ## Branch rules
 
 - Branch from `develop`, never from `main`.
 - PR target is `develop`. The `main` branch is for landed, released work only.
-- Branch naming: `feature/<thing>`, `fix/<thing>`, `docs/<thing>`.
+- Branch naming: `feature/<thing>`, `fix/<thing>`, `docs/<thing>`, `chore/<thing>`.
 
 ## Standard contribution flow
 
@@ -60,4 +60,4 @@ If you add or rename a skill, update:
 - `docs/dayz-modding.md` if the skill appears in the workflow section.
 - The plugin manifests in `.claude-plugin/` if the skill should be exposed to plugin users.
 
-Do not touch `wiki/` — it regenerates via `/docs-sync` from the canonical sources.
+The wiki is not in this repo: it lives in `DayZ-n-Chill/Agentic-Z-Wiki`. Clone it next to this repo and `/docs-sync` checks it against the canonical sources.

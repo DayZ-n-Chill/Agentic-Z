@@ -1,0 +1,53 @@
+{
+  "agent": "dayz-audio-fx-specialist",
+  "questions": [
+    {
+      "id": "sound-required-addon",
+      "question": "Answer only, do not edit any file. My mod's config.cpp adds class MyMod_Pickup_SoundSet: baseCharacter_SoundSet inside CfgSoundSets. Which vanilla addon must my CfgPatches class list in requiredAddons[] so the parent loads first?",
+      "must_include": [
+        "DZ_Sounds_Effects",
+        "requiredAddons"
+      ],
+      "verified": "P:/DZ/sounds/hpp/config.cpp:3 (class DZ_Sounds_Effects) and :318381 (class baseCharacter_SoundSet); P:/DZ/sounds_bliss/config.cpp:3-13 requires DZ_Sounds_Effects"
+    },
+    {
+      "id": "loop-and-stop-helpers",
+      "question": "Answer only, do not edit any file. In my item's Enforce Script, which methods on the object play a sound set in a loop on the item and later stop it? Give the method names and their parameters.",
+      "must_include": [
+        "PlaySoundSetLoop",
+        "StopSoundSet",
+        "EffectSound"
+      ],
+      "verified": "P:/scripts/3_game/entities/object.c:1273 (bool PlaySoundSetLoop(out EffectSound sound, string sound_set, float fade_in, float fade_out)) and :1314 (bool StopSoundSet(out EffectSound sound))"
+    },
+    {
+      "id": "restart-loop-needs-stop",
+      "question": "Answer only, do not edit any file. My device swaps its running loop when fuel is low. I call PlaySoundSetLoop(m_EngineLoop, \"MyMod_LowFuel_SoundSet\", 0.3, 0.3) while m_EngineLoop still holds the normal loop. The normal loop keeps playing and the low fuel loop never starts. Why, and what is the fix?",
+      "must_include": [
+        "StopSoundSet",
+        "re:\\b(already|still)\\s+(set|holds|assigned|playing|running|non-null|not null)\\b|\\b(not|non)[- ]null\\b"
+      ],
+      "verified": "P:/scripts/3_game/entities/object.c:1273-1275 (PlaySoundSetLoop calls PlaySoundSet with loop=true) and :1251-1255 (PlaySoundSet returns true without playing when sound is set and loop is true); P:/scripts/4_world/entities/itembase/powergenerator.c:257-258 (vanilla calls StopSoundSet then StartLoopSound)"
+    },
+    {
+      "id": "shader-range-unit",
+      "question": "Answer only, do not edit any file. In a CfgSoundShaders class, which key sets how far away the sound can be heard?",
+      "must_include": [
+        "re:\\brange\\b"
+      ],
+      "must_not_include": [
+        "re:volumeFactor\\s+sets how far"
+      ],
+      "verified": "P:/DZ/sounds/hpp/config.cpp:5775 (range=100 on powerGeneratorLoop_Soundshader) and :17078-17090 (reloadWeapon_SoundShader range=30 with an inline rangeCurve[] from 0 to 30); the unit of range (meters) is unverified: no P: file states it for CfgSoundShaders (object.c:1234 says meters only for the script PlaySound range argument), so it is not asked or scored"
+    },
+    {
+      "id": "weapon-particle-registration",
+      "question": "Answer only, do not edit any file. In my weapon's config.cpp I set class Particles { class OnFire { class MuzzleFlash { overrideParticle=\"mymod_muzzle_01\"; }; }; }; with my own mymod_muzzle_01.ptc in the mod. What must my scripts do so the engine finds this particle by that name?",
+      "must_include": [
+        "ParticleList",
+        "re:RegisterParticle|modded class ParticleList"
+      ],
+      "verified": "P:/scripts/4_world/entities/weaponparticles.c:117-121 (overrideParticle read with ConfigGetText and resolved by ParticleList.GetParticleIDByName); P:/scripts/3_game/particles/particlelist.c:3-9 (modded ParticleList example)"
+    }
+  ]
+}

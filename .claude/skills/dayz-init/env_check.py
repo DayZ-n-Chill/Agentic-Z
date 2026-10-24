@@ -1,16 +1,25 @@
-"""Environment detection for /dayz-init.
+"""Environment checks for /dayz-init.
 
-Categorizes each prereq as: OK (nothing to do), AUTOFIX (we can fix it),
-HARD_STOP (user has to act). Returns EnvIssue objects with optional
-steam:// links and human-readable messages.
+Each check returns None (fine) or an EnvIssue:
+  AUTOFIX    /dayz-init fixes it itself (mount P:\\)
+  HARD_STOP  the user has to act (install DayZ Tools, extract game data, ...)
+
+Every check is read-only. Paths are resolved with the shared dayz-preflight resolvers so this check and
+every other DayZ skill agree on where things live. Checks that read P:\\ are
+skipped while P:\\ is unmounted; re-run after mounting to see them.
 """
 from __future__ import annotations
 
+import os
 import sys
-import winreg
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+from skill_helpers import preflight  # noqa: E402
+
+P_MODS = Path("P:\\Mods")
 
 
 class Severity(Enum):
@@ -27,109 +36,95 @@ class EnvIssue:
 
 
 def check_python() -> EnvIssue | None:
-    """Confirm Python 3.8+. Currently running interpreter == answer."""
-    if sys.version_info < (3, 8):
+    if sys.version_info < (3, 10):
         return EnvIssue(
             name="python",
             severity=Severity.HARD_STOP,
-            message=f"Python 3.8+ required, found {sys.version.split()[0]}",
+            message=f"Python 3.10+ required, found {sys.version.split()[0]}",
             fix_link="https://www.python.org/downloads/",
         )
     return None
 
 
-def _p_drive_mounted() -> bool:
-    """Check P:\\ via the logical-drive bitmask (no I/O, no popup risk)."""
+def p_drive_mounted() -> bool:
+    """Check P:\\ via the logical-drive bitmask (no disk I/O, no popup risk)."""
+    if sys.platform != "win32":
+        return False
     import ctypes
 
-    bitmask = ctypes.windll.kernel32.GetLogicalDrives()
-    # Bit 0 = A, bit 1 = B, ..., bit 15 = P
-    return bool(bitmask & (1 << 15))
+    return bool(ctypes.windll.kernel32.GetLogicalDrives() & (1 << 15))  # bit 15 = P
 
 
 def check_p_drive() -> EnvIssue | None:
-    if _p_drive_mounted():
+    if p_drive_mounted():
         return None
     return EnvIssue(
         name="p_drive",
         severity=Severity.AUTOFIX,
-        message="P:\\ is not mounted (will mount via subst)",
+        message="P:\\ is not mounted (will mount with /dayz-workdrive)",
     )
 
 
-def _dayz_tools_installed() -> bool:
-    """Check DayZ Tools install: registry subkey plus AddonBuilder.exe on disk.
-
-    DayZ Tools registers each tool under its own subkey (AddonBuilder, BinMake,
-    etc.) with `path` and `exe` values — there is no top-level InstallPath.
-    We resolve via the AddonBuilder subkey and verify the exe is on disk so a
-    stale registry entry (install dir manually deleted) still reads as missing.
-    """
-    try:
-        with winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE,
-            r"SOFTWARE\WOW6432Node\Bohemia Interactive\DayZ Tools\AddonBuilder",
-        ) as key:
-            tool_path, _ = winreg.QueryValueEx(key, "path")
-            tool_exe, _ = winreg.QueryValueEx(key, "exe")
-    except OSError:
-        return False
-    return (Path(tool_path) / tool_exe).is_file()
-
-
 def check_dayz_tools() -> EnvIssue | None:
-    if _dayz_tools_installed():
+    if preflight.find_dayz_tools() is not None:
         return None
     return EnvIssue(
         name="dayz_tools",
         severity=Severity.HARD_STOP,
-        message="DayZ Tools is not installed (Steam, free)",
+        message="DayZ Tools not found (free on Steam; set DAYZ_TOOLS_PATH if installed elsewhere)",
         fix_link="steam://install/830640",
     )
 
 
 def check_vanilla_data() -> EnvIssue | None:
-    """Vanilla data extracted to P:\\ implies P:\\scripts\\3_Game exists."""
-    marker = Path("P:\\scripts\\3_Game")
-    if marker.is_dir():
+    if not p_drive_mounted() or preflight.find_vanilla_data() is not None:
         return None
     return EnvIssue(
         name="vanilla_data",
         severity=Severity.HARD_STOP,
-        message=(
-            "Vanilla data is not extracted to P:\\.\n"
-            "  Open DayZ Tools, then: Tools menu, Extract Game Data."
-        ),
+        message="Vanilla game data is not extracted to P:\\ (DayZ Tools > Tools > Extract Game Data)",
     )
 
 
 def check_mods_junction() -> EnvIssue | None:
-    """P:\\Mods\\ should junction to <DayZ install>\\!Workshop\\."""
-    if Path("P:\\Mods").exists():
+    """P:\\Mods\\ must be a junction to <DayZ install>\\!Workshop\\. Read-only.
+
+    Missing while the game's !Workshop folder exists: fine. /dayz-preflight,
+    which every child skill runs first, creates the junction (mklink /J is
+    non-destructive). Missing without a locatable game, or present in the wrong
+    shape (real folder, dangling link, wrong target): HARD_STOP.
+
+    preflight.validate_p_mods() is only called when P:\\Mods exists, because on
+    an absent path it creates the junction; on an existing path it only inspects.
+    """
+    if not p_drive_mounted():
         return None
-    return EnvIssue(
-        name="mods_junction",
-        severity=Severity.AUTOFIX,
-        message="P:\\Mods\\ junction to !Workshop missing (will create)",
-    )
+    if not os.path.lexists(P_MODS):
+        game = preflight.find_dayz_game()
+        if game is not None and (game / "!Workshop").is_dir():
+            return None
+        return EnvIssue(
+            name="mods_junction",
+            severity=Severity.HARD_STOP,
+            message="P:\\Mods\\ is missing and the DayZ install's !Workshop folder was not found "
+                    "(install DayZ, or set DAYZ_GAME_PATH if it is installed somewhere unusual)",
+        )
+    problem = preflight.validate_p_mods()
+    if problem is None:
+        return None
+    return EnvIssue(name="mods_junction", severity=Severity.HARD_STOP, message=problem)
+
+
+CHECKS = [check_python, check_p_drive, check_dayz_tools, check_vanilla_data, check_mods_junction]
 
 
 def run_all() -> list[EnvIssue]:
-    """Run every check, return non-None issues in declaration order."""
-    checks = [
-        check_python,
-        check_p_drive,
-        check_dayz_tools,
-        check_vanilla_data,
-        check_mods_junction,
-    ]
-    return [issue for check in checks if (issue := check()) is not None]
+    """Run every check; return the issues in check order."""
+    return [issue for check in CHECKS if (issue := check()) is not None]
 
 
-def classify(
-    issues: list[EnvIssue],
-) -> tuple[list[EnvIssue], list[EnvIssue]]:
-    """Split issues into (autofixable, hard_stop) preserving order within each."""
+def classify(issues: list[EnvIssue]) -> tuple[list[EnvIssue], list[EnvIssue]]:
+    """Split issues into (autofix, hard_stop), preserving order."""
     autofix = [i for i in issues if i.severity == Severity.AUTOFIX]
     hard_stop = [i for i in issues if i.severity == Severity.HARD_STOP]
     return autofix, hard_stop

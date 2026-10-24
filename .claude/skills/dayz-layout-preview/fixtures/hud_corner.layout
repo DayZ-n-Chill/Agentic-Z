@@ -1,0 +1,58 @@
+FrameWidgetClass rootFrame {
+ position 0 0
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ {
+  PanelWidgetClass panel_status {
+   color 0 0 0 0.6
+   position 24 24
+   size 320 120
+   halign right_ref
+   valign bottom_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   {
+    ImageWidgetClass img_icon {
+     position 10 0
+     size 64 64
+     valign center_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     image0 "set:dayz_gui image:icon_health"
+     mode blend
+    }
+    TextWidgetClass txt_status {
+     position 84 0
+     size 0.5 0.4
+     valign center_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     text "Healthy"
+     font "gui/fonts/sdf_MetronBook24"
+     "text color" 1 1 1 1
+     "exact text" 1
+     "exact text size" 20
+     "text valign" center
+    }
+   }
+  }
+  PanelWidgetClass panel_topbar {
+   color 0.1 0.1 0.1 0.8
+   position 0 0
+   size 1 40
+   hexactpos 0
+   vexactpos 1
+   hexactsize 0
+   vexactsize 1
+  }
+ }
+}

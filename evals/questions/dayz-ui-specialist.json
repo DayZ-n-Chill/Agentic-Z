@@ -1,0 +1,52 @@
+{
+  "agent": "dayz-ui-specialist",
+  "questions": [
+    {
+      "id": "hud-mod-ingamehud",
+      "question": "Answer only, do not edit any file. I wrote `modded class Hud { override void Init(Widget hud_panel_widget) { super.Init(hud_panel_widget); /* create my overlay */ } }` but my overlay never appears in game. Which class should I mod instead, and why does my override never run?",
+      "must_include": [
+        "IngameHud",
+        "re:super"
+      ],
+      "verified": "P:/scripts/3_game/gameplay.c:640 (Hud.Init is an empty base method) and P:/scripts/5_mission/gui/ingamehud.c:143 (IngameHud.Init overrides it without calling super)"
+    },
+    {
+      "id": "listbox-onitemselected-signature",
+      "question": "Answer only, do not edit any file. In my UIScriptedMenu I override `bool OnItemSelected(Widget w, int row, int col)` for a TextListboxWidget and it does not compile. What is the vanilla signature?",
+      "must_include": [
+        "re:OnItemSelected\\s*\\(\\s*Widget\\s+\\w+\\s*,\\s*int\\s+\\w+\\s*,\\s*int\\s+\\w+\\s*,\\s*int\\s+\\w+\\s*,\\s*int\\s+\\w+\\s*,\\s*int\\s+\\w+\\s*,\\s*int\\s+\\w+\\s*\\)"
+      ],
+      "verified": "P:/scripts/3_game/tools/uiscriptedmenu.c:298 and P:/scripts/1_core/proto/enwidgets.c:662 (bool OnItemSelected(Widget w, int x, int y, int row, int column, int oldRow, int oldColumn))"
+    },
+    {
+      "id": "layout-root-format",
+      "question": "Answer only, do not edit any file. Is a DayZ .layout file XML? Show the first line of a layout whose root is a frame widget named Root.",
+      "must_include": [
+        "re:FrameWidgetClass\\s+Root\\s*\\{",
+        "re:\\b(?:not|isn't|isn’t|no)\\b[^\\n]{0,60}?\\bXML\\b|\\bnon-XML\\b"
+      ],
+      "must_not_include": [
+        "re:<FrameWidget"
+      ],
+      "verified": "P:/gui/layouts/day_z_hud.layout:1 (FrameWidgetClass HudFrameWidget {); every vanilla layout under P:/gui/layouts/ opens with '<Type>WidgetClass <name> {'; .claude/skills/_shared/enscript/references/gui_layout.md 'File Format'"
+    },
+    {
+      "id": "chat-open-check",
+      "question": "Answer only, do not edit any file. My client-side key handler fires while the player is typing in chat. Which UIManager call and which vanilla menu constant tell me the chat input is open?",
+      "must_include": [
+        "IsMenuOpen",
+        "MENU_CHAT_INPUT"
+      ],
+      "verified": "P:/scripts/3_game/tools/uimanager.c:154 (bool IsMenuOpen(int id)) and P:/scripts/3_game/constants.c:192 (const int MENU_CHAT_INPUT = 17)"
+    },
+    {
+      "id": "listbox-two-columns",
+      "question": "Answer only, do not edit any file. How do I add one row with two columns (name and count) to a TextListboxWidget from script? Name the two methods.",
+      "must_include": [
+        "AddItem",
+        "SetItem"
+      ],
+      "verified": "P:/scripts/1_core/proto/enwidgets.c:442 (int AddItem(string text, Class userData, int column, int row = -1)) and :443 (void SetItem(int position, string text, Class userData, int column))"
+    }
+  ]
+}

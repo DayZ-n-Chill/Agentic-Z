@@ -1,10 +1,20 @@
-# .emat Material Format Reference
+# .emat material format reference
 
 Verified from 8 vanilla particle material files. Plain text format.
 
+## Contents
+
+- [Two shader types](#two-shader-types)
+- [Complete property table](#complete-property-table)
+- [BlendMode values](#blendmode-values)
+- [Sort values](#sort-values)
+- [Vanilla examples (annotated)](#vanilla-examples-annotated)
+- [Creating custom materials](#creating-custom-materials)
+- [.meta files (for reference only, not needed for mods)](#meta-files-for-reference-only-not-needed-for-mods)
+
 ---
 
-## TWO SHADER TYPES
+## Two shader types
 
 ### `Particle` — Most common (fire, sparks, water, smoke with blending)
 
@@ -18,7 +28,7 @@ No BlendMode property available.
 
 ---
 
-## COMPLETE PROPERTY TABLE
+## Complete property table
 
 | Property | Available in | Type | Description |
 |---|---|---|---|
@@ -37,7 +47,7 @@ No BlendMode property available.
 
 ---
 
-## BlendMode VALUES
+## BlendMode values
 
 | Value | Visual effect | Use case |
 |---|---|---|
@@ -47,7 +57,7 @@ No BlendMode property available.
 
 ---
 
-## Sort VALUES
+## Sort values
 
 | Value | Render order | Use case |
 |---|---|---|
@@ -57,7 +67,7 @@ No BlendMode property available.
 
 ---
 
-## VANILLA EXAMPLES (annotated)
+## Vanilla examples (annotated)
 
 ### Glow dot (simplest material — ParticleSprite-like but Particle shader)
 
@@ -147,7 +157,7 @@ ParticleSprite {
 
 ---
 
-## CREATING CUSTOM MATERIALS
+## Creating custom materials
 
 ### Approach 1: Reference vanilla .edds textures (safest)
 
@@ -169,7 +179,7 @@ This creates blue electric sparks using vanilla spark texture.
 1. Create a DDS texture (DXT5 for alpha, DXT1 for opaque)
 2. Rename `.dds` → `.edds`
 3. Place in mod: `MyMod/data/particles/sprites/my_texture.edds`
-4. Reference in .emat by path only (no GUID for mod files — needs testing):
+4. Reference in .emat by path only (mod files have no GUID; vanilla's own path-only reference is at `P:\graphics\particles\contaminated_area_gas_around_tiny.ptc:13`, see SKILL.md "GUID references"):
    `AlbedoMap "MyMod/data/particles/sprites/my_texture.edds"`
 
 ### Vanilla sprite texture GUIDs (extracted from .emat files)
@@ -183,9 +193,28 @@ This creates blue electric sparks using vanilla spark texture.
 | `{612031817F136DE0}` | Graphics/Particles/sprites/water_splash_01.edds | Water splash (4x2 sheet) |
 | `{856E111BF3EA99A3}` | Graphics/Particles/sprites/flare_light_ca.edds | Light flare |
 
+
+### Vanilla material GUIDs (reference from a custom .ptc)
+
+All paths are prefixed with `Graphics/Particles/materials/`.
+
+| GUID | Short name | Visual type |
+|---|---|---|
+| `{CB7AF4FD8ACBFDFC}` | glow/glow1.emat | Soft glow dot |
+| `{009C2EBAACD2D72A}` | fire/sparks1.emat | Bright spark point |
+| `{0B829A150C6A13E5}` | fire/sparks_06.emat | Spark strip (8-tile) |
+| `{853257EDA4B1E35D}` | fire/fire_flame_01.emat | Fire flame billboard |
+| `{3E6CE4D61F8AC71F}` | fire/fire_medium_camp_02.emat | Medium fire anim |
+| `{83BCB6516091DB01}` | fire/fire_medium_camp_04.emat | Fire burst anim |
+| `{62F13B8B540EBC80}` | fire/fireball_1.emat | Fireball |
+| `{00BEA27443975BEB}` | smoke/smoke_anim_02.emat | Animated smoke puff |
+| `{008E25684854DAB8}` | smoke/steam_small_cook_01.emat | Steam/vapor cloud |
+| `{8FE2383D6913E098}` | enviroment/water_splash_01_NoEm.emat | Water splash |
+| `{D29B53088A5A3911}` | smoke/smoke_dust_01_W.emat | White dust/mist |
+
 ---
 
-## .meta FILES (for reference only — not needed for mods)
+## .meta files (for reference only, not needed for mods)
 
 ```
 MetaFileClass {

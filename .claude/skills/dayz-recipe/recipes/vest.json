@@ -1,0 +1,59 @@
+{
+  "name": "vest",
+  "title": "New vest",
+  "summary": "A new vest built on a vanilla one: its own class and textures on the vanilla model, the vanilla attachment slots and cargo, and a loot entry.",
+  "item": {"default": "{mod}_Vest", "root": "CfgVehicles"},
+  "options": {
+    "parent": {"default": "SmershVest", "root": "CfgVehicles", "hint": "dz/characters/vests/config.cpp",
+               "help": "Vanilla vest the new one inherits"},
+    "attachment": {"default": "SmershBag", "root": "CfgVehicles", "hint": "dz/characters/backpacks/config.cpp",
+                   "help": "Vanilla item for the attach check; it must fit a slot of the parent"},
+    "cargo": {"default": "Rag", "root": "CfgVehicles", "hint": "dz/gear/consumables/config.cpp",
+              "help": "Vanilla item for the cargo check; it must fit the parent's cargo"}
+  },
+  "fits": [
+    {"kind": "wear", "slot": "Vest", "host": "parent"},
+    {"kind": "slot", "item": "attachment", "host": "parent"},
+    {"kind": "cargo", "item": "cargo", "host": "parent"}
+  ],
+  "scripts": [],
+  "classes": [
+    {"name": "{item}", "where": "config.cpp, CfgVehicles", "parent": "{parent}",
+     "notes": "scope 2. Keeps the parent's inventorySlot, attachments[], cargo and ClothingTypes models."}
+  ],
+  "files": [
+    {"path": "workspace/{mod}/config.cpp", "what": "Add {parent_addon} to requiredAddons[] and the {item} class to CfgVehicles."},
+    {"path": "workspace/{mod}/data/{item_lower}_co.paa", "what": "Texture for the hidden selections ({parent_selections})."},
+    {"path": ".server/<instance>/mission/db/types.xml", "what": "Loot entry for {item}."}
+  ],
+  "tasks": [
+    {"id": "T1", "team": "Art", "worker": "dayz-wearables-specialist",
+     "task": "Add class {item} : {parent} to CfgVehicles with scope 2, displayName and descriptionShort. Set hiddenSelectionsTextures for {parent_selections}, one entry per selection. Add {parent_addon} to requiredAddons[].",
+     "done": "/dayz-lint {mod} passes and {item} inherits {parent}.",
+     "files": ["workspace/{mod}/config.cpp"], "depends": []},
+    {"id": "T2", "team": "Art", "worker": "dayz-asset-specialist",
+     "task": "Make {item_lower}_co.paa from the user's PNG or TGA source with /dayz-pack-texture, laid out like the {parent} texture.",
+     "done": "The .paa exists at the path T1 put in hiddenSelectionsTextures.",
+     "files": ["workspace/{mod}/data/{item_lower}_co.paa"], "depends": []},
+    {"id": "T3", "team": "Server", "worker": "dayz-server-admin",
+     "task": "Add a types.xml entry for {item} with /dayz-edit-types, starting from the vanilla {parent} entry.",
+     "done": "The entry exists and min is not above nominal.",
+     "files": [".server/<instance>/mission/db/types.xml"], "depends": ["T1"]}
+  ],
+  "checks": [
+    {"id": "vest-spawn", "feature": "The vest exists in the world", "item": "{item}", "action": "spawn"},
+    {"id": "vest-wear", "feature": "A player can wear the vest", "item": "{item}", "action": "wear"},
+    {"id": "vest-attach", "feature": "The {attachment} attaches to the vest", "item": "{item}", "action": "attach", "with": "{attachment}"},
+    {"id": "vest-cargo", "feature": "A {cargo} fits in the vest", "item": "{item}", "action": "cargo", "with": "{cargo}"}
+  ],
+  "needs_person": [
+    "How the vest looks worn on a male and a female character, and on the ground.",
+    "Damage and protection in a fight."
+  ],
+  "questions": [
+    "What display name and description should the vest have?",
+    "How many colors? This draft has one; each extra color is one more class and one more texture.",
+    "Change any stats (cargo size, protection, weight), or keep the {parent} values?",
+    "Where should it spawn, and how often?"
+  ]
+}

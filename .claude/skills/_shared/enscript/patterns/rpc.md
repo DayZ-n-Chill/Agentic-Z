@@ -2,24 +2,45 @@
 
 DayZ has two RPC APIs: the legacy `GetGame().RPC` / `GetGame().RPCSingleParam` and the cleaner `ScriptRPC` builder. Both deliver messages that are received in `OnRPC()` overrides on the target entity.
 
+Vanilla sources:
+
+| API | Signature | Source |
+|---|---|---|
+| Receive on an object | `void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)` | `P:\scripts\3_game\entities\object.c:860`; `EntityAI` override at `P:\scripts\3_game\entities\entityai.c:3507` |
+| Receive on the game (any target, or none) | `void OnRPC(PlayerIdentity sender, Object target, int rpc_type, ParamsReadContext ctx)` on `CGame`, overridden in `DayZGame` | `P:\scripts\3_game\global\game.c:211`; `P:\scripts\3_game\dayzgame.c:3141` (it forwards to `target.OnRPC` at :3151) |
+| Send one param | `RPCSingleParam(Object target, int rpc_type, Param param, bool guaranteed, PlayerIdentity recipient = null)` | `P:\scripts\3_game\global\game.c:1013` |
+| Send many params | `RPC(Object target, int rpcType, notnull array<ref Param> params, bool guaranteed, PlayerIdentity recipient = null)` | `P:\scripts\3_game\global\game.c:1011` |
+| Builder | `ScriptRPC.Send(Object target, int rpc_type, bool guaranteed, PlayerIdentity recipient = NULL)` | `P:\scripts\3_game\gameplay.c:117` |
+| Vanilla IDs | `enum ERPCs`, from `RPC_SYNC_ITEM_VAR = 0` up to `RPC_END` | `P:\scripts\3_game\enums\erpcs.c:1`, `:7` and `:225` |
+
+## Contents
+
+- [Custom RPC ID Enum](#custom-rpc-id-enum)
+- [1. RPCSingleParam: Simplest Path](#1-rpcsingleparam-simplest-path)
+- [2. GetGame().RPC: Broadcast all Clients](#2-getgamerpc-broadcast-all-clients)
+- [3. ScriptRPC: Multi-Field Payload](#3-scriptrpc-multi-field-payload)
+- [4. Client → Server RPC](#4-client--server-rpc)
+- [5. OnRPC Override Template](#5-onrpc-override-template)
+- [Rules](#rules)
+
 ---
 
 ## Custom RPC ID Enum
 
-Always claim a private ID range. Vanilla uses 0–~200; community mods use high ranges.
+Always claim a private ID range. Vanilla `ERPCs` counts up from 0 to `RPC_END`, a little under 200 entries on this build (`P:\scripts\3_game\enums\erpcs.c`); community mods use high ranges. The high ranges are a community convention, not a vanilla rule.
 
 ```c
 // Scripts/3_Game/MyMod_ERPCs.c
 enum MyMod_ERPCs
 {
-    // Range 20000–20099 owned by MyMod — document in README
+    // Range 20000 to 20099 owned by MyMod: document in README
     RPC_NOTIFICATION     = 20000,
     RPC_SYNC_DATA        = 20001,
     RPC_CLIENT_TO_SERVER = 20002,
 }
 ```
 
-**⚠️ Collision symptom:** an RPC fires "the wrong handler" intermittently when another mod is loaded. That's the IDs colliding. Low ranges (1–200) are heavily used by vanilla; community convention is to pick a high random base (e.g. `25416533`) when you genuinely want isolation:
+**⚠️ Collision symptom:** an RPC fires "the wrong handler" intermittently when another mod is loaded. That's the IDs colliding. Low ranges (1 to 200) are heavily used by vanilla; community convention is to pick a high random base (e.g. `25416533`) when you genuinely want isolation:
 
 ```c
 enum eMyMod_RPC
@@ -33,7 +54,7 @@ enum eMyMod_RPC
 
 ---
 
-## 1. RPCSingleParam — Simplest Path
+## 1. RPCSingleParam: Simplest Path
 
 One `Param` wrapper, sent to a specific player or null-broadcast.
 
@@ -56,7 +77,7 @@ void SendNotification(PlayerBase player, string msg)
 
 ---
 
-## 2. GetGame().RPC — Broadcast all Clients
+## 2. GetGame().RPC: Broadcast all Clients
 
 ```c
 // Server → all clients (null recipient)
@@ -70,7 +91,7 @@ void BroadcastAlert(string msg)
 
 ---
 
-## 3. ScriptRPC — Multi-Field Payload
+## 3. ScriptRPC: Multi-Field Payload
 
 Avoids `Param8` nesting for complex payloads.
 
@@ -87,7 +108,7 @@ void SendSyncData(PlayerBase player, string key, int val, float factor)
     rpc.Send(player, MyMod_ERPCs.RPC_SYNC_DATA, true, player.GetIdentity());
 }
 
-// Receive — field order MUST match write order
+// Receive: field order MUST match write order
 override void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)
 {
     super.OnRPC(sender, rpc_type, ctx);
@@ -131,7 +152,7 @@ case MyMod_ERPCs.RPC_CLIENT_TO_SERVER:
 {
     if (!GetGame().IsServer())
         break;
-    // ALWAYS validate server-side — never trust client input
+    // ALWAYS validate server-side: never trust client input
     break;
 }
 ```

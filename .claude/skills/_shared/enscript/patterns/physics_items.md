@@ -14,7 +14,7 @@ The vanilla helper at `P:\scripts\3_game\entities\inventoryitem.c:26`:
 proto native void ThrowPhysically(DayZPlayer player, vector force, bool collideWithCharacters = true);
 ```
 
-Internally calls `CreateDynamicPhysics(ITEM_LARGE)`, `SetDynamicPhysicsLifeTime(...)`, and applies `force` as an impulse. This is the pattern vanilla itself uses — see `P:\scripts\4_world\static\miscgameplayfunctions.c` lines 1188 / 1204 / 1212 for examples.
+It is native, so what it does inside can't be read in script. It is the call vanilla itself uses: the player's throw (`P:\scripts\3_game\systems\inventory\hand_actions.c:81`) and items or kits that must fall (`P:\scripts\4_world\classes\constructionbase.c:300`, `P:\scripts\4_world\entities\itembase\tentbase\shelter.c:65`).
 
 ```c
 EntityAI spawned = GetGame().CreateObjectEx("MyMod_Item", pos, ECE_CREATEPHYSICS|ECE_UPDATEPATHGRAPH);
@@ -45,7 +45,7 @@ The `SetDynamicPhysicsLifeTime` call is **mandatory** — without it the engine 
 
 | API | Location |
 |---|---|
-| `CreateDynamicPhysics`, `EnableDynamicCCD`, `SetDynamicPhysicsLifeTime` | `P:\scripts\3_game\entities\object.c:462-464` |
-| `PhxInteractionLayers` enum (`DYNAMICITEM`, `DYNAMICITEM_NOCHAR`, ...) | `P:\scripts\3_game\global\dayzphysics.c:1-29` |
+| `CreateDynamicPhysics`, `EnableDynamicCCD`, `SetDynamicPhysicsLifeTime` | `P:\scripts\3_game\entities\object.c:456-458` |
+| `PhxInteractionLayers` enum (`DYNAMICITEM`, `DYNAMICITEM_NOCHAR`, ...) | `P:\scripts\3_game\global\dayzphysics.c:1-43` |
 | `dBodyDynamic`, `dBodyEnableGravity`, `dBodyApplyImpulse` | `P:\scripts\1_core\proto\enphysics.c:64-69, 141` |
 | `StopItemDynamicPhysics` (sets lifetime to 0.01 to "park" the body) | `P:\scripts\4_world\entities\itembase.c:4530` |

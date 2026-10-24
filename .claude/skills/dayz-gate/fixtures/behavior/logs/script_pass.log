@@ -1,0 +1,9 @@
+12:00:01.204 SCRIPT       : Module: Game; loaded 415x files
+12:00:04.880 SCRIPT       : [AZ-BEHAVIOR] START 5
+12:00:31.002 SCRIPT       : Player connected
+12:00:42.115 SCRIPT       : [AZ-BEHAVIOR] PASS vest-spawns
+12:00:43.117 SCRIPT       : [AZ-BEHAVIOR] PASS vest-wear
+12:00:44.120 SCRIPT       : [AZ-BEHAVIOR] PASS vest-pouch
+12:00:45.121 SCRIPT       : [AZ-BEHAVIOR] PASS vest-cargo
+12:00:46.125 SCRIPT       : [AZ-BEHAVIOR] PASS knife-hands
+12:00:47.126 SCRIPT       : [AZ-BEHAVIOR] DONE

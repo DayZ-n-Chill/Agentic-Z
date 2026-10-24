@@ -1,6 +1,15 @@
 # Pattern: Singleton Config
 
-A static, lazily-initialized configuration class loaded from a JSON file on the server profile directory. The singleton lives in `3_Game` (loads on both server and client) or `5_Mission` for server-only data.
+A static, lazily-initialized configuration class loaded from a JSON file on the server profile directory. The singleton lives in `3_Game` (visible to every later layer) or `5_Mission`; neither is server-only, so guard server work with `GetGame().IsServer()`. Do not use `#ifdef SERVER` for it: `SERVER` is defined only on a dedicated server (`P:\scripts\1_core\defines.c:106`, `:112` to `:115`), so config code inside it does not exist in offline or single player testing (`../references/language_compile.md`).
+
+It loads with `JsonFileLoader<T>.LoadFile(path, data, errorMessage)` and saves with `SaveFile(path, data, errorMessage)`, which return `bool` and say what went wrong (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`). Do not use `JsonLoadFile` or `JsonSaveFile`: they return nothing, so a broken file is only an `ErrorEx` in the log, and vanilla marks them "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`).
+
+## Contents
+
+- [Implementation](#implementation)
+- [Nested Sub-Config](#nested-sub-config)
+- [Rules](#rules)
+- [Static `ScriptInvoker` shutdown crash](#-static-scriptinvoker-shutdown-crash)
 
 ---
 
@@ -28,10 +37,7 @@ class MyMod_Config
     static MyMod_Config GetInstance()
     {
         if (!s_Instance)
-        {
-            s_Instance = new MyMod_Config();
-            s_Instance.Load();
-        }
+            s_Instance = LoadFromDisk();
         return s_Instance;
     }
 
@@ -41,23 +47,33 @@ class MyMod_Config
         s_Instance = null;
     }
 
-    void Load()
+    static MyMod_Config LoadFromDisk()
     {
-        if (!FileExist(FOLDER))
-            MakeDirectory(FOLDER);
-
+        MyMod_Config cfg = new MyMod_Config();
         string path = FOLDER + FILE;
-        if (FileExist(path))
-            JsonFileLoader<MyMod_Config>.JsonLoadFile(path, this);
-        else
-            Save(); // write defaults on first run
+        if (!FileExist(path))
+        {
+            cfg.Save(); // write defaults on first run
+            return cfg;
+        }
+
+        string err;
+        if (!JsonFileLoader<MyMod_Config>.LoadFile(path, cfg, err))
+        {
+            // Keep the admin's file; run on defaults and say why.
+            Print("[MyMod] config.json not loaded, using defaults: " + err);
+            cfg = new MyMod_Config();
+        }
+        return cfg;
     }
 
     void Save()
     {
         if (!FileExist(FOLDER))
             MakeDirectory(FOLDER);
-        JsonFileLoader<MyMod_Config>.JsonSaveFile(FOLDER + FILE, this);
+        string err;
+        if (!JsonFileLoader<MyMod_Config>.SaveFile(FOLDER + FILE, this, err))
+            Print("[MyMod] config.json not saved: " + err);
     }
 
     bool IsAdmin(string uid)
@@ -66,7 +82,7 @@ class MyMod_Config
     }
 }
 
-// Global accessor — clean call-site: GetMyModConfig().EnableWelcomeMsg
+// Global accessor: clean call-site: GetMyModConfig().EnableWelcomeMsg
 MyMod_Config GetMyModConfig()
 {
     return MyMod_Config.GetInstance();
@@ -106,27 +122,29 @@ class MyMod_SpawnConfig
 
 ## Rules
 
+`LoadFile` and `SaveFile` hand the object to `JsonSerializer`, whose reading and writing is native (`ReadFromString` in `jsonfileloader.c`), so the field rules below cannot be read from script. Rows marked **Reported, not checked on `P:\`** come from modders' reports; test them in your own mod before you rely on them.
+
 | Rule | Detail |
 |---|---|
-| All serialized fields must be **public** | `private` / `protected` fields are silently skipped |
-| Nested objects must be `ref` | Value-type nesting does not serialize correctly |
-| Extra JSON keys are ignored | Safe to add new fields in config without breaking old saves |
-| Missing keys keep defaults | Rename fields = default on next load; document field renames |
-| Arrays serialize as JSON arrays | `ref array<string>` works; use `{}` not `new array<string>()` for literal init |
+| All serialized fields must be **public** | Reported, not checked on `P:\` (`JsonSerializer` is native): `private` / `protected` fields are silently skipped |
+| Nested objects must be `ref` | Reported, not checked on `P:\` (`JsonSerializer` is native): value-type nesting does not serialize correctly |
+| Extra JSON keys are ignored | Reported, not checked on `P:\` (`JsonSerializer` is native): safe to add new fields in config without breaking old saves |
+| Missing keys keep defaults | Reported, not checked on `P:\` (`JsonSerializer` is native): rename fields = default on next load; document field renames |
+| Arrays serialize as JSON arrays | Reported, not checked on `P:\` (`JsonSerializer` is native): `ref array<string>` works. `{}` and `new array<string>()` are both valid ways to create it |
 
 ---
 
 ## ⚠️ Static `ScriptInvoker` shutdown crash
 
-A common cleanup pattern null-derefs on shutdown because static invokers don't have a stable destructor order:
+Reported, not checked on `P:\`: the teardown order of statics is engine behavior that script does not show. The report is that a common cleanup pattern null-derefs on shutdown because static invokers don't have a stable destructor order:
 
 ```c
 // CRASHES if the static invoker was already torn down
 MyClass.Event_PowerChanged.Remove(m_Callback);
 
-// CORRECT — null-check first
+// CORRECT: null-check first
 if (MyClass.Event_PowerChanged)
     MyClass.Event_PowerChanged.Remove(m_Callback);
 ```
 
-Assume static invokers may already be null during your destructor or mission cleanup. The fix is always the null-guard — don't try to reorder destruction.
+Assume static invokers may already be null during your destructor or mission cleanup. The fix is always the null-guard: don't try to reorder destruction.

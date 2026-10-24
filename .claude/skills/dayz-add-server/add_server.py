@@ -15,67 +15,92 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
-import importlib.util
+import os
+import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from textwrap import dedent
 
-# REPO_ROOT = where this skill ships from (plugin or template clone).
-# Project dir (where .server/ lives) is resolved at runtime from the
-# /dayz-init project cache; see resolve_project_dir().
-REPO_ROOT = Path(__file__).resolve().parents[3]
-PREFLIGHT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-preflight"
-PREFLIGHT = PREFLIGHT_DIR / "preflight.py"
-DAYZ_INIT_DIR = REPO_ROOT / ".claude" / "skills" / "dayz-init"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+import skill_helpers as h  # noqa: E402
 
 KNOWN_MAPS: dict[str, str] = {
     "chernarus": "dayzOffline.chernarusplus",
     "livonia": "dayzOffline.enoch",
     "sakhal": "dayzOffline.sakhal",
+    "nasdara": "dayzOffline.nasdara",
 }
 
-OK = "[OK]   "
-WARN = "[WARN] "
-FAIL = "[FAIL] "
+OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
+
+find_dayz_server = h.preflight.find_dayz_server
+
+# Windows device names. A folder called one of these, in any case and with or
+# without an extension, opens the device instead of a folder.
+_RESERVED_DEVICE_NAMES = frozenset(
+    {"con", "prn", "aux", "nul"}
+    | {f"{p}{n}" for p in ("com", "lpt") for n in "0123456789¹²³"}
+)
 
 
-def _load_module_from_path(name: str, path: Path):
-    """Load a sibling-skill .py as a module by file path so static analyzers don't
-    choke on a sys.path-based sibling import."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Could not load module at {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+def windows_name_problem(name: str) -> str | None:
+    """Why Windows cannot hold a folder called `name`, or None when it can."""
+    if name.split(".", 1)[0].rstrip(" ").lower() in _RESERVED_DEVICE_NAMES:
+        return "it is a Windows reserved device name (CON, PRN, AUX, NUL, COM0-9, LPT0-9)"
+    if name.endswith((".", " ")):
+        return "Windows strips a trailing dot or space from folder names"
+    return None
 
 
-_preflight = _load_module_from_path("dayz_preflight_module", PREFLIGHT)
-find_dayz_server = _preflight.find_dayz_server
+def validate_instance(instance: str) -> str:
+    """argparse type for <instance>: one folder name directly under .server/."""
+    if instance in ("", ".", "..") or any(c in instance for c in '/\\:*?"<>|'):
+        raise argparse.ArgumentTypeError(
+            f"'{instance}' is not a valid instance name: use a single folder name "
+            "(no path separators, drive letters, '..', or the characters * ? \" < > | "
+            "that Windows forbids in file names)."
+        )
+    problem = windows_name_problem(instance)
+    if problem:
+        raise argparse.ArgumentTypeError(f"'{instance}' is not a valid instance name: {problem}.")
+    if instance.startswith("!"):
+        raise argparse.ArgumentTypeError(
+            f"'{instance}' is reserved: names starting with '!' belong to shared .server "
+            "folders such as !ClientDiagLogs and !Health."
+        )
+    if instance.endswith("-behavior"):
+        raise argparse.ArgumentTypeError(
+            f"'{instance}' is reserved: names ending in '-behavior' are the copies "
+            "/dayz-gate behavior makes and replaces on every run."
+        )
+    if not re.search(r"[A-Za-z0-9]", instance):
+        raise argparse.ArgumentTypeError(
+            f"'{instance}' needs at least one letter or digit: the server's shardId "
+            "is built from them."
+        )
+    return instance
 
-# Reuse the project-root cache reader from /dayz-init so add-server follows the same source of truth.
-_dayz_init_state = _load_module_from_path("dayz_init_state_module", DAYZ_INIT_DIR / "state.py")
-cached_project_root = _dayz_init_state.cached_project_root
 
+def validate_map(map_arg: str) -> str:
+    """argparse type for --map: an alias or one mission folder name.
 
-def resolve_project_dir() -> Path:
-    """Return the cached project root, or bail out pointing the user at /dayz-init."""
-    project = cached_project_root()
-    if project is None:
-        print("error: no project cached.", file=sys.stderr)
-        print("  Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
-        sys.exit(2)
-    return project.resolve()
-
-
-def gate_on_preflight() -> None:
-    if not PREFLIGHT.exists():
-        sys.exit(f"{FAIL} dayz-preflight skill not found at {PREFLIGHT.relative_to(REPO_ROOT)}")
-    result = subprocess.run([sys.executable, str(PREFLIGHT)])
-    if result.returncode != 0:
-        sys.exit(result.returncode)
+    The value is joined into <DayZServer>/mpmissions/<template> and into the
+    junction path .server/<instance>/<template>, so a path such as ..\\..\\x
+    would reach outside both folders.
+    """
+    if map_arg in ("", ".", "..") or any(c in map_arg for c in '/\\:*?"<>|'):
+        raise argparse.ArgumentTypeError(
+            f"'{map_arg}' is not a valid map: use an alias ({', '.join(KNOWN_MAPS)}) or a "
+            "single mission folder name such as dayzOffline.namalsk (no path separators, "
+            "drive letters, '..', or the characters * ? \" < > |)."
+        )
+    problem = windows_name_problem(map_arg)
+    if problem:
+        raise argparse.ArgumentTypeError(f"'{map_arg}' is not a valid map: {problem}.")
+    return map_arg
 
 
 def gate_on_old_layout(project_dir: Path) -> None:
@@ -96,11 +121,14 @@ def resolve_map_name(instance: str, map_arg: str | None) -> str:
     known map alias, use it as the map. Otherwise fail and force the user to
     be explicit, since we have no way to guess the mission template from a
     free-form name like 'my-test-server'.
+
+    Aliases match in any case (Chernarus, CHERNARUS) and come back lowercase;
+    a custom mission folder name keeps its case.
     """
     if map_arg:
-        return map_arg
-    if instance in KNOWN_MAPS:
-        return instance
+        return map_arg.lower() if map_arg.lower() in KNOWN_MAPS else map_arg
+    if instance.lower() in KNOWN_MAPS:
+        return instance.lower()
     sys.exit(
         f"{FAIL} '{instance}' is not a known map alias and --map was not given.\n"
         f"       Specify --map (one of: {', '.join(KNOWN_MAPS)}, or a custom\n"
@@ -112,15 +140,119 @@ def resolve_mission_template(map_name: str) -> str:
     return KNOWN_MAPS.get(map_name, map_name)
 
 
+# A serverDZ.cfg hand-edited in an ANSI editor may hold bytes that are not UTF-8
+# (an accented hostname). surrogateescape carries them through a read and write
+# unchanged instead of crashing.
+CFG_ENCODING = {"encoding": "utf-8", "errors": "surrogateescape"}
+
+# The active `template = "..."` line in serverDZ.cfg (a commented-out line does not count).
+TEMPLATE_RE = re.compile(r'^\s*template\s*=\s*"([^"]*)"', re.MULTILINE)
+
+
+def gate_on_template_mismatch(cfg_path: Path, template: str, instance: str) -> None:
+    """Refuse when an existing instance was set up for a different mission template.
+
+    Rerunning with another --map would otherwise leave the old mission/ and
+    cfg in place while reporting the new map, so the server loads the old one.
+    """
+    if not cfg_path.exists():
+        return
+    match = TEMPLATE_RE.search(cfg_path.read_text(**CFG_ENCODING))
+    if match is None or match.group(1) == template:
+        return
+    sys.exit(
+        f"{FAIL} Instance '{instance}' is set up for mission template '{match.group(1)}',\n"
+        f"       not '{template}' (from {cfg_path.name}'s template = line).\n"
+        f"       For a different map, add a new instance: /dayz-add-server <new-name> --map <map>\n"
+        f"       To switch this instance, set template = \"{template}\"; in {cfg_path}\n"
+        "       and rerun with --refresh-mission (the old mission/ is kept as a backup)."
+    )
+
+
+# Records which DayZ Server template a mission/ copy came from. It is written
+# into the staged copy before the swap, so it travels with the folder: a
+# mission.bak-* backup keeps its own marker, and renaming it back restores both.
+MISSION_MARKER = ".agentic-z-template"
+
+
+def recorded_mission_template(mission_dir: Path) -> str | None:
+    """The template named in mission/'s marker file, or None when there is none."""
+    try:
+        return (mission_dir / MISSION_MARKER).read_text(encoding="utf-8").strip() or None
+    except OSError:
+        return None
+
+
+def linked_templates(inst_dir: Path, mission_dir: Path) -> list[str]:
+    """Names of the junctions in the instance folder that point at mission/."""
+    if not inst_dir.is_dir():
+        return []
+    names = []
+    for entry in inst_dir.iterdir():
+        if entry.name == mission_dir.name or not h.is_link(entry):
+            continue
+        target = h.link_target(entry)
+        if target is not None and h.paths_equal(target, mission_dir):
+            names.append(entry.name)
+    return sorted(names)
+
+
+def gate_on_mission_source(template: str, mission_dir: Path, project_dir: Path) -> None:
+    """Refuse to keep a mission/ that was copied from a different template.
+
+    Editing the cfg's template = line without --refresh-mission would pass the
+    cfg gate, keep the old map's mission/ and junction it under the new name, so
+    the server would load the wrong mission files while every line reads OK.
+    The marker file says where the copy came from; a mission made before the
+    marker existed is identified by the template junction pointing at it. A
+    mission with neither (filled in by hand) is accepted as it is.
+    """
+    recorded = recorded_mission_template(mission_dir)
+    if recorded is not None:
+        if recorded.casefold() == template.casefold():
+            return
+        source, evidence = recorded, f"its {MISSION_MARKER} file"
+    else:
+        linked = linked_templates(mission_dir.parent, mission_dir)
+        if not linked or template.casefold() in (n.casefold() for n in linked):
+            return
+        source, evidence = linked[0], f"the {linked[0]}/ junction that points at it"
+    sys.exit(
+        f"{FAIL} {mission_dir.relative_to(project_dir)} was copied from mission template '{source}'\n"
+        f"       (from {evidence}), but this run wants '{template}'.\n"
+        "       Rerun with --refresh-mission to copy the new template's mission\n"
+        "       (the current mission/ is kept as a mission.bak-<timestamp>/ backup)."
+    )
+
+
+def warn_leftover_staging(mission_dir: Path, project_dir: Path) -> None:
+    """Name any mission.tmp-* folder an interrupted earlier run left behind."""
+    if not mission_dir.parent.is_dir():
+        return
+    for leftover in sorted(mission_dir.parent.glob(f"{mission_dir.name}.tmp-*")):
+        print(
+            f"{WARN} {leftover.relative_to(project_dir)} is a partial mission copy left by an "
+            "interrupted run. Nothing uses it; delete it by hand."
+        )
+
+
 def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir: Path) -> None:
     """Ensure <instance>/mission/ exists, copied from DayZ Server install.
 
     Folder is named `mission/` regardless of template (the launcher pins the
     path explicitly via -mission=<abspath>, so the engine doesn't care).
     """
-    already_present = mission_dir.exists() and any(mission_dir.iterdir())
+    warn_leftover_staging(mission_dir, project_dir)
+    if os.path.lexists(mission_dir) and not mission_dir.is_dir():
+        sys.exit(
+            f"{FAIL} {mission_dir.relative_to(project_dir)} is a file or a broken link, not a folder.\n"
+            "       The skill will not delete it. Move it out of the instance folder and rerun;\n"
+            "       the mission is then copied fresh from the DayZ Server install."
+        )
+    already_present = mission_dir.is_dir() and any(mission_dir.iterdir())
 
     if already_present and not refresh:
+        gate_on_mission_source(template, mission_dir, project_dir)
         print(f"{OK} Mission already present: {mission_dir.relative_to(project_dir)}")
         return
 
@@ -147,13 +279,97 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir:
         )
 
     mission_dir.parent.mkdir(parents=True, exist_ok=True)
-    if mission_dir.exists():
-        shutil.rmtree(mission_dir)
+    # Copy into a temporary sibling first and swap it in only once complete, so
+    # a failed copy (disk full, antivirus lock, Steam updating the install)
+    # never leaves a partial mission/ that a rerun would report as present.
+    staging = unique_sibling(mission_dir, "tmp")
+    try:
+        _copy_and_swap(src, staging, template, mission_dir, already_present, project_dir)
+    finally:
+        # Ctrl+C or a crash mid-copy raises past the handlers in _copy_and_swap;
+        # the staged copy is removed either way, so no mission.tmp-* is left behind.
+        if os.path.lexists(staging):
+            shutil.rmtree(staging, ignore_errors=True)
+
+
+def _copy_and_swap(
+    src: Path, staging: Path, template: str, mission_dir: Path, already_present: bool, project_dir: Path
+) -> None:
+    """Copy src into staging, record its template, then move it into mission/."""
+    try:
+        shutil.copytree(src, staging)
+        (staging / MISSION_MARKER).write_text(template + "\n", encoding="utf-8")
+    except (shutil.Error, OSError) as exc:
+        shutil.rmtree(staging, ignore_errors=True)
+        kept = (
+            f"       Your existing {mission_dir.relative_to(project_dir)} was not touched.\n"
+            if already_present else
+            "       No mission folder was created.\n"
+        )
+        leftover = (
+            f"       Could not remove the partial copy {staging.name}; delete it by hand.\n"
+            if staging.exists() else ""
+        )
+        sys.exit(
+            f"{FAIL} Copying the mission from {src} failed: {exc}\n"
+            f"{kept}{leftover}"
+            "       Free disk space, pause antivirus scanning of .server/, or wait for Steam\n"
+            "       to finish updating DayZ Server, then rerun."
+        )
+
+    action = "Copied"
+    backup = None
+    if already_present:
+        backup = backup_mission(mission_dir, cleanup=staging)
+        print(f"{OK} Kept previous mission as {backup.relative_to(project_dir)}")
         action = "Refreshed"
-    else:
-        action = "Copied"
-    shutil.copytree(src, mission_dir)
+    try:
+        if mission_dir.exists():
+            mission_dir.rmdir()  # empty folder: nothing to keep
+        staging.rename(mission_dir)
+    except OSError as exc:
+        shutil.rmtree(staging, ignore_errors=True)
+        restore = (
+            f"       Your previous mission is safe in {backup.relative_to(project_dir)};\n"
+            f"       rename it back to {mission_dir.name} to restore it.\n"
+            if backup is not None else ""
+        )
+        sys.exit(
+            f"{FAIL} Could not move the new mission copy into {mission_dir.relative_to(project_dir)}: {exc}\n"
+            f"{restore}"
+            "       Stop any running session (/dayz-stop-test), close files in the instance folder, and rerun."
+        )
     print(f"{OK} {action} {mission_dir.relative_to(project_dir)}  (from DayZ Server install)")
+
+
+def unique_sibling(path: Path, tag: str) -> Path:
+    """Return <path>.<tag>-<timestamp>[-n] next to path that does not exist yet."""
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    candidate = path.with_name(f"{path.name}.{tag}-{stamp}")
+    n = 1
+    while candidate.exists():
+        candidate = path.with_name(f"{path.name}.{tag}-{stamp}-{n}")
+        n += 1
+    return candidate
+
+
+def backup_mission(mission_dir: Path, cleanup: Path | None = None) -> Path:
+    """Rename mission/ to mission.bak-<timestamp>/ so --refresh-mission never
+    destroys local edits. Returns the backup path. On failure, `cleanup` (the
+    staged new copy, if any) is deleted before exiting."""
+    backup = unique_sibling(mission_dir, "bak")
+    try:
+        mission_dir.rename(backup)
+    except OSError as exc:
+        if cleanup is not None:
+            shutil.rmtree(cleanup, ignore_errors=True)
+        sys.exit(
+            f"{FAIL} Could not rename {mission_dir} to {backup.name}: {exc}\n"
+            "       A running server or an open editor usually holds the folder.\n"
+            "       Stop the session (/dayz-stop-test), close files in mission/, and rerun.\n"
+            "       Nothing was changed."
+        )
+    return backup
 
 
 def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
@@ -183,38 +399,111 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
         cfg_path.write_text(default_server_cfg(instance, template), encoding="utf-8")
         print(f"{OK} Wrote default {cfg_path.relative_to(project_dir)}")
     else:
-        cfg = cfg_path.read_text(encoding="utf-8")
-        if "allowFilePatching" not in cfg:
+        cfg = cfg_path.read_text(**CFG_ENCODING)
+        setting = h.file_patching_setting(cfg)
+        if setting is None:
             cfg = cfg.rstrip() + "\nallowFilePatching = 1;\n"
-            cfg_path.write_text(cfg, encoding="utf-8")
+            cfg_path.write_text(cfg, **CFG_ENCODING)
             print(f"{OK} Appended allowFilePatching = 1 to {cfg_path.relative_to(project_dir)}")
+        elif setting.group(1) != "1":
+            # Clients launch with -filePatching and cannot join a server without it.
+            cfg = cfg[: setting.start(1)] + "1" + cfg[setting.end(1):]
+            cfg_path.write_text(cfg, **CFG_ENCODING)
+            print(f"{OK} Set allowFilePatching = 1 in {cfg_path.relative_to(project_dir)} (was {setting.group(1)})")
         else:
             print(f"{OK} {cfg_path.relative_to(project_dir)} unchanged (already configured)")
 
-    # Mission template junction: dayzOffline.<map> -> mission/. The engine looks
-    # for the template by name during the connect handshake; missing this causes
-    # client spawn to hang indefinitely (world loads, player entity created, but
-    # the player never renders into the world).
     mission_dir = inst_dir / "mission"
-    template_junction = inst_dir / template
-    if mission_dir.exists() and not template_junction.exists():
-        import subprocess
-        result = subprocess.run(
-            ["cmd", "/c", "mklink", "/J", str(template_junction), str(mission_dir)],
-            capture_output=True, text=True
-        )
-        if result.returncode == 0:
-            print(f"{OK} Junction {template_junction.name}/ -> mission/ (template handshake)")
-        else:
-            print(f"{FAIL} Could not create template junction: {result.stderr.strip()}")
+    if mission_dir.is_dir():
+        ensure_template_junction(inst_dir / template, mission_dir)
+        remove_old_template_junctions(inst_dir, template, mission_dir)
 
     print(f"{OK} {server_profiles.relative_to(project_dir)} ready")
     print(f"{OK} {client_diag_logs.relative_to(project_dir)} ready")
 
 
+def ensure_template_junction(junction: Path, mission_dir: Path) -> None:
+    """Make <instance>/<template> a junction to this instance's mission/.
+
+    The engine looks for the template by name during the connect handshake;
+    without it the world loads but the player never spawns.
+
+    The link itself is inspected, not what it points at: after the project
+    folder is moved, the old junction dangles (exists() is False, so mklink
+    would fail with "file already exists") or still points at the old copy's
+    mission. A link with the wrong target is replaced; removing a link never
+    touches the folder it points at. A real folder or file at that name may
+    hold the user's data, so the skill refuses instead of removing it.
+    """
+    if h.is_link(junction):
+        target = h.link_target(junction)
+        if target is not None and h.paths_equal(target, mission_dir):
+            print(f"{OK} Junction {junction.name}/ -> mission/ already present")
+            return
+        try:
+            remove_link(junction)
+        except OSError as exc:
+            sys.exit(
+                f"{FAIL} Junction {junction} points at {target or 'an unreadable target'},\n"
+                f"       not {mission_dir}, and could not be removed: {exc}\n"
+                "       Delete the link yourself (rmdir, which leaves its target alone) and rerun."
+            )
+        print(f"{WARN} Removed stale junction {junction.name}/ (it pointed at {target or 'an unreadable target'})")
+    elif os.path.lexists(junction):
+        sys.exit(
+            f"{FAIL} {junction} is a real folder or file, not a junction to mission/.\n"
+            "       The engine needs a junction there, and the skill will not delete what it holds.\n"
+            "       Move it out of the instance folder and rerun."
+        )
+
+    result = subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(junction), str(mission_dir)],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        sys.exit(
+            f"{FAIL} Could not create template junction {junction}: "
+            f"{(result.stderr or result.stdout).strip()}\n"
+            "       Without it the client connects but never spawns. Fix the cause and rerun."
+        )
+    print(f"{OK} Junction {junction.name}/ -> mission/ (template handshake)")
+
+
+def remove_old_template_junctions(inst_dir: Path, template: str, mission_dir: Path) -> None:
+    """Remove junctions to mission/ named after a template this instance no longer uses.
+
+    After a switch (template = edited, then --refresh-mission) the old map's
+    junction still points at mission/, which now holds the new map. Removing a
+    link never touches mission/ itself.
+    """
+    for name in linked_templates(inst_dir, mission_dir):
+        if name.casefold() == template.casefold():
+            continue
+        try:
+            remove_link(inst_dir / name)
+        except OSError as exc:
+            print(f"{WARN} Could not remove junction {name}/ left from the previous mission template: {exc}")
+            continue
+        print(f"{OK} Removed junction {name}/ left from the previous mission template")
+
+
+def remove_link(path: Path) -> None:
+    """Remove a junction or directory symlink without touching its target.
+
+    On Windows, rmdir on a reparse point deletes only the link, even when it
+    dangles or its target is not empty.
+    """
+    if os.name == "nt":
+        os.rmdir(path)
+    else:
+        os.unlink(path)
+
+
 def default_server_cfg(instance: str, template: str) -> str:
-    # Six-char shardId required by engine; truncate/pad instance name.
-    shard = (instance + "shard")[:6].lower()
+    # The engine needs a six-char alphanumeric shardId: keep only the instance
+    # name's letters and digits, pad with "shard0", truncate to six. The pad is
+    # six characters on its own, so the result is always six long.
+    shard = (re.sub(r"[^A-Za-z0-9]", "", instance) + "shard0")[:6].lower()
     return dedent(
         f"""\
         hostname = "Local Test ({instance})";   // Server name
@@ -227,7 +516,7 @@ def default_server_cfg(instance: str, template: str) -> str:
 
         maxPlayers = 4;                         // Maximum amount of players (local test)
 
-        verifySignatures = 0;                   // Verifies .pbos against .bisign files (only 2 is supported)
+        verifySignatures = 0;                   // 0 = off for local diag testing (2 = full .bisign check)
         forceSameBuild = 0;                     // 0 for diag-mode mod testing (client/server diag may mismatch)
         allowFilePatching = 1;                  // Required; clients launch with -filePatching
 
@@ -273,6 +562,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Set up a DayZ test server instance under .server/<instance>/.")
     parser.add_argument(
         "instance",
+        type=validate_instance,
         help=(
             "Free-form instance name (becomes .server/<instance>/). If the name "
             f"matches a known map alias ({', '.join(KNOWN_MAPS)}), --map defaults "
@@ -283,6 +573,7 @@ def main() -> int:
         "--map",
         dest="map_arg",
         default=None,
+        type=validate_map,
         help=(
             f"Map alias (one of: {', '.join(KNOWN_MAPS)}) or full mission template "
             "folder name (e.g. dayzOffline.namalsk). Defaults to <instance> when "
@@ -292,12 +583,12 @@ def main() -> int:
     parser.add_argument(
         "--refresh-mission",
         action="store_true",
-        help="Re-copy the mission folder from DayZ Server install, overwriting local edits.",
+        help="Re-copy the mission folder from DayZ Server install; the old copy is kept as mission.bak-<timestamp>.",
     )
     args = parser.parse_args()
 
-    project_dir = resolve_project_dir()
-    gate_on_preflight()
+    project_dir = h.resolve_project_dir()
+    h.gate_on_preflight()
     print()
     print(f"{OK} Project: {project_dir}")
     gate_on_old_layout(project_dir)
@@ -310,6 +601,7 @@ def main() -> int:
     inst_dir = server_root / args.instance
     mission_dir = inst_dir / "mission"
 
+    gate_on_template_mismatch(inst_dir / "serverDZ.cfg", template, args.instance)
     ensure_mission(template, mission_dir, refresh=args.refresh_mission, project_dir=project_dir)
     setup_instance_dir(args.instance, template, project_dir)
 

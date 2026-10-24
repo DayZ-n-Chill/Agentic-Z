@@ -1,17 +1,18 @@
 # Reference: File Paths and File System API
 
-Enforce Script exposes a limited file I/O API. Paths use special `$` root tokens rather than absolute OS paths.
+Enforce Script exposes a limited file I/O API. Paths use special `$` root tokens rather than absolute OS paths. The file functions are declared in `P:\scripts\1_core\proto\ensystem.c` (line numbers below are in that file unless another is named).
 
 ---
 
 ## Path Root Tokens
 
-| Token | Resolves to | Writable | Notes |
+| Token | Resolves to | Writable | Vanilla use |
 |---|---|---|---|
-| `$profile:` | `<DayZServerDir>\profiles\<profileName>\` | Yes | Primary mod storage |
-| `$saves:` | Same as `$profile:` in most builds | Yes | Use `$profile:` instead |
-| `$game:` | DayZ installation directory | No | Read vanilla assets |
-| `$missions:` | Mission directory | No | Read mission data |
+| `$profile:` | The `-profiles=` folder of the running server or client | Yes | `OpenFile("$profile:testiik.txt", FileMode.WRITE)` (`ensystem.c:406`) |
+| `$saves:` | The saves folder | Yes | `FILE_ROOT = "$saves:"` (`P:\scripts\4_world\plugins\pluginbase\pluginfilehandler\pluginconfighandler\pluginconfigscene.c:3`) |
+| `$mission:` | The loaded mission folder | No | `string.Format("$mission:%1", m_ConfigFilePath)` (`P:\scripts\3_game\cfgbunkerbroadcasthandler.c:23`) |
+
+Note the spelling: it is `$mission:` (singular). `$missions:` is not a vanilla token, so a path built with it fails. `DeleteFile` and the target of `CopyFile` work only on `$profile:` and `$saves:` (`ensystem.c:527` and `:530`). A `$game:` token is not used anywhere in the vanilla scripts, so it is not listed here.
 
 ```c
 // Full path example
@@ -21,6 +22,8 @@ string configPath = "$profile:\\MyMod\\config.json";
 ---
 
 ## File Existence and Directory Management
+
+`FileExist(string name)` (`:397`) and `MakeDirectory(string name)` (`:525`):
 
 ```c
 string folder = "$profile:\\MyMod\\";
@@ -37,6 +40,8 @@ if (FileExist(file))
 ---
 
 ## Reading a File (line by line)
+
+`OpenFile(string name, FileMode mode)` (`:417`), `FGets(FileHandle file, string var)` (`:501`), `CloseFile(FileHandle file)` (`:443`). `ReadFile(FileHandle file, void param_array, int length)` (`:425`) reads a whole block instead.
 
 ```c
 FileHandle fh = OpenFile(file, FileMode.READ);
@@ -55,12 +60,14 @@ if (fh != 0)
 
 ## Writing a File
 
+`FPrint(FileHandle file, void var)` (`:462`) writes the value; `FPrintln` (`:481`) adds a line break.
+
 ```c
 FileHandle fh = OpenFile(file, FileMode.WRITE);
 if (fh != 0)
 {
     FPrint(fh, "line 1\n");
-    FPrint(fh, "line 2\n");
+    FPrintln(fh, "line 2");
     CloseFile(fh);
 }
 ```
@@ -69,15 +76,19 @@ if (fh != 0)
 
 ## JSON Read/Write (Preferred for Structured Data)
 
-The `JsonFileLoader<T>` utility is preferred over manual file I/O for structured config/data:
+The `JsonFileLoader<T>` utility is preferred over manual file I/O for structured config/data. Use `LoadFile` and `SaveFile`, which return `bool` and an error message (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`); vanilla marks the older `JsonLoadFile` and `JsonSaveFile` "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`).
 
 ```c
+string err;
+
 // Save
-JsonFileLoader<MyMod_Config>.JsonSaveFile("$profile:\\MyMod\\config.json", configObject);
+if (!JsonFileLoader<MyMod_Config>.SaveFile("$profile:\\MyMod\\config.json", configObject, err))
+    Print("[MyMod] save failed: " + err);
 
 // Load into existing object
 MyMod_Config cfg = new MyMod_Config();
-JsonFileLoader<MyMod_Config>.JsonLoadFile("$profile:\\MyMod\\config.json", cfg);
+if (!JsonFileLoader<MyMod_Config>.LoadFile("$profile:\\MyMod\\config.json", cfg, err))
+    Print("[MyMod] load failed: " + err);
 ```
 
 Rules:
@@ -88,15 +99,19 @@ Rules:
 
 ---
 
-## Deleting and Renaming
+## Deleting, Copying and Listing
 
 ```c
-// Delete a file (returns true on success)
+// Delete a file (returns true on success; $profile: and $saves: only)
 bool ok = DeleteFile("$profile:\\MyMod\\old_data.json");
 
-// Rename / move (no built-in rename — copy + delete)
-// (no CopyFile either — use JsonFileLoader for structured data or manual FGets/FPrint)
+// Copy a file (the target must be in $profile: or $saves:)
+CopyFile("$mission:mymod_defaults.json", "$profile:\\MyMod\\config.json");
+
+// Rename or move = CopyFile, then DeleteFile on the source
 ```
+
+`DeleteFile` is at `:528` and `CopyFile(string sourceName, string destName)` at `:531`. `FindFile`, `FindNextFile` and `CloseFindFile` (`:520-522`) list the files that match a pattern.
 
 ---
 
@@ -114,6 +129,8 @@ bool ok = DeleteFile("$profile:\\MyMod\\old_data.json");
 ---
 
 ## File Mode Constants
+
+`enum FileMode { READ, WRITE, APPEND }` (`ensystem.c:382`).
 
 | Constant | Meaning |
 |---|---|

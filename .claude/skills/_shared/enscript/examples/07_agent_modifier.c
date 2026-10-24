@@ -1,121 +1,84 @@
 // =============================================================================
-// MyMod_Agent_Modifier.c
-// Full agent + modifier stack showing how the vanilla disease system works:
+// MyMod_RustModifier.c
+// A custom player modifier driven by a vanilla disease agent, built on the
+// shape of the vanilla PoisoningMdfr and BrokenLegsMdfr:
+//   P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\poisoning.c
+//   P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\brokenlegs.c
 //
-//   AgentBase       – the "disease" that grows inside the player's pool
-//   ModifierBase    – the periodic effect that fires when the disease is active
-//   Registration    – via config.cpp CfgVehicles / item transferability
-//   PlayerBase mods – inserting agents, checking counts, activating modifiers
+//   Agent: the "disease" count in the player's agent pool (eAgents)
+//   Modifier: the periodic effect that runs while a condition holds
+//   Registration: AddModifier(new ...) in a modded ModifiersManager.Init()
 //
 // Agents and modifiers are SERVER-SIDE ONLY systems.
 //
-// Placement: Scripts/4_World/Classes/TransmissionAgents/  (agents)
-//            Scripts/4_World/Classes/PlayerModifiers/      (modifiers)
-//            Scripts/4_World/Entities/ManBase/              (player hooks)
+// Why no custom agent: eAgents values are bit flags that "MUST MATCH CONFIG-SIDE
+// AGENT CONFIGURATION" (P:\scripts\3_game\enums\eagents.c:1), and agents are
+// registered by the vanilla PluginTransmissionAgents
+// (P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:22-26).
+// This example reacts to the vanilla FOOD_POISON agent instead.
 //
-// config.cpp (for transferability via items):
-//   class CfgVehicles {
-//       class MyMod_ContaminatedFood : Edible_Base {
-//           agentTransferability    = 1;  // food can carry agents
-//           agentTransferabilityIn  = 1;
-//       };
-//   };
+// Placement: Scripts/4_World/Classes/PlayerModifiers/Modifiers/MyMod_RustModifier.c
 // =============================================================================
 
-// =============================================================================
-// 1. AGENT
-// =============================================================================
-// Place in: Scripts/4_World/Classes/TransmissionAgents/Agents/MyMod_RustAgent.c
-
-class MyMod_RustAgent : AgentBase
-{
-    void MyMod_RustAgent()
-    {
-        Init();
-    }
-
-    override void Init()
-    {
-        // eAgents enum integer – pick a value NOT used by vanilla.
-        // Vanilla uses 1..512; use 1024+ for mods.
-        m_Type                  = eAgents.FOOD_POISON;  // reuse vanilla for simplicity
-                                                         // OR define a custom enum value
-
-        m_Invasibility          = 5;    // grow rate when potent
-        m_TransferabilityIn     = 0.2;  // 20 % chance to infect player from item
-        m_TransferabilityOut    = 0.05; // 5 % chance to transfer to another item
-        m_Digestibility         = 0.15; // agents digested per ml/g consumed
-        m_MaxCount              = 1000; // cap
-        m_AutoinfectCount       = 30;
-        m_AutoinfectProbability = CalculateAutoinfectProbability(0.0001); // ~0.01%/hr
-
-        m_DieOffSpeed           = 0.5;  // dies quickly when immune system is strong
-        m_AntibioticsResistance = 0.3;  // antibiotics work well against this
-        m_Potency               = EStatLevels.HIGH; // only grows if immunity is HIGH
-    }
-}
+// ---- Modifier ID -------------------------------------------------------------
+// Modifier IDs are plain ints kept in a map (ModifiersManager.AddModifier,
+// P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c:188-200) and must
+// be 1 or higher (:192). Never reuse a vanilla eModifiers value
+// (P:\scripts\4_world\classes\playermodifiers\emodifiers.c): two modifiers with
+// one ID replace each other. Pick a number far above eModifiers.COUNT.
+const int MYMOD_MDF_RUST = 25000;
 
 // =============================================================================
-// 2. MODIFIER
+// 1. MODIFIER
 // =============================================================================
-// Place in: Scripts/4_World/Classes/PlayerModifiers/Modifiers/MyMod_RustModifier.c
-
 class MyMod_RustModifier : ModifierBase
 {
-    static const float TICK_HEALTH_LOSS = 0.5; // health drained per active tick
+    static const int   AGENT_THRESHOLD_ACTIVATE   = 200;
+    static const int   AGENT_THRESHOLD_DEACTIVATE = 50;
+    static const float TICK_HEALTH_LOSS           = 0.5; // health drained per active tick
 
-    void MyMod_RustModifier()
+    // Vanilla modifiers set their fields in Init(), which InitBase calls
+    // (P:\scripts\4_world\classes\playermodifiers\modifierbase.c:38-50).
+    override void Init()
     {
-        // m_ID maps to eModifiers enum; vanilla uses 1..29; pick 100+ for mods
-        m_ID                 = eModifiers.MDF_FOODPOISONING; // reuse for demo
-        m_TickIntervalActive = 5.0;  // fire every 5 s while active
-        m_IsPersistent       = true; // survive server restarts
-        m_TrackActivatedTime = true;
+        m_ID                    = MYMOD_MDF_RUST;
+        m_TickIntervalInactive  = DEFAULT_TICK_TIME_INACTIVE;  // modifiersmanager.c:29
+        m_TickIntervalActive    = 5.0;   // run OnTick every 5 s while active
+        m_IsPersistent          = true;  // saved with the player (modifierbase.c:15)
+        // Keep this false for a mod modifier. When a saved modifier ID is not
+        // found (your mod was removed), the loader skips the ID but cannot skip
+        // its saved time value, and the rest of the player's save is misread
+        // (modifiersmanager.c:285-302).
+        m_TrackActivatedTime    = false;
+        m_AnalyticsStatsEnabled = false; // vanilla analytics are for vanilla IDs
     }
 
-    // ---- Activation condition -----------------------------------------------
-    // Called every m_TickIntervalInactive seconds; return true to activate.
+    // ---- Activation condition (modifierbase.c:176) --------------------------
+    // Checked every m_TickIntervalInactive seconds; return true to activate.
     override bool ActivateCondition(PlayerBase player)
     {
-        // Activate when the player has a significant amount of rust agent
-        return player.GetSingleAgentCount(eAgents.FOOD_POISON) > 200;
+        // GetSingleAgentCount: P:\scripts\4_world\entities\manbase\playerbase.c:8121
+        return player.GetSingleAgentCount(eAgents.FOOD_POISON) > AGENT_THRESHOLD_ACTIVATE;
     }
 
-    // ---- Deactivation condition ---------------------------------------------
-    // Called every m_TickIntervalActive seconds while active; return true to stop.
+    // ---- Deactivation condition (modifierbase.c:181) ------------------------
     override bool DeactivateCondition(PlayerBase player)
     {
-        return player.GetSingleAgentCount(eAgents.FOOD_POISON) <= 50;
+        return player.GetSingleAgentCount(eAgents.FOOD_POISON) <= AGENT_THRESHOLD_DEACTIVATE;
     }
 
     // ---- Effect tick --------------------------------------------------------
     // Called every m_TickIntervalActive seconds while this modifier is active.
     override void OnTick(PlayerBase player, float deltaT)
     {
-        // Drain health
         player.AddHealth("", "", -TICK_HEALTH_LOSS);
-
-        // Optionally trigger a symptom (e.g. vomit animation)
-        // player.GetSymptomManager().QueueUpSymptom(SymptomIDs.SYMPTOM_NAUSEA, "");
-
-        // Visual feedback – send a HUD warning via RPC
-        if (player.GetIdentity())
-        {
-            Param1<string> msg = new Param1<string>("You feel the rust sickness spreading...");
-            GetGame().RPCSingleParam(
-                player,
-                ERPCs.RPC_USER_ACTION_MESSAGE,
-                msg,
-                false,  // unreliable – cosmetic only
-                player.GetIdentity()
-            );
-        }
     }
 
-    // ---- On activation: show one-time notification --------------------------
+    // ---- On activation (modifierbase.c:187) ---------------------------------
     override void OnActivate(PlayerBase player)
     {
-        super.OnActivate(player);
+        // PlayerBase.OnRPC shows ERPCs.RPC_USER_ACTION_MESSAGE + Param1<string>
+        // as an action message (playerbase.c:5773).
         if (player.GetIdentity())
         {
             Param1<string> msg = new Param1<string>("You contracted rust sickness!");
@@ -123,67 +86,61 @@ class MyMod_RustModifier : ModifierBase
         }
     }
 
-    // ---- On deactivation ----------------------------------------------------
+    // A persistent modifier is re-activated on connect with OnReconnect
+    // (modifierbase.c:190); vanilla PoisoningMdfr forwards it to OnActivate.
+    override void OnReconnect(PlayerBase player)
+    {
+        OnActivate(player);
+    }
+
+    // ---- On deactivation (modifierbase.c:191) -------------------------------
     override void OnDeactivate(PlayerBase player)
     {
-        super.OnDeactivate(player);
         if (player.GetIdentity())
         {
             Param1<string> msg = new Param1<string>("You recovered from rust sickness.");
             GetGame().RPCSingleParam(player, ERPCs.RPC_USER_ACTION_MESSAGE, msg, true, player.GetIdentity());
         }
     }
+}
 
-    // ---- Persistence --------------------------------------------------------
-    override void OnStoreSave(ParamsWriteContext ctx)
+// =============================================================================
+// 2. REGISTRATION
+// =============================================================================
+// ModifiersManager builds every modifier in Init(), called from its constructor
+// (modifiersmanager.c:80-90). AddModifier takes an instance, not a typename
+// (modifiersmanager.c:188).
+modded class ModifiersManager
+{
+    override void Init()
     {
-        super.OnStoreSave(ctx);
-        // save custom fields if any
-    }
-
-    override bool OnStoreLoad(ParamsReadContext ctx)
-    {
-        if (!super.OnStoreLoad(ctx))
-            return false;
-        return true;
+        super.Init();
+        AddModifier(new MyMod_RustModifier);
     }
 }
 
 // =============================================================================
-// 3. REGISTRATION in PlayerBase
+// 3. PlayerBase helpers
 // =============================================================================
-// Modifiers and agents must be registered in their manager on player init.
-
 modded class PlayerBase
 {
-    // ---- Register modifier so the manager knows this type exists ------------
-    override void OnStoreLoad_RemotePlayerMods(ParamsReadContext ctx, int version)
-    {
-        super.OnStoreLoad_RemotePlayerMods(ctx, version);
-    }
-
-    // The manager is initialised in vanilla; we inject our entry here
-    override void InitModifiers()
-    {
-        super.InitModifiers();
-        GetModifiersManager().AddModifier(MyMod_RustModifier);
-    }
-
-    // ---- Helper: manually infect this player (call from item, action, etc.) -
+    // Infect this player (call from an item, an action, etc.).
+    // InsertAgent: playerbase.c:8115
     void MyMod_InjectRustAgent(int amount)
     {
         if (!GetGame().IsServer())
             return;
         InsertAgent(eAgents.FOOD_POISON, amount);
-        // The modifier's ActivateCondition fires on next tick automatically
+        // ActivateCondition sees it on the next inactive tick
     }
 
-    // ---- Helper: clear the agent (e.g. after taking an antidote) ------------
+    // Cure (e.g. after taking an antidote).
+    // RemoveAgent: playerbase.c:8102; DeactivateModifier: modifiersmanager.c:232
     void MyMod_CureRust()
     {
         if (!GetGame().IsServer())
             return;
-        RemoveAllAgents();
-        GetModifiersManager().DeactivateModifier(eModifiers.MDF_FOODPOISONING);
+        RemoveAgent(eAgents.FOOD_POISON);
+        GetModifiersManager().DeactivateModifier(MYMOD_MDF_RUST);
     }
 }

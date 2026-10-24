@@ -1,5 +1,8 @@
 /node_modules
 
+# Whole-repo clones made by /dayz-import-mod for a GitHub tree link to a subfolder
+/.imports/
+
 # Python
 __pycache__/
 *.pyc
@@ -15,7 +18,7 @@ __pycache__/
 
 # Per-clone agentic-z-update state (last-pulled upstream SHA + concurrency lock)
 .claude/.upstream-baseline
-.claude/.upstream-update.lock
+.claude/.upstream-update.lock*
 
 # Per-agent memory (auto-created by agents at runtime; per-user, never committed)
 .claude/agent-memory/
@@ -28,16 +31,19 @@ __pycache__/
 .env.local
 .env.*.local
 
-# Release assets — uploaded to GitHub Releases, not committed (too big for git)
-output/release/
+# Each person's own work and machine, never part of the toolkit: test servers
+# (/dayz-add-server recreates them), deliverables, release assets, answer test
+# and visual test results, mods in progress, pasted images and the pytest cache.
+.server/
+output/
+workspace/
+.claude-images/
+.pytest_cache/
 *.tar.gz
 
-workspace/_server/missions/dayzOffline.enoch/storage_1/communityframework/
+# Private working docs: never pushed
+docs/.updates/
+docs/superpowers/
 
-# DayZ test-server runtime (.server/<instance>/). Logs, profiles, and storage are
-# runtime junk and should not be tracked. User-edited serverDZ.cfg and mission/
-# contents stay tracked via negation patterns.
-.server/*/
-!.server/*/serverDZ.cfg
-!.server/*/mission/
-!.server/*/mission/**
+# Claude Code worktrees: full copies of the repo, one per isolated agent session
+.claude/worktrees/

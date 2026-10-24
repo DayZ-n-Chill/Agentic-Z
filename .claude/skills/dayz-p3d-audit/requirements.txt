@@ -1,0 +1,1 @@
+py3d @ git+https://github.com/KoffeinFlummi/py3d.git@7acd58ba6ea3e118f7ad0130bea262c6e7172c84

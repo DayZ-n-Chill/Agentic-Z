@@ -1,294 +1,393 @@
-"""Tests for the canonical->wiki transforms in apply.py.
+"""Tests for apply.py and the --apply / --apply --dry-run modes of sync.py.
 
-Each transform has:
-  - frontmatter handling (kept fields, dropped fields, quoting)
-  - body handling (preserved vs HTML-escaped vs synthesized)
-  - the parser for agent <example> blocks (Context/User/Assistant + commentary drop)
+Uses the fake repo builder from test_docs_sync.py, so the real wiki is never written.
 """
 from __future__ import annotations
 
+import builtins
+import errno
+import importlib.util
+import io
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+import pytest
 
-from apply import (
-    decode_yaml_quoted,
-    escape_mdx_tags_in_body,
-    html_escape,
-    parse_example_block,
-    render_description,
-    render_example_div,
-    render_frontmatter,
-    split_frontmatter,
-    transform_agent,
-    transform_doc,
-    transform_skill,
-)
+HERE = Path(__file__).parent
 
 
-# ---------- helpers ----------
-
-def test_split_frontmatter_basic():
-    # The blank line between closing --- and body content is consumed by the
-    # frontmatter regex (\\s*\\n? after the closing fence). Body starts at
-    # the first content character. Renderers add their own spacing back.
-    text = "---\nname: foo\ndescription: bar\n---\n\nbody here\n"
-    fm, body = split_frontmatter(text)
-    assert fm == {"name": "foo", "description": "bar"}
-    assert body == "body here\n"
+def _load(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module  # dataclasses look their module up here
+    spec.loader.exec_module(module)
+    return module
 
 
-def test_split_frontmatter_quoted_values():
-    text = '---\nname: "foo"\ndescription: "with \\"quotes\\""\n---\nbody\n'
-    fm, body = split_frontmatter(text)
-    assert fm["name"] == "foo"
-    # The simple parser strips outer quotes; embedded escaped quotes are
-    # preserved-as-text inside (we don't fully decode here).
-    assert body == "body\n"
+apply = _load("docs_sync_apply_under_test", HERE / "apply.py")
+t = _load("docs_sync_test_helpers", HERE / "test_docs_sync.py")
+sync = t.sync
 
 
-def test_split_frontmatter_no_frontmatter():
-    text = "no frontmatter here\n"
-    fm, body = split_frontmatter(text)
-    assert fm == {}
-    assert body == text
+@pytest.fixture
+def repo(tmp_path, monkeypatch):
+    monkeypatch.setattr(sync, "REPO_ROOT", tmp_path)
+    monkeypatch.delenv(sync.WIKI_ENV, raising=False)  # the fixture's own wiki/ folder is the wiki
+    return t.build_repo(tmp_path)
 
 
-def test_render_frontmatter_quoting():
-    out = render_frontmatter({"name": "x", "model": "opus"}, keys_quoted={"name"})
-    assert out == '---\nname: "x"\nmodel: opus\n---\n'
+def snapshot(root: Path) -> dict[str, bytes]:
+    return {p.relative_to(root).as_posix(): p.read_bytes() for p in sorted(root.rglob("*")) if p.is_file()}
 
 
-def test_html_escape_safety():
-    assert html_escape("<example>") == "&lt;example&gt;"
-    assert html_escape("a & b") == "a &amp; b"
-    assert html_escape('user said "hi"') == 'user said "hi"'  # quotes left alone
+def patch_open(monkeypatch, fake):
+    # Path.write_text goes through io.open and the builtin open is the same
+    # function, so patch both names to catch every way a file is opened.
+    monkeypatch.setattr(io, "open", fake)
+    monkeypatch.setattr(builtins, "open", fake)
 
 
-# ---------- yaml-quoted decode ----------
+# ---------------------------------------------------------------- apply_to_text
 
-def test_decode_yaml_quoted_newlines():
-    assert decode_yaml_quoted("line1\\nline2") == "line1\nline2"
-
-
-def test_decode_yaml_quoted_quote_escape():
-    assert decode_yaml_quoted('he said \\"hi\\"') == 'he said "hi"'
+def test_apply_to_text_replaces_spans_right_to_left_on_one_line():
+    text = "a\nhas 3 agents and 7 skills\nz"
+    fixes = [(2, (4, 5, "30")), (2, (17, 18, "44"))]
+    assert apply.apply_to_text(text, fixes) == "a\nhas 30 agents and 44 skills\nz"
 
 
-def test_decode_yaml_quoted_backslash():
-    assert decode_yaml_quoted("path C:\\\\foo") == "path C:\\foo"
+def test_apply_to_text_keeps_crlf_line_endings():
+    text = "x 3 y\r\nz 4\r\n"
+    assert apply.apply_to_text(text, [(1, (2, 3, "5")), (2, (2, 3, "6"))]) == "x 5 y\r\nz 6\r\n"
 
 
-# ---------- example block parser ----------
+# ---------------------------------------------------------------- apply_fixes
 
-def test_parse_example_block_full():
-    inner = (
-        "\nContext: User wants foo.\n"
-        'user: "Make it foo"\n'
-        'assistant: "Doing foo now"\n'
-    )
-    out = parse_example_block(inner)
-    assert out == {
-        "context": "User wants foo.",
-        "user": '"Make it foo"',
-        "assistant": '"Doing foo now"',
-    }
+def test_apply_fixes_ignores_unfixable_problems(repo, capsys):
+    problems = [sync.Problem(sync.GUIDE, 1, "names agent `x`, which does not exist")]
+    before = snapshot(repo)
+    assert apply.apply_fixes(repo, problems) == 0
+    assert snapshot(repo) == before
+    assert "Nothing to fix" in capsys.readouterr().out
 
 
-def test_parse_example_block_drops_commentary():
-    inner = (
-        "Context: c\n"
-        'user: "u"\n'
-        'assistant: "a"\n'
-        "<commentary>this should NOT show up</commentary>\n"
-    )
-    out = parse_example_block(inner)
-    assert "this should NOT" not in (out["context"] + out["user"] + out["assistant"])
+def test_dry_run_writes_nothing_and_prints_each_change(repo, capsys):
+    t.edit(repo, sync.GUIDE, "has 2 agents", "has 4 agents")
+    before = snapshot(repo)
+    assert sync.main(["--apply", "--dry-run"]) == 0
+    assert snapshot(repo) == before
+    out = capsys.readouterr().out
+    assert "wiki/src/content/guide.md:11: would change 4 -> 2" in out
+    assert "Would apply 1 fix(es) in 1 file(s)." in out
 
 
-def test_parse_example_block_collapses_whitespace():
-    inner = (
-        "Context: c\n"
-        'user: "line1\n\nline2  with  spaces"\n'
-        'assistant: "ok"\n'
-    )
-    out = parse_example_block(inner)
-    assert out["user"] == '"line1 line2 with spaces"'
+def test_dry_run_tells_apart_two_fixes_on_one_line(repo, capsys):
+    t.edit(repo, sync.GUIDE, "includes 2 agents, 2 skills", "includes 4 agents, 4 skills")
+    assert sync.main(["--apply", "--dry-run"]) == 0
+    out = capsys.readouterr().out
+    line = (repo / sync.GUIDE).read_text(encoding="utf-8").split("\n")[2]
+    first, second = line.index("4 agents") + 1, line.index("4 skills") + 1
+    assert f"guide.md:3: would change 4 -> 2 (column {first})" in out
+    assert f"guide.md:3: would change 4 -> 2 (column {second})" in out
 
 
-def test_render_example_div_full():
-    ex = {"context": "ctx", "user": "u", "assistant": "a"}
-    rendered = render_example_div(ex)
-    assert '<div class="agent-example">' in rendered
-    assert '<div class="agent-example__title">Example</div>' in rendered
-    assert '<div class="agent-example__label">Context</div>' in rendered
-    assert '<div class="agent-example__content">ctx</div>' in rendered
-    assert '<div class="agent-example__label">User</div>' in rendered
-    assert '<div class="agent-example__label">Assistant</div>' in rendered
+def test_apply_fixes_counts_in_every_file_and_nothing_else(repo, capsys):
+    t.edit(repo, sync.GUIDE, "includes 2 agents, 2 skills", "includes 3 agents, 9 skills")
+    t.edit(repo, sync.TEAM, "and two topic files of", "and four topic files of")
+    t.edit(repo, sync.APP_JSX, "['6', 'items graded A+']", "['7', 'items graded A+']")
+    t.edit(repo, sync.APP_JSX, "['3', 'hooks']", "['9', 'hooks']")  # 3 hook scripts in hooks/
+    before = snapshot(repo)
+
+    assert sync.main(["--apply"]) == 0
+    after = snapshot(repo)
+    changed = {k for k in after if after[k] != before[k]}
+    assert changed == {sync.GUIDE, sync.TEAM, sync.APP_JSX}
+    assert "includes 2 agents, 2 skills" in (repo / sync.GUIDE).read_text(encoding="utf-8")
+    assert "and two topic files of" in (repo / sync.TEAM).read_text(encoding="utf-8")
+    app = (repo / sync.APP_JSX).read_text(encoding="utf-8")
+    assert "['6', 'items graded A+']" in app and "['3', 'hooks']" in app
+    assert "Applied 5 fix(es) in 3 file(s)." in capsys.readouterr().out
+    assert sync.main(["--check"]) == 0
 
 
-def test_render_example_div_skips_empty_turns():
-    # If only context and user are present, assistant turn must not render
-    ex = {"context": "c", "user": "u", "assistant": ""}
-    rendered = render_example_div(ex)
-    assert 'Assistant' not in rendered
+def test_apply_keeps_the_file_line_endings(repo):
+    path = repo / sync.TEAM
+    path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n").replace(b"the 2 agents and", b"the 6 agents and"))
+    assert sync.main(["--apply"]) == 0
+    data = path.read_bytes()
+    assert b"the 2 agents and" in data and b"\r\n" in data and b"\n" not in data.replace(b"\r\n", b"")
 
 
-# ---------- description renderer (prose + examples) ----------
-
-def test_render_description_pure_prose():
-    out = render_description("Just some prose.")
-    assert out == "Just some prose."
-
-
-def test_render_description_prose_then_examples():
-    desc = (
-        "Use this agent for stuff. Examples:\n\n"
-        '<example>\nContext: c1\nuser: "u1"\nassistant: "a1"\n</example>\n\n'
-        '<example>\nContext: c2\nuser: "u2"\nassistant: "a2"\n</example>'
-    )
-    out = render_description(desc)
-    # Prose comes first
-    assert out.startswith("Use this agent for stuff. Examples:")
-    # Two divs follow
-    assert out.count('<div class="agent-example">') == 2
-    # Content from both examples is in there
-    assert ">c1<" in out
-    assert ">c2<" in out
+def test_apply_exits_1_and_reports_what_it_cannot_fix(repo, capsys):
+    t.edit(repo, sync.GUIDE, "has 2 agents", "has 4 agents")
+    t.edit(repo, sync.SKILLS_TABLE, "| `/bar` | Bar. |\n", "")
+    assert sync.main(["--apply"]) == 1
+    out = capsys.readouterr().out
+    assert "1 problem(s) need a hand edit:" in out
+    assert "skill `bar` exists but is not listed in the skills table" in out
+    assert "has 2 agents" in (repo / sync.GUIDE).read_text(encoding="utf-8")  # the count was still fixed
+    assert sync.main(["--check"]) == 1
 
 
-def test_render_description_yaml_quoted_input():
-    """Agent files store description as a YAML quoted string with \\n escapes;
-    render_description must decode those before parsing examples."""
-    desc_raw = 'Lead-in.\\n\\n<example>\\nContext: ctx\\nuser: "u"\\nassistant: "a"\\n</example>'
-    out = render_description(desc_raw)
-    assert out.startswith("Lead-in.")
-    assert '<div class="agent-example">' in out
-    assert ">ctx<" in out
+def test_dry_run_exits_1_when_hand_edits_remain(repo):
+    t.edit(repo, sync.TEAM, "| `foo` | B | A+ |\n", "")
+    before = snapshot(repo)
+    assert sync.main(["--apply", "--dry-run"]) == 1
+    assert snapshot(repo) == before
 
 
-# ---------- MDX tag escape in body ----------
-
-def test_escape_mdx_tags_in_body_only_targets_mdx_problem_tags():
-    body = (
-        "Plain `<ModName>` is fine.\n"
-        "But `<example>...</example>` confuses MDX.\n"
-        "And `<commentary>` too.\n"
-    )
-    out = escape_mdx_tags_in_body(body)
-    # ModName tag NOT touched (it's not an MDX-problem tag)
-    assert "`<ModName>`" in out
-    # example/commentary tags escaped
-    assert "&lt;example&gt;" in out
-    assert "&lt;/example&gt;" in out
-    assert "&lt;commentary&gt;" in out
+def test_apply_with_nothing_wrong_writes_nothing(repo, capsys):
+    before = snapshot(repo)
+    assert sync.main(["--apply"]) == 0
+    assert snapshot(repo) == before
+    assert "Nothing to fix" in capsys.readouterr().out
 
 
-# ---------- transform_skill ----------
+def test_write_error_exits_1(repo, monkeypatch, capsys):
+    t.edit(repo, sync.GUIDE, "has 2 agents", "has 4 agents")
 
-def test_transform_skill_trims_description_and_inserts_overview():
-    src = (
-        "---\n"
-        "name: dayz-foo\n"
-        "description: A skill that does foo with <args>\n"
-        "---\n\n"
-        "# /dayz-foo\n\n"
-        "Body content here.\n"
-    )
-    out = transform_skill(src)
-    # Frontmatter has name only
-    assert "name: dayz-foo" in out
-    assert "description:" not in out.split("---", 2)[1]  # not in FM section
-    # Overview inserted with HTML-escaped description
-    assert "## Overview" in out
-    assert "&lt;args&gt;" in out
-    # Original body preserved
-    assert "# /dayz-foo" in out
-    assert "Body content here." in out
+    real_open = io.open
+
+    def refuse(file, mode="r", *args, **kwargs):
+        if "w" in mode:
+            raise PermissionError("read-only")
+        return real_open(file, mode, *args, **kwargs)
+
+    patch_open(monkeypatch, refuse)
+    assert sync.main(["--apply"]) == 1
+    assert "could not write the wiki" in capsys.readouterr().err
 
 
-def test_transform_skill_no_description():
-    src = "---\nname: dayz-x\n---\n\n# /dayz-x\n\nbody\n"
-    out = transform_skill(src)
-    assert "## Overview" not in out
-    assert "name: dayz-x" in out
+def test_write_error_partway_leaves_no_file_changed(repo, monkeypatch, capsys):
+    # Fixes in three files; the second write fails. The first file must be put back.
+    t.edit(repo, sync.GUIDE, "has 2 agents", "has 4 agents")
+    t.edit(repo, sync.TEAM, "provides 2 slash commands", "provides 5 slash commands")
+    t.edit(repo, sync.APP_JSX, "['2', 'agents']", "['8', 'agents']")
+    before = snapshot(repo)
+    real_open = io.open
+    calls = []
+
+    def fail_second(file, mode="r", *args, **kwargs):
+        if "w" in mode:
+            calls.append(file)
+            if len(calls) == 2:
+                raise PermissionError("read-only")
+        return real_open(file, mode, *args, **kwargs)
+
+    patch_open(monkeypatch, fail_second)
+    assert sync.main(["--apply"]) == 1
+    assert snapshot(repo) == before
+    captured = capsys.readouterr()
+    assert "could not write the wiki" in captured.err and "changed" not in captured.out
 
 
-# ---------- transform_agent ----------
-
-def test_transform_agent_trims_frontmatter_and_injects_badges():
-    src = (
-        "---\n"
-        'name: "test-agent"\n'
-        "description: One-liner.\n"
-        "model: opus\n"
-        "color: red\n"
-        "memory: project\n"
-        "tools: Read, Glob\n"
-        "permissionMode: acceptEdits\n"
-        "maxTurns: 50\n"
-        "---\n\n"
-        "## NAME\n\ntest-agent\n"
-    )
-    out = transform_agent(src)
-    # Kept
-    assert 'name: "test-agent"' in out
-    assert "model: opus" in out
-    assert "color: red" in out
-    assert "memory: project" in out
-    # Dropped
-    fm_section = out.split("---", 2)[1]
-    assert "description" not in fm_section
-    assert "tools" not in fm_section
-    assert "permissionMode" not in fm_section
-    assert "maxTurns" not in fm_section
-    # Badge HTML inserted
-    assert '<p class="agent-badges">' in out
-    assert "Agent</span>" in out
-    assert "opus</span>" in out
-    assert "agent-color-badge--red" in out
-    # Overview present
-    assert "## Overview" in out
-    assert "One-liner." in out
-    # Body preserved
-    assert "## NAME" in out
+def _three_file_fixes(repo):
+    t.edit(repo, sync.GUIDE, "has 2 agents", "has 4 agents")
+    t.edit(repo, sync.TEAM, "provides 2 slash commands", "provides 5 slash commands")
+    t.edit(repo, sync.APP_JSX, "['2', 'agents']", "['8', 'agents']")
 
 
-def test_transform_agent_with_examples():
-    src = (
-        "---\n"
-        'name: "ex-agent"\n'
-        'description: "Lead.\\n\\n<example>\\nContext: c\\nuser: \\"u\\"\\nassistant: \\"a\\"\\n</example>"\n'
-        "model: opus\n"
-        "color: blue\n"
-        "memory: project\n"
-        "---\n\n"
-        "## NAME\n\nex-agent\n"
-    )
-    out = transform_agent(src)
-    assert "Lead." in out
-    assert '<div class="agent-example">' in out
-    assert ">c<" in out
+def _fail_on_writes(monkeypatch, failures: dict):
+    """Open files as usual, but raise failures[n] on the n-th open for writing."""
+    real_open = io.open
+    calls = []
+
+    def fake(file, mode="r", *args, **kwargs):
+        if "w" in mode:
+            calls.append(file)
+            if len(calls) in failures:
+                raise failures[len(calls)]
+        return real_open(file, mode, *args, **kwargs)
+
+    patch_open(monkeypatch, fake)
+    return calls
 
 
-def test_transform_agent_escapes_mdx_tags_in_body():
-    src = (
-        "---\n"
-        'name: "x"\n'
-        "description: x\n"
-        "model: opus\n"
-        "color: green\n"
-        "memory: project\n"
-        "---\n\n"
-        "Body says: `<example>...</example>` should be escaped.\n"
-    )
-    out = transform_agent(src)
-    assert "&lt;example&gt;" in out
+def test_ctrl_c_between_writes_leaves_no_file_changed(repo, monkeypatch, capsys):
+    # Ctrl+C lands on the second write; the first file must still be put back.
+    _three_file_fixes(repo)
+    before = snapshot(repo)
+    _fail_on_writes(monkeypatch, {2: KeyboardInterrupt()})
+    assert sync.main(["--apply"]) == 1
+    monkeypatch.undo()
+    assert snapshot(repo) == before
+    captured = capsys.readouterr()
+    assert "stopped; the wiki files were put back" in captured.err and "Traceback" not in captured.err
 
 
-# ---------- transform_doc ----------
+def test_ctrl_c_after_the_last_write_says_the_fixes_were_written(repo, monkeypatch, capsys):
+    # Ctrl+C lands while the changes are printed, after every write finished:
+    # the fixes stay in place and the message must not claim they were put back.
+    _three_file_fixes(repo)
+    before = snapshot(repo)
+    real_print = builtins.print
 
-def test_transform_doc_is_identity():
-    src = "---\nname: X\ntitle: Y\n---\n\nbody contents\n"
-    assert transform_doc(src) == src
+    def interrupt_printout(*args, **kwargs):
+        if args and ": changed " in str(args[0]):
+            raise KeyboardInterrupt
+        real_print(*args, **kwargs)
+
+    monkeypatch.setattr(builtins, "print", interrupt_printout)
+    assert sync.main(["--apply"]) == 1
+    monkeypatch.setattr(builtins, "print", real_print)  # not undo(): that would drop the fake repo root too
+    assert snapshot(repo) != before
+    assert not any(p.fix for p in sync.run_checks()[1])
+    err = capsys.readouterr().err
+    assert "stopped after writing the fixes" in err and "put back" not in err and "Traceback" not in err
+
+
+def test_change_list_prints_fixes_on_one_line_left_to_right(tmp_path, capsys):
+    # Problems may arrive out of column order; the change list is sorted by line, then column.
+    (tmp_path / "page.md").write_text("has 3 agents and 7 skills\n", encoding="utf-8")
+    problems = [
+        sync.Problem("page.md", 1, "skills", (17, 18, "44"), "7"),
+        sync.Problem("page.md", 1, "agents", (4, 5, "30"), "3"),
+    ]
+    apply.apply_fixes(tmp_path, problems, dry_run=True)
+    out = capsys.readouterr().out.splitlines()
+    assert out[:2] == ["page.md:1: would change 3 -> 30 (column 5)", "page.md:1: would change 7 -> 44 (column 18)"]
+
+
+def test_ctrl_c_during_the_check_says_nothing_was_written(repo, monkeypatch, capsys):
+    def interrupted():
+        raise KeyboardInterrupt
+    monkeypatch.setattr(sync, "run_checks", interrupted)
+    before = snapshot(repo)
+    assert sync.main(["--apply"]) == 1
+    assert snapshot(repo) == before
+    err = capsys.readouterr().err
+    assert "stopped; nothing was written" in err and "Traceback" not in err
+
+
+def test_file_edited_between_check_and_write_is_not_fixed(repo, monkeypatch, capsys):
+    # An editor saves the page after the check, shifting the text the fix offsets point at.
+    t.edit(repo, sync.GUIDE, "has 2 agents", "has 4 agents")
+    problems = sync.run_checks()[1]
+    monkeypatch.setattr(sync, "run_checks", lambda: (None, problems))
+    t.edit(repo, sync.GUIDE, "has 4 agents", "now has 4 agents")
+    before = snapshot(repo)
+    assert sync.main(["--apply"]) == 1
+    assert snapshot(repo) == before
+    assert f"{sync.GUIDE} changed since the check; run again" in capsys.readouterr().err
+
+
+def test_unreadable_wiki_file_during_apply_is_a_read_error(repo, monkeypatch, capsys):
+    # apply.py re-reads each file it fixes; a failed read is not a failed write.
+    t.edit(repo, sync.GUIDE, "has 2 agents", "has 4 agents")
+    problems = sync.run_checks()[1]
+    monkeypatch.setattr(sync, "run_checks", lambda: (None, problems))
+    real_open = io.open
+
+    def refuse_read(file, mode="r", *args, **kwargs):
+        if "w" not in mode and Path(file) == repo / sync.GUIDE:
+            raise PermissionError(13, "Permission denied")
+        return real_open(file, mode, *args, **kwargs)
+
+    before = snapshot(repo)
+    patch_open(monkeypatch, refuse_read)
+    assert sync.main(["--apply"]) == 1
+    monkeypatch.undo()
+    assert snapshot(repo) == before
+    err = capsys.readouterr().err
+    assert f"could not read {sync.GUIDE}: Permission denied" in err and "could not write" not in err
+
+
+def test_failed_put_back_keeps_the_first_error(repo, monkeypatch):
+    # The second write fails, then putting the first file back (the third write) fails too.
+    # The error raised is still the first one, with the put-back failure noted on it.
+    _three_file_fixes(repo)
+    problems = sync.run_checks()[1]
+    _fail_on_writes(monkeypatch, {2: PermissionError("read-only"), 3: OSError("disk gone")})
+    with pytest.raises(PermissionError, match="read-only") as exc:
+        apply.apply_fixes(repo, problems)
+    monkeypatch.undo()
+    assert any("could not put back" in n and "disk gone" in n for n in exc.value.__notes__)
+
+
+def test_failed_put_back_is_shown_on_the_command_line(repo, monkeypatch, capsys):
+    # Same failure through main(): the user must be told which file was not put back.
+    _three_file_fixes(repo)
+    _fail_on_writes(monkeypatch, {2: PermissionError("read-only"), 3: OSError("disk gone")})
+    assert sync.main(["--apply"]) == 1
+    monkeypatch.undo()
+    err = capsys.readouterr().err
+    assert "could not write the wiki: read-only" in err
+    # The first file written (and so the one put back) is the first in the fix order.
+    first = repo / sync.APP_JSX
+    assert f"could not put back {first}: disk gone" in err
+
+
+class _DiskFullWriter:
+    """A file opened for writing that writes half its text, then fails like a full disk."""
+
+    def __init__(self, f):
+        self._f = f
+
+    def write(self, text):
+        self._f.write(text[: len(text) // 2])
+        self._f.flush()
+        raise OSError(errno.ENOSPC, "No space left on device")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self._f.close()
+        return False
+
+    def __getattr__(self, name):
+        return getattr(self._f, name)
+
+
+@pytest.mark.parametrize("failing_write", [1, 2])
+def test_write_failing_after_the_file_is_open_leaves_every_file_unchanged(repo, monkeypatch, capsys, failing_write):
+    # The disk fills up in the middle of a write, after the file was opened and
+    # half the text went out. Neither the file being written (1st write) nor the
+    # file already fixed before it (2nd write) may end up empty, cut short or fixed.
+    t.edit(repo, sync.GUIDE, "has 2 agents", "has 4 agents")
+    t.edit(repo, sync.TEAM, "provides 2 slash commands", "provides 5 slash commands")
+    t.edit(repo, sync.APP_JSX, "['2', 'agents']", "['8', 'agents']")
+    before = snapshot(repo)
+    real_open = io.open
+    calls = []
+
+    def disk_full(file, mode="r", *args, **kwargs):
+        f = real_open(file, mode, *args, **kwargs)
+        if "w" in mode:
+            calls.append(file)
+            if len(calls) == failing_write:
+                return _DiskFullWriter(f)
+        return f
+
+    patch_open(monkeypatch, disk_full)
+    assert sync.main(["--apply"]) == 1
+    monkeypatch.undo()
+    assert len(calls) >= failing_write
+    assert snapshot(repo) == before  # same bytes, and no temporary file left behind
+    captured = capsys.readouterr()
+    assert "could not write the wiki" in captured.err and "changed" not in captured.out
+
+
+@pytest.mark.parametrize("what", t.SOURCES)
+@pytest.mark.parametrize("args", [["--apply"], ["--apply", "--dry-run"]])
+def test_apply_writes_nothing_when_a_source_is_missing_or_unreadable(repo, capsys, what, args):
+    # Wiki counts that are wrong only if the missing source read as 0.
+    t.edit(repo, sync.GUIDE, "has 2 agents", "has 4 agents")
+    message = t.remove_source(repo, what)
+    before = snapshot(repo)
+    assert sync.main(args) == 1
+    assert snapshot(repo) == before
+    captured = capsys.readouterr()
+    assert message in captured.err and "changed" not in captured.out
+
+
+# ---------------------------------------------------------------- real process
+
+def test_cli_apply_and_dry_run(tmp_path):
+    root = t.build_repo(tmp_path, with_scripts=True)
+    t.edit(root, sync.GUIDE, "has 2 agents", "has 4 agents")
+    r = t.run_cli(root, "--apply", "--dry-run")
+    assert r.returncode == 0 and "would change 4 -> 2" in r.stdout
+    assert "has 4 agents" in (root / sync.GUIDE).read_text(encoding="utf-8")
+    r = t.run_cli(root, "--apply")
+    assert r.returncode == 0 and "changed 4 -> 2" in r.stdout
+    assert t.run_cli(root, "--check").returncode == 0

@@ -4,6 +4,21 @@ Canonical translation rules for the Figma-to-DayZ pipeline (`figma-node-normaliz
 
 For the exhaustive widget catalog and property reference, see [`enscript/references/gui_layout.md`](enscript/references/gui_layout.md). This doc covers translation rules only.
 
+## Contents
+
+1. [The format is not XML](#1-the-format-is-not-xml)
+2. [Format cheat sheet](#2-format-cheat-sheet)
+3. [Figma to DayZ widget mapping](#3-figma-to-dayz-widget-mapping)
+4. [Naming prefix taxonomy](#4-naming-prefix-taxonomy)
+5. [Layout translation: anchors first, spacers only when needed](#5-layout-translation-anchors-first-spacers-only-when-needed)
+6. [Coordinate translation](#6-coordinate-translation)
+7. [Color translation](#7-color-translation)
+8. [Font translation](#8-font-translation)
+9. [Hard NO list](#9-hard-no-list)
+10. [Worked example](#10-worked-example)
+
+Then [Agent usage](#agent-usage): which agent reads which section.
+
 ---
 
 ## 1. The format is not XML
@@ -25,10 +40,10 @@ WidgetClassNameClass WidgetName {
 Three rules that cover the syntax:
 
 - Class names always end in `Class`. `FrameWidget` is wrong, `FrameWidgetClass` is right.
-- Properties are bare key-value pairs on their own line. No `=`, no `:`, no semicolons, no quoted attribute values. The value follows the key separated by a space.
+- Properties are key-value pairs on their own line. No `=`, no `:`, no semicolons. The value follows the key separated by a space. Quote string values the way vanilla does: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`, `items`, `layout`, `Mask` and `ScriptParamsClass` values (for example `items` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`). Numbers, flags and enum words such as `style`, `halign` and `valign` stay bare. Multi-word keys are quoted too (`"exact text" 1`).
 - The child `{ }` block goes inside the parent's braces, AFTER all of the parent's own properties. A widget may have multiple child blocks (the second is conventionally for `ScriptParamsClass` parameter blocks).
 
-Multi-word property keys are quoted, values still are not:
+Multi-word property keys are quoted. String values are quoted, and numbers and enum words stay bare:
 
 ```
 text "Status: OK"
@@ -37,7 +52,7 @@ text "Status: OK"
 "text halign" right
 ```
 
-Loaded in script via `GetGame().GetWorkspace().CreateWidgets("gui/layouts/MyMod/file.layout", parent)`.
+Loaded in script via `GetGame().GetWorkspace().CreateWidgets("MyMod/gui/layouts/file.layout", parent)`; the path starts with the mod's `$PBOPREFIX$` (the mod name for a `/dayz-new-mod` scaffold, which puts `gui/` at the mod root).
 
 ---
 
@@ -70,7 +85,7 @@ Six properties every visible widget cares about:
 | `hexactsize` | `1` = size is pixels, `0` = fraction of parent width |
 | `vexactsize` | `1` = size is pixels, `0` = fraction of parent height |
 
-Alignment anchors place the widget against a side or center of the parent. `halign` values: `left`, `right`, `center_ref`, `left_ref`, `right_ref`. `valign` values: `top`, `bottom`, `center_ref`, `top_ref`, `bottom_ref`. The `_ref` variants use the parent's reference frame, not its raw bounds.
+Alignment anchors place the widget against a side or center of the parent. The values vanilla uses (`enscript/references/gui_layout.md`, "Common Properties"): `halign` `left`, `center_ref`, `right_ref`; `valign` `top`, `bottom`, `center_ref`, `bottom_ref` (for example `halign right_ref` and `valign bottom_ref` at `P:\gui\layouts\day_z_hud.layout:520` and `:521`).
 
 See `enscript/references/gui_layout.md` for the full property catalog (`ignorepointer`, `priority`, `disabled`, `clipchildren`, fonts, styles, etc.) and the full widget class list.
 
@@ -155,7 +170,7 @@ All widget names end in `Class`.
 
 This is the section most likely to be mishandled. Read it once carefully.
 
-**The vanilla DayZ idiom is absolute pixel positioning with alignment anchors.** Every shipping vanilla `.layout` under `P:\gui\` and every example layout in this repo uses absolute `position`/`size` plus `halign`/`valign` anchors. Spacer widgets exist but are reserved for cases the anchor system genuinely cannot express.
+**Vanilla DayZ places most widgets with `position`/`size` plus `halign`/`valign` anchors, and uses spacer widgets for content that flows or repeats.** Both are common: 149 of the 227 vanilla `.layout` files under `P:\gui\layouts` hold a `GridSpacerWidgetClass`, `WrapSpacerWidgetClass` or `SpacerWidgetClass`, and some have a spacer as the root (`WrapSpacerWidgetClass ChatItemWidget` at `P:\gui\layouts\day_z_chat_item.layout:1`). A spacer places its own children; every other widget takes its place from position, size and anchors. For a Figma design, start from position and anchors and add a spacer for the cases listed under "When to reach for spacer widgets" below.
 
 ### Default: absolute + anchor, but honor Figma sizing modes
 
@@ -204,15 +219,6 @@ Use `WrapSpacerWidgetClass` or `GridSpacerWidgetClass` only when:
 
 A static row of three buttons described in Figma auto-layout is NOT a spacer case. It is three `ButtonWidgetClass` widgets with `position`/`size` derived from their Figma bounds and Figma sizing modes per the table above.
 
-### When to reach for spacer widgets
-
-Use `WrapSpacerWidgetClass` or `GridSpacerWidgetClass` only when:
-
-- The Figma frame contains a **truly dynamic** repeating list or grid (N children where N is determined at runtime by data, not designed in Figma)
-- OR the design relies on children flowing and wrapping based on container width (rare in DayZ UIs)
-
-A static row of three buttons described in Figma auto-layout is NOT a spacer case. It is three `ButtonWidgetClass` widgets with `position`/`size` derived from their Figma bounds.
-
 ### When to reach for `ScrollWidgetClass`
 
 When a Figma frame is marked as overflow-scrollable, or when its content height exceeds the visible region by design.
@@ -255,7 +261,7 @@ DayZ colors are `R G B A` space-separated floats in 0..1, lowercase keyword `col
 
 ```
 color 1 1 1 1               // white, opaque
-color 0.0863 0.0863 0.0863 0.902   // vanilla dark panel
+color 0.1569 0.1569 0.1569 0.902   // vanilla dark panel
 color 1 0.2 0.2 1           // red
 color 0 0 0 0.5             // black, 50% alpha
 ```
@@ -300,15 +306,15 @@ The font's name suffix (e.g. `24`) is the SDF generation size, not the render si
 
 ## 9. Hard NO list
 
-Surface red flags that the output is wrong. The generator must never emit these. The validator must strip them on contact.
+Surface red flags that the output is wrong. The generator must never emit these. The validator, a read-only gate, fails the layout on any of them and reports each with its line, and `figma-to-dayz-layout` fixes them in repair mode.
 
 - **XML syntax**: `<Tag>`, `</Tag>`, `/>`, `name="value"` attribute pairs, namespace prefixes.
-- **`=` between key and value.** DayZ is `key value`, not `key = value`.
-- **Quoted attribute values.** Bare values only. The exception is text strings (`text "Hello"`) and multi-word KEYS (`"exact text" 1`).
-- **Semicolons** as line terminators.
-- **CSS-flavored property names**: `borderRadius`, `border-radius`, `display`, `flex`, `flexDirection`, `justifyContent`, `alignItems`, `boxShadow`, `box-shadow`, `padding`, `margin`, `gap`.
-- **Opacity as a separate property or percentage.** Alpha lives as the fourth float on `color`.
-- **camelCase or kebab-case attribute names.** DayZ properties are lowercase single words or quoted multi-word keys.
+- **`=` between key and value.** DayZ is `key value`, not `key = value`. Inside a quoted value `=` is valid, such as the rich-text `set=` tag in the `text` value at `P:\gui\layouts\repro\alphamask.layout:71`.
+- **Quoted values where vanilla leaves them bare.** Quote string values the way vanilla does: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`, `items`, `layout`, `Mask` and `ScriptParamsClass` values (for example `items` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`). Numbers, flags and enum words such as `style`, `halign` and `valign` stay bare. Multi-word keys are quoted too (`"exact text" 1`).
+- **Semicolons** as line terminators. Inside a quoted value semicolons are valid list separators: `colums "Item;80;Value;50;"` at `P:\gui\layouts\debug\day_z_debug_remoteinfo.layout:38` and `items "TIME;SPEED"` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`.
+- **CSS-flavored property names**, spelled exactly as CSS spells them (case sensitive): `borderRadius`, `border-radius`, `display`, `flex`, `flexDirection`, `justifyContent`, `alignItems`, `boxShadow`, `box-shadow`, `padding`, `margin`, `gap`. Spacer widgets' vanilla `Padding` and `Margin` (capitalized, for example `Padding 0` at `P:\gui\layouts\new_ui\options\msstore\keybinding_menu.layout:61`) are valid and must be kept.
+- **Opacity as a separate property or percentage.** Alpha lives as the fourth float on `color`. This bans a bare `opacity` key only; quoted vanilla keys that contain the word, such as `"shadow opacity"` (`P:\gui\layouts\day_z_hud_watermark.layout:55`), are valid.
+- **Property names vanilla does not spell that way.** Write each name exactly as vanilla spells it (`imageTexture`, `userID`, `"exact text size"`); no CSS names.
 - **Self-closing tags.** Empty widgets still need `{ }` braces.
 - **Inventing widget classes that do not end in `Class`.** Verify every unknown widget against vanilla before emitting it.
 
@@ -338,20 +344,52 @@ Frame "StatusCard"  auto-layout vertical
   "name": "status_card",
   "type": "panel",
   "layout": "vertical",
+  "spacing": 4,
   "padding": { "top": 8, "right": 8, "bottom": 8, "left": 8 },
   "size": { "width": 320, "height": 120 },
+  "sizing": { "width": "fixed", "height": "fixed" },
   "style": { "color": "#161616", "alpha": 0.8 },
   "anchor": { "halign": "right", "valign": "bottom", "offsetX": 24, "offsetY": 24 },
   "children": [
-    { "name": "txt_title", "type": "text", "text": "Status: OK",
-      "font": "metron_book_18_bold" },
-    { "name": "txt_body",  "type": "text", "text": "Subtitle",
-      "font": "metron_light_12" },
-    { "name": "btn_close", "type": "button", "text": "Close",
-      "font": "metron_book_14" }
+    { "name": "txt_title", "type": "text", "layout": "none", "spacing": 0,
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "size": { "width": 304, "height": 24 },
+      "sizing": { "width": "fixed", "height": "hug" },
+      "text": "Status: OK", "font": "metron_book_18_bold", "children": [] },
+    { "name": "txt_body", "type": "text", "layout": "none", "spacing": 0,
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "size": { "width": 304, "height": 18 },
+      "sizing": { "width": "fixed", "height": "hug" },
+      "text": "Subtitle", "font": "metron_light_12", "children": [] },
+    { "name": "btn_close", "type": "button", "layout": "none", "spacing": 0,
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "size": { "width": 80, "height": 28 },
+      "sizing": { "width": "hug", "height": "hug" },
+      "text": "Close", "font": "metron_book_14", "children": [] }
   ]
 }
 ```
+
+Every node, leaves included, carries the eight core fields: `name`, `type`, `layout`, `spacing`, `padding`, `size`, `sizing` and `children`. The generator reads `sizing` on each axis to pick the size toggle (section 5), so a node without it cannot be made responsive. A child of a `layout: none` parent, or a child Figma marks as absolutely positioned inside an auto-layout frame, also carries `position`, `{ "x", "y" }` in pixels from the parent's top-left corner, since no auto-layout places it; the other children of `horizontal` and `vertical` parents omit it. When `position` is present, the generator uses it instead of computing a flow position. The other fields (`text`, `font`, `style`, `anchor`) appear only when the source node carries that data.
+
+For example, an icon at x=200, y=10 inside a free-placed 240 by 40 header frame:
+
+```json
+{ "name": "panel_header", "type": "panel", "layout": "none", "spacing": 0,
+  "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+  "size": { "width": 240, "height": 40 },
+  "sizing": { "width": "fixed", "height": "fixed" },
+  "children": [
+    { "name": "img_icon", "type": "image", "layout": "none", "spacing": 0,
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "size": { "width": 20, "height": 20 },
+      "sizing": { "width": "fixed", "height": "fixed" },
+      "position": { "x": 200, "y": 10 }, "children": [] }
+  ]
+}
+```
+
+The generator writes that child as `position 200 10` with `hexactpos 1` and `vexactpos 1` (section 6, "Fixed-size button or icon").
 
 ### Generator output (`.layout`, property-file)
 
@@ -408,10 +446,8 @@ FrameWidgetClass StatusHud {
      "text valign" center
     }
     ButtonWidgetClass btn_close {
-     position 8 8
+     position 8 58
      size 80 28
-     halign right_ref
-     valign bottom_ref
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -428,6 +464,8 @@ FrameWidgetClass StatusHud {
 }
 ```
 
+The three children carry no `position` because their vertical auto-layout parent places them: each one's `y` is the parent's top padding plus the heights of the siblings before it plus one `spacing` per sibling before it, so `txt_body` is at 8 + 24 + 4 = 36 and `btn_close` at 8 + 24 + 4 + 18 + 4 = 58, and each `x` is the left padding, 8. Both axes of all three children are pixel-sized; a `fill` axis would instead take position `0` with its position toggle `0` (section 6).
+
 Each stage's shape mirrors the next: the Figma frame becomes the normalized JSON node, which becomes the `.layout` widget block. Names survive end to end so `FindAnyWidget("btn_close")` works from script.
 
 ---
@@ -436,6 +474,6 @@ Each stage's shape mirrors the next: the Figma frame becomes the normalized JSON
 
 - **`figma-node-normalizer`** uses sections 4 (prefixes) and 6 to decide what to keep, what to flatten, what to label. Its output JSON should carry enough metadata that the generator never has to re-guess.
 - **`figma-to-dayz-layout`** uses every section. The widget mapping table is its primary lookup. Section 5 is the most common place to go wrong, treat it as required reading.
-- **`dayz-layout-validator`** uses section 9 (Hard NO list) as its strip list, sections 1 and 2 to verify well-formedness, and sections 3 and 4 to confirm widget classes against the catalog.
+- **`dayz-layout-validator`** uses section 9 (Hard NO list) as its list of failures to report (it changes no file), sections 1 and 2 to verify well-formedness, and sections 3 and 4 to confirm widget classes against the catalog.
 
 When the format claims in any individual agent's `.md` file disagree with this doc, this doc wins. The agents are documentation; this is the spec.

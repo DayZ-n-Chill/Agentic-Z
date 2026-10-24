@@ -1,0 +1,57 @@
+{
+  "agent": "dayz-ai-specialist",
+  "questions": [
+    {
+      "id": "infected-mind-states",
+      "question": "Answer only, do not edit any file. Which vanilla enum lists the infected mind states, which value means the infected is chasing a target, and in which vanilla file is it declared?",
+      "must_include": [
+        "DayZInfectedConstants",
+        "MINDSTATE_CHASE"
+      ],
+      "cite": "3_game/entities/dayzinfected.c",
+      "verified": "P:/scripts/3_game/entities/dayzinfected.c:1 (enum DayZInfectedConstants) and :16 (MINDSTATE_CHASE)"
+    },
+    {
+      "id": "soldier-behaviour-template",
+      "question": "Answer only, do not edit any file. My new infected class inherits from the vanilla ZmbM_SoldierNormal. Which config key picks its AI behaviour template, which template does it inherit, and in which vanilla config file and config class are the templates defined?",
+      "must_include": [
+        "aiAgentTemplate",
+        "InfectedMSoldier",
+        "CfgAIBehaviours"
+      ],
+      "cite": "DZ/AI/config.cpp",
+      "verified": "P:/DZ/characters/zombies/config.cpp:9497 (aiAgentTemplate=\"InfectedMSoldier\" on ZmbM_SoldierNormal_Base, parent of ZmbM_SoldierNormal at :9791); P:/DZ/AI/config.cpp:14 (class CfgAIBehaviours) and :6477 (class InfectedMSoldier)"
+    },
+    {
+      "id": "spawn-with-ai",
+      "question": "Answer only, do not edit any file. I spawn an infected from server script with GetGame().CreateObjectEx(). Which flag must I pass so its AI starts, and in which vanilla file are the CreateObjectEx flags defined?",
+      "must_include": [
+        "ECE_INITAI"
+      ],
+      "cite": "3_game/ce/centraleconomy.c",
+      "verified": "P:/scripts/3_game/ce/centraleconomy.c:18 (const int ECE_INITAI = 2048); used at P:/scripts/4_world/plugins/pluginbase/plugindeveloper.c:454"
+    },
+    {
+      "id": "fake-gunshot-noise",
+      "question": "Answer only, do not edit any file. From server script I want to make a noise at a world position that infected will hear and walk toward, like a fake gunshot. Which vanilla class and call do I use, and which class loads the noise settings from config?",
+      "must_include": [
+        "re:AddNoiseTarget|AddNoisePos",
+        "NoiseParams"
+      ],
+      "cite": "3_game/noise.c",
+      "verified": "P:/scripts/3_game/noise.c:7 (AddNoisePos), :10 (AddNoiseTarget), :16 (class NoiseParams); vanilla use at P:/scripts/3_game/dayzgame.c:3618"
+    },
+    {
+      "id": "no-vanilla-human-ai",
+      "question": "Answer only, do not edit any file. Does vanilla DayZ ship a human AI class, such as a bandit or soldier NPC, that I can inherit from for my base guards? Start with yes or no, then explain what vanilla AI does exist.",
+      "must_include": [
+        "re:\\A\\W*no\\b",
+        "re:infected|zombie"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "verified": "P:/DZ/data/config.cpp:3079 (DZ_LightAI); its only children are DayZInfected (P:/DZ/characters/zombies/config.cpp:21) and AnimalBase (P:/DZ/animals/config.cpp:17); the only script children of DayZCreatureAI are DayZInfected (P:/scripts/3_game/entities/dayzinfected.c:104) and DayZAnimal (P:/scripts/3_game/entities/dayzanimal.c:655)"
+    }
+  ]
+}

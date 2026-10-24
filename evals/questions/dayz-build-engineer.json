@@ -1,0 +1,65 @@
+{
+  "agent": "dayz-build-engineer",
+  "questions": [
+    {
+      "id": "instance-without-map-stops",
+      "question": "Answer only, do not edit any file and do not run anything. Release team brief: build MyVest and start a test session on the server instance chernarus-hardcore. The instance does not exist yet. The brief names no map and no dependencies are needed. What do you do?",
+      "must_include": [
+        "re:\\bstop|\\bhalt|won't|will not|do not add|don't add|cannot add|can't add",
+        "re:\\bmap\\b",
+        "re:release lead"
+      ],
+      "must_not_include": [
+        "re:--map\\s+chernarus\\b"
+      ],
+      "verified": ".claude/agents/dayz-build-engineer.md step 3 (an instance name that is not a map alias needs --map; with no map in the brief, stop and report it to the release lead); .claude/skills/dayz-add-server/SKILL.md --map row (aliases chernarus, livonia, sakhal, nasdara; any other name fails without --map)"
+    },
+    {
+      "id": "non-dz-addon-without-deps-stops",
+      "question": "Answer only, do not edit any file and do not run anything. Release team brief: build MyVest and start a test session on chernarus. The brief gives no dependency list. MyVest's config.cpp has requiredAddons[] = {\"DZ_Data\", \"DZ_Characters_Vests\", \"JM_CF_Scripts\"}; in its CfgPatches. What do you do?",
+      "must_include": [
+        "JM_CF_Scripts",
+        "re:\\bstop|\\bhalt|won't launch|will not launch|do not launch|don't launch|not launch",
+        "re:dependenc"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-build-engineer.md step 4c (no dependency list: launch with none; /dayz-launch-test refuses on a requiredAddons entry without the DZ_ prefix that is not the mod's own CfgPatches class, and the agent stops and reports it); .claude/skills/dayz-launch-test/launch.py:146-179 (missing_dependencies); every vanilla CfgPatches class under P:/DZ starts with DZ_, and JM_CF_Scripts is the Community Framework addon used in .claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp:8"
+    },
+    {
+      "id": "own-patch-requirement-launches",
+      "question": "Answer only, do not edit any file and do not run anything. Release team brief: build MyVest and start a test session on chernarus. The brief gives no dependency list. MyVest is not a bundle. workspace/MyVest/config.cpp declares class CfgPatches { class MyVest_Data { requiredAddons[] = {\"DZ_Data\", \"DZ_Characters_Vests\"}; }; }; and workspace/MyVest/scripts/config.cpp declares class CfgPatches { class MyVest_Scripts { requiredAddons[] = {\"DZ_Scripts\", \"MyVest_Data\"}; }; };. Do you launch, and with which dependencies? Write the exact /dayz-launch-test command you run, or say why you stop.",
+      "must_include": [
+        "re:/dayz-launch-test\\s+@?MyVest\\b",
+        "re:--server\\s+chernarus\\b"
+      ],
+      "must_not_include": [
+        "re:BLOCKED:\\s*step\\s*4",
+        "re:/dayz-launch-test\\s+\\S*MyVest_Data"
+      ],
+      "verified": ".claude/agents/dayz-build-engineer.md step 4c (no dependency list and not a bundle: launch with no dependencies and let /dayz-launch-test run the requiredAddons check); .claude/skills/dayz-launch-test/launch.py:118-143 (workspace_patches reads every config.cpp, skipping .git, Addons and Keys) and :167-177 (the mod's own patches count as provided); vanilla patches start with DZ_, e.g. P:/DZ/AI/config.cpp:1-11"
+    },
+    {
+      "id": "server-only-dep-uses-flag",
+      "question": "Answer only, do not edit any file and do not run anything. Release team brief: build MyVest and start a test session on chernarus. Dependencies in load order: CF. MyVestServer is also needed and the brief marks it as server only. Write the exact /dayz-launch-test command you run.",
+      "must_include": [
+        "re:--server-only\\s+@?MyVestServer\\b",
+        "re:--server\\s+chernarus\\b"
+      ],
+      "must_not_include": [
+        "re:/dayz-launch-test\\s+(@?CF\\s+)?@?MyVestServer\\b"
+      ],
+      "verified": ".claude/agents/dayz-build-engineer.md step 4 (a dependency the brief marks as server only goes through --server-only, on -serverMod=); .claude/skills/dayz-launch-test/SKILL.md --server-only row (never added to either -mod= list)"
+    },
+    {
+      "id": "payload-bundle-deploys",
+      "question": "Answer only, do not edit any file and do not run anything. Release team brief: build MyBundle and start a test session on chernarus; no dependencies are needed. workspace/MyBundle/Addons/ holds three PBOs and the bundle has no config.cpp. Which build skill do you run?",
+      "must_include": [
+        "/dayz-deploy-pbo"
+      ],
+      "must_not_include": [
+        "re:^\\s*(\\d+\\.\\s*)?`?/dayz-build-pbo\\s+MyBundle"
+      ],
+      "verified": ".claude/agents/dayz-build-engineer.md step 2b (a payload only bundle with no config.cpp skips /dayz-build-pbo and runs /dayz-deploy-pbo); .claude/skills/_shared/conventions/config.md 'Bundle / umbrella mods'"
+    }
+  ]
+}

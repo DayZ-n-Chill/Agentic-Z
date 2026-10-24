@@ -1,5 +1,5 @@
 Agentic-Z License
-Copyright (c) 2026 Brian Orr (DayZ n' Chill)
+Copyright (c) 2026 DayZ n' Chill
 
 Permission is granted, free of charge, to any person to use, modify, and run
 the Software for the purpose of developing DayZ video game modifications and
@@ -8,7 +8,7 @@ distribution and sale are unrestricted by this license.
 
 "The Software" means the Agentic-Z project, including but not limited to:
   - Source code, scripts, helpers, and configuration files
-  - Agent definitions (.claude/agents/, codex/agents/, gemini/agents/)
+  - Agent definitions (.claude/agents/)
   - Skill definitions and supporting code (.claude/skills/ and mirrors)
   - Documentation, the Docusaurus wiki, and L1 rule files
   - Any derivative or modified version of the above

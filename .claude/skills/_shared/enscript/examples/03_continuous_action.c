@@ -1,28 +1,30 @@
 // =============================================================================
 // ActionMyMod_RepairCanteen.c
 // A continuous (hold-to-complete) action on MyMod_CustomCanteen.
-// Shows the animation loop, Do() per-frame logic, progress bar integration,
-// and proper cancel/interrupt handling.
+// The callback sets how long the hold takes; the engine runs the progress bar
+// and calls OnFinishProgressServer when the time is up. Releasing the key
+// cancels it.
 //
 // Placement: Scripts/4_World/Classes/UserActionsComponent/Actions/
 //            ActionMyMod_RepairCanteen.c
+//
+// Built on the vanilla shape of ActionCraftArmband
+//   P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actioncraftarmband.c
+// Base classes:
+//   ActionContinuousBaseCB, ActionContinuousBase
+//     P:\scripts\4_world\classes\useractionscomponent\actions\actioncontinuousbase.c:1 and :120
+//   CAContinuousTime
+//     P:\scripts\4_world\classes\useractionscomponent\actioncomponents\cacontinuoustime.c:1
 // =============================================================================
 
 // ---- Callback ---------------------------------------------------------------
+// The action component decides when the action completes. CAContinuousTime
+// completes after a fixed number of seconds (cacontinuoustime.c:9).
 class ActionMyMod_RepairCanteenCB : ActionContinuousBaseCB
 {
-    // Fires when the loop animation begins ("ActionExecStart" anim event)
-    override void OnStartAnimationLoop(ActionData action_data)
+    override void CreateActionComponent()
     {
-        super.OnStartAnimationLoop(action_data);
-        // optional: play initial SFX
-    }
-
-    // Fires when the loop animation ends ("ActionExecEnd" anim event)
-    override void OnEndAnimationLoop(ActionData action_data)
-    {
-        super.OnEndAnimationLoop(action_data);
-        // optional: play completion SFX
+        m_ActionData.m_ActionComponent = new CAContinuousTime(ActionMyMod_RepairCanteen.REPAIR_DURATION);
     }
 }
 
@@ -34,78 +36,52 @@ class ActionMyMod_RepairCanteen : ActionContinuousBase
     void ActionMyMod_RepairCanteen()
     {
         m_CallbackClass   = ActionMyMod_RepairCanteenCB;
-        m_CommandUID      = DayZPlayerConstants.CMD_ACTIONMOD_EAT;
-        m_FullBody        = false;
-        m_StanceMask      = DayZPlayerConstants.STANCEMASK_ERECT;
+        m_CommandUID      = DayZPlayerConstants.CMD_ACTIONFB_CRAFTING;   // as actioncraftarmband.c:14
+        m_FullBody        = true;
+        m_StanceMask      = DayZPlayerConstants.STANCEMASK_CROUCH;
         m_Text            = "Repair Canteen";
-        // Duration for the vanilla continuous-action progress bar
-        m_LockTargetOnUse = true;
     }
 
     // ---- Conditions ---------------------------------------------------------
 
     override void CreateConditionComponents()
     {
-        m_ConditionItem   = new CCINotRuined;
-        m_ConditionTarget = new CCTNone;
+        m_ConditionItem   = new CCINonRuined;           // ccinonruined.c
+        m_ConditionTarget = new CCTSelf;                // as actioncraftarmband.c:24
     }
 
-    override bool CanBePerformedServer(Man player)
+    override bool HasTarget()
+    {
+        return false;
+    }
+
+    // Client shows the action, server re-checks it (actionbase.c:441 and :954)
+    override bool ActionCondition(PlayerBase player, ActionTarget target, ItemBase item)
     {
         MyMod_CustomCanteen canteen;
-        if (!Class.CastTo(canteen, player.GetHeldItem()))
+        if (!Class.CastTo(canteen, item))           // item = player.GetItemInHands()
             return false;
 
         // Only allow if not already (nearly) full health
+        // GetHealth01(zone, type): P:\scripts\3_game\entities\object.c:1001
         return canteen.GetHealth01("", "") < 0.99;
     }
 
-    override bool CanBePerformed(Man player)
+    // ---- Animation loop hooks (optional, actioncontinuousbase.c:208 and :228)
+    override void OnStartAnimationLoop(ActionData action_data)
     {
-        return player.IsAlive();
+        super.OnStartAnimationLoop(action_data);
+        // optional: start a looping sound on the client
     }
 
-    override string GetText()
+    override void OnEndAnimationLoop(ActionData action_data)
     {
-        return m_Text;
+        super.OnEndAnimationLoop(action_data);
+        // optional: stop the looping sound
     }
 
-    // ---- Per-frameDo loop (server) ------------------------------------------
-    // Called each server tick while the player holds the action input.
-    // action_data.m_State drives the state machine: UA_INITIALIZE → UA_PROCESSING
-    //   → UA_FINISHED  (or UA_CANCEL on release).
-
-    override void Do(ActionData action_data, int state)
-    {
-        if (state == UA_INITIALIZE)
-        {
-            // First tick: store start time in action_data.m_Player (or use a static)
-            action_data.m_Player.SetAnimCommandTypeModifier(0);
-        }
-
-        if (state == UA_PROCESSING)
-        {
-            // Accumulate time using GetGame().GetTickTime() delta
-            // (action_data carries no built-in timer; use float stored on item or player)
-            MyMod_CustomCanteen canteen;
-            if (!Class.CastTo(canteen, action_data.m_MainItem))
-            {
-                action_data.m_State = UA_CANCEL;
-                return;
-            }
-
-            // Example: push incremental health repair each tick
-            float dt = action_data.m_Player.GetDeltaT();
-            float healPerSec = (1.0 / REPAIR_DURATION) * canteen.GetMaxHealth("", "");
-            canteen.AddHealth("", "", healPerSec * dt);
-
-            // Signal completion when the item is fully repaired
-            if (canteen.GetHealth01("", "") >= 0.99)
-                action_data.m_State = UA_FINISHED;
-        }
-    }
-
-    // ---- Finished (server) --------------------------------------------------
+    // ---- Finished (server, actioncontinuousbase.c:289) ----------------------
+    // Runs once when CAContinuousTime reaches REPAIR_DURATION.
 
     override void OnFinishProgressServer(ActionData action_data)
     {
@@ -113,31 +89,38 @@ class ActionMyMod_RepairCanteen : ActionContinuousBase
         if (!Class.CastTo(canteen, action_data.m_MainItem))
             return;
 
-        canteen.SetHealth("", "", canteen.GetMaxHealth("", ""));
+        // SetHealthMax(zone, type): object.c:1105
+        canteen.SetHealthMax("", "");
 
-        // Notify player
-        PlayerBase pb;
-        if (Class.CastTo(pb, action_data.m_Player))
+        // Show a message on the player's screen (handled by PlayerBase.OnRPC,
+        // P:\scripts\4_world\entities\manbase\playerbase.c:5773)
+        PlayerBase pb = action_data.m_Player;
+        if (pb)
         {
             Param1<string> msg = new Param1<string>("Canteen repaired!");
             GetGame().RPCSingleParam(pb, ERPCs.RPC_USER_ACTION_MESSAGE, msg, true, pb.GetIdentity());
         }
     }
+}
 
-    // ---- Progress bar (client) ----------------------------------------------
-    // Return a value 0..1 to drive the vanilla on-screen progress widget.
-
-    override float GetProgress(ActionData action_data)
+// =============================================================================
+// Registration takes two steps, as in 02_custom_action_singleuse.c:
+// 1. Register the class in ActionConstructor.RegisterActions
+//    (P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:27).
+//    Without it AddAction finds no action and the hold-to-repair never appears.
+// 2. Add the action in SetActions() (itembase.c:246-255). Add both actions in
+//    the one SetActions() of MyMod_CustomCanteen; do not add a modded class of
+//    your own class.
+// =============================================================================
+modded class ActionConstructor
+{
+    override void RegisterActions(TTypenameArray actions)
     {
-        MyMod_CustomCanteen canteen;
-        if (!Class.CastTo(canteen, action_data.m_MainItem))
-            return 0;
-        return canteen.GetHealth01("", "");
-    }
-
-    // Return the text shown above the progress bar
-    override string GetProgressText()
-    {
-        return "Repairing...";
+        super.RegisterActions(actions);
+        actions.Insert(ActionMyMod_RepairCanteen);
     }
 }
+
+// AddAction(ActionMyMod_RepairCanteen) goes in the SetActions() override inside
+// the class MyMod_CustomCanteen declaration (01_custom_item.c), next to the
+// action from 02_custom_action_singleuse.c; that file shows the full override.

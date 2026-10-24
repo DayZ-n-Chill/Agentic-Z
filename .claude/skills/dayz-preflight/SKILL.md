@@ -1,6 +1,6 @@
 ---
 name: dayz-preflight
-description: Verify the DayZ modding environment is ready (P:\ mounted, DayZ Tools installed, vanilla data unpacked, workshop deploy folder accessible). Run this before any other DayZ skill. Hard-fails if P:\ is not mounted; warns on the rest.
+description: "Checks the DayZ modding environment (P:\\ mounted, DayZ Tools, DayZ Diag and DayZ Server installed, vanilla data unpacked, P:\\Mods junction) and creates the junction if it is missing. Use when starting DayZ work, after a reboot or fresh clone, or when another DayZ skill reports an environment problem."
 ---
 
 <!-- skill-dir-note -->
@@ -8,36 +8,9 @@ description: Verify the DayZ modding environment is ready (P:\ mounted, DayZ Too
 
 # /dayz-preflight
 
-Verify the DayZ modding environment before doing any DayZ work. Halts with a clear error if `P:\` is not mounted (per `.claude/skills/_shared/dayz-conventions.md`); warns on optional checks so the user can decide whether to proceed.
+Verify the DayZ modding environment before doing any DayZ work. Halts with a clear error if `P:\` is not mounted; warns on the other checks so the user can decide whether to proceed. Follow `.claude/skills/_shared/dayz-conventions.md`.
 
-**Read-only.** Preflight inspects state and reports. It never mounts drives, creates junctions, or otherwise mutates the filesystem — fixes belong to dedicated setup skills (e.g. `/dayz-workdrive`).
-
-Follow `.claude/skills/_shared/dayz-conventions.md`.
-
-## What it checks
-
-| # | Check | Severity |
-|---|---|---|
-| 1 | `P:\` drive is mounted | **hard fail** — exit 1 |
-| 2 | DayZ Tools installed (AddonBuilder.exe locatable) | warn |
-| 3 | Vanilla DayZ data unpacked under `P:\` | warn |
-| 4 | `P:\Mods\` is a directory junction to `<DayZ install>\!Workshop\` (not a regular folder, not missing, not dangling) | warn — build-pbo hard-fails on the same condition |
-
-Exit code 0 = ready (or warnings only). Non-zero = hard environment issue, named in stderr.
-
-## How paths are resolved
-
-Paths are not blindly hard-coded. Resolution order, first hit wins:
-
-| What | Order |
-|---|---|
-| **DayZ Tools install root** | 1. `DAYZ_TOOLS_PATH` env var → 2. Windows registry (`HKLM\SOFTWARE\WOW6432Node\Bohemia Interactive\DayZ Tools` → `Path` value, plus the `HKLM` non-WOW6432 and `HKCU` siblings) → 3. Common Steam paths (`C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools`, then `C:\Program Files\…`). A candidate counts only if `Bin\AddonBuilder\AddonBuilder.exe` exists under it. |
-| **Vanilla data root** | 1. `DAYZ_VANILLA_DATA_PATH` env var → 2. Canonical names on P:\: `P:\dz`, `P:\DZ`, `P:\dta`. A candidate counts only if it exists and is non-empty. |
-| **`P:\` and `P:\Mods\`** | Fixed by DayZ engine convention — not configurable. |
-
-To override either env var, set it in your shell or in the user/system environment before running any DayZ skill. Example (PowerShell): `$env:DAYZ_TOOLS_PATH = 'D:\Games\Steam\steamapps\common\DayZ Tools'`.
-
-The `find_dayz_tools()` and `find_vanilla_data()` helper functions in `preflight.py` are reusable — future DayZ skills (e.g. `dayz-build-pbo`) should import them instead of re-implementing path discovery.
+Preflight reports and does not repair, with one exception: when `P:\Mods\` is absent and the game's `!Workshop\` folder is found, it creates the `P:\Mods\` junction. `mklink /J` needs no admin rights, overwrites nothing and has a fixed target. It never mounts `P:\` (use `/dayz-workdrive`) and never changes an existing `P:\Mods\`.
 
 ## How to run
 
@@ -45,26 +18,56 @@ The `find_dayz_tools()` and `find_vanilla_data()` helper functions in `preflight
 python "<skill-dir>\preflight.py"
 ```
 
-## When to run
+Run it before other DayZ skills, after a fresh clone, and after each reboot (`P:\` does not auto-mount). Build and deploy skills run it for you as a gate.
 
-- Before invoking any other DayZ skill.
-- After a fresh clone of the repo.
-- After a fresh boot of the workstation — `P:\` does not auto-mount; you have to open DayZ Tools and mount it (or use the Tools "Mount P drive" command) at the start of each session.
+## What it checks
+
+| # | Check | Severity |
+|---|---|---|
+| 1 | `P:\` drive is mounted | **hard fail**, exit 1 |
+| 2 | DayZ Tools installed (`Bin\AddonBuilder\AddonBuilder.exe` found) | warn |
+| 3 | DayZ Diag installed (`DayZDiag_x64.exe` found; `/dayz-launch-test` needs it) | warn |
+| 4 | DayZ Server installed (`DayZServer_x64.exe` found; `/dayz-add-server` copies mission templates from it) | warn |
+| 5 | Vanilla DayZ data unpacked under `P:\`, and vanilla scripts under `P:\scripts` | warn |
+| 6 | `P:\Mods\` is a junction to `<DayZ install>\!Workshop\`. Absent: created. Absent while the game is found but its `!Workshop\` folder is not: reported with the `mkdir` command for that folder, nothing created. Real folder, dangling link, or link to anywhere else: reported, left untouched. | warn here; `/dayz-build-pbo` and `/dayz-deploy-pbo` hard-fail on it |
+
+Exit code 0 = ready (or warnings only). Exit 1 = `P:\` not mounted, named in stderr.
+
+## How paths are resolved
+
+First hit wins. A `*_PATH` env var whose value fails its check is skipped, the next source is tried, and preflight prints `[WARN]  <VAR> ignored: <value>` with what the value must contain, so a setting that had no effect is never silent:
+
+| What | Order |
+|---|---|
+| **DayZ Tools** | `DAYZ_TOOLS_PATH` env var, then the registry (`Path` under `HKLM\SOFTWARE\WOW6432Node\Bohemia Interactive\DayZ Tools`, its non-WOW6432 and `HKCU` siblings, each tried in turn), then `DayZ Tools` in each Steam library. The first candidate containing `Bin\AddonBuilder\AddonBuilder.exe` wins. |
+| **DayZ Diag** | `DAYZ_DIAG_PATH` env var, set to the full exe path (for example `D:\SteamLibrary\steamapps\common\DayZ\DayZDiag_x64.exe`); a folder holding `DayZDiag_x64.exe` also works. Any other value is ignored with a warning. Then `DayZDiag_x64.exe` next to the resolved game, then `DayZ\DayZDiag_x64.exe` in each Steam library. The result is always the exe file. |
+| **DayZ Server** | `DAYZ_SERVER_PATH` env var, then `DayZServer` in each Steam library (must contain `DayZServer_x64.exe`). |
+| **DayZ game** (for `!Workshop`) | `DAYZ_GAME_PATH` env var, then `DayZ` in each Steam library (must contain `DayZ_x64.exe`). |
+| **Vanilla data** | `DAYZ_VANILLA_DATA_PATH` env var, then `P:\dz` (case-insensitive, so `P:\DZ` matches). Must exist and be non-empty. |
+| **Vanilla scripts** | `P:\scripts` (vanilla `DZ_Scripts`, unpacked beside `P:\DZ`). Must exist and be non-empty; warns otherwise. |
+| **`P:\` and `P:\Mods\`** | Fixed by DayZ convention, not configurable. |
+
+Steam libraries come from the Steam root in the registry (or the default `C:\Program Files (x86)\Steam` and `C:\Program Files\Steam`) plus every library listed in its `steamapps\libraryfolders.vdf`, so installs on other drives are found.
+
+Other skills reuse these resolvers rather than re-implementing discovery: `find_dayz_tools`, `find_dayz_game`, `find_dayz_diag`, `find_dayz_server`, `find_vanilla_data`, `validate_p_mods` and `read_registry_string` (load `preflight.py` through `.claude/skills/_shared/skill_helpers.py`).
 
 ## Output
-
-Plain text, one line per check:
 
 ```
 DayZ preflight
 
 [OK]    P:\ is mounted
 [OK]    DayZ Tools found: C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools
+[OK]    DayZ Diag found: D:\SteamLibrary\steamapps\common\DayZ\DayZDiag_x64.exe
+[OK]    DayZ Server found: D:\SteamLibrary\steamapps\common\DayZServer
 [OK]    Vanilla data found: P:\dz
-[OK]    Workshop deploy folder exists: P:\Mods
+[OK]    Vanilla scripts found: P:\scripts
+[OK]    P:\Mods -> D:\SteamLibrary\steamapps\common\DayZ\!Workshop
 
 Preflight complete.
 ```
+
+On a first run where `P:\Mods\` did not exist, the last check prints `[OK]    Created junction P:\Mods -> ...\DayZ\!Workshop` before the `P:\Mods ->` line.
 
 If `P:\` is not mounted:
 
@@ -72,13 +75,13 @@ If `P:\` is not mounted:
 DayZ preflight
 
 [FAIL]  P:\ is NOT mounted
-        Open DayZ Tools and mount the P drive (Tools menu > Mount P drive).
+        Open DayZ Tools and mount the P drive (Tools menu > Mount P drive), or run /dayz-workdrive.
 ```
 
-Exit 1, and downstream DayZ skills should refuse to run.
+Exit 1; downstream DayZ skills refuse to run.
 
 ## Do not
 
-- Don't try to mount `P:\` programmatically — it's a DayZ Tools function and assumes Tools is installed and configured. Surface a clear message and let the user mount it.
-- Don't gate on the DayZ Tools / vanilla data / Workshop folder checks — they're warnings, not errors. The user may have a custom layout.
-- Don't reintroduce hard-coded paths in other DayZ skills. Import `find_dayz_tools` / `find_vanilla_data` from this skill so resolution stays consistent (env var → registry → fallback).
+- Don't mount `P:\` from here. That is `/dayz-workdrive`'s job.
+- Don't "fix" a wrong `P:\Mods\` automatically. A real folder may hold the user's files; the warning gives the manual fix.
+- Don't treat the Tools, Diag, Server, vanilla data or junction warnings as fatal in preflight itself. The user may have a custom layout; build skills enforce what they need.

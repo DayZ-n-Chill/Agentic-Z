@@ -1,6 +1,7 @@
 ---
 name: dayz-launch-objectbuilder
-description: Open Object Builder (DayZ Tools' .p3d model editor) from the CLI, optionally pointed at a specific .p3d file or mod folder. Spawns detached so the shell returns immediately. Requires /dayz-setup-objectbuilder to have been run once on the machine. Replaces clicking through Steam → DayZ Tools → Object Builder → File → Open.
+description: "Opens DayZ Tools' Object Builder (the .p3d model editor), optionally on a specific .p3d or the one .p3d in a mod's P: folder. Needs /dayz-setup-objectbuilder run once. Use when you need to inspect or edit a .p3d model, such as adding LODs, named selections or memory points."
+argument-hint: "[--file <p3d> | --mod <ModName>]"
 ---
 
 <!-- skill-dir-note -->
@@ -8,20 +9,22 @@ description: Open Object Builder (DayZ Tools' .p3d model editor) from the CLI, o
 
 # /dayz-launch-objectbuilder
 
-Open Object Builder without leaving the terminal. Optionally pre-loads a `.p3d`, or sets the working folder to a specific mod's `P:\<ModName>\` so the file dialog opens inside it.
+Open Object Builder without leaving the terminal. Optionally pre-loads a `.p3d`: one you name with `--file`, or the one model anywhere under a mod's `P:\<ModName>\` folder with `--mod`.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
 ## What it does
 
-1. Gates on `/dayz-preflight`.
-2. Locates `ObjectBuilder.exe` via DayZ Tools.
-3. Verifies the registry has been populated by `/dayz-setup-objectbuilder` — fails with a clear hint if not.
-4. Resolves the open target:
-   - `--file <path>` → opens that `.p3d` directly.
-   - `--mod <ModName>` → sets working dir to `P:\<ModName>\` so the open-dialog lands there.
-   - Neither → no argument; Object Builder opens its last-used file.
-5. Spawns `ObjectBuilder.exe` with `DETACHED_PROCESS` so the shell returns immediately. The window may take 2-5s to appear.
+1. Gates on `/dayz-preflight` (as `/dayz-launch-workbench` does), so an unmounted `P:\` fails with preflight's fix before `--mod` looks under it.
+2. Resolves the open target:
+   - `--file <path>`: that `.p3d`. A relative path is looked up under the project root first, then the current folder; when neither has it, the error lists both paths it tried. Fails if the path is missing or is a folder (Object Builder opens model files, not folders); warns if the extension isn't `.p3d`.
+   - `--mod <ModName>`: checks the name against `/dayz-new-mod`'s naming rule (a letter first, then letters, digits or underscores, at most 64 characters; the same `NAME_PATTERN`, loaded from its `new_mod.py`) and refuses the top-level `P:\` folders that are not mods (vanilla data such as `P:\DZ`, `P:\scripts` or `P:\gui`, and the `P:\Mods` junction; the same `RESERVED_P_FOLDERS` list `/dayz-launch-workbench` uses, loaded from its `launch.py`) before joining it onto `P:\`. It then takes the `.p3d` anywhere under `P:\<ModName>\` (every subfolder, so `data\`, `models\` or any other layout). Object Builder opens model files, not folders, so the skill never passes it a directory. Fails if the name is invalid or reserved, or the mod folder is missing. With no `.p3d` yet (a fresh `/dayz-new-mod` scaffold), it says so and opens Object Builder with no model. With several, it lists the first 20 (plus a count of the rest) and asks for `--file`.
+   - Neither: no argument; Object Builder opens its last-used file.
+3. Locates `ObjectBuilder.exe` via DayZ Tools.
+4. Verifies the registry has been populated by `/dayz-setup-objectbuilder` (with that skill's own check, loaded from its `setup.py`), and fails with a hint if not.
+5. Refuses if `ObjectBuilder.exe` is already running (checked with `tasklist`, using `/dayz-setup-objectbuilder`'s own check) and tells you to switch to that window, so a second instance never opens on the same `.p3d`. If `tasklist` itself fails, it prints a `[WARN]` and carries on as if Object Builder were not running.
+6. Spawns `ObjectBuilder.exe` detached, with working directory `<DayZ Tools>\Bin\ObjectBuilder\`, so the shell returns immediately. The window may take a few seconds to appear.
+7. Watches the new process for about a second. If it has already exited, the skill reports a failure with its exit code (exit 1) instead of printing "launched".
 
 ## How to run
 
@@ -35,11 +38,11 @@ python "<skill-dir>\launch.py"
 python "<skill-dir>\launch.py" --file P:\MyMod\data\model.p3d
 ```
 
-**Open with a mod folder as working directory:**
+**Open a mod's model:**
 ```cmd
 python "<skill-dir>\launch.py" --mod MyMod
 ```
-(Requires `P:\MyMod\` to exist — typically created by `/dayz-new-mod`.)
+(Requires `P:\MyMod\`, typically created by `/dayz-new-mod`. Opens the one `.p3d` anywhere under it, or the editor with no model when there is none yet. With several, use `--file`.)
 
 ## When to run
 
@@ -52,10 +55,14 @@ python "<skill-dir>\launch.py" --mod MyMod
 ```
 DayZ Object Builder launcher
 
-[OK]    P:\ mounted
-[OK]    DayZ Tools: ...
-[OK]    Vanilla data: P:\dz
-[OK]    P:\Mods junction valid
+DayZ preflight
+
+[OK]    P:\ is mounted
+[OK]    DayZ Tools found: C:\...\steamapps\common\DayZ Tools
+[OK]    Vanilla data found: P:\dz
+[OK]    P:\Mods -> C:\...\steamapps\common\DayZ\!Workshop
+
+Preflight complete.
 
 [OK]    ObjectBuilder.exe: ...\Bin\ObjectBuilder\ObjectBuilder.exe
 [OK]    Registry configured
@@ -66,20 +73,16 @@ DayZ Object Builder launcher
 
 ## Flag rules
 
-- `--file` and `--mod` are mutually exclusive — pass one or neither.
-- `--file` accepts an absolute path. Warns if the extension isn't `.p3d` (Object Builder may refuse).
-- `--mod` is just the mod name; the skill expands to `P:\<ModName>\`. Fails fast if the folder isn't there.
+- `--file` and `--mod` are mutually exclusive (argparse rejects both together); pass one or neither.
+- `--file` takes an absolute path, or a relative one. A relative path is tried under the project root first, then under the current folder, and the first that exists wins; if neither exists, the error names both. The root is found the way the other DayZ skills find it (`/dayz-init`'s `find_project_dir()`): `CLAUDE_PROJECT_DIR`, else the nearest folder at or above the current one that holds the `/dayz-init` project cache, else the clone that holds the skill scripts when that clone has the cache, else the current folder. So `--file data\model.p3d` works both from the project root (`data\model.p3d` there) and from `workspace\<ModName>\` (its own `data\model.p3d`). Warns if the extension isn't `.p3d` (Object Builder may refuse it).
+- `--mod` is just the mod name; the skill opens the single `.p3d` anywhere under `P:\<ModName>\`, or the editor with no model when there is none. Fails, right after preflight, if the name breaks the naming rule, names a vanilla or reserved `P:\` folder (for example `--mod DZ`; pass a vanilla model with `--file` instead), or the folder isn't there. With more than one `.p3d` it lists up to 20 of them, then how many more there are.
 
 ## Why detached
 
-Running Object Builder under the parent shell would block the terminal until you close the editor. We spawn with `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP` so:
-
-- Closing this terminal doesn't kill Object Builder.
-- The skill exits immediately after the spawn.
-- The PID is printed so you can find/kill it later if needed.
+The editor is spawned detached (shared `DETACH_FLAGS` in `_shared/skill_helpers.py`) so the terminal returns at once and closing it doesn't kill Object Builder; the printed PID identifies the process.
 
 ## Do not
 
 - Don't run before `/dayz-setup-objectbuilder` on a fresh machine — the skill will tell you to run setup first.
-- Don't pass relative paths to `--file` unless you're sure of cwd — absolute paths are safer.
-- Don't spam-launch — Object Builder isn't designed to run multiple instances against the same file.
+- Don't rely on a relative `--file` when the same relative path exists under both the project root and the current folder: the project root's copy wins. Pass an absolute path to be sure which model opens.
+- Don't try to open a second instance: the skill refuses while `ObjectBuilder.exe` is running. Switch to the open window, or close it and re-run.

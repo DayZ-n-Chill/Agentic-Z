@@ -1,0 +1,50 @@
+{
+  "agent": "dayz-map-specialist",
+  "questions": [
+    {
+      "id": "surface-clutter-link",
+      "question": "Answer only, do not edit any file. I added a new class to CfgSurfaces for my terrain, but no grass clutter grows on it. Which CfgSurfaces property links a surface to its clutter list, and which config class holds that list?",
+      "must_include": [
+        "character",
+        "CfgSurfaceCharacters"
+      ],
+      "verified": "P:/DZ/surfaces/config.cpp:805 (cp_grass: character=\"cp_grass\") and :257-272 (CfgSurfaceCharacters with class cp_grass, probability[] and names[])"
+    },
+    {
+      "id": "clutter-model-classes",
+      "question": "Answer only, do not edit any file. Where in config are the clutter models themselves (the grass .p3d files) declared? Give the config class path.",
+      "must_include": [
+        "CfgWorlds",
+        "Clutter",
+        "CAWorld"
+      ],
+      "verified": "P:/DZ/surfaces/config.cpp:14-27 (class CfgWorlds { class CAWorld: DefaultWorld { class Clutter { class Anthoxanthum: DefaultClutter { model=...)"
+    },
+    {
+      "id": "surface-dig-plant",
+      "question": "Answer only, do not edit any file. Players cannot dig or plant seeds on my custom terrain surface. Which two CfgSurfaces properties control that?",
+      "must_include": [
+        "isDigable",
+        "isFertile"
+      ],
+      "verified": "P:/DZ/surfaces/config.cpp:815 (isDigable=1) and :816 (isFertile=1) in class cp_grass"
+    },
+    {
+      "id": "surface-texture-match",
+      "question": "Answer only, do not edit any file. How does a CfgSurfaces class know which terrain texture files it applies to? Name the property and show the vanilla value for cp_grass.",
+      "must_include": [
+        "files",
+        "cp_grass_ca"
+      ],
+      "verified": "P:/DZ/surfaces/config.cpp:799 (files=\"cp_grass_ca*\")"
+    },
+    {
+      "id": "surfaces-required-addon",
+      "question": "Answer only, do not edit any file. My mod's config.cpp adds surfaces that inherit from the vanilla DZ_SurfacesExt class. Which vanilla CfgPatches class must be in my requiredAddons[]?",
+      "must_include": [
+        "DZ_Surfaces"
+      ],
+      "verified": "P:/DZ/surfaces/config.cpp:3 (class DZ_Surfaces in CfgPatches) and :647 (class DZ_SurfacesExt: Default)"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "agent": "dayz-animation-specialist",
+  "questions": [
+    {
+      "id": "angle-radians",
+      "question": "Answer only, do not edit any file. In my model.cfg rotation animation for a door I wrote angle0 = 0; angle1 = 90; because the door should open 90 degrees. In game the door spins far too much. Why, and what should angle1 be?",
+      "must_include": [
+        "re:radian",
+        "re:1\\.57|rad\\s*90"
+      ],
+      "verified": "P:/DZ/structures/Residential/HouseBlocks/houseblock_3f_corner1.p3d (animation Doors5 stores -1.5708 for a 90 degree door) and P:/DZ/gear/camping/fence.p3d (Wall_Gate_Rotate stores 1.7453 for 100 degrees)"
+    },
+    {
+      "id": "fence-gate-phase",
+      "question": "Answer only, do not edit any file. Vanilla Fence opens its gate from script. Which animation source name does it pass to SetAnimationPhase, what phase value opens the gate, and why is a value above 1 valid there?",
+      "must_include": [
+        "Wall_Gate_Rotate",
+        "re:\\b100\\b",
+        "re:maxValue|value range|range"
+      ],
+      "cite": "fence.c",
+      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase/fence.c:12 (GATE_ROTATION_ANGLE_DEG = 100) and :498 (SetAnimationPhase(\"Wall_Gate_Rotate\", value)); P:/DZ/gear/camping/config.cpp:4450; fence.p3d stores a 0 to 100 range for Wall_Gate_Rotate"
+    },
+    {
+      "id": "user-source-missing",
+      "question": "Answer only, do not edit any file. My item's model.cfg has an animation with source = \"hatch\". From script I call SetAnimationPhase(\"hatch\", 1) and nothing moves. The model.cfg and selections are correct. What is missing from the item's config.cpp class?",
+      "must_include": [
+        "AnimationSources",
+        "re:source\\s*=\\s*\"user\"",
+        "animPeriod"
+      ],
+      "verified": "P:/DZ/gear/containers/config.cpp:99-112 (Barrel_ColorBase AnimationSources Lid and Lid2, source=\"user\", animPeriod, initPhase) driven by P:/scripts/4_world/entities/itembase/barrel_colorbase.c:148"
+    },
+    {
+      "id": "lid-client-sync",
+      "question": "Answer only, do not edit any file. My crate opens its lid on the server with SetAnimationPhase(\"Lid\", 1), but other players still see it closed. Which vanilla item does this correctly, and what is the pattern?",
+      "must_include": [
+        "OnVariablesSynchronized",
+        "re:RegisterNetSyncVariable|net ?sync",
+        "re:Barrel"
+      ],
+      "verified": "P:/scripts/4_world/entities/itembase/barrel_colorbase.c:21 (RegisterNetSyncVariableBool), :144-156 (UpdateVisualState sets Lid and Lid2) and :158-163 (OnVariablesSynchronized calls UpdateVisualState)"
+    },
+    {
+      "id": "building-door-source",
+      "question": "Answer only, do not edit any file. I'm making a Land_ bunker that inherits HouseNoDestruct. Its config.cpp has class Doors { class Doors1 { component = \"Doors1\"; animPeriod = 1; ... }; };. What must the source of the door's model.cfg animation be, and do I need to write a script or user action so players can open it?",
+      "must_include": [
+        "re:source\\s*=\\s*\"?doors1",
+        "re:ActionOpenDoors|OpenDoor"
+      ],
+      "must_not_include": [
+        "re:source\\s*=\\s*\"user\""
+      ],
+      "verified": "P:/DZ/structures/residential/config.cpp:7357-7397 (class Doors with Doors5); houseblock_3f_corner1.p3d stores source doors5 for that door; P:/scripts/4_world/entities/manbase/playerbase.c:1697 (AddAction(ActionOpenDoors)) and actionopendoors.c:59-75 (OpenDoor)"
+    }
+  ]
+}

@@ -1,11 +1,23 @@
-# Script API Reference — Particle System
+# Particle system script API reference
 
 All signatures verified from vanilla source (Particle.c, ParticleSource.c,
 ParticleManager.c, ParticleBase.c). Inheritance: ParticleBase → Particle → ParticleSource.
 
+## Contents
+
+- [Class hierarchy](#class-hierarchy)
+- [Particle (legacy) — Static Factory Methods](#particle-legacy--static-factory-methods)
+- [Particle — Instance Methods](#particle--instance-methods)
+- [ParticleSource — Additional/Override Methods](#particlesource--additionaloverride-methods)
+- [ParticleSource Enums](#particlesource-enums)
+- [ParticleManager — Pool Management](#particlemanager--pool-management)
+- [ParticleList — Registration & Lookup](#particlelist--registration--lookup)
+- [ParticleEvents — Event System](#particleevents--event-system)
+- [FireplaceBase Pattern (recommended for placed devices)](#fireplacebase-pattern-recommended-for-placed-devices)
+
 ---
 
-## CLASS HIERARCHY
+## Class hierarchy
 
 ```
 Entity
@@ -251,13 +263,13 @@ ps.GetEvents().Event_OnParticleEnd.Insert(MyCallback);
 
 ## FireplaceBase Pattern (recommended for placed devices)
 
-Vanilla FireplaceBase helper methods — the gold standard for particle lifecycle:
+Vanilla FireplaceBase helper methods (`P:\scripts\4_World\entities\itembase\fireplacebase.c:1110` and `:1130`) — the gold standard for particle lifecycle:
 
 ```
 // Play: creates particle if not already playing, returns success
 protected bool PlayParticle(out Particle particle, int particle_type, vector pos, bool worldpos = false)
 {
-    if (!particle && GetGame() && (!GetGame().IsDedicatedServer()))
+    if (!particle && g_Game && (!g_Game.IsHeadlessOrDedicatedServer()))
     {
         if (!worldpos)
             particle = ParticleManager.GetInstance().PlayOnObject(particle_type, this, pos);
@@ -271,7 +283,7 @@ protected bool PlayParticle(out Particle particle, int particle_type, vector pos
 // Stop: stops and nulls reference, returns success
 protected bool StopParticle(out Particle particle)
 {
-    if (particle && GetGame() && (!GetGame().IsDedicatedServer()))
+    if (particle && g_Game && (!g_Game.IsHeadlessOrDedicatedServer()))
     {
         particle.Stop();
         particle = NULL;

@@ -1,0 +1,60 @@
+{
+  "agent": "dayz-script-specialist",
+  "questions": [
+    {
+      "id": "modded-class-extends",
+      "question": "Answer only, do not edit any file. My mod has this in scripts/4_World:\n\nmodded class PlayerBase extends PlayerBase\n{\n    override void OnConnect()\n    {\n        super.OnConnect();\n        Print(\"hello\");\n    }\n}\n\nA friend told me this class header is wrong and the Print may never run. What is wrong with it, and what is the fix? Show the corrected class as code. Cite the vanilla file that defines PlayerBase.",
+      "must_include": [
+        "re:\\b(remove|drop|delete)\\b[^.\\n]{0,40}\\bextends\\b|\\b(without|no|never)\\s+(an?\\s+|the\\s+)?`?extends\\b|\\b(don't|do not|must not|cannot|can't|never)\\s+(use|write|add|put|have|take|include|need)\\b[^.\\n]{0,30}\\bextends\\b|\\bextends\\b[^.\\n]{0,60}?\\b(must|should|has to|needs to)\\s+(be\\s+)?(removed|dropped|deleted|go)\\b|\\bextends\\b[^.\\n]{0,60}?\\b(not allowed|forbidden|illegal|invalid)\\b|\\bmodded class(es)?\\b[^.\\n]{0,40}\\b(cannot|can't|must not|do not|don't|never)\\b[^.\\n]{0,20}\\bextends?\\b|\\b(leave|take|cut)\\b[^.\\n]{0,20}\\bextends\\b[^.\\n]{0,25}\\b(out|off)\\b|\\bextends\\b[^.\\n]{0,60}?\\b(is|are)\\s+(wrong|redundant|unnecessary|not needed|the (bug|problem|issue|mistake))\\b|\\bextends\\b[^\\n]{0,80}?\\b(remove|drop|delete)\\s+(it|that|this|them)\\b",
+        "re:modded class PlayerBase\\s*\\{"
+      ],
+      "must_not_include": [
+        "re:(?<!n't )(?<!not )(?<!never )\\b(keep|leave)\\s+(the\\s+)?`?extends\\b(?![^.\\n]{0,25}\\b(out|off)\\b)"
+      ],
+      "cite": "4_world/entities/manbase/playerbase.c",
+      "verified": "P:/scripts/4_world/entities/manbase/playerbase.c:49 (class PlayerBase extends ManBase) and :7623 (void OnConnect); the no-extends form is the vanilla modding example form: P:/scripts/3_game/particles/particlelist.c:5, P:/scripts/4_world/plugins/pluginbase/plugindiagmenu/plugindiagmenumodding.c:21 (one commented-out vanilla sample, P:/scripts/3_game/ppemanager/pperequesterbank.c:276, writes extends Managed; none writes a class extending itself). Not checked (so not scored): that extends on a modded class is a silent no-op (modded_class.md marks it reported)"
+    },
+    {
+      "id": "action-layer",
+      "question": "Answer only, do not edit any file. I'm writing a new user action class that inherits from ActionContinuousBase. Which scripts folder does it go in: 3_Game, 4_World or 5_Mission? Give the folder and the reason in a few lines.",
+      "must_include": [
+        "4_World"
+      ],
+      "must_not_include": [
+        "re:\\A(?:(?!4_World|\\bnot\\b|\\bnever\\b|n't\\b|\\bcannot\\b)[\\s\\S])*?\\b(3_Game|5_Mission)\\b(?![^.\\n]*(\\bnot\\b|\\bnever\\b|n't\\b|\\bcannot\\b))"
+      ],
+      "verified": "P:/scripts/4_world/classes/useractionscomponent/actions/actioncontinuousbase.c:120 (class ActionContinuousBase : AnimatedActionBase)"
+    },
+    {
+      "id": "layer-visibility",
+      "question": "Answer only, do not edit any file. Can a class in my mod's scripts/3_Game folder declare a member variable of type PlayerBase? Start with yes or no, then explain.",
+      "must_include": [
+        "re:\\A\\W*(?:[\\w ]{1,20}:\\W*)?no\\b",
+        "4_World"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*(?:[\\w ]{1,20}:\\W*)?yes\\b"
+      ],
+      "verified": "P:/scripts/4_world/entities/manbase/playerbase.c:49; P:/scripts/3_game/entities/entityai.c:1724 notes the lower layer does not know PlayerBase"
+    },
+    {
+      "id": "server-only-gate",
+      "question": "Answer only, do not edit any file. In my item's script, how do I make a block of code run only on the dedicated server and never on a client? Show the check in Enforce Script.",
+      "must_include": [
+        "IsDedicatedServer",
+        "re:\\bif\\s*\\((?:[^\\n;{]*?&&\\s*)?\\s*(GetGame\\(\\)|g_Game)\\s*\\.\\s*IsDedicatedServer\\s*\\(\\s*\\)|\\bif\\s*\\(\\s*!\\s*(GetGame\\(\\)|g_Game)\\s*\\.\\s*IsDedicatedServer\\s*\\(\\s*\\)\\s*\\)\\s*\\{?\\s*return\\b"
+      ],
+      "verified": "P:/scripts/3_game/global/game.c:1125 (proto native bool IsDedicatedServer()); vanilla gates server code with the positive check: P:/scripts/4_world/classes/useractionscomponent/actions/interact/actiondetachbattery.c:71 (if (GetGame().IsDedicatedServer())) and P:/scripts/3_game/effect.c:74 (if (g_Game.IsDedicatedServer())); the negated form runs code anywhere except a dedicated server: P:/scripts/3_game/cfggameplayhandler.c:56"
+    },
+    {
+      "id": "net-sync-calls",
+      "question": "Answer only, do not edit any file. A variable on my item must have the same value on every client. Which vanilla call registers the variable for sync, which call pushes a change out, and in which vanilla file are both declared?",
+      "must_include": [
+        "RegisterNetSyncVariable",
+        "SetSynchDirty"
+      ],
+      "cite": "entityai.c",
+      "verified": "P:/scripts/3_game/entities/entityai.c:2850 (RegisterNetSyncVariableInt) and :3064 (SetSynchDirty)"
+    }
+  ]
+}

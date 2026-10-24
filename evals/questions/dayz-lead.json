@@ -1,0 +1,58 @@
+{
+  "agent": "dayz-lead",
+  "questions": [
+    {
+      "id": "wearable-on-config-team-reassigns",
+      "question": "Answer only, do not edit any file and do not start any agent. You lead the config team. One of your tasks from the orchestrator is: add a plate carrier vest class MyVest_PlateCarrier in two colors. What do you do with this task, and what line do you put in your report?",
+      "must_include": [
+        "re:Reassign:",
+        "dayz-wearables-specialist",
+        "re:\\bart\\b",
+        "blocked"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-lead.md 'Your workers' (wearables-specialist is on the Art row; a task whose specialist is on another team's row is marked blocked with 'Reassign: <task> belongs to <specialist> on the <team> team', and is not given to one of your own workers)"
+    },
+    {
+      "id": "types-entries-go-under-server-heading",
+      "question": "Answer only, do not edit any file and do not start any agent. You lead the art team. dayz-wearables-specialist reports its task done and its report lists the types.xml spawn entries the two new vest colors need. Where do those entries go in your report to the orchestrator?",
+      "must_include": [
+        "For the server lead",
+        "types.xml"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-lead.md Report ('For the server lead': spawn setup, types.xml entries, a spawn parts list, copied after the table naming the task it came from)"
+    },
+    {
+      "id": "normalizer-json-has-no-file-gate",
+      "question": "Answer only, do not edit any file and do not start any agent. You lead the UI team and have a Figma design to turn into a DayZ .layout. figma-node-normalizer has just returned its JSON and changed no files. Do you send that JSON to dayz-mod-reviewer? What happens next, and which gate checks the result?",
+      "must_include": [
+        "re:\\bno\\b|\\bnot\\b|n't",
+        "figma-to-dayz-layout",
+        "dayz-layout-validator"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-lead.md 'Your workers' (a task that changes no files, such as the normalizer's JSON, has no file gate and its output goes to figma-to-dayz-layout; dayz-layout-validator gates any task that changes a .layout; Figma steps run normalizer, figma-to-dayz-layout, layout validator in gate mode, then dayz-ui-specialist)"
+    },
+    {
+      "id": "lead-never-runs-build-gate",
+      "question": "Answer only, do not edit any file and do not start any agent. You lead the config team. All three of your tasks passed dayz-mod-reviewer. Do you now run /dayz-gate build or start dayz-ingame-tester to check the mod loads?",
+      "must_include": [
+        "re:\\bno\\b|\\bnot\\b|never|n't",
+        "orchestrator"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-lead.md 'Your workers' (the orchestrator runs the build and in-game gates after the whole wave reports, so never start /dayz-gate, dayz-build-checker, dayz-ingame-tester or /dayz-launch-test yourself)"
+    },
+    {
+      "id": "third-failed-round-stops",
+      "question": "Answer only, do not edit any file and do not start any agent. You lead the script team. dayz-mod-reviewer has now failed the same task three rounds in a row, after you sent its notes back to dayz-script-specialist each time. What do you do next, and what status does the task get in your report?",
+      "must_include": [
+        "blocked",
+        "re:\\bstop|no more|not (send|loop|try)|don't (send|loop|try)|instead of looping"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-lead.md 'How you run a task' step 4 (after three failed rounds, stop and report the problem instead of looping) and Report (Status is passed or blocked; each blocked task gets a line with the last gate failure and what was tried)"
+    }
+  ]
+}

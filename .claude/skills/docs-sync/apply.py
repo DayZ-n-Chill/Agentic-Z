@@ -1,277 +1,120 @@
-"""Pure-function transforms for canonical -> wiki mirrors.
+"""Write the count fixes that sync.py found into the wiki files, in place.
 
-Replaces what the deprecated `docs-wiki-sync` agent used to do via LLM
-intelligence: deterministic Python transforms covering every variation
-the agent applied.
-
-Three transform kinds, mirroring docs-sync's `find_canonical_targets`:
-
-  - skill (.claude/skills/<name>/SKILL.md -> wiki/docs/skills/<name>.md)
-        Trim frontmatter to just `name:`. Insert `## Overview` heading +
-        the (HTML-escaped) description between frontmatter and body.
-
-  - agent (.claude/agents/<name>.md -> wiki/docs/agents/<name>.md)
-        Trim frontmatter to `name/model/color/memory`. Inject badge HTML.
-        Insert `## Overview` + parsed description: prose chunks + each
-        `<example>` block transformed into a styled `<div>` (Context/User/
-        Assistant turns; `<commentary>` blocks dropped). Body HTML-escapes
-        literal `<example>...</example>` strings (defensive against MDX
-        treating them as components).
-
-  - doc (docs/*.md, .claude/skills/_shared/*.md -> wiki/docs/<name>.md)
-        Identity copy.
-
-All functions are pure: input string in, output string out. The hooks
-that wrap these (drift detect, file I/O) live in sync.py.
+Only problems that carry a `fix` (a (start, end, replacement) span within one
+line) are applied; everything else is left for a hand edit. Each file is read
+and written with its own line endings, and only the fixed spans change.
 """
 from __future__ import annotations
 
-import re
-from typing import Iterable
-
-# --- frontmatter -------------------------------------------------------
-
-_FM_PATTERN = re.compile(r"^---\s*\n(.*?)\n---\s*\n?", re.DOTALL)
+import os
+import tempfile
+from collections import defaultdict
+from pathlib import Path
 
 
-def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
-    """Return (frontmatter dict, body). If no frontmatter, returns ({}, text).
+class ReadError(Exception):
+    """A wiki file to fix could not be read, or changed since the check."""
 
-    Frontmatter values are read raw (one-line YAML-ish). Multiline values
-    that span lines via leading whitespace continuation are NOT supported,
-    but agent descriptions are always single-line quoted strings with `\\n`
-    escape sequences, so this is fine for our inputs.
+
+class Stopped(KeyboardInterrupt):
+    """Ctrl+C during --apply; the message says what state the wiki was left in."""
+
+
+def write_atomic(path: Path, text: str) -> None:
+    """Replace path with text, so a failed write never empties or cuts the file short.
+
+    The text goes to a temporary file in the same folder, which then replaces the
+    original in one step; on any error the temporary file is removed and the
+    original is untouched.
     """
-    m = _FM_PATTERN.match(text)
-    if not m:
-        return {}, text
-    fm_block = m.group(1)
-    body = text[m.end():]
-    fm: dict[str, str] = {}
-    for line in fm_block.splitlines():
-        if ":" not in line:
-            continue
-        key, _, val = line.partition(":")
-        fm[key.strip()] = val.strip().strip('"').strip("'")
-    return fm, body
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    os.close(fd)  # reopened as text below; an open handle would block the cleanup on Windows
+    try:
+        with open(tmp, "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+        os.chmod(tmp, path.stat().st_mode)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
-def render_frontmatter(fm: dict[str, str], keys_quoted: Iterable[str] = ()) -> str:
-    """Serialize frontmatter back to YAML. `keys_quoted` are emitted with
-    double-quoted values (matching how agents quote their `name`)."""
-    keys_quoted_set = set(keys_quoted)
-    lines = ["---"]
-    for k, v in fm.items():
-        if k in keys_quoted_set:
-            lines.append(f'{k}: "{v}"')
-        else:
-            lines.append(f"{k}: {v}")
-    lines.append("---")
-    return "\n".join(lines) + "\n"
-
-
-# --- HTML escape -------------------------------------------------------
-
-def html_escape(text: str) -> str:
-    """Escape & < > for safe embedding in MDX/Docusaurus markdown.
-
-    NOT a full HTML escape (no ' / " escaping) — those don't trip MDX.
-    """
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
-
-# --- agent description parser -----------------------------------------
-
-# Agent descriptions are JSON-ish quoted strings with literal `\n` escapes
-# (because YAML quoted-string mode). Decode those before parsing.
-_DECODE_MAP = {
-    "\\n": "\n",
-    '\\"': '"',
-    "\\\\": "\\",
-}
-
-
-def decode_yaml_quoted(s: str) -> str:
-    """Decode the `\\n`/`\\"` escapes used inside an agent's description string.
-
-    Agent frontmatter looks like `description: "...\\n\\n<example>...\\n</example>..."`.
-    We need real newlines so the example parser can find tag boundaries.
-    """
-    # Use re.sub with a replacement function for stable order.
-    pattern = re.compile(r"\\[n\"\\]")
-    return pattern.sub(lambda m: _DECODE_MAP.get(m.group(0), m.group(0)), s)
-
-
-_EXAMPLE_BLOCK = re.compile(r"<example>(.*?)</example>", re.DOTALL)
-_CONTEXT_LINE = re.compile(r"^\s*Context:\s*(.+?)\s*$", re.MULTILINE)
-_USER_LINE = re.compile(r"^\s*user:\s*(.+?)\s*$", re.MULTILINE | re.DOTALL)
-_ASSISTANT_LINE = re.compile(r"^\s*assistant:\s*(.+?)\s*$", re.MULTILINE | re.DOTALL)
-_COMMENTARY_BLOCK = re.compile(r"<commentary>.*?</commentary>", re.DOTALL)
-
-
-def _normalize_turn_text(text: str) -> str:
-    """Collapse whitespace, strip outer quotes preserved from `user:` / `assistant:`."""
-    text = _COMMENTARY_BLOCK.sub("", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-def parse_example_block(block_inner: str) -> dict[str, str]:
-    """Extract Context / user / assistant content from one <example>...</example> body.
-
-    Returns a dict with keys 'context', 'user', 'assistant' (any may be empty
-    string if not present). Commentary is silently dropped.
-    """
-    out = {"context": "", "user": "", "assistant": ""}
-
-    block = _COMMENTARY_BLOCK.sub("", block_inner)
-
-    if (m := _CONTEXT_LINE.search(block)):
-        out["context"] = _normalize_turn_text(m.group(1))
-
-    # `user:` and `assistant:` lines greedily eat to the next "label:" line or
-    # end of block. We use a more careful pattern: capture until the next
-    # known-label line or end.
-    label_split = re.compile(
-        r"^\s*(Context|user|assistant):\s*(.*?)(?=^\s*(?:Context|user|assistant):|\Z)",
-        re.MULTILINE | re.DOTALL,
-    )
-    for m in label_split.finditer(block):
-        label = m.group(1).lower()
-        content = m.group(2).strip()
-        if label == "context":
-            out["context"] = _normalize_turn_text(content)
-        elif label == "user":
-            out["user"] = _normalize_turn_text(content)
-        elif label == "assistant":
-            out["assistant"] = _normalize_turn_text(content)
-
-    return out
-
-
-def render_example_div(example: dict[str, str]) -> str:
-    """Render one parsed example as the agent-example div block."""
-    lines = ['<div class="agent-example">']
-    lines.append('<div class="agent-example__title">Example</div>')
-    for label, key in (("Context", "context"), ("User", "user"), ("Assistant", "assistant")):
-        content = example.get(key, "").strip()
-        if not content:
-            continue
-        lines.append('<div class="agent-example__turn">')
-        lines.append(f'<div class="agent-example__label">{label}</div>')
-        lines.append(f'<div class="agent-example__content">{content}</div>')
-        lines.append('</div>')
-    lines.append('</div>')
+def apply_to_text(text: str, fixes: list[tuple[int, tuple[int, int, str]]]) -> str:
+    """Apply (1-based line, (start, end, replacement)) fixes to text."""
+    lines = text.split("\n")
+    # Right to left within a line, so earlier spans keep their offsets.
+    for line_no, (start, end, new) in sorted(fixes, key=lambda f: (f[0], f[1][0]), reverse=True):
+        line = lines[line_no - 1]
+        lines[line_no - 1] = line[:start] + new + line[end:]
     return "\n".join(lines)
 
 
-def render_description(description_raw: str) -> str:
-    """Turn an agent description (decoded) into the body content for the
-    Overview section: prose + zero-or-more example divs.
-    """
-    decoded = decode_yaml_quoted(description_raw)
-    parts: list[str] = []
-    last_end = 0
-    for m in _EXAMPLE_BLOCK.finditer(decoded):
-        prose = decoded[last_end:m.start()].strip()
-        if prose:
-            parts.append(prose)
-        ex = parse_example_block(m.group(1))
-        parts.append(render_example_div(ex))
-        last_end = m.end()
-    tail = decoded[last_end:].strip()
-    if tail:
-        parts.append(tail)
-    return "\n\n".join(parts)
-
-
-# --- body MDX-safety pass ---------------------------------------------
-
-# Specific tag names that MDX tries to parse as components even inside
-# inline code. Escape them defensively wherever they appear in the body.
-_MDX_TAG_PATTERN = re.compile(r"<(/?(?:example|commentary))>")
-
-
-def escape_mdx_tags_in_body(body: str) -> str:
-    """Escape literal <example>/<commentary> tags so MDX doesn't choke."""
-    return _MDX_TAG_PATTERN.sub(lambda m: f"&lt;{m.group(1)}&gt;", body)
-
-
-def escape_mdx_curlies_outside_fences(body: str) -> str:
-    """Escape { and } to HTML entities outside fenced code blocks.
-
-    MDX parses `{expr}` as a JavaScript expression even when the curly
-    braces appear in plain prose OR inline code (`code` spans). Fenced
-    code blocks (```...```) are preserved as-is by MDX, so we only
-    escape outside them. The HTML entities render visually as { and }
-    in the output (browsers decode entities inside <code> too) but
-    don't trip MDX's expression parser.
-
-    Triggered by skills like dayz-particles that document GUID syntax
-    like {HEXGUID}path/to/file.emat in prose and tables.
-    """
-    out: list[str] = []
-    in_fence = False
-    for line in body.splitlines(keepends=True):
-        stripped = line.lstrip()
-        if stripped.startswith("```"):
-            in_fence = not in_fence
-            out.append(line)
-            continue
-        if in_fence:
-            out.append(line)
-            continue
-        out.append(line.replace("{", "&#123;").replace("}", "&#125;"))
-    return "".join(out)
-
-
-# --- transforms --------------------------------------------------------
-
-_SKILL_FM_KEEP = ("name",)
-_AGENT_FM_KEEP = ("name", "model", "color", "memory")
-_AGENT_FM_QUOTED = ("name",)
-
-
-def transform_skill(canonical_text: str) -> str:
-    fm, body = split_frontmatter(canonical_text)
-    description = fm.get("description", "")
-    trimmed_fm = {k: fm[k] for k in _SKILL_FM_KEEP if k in fm}
-
-    overview = ""
-    if description:
-        overview = f"\n## Overview\n\n{html_escape(description)}\n\n"
-
-    safe_body = escape_mdx_curlies_outside_fences(body)
-    return render_frontmatter(trimmed_fm) + overview + safe_body.lstrip("\n")
-
-
-def transform_agent(canonical_text: str) -> str:
-    fm, body = split_frontmatter(canonical_text)
-    description = fm.get("description", "")
-    model = fm.get("model", "opus")
-    color = fm.get("color", "")
-    trimmed_fm = {k: fm[k] for k in _AGENT_FM_KEEP if k in fm}
-
-    badges = (
-        '<p class="agent-badges">'
-        '<span class="badge badge--primary">Agent</span>'
-        f'<span class="badge badge--secondary">{model}</span>'
-        + (f'<span class="agent-color-badge agent-color-badge--{color}">{color}</span>' if color else "")
-        + "</p>"
-    )
-
-    overview_body = render_description(description) if description else ""
-    overview = ""
-    if overview_body:
-        overview = f"\n{badges}\n\n## Overview\n\n{overview_body}\n\n"
-    else:
-        overview = f"\n{badges}\n\n"
-
-    safe_body = escape_mdx_curlies_outside_fences(escape_mdx_tags_in_body(body))
-
-    return render_frontmatter(trimmed_fm, keys_quoted=_AGENT_FM_QUOTED) + overview + safe_body.lstrip("\n")
-
-
-def transform_doc(canonical_text: str) -> str:
-    """Doc files (docs/*.md, _shared/*.md) get an identity copy."""
-    return canonical_text
+def apply_fixes(repo_root: Path, problems: list, dry_run: bool = False, resolve=None) -> int:
+    """Apply every fixable problem; print one line per change. Returns the number of changes."""
+    by_file: dict[str, list] = defaultdict(list)
+    for p in problems:
+        if p.fix is not None:
+            by_file[p.file].append(p)
+    if not by_file:
+        print("Nothing to fix automatically.")
+        return 0
+    # Build every fixed file before writing any. Each write is atomic, so a failed
+    # write leaves its file untouched, and the files already replaced are put back,
+    # so an error never leaves the wiki half-fixed.
+    planned: list[tuple[Path, str, str]] = []  # (path, original text, fixed text)
+    changes: list[tuple[str, str, str, int]] = []  # (file:line, old, new, column)
+    for rel, fixes in sorted(by_file.items()):
+        path = resolve(rel) if resolve else repo_root / rel  # the wiki lives in its own checkout
+        try:
+            # open(), not Path.read_text(newline=...), which needs Python 3.13; CI runs 3.12.
+            with open(path, encoding="utf-8", newline="") as f:
+                text = f.read()
+        except (OSError, UnicodeDecodeError) as e:
+            raise ReadError(f"could not read {rel}: {getattr(e, 'strerror', None) or e}") from e
+        lines = text.split("\n")
+        for p in sorted(fixes, key=lambda p: (p.line, p.fix[0])):
+            start, end, new = p.fix
+            if lines[p.line - 1][start:end] != p.old:
+                # An editor saved the file after the check; these offsets may now point at other text.
+                raise ReadError(f"{rel} changed since the check; run again")
+            changes.append((f"{rel}:{p.line}", lines[p.line - 1][start:end], new, start + 1))
+        planned.append((path, text, apply_to_text(text, [(p.line, p.fix) for p in fixes])))
+    written: list[tuple[Path, str]] = []
+    all_written = False
+    try:
+        if not dry_run:
+            for path, original, fixed in planned:
+                # Listed before the write, so a stop just after it still puts the file back.
+                written.append((path, original))
+                write_atomic(path, fixed)
+            all_written = True
+        verb = "would change" if dry_run else "changed"
+        for where, old, new, column in changes:
+            print(f"{where}: {verb} {old} -> {new} (column {column})")
+        total = sum(len(f) for f in by_file.values())
+        print(f"{'Would apply' if dry_run else 'Applied'} {total} fix(es) in {len(by_file)} file(s).")
+    except BaseException as first:
+        if all_written:
+            # Every fix is already in place; only the printout was cut short.
+            if isinstance(first, KeyboardInterrupt):
+                raise Stopped("stopped after writing the fixes") from first
+            raise
+        # Any stop (an OSError, or Ctrl+C between two writes) puts back the files
+        # already replaced. A failure while putting one back is attached to the
+        # first error instead of hiding it, and the other files are still tried.
+        failed = []
+        for path, original in written:
+            try:
+                write_atomic(path, original)
+            except OSError as e:
+                failed.append(path)
+                first.add_note(f"could not put back {path}: {e}")
+        if isinstance(first, KeyboardInterrupt):
+            if failed:
+                raise Stopped(f"stopped; could not put back {', '.join(map(str, failed))}") from first
+            raise Stopped("stopped; the wiki files were put back" if written else "stopped; nothing was written") from first
+        raise
+    return total

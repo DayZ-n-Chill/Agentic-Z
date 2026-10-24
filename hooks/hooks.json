@@ -1,0 +1,40 @@
+{
+  "description": "Agentic-Z: syntax check for config.cpp and .layout edits, the /dayz-scope-mod guard against editing other mods, and the paste-in router that sends pasted logs, types.xml chunks and links to the right workflow.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=python; python -c '' >/dev/null 2>&1 || P=py; \"$P\" \"${CLAUDE_PLUGIN_ROOT}/hooks/paste_router.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=python; python -c '' >/dev/null 2>&1 || P=py; \"$P\" \"${CLAUDE_PLUGIN_ROOT}/hooks/scope_guard.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=python; python -c '' >/dev/null 2>&1 || P=py; \"$P\" \"${CLAUDE_PLUGIN_ROOT}/hooks/edit_check.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

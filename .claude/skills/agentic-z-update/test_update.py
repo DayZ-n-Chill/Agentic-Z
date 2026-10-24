@@ -55,6 +55,17 @@ class TestClassifyPerFile(unittest.TestCase):
         result = classify_per_file(baseline=None, local=b"my new agent", upstream=None)
         self.assertEqual(result, FileStatus.LOCAL_ONLY_EDIT)
 
+    def test_conflict_when_untracked_local_file_sits_where_upstream_adds_one(self):
+        # The dirty-tree gate ignores untracked files because of this case: a file
+        # the user created at a path upstream now adds must be a conflict, never
+        # a NEW that would overwrite it.
+        result = classify_per_file(baseline=None, local=b"my file", upstream=b"upstream file")
+        self.assertEqual(result, FileStatus.CONFLICT)
+
+    def test_unchanged_when_untracked_local_file_matches_what_upstream_adds(self):
+        result = classify_per_file(baseline=None, local=b"same", upstream=b"same")
+        self.assertEqual(result, FileStatus.UNCHANGED)
+
     def test_skip_when_all_three_missing(self):
         # All missing → nothing to do (defensive case; shouldn't normally arise)
         result = classify_per_file(baseline=None, local=None, upstream=None)
@@ -192,21 +203,38 @@ class TestAcquireLock(unittest.TestCase):
         self.assertEqual(read_lock()["pid"], os.getpid())
         release_lock()
 
+    def test_lock_create_is_exclusive(self):
+        # A second create while the file exists must fail, not overwrite (no check-then-write race).
+        write_lock()
+        with self.assertRaises(FileExistsError):
+            write_lock()
+        release_lock()
+
+    def test_acquire_takes_over_unreadable_lock(self):
+        LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+        LOCK_FILE.write_text("not json")
+        self.assertTrue(acquire_lock())
+        self.assertEqual(read_lock()["pid"], os.getpid())
+        release_lock()
+
 
 class TestComputeDriftSmoke(unittest.TestCase):
     """Single smoke test for compute_drift — full integration is covered by manual smoke later."""
 
     def test_compute_drift_returns_dict(self):
         # compute_drift uses git diff against the current repo; needs a git tree.
-        if not Path(".git").exists():
-            self.skipTest("not a git repo; skipping compute_drift smoke")
+        # A repo with no commits has .git but no HEAD, so ask git for HEAD
+        # instead of looking for the folder.
+        try:
+            r = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True)
+        except OSError:
+            self.skipTest("git not installed; skipping compute_drift smoke")
+        if r.returncode != 0:
+            self.skipTest("no git HEAD here; skipping compute_drift smoke")
         from update import compute_drift
         # Pass current HEAD as both baseline and upstream — diff is empty,
         # so the candidate set is empty and the result must be {}.
-        head = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True, text=True, check=True,
-        ).stdout.strip()
+        head = r.stdout.strip()
         drift = compute_drift(baseline_sha=head, upstream_ref=head)
         # May contain entries for locally-modified files (test edits, etc.) but
         # the test environment is generally clean; allow any dict, just verify type.

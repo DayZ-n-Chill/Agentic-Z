@@ -1,0 +1,59 @@
+{
+  "agent": "dayz-wearables-specialist",
+  "questions": [
+    {
+      "id": "plate-carrier-cargo",
+      "question": "Answer only, do not edit any file. My class MyMod_Carrier inherits vanilla PlateCarrierVest and should hold six items in its own cargo. Does the vanilla plate carrier have cargo of its own, and what line do I add to my class?",
+      "must_include": [
+        "re:itemsCargoSize\\[\\]\\s*=\\s*\\{\\s*(3\\s*,\\s*2|2\\s*,\\s*3|6\\s*,\\s*1|1\\s*,\\s*6)\\s*\\}",
+        "re:\\b(no|not|without|lacks?)\\b[^.\\n]{0,60}\\b(cargo|itemsCargoSize)|n't[^.\\n]{0,60}\\b(cargo|itemsCargoSize)|\\b(cargo|itemsCargoSize)\\b[^.\\n]{0,40}\\b(none|missing|absent)\\b",
+        "re:pouch[^.\\n]{0,80}\\b(cargo|storage|slots?|space)\\b|\\b(cargo|storage|slots?|space)\\b[^.\\n]{0,80}pouch"
+      ],
+      "verified": "P:/DZ/characters/vests/config.cpp:24 to :194 (the whole PlateCarrierVest class, ClothingTypes and DamageSystem included, has no itemsCargoSize; storage comes from the VestPouch attachment) and P:/DZ/gear/containers/config.cpp:646 and :658 (PlateCarrierPouches itemsCargoSize[]={5,3})"
+    },
+    {
+      "id": "color-selection-names",
+      "question": "Answer only, do not edit any file. I'm making a vest in three colors with a ground model, a male model and a female model, laid out like the vanilla vests. What hiddenSelections[] line goes on my color base class, and how many entries does each color's hiddenSelectionsTextures[] need?",
+      "must_include": [
+        "camoGround",
+        "camoMale",
+        "camoFemale",
+        "re:\\b(three|3)\\b[^.\\n]{0,40}(entries|textures|paths|strings|paa)|\\b(entries|textures|paths)\\b[^.\\n]{0,15}\\b(three|3)\\b"
+      ],
+      "verified": "P:/DZ/characters/vests/config.cpp:195 to :207 (PlateCarrierVest_Black lists camoGround, camoMale, camoFemale and three textures); each binarized (ODOL) model stores its selection name in lowercase, checked with grep -a -o -i -E \"camo(ground|male|female)\" on P:/DZ/characters/vests/plate_carrier_g.p3d (4 hits, camoground only), plate_carrier_m.p3d (6 hits, camomale only) and plate_carrier_f.p3d (6 hits, camofemale only)"
+    },
+    {
+      "id": "drenched-insulation",
+      "question": "Answer only, do not edit any file. My jacket has heatIsolation=0.9. When it is drenched, what heat isolation value does vanilla script use for it?",
+      "must_include": [
+        "re:[-−]0\\.15\\b"
+      ],
+      "must_not_include": [
+        "-0.135",
+        "0.135",
+        "re:(0\\.9\\s*[x*×·]\\s*[-−]?0\\.15|[-−]?0\\.15\\s*[x*×·]\\s*0\\.9\\b|multipl\\w*\\s+(it\\s+|0\\.9\\s+|(the\\s+)?heatIsolation\\s+)?by\\s+[-−]?0\\.15|multiplier\\s+of\\s+[-−]?0\\.15)"
+      ],
+      "cite": "miscgameplayfunctions.c",
+      "verified": "P:/scripts/4_world/static/miscgameplayfunctions.c:1381 to :1383 (in GetCurrentItemHeatIsolation, declared at :1355, the STATE_DRENCHED branch returns ENVIRO_ISOLATION_WETFACTOR_DRENCHED outright) and P:/scripts/3_game/constants.c:825 (value -0.15)"
+    },
+    {
+      "id": "survivor-scope",
+      "question": "Answer only, do not edit any file. I added class MyMod_SurvivorM_Bob: SurvivorM_Mirek with scope=1 in CfgVehicles, but Bob never shows up as a playable character. Why, and what do I change?",
+      "must_include": [
+        "re:scope\\s*=?\\s*2|scope (of|to) 2",
+        "SurvivorBase"
+      ],
+      "cite": "dayzgame.c",
+      "verified": "P:/scripts/3_game/dayzgame.c:1098 to :1117 (only CfgVehicles classes with scope 2 that inherit SurvivorBase join m_CharClassNames); P:/DZ/characters/data/config.cpp:9234 (SurvivorM_Mirek scope=2)"
+    },
+    {
+      "id": "mask-blocks-helmet",
+      "question": "Answer only, do not edit any file. Vanilla GasMask cannot be worn together with a helmet. Which config key on GasMask causes that, and which slot does it block?",
+      "must_include": [
+        "noHelmet",
+        "re:headgear"
+      ],
+      "verified": "P:/DZ/characters/masks/config.cpp:47 (GasMask noHelmet=1) and P:/scripts/3_game/entities/entityai.c:4458 (noHelmet in the Mask slot adds LEGACY_HEADGEAR_MASK)"
+    }
+  ]
+}

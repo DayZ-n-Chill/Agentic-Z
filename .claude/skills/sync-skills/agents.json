@@ -2,19 +2,21 @@
   "agents": [
     {
       "name": "claude",
-      "env_home_vars": ["CLAUDE_HOME"],
+      "default": false,
+      "env_home_vars": ["CLAUDE_CONFIG_DIR"],
       "default_home": "~/.claude",
       "skills_subdir": "skills"
     },
     {
       "name": "codex",
-      "env_home_vars": ["CODEX_HOME"],
-      "default_home": "~/.codex",
+      "env_home_vars": [],
+      "default_home": "~/.agents",
       "skills_subdir": "skills"
     },
     {
       "name": "gemini",
-      "env_home_vars": ["GEMINI_CLI_HOME", "GEMINI_HOME"],
+      "env_home_vars": ["GEMINI_CLI_HOME"],
+      "env_home_subdir": ".gemini",
       "default_home": "~/.gemini",
       "skills_subdir": "skills"
     }

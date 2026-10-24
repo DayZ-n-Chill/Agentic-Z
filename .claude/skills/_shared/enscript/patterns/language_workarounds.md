@@ -1,10 +1,25 @@
 # Pattern: Language Workarounds
 
-Enforce Script is a C-like language with several intentional and incidental gaps compared to C++ or modern scripting languages. These are the most commonly encountered missing features and their workarounds.
+Enforce Script is a C-like language with several intentional and incidental gaps compared to C++ or modern scripting languages. These are the most commonly encountered missing features and their workarounds. For what the language does have (types, `auto`, parameters, containers, `foreach`, strings), see [`../references/language_types.md`](../references/language_types.md); this file only covers the gaps.
+
+A "not supported" claim below means no vanilla script under `P:\scripts\` uses the feature, and the replacement is what vanilla uses instead, with its file.
+
+## Contents
+
+- [No Ternary Operator](#no-ternary-operator)
+- [`auto` infers a local's type](#auto-infers-a-locals-type)
+- [No String Interpolation](#no-string-interpolation)
+- [No Lambdas / Closures](#no-lambdas--closures)
+- [No `null` for Primitives](#no-null-for-primitives)
+- [Overloading works, but keep it simple](#overloading-works-but-keep-it-simple)
+- [No Exception Handling](#no-exception-handling)
+- [`foreach` with an index](#foreach-with-an-index)
 
 ---
 
 ## No Ternary Operator
+
+No vanilla script uses `cond ? a : b`; vanilla writes an `if`/`else`.
 
 ```c
 // ✗ Does NOT compile
@@ -28,26 +43,25 @@ string label = StringIf(count > 0, "items", "empty");
 
 ---
 
-## No `auto` Type Inference
+## `auto` infers a local's type
 
-`auto` is a **storage qualifier** (autoptr = reference-counted pointer), NOT type inference.
+`auto` declares a local whose type comes from the value. Vanilla uses it, for example `auto vehicle = CarScript.Cast(vehCommand.GetTransport());` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionstartengine.c:32`). The owning qualifier is `autoptr`, a different keyword (`references/language_memory.md`).
 
 ```c
-// ✗ WRONG — 'auto x = 5' means autoptr int (confusing, avoid)
-auto x = 5;
+// Legal, as in vanilla
+auto tmp = t.m_srcState.GetParentState();   // 3_game/systems/hfsmbase.c:177
 
-// ✓ Always declare explicit types
+// Preferred in mod code: explicit types are easier to read
 int x = 5;
 float f = 3.14;
 string s = "hello";
-
-// ✓ 'auto Type' IS valid — it means autoptr (ref-counted ownership)
-auto array<int> arr = new array<int>(); // equivalent to: ref array<int> arr = ...
 ```
 
 ---
 
 ## No String Interpolation
+
+There are no template strings. Vanilla builds text with `string.Format`, whose placeholders start at `%1` and take up to nine values (`static proto string Format(string fmt, void param1 = NULL, ...)`, `P:\scripts\1_core\proto\enstring.c:526`).
 
 ```c
 // ✗ Template strings do not exist
@@ -63,6 +77,8 @@ string msg2 = "Player " + name + " has " + hp.ToString() + " HP";
 ---
 
 ## No Lambdas / Closures
+
+There are no anonymous functions. Pass a named method instead: `ScriptCaller` holds one (`static proto ScriptCaller Create(func fn)`, `P:\scripts\2_gamelib\tools.c:165`, used at :195) and `ScriptInvoker` holds many (`Insert`, `Remove` and `Invoke`, `tools.c:115-123`).
 
 ```c
 // ✗ Anonymous functions / closures do not exist
@@ -82,8 +98,10 @@ m_OnDeath.Remove(this.HandleDeath);     // unsubscribe
 
 ## No `null` for Primitives
 
+`int`, `float`, `bool`, `string` and `vector` are value types (`references/language_types.md`, "Built in types"), so they are never `null`.
+
 ```c
-// int, float, bool, string are value types — they are NEVER null
+// int, float, bool, string are value types: they are NEVER null
 // Default values: int=0, float=0.0, bool=false, string=""
 
 // ✗ This check is meaningless at best, compile error at worst
@@ -96,40 +114,32 @@ if (myObject == null) { }   // also valid for class instances
 
 ---
 
-## No Function Overloading by Signature
+## Overloading works, but keep it simple
+
+Methods can share a name when their parameters differ. Vanilla does it: `Hud.ShowWalkieTalkie(bool show)` and `ShowWalkieTalkie(int fadeOutSeconds)` (`P:\scripts\3_game\gameplay.c:652-653`), and `Effect.SetParent(Object parent_obj, int pivot)` and `SetParent(Object parent_obj)` (`P:\scripts\3_game\effect.c:399` and `:411`). Default parameter values work too (`references/language_types.md`, "Parameters").
+
+Overloads whose arguments convert into each other (such as `int` and `bool`, or `int` and `float`) make the call site hard to read. Prefer distinct names in mod code:
 
 ```c
-// ✗ Cannot have two methods with same name different params
-void DoThing(int x) { }
-void DoThing(string s) { }  // compile error: duplicate name
-
-// ✓ Use distinct names
+// ✓ Clear at the call site
 void DoThingInt(int x) { }
 void DoThingStr(string s) { }
 
-// ✓ Or use optional-flag parameter and early return
-void DoThing(int x, bool useStr = false, string s = "")
-{
-    if (useStr)
-    {
-        // handle string path
-        return;
-    }
-    // handle int path
-}
+// ✓ Or one method with a default parameter
+void DoThing(int x, bool verbose = false) { }
 ```
 
 ---
 
 ## No Exception Handling
 
-```c
-// ✗ try/catch does not exist
+There is no `try`/`catch`; no vanilla script uses either. Vanilla signals failure with a `bool` return and an `out` value, as `JsonFileLoader<T>.LoadFile(string filename, out T data, out string errorMessage)` does (`P:\scripts\3_game\tools\jsonfileloader.c:7`).
 
+```c
 // ✓ Return bool / null for error signaling
 bool TryParse(string input, out int result)
 {
-    result = input.ToInt();
+    result = input.ToInt();   // enstring.c:20
     return input.Length() > 0 && result != 0;
 }
 
@@ -140,39 +150,20 @@ if (!TryParse(rawInput, val))
 
 ---
 
-## No `foreach` with Index
+## `foreach` with an index
+
+`foreach` gives the index (or a map's key) as an optional first variable: `foreach (int i, string s : tokens)` (`P:\scripts\1_core\proto\enstring.c:427`) and `foreach (int id, Effect eff : m_EffectsMap)` (`P:\scripts\3_game\effectmanager.c:556`). No manual counter is needed.
 
 ```c
-// ✗ Cannot get index inside foreach
-foreach (int val : arr) { /* no index available */ }
-
-// ✓ Use a manual counter
-int i = 0;
-foreach (int val : arr)
+// ✓ Index and value
+foreach (int i, int val : arr)
 {
     Print(string.Format("[%1] = %2", i, val));
-    i++;
 }
 
-// ✓ Or indexed for-loop
-for (int i = 0; i < arr.Count(); i++)
+// ✓ Or an indexed for-loop
+for (int j = 0; j < arr.Count(); j++)
 {
-    int val = arr[i];
+    int v = arr[j];
 }
-```
-
----
-
-## No Default Parameter Values (pre-1.17 builds)
-
-On older engine builds, default parameter values may not work. Be conservative:
-
-```c
-// May fail on older builds — safer to avoid for public API
-void MyFunc(int x, bool optional = false) { }
-
-// ✓ Overload-via-wrapper pattern instead
-void MyFunc(int x)         { MyFuncInternal(x, false); }
-void MyFunc(int x, bool b) { MyFuncInternal(x, b); }
-void MyFuncInternal(int x, bool b) { /* impl */ }
 ```

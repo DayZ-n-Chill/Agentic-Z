@@ -1,7 +1,7 @@
 """
 DayZ Type Splitter Pro — vendored under /dayz-split-types
 
-Original tool by DayZ-n-Chill:
+Original tool by DayZ n' Chill:
   https://github.com/DayZ-n-Chill/DayZ-TypeSplitterPro
 
 This file is a verbatim copy of the upstream `typeSplitter.py` script, included
@@ -10,7 +10,7 @@ upstream repo separately. The wrapper at ../split.py invokes this file by
 copying it next to the user's types.xml at runtime.
 
 If you need to update this vendored copy, fetch the latest from the URL above.
-Credit to DayZ-n-Chill.
+Credit to DayZ n' Chill.
 """
 import xml.etree.ElementTree as ET
 import os

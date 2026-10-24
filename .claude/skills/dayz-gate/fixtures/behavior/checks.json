@@ -1,0 +1,10 @@
+{
+  "mod": "MyMod",
+  "checks": [
+    {"id": "vest-spawns", "feature": "The vest exists in the world", "item": "MyMod_Vest", "action": "spawn"},
+    {"id": "vest-wear", "feature": "A player can wear the vest", "item": "MyMod_Vest", "action": "wear"},
+    {"id": "vest-pouch", "feature": "The pouch attaches to the vest", "item": "MyMod_Vest", "action": "attach", "with": "MyMod_Pouch"},
+    {"id": "vest-cargo", "feature": "The vest holds a bandage", "item": "MyMod_Vest", "action": "cargo", "with": "BandageDressing"},
+    {"id": "knife-hands", "feature": "A player can hold the knife", "item": "MyMod_Knife", "action": "hands"}
+  ]
+}
