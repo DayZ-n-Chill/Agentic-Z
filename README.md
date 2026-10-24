@@ -298,7 +298,7 @@ The full text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
 - **[`docs/model-routing.md`](docs/model-routing.md)** — when to use Opus / Sonnet / Haiku and the subagent patterns.
 - **[`docs/evals.md`](docs/evals.md)**: answer tests that score each agent's answers, so a change can only keep or raise the score.
 - **[`docs/prompt-conventions.md`](docs/prompt-conventions.md)** — why agent and skill files use caps the way they do (RFC 2119 directives, when to cap, when to stay lowercase).
-- **The wiki** lives in its own private repo, `DayZ-n-Chill/Agentic-Z-Wiki` (React + MUI, Vite). `/docs-sync` checks it against this repo when it is cloned next to this one. The old Docusaurus wiki is archived in `archive/wiki-docusaurus/`.
+- **The wiki** lives in its own private repo, `DayZ-n-Chill/Agentic-Z-Wiki` (React + MUI, Vite). `/docs-sync` checks it against this repo when it is cloned next to this one. The old Docusaurus wiki is archived in that repo too, under `archive/wiki-docusaurus/`.
 
 ---
 
