@@ -9,7 +9,7 @@ argument-hint: "<ModName> [--author \"YourHandle\"]"
 
 # /dayz-new-mod
 
-Create a new DayZ mod project under `workspace/<ModName>/` in the current project: `CLAUDE_PROJECT_DIR`, else the nearest folder at or above the working directory (below the home folder) that holds a `/dayz-init` project cache, else the working directory. This is the same lookup every DayZ skill uses; it does not require the cache, because this skill writes it. Gates on `/dayz-preflight` like every DayZ skill, so it refuses to run when `P:\` is not mounted.
+Create a new DayZ mod project under `workspace/<ModName>/` in the current project: `CLAUDE_PROJECT_DIR`, else the nearest folder at or above the working directory (below the home folder) that holds a `/dayz-init` project cache, else the clone that holds the skill scripts when that clone has the cache, else the working directory. This is the same lookup every DayZ skill uses; it does not require the cache, because this skill writes it. Gates on `/dayz-preflight` like every DayZ skill, so it refuses to run when `P:\` is not mounted. The two checks that read only the command line and the workspace folder (the mod name and an existing `workspace/<ModName>/`) run just before preflight, so a bad name or an existing project is refused before anything on disk changes.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -22,20 +22,22 @@ python "<skill-dir>\new_mod.py" <ModName> [--author "YourHandle"]
 | Argument | Required? | Notes |
 |---|---|---|
 | `<ModName>` | yes | Folder name and `CfgPatches` class name. Must start with a letter; letters, digits, underscores only; max 64 chars. |
-| `--author` | no | Author handle written into `config.cpp` and cached for future runs. If omitted, the skill checks the cache, then prompts interactively, then fails. |
+| `--author` | no | Author handle written into `config.cpp` and cached for future runs once the scaffold succeeds. If omitted, the skill checks the cache, then prompts interactively, then fails. |
 
 ## Author handle resolution
 
 First hit wins:
 
-1. `--author "Name"` flag — also writes to the cache for next time.
+1. `--author "Name"` flag — also cached for next time.
 2. Cached value at `.claude/local-memory/dayz-author.txt` (per-clone, gitignored).
-3. Interactive prompt if stdin is a TTY — written to cache after.
+3. Interactive prompt if stdin is a TTY — also cached for next time.
 4. Hard fail with instructions otherwise. The prompt reading an empty answer or end-of-file fails the same way (a null stdin, such as an agent's PowerShell tool, can report itself as a TTY); the message names `--author` and the cache file.
+
+The cache is written only after the scaffold and the `P:\<ModName>\` link both succeed, so a refused or failed run (existing folder, foreign link, junction error) never replaces your cached handle.
 
 The handle is written inside quoted strings in `config.cpp`, so a handle containing `"` or a line break is refused wherever it comes from (flag, cache or prompt).
 
-To change your handle later: re-run with `--author "NewHandle"`, or edit / delete `.claude/local-memory/dayz-author.txt`.
+To change your handle later: pass `--author "NewHandle"` when you scaffold your next mod, or edit / delete `.claude/local-memory/dayz-author.txt`.
 
 ## What it creates
 
@@ -86,13 +88,15 @@ After the junction is created, the skill points the `/dayz-init` project cache a
 
 ## Refuses to run if
 
-- `/dayz-preflight` returns non-zero (typically `P:\` not mounted) — preflight runs first and propagates its exit code.
+Checked in this order. The scaffold, the link and both caches are written only after every check passes.
+
 - `<ModName>` fails the name pattern.
 - `workspace/<ModName>/` already exists (won't clobber an in-progress project).
-- `P:\<ModName>\` exists as a real folder (won't clobber non-link content).
-- `P:\<ModName>\` exists as a link pointing somewhere other than `workspace/<ModName>/` (won't redirect a junction the user set up for a different project).
+- `/dayz-preflight` returns non-zero (typically `P:\` not mounted) — its exit code is propagated.
 - No author handle is available and stdin is not a TTY, or the prompt reads an empty answer or end-of-file.
 - The author handle contains `"` or a line break.
+- `P:\<ModName>\` exists as a real folder (won't clobber non-link content).
+- `P:\<ModName>\` exists as a link pointing somewhere other than `workspace/<ModName>/` (won't redirect a junction the user set up for a different project).
 
 ### Stale-junction auto-clean
 

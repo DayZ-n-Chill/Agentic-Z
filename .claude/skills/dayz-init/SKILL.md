@@ -12,7 +12,7 @@ The agent is the wizard: it runs the scripts below with Bash and asks the user q
 
 Follow `.claude/skills/_shared/dayz-conventions.md`. This skill does not gate on `/dayz-preflight` itself, because its own environment check covers the same ground and also fixes `P:\` first. Every child skill it runs gates on preflight.
 
-State is per clone, in `.claude/local-memory/` (gitignored): `dayz-current-project.txt` (the project root other DayZ skills read) and `dayz-init-state.json` (the active mod). The project root is the clone: `$CLAUDE_PROJECT_DIR`, else the nearest folder at or above the current directory (below the home folder) that holds `dayz-current-project.txt`, else the current directory. Mods live in `workspace/<ModName>/`, test servers in `.server/<instance>/`.
+State is per clone, in `.claude/local-memory/` (gitignored): `dayz-current-project.txt` (the project root other DayZ skills read) and `dayz-init-state.json` (the active mod). The project root is the clone: `$CLAUDE_PROJECT_DIR`, else the nearest folder at or above the current directory (below the home folder) that holds `dayz-current-project.txt`, else the clone that holds the skill scripts when that clone has the cache, else the current directory. Mods live in `workspace/<ModName>/`, test servers in `.server/<instance>/`.
 
 ## Step 1: setup check
 
@@ -113,7 +113,7 @@ Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and s
 | Stop DayZ Diag | `dispatch.py stop` |
 | Show the server log | Read the newest `script*.log` in `.server\<instance>\Profiles\` |
 | Open in Workbench | `dispatch.py workbench` |
-| Open in Object Builder | `dispatch.py objectbuilder` |
+| Open in Object Builder | `dispatch.py objectbuilder` (opens the mod's one `.p3d` under `P:\<ModName>\`; opens Object Builder empty when the mod has no model yet; with several models, run `/dayz-launch-objectbuilder --file <p3d>`) |
 | Review the mod | Hand `workspace\<ModName>\` to the dayz-mod-reviewer agent |
 | Add a test server | `dispatch.py add-server --server <map>` |
 | Set up search | See "Search (optional)" below, then `dispatch.py search-download` |

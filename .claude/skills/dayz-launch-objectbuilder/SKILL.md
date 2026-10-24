@@ -18,7 +18,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 1. Gates on `/dayz-preflight` (as `/dayz-launch-workbench` does), so an unmounted `P:\` fails with preflight's fix before `--mod` looks under it.
 2. Resolves the open target:
    - `--file <path>`: that `.p3d`. Fails if the path is missing; warns if the extension isn't `.p3d`.
-   - `--mod <ModName>`: checks the name against `/dayz-new-mod`'s naming rule (a letter first, then letters, digits or underscores, at most 64 characters; the same `NAME_PATTERN`, loaded from its `new_mod.py`) before joining it onto `P:\`, then takes the `.p3d` anywhere under `P:\<ModName>\` (every subfolder, so `data\`, `models\` or any other layout). Object Builder opens model files, not folders, so the skill never passes it a directory. Fails if the name is invalid, the mod folder is missing or it holds no `.p3d`; with several, it lists them and asks for `--file`.
+   - `--mod <ModName>`: checks the name against `/dayz-new-mod`'s naming rule (a letter first, then letters, digits or underscores, at most 64 characters; the same `NAME_PATTERN`, loaded from its `new_mod.py`) before joining it onto `P:\`, then takes the `.p3d` anywhere under `P:\<ModName>\` (every subfolder, so `data\`, `models\` or any other layout). Object Builder opens model files, not folders, so the skill never passes it a directory. Fails if the name is invalid or the mod folder is missing. With no `.p3d` yet (a fresh `/dayz-new-mod` scaffold), it says so and opens Object Builder with no model. With several, it lists them and asks for `--file`.
    - Neither: no argument; Object Builder opens its last-used file.
 3. Locates `ObjectBuilder.exe` via DayZ Tools.
 4. Verifies the registry has been populated by `/dayz-setup-objectbuilder` (with that skill's own check, loaded from its `setup.py`), and fails with a hint if not.
@@ -42,7 +42,7 @@ python "<skill-dir>\launch.py" --file P:\MyMod\data\model.p3d
 ```cmd
 python "<skill-dir>\launch.py" --mod MyMod
 ```
-(Requires `P:\MyMod\`, typically created by `/dayz-new-mod`, with one `.p3d` anywhere under it. With several, use `--file`.)
+(Requires `P:\MyMod\`, typically created by `/dayz-new-mod`. Opens the one `.p3d` anywhere under it, or the editor with no model when there is none yet. With several, use `--file`.)
 
 ## When to run
 
@@ -74,8 +74,8 @@ Preflight complete.
 ## Flag rules
 
 - `--file` and `--mod` are mutually exclusive (argparse rejects both together); pass one or neither.
-- `--file` takes an absolute path, or a path relative to the project. Warns if the extension isn't `.p3d` (Object Builder may refuse it).
-- `--mod` is just the mod name; the skill opens the single `.p3d` anywhere under `P:\<ModName>\`. Fails, right after preflight, if the name breaks the naming rule, the folder isn't there or has no `.p3d`, and lists the files when there is more than one.
+- `--file` takes an absolute path, or a path relative to the project root. The root is found the way the other DayZ skills find it (`/dayz-init`'s `find_project_dir()`): `CLAUDE_PROJECT_DIR`, else the nearest folder at or above the current one that holds the `/dayz-init` project cache, else the clone that holds the skill scripts when that clone has the cache, else the current folder. So a run from `workspace\<ModName>\` still resolves against the project. Warns if the extension isn't `.p3d` (Object Builder may refuse it).
+- `--mod` is just the mod name; the skill opens the single `.p3d` anywhere under `P:\<ModName>\`, or the editor with no model when there is none. Fails, right after preflight, if the name breaks the naming rule or the folder isn't there, and lists the files when there is more than one.
 
 ## Why detached
 
@@ -84,5 +84,5 @@ The editor is spawned detached (shared `DETACH_FLAGS` in `_shared/skill_helpers.
 ## Do not
 
 - Don't run before `/dayz-setup-objectbuilder` on a fresh machine — the skill will tell you to run setup first.
-- Don't pass a relative `--file` path unless you know the project root it resolves against (`CLAUDE_PROJECT_DIR`, else the working directory); absolute paths are safer.
+- Don't pass a relative `--file` path from outside the project (no `CLAUDE_PROJECT_DIR` and no `/dayz-init` cache at or above the current folder): it then resolves against the current folder. Absolute paths are safer.
 - Don't try to open a second instance: the skill refuses while `ObjectBuilder.exe` is running. Switch to the open window, or close it and re-run.

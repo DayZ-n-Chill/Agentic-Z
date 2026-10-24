@@ -11,7 +11,8 @@ The project root is the clone (or user project) that holds workspace/ and
 .server/: $CLAUDE_PROJECT_DIR when set, else the nearest folder at or above the
 current directory (below the home folder) whose local-memory holds the
 project cache, so skills work from a subfolder such as workspace/<mod>/; else
-the current directory.
+the clone that holds this script, when it has the cache; else the current
+directory.
 """
 from __future__ import annotations
 
@@ -21,6 +22,9 @@ from pathlib import Path
 
 CACHE_FILENAME = "dayz-current-project.txt"
 STATE_FILENAME = "dayz-init-state.json"
+# <clone>/.claude/skills/dayz-init/state.py -> <clone>. In a plugin install this is the
+# plugin cache, which has no local-memory cache, so the check below never matches there.
+SCRIPT_CLONE = Path(__file__).resolve().parents[3]
 
 
 def find_project_dir() -> Path:
@@ -36,6 +40,12 @@ def find_project_dir() -> Path:
             break
         if (folder / ".claude" / "local-memory" / CACHE_FILENAME).is_file():
             return folder
+    # A worker whose shell starts outside any project (the home folder, a temp
+    # folder) would otherwise read a cache left there by another setup. In the
+    # live AZTestVest run that sent a release build to a different clone. In a
+    # clone, the clone that holds this script is the project.
+    if (SCRIPT_CLONE / ".claude" / "local-memory" / CACHE_FILENAME).is_file():
+        return SCRIPT_CLONE
     return cwd
 
 

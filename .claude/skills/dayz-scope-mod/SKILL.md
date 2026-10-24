@@ -25,11 +25,13 @@ python "<skill-dir>\scope.py" --status
 python "<skill-dir>\scope.py" --clear
 ```
 
+The project is found the same way `/dayz-init` finds it: `CLAUDE_PROJECT_DIR` when set, else the nearest folder at or above the current folder that holds `.claude\local-memory\dayz-current-project.txt`, else the clone that holds the skill scripts when that clone has the cache, else the current folder. So a run from `workspace\<ModName>\` still uses the project's `workspace\` and settings.
+
 ## What it does
 
 1. Validates `<ModName>` exists at `workspace/<ModName>/`, matching the folder name case-insensitively and then using the folder's on-disk spelling in every rule, in the output and in the recorded scope (refuses unknown names, and names that permission rules would read as pattern syntax: `*`, `?` or `[` anywhere, or a leading `!` or `#`; `!` and `#` mid-name are fine because gitignore syntax treats them specially only at the start of a pattern).
-2. Reads `.claude/settings.local.json`, removes any rules previously added by this skill (idempotent re-run).
-3. Enumerates sibling mods under `workspace/` (every directory except the active mod and dotted folders). Refuses if a sibling's name breaks the same rule.
+2. Enumerates sibling mods under `workspace/` (every directory except the active mod and dotted folders). Refuses if a sibling's name breaks the same rule.
+3. Reads `.claude/local-memory/dayz-active-scope.json` and `.claude/settings.local.json`, and removes any rules a previous run recorded (idempotent re-run). If either file is unreadable or has the wrong shape (the scope record must hold a `denied_rules` list; the settings must be an object whose `permissions.deny` is a list), it exits 1 with nothing changed. A corrupt scope record is never treated as "no scope", because the rules it recorded may still be in the settings; the message tells you to remove them by hand and delete the record.
 4. For each sibling mod, appends deny rules to `permissions.deny`:
    - `Edit(/workspace/<other>/**)` (a leading `/` anchors at Claude Code's primary working directory, so start Claude Code from the project root)
    - `Edit(//p/<other>/**)` (`//` is absolute; Claude Code normalizes `P:\` to `/p/` before matching)
@@ -37,7 +39,7 @@ python "<skill-dir>\scope.py" --clear
    - `Edit(//<drive>/<DayZ game>/!Workshop/@<other>/**)`, the real folder behind the `P:\Mods` junction, e.g. `Edit(//c/Program Files (x86)/Steam/steamapps/common/DayZ/!Workshop/@OtherMod/**)`. The game is located with `find_dayz_game()` from `/dayz-preflight`; if it is not found this rule is skipped with an `[INFO]` line.
 
    Claude Code checks file writes against `Edit(...)` rules only, so one `Edit` rule blocks both the Edit and Write tools. `Write(path)` rules are accepted but never matched, which is why the skill does not write them.
-5. Writes back `.claude/settings.local.json`.
+5. Writes back `.claude/settings.local.json`, only if its content changed. The old file is first copied to `.claude/local-memory/settings.local.json.<timestamp>.bak`, a new name on every change, so no older backup is replaced (restore by copying one back). The new file replaces the old one in a single step, so a failed write never leaves it half-written. `--clear` backs up and writes the same way.
 6. Records the active mod and the rules this run actually appended (a matching rule you already had is skipped, left in place and not recorded, so `--clear` never removes it) in `.claude/local-memory/dayz-active-scope.json` so `--clear` can undo precisely what was set.
 
 ## What it does not do
@@ -65,6 +67,7 @@ DayZ scope: SuperMedKit
 
 [OK]    Mod found: workspace\SuperMedKit
 [INFO]  Sibling mods detected: 2 (OtherModA, OtherModB)
+[INFO]  Backed up settings to .claude\local-memory\settings.local.json.20261024-101500.bak
 [OK]    Added 8 Edit deny rules to .claude\settings.local.json
 [OK]    Active scope recorded at .claude\local-memory\dayz-active-scope.json
 

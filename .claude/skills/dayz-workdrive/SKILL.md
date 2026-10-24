@@ -29,16 +29,18 @@ python "<skill-dir>\mount.py" --unmount --force               # unmount even whi
 2. Resolves the work-drive folder, taking the first candidate that exists:
    1. `--path` (fails if it is not a directory). A relative `--path` is made absolute against the current folder first, so the folder that is mounted and cached is the same one from any later run
    2. `$DAYZ_WORK_DRIVE`
-   3. The path cached by a previous successful run in `<project>\.claude\local-memory\dayz-work-drive.json`, where `<project>` is `$CLAUDE_PROJECT_DIR`, else the nearest folder at or above the current directory whose `.claude\local-memory\` holds the `/dayz-init` project cache, else the current directory (the same rule `/dayz-init` uses, so a plugin install caches per project and a run from `scripts\setup\` or `workspace\<mod>\` still finds the project)
+   3. The path cached by a previous successful run in `<project>\.claude\local-memory\dayz-work-drive.json`, where `<project>` is `$CLAUDE_PROJECT_DIR`, else the nearest folder at or above the current directory whose `.claude\local-memory\` holds the `/dayz-init` project cache, else the clone that holds the skill scripts when that clone has the cache, else the current directory (the same rule `/dayz-init` uses, so a plugin install caches per project and a run from `scripts\setup\` or `workspace\<mod>\` still finds the project)
    4. `[ProjectDrive] path=` in `<DayZ Tools>\settings.ini`
 
    If none of these exists the skill exits 1 and asks for `--path`. It never falls back to `<DayZ Tools>\Bin\WorkDrive`: that folder holds `WorkDrive.exe` itself, not a project drive. The DayZ Tools registry keys are not a source: they hold the install path, not the work drive folder.
-3. Prints and runs `WorkDrive.exe /Mount "<folder>"`. WorkDrive.exe gets 60 seconds; if it is still running (stuck at its "press any key" prompt) it is stopped. If `P:\` still is not visible (or WorkDrive.exe is missing or was stopped), falls back to `subst P: "<folder>"`. When `[ProjectDrive] Letter=` in `settings.ini` is not `P`, WorkDrive.exe would mount that letter instead, so the skill prints a `[WARN]` naming the letter and goes straight to `subst P:`. `--unmount` then skips WorkDrive.exe the same way.
+3. Prints and runs `WorkDrive.exe /Mount "<folder>"`. WorkDrive.exe gets 60 seconds; if it is still running (stuck at its "press any key" prompt) it is stopped. If `P:\` still is not visible (or WorkDrive.exe is missing or was stopped), falls back to `subst P: "<folder>"`. When `[ProjectDrive] Letter=` in `settings.ini` is not `P`, WorkDrive.exe would mount that letter instead, so the skill prints `[WARN] DayZ Tools' settings.ini sets [ProjectDrive] Letter=<X>, so WorkDrive.exe would mount <X>: instead of P:\. Using subst P: instead.` and goes straight to `subst P:`. `--unmount` then skips WorkDrive.exe the same way.
 4. On success, caches the folder for the next run.
 
 DayZ Tools is located with the shared `find_dayz_tools()` resolver from `dayz-preflight/preflight.py`.
 
-`--unmount` runs `WorkDrive.exe /Dismount`, falling back to `subst P: /D` if `P:\` is still visible; it is a no-op when `P:\` is not mounted. Before unmounting it lists running processes with `tasklist` and refuses (exit 1, nothing unmounted) while any of `WorkbenchApp.exe`, `ObjectBuilder.exe`, `AddonBuilder.exe`, `binarize.exe` or `DayZDiag_x64.exe` is running, because pulling `P:\` out from under them breaks those open sessions. Close them first (`/dayz-stop-test` stops DayZDiag), or pass `--force` to unmount anyway with a `[WARN]` naming them.
+`--unmount` runs `WorkDrive.exe /Dismount`, falling back to `subst P: /D` if `P:\` is still visible; it is a no-op when `P:\` is not mounted. Before unmounting it lists running processes with `tasklist` and refuses (exit 1, nothing unmounted) while any of `WorkbenchApp.exe`, `ObjectBuilder.exe`, `AddonBuilder.exe`, `binarize.exe` or `DayZDiag_x64.exe` is running, because pulling `P:\` out from under them breaks those open sessions. Close them first (`/dayz-stop-test` stops DayZDiag), or pass `--force` to unmount anyway with a `[WARN]` naming them. If `tasklist` cannot start, exits non-zero or prints nothing, the running processes are unknown, so `--unmount` refuses the same way (exit 1, `[FAIL] Not unmounting: tasklist failed ...`); `--force` unmounts anyway with a `[WARN]` that nothing was checked.
+
+`--force` is accepted only with `--unmount`, and `--path` only without it; either mismatch exits 2 with an argparse error instead of being silently ignored.
 
 ## Output
 
@@ -66,5 +68,5 @@ When already mounted it prints `[OK]   P:\ already mounted -> <folder>` and runs
 | Code | Meaning |
 |---|---|
 | 0 | `P:\` is mounted (or, with `--unmount`, unmounted or already absent) |
-| 1 | No work-drive folder could be resolved, `--path` is not a directory, both WorkDrive.exe and `subst` failed (the `subst` exit code is printed), `--unmount` left `P:\` mounted, or `--unmount` without `--force` found DayZ Tools or DayZDiag running |
-| 2 | Bad argument, such as an unknown option or `--path` with no folder (argparse prints the usage) |
+| 1 | No work-drive folder could be resolved, `--path` is not a directory, both WorkDrive.exe and `subst` failed (the `subst` exit code is printed), `--unmount` left `P:\` mounted, or `--unmount` without `--force` found DayZ Tools or DayZDiag running or could not list processes |
+| 2 | Bad argument, such as an unknown option, `--path` with no folder, `--force` without `--unmount`, or `--path` with `--unmount` (argparse prints the usage) |
