@@ -33,7 +33,7 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove [--dry-run]
 | `--restock S` | Restock interval in seconds. Default for new entries: 0. |
 | `--cost N` | Spawn cost / weight. Default for new entries: 100. |
 | `--quantmin N` | Lowest spawn quantity in percent, for a quantity item (magazine, bottle, battery): `-1` (not a quantity item) or 0 to 100. Default for new entries: -1. Vanilla example: AKM has `<quantmin>30</quantmin>` (`P:\DZ\worlds\chernarusplus\ce\db\types.xml:129`). |
-| `--quantmax N` | Highest spawn quantity in percent: `-1` or 0 to 100. Default for new entries: -1 (AKM: 80, same file line 130). Pass both `--quantmin` and `--quantmax` when turning an entry into a quantity item: every vanilla entry has both at -1 or both set. |
+| `--quantmax N` | Highest spawn quantity in percent: `-1` or 0 to 100. Default for new entries: -1 (AKM: 80, same file line 130). Pass both `--quantmin` and `--quantmax` when turning an entry into a quantity item or back: every vanilla entry has both at -1 or both set (all 2382, 2391 and 2404 entries in the chernarusplus, enoch and sakhal `types.xml`). An edit that leaves exactly one of them at -1 prints `[WARN] <ClassName>: quantmin is 50 but quantmax is -1; ...` and still goes ahead. |
 | `--category CAT` | Sets `<category name="CAT"/>`. Single value (replaces any existing). |
 | `--usage TAG` | Set the entry's usages to exactly the `<usage name="TAG"/>` tags given. Repeatable. Every usage not passed is removed, so to add one, pass the existing usages too. The change line names what was removed. |
 | `--value TAG` | Set the entry's values to exactly the `<value name="TAG"/>` tags given. Repeatable. Every value not passed is removed. |
@@ -42,14 +42,14 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove [--dry-run]
 ## What it does
 
 1. Preflight gate.
-2. Read and parse `<types.xml>` (comments are kept). Locate the `<type name="<ClassName>">` block.
+2. Read and parse `<types.xml>` (comments are kept). Locate the `<type name="<ClassName>">` block. Names match ignoring case, because DayZ class names are case-insensitive: vanilla `P:\DZ\worlds\chernarusplus\ce\db\types.xml:3036` lists `Bandana_Blackpattern` for the config class `Bandana_BlackPattern` (`P:\DZ\characters\headgear\config.cpp:3084`). So `akm` updates or removes the existing `AKM` block instead of adding a second one, and the file keeps its own spelling.
 3. Upsert mode (default):
    - If the block exists, update only the fields passed. Untouched fields stay as-is.
    - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the vanilla standard flags (`count_in_map=1`, everything else 0). Children are written in vanilla order: `nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`, then `category`, `tag`, `usage`, `value`. An edit that adds a name puts it in the same place among the existing children.
 4. Remove mode (`--remove`): delete the block.
 5. Name check (upsert mode): the entry's `<category>`, `<usage>`, `<value>` and `<tag>` names are checked against the mission's `cfglimitsdefinition.xml`, found next to `db/` (`<types.xml>\..\..\`). A `user=` group is checked against `cfglimitsdefinitionuser.xml` when it exists; without that file `user=` groups are not checked. Each name the file does not define prints `[WARN] usage name "Militar" is not defined in cfglimitsdefinition.xml`, because the Central Economy ignores or rejects it. The edit still goes ahead. When `cfglimitsdefinition.xml` is not there (a types file kept in a mod folder), the check is skipped with a note.
 6. If nothing changed (entry already matches, or the entry to remove is absent), or `--dry-run` was passed, stop: no backup, no write.
-7. Otherwise copy the file to `<types.xml>.<YYYYMMDD-HHMMSS>.bak` (a new backup every run; a `-2`, `-3` counter is added within the same second) and write back only the `<type>` blocks that changed.
+7. Otherwise copy the file to `<types.xml>.<YYYYMMDD-HHMMSS>.bak` (a new backup every run; a `-2`, `-3` counter is added within the same second) and write back only the `<type>` blocks that changed. If the file cannot be written (read-only, open in another program, disk full), the run stops with `[FAIL] Could not write <types.xml>: <reason>` and exit 1. When the file is still unchanged, the backup this run made is removed; when the write got partway, the backup is kept and the message names it so you can restore from it.
 
 ## Merge a pasted chunk
 
@@ -60,19 +60,19 @@ python "<skill-dir>\types_edit.py" <types.xml> --merge <chunk.xml> [--dry-run]
 python "<skill-dir>\types_edit.py" <types.xml> --merge - < chunk.xml
 ```
 
-The chunk can be bare `<type>` blocks or a whole `<types>` file, with or without the XML declaration. Every entry is checked before anything is written. These are errors, and any one of them stops the whole merge with the file unchanged:
+The chunk can be bare `<type>` blocks or a whole `<types>` file, with or without the XML declaration, saved or piped as UTF-8 (a chunk that is not UTF-8 stops with `[FAIL] The chunk from <chunk> is not UTF-8 ...` and the file unchanged). Every entry is checked before anything is written. These are errors, and any one of them stops the whole merge with the file unchanged:
 
-- a `<type>` without a name, or a name listed twice in the chunk
+- a `<type>` without a name, or a name listed twice in the chunk (in any case)
 - a count, lifetime, restock or cost that is not a whole number or is negative
 - `min` greater than `nominal`
 - `quantmin` or `quantmax` outside -1 and 0 to 100, or `quantmin` greater than `quantmax`
 - a `<flags>` value other than 0 or 1
 - a `<category>`, `<usage>`, `<value>` or `<tag>` without a name
-- a name the target file already lists twice
+- a name the target file already lists twice (in any case)
 
-A missing standard child (`nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`), an unknown element or an unknown flag is a `[WARN]` and does not stop the merge. So is a category, usage, value or tag name that the mission's `cfglimitsdefinition.xml` does not define (the same name check as upsert mode, skipped with a note when that file is absent).
+A missing standard child (`nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`), an unknown element, an unknown flag, or exactly one of `quantmin` and `quantmax` at -1 is a `[WARN]` and does not stop the merge. So is a category, usage, value or tag name that the mission's `cfglimitsdefinition.xml` does not define (the same name check as upsert mode, skipped with a note when that file is absent).
 
-Then each entry is merged: a new name is added at the end, a name already in the file has its whole block replaced where it stands, and an identical block is left alone. The file is backed up to `types.xml.<YYYYMMDD-HHMMSS>.bak` once and written once. `--dry-run` checks and reports the same lines and writes nothing.
+Then each entry is merged: a new name is added at the end, a name already in the file (matched ignoring case) has its whole block replaced where it stands under the file's spelling of the name, and an identical block is left alone. The file is backed up to `types.xml.<YYYYMMDD-HHMMSS>.bak` once and written once. `--dry-run` checks and reports the same lines and writes nothing.
 
 ```
 [OK]    Checked 2 <type> entries
@@ -82,7 +82,7 @@ Then each entry is merged: a new name is added at the end, a name already in the
 [OK]    Wrote .server\chernarus\mission\db\types.xml
 ```
 
-Formatting: only the `<type>` blocks that changed are rewritten. Every other byte stays as it was: the XML declaration, comments inside and outside `<types>`, blank lines, line endings (LF or CRLF) and every untouched block. A one-field edit of a vanilla `types.xml` is a one-line diff. A rewritten or added block uses the file's own indentation and writes self-closing tags as vanilla does (`<category name="weapons"/>`, no space before `/>`). A file that cannot be patched block by block (an empty `<types/>`, or a file that is not UTF-8) is written whole, re-indented with 4 spaces, keeping its XML declaration.
+Formatting: only the `<type>` blocks that changed are rewritten. Every other byte stays as it was: the XML declaration, comments inside and outside `<types>`, blank lines, line endings (LF or CRLF) and every untouched block. A one-field edit of a vanilla `types.xml` is a one-line diff. A rewritten or added block uses the file's own indentation and writes self-closing tags as vanilla does (`<category name="weapons"/>`, no space before `/>`). The file is written in the encoding its XML declaration names (UTF-8 when it names none), so an `ISO-8859-1` file stays `ISO-8859-1`; a new name that encoding cannot hold is written as a character reference such as `&#228;`. A file that cannot be patched block by block (an empty `<types/>`, or bytes that are not valid in the declared encoding) is written whole, re-indented with 4 spaces, keeping its XML declaration and encoding.
 
 ## Refuses to run if
 
@@ -91,8 +91,10 @@ Formatting: only the `<type>` blocks that changed are rewritten. Every other byt
 - `<types.xml>` doesn't exist.
 - `<types.xml>` isn't valid XML.
 - The root element is not `<types>` (for example `events.xml` or `globals.xml` passed by mistake).
-- `<ClassName>` appears in more than one `<type>` block; merge them by hand first. Duplicates of other names only print a `[WARN]` listing them.
+- `<ClassName>` appears in more than one `<type>` block, in any case (`AKM` and `akm` count as the same name); merge them by hand first. Duplicates of other names only print a `[WARN]` listing them.
 - `--nominal`, `--min`, `--lifetime`, `--restock` or `--cost` is negative, or `--quantmin` / `--quantmax` is not -1 or 0 to 100 (argparse usage error, exit 2).
+- `<ClassName>`, `--category`, `--usage`, `--value` or `--tag` is empty or only whitespace (argparse usage error, exit 2), the same names merge mode rejects.
+- The backup cannot be made, or `<types.xml>` cannot be written (exit 1, see step 7).
 - `--min` or `--nominal` would leave the entry with `min` greater than `nominal` (checked against the entry's existing or default value for the flag you did not pass). The file is left unchanged.
 - `--quantmin` or `--quantmax` would leave the entry with `quantmin` greater than `quantmax` (both set, neither -1; checked the same way). The file is left unchanged.
 

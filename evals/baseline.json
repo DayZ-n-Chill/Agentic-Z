@@ -8,18 +8,25 @@
       "forward-declaration",
       "hidden-selection-count",
       "inventoryslot-append"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-mod-reviewer": {
-    "score": 5,
-    "total": 5,
+    "score": 6,
+    "total": 6,
     "passed": [
       "hidden-selection-mismatch",
       "modded-class-extends",
       "procedural-texture-pass",
       "texture-suffix-warn",
-      "types-min-above-nominal"
-    ]
+      "types-min-above-nominal",
+      "workbench-plugin-not-critical"
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-script-specialist": {
     "score": 5,
@@ -30,7 +37,10 @@
       "modded-class-extends",
       "net-sync-calls",
       "server-only-gate"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-weapon-specialist": {
     "score": 5,
@@ -41,7 +51,10 @@
       "long-range-optic-slot",
       "magazine-ammo-keys",
       "recoil-is-script"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-audio-fx-specialist": {
     "score": 5,
@@ -52,7 +65,10 @@
       "shader-range-unit",
       "sound-required-addon",
       "weapon-particle-registration"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-object-builder": {
     "score": 5,
@@ -63,7 +79,10 @@
       "door-needs-view-geometry-component",
       "proxy-selection-name",
       "viewgeo-firegeo-resolutions"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-ai-specialist": {
     "score": 5,
@@ -74,7 +93,10 @@
       "no-vanilla-human-ai",
       "soldier-behaviour-template",
       "spawn-with-ai"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-animation-specialist": {
     "score": 5,
@@ -85,7 +107,10 @@
       "fence-gate-phase",
       "lid-client-sync",
       "user-source-missing"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-persistence-specialist": {
     "score": 5,
@@ -96,7 +121,10 @@
       "persistent-id-lookup-event",
       "removed-field-read-and-discard",
       "version-param-is-game"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-physics-specialist": {
     "score": 5,
@@ -107,7 +135,10 @@
       "heavy-crate-cannot-be-thrown",
       "make-resting-item-fall",
       "spawn-without-physics"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-vehicle-specialist": {
     "score": 5,
@@ -118,7 +149,10 @@
       "diesel-needs-glowplug",
       "new-door-slot",
       "vanilla-helicopter"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-wearables-specialist": {
     "score": 5,
@@ -129,7 +163,10 @@
       "mask-blocks-helmet",
       "plate-carrier-cargo",
       "survivor-scope"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-asset-specialist": {
     "score": 7,
@@ -142,7 +179,10 @@
       "power-of-two-sizes",
       "refused-size-reruns-the-rest",
       "smdi-is-specular"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-layout-validator": {
     "score": 8,
@@ -156,7 +196,10 @@
       "quoted-shadow-opacity-passes",
       "syntax-script-runs-first",
       "xml-style-fails-on-line-1"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-ui-specialist": {
     "score": 5,
@@ -167,7 +210,10 @@
       "layout-root-format",
       "listbox-onitemselected-signature",
       "listbox-two-columns"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-map-specialist": {
     "score": 5,
@@ -178,7 +224,10 @@
       "surface-dig-plant",
       "surface-texture-match",
       "surfaces-required-addon"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-workbench-specialist": {
     "score": 5,
@@ -189,7 +238,10 @@
       "resource-context-menu",
       "run-external-command",
       "script-editor-current-file"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-server-admin": {
     "score": 5,
@@ -200,7 +252,10 @@
       "objectspawner-json",
       "spawn-not-saved",
       "types-restock"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-mod-debugger": {
     "score": 5,
@@ -211,29 +266,41 @@
       "modded-class-extends-noop",
       "onstoreload-read-failure",
       "review-gate-no-log"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "figma-node-normalizer": {
-    "score": 6,
-    "total": 6,
+    "score": 8,
+    "total": 8,
     "passed": [
       "children-source-order",
+      "dedup-skips-existing-suffix",
       "no-figma-tool",
       "position-in-free-frame",
+      "position-under-centered-alignment",
       "prefix-typing-btn-close",
       "removal-in-summary",
       "sizing-on-every-node"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-build-engineer": {
-    "score": 4,
-    "total": 4,
+    "score": 5,
+    "total": 5,
     "passed": [
       "instance-without-map-stops",
       "non-dz-addon-without-deps-stops",
+      "own-patch-requirement-launches",
       "payload-bundle-deploys",
       "server-only-dep-uses-flag"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-haiku-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-docs-writer": {
     "score": 5,
@@ -244,7 +311,10 @@
       "payload-only-bundle-skips-kit",
       "private-key-is-a-release-blocker",
       "summary-missing-goes-in-readme"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-sonnet-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "agent-creator": {
     "score": 5,
@@ -255,7 +325,10 @@
       "model-is-omitted",
       "new-worker-registration",
       "no-memory-section-in-body"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "figma-to-dayz-layout": {
     "score": 5,
@@ -266,7 +339,10 @@
       "hex-color-to-floats",
       "prefix-beats-frame-type",
       "raw-figma-url-needs-normalizer"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-ingame-tester": {
     "score": 5,
@@ -277,20 +353,27 @@
       "non-bundle-unmapped-dep-stops",
       "ready-line-and-settle",
       "unqualified-null-pointer-is-warning"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-router": {
-    "score": 7,
-    "total": 7,
+    "score": 8,
+    "total": 8,
     "passed": [
       "add-test-server-instance",
       "build-imageset-from-sprites",
       "cot-admin-bootstrap",
+      "mod-changelog-file-is-docs-writer",
       "open-workbench-is-the-launcher",
       "pack-texture-vs-wrong-texture",
       "status-hub-is-init",
       "stretched-texture-is-not-packing"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-haiku-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-build-checker": {
     "score": 5,
@@ -301,6 +384,51 @@
       "payload-bundle-deploys",
       "pbo-path",
       "unstarted-session-blocks"
-    ]
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
+  },
+  "dayz-lead": {
+    "score": 5,
+    "total": 5,
+    "passed": [
+      "lead-never-runs-build-gate",
+      "normalizer-json-has-no-file-gate",
+      "third-failed-round-stops",
+      "types-entries-go-under-server-heading",
+      "wearable-on-config-team-reassigns"
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
+  },
+  "dayz-mod-architect": {
+    "score": 5,
+    "total": 5,
+    "passed": [
+      "action-and-menu-layers",
+      "attach-behavior-check",
+      "firing-needs-a-person",
+      "loot-numbers-in-types",
+      "vest-parent-addon"
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
+  },
+  "dayz-orchestrator": {
+    "score": 5,
+    "total": 5,
+    "passed": [
+      "first-visual-shot-waits-for-user",
+      "foreign-session-error-asks-before-yes",
+      "known-failure-goes-to-owning-lead",
+      "new-failure-goes-to-debugger",
+      "new-mod-needs-server-instance-before-ingame-gate"
+    ],
+    "recorded": "2026-10-24",
+    "model": "claude-opus-5-5",
+    "claude_version": "2.1.310 (Claude Code)"
   }
 }

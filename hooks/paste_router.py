@@ -276,8 +276,12 @@ def _wires(settings: Path, hook: str) -> bool:
 
 def main() -> int:
     try:
-        if shadowed_by_project():
-            return 0
+        shadowed = shadowed_by_project()
+    except Exception:  # a broken shadow check must not switch this copy off; run it instead
+        shadowed = False
+    if shadowed:
+        return 0
+    try:
         data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace") or "{}")
         prompt = data.get("prompt") or ""
         project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd())

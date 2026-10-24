@@ -15,8 +15,11 @@ Types entries come from, in order: the mod's own types files (any *.xml under
 the mod folder whose root is <types>), then the --mission's db/types.xml and
 every types file its cfgeconomycore.xml lists. A spawnable class found in
 neither gets a placeholder entry with nominal and min 0, so it does not spawn
-until the owner tunes it. Classes, scope, dependencies and keys come from
-/dayz-release-pack's mod_facts().
+until the owner tunes it. A types file that does not parse, a --mission folder
+with neither db/types.xml nor cfgeconomycore.xml, and a listed types file that is
+missing all stop the run (exit 2) instead of being skipped. Classes, scope, dependencies and keys come from
+/dayz-release-pack's mod_facts(), which reads every config.cpp in the mod (the
+root one and sub-folders such as data/).
 
 Exit codes: 0 written (warnings allowed), 2 error.
 """
@@ -24,6 +27,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 import zipfile
@@ -39,9 +44,16 @@ rp = h.load_module("dayz_server_kit_release_pack", SKILLS_DIR / "dayz-release-pa
 ReleaseError = rp.ReleaseError
 
 PRIVATE_SUFFIX = ".biprivatekey"
-SKIP_DIRS = {".git", "Addons", "addons", "Keys", "keys", "output"}
+# Folders whose *.xml are never the mod's own types files: built PBOs, signing
+# keys, generated output and dot folders (.git, .vscode). Matched case-insensitively.
+SKIP_DIRS = {"addons", "keys", "output"}
 
-# Placeholder entry, in the element order of the vanilla db/types.xml. nominal 0
+
+def _skipped(part: str) -> bool:
+    return part.startswith(".") or part.lower() in SKIP_DIRS
+
+# Placeholder entry, in the element order of the vanilla db/types.xml (DayZServer
+# mpmissions/dayzOffline.chernarusplus/db/types.xml:124-136, the AKM entry). nominal 0
 # and min 0 keep the item out of the loot economy until the owner sets real values.
 PLACEHOLDER = """    <type name="{name}">
         <nominal>0</nominal>
@@ -55,19 +67,36 @@ PLACEHOLDER = """    <type name="{name}">
     </type>"""
 
 
-def _types_root(path: Path) -> Optional[ET.Element]:
+# A <types> start tag in the raw text: an *.xml that does not parse but holds one
+# was meant as a types file, so dropping it would silently lose its entries.
+LOOKS_LIKE_TYPES = re.compile(rb"<types[\s>/]")
+
+
+def _types_root(path: Path, declared: bool = False) -> Optional[ET.Element]:
+    """The <types> root of path, or None when the file is not a types file.
+
+    A file that does not parse raises ReleaseError when it is declared as types
+    (a mission types file) or holds a <types> tag, so no entries are dropped.
+    A declared types file whose root is not <types> raises too.
+    """
     try:
         root = ET.parse(path).getroot()
-    except (ET.ParseError, OSError):
+    except ET.ParseError as e:
+        if declared or LOOKS_LIKE_TYPES.search(path.read_bytes()):
+            raise ReleaseError(f"{path} is a types file that does not parse: {e}. Fix the XML and rerun") from e
         return None
-    return root if root.tag == "types" else None
+    if root.tag == "types":
+        return root
+    if declared:
+        raise ReleaseError(f"{path} is listed as a types file but its root is <{root.tag}>, not <types>. Fix the file and rerun")
+    return None
 
 
 def mod_types_files(mod_dir: Path) -> list[Path]:
     out = []
     for path in sorted(mod_dir.rglob("*.xml")):
         rel = path.relative_to(mod_dir).parts
-        if set(rel[:-1]) & SKIP_DIRS:
+        if any(_skipped(part) for part in rel[:-1]):
             continue
         if _types_root(path) is not None:
             out.append(path)
@@ -75,9 +104,19 @@ def mod_types_files(mod_dir: Path) -> list[Path]:
 
 
 def mission_types_files(mission: Path) -> list[Path]:
-    """db/types.xml plus every type="types" file cfgeconomycore.xml lists, relative to the mission root."""
-    files = [mission / "db" / "types.xml"]
+    """db/types.xml plus every type="types" file cfgeconomycore.xml lists, relative to the mission root.
+
+    A folder with neither db/types.xml nor cfgeconomycore.xml is not a mission (the
+    vanilla dayzOffline.chernarusplus mission has both), and a listed types file that
+    is missing would silently turn its classes into placeholders, so both raise.
+    """
+    db_types = mission / "db" / "types.xml"
     core = mission / "cfgeconomycore.xml"
+    if not db_types.is_file() and not core.is_file():
+        hint = (f" Did you mean its mission subfolder {mission / 'mission'}?" if (mission / "mission").is_dir()
+                else " Pass the mission folder that holds db\\types.xml, or a test server instance name.")
+        raise ReleaseError(f"--mission {mission} is not a mission folder: it has no db\\types.xml and no cfgeconomycore.xml.{hint}")
+    files = [db_types] if db_types.is_file() else []
     if core.is_file():
         try:
             root = ET.parse(core).getroot()
@@ -86,8 +125,12 @@ def mission_types_files(mission: Path) -> list[Path]:
         for ce in root.findall("ce"):
             for f in ce.findall("file"):
                 if f.get("type") == "types" and f.get("name"):
-                    files.append(mission / ce.get("folder", "") / f.get("name"))
-    return [f for f in files if f.is_file()]
+                    listed = mission / ce.get("folder", "") / f.get("name")
+                    if not listed.is_file():
+                        raise ReleaseError(f"{core} lists the types file {listed}, which does not exist. "
+                                           "Fix the <ce> entry or add the file and rerun")
+                    files.append(listed)
+    return files
 
 
 def resolve_mission(value: Optional[str], roots: list[Path]) -> Optional[Path]:
@@ -142,7 +185,7 @@ def collect_types(facts: dict, mod_dir: Path, mission: Optional[Path]) -> tuple[
             add(element, "mod")
     wanted = {c["name"].lower() for c in facts["spawnable"]}
     for path in mission_types_files(mission) if mission else []:
-        root = _types_root(path)
+        root = _types_root(path, declared=True)
         for element in root.findall("type") if root is not None else []:
             if element.get("name", "").lower() in wanted:
                 add(element, "mission")
@@ -220,17 +263,32 @@ def server_kit(mod: str, mod_dir: Path, out_dir: Path, mission: Optional[Path] =
         raise ReleaseError("refusing to zip a .biprivatekey")
     out_dir.mkdir(parents=True, exist_ok=True)
     zip_path = out_dir / f"{mod}-server-kit.zip"
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
-        for name, data in members.items():
-            z.writestr(name, data)
-    warnings = list(facts["warnings"])
+    replaced = zip_path.exists()
+    # Write next to the target and swap it in, so a failed write never leaves a broken kit.
+    tmp_path = zip_path.with_name(zip_path.name + ".tmp")
+    try:
+        with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as z:
+            for name, data in members.items():
+                z.writestr(name, data)
+        os.replace(tmp_path, zip_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
+    # summary-missing is about the release pack's Workshop text, which this kit never writes.
+    warnings = [w for w in facts["warnings"] if not w.startswith("summary-missing")]
+    known = {c["name"].lower() for c in facts["classes"]}
+    unknown = [name for name in sources["mod"] if name.lower() not in known]
+    if unknown:
+        warnings.append(f"types-unknown-class: {unknown} have a types entry in the mod but no class in its config.cpp; "
+                        "fix the misspelt name in the types file or config.cpp and rerun, or remove the entry if it "
+                        "belongs to another mod")
     if sources["placeholder"]:
-        warnings.append(f"placeholder-types: {sources['placeholder']} have no types entry in the mod"
-                        + ("" if mission else " (pass --mission to copy real ones)")
-                        + "; the kit holds placeholders that do not spawn")
+        where = "the mod or the mission" if mission else "the mod (pass --mission to copy real ones)"
+        warnings.append(f"placeholder-types: {sources['placeholder']} have no types entry in {where}"
+                        "; the kit holds placeholders that do not spawn")
     return {
         "mod": mod,
         "zip": str(zip_path),
+        "replaced": replaced,
         "files": sorted(members),
         "types": sources,
         "load_order": rp.load_order(facts),
@@ -242,7 +300,7 @@ def server_kit(mod: str, mod_dir: Path, out_dir: Path, mission: Optional[Path] =
 
 def render_text(report: dict) -> str:
     t = report["types"]
-    out = [f"[OK]   Wrote {report['zip']}"]
+    out = [f"[OK]   Wrote {report['zip']}" + (" (replaced the previous kit)" if report["replaced"] else "")]
     out += [f"       {name}" for name in report["files"]]
     out.append(f"       types: {len(t['mod'])} from the mod, {len(t['mission'])} from the mission, "
                f"{len(t['placeholder'])} placeholders; load order {';'.join(report['load_order'])}")
@@ -253,9 +311,12 @@ def render_text(report: dict) -> str:
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Zip the types entries, cfgeconomycore lines, load order and public keys for server owners.")
     parser.add_argument("mod", nargs="?", help="Mod name under workspace/ in the project cached by /dayz-init.")
-    parser.add_argument("--mod-dir", type=Path, help="Use this folder instead (its name is the mod name).")
+    parser.add_argument("--mod-dir", type=Path, help="Use this folder instead (its name is the mod name unless "
+                        "<ModName> is given too).")
     parser.add_argument("--mission", help="Mission folder, or a test server instance name, to copy real types entries from.")
-    parser.add_argument("--deps", nargs="+", default=[], metavar="MOD", help="Dependency mods in load order (CF or @CF).")
+    # extend, so a second --deps adds to the list instead of replacing it.
+    parser.add_argument("--deps", nargs="+", action="extend", default=[], metavar="MOD",
+                        help="Dependency mods in load order (CF or @CF).")
     parser.add_argument("--out", type=Path, help="Output folder. Default output/<ModName>-release/.")
     parser.add_argument("--json", action="store_true", help="Print the report as JSON.")
     try:

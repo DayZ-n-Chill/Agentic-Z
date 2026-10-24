@@ -81,14 +81,14 @@ A result with a `route` is followed directly. `{"route": null, "next": "dayz-rou
 
 ## 4. Edit hooks
 
-Two Python hooks in `hooks/` run on every `Edit`, `Write` and `MultiEdit`. The plugin loads them from `hooks/hooks.json`; a clone of this repo loads the same scripts from `.claude/settings.json`. Both need `python` on `PATH`, use no network, and finish in about 0.1 s.
+Two Python hooks in `hooks/` run on every `Edit`, `Write` and `MultiEdit`. The plugin loads them from `hooks/hooks.json`; a clone of this repo loads the same scripts from `.claude/settings.json`. Each hook command runs `python` when it works and otherwise the `py` launcher (so the Microsoft Store alias, which exits 9009, is skipped); both hooks use no network and finish in about 0.1 s.
 
 - **Syntax check** (`hooks/edit_check.py`, PostToolUse). After an edit to `config.cpp` (anywhere), a `.cpp` or `.hpp` under a `workspace/` folder, or a `.layout`, it re-reads the file and checks:
   - config files: balanced braces, `};` after every class body, `;` after every property and array, `[]` on array properties, `,` (not `;`) between array elements, closed strings and comments;
   - layouts: the brace format (XML is refused), balanced blocks, one root widget, child widgets inside the parent's bare `{ }` children block, properties inside a widget block.
 
   A clean file produces no output. On a problem, Claude gets each `file:line` and its fix next to the edit result and corrects it in the same turn. On a mounted P:\ it reports no false alarms on the 1,087 vanilla and community `config.cpp` and `.layout` files there (a `.hpp` outside `workspace/`, such as `P:\DZ\data\basicdefines.hpp`, is not checked).
-- **Scope guard** (`hooks/scope_guard.py`, PreToolUse). While `/dayz-scope-mod <Mod>` is active (it writes `.claude/local-memory/dayz-active-scope.json`), any edit to another mod's `workspace/<Other>/`, `P:\<Other>\` or `P:\Mods\@<Other>\` is denied with a reason that names the active mod and how to change scope. It backs up the deny rules `/dayz-scope-mod` writes, and also covers mod folders created after the scope was set.
+- **Scope guard** (`hooks/scope_guard.py`, PreToolUse). While `/dayz-scope-mod <Mod>` is active (it writes `.claude/local-memory/dayz-active-scope.json`), any Edit, Write or MultiEdit to another mod's `workspace/<Other>/`, `P:\<Other>\` or `P:\Mods\@<Other>\`, and any Bash or PowerShell command whose redirect, copy, move, delete or in-place edit targets one, is denied with a reason that names the active mod and how to change scope. It backs up the deny rules `/dayz-scope-mod` writes, and also covers mod folders created after the scope was set: every other top-level `workspace/` folder counts as a mod, except helper folders whose names start with `_` (such as `workspace/_notes/`).
 
 A third hook, the **paste-in router** (`hooks/paste_router.py`, UserPromptSubmit), runs on every prompt and only adds context; it never blocks one. It looks at what was pasted:
 
@@ -133,7 +133,7 @@ Install writes `statusLine` into `.claude/settings.local.json` after backing the
 
 Two release workers are pinned to cheaper models in their frontmatter, each with a comment marking it as a deliberate cost decision:
 
-- `dayz-build-engineer` runs on `haiku`: it runs `/dayz-stop-test`, `/dayz-build-pbo`, `/dayz-add-server` and `/dayz-launch-test` in a fixed order and quotes their output.
+- `dayz-build-engineer` runs on `haiku`: it runs `/dayz-stop-test`, `/dayz-build-pbo`, `/dayz-deploy-pbo`, `/dayz-add-server` and `/dayz-launch-test` in a fixed order and quotes their output.
 - `dayz-docs-writer` runs on `sonnet`: it writes plain docs, but its classname list depends on reading `config.cpp` inheritance and `scope` correctly, which is more than Haiku should be trusted with.
 - `dayz-router` (piece 3) also runs on `haiku`.
 
@@ -228,6 +228,6 @@ Each run shows a toast when it finishes and keeps the result line (the first `[F
 | 34 skills | 12,848 | 9,246 |
 | 22 agents | 18,453 | 13,661 |
 
-Skills and agents added since then have brought the total back to about 32,600 characters (44 skills about 12,800; 30 agents about 19,800).
+Skills and agents added since then have brought the total back to about 35,100 characters (44 skills about 13,000; 30 agents about 22,100).
 
-**Limits:** twelve skill descriptions run 309 to 424 characters where cutting would drop a trigger phrase or a who-calls-whom fact (for example `dayz-p3d-audit`'s list of symptoms). Agent descriptions run 470 to 850 characters because each keeps one example.
+**Limits:** fourteen skill descriptions run 301 to 424 characters where cutting would drop a trigger phrase or a who-calls-whom fact (for example `dayz-p3d-audit`'s list of symptoms). Agent descriptions run 470 to 1,230 characters because each keeps one example.

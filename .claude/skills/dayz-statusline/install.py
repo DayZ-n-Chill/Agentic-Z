@@ -5,9 +5,14 @@ Run:
     python .claude/skills/dayz-statusline/install.py --remove   # undo
     python .claude/skills/dayz-statusline/install.py --status
 
-Install backs up settings.local.json to settings.local.json.bak first and
-records the statusLine it replaces in .claude/local-memory/, so --remove puts
-that one back.
+The project is $CLAUDE_PROJECT_DIR, else the nearest folder at or above the
+current one that holds a .claude folder (the home folder is never taken);
+with neither, it refuses and changes nothing.
+
+Install and remove first copy settings.local.json to a free backup name
+(settings.local.json.bak, then .2.bak, ...), so an older backup is never
+replaced. Install records the statusLine it replaces in .claude/local-memory/,
+so --remove puts that one back.
 """
 from __future__ import annotations
 
@@ -21,10 +26,30 @@ from typing import Optional
 
 STATUSLINE = Path(__file__).resolve().parent / "statusline.py"
 
-# Project dir: where Claude Code was started, as /dayz-scope-mod resolves it.
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
-SETTINGS_LOCAL = PROJECT_DIR / ".claude" / "settings.local.json"
-RECORD = PROJECT_DIR / ".claude" / "local-memory" / "dayz-statusline.json"
+
+def find_project_dir(start: Optional[Path] = None, home: Optional[Path] = None) -> Optional[Path]:
+    """$CLAUDE_PROJECT_DIR, else the nearest folder at or above `start` holding a .claude folder.
+
+    Stops below the home folder: ~/.claude/ is Claude Code's user config, not a
+    project. None when nothing is found, so the installer refuses instead of
+    creating a stray .claude/settings.local.json in a subfolder.
+    """
+    env = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env:
+        return Path(env).resolve()
+    start = (start or Path.cwd()).resolve()
+    home = (home or Path.home()).resolve()
+    for folder in (start, *start.parents):
+        if folder == home:
+            break
+        if (folder / ".claude").is_dir():
+            return folder
+    return None
+
+
+PROJECT_DIR = find_project_dir()
+SETTINGS_LOCAL = PROJECT_DIR / ".claude" / "settings.local.json" if PROJECT_DIR else None
+RECORD = PROJECT_DIR / ".claude" / "local-memory" / "dayz-statusline.json" if PROJECT_DIR else None
 
 OK = "[OK]   "
 FAIL = "[FAIL] "
@@ -66,6 +91,17 @@ def _load(path: Path) -> Optional[dict]:
     return data
 
 
+def _backup(path: Path) -> Path:
+    """Copy path to the first free <name>.bak, <name>.2.bak, ... and return it. Never replaces a backup."""
+    backup = path.with_name(f"{path.name}.bak")
+    n = 2
+    while backup.exists():
+        backup = path.with_name(f"{path.name}.{n}.bak")
+        n += 1
+    shutil.copy2(path, backup)
+    return backup
+
+
 def _write(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
@@ -81,13 +117,15 @@ def cmd_install() -> int:
         print(f"{OK} Status line already installed in {SETTINGS_LOCAL}")
         return 0
     if SETTINGS_LOCAL.exists():
-        shutil.copy2(SETTINGS_LOCAL, SETTINGS_LOCAL.with_name(SETTINGS_LOCAL.name + ".bak"))
-        print(f"{OK} Backed up settings to {SETTINGS_LOCAL.name}.bak")
+        print(f"{OK} Backed up settings to {_backup(SETTINGS_LOCAL).name}")
     if current is not None and not is_ours(current):
         # Keep the user's own status line so --remove can restore it.
         _write(RECORD, {"previous": current})
         print(f"{INFO} Replacing your existing status line; --remove puts it back")
-    elif current is None and not RECORD.exists():
+    elif current is None:
+        # Nothing to restore. Overwrite any stale record left from an earlier
+        # install whose statusLine was later deleted by hand, so --remove can
+        # never bring back a line the user already removed.
         _write(RECORD, {"previous": None})
     settings["statusLine"] = wanted
     _write(SETTINGS_LOCAL, settings)
@@ -104,9 +142,13 @@ def cmd_remove() -> int:
     if not is_ours(current):
         print(f"{INFO} The DayZ status line is not installed here. Nothing to remove.")
         return 0
-    record = _load(RECORD) if RECORD.exists() else {}
-    previous = (record or {}).get("previous")
-    shutil.copy2(SETTINGS_LOCAL, SETTINGS_LOCAL.with_name(SETTINGS_LOCAL.name + ".bak"))
+    record = _load(RECORD)
+    if record is None:
+        # A corrupt record may hold the user's own status line; deleting the key
+        # and the record would lose it, so stop before touching anything.
+        return 1
+    previous = record.get("previous")
+    print(f"{OK} Backed up settings to {_backup(SETTINGS_LOCAL).name}")
     if previous is not None:
         settings["statusLine"] = previous
         msg = "restored your previous status line"
@@ -130,7 +172,8 @@ def cmd_status() -> int:
     elif is_ours(current):
         print(f"{INFO} Installed from another path: {current.get('command')}. Run install.py again to update it.")
     elif current:
-        print(f"{INFO} A different status line is set: {current.get('command')}")
+        shown = current.get("command") if isinstance(current, dict) else current
+        print(f"{INFO} A different status line is set: {shown}")
     else:
         print(f"{INFO} No status line set in {SETTINGS_LOCAL}")
     return 0
@@ -142,6 +185,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     group.add_argument("--remove", action="store_true", help="Remove it (restores any status line it replaced)")
     group.add_argument("--status", action="store_true", help="Show what statusLine is set")
     args = parser.parse_args(argv)
+    if PROJECT_DIR is None:
+        print(f"{FAIL} No project found: no .claude folder at or above {Path.cwd()}.", file=sys.stderr)
+        print("        Run this from your project root (the folder Claude Code was started in). Nothing was changed.",
+              file=sys.stderr)
+        return 1
     if args.remove:
         return cmd_remove()
     if args.status:

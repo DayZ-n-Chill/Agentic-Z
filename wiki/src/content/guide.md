@@ -217,7 +217,7 @@ Each wave goes through these gates:
 
 Nothing reaches you until the mod builds, loads in game with clean logs and, when the plan lists behavior checks, passes the behavior test.
 
-The behavior and visual gates have been tested only with fixtures. They have not yet run in a live DayZ session.
+All four gates have run in a live DayZ session. On October 24, 2026 a three-retexture plate carrier mod was built end to end: the build, in-game, behavior (10 checks) and visual gates each passed.
 
 ![One wave of work](images/guide-01-5.svg)
 
@@ -258,7 +258,7 @@ These features move mechanical work out of the AI. The AI then spends tokens onl
 | Paste-in router | Reads what you paste and starts the matching workflow. | Automatic. See [Paste it in](#paste-it-in). |
 | Status line | Shows the state of P:, the active mod, whether DayZ Diag is running and the age of the search index. | Run `/dayz-statusline` once per project. |
 | Lower-cost models | The build engineer and the router run on Haiku. The docs writer runs on Sonnet. | Automatic. |
-| Smaller rules | The DayZ rules file is split into a 143-line core and five topic files of 24 to 56 lines. Most skills read only the core, which is 40% less than the old 239-line file. `/dayz-deploy-pbo` and `/dayz-gate` also read the bundle mods section of the config topic file. Each agent reads the core plus the topic files its job needs. With one topic file, an agent reads 17% to 30% less than before. With two, the result depends on which two. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and effects specialists (251 lines) read more, as does the mod reviewer, which reads three topic files (283 lines). | Automatic. |
+| Smaller rules | The DayZ rules file is split into a 143-line core and five topic files of 28 to 56 lines. Most skills read only the core, which is 40% less than the old 239-line file. `/dayz-deploy-pbo` and `/dayz-gate` also read the bundle mods section of the config topic file. Each agent reads the core plus the topic files its job needs. With one topic file, an agent reads 17% to 30% less than before. With two, the result depends on which two. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and effects specialists (251 lines) read more, as does the mod reviewer, which reads three topic files (283 lines). | Automatic. |
 | No-token wrappers | Provide a `.bat` file for every runnable skill, so you can run it yourself with no AI involved. | See `scripts\README.md`. |
 | Shorter descriptions | Every skill and agent description loads into every session. The descriptions were shortened to save about 2,100 tokens. | Automatic. |
 ### Each specialist in detail
@@ -397,17 +397,17 @@ Add-ons will follow these rules:
 
 The author does not set the grades. Separate AI reviewers grade every agent, skill and shared file against Anthropic's published best practices for Claude Code. The reviewers are Claude instances started fresh for the job. They see the files, the rubric and the standards, but never the earlier grades or the author's opinion. This is not an official Anthropic rating. It is a repeatable review that anyone can run again with the prompts below.
 
-Answer tests (evals) check 23 of the 30 agents, and a change may only keep or raise a score. Claude Code handles prompt caching on its own, so Agentic-Z has no rule or test of its own for it.
+Answer tests (evals) check 30 of the 30 agents, and a change may only keep or raise a score. Claude Code handles prompt caching on its own, so Agentic-Z has no rule or test of its own for it.
 
 ### The final count
 
-The final grades cover 163 items. All 163 are at A+: 30 of the 30 agents, 44 of the 44 skills and 89 of the 89 shared items. The shared items are the hooks, the search server, scripts and wrappers, answer tests, rules files, the shared reference packs and this method note.
+The final grades cover 193 items, and 192 are at A+: 30 of the 30 agents, 44 of the 44 skills and 118 of the 119 shared items. The shared items are the hooks, the search server, scripts and wrappers, answer tests, rules files, the shared reference packs and this method note. The one item below A+ is the Agentic-Z panel mod (`mods/agentic-z-panel`), at B+. It is a third-party piece, so it is kept exactly as it is and was not sent to the fixers.
 
-The final review graded every item. Fresh graders then regraded items after each fix round. Each item shows its latest grade. The grades come from `final_grades.json` and `final_grades_shared.json`. The `clean-repo` item was graded twice and counts once.
+The final review graded every item. Fresh graders then regraded items after each fix round. In the last rounds every reviewer also got the defect rule under "Run it yourself", so only concrete defects counted against an item, not feature requests. Each item shows its latest grade. The grades come from `final_grades.json` and `final_grades_shared.json`. The `clean-repo` item was graded twice and counts once.
 
 ### Who grades
 
-- **Independent reviewers:** each round starts new Claude reviewers with no memory of earlier rounds. The final review used six: two for the agents, three for the skills, and one for everything shared. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the shared reference packs and this note. A few shared files were not graded yet: nine answer test files, `expansion_style.md`, `examples/layouts.md`, the nine `enscript-style/` section files and `scripts/dev/test_dayz_search.py`.
+- **Independent reviewers:** each round starts new Claude reviewers with no memory of earlier rounds. The final rounds used seven: two for the agents, three for the skills, one for the shared files and one for the answer tests. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the shared reference packs and this note.
 - **Read-only access:** reviewers cannot edit files. They read every file, run the tests where the session allows it, and check claims against the code and the vanilla DayZ files on the P: drive. The skill reviewer for `dayz-launch-objectbuilder`, `dayz-launch-workbench` and `dayz-search-download` could not run pytest for them, because its session denied it. The reviewer stated this in its reasons.
 - **Separate fixers:** different agents fix the problems the reviewers find, and each fixer owns its own files. A fixer never grades its own work.
 - **Regrading:** new reviewers grade again after every fix round. An item counts as A+ only when an independent reviewer gives it A+.
@@ -416,7 +416,7 @@ The final review graded every item. Fresh graders then regraded items after each
 
 - **Anthropic's standards:** the Claude Code subagent documentation (code.claude.com/docs/en/sub-agents), the Agent Skills best practices (docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices), the Claude Code hooks reference (code.claude.com/docs/en/hooks) and the plugins reference (code.claude.com/docs/en/plugins-reference). For the search server, the reviewers also use the Model Context Protocol tool guidance.
 - **Agentic-Z's own rules:** `CLAUDE.md` (Tier 1), the DayZ rules file and its topic files (Tier 2), the agent standard in `agent-creator.md`, and `docs/prompt-conventions.md`.
-- **The real game:** DayZ facts are checked against the vanilla files on P:. Examples include which file holds CfgSurfaces, which texture suffixes exist, and which widget classes can be the root of a layout. Six Enforce Script worked examples (01, 04, 05, 06, 08 and 09) are still marked as vendored and have not been checked on P:.
+- **The real game:** DayZ facts are checked against the vanilla files on P:. Examples include which file holds CfgSurfaces, which texture suffixes exist, and which widget classes can be the root of a layout. The Enforce Script worked examples are checked on P: too, and a test keeps them in step with the vanilla files.
 
 ### The rubric for agents and skills
 
@@ -430,7 +430,7 @@ The final review graded every item. Fresh graders then regraded items after each
 
 ### The rubric for everything else
 
-The 90 shared items are neither agents nor skills, so the reviewer judges each kind of item against criteria suited to it.
+The 119 shared items are neither agents nor skills, so the reviewer judges each kind of item against criteria suited to it.
 
 | Kind of item | What the reviewer checks |
 | --- | --- |
@@ -439,7 +439,7 @@ The 90 shared items are neither agents nor skills, so the reviewer judges each k
 | Rules files | Every rule is true of the code, no rule repeats another tier, and every named path and skill exists. |
 | Specialist reference files | Each game fact cites a P: file and line or is marked as unverified, the cited lines hold when opened on P:, and nothing contradicts the checked references. |
 | Scripts, wrappers and repository tests | The tests run and pass, the documentation and help text match the code, and failures exit with a nonzero code and a clear message. |
-| Answer tests (evals) | The cases test what the agent is for, the runner and baselines match, and a change can only keep or raise a score. Answer tests cover 23 of the 30 agents. |
+| Answer tests (evals) | The cases test what the agent is for, the runner and baselines match, and a change can only keep or raise a score. Answer tests cover 30 of the 30 agents. |
 | This method note | The note states the rubric for every kind of item and gives the grading prompts. Every count, source and claim in it matches the repository and the grade files. |
 
 ### The scale
@@ -520,6 +520,12 @@ and final_grades_shared.json. Scale A+
 to D. A+ means nothing concrete left to fix. For anything lower, name a
 concrete defect a reader would actually hit.
 Output a table: Item | Grade | Why | To reach A+.
+```
+
+The final rounds added this defect rule after the prompt, word for word:
+
+```
+Defect rule (from the repository owner, applies to this grading): count only concrete defects: a wrong DayZ fact (checked on P:), a failing test, a doc, comment or help text that does not match the code, or a real bug a user would hit. Feature requests, extra tests for behavior that already works and is covered, optional hardening, refactors and style or wording preferences are NOT defects and must not lower the grade. An item with no concrete defect is A+. For anything lower, "To reach A+" names only the concrete defects, each with its file and line.
 ```
 
 Because each run uses a new reviewer, two runs can word their findings differently, and a stricter reviewer can find a new edge case. This is intended. The grading found real bugs, and each one was fixed and covered by a test.
@@ -619,7 +625,7 @@ Two values in the table are not grades. "Not built" means that the item did not 
 | `_shared/container-base.md` | not built | not built | A+ |
 | `_shared/py3d-mlod-notes.md` | not built | not built | A+ |
 | `_shared/skill_helpers.py + test_skill_helpers.py` | not built | not built | A+ |
-| `_shared/enscript-style.md` | not built | not built | A+ |
+| `_shared/enscript-style.md` | n/a | n/a | A+ |
 | `_shared/answer-formatting.md` | not built | not built | A+ |
 | Grading method note (the "How the grading works" section of this guide) | not built | not built | A+ |
 | `.claude/skills/_shared/README.md (index of shared reference folders)` | not built | not built | A+ |
@@ -668,6 +674,17 @@ Two values in the table are not grades. "Not built" means that the item did not 
 | `enscript/examples/02_custom_action_singleuse.c` | not built | not built | A+ |
 | `enscript/examples/03_continuous_action.c` | not built | not built | A+ |
 | `enscript/examples/10_modded_playerbase.c` | not built | not built | A+ |
+| `_shared/enscript-style/README.md` | not built | not built | A+ |
+| `_shared/enscript-style/best-practices.md` | not built | not built | A+ |
+| `_shared/enscript-style/control-flow-and-preprocessor.md` | not built | not built | A+ |
+| `_shared/enscript-style/debugging-and-errors.md` | not built | not built | A+ |
+| `_shared/enscript-style/layout-and-comments.md` | not built | not built | A+ |
+| `_shared/enscript-style/memory.md` | not built | not built | A+ |
+| `_shared/enscript-style/modding-patterns.md` | not built | not built | A+ |
+| `_shared/enscript-style/naming.md` | not built | not built | A+ |
+| `_shared/enscript-style/types.md` | not built | not built | A+ |
+| `enscript/examples/layouts.md` | not built | not built | A+ |
+| `enscript/integrations/expansion_style.md` | not built | not built | A+ |
 | **Hooks** | | | |
 | `hooks/hooks.json` | not built | not built | A+ |
 | `hooks/test_plugin_copy.py` | not built | not built | A+ |
@@ -675,6 +692,7 @@ Two values in the table are not grades. "Not built" means that the item did not 
 | `hooks/scope_guard.py (+ test_scope_guard.py)` | not built | not built | A+ |
 | `hooks/paste_router.py (+ test_paste_router.py)` | not built | not built | A+ |
 | `dayz-rag MCP server (server.py, voyage_common.py, README, tests)` | not built | not built | A+ |
+| `mods/agentic-z-panel (plugin.json, hooks.json, register.tsx, register.test.tsx, types)` | not built | not built | B+ |
 | **Answer tests (evals)** | | | |
 | `evals/baseline.json` | not built | not built | A+ |
 | `evals/fixtures/dayz-layout-validator/*.layout` | not built | not built | A+ |
@@ -695,6 +713,22 @@ Two values in the table are not grades. "Not built" means that the item did not 
 | `scripts/dev/test_run_evals.py` | not built | not built | A+ |
 | `evals/README.md` | not built | not built | A+ |
 | `scripts/dev/run_evals.py` | not built | not built | A+ |
+| `evals/questions/agent-creator.json` | not built | not built | A+ |
+| `evals/questions/dayz-build-checker.json` | not built | not built | A+ |
+| `evals/questions/dayz-build-engineer.json` | not built | not built | A+ |
+| `evals/questions/dayz-docs-writer.json` | not built | not built | A+ |
+| `evals/questions/dayz-ingame-tester.json` | not built | not built | A+ |
+| `evals/questions/dayz-lead.json` | not built | not built | A+ |
+| `evals/questions/dayz-map-specialist.json` | not built | not built | A+ |
+| `evals/questions/dayz-mod-architect.json` | not built | not built | A+ |
+| `evals/questions/dayz-mod-debugger.json` | not built | not built | A+ |
+| `evals/questions/dayz-orchestrator.json` | not built | not built | A+ |
+| `evals/questions/dayz-router.json` | not built | not built | A+ |
+| `evals/questions/dayz-server-admin.json` | not built | not built | A+ |
+| `evals/questions/dayz-ui-specialist.json` | not built | not built | A+ |
+| `evals/questions/dayz-workbench-specialist.json` | not built | not built | A+ |
+| `evals/questions/figma-node-normalizer.json` | not built | not built | A+ |
+| `evals/questions/figma-to-dayz-layout.json` | not built | not built | A+ |
 | **Scripts and repo tests** | | | |
 | `scripts/dev/evals.bat, clean-repo.bat, docs-sync.bat` | not built | not built | A+ |
 | `scripts/setup/preflight.bat, workdrive.bat, setup-objectbuilder.bat, statusline.bat, sync-skills.bat` | not built | not built | A+ |
@@ -704,6 +738,8 @@ Two values in the table are not grades. "Not built" means that the item did not 
 | `scripts/setup/agentic-z-update.bat` | not built | not built | A+ |
 | `scripts/dev/test_repo_integrity.py` | not built | not built | A+ |
 | `scripts/dayz/dayz-search.py` | not built | not built | A+ |
+| `.claude/skills/_shared/test_enscript_examples.py` | not built | not built | A+ |
+| `scripts/dev/test_dayz_search.py` | not built | not built | A+ |
 
 ## Where everything lives
 

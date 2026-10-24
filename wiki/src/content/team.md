@@ -99,22 +99,22 @@ The status column uses three values:
 
 | Feature | Status | What was checked |
 | --- | --- | --- |
-| Test suite | Works | `py -m pytest -q .claude scripts/dev hooks`, run in a clean worktree, collects 2,884 tests. The tests confirm that every agent and skill is registered, every file and skill they name exists, gates cannot edit, tier files match, and every wrapper points to a real script. |
+| Test suite | Works | `py -m pytest -q .claude scripts/dev hooks`, run in a clean worktree, collects 5,005 tests. The tests confirm that every agent and skill is registered, every file and skill they name exists, gates cannot edit, tier files match, and every wrapper points to a real script. |
 | CI on GitHub | Works | The tests workflow passed on GitHub. |
-| Answer tests (evals) | Works | 23 of the 30 agents have a question file and a score in `evals/baseline.json`. |
-| DayZ facts in the packs | Works | For every pack, the graders opened the cited lines on P:. Six Enforce Script examples are still marked as vendored and have not been checked. |
+| Answer tests (evals) | Works | All 30 agents have a question file and a score in `evals/baseline.json`. |
+| DayZ facts in the packs | Works | For every pack, the graders opened the cited lines on P:. The Enforce Script examples are checked on P: too, and a test keeps them in step with the vanilla files. |
 | RAG search: game files | Needs a step | The index on disk is the August 10, 2026 build (52,048 chunks). For the required steps, see Open items and decisions. |
-| Orchestrator, leads, gates in a real session | Not run yet | See Open items and decisions. |
-| Behavior and visual gates | Not run yet | Tested with fixtures only. See Open items and decisions. |
+| Orchestrator, leads, gates in a real session | Works | On October 24, 2026 the orchestrator built a three-retexture plate carrier mod from plan to tested PBO. The run found six bugs, and each was fixed with a test. |
+| Behavior and visual gates | Works | Both ran in the same live session. All 10 behavior checks passed, and the visual gate compared a capture with its baseline. |
 ## Quality by version
 
-The final grades cover 163 items, and all 163 are at A+: 30 of the 30 agents, 44 of the 44 skills and 89 of the 89 shared items. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and the grading method note. The final review graded every item, and each item shows its latest grade. The grades come from `final_grades.json` and `final_grades_shared.json`. The `clean-repo` skill was graded twice and counts once.
+The final grades cover 193 items, and 192 are at A+: 30 of the 30 agents, 44 of the 44 skills and 118 of the 119 shared items. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and the grading method note. The final review graded every item, and each item shows its latest grade. The grades come from `final_grades.json` and `final_grades_shared.json`. The `clean-repo` skill was graded twice and counts once. The one item below A+ is the Agentic-Z panel mod (`mods/agentic-z-panel`), at B+. It is a third-party piece, so it is kept exactly as it is and was not sent to the fixers.
 
 Independent reviewers graded every agent and skill at v1.6.0, at v1.7.0 and in the current Agentic-Z (see "How the grading works"). All three columns are their grades, and the final column is the final grade, not a target. The final grades also cover the hooks, the search server, the scripts, the answer tests and every shared reference folder under `_shared/`. An item that did not exist yet at a version shows "not built". A shared file that was not graded at a version shows "n/a".
 
 ![Agentic-Z versions and grades](images/team-02-1.svg)
 
-The test suite grew from 84 tests at v1.6.0 to 2,884 tests now.
+The test suite grew from 85 tests at v1.6.0 to 5,005 tests now.
 
 | Item | v1.6.0 released | v1.7.0 agent team | v2.0.0 final |
 | --- | --- | --- | --- |
@@ -204,7 +204,7 @@ The test suite grew from 84 tests at v1.6.0 to 2,884 tests now.
 | `_shared/container-base.md` | not built | not built | A+ |
 | `_shared/py3d-mlod-notes.md` | not built | not built | A+ |
 | `_shared/skill_helpers.py + test_skill_helpers.py` | not built | not built | A+ |
-| `_shared/enscript-style.md` | not built | not built | A+ |
+| `_shared/enscript-style.md` | n/a | n/a | A+ |
 | `_shared/answer-formatting.md` | not built | not built | A+ |
 | Grading method note (the "How the grading works" section of this document) | not built | not built | A+ |
 | `.claude/skills/_shared/README.md (shared file index)` | not built | not built | A+ |
@@ -253,6 +253,17 @@ The test suite grew from 84 tests at v1.6.0 to 2,884 tests now.
 | `enscript/examples/02_custom_action_singleuse.c` | not built | not built | A+ |
 | `enscript/examples/03_continuous_action.c` | not built | not built | A+ |
 | `enscript/examples/10_modded_playerbase.c` | not built | not built | A+ |
+| `_shared/enscript-style/README.md` | not built | not built | A+ |
+| `_shared/enscript-style/best-practices.md` | not built | not built | A+ |
+| `_shared/enscript-style/control-flow-and-preprocessor.md` | not built | not built | A+ |
+| `_shared/enscript-style/debugging-and-errors.md` | not built | not built | A+ |
+| `_shared/enscript-style/layout-and-comments.md` | not built | not built | A+ |
+| `_shared/enscript-style/memory.md` | not built | not built | A+ |
+| `_shared/enscript-style/modding-patterns.md` | not built | not built | A+ |
+| `_shared/enscript-style/naming.md` | not built | not built | A+ |
+| `_shared/enscript-style/types.md` | not built | not built | A+ |
+| `enscript/examples/layouts.md` | not built | not built | A+ |
+| `enscript/integrations/expansion_style.md` | not built | not built | A+ |
 | Hooks | | | |
 | `hooks/hooks.json` | not built | not built | A+ |
 | `hooks/test_plugin_copy.py` | not built | not built | A+ |
@@ -260,6 +271,7 @@ The test suite grew from 84 tests at v1.6.0 to 2,884 tests now.
 | `hooks/scope_guard.py (+ test_scope_guard.py)` | not built | not built | A+ |
 | `hooks/paste_router.py (+ test_paste_router.py)` | not built | not built | A+ |
 | `dayz-rag MCP server (server.py, voyage_common.py, README, tests)` | not built | not built | A+ |
+| `mods/agentic-z-panel (plugin.json, hooks.json, register.tsx, register.test.tsx, types)` | not built | not built | B+ |
 | Answer tests (evals) | | | |
 | `evals/baseline.json` | not built | not built | A+ |
 | `evals/fixtures/dayz-layout-validator/*.layout` | not built | not built | A+ |
@@ -280,6 +292,22 @@ The test suite grew from 84 tests at v1.6.0 to 2,884 tests now.
 | `scripts/dev/test_run_evals.py` | not built | not built | A+ |
 | `evals/README.md` | not built | not built | A+ |
 | `scripts/dev/run_evals.py` | not built | not built | A+ |
+| `evals/questions/agent-creator.json` | not built | not built | A+ |
+| `evals/questions/dayz-build-checker.json` | not built | not built | A+ |
+| `evals/questions/dayz-build-engineer.json` | not built | not built | A+ |
+| `evals/questions/dayz-docs-writer.json` | not built | not built | A+ |
+| `evals/questions/dayz-ingame-tester.json` | not built | not built | A+ |
+| `evals/questions/dayz-lead.json` | not built | not built | A+ |
+| `evals/questions/dayz-map-specialist.json` | not built | not built | A+ |
+| `evals/questions/dayz-mod-architect.json` | not built | not built | A+ |
+| `evals/questions/dayz-mod-debugger.json` | not built | not built | A+ |
+| `evals/questions/dayz-orchestrator.json` | not built | not built | A+ |
+| `evals/questions/dayz-router.json` | not built | not built | A+ |
+| `evals/questions/dayz-server-admin.json` | not built | not built | A+ |
+| `evals/questions/dayz-ui-specialist.json` | not built | not built | A+ |
+| `evals/questions/dayz-workbench-specialist.json` | not built | not built | A+ |
+| `evals/questions/figma-node-normalizer.json` | not built | not built | A+ |
+| `evals/questions/figma-to-dayz-layout.json` | not built | not built | A+ |
 | Scripts and repo tests | | | |
 | `scripts/dev/evals.bat, clean-repo.bat, docs-sync.bat` | not built | not built | A+ |
 | `scripts/setup/preflight.bat, workdrive.bat, setup-objectbuilder.bat, statusline.bat, sync-skills.bat` | not built | not built | A+ |
@@ -289,6 +317,8 @@ The test suite grew from 84 tests at v1.6.0 to 2,884 tests now.
 | `scripts/setup/agentic-z-update.bat` | not built | not built | A+ |
 | `scripts/dev/test_repo_integrity.py` | not built | not built | A+ |
 | `scripts/dayz/dayz-search.py` | not built | not built | A+ |
+| `.claude/skills/_shared/test_enscript_examples.py` | not built | not built | A+ |
+| `scripts/dev/test_dayz_search.py` | not built | not built | A+ |
 
 ## How the grading works
 
@@ -298,7 +328,7 @@ The final grade count opens the "Quality by version" section.
 
 ### Who grades
 
-- Each round starts new, independent Claude reviewers with no memory of earlier rounds. The final review used six reviewers: two for the agents, three for the skills and one for all shared items. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and this method note. For the files that were not graded, see "Files not graded" under "Open items and decisions".
+- Each round starts new, independent Claude reviewers with no memory of earlier rounds. The final rounds used seven reviewers: two for the agents, three for the skills, one for the shared files and one for the answer tests. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and this method note. Every item has been graded. In the final rounds each reviewer also got a defect rule, so only concrete defects counted against an item: a wrong DayZ fact, a failing test, a doc that does not match the code, or a real bug.
 - Reviewers are read-only and cannot edit files. They read every file, run the tests where the session allows it, and check claims against the code and the vanilla DayZ files on the P: drive. One skill reviewer could not run pytest because its session denied it. It said so in its reasons for the three skills it graded that way: `dayz-launch-objectbuilder`, `dayz-launch-workbench` and `dayz-search-download`.
 - Separate fixers correct what the reviewers find. The fixers are different agents, and each one owns its own files. A fixer never grades its own work.
 - New reviewers grade again after every fix round. An item counts as A+ only when an independent reviewer gives it A+.
@@ -320,7 +350,7 @@ The final grade count opens the "Quality by version" section.
 
 ### The rubric for everything else
 
-The 90 shared items are neither agents nor skills, so reviewers judge each type of item by its own purpose.
+The 119 shared items are neither agents nor skills, so reviewers judge each type of item by its own purpose.
 
 | Item type | What the reviewer checks |
 | --- | --- |
@@ -425,7 +455,7 @@ Every token saver and workflow in this section is new. Each one is built and tes
 | Hooks | The three hooks are described in What Agentic-Z gives an AI agent. |
 | Status line | Status line with no token cost (`/dayz-statusline`). |
 | Cheaper models | The build engineer and the router run on Haiku, and the docs writer runs on Sonnet. |
-| Smaller rules loading | The DayZ rules core is 143 lines, and each of the five topic files is 24 to 56 lines (see [The three tiers of rules](#the-three-tiers-of-rules)). Most skills read only the core, which is 40% less than the old 239-line file. `/dayz-deploy-pbo` and `/dayz-gate` also read the bundle mods section of the config topic file. An agent that reads one topic file loads 17% to 30% less than before. With two topic files, the result depends on the pair. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and FX specialists (251 lines) read more, as does the mod reviewer with three topic files (283 lines). |
+| Smaller rules loading | The DayZ rules core is 143 lines, and each of the five topic files is 28 to 56 lines (see [The three tiers of rules](#the-three-tiers-of-rules)). Most skills read only the core, which is 40% less than the old 239-line file. `/dayz-deploy-pbo` and `/dayz-gate` also read the bundle mods section of the config topic file. An agent that reads one topic file loads 17% to 30% less than before. With two topic files, the result depends on the pair. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and FX specialists (251 lines) read more, as does the mod reviewer with three topic files (283 lines). |
 | Wrappers | A `.bat` wrapper for every runnable skill runs its script directly. |
 | Shorter descriptions | Every session loads about 2,100 fewer tokens. |
 
@@ -467,18 +497,11 @@ New specialists build on Agentic-Z, which remains the base. The team loop is unc
 
 | Item | Status | Next step |
 | --- | --- | --- |
-| Live DayZ checks | Still outstanding. Nothing in this build has run against a live DayZ session. This includes the team loop, the in-game, behavior and visual gates. | Build one small mod end to end with DayZ running on the user's PC. The user will be asked before this runs. |
-| Answer tests for seven agents | The build checker, in-game tester, architect, lead, orchestrator, router and Figma to layout agent have no question file yet. | Write their question files and record a baseline. |
-| Files not graded | Nine answer test files, `expansion_style.md`, `examples/layouts.md` and the nine `enscript-style/` section files have no grade yet. | Grade them in the next independent round. |
-| Preflight exception list | `docs/dayz-modding.md` still lists five, which no longer matches the DayZ rules file (see The skills). | Bring `docs/dayz-modding.md` in line with the rules file. |
 | RAG search | The installed plugin (1.6.0) has the search timeout bug. The fix is in the current Agentic-Z. | The updated plugin, a Voyage API key in `.env`, and a full re-index. |
 
 ### Roadmap
 
-1. **Live DayZ checks.** See Open items and decisions.
-2. **Answer tests for the last seven agents.** See Open items and decisions.
-3. **Grade the files not yet graded.** See Open items and decisions.
-4. **Add-ons plugin.** An optional `agentic-z-addons` plugin for outside tools. It will be built only after the core is complete, and only for the add-ons the user names.
+1. **Add-ons plugin.** An optional `agentic-z-addons` plugin for outside tools. It will be built only after the core is complete, and only for the add-ons the user names.
 
 ## What changed from Agentic-Z 1.6.0
 

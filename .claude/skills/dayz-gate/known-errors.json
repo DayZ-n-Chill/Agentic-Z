@@ -90,6 +90,15 @@
     "source": "dayz-build-pbo SKILL.md (workspace check)"
   },
   {
+    "id": "lint-pboprefix-encoding",
+    "scope": "lint",
+    "pattern": "^\\[lint:pboprefix-encoding\\] ",
+    "meaning": "$PBOPREFIX$ is not plain ASCII or UTF-8 text (often UTF-16, which Windows PowerShell 5.1 writes for `echo <ModName> > $PBOPREFIX$`), so its prefix cannot be read.",
+    "fix": "Save workspace/<ModName>/$PBOPREFIX$ as plain ASCII or UTF-8 holding only the single line <ModName>, for example in PowerShell: Set-Content -Encoding ascii -Path '$PBOPREFIX$' -Value <ModName>.",
+    "owner_agent": "dayz-config-specialist",
+    "source": "dayz-lint SKILL.md"
+  },
+  {
     "id": "lint-pboprefix-mismatch",
     "scope": "lint",
     "pattern": "^\\[lint:pboprefix-mismatch\\] ",

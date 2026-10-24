@@ -44,8 +44,27 @@ WRONG = "wrong"      # present, left unchanged, but holds content a later skill 
 _nm = h.load_module("dayz_new_mod_module", NEW_MOD)
 
 
+def _wrong_kind(path: Path, shown: str, want_dir: bool) -> bool:
+    """Warn and return True when `path` exists but is not the kind the piece needs.
+
+    A file where a folder belongs (or a folder where a file belongs) would make
+    mkdir or read_text raise; it is left unchanged and reported as needing a fix.
+    lexists also catches a broken link, which mkdir would trip over too.
+    """
+    if not os.path.lexists(path):
+        return False
+    if path.is_dir() if want_dir else path.is_file():
+        return False
+    print(f"{WARN} {shown} exists as a {'file' if want_dir else 'folder'}, "
+          f"not a {'folder' if want_dir else 'file'} (left unchanged)")
+    print("       Move or rename it, then re-run.")
+    return True
+
+
 def add_config(target: Path, modname: str, get_author) -> str:
     f = target / "config.cpp"
+    if _wrong_kind(f, "config.cpp", want_dir=False):
+        return WRONG
     if f.exists():
         print(f"{SKIP} config.cpp present")
         return PRESENT
@@ -60,10 +79,20 @@ def add_config(target: Path, modname: str, get_author) -> str:
 
 def add_prefix(target: Path, modname: str) -> str:
     f = target / "$PBOPREFIX$"
+    if _wrong_kind(f, "$PBOPREFIX$", want_dir=False):
+        return WRONG
     if f.exists():
         # Read it the way /dayz-build-pbo's gate_on_prefix does (BOM and
         # surrounding whitespace ignored), so the warning matches its refusal.
-        prefix = f.read_text(encoding="utf-8-sig").strip()
+        try:
+            prefix = f.read_text(encoding="utf-8-sig").strip()
+        except UnicodeDecodeError:
+            # Not UTF-8 (e.g. saved as ANSI with an accented character): it
+            # cannot hold the ASCII <ModName>, and /dayz-build-pbo cannot read it.
+            print(f"{WARN} $PBOPREFIX$ present but is not UTF-8 text (left unchanged)")
+            print(f"       Save it as UTF-8 holding the single line {modname}; /dayz-build-pbo")
+            print("       will refuse to build until then.")
+            return WRONG
         if prefix != modname:
             print(f"{WARN} $PBOPREFIX$ present but holds {prefix!r}, not {modname!r} (left unchanged)")
             print("       /dayz-build-pbo will refuse to build until the file holds the single")
@@ -78,6 +107,8 @@ def add_prefix(target: Path, modname: str) -> str:
 
 def add_readme(target: Path, modname: str, get_author) -> str:
     f = target / "README.md"
+    if _wrong_kind(f, "README.md", want_dir=False):
+        return WRONG
     if f.exists():
         print(f"{SKIP} README.md present")
         return PRESENT
@@ -94,18 +125,32 @@ def add_skeleton(target: Path) -> str:
     folders = ("scripts/3_Game", "scripts/4_World", "scripts/5_Mission", "data", "gui")
     added = 0
     present = 0
+    blocked: list[str] = []  # e.g. "scripts", a file blocking all three scripts/ folders
     for sub in folders:
+        # Check each level (scripts, then scripts/3_Game): a file at any of them
+        # would make mkdir raise instead of creating the folder.
+        parts = sub.split("/")
+        levels = ["/".join(parts[:i]) for i in range(1, len(parts) + 1)]
+        blocker = next((lv for lv in levels if lv in blocked
+                        or _wrong_kind(target / lv, lv, want_dir=True)), None)
+        if blocker is not None:
+            if blocker not in blocked:
+                blocked.append(blocker)
+            continue
         folder = target / sub
-        if folder.exists():
+        if folder.is_dir():
             present += 1
             continue
         folder.mkdir(parents=True)
         (folder / ".gitkeep").write_text("", encoding="utf-8")
         added += 1
-    if added == 0:
+    if added:
+        print(f"{OK} Skeleton folders created ({added} added, {present} already present)")
+    elif not blocked:
         print(f"{SKIP} Skeleton folders all present")
         return PRESENT
-    print(f"{OK} Skeleton folders created ({added} added, {present} already present)")
+    if blocked:
+        return WRONG
     return ADDED
 
 
@@ -121,11 +166,23 @@ def add_workbench(target: Path, modname: str) -> str:
     gproj = workbench_dir / "dayz.gproj"
     setting = workbench_dir / "DayZSetting.xml"
 
+    if _wrong_kind(workbench_dir, "workbench", want_dir=True):
+        return WRONG
+    if any([_wrong_kind(f, f"workbench/{f.name}", want_dir=False) for f in (gproj, setting)]):
+        return WRONG
+
     if gproj.exists() and setting.exists():
         print(f"{SKIP} workbench/ present (dayz.gproj + DayZSetting.xml)")
         return PRESENT
 
     tools_root = _nm.find_dayz_tools()
+    if tools_root is None and gproj.exists():
+        # The gproj is the piece's purpose and it is already here; only the
+        # xml is missing, so report the piece as present with a warning.
+        print(f"{SKIP} workbench/dayz.gproj present")
+        print(f"{WARN} workbench/DayZSetting.xml missing and not copied - DayZ Tools not detected")
+        print("       Re-run after installing DayZ Tools to add it.")
+        return PRESENT
     if tools_root is None:
         print(f"{WARN} workbench/ skipped - DayZ Tools not detected")
         print("       Re-run after installing DayZ Tools, or copy")
@@ -163,8 +220,11 @@ def add_workbench(target: Path, modname: str) -> str:
 
     # The gproj is the piece's purpose: copying only DayZSetting.xml (vanilla
     # dayz.gproj missing from DayZ Tools) still leaves Workbench unopenable,
-    # so it counts as skipped and `--piece workbench` exits 1.
-    return ADDED if wrote_anything and gproj.exists() else SKIPPED
+    # so it counts as skipped and `--piece workbench` exits 1. A gproj that
+    # was already here with only the xml uncopyable counts as present.
+    if not gproj.exists():
+        return SKIPPED
+    return ADDED if wrote_anything else PRESENT
 
 
 def add_junction(target: Path, modname: str) -> str:
@@ -251,8 +311,9 @@ def main() -> int:
     parser.add_argument("--author", help="Author handle (cached for future runs).")
     args = parser.parse_args()
 
-    h.gate_on_preflight()
+    # A mistyped name fails before the slower preflight runs.
     _nm.validate_name(args.modname)
+    h.gate_on_preflight()
 
     target = h.resolve_project_dir() / "workspace" / args.modname
     rel = _display(target)
@@ -270,8 +331,9 @@ def main() -> int:
     # Resolve the author before writing anything, so a missing handle (no
     # flag, no cache, no TTY) exits with the folder untouched rather than
     # after some pieces were already written.
+    author = None
     if any(p in AUTHOR_PIECES and not (target / AUTHOR_PIECES[p]).exists() for p in pieces):
-        get_author()
+        author = get_author()
 
     print()
     print(f"Scaffolding {rel}{os.sep}")
@@ -279,6 +341,10 @@ def main() -> int:
 
     results = [add_piece(piece, target, args.modname, get_author) for piece in pieces]
     added, present, skipped, wrong = (results.count(s) for s in (ADDED, PRESENT, SKIPPED, WRONG))
+    if author is not None:
+        # Cache the handle only now that the pieces using it are written, as
+        # /dayz-new-mod does, so a refused run never replaces the cached one.
+        _nm.remember_author(author)
 
     print()
     if args.piece == JUNCTION:

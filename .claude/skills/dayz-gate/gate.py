@@ -5,10 +5,10 @@
                  [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json]
   gate.py behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>]
                  [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX]
-                 [--prepare-only | --logs FILE ...] [--yes] [--json]
+                 [--prepare-only | --logs [FILE ...]] [--yes] [--json]
   gate.py visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N]
                  [--timeout S] [--threshold R] [--ready-pattern REGEX]
-                 [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--yes] [--json]
+                 [--compare [DIR] | --accept [DIR] [--shot ID ... [--replace-failed]]] [--yes] [--json]
 
 Every mode that packs or launches stops a running DayZDiag session first
 (build only once lint passes; a session the gate did not start is stopped only
@@ -528,6 +528,19 @@ def gate_ingame(
     return finish(report, project_dir, {"instance": instance})
 
 
+def required_deps(identity: ModIdentity, mod_dir: Path, deps: list[str]) -> list[str]:
+    """`deps` without '@', or GateError when config.cpp needs non-vanilla addons and none were given."""
+    deps = [d.lstrip("@") for d in deps]
+    missing_deps = non_vanilla_addons(identity)
+    if missing_deps and not deps and not bundle_layout(mod_dir)[1]:
+        raise GateError(
+            f"config.cpp requires non-vanilla addons {missing_deps} but no --deps were given. "
+            "Map each to the @mod under P:\\Mods\\ that ships it and pass them in load order, "
+            "for example --deps CF."
+        )
+    return deps
+
+
 def ingame_session(
     mod: str,
     project_dir: Path,
@@ -549,14 +562,7 @@ def ingame_session(
     report = new_report(mode, mod)
     mod_dir = project_dir / "workspace" / mod
     identity = mod_identity(mod, mod_dir)
-    deps = [d.lstrip("@") for d in deps]
-    missing_deps = non_vanilla_addons(identity)
-    if missing_deps and not deps and not bundle_layout(mod_dir)[1]:
-        raise GateError(
-            f"config.cpp requires non-vanilla addons {missing_deps} but no --deps were given. "
-            "Map each to the @mod under P:\\Mods\\ that ships it and pass them in load order, "
-            "for example --deps CF."
-        )
+    deps = required_deps(identity, mod_dir, deps)
     ready_re = re.compile(ready_pattern)
     server_dir = project_dir / ".server" / instance / "Profiles"
     client_dir = project_dir / ".server" / "!ClientDiagLogs"
@@ -930,6 +936,8 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     offline.add_argument("--accept", nargs="?", const=True, type=Path, metavar="DIR",
                          help="Make captures the new baselines (no folder: the newest run).")
     s.add_argument("--shot", nargs="+", metavar="ID", help="--accept: only these shots.")
+    s.add_argument("--replace-failed", action="store_true",
+                   help="--accept --shot: also accept these shots when their capture FAILs against the current baseline.")
     s.add_argument("--json", action="store_true")
     s.add_argument("--yes", action="store_true", help=YES_HELP)
     try:
@@ -946,6 +954,8 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
             re.compile(args.ready_pattern)
         if args.mode == "visual" and args.shot and args.accept is None:
             raise GateError("--shot works with --accept only")
+        if args.mode == "visual" and args.replace_failed and not (args.accept is not None and args.shot):
+            raise GateError("--replace-failed works with --accept --shot <id> only, so each changed look is named")
         if args.mode == "visual" and args.threshold is not None and not 0 <= args.threshold <= 1:
             raise GateError("--threshold must be from 0 to 1")
         project_dir = h.resolve_project_dir()
@@ -955,11 +965,12 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
         if args.mode == "build":
             report = gate_build(args.mod, project_dir, rt)
         elif args.mode == "behavior" and args.prepare_only:
-            return _prepared(args.mod, project_dir, args.checks, args.server, args.json)
+            return _prepared(args.mod, project_dir, args.checks, args.server, args.deps, args.json)
         elif args.mode == "behavior" and args.logs is not None:
             report = gate_behavior_logs(args.mod, project_dir, args.checks, args.server, args.logs)
         elif args.mode == "visual" and args.accept is not None:
-            return _accepted(args.mod, project_dir, args.shots, args.accept, args.shot, args.json)
+            return _accepted(args.mod, project_dir, args.shots, args.accept, args.shot, args.threshold,
+                             args.replace_failed, args.json)
         elif args.mode == "visual" and args.compare is not None:
             report = gate_visual_compare(args.mod, project_dir, args.shots, _dir_arg(args.compare), args.threshold)
         elif args.mode == "visual":
@@ -988,17 +999,22 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     return 0 if report["verdict"] == "PASS" else 1
 
 
-def _prepared(mod: str, project_dir: Path, checks_path: Optional[Path], instance: str, as_json: bool) -> int:
-    """--prepare-only: write the copy, print PREPARED and how to run it by hand."""
+def _prepared(mod: str, project_dir: Path, checks_path: Optional[Path], instance: str, deps: list[str],
+              as_json: bool) -> int:
+    """--prepare-only: write the copy, print PREPARED and the launch command, dependency mods first."""
     checks = behavior.load_checks(checks_path or behavior.default_checks_path(project_dir, mod))
+    mod_dir = project_dir / "workspace" / mod
+    deps = required_deps(mod_identity(mod, mod_dir), mod_dir, deps)  # before writing anything
     prepared = behavior.prepare_instance(project_dir, instance, checks)
-    info = {"verdict": "PREPARED", "instance": prepared["instance"], "init": _rel(prepared["init"], project_dir), "checks": len(checks)}
+    launch = " ".join(["/dayz-launch-test", *deps, mod, "--server", prepared["instance"]])
+    info = {"verdict": "PREPARED", "instance": prepared["instance"], "init": _rel(prepared["init"], project_dir),
+            "checks": len(checks), "launch": launch}
     print("PREPARED")
     if as_json:
         print(json.dumps(info, indent=2))
     else:
         print(f"  instance {info['instance']}: {info['checks']} checks in {info['init']}")
-        print(f"  run: /dayz-launch-test {mod} --server {info['instance']}, then gate.py behavior {mod} --logs")
+        print(f"  run: {launch}, then gate.py behavior {mod} --logs")
     return 0
 
 
@@ -1008,15 +1024,26 @@ def _dir_arg(value: object) -> Optional[Path]:
 
 
 def _accepted(mod: str, project_dir: Path, shots_path: Optional[Path], run_dir: object,
-              only: Optional[list[str]], as_json: bool) -> int:
-    """--accept: copy captures into the baseline folder, print ACCEPTED."""
+              only: Optional[list[str]], threshold: Optional[float], replace_failed: bool, as_json: bool) -> int:
+    """--accept: back up and replace baselines with captures, print ACCEPTED."""
     spec = visual.load_shots(shots_path or visual.default_shots_path(project_dir, mod))
     run_dir = _dir_arg(run_dir) or visual.latest_run_dir(project_dir, mod)
-    done = visual.accept(spec, run_dir, visual.baseline_dir(project_dir, mod), only)
-    info = {"verdict": "ACCEPTED", "shots": done, "from": _rel(run_dir, project_dir),
-            "baseline": _rel(visual.baseline_dir(project_dir, mod), project_dir)}
+    if not run_dir.is_dir():
+        raise GateError(f"no folder {run_dir}")
+    result = visual.accept(spec, run_dir, visual.baseline_dir(project_dir, mod), only, threshold, replace_failed)
+    done = result["accepted"]
+    info = {"verdict": "ACCEPTED", "shots": done, "skipped": result["skipped"], "from": _rel(run_dir, project_dir),
+            "baseline": _rel(visual.baseline_dir(project_dir, mod), project_dir),
+            "backups": {sid: _rel(p, project_dir) for sid, p in result["backups"].items()}}
     print("ACCEPTED")
-    print(json.dumps(info, indent=2) if as_json else f"  {len(done)} baseline(s) in {info['baseline']}: {', '.join(done)}")
+    if as_json:
+        print(json.dumps(info, indent=2))
+    else:
+        print(f"  {len(done)} baseline(s) in {info['baseline']}: {', '.join(done)}")
+        if info["skipped"]:
+            print(f"  skipped, no capture in {info['from']}: {', '.join(info['skipped'])} (baseline unchanged)")
+        for sid, path in info["backups"].items():
+            print(f"  previous {sid} kept at {path}")
     return 0
 
 

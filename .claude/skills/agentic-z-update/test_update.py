@@ -55,6 +55,17 @@ class TestClassifyPerFile(unittest.TestCase):
         result = classify_per_file(baseline=None, local=b"my new agent", upstream=None)
         self.assertEqual(result, FileStatus.LOCAL_ONLY_EDIT)
 
+    def test_conflict_when_untracked_local_file_sits_where_upstream_adds_one(self):
+        # The dirty-tree gate ignores untracked files because of this case: a file
+        # the user created at a path upstream now adds must be a conflict, never
+        # a NEW that would overwrite it.
+        result = classify_per_file(baseline=None, local=b"my file", upstream=b"upstream file")
+        self.assertEqual(result, FileStatus.CONFLICT)
+
+    def test_unchanged_when_untracked_local_file_matches_what_upstream_adds(self):
+        result = classify_per_file(baseline=None, local=b"same", upstream=b"same")
+        self.assertEqual(result, FileStatus.UNCHANGED)
+
     def test_skip_when_all_three_missing(self):
         # All missing → nothing to do (defensive case; shouldn't normally arise)
         result = classify_per_file(baseline=None, local=None, upstream=None)

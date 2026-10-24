@@ -11,7 +11,7 @@
       "must_not_include": [
         "dayz-workbench-specialist"
       ],
-      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-launch-workbench opens Workbench; dayz-workbench-specialist writes plugins and never opens it, .claude/agents/dayz-workbench-specialist.md:29)"
+      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-launch-workbench opens Workbench; dayz-workbench-specialist writes plugins and never opens it, .claude/agents/dayz-workbench-specialist.md, Rules: never open Workbench yourself)"
     },
     {
       "id": "add-test-server-instance",
@@ -82,6 +82,17 @@
         "dayz-health"
       ],
       "verified": ".claude/agents/dayz-router.md Valid routes (dayz-init is the status hub; .claude/skills/dayz-init/SKILL.md description)"
+    },
+    {
+      "id": "mod-changelog-file-is-docs-writer",
+      "question": "Answer only, do not edit any file. Route this request: add a 1.1 entry to the CHANGELOG.md in my MyVest mod folder.",
+      "must_include": [
+        "re:\"route\"\\s*:\\s*\"dayz-docs-writer\""
+      ],
+      "must_not_include": [
+        "dayz-release-pack"
+      ],
+      "verified": ".claude/agents/dayz-docs-writer.md (edits workspace/<ModName>/CHANGELOG.md); .claude/skills/dayz-release-pack/release_pack.py:6 (writes generated texts to output/<ModName>-release/)"
     }
   ]
 }

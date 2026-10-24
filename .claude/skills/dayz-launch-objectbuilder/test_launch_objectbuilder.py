@@ -47,6 +47,41 @@ def test_missing_file_exits(tmp_path):
     assert "does not exist" in str(exc.value.code)
 
 
+def test_folder_passed_as_file_exits(tmp_path, capsys):
+    """A folder must never reach ObjectBuilder.exe: it opens model files, not folders."""
+    folder = tmp_path / "models"
+    folder.mkdir()
+    with pytest.raises(SystemExit) as exc:
+        ob.resolve_target(str(folder), None)
+    msg = str(exc.value.code)
+    assert "--file is a folder" in msg and "Pass a .p3d file" in msg
+    assert "not a .p3d" not in capsys.readouterr().out  # no misleading extension warning
+
+
+def test_main_with_file_passes_the_resolved_p3d_to_objectbuilder(tmp_path, monkeypatch):
+    exe = _fake_exe(tmp_path / "tools")
+    _fake_launch_env(tmp_path / "tools", monkeypatch)
+    monkeypatch.setattr(ob, "PROJECT_DIR", tmp_path)
+    model = tmp_path / "data" / "model.p3d"
+    model.parent.mkdir()
+    model.write_bytes(b"")
+    spawned = {}
+
+    class FakePopen:
+        pid = 4242
+
+        def __init__(self, cmd, **kwargs):
+            spawned["cmd"] = cmd
+
+        def poll(self):
+            return None
+
+    monkeypatch.setattr(ob.subprocess, "Popen", FakePopen)
+    monkeypatch.setattr("sys.argv", ["launch.py", "--file", "data/model.p3d"])
+    assert ob.main() == 0
+    assert spawned["cmd"] == [str(exe), str(model.resolve())]
+
+
 def test_non_p3d_file_warns(tmp_path, capsys):
     other = tmp_path / "model.obj"
     other.write_bytes(b"")
@@ -64,12 +99,38 @@ def test_mod_target_is_the_one_p3d_in_data(tmp_path, monkeypatch):
     assert target == model and target.is_file()  # a file, never the mod folder
 
 
-def test_mod_without_p3d_exits(tmp_path, monkeypatch):
+def test_mod_without_p3d_opens_the_editor_empty(tmp_path, monkeypatch, capsys):
+    """A fresh scaffold has no model yet: no target, not a failure."""
     monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
     (tmp_path / "MyMod" / "data").mkdir(parents=True)
-    with pytest.raises(SystemExit) as exc:
-        ob.resolve_target(None, "MyMod")
-    assert "No .p3d under" in str(exc.value.code) and "--file" in str(exc.value.code)
+    assert ob.resolve_target(None, "MyMod") is None
+    out = capsys.readouterr().out
+    assert "No .p3d under" in out and "opening Object Builder with no model" in out
+
+
+def test_main_with_mod_without_p3d_launches_with_no_model(tmp_path, monkeypatch, capsys):
+    exe = _fake_exe(tmp_path / "tools")
+    _fake_launch_env(tmp_path / "tools", monkeypatch)
+    monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
+    (tmp_path / "MyMod" / "data").mkdir(parents=True)
+    spawned = {}
+
+    class FakePopen:
+        pid = 4242
+
+        def __init__(self, cmd, **kwargs):
+            spawned["cmd"] = cmd
+
+        def poll(self):
+            return None
+
+    monkeypatch.setattr(ob.subprocess, "Popen", FakePopen)
+    monkeypatch.setattr("sys.argv", ["launch.py", "--mod", "MyMod"])
+    assert ob.main() == 0
+    assert spawned["cmd"] == [str(exe)]
+    out = capsys.readouterr().out
+    assert "No --file/--mod given" not in out  # --mod was given; say why there is no model instead
+    assert "Object Builder launched" in out
 
 
 def test_mod_with_several_p3d_lists_them_and_asks_for_file(tmp_path, monkeypatch):
@@ -183,6 +244,19 @@ def test_running_check_is_reused_from_setup_objectbuilder():
     assert ob.objectbuilder_running is ob._setup.objectbuilder_running
 
 
+def test_failed_tasklist_warns_instead_of_silently_saying_not_running(monkeypatch, capsys):
+    import subprocess as sp
+
+    monkeypatch.setattr(ob._setup.sys, "platform", "win32")
+    monkeypatch.setattr(
+        ob._setup.subprocess, "run",
+        lambda cmd, **kw: sp.CompletedProcess(cmd, 1, stdout="", stderr="ERROR"),
+    )
+    assert ob.objectbuilder_running() is False
+    err = capsys.readouterr().err
+    assert "tasklist failed (exit code 1)" in err and "treating it as not running" in err
+
+
 def test_process_that_exits_at_once_is_reported_as_failure(tmp_path, monkeypatch, capsys):
     _fake_exe(tmp_path)
     _fake_launch_env(tmp_path, monkeypatch)
@@ -241,13 +315,42 @@ def test_mod_finds_p3d_outside_data(tmp_path, monkeypatch):
     assert ob.resolve_target(None, "MyMod") == model
 
 
-def test_mod_without_p3d_names_the_whole_mod_tree(tmp_path, monkeypatch):
+def test_mod_without_p3d_names_the_whole_mod_tree(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
     (tmp_path / "MyMod" / "models").mkdir(parents=True)
-    with pytest.raises(SystemExit) as exc:
-        ob.resolve_target(None, "MyMod")
-    msg = str(exc.value.code)
-    assert f"No .p3d under {tmp_path / 'MyMod'} (searched every subfolder)" in msg
+    assert ob.resolve_target(None, "MyMod") is None
+    assert f"No .p3d under {tmp_path / 'MyMod'} yet (searched every subfolder)" in capsys.readouterr().out
+
+
+def _load_fresh_launcher():
+    spec = importlib.util.spec_from_file_location("dayz_launch_objectbuilder_fresh", HERE / "launch.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_project_dir_is_found_from_a_subfolder(tmp_path, monkeypatch):
+    r"""Run from workspace\<mod>\, a relative --file resolves against the cached
+    project, as in the sibling DayZ skills, not against the subfolder."""
+    project = tmp_path / "proj"
+    (project / ".claude" / "local-memory").mkdir(parents=True)
+    (project / ".claude" / "local-memory" / "dayz-current-project.txt").write_text("x", encoding="utf-8")
+    sub = project / "workspace" / "MyMod"
+    sub.mkdir(parents=True)
+    model = project / "data" / "model.p3d"
+    model.parent.mkdir()
+    model.write_bytes(b"")
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(sub)
+    fresh = _load_fresh_launcher()
+    assert fresh.PROJECT_DIR == project.resolve()
+    assert fresh.resolve_target("data/model.p3d", None) == model.resolve()
+
+
+def test_project_dir_prefers_claude_project_dir(tmp_path, monkeypatch):
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    assert _load_fresh_launcher().PROJECT_DIR == tmp_path.resolve()
 
 
 @pytest.mark.parametrize(
@@ -259,6 +362,102 @@ def test_invalid_mod_name_is_refused_before_touching_p_drive(bad, tmp_path, monk
     with pytest.raises(SystemExit) as exc:
         ob.resolve_target(None, bad)
     assert "Invalid mod name" in str(exc.value.code)
+
+
+def test_relative_file_falls_back_to_current_folder(tmp_path, monkeypatch):
+    r"""`--file data\model.p3d` run from workspace\<mod>\ used to fail with
+    "does not exist" because only the project root was tried."""
+    project = tmp_path / "proj"
+    project.mkdir()
+    sub = project / "workspace" / "MyMod"
+    model = sub / "data" / "model.p3d"
+    model.parent.mkdir(parents=True)
+    model.write_bytes(b"")
+    monkeypatch.setattr(ob, "PROJECT_DIR", project)
+    monkeypatch.chdir(sub)
+    assert ob.resolve_target("data/model.p3d", None) == model.resolve()
+
+
+def test_relative_file_prefers_project_root_over_current_folder(tmp_path, monkeypatch):
+    project = tmp_path / "proj"
+    sub = project / "workspace" / "MyMod"
+    for base in (project, sub):
+        (base / "data").mkdir(parents=True)
+        (base / "data" / "model.p3d").write_bytes(b"")
+    monkeypatch.setattr(ob, "PROJECT_DIR", project)
+    monkeypatch.chdir(sub)
+    assert ob.resolve_target("data/model.p3d", None) == (project / "data" / "model.p3d").resolve()
+
+
+def test_missing_relative_file_names_every_base_folder_tried(tmp_path, monkeypatch):
+    project = tmp_path / "proj"
+    sub = tmp_path / "elsewhere"
+    project.mkdir()
+    sub.mkdir()
+    monkeypatch.setattr(ob, "PROJECT_DIR", project)
+    monkeypatch.chdir(sub)
+    with pytest.raises(SystemExit) as exc:
+        ob.resolve_target("data/model.p3d", None)
+    msg = str(exc.value.code)
+    assert "does not exist: data/model.p3d" in msg
+    assert str((project / "data" / "model.p3d").resolve()) in msg
+    assert str((sub / "data" / "model.p3d").resolve()) in msg
+
+
+def test_many_p3d_listing_is_capped_with_a_count(tmp_path, monkeypatch):
+    r"""A big tree used to print every path (8,256 for P:\DZ) before asking for --file."""
+    monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
+    data = tmp_path / "MyMod" / "data"
+    data.mkdir(parents=True)
+    total = ob.MAX_LISTED_MODELS + 5
+    names = [f"m{i:03d}.p3d" for i in range(total)]
+    for name in names:
+        (data / name).write_bytes(b"")
+    with pytest.raises(SystemExit) as exc:
+        ob.resolve_target(None, "MyMod")
+    msg = str(exc.value.code)
+    assert f"{total} .p3d files" in msg
+    assert str(data / names[ob.MAX_LISTED_MODELS - 1]) in msg
+    assert str(data / names[ob.MAX_LISTED_MODELS]) not in msg
+    assert "... and 5 more" in msg
+
+
+def test_exactly_the_cap_lists_all_without_a_count(tmp_path, monkeypatch):
+    monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
+    data = tmp_path / "MyMod" / "data"
+    data.mkdir(parents=True)
+    for i in range(ob.MAX_LISTED_MODELS):
+        (data / f"m{i:03d}.p3d").write_bytes(b"")
+    with pytest.raises(SystemExit) as exc:
+        ob.resolve_target(None, "MyMod")
+    assert "more" not in str(exc.value.code)
+
+
+@pytest.mark.parametrize("name", ["DZ", "dz", "scripts", "gui", "Mods"])
+def test_vanilla_p_folder_is_refused_as_mod_without_scanning(name, tmp_path, monkeypatch):
+    monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
+    (tmp_path / name / "data").mkdir(parents=True)
+    (tmp_path / name / "data" / "a.p3d").write_bytes(b"")
+    (tmp_path / name / "data" / "b.p3d").write_bytes(b"")
+    with pytest.raises(SystemExit) as exc:
+        ob.resolve_target(None, name)
+    msg = str(exc.value.code)
+    assert "not a mod" in msg and "--file" in msg
+    assert ".p3d files under" not in msg  # refused before the tree was scanned
+
+
+def test_mod_name_starting_like_a_vanilla_folder_is_allowed(tmp_path, monkeypatch):
+    monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
+    model = tmp_path / "DZ_Extra" / "data" / "a.p3d"
+    model.parent.mkdir(parents=True)
+    model.write_bytes(b"")
+    assert ob.resolve_target(None, "DZ_Extra") == model
+
+
+def test_reserved_folders_come_from_launch_workbench():
+    wb_py = Path(ob.__file__).resolve().parents[1] / "dayz-launch-workbench" / "launch.py"
+    assert Path(ob._workbench.__file__).resolve() == wb_py
+    assert ob.RESERVED_P_FOLDERS is ob._workbench.RESERVED_P_FOLDERS
 
 
 def test_mod_name_rule_comes_from_new_mod():

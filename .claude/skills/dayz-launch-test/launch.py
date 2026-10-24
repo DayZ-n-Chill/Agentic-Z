@@ -83,6 +83,123 @@ def verify_built_mods(modnames: list[str]) -> None:
             print(f"{OK} {name} ({len(pbos)} PBOs): {', '.join(p.name for p in pbos)}")
 
 
+_SKIP_DIRS = {".git", "addons", "keys"}  # same folders /dayz-lint skips (compared lowercased)
+_CLASS_OR_BRACE = re.compile(r"\bclass\s+(\w+)[^;{}]*[;{]|[{}]")
+
+
+def config_patches(text: str) -> tuple[set[str], list[str]]:
+    """(CfgPatches class names, requiredAddons[] names) declared in one config.cpp.
+
+    Vanilla configs use the same shape, e.g. P:\\DZ\\AI\\config.cpp:1-11
+    (class CfgPatches > class DZ_AI > requiredAddons[] = {"DZ_Data"}).
+    """
+    text = h.strip_cpp_comments(text)
+    required: list[str] = []
+    # `+=` appends to the array in config syntax. No vanilla config.cpp under
+    # P:\DZ\ uses it (a grep finds none), but a mod's may, and the names it
+    # adds are required just the same.
+    for block in re.findall(r"requiredAddons\s*\[\]\s*\+?=\s*\{([^}]*)\}", text):
+        required += re.findall(r'"([^"]+)"', block)
+    # Walk class and brace tokens with string literals blanked, so a brace
+    # inside a value cannot shift the depth. Array braces push a None entry.
+    stack: list[str | None] = []
+    patches: set[str] = set()
+    for m in _CLASS_OR_BRACE.finditer(re.sub(r'"[^"\n]*"', '""', text)):
+        token = m.group(0)
+        if token == "{":
+            stack.append(None)
+        elif token == "}":
+            if stack:
+                stack.pop()
+        elif token.endswith("{"):
+            if len(stack) == 1 and (stack[0] or "").lower() == "cfgpatches":
+                patches.add(m.group(1))
+            stack.append(m.group(1))
+    return patches, required
+
+
+def workspace_patches(mod_dir: Path) -> tuple[set[str], list[str]] | None:
+    """CfgPatches names and requiredAddons of a source mod under workspace/, or None.
+
+    None means unknown: no such folder, no config.cpp in it, or a prebuilt
+    bundle (Addons/*.pbo) whose PBOs may provide their own requirements, the
+    same exception /dayz-gate ingame makes. Every config.cpp in the mod is
+    read, not only the root one, skipping .git, Addons and Keys.
+    """
+    if not mod_dir.is_dir():
+        return None
+    addons = mod_dir / "Addons"
+    if addons.is_dir() and any(addons.glob("*.pbo")):
+        return None
+    configs = [
+        p for p in sorted(mod_dir.rglob("config.cpp"))
+        if not any(part.lower() in _SKIP_DIRS for part in p.relative_to(mod_dir).parts[:-1])
+    ]
+    if not configs:
+        return None
+    patches: set[str] = set()
+    required: list[str] = []
+    for cfg in configs:
+        found, needs = config_patches(cfg.read_text(encoding="utf-8", errors="replace"))
+        patches |= found
+        required += [n for n in needs if n not in required]
+    return patches, required
+
+
+def missing_dependencies(
+    modnames: list[str], server_only: list[str], project_dir: Path
+) -> dict[str, list[str]]:
+    """Per mod: non-vanilla requiredAddons that no mod loaded before it provides.
+
+    Vanilla patches start with DZ_ and are always loaded. A shared mod can only
+    rely on shared mods named before it (clients never load server-only mods);
+    a server-only mod can rely on every shared mod and the server-only mods
+    before it. A mod listed earlier whose CfgPatches cannot be read (a built
+    mod such as @CF with no workspace/ source) may provide anything, so its
+    presence satisfies the check, as --deps does for /dayz-gate ingame.
+    Names are compared case-insensitively.
+    """
+    order = [(name, modnames[:i]) for i, name in enumerate(modnames)]
+    order += [(name, modnames + server_only[:i]) for i, name in enumerate(server_only)]
+    workspace = project_dir / "workspace"
+    problems: dict[str, list[str]] = {}
+    for name, before in order:
+        facts = workspace_patches(workspace / name)
+        if facts is None:
+            continue
+        provided = {p.lower() for p in facts[0]}
+        unknown_provider = False
+        for dep in before:
+            dep_facts = workspace_patches(workspace / dep)
+            if dep_facts is None:
+                unknown_provider = True
+                break
+            provided |= {p.lower() for p in dep_facts[0]}
+        if unknown_provider:
+            continue
+        missing = [r for r in facts[1] if not r.upper().startswith("DZ_") and r.lower() not in provided]
+        if missing:
+            problems[name] = missing
+    return problems
+
+
+def gate_on_dependencies(modnames: list[str], server_only: list[str], project_dir: Path) -> None:
+    """Refuse a launch in which a mod's non-vanilla requiredAddons are not loaded first."""
+    problems = missing_dependencies(modnames, server_only, project_dir)
+    if not problems:
+        return
+    lines = [
+        f"          - {name} requires {', '.join(needs)}" for name, needs in problems.items()
+    ]
+    first = next(iter(problems))
+    sys.exit(
+        f"{FAIL} Required addons are not provided by any mod loaded before the mod that needs them:\n"
+        + "\n".join(lines) + "\n"
+        "       Name the @mods under P:\\Mods\\ that ship them before the mod, in load order,\n"
+        f"       for example: /dayz-launch-test CF {first}. Without them the mod fails to load in game."
+    )
+
+
 def resolve_diag_client() -> Path:
     """Returns the path to DayZDiag_x64.exe; required for filePatching to work.
 
@@ -133,7 +250,9 @@ def verify_instance_environment(
     mission_dir = inst_dir / "mission"
 
     missing = []
-    cfg = cfg_path.read_text(encoding="utf-8") if cfg_path.is_file() else None
+    # errors="replace": a cfg saved in ANSI with a non-ASCII hostname or password
+    # still parses; only the ASCII template and allowFilePatching lines are read.
+    cfg = cfg_path.read_text(encoding="utf-8", errors="replace") if cfg_path.is_file() else None
     template = read_cfg_template(cfg) if cfg is not None else None
     if cfg is None:
         missing.append(f"server cfg: {cfg_path.relative_to(project_dir)}")
@@ -276,22 +395,31 @@ def wait_for_server_port(
     DayZ servers can take 30+ seconds to fully init (mission load, mod load,
     persistence init) before binding the network port; previous fixed-5s
     sleep was way too short.
+
+    Ctrl+C during the wait kills the server it was waiting on and exits 130,
+    so no detached server is left holding the port for the next launch.
     """
     print(f"        Waiting up to {timeout_s}s for server to bind UDP port {port}...")
     sys.stdout.flush()
     deadline = time.time() + timeout_s
     last_dot = time.time()
-    while time.time() < deadline:
-        if server_proc.poll() is not None:
-            print(f"\n{FAIL} Server process exited unexpectedly (rc={server_proc.returncode}).")
-            return False
-        if not h.udp_port_free(port):
-            print(f"\n{OK} Server has bound UDP port {port}")
-            return True
-        if time.time() - last_dot > 5:
-            print(".", end="", flush=True)
-            last_dot = time.time()
-        time.sleep(1)
+    try:
+        while time.time() < deadline:
+            if server_proc.poll() is not None:
+                print(f"\n{FAIL} Server process exited unexpectedly (rc={server_proc.returncode}).")
+                return False
+            if not h.udp_port_free(port):
+                print(f"\n{OK} Server has bound UDP port {port}")
+                return True
+            if time.time() - last_dot > 5:
+                print(".", end="", flush=True)
+                last_dot = time.time()
+            time.sleep(1)
+    except KeyboardInterrupt:
+        if server_proc.poll() is None:
+            server_proc.kill()
+        print(f"\n{FAIL} Interrupted while waiting for the server; killed it (PID {server_proc.pid}).")
+        sys.exit(130)
     print()
     return False
 
@@ -339,26 +467,64 @@ def port(value: str) -> int:
     return n
 
 
+_PATH_CHARS = '/\\:*?"<>|'
+
+
+def mod_name(value: str) -> str:
+    """argparse type for a mod name: the folder after @ under P:\\Mods\\.
+
+    A leading @ is dropped, so CF and @CF name the same mod.
+    """
+    name = value[1:] if value.startswith("@") else value
+    if name in ("", ".", "..") or any(c in name for c in _PATH_CHARS):
+        raise argparse.ArgumentTypeError(
+            f"'{value}' is not a mod name: use the folder name after @ under P:\\Mods\\ "
+            "(no path separators, drive letters or '..')"
+        )
+    return name
+
+
+def instance_name(value: str) -> str:
+    """argparse type for --server: one folder name directly under .server/."""
+    if value in ("", ".", "..") or any(c in value for c in _PATH_CHARS):
+        raise argparse.ArgumentTypeError(
+            f"'{value}' is not an instance name: use a single folder name under .server/ "
+            "(no path separators, drive letters or '..')"
+        )
+    if value.startswith("!"):
+        raise argparse.ArgumentTypeError(
+            f"'{value}' is not an instance: names starting with '!' are shared .server folders "
+            "such as !ClientDiagLogs"
+        )
+    return value
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Launch local DayZ server + client with one or more built mods."
     )
     parser.add_argument(
-        "modnames", nargs="+", help="Mod names loaded on both client and server (PBO must exist)."
+        "modnames", nargs="+", type=mod_name,
+        help="Mod names loaded on both client and server, dependencies first (PBO must exist).",
     )
+    # One name per --server-only flag. With nargs="+" it swallowed every name
+    # after it, so `CF --server-only Srv MyMod` silently left MyMod off the client.
     parser.add_argument(
         "--server-only",
-        nargs="+",
+        action="append",
         default=[],
+        type=mod_name,
         metavar="MODNAME",
         help=(
-            "Mod names loaded on the server only, never the client (PBO must exist). "
-            "For server-side mods that exit on purpose when loaded client-side."
+            "A mod loaded on the server only, never the client (PBO must exist). "
+            "Repeat the flag for each one. For server-side mods that exit on purpose "
+            "when loaded client-side."
         ),
     )
     parser.add_argument(
         "--server",
         default=DEFAULT_INSTANCE,
+        type=instance_name,
         help=(
             f"Server instance to launch on (default: {DEFAULT_INSTANCE}). "
             "Must have been added via /dayz-add-server."
@@ -370,12 +536,30 @@ def main() -> int:
         action="store_true",
         help="Print resolved commands without launching anything.",
     )
-    args = parser.parse_args()
+    args, extra = parser.parse_known_args()
+    # argparse does not add a name that follows an option to the shared mods;
+    # refuse it rather than guess whether it was meant shared or server-only.
+    if extra:
+        parser.error(
+            f"unexpected arguments: {' '.join(extra)}. Put every shared mod name first, "
+            "then the options, and give --server-only once per server-only mod, "
+            "for example: CF MyMod --server-only Srv1 --server-only Srv2"
+        )
+    # Windows folder names ignore case, so CF and cf are the same @CF folder.
     # A mod on -mod= is advertised to clients, so one named both ways would
-    # break the reason --server-only exists.
-    both = [name for name in args.server_only if name in args.modnames]
+    # break the reason --server-only exists; one named twice lands twice.
+    shared = {name.casefold() for name in args.modnames}
+    both = [name for name in args.server_only if name.casefold() in shared]
     if both:
         parser.error(f"mod named both as shared and --server-only: {', '.join(both)}")
+    seen: set[str] = set()
+    dupes = []
+    for name in args.modnames + args.server_only:
+        if name.casefold() in seen:
+            dupes.append(name)
+        seen.add(name.casefold())
+    if dupes:
+        parser.error(f"mod named more than once: {', '.join(dupes)}")
 
     project_dir = h.resolve_project_dir()
     h.gate_on_preflight()
@@ -383,6 +567,7 @@ def main() -> int:
     print(f"{OK} Project: {project_dir}")
     gate_on_old_layout(project_dir)
     verify_built_mods(args.modnames + args.server_only)
+    gate_on_dependencies(args.modnames, args.server_only, project_dir)
     diag_exe = resolve_diag_client()
     cfg_path, server_profile_dir, mission_path, client_profile_dir = verify_instance_environment(
         args.server, project_dir, dry_run=args.dry_run

@@ -55,20 +55,26 @@ P_DRIVE_USERS = (
     "dayzdiag_x64.exe",
 )
 
+# Hint for a P: letter this skill did not create and cannot remove.
+FREE_LETTER_HINT = "       Free the letter in Disk Management, or with 'net use P: /delete' for a network drive."
+
 # Reuse preflight's resolvers (loading the module does not run its checks).
 find_dayz_tools = h.preflight.find_dayz_tools
 paths_equal = h.preflight.paths_equal
 
 
 def is_p_mounted() -> bool:
+    """True when P:\\ is visible as a folder (the mapping exists and its target is reachable)."""
     return P_DRIVE.is_dir()
 
 
-def current_p_target() -> Optional[Path]:
-    r"""Folder P: is mapped to, or None if it is not a folder mapping.
+def query_p_device() -> Optional[str]:
+    r"""What the P: drive letter is assigned to, or None when the letter is free.
 
-    WorkDrive.exe and subst both create a DOS device mapping, which
-    QueryDosDeviceW reports as "\??\C:\folder".
+    This reads the drive-letter mapping itself, so it still reports a mapping
+    whose folder was renamed, deleted or sits on an unplugged disk, while P:\
+    then reads as not a directory. A folder mapping reads "\??\C:\folder", a
+    volume "\Device\HarddiskVolume3", a network drive "\Device\LanmanRedirector\...".
     """
     if sys.platform != "win32":
         return None
@@ -77,10 +83,25 @@ def current_p_target() -> Optional[Path]:
     buf = ctypes.create_unicode_buffer(1024)
     if not ctypes.windll.kernel32.QueryDosDeviceW("P:", buf, len(buf)):
         return None
+    return buf.value or None
+
+
+def current_p_target() -> Optional[Path]:
+    r"""Folder P: is mapped to, or None if it is not a folder mapping.
+
+    WorkDrive.exe and subst both create a DOS device mapping, which
+    QueryDosDeviceW reports as "\??\C:\folder". The folder may be missing.
+    """
+    device = query_p_device()
     prefix = "\\??\\"
-    if not buf.value.startswith(prefix):
-        return None  # a volume or network device, not a folder mapping
-    return Path(buf.value[len(prefix):])
+    if not device or not device.startswith(prefix):
+        return None  # letter free, or a volume or network device
+    return Path(device[len(prefix):])
+
+
+def p_letter_in_use() -> bool:
+    """True while P:\\ is visible or any mapping still holds the letter, even a stale one."""
+    return is_p_mounted() or query_p_device() is not None
 
 
 def get_cached_path() -> Optional[Path]:
@@ -88,11 +109,14 @@ def get_cached_path() -> Optional[Path]:
         return None
     try:
         data = json.loads(CACHE.read_text(encoding="utf-8"))
-        p = data.get("work_drive_path")
-        if p and Path(p).is_dir():
-            return Path(p)
-    except (OSError, json.JSONDecodeError):
-        pass
+    except (OSError, ValueError):
+        return None
+    # Valid JSON that is not the {"work_drive_path": "..."} object counts as no cache.
+    if not isinstance(data, dict):
+        return None
+    p = data.get("work_drive_path")
+    if isinstance(p, str) and p and Path(p).is_dir():
+        return Path(p)
     return None
 
 
@@ -147,39 +171,46 @@ def workdrive_letter_is_not_p() -> Optional[str]:
     return letter if letter and letter != "P" else None
 
 
-def find_work_drive() -> Optional[Path]:
-    """Resolve the work-drive folder. Returns the first candidate that exists.
+def find_work_drive() -> tuple[Optional[Path], Optional[str]]:
+    """Resolve the work-drive folder: (first candidate that exists, its source), or (None, None).
 
     Resolution order:
-      1. $DAYZ_WORK_DRIVE env var
+      1. $DAYZ_WORK_DRIVE env var, made absolute against the current folder
       2. Cached path from prior run
       3. <DayZ Tools>/settings.ini [ProjectDrive] path=
 
-    The DayZ Tools registry keys hold no work-drive folder (HKCU only has
-    path, exe, version and patch), so they are not a source. There is no default: <DayZ Tools>/Bin/WorkDrive holds WorkDrive.exe itself,
-    not a project drive, so mounting it would be wrong. Returns None instead and
-    the caller asks for --path.
-    """
-    candidates: list[Path] = []
+    An env var or settings.ini value that is set but is not a folder (a typo, a
+    renamed folder) gets a [WARN] naming it before the next source is tried, so
+    a different folder is never mounted silently.
 
+    The DayZ Tools registry keys hold no work-drive folder (HKCU only has
+    path, exe, version and patch), so they are not a source. There is no
+    default: <DayZ Tools>/Bin/WorkDrive holds WorkDrive.exe itself, not a
+    project drive, so mounting it would be wrong. Returns (None, None) instead
+    and the caller asks for --path.
+    """
     env_override = os.environ.get("DAYZ_WORK_DRIVE")
     if env_override:
-        candidates.append(Path(env_override))
+        # Absolute for the same reason as --path: the folder is cached, and a
+        # relative one would point elsewhere when a later run starts in another folder.
+        env_path = Path(env_override).resolve()
+        if env_path.is_dir():
+            return env_path, "$DAYZ_WORK_DRIVE"
+        print(f"{WARN}$DAYZ_WORK_DRIVE is set to {env_override}, which is not a folder; ignoring it.")
 
     cached = get_cached_path()
     if cached:
-        candidates.append(cached)
+        return cached, f"cache {CACHE}"
 
     tools = find_dayz_tools()
     if tools:
         ini_path = read_settings_ini_path(tools)
         if ini_path:
-            candidates.append(ini_path)
-
-    for c in candidates:
-        if c and c.is_dir():
-            return c
-    return None
+            if ini_path.is_dir():
+                return ini_path, f"{tools / 'settings.ini'}"
+            print(f"{WARN}{tools / 'settings.ini'} sets [ProjectDrive] path={ini_path}, "
+                  "which is not a folder; ignoring it.")
+    return None, None
 
 
 def find_workdrive_exe() -> Optional[Path]:
@@ -218,8 +249,8 @@ def invoke_mount(target: Path) -> bool:
     other = workdrive_letter_is_not_p()
     exe = None if other else find_workdrive_exe()
     if other:
-        print(f"{WARN}DayZ Tools is set to mount {other}: ([ProjectDrive] Letter= in settings.ini), "
-              "so WorkDrive.exe will not create P:\\; using subst")
+        print(f"{WARN}DayZ Tools' settings.ini sets [ProjectDrive] Letter={other}, so WorkDrive.exe "
+              f"would mount {other}: instead of P:\\. Using subst P: instead.")
     elif exe:
         print(f'{CMD}"{exe}" /Mount "{target}"')
         rc, _stdout, stderr = _run_workdrive([str(exe), "/Mount", str(target)])
@@ -244,22 +275,83 @@ def parse_tasklist_images(output: str) -> list[str]:
     return [row[0] for row in csv.reader(output.splitlines()) if row]
 
 
-def running_p_drive_users() -> list[str]:
-    """Sorted, de-duplicated names of running processes listed in P_DRIVE_USERS."""
-    result = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True, text=True)
+def running_p_drive_users() -> Optional[list[str]]:
+    """Sorted, de-duplicated names of running processes listed in P_DRIVE_USERS.
+
+    Returns None when the process list is unknown: tasklist could not start,
+    exited non-zero, or printed nothing (a working tasklist always lists at
+    least the System Idle Process). The caller must not read None as "none
+    running".
+    """
+    try:
+        result = subprocess.run(
+            ["tasklist", "/FO", "CSV", "/NH"], capture_output=True, text=True, errors="replace"
+        )
+    except OSError:
+        return None
+    if result.returncode != 0 or not (result.stdout or "").strip():
+        return None
     found = {n for n in parse_tasklist_images(result.stdout) if n.lower() in P_DRIVE_USERS}
     return sorted(found, key=str.lower)
 
 
+def remove_stale_mapping(target: Path) -> int:
+    """Remove a P: folder mapping whose folder is missing.
+
+    No process can be working from P:\\ while it is not visible, so the
+    running-process guard does not apply here.
+    """
+    print(f"{INFO}P: is mapped to {target}, which is missing; removing the stale mapping")
+    print(f"{CMD}subst P: /D")
+    rc = subprocess.run(["subst", "P:", "/D"]).returncode
+    if p_letter_in_use():
+        print(f"{FAIL}subst P: /D exited with code {rc}; the stale P: mapping to {target} is still there.",
+              file=sys.stderr)
+        print("       It may belong to another Windows session; signing out or restarting Windows clears it.",
+              file=sys.stderr)
+        return 1
+    print(f"{OK}Stale P: mapping removed")
+    return 0
+
+
 def invoke_unmount(force: bool = False) -> int:
     if not is_p_mounted():
+        stale = current_p_target()
+        if stale is not None:
+            return remove_stale_mapping(stale)
+        device = query_p_device()
+        if device is not None:
+            print(f"{FAIL}Not unmounting: P: is assigned to {device}, which is not reachable and is not "
+                  "a folder mapping made by WorkDrive.exe or subst, so this skill cannot remove it.",
+                  file=sys.stderr)
+            print(FREE_LETTER_HINT, file=sys.stderr)
+            return 1
         print(f"{INFO}P:\\ is not currently mounted")
         return 0
 
+    # subst /D and WorkDrive.exe /Dismount only remove folder mappings; on a real
+    # volume or network drive they would fail with nothing but an exit code.
+    if current_p_target() is None:
+        device = query_p_device() or "an unknown device"
+        print(f"{FAIL}Not unmounting: P:\\ is {device} (a volume or network drive), not a folder "
+              "mapping made by WorkDrive.exe or subst.", file=sys.stderr)
+        print(FREE_LETTER_HINT, file=sys.stderr)
+        return 1
+
     # Pulling P:\ out from under Workbench, Object Builder, a build or DayZDiag breaks
-    # those sessions, so refuse unless the user asked for it with --force.
+    # those sessions, so refuse unless the user asked for it with --force. A process
+    # list that could not be read counts as "maybe running", never as "none running".
     users = running_p_drive_users()
-    if users:
+    if users is None:
+        if not force:
+            print(f"{FAIL}Not unmounting: tasklist failed, so it is unknown whether DayZ Tools "
+                  "or DayZDiag is running from P:\\.", file=sys.stderr)
+            print("       Close them first (/dayz-stop-test stops DayZDiag), "
+                  "then re-run with --unmount --force.", file=sys.stderr)
+            return 1
+        print(f"{WARN}--force: could not list running processes; unmounting without checking "
+              "for DayZ Tools or DayZDiag")
+    elif users:
         names = ", ".join(users)
         if not force:
             print(f"{FAIL}Not unmounting: {names} is running and works from P:\\. "
@@ -309,6 +401,14 @@ def main() -> int:
         help="With --unmount: unmount even while DayZ Tools or DayZDiag is running from P:\\",
     )
     args = parser.parse_args()
+    if args.force and not args.unmount:
+        parser.error("--force only applies to --unmount")
+    if args.path and args.unmount:
+        parser.error("--path cannot be combined with --unmount")
+    if sys.platform != "win32":
+        print(f"{FAIL}Windows-only: P:\\ is a Windows drive letter mounted with WorkDrive.exe or subst, "
+              f"and this is {sys.platform}.", file=sys.stderr)
+        return 1
     # Absolute before comparing, mounting or caching: a relative --path cached as-is
     # would point somewhere else (or nowhere) when the next run starts in another folder.
     explicit = Path(args.path).resolve() if args.path else None
@@ -330,13 +430,28 @@ def main() -> int:
             print("       Run with --unmount first, then mount again with --path.")
         return 0
 
+    # P:\ is not visible, but a mapping can still hold the letter: one whose folder
+    # is gone, or an unreachable volume or network drive. subst P: would then fail
+    # with nothing but an exit code, so name the cause and the fix.
+    stale = current_p_target()
+    if stale is not None:
+        print(f"{FAIL}P: is mapped to a missing folder {stale}; run --unmount to remove the stale "
+              "mapping, then mount again.", file=sys.stderr)
+        return 1
+    device = query_p_device()
+    if device is not None:
+        print(f"{FAIL}P: is assigned to {device}, which is not reachable, so P:\\ cannot be mounted.",
+              file=sys.stderr)
+        print(FREE_LETTER_HINT, file=sys.stderr)
+        return 1
+
     if explicit:
-        work = explicit
+        work, source = explicit, "--path"
         if not work.is_dir():
             print(f"{FAIL}Path does not exist or is not a directory: {work}", file=sys.stderr)
             return 1
     else:
-        work = find_work_drive()
+        work, source = find_work_drive()
         if not work:
             print(f"{FAIL}Could not resolve a work drive folder.", file=sys.stderr)
             print(
@@ -350,12 +465,28 @@ def main() -> int:
             )
             return 1
 
-    print(f"{INFO}Mounting P: -> {work}")
+    print(f"{INFO}Mounting P: -> {work} (from {source})")
     if not invoke_mount(work):
         return 1
 
-    set_cached_path(work)
+    # P:\\ being visible is not enough: confirm it shows the requested folder
+    # before caching it, so a wrong mount is never reported as OK or reused.
+    mounted = current_p_target()
+    if mounted is None or not paths_equal(mounted, work):
+        shown = mounted if mounted is not None else (query_p_device() or "an unknown device")
+        print(f"{FAIL}P:\\ is mounted but points to {shown}, not {work}; nothing was cached.",
+              file=sys.stderr)
+        print("       Run with --unmount, then mount again (pass --path to choose the folder).",
+              file=sys.stderr)
+        return 1
+
     print(f"{OK}P:\\ mounted -> {work}")
+    try:
+        set_cached_path(work)
+    except OSError as e:
+        print(f"{WARN}P:\\ is mounted, but the folder was not cached at {CACHE}: {e}")
+        print("       The next run resolves the folder again; pass --path or set $DAYZ_WORK_DRIVE if it cannot.")
+        return 0
     print(f"{INFO}Cached for future runs at {CACHE}")
     return 0
 

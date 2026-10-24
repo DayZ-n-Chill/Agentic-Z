@@ -15,8 +15,10 @@ import argparse
 from collections import Counter
 import copy
 from datetime import datetime
+import os
 import re
 import shutil
+import stat
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -125,12 +127,25 @@ def _ensure_flags(parent: ET.Element) -> None:
         el.set(k, v)
 
 
+def find_type(root: ET.Element, classname: str) -> Optional[ET.Element]:
+    r"""The <type> block whose name matches classname ignoring case, or None.
+
+    DayZ class names are case-insensitive: vanilla chernarusplus types.xml lists
+    <type name="Bandana_Blackpattern"> (P:\DZ\worlds\chernarusplus\ce\db\types.xml:3036)
+    for config class Bandana_BlackPattern (P:\DZ\characters\headgear\config.cpp:3084)
+    and Camonet (types.xml:4607) for CamoNet (P:\DZ\gear\camping\config.cpp:9808).
+    So `akm` must find the existing AKM block, never add a second one.
+    """
+    key = classname.casefold()
+    return next((t for t in root.findall("type") if (t.get("name") or "").casefold() == key), None)
+
+
 def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> tuple[bool, str]:
     """Create or update the <type name="classname"> block.
 
     Returns (changed, one-line summary).
     """
-    type_el = next((t for t in root.findall("type") if t.get("name") == classname), None)
+    type_el = find_type(root, classname)
     is_new = type_el is None
     if is_new:
         type_el = ET.SubElement(root, "type")
@@ -154,6 +169,7 @@ def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> tuple[
         )
         return True, f"Added <type name=\"{classname}\"> {summary}"
 
+    classname = type_el.get("name")  # report the file's own spelling
     changes: list[str] = []
     for tag in ("nominal", "min", "lifetime", "restock", "quantmin", "quantmax", "cost"):
         value = getattr(args, tag, None)
@@ -185,7 +201,7 @@ def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> tuple[
 
 def min_exceeds_nominal(root: ET.Element, classname: str) -> Optional[tuple[int, int]]:
     """(min, nominal) when the entry's min is above its nominal, else None."""
-    type_el = next((t for t in root.findall("type") if t.get("name") == classname), None)
+    type_el = find_type(root, classname)
     if type_el is None:
         return None
     try:
@@ -197,7 +213,7 @@ def min_exceeds_nominal(root: ET.Element, classname: str) -> Optional[tuple[int,
 
 def quantmin_exceeds_quantmax(root: ET.Element, classname: str) -> Optional[tuple[int, int]]:
     """(quantmin, quantmax) when both are set (not -1) and quantmin is above quantmax, else None."""
-    type_el = next((t for t in root.findall("type") if t.get("name") == classname), None)
+    type_el = find_type(root, classname)
     if type_el is None:
         return None
     try:
@@ -205,6 +221,33 @@ def quantmin_exceeds_quantmax(root: ET.Element, classname: str) -> Optional[tupl
     except ValueError:
         return None  # a hand-edited non-number is left for the user to fix
     return (lo, hi) if lo != -1 and hi != -1 and lo > hi else None
+
+
+def half_set_quant(el: ET.Element) -> Optional[str]:
+    r"""A warning when exactly one of quantmin and quantmax is -1, else None.
+
+    -1 on both means "not a quantity item"; a quantity item sets both. No
+    vanilla entry mixes them: all 2382 / 2391 / 2404 entries with both tags in
+    P:\DZ\worlds\{chernarusplus,enoch,sakhal}\ce\db\types.xml have both -1 or
+    both set (counted with ElementTree). A missing or non-number tag is left to
+    the other checks.
+    """
+    try:
+        qmin, qmax = int(el.findtext("quantmin").strip()), int(el.findtext("quantmax").strip())
+    except (AttributeError, ValueError):
+        return None
+    if (qmin == -1) == (qmax == -1):
+        return None
+    return (f"quantmin is {qmin} but quantmax is {qmax}; vanilla sets both to -1 "
+            "(not a quantity item) or both to 0 to 100")
+
+
+def non_blank(text: str) -> str:
+    """argparse type for ClassName, --category, --usage, --value and --tag: a
+    name that is not empty or only whitespace (the merge check rejects those too)."""
+    if not text.strip():
+        raise argparse.ArgumentTypeError("must not be empty")
+    return text
 
 
 def quant_value(text: str) -> int:
@@ -232,17 +275,25 @@ def non_negative_int(text: str) -> int:
 
 def remove(root: ET.Element, classname: str) -> tuple[bool, str]:
     """Delete the <type name="classname"> block. Returns (changed, summary)."""
-    type_el = next((t for t in root.findall("type") if t.get("name") == classname), None)
+    type_el = find_type(root, classname)
     if type_el is None:
         return False, f"<type name=\"{classname}\"> not found; no change"
     root.remove(type_el)
-    return True, f"Removed <type name=\"{classname}\">"
+    return True, f"Removed <type name=\"{type_el.get('name')}\">"
 
 
 def duplicate_names(root: ET.Element) -> list[str]:
-    """<type> names that appear more than once, sorted."""
-    counts = Counter(t.get("name") for t in root.findall("type"))
-    return sorted(name for name, n in counts.items() if name is not None and n > 1)
+    """<type> names that appear more than once ignoring case (see find_type),
+    sorted, each as its first block spells it."""
+    first: dict[str, str] = {}
+    counts: Counter = Counter()
+    for t in root.findall("type"):
+        name = t.get("name")
+        if name is None:
+            continue
+        first.setdefault(name.casefold(), name)
+        counts[name.casefold()] += 1
+    return sorted(first[key] for key, n in counts.items() if n > 1)
 
 
 def check_types_root(root: ET.Element, path: Path, classname: str) -> None:
@@ -255,7 +306,7 @@ def check_types_root(root: ET.Element, path: Path, classname: str) -> None:
     if root.tag != "types":
         sys.exit(f"{FAIL} {path} has root element <{root.tag}>, not <types>; refusing to edit it.")
     dups = duplicate_names(root)
-    if classname in dups:
+    if classname.casefold() in {d.casefold() for d in dups}:
         sys.exit(
             f"{FAIL} {path} has more than one <type name=\"{classname}\">.\n"
             "       Merge them by hand into one block, then rerun."
@@ -375,6 +426,9 @@ def validate_type(el: ET.Element) -> tuple[list[str], list[str]]:
     qmin, qmax = numbers.get("quantmin", -1), numbers.get("quantmax", -1)
     if qmin != -1 and qmax != -1 and qmin > qmax:
         errors.append(f"quantmin ({qmin}) is greater than quantmax ({qmax})")
+    half = half_set_quant(el)
+    if half:
+        warnings.append(half)
     flags = el.find("flags")
     if flags is not None:
         for key, value in flags.attrib.items():
@@ -413,9 +467,11 @@ def merge(root: ET.Element, chunk: list[ET.Element]) -> tuple[bool, list[str]]:
     changed = False
     lines: list[str] = []
     for new in chunk:
-        name = new.get("name")
         children = list(root)
-        old = next((t for t in children if t.tag == "type" and t.get("name") == name), None)
+        old = find_type(root, new.get("name"))
+        if old is not None:
+            new.set("name", old.get("name"))  # keep the file's spelling; names ignore case
+        name = new.get("name")
         if old is None:
             root.append(new)
             lines.append(f"Added <type name=\"{name}\">")
@@ -440,14 +496,19 @@ def check_chunk(chunk: list[ET.Element], root: ET.Element, path: Path) -> list[s
         sys.exit(f"{FAIL} The chunk has no <type> blocks; {path} was not changed.")
     errors: list[str] = []
     warnings: list[str] = []
-    counts = Counter(el.get("name") for el in chunk)
-    for name in sorted(n for n, c in counts.items() if n and c > 1):
-        errors.append(f"{name}: listed {counts[name]} times in the chunk")
-    file_dups = set(duplicate_names(root))
+    first: dict[str, str] = {}
+    counts: Counter = Counter()
+    for el in chunk:
+        if el.get("name"):
+            first.setdefault(el.get("name").casefold(), el.get("name"))
+            counts[el.get("name").casefold()] += 1
+    for key in sorted(k for k, c in counts.items() if c > 1):
+        errors.append(f"{first[key]}: listed {counts[key]} times in the chunk (names ignore case)")
+    file_dups = {d.casefold() for d in duplicate_names(root)}
     for el in chunk:
         name = el.get("name") or "(no name)"
         errs, warns = validate_type(el)
-        if name in file_dups:
+        if name.casefold() in file_dups:
             errs.append(f"{path} already has more than one <type name=\"{name}\">; merge them by hand first")
         errors += [f"{name}: {e}" for e in errs]
         warnings += [f"{name}: {w}" for w in warns]
@@ -465,14 +526,34 @@ COMMENT_RE = re.compile(r"<!--(.*?)-->", re.DOTALL)
 PROLOG_RE = re.compile(r"\A(?:\s+|<\?.*?\?>|<!DOCTYPE[^>]*>|<!--.*?-->)*", re.DOTALL)
 
 
+# The encoding="..." of an XML declaration, read from the raw bytes (the
+# declaration itself is ASCII in every ASCII-compatible encoding).
+ENCODING_DECL_RE = re.compile(rb"""\s*<\?xml\b[^>]*?\bencoding\s*=\s*["']([A-Za-z0-9._-]+)["']""")
+
+
+def declared_encoding(source: bytes) -> str:
+    """The encoding the file declares, as the XML parser reads it: a UTF-16
+    byte-order mark wins, then encoding="..." in the declaration, else UTF-8."""
+    if source.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return "utf-16"
+    m = ENCODING_DECL_RE.match(source.removeprefix(b"\xef\xbb\xbf"))
+    return m.group(1).decode("ascii").lower() if m else "utf-8"
+
+
+def _decode(source: bytes) -> str:
+    """The source text in its declared encoding. utf-8-sig drops the BOM that
+    Windows editors (and PowerShell 5.1) often put at the start of the file."""
+    enc = declared_encoding(source)
+    return source.decode("utf-8-sig" if enc in ("utf-8", "utf8") else enc, errors="replace")
+
+
 def _outer_comments(path: Path, root_tag: str) -> tuple[list[str], list[str]]:
     """Comments before and after the root element.
 
     TreeBuilder(insert_comments=True) keeps only comments inside the root, so a
     header such as <!-- MyMod types --> above <types> would be lost on write.
     """
-    # utf-8-sig: Windows editors (and PowerShell 5.1) often start the file with a BOM.
-    text = path.read_bytes().decode("utf-8-sig", errors="replace")
+    text = _decode(path.read_bytes())
     prolog = PROLOG_RE.match(text).group(0)
     close = text.rfind(f"</{root_tag}>")
     epilog = text[close + len(root_tag) + 3:] if close >= 0 else ""
@@ -518,10 +599,11 @@ def _line_indent(text: str, pos: int) -> Optional[str]:
 
 def _splice(tree: ET.ElementTree) -> Optional[str]:
     """The source text with only the changed, added and removed <type> blocks
-    rewritten, or None when the source cannot be patched block by block (not
-    UTF-8, a self-closing <types/>, or blocks the scan cannot pair up)."""
+    rewritten, or None when the source cannot be patched block by block (bytes
+    not valid in the declared encoding, a self-closing <types/>, or blocks the
+    scan cannot pair up). A UTF-8 BOM stays in the text, so it is written back."""
     try:
-        text = tree.source.decode("utf-8")
+        text = tree.source.decode(declared_encoding(tree.source))
     except UnicodeDecodeError:
         return None
     blanked = re.sub(r"<!--.*?-->", lambda m: " " * len(m.group()), text, flags=re.DOTALL)
@@ -599,26 +681,32 @@ def write_types(tree: ET.ElementTree, path: Path) -> None:
 
     A tree that cannot be patched block by block (see _splice) is written
     whole, re-indented with 4 spaces, keeping the original XML declaration.
+    Either way the bytes are written in the encoding the declaration names, so
+    an ISO-8859-1 file stays ISO-8859-1; a character that encoding cannot hold
+    is written as a character reference (&#233;).
     """
+    raw = getattr(tree, "source", b"")
+    encoding = declared_encoding(raw)
     spliced = _splice(tree) if hasattr(tree, "source") else None
     if spliced is not None:
-        path.write_bytes(spliced.encode("utf-8"))
+        path.write_bytes(spliced.encode(encoding, errors="xmlcharrefreplace"))
         return
     ET.indent(tree, space="    ")
     before, after = getattr(tree, "outer_comments", ([], []))
-    source = getattr(tree, "source", b"").decode("utf-8-sig", errors="replace")
+    source = _decode(raw)
     decl = re.match(r"\s*(<\?xml\b.*?\?>)", source, re.DOTALL)
     out = (decl.group(1) if decl else '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>') + "\n"
     out += "".join(f"<!--{c}-->\n" for c in before)
     out += SELF_CLOSE_RE.sub(r"\1/>", ET.tostring(tree.getroot(), encoding="unicode"))
     out += "".join(f"\n<!--{c}-->" for c in after)
-    path.write_bytes(out.encode("utf-8"))
+    path.write_bytes(out.encode(encoding, errors="xmlcharrefreplace"))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Upsert / remove an entry in DayZ types.xml.")
     parser.add_argument("path", type=Path, help="Path to types.xml.")
-    parser.add_argument("classname", nargs="?", help="Class name (the `name` attribute of the <type> block).")
+    parser.add_argument("classname", nargs="?", type=non_blank,
+                        help="Class name (the `name` attribute of the <type> block).")
     parser.add_argument(
         "--merge", metavar="CHUNK",
         help="Check every <type> in a pasted chunk (a file, or - for stdin) and merge them all.",
@@ -635,10 +723,13 @@ def main() -> int:
     parser.add_argument("--quantmin", type=quant_value, help="-1 (not a quantity item) or 0 to 100.")
     parser.add_argument("--quantmax", type=quant_value, help="-1 (not a quantity item) or 0 to 100.")
     parser.add_argument("--cost", type=non_negative_int)
-    parser.add_argument("--category")
-    parser.add_argument("--usage", action="append", help="Repeatable. Sets the usages; any others are removed.")
-    parser.add_argument("--value", action="append", help="Repeatable. Sets the values; any others are removed.")
-    parser.add_argument("--tag", action="append", help="Repeatable. Sets the tags; any others are removed.")
+    parser.add_argument("--category", type=non_blank)
+    parser.add_argument("--usage", action="append", type=non_blank,
+                        help="Repeatable. Sets the usages; any others are removed.")
+    parser.add_argument("--value", action="append", type=non_blank,
+                        help="Repeatable. Sets the values; any others are removed.")
+    parser.add_argument("--tag", action="append", type=non_blank,
+                        help="Repeatable. Sets the tags; any others are removed.")
     args = parser.parse_args()
     if (args.classname is None) == (args.merge is None):
         parser.error("give a ClassName, or --merge CHUNK (not both)")
@@ -679,8 +770,11 @@ def main() -> int:
                 )
     print(f"{OK} {msg}")
     if not args.remove:
+        target = find_type(root, args.classname)
+        half = half_set_quant(target)
+        if half:
+            print(f"{WARN} {target.get('name')}: {half}. Pass --quantmin and --quantmax together.")
         limits = load_limits(args.path)
-        target = next(t for t in root.findall("type") if t.get("name") == args.classname)
         for problem in undefined_limit_names(target, limits) if limits else []:
             print(f"{WARN} {problem}")
     if args.dry_run:
@@ -702,11 +796,43 @@ def backup_path(path: Path) -> Path:
     return dest
 
 
+def _discard(backup: Path) -> bool:
+    """Delete a backup this run made. copy2 copies a read-only flag, which
+    blocks deletion on Windows, so clear it first. Returns False if it stays."""
+    try:
+        if backup.exists():
+            os.chmod(backup, stat.S_IWRITE | stat.S_IREAD)
+            backup.unlink()
+        return True
+    except OSError:
+        return False
+
+
 def backup_and_write(tree: ET.ElementTree, path: Path) -> None:
+    """Back the file up, then write it. A file that is read-only, locked or on a
+    full disk stops with a [FAIL] line and exit 1, not a traceback; a backup
+    left over from the failed run is removed when the file is unchanged."""
     backup = backup_path(path)
-    shutil.copy2(path, backup)
+    try:
+        shutil.copy2(path, backup)
+    except OSError as e:
+        _discard(backup)
+        sys.exit(f"{FAIL} Could not back up {path} to {backup}: {e.strerror or e}.\n"
+                 f"       {path} was not changed.")
     print(f"{OK} Backup: {backup}")
-    write_types(tree, path)
+    try:
+        write_types(tree, path)
+    except OSError as e:
+        try:
+            unchanged = path.read_bytes() == tree.source
+        except OSError:
+            unchanged = False
+        reason = f"{FAIL} Could not write {path}: {e.strerror or e} (is it read-only or open in another program?)"
+        if unchanged and _discard(backup):
+            sys.exit(f"{reason}\n       {path} was not changed; the backup this run made was removed.")
+        if unchanged:
+            sys.exit(f"{reason}\n       {path} was not changed. Could not remove {backup}; delete it by hand.")
+        sys.exit(f"{reason}\n       {path} may be partly written. Restore it from {backup}.")
     print(f"{OK} Wrote {path}")
 
 
@@ -715,13 +841,23 @@ def run_merge(tree: ET.ElementTree, args: argparse.Namespace) -> int:
     root = tree.getroot()
     if root.tag != "types":
         sys.exit(f"{FAIL} {args.path} has root element <{root.tag}>, not <types>; refusing to edit it.")
-    if args.merge == "-":
-        text = sys.stdin.read()
-    else:
-        chunk_path = Path(args.merge)
-        if not chunk_path.is_file():
-            sys.exit(f"{FAIL} Chunk file {chunk_path} not found.")
-        text = chunk_path.read_text(encoding="utf-8-sig")
+    try:
+        if args.merge == "-":
+            source = "stdin"
+            # Read stdin's bytes as UTF-8, like a chunk file, not in the console code page.
+            buffer = getattr(sys.stdin, "buffer", None)
+            text = buffer.read().decode("utf-8-sig") if buffer else sys.stdin.read()
+        else:
+            chunk_path = Path(args.merge)
+            if not chunk_path.is_file():
+                sys.exit(f"{FAIL} Chunk file {chunk_path} not found.")
+            source = str(chunk_path)
+            text = chunk_path.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError as e:
+        sys.exit(
+            f"{FAIL} The chunk from {source} is not UTF-8 ({e.reason} at byte {e.start}).\n"
+            f"       Save it as UTF-8 and run again. {args.path} was not changed."
+        )
     try:
         chunk = parse_chunk(text)
     except ET.ParseError as e:

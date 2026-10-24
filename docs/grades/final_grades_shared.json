@@ -1204,5 +1204,233 @@
     "item": ".claude/skills/_shared/test_enscript_examples.py",
     "grade": "B+",
     "reason": "Its checks are real and pass: duplicate classes, consts and enums across files; the stamina percentage dividing by the configured maximum; the EOnFrame client guard; the eat cooldown starting ready; the hover guard and the hotkey menu guard. They are text checks only. Nothing checks references across files or layers, so 10_modded_playerbase.c using MyMod_CustomCanteen from 01 with no note passed. Duplicate top-level functions such as MyMod_SendNotification are not checked, even though they break the same 'compiles together' promise the docstring makes."
+  },
+  {
+    "batch": "shared",
+    "item": "hooks/hooks.json",
+    "grade": "A+",
+    "reason": "The file uses the plugin hooks format: a description plus a hooks map. It wires UserPromptSubmit to paste_router.py, PreToolUse on Edit|Write|MultiEdit to scope_guard.py, and PostToolUse on Edit|Write|MultiEdit to edit_check.py. Each command finds the hook through a quoted ${CLAUDE_PLUGIN_ROOT}, so paths with spaces work. Each command tries python first and falls back to py, which covers machines that have only the py launcher or only the Microsoft Store alias. Each hook has a timeout of 10 or 15 seconds. If no Python is found, the command exits with 127, which Claude Code does not treat as a block (only exit code 2 blocks), so a missing interpreter cannot stop an edit. The events, matchers and timeouts match the project copy in .claude/settings.json. When a clone also has the project copy wired, the plugin copy steps aside so nothing runs twice. test_hook_commands.py checks the exact command strings for both configs and runs every hook through bash with stdin on three simulated machines: py only, Store alias plus py, and real python. It also checks that no alias hint leaks into the hook's JSON and that paste_router returns hookEventName UserPromptSubmit. test_plugin_copy.py covers the step-aside, including non-ASCII paths and settings.local.json. `py -m pytest -q hooks` passed 194 of 194."
+  },
+  {
+    "batch": "shared",
+    "item": "_shared/conventions/ui.md",
+    "grade": "B",
+    "reason": "I opened every P: citation and nearly all of them hold. mainmenu.c:57/59/61, missiongameplay.c:8/104/130/132/140, enwidgets.c:144 (inside class Widget), actionmenu.c:74, colors.c:53 and mainmenupromo.c:157 all say what the file claims. COLOR_DAYZ_RED is used in exactly one place, P:\\gui\\layouts has 227 .layout files, more than 10 files in 5_mission/gui hold ARGB literals, FadeColors exists at colors.c:71, the three referenced packs and /dayz-build-imageset exist, and the claims that are not tested in game are marked unverified. One claim is false, and it is the main reason given for ruling out HUD layout replacement: it says reproducing MissionGameplay.OnInit without super 'either drops or doubles the MissionBase init'. MissionBase (P:\\scripts\\5_mission\\mission\\missionbase.c) and MissionBaseWorld (P:\\scripts\\4_world\\classes\\missionbaseworld.c) do not define OnInit. The only parent body is the empty 'void OnInit() {}' in class Mission at P:\\scripts\\3_game\\gameplay.c:700, so skipping super drops no vanilla parent init. A user who asks to swap day_z_hud.layout gets told it is impossible, for a reason that does not exist. The real cost of skipping super, that it also skips other mods' modded OnInit overrides in the chain, is never mentioned. The test suite (py -m pytest -q .claude scripts/dev hooks) did not finish within the 300-second timeout, and it does not test this document anyway."
+  },
+  {
+    "batch": "shared",
+    "item": "_shared/conventions/scripts.md",
+    "grade": "A-",
+    "reason": "I opened every P: citation in the file and all of them hold: game.c 1118-1125; missionserver.c:5 and missiongameplay.c:1; actionbase.c 788-796, 929-973 and :954; animatedactionbase.c 201-203; itembase.c 3315-3318 together with entityai.c 2753-2765; entityai.c 1955-2050, 1983, 2047, 1967-1968, 4906-4907, 2894, 2910, 2955, 2978, 2832-2850 and 3063-3069; centraleconomy.c:25 (ECE_LOCAL); gameplay.c 111-117; game.c 970-974 and 1013; playerbase.c 5727-5733; object.c:860; codelockcomponent.c 350-354 and 556-567; dayzgame.c:3347; actionmanagerserver.c:168. The two claims that cannot be checked are correctly marked: the `modded class ... extends` no-op and the engine filling `sender`. Every file it links to exists. The pytest run gave 1 failed and 4525 passed, and I did not check whether the one failure relates to this file. One defect a reader would hit: the link paths are inconsistent. Line 12 writes `../enscript/patterns/modded_class.md`, which is correct from conventions/. Lines 24, 35 and 43 write `enscript/patterns/modded_class.md`, `netsync.md` and `rpc.md`, and line 56 writes `enscript/patterns/actions.md`. From conventions/ those four resolve to conventions/enscript/..., which does not exist, so an agent following them gets file-not-found. A smaller precision gap: line 28 says SetQuantity always returns false on a multiplayer client, but the method takes an `allow_client` parameter (itembase.c:3315) that skips the server check."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/baseline.json",
+    "grade": "B+",
+    "reason": "Structurally sound. It has an entry for each of the 30 question files and no extras. Every score equals the length of its passed list, every total equals the number of questions in the file, every passed id exists in its question file, and all entries carry recorded, model and claude_version. Each entry's score and passed list also match that agent's latest results file in output/evals. The 67 tests in scripts/dev/test_run_evals.py pass. Concrete defect: the 5/5 entry for dayz-workbench-specialist does not cover the agent as it is now. .claude/agents/dayz-workbench-specialist.md was modified at 06:46:18, after its last eval run (results-20261024-063743.json, run_at 06:37:43, written 06:40:35). The edit changes behavior: it now takes texture suffixes from conventions/assets.md, says dayz-mod-reviewer exempts scripts/editor/, and drops the release-lead exclude.lst note. So a user who runs `evals.bat --baseline` is comparing against a score the current prompt never earned. Second issue: baseline.json is modified but uncommitted, and three question files it scores are untracked (dayz-lead, dayz-mod-architect, dayz-orchestrator). A fresh clone gets the HEAD baseline, not these entries, even though docs/evals.md says to commit the baseline together with the change. Minor: the model is recorded as 'claude CLI default' rather than a model id, so a drop caused by a change in the default model only shows up if claude_version also changes."
+  },
+  {
+    "batch": "shared",
+    "item": "scripts/dayz/*.bat (the other 35 wrappers: add-scaffold, add-server, ask, balance, build-imageset, build-pbo, clean-workspace, conflict-check, cot-bootstrap, deploy-pbo, gate, health, import-mod, launch-test, layout-preview, lint, logwatch, new-mod, objectbuilder, p3d-audit, pack-texture, recipe, release-pack, route, scope-mod, search-download, search-index, server-kit, status, stop-test, triage, types-edit, types-split, upgrade-guard, workbench)",
+    "grade": "A",
+    "reason": "I checked all 35 wrappers, and the one defect is a documented example that fails. The script each wrapper runs and the SKILL.md each one names both exist (checked by a script). Every wrapper ran with --help through cmd and exited 0, with argparse output that matches its usage comment and its row in scripts/README.md. That covers the gate subcommands, health showing a mod without the word 'show', upgrade-guard check [mods], recipe vest with the SmershVest default, the logwatch, ask and release-pack flags, and the new-mod, import-mod, add-scaffold, clean-workspace, workbench and objectbuilder flags. With PATH cut down to System32, lint.bat printed '[FAIL] Python 3 not found' and exited 9009, as the README says. Exit codes come back from the script (health.bat NoSuchMod gave 2). Piping text into triage.bat --stdin works, and arguments holding % & ^ reach the script intact. stop-test.bat passes on its arguments, and its target refuses unknown ones with exit 2. The full run of 'py -m pytest -q .claude scripts/dev hooks' gave 4525 passed and 1 failed. The failure is test_rag_agents_fall_back_to_rag_after_failed_greps for dayz-animation-specialist, an agent text check that has nothing to do with the wrappers; all wrapper tests passed. The defect: the README example for triage.bat is 'triage.bat .server\\chernarus\\Profiles\\script.log'. DayZ never writes that file. The Profiles folder holds files named script_<date>_<time>.log, such as script_2026-10-24_03-07-37.log. A user who copies the example gets '[FAIL] Not found: .server\\chernarus\\Profiles\\script.log' and exit 2 (reproduced)."
+  },
+  {
+    "batch": "shared",
+    "item": "hooks/test_plugin_copy.py",
+    "grade": "A",
+    "reason": "All 38 tests pass (py -m pytest -q hooks/test_plugin_copy.py, 13s). The file feeds JSON to each hook through stdin as UTF-8 and checks every hook's output shape: UserPromptSubmit hookSpecificOutput, PreToolUse permissionDecision deny, PostToolUse decision block. It covers both settings files, non-ASCII paths, hooks/ present but not wired, malformed settings, plugin-root commands, a missing CLAUDE_PROJECT_DIR and a shadow check that throws. It also pins its wiring helper to the shipped .claude/settings.json and hooks/hooks.json, so the fixture cannot drift from the real wiring. Two branches of shadowed_by_project / _wires (scope_guard.py lines 173 and 191, copied into each hook) have no test. (1) The backslash-to-slash step: if it regressed, a Windows settings.local.json with a command like py H:\\proj\\hooks\\scope_guard.py would no longer count as project wiring, so the plugin copy would run too and every deny or report would show twice, and this suite would still pass. (2) The here.is_relative_to(root) early return, which keeps the project copy from going silent: it is only exercised indirectly, and nothing tests a plugin copy installed under the project folder."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/dayz-wearables-specialist.json",
+    "grade": "A-",
+    "reason": "I opened all 11 cited locations on P: and each one holds what the file says. The vests config has PlateCarrierVest at line 24 with no itemsCargoSize anywhere in lines 24 to 194, and PlateCarrierVest_Black at 195 to 207 with the camoGround, camoMale and camoFemale selections and three textures. The containers config has PlateCarrierPouches at 646 with itemsCargoSize {5,3} at 658. In miscgameplayfunctions.c, GetCurrentItemHeatIsolation starts at 1355 and the drenched branch returns the constant directly at 1381 to 1383; constants.c line 825 sets it to -0.15. In dayzgame.c, lines 1098 to 1117 keep only classes with scope 2 that inherit SurvivorBase. SurvivorM_Mirek is at characters/data config line 9234 with scope=2 two lines below. GasMask (class at line 21) sets noHelmet=1 at line 47, and entityai.c line 4458 is the noHelmet check that adds LEGACY_HEADGEAR_MASK. The grep over the P3D files gives 4 camoground, 6 camomale and 6 camofemale hits, as the file says. The baseline records 5 of 5 passing. The full test run gave 4525 passed and 1 failed; the failure is a dayz-lead.md skill-reference test, not this file. One concrete defect: in drenched-insulation, the must_not_include pattern `re:multipl\\w*[^.\\n]{0,40}-?0\\.15` rejects correct answers. I ran it on the correct sentence \"Instead of multiplying by a wet factor, it returns -0.15 outright\" and it matched, so that answer would be marked forbidden and fail."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/dayz-script-specialist.json",
+    "grade": "B",
+    "reason": "All five questions point at facts I checked on P:. PlayerBase is declared at playerbase.c:49 and OnConnect at :7623. Modded-class examples are at particlelist.c:5 and plugindiagmenumodding.c:21, and the commented-out sample is at pperequesterbank.c:276. Also checked: entityai.c:1724, IsDedicatedServer at game.c:1125, the server gates at actiondetachbattery.c:71, effect.c:74 and cfggameplayhandler.c:56, RegisterNetSyncVariableInt at entityai.c:2850, and SetSynchDirty at entityai.c:3064, its only declaration. The file passes the runner's dry run and the baseline is 5/5. The full pytest run gave 4 failed and 4522 passed; none of the failures involve this file. The defect is in the checks: I ran correct answers through the runner's score() and some of them fail. (1) action-layer: the answer \"4_World. ActionContinuousBase is defined in 4_World, and nothing that references PlayerBase belongs in 3_Game\" fails, and so does \"4_World. Only engine-level helpers go in 3_Game; UI code goes in 5_Mission.\" The forbidden regex `(goes|belongs|put it) in 3_Game|5_Mission` only ignores phrases right after never/not/n't/cannot, so a correct contrast sentence fails the question. (2) net-sync-calls: \"Both are declared on EntityAI, in EntityAI.c\" fails because the cite needs the folder 3_game/entities/. That answers the question it asks (which file) correctly. (3) modded-class-extends: \"Writing extends on a modded class is redundant; delete it\" and \"the `extends PlayerBase` is wrong here\" both fail the long must_include regex. Correct answers that use other wording therefore fail, so a later prompt change that only changes wording could show up as a drop in the baseline gate."
+  },
+  {
+    "batch": "shared",
+    "item": "dayz-rag MCP server (server.py, voyage_common.py, README, tests)",
+    "grade": "A-",
+    "reason": "Mostly solid. The 75 MCP tests pass (py -m pytest -q .claude/mcp/dayz-rag). In the full requested suite, 3 of 4528 tests fail, all outside this server. All three tools carry readOnlyHint, and openWorldHint is set correctly: true for the search tool, false for the two local tools. Tool descriptions are clear. Errors raise and reach the client with isError=true, and a test runs this through the MCP layer. Retries, the cache, rebuild detection, the drive guard and worker-thread offload are all tested. The README matches the code. One concrete defect confirmed on P:: get_dayz_file only applies its 200 KB limit when neither line_start nor line_end is given. So get_dayz_file('P:\\DZ\\sounds\\hpp\\config.cpp', line_start=1) returned 10,239,845 characters (523,051 lines), and the size error only appeared when no range was passed. An agent that passes just a start line on a big config.cpp or mapgroupcluster.xml gets megabytes back and floods its context. A second, latent mismatch: _slice_lines uses str.splitlines(), but the indexer's _split_lines deliberately splits on '\\n' only, because splitlines also breaks at \\f, \\v, \\x1c-\\x1e, \\x85 and \\u2028. For 'a\\fb\\nc', the server returns 'b' as line 2 where the indexer counts 'c'. A scan of P:\\scripts and P:\\DZ found no such characters today, so this only bites on future or modded files. Minor issues: _read_manifest does not catch UnicodeDecodeError, so a manifest that is not valid UTF-8 errors without the rebuild hint. The search docstring lists stale_reason as always present, but it only appears on stale hits."
+  },
+  {
+    "batch": "shared",
+    "item": "scripts/README.md",
+    "grade": "A-",
+    "reason": "Almost everything checks out. All 36 scripts\\dayz rows, the 6 setup rows and the 3 dev rows match a real .bat file, and every wrapper's target script exists. Every flag or subcommand used in an example is in the target's --help: --author, --source, --piece, vest, gate build, --stdin, --server, --mod, check, --merge, --version, --mission, --full, --grep, --keep-server, --remove, --status, --agents. The Python fallback note is accurate: stop-test.bat has no fallback, and dayz-search.bat is the only scripts\\dayz wrapper without the [FAIL] line. The paid-API notes are accurate: Voyage, the free-tier prompt in index.py, TypeSafe Jev only when the key is set, and evals.bat costing tokens. The panel install line matches .claude-plugin/marketplace.json. The clean-repo and clean-workspace rows match their code: .git folders are skipped, and --include-server removes all of .server. Its tests in scripts/dev/test_repo_integrity.py pass. The full run (py -m pytest -q .claude scripts/dev hooks) gave 3 failed and 4525 passed; none of the 3 failures involves this README. Problems a user would hit: (1) The sync-skills.bat row says 'Claude Code with --agents claude'. Running `sync-skills.bat --agents claude` links only Claude Code and drops Codex and Gemini, because --agents replaces the default list in sync.py. A user who wants all three gets one. (2) The clean-workspace.bat row says it deletes the deployed P:\\Mods\\@<ModName>\\ copies. clean.py removes one only when its ownership marker matches, so a hand-copied or older deploy stays and the user does not know why. (3) The Python-missing message only covers scripts\\dayz. The setup wrappers, which a new user runs first (for example preflight.bat), have no [FAIL] guard. Without Python the user gets a bare 'py is not recognized' error, and the README says nothing about that case. (4) The ask.bat note says every question goes to Voyage. Without VOYAGE_API_KEY, ask.py falls back to grep on its own, which the README does not say."
+  },
+  {
+    "batch": "shared",
+    "item": "hooks/scope_guard.py (+ test_scope_guard.py)",
+    "grade": "A-",
+    "reason": "All 49 tests in hooks/test_scope_guard.py pass (8.8 seconds), and every test drives the hook through stdin. The output is correct PreToolUse JSON: hookSpecificOutput holds hookEventName PreToolUse, permissionDecision deny and a reason Claude can act on. Bad stdin, a corrupt state file and errors inside the hook all exit 0 with no output, so the hook never blocks on its own bug. The project wiring in .claude/settings.json and the plugin wiring in hooks/hooks.json both match Edit|Write|MultiEdit and have a 10-second timeout. The docstring matches the code. I also probed paths by hand. These were blocked: short 8.3 names (OTHERM~1, WORKSP~1, including a file that does not exist yet), alternate data streams (a.c:ads), the ::$INDEX_ALLOCATION directory form, non-ASCII file names, and the P:\\Other and P:\\Mods\\@Other forms. Two gaps remain that a user would actually hit. First, a sibling mod that is still being created is not guarded: while scoped to MyVest, Claude can write workspace/BrandNew/scripts/3_Game/x.c, mod.cpp and the rest of a new mod, as long as config.cpp or $PBOPREFIX$ is written last. Only the marker write at the folder root is caught. Second, the hook matches Edit, Write and MultiEdit only, so a Bash or PowerShell write into another mod's folder (redirect, cp, sed -i, Set-Content) passes. The docstring states this second gap. There are also small test gaps: no test covers the 8.3 short-name claim, a state file whose JSON is valid but not an object, or a missing preflight.py or game install on the !Workshop path."
+  },
+  {
+    "batch": "shared",
+    "item": ".claude/skills/_shared/test_enscript_examples.py",
+    "grade": "A-",
+    "reason": "All 18 tests pass in 0.16s, and the full suite (1417 tests) passes. Each scan has a test that feeds it a synthetic bad case, so the checks for modded-member clashes, cross-file names and layers, duplicate RPC handlers and unused fields are each shown to fail when they should. Every P: citation holds when opened: staminahandler.c:335-338 sets stamina from GetStaminaMax, cfggameplayhandler.c:217-220 is GetStaminaMax, playerbase.c:4607-4610 is the EOnFrame client and IsControlledPlayer guard, dayzgame.c:2848 and :2914-2917 forward OnKeyPress to the mission, and uimanager.c:59 is GetMenu. Three concrete defects remain. First, _method_body counts braces in the raw source without removing strings or comments, so a method that later gains a line such as Print(\"}\") or a comment ending in '}' is cut short. The hover, hotkey, stamina and EOnFrame tests then fail even though the code is correct, or pass without having looked at it. Second, _cross_file_problems searches code that still contains string literals, so a Print(\"MyMod_Item\") in another file counts as a use and wrongly demands a note naming the declaring file. Third, the _FUNC negative lookahead skips any line that starts with 'static', so two files that each declare the same file-scope static function would not be reported as a duplicate."
+  },
+  {
+    "batch": "shared",
+    "item": "enscript/examples/10_modded_playerbase.c",
+    "grade": "A-",
+    "reason": "I opened every P: citation in the file (canteen.c:1, playerbase.c:359-364, 2042, 3007, 3129, 6170, 6733, 8121, 7353-7361, 7408-7421, entityai.c:227, 2843-2850, 3064, eagents.c:9, poisoning.c:32, staminahandler.c:335-338 and 1081, cfggameplayhandler.c:217-220, cfggameplaydatajson.c:135, constants.c:749, playerstatspco.c:340, playerconstants.c:45, missionserver.c:781, missiongameplay.c:230, inventory.c:121-128, gameplay.c:4-11, presethandlers.c:179, bloodregen.c:14, and characters config.cpp:122, 378-382, 412-414). All of them hold. The save and load order matches vanilla, the version guard is correct, the warning about adding saved fields to a vanilla class is present, and the 18 example tests pass. Two concrete defects remain. (1) The IS_EXHAUSTED check in MyMod_UpdateSyncFlags (line 98) compares raw stamina against 10. The same file explains that raw stamina runs from 0 to the server's staminaMax setting and adds MyMod_GetStaminaPct for that reason, but this check does not use it. On a server with staminaMax set to 1000, the flag only turns on at 1 percent stamina. (2) OnScheduledTick (lines 140-150) does its work after super returns. Vanilla's early return for players who are not selected or not alive (playerbase.c:3009-3010) only exits the super call, so the mod still decays reputation and rebuilds sync flags for dead and not-yet-selected players. Two smaller points: the null check in MyMod_GetStaminaPct (line 243) can never fire, because vanilla Init creates the stamina handler (playerbase.c:414). OnStoreLoad also does not reject a save whose version is newer than MYMOD_PLAYER_STORE_VERSION, which happens after a mod downgrade."
+  },
+  {
+    "batch": "shared",
+    "item": "scripts/dev/run_evals.py",
+    "grade": "A-",
+    "reason": "The full suite (py -m pytest -q .claude scripts/dev hooks) passes: 4822 tests. A dry run validates 162 questions for 30 agents, an unknown --agent exits 2, and baseline.json covers all 30 question files. Tool restriction, sending the question on stdin, the unchanged-file hash check, killing the whole process tree on timeout, handling of non-UTF-8 output, Ctrl+C handling and the baseline-only-rises gate all match docs/evals.md and evals.bat. One concrete defect: validate() assumes every question file has the right shape. A hand-edited file that breaks it crashes the runner with a Python traceback (exit 1) instead of the documented 'ERROR ...' plus exit 2. I reproduced four crashes: must_include written as a string instead of a list ('\"must_include\": \"foo\"' gives TypeError: can only concatenate str), a question entry that is not an object (AttributeError), a top-level JSON list (AttributeError) and a non-string check such as [5] (AttributeError on startswith). Also, 'unchanged' written as a string is walked one character at a time and reports 15 bogus 'unchanged file e does not exist' lines. Smaller mismatch: docs/evals.md says 'verified' is required only for shipped files, but validate() requires it in every file."
+  },
+  {
+    "batch": "shared",
+    "item": "scripts/dev/test_repo_integrity.py",
+    "grade": "A-",
+    "reason": "I ran py -m pytest -q on this file: all 960 tests passed in 15.6 seconds with P:\\ mounted, so the checks that open P:\\ ran too. The module docstring matches what the file checks. The P:\\ citation checks have their own tests with fake data that prove they catch a line that moved. Four concrete defects remain. (1) The dead-reference check (test_referenced_repo_files_exist, line 132) only matches forward-slash paths like scripts/dayz/x.bat. A Windows-style reference such as scripts\\dayz\\x.bat or .claude\\skills\\x\\y.py is never checked, and agent and skill docs use that style in 7 places today. Those 7 resolve now (I checked them with a separate script), but a renamed script cited with backslashes would pass the check and send users to a missing file. (2) PLUGIN, ROUTE and GATE (which runs dayz-gate/gate.py) all load when the module is imported. A syntax error in gate.py or a malformed plugin.json or rules.json therefore stops pytest at collection, and all 960 tests fail with an import traceback instead of one test naming the broken file. (3) In CITED_SYMBOL_EXEMPT, the comment for basebuildingbase.c:420 and entityai.c:1393/:3041 (lines 913-915) sits above the dayz-script-specialist entry, but those citations belong to the dayz-persistence-specialist entry below it. Anyone reviewing the exemptions is pointed at the wrong file. (4) test_dayz_wrapper_list_is_complete only asserts that the count is the total minus 1. It never checks that the one wrapper without Python is stop-test.bat, though its comment says so. Also, the line_count closure is copied into two tests, and the eval-question reader is written twice (in _citation_texts and _eval_question_texts)."
+  },
+  {
+    "batch": "shared",
+    "item": "scripts/dev/test_run_evals.py",
+    "grade": "A-",
+    "reason": "All 67 tests pass in 4.3s (py -m pytest -q scripts/dev/test_run_evals.py). The claude call is always mocked, and the tests cover scoring, timeouts that kill the whole process tree, output that is not valid UTF-8, Ctrl+C at every stage, saving after each question, the baseline gate and its date/model/version stamps, and the shipped question files. The docstring and docs/evals.md line 68 describe the file correctly. The gap: no test checks the field types in a question file, and I hit two runner bugs because of it. (1) If must_include is a plain string instead of a list, validate() crashes at run_evals.py:131 with a TypeError traceback instead of printing ERROR and exiting 2. (2) If must_include is a string and must_not_include is an empty string, --dry-run prints 'question files are valid', and score() then checks each character of the string as its own substring. I reproduced this: must_include '4_World' produced the failed checks 'missing: _' and 'missing: r', so any answer containing those characters passes. A user who writes one string by mistake gets a question that passes falsely. Also untested: validate's error branches for unreadable or bad JSON, an agent name that does not match the filename, and an empty questions list."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/baseline.json",
+    "grade": "A+",
+    "reason": "There are 30 entries, one for each of the 30 agents and each of the 30 question files. Every entry's passed list exactly matches the question ids in its file, score equals the number of passed questions, total equals the number of questions, and every entry has the recorded, model and claude_version fields that docs/evals.md requires. The full suite (py -m pytest -q .claude scripts/dev hooks) passed: 4985 passed."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/dayz-script-specialist.json",
+    "grade": "A+",
+    "reason": "I opened every cited P: line and each holds: playerbase.c:49 and :7623, particlelist.c:5, plugindiagmenumodding.c:21, the commented-out pperequesterbank.c:276, actioncontinuousbase.c:120, entityai.c:1724, :2850 and :3064, game.c:1125, actiondetachbattery.c:71, effect.c:74 and cfggameplayhandler.c:56. The file passes validation and the dry run."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/dayz-wearables-specialist.json",
+    "grade": "A+",
+    "reason": "Every cited fact holds on P:. PlateCarrierVest (vests config.cpp lines 24 to 194) has no itemsCargoSize. PlateCarrierPouches at containers config.cpp:646 has {5,3} at :658. PlateCarrierVest_Black at :195 to :207 lists camoGround, camoMale and camoFemale with three textures. Grepping the three p3d files gives 4, 6 and 6 hits, as the file says. The drenched branch at miscgameplayfunctions.c:1381 to :1383 returns -0.15 outright (constants.c:825). dayzgame.c:1098 to :1117 keeps only scope 2 SurvivorBase classes. GasMask noHelmet=1 is at masks config.cpp:47, and the noHelmet check is at entityai.c:4458 in the MASK case, where it adds LEGACY_HEADGEAR_MASK."
+  },
+  {
+    "batch": "shared",
+    "item": "scripts/dev/test_run_evals.py",
+    "grade": "A+",
+    "reason": "Its 120 tests pass together with test_script_specialist_evals.py in 3.8 seconds. claude is mocked throughout, and the docstrings match the runner's behavior. The full-suite command run for this grading (pytest on .claude, scripts/dev and hooks) has 4 failures, all in .claude/skills/docs-sync/test_docs_sync.py and all about wiki grade-count claims, so none is in this item."
+  },
+  {
+    "batch": "shared",
+    "item": "scripts/dev/run_evals.py",
+    "grade": "A+",
+    "reason": "The dry run validates all 162 questions for 30 agents. The module docstring, the help text, docs/evals.md and the comments in evals.bat match the code on: the read-only and denied tool lists, exit codes 0, 1, 2 and 130, rewriting the results file after every question, refusing --update-baseline after an error, comparing per question with removed ids ignored, and taking the model id from modelUsage. I found no bug a user would hit."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/dayz-build-checker.json",
+    "grade": "A+",
+    "reason": "I opened every citation in the verified fields and each holds. The agent file's steps 1 to 3, the bundle paragraph and the BLOCKED: step 2 report rule match. In gate.py, stop_session uses rt.confirm, and gate_build runs run_lint, then stop_session, then BUILD_PY. Line 373 of build.py builds pbo_path as target_dir / f\"{modname}.pbo\". config.md has the 'Bundle / umbrella mods' heading, and deploy.py prints [FAIL] and checks for .bisign files. The runner compiles regexes with IGNORECASE and MULTILINE, so the ^ anchors in must_not_include work line by line as intended. All five ids match the baseline, and the tests pass."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/dayz-ingame-tester.json",
+    "grade": "A+",
+    "reason": "P:/scripts/5_mission/somemission.c:3 is Print(\"Creating Mission: \"+ path). gate.py has DEFAULT_SETTLE_S = 30 (:62), DEFAULT_READY_RE with __cur_mp (:71), MOD_QUALIFIED (:75), bundle_layout (:266), non_vanilla_addons (:378) and ingame_session (:544). dayz-ingame-tester.md steps 1 to 3 and line 29 say what each question expects: the bundle PBO check, bundle launched alone, stop on an unmapped dependency, the warning rule."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/dayz-lead.json",
+    "grade": "A+",
+    "reason": "Every cited dayz-lead.md rule is in the file and matches its question. The Art row lists wearables-specialist (:19). The Reassign line is at :31. The 'For the server lead' heading is at :62. The normalizer JSON has no file gate (:37), and the pipeline order is at :43. The 'never start /dayz-gate, dayz-build-checker, dayz-ingame-tester' rule is at :35. Three failed rounds means stop (:45)."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/dayz-mod-architect.json",
+    "grade": "A+",
+    "reason": "actionbase.c:51 (class ActionBase), missiongameplay.c:1 (class MissionGameplay), vests config.cpp:3 (DZ_Characters_Vests) and :24 (PlateCarrierVest), centraleconomy.c:754 to :765 (CEItemProfile getters), checks-file.md (attach action) and dayz-mod-architect.md step 6 (no fire action, a person tries it) all hold."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/dayz-orchestrator.json",
+    "grade": "A+",
+    "reason": "dayz-orchestrator.md matches each question: chernarus default and /dayz-add-server (:27), known failure to the owning team's lead with points_to (:38), new failure to dayz-mod-debugger with --learn (:40), visual NEW shots wait for the user before --accept (:41), --yes only when the user agrees (:45). dayz-gate/SKILL.md shows the --server default chernarus (:33)."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/dayz-router.json",
+    "grade": "A+",
+    "reason": "Every expected route is in dayz-router.md: dayz-init (:33), dayz-launch-workbench (:34), dayz-add-server (:35), dayz-pack-texture (:36), dayz-build-imageset (:37), dayz-cot-bootstrap (:38), docs-writer for CHANGELOG.md (:64) and a stretched texture to dayz-asset-specialist (:80). Each named skill folder exists. release_pack.py:6 says it writes to output/<ModName>-release/."
+  },
+  {
+    "batch": "shared",
+    "item": "evals/questions/figma-to-dayz-layout.json",
+    "grade": "A+",
+    "reason": "The fixture trader_panel.json has the five widgets the checks expect: btn_close is a frame, txt_title has fill width and hug height, and bar_health has fill width. figma-to-dayz-layout.md steps 1, 3 and 5 and the one-space rule at :44 match the questions, and rules section 7 maps #FF5050 to 1 0.314 0.314 (:275). The vanilla lines hold: camera_tools.layout:298 ButtonWidgetClass, day_z_hud.layout:3814 ProgressBarWidgetClass, camera_checkerboard.layout:6 hexactsize 0, and day_z_chat_item.layout:2-8 indented one space."
+  },
+  {
+    "batch": "shared",
+    "item": "hooks/test_plugin_copy.py",
+    "grade": "A+",
+    "reason": "All parametrized cases pass. Every hook runs as a subprocess with UTF-8 JSON on stdin, including non-ASCII names. It covers silent, unwired, partly wired, backslash-wired, nested-in-project, malformed-settings and broken-shadow-check cases. The module docstring matches what shadowed_by_project and _wires do in each hook."
+  },
+  {
+    "batch": "shared",
+    "item": "scripts/dayz/*.bat (the other 35 wrappers: add-scaffold, add-server, ask, balance, build-imageset, build-pbo, clean-workspace, conflict-check, cot-bootstrap, deploy-pbo, gate, health, import-mod, launch-test, layout-preview, lint, logwatch, new-mod, objectbuilder, p3d-audit, pack-texture, recipe, release-pack, route, scope-mod, search-download, search-index, server-kit, status, stop-test, triage, types-edit, types-split, upgrade-guard, workbench)",
+    "grade": "A+",
+    "reason": "Every target script and every 'See ...SKILL.md' path exists. I ran --help on the wrappers whose comments give a usage line (ask, balance, conflict-check, gate, health, layout-preview, lint, logwatch, recipe, release-pack, server-kit, triage, upgrade-guard, objectbuilder, workbench) and every usage comment matches the script's argparse. health.bat <ModName> is turned into 'show' by health.py line 530. The recipe vest defaults, including --parent SmershVest, are real. route.bat \"build MyVest\" works. stop-test forwards correctly to stop_test.bat. The Python fallback block is the same in every wrapper and is covered by test_repo_integrity. The full suite passed: 4979 tests."
+  },
+  {
+    "batch": "shared",
+    "item": "_shared/conventions/scripts.md",
+    "grade": "A+",
+    "reason": "I opened every vanilla citation on P: and each one holds. This covers game.c:1118-1125, missionserver.c:5, actionbase.c:788-796, animatedactionbase.c:201-203, itembase.c:3315-3318, entityai.c:2753-2765, 1955-2050, 1967-1968, 4906-4907, 2894, 2910, 2955, 2978, 2832-2850 and 3063-3069, plus centraleconomy.c:25, gameplay.c:111-117, game.c:970-974 and 1013, playerbase.c:5727-5733, object.c:860, codelockcomponent.c:350-354 and 556-567, dayzgame.c:3347, actionmanagerserver.c:168 and actionbase.c:929-973. Claims that were not checked (the modded-class extends no-op, sender being unforgeable) are marked as unverified."
+  },
+  {
+    "batch": "shared",
+    "item": "_shared/conventions/ui.md",
+    "grade": "A+",
+    "reason": "Every citation holds on P:: mainmenu.c:57-61, missiongameplay.c:8, 102-104, 130, 132 and 140, enwidgets.c:144, gameplay.c:700 (inside class Mission at line 685), actionmenu.c:74, colors.c:53, and the single COLOR_DAYZ_RED use at mainmenupromo.c:157. MissionBase and MissionBaseWorld have no OnInit. The counts are true: 227 .layout files, and 53 files under 5_mission/gui with inline colors. Claims that were not tested are marked unverified."
+  },
+  {
+    "batch": "shared",
+    "item": "hooks/scope_guard.py (+ test_scope_guard.py)",
+    "grade": "A+",
+    "reason": "No concrete defects found. All 172 tests in hooks/test_scope_guard.py pass, and they send input through stdin to a subprocess. On a deny, the hook prints the correct PreToolUse JSON (hookSpecificOutput with hookEventName PreToolUse, permissionDecision deny and permissionDecisionReason). Bad input, a broken state file and internal exceptions all exit 0 silently, so the hook never blocks because of its own bug. The PreToolUse matcher in .claude/settings.json and hooks/hooks.json (Edit|Write|MultiEdit|Bash|PowerShell) matches the tools the docstring lists. I checked the documented shell behavior directly and the code does what the docstring says for: redirects (>, 2>&1 skipped, *>), cp and robocopy destinations, Copy-Item -Destination, sed -i, sed -E -i, perl -pi -e, bash -c, powershell -Command, cd before a relative path, Expand-Archive without a destination, and New-Item -Path:."
+  },
+  {
+    "batch": "shared",
+    "item": "dayz-rag MCP server (server.py, voyage_common.py, README, tests)",
+    "grade": "A+",
+    "reason": "All three tools have readOnlyHint set. openWorldHint is True for search and False for the two local tools, and tests check both. Errors are raised and come back as isError (tested over a real client session, and mcp 1.27.0 is installed). The tool descriptions match the code: the 1500-character snippet limit, the 200 KB file limit, the stale-hit rules, and the manifest fields (counts_by_folder holds the per-type counts). The README's claims hold, including the test that keeps P:\\..\\..\\Windows on P:. voyage_common's .env order and retry rule match their docs. The tests pass."
+  },
+  {
+    "batch": "shared",
+    "item": "scripts/README.md",
+    "grade": "A+",
+    "reason": "Every example's flags exist in the target script's --help: new-mod --author, import-mod --source, add-scaffold --piece junction, clean-workspace --mod and --dry-run, search-index --full, statusline --remove and --status, clean-repo --dry-run and --keep-server, and evals --baseline and --dry-run. The sync-skills default list matches agents.json. The Python fallback and [FAIL] claims match the wrapper code, the stop-test claim matches stop_test.bat, and the triage log name follows DayZ's script_<date>_<time>.log pattern."
+  },
+  {
+    "batch": "shared",
+    "item": "scripts/dev/test_repo_integrity.py",
+    "grade": "A+",
+    "reason": "It runs and passes within the full suite (4979 passed). Its module docstring matches what the tests check: plugin registration, references, wrappers, the pack index and citations checked on P:, the preflight gate list, the Tier 1 files and the panel's skill scripts. I found no failing check and no doc mismatch."
+  },
+  {
+    "batch": "shared",
+    "item": "enscript/examples/10_modded_playerbase.c",
+    "grade": "A+",
+    "reason": "Every P: citation was opened and holds: canteen.c:1, playerbase.c:359-364, 2042, 3007, 3129, 6170, 6733, 8121, 7353-7361 and 7408-7421, entityai.c:227, 2843-2850 and 3064, eagents.c:9, poisoning.c:32, staminahandler.c:335-338 and 1081, missionserver.c:781, missiongameplay.c:230, characters/data/config.cpp:122, 378-382 and 412-414, bloodregen.c:14, playerstatspco.c:340, playerconstants.c:45, cfggameplayhandler.c:217-220, cfggameplaydatajson.c:135, constants.c:749, inventory.c:121-128, gameplay.c:4-11 and presethandlers.c:179. The members it uses (m_StaminaHandler, GetStatEnergy) exist, and the save and load orders mirror each other."
+  },
+  {
+    "batch": "shared",
+    "item": ".claude/skills/_shared/test_enscript_examples.py",
+    "grade": "A+",
+    "reason": "All tests pass, and each scanner has its own unit test. The docstrings match the code. The vanilla citations in its comments hold on P:: staminahandler.c:335-338, cfggameplayhandler.c:217-220, playerbase.c:4607-4610, dayzgame.c:2848 and 2914-2917, and uimanager.c:59."
   }
 ]

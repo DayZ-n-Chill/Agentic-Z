@@ -11,6 +11,10 @@ Detail for `/dayz-import-mod`. The skill's `SKILL.md` has the short version.
 
 `git` must be on `PATH`, and a private repo needs your usual git credentials.
 
+A tree path with more than one segment (`tree/feature/x`, `tree/main/MyMod`) is split by asking the remote for its branch list (`git ls-remote --heads`); the longest leading part that is a real branch wins. If that call fails, the import refuses before cloning rather than guess the branch.
+
+A clone that fails or is interrupted with Ctrl+C is deleted, so the retry does not hit "already exists".
+
 ## Repo link (no subfolder)
 
 - The mod name comes from the repo name, or from `--name`.
@@ -28,6 +32,7 @@ Detail for `/dayz-import-mod`. The skill's `SKILL.md` has the short version.
 - There is one clone per owner, repo and branch. A clone is reused only when another subfolder of that same branch is imported, so a second branch or a fork never picks up another clone's files.
 - `workspace/<ModName>` is then linked to the subfolder exactly as a folder import is. The scaffold check and any accepted pieces go into the subfolder, never the repo root.
 - A subfolder that contains `..`, or that resolves outside the clone, is refused.
+- A reused clone is never changed by the import, because other imports may link into it. The run fetches it and, when upstream has newer commits (or the fetch fails), warns that it may be out of date and prints `git -C <clone> pull --ff-only` to run first.
 - If the folder is not in the branch, the run refuses. A reused clone may just be out of date, so the error gives the `git pull` to run.
 - When the run refuses (missing folder, missing pieces with no decision flag and no interactive console, or a failed link), a clone this run made is deleted again. A clone from an earlier import is never deleted.
 

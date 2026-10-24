@@ -15,13 +15,16 @@ shipped twice, the same CfgPatches class, the same config class defined in
 both, the same script class declared in both, and modded classes both mods
 override. --ingame then runs /dayz-gate ingame with those mods loaded.
 
-The first output line is the verdict: PASS (exit 0, warnings allowed), FAIL
-(exit 1, at least one error, or the in-game gate failed) or ERROR (exit 2:
-bad arguments, no project, no mod folder, nothing to compare). See SKILL.md.
+The first output line is the verdict: PASS (exit 0, warnings allowed),
+PARTIAL (exit 0: no error, but at least one mod was read from PBO headers
+only, so its config and script classes were not compared), FAIL (exit 1, at
+least one error, or the in-game gate failed) or ERROR (exit 2: bad arguments,
+no project, no mod folder, nothing to compare). See SKILL.md.
 """
 from __future__ import annotations
 
 import argparse
+import bisect
 import json
 import re
 import struct
@@ -103,8 +106,11 @@ def norm_path(path: str) -> str:
     return path.replace("/", "\\").strip("\\").lower()
 
 
-def line_of(text: str, offset: int) -> int:
-    return text.count("\n", 0, offset) + 1
+def line_finder(text: str) -> Callable[[int], int]:
+    """A function from offset to 1-based line number. Indexes the line breaks once, so a
+    10 MB vanilla config (P:\\DZ\\sounds\\hpp\\config.cpp) costs one pass, not one per class."""
+    breaks = [m.start() for m in re.finditer("\n", text)]
+    return lambda offset: bisect.bisect_left(breaks, offset) + 1
 
 
 def blank(match: re.Match) -> str:
@@ -118,6 +124,7 @@ def scan_config(text: str, where: str, facts: Facts) -> None:
         facts.required |= {v.lower() for v in re.findall(r'"([^"]+)"', m.group(1))}
     clean = STRING_RE.sub(blank, COMMENT_RE.sub(blank, text))
     clean = re.sub(r"(?m)^[ \t]*#[^\n]*", blank, clean)  # preprocessor lines
+    line_of = line_finder(clean)
     stack: list[Optional[str]] = []
     for m in CONFIG_TOKEN_RE.finditer(clean):
         token = m.group(0)
@@ -132,7 +139,7 @@ def scan_config(text: str, where: str, facts: Facts) -> None:
         if end == "{":
             if len(stack) == 1 and stack[0]:
                 section = stack[0].lower()
-                at = f"{where}:{line_of(clean, m.start())}"
+                at = f"{where}:{line_of(m.start())}"
                 if section == "cfgpatches":
                     facts.patches.setdefault(name.lower(), (name, at))
                 else:
@@ -143,10 +150,11 @@ def scan_config(text: str, where: str, facts: Facts) -> None:
 def scan_script(text: str, where: str, facts: Facts) -> None:
     """Record the class and enum names a .c file declares. Only names are kept."""
     clean = STRING_RE.sub(blank, COMMENT_RE.sub(blank, text))
+    line_of = line_finder(clean)
     for m in SCRIPT_DECL_RE.finditer(clean):
         modded, name = m.group(1), m.group(3)
         target = facts.modded if modded else facts.script_classes
-        target.setdefault(name.lower(), (name, f"{where}:{line_of(clean, m.start(3))}"))
+        target.setdefault(name.lower(), (name, f"{where}:{line_of(m.start(3))}"))
 
 
 def read_text(path: Path) -> str:
@@ -276,22 +284,27 @@ class Vanilla:
 
     def __init__(self, root: Optional[Path]):
         self.root = root
-        self._config: Optional[set[str]] = None
+        self._config: Optional[set[tuple[str, str]]] = None
         self._script: Optional[set[str]] = None
 
     @property
     def available(self) -> bool:
         return self.root is not None and (self.root / "DZ").is_dir()
 
-    def config_class(self, name: str) -> bool:
+    def config_class(self, section: str, name: str) -> bool:
+        """True when vanilla defines a class of this name in this Cfg section (keyed like Facts.classes)."""
         if self._config is None:
             facts = Facts("vanilla")
             if self.available:
+                # About 200 config.cpp files and 20 MB of text; read once per run, only when
+                # both mods define the same config class.
+                print(f"reading vanilla config classes from {self.root / 'DZ'} (a few seconds)...",
+                      file=sys.stderr, flush=True)
                 for cfg in [*(self.root / "DZ").rglob("config.cpp"), self.root / "scripts" / "config.cpp"]:
                     if cfg.is_file():
                         scan_config(read_text(cfg), str(cfg), facts)
-            self._config = {n for _, n in facts.classes}
-        return name.lower() in self._config
+            self._config = set(facts.classes)
+        return (section.lower(), name.lower()) in self._config
 
     def script_class(self, name: str) -> bool:
         if self._script is None:
@@ -306,37 +319,78 @@ class Vanilla:
 
 # --- which mods to compare with -----------------------------------------------
 
+EXPANSION_BUNDLE = "@dayz-expansion-bundle"
+
+
+def without_bundled_parts(mods: list[Path]) -> list[Path]:
+    """The Expansion bundle holds every Expansion part, so when it is there the parts are dropped."""
+    if not any(p.name.lower() == EXPANSION_BUNDLE for p in mods):
+        return mods
+    return [p for p in mods if p.name.lower() == EXPANSION_BUNDLE or not p.name.lower().startswith("@dayz-expansion")]
+
+
 def default_targets(mods_root: Path) -> list[Path]:
     """CF, COT and Expansion, in load order, when they are under mods_root.
 
-    The Expansion bundle holds every Expansion part, so when it is there the
-    parts are not added a second time.
+    The bundle is used alone when it is there; otherwise each Expansion part, Core first.
     """
     found = {p.name.lower(): p for p in mods_root.iterdir() if p.is_dir()} if mods_root.is_dir() else {}
     out = [found[n] for n in ("@cf", "@community-online-tools") if n in found]
-    if "@dayz-expansion-bundle" in found:
-        return out + [found["@dayz-expansion-bundle"]]
+    if EXPANSION_BUNDLE in found:
+        return out + [found[EXPANSION_BUNDLE]]
     parts = sorted((p for n, p in found.items() if n.startswith("@dayz-expansion")),
                    key=lambda p: (p.name.lower() != "@dayz-expansion-core", p.name.lower()))
     return out + parts
 
 
+def is_path_entry(item: str) -> bool:
+    """An --against entry written as a path: absolute, or holding a path separator."""
+    return Path(item).is_absolute() or "/" in item or "\\" in item
+
+
+def resolve_against(item: str, mods_root: Path) -> Path:
+    """One --against entry: a folder path (absolute or relative to the current folder) or a mod name.
+
+    An entry with a path separator is always a path. A bare word is a mod name
+    under mods_root (CF or @CF) first, and a folder in the current folder only
+    when no such mod exists.
+    """
+    if is_path_entry(item):
+        path = Path(item).resolve()
+        if not path.is_dir():
+            raise ConflictError(f"{item}: no folder at {path}")
+        return path
+    named = mods_root / (item if item.startswith("@") else f"@{item}")
+    if named.is_dir():
+        return named
+    local = Path(item)
+    if not item.startswith("@") and local.is_dir():
+        return local.resolve()
+    raise ConflictError(f"{item}: no mod folder at {named} and no folder {local.resolve()}")
+
+
 def resolve_targets(against: list[str], scan_all: bool, mods_root: Path, mod: str) -> list[Path]:
+    """The mods to compare with, in load order, never including the mod itself."""
+    needs_root = scan_all or not against or not all(is_path_entry(i) for i in against)
+    if needs_root and not mods_root.is_dir():
+        raise ConflictError(f"mods folder {mods_root} not found (is P:\\ mounted?); pass --mods-root to name another")
     if scan_all:
-        targets = sorted(p for p in mods_root.iterdir() if p.is_dir() and p.name.startswith("@")) if mods_root.is_dir() else []
+        targets = without_bundled_parts(sorted(p for p in mods_root.iterdir() if p.is_dir() and p.name.startswith("@")))
     elif against:
-        targets = []
-        for item in against:
-            path = Path(item)
-            if not path.is_absolute():
-                path = mods_root / (item if item.startswith("@") else f"@{item}")
-            if not path.is_dir():
-                raise ConflictError(f"{item}: no folder at {path}")
-            targets.append(path)
+        targets = [resolve_against(item, mods_root) for item in against]
     else:
         targets = default_targets(mods_root)
     own = {mod.lower(), f"@{mod.lower()}"}
-    return [t for t in targets if t.name.lower() not in own]
+    kept = [t for t in targets if t.name.lower() not in own]
+    if kept:
+        return kept
+    if targets:
+        raise ConflictError(f"no mods to compare with: {targets[0].name} is your own mod, which is never "
+                            "compared with itself; name other mods in --against")
+    if scan_all:
+        raise ConflictError(f"no mods to compare with: --all found no @mod folder under {mods_root}")
+    raise ConflictError(f"no mods to compare with: none of CF, COT or Expansion is under {mods_root}; "
+                        "pass --against with the mods to compare")
 
 
 # --- comparison ---------------------------------------------------------------
@@ -372,7 +426,7 @@ def compare(ours: Facts, theirs: Facts, vanilla: Vanilla) -> list[dict]:
         if (section, key) not in theirs.classes:
             continue
         other = theirs.classes[(section, key)][1]
-        if vanilla.config_class(name):
+        if vanilla.config_class(section, name):
             add("vanilla-class-overlap", where, f"{name} is a vanilla class both you and {theirs.name} change.", other)
         elif requires_them:
             add("class-override", where, f"{name} is also defined by {theirs.name}, whose CfgPatches you require.", other)
@@ -394,6 +448,14 @@ def compare(ours: Facts, theirs: Facts, vanilla: Vanilla) -> list[dict]:
 
 # --- report -------------------------------------------------------------------
 
+def header_only_note(mods: list[str], ingame: bool = False) -> str:
+    head = f"{', '.join(mods)} read from PBO headers only (prefixes, paths and script file names)"
+    if ingame:
+        return f"{head}; their config and script classes were checked in game by --ingame."
+    return (f"not a full check: {head}, so their config and script classes were not compared. "
+            "Run again with --ingame to check them.")
+
+
 def check_mod(
     mod: str,
     mod_dir: Path,
@@ -405,7 +467,7 @@ def check_mod(
     if not mod_dir.is_dir():
         raise ConflictError(f"{mod_dir} not found")
     if not targets:
-        raise ConflictError("no mods to compare with: none of CF, COT or Expansion is under the mods folder; pass --against")
+        raise ConflictError("no mods to compare with")
     root = display_root or mod_dir.parent
 
     def display(path: Path) -> str:
@@ -425,18 +487,21 @@ def check_mod(
                         "unreadable": theirs.unreadable})
     findings.sort(key=lambda f: (f["severity"] != ERROR, f["where"], f["rule"]))
     errors = sum(f["severity"] == ERROR for f in findings)
+    # A mod with no unpacked addon gave only prefixes, paths and file names:
+    # no class of it was compared, so a clean result against it is not a PASS.
+    shallow = [s["mod"] for s in scanned if not s["unpacked"]]
     report = {
-        "verdict": "FAIL" if errors else "PASS",
+        "verdict": "FAIL" if errors else "PARTIAL" if shallow else "PASS",
         "mod": mod,
         "mod_dir": str(mod_dir),
         "errors": errors,
         "warnings": len(findings) - errors,
         "scanned": scanned,
+        "header_only": shallow,
         "findings": findings,
     }
-    if any(s["pbo_headers"] and not s["unpacked"] for s in scanned):
-        report["note"] = ("Packed mods were read from their PBO headers only: prefixes, paths and script file names. "
-                          "Their config and script classes are not compared; --ingame checks those at run time.")
+    if shallow:
+        report["note"] = header_only_note(shallow)
     if not vanilla.available:
         report.setdefault("note", "")
         report["note"] = (report["note"] + " P:\\DZ\\ is not mounted, so vanilla classes were not told apart.").strip()
@@ -482,10 +547,16 @@ def add_ingame(report: dict, mod: str, targets: list[Path], server: str, port: i
     report["ingame"] = {"deps": deps, "server": server, "rc": rc, "verdict": first.strip() or "ERROR", "report": gate}
     if report["ingame"]["verdict"] != "PASS":
         report["verdict"] = "FAIL"
+    elif report["verdict"] == "PARTIAL":  # the game loaded every mod together, which covers the header-only ones
+        report["verdict"] = "PASS"
+        shallow = report["header_only"]
+        report["note"] = report["note"].replace(header_only_note(shallow), header_only_note(shallow, ingame=True))
 
 
 def render_text(report: dict) -> str:
     out = []
+    if report.get("note"):  # right under the verdict, so a header-only result is never read as a full check
+        out.append(f"  {report['note']}")
     for f in report["findings"]:
         out.append(f"- {f['where']}  {f['severity']} {f['rule']}: {f['message']}")
         out.append(f"    theirs: {f['other']}")
@@ -493,8 +564,6 @@ def render_text(report: dict) -> str:
     for s in report["scanned"]:
         extra = f", {len(s['unreadable'])} unreadable" if s["unreadable"] else ""
         out.append(f"  scanned {s['mod']}: {s['pbo_headers']} PBO header(s), {s['unpacked']} unpacked addon(s){extra}")
-    if report.get("note"):
-        out.append(f"  {report['note']}")
     out.append(f"  {report['errors']} error(s), {report['warnings']} warning(s)")
     if "ingame" in report:
         g = report["ingame"]
@@ -520,6 +589,15 @@ def main(argv: Optional[list[str]] = None, run: Callable[[list[str]], tuple[int,
     parser.add_argument("--server", default="chernarus", help="--ingame: server instance (default chernarus).")
     parser.add_argument("--port", type=int, default=2302, help="--ingame: server port (default 2302).")
     parser.add_argument("--json", action="store_true", help="Print the report as JSON after the verdict line.")
+    as_json = "--json" in (sys.argv[1:] if argv is None else argv)
+
+    def arg_error(message: str) -> None:
+        # Bad arguments get the same ERROR first line as every other refusal, not bare argparse usage.
+        usage = " ".join(parser.format_usage().split()[1:])
+        _error(f"{message}. Usage: {usage}", as_json)
+        raise SystemExit(2)
+
+    parser.error = arg_error
     try:
         args = parser.parse_args(argv)
         if not args.mod and not args.mod_dir:
@@ -551,7 +629,7 @@ def main(argv: Optional[list[str]] = None, run: Callable[[list[str]], tuple[int,
         return _error(str(e), args.json)
     print(report["verdict"])
     print(json.dumps(report, indent=2) if args.json else render_text(report))
-    return 0 if report["verdict"] == "PASS" else 1
+    return 0 if report["verdict"] in ("PASS", "PARTIAL") else 1
 
 
 def _error(message: str, as_json: bool) -> int:

@@ -21,12 +21,16 @@ Then it writes output/<ModName>-plan/plan.md (a draft the architect finishes),
 behavior-checks.json (validated with dayz-gate's own checker) and recipe.json.
 
 The first output line is the verdict: WROTE (exit 0), FAIL (exit 1, a vanilla
-class or fit did not check out; nothing written) or ERROR (exit 2: bad
-arguments, no project, P:\\ not mounted, plan already there). See SKILL.md.
+class or fit did not check out, or --item reuses a vanilla class name; nothing
+written) or ERROR (exit 2: bad arguments, P:\\ not mounted, no project, plan
+already there without --force, or a finished plan that --force will not
+replace). --force copies the old draft files to a new <out>/.bak/<timestamp>/
+folder first, so no backup is ever overwritten. See SKILL.md.
 """
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import re
 import sys
@@ -191,6 +195,16 @@ class Vanilla:
                     return c
         return None
 
+    def find_any(self, name: str) -> Optional[ClassDef]:
+        """The definition of a class in any config root of any config.cpp under dz/."""
+        if self._all is None:
+            self._all = sorted((self.root / "dz").rglob("config.cpp"))
+        for path in self._all:
+            for c in self._classes(path):
+                if c.name.lower() == name.lower():
+                    return c
+        return None
+
     def resolve(self, cls: ClassDef, prop: str) -> object:
         """A property with inheritance: the class, then its parents in the same root."""
         seen = set()
@@ -312,9 +326,8 @@ class Result:
         return not self.failures
 
 
-def build(recipe: dict, mod: str, item: Optional[str], chosen: dict[str, str], vanilla: Vanilla,
-          display: Path = P_DRIVE) -> Result:
-    """Check the recipe's vanilla classes, scripts and fits; return everything the plan needs."""
+def check_args(recipe: dict, mod: str, item: Optional[str], chosen: dict[str, str]) -> str:
+    """Check the mod name, the options and the class names; return the item class name."""
     if not MOD_RE.match(mod):
         raise RecipeError(f"mod name {mod!r}: start with a letter, then letters, digits or '_' (max 64)")
     unknown = set(chosen) - set(recipe["options"])
@@ -325,7 +338,13 @@ def build(recipe: dict, mod: str, item: Optional[str], chosen: dict[str, str], v
     for label, name in [("item", item)] + sorted(chosen.items()):
         if not behavior.CLASS_RE.match(name):
             raise RecipeError(f"--{label} {name!r} is not a config class name")
+    return item
 
+
+def build(recipe: dict, mod: str, item: Optional[str], chosen: dict[str, str], vanilla: Vanilla,
+          display: Path = P_DRIVE) -> Result:
+    """Check the recipe's vanilla classes, scripts and fits; return everything the plan needs."""
+    item = check_args(recipe, mod, item, chosen)
     values = {"mod": mod, "item": item, "item_lower": item.lower()}
     res = Result(recipe, mod, item, values)
     found: dict[str, ClassDef] = {}
@@ -343,6 +362,16 @@ def build(recipe: dict, mod: str, item: Optional[str], chosen: dict[str, str], v
             entry.update(file=str(display / Path(_rel(vanilla.root, cls.file))), line=cls.line,
                          addon=cls.addon, parent=cls.parent)
         res.vanilla.append(entry)
+
+    # The new class must not reuse a vanilla name: `class AKM: AKM` inherits from itself and redefines vanilla.
+    clash = vanilla.find_any(item)
+    if clash is not None or item.lower() == values.get("parent", "").lower():
+        default = recipe["item"]["default"].format(mod=mod)
+        suggest = default if default.lower() != item.lower() else f"{mod}_{recipe['name'].capitalize()}"
+        what = (f"is already a vanilla class ({clash.root} at "
+                f"{display / Path(_rel(vanilla.root, clash.file))}:{clash.line})" if clash is not None
+                else "is the parent's name")
+        res.failures.append(f"--item {item} {what}; pick a new name such as {suggest}.")
 
     parent = found.get("parent")
     values["parent_addon"] = (parent.addon if parent else None) or "<its CfgPatches class>"
@@ -482,20 +511,52 @@ def render_plan(res: Result, workspace_exists: bool, spec_exists: bool) -> str:
     return "\n".join(out) + "\n"
 
 
-def write_plan(res: Result, project: Path, out_dir: Path, force: bool) -> list[Path]:
+def is_draft(plan_md: Path) -> bool:
+    """True when plan.md is still the recipe's draft (the architect's final plan drops the mark)."""
+    return plan_md.read_text(encoding="utf-8", errors="replace").lstrip("﻿").startswith(DRAFT_MARK)
+
+
+def new_backup_dir(out_dir: Path) -> Path:
+    """Create a fresh <out>/.bak/<timestamp>/ folder; a second --force never reuses an earlier one."""
+    root = out_dir / ".bak"
+    root.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    for n in range(1000):
+        folder = root / (stamp if n == 0 else f"{stamp}-{n}")
+        try:
+            folder.mkdir()
+            return folder
+        except FileExistsError:
+            continue
+    raise RecipeError(f"could not make a new backup folder under {root}; clear out old backups there and rerun.")
+
+
+def write_plan(res: Result, project: Path, out_dir: Path, force: bool) -> tuple[list[Path], Optional[Path]]:
+    """Write the plan files and return them with the backup folder (None when nothing was replaced).
+    --force replaces only a draft, and first copies the old files to a new <out>/.bak/<timestamp>/."""
     present = [out_dir / n for n in PLAN_FILES if (out_dir / n).exists()]
     if present and not force:
         raise RecipeError(f"{present[0]} already exists. Pass --force to replace the plan files, "
                           "or ask dayz-mod-architect to change the plan instead.")
+    plan_md = out_dir / PLAN_FILES[0]
+    if plan_md.exists() and not is_draft(plan_md):
+        raise RecipeError(f"{plan_md} is a finished plan (it no longer starts with {DRAFT_MARK}), so --force "
+                          "will not replace it. Ask dayz-mod-architect to change the plan, or pass --out "
+                          "to write the draft to another folder.")
     workspace = project / "workspace" / res.mod
     plan = render_plan(res, workspace.is_dir(), (workspace / "spec.md").is_file())
     data = checks_file(res)
+    backup = None
+    if present:
+        backup = new_backup_dir(out_dir)
+        for p in present:
+            (backup / p.name).write_bytes(p.read_bytes())
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = [out_dir / n for n in PLAN_FILES]
     paths[0].write_text(plan, encoding="utf-8")
     paths[1].write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     paths[2].write_text(json.dumps(report(res), indent=2) + "\n", encoding="utf-8")
-    return paths
+    return paths, backup
 
 
 def report(res: Result) -> dict:
@@ -518,8 +579,32 @@ def check_vanilla_root(root: Path) -> None:
                           "/dayz-workdrive and check it with /dayz-preflight, then run the recipe again.")
 
 
+def project_root(given: Optional[Path]) -> Path:
+    """The project the plan goes into: --project, else the one cached by /dayz-init.
+
+    Reads the /dayz-init cache itself instead of calling resolve_project_dir, which
+    prints on stderr and exits, so the verdict stays the first line of the output.
+    """
+    if given is not None:
+        if not given.is_dir():
+            raise RecipeError(f"--project {given} is not a folder")
+        return given.resolve()
+    state = h.load_module("dayz_init_state_module", h.DAYZ_INIT_STATE)
+    cached = state.cached_project_root()
+    if cached is None:
+        raise RecipeError("no project cached: run /dayz-init, or pass --project")
+    if not cached.is_dir():
+        raise RecipeError(f"the cached project {cached} no longer exists: run /dayz-init again, or pass --project")
+    return cached.resolve()
+
+
+class _Parser(argparse.ArgumentParser):
+    def error(self, message):  # argparse would print usage on stderr and exit 2 with no verdict line
+        raise RecipeError(f"{message} (see recipe.py --help)")
+
+
 def main(argv: Optional[list[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="Pre-fill dayz-mod-architect's plan from a recipe.")
+    parser = _Parser(description="Pre-fill dayz-mod-architect's plan from a recipe.")
     parser.add_argument("recipe", help=f"list, or one of: {', '.join(list_recipes())}")
     parser.add_argument("mod", nargs="?", help="Mod name; the plan goes to output/<ModName>-plan/.")
     parser.add_argument("--item", help="Class name of the new item (default from the recipe).")
@@ -528,12 +613,17 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--project", type=Path, help="Project root (default: the one cached by /dayz-init).")
     parser.add_argument("--out", type=Path, help="Plan folder (default output/<ModName>-plan/ in the project).")
     parser.add_argument("--vanilla", type=Path, default=P_DRIVE, help=r"Vanilla data root (default P:\).")
-    parser.add_argument("--force", action="store_true", help="Replace plan files that already exist.")
+    parser.add_argument("--force", action="store_true", help="Replace a draft plan that already exists (the old files go to a new .bak/<timestamp>/); "
+                        "a finished plan is never replaced.")
     parser.add_argument("--json", action="store_true", help="Print the report as JSON after the verdict line.")
     try:
         args = parser.parse_args(argv)
-    except SystemExit as e:
+    except SystemExit as e:  # --help
         return 0 if e.code == 0 else 2
+    except RecipeError as e:
+        print("ERROR")
+        print(f"  {e}")
+        return 2
 
     if args.recipe == "list":
         recipes = [load_recipe(n) for n in list_recipes()]
@@ -551,14 +641,9 @@ def main(argv: Optional[list[str]] = None) -> int:
             raise RecipeError("give a <ModName> after the recipe")
         recipe = load_recipe(args.recipe)
         chosen = {o: getattr(args, o) for o in all_option_names() if getattr(args, o)}
+        check_args(recipe, args.mod, args.item, chosen)  # argument errors first, before any setup check
         check_vanilla_root(args.vanilla)
-        if args.project:
-            project = args.project.resolve()
-        else:
-            try:
-                project = h.resolve_project_dir()
-            except SystemExit:  # resolve_project_dir already printed why on stderr
-                raise RecipeError("no usable project: run /dayz-init, or pass --project") from None
+        project = project_root(args.project)
         res = build(recipe, args.mod, args.item, chosen, Vanilla(args.vanilla), args.vanilla)
         if not res.ok:
             print("FAIL")
@@ -566,7 +651,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                   "\n".join(f"{h.FAIL}{f}" for f in res.failures) + "\n  Nothing was written.")
             return 1
         out_dir = args.out or project / "output" / f"{args.mod}-plan"
-        paths = write_plan(res, project, out_dir, args.force)
+        replaced = [n for n in PLAN_FILES if (out_dir / n).exists()]
+        paths, backup = write_plan(res, project, out_dir, args.force)
     except (RecipeError, behavior.BehaviorError, OSError) as e:
         print("ERROR")
         print(json.dumps({"verdict": "ERROR", "error": str(e)}, indent=2) if args.json else f"  {e}")
@@ -574,7 +660,8 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     print("WROTE")
     if args.json:
-        print(json.dumps(dict(report(res), written=[str(p) for p in paths]), indent=2))
+        print(json.dumps(dict(report(res), written=[str(p) for p in paths],
+                              backup=str(backup) if backup else None), indent=2))
         return 0
     for e in res.vanilla:
         print(f"{h.OK}{e['class']} ({e['option']}) {e['root']} at {e['file']}:{e['line']}, addon {e['addon']}")
@@ -582,6 +669,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"{h.OK}{e['symbol']} at {e['file']}:{e['line']}")
     for f in res.fits:
         print(f"{h.OK}{f['what']}")
+    if replaced:
+        print(f"{h.OK}Copied the old {', '.join(replaced)} to {backup}")
     for p in paths:
         print(f"{h.OK}Wrote {p}")
     print(f"  Next: have dayz-mod-architect finish {paths[0].name} (it has {len(res.recipe['questions'])} open questions).")

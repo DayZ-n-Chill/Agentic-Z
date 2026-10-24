@@ -97,8 +97,8 @@ CLAIMS = [
     Claim(GUIDE, "The {N} agents, the {N} skills, and the reference files", ("agents", "skills")),
     Claim(GUIDE, "split into a {N}-line core and {N} topic files of {N} to {N} lines", _RULES),
     Claim(GUIDE, "Answer tests (evals) check {N} of the {N} agents", ("eval_agents", "agents")),
-    Claim(GUIDE, "The final grades cover {N} items. All {N} are at A+: {N} of the {N} agents, "
-                 "{N} of the {N} skills and {N} of the {N} shared items.", ("graded_total", "graded_total") + _GRADED, all_aplus=True),
+    Claim(GUIDE, "The final grades cover {N} items, and {N} are at A+: {N} of the {N} agents, "
+                 "{N} of the {N} skills and {N} of the {N} shared items.", ("graded_total", "graded_aplus") + _GRADED),
     Claim(GUIDE, "The {N} shared items are neither agents nor skills", ("graded_shared",)),
     Claim(GUIDE, "Answer tests cover {N} of the {N} agents.", ("eval_agents", "agents")),
     Claim(GUIDE, "The {N} agents, one .md file each", ("agents",)),
@@ -107,8 +107,8 @@ CLAIMS = [
     Claim(GUIDE, "The {N} hooks: edit check", ("hooks",)),
     Claim(GUIDE, "The {N} agents that use RAG search also send text off the machine", ("rag_agents",)),
     Claim(TEAM, "the {N} agents and {N} skills that work together", ("agents", "skills")),
-    Claim(TEAM, "The final grades cover {N} items, and all {N} are at A+: {N} of the {N} agents, "
-                "{N} of the {N} skills and {N} of the {N} shared items.", ("graded_total", "graded_total") + _GRADED, all_aplus=True),
+    Claim(TEAM, "The final grades cover {N} items, and {N} are at A+: {N} of the {N} agents, "
+                "{N} of the {N} skills and {N} of the {N} shared items.", ("graded_total", "graded_aplus") + _GRADED),
     Claim(TEAM, "The {N} shared items are neither agents nor skills", ("graded_shared",)),
     Claim(TEAM, "The {N} hooks are described in", ("hooks",)),
     Claim(TEAM, "The DayZ rules core is {N} lines, and each of the {N} topic files is {N} to {N} lines", _RULES),

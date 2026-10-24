@@ -1,15 +1,22 @@
-; Passed to AddonBuilder as -exclude=. Files matching these patterns are left
-; out of the final PBO. Comment lines start with ';'.
+; Applied by build.py while it stages the mod into P:\temp\_stage\<ModName>\;
+; it is NOT passed to AddonBuilder (-exclude= crashes AddonBuilder 1.0.240639).
+; Files matching these patterns are not staged, so they stay out of the PBO.
+; Each pattern matches the whole path relative to the mod root, ignoring case,
+; and '*' crosses folders, so 'folder\*' also drops files with no extension.
+; Comment lines start with ';'.
 
 ; Sprite sources for /dayz-build-imageset. Only the packed .paa atlas and
 ; .imageset under gui/imagesets/ ship; the source PNGs stay out of the PBO.
-.gui-sources\*.*
-.gui-sources\*\*.*
+.gui-sources\*
 *\.gui-sources\*
 
 ; Workbench project files (dayz.gproj, DayZSetting.xml) are for the editor, not the game
-workbench\*.*
+workbench\*
 *\workbench\*
+
+; Workbench plugins (scripts\editor\plugins\*.c) run only in the mod's gproj;
+; the game never loads them, so they stay out of the PBO. '*' crosses folders.
+scripts\editor\*
 
 ; Binarization by-products and backups
 *.dep
@@ -18,11 +25,11 @@ workbench\*.*
 *.bak
 
 ; Source, doc and temp folders at the mod root only, archives, image sources.
-; These stay anchored to the root: AddonBuilder matches case-insensitively, so
+; These stay anchored to the root: the patterns match case-insensitively, so
 ; an unanchored *\Temp\* would also drop scripts\4_World\Temp\ or data\doc\.
-Source\*.*
-Temp\*.*
-Doc\*.*
+Source\*
+Temp\*
+Doc\*
 *.zip
 *.7z
 *.psd
@@ -30,8 +37,8 @@ Doc\*.*
 ; Version control
 *\.svn\*
 *\.git\*
-.svn\*.*
-.git\*.*
+.svn\*
+.git\*
 *.scc
 
 ; Nested packed files, editor temp files, signatures and keys

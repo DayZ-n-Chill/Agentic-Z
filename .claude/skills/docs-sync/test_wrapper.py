@@ -70,7 +70,18 @@ def _stop_hook_command() -> str:
     return docs_sync[0]
 
 
-BASH = shutil.which("bash")
+def _git_bash():
+    # Claude Code runs hooks with Git Bash. On PATH, System32's bash.exe (WSL) can come
+    # first, and WSL drops CLAUDE_PROJECT_DIR, so prefer the bash that ships with Git.
+    git = shutil.which("git")
+    if git:
+        candidate = Path(git).resolve().parents[1] / "bin" / "bash.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return shutil.which("bash")
+
+
+BASH = _git_bash()
 
 
 @pytest.mark.skipif(BASH is None, reason="Claude Code runs hook commands with Git Bash")

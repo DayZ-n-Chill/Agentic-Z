@@ -32,23 +32,23 @@ python "<skill-dir>\layout_preview.py" <file.layout> [more.layout ...] [options]
 | Argument | Notes |
 |---|---|
 | `<file.layout>` | One or more layouts. Vanilla ones under `P:\gui\layouts\` work too. |
-| `--sizes` | Comma separated `WIDTHxHEIGHT` list. Default `1280x720,1920x1080,2560x1440,3440x1440`. |
-| `--out` | Folder for the PNGs. Default `output\layout-preview\` under the project root, wherever you run it from. A folder inside `workspace\<ModName>\` is refused (exit 1). |
+| `--sizes` | Comma separated `WIDTHxHEIGHT` list. Default `1280x720,1920x1080,2560x1440,3440x1440`. Each width and height must be 1 to 8192 pixels; anything else is refused (exit 1). |
+| `--out` | Folder for the PNGs. Default `output\layout-preview\` under the project root, wherever you run it from. A folder inside `workspace\<ModName>\` is refused (exit 1), and so is a path that is an existing file. A re-run overwrites PNGs of the same name there. |
 | `--show-hidden` | Also draw widgets with `visible 0`, faded. By default they and their children are left out. |
 | `--no-labels` | Leave widget names off the boxes. |
-| `--json` | Print every widget's box at every size, and the findings, as JSON. Stdout then holds only the JSON; the `[OK]`, `[WARN]` and `[FAIL]` lines go to stderr. |
+| `--json` | Print every widget's box at every size, and the findings, as JSON. Stdout then holds only the JSON; the `[OK]`, `[WARN]`, `[NOTE]` and `[FAIL]` lines go to stderr. |
 
 Each PNG is named `<layout>_<W>x<H>.png`. When two layouts in one run share a file name, their parent folder names go in front (`modA_gui_hud_1280x720.png`, `modB_gui_hud_1280x720.png`) so neither overwrites the other.
 
 ## Output and exit codes
 
-One `[OK]` line per PNG, then one `[WARN]` line per finding. Exit 0 when every layout was drawn, 1 when a file is missing or cannot be parsed, a path is on P:\ while P:\ is not mounted (the line says to run `/dayz-workdrive`), or `--out` is inside a mod's workspace folder (the line says why), 2 when Pillow is missing.
+One `[OK]` line per PNG, then one `[WARN]` or `[NOTE]` line per finding. Findings never change the exit code. Exit 0 when every layout was drawn, 1 when a file is missing or cannot be parsed, a path is on P:\ while P:\ is not mounted (the line says to run `/dayz-workdrive`), `--out` is inside a mod's workspace folder or names a file (the line says why), `--sizes` is malformed or out of range, or a PNG can't be written (for example a folder you can't write to), 2 when Pillow is missing. A layout that fails gets one `[FAIL] <path>: <reason>` line and the run goes on to the next layout.
 
-| Finding | Means |
-|---|---|
-| `off-screen` | A shown widget's box goes past the screen edge at the listed sizes. Often a pixel offset that only fits wide screens. |
-| `no-area` | A shown widget is under one pixel wide or high at the listed sizes, usually a tiny relative size. |
-| `missing-toggle` | A widget sets `position` or `size` without all four exact toggles. The preview reads a missing toggle as 0 (relative); Workbench may not. |
+| Finding | Line | Means |
+|---|---|---|
+| `off-screen` | `[WARN]` | A shown widget's box goes past the screen edge at the listed sizes. Often a pixel offset that only fits wide screens. |
+| `no-area` | `[WARN]` | A shown widget is under one pixel wide or high at the listed sizes, usually a tiny relative size. |
+| `missing-toggle` | `[NOTE]` | A widget leaves out an exact toggle over a nonzero `position` or `size` value, so the toggle decides the box. The preview draws it as 0 (relative). Vanilla files do this and load (`P:\gui\layouts\day_z_ingamemenu.layout:1` is a full-screen menu root with `size 1 1` and no size toggles), so it is a note for the repo rule that every toggle be written (`figma-to-dayz-rules.md` section 6), not a load problem. A toggle over a value of 0 changes nothing and is not reported, such as `position 0 0` with no `hexactpos` at `P:\gui\layouts\day_z_hud.layout:1`. |
 
 ## What the preview draws
 
@@ -67,7 +67,7 @@ One `[OK]` line per PNG, then one `[WARN]` line per finding. Exit 0 when every l
 
 - It is an approximation, not the game renderer. Fonts, styles, imageset art, `fixaspect`, `"Size To Content"`, safe zones and script that moves widgets at run time are not drawn.
 - The 1080 reference height for `scaled 1` is an assumption. Check a layout that depends on it in game with `/dayz-launch-test`.
-- It reads structure loosely. A file the edit hook rejects may still draw; fix what the hook reports first.
+- It reads structure loosely. A file the edit hook rejects may still draw; fix what the hook reports first. A `//` comment, on its own line or at the end of one, is skipped; `//` inside a quoted string is kept.
 
 ## Do not
 

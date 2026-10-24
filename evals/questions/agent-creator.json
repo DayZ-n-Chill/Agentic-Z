@@ -49,7 +49,7 @@
         "dayz-lead.md",
         "re:docs/dayz-modding\\.md|dayz-modding\\.md"
       ],
-      "verified": ".claude/agents/agent-creator.md Workflow step 1 (plugin.json agents list, the Team table in dayz-lead.md and the role table in docs/dayz-modding.md, so a lead can start it); scripts/dev/test_repo_integrity.py test_every_agent_is_registered_in_the_plugin and test_every_dayz_worker_is_in_the_lead_table (the test checks the lead table only; the docs table is checked by hand)"
+      "verified": ".claude/agents/agent-creator.md Workflow step 2, Create (follow every applicable line of docs/agent-registration.md); docs/agent-registration.md:5 (plugin.json agents list), :6 (Team table in dayz-lead.md), :8 (docs/dayz-modding.md routing table for every lead worker and gate); scripts/dev/test_repo_integrity.py test_every_agent_is_registered_in_the_plugin, test_every_dayz_worker_is_in_the_lead_table and test_every_lead_worker_and_gate_is_in_the_docs_routing_table"
     },
     {
       "id": "baseline-via-runner",
@@ -61,7 +61,7 @@
       "must_not_include": [
         "re:\"score\"\\s*:\\s*\\d"
       ],
-      "verified": ".claude/agents/agent-creator.md :24 Workflow step 1 (run `py scripts/dev/run_evals.py --agent <name> --update-baseline`; never edit that file by hand; the runner refuses to lower a score); docs/evals.md:12 names scripts\\dev\\evals.bat as the no-token wrapper for the runner; docs/evals.md 'Adding questions'"
+      "verified": ".claude/agents/agent-creator.md Workflow step 2, Create (follow docs/agent-registration.md); docs/agent-registration.md:15 (run `py scripts/dev/run_evals.py --agent <name> --update-baseline`; never edit that file by hand; the runner refuses to lower a score); docs/evals.md:12 names scripts\\dev\\evals.bat as the no-token wrapper for the runner; docs/evals.md 'Adding questions'"
     }
   ]
 }

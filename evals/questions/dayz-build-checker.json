@@ -11,7 +11,7 @@
       "must_not_include": [
         "re:^\\s*(\\d+\\.\\s*)?`?/dayz-build-pbo\\s+MyVest"
       ],
-      "verified": ".claude/agents/dayz-build-checker.md step 2 (a session the agent did not start is never stopped unasked: report BLOCKED: step 2 and ask the caller); .claude/skills/dayz-gate/gate.py stop_session (a session the gate did not start is stopped only when rt.confirm agrees: --yes or a terminal yes)"
+      "verified": ".claude/agents/dayz-build-checker.md step 2 (`tasklist | grep -i DayZDiag_x64.exe` lists one process per line with the PID in the second column; a session the agent did not start is never stopped unasked: report BLOCKED: step 2 and ask the caller); .claude/skills/dayz-gate/gate.py stop_session (a session the gate did not start is stopped only when rt.confirm agrees: --yes or a terminal yes)"
     },
     {
       "id": "agreed-session-stops-first",
@@ -56,7 +56,7 @@
         "re:P:\\\\+Mods\\\\+@MyVest\\\\+Addons\\\\+MyVest\\.pbo|P:/Mods/@MyVest/Addons/MyVest\\.pbo"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-build-checker.md step 3 (P:\\Mods\\@<ModName>\\Addons\\<ModName>.pbo); .claude/skills/dayz-build-pbo/build.py:1 and :256 (pbo_path = target_dir / f\"{args.modname}.pbo\" under P:\\Mods\\@<ModName>\\Addons)"
+      "verified": ".claude/agents/dayz-build-checker.md step 3 (P:\\Mods\\@<ModName>\\Addons\\<ModName>.pbo); .claude/skills/dayz-build-pbo/build.py:1 and :373 (pbo_path = target_dir / f\"{args.modname}.pbo\" under P:\\Mods\\@<ModName>\\Addons)"
     }
   ]
 }

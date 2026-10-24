@@ -225,6 +225,7 @@ Front index: `_shared/textures/README.md`, which also has a symptom to cause tab
 | `dayz-p3d-audit/references/config-rvmat-checks.md` | `config.cpp` and `.rvmat` checks for models. |
 | `dayz-search-index/references` | Search index notes. Front index: `dayz-search-index/SKILL.md`. |
 | `dayz-search-index/references/cost-and-free-tier.md` | Voyage embedding cost and the free tier check. |
+| `dayz-search-index/references/chunking.md` | How each file type is chunked, and what indexes built by older versions are missing. |
 | `dayz-import-mod/references` | Import notes. Front index: `dayz-import-mod/SKILL.md`. |
 | `dayz-import-mod/references/github-and-cleanup.md` | Git link forms, clone naming and reuse, and removing an imported or cloned mod. |
 

@@ -7,7 +7,7 @@
       "must_include": [
         "re:_co\\b",
         "re:rename",
-        "re:art lead|report|send it back|suffix is missing|no( texture(-role)?)? (suffix|ending)|missing (a |the )?(suffix|ending)"
+        "re:art lead|report|send it back|suffix is missing|no( texture(-role)?)? (suffix|ending)|missing (a |the )?(suffix|ending)|(doesn't|does not) end in an? (texture(-role)? )?(suffix|ending)|refuses"
       ],
       "must_not_include": [
         "re:\\bI (have |will |'ll )?renamed\\b"

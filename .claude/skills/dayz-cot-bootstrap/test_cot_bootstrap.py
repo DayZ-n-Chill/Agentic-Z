@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -28,6 +29,44 @@ def test_user_supplied_cf_cot_deduplicated():
 
 def test_no_user_mods():
     assert cot.dedup_with_cf_cot([]) == ["CF", "Community-Online-Tools"]
+
+
+def test_dedup_is_case_insensitive():
+    """Windows folder names ignore case, so `cf` must not load @CF twice."""
+    assert cot.dedup_with_cf_cot(["cf", "community-online-tools", "MyMod", "mymod"]) == [
+        "CF", "Community-Online-Tools", "MyMod",
+    ]
+
+
+# --- mod name and numeric argument parsing ----------------------------------------
+
+@pytest.mark.parametrize("raw, expected", [("MyMod", "MyMod"), ("@MyMod", "MyMod"), (" @Dabs Framework ", "Dabs Framework")])
+def test_mod_name_strips_leading_at(raw, expected):
+    assert cot.mod_name(raw) == expected
+
+
+@pytest.mark.parametrize("raw", ["", "@", "..", "a;b", "a\\b", "a/b", "P:\\Mods\\@x", "x*"])
+def test_mod_name_rejects_paths_and_separators(raw):
+    with pytest.raises(cot.argparse.ArgumentTypeError):
+        cot.mod_name(raw)
+
+
+def test_main_accepts_at_prefixed_and_lowercase_names(monkeypatch, tmp_path):
+    """`@MyMod` used to look for P:\\Mods\\@@MyMod; `cf` used to load @CF twice."""
+    checked = []
+    _patch_main(monkeypatch, tmp_path, [tmp_path / "Profiles" / "abc.json"], argv=("@MyMod", "cf"))
+    monkeypatch.setattr(cot, "verify_built_mods", lambda mods: checked.extend(mods))
+    assert cot.main() == 0
+    assert checked == ["CF", "Community-Online-Tools", "MyMod"]
+
+
+@pytest.mark.parametrize("argv", [("a;b",), ("--port", "0"), ("--port", "70000"), ("--timeout", "0")])
+def test_main_rejects_bad_arguments_before_preflight(monkeypatch, tmp_path, argv):
+    _patch_main(monkeypatch, tmp_path, [], argv=argv)
+    monkeypatch.setattr(cot.h, "gate_on_preflight", lambda: pytest.fail("preflight ran"))
+    with pytest.raises(SystemExit) as exc:
+        cot.main()
+    assert exc.value.code == 2
 
 
 # --- grant_admin_role -------------------------------------------------------------
@@ -63,6 +102,16 @@ def test_unparseable_json_reports_failure(tmp_path):
     assert f.read_text(encoding="utf-8") == "{not json"
 
 
+@pytest.mark.parametrize("payload", ["[1]", '"admin"', "null", "42"])
+def test_non_object_json_reports_failure(tmp_path, capsys, payload):
+    f = tmp_path / "abc.json"
+    f.write_text(payload, encoding="utf-8")
+    assert cot.grant_admin_role(f) is None
+    assert "Could not parse abc.json" in capsys.readouterr().out
+    assert f.read_text(encoding="utf-8") == payload
+    assert not (tmp_path / "abc.json.bak").exists()
+
+
 # --- flip_zeros_to_twos -----------------------------------------------------------
 
 def test_flip_counts_and_preserves_layout(tmp_path):
@@ -77,6 +126,27 @@ def test_flip_keeps_crlf(tmp_path):
     f.write_bytes(b"A 0\r\nB 0\r\n")
     assert cot.flip_zeros_to_twos(f) == 2
     assert f.read_bytes() == b"A 2\r\nB 2\r\n"
+
+
+def test_flip_keeps_lf(tmp_path):
+    f = tmp_path / "abc.txt"
+    f.write_bytes(b"A 0\nB 0\n")
+    assert cot.flip_zeros_to_twos(f) == 2
+    assert f.read_bytes() == b"A 2\nB 2\n"
+
+
+def test_flip_keeps_mixed_line_endings(tmp_path):
+    f = tmp_path / "abc.txt"
+    f.write_bytes(b"A 0\r\nB 0\nC 0")
+    assert cot.flip_zeros_to_twos(f) == 3
+    assert f.read_bytes() == b"A 2\r\nB 2\nC 2"
+
+
+def test_flip_handles_trailing_whitespace(tmp_path):
+    f = tmp_path / "abc.txt"
+    f.write_bytes(b"Admin.X 0 \nAdmin.Y 0\t\r\nAdmin.Z 0  ")
+    assert cot.flip_zeros_to_twos(f) == 3
+    assert f.read_bytes() == b"Admin.X 2 \nAdmin.Y 2\t\r\nAdmin.Z 2  "
 
 
 def test_flip_only_touches_trailing_zero(tmp_path):
@@ -122,6 +192,41 @@ def test_edit_permissions_fails_when_player_json_unreadable(tmp_path):
     player.write_text("{not json", encoding="utf-8")
     (fw / "Permissions" / "abc.txt").write_text("A 0\n", encoding="utf-8")
     assert cot.edit_permissions(tmp_path, [player]) is False
+
+
+def test_edit_permissions_leaves_perms_untouched_when_json_unparseable(tmp_path):
+    fw = _framework(tmp_path)
+    player = fw / "Players" / "abc.json"
+    player.write_text("{not json", encoding="utf-8")
+    perms = fw / "Permissions" / "abc.txt"
+    perms.write_text("A 0\n", encoding="utf-8")
+    assert cot.edit_permissions(tmp_path, [player]) is False
+    assert perms.read_text(encoding="utf-8") == "A 0\n"
+    assert not (fw / "Permissions" / "abc.txt.bak").exists()
+
+
+def test_edit_permissions_skips_only_the_failed_player(tmp_path):
+    fw = _framework(tmp_path)
+    bad, good = fw / "Players" / "bad.json", fw / "Players" / "good.json"
+    bad.write_text("{not json", encoding="utf-8")
+    good.write_text(json.dumps({"Roles": []}), encoding="utf-8")
+    (fw / "Permissions" / "bad.txt").write_text("A 0\n", encoding="utf-8")
+    (fw / "Permissions" / "good.txt").write_text("A 0\n", encoding="utf-8")
+    assert cot.edit_permissions(tmp_path, [bad, good]) is False
+    assert (fw / "Permissions" / "bad.txt").read_text(encoding="utf-8") == "A 0\n"
+    assert (fw / "Permissions" / "good.txt").read_text(encoding="utf-8") == "A 2\n"
+
+
+def test_grant_admin_reads_json_with_byte_order_mark(tmp_path):
+    player = tmp_path / "abc.json"
+    player.write_bytes(b"\xef\xbb\xbf" + json.dumps({"Roles": []}).encode("utf-8"))
+    assert cot.grant_admin_role(player) is True
+    assert json.loads(player.read_text(encoding="utf-8-sig"))["Roles"] == ["admin"]
+
+
+def test_admin_players_reads_json_with_byte_order_mark(tmp_path):
+    (tmp_path / "abc.json").write_bytes(b"\xef\xbb\xbf" + json.dumps({"Roles": ["admin"]}).encode("utf-8"))
+    assert cot.admin_players(tmp_path) == ["abc"]
 
 
 def test_edit_permissions_fails_when_perms_file_missing(monkeypatch, tmp_path):
@@ -271,13 +376,80 @@ def test_launch_pair_refuses_taken_port_before_spawning(monkeypatch, tmp_path):
 def test_launch_pair_spawns_server_after_free_port_check(monkeypatch, tmp_path):
     order = []
     monkeypatch.setattr(cot.h, "udp_port_free", lambda port: order.append("check") or True)
-    monkeypatch.setattr(cot.subprocess, "Popen", lambda cmd, cwd=None: order.append("spawn") or FakeProc(len(order)))
+    monkeypatch.setattr(cot.h, "gate_on_steam", lambda: order.append("steam"))
+    flags = []
+
+    def fake_popen(cmd, cwd=None, creationflags=0):
+        flags.append(creationflags)
+        order.append("spawn")
+        return FakeProc(len(order))
+
+    monkeypatch.setattr(cot.subprocess, "Popen", fake_popen)
     monkeypatch.setattr(cot, "wait_for_server_port", lambda port, proc, timeout_s: True)
     procs = cot.launch_pair(
         Path("C:/DayZ/DayZDiag_x64.exe"), "P:/Mods/@CF", 2302, tmp_path / "serverDZ.cfg",
         tmp_path / "Profiles", tmp_path / "m", tmp_path / "logs", {}, "Pass 1",
     )
-    assert order == ["check", "spawn", "spawn"] and len(procs) == 2
+    assert order == ["check", "steam", "spawn", "spawn"] and len(procs) == 2
+    # Detached like /dayz-launch-test, so closing the shell leaves pass 2 running.
+    assert flags == [cot.h.DETACH_FLAGS, cot.h.DETACH_FLAGS]
+
+
+def _launch_pair_with(monkeypatch, tmp_path, popen, wait_for_port):
+    monkeypatch.setattr(cot.h, "udp_port_free", lambda port: True)
+    monkeypatch.setattr(cot.h, "gate_on_steam", lambda: None)
+    monkeypatch.setattr(cot.subprocess, "Popen", popen)
+    monkeypatch.setattr(cot, "wait_for_server_port", wait_for_port)
+    return lambda: cot.launch_pair(
+        Path("C:/DayZ/DayZDiag_x64.exe"), "P:/Mods/@CF", 2302, tmp_path / "serverDZ.cfg",
+        tmp_path / "Profiles", tmp_path / "m", tmp_path / "logs", {}, "Pass 1",
+    )
+
+
+def test_launch_pair_stops_server_on_ctrl_c_during_bind_wait(monkeypatch, tmp_path):
+    server = FakeProc(1)
+
+    def interrupted(port, proc, timeout_s):
+        raise KeyboardInterrupt
+
+    run = _launch_pair_with(monkeypatch, tmp_path, lambda *a, **k: server, interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        run()
+    assert server.killed
+
+
+def test_launch_pair_stops_server_when_client_fails_to_spawn(monkeypatch, tmp_path):
+    server = FakeProc(1)
+    spawned = []
+
+    def popen(*a, **k):
+        if spawned:
+            raise OSError("client exe missing")
+        spawned.append(server)
+        return server
+
+    run = _launch_pair_with(monkeypatch, tmp_path, popen, lambda port, proc, timeout_s: True)
+    with pytest.raises(SystemExit) as exc:
+        run()
+    assert server.killed
+    assert "Failed to spawn" in str(exc.value.code)
+
+
+def test_main_ctrl_c_during_pass1_wait_stops_both_processes(monkeypatch, tmp_path, capsys):
+    procs = [FakeProc(1), FakeProc(2)]
+    real_stop = cot.stop_session
+    _patch_main(monkeypatch, tmp_path, [])
+    monkeypatch.setattr(cot, "launch_pair", lambda *a: procs)
+    monkeypatch.setattr(cot, "stop_session", real_stop)
+
+    def interrupted(*a):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cot, "wait_for_cot_player", interrupted)
+    monkeypatch.setattr(cot, "edit_permissions", lambda *a: pytest.fail("edited after Ctrl+C"))
+    assert cot.main() == 130
+    assert all(p.killed for p in procs)
+    assert "Interrupted" in capsys.readouterr().out
 
 
 def test_perms_file_written_after_the_json_is_waited_for_before_stop(monkeypatch, tmp_path):
@@ -399,3 +571,23 @@ def test_skip_pass1_refuses_when_no_player_is_admin(monkeypatch, tmp_path, capsy
     assert cot.main() == 1
     assert launches == []
     assert "no Players JSON" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("argv", [("MyMod",), ("MyMod", "--skip-pass1")])
+def test_pass_two_gate_failure_prints_skip_pass1_hint(monkeypatch, tmp_path, capsys, argv):
+    players = tmp_path / "Profiles" / "PermissionsFramework" / "Players"
+    players.mkdir(parents=True)
+    (players / "abc.json").write_text(json.dumps({"Roles": ["admin"]}), encoding="utf-8")
+    launches = _patch_main(monkeypatch, tmp_path, [players / "abc.json"], argv=argv)
+
+    def launch_pair(*args):
+        launches.append(args[-1])
+        if args[-1] == "Pass 2":
+            sys.exit("[FAIL] Steam is not running.")
+        return [FakeProc(1), FakeProc(2)]
+
+    monkeypatch.setattr(cot, "launch_pair", launch_pair)
+    assert cot.main() == 1
+    assert launches[-1] == "Pass 2"
+    out = capsys.readouterr().out
+    assert "Steam is not running" in out and "--skip-pass1" in out

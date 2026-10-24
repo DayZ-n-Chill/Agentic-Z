@@ -154,6 +154,12 @@ def test_rules_route_confidently(text, expected, args):
         ("set up Object Builder", "dayz-setup-objectbuilder", None),
         ("Object Builder opens with broken panels", "dayz-setup-objectbuilder", None),
         ("show me the vanilla particle catalog", "dayz-particles", None),
+        ("mount P:", "dayz-workdrive", None),
+        ("mount the P: drive", "dayz-workdrive", None),
+        ("download the search index", "dayz-search-download", None),
+        ("get the prebuilt index", "dayz-search-download", None),
+        ("install the statusline", "dayz-statusline", None),
+        ("remove the dayz status line", "dayz-statusline", None),
     ],
 )
 def test_tool_skills_beat_their_neighbours(text, expected, args):
@@ -168,6 +174,34 @@ def test_checking_the_drive_is_still_preflight(text):
 @pytest.mark.parametrize("text", ["add smoke particles to my generator", "make a spark particle effect"])
 def test_making_a_particle_effect_is_still_the_specialists(text):
     assert decide(text)["route"] == "dayz-audio-fx-specialist"
+
+
+def test_debugging_a_particle_effect_is_the_specialists():
+    # The router used to call dayz-particles lookup-only while the skill said "writing or debugging".
+    assert decide("debug my smoke particle")["route"] == "dayz-audio-fx-specialist"
+
+
+# Corrections used to have no route, so the router sent them to an unrelated handler at 0.6 or less.
+@pytest.mark.parametrize("text", ["record a correction: never put scripts in 5_Mission",
+                                  "remember this: always use the CfgPatches name from config.cpp",
+                                  "never use hiddenSelections without a texture",
+                                  "from now on, review every mod before you build it"])
+def test_corrections_go_to_record_correction(text):
+    _assert_confident(text, "dayz-record-correction", None)
+
+
+@pytest.mark.parametrize("text", ["make the safe remember this code after a restart",
+                                  "make the zombies never use doors"])
+def test_remember_or_never_inside_a_request_is_not_a_correction(text):
+    assert decide(text)["route"] != "dayz-record-correction"
+
+
+def test_router_report_template_has_no_copyable_confidence():
+    # A literal "confidence": 0.0 in the template can be copied by Haiku and drops every answer below 0.8.
+    text = (REPO / ".claude" / "agents" / "dayz-router.md").read_text(encoding="utf-8")
+    report = text.split("## Report", 1)[1]
+    assert not re.search(r'"confidence"\s*:\s*\d', report)
+    assert '"confidence": <score>' in report
 
 
 @pytest.mark.parametrize("text", ["add named selections to my vest.p3d", "add a view LOD in Object Builder"])
@@ -259,10 +293,85 @@ def test_plural_pbos_for_a_mod_still_names_the_mod():
     assert decide("build the pbos for MyVest").get("args") == {"mod": "MyVest"}
 
 
-@pytest.mark.parametrize("text", ["build MyVest and launch it", "build MyVest then test it"])
+# Without a mod name only the "and launch" rule used to match, so these went straight to
+# dayz-launch-test at 0.85 and the build step was dropped.
+@pytest.mark.parametrize("text", ["build MyVest and launch it", "build MyVest then test it", "rebuild and launch",
+                                  "build it and test", "rebuild and launch the test server", "pack it then run it"])
 def test_build_and_launch_is_two_steps(text):
     d = decide(text)
     assert d["route"] is None or d["confidence"] < CFG["threshold"]
+
+
+# An absorbing rule used to keep full confidence over any other match, so a second step
+# (a build, a lint, a types.xml edit) was silently dropped. A separate step is absorbed
+# only by a rule whose own work includes it.
+@pytest.mark.parametrize("text", ["build MyVest then show me the health page",
+                                  "lint MyVest and check conflicts with CF",
+                                  "here is my crash log and also add a types entry",
+                                  "my server crashes, build MyVest again",
+                                  "open Workbench on MyVest and build MyVest",
+                                  "how does vanilla handle food? then lint MyVest"])
+def test_an_absorbing_rule_never_drops_a_separate_step(text):
+    d = decide(text)
+    assert d == {"route": None, "next": "dayz-router", "note": d["note"]}
+    assert "best guess" in d["note"]
+
+
+# A step that is part of the winner's own work, or pasted content, still keeps full confidence.
+@pytest.mark.parametrize(
+    "text, expected, args",
+    [
+        ("make a playable test build of MyVest and launch it", "dayz-build-engineer", None),
+        ("build me a vest mod and test it", "orchestrator", None),
+        ("add a types.xml entry for my jacket", "dayz-server-admin", None),
+        ("run the behavior tests for MyVest", "dayz-gate", {"mod": "MyVest"}),
+        ("here's my log: 12:01 SCRIPT (E): NULL pointer to instance, then build MyVest", "dayz-gate",
+         {"mode": "triage"}),
+        ("remove the types entry for MyVest_Vest", "dayz-edit-types", None),
+    ],
+)
+def test_steps_inside_the_winners_own_work_are_absorbed(text, expected, args):
+    _assert_confident(text, expected, args)
+
+
+def test_absorbs_lists_name_step_targets():
+    for rule in CFG["rules"]:
+        absorbs = rule.get("absorbs", False)
+        assert isinstance(absorbs, bool) or absorbs == "all" or isinstance(absorbs, list), rule["route"]
+        if isinstance(absorbs, list):
+            for other in absorbs:
+                assert CFG["targets"][other].get("step"), (rule["route"], other)
+
+
+@pytest.mark.parametrize(
+    "content, reason",
+    [
+        ("{not json", "not valid JSON"),
+        ('{"threshold": 0.8, "conflict_factor": 0.5, "targets": {"a": {"kind": "skill"}},'
+         ' "rules": [{"route": "a", "confidence": 0.9, "patterns": ["(unclosed"]}]}', "bad regex"),
+        ('{"threshold": 0.8, "conflict_factor": 0.5, "targets": {},'
+         ' "rules": [{"route": "a", "confidence": 0.9, "patterns": ["x"]}]}', "route is not in targets"),
+        ('{"threshold": 0.8, "conflict_factor": 0.5, "targets": {"a": {"kind": "skill"}},'
+         ' "rules": [{"route": "a", "confidence": 0.9, "absorbs": "yes", "patterns": ["x"]}]}', "absorbs must be"),
+        ('{"targets": {}, "rules": []}', "missing or malformed field"),
+    ],
+)
+def test_broken_rules_json_exits_1_with_one_line(tmp_path, monkeypatch, capsys, content, reason):
+    bad = tmp_path / "rules.json"
+    bad.write_text(content, encoding="utf-8")
+    with pytest.raises(route.RulesError, match=reason):
+        route.load_rules(bad)
+    monkeypatch.setattr(route, "RULES", bad)
+    assert route.main(["build MyVest"]) == 1
+    err = capsys.readouterr().err.strip()
+    assert err.startswith("dayz-route: rules.json:") and reason in err
+    assert "\n" not in err and "Traceback" not in err
+
+
+def test_missing_rules_json_exits_1(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(route, "RULES", tmp_path / "rules.json")
+    assert route.main(["build MyVest"]) == 1
+    assert capsys.readouterr().err.startswith("dayz-route: rules.json: cannot read")
 
 
 def test_a_crash_after_an_update_is_still_the_debuggers():
@@ -287,6 +396,39 @@ def test_vanilla_in_a_change_request_is_not_a_question(text):
 @pytest.mark.parametrize("text", ["build me a mod", "build a pbo", "build the config", "build it"])
 def test_build_me_is_not_a_pbo_build(text):
     assert decide(text)["route"] != "dayz-build-pbo"
+
+
+# A debugging noun after "build" used to be taken as the mod name: "build errors in MyVest"
+# went to dayz-build-pbo at 0.9 with mod=errors and never reached Jev or the router.
+@pytest.mark.parametrize("text", ["build errors in MyVest", "build fails for MyVest", "build log for MyVest",
+                                  "build issues with MyVest", "pack crashes on MyVest", "build is broken for MyVest",
+                                  "rebuild keeps failing on MyVest", "build results for MyVest"])
+def test_build_debugging_nouns_are_not_a_mod_name(text):
+    d = decide(text)
+    assert d["route"] != "dayz-build-pbo"
+    assert "mod" not in d.get("args", {})
+
+
+# These used to match no rule and cost a router turn.
+@pytest.mark.parametrize("text", ["rebuild the pbo", "build the pbo", "pack my pbos", "rebuild the pbos"])
+def test_rebuild_the_pbo_without_a_name_is_a_pbo_build(text):
+    _assert_confident(text, "dayz-build-pbo", None)
+
+
+def test_the_pbo_for_everything_is_still_not_a_mod_name():
+    assert decide("build the pbo for everything")["route"] is None
+
+
+@pytest.mark.parametrize("text", ["scaffold a whole new mod with a car", "start a new vest mod",
+                                  "start a mod that adds a car and a garage", "scaffold me a weapons mod"])
+def test_scaffold_or_start_a_mod_with_content_is_the_team(text):
+    _assert_confident(text, "orchestrator", None)
+
+
+# An empty scaffold stays with dayz-new-mod; the new orchestrator verbs must not take it.
+@pytest.mark.parametrize("text", ["scaffold a new mod", "scaffold an empty mod", "scaffold a whole new mod"])
+def test_scaffold_an_empty_mod_is_still_new_mod(text):
+    _assert_confident(text, "dayz-new-mod", None)
 
 
 @pytest.mark.parametrize("text", ["build MyVest and then launch the test server", "what should I do next?",
@@ -347,6 +489,15 @@ def test_router_agent_lists_exactly_the_targets():
     assert listed == set(CFG["targets"])
     for name, target in CFG["targets"].items():
         assert f"- `{name}` ({target['kind']})" in text
+
+
+def test_every_user_facing_dayz_skill_is_a_target():
+    # A skill with no target is unreachable, so the router forces it onto a wrong route.
+    not_targets = {
+        "dayz-route",  # the router itself
+    }
+    skills = {p.parent.name for p in (REPO / ".claude" / "skills").glob("dayz-*/SKILL.md")}
+    assert sorted(skills - not_targets - set(CFG["targets"])) == []
 
 
 def test_cli_json_and_text(monkeypatch):

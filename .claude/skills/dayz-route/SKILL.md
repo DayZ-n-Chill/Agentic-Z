@@ -19,7 +19,7 @@ It needs no DayZ install and does not gate on `/dayz-preflight`: it only reads `
 python "<skill-dir>\route.py" "<the user's request>" --json
 ```
 
-Without `--json` it prints one readable line instead. It always exits 0 for a non-empty request.
+Without `--json` it prints one readable line instead. It exits 0 for a non-empty request, 2 for an empty one, and 1 with a one-line `dayz-route: rules.json: ...` message on stderr when `rules.json` is missing, is not valid JSON, or holds a bad regex, an unknown route or a bad `absorbs` value. On exit 1, fix `rules.json` (or dispatch the `dayz-router` agent meanwhile).
 
 ## Output
 
@@ -40,10 +40,15 @@ One shape for every stage:
 
 ## Stages
 
-1. **Rules** (`rules.json`, free): regex patterns per route. A rule can carry fixed `args` (the paste rules set `mode`) that join what its pattern captures. Matches for two different routes (for example "build MyVest and launch it") cut confidence by `conflict_factor`, because that is a multi-step request. A rule with `"absorbs": true` in `rules.json` keeps full confidence when other routes also match. Whole-mod, pipeline, file, log, tool, paste and question rules use it, so a named item (a car, a rifle, a changelog) does not pull the request away. Results at or above `threshold` (0.8) are final.
+1. **Rules** (`rules.json`, free): regex patterns per route. A rule can carry fixed `args` (the paste rules set `mode`) that join what its pattern captures. Matches for two different routes (for example "build MyVest and launch it", or "rebuild and launch" with no mod name) cut confidence by `conflict_factor`, because that is a multi-step request. A rule's `absorbs` value says which other matches it may ignore and keep full confidence:
+   - `true`: matches for routes that are not separate steps, so a named item (a car, a rifle, a changelog) does not pull a file, log, tool or question request away. Targets marked `"step": true` (build, deploy, lint, conflict check, launch, stop, types.xml edit) are separate actions, and a `true` rule absorbs one only when both matches cover the same words (such as "rebuild" in "rebuild the search index"). So "build MyVest then show me the health page" falls through instead of dropping the build.
+   - a list of step targets: those steps too, because they are part of the rule's own work (the build engineer builds and launches; server admin edits types.xml; a behaviour or visual test launches the game).
+   - `"all"`: everything. Paste rules and the whole-mod team use it.
+
+   Results at or above `threshold` (0.8) are final.
 2. **Jev** (`jev.py`, only with `TYPESAFE_API_KEY` set): one TypeSafe Choice question over all targets plus `other`, 5 second timeout. Missing key, network error, bad status, `other` or low confidence all fall through, with the reason in `note`. The request text is sent to `api.typesafe.ai`.
 3. **dayz-router** agent: Haiku, reads nothing but the request (and `rules.json` if needed).
 
 ## Changing routes
 
-Add a target to `targets` and a rule to `rules` in `rules.json`, and add the same target to the list in `.claude/agents/dayz-router.md`. `test_route.py` fails if a target has no skill folder or agent file, or if the two lists differ.
+Add a target to `targets` (with `"step": true` when it is a separate action a request can chain with others) and a rule to `rules` in `rules.json`, and add the same target to the list in `.claude/agents/dayz-router.md`. `test_route.py` fails if a target has no skill folder or agent file, or if the two lists differ.

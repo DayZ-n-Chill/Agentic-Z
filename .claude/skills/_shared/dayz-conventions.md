@@ -122,11 +122,11 @@ The core above is what every DayZ agent and skill reads. Topic rules live in `.c
 
 | Topic file | Sections | Read by |
 |---|---|---|
-| `conventions/config.md` | Config conventions, `inventorySlot` string vs array (`T148506`), Bundle / umbrella mods | config-specialist, build-checker, build-engineer, mod-reviewer, audio-fx-specialist, ai-specialist, docs-writer, ingame-tester, mod-debugger, vehicle-specialist |
+| `conventions/config.md` | Config conventions, `inventorySlot` string vs array (`T148506`), Bundle / umbrella mods | config-specialist, build-checker, build-engineer, mod-reviewer, audio-fx-specialist, ai-specialist, docs-writer, ingame-tester, mod-debugger, vehicle-specialist, mod-architect, weapon-specialist, wearables-specialist |
 | `conventions/assets.md` | Asset conventions (texture suffixes, `.rvmat`, `.p3d`), LOD canonical resolutions | asset-specialist, object-builder, animation-specialist, physics-specialist, mod-reviewer, mod-architect |
-| `conventions/scripts.md` | Script conventions (`scripts/` layers, `modded class` with no `extends`), Client and server ownership (which side runs what, who owns state, RPC direction, server validation) | script-specialist, workbench-specialist, mod-debugger, mod-reviewer, mod-architect, audio-fx-specialist, ai-specialist, persistence-specialist, vehicle-specialist |
+| `conventions/scripts.md` | Script conventions (`scripts/` layers, `modded class` with no `extends`), Client and server ownership (which side runs what, who owns state, RPC direction, server validation) | script-specialist, workbench-specialist, mod-debugger, mod-reviewer, mod-architect, audio-fx-specialist, ai-specialist, persistence-specialist, vehicle-specialist, weapon-specialist |
 | `conventions/ui.md` | UI scripting realities (read before any "change the X color" task) | ui-specialist, figma-to-dayz-layout, layout-validator |
-| `conventions/server.md` | Server / economy, Test server instances (`.server/`), Mission and DayZ Server install notes | server-admin, map-specialist, ingame-tester, mod-debugger |
+| `conventions/server.md` | Server / economy, Test server instances (`.server/`), Mission and DayZ Server install notes | server-admin, map-specialist, ingame-tester, mod-debugger, mod-architect |
 
 ## How agents and skills reference this file
 

@@ -10,13 +10,17 @@ evidence and writes the answer.
 2. Every hit is checked against the file on P:\\: the cited lines must still
    hold the indexed text. A hit whose text moved is re-cited at its new line;
    one whose text is gone is dropped.
-3. A checked hit is kept only when it is on topic: its distance is at most
+3. A checked hit longer than EXCERPT_LINES (often a whole config class) is
+   re-cited at its best term lines, as the Grep fallback picks lines in a
+   file; one with no term line inside it is dropped as off topic.
+4. A checked hit is kept only when it is on topic: its distance is at most
    RAG_MAX_DISTANCE and its text or class holds a search term from the question.
-4. With no key, no index, a search error or no kept hit, a keyword scan
+5. With no key, no index, a search error or no kept hit, a keyword scan
    of the vanilla folders on P:\\ (the Grep fallback) gives the evidence.
 
 The first output line is the verdict: EVIDENCE (exit 0), NONE (exit 1, nothing
-found) or ERROR (exit 2: empty question, bad argument, P:\\ not mounted).
+found) or ERROR (exit 2: empty question, no search terms, bad argument, P:\\
+not mounted, or the script crashed or could not load the dayz-rag server).
 Each citation is path:line_start-line_end with the lines read from disk.
 See SKILL.md.
 """
@@ -34,12 +38,18 @@ from typing import Optional
 HERE = Path(__file__).resolve().parent
 SKILLS_DIR = HERE.parent
 REPO = SKILLS_DIR.parents[1]
-sys.path.insert(0, str(SKILLS_DIR / "_shared"))
-import skill_helpers as h  # noqa: E402
-
 RAG_DIR = REPO / ".claude" / "mcp" / "dayz-rag"
+sys.path.insert(0, str(SKILLS_DIR / "_shared"))
 sys.path.insert(0, str(RAG_DIR))
-import voyage_common  # noqa: E402  same key lookup as the server
+# A failed import is reported by main() as an ERROR line with exit 2, not a traceback.
+try:
+    import skill_helpers as h  # noqa: E402
+    import voyage_common  # noqa: E402  same key lookup as the server
+except Exception as _exc:  # noqa: BLE001
+    h = voyage_common = None
+    IMPORT_ERROR: Optional[str] = f"{type(_exc).__name__}: {_exc}"
+else:
+    IMPORT_ERROR = None
 
 P_DRIVE = Path("P:\\")
 DEFAULT_TOP_K = 5
@@ -81,17 +91,55 @@ with work works would you your
 
 _SUFFIXES = ("ing", "age", "ed", "es", "s")
 
+# Two-letter words kept as search terms even when written in lower case. Any other
+# two-letter word is kept only when written in capitals ("HP", "NV"), so "is" and
+# "it" are still dropped. Stop words are dropped in any case ("IT", "IS").
+SHORT_TERMS = {"ai", "hp", "ui", "id", "nv", "uv"}
+_short_re_cache: dict[str, re.Pattern] = {}
+
+
+def _short_re(term: str) -> re.Pattern:
+    """Pattern for a two-letter term as its own word or name part, never inside a word.
+
+    "AI" matches EntityAI, DayZCreatureAI and a lone "ai", but not FAIL, MAIN_MENU,
+    RAISED or UAInput; "HP" matches zoneHP and HPTypes but not THROUGHPUT.
+    """
+    pat = _short_re_cache.get(term)
+    if pat is None:
+        up = re.escape(term.upper())
+        low = re.escape(term)
+        pat = re.compile(rf"(?<![A-Z]){up}(?![a-z])|(?<![A-Za-z]){low}(?![A-Za-z])")
+        _short_re_cache[term] = pat
+    return pat
+
+
+def _has_term(term: str, text: str, low: Optional[str] = None) -> bool:
+    """True when text holds the search term.
+
+    A term of three letters or more is a lower-case substring match, so "spoil"
+    finds "SpoilTime". A two-letter term would match inside too many words that
+    way ("ai" in "main", "fail"), so it is matched by case on its own word or name
+    part instead (see _short_re). Pass low (text.lower()) when it is already known.
+    """
+    if len(term) < 3:
+        return _short_re(term).search(text) is not None
+    return term in (low if low is not None else text.lower())
+
 
 def search_terms(question: str) -> list[str]:
     """Lower-case search terms from a question, stop words dropped, light stemming.
 
     Terms are matched as substrings, so "spoilage" becomes "spoil" and still
-    finds "spoiled" and "SpoilTime".
+    finds "spoiled" and "SpoilTime". Words shorter than three letters are dropped,
+    except a two-letter word written in capitals or listed in SHORT_TERMS
+    ("AI", "HP", "ui"), which is matched as its own word (see _has_term).
     """
     terms: list[str] = []
     for word in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", question):
         w = word.lower()
-        if len(w) < 3 or w in STOPWORDS:
+        if w in STOPWORDS or len(w) < 2:
+            continue
+        if len(w) == 2 and not (word.isupper() or w in SHORT_TERMS):
             continue
         for suffix in _SUFFIXES:
             if w.endswith(suffix) and len(w) - len(suffix) >= 4:
@@ -111,6 +159,16 @@ def _read_lines(path: Path) -> Optional[list[str]]:
         return path.read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError:
         return None
+
+
+# A quoted asset path such as "\dz\gear\food\BoxCereal.p3d". A search term inside one
+# ("food" in a model path) says where the asset sits, not what the class does.
+_QUOTED_PATH = re.compile(r'"[^"\n]*[\\/][^"\n]*"')
+
+
+def _topic_text(text: str) -> str:
+    """Text for term matching on RAG hits, quoted asset paths removed (case kept for _has_term)."""
+    return _QUOTED_PATH.sub('""', text)
 
 
 def _excerpt(lines: list[str], start: int, end: int) -> str:
@@ -182,6 +240,68 @@ def verify_hit(hit: dict) -> dict:
     return {**cite, "status": "changed", "reason": "cited lines no longer match the index"}
 
 
+def _term_windows(line_scores: list[tuple], n_lines: int, lo: int = 1,
+                  hi: Optional[int] = None) -> list[list]:
+    """Windows of CONTEXT lines around the best LINES_PER_FILE scored lines.
+
+    line_scores holds (weight, 0-based line index), best first. Returns
+    [start, end, best line, its weight] lists (1-based, kept inside lo..hi);
+    overlapping windows merge. Shared by the Grep fallback and narrow_hit.
+    """
+    hi = min(hi or n_lines, n_lines)
+    spans: list[list] = []
+    for w, i in sorted(line_scores[:LINES_PER_FILE], key=lambda x: x[1]):
+        start, end = max(lo, i + 1 - CONTEXT), min(hi, i + 1 + CONTEXT)
+        if spans and start <= spans[-1][1] + 1:
+            spans[-1][1] = end
+            if w > spans[-1][3]:
+                spans[-1][2:] = [i + 1, w]
+        else:
+            spans.append([start, end, i + 1, w])
+    return spans
+
+
+def narrow_hit(cite: dict, terms: list[str]) -> Optional[list[dict]]:
+    """Re-cite a checked RAG hit longer than EXCERPT_LINES at its best term lines.
+
+    The index can return a whole config class (the CfgVehicles chunk of
+    P:\\dz\\gear\\food\\config.cpp spans some 14,000 lines) while the excerpt shows
+    only the first EXCERPT_LINES of it. Lines inside the span are scored as the
+    Grep fallback scores a file's lines (a term on fewer lines weighs more;
+    quoted asset paths do not count), and each window becomes its own citation,
+    with "within" naming the whole span. A short hit comes back unchanged.
+    Returns None when no line inside the span holds a search term.
+    """
+    start, end = cite["line_start"], cite["line_end"]
+    if end - start + 1 <= EXCERPT_LINES:
+        return [cite]
+    lines = _read_lines(Path(cite["path"])) or []
+    end = min(end, len(lines))
+    body = [_topic_text(lines[i]) for i in range(start - 1, end)]
+    body_low = [x.lower() for x in body]
+    df = {t: sum(1 for x, xl in zip(body, body_low) if _has_term(t, x, xl)) for t in terms}
+    weight = {t: math.log((len(body) + 1) / df[t]) for t in terms if df[t]}
+    line_scores = []
+    for k, (text, low) in enumerate(zip(body, body_low)):
+        w = sum(wt for t, wt in weight.items() if _has_term(t, text, low))
+        if w:
+            line_scores.append((w, start - 1 + k))
+    if not line_scores:
+        return None
+    line_scores.sort(key=lambda x: (-x[0], x[1]))
+    within = f"{cite['path']}:{cite['line_start']}-{cite['line_end']}"
+    return [{**cite, "line_start": s, "line_end": e, "within": within, "excerpt": _excerpt(lines, s, e)}
+            for s, e, _m, _w in _term_windows(line_scores, len(lines), start, end)]
+
+
+def too_far(cite: dict) -> Optional[str]:
+    """Why a RAG hit is farther than RAG_MAX_DISTANCE, or None when it is close enough."""
+    dist = cite.get("distance")
+    if dist is not None and dist > RAG_MAX_DISTANCE:
+        return f"off topic: distance {dist:.3f} is above {RAG_MAX_DISTANCE}"
+    return None
+
+
 def off_topic(cite: dict, terms: list[str]) -> Optional[str]:
     """Why a checked RAG hit is off topic, or None when it is kept.
 
@@ -189,11 +309,11 @@ def off_topic(cite: dict, terms: list[str]) -> Optional[str]:
     excerpt or class context (a hit can match by meaning and still be about
     something else, e.g. a cooking config class for a food spoilage question).
     """
-    dist = cite.get("distance")
-    if dist is not None and dist > RAG_MAX_DISTANCE:
-        return f"off topic: distance {dist:.3f} is above {RAG_MAX_DISTANCE}"
-    text = f"{cite.get('excerpt', '')}\n{cite.get('context') or ''}".lower()
-    if terms and not any(t in text for t in terms):
+    if why := too_far(cite):
+        return why
+    text = _topic_text(f"{cite.get('excerpt', '')}\n{cite.get('context') or ''}")
+    low = text.lower()
+    if terms and not any(_has_term(t, text, low) for t in terms):
         return "off topic: holds no search term from the question"
     return None
 
@@ -210,6 +330,17 @@ def _declared_names(lines: list[str]) -> list[str]:
         if m and m.group(1).split()[0] not in _KEYWORDS:
             names.append(m.group(2).lower())
     return names
+
+
+def _name_holds(term: str, name: str) -> bool:
+    """True when a lower-case declared name holds the term.
+
+    A two-letter term counts only at the start or end of the name ("entityai",
+    "uiscriptedmenu"), not inside it ("main", "fail").
+    """
+    if len(term) < 3:
+        return name.startswith(term) or name.endswith(term)
+    return term in name
 
 
 def _is_debug_or_gui(path: Path, root: Path) -> bool:
@@ -250,8 +381,9 @@ def grep_vanilla(terms: list[str], folders: list[str], file_type: Optional[str],
                 if not lines:
                     continue
                 scanned += 1
-                low = "\n".join(lines).lower()
-                present = [t for t in terms if t in low]
+                whole = "\n".join(lines)
+                low = whole.lower()
+                present = [t for t in terms if _has_term(t, whole, low)]
                 if present:
                     found.append((str(path), lines, present))
     df = {t: sum(1 for _p, _l, present in found if t in present) for t in terms}
@@ -261,29 +393,20 @@ def grep_vanilla(terms: list[str], folders: list[str], file_type: Optional[str],
         line_scores = []
         for i, line in enumerate(lines):
             ll = line.lower()
-            w = sum(weight[t] for t in present if t in ll)
+            w = sum(weight[t] for t in present if _has_term(t, line, ll))
             if w:
                 line_scores.append((w, i))
         line_scores.sort(key=lambda x: (-x[0], x[1]))
         score = sum(weight[t] for t in present) + line_scores[0][0]
         names = _declared_names(lines)
-        score += sum(weight[t] for t in present if any(t in n for n in names))
+        score += sum(weight[t] for t in present if any(_name_holds(t, n) for n in names))
         if _is_debug_or_gui(Path(path), root):
             score *= DEBUG_GUI_WEIGHT
         scored.append((score, len(lines), path, lines, line_scores, len(present)))
     scored.sort(key=lambda s: (-s[0], s[1], s[2]))
     cites = []
     for _score, _n, path, lines, line_scores, n_terms in scored[:top_k]:
-        spans: list[list] = []  # [start, end, best line, its weight]; overlapping windows merge
-        for w, i in sorted(line_scores[:LINES_PER_FILE], key=lambda x: x[1]):
-            start, end = max(1, i + 1 - CONTEXT), min(len(lines), i + 1 + CONTEXT)
-            if spans and start <= spans[-1][1] + 1:
-                spans[-1][1] = end
-                if w > spans[-1][3]:
-                    spans[-1][2:] = [i + 1, w]
-            else:
-                spans.append([start, end, i + 1, w])
-        for start, end, match, _w in spans:
+        for start, end, match, _w in _term_windows(line_scores, len(lines)):
             cites.append({
                 "source": "grep",
                 "path": path,
@@ -335,17 +458,36 @@ def ask(question: str, top_k: int = DEFAULT_TOP_K, file_type: Optional[str] = No
                 notes.append(f"RAG search failed: {exc}")
             else:
                 mode = "rag"
-                stale = unrelated = 0
+                stale = unrelated = narrowed = 0
                 for hit in hits:
                     c = verify_hit(hit)
                     if c["status"] == "changed":
                         stale += 1
                         dropped.append(c)
-                    elif why_off := off_topic(c, terms):
+                        continue
+                    # Distance first, so a far whole-class hit is dropped once, whole,
+                    # instead of once per re-cited window.
+                    if why_far := too_far(c):
                         unrelated += 1
-                        dropped.append({**c, "reason": why_off})
-                    else:
-                        cites.append(c)
+                        dropped.append({**c, "reason": why_far})
+                        continue
+                    parts = narrow_hit(c, terms)
+                    if parts is None:
+                        unrelated += 1
+                        n_lines = c["line_end"] - c["line_start"] + 1
+                        dropped.append({**c, "reason": f"off topic: none of its {n_lines} lines "
+                                                       "holds a search term from the question"})
+                        continue
+                    narrowed += parts[0] is not c
+                    for part in parts:
+                        if why_off := off_topic(part, terms):
+                            unrelated += 1
+                            dropped.append({**part, "reason": why_off})
+                        else:
+                            cites.append(part)
+                if narrowed:
+                    notes.append(f"{narrowed} hit(s) longer than {EXCERPT_LINES} lines re-cited at their "
+                                 "best term lines; 'within' names the whole span")
                 if stale:
                     notes.append(f"{stale} hit(s) dropped: the file no longer holds the indexed text; "
                                  "rebuild with /dayz-search-index --full")
@@ -383,6 +525,8 @@ def print_report(report: dict) -> None:
         print(f"\n[{i}] {c['cite']}  {c['status']}{extra}{ctx}")
         if c.get("reason"):
             print(f"    ({c['reason']})")
+        if c.get("within"):
+            print(f"    (within {c['within']})")
         for line in c["excerpt"].splitlines():
             print(f"    | {line}")
 
@@ -408,6 +552,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     except SystemExit as e:
         return 0 if e.code == 0 else 2
 
+    if IMPORT_ERROR:
+        print(f"ERROR\n  could not load the script's helpers ({IMPORT_ERROR})")
+        return 2
     question = " ".join(" ".join(args.question).split())
     if not question:
         print("ERROR\n  empty question")
@@ -415,11 +562,19 @@ def main(argv: Optional[list[str]] = None) -> int:
     if not 1 <= args.top_k <= MAX_TOP_K:
         print(f"ERROR\n  --top-k must be 1 to {MAX_TOP_K}")
         return 2
+    if not search_terms(question):
+        print("ERROR\n  no search terms left once common words are dropped; "
+              "name a class, function or config value")
+        return 2
     if not P_DRIVE.exists():
         print("ERROR\n  P:\\ is not mounted, so vanilla files can't be read. Run /dayz-workdrive.")
         return 2
 
-    report = ask(question, args.top_k, args.file_type, args.folder, args.grep)
+    try:
+        report = ask(question, args.top_k, args.file_type, args.folder, args.grep)
+    except Exception as exc:  # noqa: BLE001  a crash (e.g. server.py fails to load) is ERROR, never NONE
+        print(f"ERROR\n  {type(exc).__name__}: {exc}")
+        return 2
     if args.json:
         print(report["verdict"])
         print(json.dumps(report, indent=2))

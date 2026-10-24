@@ -60,6 +60,18 @@
         "re:min[^\\n]*nominal|nominal[^\\n]*min"
       ],
       "verified": ".claude/agents/dayz-mod-reviewer.md check 7 (min is not above nominal) and the owner list"
+    },
+    {
+      "id": "workbench-plugin-not-critical",
+      "question": "Gate review of a Workbench plugin task; review only what is shown, do not open workspace/, do not run lint, and assume every referenced file exists. The mod is MyMod with $PBOPREFIX$ MyMod. The task added scripts/editor/plugins/myplugin.c and added \"MyMod/scripts/editor/plugins\" to the workbench module Paths in workbench/dayz.gproj. config.cpp is unchanged and its CfgMods defs list only MyMod/scripts/3_Game, MyMod/scripts/4_World and MyMod/scripts/5_Mission. Lint already ran and returned exactly one finding: {\"rule\": \"script-module-unlisted\", \"severity\": \"warning\", \"file\": \"config.cpp\", \"message\": \"scripts/editor/ holds scripts, but no CfgMods defs entry lists MyMod/scripts/editor; add it to a script module or the engine ignores those files.\"}. File scripts/editor/plugins/myplugin.c:\n\n[WorkbenchPluginAttribute(\"MyMod Hello\", \"Prints a line\", \"ctrl+9\", \"\", {\"ScriptEditor\"})]\nclass MyModHelloPlugin: WorkbenchPlugin\n{\n    override void Run()\n    {\n        Print(\"Hello from MyMod\");\n    }\n}\n\nReturn your verdict in your usual report format.",
+      "must_include": [
+        "re:\\A\\W*PASS"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*FAIL\\b",
+        "re:CRITICAL[^\\n]*(scripts/editor|script-module-unlisted)"
+      ],
+      "verified": ".claude/agents/dayz-mod-reviewer.md 'Run lint first' (scripts/editor/ exception) and check 2; .claude/skills/dayz-lint/lint.py:341-351 (warns on any scripts/ subfolder with .c files no module lists); vanilla plugin form at P:/scripts/editor/plugins/dayztools.c:1 (class DayZTool: WorkbenchPlugin), :46 (WorkbenchPluginAttribute with five positional arguments) and :55 (override void Run())"
     }
   ]
 }

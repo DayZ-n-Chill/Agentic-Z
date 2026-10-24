@@ -10,7 +10,7 @@ cd my-mod
 python .claude\skills\sync-skills\sync.py
 ```
 
-After that, all three supported agent CLIs (Claude Code, Codex, Gemini) discover the same slash commands. From inside Claude Code you can also run `/sync-skills` instead of the python command.
+After that, all three supported agent CLIs (Claude Code, Codex, Gemini) discover the same slash commands: Claude Code from the repo directly, Codex and Gemini through the links. From inside Claude Code you can also run `/sync-skills` instead of the python command.
 
 Then walk through [`docs/dayz-modding.md`](dayz-modding.md) for prerequisites (DayZ Tools, P:\ drive setup, vanilla data extraction) and the end-to-end workflow.
 

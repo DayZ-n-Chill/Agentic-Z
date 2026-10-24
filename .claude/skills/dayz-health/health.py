@@ -8,14 +8,16 @@ Every result is one JSON file under .server/!Health/<ModName>/results/, named
 by its UTC time and kind (build, lint, ingame, behavior, visual or review). /dayz-gate
 writes one per run (and a lint result for each build run). `record` stores
 any other result: the JSON output of /dayz-lint or /dayz-gate, or a
-dayz-mod-reviewer report as text. FILE defaults to standard input.
+dayz-mod-reviewer report as text. FILE defaults to standard input. A build
+report with a lint step is stored as two results, as /dayz-gate stores it.
 
 `show` rebuilds health.md and health.html next to the results: the last
 build, the last test, open findings (those in the newest result of each kind)
 and the history. `record` and /dayz-gate rebuild them too.
 
 The first output line is OK (exit 0) or ERROR (exit 2: bad arguments, no
-project, unreadable report). See SKILL.md.
+project, a mod with no workspace folder and no stored results, unreadable
+report). See SKILL.md.
 """
 from __future__ import annotations
 
@@ -24,7 +26,7 @@ import html
 import json
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -40,8 +42,11 @@ TEST_KINDS = ("ingame", "behavior", "visual")
 HEALTH_DIR = Path(".server") / "!Health"
 KEEP = 200          # results kept per mod; older ones are deleted when a new one is stored
 HISTORY_ROWS = 50   # rows in the page's history table
+ARG_USAGE = "health.py [show] <ModName>|--all [--json] | health.py record <ModName> <kind> [FILE] [--json]"
 MOD_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*$")
 SEVERITY_ORDER = {"fail": 0, "critical": 0, "error": 0, "warn": 1, "warning": 1, "nit": 2}
+# A review finding's severity (text or JSON form) -> the stored one.
+REVIEW_SEVERITY = {"critical": "fail", "fail": "fail", "error": "fail", "warn": "warn", "warning": "warn", "nit": "nit"}
 # dayz-mod-reviewer report line: `<SEVERITY> path:line: what is wrong, and the fix -> <owner>`
 REVIEW_LINE_RE = re.compile(
     r"^\s*[-*]?\s*(?P<sev>CRITICAL|WARN|NIT)\b[:\s]+(?P<where>\S+?)(?::(?P<line>\d+))?:\s+(?P<text>.+?)"
@@ -66,8 +71,11 @@ def mod_dir(project_dir: Path, mod: str) -> Path:
 
 def _finding(severity: str, text: str, file: Optional[str] = None, line: Optional[int] = None,
              category: str = "", owner: str = "", fix: str = "", count: int = 1) -> dict:
-    return {"severity": severity, "category": category, "file": file or "", "line": line,
-            "text": text, "owner": owner, "fix": fix, "count": count}
+    """One stored finding. Text fields become strings and line/count integers here, so a report with
+    odd types is refused while parsing (ValueError) instead of breaking the page every later run."""
+    return {"severity": severity, "category": str(category or ""), "file": str(file or ""),
+            "line": int(line) if line not in (None, "") else None, "text": str(text),
+            "owner": str(owner or ""), "fix": str(fix or ""), "count": int(count)}
 
 
 def _triaged(f: dict) -> tuple[str, str]:
@@ -85,13 +93,15 @@ def from_gate(report: dict) -> dict:
         owner, fix = _triaged(f)
         findings.append(_finding("fail", f["text"], f.get("file"), f.get("line"), f.get("category", ""),
                                  owner, fix, f.get("count", 1)))
-    warnings = len(report.get("warnings", [])) + report.get("warnings_not_listed", 0)
+    warnings = len(report.get("warnings", [])) + int(report.get("warnings_not_listed", 0))
     result = {"kind": report["mode"], "verdict": report["verdict"], "findings": findings, "warnings": warnings}
     if report.get("checks"):
-        result["checks"] = [{"id": c["id"], "status": c["status"], "reason": c.get("reason", "")} for c in report["checks"]]
+        result["checks"] = [{"id": str(c["id"]), "status": str(c["status"]), "reason": str(c.get("reason") or "")}
+                            for c in report["checks"]]
     if report.get("shots"):
-        result["shots"] = [{"id": s["id"], "status": s["status"], "reason": s.get("reason") or "",
-                            "ratio": s.get("ratio")} for s in report["shots"]]
+        result["shots"] = [{"id": str(s["id"]), "status": str(s["status"]), "reason": str(s.get("reason") or ""),
+                            "ratio": float(s["ratio"]) if s.get("ratio") is not None else None}
+                           for s in report["shots"]]
     lint = report.get("lint")
     if report["mode"] == "build" and lint and lint["verdict"] != "PASS":
         result["summary"] = "stopped at lint, nothing was packed"
@@ -115,7 +125,9 @@ def lint_from_gate(report: dict) -> dict:
         for f in report.get("warnings", []) if f.get("category") == "lint"
     ]
     lint = report["lint"]
-    return {"kind": "lint", "verdict": lint["verdict"], "findings": findings, "warnings": lint["warnings"]}
+    if lint["verdict"] not in ("PASS", "FAIL"):
+        raise HealthError(f"the build report's lint step has verdict {lint['verdict']!r}, not PASS or FAIL")
+    return {"kind": "lint", "verdict": lint["verdict"], "findings": findings, "warnings": int(lint["warnings"])}
 
 
 def from_lint(report: dict) -> dict:
@@ -126,7 +138,8 @@ def from_lint(report: dict) -> dict:
         severity = "fail" if f.get("severity") == "error" else "warn"
         findings.append(_finding(severity, f.get("message") or f["text"], f.get("file"), f.get("line"),
                                  f.get("rule", "lint"), owner, fix))
-    return {"kind": "lint", "verdict": report["verdict"], "findings": findings, "warnings": report.get("warnings", 0)}
+    return {"kind": "lint", "verdict": report["verdict"], "findings": findings,
+            "warnings": int(report.get("warnings", 0))}
 
 
 def from_review_text(text: str) -> dict:
@@ -139,8 +152,7 @@ def from_review_text(text: str) -> dict:
     for line in lines[1:]:
         m = REVIEW_LINE_RE.match(line)
         if m:
-            sev = m["sev"].lower()
-            findings.append(_finding("fail" if sev == "critical" else sev, m["text"], m["where"],
+            findings.append(_finding(REVIEW_SEVERITY[m["sev"].lower()], m["text"], m["where"],
                                      int(m["line"]) if m["line"] else None, "review", m["owner"] or ""))
         elif REVIEW_SUSPECT_RE.search(line):
             unparsed.append(line.strip())
@@ -154,56 +166,97 @@ def from_review_text(text: str) -> dict:
     return result
 
 
-def parse_report(kind: str, text: str, mod: Optional[str] = None) -> dict:
-    """Turn what `record` was given into a stored result of `kind`. A JSON report naming another
-    mod than `mod` is refused, so one mod's failures never land on another's page."""
+def _review_severity(value) -> str:
+    """A review finding's severity as stored: critical, fail and error are failures (as in the text form)."""
+    sev = str(value).strip().lower()
+    if sev not in REVIEW_SEVERITY:
+        raise HealthError(f"a review finding has severity {value!r}; use CRITICAL, WARN or NIT")
+    return REVIEW_SEVERITY[sev]
+
+
+def _decode_json(text: str):
+    """The JSON object starting at the first `{`, ignoring a verdict line before it and any text after it."""
+    brace = text.find("{")
+    if brace < 0:
+        return None
+    try:
+        return json.JSONDecoder().raw_decode(text, brace)[0]
+    except json.JSONDecodeError:
+        return None
+
+
+def _parse(kind: str, text: str, mod: Optional[str]) -> list[dict]:
     if kind not in KINDS:
         raise HealthError(f"kind must be one of {', '.join(KINDS)}")
-    brace = text.find("{")
-    data = None
-    if brace >= 0:
-        try:
-            data = json.loads(text[brace:])
-        except json.JSONDecodeError:
-            data = None
-    if kind == "review" and data is None:
-        return from_review_text(text)
+    # A review is JSON only when the report itself opens with `{`: a text review's finding lines often
+    # quote braces (`modded class Foo {}`), and that quote must not be taken for the report.
+    if kind == "review" and not text.lstrip().startswith("{"):
+        return [from_review_text(text)]
+    data = _decode_json(text)
     if not isinstance(data, dict) or data.get("verdict") not in ("PASS", "FAIL"):
         raise HealthError("the report is not JSON with a PASS or FAIL verdict (run the gate or lint with --json)")
     if mod and data.get("mod") and data["mod"] != mod:
         raise HealthError(f"the report is for mod {data['mod']!r}, not {mod!r}")
     if kind == "review":
-        findings = [_finding(str(f.get("severity", "warn")).lower(), f["text"], f.get("file"), f.get("line"),
+        findings = [_finding(_review_severity(f.get("severity", "warn")), f["text"], f.get("file"), f.get("line"),
                              "review", f.get("owner", "")) for f in data.get("findings", [])]
-        return {"kind": "review", "verdict": data["verdict"], "findings": findings,
-                "warnings": sum(f["severity"] != "fail" for f in findings)}
+        return [{"kind": "review", "verdict": data["verdict"], "findings": findings,
+                 "warnings": sum(f["severity"] != "fail" for f in findings)}]
     if kind == "lint":
-        return from_lint(data)
+        return [from_lint(data)]
     if data.get("mode") != kind:
         raise HealthError(f"the report is a {data.get('mode')!r} gate report, not {kind!r}")
-    return from_gate(data)
+    # A build report carries its lint step: store it too, as /dayz-gate does (record_gate).
+    lint = [lint_from_gate(data)] if kind == "build" and data.get("lint") else []
+    return lint + [from_gate(data)]
 
 
-def store(project_dir: Path, mod: str, result: dict, now: Optional[datetime] = None) -> Path:
-    """Write one result file and prune the oldest beyond KEEP. Returns its path."""
+def parse_reports(kind: str, text: str, mod: Optional[str] = None) -> list[dict]:
+    """Turn what `record` was given into the results to store: one of `kind`, preceded by a lint result
+    when a build report has a lint step. A JSON report naming another mod than `mod` is refused, so one
+    mod's failures never land on another's page. A report missing a field, or with a field of the wrong
+    type, is refused with a HealthError that says so."""
+    try:
+        return _parse(kind, text, mod)
+    except KeyError as e:
+        raise HealthError(f"the report is missing the {e.args[0]!r} field of an entry") from None
+    except (TypeError, ValueError, AttributeError) as e:
+        raise HealthError(f"the report has a field of the wrong type: {e}") from None
+
+
+def parse_report(kind: str, text: str, mod: Optional[str] = None) -> dict:
+    """The result of `kind` that `record` stores (see parse_reports)."""
+    return parse_reports(kind, text, mod)[-1]
+
+
+def store(project_dir: Path, mod: str, result: dict, now: Optional[datetime] = None, earlier_us: int = 0) -> Path:
+    """Write one result file and prune the oldest beyond KEEP. Returns its path. `earlier_us` moves only
+    the file name's stamp back that many microseconds (the history's order), never the recorded time."""
     now = now or datetime.now(timezone.utc)
     folder = mod_dir(project_dir, mod) / "results"
     folder.mkdir(parents=True, exist_ok=True)
     record = {"schema": SCHEMA, "mod": mod, "time": now.strftime("%Y-%m-%dT%H:%M:%SZ"), **result}
-    path = folder / f"{now.strftime('%Y%m%dT%H%M%S%fZ')}-{result['kind']}.json"
+    stamp = (now - timedelta(microseconds=earlier_us)).strftime('%Y%m%dT%H%M%S%fZ')
+    path = folder / f"{stamp}-{result['kind']}.json"
     path.write_text(json.dumps(record, indent=2), encoding="utf-8")
     for old in sorted(folder.glob("*.json"))[:-KEEP]:
         old.unlink()
     return path
 
 
+def store_all(project_dir: Path, mod: str, results: list[dict], now: Optional[datetime] = None) -> list[Path]:
+    """Store results that come from one report (a build's lint step, then the build). Each earlier result
+    is named one microsecond before the next, so the history lists the lint step before its build; all
+    of them keep the same recorded time."""
+    now = now or datetime.now(timezone.utc)
+    last = len(results) - 1
+    return [store(project_dir, mod, r, now, last - i) for i, r in enumerate(results)]
+
+
 def record_gate(project_dir: Path, report: dict, now: Optional[datetime] = None) -> list[Path]:
     """Store a /dayz-gate report (plus its lint step) and rebuild the mod's pages."""
-    now = now or datetime.now(timezone.utc)
-    paths = []
-    if report["mode"] == "build" and report.get("lint"):
-        paths.append(store(project_dir, report["mod"], lint_from_gate(report), now))
-    paths.append(store(project_dir, report["mod"], from_gate(report), now))
+    results = [lint_from_gate(report)] if report["mode"] == "build" and report.get("lint") else []
+    paths = store_all(project_dir, report["mod"], results + [from_gate(report)], now)
     render(project_dir, report["mod"])
     return paths
 
@@ -454,11 +507,29 @@ def _print_summary(s: dict) -> None:
     print(f"    {s['html']}")
 
 
+def check_mod_exists(project_dir: Path, mod: str) -> None:
+    """Refuse a mod with neither a workspace/<mod>/ folder nor stored results, so a typo in the name
+    reports an error instead of creating an empty page for a mod that does not exist."""
+    results = mod_dir(project_dir, mod) / "results"  # validates the name first
+    if (project_dir / "workspace" / mod).is_dir() or results.is_dir():
+        return
+    known = mods_with_results(project_dir)
+    hint = f" Mods with stored results: {', '.join(known)}." if known else ""
+    raise HealthError(f"no workspace/{mod}/ folder and no stored results for {mod!r}: check the mod name.{hint}")
+
+
+class _ArgParser(argparse.ArgumentParser):
+    """Bad arguments get the same ERROR first line as every other refusal (subparsers use this class too)."""
+
+    def error(self, message: str):
+        raise HealthError(message)
+
+
 def main(argv: Optional[list[str]] = None, stdin=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] not in ("show", "record", "-h", "--help"):
         argv.insert(0, "show")
-    parser = argparse.ArgumentParser(description="Store gate results per mod and render health pages.")
+    parser = _ArgParser(description="Store gate results per mod and render health pages.")
     sub = parser.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("show", help="Rebuild and summarize the health page of a mod (or every mod).")
     s.add_argument("mod", nargs="?")
@@ -471,8 +542,10 @@ def main(argv: Optional[list[str]] = None, stdin=None) -> int:
     r.add_argument("--json", action="store_true")
     try:
         args = parser.parse_args(argv)
-    except SystemExit as e:
+    except SystemExit as e:  # -h / --help
         return 0 if e.code == 0 else 2
+    except HealthError as e:
+        return _error(f"{e} (usage: {ARG_USAGE})", "--json" in argv)
     if args.cmd == "show" and bool(args.mod) == args.all:
         return _error("give one <ModName> or --all", args.json)
 
@@ -480,12 +553,16 @@ def main(argv: Optional[list[str]] = None, stdin=None) -> int:
         project_dir = h.resolve_project_dir()
         if args.cmd == "record":
             text = args.file.read_text(encoding="utf-8-sig") if args.file else (stdin or sys.stdin).read()
-            result = parse_report(args.kind, text, args.mod)
-            unparsed = result.get("unparsed", [])
-            path = store(project_dir, args.mod, result)
+            results = parse_reports(args.kind, text.removeprefix("﻿"), args.mod)
+            unparsed = results[-1].get("unparsed", [])
+            check_mod_exists(project_dir, args.mod)
+            paths = store_all(project_dir, args.mod, results)
+            path, also = paths[-1], paths[:-1]
             mods = [args.mod]
         else:
-            path, unparsed = None, []
+            path, also, unparsed = None, [], []
+            if not args.all:
+                check_mod_exists(project_dir, args.mod)
             mods = mods_with_results(project_dir) if args.all else [args.mod]
         summaries = [_summary(*render(project_dir, m), project_dir) for m in mods]
     except SystemExit:  # resolve_project_dir already printed why on stderr
@@ -498,12 +575,14 @@ def main(argv: Optional[list[str]] = None, stdin=None) -> int:
         out = {"mods": summaries}
         if path is not None:
             out["recorded"] = _rel(path, project_dir)
+        if also:
+            out["also_recorded"] = [_rel(p, project_dir) for p in also]
         if unparsed:
             out["unparsed"] = unparsed
         print(json.dumps(out, indent=2))
         return 0
-    if path is not None:
-        print(f"  recorded {_rel(path, project_dir)}")
+    for p in also + ([path] if path is not None else []):
+        print(f"  recorded {_rel(p, project_dir)}")
     if unparsed:
         print(f"  warning: {len(unparsed)} review line(s) look like findings but do not parse, so they were not stored:")
         for line in unparsed:

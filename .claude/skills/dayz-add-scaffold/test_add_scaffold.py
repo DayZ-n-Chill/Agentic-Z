@@ -412,6 +412,17 @@ def test_existing_prefix_matching_after_bom_and_newline_is_plain_skip(tmp_path, 
     assert "$PBOPREFIX$ present" in out and scaf.WARN not in out
 
 
+def test_existing_prefix_not_utf8_is_wrong_not_a_traceback(tmp_path, capsys):
+    """An ANSI-saved $PBOPREFIX$ (cp1252 'é') is reported as needing a fix, not a crash."""
+    target = tmp_path / "MyMod"
+    target.mkdir()
+    (target / "$PBOPREFIX$").write_bytes(b"Caf\xe9Mod")
+    assert scaf.add_prefix(target, "MyMod") == scaf.WRONG
+    out = capsys.readouterr().out
+    assert scaf.WARN in out and "not UTF-8" in out and "/dayz-build-pbo" in out
+    assert (target / "$PBOPREFIX$").read_bytes() == b"Caf\xe9Mod"
+
+
 def test_main_single_prefix_piece_left_wrong_exits_nonzero(monkeypatch, tmp_path, capsys):
     """--piece prefix on a $PBOPREFIX$ /dayz-build-pbo will refuse must not report success."""
     target = tmp_path / "project" / "workspace" / "MyMod"
@@ -451,3 +462,135 @@ def test_main_all_summary_tag_is_ok_when_everything_added(monkeypatch, tmp_path,
     (tmp_path / "project" / "workspace" / "MyMod").mkdir(parents=True)
     _run_main(monkeypatch, tmp_path, ["MyMod", "--author", "Tester"])
     assert f"{scaf.OK} 5 piece(s) added, 0 already present, 0 skipped." in capsys.readouterr().out
+
+
+def test_main_author_flag_is_cached_for_the_next_run(monkeypatch, tmp_path):
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "config", "--author", "Tester"]) == 0
+    assert (tmp_path / "author.txt").read_text(encoding="utf-8").strip() == "Tester"
+    # The next run has no flag and no TTY, and must reuse the cached handle.
+    (target / "README.md").unlink(missing_ok=True)
+    monkeypatch.setattr(scaf._nm.sys, "stdin", _NoTty())
+    monkeypatch.setattr(scaf._nm, "PROJECT_DIR", tmp_path)  # cache path is shown relative to it
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "readme"]) == 0
+    assert "Tester" in (target / "README.md").read_text(encoding="utf-8")
+
+
+def test_main_author_not_cached_when_no_author_piece_written(monkeypatch, tmp_path):
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    (target / "config.cpp").write_text("mine", encoding="utf-8")
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "config", "--author", "Tester"]) == 0
+    assert not (tmp_path / "author.txt").exists()
+
+
+def test_workbench_present_gproj_without_tools_is_present_not_skipped(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(scaf._nm, "find_dayz_tools", lambda: None)
+    target = tmp_path / "MyMod"
+    (target / "workbench").mkdir(parents=True)
+    (target / "workbench" / "dayz.gproj").write_text("custom gproj", encoding="utf-8")
+    assert scaf.add_workbench(target, "MyMod") == scaf.PRESENT
+    out = capsys.readouterr().out
+    assert "DayZSetting.xml missing" in out and "workbench/ skipped" not in out
+    assert sorted(p.name for p in (target / "workbench").iterdir()) == ["dayz.gproj"]
+
+
+def test_workbench_present_gproj_with_tools_xml_missing_is_present(tmp_path, fake_tools):
+    (fake_tools / "DayZSetting.xml").unlink()
+    target = tmp_path / "MyMod"
+    (target / "workbench").mkdir(parents=True)
+    (target / "workbench" / "dayz.gproj").write_text("custom gproj", encoding="utf-8")
+    assert scaf.add_workbench(target, "MyMod") == scaf.PRESENT
+
+
+def test_main_single_workbench_piece_with_gproj_present_exits_zero(monkeypatch, tmp_path):
+    monkeypatch.setattr(scaf._nm, "find_dayz_tools", lambda: None)
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    (target / "workbench").mkdir(parents=True)
+    (target / "workbench" / "dayz.gproj").write_text("custom gproj", encoding="utf-8")
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "workbench"]) == 0
+
+
+# --- a file where a folder belongs (or the reverse) --------------------------------
+
+@pytest.mark.parametrize("blocker, created", [
+    ("scripts", ["data", "gui"]),
+    ("data", ["scripts/3_Game", "scripts/4_World", "scripts/5_Mission", "gui"]),
+    ("gui", ["scripts/3_Game", "scripts/4_World", "scripts/5_Mission", "data"]),
+])
+def test_skeleton_file_in_place_of_folder_is_wrong_not_a_traceback(blocker, created, tmp_path, capsys):
+    """A file named scripts/data/gui used to raise FileExistsError or count as present."""
+    target = tmp_path / "MyMod"
+    target.mkdir()
+    (target / blocker).write_text("not a folder", encoding="utf-8")
+    assert scaf.add_skeleton(target) == scaf.WRONG
+    out = capsys.readouterr().out
+    assert out.count(f"{scaf.WARN} {blocker} exists as a file, not a folder") == 1
+    assert (target / blocker).read_text(encoding="utf-8") == "not a folder"
+    assert all((target / sub / ".gitkeep").is_file() for sub in created)
+
+
+def test_skeleton_file_only_blocking_is_wrong_when_nothing_else_to_add(tmp_path, capsys):
+    target = tmp_path / "MyMod"
+    target.mkdir()
+    for sub in ("scripts/3_Game", "scripts/4_World", "scripts/5_Mission", "data"):
+        (target / sub).mkdir(parents=True)
+    (target / "gui").write_text("", encoding="utf-8")
+    assert scaf.add_skeleton(target) == scaf.WRONG
+    out = capsys.readouterr().out
+    assert "all present" not in out and "gui exists as a file" in out
+
+
+def test_workbench_file_in_place_of_folder_is_wrong_not_a_traceback(tmp_path, fake_tools, capsys):
+    target = tmp_path / "MyMod"
+    target.mkdir()
+    (target / "workbench").write_text("not a folder", encoding="utf-8")
+    assert scaf.add_workbench(target, "MyMod") == scaf.WRONG
+    assert "workbench exists as a file, not a folder" in capsys.readouterr().out
+    assert (target / "workbench").read_text(encoding="utf-8") == "not a folder"
+
+
+def test_workbench_folder_in_place_of_gproj_is_wrong(tmp_path, fake_tools, capsys):
+    target = tmp_path / "MyMod"
+    (target / "workbench" / "dayz.gproj").mkdir(parents=True)
+    assert scaf.add_workbench(target, "MyMod") == scaf.WRONG
+    assert "workbench/dayz.gproj exists as a folder, not a file" in capsys.readouterr().out
+    assert not (target / "workbench" / "DayZSetting.xml").exists()
+
+
+@pytest.mark.parametrize("piece, rel", [
+    ("config", "config.cpp"), ("prefix", "$PBOPREFIX$"), ("readme", "README.md"),
+])
+def test_folder_in_place_of_file_piece_is_wrong(piece, rel, tmp_path, capsys):
+    """A folder named $PBOPREFIX$ used to raise PermissionError; config.cpp/README.md counted as present."""
+    target = tmp_path / "MyMod"
+    (target / rel).mkdir(parents=True)
+    assert _run_piece(piece, target) == scaf.WRONG
+    assert f"{rel} exists as a folder, not a file" in capsys.readouterr().out
+
+
+def test_main_single_skeleton_piece_blocked_by_file_exits_nonzero(monkeypatch, tmp_path, capsys):
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    (target / "scripts").write_text("", encoding="utf-8")
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "skeleton"]) == 1
+    out = capsys.readouterr().out
+    assert f"{scaf.FAIL} skeleton is present but wrong" in out
+
+
+def test_main_all_with_workbench_file_counts_it_as_needing_a_fix(monkeypatch, tmp_path, capsys, fake_tools):
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    (target / "workbench").write_text("", encoding="utf-8")
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--author", "Tester"]) == 0
+    assert (f"{scaf.WARN} 4 piece(s) added, 0 already present, 0 skipped, 1 need fixing by hand."
+            in capsys.readouterr().out)
+
+
+def test_main_validates_name_before_preflight(monkeypatch, tmp_path):
+    monkeypatch.setattr(scaf.h, "gate_on_preflight", lambda: pytest.fail("preflight ran first"))
+    monkeypatch.setattr(scaf.sys, "argv", ["add_scaffold.py", "1bad-name"])
+    with pytest.raises(SystemExit) as exc:
+        scaf.main()
+    assert "Invalid mod name" in str(exc.value.code)

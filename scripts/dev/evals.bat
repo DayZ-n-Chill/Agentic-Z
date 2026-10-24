@@ -4,6 +4,7 @@ REM Usage:
 REM   evals.bat --dry-run                check the question files, ask nothing
 REM   evals.bat --agent dayz-mod-reviewer  ask one agent its questions
 REM   evals.bat --baseline               fail if any score fell below evals\baseline.json
+REM   evals.bat --update-baseline        record these scores in evals\baseline.json (refused on a drop or an error)
 REM See docs\evals.md for the question format and how evals gate a change.
 REM Uses python when it runs, otherwise the py launcher. Running it (not just
 REM finding it) skips the Microsoft Store alias, which is on PATH but exits 9009.

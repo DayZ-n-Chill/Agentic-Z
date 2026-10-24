@@ -110,7 +110,37 @@ def test_findings_name_off_screen_and_missing_toggles():
     assert by_rule["off-screen"]["widget"] == "txt_far"
     assert by_rule["off-screen"]["sizes"] == ["1280x720", "1920x1080", "2560x1440", "3440x1440"]
     assert by_rule["missing-toggle"]["widget"] == "panel_loose"
+    assert by_rule["missing-toggle"]["severity"] == "note"
+    assert by_rule["off-screen"]["severity"] == "warning"
     assert "png" not in report["sizes"][0]
+
+
+def test_missing_toggle_over_a_zero_value_is_not_reported():
+    # Shaped like P:\gui\layouts\day_z_hud.layout:1 and :4851, which load in game.
+    root = lp.parse(
+        "FrameWidgetClass HudFrameWidget {\n position 0 0\n size 0.9 0.9\n hexactsize 0\n vexactsize 0\n {\n"
+        "  PanelWidgetClass ChatFrameWidget {\n   position 0 0.2\n   size 5 300\n   vexactpos 0\n"
+        "   hexactsize 0\n   vexactsize 1\n  }\n"
+        "  PanelWidgetClass Shifted {\n   position 0.3 0\n   size 1 1\n   hexactsize 0\n   vexactsize 0\n  }\n"
+        " }\n}\n")
+    found = [f for f in lp.findings(root, {}) if f["rule"] == "missing-toggle"]
+    assert [(f["widget"], f["message"].split(";")[0]) for f in found] == [("Shifted", "Shifted has no hexactpos")]
+
+
+@pytest.mark.skipif(not (VANILLA / "day_z_hud.layout").is_file(), reason="vanilla layouts on P: not available")
+def test_vanilla_hud_roots_raise_no_missing_toggle():
+    root = lp.parse((VANILLA / "day_z_hud.layout").read_text(encoding="utf-8", errors="replace"))
+    flagged = {f["widget"] for f in lp.findings(root, {}) if f["rule"] == "missing-toggle"}
+    assert not flagged & {"HudFrameWidget", "ChatFrameWidget"}
+
+
+def test_cli_prints_missing_toggle_as_a_note(tmp_path, capsys):
+    pytest.importorskip("PIL")
+    assert lp.main([str(FIXTURES / "inline_row.layout"), "--out", str(tmp_path), "--sizes", "1920x1080"]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert any(l.startswith("[NOTE] ") and "missing-toggle" in l for l in lines)
+    assert not any(l.startswith("[WARN] ") and "missing-toggle" in l for l in lines)
+    assert any(l.startswith("[WARN] ") and "off-screen" in l for l in lines)
 
 
 def test_clean_fixture_has_no_findings():
@@ -142,6 +172,36 @@ def test_render_fills_panels_with_their_color(tmp_path):
         background, topbar = img.getpixel((960, 540)), img.getpixel((960, 20))
     assert background == (28, 30, 34)
     assert topbar != background
+
+
+@pytest.mark.parametrize("cls", ["TextWidgetClass", "ButtonWidgetClass", "EditBoxWidgetClass"])
+@pytest.mark.parametrize("position", ["-500 10", "10 -500", "-500 -500", "1300 10", "10 800", "-50 10"])
+def test_text_widget_off_screen_still_draws_and_is_reported(tmp_path, capsys, cls, position):
+    # A text box wholly past the left or top edge used to crash Pillow's alpha_composite.
+    pytest.importorskip("PIL")
+    from PIL import Image
+
+    layout = tmp_path / "offscreen.layout"
+    layout.write_text(
+        "FrameWidgetClass root {\n size 1 1\n hexactpos 0\n vexactpos 0\n hexactsize 0\n vexactsize 0\n {\n"
+        f"  {cls} txt_gone {{\n   position {position}\n   size 100 30\n   hexactpos 1\n   vexactpos 1\n"
+        "   hexactsize 1\n   vexactsize 1\n   text \"Gone\"\n  }\n }\n}\n", encoding="utf-8")
+    assert lp.main([str(layout), "--out", str(tmp_path), "--sizes", "1280x720"]) == 0
+    with Image.open(tmp_path / "offscreen_1280x720.png") as img:
+        assert img.size == (1280, 720)
+    out = capsys.readouterr().out
+    assert "[WARN] offscreen.layout:" in out and "off-screen: txt_gone leaves the screen at 1280x720" in out
+
+
+def test_parse_strips_comments_at_the_end_of_a_line():
+    root = lp.parse(
+        "FrameWidgetClass root { // the root\n size 1 1 // full screen\n hexactsize 0\n vexactsize 0\n {\n"
+        "  TextWidgetClass t {\n   text \"http://a//b\" // quoted slashes stay\n   position 0.5 0.25//no space\n"
+        "  }\n }\n}\n")
+    assert root.props["size"] == ["1", "1"]
+    text = root.children[0]
+    assert text.props["text"] == ['"http://a//b"']
+    assert text.props["position"] == ["0.5", "0.25"]
 
 
 def test_cli_reports_broken_and_missing_files(tmp_path, capsys):
@@ -253,3 +313,67 @@ def test_every_vanilla_layout_parses_and_lays_out():
     for path in sorted(VANILLA.rglob("*.layout")):
         root = lp.parse(path.read_text(encoding="utf-8", errors="replace"))
         assert lp.layout(root, 1920, 1080, show_hidden=True), path
+
+
+def run_cli(*args):
+    return subprocess.run([sys.executable, str(HERE / "layout_preview.py"), *map(str, args)],
+                          capture_output=True, text=True, check=False)
+
+
+@pytest.mark.parametrize("sizes", ["00x00", "1920x00", "99999x1080"])
+def test_zero_or_huge_size_is_a_fail_line_not_a_traceback(tmp_path, sizes):
+    pytest.importorskip("PIL")
+    with pytest.raises(Exception, match="1 to 8192"):
+        lp.parse_sizes(sizes)
+    result = run_cli(FIXTURES / "hud_corner.layout", "--out", tmp_path, "--sizes", sizes)
+    assert result.returncode == 1
+    assert "[FAIL] --sizes" in result.stdout and "1 to 8192" in result.stdout
+    assert "Traceback" not in result.stderr
+    assert not list(tmp_path.iterdir())
+
+
+def test_bad_size_format_is_a_fail_line_with_exit_1(tmp_path):
+    pytest.importorskip("PIL")
+    result = run_cli(FIXTURES / "hud_corner.layout", "--out", tmp_path, "--sizes", "1920by1080")
+    assert result.returncode == 1
+    assert "[FAIL] --sizes" in result.stdout and "Traceback" not in result.stderr
+
+
+def test_out_naming_an_existing_file_is_a_fail_line_not_a_traceback(tmp_path):
+    pytest.importorskip("PIL")
+    not_a_folder = tmp_path / "preview.png"
+    not_a_folder.write_bytes(b"keep me")
+    result = run_cli(FIXTURES / "hud_corner.layout", "--out", not_a_folder, "--sizes", "1280x720")
+    assert result.returncode == 1
+    assert f"[FAIL] {not_a_folder}: --out names a file" in result.stdout
+    assert "Traceback" not in result.stderr
+    assert not_a_folder.read_bytes() == b"keep me"
+
+
+def test_out_below_a_file_fails_each_layout_without_a_traceback(tmp_path):
+    pytest.importorskip("PIL")
+    blocker = tmp_path / "blocker"
+    blocker.write_text("x", encoding="utf-8")
+    result = run_cli(FIXTURES / "hud_corner.layout", FIXTURES / "menu_dialog.layout",
+                     "--out", blocker / "sub", "--sizes", "1280x720")
+    assert result.returncode == 1
+    assert result.stdout.count("[FAIL] ") == 2, result.stdout
+    assert "Traceback" not in result.stderr
+
+
+def test_write_error_on_one_layout_still_draws_the_next(tmp_path, monkeypatch, capsys):
+    pytest.importorskip("PIL")
+    real_render, calls = lp.render, []
+
+    def render_once_fails(*a, **k):
+        calls.append(1)
+        if len(calls) == 1:
+            raise PermissionError(13, "Permission denied", str(tmp_path / "first.png"))
+        return real_render(*a, **k)
+
+    monkeypatch.setattr(lp, "render", render_once_fails)
+    assert lp.main([str(FIXTURES / "hud_corner.layout"), str(FIXTURES / "menu_dialog.layout"),
+                    "--out", str(tmp_path), "--sizes", "1280x720"]) == 1
+    out = capsys.readouterr().out
+    assert f"[FAIL] {FIXTURES / 'hud_corner.layout'}: Permission denied" in out
+    assert "[OK]" in out and (tmp_path / "menu_dialog_1280x720.png").is_file()

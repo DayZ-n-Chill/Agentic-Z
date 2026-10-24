@@ -140,6 +140,10 @@ CASES = [
     ("required-addon-duplicate", "warning", cfg_edit('"DZ_Scripts"', '"dz_data"'), "workspace/MyMod/config.cpp", 8),
     ("pboprefix-missing", "error", remove("$PBOPREFIX$"), "workspace/MyMod/$PBOPREFIX$", None),
     ("pboprefix-mismatch", "error", write("$PBOPREFIX$", "mymod\\data"), "workspace/MyMod/$PBOPREFIX$", 1),
+    # What Windows PowerShell 5.1 writes for `echo MyMod > $PBOPREFIX$`: UTF-16 with a byte-order mark.
+    ("pboprefix-encoding", "error", lambda m: (m / "$PBOPREFIX$").write_bytes("MyMod\r\n".encode("utf-16")),
+     "workspace/MyMod/$PBOPREFIX$", 1),
+    ("pboprefix-encoding", "error", lambda m: (m / "$PBOPREFIX$").write_bytes(b"MyM\xf6d\r\n"), "workspace/MyMod/$PBOPREFIX$", 1),
     ("script-module-path", "error", cfg_edit('"MyMod/scripts/5_Mission"', '"OtherMod/scripts/5_Mission"'), "workspace/MyMod/config.cpp", 21),
     ("script-module-path", "error", cfg_edit('"MyMod/scripts/5_Mission"', '"MyMod/scripts/5_Misson"'), "workspace/MyMod/config.cpp", 21),
     ("script-module-layer", "error", cfg_edit('{"MyMod/scripts/3_Game"}', '{"MyMod/scripts/4_World"}'), "workspace/MyMod/config.cpp", 19),
@@ -148,6 +152,10 @@ CASES = [
     ("modded-class-extends", "error", write("scripts/4_World/vest.c", "class A {}\nmodded class PlayerBase extends PlayerBase\n{\n}\n"),
      "workspace/MyMod/scripts/4_World/vest.c", 2),
     ("modded-class-extends", "error", write("scripts/4_World/vest.c", "modded class PlayerBase: PlayerBase {}\n"),
+     "workspace/MyMod/scripts/4_World/vest.c", 1),
+    ("modded-class-extends", "error", write("scripts/4_World/vest.c", "class A {}\nmodded class PlayerBase\n\textends ManBase\n{\n}\n"),
+     "workspace/MyMod/scripts/4_World/vest.c", 2),
+    ("modded-class-extends", "error", write("scripts/4_World/vest.c", "modded class PlayerBase /* base */\n: ManBase\n{\n}\n"),
      "workspace/MyMod/scripts/4_World/vest.c", 1),
     ("script-suffix", "warning", write("scripts/4_World/helper.c.txt", "class X {}\n"), "workspace/MyMod/scripts/4_World/helper.c.txt", None),
     ("missing-model", "error", remove("data/vest.p3d"), "workspace/MyMod/config.cpp", 30),
@@ -203,6 +211,59 @@ def test_modded_extends_after_a_block_comment_keeps_its_line_number(mod, p_drive
     (mod / "scripts" / "4_World" / "vest.c").write_text("/* one\ntwo\n*/\nmodded class PlayerBase extends PlayerBase {}\n", encoding="utf-8")
     [f] = run(mod, p_drive)["findings"]
     assert (f["rule"], f["line"]) == ("modded-class-extends", 4)
+
+
+def test_modded_extends_on_the_next_line_names_the_whole_clause(mod, p_drive):
+    (mod / "scripts" / "4_World" / "vest.c").write_text("modded class PlayerBase\nextends ManBase\n{\n}\n", encoding="utf-8")
+    [f] = run(mod, p_drive)["findings"]
+    assert (f["rule"], f["line"]) == ("modded-class-extends", 1)
+    assert f["message"].startswith("modded class PlayerBase extends ManBase: ")
+
+
+def test_extends_on_a_later_plain_class_is_not_a_modded_extends(mod, p_drive):
+    (mod / "scripts" / "4_World" / "vest.c").write_text(
+        "modded class PlayerBase\n{\n}\nclass MyModVest extends Clothing\n{\n}\nmodded class Extendsable\n{\n}\n", encoding="utf-8")
+    assert run(mod, p_drive)["findings"] == []
+
+
+@pytest.mark.parametrize("source", [
+    # A "/*" in one string and a "*/" in a later one are not a comment between them.
+    'string a = "MyMod/scripts/*";\nmodded class PlayerBase extends PlayerBase {}\nstring b = "*/";\n',
+    # An escaped quote does not end the string, so the "/*" after it is still inside it.
+    'string a = "say \\"/*";\nmodded class PlayerBase extends PlayerBase {}\nstring b = "*/";\n',
+    # A "//" in a string is not a line comment.
+    'string a = "http://x"; string c = "/*";\nmodded class PlayerBase extends PlayerBase {}\nstring b = "*/";\n',
+])
+def test_comment_markers_inside_strings_do_not_hide_a_modded_extends(mod, p_drive, source):
+    (mod / "scripts" / "4_World" / "vest.c").write_text(source, encoding="utf-8")
+    [f] = run(mod, p_drive)["findings"]
+    assert (f["rule"], f["line"]) == ("modded-class-extends", 2)
+
+
+def test_strip_comments_keeps_strings_and_line_numbers():
+    text = 'a = "x//y"; // gone\nb = "/*"; /* gone\nstill gone */ c = "*/";\n'
+    assert lint.strip_comments(text, backslash_escapes=True) == 'a = "x//y"; \nb = "/*"; \n c = "*/";\n'
+
+
+def test_patch_names_ignores_comment_markers_inside_config_strings():
+    # Config strings have no backslash escapes: "dir\" ends at its second quote.
+    text = ('class CfgPatches { class A { x[] = {"a/*"}; }; class B { y[] = {"*/"}; };\n'
+            'class C { p = "dir\\"; /* class Fake {}; */ }; };')
+    assert lint.patch_names(text) == {"a", "b", "c"}
+
+
+def test_utf16_prefix_still_runs_every_other_check_and_says_how_to_fix(mod, p_drive, monkeypatch, capsys):
+    (mod / "$PBOPREFIX$").write_bytes("MyMod\r\n".encode("utf-16"))
+    (mod / "data" / "vest.p3d").unlink()
+    report = run(mod, p_drive)
+    rules = {f["rule"] for f in report["findings"]}
+    assert rules == {"pboprefix-encoding", "missing-model"}, report["findings"]
+    [f] = [f for f in report["findings"] if f["rule"] == "pboprefix-encoding"]
+    assert f["message"].startswith("$PBOPREFIX$ is UTF-16 text")
+    assert "plain ASCII or UTF-8" in f["triage"]["fix"] and "workspace/MyMod/$PBOPREFIX$" in f["triage"]["fix"]
+    monkeypatch.setattr(lint, "P_DRIVE", p_drive)
+    assert lint.main(["--mod-dir", str(mod)]) == 1  # a FAIL verdict, not the old exit-2 crash
+    assert capsys.readouterr().out.splitlines()[0] == "FAIL"
 
 
 def test_lint_entries_never_match_log_lines():
@@ -288,6 +349,35 @@ def test_link_pointing_elsewhere_is_an_error(mod, p_drive, monkeypatch, tmp_path
     monkeypatch.setattr(lint.h, "link_target", lambda p: tmp_path / "elsewhere")
     [f] = run(mod, p_drive)["findings"]
     assert f["rule"] == "p-link" and "points at" in f["message"]
+
+
+def _junction(link: Path, target: Path) -> None:
+    subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)], check=True, capture_output=True)
+
+
+def test_imported_mod_linted_by_mod_dir_through_real_junctions_passes(mod, tmp_path, p_drive, monkeypatch, capsys):
+    # /dayz-import-mod layout: workspace\MyMod is a junction to the outside source, and
+    # P:\MyMod is a junction to workspace\MyMod. --mod-dir resolves to the source folder.
+    source = tmp_path / "repos" / "MyMod"
+    shutil.copytree(mod, source)
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    _junction(workspace / "MyMod", source)
+    (p_drive / "MyMod").rmdir()
+    _junction(p_drive / "MyMod", workspace / "MyMod")
+    monkeypatch.setattr(lint.h, "link_target", lint.h._preflight().link_target)  # the real resolver, not the fixture's
+    monkeypatch.setattr(lint, "P_DRIVE", p_drive)
+    monkeypatch.setattr(lint, "cached_workspace", lambda: workspace)
+    assert lint.main(["--mod-dir", str(workspace / "MyMod"), "--json"]) == 0
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "PASS", out
+    # A real link to some other folder is still an error.
+    other = tmp_path / "other"
+    other.mkdir()
+    (p_drive / "MyMod").rmdir()  # removes the junction only, never its target
+    _junction(p_drive / "MyMod", other)
+    assert lint.main(["--mod-dir", str(workspace / "MyMod")]) == 1
+    assert "points at" in capsys.readouterr().out
 
 
 def test_unmounted_p_drive_is_only_a_warning_and_skips_vanilla_names(mod, tmp_path):
@@ -404,6 +494,101 @@ def test_cli_errors_exit_2(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(lint.h, "resolve_project_dir", refuse)
     assert lint.main(["MyMod"]) == 2
     assert "ERROR" in capsys.readouterr().out
+
+
+def test_no_cached_project_prints_the_verdict_first(monkeypatch, capsys):
+    # resolve_project_dir prints its reason on stderr before exiting; that must not come before the verdict.
+    def no_cache():
+        print("[FAIL] No project cached.", file=sys.stderr)
+        print("       Run /dayz-init to set up your DayZ environment and project.", file=sys.stderr)
+        raise SystemExit(2)
+    monkeypatch.setattr(lint.h, "resolve_project_dir", no_cache)
+    assert lint.main(["MyMod"]) == 2
+    out, err = capsys.readouterr()
+    assert err == ""
+    lines = out.splitlines()
+    assert lines[0] == "ERROR"
+    assert "No project cached. Run /dayz-init" in lines[1] and "--mod-dir" in lines[1]
+
+
+@pytest.mark.parametrize("argv", [[], ["--bogus"], ["MyMod", "extra"]])
+def test_bad_arguments_print_the_verdict_first(argv, capsys):
+    assert lint.main(argv) == 2
+    out, err = capsys.readouterr()
+    assert err == ""
+    lines = out.splitlines()
+    assert lines[0] == "ERROR" and "usage:" in lines[1]
+
+
+def test_bad_arguments_with_json_print_an_error_object(capsys):
+    assert lint.main(["--bogus", "--json"]) == 2
+    first, _, rest = capsys.readouterr().out.partition("\n")
+    data = json.loads(rest)
+    assert first == "ERROR" and data["verdict"] == "ERROR" and "--bogus" in data["error"]
+
+
+def test_help_still_exits_0(capsys):
+    assert lint.main(["--help"]) == 0
+
+
+@pytest.mark.parametrize("name", ["..", "..\\Other", "a/b", "P:Mod"])
+def test_mod_name_that_is_a_path_is_refused(name, monkeypatch, capsys):
+    monkeypatch.setattr(lint.h, "resolve_project_dir", lambda: pytest.fail("resolved the project for a bad name"))
+    assert lint.main([name]) == 2
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[0] == "ERROR" and "--mod-dir" in lines[1]
+
+
+def test_messages_print_paths_with_single_backslashes(mod, p_drive):
+    # repr() doubled every backslash: 'P:\\MyMod\\data\\vest.p3d'.
+    edit(mod / "config.cpp", '"\\MyMod\\data\\vest.p3d"', '"P:\\MyMod\\data\\vest.p3d"')
+    write("$PBOPREFIX$", "My\\Mod")(mod)
+    report = run(mod, p_drive)
+    messages = {f["rule"]: f["message"] for f in report["findings"]}
+    assert messages["absolute-path"].startswith("'P:\\MyMod\\data\\vest.p3d' is a disk path")
+    assert messages["pboprefix-mismatch"].startswith("$PBOPREFIX$ is 'My\\Mod', expected 'MyMod'")
+    assert all("\\\\" not in f["message"] for f in report["findings"])
+
+
+def test_png_reference_is_reported_once(mod, p_drive):
+    # The .png does not exist either, but packing it to .paa is the one fix; no second missing-file error.
+    edit(mod / "config.cpp", '"MyMod\\data\\vest_co.paa"', '"MyMod\\data\\vest_co.png"')
+    report = run(mod, p_drive)
+    assert [(f["rule"], f["line"]) for f in report["findings"]] == [("texture-format", 33)]
+    assert report["errors"] == 1
+
+
+def test_fixes_name_the_linted_folder_outside_workspace(mod, tmp_path, p_drive, monkeypatch, capsys):
+    outside = tmp_path / "repos" / "MyMod"
+    shutil.copytree(mod, outside)
+    (outside / "data" / "vest.p3d").unlink()
+    (outside / "$PBOPREFIX$").unlink()
+    monkeypatch.setattr(lint, "P_DRIVE", p_drive)
+    monkeypatch.setattr(lint, "cached_workspace", lambda: tmp_path / "proj" / "workspace")
+    monkeypatch.chdir(tmp_path)
+    assert lint.main(["--mod-dir", str(outside), "--json"]) == 1
+    fixes = {f["rule"]: f["triage"]["fix"] for f in json.loads(capsys.readouterr().out.partition("\n")[2])["findings"]}
+    assert "workspace/" not in fixes["missing-model"] and "repos/MyMod/" in fixes["missing-model"]
+    assert fixes["pboprefix-missing"] == "Create repos/MyMod/$PBOPREFIX$ holding the single line MyMod."
+
+
+def test_config_missing_fix_outside_workspace_does_not_name_add_scaffold(mod, tmp_path, p_drive, monkeypatch, capsys):
+    outside = tmp_path / "repos" / "MyMod"
+    shutil.copytree(mod, outside)
+    (outside / "config.cpp").unlink()
+    monkeypatch.setattr(lint, "P_DRIVE", p_drive)
+    monkeypatch.setattr(lint, "cached_workspace", lambda: tmp_path / "proj" / "workspace")
+    monkeypatch.chdir(tmp_path)
+    assert lint.main(["--mod-dir", str(outside), "--json"]) == 1
+    [f] = json.loads(capsys.readouterr().out.partition("\n")[2])["findings"]
+    assert f["rule"] == "config-missing"
+    assert "/dayz-add-scaffold" not in f["triage"]["fix"] and "repos/MyMod/Addons/" in f["triage"]["fix"]
+
+
+def test_workspace_fixes_keep_the_workspace_path(mod, p_drive):
+    (mod / "data" / "vest.p3d").unlink()
+    [f] = run(mod, p_drive)["findings"]
+    assert "add the .p3d under workspace/MyMod/" in f["triage"]["fix"]
 
 
 def test_script_runs_standalone(mod):

@@ -25,7 +25,7 @@ cd my-dayz-mod
 python .claude\skills\sync-skills\sync.py
 ```
 
-That symlinks the repo's `.claude/skills/` into each agent CLI's home directory so all three discover the same slash commands. Inside Claude Code you can also run `/sync-skills` instead. Skills appear unprefixed (`/dayz-build-pbo`).
+That symlinks the repo's `.claude/skills/` into the Codex and Gemini home directories so they discover the same slash commands Claude Code reads from the repo directly. Inside Claude Code you can also run `/sync-skills` instead. Skills appear unprefixed (`/dayz-build-pbo`).
 
 **Option B — Install as a Claude Code plugin** (for adding the toolkit to an existing project without forking):
 

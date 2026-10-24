@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
@@ -145,6 +146,41 @@ def last_shot_at(spec: dict) -> float:
 
 # --- capture -----------------------------------------------------------------------
 
+VK_MENU = 0x12          # the Alt key
+KEYEVENTF_KEYUP = 0x0002
+
+
+def bring_to_front(user32, hwnd: int, pid: int, sleep: Callable[[float], None] = time.sleep) -> None:
+    """Make hwnd the foreground window, or raise VisualError.
+
+    The gate runs as a background process (an agent's shell or a pipe), and
+    Windows' foreground lock refuses SetForegroundWindow from a process that
+    did not get the last input event, so a plain call only flashes the
+    taskbar button (SetForegroundWindow remarks:
+    https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-setforegroundwindow).
+    When the first call does not take, the gate sends one Alt press and
+    release (keybd_event), the usual workaround that makes this process the
+    sender of the last input event, and tries the switch once more. The tap
+    goes to whichever window is in front at that moment, just before the
+    client takes its place.
+    """
+    if user32.GetForegroundWindow() == hwnd:
+        return
+    user32.SetForegroundWindow(hwnd)
+    sleep(0.5)  # let the window draw a frame on top
+    if user32.GetForegroundWindow() != hwnd:
+        user32.keybd_event(VK_MENU, 0, 0, 0)
+        user32.keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0)
+        user32.SetForegroundWindow(hwnd)
+        sleep(0.5)
+    # Windows can still refuse the switch, so check it took.
+    if user32.GetForegroundWindow() != hwnd:
+        raise VisualError(
+            f"the DayZ client window (PID {pid}) could not be brought to the front; "
+            "click it and keep it uncovered while the gate runs"
+        )
+
+
 def capture_window(pid: int, out: Path) -> None:
     """Save the client area of the visible window of process `pid` as a PNG (Windows only).
 
@@ -179,15 +215,7 @@ def capture_window(pid: int, out: Path) -> None:
     hwnd = max(found)[1]
     if user32.IsIconic(hwnd):
         raise VisualError(f"the DayZ client window (PID {pid}) is minimized")
-    if user32.GetForegroundWindow() != hwnd:
-        user32.SetForegroundWindow(hwnd)
-        time.sleep(0.5)  # let the window draw a frame on top
-        # Windows can refuse the switch (its foreground lock), so check it took.
-        if user32.GetForegroundWindow() != hwnd:
-            raise VisualError(
-                f"the DayZ client window (PID {pid}) could not be brought to the front; "
-                "click it and keep it uncovered while the gate runs"
-            )
+    bring_to_front(user32, hwnd, pid)
     user32.GetClientRect(hwnd, ctypes.byref(rect))
     origin = wintypes.POINT(0, 0)
     user32.ClientToScreen(hwnd, ctypes.byref(origin))
@@ -292,6 +320,15 @@ def compare_images(
     return result
 
 
+def shot_threshold(shot: dict, spec: dict, threshold: Optional[float] = None) -> float:
+    """The shot's own threshold, else `threshold` (--threshold), else the shots file's, else DEFAULT_THRESHOLD."""
+    if "threshold" in shot:
+        return shot["threshold"]
+    if threshold is not None:
+        return threshold
+    return spec["threshold"] if spec["threshold"] is not None else DEFAULT_THRESHOLD
+
+
 def compare_run(spec: dict, run_dir: Path, base_dir: Path, threshold: Optional[float] = None,
                 errors: Optional[dict[str, str]] = None) -> list[dict]:
     """One result per shot: PASS, FAIL, NEW (no baseline yet) or MISSING (no capture).
@@ -302,7 +339,7 @@ def compare_run(spec: dict, run_dir: Path, base_dir: Path, threshold: Optional[f
     results = []
     for shot in spec["shots"]:
         sid = shot["id"]
-        limit = shot.get("threshold", threshold if threshold is not None else spec["threshold"] if spec["threshold"] is not None else DEFAULT_THRESHOLD)
+        limit = shot_threshold(shot, spec, threshold)
         capture, baseline = run_dir / f"{sid}.png", base_dir / f"{sid}.png"
         entry = {"id": sid, "feature": shot["feature"], "status": MISSING, "ratio": None, "threshold": limit,
                  "capture": capture, "baseline": baseline, "diff": None, "reason": ""}
@@ -319,22 +356,63 @@ def compare_run(spec: dict, run_dir: Path, base_dir: Path, threshold: Optional[f
     return results
 
 
-def accept(spec: dict, run_dir: Path, base_dir: Path, only: Optional[list[str]] = None) -> list[str]:
-    """Copy captures from `run_dir` into the baseline folder; the shot ids accepted."""
+def backup_dir(base_dir: Path) -> Path:
+    """Where accept() keeps each baseline it replaces, as <id>.<stamp>.png."""
+    return base_dir / ".prev"
+
+
+def accept(spec: dict, run_dir: Path, base_dir: Path, only: Optional[list[str]] = None,
+           threshold: Optional[float] = None, replace_failed: bool = False) -> dict:
+    """Copy captures from `run_dir` into the baseline folder.
+
+    Returns {"accepted": [shot ids], "skipped": [shot ids with no capture in the run],
+    "backups": {shot id: path of the old baseline}}. A shot named in `only` with no
+    capture is an error; without `only`, shots with no capture are skipped and listed.
+    Every baseline that gets replaced is first copied to baseline/.prev/<id>.<stamp>.png.
+    A capture that FAILs against its current baseline (the same compare the gate
+    runs, with the same threshold) is refused unless `replace_failed`, so a new
+    look only becomes the expected one when someone asks for it; nothing is
+    copied when any shot is refused.
+    """
     ids = [s["id"] for s in spec["shots"]]
     unknown = sorted(set(only or []) - set(ids))
     if unknown:
         raise VisualError(f"not in the shots file: {unknown}")
-    wanted = [i for i in ids if not only or i in only]
-    missing = [i for i in wanted if not (run_dir / f"{i}.png").is_file()]
+    wanted = [s for s in spec["shots"] if not only or s["id"] in only]
+    missing = [s["id"] for s in wanted if not (run_dir / f"{s['id']}.png").is_file()]
     if missing and only:
         raise VisualError(f"no capture in {run_dir} for {missing}")
-    base_dir.mkdir(parents=True, exist_ok=True)
-    done = []
-    for sid in wanted:
-        if sid not in missing:
-            shutil.copy2(run_dir / f"{sid}.png", base_dir / f"{sid}.png")
-            done.append(sid)
-    if not done:
+    todo = [s for s in wanted if s["id"] not in missing]
+    if not todo:
         raise VisualError(f"no captures in {run_dir} to accept")
-    return done
+
+    if not replace_failed:
+        failed = []
+        with tempfile.TemporaryDirectory() as scratch:
+            for shot in todo:
+                sid = shot["id"]
+                if (base_dir / f"{sid}.png").is_file():
+                    r = compare_images(base_dir / f"{sid}.png", run_dir / f"{sid}.png", Path(scratch) / f"{sid}.diff.png",
+                                       shot_threshold(shot, spec, threshold), shot["ignore"])
+                    if r["status"] == FAIL:
+                        failed.append(f"{sid} ({r['reason']})")
+        if failed:
+            raise VisualError(
+                f"these captures FAIL against their baseline: {', '.join(failed)}. Nothing was accepted. "
+                "Look at each capture and its diff; if the new look is right, accept it with --shot <id> --replace-failed"
+            )
+
+    base_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
+    accepted, backups = [], {}
+    for shot in todo:
+        sid = shot["id"]
+        target = base_dir / f"{sid}.png"
+        if target.is_file():
+            backup = backup_dir(base_dir) / f"{sid}.{stamp}.png"
+            backup.parent.mkdir(exist_ok=True)
+            shutil.copy2(target, backup)
+            backups[sid] = backup
+        shutil.copy2(run_dir / f"{sid}.png", target)
+        accepted.append(sid)
+    return {"accepted": accepted, "skipped": missing, "backups": backups}

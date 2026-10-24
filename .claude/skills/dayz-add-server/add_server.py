@@ -15,6 +15,7 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shutil
 import subprocess
@@ -168,15 +169,90 @@ def gate_on_template_mismatch(cfg_path: Path, template: str, instance: str) -> N
     )
 
 
+# Records which DayZ Server template a mission/ copy came from. It is written
+# into the staged copy before the swap, so it travels with the folder: a
+# mission.bak-* backup keeps its own marker, and renaming it back restores both.
+MISSION_MARKER = ".agentic-z-template"
+
+
+def recorded_mission_template(mission_dir: Path) -> str | None:
+    """The template named in mission/'s marker file, or None when there is none."""
+    try:
+        return (mission_dir / MISSION_MARKER).read_text(encoding="utf-8").strip() or None
+    except OSError:
+        return None
+
+
+def linked_templates(inst_dir: Path, mission_dir: Path) -> list[str]:
+    """Names of the junctions in the instance folder that point at mission/."""
+    if not inst_dir.is_dir():
+        return []
+    names = []
+    for entry in inst_dir.iterdir():
+        if entry.name == mission_dir.name or not h.is_link(entry):
+            continue
+        target = h.link_target(entry)
+        if target is not None and h.paths_equal(target, mission_dir):
+            names.append(entry.name)
+    return sorted(names)
+
+
+def gate_on_mission_source(template: str, mission_dir: Path, project_dir: Path) -> None:
+    """Refuse to keep a mission/ that was copied from a different template.
+
+    Editing the cfg's template = line without --refresh-mission would pass the
+    cfg gate, keep the old map's mission/ and junction it under the new name, so
+    the server would load the wrong mission files while every line reads OK.
+    The marker file says where the copy came from; a mission made before the
+    marker existed is identified by the template junction pointing at it. A
+    mission with neither (filled in by hand) is accepted as it is.
+    """
+    recorded = recorded_mission_template(mission_dir)
+    if recorded is not None:
+        if recorded.casefold() == template.casefold():
+            return
+        source, evidence = recorded, f"its {MISSION_MARKER} file"
+    else:
+        linked = linked_templates(mission_dir.parent, mission_dir)
+        if not linked or template.casefold() in (n.casefold() for n in linked):
+            return
+        source, evidence = linked[0], f"the {linked[0]}/ junction that points at it"
+    sys.exit(
+        f"{FAIL} {mission_dir.relative_to(project_dir)} was copied from mission template '{source}'\n"
+        f"       (from {evidence}), but this run wants '{template}'.\n"
+        "       Rerun with --refresh-mission to copy the new template's mission\n"
+        "       (the current mission/ is kept as a mission.bak-<timestamp>/ backup)."
+    )
+
+
+def warn_leftover_staging(mission_dir: Path, project_dir: Path) -> None:
+    """Name any mission.tmp-* folder an interrupted earlier run left behind."""
+    if not mission_dir.parent.is_dir():
+        return
+    for leftover in sorted(mission_dir.parent.glob(f"{mission_dir.name}.tmp-*")):
+        print(
+            f"{WARN} {leftover.relative_to(project_dir)} is a partial mission copy left by an "
+            "interrupted run. Nothing uses it; delete it by hand."
+        )
+
+
 def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir: Path) -> None:
     """Ensure <instance>/mission/ exists, copied from DayZ Server install.
 
     Folder is named `mission/` regardless of template (the launcher pins the
     path explicitly via -mission=<abspath>, so the engine doesn't care).
     """
-    already_present = mission_dir.exists() and any(mission_dir.iterdir())
+    warn_leftover_staging(mission_dir, project_dir)
+    if os.path.lexists(mission_dir) and not mission_dir.is_dir():
+        sys.exit(
+            f"{FAIL} {mission_dir.relative_to(project_dir)} is a file or a broken link, not a folder.\n"
+            "       The skill will not delete it. Move it out of the instance folder and rerun;\n"
+            "       the mission is then copied fresh from the DayZ Server install."
+        )
+    already_present = mission_dir.is_dir() and any(mission_dir.iterdir())
 
     if already_present and not refresh:
+        gate_on_mission_source(template, mission_dir, project_dir)
         print(f"{OK} Mission already present: {mission_dir.relative_to(project_dir)}")
         return
 
@@ -203,27 +279,96 @@ def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir:
         )
 
     mission_dir.parent.mkdir(parents=True, exist_ok=True)
+    # Copy into a temporary sibling first and swap it in only once complete, so
+    # a failed copy (disk full, antivirus lock, Steam updating the install)
+    # never leaves a partial mission/ that a rerun would report as present.
+    staging = unique_sibling(mission_dir, "tmp")
+    try:
+        _copy_and_swap(src, staging, template, mission_dir, already_present, project_dir)
+    finally:
+        # Ctrl+C or a crash mid-copy raises past the handlers in _copy_and_swap;
+        # the staged copy is removed either way, so no mission.tmp-* is left behind.
+        if os.path.lexists(staging):
+            shutil.rmtree(staging, ignore_errors=True)
+
+
+def _copy_and_swap(
+    src: Path, staging: Path, template: str, mission_dir: Path, already_present: bool, project_dir: Path
+) -> None:
+    """Copy src into staging, record its template, then move it into mission/."""
+    try:
+        shutil.copytree(src, staging)
+        (staging / MISSION_MARKER).write_text(template + "\n", encoding="utf-8")
+    except (shutil.Error, OSError) as exc:
+        shutil.rmtree(staging, ignore_errors=True)
+        kept = (
+            f"       Your existing {mission_dir.relative_to(project_dir)} was not touched.\n"
+            if already_present else
+            "       No mission folder was created.\n"
+        )
+        leftover = (
+            f"       Could not remove the partial copy {staging.name}; delete it by hand.\n"
+            if staging.exists() else ""
+        )
+        sys.exit(
+            f"{FAIL} Copying the mission from {src} failed: {exc}\n"
+            f"{kept}{leftover}"
+            "       Free disk space, pause antivirus scanning of .server/, or wait for Steam\n"
+            "       to finish updating DayZ Server, then rerun."
+        )
+
     action = "Copied"
-    if mission_dir.exists() and not already_present:
-        mission_dir.rmdir()  # empty folder: nothing to keep
-    elif mission_dir.exists():
-        backup = backup_mission(mission_dir)
+    backup = None
+    if already_present:
+        backup = backup_mission(mission_dir, cleanup=staging)
         print(f"{OK} Kept previous mission as {backup.relative_to(project_dir)}")
         action = "Refreshed"
-    shutil.copytree(src, mission_dir)
+    try:
+        if mission_dir.exists():
+            mission_dir.rmdir()  # empty folder: nothing to keep
+        staging.rename(mission_dir)
+    except OSError as exc:
+        shutil.rmtree(staging, ignore_errors=True)
+        restore = (
+            f"       Your previous mission is safe in {backup.relative_to(project_dir)};\n"
+            f"       rename it back to {mission_dir.name} to restore it.\n"
+            if backup is not None else ""
+        )
+        sys.exit(
+            f"{FAIL} Could not move the new mission copy into {mission_dir.relative_to(project_dir)}: {exc}\n"
+            f"{restore}"
+            "       Stop any running session (/dayz-stop-test), close files in the instance folder, and rerun."
+        )
     print(f"{OK} {action} {mission_dir.relative_to(project_dir)}  (from DayZ Server install)")
 
 
-def backup_mission(mission_dir: Path) -> Path:
-    """Rename mission/ to mission.bak-<timestamp>/ so --refresh-mission never
-    destroys local edits. Returns the backup path."""
+def unique_sibling(path: Path, tag: str) -> Path:
+    """Return <path>.<tag>-<timestamp>[-n] next to path that does not exist yet."""
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    backup = mission_dir.with_name(f"{mission_dir.name}.bak-{stamp}")
+    candidate = path.with_name(f"{path.name}.{tag}-{stamp}")
     n = 1
-    while backup.exists():
-        backup = mission_dir.with_name(f"{mission_dir.name}.bak-{stamp}-{n}")
+    while candidate.exists():
+        candidate = path.with_name(f"{path.name}.{tag}-{stamp}-{n}")
         n += 1
-    mission_dir.rename(backup)
+    return candidate
+
+
+def backup_mission(mission_dir: Path, cleanup: Path | None = None) -> Path:
+    """Rename mission/ to mission.bak-<timestamp>/ so --refresh-mission never
+    destroys local edits. Returns the backup path. On failure, `cleanup` (the
+    staged new copy, if any) is deleted before exiting."""
+    backup = unique_sibling(mission_dir, "bak")
+    try:
+        mission_dir.rename(backup)
+    except OSError as exc:
+        if cleanup is not None:
+            shutil.rmtree(cleanup, ignore_errors=True)
+        sys.exit(
+            f"{FAIL} Could not rename {mission_dir} to {backup.name}: {exc}\n"
+            "       A running server or an open editor usually holds the folder.\n"
+            "       Stop the session (/dayz-stop-test), close files in mission/, and rerun.\n"
+            "       Nothing was changed."
+        )
     return backup
 
 
@@ -268,29 +413,90 @@ def setup_instance_dir(instance: str, template: str, project_dir: Path) -> None:
         else:
             print(f"{OK} {cfg_path.relative_to(project_dir)} unchanged (already configured)")
 
-    # Mission template junction: dayzOffline.<map> -> mission/. The engine looks
-    # for the template by name during the connect handshake; missing this causes
-    # client spawn to hang indefinitely (world loads, player entity created, but
-    # the player never renders into the world).
     mission_dir = inst_dir / "mission"
-    template_junction = inst_dir / template
-    if mission_dir.exists() and not template_junction.exists():
-        result = subprocess.run(
-            ["cmd", "/c", "mklink", "/J", str(template_junction), str(mission_dir)],
-            capture_output=True, text=True
-        )
-        if result.returncode != 0:
-            sys.exit(
-                f"{FAIL} Could not create template junction {template_junction}: "
-                f"{(result.stderr or result.stdout).strip()}\n"
-                "       Without it the client connects but never spawns. Fix the cause and rerun."
-            )
-        print(f"{OK} Junction {template_junction.name}/ -> mission/ (template handshake)")
-    elif template_junction.exists():
-        print(f"{OK} Junction {template_junction.name}/ -> mission/ already present")
+    if mission_dir.is_dir():
+        ensure_template_junction(inst_dir / template, mission_dir)
+        remove_old_template_junctions(inst_dir, template, mission_dir)
 
     print(f"{OK} {server_profiles.relative_to(project_dir)} ready")
     print(f"{OK} {client_diag_logs.relative_to(project_dir)} ready")
+
+
+def ensure_template_junction(junction: Path, mission_dir: Path) -> None:
+    """Make <instance>/<template> a junction to this instance's mission/.
+
+    The engine looks for the template by name during the connect handshake;
+    without it the world loads but the player never spawns.
+
+    The link itself is inspected, not what it points at: after the project
+    folder is moved, the old junction dangles (exists() is False, so mklink
+    would fail with "file already exists") or still points at the old copy's
+    mission. A link with the wrong target is replaced; removing a link never
+    touches the folder it points at. A real folder or file at that name may
+    hold the user's data, so the skill refuses instead of removing it.
+    """
+    if h.is_link(junction):
+        target = h.link_target(junction)
+        if target is not None and h.paths_equal(target, mission_dir):
+            print(f"{OK} Junction {junction.name}/ -> mission/ already present")
+            return
+        try:
+            remove_link(junction)
+        except OSError as exc:
+            sys.exit(
+                f"{FAIL} Junction {junction} points at {target or 'an unreadable target'},\n"
+                f"       not {mission_dir}, and could not be removed: {exc}\n"
+                "       Delete the link yourself (rmdir, which leaves its target alone) and rerun."
+            )
+        print(f"{WARN} Removed stale junction {junction.name}/ (it pointed at {target or 'an unreadable target'})")
+    elif os.path.lexists(junction):
+        sys.exit(
+            f"{FAIL} {junction} is a real folder or file, not a junction to mission/.\n"
+            "       The engine needs a junction there, and the skill will not delete what it holds.\n"
+            "       Move it out of the instance folder and rerun."
+        )
+
+    result = subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(junction), str(mission_dir)],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        sys.exit(
+            f"{FAIL} Could not create template junction {junction}: "
+            f"{(result.stderr or result.stdout).strip()}\n"
+            "       Without it the client connects but never spawns. Fix the cause and rerun."
+        )
+    print(f"{OK} Junction {junction.name}/ -> mission/ (template handshake)")
+
+
+def remove_old_template_junctions(inst_dir: Path, template: str, mission_dir: Path) -> None:
+    """Remove junctions to mission/ named after a template this instance no longer uses.
+
+    After a switch (template = edited, then --refresh-mission) the old map's
+    junction still points at mission/, which now holds the new map. Removing a
+    link never touches mission/ itself.
+    """
+    for name in linked_templates(inst_dir, mission_dir):
+        if name.casefold() == template.casefold():
+            continue
+        try:
+            remove_link(inst_dir / name)
+        except OSError as exc:
+            print(f"{WARN} Could not remove junction {name}/ left from the previous mission template: {exc}")
+            continue
+        print(f"{OK} Removed junction {name}/ left from the previous mission template")
+
+
+def remove_link(path: Path) -> None:
+    """Remove a junction or directory symlink without touching its target.
+
+    On Windows, rmdir on a reparse point deletes only the link, even when it
+    dangles or its target is not empty.
+    """
+    if os.name == "nt":
+        os.rmdir(path)
+    else:
+        os.unlink(path)
 
 
 def default_server_cfg(instance: str, template: str) -> str:

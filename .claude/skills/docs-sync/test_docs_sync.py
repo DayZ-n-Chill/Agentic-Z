@@ -47,7 +47,7 @@ Agentic-Z has 2 agents.
 
 Answer tests (evals) check 1 of the 2 agents. Answer tests cover 1 of the 2 agents. The 1 agents that use RAG search also send text off the machine.
 
-The final grades cover 6 items. All 6 are at A+: 2 of the 2 agents, 2 of the 2 skills and 2 of the 2 shared items. The 2 shared items are neither agents nor skills.
+The final grades cover 6 items. All 6 are at A+: 2 of the 2 agents, 2 of the 2 skills and 2 of the 2 shared items. The 2 shared items are neither agents nor skills. The final grades cover 6 items, and 6 are at A+: 2 of the 2 agents, 2 of the 2 skills and 2 of the 2 shared items.
 
 The rules are split into a 3-line core and two topic files of 2 to 4 lines.
 
@@ -78,7 +78,7 @@ TEAM = """# Team
 | Agent memory | 1 of the 2 agents keep notes. |
 This document describes the 2 agents and 2 skills that work together. Agentic-Z provides 2 slash commands. The 3 hooks are described in the hooks section.
 
-The DayZ rules core is 3 lines, and each of the two topic files is 2 to 4 lines. The final grades cover 6 items, and all 6 are at A+: 2 of the 2 agents, 2 of the 2 skills and 2 of the 2 shared items. The 2 shared items are neither agents nor skills.
+The DayZ rules core is 3 lines, and each of the two topic files is 2 to 4 lines. The final grades cover 6 items, and all 6 are at A+: 2 of the 2 agents, 2 of the 2 skills and 2 of the 2 shared items. The 2 shared items are neither agents nor skills. The final grades cover 6 items, and 6 are at A+: 2 of the 2 agents, 2 of the 2 skills and 2 of the 2 shared items.
 
 ## Quality by version
 
@@ -495,11 +495,40 @@ def test_grade_table_wrong_final_grade(repo):
     assert not any(p.fix for p in sync.run_checks()[1])
 
 
-def test_not_every_item_at_a_plus_needs_a_hand_edit_not_a_rewrite(repo, capsys):
-    # beta-agent drops to A: 6 graded, 5 at A+. No number makes "cover 6 items. All N are
-    # at A+" true, so --apply must not rewrite it into "cover 6 items. All 5 are at A+".
+# The shipped wiki states the true A+ count ("and N are at A+"), so CLAIMS holds no
+# all_aplus claim. The fixture still has an "All N are at A+" sentence in each file;
+# these claims keep the rule tested that such a sentence is reworded by hand, never rewritten.
+ALL_APLUS_CLAIMS = [
+    sync.Claim(sync.GUIDE, "The final grades cover {N} items. All {N} are at A+: {N} of the {N} agents, "
+                           "{N} of the {N} skills and {N} of the {N} shared items.",
+               ("graded_total", "graded_total") + sync._GRADED, all_aplus=True),
+    sync.Claim(sync.TEAM, "The final grades cover {N} items, and all {N} are at A+: {N} of the {N} agents, "
+                          "{N} of the {N} skills and {N} of the {N} shared items.",
+               ("graded_total", "graded_total") + sync._GRADED, all_aplus=True),
+]
+
+
+def _beta_drops_to_a(repo, monkeypatch):
+    """beta-agent drops to A (6 graded, 5 at A+); the true-count sentences and stats say so."""
+    monkeypatch.setattr(sync, "CLAIMS", sync.CLAIMS + ALL_APLUS_CLAIMS)
     grades = [dict(g, grade="A") if g["item"] == "beta-agent" else g for g in GRADES]
     (repo / sync.GRADES_DIR / "final_grades.json").write_text(json.dumps(grades), encoding="utf-8")
+    for rel in (sync.GUIDE, sync.TEAM):
+        edit(repo, rel, "and 6 are at A+: 2 of the 2 agents", "and 5 are at A+: 1 of the 2 agents")
+
+
+def test_true_count_sentence_follows_the_a_plus_count(repo):
+    grades = [dict(g, grade="A") if g["item"] == "beta-agent" else g for g in GRADES]
+    (repo / sync.GRADES_DIR / "final_grades.json").write_text(json.dumps(grades), encoding="utf-8")
+    out = problems()
+    assert any(p.startswith("wiki/src/content/guide.md:23: says 6, expected 5") for p in out)
+    assert any(p.startswith("wiki/src/content/guide.md:23: says 2, expected 1") for p in out)
+
+
+def test_not_every_item_at_a_plus_needs_a_hand_edit_not_a_rewrite(repo, capsys, monkeypatch):
+    # beta-agent drops to A: 6 graded, 5 at A+. No number makes "cover 6 items. All N are
+    # at A+" true, so --apply must not rewrite it into "cover 6 items. All 5 are at A+".
+    _beta_drops_to_a(repo, monkeypatch)
     for rel in (sync.GUIDE, sync.TEAM):
         edit(repo, rel, "| `beta-agent` | not built | A+ |", "| `beta-agent` | not built | A |")
     edit(repo, sync.APP_JSX, "['6', 'items graded A+']", "['5', 'items graded A+']")
@@ -516,14 +545,16 @@ def test_not_every_item_at_a_plus_needs_a_hand_edit_not_a_rewrite(repo, capsys):
     assert sync.main(["--check"]) == 1
 
 
-def test_all_aplus_sentence_still_reports_its_other_numbers_without_fixing_them(repo):
+def test_all_aplus_sentence_still_reports_its_other_numbers_without_fixing_them(repo, monkeypatch):
     # beta-agent drops to A, and guide.md's sentence also has a wrong agent count.
     # One run must report both the reword and the wrong count, and --apply must
     # leave that sentence alone.
-    grades = [dict(g, grade="A") if g["item"] == "beta-agent" else g for g in GRADES]
-    (repo / sync.GRADES_DIR / "final_grades.json").write_text(json.dumps(grades), encoding="utf-8")
+    _beta_drops_to_a(repo, monkeypatch)
+    for rel in (sync.GUIDE, sync.TEAM):
+        edit(repo, rel, "| `beta-agent` | not built | A+ |", "| `beta-agent` | not built | A |")
+    edit(repo, sync.APP_JSX, "['6', 'items graded A+']", "['5', 'items graded A+']")
     text = (repo / sync.GUIDE).read_text(encoding="utf-8")
-    m = sync.claim_regex(next(c for c in sync.CLAIMS if c.file == sync.GUIDE and c.all_aplus)).search(text)
+    m = sync.claim_regex(ALL_APLUS_CLAIMS[0]).search(text)
     group = 4  # "{N} of the {N} agents": the graded_agents number
     edit(repo, sync.GUIDE, m.group(0), m.group(0)[:m.start(group) - m.start()] + "99" + m.group(0)[m.end(group) - m.start():])
     before = (repo / sync.GUIDE).read_text(encoding="utf-8")

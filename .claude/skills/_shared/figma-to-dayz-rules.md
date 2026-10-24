@@ -370,7 +370,7 @@ Frame "StatusCard"  auto-layout vertical
 }
 ```
 
-Every node, leaves included, carries the eight core fields: `name`, `type`, `layout`, `spacing`, `padding`, `size`, `sizing` and `children`. The generator reads `sizing` on each axis to pick the size toggle (section 5), so a node without it cannot be made responsive. A child of a `layout: none` parent also carries `position`, `{ "x", "y" }` in pixels from the parent's top-left corner, since no auto-layout places it; children of `horizontal` and `vertical` parents omit it. The other fields (`text`, `font`, `style`, `anchor`) appear only when the source node carries that data.
+Every node, leaves included, carries the eight core fields: `name`, `type`, `layout`, `spacing`, `padding`, `size`, `sizing` and `children`. The generator reads `sizing` on each axis to pick the size toggle (section 5), so a node without it cannot be made responsive. A child of a `layout: none` parent, or a child Figma marks as absolutely positioned inside an auto-layout frame, also carries `position`, `{ "x", "y" }` in pixels from the parent's top-left corner, since no auto-layout places it; the other children of `horizontal` and `vertical` parents omit it. When `position` is present, the generator uses it instead of computing a flow position. The other fields (`text`, `font`, `style`, `anchor`) appear only when the source node carries that data.
 
 For example, an icon at x=200, y=10 inside a free-placed 240 by 40 header frame:
 
@@ -446,10 +446,8 @@ FrameWidgetClass StatusHud {
      "text valign" center
     }
     ButtonWidgetClass btn_close {
-     position 8 8
+     position 8 58
      size 80 28
-     halign right_ref
-     valign bottom_ref
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -465,6 +463,8 @@ FrameWidgetClass StatusHud {
  }
 }
 ```
+
+The three children carry no `position` because their vertical auto-layout parent places them: each one's `y` is the parent's top padding plus the heights of the siblings before it plus one `spacing` per sibling before it, so `txt_body` is at 8 + 24 + 4 = 36 and `btn_close` at 8 + 24 + 4 + 18 + 4 = 58, and each `x` is the left padding, 8. Both axes of all three children are pixel-sized; a `fill` axis would instead take position `0` with its position toggle `0` (section 6).
 
 Each stage's shape mirrors the next: the Figma frame becomes the normalized JSON node, which becomes the `.layout` widget block. Names survive end to end so `FindAnyWidget("btn_close")` works from script.
 

@@ -30,7 +30,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `--source <path>` | yes (or interactive) | Path to the existing mod folder (absolute or relative, `~` expanded), or a GitHub link to clone. If omitted on a TTY, the skill prompts for a path. |
+| `--source <path>` | yes (or interactive) | Path to the existing mod folder (absolute or relative, `~` expanded), or a GitHub link to clone. If omitted on an interactive console, the skill prompts `Path or GitHub link:`; the answer goes through the same Workshop and GitHub-link checks as `--source`. |
 | `--name <ModName>` | no | Override the name the mod is imported under. Defaults to the source folder's basename, validated against `[A-Za-z][A-Za-z0-9_]{0,63}`. Required if the basename has spaces or other invalid characters. |
 | `--scaffold` | no | Auto-yes for every "scaffold this missing piece?" prompt. Required for non-TTY use when missing pieces would otherwise prompt. |
 | `--no-scaffold` | no | Auto-no - link only, never write into the source folder. |
@@ -38,7 +38,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 
 ## What it does
 
-1. Gates on `/dayz-preflight`.
+1. Takes the source from `--source` or the prompt, refuses a Steam Workshop link, then gates on `/dayz-preflight`.
 2. Resolves and validates the source path (must exist, be a directory, not be inside `<repo>/workspace/`, not be a UNC path).
 3. Derives the mod name (from `--name` or source basename), validates the name pattern.
 4. Refuses if `workspace/<Name>/` already exists, or if `P:\<Name>\` exists pointing somewhere else (auto-cleans a stale link pointing at our about-to-be-created `workspace/<Name>/`).
@@ -55,7 +55,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 
 ## GitHub links
 
-`--source` also takes a GitHub link (`github.com/<owner>/<repo>`, optionally `/tree/<branch>` or `/tree/<branch>/<folder>`) or any other git remote. `git` must be on `PATH`.
+`--source` (and the prompt) also takes a GitHub link (`github.com/<owner>/<repo>`, optionally `/tree/<branch>` or `/tree/<branch>/<folder>`) or any other git remote. `git` must be on `PATH`.
 
 - A repo link is cloned straight into `workspace/<ModName>/` and gets the same junction and scaffold check. The name comes from the repo (or `--name`).
 - A tree link to a subfolder clones the repo to `.imports\<owner>__<repo>__<branch>\` and links the subfolder as the mod.
@@ -73,7 +73,7 @@ A Steam Workshop link (`steamcommunity.com/sharedfiles/filedetails/?id=...` or `
 ```
 ... (preflight output)
 
-Path to existing mod folder: C:\Users\me\repos\MyMod
+Path or GitHub link: C:\Users\me\repos\MyMod
 [OK]    Source validated: C:\Users\me\repos\MyMod
 [INFO]  Derived mod name: MyMod
 [OK]    workspace\MyMod -> C:\Users\me\repos\MyMod (junction)
@@ -102,7 +102,7 @@ An existing `$PBOPREFIX$` must hold exactly the mod name, because `/dayz-build-p
 Scaffolding check:
   [OK]    config.cpp present
   [OK]    $PBOPREFIX$ present
-  [WARN]  $PBOPREFIX$ is 'Author\\MyMod', not 'MyMod', so /dayz-build-pbo will refuse it.
+  [WARN]  $PBOPREFIX$ is 'Author\MyMod', not 'MyMod', so /dayz-build-pbo will refuse it.
           Set the file to the single line MyMod and make config.cpp paths start with MyMod\.
 ...
 Next steps:
@@ -112,13 +112,14 @@ Next steps:
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero (typically `P:\` not mounted).
-- `--source` is a Steam Workshop link.
-- `--source` missing and stdin isn't a TTY.
+- `--source` (or the prompted answer) is a Steam Workshop link.
+- `--source` missing and stdin isn't an interactive console (checked before preflight, so nothing is prompted or touched).
 - Source path doesn't exist, isn't a directory, or is a UNC path (`\\server\share\...` - junctions can't target them on Windows).
 - Source path is inside `<repo>/workspace/` (avoids self-referential / circular links). The error points at `/dayz-add-scaffold <Name> --piece junction`, which links a mod that is already in `workspace/`.
 - Derived/given mod name fails the pattern (`[A-Za-z][A-Za-z0-9_]{0,63}`).
 - `workspace/<Name>/` already exists (won't clobber).
-- A git link is given and `git` is not on `PATH`, or `git clone` fails (its last lines are shown).
+- A git link is given and `git` is not on `PATH`, or `git clone` fails (its last lines are shown). A failed or interrupted (Ctrl+C) clone is deleted, so the retry is not refused with "already exists".
+- A tree link has more than one segment after `/tree/` (such as `tree/feature/x`) and `git ls-remote` cannot list the remote's branches (offline, bad credentials), so the branch and the folder cannot be told apart. Nothing is cloned; the message says to fix the connection, link the repo without `/tree/...`, or clone it yourself and import the folder by path.
 - `P:\<Name>\` exists as a real folder, or as a link pointing somewhere other than the new `workspace/<Name>/`.
 - Missing scaffold pieces, neither `--scaffold` nor `--no-scaffold` passed, and stdin is not an interactive console. A null stdin such as `< NUL` or an agent's tool shell counts as non-interactive even though Windows reports it as a TTY. This check runs before any link is created, so nothing is left half-done.
 

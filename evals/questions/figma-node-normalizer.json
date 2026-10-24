@@ -62,6 +62,26 @@
         "re:(?s)\"txt_title\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*12\\s*,\\s*\"y\"\\s*:\\s*8\\s*\\}"
       ],
       "verified": ".claude/agents/figma-node-normalizer.md JSON shape (position is required on every child of a layout: none parent, x and y relative to the parent) and .claude/skills/_shared/figma-to-dayz-rules.md section 10 (free-placed icon example)"
+    },
+    {
+      "id": "position-under-centered-alignment",
+      "question": "Answer only, do not edit any file, and do not call any Figma MCP tool: the node tree below is the get_metadata output, already fetched. Normalize it for figma-to-dayz-layout.\n\n<frame id=\"60:1\" name=\"panel_dialog\" x=\"0\" y=\"0\" width=\"300\" height=\"120\" layout=\"vertical\" primary-axis-align=\"start\" counter-axis-align=\"center\" padding=\"8\" spacing=\"8\" sizing=\"fixed,fixed\">\n  <text id=\"60:2\" name=\"txt_title\" x=\"100\" y=\"8\" width=\"100\" height=\"24\" sizing=\"fixed,hug\">Confirm</text>\n  <frame id=\"60:3\" name=\"btn_ok\" x=\"110\" y=\"40\" width=\"80\" height=\"28\" sizing=\"hug,hug\">\n    <text id=\"60:4\" name=\"Label\" x=\"28\" y=\"6\" width=\"24\" height=\"16\">OK</text>\n  </frame>\n</frame>\n\nReturn your usual report.",
+      "must_include": [
+        "re:(?s)\"txt_title\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*100\\s*,\\s*\"y\"\\s*:\\s*8\\s*\\}",
+        "re:(?s)\"btn_ok\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*110\\s*,\\s*\"y\"\\s*:\\s*40\\s*\\}"
+      ],
+      "verified": ".claude/agents/figma-node-normalizer.md JSON shape (position is required on every child of an auto-layout parent whose primary or counter-axis alignment is not start) and .claude/agents/figma-to-dayz-layout.md step 3 (a node's position replaces the flow position)"
+    },
+    {
+      "id": "dedup-skips-existing-suffix",
+      "question": "Answer only, do not edit any file, and do not call any Figma MCP tool: the node tree below is the get_metadata output, already fetched. Normalize it for figma-to-dayz-layout.\n\n<frame id=\"70:1\" name=\"panel_list\" x=\"0\" y=\"0\" width=\"200\" height=\"90\" layout=\"vertical\" sizing=\"fixed,fixed\">\n  <text id=\"70:2\" name=\"Label\" x=\"0\" y=\"0\" width=\"200\" height=\"24\" sizing=\"fill,hug\">One</text>\n  <text id=\"70:3\" name=\"Label\" x=\"0\" y=\"30\" width=\"200\" height=\"24\" sizing=\"fill,hug\">Two</text>\n  <text id=\"70:4\" name=\"label_2\" x=\"0\" y=\"60\" width=\"200\" height=\"24\" sizing=\"fill,hug\">Three</text>\n</frame>\n\nReturn your usual report.",
+      "must_include": [
+        "re:\"name\"\\s*:\\s*\"label_3\""
+      ],
+      "must_not_include": [
+        "re:(?s)\"name\"\\s*:\\s*\"label_2\".*\"name\"\\s*:\\s*\"label_2\""
+      ],
+      "verified": ".claude/agents/figma-node-normalizer.md De-duplicate names (each later duplicate takes the lowest suffix from _2 up that no node in the tree already has)"
     }
   ]
 }

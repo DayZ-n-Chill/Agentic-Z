@@ -108,16 +108,26 @@ def resolve_branch(git: str, url: str, ref_path: str) -> str:
     """The branch named by a /tree/ ref path. The path may be a branch with
     slashes (feature/x) or a branch plus a subfolder (main/MyMod), so the
     longest leading run of segments that is a real head on the remote wins.
-    With no match (a tag, or ls-remote failed) the first segment is used."""
+    With no match (a tag) the first segment is used. If ls-remote fails
+    (offline, bad credentials) the split cannot be known, so this refuses
+    instead of guessing: a guess would clone feature/x as branch feature."""
     segments = ref_path.split("/")
     if len(segments) == 1:
         return ref_path
     result = subprocess.run([git, "ls-remote", "--heads", url], capture_output=True, text=True)
+    if result.returncode != 0:
+        sys.exit(
+            f"{FAIL} Could not list the branches of {url} (git ls-remote failed), so the link's\n"
+            f"       tree/{ref_path} cannot be split into a branch and a folder.\n"
+            f"{_git_tail(result.stderr)}\n"
+            "       Check your network and git credentials and re-run. Or link the repo without\n"
+            "       /tree/... to clone its default branch, or clone it yourself and import the\n"
+            "       folder with --source <path>."
+        )
     heads = set()
-    if result.returncode == 0:
-        for line in (result.stdout or "").splitlines():
-            if "\t" in line:
-                heads.add(line.split("\t", 1)[1].removeprefix("refs/heads/"))
+    for line in (result.stdout or "").splitlines():
+        if "\t" in line:
+            heads.add(line.split("\t", 1)[1].removeprefix("refs/heads/"))
     for n in range(len(segments), 0, -1):
         candidate = "/".join(segments[:n])
         if candidate in heads:
@@ -125,8 +135,15 @@ def resolve_branch(git: str, url: str, ref_path: str) -> str:
     return segments[0]
 
 
+def _git_tail(stderr: str | None) -> str:
+    """The last lines of git's error output, indented under a [FAIL] line."""
+    return "\n".join(f"       {line}" for line in (stderr or "").strip().splitlines()[-5:])
+
+
 def clone_repo(src: GitSource, target: Path) -> None:
-    """git clone the repo into target, or exit with git's own message."""
+    """git clone the repo into target, or exit with git's own message. A failed
+    or interrupted (Ctrl+C) clone is removed, so a retry is not refused with
+    'already exists'."""
     git = shutil.which("git")
     if git is None:
         sys.exit(f"{FAIL} git was not found on PATH. Install Git for Windows (https://git-scm.com) and re-run.")
@@ -136,11 +153,39 @@ def clone_repo(src: GitSource, target: Path) -> None:
               "the whole repo is cloned and that folder is the mod.")
     cmd = [git, "clone"] + (["--branch", branch] if branch else []) + [src.url, str(target)]
     print(f"{INFO} Cloning {src.url}{f' (branch {branch})' if branch else ''} ...")
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+    except KeyboardInterrupt:
+        # subprocess.run has already killed git; drop the half-written folder.
+        try:
+            remove_clone(target)
+            note = f"Removed the partial clone at {_display(target)} so the retry starts clean."
+        except OSError:
+            note = f"Could not remove the partial clone; delete it with: cmd /c rmdir /s /q \"{target}\""
+        sys.exit(f"{FAIL} Clone of {src.url} interrupted.\n       {note}")
     if result.returncode != 0:
         remove_clone(target)
-        tail = "\n".join(f"       {line}" for line in (result.stderr or "").strip().splitlines()[-5:])
-        sys.exit(f"{FAIL} git clone failed for {src.url}\n{tail}")
+        sys.exit(f"{FAIL} git clone failed for {src.url}\n{_git_tail(result.stderr)}")
+
+
+def warn_if_behind(clone: Path) -> None:
+    """A reused clone is never changed here (other imports may link into it),
+    but a fetch shows whether upstream moved on; if so, print the pull to run."""
+    git = shutil.which("git")
+    if git is None:
+        return  # split_subfolder already needed git, so this only guards a PATH change mid-run
+    pull = f"git -C \"{clone}\" pull --ff-only"
+    fetch = subprocess.run([git, "-C", str(clone), "fetch", "--quiet"], capture_output=True, text=True)
+    if fetch.returncode != 0:
+        print(f"{WARN} Could not fetch {_display(clone)}, so it may be out of date.\n"
+              f"       To update it: {pull}")
+        return
+    behind = subprocess.run([git, "-C", str(clone), "rev-list", "--count", "HEAD..@{u}"],
+                            capture_output=True, text=True)
+    count = (behind.stdout or "").strip()
+    if behind.returncode == 0 and count.isdigit() and int(count) > 0:
+        print(f"{WARN} The reused clone is {count} commit(s) behind upstream; it is imported as it is.\n"
+              f"       To update it first: {pull}")
 
 
 def remove_clone(target: Path) -> None:
@@ -164,21 +209,26 @@ def _display(path: Path) -> Path:
         return path
 
 
-def resolve_source(cli_value: str | None) -> Path:
-    """Resolve the source path from the CLI flag or an interactive prompt."""
-    raw = cli_value
+def ask_source() -> str:
+    """Prompt for the source when --source was not passed. main() sends the
+    answer through the same Workshop and git-link checks as --source."""
+    if not stdin_is_interactive():
+        sys.exit(
+            f"{FAIL} --source is required when stdin is not an interactive console.\n"
+            "       Re-run with --source <path-to-mod-folder or GitHub link>."
+        )
+    try:
+        raw = input("Path or GitHub link: ").strip()
+    except EOFError:
+        raw = ""
     if not raw:
-        if not sys.stdin.isatty():
-            sys.exit(
-                f"{FAIL} --source is required when stdin is not a TTY.\n"
-                "       Re-run with --source <path-to-existing-mod-folder>."
-            )
-        try:
-            raw = input("Path to existing mod folder: ").strip()
-        except EOFError:
-            raw = ""
-        if not raw:
-            sys.exit(f"{FAIL} No source path provided.")
+        sys.exit(f"{FAIL} No source path provided.")
+    return raw
+
+
+def resolve_source(cli_value: str | None) -> Path:
+    """Validate a local source folder, prompting for one when none is given."""
+    raw = cli_value or ask_source()
 
     # Junctions can't target UNC paths on Windows.
     if raw.startswith("\\\\") or raw.startswith("//"):
@@ -353,18 +403,20 @@ def main() -> int:
         help="Author handle for a scaffolded config.cpp (cached for future runs, as in /dayz-new-mod).",
     )
     args = parser.parse_args()
+    # A prompted answer goes through the same Workshop and git-link checks as --source.
+    raw = args.source or ask_source()
 
-    if args.source and is_workshop_link(args.source):
-        refuse_workshop(args.source)
+    if is_workshop_link(raw):
+        refuse_workshop(raw)
 
     h.gate_on_preflight()
     print()
 
-    git_source = parse_git_source(args.source) if args.source else None
+    git_source = parse_git_source(raw)
     if git_source is not None:
         return import_from_git(git_source, args)
 
-    source = resolve_source(args.source)
+    source = resolve_source(raw)
     print(f"{OK} Source validated: {source}")
 
     modname = derive_modname(source, args.name)
@@ -452,8 +504,10 @@ def check_prefix(prefix_file: Path, modname: str) -> bool:
     prefix = prefix_file.read_text(encoding="utf-8-sig", errors="replace").strip()
     if prefix == modname:
         return True
+    # Print the raw text: repr() would double every backslash (Author\\MyMod).
+    shown = f"'{prefix}'" if prefix else "empty"
     print(
-        f"  {WARN} $PBOPREFIX$ is {prefix!r}, not {modname!r}, so /dayz-build-pbo will refuse it.\n"
+        f"  {WARN} $PBOPREFIX$ is {shown}, not '{modname}', so /dayz-build-pbo will refuse it.\n"
         f"          Set the file to the single line {modname} and make config.cpp paths start with {modname}\\."
     )
     return False
@@ -548,6 +602,7 @@ def import_git_subfolder(src: GitSource, subfolder: str, args: argparse.Namespac
         print(f"{OK} Cloned into {_display(clone)}")
     else:
         print(f"{INFO} Reusing the clone at {_display(clone)}")
+        warn_if_behind(clone)
 
     def undo(msg: str):
         if made_clone:

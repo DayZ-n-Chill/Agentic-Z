@@ -1,6 +1,5 @@
 """Tests for the atlas packing logic in build_imageset.py (no Pillow or DayZ Tools needed)."""
 import importlib.util
-import os
 from pathlib import Path
 
 import pytest
@@ -290,40 +289,217 @@ class _FakeImage:
         return _FakeAtlas()
 
 
-def _convert(monkeypatch, tmp_path, writes):
-    """Run write_one_atlas with ImageToPAA faked to exit 0 and write the .paa only if `writes`."""
-    monkeypatch.setattr(bi, "Image", _FakeImage)
+class _Sprite:
+    width = height = 64
 
-    def fake_run(cmd):
-        if writes:
-            Path(cmd[2]).write_bytes(b"new paa")
-        return bi.subprocess.CompletedProcess(cmd, 0)
+    def load(self):
+        pass
 
-    monkeypatch.setattr(bi.subprocess, "run", fake_run)
-    return bi.write_one_atlas("icons", 256, 256, [], "MyMod", tmp_path, Path("ImageToPAA.exe"))
+    def convert(self, mode):
+        return self
 
+    def __enter__(self):
+        return self
 
-def _age(path):
-    """Backdate `path` one minute, like a .paa left by an earlier run."""
-    old = path.stat().st_mtime_ns - 60_000_000_000
-    os.utime(path, ns=(old, old))
+    def __exit__(self, *a):
+        return False
 
 
-def test_write_one_atlas_rejects_paa_left_from_earlier_run(monkeypatch, tmp_path, capsys):
-    stale = tmp_path / "icons.paa"
-    stale.write_bytes(b"old paa")
-    _age(stale)
-    assert _convert(monkeypatch, tmp_path, writes=False) is False
-    assert "did not rewrite icons.paa" in capsys.readouterr().err
-    assert not (tmp_path / "icons.imageset").exists()
+class _FakePillow(_FakeImage):
+    @staticmethod
+    def open(path):
+        return _Sprite()
 
 
-def test_write_one_atlas_accepts_rewritten_paa(monkeypatch, tmp_path):
-    stale = tmp_path / "icons.paa"
-    stale.write_bytes(b"old paa")
-    _age(stale)
-    assert _convert(monkeypatch, tmp_path, writes=True) is True
-    assert (tmp_path / "icons.imageset").is_file()
+def _real_build(monkeypatch, tmp_path, fake_run, parts=1, old_stems=("icons",), set_name="icons"):
+    """build_one with the real write_one_atlas and staging, ImageToPAA faked by `fake_run`.
+
+    `parts` > 1 makes pack_split return that many atlases. Every stem in
+    `old_stems` gets a .paa and .imageset holding b"old" from an earlier run.
+    """
+    set_dir = tmp_path / ".gui-sources" / set_name
+    set_dir.mkdir(parents=True)
+    (set_dir / "a.png").write_bytes(b"x")
+    out_dir = tmp_path / "gui" / "imagesets"
+    out_dir.mkdir(parents=True)
+    for stem in old_stems:
+        for ext in (".paa", ".imageset"):
+            (out_dir / f"{stem}{ext}").write_bytes(b"old")
+    monkeypatch.setattr(bi, "Image", _FakePillow)
+    if parts > 1:
+        monkeypatch.setattr(bi, "pack_split", lambda metas: [((256, 256), [])] * parts)
+    calls = []
+
+    def run(cmd):
+        calls.append(cmd)
+        return fake_run(cmd, len(calls))
+
+    monkeypatch.setattr(bi.subprocess, "run", run)
+    ok = bi.build_one(set_dir, "MyMod", out_dir, Path("ImageToPAA.exe"))
+    return ok, out_dir, calls
+
+
+def _writes(cmd, n, rc=0):
+    Path(cmd[2]).write_bytes(b"new paa")
+    return bi.subprocess.CompletedProcess(cmd, rc)
+
+
+def _partial_then_fail(cmd, n):
+    Path(cmd[2]).write_bytes(b"trunc")
+    return bi.subprocess.CompletedProcess(cmd, 1)
+
+
+def _assert_no_staging_left(out_dir):
+    assert not [d for d in out_dir.iterdir() if d.is_dir()]
+
+
+def test_imagetopaa_never_writes_to_the_final_path(monkeypatch, tmp_path):
+    ok, out_dir, calls = _real_build(monkeypatch, tmp_path, _writes)
+    assert ok is True
+    assert Path(calls[0][2]).parent != out_dir
+    assert (out_dir / "icons.paa").read_bytes() == b"new paa"
+    assert 'path "MyMod\\gui\\imagesets\\icons.paa"' in (out_dir / "icons.imageset").read_text()
+    _assert_no_staging_left(out_dir)
+
+
+def test_partial_write_then_failure_keeps_previous_single_output(monkeypatch, tmp_path, capsys):
+    ok, out_dir, _ = _real_build(monkeypatch, tmp_path, _partial_then_fail)
+    assert ok is False
+    assert (out_dir / "icons.paa").read_bytes() == b"old"
+    assert (out_dir / "icons.imageset").read_bytes() == b"old"
+    assert "ImageToPAA exited 1 on icons" in capsys.readouterr().err
+    _assert_no_staging_left(out_dir)
+
+
+def test_exit_zero_without_output_keeps_previous_output(monkeypatch, tmp_path, capsys):
+    """An earlier run's .paa must not pass for this run's output."""
+    ok, out_dir, _ = _real_build(
+        monkeypatch, tmp_path, lambda cmd, n: bi.subprocess.CompletedProcess(cmd, 0))
+    assert ok is False
+    assert "wrote no icons.paa" in capsys.readouterr().err
+    assert (out_dir / "icons.paa").read_bytes() == b"old"
+    assert (out_dir / "icons.imageset").read_bytes() == b"old"
+
+
+def test_split_part_failure_replaces_no_part(monkeypatch, tmp_path):
+    """Part 1 converts, part 2 writes a partial file and fails: no old part is touched."""
+    def run(cmd, n):
+        return _writes(cmd, n) if n == 1 else _partial_then_fail(cmd, n)
+
+    ok, out_dir, _ = _real_build(monkeypatch, tmp_path, run, parts=2,
+                                 old_stems=("icons_1", "icons_2"))
+    assert ok is False
+    for stem in ("icons_1", "icons_2"):
+        assert (out_dir / f"{stem}.paa").read_bytes() == b"old"
+        assert (out_dir / f"{stem}.imageset").read_bytes() == b"old"
+    _assert_no_staging_left(out_dir)
+
+
+def test_split_success_replaces_parts_and_drops_unsplit_output(monkeypatch, tmp_path):
+    ok, out_dir, _ = _real_build(monkeypatch, tmp_path, _writes, parts=2,
+                                 old_stems=("icons", "icons_1"))
+    assert ok is True
+    assert sorted(f.name for f in out_dir.iterdir()) == [
+        "icons_1.imageset", "icons_1.paa", "icons_2.imageset", "icons_2.paa",
+    ]
+    assert (out_dir / "icons_1.paa").read_bytes() == b"new paa"
+
+
+@pytest.mark.parametrize("name", ["main menu", "main-menu", "2icons", "menü"])
+def test_build_one_rejects_bad_set_folder_name(tmp_path, capsys, name):
+    set_dir = tmp_path / ".gui-sources" / name
+    set_dir.mkdir(parents=True)
+    (set_dir / "hud_ok.png").write_bytes(b"not read")
+    out_dir = tmp_path / "gui" / "imagesets"
+    assert bi.build_one(set_dir, "MyMod", out_dir, Path("ImageToPAA.exe")) is False
+    err = capsys.readouterr().err
+    assert "set folder names must be identifiers" in err and "Rename the folder" in err
+    assert not out_dir.exists()
+
+
+def test_main_fails_bad_set_name_but_builds_others(monkeypatch, tmp_path, capsys):
+    mod = tmp_path / "MyMod"
+    for name in ("main menu", "icons"):
+        d = mod / ".gui-sources" / name
+        d.mkdir(parents=True)
+        (d / "hud_ok.png").write_bytes(b"x")
+    built = []
+    monkeypatch.setattr(bi.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(bi, "Image", _FakePillow)
+    monkeypatch.setattr(bi, "resolve_image_to_paa", lambda: Path("ImageToPAA.exe"))
+    monkeypatch.setattr(bi, "write_one_atlas", lambda stem, *a: built.append(stem) or True)
+    monkeypatch.setattr("sys.argv", ["build_imageset.py", str(mod), "--mod-name", "MyMod"])
+    assert bi.main() == 1
+    assert built == ["icons"]
+    assert "1 of 2 imagesets built." in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("others,expected", [
+    ({"icons_1"}, ["icons_1"]),
+    ({"ICONS_2", "other"}, ["icons_2"]),
+    ({"icons_3", "icons"}, []),
+])
+def test_colliding_part_stems(others, expected):
+    assert bi.colliding_part_stems("icons", 2, others) == expected
+
+
+def test_colliding_part_stems_ignores_unsplit_sets():
+    assert bi.colliding_part_stems("icons", 1, {"icons_1"}) == []
+
+
+def test_split_stem_colliding_with_source_set_fails_before_converting(monkeypatch, tmp_path, capsys):
+    set_dir = tmp_path / ".gui-sources" / "icons"
+    set_dir.mkdir(parents=True)
+    (set_dir / "a.png").write_bytes(b"x")
+    out_dir = tmp_path / "gui" / "imagesets"
+    monkeypatch.setattr(bi, "Image", _FakePillow)
+    monkeypatch.setattr(bi, "pack_split", lambda metas: [((256, 256), [])] * 2)
+    monkeypatch.setattr(bi, "write_one_atlas", lambda *a: pytest.fail("must not convert"))
+    assert bi.build_one(set_dir, "MyMod", out_dir, Path("ImageToPAA.exe"),
+                        frozenset({"icons_1"})) is False
+    err = capsys.readouterr().err
+    assert "icons_1 is also a source set name" in err
+    assert not out_dir.exists()
+
+
+def test_dry_run_writes_and_deletes_nothing(monkeypatch, tmp_path, capsys):
+    set_dir = tmp_path / ".gui-sources" / "icons"
+    set_dir.mkdir(parents=True)
+    (set_dir / "a.png").write_bytes(b"x")
+    out_dir = tmp_path / "gui" / "imagesets"
+    _touch_outputs(out_dir, "icons_1", "icons_2")
+    before = sorted(f.name for f in out_dir.iterdir())
+    monkeypatch.setattr(bi, "Image", _FakePillow)
+    monkeypatch.setattr(bi.subprocess, "run", lambda *a: pytest.fail("must not convert"))
+    assert bi.build_one(set_dir, "MyMod", out_dir, Path("ImageToPAA.exe"), dry_run=True) is True
+    out = capsys.readouterr().out
+    assert "would write icons.paa + icons.imageset" in out
+    assert "Would remove stale icons_1.paa" in out and "Would remove stale icons_2.imageset" in out
+    assert sorted(f.name for f in out_dir.iterdir()) == before
+
+
+def test_dry_run_empty_set_reports_but_keeps_outputs(tmp_path, capsys):
+    set_dir = tmp_path / ".gui-sources" / "icons"
+    set_dir.mkdir(parents=True)
+    out_dir = tmp_path / "gui" / "imagesets"
+    _touch_outputs(out_dir, "icons")
+    removed = bi.build_one(set_dir, "MyMod", out_dir, Path("ImageToPAA.exe"), dry_run=True)
+    assert removed is True
+    assert (out_dir / "icons.paa").exists()
+    assert "Would remove stale icons.paa" in capsys.readouterr().out
+
+
+def test_main_dry_run_flag_reaches_build_one(monkeypatch, tmp_path, capsys):
+    mod = _mod(tmp_path, "MyMod", prefix="MyMod")
+    seen = []
+    monkeypatch.setattr(bi.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(bi, "Image", object())
+    monkeypatch.setattr(bi, "resolve_image_to_paa", lambda: Path("ImageToPAA.exe"))
+    monkeypatch.setattr(bi, "build_one", lambda *a: seen.append(a[-1]) or True)
+    monkeypatch.setattr("sys.argv", ["build_imageset.py", str(mod), "--dry-run"])
+    assert bi.main() == 0
+    assert seen == [True]
+    assert "1 of 1 imagesets planned (dry run)." in capsys.readouterr().out
 
 
 def _split_set(monkeypatch, tmp_path, convert_ok):
@@ -465,3 +641,90 @@ def test_default_mod_name_falls_back_to_folder_with_warning(tmp_path, capsys):
     mod.mkdir()
     assert bi.default_mod_name(mod) == "Folder"
     assert "[WARN]" in capsys.readouterr().out
+
+
+def test_remove_stale_outputs_ignores_case(tmp_path):
+    """After renaming the folder Icons to icons, the old Icons_2.* is stale too."""
+    _touch_outputs(tmp_path, "Icons_2", "ICONS_3")
+    bi.remove_stale_outputs(tmp_path, "icons", 1, frozenset({"Icons_3"}))
+    assert {p.stem for p in tmp_path.iterdir()} == {"ICONS_3"}
+
+
+def _generated(out_dir, stem, paa=True):
+    out_dir.mkdir(parents=True, exist_ok=True)
+    bi.write_imageset_file(out_dir / f"{stem}.imageset", stem, 256, 256,
+                           f"MyMod\\gui\\imagesets\\{stem}.paa", [])
+    if paa:
+        (out_dir / f"{stem}.paa").write_bytes(b"paa")
+
+
+def test_looks_generated_only_matches_this_skills_format(tmp_path):
+    _generated(tmp_path, "mine")
+    assert bi.looks_generated(tmp_path / "mine.imageset")
+    vanilla = tmp_path / "vanilla.imageset"
+    vanilla.write_text('ImageSetClass {\n Name "vanilla"\n Textures {\n  ImageSetTextureClass {\n'
+                       '   path "Gui/imagesets/vanilla.edds"\n  }\n }\n}\n', encoding="utf-8")
+    assert not bi.looks_generated(vanilla)
+    renamed = tmp_path / "renamed.imageset"
+    renamed.write_text((tmp_path / "mine.imageset").read_text(encoding="utf-8"), encoding="utf-8")
+    assert not bi.looks_generated(renamed)  # Name and path point at another stem
+
+
+def test_find_orphan_outputs_lists_generated_files_of_deleted_sets(tmp_path):
+    _generated(tmp_path, "old")          # set folder deleted
+    _generated(tmp_path, "gone_1")       # part of a deleted split set
+    _generated(tmp_path, "gone_2", paa=False)
+    _generated(tmp_path, "icons")        # current set
+    _generated(tmp_path, "Menu_2")       # part of the current set "menu", other case
+    (tmp_path / "custom.imageset").write_text("hand made", encoding="utf-8")
+    (tmp_path / "custom.paa").write_bytes(b"paa")
+    orphans = bi.find_orphan_outputs(tmp_path, {"icons", "menu"})
+    assert [p.name for p in orphans] == [
+        "gone_1.imageset", "gone_1.paa", "gone_2.imageset", "old.imageset", "old.paa",
+    ]
+    assert bi.find_orphan_outputs(tmp_path / "nope", set()) == []
+
+
+def _orphan_mod(tmp_path):
+    mod = _mod(tmp_path, "MyMod", prefix="MyMod")
+    out_dir = mod / "gui" / "imagesets"
+    _generated(out_dir, "icons")
+    _generated(out_dir, "old")
+    return mod, out_dir
+
+
+def test_main_warns_about_orphans_and_keeps_them_by_default(monkeypatch, tmp_path, capsys):
+    mod, out_dir = _orphan_mod(tmp_path)
+    _run_main(monkeypatch, tmp_path, [str(mod)])
+    out = capsys.readouterr().out
+    assert "[WARN]  orphan old.imageset" in out and "--prune" in out
+    assert (out_dir / "old.paa").is_file() and (out_dir / "old.imageset").is_file()
+
+
+def test_main_prune_deletes_orphans_only(monkeypatch, tmp_path, capsys):
+    mod, out_dir = _orphan_mod(tmp_path)
+    _run_main(monkeypatch, tmp_path, [str(mod), "--prune", "--dry-run"])
+    assert "Would remove orphan old.paa" in capsys.readouterr().out
+    assert (out_dir / "old.paa").is_file()
+    _run_main(monkeypatch, tmp_path, [str(mod), "--prune"])
+    assert "Removed orphan old.paa" in capsys.readouterr().out
+    assert sorted(f.name for f in out_dir.iterdir()) == ["icons.imageset", "icons.paa"]
+
+
+def test_main_prune_with_no_set_folders_left(monkeypatch, tmp_path, capsys):
+    mod, out_dir = _orphan_mod(tmp_path)
+    (mod / ".gui-sources" / "icons").rmdir()
+    monkeypatch.setattr(bi.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(bi, "Image", object())
+    monkeypatch.setattr("sys.argv", ["build_imageset.py", str(mod), "--prune"])
+    with pytest.raises(SystemExit) as exc:
+        bi.main()
+    assert "no imageset subfolders" in str(exc.value)
+    assert not any(out_dir.iterdir())
+
+
+def test_main_skips_dot_folders_in_gui_sources(monkeypatch, tmp_path):
+    mod = _mod(tmp_path, "MyMod", prefix="MyMod")
+    (mod / ".gui-sources" / ".git").mkdir()
+    calls = _run_main(monkeypatch, tmp_path, [str(mod)])  # asserts exit 0
+    assert [c[0].name for c in calls] == ["icons"]

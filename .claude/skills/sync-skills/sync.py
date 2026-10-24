@@ -1,7 +1,8 @@
 """Sync repo-local .claude/skills/ into the per-agent skill directories.
 
 Reads .claude/skills/sync-skills/agents.json for the list of agent targets,
-so adding a new agent CLI later is a config change, not a code change.
+so adding a new agent CLI later is a config change, not a code change. An
+entry with "default": false (Claude Code) is only synced when named in --agents.
 
 Run from the repo root (or from anywhere — the script resolves paths relative
 to its own location):
@@ -9,7 +10,8 @@ to its own location):
     python .claude/skills/sync-skills/sync.py
     python .claude/skills/sync-skills/sync.py --agents claude codex
     python .claude/skills/sync-skills/sync.py --dry-run
-    python .claude/skills/sync-skills/sync.py --skip claude
+    python .claude/skills/sync-skills/sync.py --skip gemini
+    python .claude/skills/sync-skills/sync.py --unlink --agents claude
 """
 from __future__ import annotations
 
@@ -52,6 +54,36 @@ def load_agents_config() -> list[dict]:
         print(f'ERROR: {cfg_path} must be {{"agents": [{{"name": ..., ...}}, ...]}}; '
               "every entry needs a \"name\".", file=sys.stderr)
         sys.exit(2)
+    names = [a["name"] for a in agents]
+    dupes = sorted({n for n in names if names.count(n) > 1})
+    if dupes:
+        print(f"ERROR: {cfg_path}: agent names must be unique (duplicated: {dupes}).", file=sys.stderr)
+        sys.exit(2)
+
+    def is_text(v, allow_empty: bool = False) -> bool:
+        return isinstance(v, str) and (allow_empty or bool(v.strip()))
+
+    # Each check: (agents that break it, what the field must be). An empty
+    # "default_home" would make home_for return "" and put the links in a
+    # skills folder under the current directory, so it is required.
+    checks = [
+        ([a["name"] for a in agents if not isinstance(a.get("default", True), bool)],
+         '"default" must be true or false'),
+        ([a["name"] for a in agents if not is_text(a.get("default_home"))],
+         '"default_home" is required and must be a non-empty string (e.g. "~/.gemini")'),
+        ([a["name"] for a in agents
+          if not (isinstance(a.get("env_home_vars", []), list)
+                  and all(is_text(v) for v in a.get("env_home_vars", [])))],
+         '"env_home_vars" must be a list of environment variable names (e.g. ["GEMINI_CLI_HOME"])'),
+        ([a["name"] for a in agents if not is_text(a.get("skills_subdir", "skills"))],
+         '"skills_subdir" must be a non-empty string'),
+        ([a["name"] for a in agents if not is_text(a.get("env_home_subdir", ""), allow_empty=True)],
+         '"env_home_subdir" must be a string'),
+    ]
+    for bad, rule in checks:
+        if bad:
+            print(f"ERROR: {cfg_path}: {rule} (agents: {bad}).", file=sys.stderr)
+            sys.exit(2)
     return agents
 
 
@@ -142,9 +174,23 @@ def make_link(src: Path, dst: Path) -> str:
 def remove_link(p: Path) -> None:
     """Remove a symlink/junction without descending into the target."""
     if os.name == "nt":
-        subprocess.run(["cmd", "/c", "rmdir", str(p)], check=True, capture_output=True, text=True)
+        try:
+            subprocess.run(["cmd", "/c", "rmdir", str(p)], check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            raise OSError(f"rmdir failed: {(e.stderr or e.stdout or '').strip()}") from e
     else:
         p.unlink()
+
+
+def resolved_target(link: Path) -> Path | None:
+    """The absolute, resolved target of a link, or None if it is not a link."""
+    t = link_target(link)
+    if t is None:
+        return None
+    try:
+        return t.resolve() if t.is_absolute() else (link.parent / t).resolve()
+    except OSError:
+        return None
 
 
 def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool) -> dict[str, int]:
@@ -154,7 +200,10 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
     print()
     print(f"[{name}] {target_dir}")
 
-    counts = {"linked": 0, "ok": 0, "refreshed": 0, "skipped": 0, "pruned": 0, "failed": 0}
+    # "link_failed" counts only failures of make_link itself (symlink and the
+    # junction fallback both refused). main prints the junction note on that
+    # alone, not on a failed mkdir, old-link removal or prune.
+    counts = {"linked": 0, "ok": 0, "refreshed": 0, "skipped": 0, "pruned": 0, "failed": 0, "link_failed": 0}
     if not target_dir.exists():
         if dry_run:
             print(f"  DRY-RUN mkdir {target_dir}")
@@ -164,7 +213,6 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
             except OSError as e:
                 print(f"  [FAILED]  cannot create {target_dir}: {e}")
                 counts["failed"] += 1
-                counts["mkdir_failed"] = 1  # not a link failure, so main skips the junction note
                 return counts
 
     # Ownership is decided against this checkout's skills folder, not the repo
@@ -198,11 +246,24 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
             else:
                 try:
                     remove_link(dst)
+                except Exception as e:
+                    print(f"  [FAILED]  {src.name}: cannot remove old link: {e}")
+                    counts["failed"] += 1
+                    continue
+                try:
                     kind = make_link(src_resolved, dst)
                     print(f"  [REFRESH] {src.name}  ({kind}, was {existing})")
                 except Exception as e:
-                    print(f"  [FAILED]  {src.name}: {e}")
+                    # The old link is already gone; put it back so the skill
+                    # is not left with no link at all.
+                    try:
+                        make_link(existing_resolved, dst)
+                        note = f"previous link to {existing_resolved} restored"
+                    except Exception as e2:
+                        note = f"previous link to {existing_resolved} could not be restored either: {e2}"
+                    print(f"  [FAILED]  {src.name}: {e}; {note}")
                     counts["failed"] += 1
+                    counts["link_failed"] += 1
                     continue
             counts["refreshed"] += 1
             continue
@@ -221,25 +282,27 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
         except Exception as e:
             print(f"  [FAILED]  {src.name}: {e}")
             counts["failed"] += 1
+            counts["link_failed"] += 1
 
-    # Pass 2: prune orphan links pointing into this checkout's skills folder at gone paths
+    # Pass 2: prune orphan links pointing into this checkout's skills folder
+    # at something that is no longer a skill. A deleted skill's folder often
+    # survives a pull because git leaves the ignored __pycache__ behind, so
+    # "no SKILL.md" is the test, not "folder gone". _shared is kept.
+    shared = own / "_shared"
     if target_dir.exists():
         for child in target_dir.iterdir():
             if child.name in expected_names:
                 continue
-            t = link_target(child)
-            if t is None:
-                continue
-            try:
-                t_resolved = t.resolve() if t.is_absolute() else (child.parent / t).resolve()
-            except OSError:
+            t_resolved = resolved_target(child)
+            if t_resolved is None:
                 continue
             if not is_under(t_resolved, own):
                 continue  # not pointing back into our repo, leave it alone
-            if t_resolved.exists():
-                continue  # repo target still exists; not an orphan
+            if is_under(t_resolved, shared) or (t_resolved / "SKILL.md").is_file():
+                continue  # still a skill (or the shared docs); not an orphan
+            reason = "target has no SKILL.md" if t_resolved.exists() else "target gone"
             if dry_run:
-                print(f"  DRY-RUN prune {child.name} (orphan; target {t_resolved} gone)")
+                print(f"  DRY-RUN prune {child.name} (orphan; {reason}: {t_resolved})")
             else:
                 try:
                     remove_link(child)
@@ -253,16 +316,63 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
     return counts
 
 
+def unlink_one(agent_cfg: dict, dry_run: bool) -> dict[str, int]:
+    """Remove every link in the agent's skills folder that points into this
+    checkout's .claude/skills/. Foreign links and real folders are left alone,
+    and the repo's skill folders themselves are never touched."""
+    name = agent_cfg["name"]
+    target_dir = home_for(agent_cfg) / agent_cfg.get("skills_subdir", "skills")
+    print()
+    print(f"[{name}] {target_dir}")
+    counts = {"unlinked": 0, "failed": 0}
+    if not target_dir.is_dir():
+        print("  nothing to unlink (folder does not exist)")
+        return counts
+    own = repo_skills_dir().resolve()
+    for child in sorted(target_dir.iterdir()):
+        t_resolved = resolved_target(child)
+        if t_resolved is None or not is_under(t_resolved, own):
+            continue
+        if dry_run:
+            print(f"  DRY-RUN unlink {child.name} (-> {t_resolved})")
+        else:
+            try:
+                remove_link(child)
+                print(f"  [UNLINK]  {child.name}")
+            except Exception as e:
+                print(f"  [FAILED]  unlink {child.name}: {e}")
+                counts["failed"] += 1
+                continue
+        counts["unlinked"] += 1
+    return counts
+
+
+_DRY_RUN_LABELS = {"linked": "would link", "refreshed": "would refresh",
+                   "pruned": "would prune", "unlinked": "would unlink"}
+
+
+def summary_header(dry_run: bool) -> str:
+    return "Summary (DRY-RUN: nothing was changed)" if dry_run else "Summary"
+
+
+def summary_label(key: str, dry_run: bool) -> str:
+    """Summary row label; a dry run says "would link" so a preview never reads as done."""
+    return _DRY_RUN_LABELS.get(key, key) if dry_run else key
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--agents", nargs="+", default=None,
-                    help="Subset of agents to sync (by name in agents.json). Default: all.")
+                    help='Agents to sync (by name in agents.json). Default: every agent not marked '
+                         '"default": false, which leaves Claude Code out; name it here to include it.')
     ap.add_argument("--skip", nargs="+", default=[],
-                    help="Agents to leave out (by name in agents.json), e.g. --skip claude.")
+                    help="Agents to leave out (by name in agents.json), e.g. --skip gemini.")
     ap.add_argument("--dry-run", action="store_true",
                     help="Show what would happen, write nothing.")
     ap.add_argument("--force", action="store_true",
                     help="Take ownership of links currently pointing at a different clone of this template.")
+    ap.add_argument("--unlink", action="store_true",
+                    help="Remove this checkout's links from the selected agents instead of creating them.")
     args = ap.parse_args()
 
     all_agents = load_agents_config()
@@ -276,11 +386,27 @@ def main() -> int:
         return 2
     agents = [
         a for a in all_agents
-        if (not args.agents or a["name"] in args.agents) and a["name"] not in args.skip
+        if (a["name"] in args.agents if args.agents else a.get("default", True))
+        and a["name"] not in args.skip
     ]
     if not agents:
         print("Nothing to do: every agent was excluded by --agents/--skip.")
         return 0
+
+    if args.unlink:
+        if not repo_skills_dir().is_dir():
+            print(f"ERROR: repo skills folder not found: {repo_skills_dir()}", file=sys.stderr)
+            return 2
+        unlinked = failed = 0
+        for agent_cfg in agents:
+            c = unlink_one(agent_cfg, args.dry_run)
+            unlinked += c["unlinked"]
+            failed += c["failed"]
+        print()
+        print(summary_header(args.dry_run))
+        print(f"  {summary_label('unlinked', args.dry_run):>14}: {unlinked}")
+        print(f"  {'failed':>14}: {failed}")
+        return 1 if failed else 0
 
     skills = list_repo_skills()
     if not skills:
@@ -299,13 +425,13 @@ def main() -> int:
             totals[k] = totals.get(k, 0) + v
         if c["failed"] > 0:
             failed_any = True
-        if c["failed"] > c.get("mkdir_failed", 0):
+        if c.get("link_failed", 0) > 0:
             link_failed = True
 
     print()
-    print("Summary")
+    print(summary_header(args.dry_run))
     for k in ("linked", "ok", "refreshed", "skipped", "pruned", "failed"):
-        print(f"  {k:>10}: {totals.get(k, 0)}")
+        print(f"  {summary_label(k, args.dry_run):>14}: {totals.get(k, 0)}")
 
     if link_failed and os.name == "nt":
         print()

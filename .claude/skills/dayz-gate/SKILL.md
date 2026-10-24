@@ -1,7 +1,7 @@
 ---
 name: dayz-gate
 description: "Runs the build, in-game, behavior and visual gates as scripts, with PASS or FAIL, triaged failures and a stored result for each. Use when gating a finished wave or checking a mod builds, loads, works and looks right in game."
-argument-hint: "build <ModName> [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--prepare-only | --logs FILE ...] [--json] | visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--threshold R] [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--json]"
+argument-hint: "build <ModName> [--yes] [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--prepare-only | --logs [FILE ...]] [--yes] [--json] | visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--ready-pattern REGEX] [--compare [DIR] | --accept [DIR] [--shot ID ... [--replace-failed]]] [--yes] [--json]"
 ---
 
 <!-- skill-dir-note -->
@@ -19,35 +19,36 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 python "<skill-dir>\gate.py" build <ModName> [--yes] [--json]
 python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--yes] [--json]
-python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --prepare-only
+python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] --prepare-only [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --logs [FILE ...] [--json]
 python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--ready-pattern REGEX] [--yes] [--json]
 python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--threshold R] --compare [DIR] [--json]
-python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] --accept [DIR] [--shot ID ...] [--json]
+python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--threshold R] --accept [DIR] [--shot ID ... [--replace-failed]] [--json]
 ```
 
 | Argument | Notes |
 |---|---|
 | `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. |
-| `--deps` | `ingame`, `behavior`, `visual`: dependency mods in load order, with or without `@` (`--deps CF`). Required when `config.cpp`'s `requiredAddons` lists anything not starting with `DZ_`; map each to the `@mod` under `P:\Mods\` that ships it. |
+| `--deps` | `ingame`, `behavior` (also with `--prepare-only`, for its launch command), `visual`: dependency mods in load order, with or without `@` (`--deps CF`). Required when `config.cpp`'s `requiredAddons` lists anything not starting with `DZ_`; map each to the `@mod` under `P:\Mods\` that ships it. |
 | `--server` | `ingame`, `behavior`, `visual`: instance added with `/dayz-add-server` (default `chernarus`). `--port` default `2302`. |
 | `--timeout` | `ingame`, `behavior`, `visual`: seconds to wait for the client to reach the mission (default 300). |
 | `--settle` | `ingame` only: seconds to keep reading after that, to catch spawn-time errors (default 30). `visual` has no `--settle`: it reads until its last shot is taken. |
 | `--done-timeout` | `behavior` only: the most seconds to wait for the test mission's `DONE` line after the client joins (default 600). The gate stops as soon as that line appears. |
 | `--ready-pattern` | `ingame`, `behavior` and `visual` in-game runs: regex in the client script log that means the mission is running. Default `Creating Mission: mpmissions\__cur_mp.`, printed by vanilla `CreateMission()` (`P:\scripts\5_mission\somemission.c`) when the client joins. |
 | `--checks` | `behavior`: the checks file. Default `output/<ModName>-plan/behavior-checks.json`, which `dayz-mod-architect` writes with the plan. |
-| `--prepare-only` | `behavior`: write the instance copy and stop. The first line is `PREPARED` (exit 0). |
+| `--prepare-only` | `behavior`: write the instance copy and stop. The first line is `PREPARED` (exit 0), then the `/dayz-launch-test` command for the copy with the `--deps` mods ahead of the mod (`launch` in `--json`). A mod that needs `--deps` and got none is refused (exit 2) before the copy is written. |
 | `--logs` | `behavior`: judge the logs of a session that already ran instead of launching one. With no files it reads the copy's server script logs. |
 | `--shots` | `visual`: the shots file. Default `output/<ModName>-plan/visual-shots.json`. |
-| `--threshold` | `visual`: the share of pixels, 0 to 1, that may differ for a shot that sets no threshold of its own. It beats the shots file's `threshold`; the default is 0.01. |
+| `--threshold` | `visual` runs, `--compare` and `--accept`: the share of pixels, 0 to 1, that may differ for a shot that sets no threshold of its own. It beats the shots file's `threshold`; the default is 0.01. |
 | `--compare` | `visual`: compare captures already taken instead of launching. With no folder it uses the newest run. |
-| `--accept` | `visual`: copy captures into the baselines. With no folder it uses the newest run; `--shot` limits it to some shots (`--shot` without `--accept` is refused, exit 2). The first line is `ACCEPTED` (exit 0). |
+| `--accept` | `visual`: copy captures into the baselines. With no folder it uses the newest run; `--shot` limits it to some shots (`--shot` without `--accept` is refused, exit 2). A shot named with `--shot` that has no capture in the run is refused (exit 2); without `--shot`, shots with no capture are skipped, their baselines stay as they were, and they are named on a `skipped, no capture` line (`skipped` in `--json`). Each baseline it replaces is first copied to `baseline/.prev/<id>.<date_time>.png` (listed under `backups` in `--json`). It compares each capture with its current baseline first, the same way the gate does, and when any of them FAILs it refuses (exit 2) and copies nothing. The first line is `ACCEPTED` (exit 0). |
+| `--replace-failed` | `visual --accept --shot <id> ...` only (refused otherwise, exit 2): accept the named shots even when their capture FAILs against the current baseline, after you have looked at the capture and its diff. |
 | `--yes` | `build`, `ingame`, `behavior`, `visual` runs that stop a session: stop a `DayZDiag_x64.exe` session the gate did not start without asking. Without it the gate asks `[y/N]` on an interactive terminal and, with no terminal (an agent or a pipe), refuses with `ERROR` (exit 2) and leaves the session running, since it may be your own play session. The session the gate launches itself is always stopped without asking. |
 | `--json` | Print the full report as JSON after the verdict line. |
 
 ## Output and exit codes
 
-The first line is the verdict: `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit 2: bad arguments, no cached project, `/dayz-stop-test` failed, a session the gate did not start is running and was not confirmed, a dependency list is needed, or the gate crashed). Then a short summary, or with `--json`:
+The first line is the verdict: `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit 2: bad arguments, no cached project, `/dayz-stop-test` failed, a session the gate did not start is running and was not confirmed, a dependency list is needed, `--accept` refused a capture that fails against its baseline, or the gate crashed). Then a short summary, or with `--json`:
 
 ```json
 {
@@ -88,7 +89,7 @@ Every `PASS` or `FAIL` is stored for `/dayz-health` under `.server/!Health/<ModN
 ## What `behavior` does
 
 1. Reads the checks file and refuses a bad one (exit 2) before touching anything. Stops any running session.
-2. Copies `.server/<instance>/` to `.server/<instance>-behavior/`: `serverDZ.cfg`, `mission/` without its `storage_*` persistence folders, the `<template>/` junction that `/dayz-launch-test` needs, and `Profiles/`. A previous copy is replaced; its logs stay. Your own instance is never changed.
+2. Copies `.server/<instance>/` to `.server/<instance>-behavior/`: `serverDZ.cfg`, `mission/` without its `storage_*` persistence folders, the `<template>/` junction that `/dayz-launch-test` needs, and the settings in `Profiles/` (every file and folder except logs and crash dumps: `*.log`, `*.RPT`, `*.mdmp`, `*.bidmp`, `crash*`), so a mod or CF/COT that reads its config from the server profile behaves as it does on the instance. A previous copy is replaced: its own logs stay and its settings are overwritten by the instance's. Your own instance is never changed.
 3. Adds a test mission to the copy's `init.c`: the class `AZ_BehaviorTest` above `main()` and an `AZ_BehaviorTest.Start();` call as the last line of `main()`.
 4. Runs the `ingame` flow on the copy, so every `ingame` rule still applies. The test mission waits for the first player (up to 240 s), waits 10 s more, empties the player's hands and clothing slots, then runs one check per second and prints to the server script log:
 
@@ -109,7 +110,7 @@ The report adds `checks` (one entry per check with `status`, `reason`, `file` an
 
 ### Running it by hand
 
-`--prepare-only` writes the copy. Launch it with `/dayz-launch-test <Dep1> [<Dep2> ...] <ModName> --server <instance>-behavior`, listing the same dependency mods you would pass to `--deps`, in load order before the mod (the launch script takes them as names ahead of the mod, not as a `--deps` flag), stop it with `/dayz-stop-test`, then judge it with `behavior <ModName> --logs`.
+`behavior <ModName> --deps <Dep1> [<Dep2> ...] --prepare-only` writes the copy and prints the launch command: `/dayz-launch-test <Dep1> [<Dep2> ...] <ModName> --server <instance>-behavior`, with the dependency mods in load order before the mod (the launch script takes them as names ahead of the mod, not as a `--deps` flag). Run it, stop the session with `/dayz-stop-test`, then judge it with `behavior <ModName> --logs`.
 
 ## What `visual` does
 
@@ -127,9 +128,9 @@ Each shot ends as one of these:
 | `NEW` | the shot has no baseline yet | `[visual:no-baseline] <id>: ...` |
 | `MISSING` | no capture: the window was hidden or minimized, or the session ended first | `[visual:no-capture] <id>: ...` |
 
-Every status but `PASS` fails the gate. The report adds `shots` (one entry per shot with `status`, `ratio`, `threshold`, `capture`, `baseline`, `diff` and `reason`) and `visual` (the run and baseline folders). Triage marks each failure `known` with owner `user`, because only a person can say whether a new look is right: look at the capture and the diff, then accept it with `--accept --shot <id>` or send it to the specialist who owns that part of the screen.
+Every status but `PASS` fails the gate. The report adds `shots` (one entry per shot with `status`, `ratio`, `threshold`, `capture`, `baseline`, `diff` and `reason`) and `visual` (the run and baseline folders). Triage marks each failure `known` with owner `user`, because only a person can say whether a new look is right: look at the capture and the diff, then accept it with `--accept --shot <id>` (add `--replace-failed` for a `FAIL`) or send it to the specialist who owns that part of the screen.
 
-The first run of a shot is always `NEW`. Look at its capture, accept it, and later runs compare against it. Keep the baselines with the project; the runs folder is ignored by git.
+The first run of a shot is always `NEW`. Look at its capture, accept it, and later runs compare against it. Keep the baselines with the project; the runs folder is ignored by git. To undo an accept, copy the shot's newest `baseline/.prev/<id>.<date_time>.png` back to `baseline/<id>.png`.
 
 ### Shots file
 
@@ -137,30 +138,15 @@ Each shot has an `id`, a `feature` and an `at` second, with an optional `thresho
 
 ## Triage
 
-`triage.py` fingerprints each line (timestamps, absolute paths, hex addresses and numbers normalized, lowercased) and matches it against `known-errors.json` (regex entries shipped with the repo) and the project's learned file `.claude/local-memory/dayz-gate-known-errors.json`. Run it on its own for any log:
+`triage.py` matches each failure line against `known-errors.json` and the project's learned file. Run it on its own for any log, or on a log the user pasted (`--stdin` or `--text`); after a reviewer has diagnosed a `new` result, record it so the next run sees it as known:
 
 ```cmd
 python "<skill-dir>\triage.py" <log-file> [...] [--mod <ModName>] [--mod-dir workspace\<ModName>] [--json]
-```
-
-### Pasted logs
-
-When the user pastes a crash log or RPT instead of naming a file, triage the pasted text. Pipe it on stdin, or pass it with `--text`:
-
-```cmd
 python "<skill-dir>\triage.py" --stdin --json < pasted.txt
-python "<skill-dir>\triage.py" --text "<pasted log>" --json
-```
-
-Results look the same as for a file, with `file` set to `<pasted>` and `line` counted within the paste. Give the user the cause and fix of each `known` result and hand it to its `owner_agent`. Dispatch `dayz-mod-debugger` with only the `new` lines and the log around them. The paste-in hook (`hooks/paste_router.py`) already runs this triage on every prompt that holds DayZ error lines and adds the result to the conversation, so for a pasted log you usually only act on its list.
-
-After a reviewer has diagnosed a `new` result, record it so the next run sees it as known:
-
-```cmd
 python "<skill-dir>\triage.py" --learn <id> --fingerprint "<fingerprint or raw log line>" [--meaning "..." --fix "..." --owner <agent>]
 ```
 
-An existing `<id>` lends its meaning, fix and owner; a new id needs all three. Learned entries go to the per-project file, never into the shipped `known-errors.json`; add an entry there by hand (with a `source`) when the error is general.
+How lines are fingerprinted, what to do with each result of a pasted log, and the rules for `--learn` are in [triage.md](triage.md); read it before triaging a pasted log or recording a diagnosis.
 
 ## Limits
 
@@ -169,8 +155,8 @@ An existing `<id>` lends its meaning, fix and owner; a new id needs all three. L
 - Dependency mapping from `requiredAddons` to `@mods` is not automatic; pass `--deps`.
 - The behavior test mission only knows the five actions above. A feature that needs more (driving, firing, eating) has no check yet; say so in the plan.
 - The test player is stripped once before the checks and each check deletes what it made, so no check can prove two items work together on the player.
-- The test mission's engine calls are checked against vanilla `P:\scripts`, and the injector and parser are tested on fixture missions and logs, but the mission has not yet run in a live session. If it fails to start there (for example an Enforce compile error in the injected `AZ_BehaviorTest` class), the gate reports `ERROR` rather than failing the mod, unless the session also shows a mod error.
-- The visual compare and baselines are tested on fixture images. The window capture is Windows only and has not yet run against a live client. It copies what is on screen, so the client must run windowed (the `/dayz-launch-test` default) and stay uncovered while the gate runs. It captures only the visible window of the client's own process, and when Windows will not bring that window to the front the shot is `MISSING`, not compared against something else.
+- The test mission has not yet run in a live session. Every engine name the injected `AZ_BehaviorTest` class uses is checked against its vanilla declaration in `P:\scripts`, and `test_behavior.py` pins that list with the path and line of each, so an unchecked call fails the tests before it can reach a game. The injector and parser are tested on fixture missions and logs. If the mission still fails to start live (for example an Enforce compile error), the gate reports `ERROR` rather than failing the mod, unless the session also shows a mod error. After the first live run, look for `[AZ-BEHAVIOR] START` in `.server/<instance>-behavior/Profiles/script*.log`.
+- The visual compare and baselines are tested on fixture images, and the window capture on a stand-in for the Windows API; it has not yet run against a live client. It copies what is on screen, so the client must run windowed (the `/dayz-launch-test` default) and stay uncovered while the gate runs. It captures only the visible window of the client's own process. Windows refuses to bring a window to the front for a background process, so when the first switch is refused the gate sends one Alt press and release and tries once more; the tap goes to whichever window was in front. When the switch is still refused the shot is `MISSING`, not compared against something else; click the client window and run the gate again.
 - A shot is taken at a time, not at a game event, and the test player stands where the server spawns it. Shots that need the player in one place or a menu open need the mod (or a future test mission) to put them there; screens that move on their own need a higher threshold or `ignore` areas.
 - The visual gate needs Pillow: `py -m pip install -r "<skill-dir>\requirements.txt"`.
 
@@ -178,4 +164,4 @@ An existing `<id>` lends its meaning, fix and owner; a new id needs all three. L
 
 - Don't pass `--yes` for the user: a running `DayZDiag_x64.exe` the gate did not start may be their play session. On that `ERROR`, ask them to close it or to agree to the gate stopping it.
 - Don't edit `known-errors.json` from `--learn`; learned fingerprints are per project.
-- Don't `--accept` a capture nobody has looked at; the baseline is the expected look.
+- Don't `--accept` a capture nobody has looked at, and don't pass `--replace-failed` for the user; the baseline is the expected look.

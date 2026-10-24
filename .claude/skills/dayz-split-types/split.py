@@ -9,7 +9,8 @@ The upstream script only logs its errors (it always exits 0), so the wrapper
 verifies the result itself before reporting success.
 
 Every run first makes timestamped backups of types.xml, cfgeconomycore.xml and
-any existing types/ folder (which upstream deletes and regenerates).
+any existing types/ folder (which upstream deletes and regenerates). If anything
+fails after the splitter starts, those backups are copied back automatically.
 
 Upstream writes <ce folder="types">, but the CE resolves the folder attribute
 relative to the mission root, while the files land in <mission>/db/types/. The
@@ -24,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import os
 import shutil
 import subprocess
 import sys
@@ -113,12 +115,159 @@ def missing_listed_files(cfgeconomycore: Path, mission_dir: Path) -> list[str]:
     ]
 
 
+def restore(
+    types_xml: Path,
+    types_backup: Path,
+    cfgeconomycore: Path,
+    core_backup: Path,
+    types_subdir: Path,
+    types_dir_backup: Path | None,
+) -> bool:
+    """Put types.xml, cfgeconomycore.xml and types/ back as they were before the run.
+
+    The regenerated types/ folder is removed; if one existed before, its backup
+    is copied back. The .bak files themselves are kept. If a copy or delete
+    fails (a locked or read-only file), prints the backup paths and the manual
+    recovery steps and returns False instead of raising.
+    """
+    try:
+        shutil.copy2(core_backup, cfgeconomycore)
+        shutil.copy2(types_backup, types_xml)
+        if types_subdir.exists():
+            shutil.rmtree(types_subdir)
+        if types_dir_backup is not None:
+            shutil.copytree(types_dir_backup, types_subdir)
+    except OSError as e:
+        steps = [
+            f"copy {core_backup} over {cfgeconomycore}",
+            f"copy {types_backup} over {types_xml}",
+            f"delete the folder {types_subdir}",
+        ]
+        if types_dir_backup is not None:
+            steps.append(f"copy the folder {types_dir_backup} to {types_subdir}")
+        print(
+            f"{h.FAIL} Automatic restore failed: {e}\n"
+            "       The mission may be half split. Close anything holding these files "
+            "(the DayZ server, an editor), then:\n"
+            + "".join(f"         {i}. {step}\n" for i, step in enumerate(steps, 1)),
+            end="",
+            file=sys.stderr,
+        )
+        return False
+    print(
+        f"{h.OK} Restored {cfgeconomycore.name}, {types_xml.name} and {types_subdir.name}/ "
+        "from this run's backups, so the mission is as it was before the run.",
+        file=sys.stderr,
+    )
+    return True
+
+
+def read_only_files(paths: list[Path]) -> list[Path]:
+    """The paths in `paths` this process cannot write to (read-only attribute or ACL)."""
+    return [p for p in paths if not os.access(p, os.W_OK)]
+
+
+def empty_types_xml(types_xml: Path) -> int:
+    """Replace types.xml with an empty <types> stub. 0 on success, 1 if the write fails.
+
+    The server always loads db/types.xml; leaving the full file would load every
+    type twice. The original is in this run's backup.
+    """
+    try:
+        types_xml.write_text(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n<types>\n</types>\n',
+            encoding="utf-8",
+        )
+    except OSError as e:
+        print(f"{h.FAIL} Could not empty {types_xml}: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def run_splitter(
+    types_xml: Path,
+    cfgeconomycore: Path,
+    core_backup: Path,
+    types_subdir: Path,
+    folder: str,
+    entries: int,
+) -> int:
+    """Run the vendored splitter, fix and verify cfgeconomycore.xml. 0 on success.
+
+    `entries` is the <type> count of the original types.xml; the category files
+    must hold exactly that many between them.
+    """
+    db_dir = types_xml.parent
+    mission_dir = cfgeconomycore.parent
+    # Copy the vendored splitter next to types.xml so its __file__ resolves into db_dir.
+    runtime_copy = db_dir / "_typeSplitter_runtime.py"
+    shutil.copy2(VENDORED_SCRIPT, runtime_copy)
+    # Flush first: when output is piped (an agent, a log file) Python buffers
+    # stdout, and the splitter's log would otherwise land before the backup lines.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    try:
+        result = subprocess.run([sys.executable, str(runtime_copy)], cwd=str(db_dir))
+    finally:
+        runtime_copy.unlink(missing_ok=True)
+    if result.returncode != 0:
+        print(f"{h.FAIL} typeSplitter exited {result.returncode}", file=sys.stderr)
+        return 1
+
+    if not types_subdir.is_dir():
+        print(f"{h.FAIL} Splitter ran but {types_subdir} was not created.", file=sys.stderr)
+        return 1
+
+    try:
+        expected = non_empty_category_files(types_subdir)
+        split_total = sum(type_count(p) for p in types_subdir.glob("*.xml"))
+    except ET.ParseError as e:
+        print(f"{h.FAIL} A category file in {types_subdir} is not valid XML: {e}", file=sys.stderr)
+        return 1
+    if split_total != entries:
+        print(
+            f"{h.FAIL} The category files hold {split_total} <type> entries, "
+            f"but types.xml had {entries}. See the typeSplitter log above.",
+            file=sys.stderr,
+        )
+        return 1
+    print()
+    print(f"{h.OK} Split into {len(expected)} non-empty category files in {types_subdir}")
+    for name in expected:
+        print(f"        {name}")
+
+    try:
+        fix_cfgeconomycore(cfgeconomycore, core_backup, folder)
+        listed = cfgeconomycore_type_files(cfgeconomycore, folder)
+        dangling = missing_listed_files(cfgeconomycore, mission_dir)
+    except ET.ParseError as e:
+        print(f"{h.FAIL} {cfgeconomycore} is not valid XML after the split: {e}", file=sys.stderr)
+        return 1
+    missing = sorted(set(expected) - listed)
+    if missing:
+        print(
+            f"{h.FAIL} {cfgeconomycore} does not reference: {', '.join(missing)}\n"
+            "       See the typeSplitter log above.",
+            file=sys.stderr,
+        )
+        return 1
+    print(f'{h.OK} Updated {cfgeconomycore} (<ce folder="{folder}">)')
+    for entry in dangling:
+        print(f"{h.WARN} {cfgeconomycore.name} lists {entry}, which does not exist")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Split monolithic types.xml into categorized files via DayZ-TypeSplitterPro."
     )
     parser.add_argument("types_xml", type=Path, help="Path to types.xml (typically <mission>/db/types.xml).")
     args = parser.parse_args()
+    # [OK] lines go to stdout and [FAIL] lines to stderr. When both are piped
+    # into one transcript (an agent, a log file), a block-buffered stdout would
+    # print its [OK] lines after a later [FAIL]/Restored line. Line buffering
+    # keeps the transcript in the order things happened.
+    sys.stdout.reconfigure(line_buffering=True)
 
     h.gate_on_preflight()
     print()
@@ -152,60 +301,35 @@ def main() -> int:
     if not VENDORED_SCRIPT.exists():
         sys.exit(f"{h.FAIL} Vendored splitter missing at {VENDORED_SCRIPT}")
 
+    # Both files get rewritten (and restored on failure), so refuse up front
+    # rather than fail halfway. Files copied from a server install are often read-only.
+    locked = read_only_files([types_xml, cfgeconomycore])
+    if locked:
+        sys.exit(
+            f"{h.FAIL} Not writable: {', '.join(str(p) for p in locked)}\n"
+            "       Clear the read-only attribute (attrib -r <file>) or fix the permissions, then rerun."
+        )
+
     types_subdir = db_dir / "types"
     folder = types_subdir.relative_to(mission_dir).as_posix()  # "db/types"
     stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     types_backup = backup(types_xml, stamp)
     core_backup = backup(cfgeconomycore, stamp)
-    if types_subdir.is_dir():
-        backup(types_subdir, stamp)
+    types_dir_backup = backup(types_subdir, stamp) if types_subdir.is_dir() else None
 
-    # Copy the vendored splitter next to types.xml so its __file__ resolves into db_dir.
-    runtime_copy = db_dir / "_typeSplitter_runtime.py"
-    shutil.copy2(VENDORED_SCRIPT, runtime_copy)
-    try:
-        result = subprocess.run([sys.executable, str(runtime_copy)], cwd=str(db_dir))
-    finally:
-        runtime_copy.unlink(missing_ok=True)
-    if result.returncode != 0:
-        print(f"{h.FAIL} typeSplitter exited {result.returncode}", file=sys.stderr)
-        return 1
-
-    if not types_subdir.is_dir():
-        print(f"{h.FAIL} Splitter ran but {types_subdir} was not created.", file=sys.stderr)
-        return 1
-
-    expected = non_empty_category_files(types_subdir)
-    print()
-    print(f"{h.OK} Split into {len(expected)} non-empty category files in {types_subdir}")
-    for name in expected:
-        print(f"        {name}")
+    def undo() -> None:
+        restore(types_xml, types_backup, cfgeconomycore, core_backup, types_subdir, types_dir_backup)
 
     try:
-        fix_cfgeconomycore(cfgeconomycore, core_backup, folder)
-        listed = cfgeconomycore_type_files(cfgeconomycore, folder)
-        dangling = missing_listed_files(cfgeconomycore, mission_dir)
-    except ET.ParseError as e:
-        print(f"{h.FAIL} {cfgeconomycore} is not valid XML after the split: {e}", file=sys.stderr)
-        return 1
-    missing = sorted(set(expected) - listed)
-    if missing:
-        print(
-            f"{h.FAIL} {cfgeconomycore} does not reference: {', '.join(missing)}\n"
-            f"       See the typeSplitter log above. The original is in {core_backup.name}.",
-            file=sys.stderr,
-        )
-        return 1
-    print(f'{h.OK} Updated {cfgeconomycore} (<ce folder="{folder}">)')
-    for entry in dangling:
-        print(f"{h.WARN} {cfgeconomycore.name} lists {entry}, which does not exist")
-
-    # The server always loads db/types.xml; leaving the full file would load every
-    # type twice. An empty stub keeps the file valid; the original is in the backup.
-    types_xml.write_text(
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n<types>\n</types>\n',
-        encoding="utf-8",
-    )
+        code = run_splitter(types_xml, cfgeconomycore, core_backup, types_subdir, folder, entries)
+        if code == 0:
+            code = empty_types_xml(types_xml)
+    except BaseException:
+        undo()
+        raise
+    if code != 0:
+        undo()
+        return code
     print(
         f"{h.OK} Emptied {types_xml.name}: its {entries} entries now load from {folder}/ "
         f"(original kept in {types_backup.name})"

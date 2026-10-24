@@ -1,14 +1,21 @@
 """dayz-setup-objectbuilder: One-time Object Builder configuration.
 
 Imports the default registry settings shipped with DayZ Tools when Object
-Builder's registry tree is missing, then on every run sets four preferred
-Object Builder flags (PREFERRED_FLAGS_ON) under HKCU, writing only the ones
-that differ. Pass --force to re-import the .reg and reset Object Builder to
-factory defaults (asks first; --yes skips the question). A forced reset first
-exports the current Object Builder key with `reg export` to a timestamped .reg
-under .claude/local-memory/ so it can be restored, then deletes the key with
+Builder's registry tree is missing, then sets four preferred Object Builder
+flags (PREFERRED_FLAGS_ON) under HKCU, writing only the ones that differ
+(--no-prefs skips that step so a flag turned off on purpose stays off).
+If the Object Builder key exists without its CConfig subkey (a partial tree),
+it is exported to a backup first, the defaults are merged over it, and the
+backup is restored if that import fails.
+
+Pass --force to re-import the .reg and reset Object Builder to factory
+defaults (asks first; --yes skips the question). A forced reset first exports
+the current Object Builder key with `reg export` to a timestamped .reg under
+.claude/local-memory/ so it can be restored, then deletes the key with
 `reg delete` so the import starts from an empty tree (values and subkeys the
 .reg does not mention, such as saved MainFrame-* layouts, are gone too).
+If the import fails or leaves the key missing after that delete, the backup is
+imported again automatically so the user's settings come back.
 
 The .reg is imported only if every key it touches is under HKEY_CURRENT_USER.
 
@@ -17,7 +24,6 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
-import os
 import subprocess
 import sys
 from datetime import datetime
@@ -44,16 +50,15 @@ PREFERRED_FLAGS_ON: dict[str, tuple[str, str]] = {
 }
 
 INFO = "[INFO] "
-# Same project-root rule as dayz-init/state.py: the clone or user project, not
-# the plugin install this script may live in.
-PROJECT_DIR = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+# The project root as dayz-init resolves it (CLAUDE_PROJECT_DIR, else the nearest
+# folder at or above the current one holding the /dayz-init cache), so a run
+# from a subfolder still backs up into the project, not the plugin install.
+PROJECT_DIR = h.load_module("dayz_setup_ob_state", h.DAYZ_INIT_STATE).find_project_dir()
 BACKUP_DIR = PROJECT_DIR / ".claude" / "local-memory"
 HKCU_PREFIX = "HKEY_CURRENT_USER\\"
 
 
-def registry_has_objectbuilder_settings() -> bool:
-    """True if the Object Builder registry tree exists with at least the CConfig
-    subkey populated. Bohemia's default .reg lays this down on first import."""
+def _hkcu_key_exists(subkey: str) -> bool:
     if sys.platform != "win32":
         return False
     try:
@@ -61,16 +66,30 @@ def registry_has_objectbuilder_settings() -> bool:
     except ImportError:
         return False
     try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_SUBKEY_CCONFIG):
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, subkey):
             return True
     except OSError:
         return False
 
 
-def apply_preferences() -> int:
+def registry_has_objectbuilder_settings() -> bool:
+    """True if the Object Builder registry tree exists with at least the CConfig
+    subkey populated. Bohemia's default .reg lays this down on first import."""
+    return _hkcu_key_exists(REG_SUBKEY_CCONFIG)
+
+
+def registry_has_objectbuilder_key() -> bool:
+    """True if the parent Object Builder key exists at all. It can hold saved
+    MainFrame-* layouts or HistoryPaths even when CConfig is missing."""
+    return _hkcu_key_exists(REG_KEY)
+
+
+def apply_preferences() -> Optional[int]:
     """Set each PREFERRED_FLAGS_ON value to its "on" string under CConfig
     ("1" for most flags, "On" for the Direct3D one). Values already on are left
-    alone; missing or different values are written. Returns how many were written."""
+    alone; missing or different values are written. Returns how many were
+    written, or None when CConfig cannot be opened for writing or a write fails
+    (a [FAIL] line naming the error is printed)."""
     if sys.platform != "win32":
         return 0
     try:
@@ -78,24 +97,31 @@ def apply_preferences() -> int:
     except ImportError:
         return 0
     changed = 0
-    with winreg.OpenKey(
-        winreg.HKEY_CURRENT_USER,
-        REG_SUBKEY_CCONFIG,
-        0,
-        winreg.KEY_READ | winreg.KEY_SET_VALUE,
-    ) as key:
-        for name, (on_value, label) in PREFERRED_FLAGS_ON.items():
-            existing: str
-            try:
-                existing, _ = winreg.QueryValueEx(key, name)
-            except OSError:
-                existing = ""
-            if existing == on_value:
-                print(f"{h.OK} {label}: already on")
-                continue
-            winreg.SetValueEx(key, name, 0, winreg.REG_SZ, on_value)
-            print(f"{INFO} {label}: turned on")
-            changed += 1
+    try:
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            REG_SUBKEY_CCONFIG,
+            0,
+            winreg.KEY_READ | winreg.KEY_SET_VALUE,
+        ) as key:
+            for name, (on_value, label) in PREFERRED_FLAGS_ON.items():
+                existing: str
+                try:
+                    existing, _ = winreg.QueryValueEx(key, name)
+                except OSError:
+                    existing = ""
+                if existing == on_value:
+                    print(f"{h.OK} {label}: already on")
+                    continue
+                winreg.SetValueEx(key, name, 0, winreg.REG_SZ, on_value)
+                print(f"{INFO} {label}: turned on")
+                changed += 1
+    except OSError as exc:
+        print(f"{h.FAIL} Could not write preferences under HKCU\\{REG_SUBKEY_CCONFIG}: {exc}",
+              file=sys.stderr)
+        print(f"        {changed} of {len(PREFERRED_FLAGS_ON)} were written before the error. "
+              "Re-run with --no-prefs to skip this step.", file=sys.stderr)
+        return None
     return changed
 
 
@@ -165,14 +191,51 @@ def delete_objectbuilder_key() -> int:
     return result.returncode
 
 
-def objectbuilder_running() -> bool:
-    """True when ObjectBuilder.exe is running. It writes its settings back to HKCU
-    when it closes, which would undo any reset or preference written now."""
-    if sys.platform != "win32":
+def restore_backup(backup: Path, had_cconfig: bool = True) -> bool:
+    """Put the user's settings back after an import failed part way.
+
+    Clears whatever the failed import left, then imports the backup taken
+    before it. The clearing delete may fail because the key is already gone;
+    only the backup import and the key check decide the result. had_cconfig is
+    False for a partial tree, whose backup never held CConfig, so only the
+    parent key is checked then.
+    """
+    print(f"{INFO} Restoring your previous settings from {backup}")
+    delete_objectbuilder_key()
+    rc = import_reg_file(backup)
+    restored = registry_has_objectbuilder_settings() if had_cconfig else registry_has_objectbuilder_key()
+    if rc != 0 or not restored:
+        print(f"{h.FAIL} Restore failed (exit {rc}). Restore by hand with: reg import \"{backup}\"",
+              file=sys.stderr)
         return False
+    print(f"{h.OK} Previous settings restored; Object Builder is as it was before this run.")
+    return True
+
+
+def objectbuilder_state() -> tuple[Optional[bool], int]:
+    """(running, tasklist exit code). running is True or False, or None when
+    tasklist failed and the answer is unknown."""
+    if sys.platform != "win32":
+        return False, 0
     result = subprocess.run(["tasklist", "/FI", "IMAGENAME eq ObjectBuilder.exe", "/NH"],
                             capture_output=True, text=True)
-    return "objectbuilder.exe" in result.stdout.lower()
+    if result.returncode != 0:
+        return None, result.returncode
+    return "objectbuilder.exe" in result.stdout.lower(), 0
+
+
+def objectbuilder_running() -> bool:
+    """Lenient check shared with /dayz-launch-objectbuilder: a failed tasklist warns
+    and counts as not running. This script's own main() uses objectbuilder_state()
+    instead, because Object Builder writes its settings back to HKCU when it closes
+    and would undo a reset or preference written while it is open."""
+    running, rc = objectbuilder_state()
+    if running is None:
+        print(f"{h.WARN} tasklist failed (exit code {rc}); "
+              "could not check whether Object Builder is running, so treating it as not running.",
+              file=sys.stderr)
+        return False
+    return running
 
 
 def confirm_reset(assume_yes: bool) -> bool:
@@ -202,6 +265,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         action="store_true",
         help="Confirm --force without asking (needed when there is no terminal)",
     )
+    parser.add_argument(
+        "--no-prefs",
+        action="store_true",
+        help="Leave the four preferred flags as they are (keeps e.g. Direct3D turned off on purpose)",
+    )
     args = parser.parse_args(argv)
 
     print("DayZ Object Builder setup\n")
@@ -230,11 +298,22 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 1
     print(f"{h.OK} Default settings file: {ob_reg.name}")
 
-    if objectbuilder_running():
+    running, tasklist_rc = objectbuilder_state()
+    if running is None:
+        print(f"{h.FAIL} tasklist failed (exit code {tasklist_rc}), so it is unknown whether "
+              "Object Builder is running.\n"
+              "        Close Object Builder if it is open and re-run; it rewrites these settings on exit.",
+              file=sys.stderr)
+        return 1
+    if running:
         print(f"{h.FAIL} Close Object Builder first; it rewrites these settings on exit.", file=sys.stderr)
         return 1
 
     already_configured = registry_has_objectbuilder_settings()
+    # A key without CConfig still holds user data (MainFrame-* layouts,
+    # HistoryPaths), so it is backed up before the defaults are merged over it.
+    partial_tree = not already_configured and registry_has_objectbuilder_key()
+    backup: Optional[Path] = None  # set once a backup exists and the registry is about to change
 
     if already_configured and not args.force:
         print(f"{h.OK} Registry already configured at HKCU\\{REG_KEY}")
@@ -251,17 +330,27 @@ def main(argv: Optional[list[str]] = None) -> int:
             if not confirm_reset(args.yes):
                 print(f"{INFO} Reset cancelled. Registry left unchanged.")
                 return 1
-            backup = backup_registry(BACKUP_DIR)
-            if backup is None:
+            saved = backup_registry(BACKUP_DIR)
+            if saved is None:
                 print(f"{h.FAIL} Could not back up HKCU\\{REG_KEY}; reset not attempted.", file=sys.stderr)
                 return 1
-            print(f"{h.OK} Current settings backed up to {backup}")
-            print(f"{INFO} Restore them with: reg import \"{backup}\"")
+            print(f"{h.OK} Current settings backed up to {saved}")
+            print(f"{INFO} Restore them with: reg import \"{saved}\"")
             rc = delete_objectbuilder_key()
             if rc != 0:
                 print(f"{h.FAIL} Could not delete HKCU\\{REG_KEY} (exit {rc}); defaults not imported.", file=sys.stderr)
                 return 1
+            backup = saved
             print(f"{h.OK} Deleted HKCU\\{REG_KEY}.")
+        elif partial_tree:
+            print(f"{INFO} HKCU\\{REG_KEY} exists without CConfig; backing it up before merging the defaults.")
+            saved = backup_registry(BACKUP_DIR)
+            if saved is None:
+                print(f"{h.FAIL} Could not back up HKCU\\{REG_KEY}; defaults not imported.", file=sys.stderr)
+                return 1
+            print(f"{h.OK} Current settings backed up to {saved}")
+            print(f"{INFO} Restore them with: reg import \"{saved}\"")
+            backup = saved
         else:
             print(f"{INFO} Registry empty — importing defaults.")
         rc = import_reg_file(ob_reg)
@@ -269,15 +358,24 @@ def main(argv: Optional[list[str]] = None) -> int:
             print(f"{h.FAIL} reg import failed (exit {rc}).", file=sys.stderr)
             print("        Importing into HKCU does not need elevation, but try an", file=sys.stderr)
             print("        Administrator shell if the failure persists.", file=sys.stderr)
+            if backup is not None:
+                restore_backup(backup, had_cconfig=not partial_tree)
             return rc
         if not registry_has_objectbuilder_settings():
             print(f"{h.FAIL} Registry import claimed success but the keys are still missing.", file=sys.stderr)
+            if backup is not None:
+                restore_backup(backup, had_cconfig=not partial_tree)
             return 1
         print(f"{h.OK} Registry imported successfully.")
 
-    print(f"\n{INFO} Applying preferred Object Builder defaults:")
-    changed = apply_preferences()
-    print(f"{INFO} {changed} of {len(PREFERRED_FLAGS_ON)} preferences changed.")
+    if args.no_prefs:
+        print(f"\n{INFO} --no-prefs: preferred flags left as they are.")
+    else:
+        print(f"\n{INFO} Applying preferred Object Builder defaults (skip with --no-prefs):")
+        changed = apply_preferences()
+        if changed is None:
+            return 1
+        print(f"{INFO} {changed} of {len(PREFERRED_FLAGS_ON)} preferences changed.")
 
     print(f"\n{h.OK} Object Builder is ready. Launch with: /dayz-launch-objectbuilder")
     return 0

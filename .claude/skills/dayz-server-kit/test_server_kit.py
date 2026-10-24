@@ -132,6 +132,14 @@ def test_cli_json_and_errors(mod, tmp_path):
     assert r.returncode == 2 and r.stderr.startswith("[FAIL]") and r.stdout == ""
 
 
+def test_cli_repeated_deps_add_to_the_load_order(mod, tmp_path):
+    """A second --deps adds to the list instead of replacing it, as /dayz-release-pack does."""
+    r = subprocess.run([sys.executable, str(HERE / "server_kit.py"), "--mod-dir", str(mod), "--out", str(tmp_path / "cli"),
+                        "--deps", "CF", "--deps", "COT", "--json"], capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert json.loads(r.stdout)["load_order"] == ["@CF", "@COT", "@MyVest"]
+
+
 def test_cli_mod_dir_with_instance_name(mod, tmp_path):
     """--mod-dir plus an instance name resolves .server/<instance>/mission/ under the current folder."""
     project = tmp_path / "proj"
@@ -142,6 +150,42 @@ def test_cli_mod_dir_with_instance_name(mod, tmp_path):
     report = json.loads(r.stdout)
     assert Path(report["mission"]) == project / ".server" / "chernarus" / "mission"
     assert report["types"]["mission"] == ["MyVest_Green", "MyVest_Pouch"]
+
+
+def test_item_in_a_sub_folder_config_gets_a_types_entry(mod, tmp_path):
+    """Imported mods keep CfgPatches at the root and the items in data/config.cpp."""
+    (mod / "data").mkdir()
+    (mod / "data" / "config.cpp").write_text(
+        "class CfgPatches\n{\n\tclass MyVest_Data\n\t{\n\t\tunits[] = {};\n\t\tweapons[] = {};\n"
+        "\t\trequiredVersion = 0.1;\n\t\trequiredAddons[] = {\"MyVest\"};\n\t};\n};\n"
+        "class CfgVehicles\n{\n\tclass Inventory_Base;\n\tclass MyVest_SubItem: Inventory_Base\n\t{\n"
+        "\t\tscope = 2;\n\t};\n};\n", encoding="utf-8")
+    report, members = build(mod, tmp_path)
+    assert "MyVest_SubItem" in type_names(members)
+    assert "MyVest_SubItem" in report["types"]["placeholder"]
+
+
+def test_broken_mission_economycore_exits_2(mod, tmp_path):
+    mission = tmp_path / "mission"
+    shutil.copytree(FIXTURES / "mission", mission)
+    (mission / "cfgeconomycore.xml").write_text("<economycore><ce folder=\"custom\">", encoding="utf-8")
+    with pytest.raises(kit.ReleaseError, match="does not parse"):
+        build(mod, tmp_path, mission)
+    r = subprocess.run([sys.executable, str(HERE / "server_kit.py"), "--mod-dir", str(mod), "--out", str(tmp_path / "cli"),
+                        "--mission", str(mission)], capture_output=True, text=True)
+    assert r.returncode == 2 and "does not parse" in r.stderr
+    assert not (tmp_path / "cli" / "MyVest-server-kit.zip").exists()
+
+
+@pytest.mark.parametrize("folder", ["Addons", "ADDONS", "Keys", "keys", "output", ".vscode"])
+def test_types_files_under_skipped_folders_are_ignored(mod, tmp_path, folder):
+    (mod / folder).mkdir(exist_ok=True)
+    (mod / folder / "types.xml").write_text(
+        '<types><type name="MyVest_Green"><nominal>99</nominal></type></types>', encoding="utf-8")
+    assert all(folder not in p.relative_to(mod).parts for p in kit.mod_types_files(mod))
+    report, members = build(mod, tmp_path)
+    assert report["types"]["mod"] == ["MyVest_Black"]
+    assert b"<nominal>99</nominal>" not in members["MyVest_ce/types.xml"]
 
 
 def test_mod_dir_instance_roots_include_the_cached_project(mod, tmp_path, monkeypatch):
@@ -156,3 +200,133 @@ def test_mod_dir_instance_roots_include_the_cached_project(mod, tmp_path, monkey
     monkeypatch.setattr(kit.h, "load_module", lambda name, path: FakeState)
     monkeypatch.chdir(tmp_path)
     assert kit.instance_roots(True, mod) == [tmp_path, cached.resolve()]
+
+
+def test_malformed_mod_types_file_exits_2_and_names_the_file(mod, tmp_path):
+    """A typo in the mod's own types.xml must not silently swap its real entry for a placeholder."""
+    bad = mod / "server" / "types.xml"
+    bad.write_text(bad.read_text(encoding="utf-8")[:200], encoding="utf-8")
+    with pytest.raises(kit.ReleaseError, match="does not parse") as e:
+        build(mod, tmp_path)
+    assert str(bad) in str(e.value)
+    r = subprocess.run([sys.executable, str(HERE / "server_kit.py"), "--mod-dir", str(mod), "--out", str(tmp_path / "cli")],
+                       capture_output=True, text=True)
+    assert r.returncode == 2 and r.stderr.startswith("[FAIL]") and "types.xml" in r.stderr
+    assert not (tmp_path / "cli" / "MyVest-server-kit.zip").exists()
+
+
+def test_malformed_non_types_xml_in_mod_is_ignored(mod, tmp_path):
+    (mod / "notes.xml").write_text("<notes><unclosed>", encoding="utf-8")
+    report, _ = build(mod, tmp_path)
+    assert report["types"]["mod"] == ["MyVest_Black"]
+
+
+@pytest.mark.parametrize("rel", ["db/types.xml", "custom/extra.xml"])
+def test_malformed_mission_types_file_exits_2(mod, tmp_path, rel):
+    """db/types.xml and a type="types" file from cfgeconomycore.xml are both declared types files."""
+    mission = tmp_path / "mission"
+    shutil.copytree(FIXTURES / "mission", mission)
+    (mission / rel).write_text("<types><type name=\"MyVest_Green\">", encoding="utf-8")
+    with pytest.raises(kit.ReleaseError, match="does not parse") as e:
+        build(mod, tmp_path, mission)
+    assert str(mission / rel) in str(e.value)
+    assert not (tmp_path / "out" / "MyVest-server-kit.zip").exists()
+
+
+def test_mod_types_entry_with_unknown_class_is_warned(mod, tmp_path):
+    (mod / "server" / "extra.xml").write_text(
+        '<types><type name="MyVest_Blak"><nominal>3</nominal></type></types>', encoding="utf-8")
+    report, members = build(mod, tmp_path)
+    assert "MyVest_Blak" in report["types"]["mod"]
+    warn = [w for w in report["warnings"] if w.startswith("types-unknown-class")]
+    assert len(warn) == 1 and "MyVest_Blak" in warn[0] and "MyVest_Black" not in warn[0]
+
+
+def test_placeholder_warning_names_the_mission_when_one_was_searched(mod, tmp_path):
+    mission = tmp_path / "mission"
+    shutil.copytree(FIXTURES / "mission", mission)
+    (mission / "custom" / "extra.xml").write_text("<types></types>", encoding="utf-8")
+    report, _ = build(mod, tmp_path, mission)
+    assert report["types"]["placeholder"] == ["MyVest_Pouch"]
+    warn = next(w for w in report["warnings"] if w.startswith("placeholder-types"))
+    assert "the mod or the mission" in warn and "--mission" not in warn
+
+
+def test_existing_kit_is_replaced_with_notice(mod, tmp_path):
+    report, _ = build(mod, tmp_path)
+    assert report["replaced"] is False and "(replaced the previous kit)" not in kit.render_text(report)
+    report, _ = build(mod, tmp_path)
+    assert report["replaced"] is True and "(replaced the previous kit)" in kit.render_text(report)
+    assert [p.name for p in (tmp_path / "out").iterdir()] == ["MyVest-server-kit.zip"]
+
+
+def test_mission_types_file_with_wrong_root_exits_2(mod, tmp_path):
+    """A cfgeconomycore type="types" file whose root is not <types> must not be dropped silently."""
+    mission = tmp_path / "mission"
+    shutil.copytree(FIXTURES / "mission", mission)
+    (mission / "custom" / "extra.xml").write_text('<type name="MyVest_Pouch"><nominal>2</nominal></type>', encoding="utf-8")
+    with pytest.raises(kit.ReleaseError, match="not <types>") as e:
+        build(mod, tmp_path, mission)
+    assert str(mission / "custom" / "extra.xml") in str(e.value)
+
+
+def test_failed_zip_write_keeps_the_old_kit_and_leaves_no_temp_file(mod, tmp_path, monkeypatch):
+    report, _ = build(mod, tmp_path)
+    old = Path(report["zip"]).read_bytes()
+
+    def boom(self, name, data, *a, **k):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(kit.zipfile.ZipFile, "writestr", boom)
+    with pytest.raises(OSError, match="disk full"):
+        kit.server_kit("MyVest", mod, tmp_path / "out", p_mods=None)
+    assert [p.name for p in (tmp_path / "out").iterdir()] == ["MyVest-server-kit.zip"]
+    assert Path(report["zip"]).read_bytes() == old
+
+
+def test_mission_folder_that_is_not_a_mission_exits_2_and_names_the_subfolder(mod, tmp_path):
+    """An instance folder passed instead of its mission subfolder must not run as if the mission had been searched."""
+    instance = tmp_path / "project" / ".server" / "chernarus"
+    shutil.copytree(FIXTURES / "mission", instance / "mission")
+    with pytest.raises(kit.ReleaseError, match="not a mission folder") as e:
+        build(mod, tmp_path, instance)
+    assert str(instance / "mission") in str(e.value)
+    out = tmp_path / "cli"
+    r = subprocess.run([sys.executable, str(HERE / "server_kit.py"), "--mod-dir", str(mod), "--out", str(out),
+                        "--mission", str(instance)], capture_output=True, text=True)
+    assert r.returncode == 2 and r.stderr.startswith("[FAIL]") and str(instance / "mission") in r.stderr
+    assert not out.exists()
+
+
+def test_empty_folder_as_mission_exits_2(mod, tmp_path):
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    with pytest.raises(kit.ReleaseError, match="no db.types.xml and no cfgeconomycore.xml"):
+        build(mod, tmp_path, empty)
+
+
+def test_missing_listed_mission_types_file_exits_2(mod, tmp_path):
+    """A type="types" file cfgeconomycore.xml lists but that is not on disk must not turn its classes into placeholders."""
+    mission = tmp_path / "mission"
+    shutil.copytree(FIXTURES / "mission", mission)
+    (mission / "custom" / "extra.xml").unlink()
+    with pytest.raises(kit.ReleaseError, match="does not exist") as e:
+        build(mod, tmp_path, mission)
+    assert str(mission / "custom" / "extra.xml") in str(e.value)
+    assert not (tmp_path / "out").exists()
+
+
+def test_mission_with_only_cfgeconomycore_is_accepted(mod, tmp_path):
+    mission = tmp_path / "mission"
+    shutil.copytree(FIXTURES / "mission", mission)
+    (mission / "db" / "types.xml").unlink()
+    report, _ = build(mod, tmp_path, mission)
+    assert report["types"]["mission"] == ["MyVest_Pouch"]
+    assert report["types"]["placeholder"] == ["MyVest_Green"]
+
+
+def test_workshop_summary_warning_is_not_passed_on(mod, tmp_path):
+    # The kit writes no Workshop text, so the release pack's summary-missing warning does not apply.
+    (mod / "mod.cpp").unlink()
+    report, _ = build(mod, tmp_path, FIXTURES / "mission", ["CF"])
+    assert not any(w.startswith("summary-missing") for w in report["warnings"])

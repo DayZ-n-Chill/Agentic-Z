@@ -9,15 +9,19 @@ config.cpp under P:\\DZ\\ (the unpacked vanilla data). For each mod item
 (scope = 2 in CfgVehicles, CfgWeapons or CfgMagazines; any CfgAmmo class
 that does not set scope = 0)
 it finds the nearest vanilla ancestor, takes the vanilla items under that
-ancestor as peers, and compares
+ancestor as peers (for CfgAmmo, only ammo of the same family: firearm
+rounds, melee hits, explosives, flares and smoke, 40mm launcher rounds,
+or syringe darts), and compares
 each stat the mod sets itself: weight, health (hitpoints), damage dealt,
 protection (armor multipliers and the Protection class), cargo capacity and
 maximum quantity. A value outside the peers' range and at least --ratio times
 away from their median is an outlier.
 
 The first output line is the verdict: PASS (exit 0, no outliers), FLAG
-(exit 1, at least one outlier) or ERROR (exit 2: bad arguments, no project,
-no mod folder, no vanilla data, or a config.cpp that does not parse). The
+(exit 1, at least one outlier), ERROR (exit 2: bad arguments, no project,
+no mod folder, no vanilla data, or a config.cpp that does not parse) or
+UNCHECKED (exit 3: no outliers, but no item could be compared, for example
+when every item inherits from another mod's base classes). The
 script only measures; deciding whether an outlier is intended is the AI's
 and the user's call. See SKILL.md.
 """
@@ -48,8 +52,30 @@ DAMAGE_TYPES = ("Health", "Blood", "Shock")
 # so a vest is never measured against every Inventory_Base item.
 MAX_WIDEN = 2
 PEER_SAMPLE = 5
+# check_item's note for an item whose every compared stat is the vanilla parent's.
+INHERITS_VANILLA = "sets none of the compared stats"
 # #include "file" or #include <file>, the directive the tokenizer otherwise skips.
 INCLUDE = re.compile(r'^\s*#\s*include\s*["<]([^">]+)[">]')
+# CfgAmmo puts every kind of hit under Bullet_Base, so a round is only measured
+# against vanilla ammo of the same family (see Balance.ammo_family). Labels for the report.
+AMMO_FAMILIES = {
+    "bullet": "firearm rounds",
+    "melee": "melee and environment hits",
+    "explosive": "explosive rounds",
+    "illumination": "flare and smoke rounds",
+    "launcher": "40mm launcher rounds",
+    "dart": "syringe darts",
+}
+# Vanilla CfgAmmo classes that start a family of their own: a class with one of
+# these above it (or that is one) is not a firearm round. Bullet_40mm_Base is the
+# inert 40mm grenade and Bullet_40mm_ChemGas inherits it
+# (P:\DZ\weapons\projectiles\config.cpp:6875, 6949); Dart_Syringe is the
+# shock pistol dart (line 6445), fired from Mag_ShockCartridge
+# (P:\DZ\weapons\attachments\magazine\config.cpp:2208, ammo= at 2217).
+AMMO_FAMILY_BASES = {
+    "bullet_40mm_base": "launcher",
+    "dart_syringe": "dart",
+}
 
 
 class BalanceError(Exception):
@@ -182,16 +208,19 @@ class Index:
         return self.sections[section].get(name.lower()) if name else None
 
 
-def load_vanilla(vanilla_root: Path) -> Index:
+def load_vanilla(vanilla_root: Path, unread: Optional[list[dict]] = None) -> Index:
+    """Index every config.cpp under <vanilla_root>/DZ. unread collects the files that do not tokenize."""
     dz = vanilla_root / "DZ"
     if not dz.is_dir():
-        raise BalanceError(f"no vanilla data at {dz}: mount P: with /dayz-workdrive, or pass --vanilla-root")
+        raise BalanceError(f"no vanilla data at {dz}: run /dayz-preflight to see what is missing (it names /dayz-workdrive when P: is not mounted), or pass --vanilla-root")
+    unread = [] if unread is None else unread
     index = Index()
     for path in sorted(dz.rglob("config.cpp")):
         try:
             index.add(parse_config(path.read_text(encoding="utf-8", errors="replace"), path))
-        except edit_check.TokenizeError:
-            continue  # a vanilla file we cannot read is one less source of peers
+        except edit_check.TokenizeError as e:
+            # One less source of peers; reported so a PASS never hides it.
+            unread.append({"file": path, "error": f"line {e.line}: {e.message}"})
     return index
 
 
@@ -415,6 +444,7 @@ class Balance:
         self._children: dict[str, dict[str, list[str]]] = {}
         self._stats: dict[tuple[str, str], dict] = {}
         self._slots: dict[tuple[str, str], frozenset[str]] = {}
+        self._family: dict[str, str] = {}
 
     def children(self, section: str) -> dict[str, list[str]]:
         if section not in self._children:
@@ -436,6 +466,42 @@ class Balance:
             node = self.vanilla.sections[section][key]
             self._slots[(section, key)] = self.r.slots(section, node, mod_first=False)
         return self._slots[(section, key)]
+
+    def ammo_family(self, node: Node, mod_first: bool) -> str:
+        """Which kind of CfgAmmo class this is; peers come from the same kind only.
+
+        Every vanilla hit inherits Bullet_Base, so without this a bullet is measured
+        against 230 classes that include melee hits (class MeleeDamage: Bullet_Base,
+        P:\\DZ\\weapons\\melee\\config.cpp:19, with FinisherHit damage = 1000 at
+        line 151), explosives (explosive=1 on GrenadeM4, Rocket_RPG7_Base and
+        Bullet_40mm_Explosive, P:\\DZ\\weapons\\projectiles\\config.cpp:6593, 6663,
+        6943) and flares and smoke (simulation="shotIlluminating", Bullet_Flare at
+        line 6508), and almost any bullet damage falls inside that range.
+
+        Explosive and smoke 40mm rounds go to those families first; the 40mm rounds
+        left (Bullet_40mm_Base, Bullet_40mm_ChemGas) and Dart_Syringe deal health
+        damage like a bullet but are not fired from a firearm, so they get their
+        own families (AMMO_FAMILY_BASES) instead of skewing the firearm median.
+        """
+        chain = self.r.chain("cfgammo", node, mod_first)
+        names = {n.name.lower() for n, _ in chain}
+        if "meleedamage" in names:
+            return "melee"
+        hit = self.r.find(chain, ("explosive",))
+        if hit is not None and any(isinstance(v, float) and v > 0 for v in hit[0]):
+            return "explosive"
+        hit = self.r.find(chain, ("simulation",))
+        if hit is not None and any(isinstance(v, str) and v.strip('"').lower() == "shotilluminating" for v in hit[0]):
+            return "illumination"
+        for base, family in AMMO_FAMILY_BASES.items():
+            if base in names:
+                return family
+        return "bullet"
+
+    def vanilla_family(self, key: str) -> str:
+        if key not in self._family:
+            self._family[key] = self.ammo_family(self.vanilla.sections["cfgammo"][key], mod_first=False)
+        return self._family[key]
 
     def is_item(self, section: str, node: Node, mod_first: bool) -> bool:
         if section == "cfgammo":
@@ -466,17 +532,23 @@ class Balance:
 
     def check_item(self, section: str, node: Node) -> tuple[list[dict], Optional[str]]:
         """Outliers for one mod item, or a note saying why it was not compared."""
-        own = {k: v for k, v in self.r.stats(section, node, mod_first=True).items() if v["from_mod"]}
-        if not own:
-            return [], "sets none of the compared stats"
+        # Ancestors first: an item that sets nothing but inherits another mod's
+        # base (CF, Expansion) has stats we never saw, so it is not vanilla's.
         ancestors = self.ancestors(section, node)
         if not ancestors:
             return [], f"has no vanilla parent (parent {node.parent or 'none'})"
+        own = {k: v for k, v in self.r.stats(section, node, mod_first=True).items() if v["from_mod"]}
+        if not own:
+            return [], INHERITS_VANILLA
         slots = self.r.slots(section, node, mod_first=True)
+        ammo = None
+        if section == "cfgammo":
+            health = self.r.stats(section, node, mod_first=True).get("damage.health")
+            ammo = (self.ammo_family(node, mod_first=True), health is None or health["value"] > 0)
         findings = []
         compared = 0
         for stat, mine in own.items():
-            group = self.peer_values(section, ancestors, stat, slots)
+            group = self.peer_values(section, ancestors, stat, slots, ammo)
             if group is None:
                 continue
             compared += 1
@@ -507,12 +579,32 @@ class Balance:
         return findings, None
 
     def peer_values(
-        self, section: str, ancestors: list[Node], stat: str, slots: frozenset[str] = frozenset()
+        self,
+        section: str,
+        ancestors: list[Node],
+        stat: str,
+        slots: frozenset[str] = frozenset(),
+        ammo: Optional[tuple[str, bool]] = None,
     ) -> Optional[tuple[str, list[tuple[str, float]]]]:
+        """The peer group name and (class, value) peers for one stat, or None if too few.
+
+        ammo is (family, lethal) for a CfgAmmo class: peers must share the family,
+        and a lethal round (health damage above 0) leaves out the non-lethal ones
+        (Bullet_12GaugeBeanbag and Bullet_12GaugeRubberSlug deal health damage 0,
+        P:\\DZ\\weapons\\projectiles\\config.cpp:4176 and 4134).
+        """
         for depth, base in enumerate(ancestors[: MAX_WIDEN + 1]):
             wanted = {s.lower() for s in slots}
             peers, same_slot = [], []
             for key in self.descendants(section, base.name.lower()):
+                if ammo is not None:
+                    family, lethal = ammo
+                    if self.vanilla_family(key) != family:
+                        continue
+                    if lethal and family == "bullet":
+                        health = self.vanilla_stats(section, key).get("damage.health")
+                        if health is not None and health["value"] <= 0:
+                            continue
                 hit = self.vanilla_stats(section, key).get(stat)
                 if hit is not None:
                     peer = (self.vanilla.sections[section][key].name, hit["value"])
@@ -527,7 +619,7 @@ class Balance:
             if slots and self.min_peers <= len(same_slot) < len(peers):
                 return f"{base.name} in slot {', '.join(sorted(slots))}", same_slot
             if len(peers) >= self.min_peers:
-                return base.name, peers
+                return (f"{base.name} ({AMMO_FAMILIES[ammo[0]]})" if ammo else base.name), peers
         return None
 
     def judge(self, value: float, values: list[float]) -> Optional[dict]:
@@ -587,8 +679,9 @@ def balance_mod(
     if min_peers < 1:
         raise BalanceError("--min-peers must be at least 1")
     include_warnings: list[dict] = []
+    vanilla_unread: list[dict] = []
     mod_index = load_mod(mod_dir, include_warnings)
-    vanilla = load_vanilla(vanilla_root or P_DRIVE)
+    vanilla = load_vanilla(vanilla_root or P_DRIVE, vanilla_unread)
     bal = Balance(mod_index, vanilla, ratio, min_peers)
     display_root = display_root or mod_dir.parent
 
@@ -600,7 +693,7 @@ def balance_mod(
         except ValueError:
             return path.as_posix()
 
-    findings, skipped, items = [], [], 0
+    findings, skipped, inherits, items, compared = [], [], [], 0, 0
     for section in SECTIONS:
         for node in mod_index.sections[section].values():
             if not bal.is_item(section, node, mod_first=True):
@@ -610,20 +703,38 @@ def balance_mod(
             for f in found:
                 f["file"] = rel(f["file"])
             findings += found
-            if note:
-                skipped.append({"item": node.name, "section": section, "file": rel(node.file), "line": node.line, "reason": note})
+            entry = {"item": node.name, "section": section, "file": rel(node.file), "line": node.line, "reason": note}
+            # An item that only inherits vanilla stats is vanilla's own balance, so it
+            # counts as compared and is listed apart from the items that were not.
+            if note == INHERITS_VANILLA:
+                inherits.append(entry)
+            elif note:
+                skipped.append(entry)
+            if note is None or note == INHERITS_VANILLA:
+                compared += 1
     findings.sort(key=lambda f: (f["file"] or "", f["line"], f["stat"]))
+    # PASS means items were measured and none stood out. When nothing could be
+    # measured (every item skipped, or no items at all) say so instead.
+    if findings:
+        verdict = "FLAG"
+    elif compared == 0:
+        verdict = "UNCHECKED"
+    else:
+        verdict = "PASS"
     return {
-        "verdict": "FLAG" if findings else "PASS",
+        "verdict": verdict,
         "mod": mod,
         "mod_dir": str(mod_dir),
         "ratio": ratio,
         "min_peers": min_peers,
         "items": items,
+        "compared": compared,
         "outliers": len(findings),
         "findings": findings,
         "skipped": skipped,
+        "inherits_vanilla": inherits,
         "includes_skipped": [{**w, "file": rel(w["file"])} for w in include_warnings],
+        "vanilla_unread": [{"file": str(u["file"]), "error": u["error"]} for u in vanilla_unread],
     }
 
 
@@ -654,11 +765,17 @@ def render_text(report: dict) -> str:
             f"(range {_fmt(f['min'])} to {_fmt(f['max'])})"
         )
         out.append("    closest: " + ", ".join(f"{p['class']} {_fmt(p['value'])}" for p in f["peers"]))
+    for s in report["inherits_vanilla"]:
+        out.append(f"  compared (inherits vanilla stats): {s['item']} {s['reason']}")
     for s in report["skipped"]:
         out.append(f"  not compared: {s['item']} {s['reason']}")
     for w in report["includes_skipped"]:
         out.append(f"  WARN {w['file']}:{w['line']}  #include \"{w['include']}\" not read: it {w['reason']}, so its classes were not compared")
-    out.append(f"  {report['outliers']} outlier(s) in {report['items']} item(s)")
+    for u in report["vanilla_unread"]:
+        out.append(f"  WARN {u['file']}  vanilla config not read ({u['error']}), so its classes are not peers")
+    out.append(f"  {report['outliers']} outlier(s) in {report['items']} item(s), {report['compared']} compared")
+    if report["verdict"] == "UNCHECKED":
+        out.append("  no item was compared with vanilla, so this is not a PASS; see the not compared lines")
     return "\n".join(out)
 
 
@@ -694,7 +811,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         return _error(str(e), args.json)
     print(report["verdict"])
     print(json.dumps(report, indent=2) if args.json else render_text(report))
-    return 0 if report["verdict"] == "PASS" else 1
+    return {"PASS": 0, "FLAG": 1, "UNCHECKED": 3}[report["verdict"]]
 
 
 def _error(message: str, as_json: bool) -> int:

@@ -12,6 +12,9 @@ _SPEC = importlib.util.spec_from_file_location(
 mount = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(mount)
 
+# The real process check, kept before any fixture replaces it on the module.
+_REAL_RUNNING_P_DRIVE_USERS = mount.running_p_drive_users
+
 
 # ---------- read_settings_ini_path ----------
 
@@ -52,6 +55,7 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.delenv("DAYZ_WORK_DRIVE", raising=False)
     monkeypatch.setattr(mount, "CACHE", tmp_path / "cache" / "dayz-work-drive.json")
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: None)
+    monkeypatch.setattr(mount, "query_p_device", lambda: None)  # P: letter free, never the real machine's
     return tmp_path
 
 
@@ -71,7 +75,7 @@ def _tools_with_ini_and_default(root: Path, ini_target: Path | None) -> Path:
 
 
 def test_nothing_resolves_to_none(isolated):
-    assert mount.find_work_drive() is None
+    assert mount.find_work_drive() == (None, None)
 
 
 def test_env_var_wins_over_everything(isolated, monkeypatch):
@@ -81,7 +85,7 @@ def test_env_var_wins_over_everything(isolated, monkeypatch):
     tools = _tools_with_ini_and_default(isolated, _dir(isolated, "ini"))
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
     monkeypatch.setenv("DAYZ_WORK_DRIVE", str(env))
-    assert mount.find_work_drive() == env
+    assert mount.find_work_drive() == (env.resolve(), "$DAYZ_WORK_DRIVE")
 
 
 def test_cache_beats_settings_ini(isolated, monkeypatch):
@@ -89,14 +93,14 @@ def test_cache_beats_settings_ini(isolated, monkeypatch):
     mount.set_cached_path(cached)
     tools = _tools_with_ini_and_default(isolated, _dir(isolated, "ini"))
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
-    assert mount.find_work_drive() == cached
+    assert mount.find_work_drive() == (cached, f"cache {mount.CACHE}")
 
 
 def test_settings_ini_path_is_used_when_nothing_earlier_resolves(isolated, monkeypatch):
     ini = _dir(isolated, "ini")
     tools = _tools_with_ini_and_default(isolated, ini)
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
-    assert mount.find_work_drive() == ini
+    assert mount.find_work_drive() == (ini, str(tools / "settings.ini"))
 
 
 def test_registry_is_not_a_source(isolated, monkeypatch):
@@ -104,13 +108,13 @@ def test_registry_is_not_a_source(isolated, monkeypatch):
     tools = _tools_with_ini_and_default(isolated, None)
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
     assert not hasattr(mount, "read_registry_string")
-    assert mount.find_work_drive() is None
+    assert mount.find_work_drive() == (None, None)
 
 
 def test_tools_binaries_folder_is_never_a_candidate(isolated, monkeypatch):
     tools = _tools_with_ini_and_default(isolated, None)
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
-    assert mount.find_work_drive() is None
+    assert mount.find_work_drive() == (None, None)
 
 
 def test_main_unresolved_fails_with_path_hint(isolated, monkeypatch, capsys):
@@ -126,14 +130,34 @@ def test_main_unresolved_fails_with_path_hint(isolated, monkeypatch, capsys):
     assert "Bin" not in err
 
 
-def test_candidates_that_do_not_exist_are_skipped(isolated, monkeypatch):
+def test_candidates_that_do_not_exist_are_skipped_with_a_warning(isolated, monkeypatch, capsys):
     real = _dir(isolated, "real")
     monkeypatch.setenv("DAYZ_WORK_DRIVE", str(isolated / "missing"))
     mount.CACHE.parent.mkdir(parents=True)
     mount.CACHE.write_text(json.dumps({"work_drive_path": str(isolated / "gone")}), encoding="utf-8")
     tools = _tools_with_ini_and_default(isolated, real)
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
-    assert mount.find_work_drive() == real
+    assert mount.find_work_drive() == (real, str(tools / "settings.ini"))
+    out = capsys.readouterr().out
+    assert f"[WARN] $DAYZ_WORK_DRIVE is set to {isolated / 'missing'}, which is not a folder" in out
+
+
+def test_settings_ini_path_that_is_not_a_folder_warns(isolated, monkeypatch, capsys):
+    tools = _tools_with_ini_and_default(isolated, isolated / "typo")
+    monkeypatch.setattr(mount, "find_dayz_tools", lambda: tools)
+    assert mount.find_work_drive() == (None, None)
+    out = capsys.readouterr().out
+    assert "[WARN]" in out and f"path={isolated / 'typo'}, which is not a folder" in out
+
+
+def test_relative_env_var_is_made_absolute(isolated, monkeypatch):
+    work = _dir(isolated, "PDrive")
+    run_dir = _dir(isolated, "scripts")
+    monkeypatch.chdir(run_dir)
+    monkeypatch.setenv("DAYZ_WORK_DRIVE", str(Path("..") / "PDrive"))
+    found, source = mount.find_work_drive()
+    assert found.is_absolute() and found == work.resolve()
+    assert source == "$DAYZ_WORK_DRIVE"
 
 
 # ---------- invoke_mount subst fallback ----------
@@ -169,20 +193,33 @@ def fake_drive(monkeypatch, tmp_path):
 
     `effects` maps the first argument of a command (the exe path, or "subst")
     to the mounted state it leaves behind; commands not listed change nothing.
+    The P: device follows the mounted state (a folder mapping while mounted, the
+    letter free otherwise) unless a test sets state["device"]; `device_effects`
+    maps a command to the device it leaves behind.
     """
     exe = tmp_path / "WorkDrive.exe"
-    state = {"mounted": False, "calls": [], "effects": {}}
+    state = {"mounted": False, "calls": [], "effects": {}, "device_effects": {}}
 
     def fake_run(args, **kwargs):
         assert "shell" not in kwargs
         state["calls"].append(list(args))
         if args[0] in state["effects"]:
             state["mounted"] = state["effects"][args[0]]
+            if state["mounted"] and len(args) == 3 and args[2] != "/D":
+                state["target"] = args[2]  # WorkDrive.exe /Mount <folder> or subst P: <folder>
+        if args[0] in state["device_effects"]:
+            state["device"] = state["device_effects"][args[0]]
         return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    def fake_device():
+        if "device" in state:
+            return state["device"]
+        return "\\??\\" + state.get("target", "C:\\Fake\\Work") if state["mounted"] else None
 
     monkeypatch.setattr(mount, "find_workdrive_exe", lambda: exe)
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: None)  # no settings.ini, so Letter= is P
     monkeypatch.setattr(mount, "is_p_mounted", lambda: state["mounted"])
+    monkeypatch.setattr(mount, "query_p_device", fake_device)
     monkeypatch.setattr(mount.subprocess, "run", fake_run)
     state["running"] = []  # processes the unmount guard sees; none by default
     monkeypatch.setattr(mount, "running_p_drive_users", lambda: state["running"])
@@ -203,7 +240,9 @@ def test_letter_other_than_p_skips_workdrive_exe(fake_drive, monkeypatch, tmp_pa
     assert mount.invoke_mount(tmp_path) is True
     assert state["calls"] == [["subst", "P:", str(tmp_path)]]
     out = capsys.readouterr().out
-    assert "[WARN]" in out and "mount Q:" in out and "WorkDrive.exe will not create P:" in out
+    assert "[WARN]" in out and "[ProjectDrive] Letter=Q," in out
+    assert "would mount Q: instead of P:\\. Using subst P: instead." in out
+    assert "(" not in out.split("[WARN]")[1].splitlines()[0]  # no tangled parenthetical
 
 
 def test_letter_p_still_uses_workdrive_exe(fake_drive, monkeypatch, tmp_path):
@@ -251,6 +290,52 @@ def test_main_success_caches_folder(fake_drive, monkeypatch, tmp_path):
     monkeypatch.setattr("sys.argv", ["mount.py", "--path", str(work)])
     assert mount.main() == 0
     assert mount.get_cached_path() == work
+
+
+def test_main_names_the_source_on_the_mounting_line(fake_drive, monkeypatch, tmp_path, capsys):
+    exe, state = fake_drive
+    state["effects"][str(exe)] = True
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.setattr(mount, "CACHE", tmp_path / "cache.json")
+    monkeypatch.setenv("DAYZ_WORK_DRIVE", str(work))
+    monkeypatch.setattr("sys.argv", ["mount.py"])
+    assert mount.main() == 0
+    assert f"[INFO] Mounting P: -> {work.resolve()} (from $DAYZ_WORK_DRIVE)" in capsys.readouterr().out
+
+
+def test_main_fails_and_does_not_cache_when_p_shows_another_folder(fake_drive, monkeypatch, tmp_path, capsys):
+    exe, state = fake_drive
+    state["effects"][str(exe)] = True
+    state["device_effects"][str(exe)] = "\\??\\C:\\Somewhere\\Else"
+    work = tmp_path / "work"
+    work.mkdir()
+    cache = tmp_path / "cache.json"
+    monkeypatch.setattr(mount, "CACHE", cache)
+    monkeypatch.setattr("sys.argv", ["mount.py", "--path", str(work)])
+    assert mount.main() == 1
+    captured = capsys.readouterr()
+    assert "points to C:\\Somewhere\\Else, not" in captured.err and "--unmount" in captured.err
+    assert "[OK]   P:\\ mounted" not in captured.out
+    assert not cache.exists()
+
+
+def test_main_warns_and_exits_0_when_cache_cannot_be_written(fake_drive, monkeypatch, tmp_path, capsys):
+    exe, state = fake_drive
+    state["effects"][str(exe)] = True
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.setattr(mount, "CACHE", tmp_path / "cache.json")
+
+    def read_only(_p):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(mount, "set_cached_path", read_only)
+    monkeypatch.setattr("sys.argv", ["mount.py", "--path", str(work)])
+    assert mount.main() == 0
+    out = capsys.readouterr().out
+    assert f"[OK]   P:\\ mounted -> {work}" in out
+    assert "[WARN]" in out and "was not cached" in out and "Permission denied" in out
 
 
 def test_main_relative_path_is_mounted_and_cached_absolute(fake_drive, monkeypatch, tmp_path):
@@ -399,6 +484,77 @@ def test_unmount_force_proceeds_with_warning(fake_drive, monkeypatch, capsys):
     assert "--force" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("result", [
+    SimpleNamespace(returncode=1, stdout="", stderr="ERROR: Access denied"),
+    SimpleNamespace(returncode=0, stdout="", stderr=""),
+    SimpleNamespace(returncode=0, stdout="  \r\n", stderr=""),
+], ids=["nonzero-exit", "empty-output", "blank-output"])
+def test_running_p_drive_users_unknown_when_tasklist_fails(monkeypatch, result):
+    monkeypatch.setattr(mount.subprocess, "run", lambda *a, **k: result)
+    assert mount.running_p_drive_users() is None
+
+
+def test_running_p_drive_users_unknown_when_tasklist_cannot_start(monkeypatch):
+    def fake_run(*a, **k):
+        raise FileNotFoundError("tasklist")
+
+    monkeypatch.setattr(mount.subprocess, "run", fake_run)
+    assert mount.running_p_drive_users() is None
+
+
+def test_unmount_refuses_when_process_list_is_unknown(fake_drive, monkeypatch, capsys):
+    exe, state = fake_drive
+    state["mounted"] = True
+    state["effects"][str(exe)] = False
+    state["running"] = None  # tasklist failed
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 1
+    assert state["calls"] == []
+    assert state["mounted"] is True
+    err = capsys.readouterr().err
+    assert "tasklist failed" in err and "--force" in err
+
+
+def test_unmount_force_proceeds_when_process_list_is_unknown(fake_drive, monkeypatch, capsys):
+    exe, state = fake_drive
+    state["mounted"] = True
+    state["effects"][str(exe)] = False
+    state["running"] = None
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount", "--force"])
+    assert mount.main() == 0
+    assert state["calls"] == [[str(exe), "/Dismount"]]
+    assert "could not list running processes" in capsys.readouterr().out
+
+
+def test_unmount_with_real_tasklist_failure_refuses(fake_drive, monkeypatch, capsys):
+    # End to end through the real running_p_drive_users: a failing tasklist must not
+    # read as "nothing running".
+    exe, state = fake_drive
+    state["mounted"] = True
+    monkeypatch.setattr(mount, "running_p_drive_users", _REAL_RUNNING_P_DRIVE_USERS)
+
+    def fake_run(args, **kwargs):
+        state["calls"].append(list(args))
+        return SimpleNamespace(returncode=1, stdout="", stderr="")
+
+    monkeypatch.setattr(mount.subprocess, "run", fake_run)
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 1
+    assert state["calls"] == [["tasklist", "/FO", "CSV", "/NH"]]  # no dismount ran
+
+
+@pytest.mark.parametrize("argv", [["--force"], ["--path", "C:\\Work", "--force"], ["--unmount", "--path", "C:\\Work"]])
+def test_flags_that_would_be_ignored_are_rejected(fake_drive, monkeypatch, capsys, argv):
+    _, state = fake_drive
+    monkeypatch.setattr("sys.argv", ["mount.py", *argv])
+    with pytest.raises(SystemExit) as exc:
+        mount.main()
+    assert exc.value.code == 2
+    assert state["calls"] == []
+    err = capsys.readouterr().err
+    assert "--force only applies to --unmount" in err or "--path cannot be combined with --unmount" in err
+
+
 def test_unmount_guard_not_checked_when_not_mounted(fake_drive, monkeypatch):
     _, state = fake_drive
     state["running"] = ["DayZDiag_x64.exe"]
@@ -466,3 +622,109 @@ def test_cache_from_a_subfolder_goes_to_the_project_root(monkeypatch, tmp_path):
     fresh = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(fresh)
     assert fresh.CACHE == project.resolve() / ".claude" / "local-memory" / "dayz-work-drive.json"
+
+
+# ---------- stale mappings, volumes and network drives on P: ----------
+
+STALE = r"\??\C:\Gone\Work"
+VOLUME = r"\Device\HarddiskVolume3"
+
+
+def test_current_p_target_reads_folder_mappings_only(monkeypatch):
+    monkeypatch.setattr(mount, "query_p_device", lambda: STALE)
+    assert mount.current_p_target() == Path(r"C:\Gone\Work")
+    monkeypatch.setattr(mount, "query_p_device", lambda: VOLUME)
+    assert mount.current_p_target() is None
+    monkeypatch.setattr(mount, "query_p_device", lambda: None)
+    assert mount.current_p_target() is None
+
+
+def test_query_p_device_none_off_windows(monkeypatch):
+    monkeypatch.setattr(mount.sys, "platform", "linux")
+    assert mount.query_p_device() is None
+
+
+def test_unmount_removes_stale_mapping(fake_drive, monkeypatch, capsys):
+    # The folder behind P: is gone: P:\ is not a directory, but the mapping still holds the letter.
+    _, state = fake_drive
+    state["device"] = STALE
+    state["device_effects"]["subst"] = None
+    state["running"] = ["WorkbenchApp.exe"]  # nothing can work from an invisible P:\, so no guard
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 0
+    assert state["calls"] == [["subst", "P:", "/D"]]
+    out = capsys.readouterr().out
+    assert r"C:\Gone\Work" in out and "stale mapping" in out
+    assert "not currently mounted" not in out
+
+
+def test_unmount_stale_mapping_that_stays_fails(fake_drive, monkeypatch, capsys):
+    _, state = fake_drive
+    state["device"] = STALE
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 1
+    assert "stale P: mapping" in capsys.readouterr().err
+
+
+def test_mount_with_stale_mapping_names_folder_and_fix(fake_drive, monkeypatch, tmp_path, capsys):
+    _, state = fake_drive
+    state["device"] = STALE
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.setattr("sys.argv", ["mount.py", "--path", str(work)])
+    assert mount.main() == 1
+    err = capsys.readouterr().err
+    assert r"mapped to a missing folder C:\Gone\Work" in err and "--unmount" in err
+    assert state["calls"] == []
+
+
+def test_mount_with_unreachable_device_on_p_fails_clearly(fake_drive, monkeypatch, tmp_path, capsys):
+    _, state = fake_drive
+    state["device"] = r"\Device\LanmanRedirector\;P:0000\server\share"
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.setattr("sys.argv", ["mount.py", "--path", str(work)])
+    assert mount.main() == 1
+    err = capsys.readouterr().err
+    assert "LanmanRedirector" in err and "net use P: /delete" in err
+    assert state["calls"] == []
+
+
+def test_unmount_refuses_on_a_volume(fake_drive, monkeypatch, capsys):
+    _, state = fake_drive
+    state["mounted"] = True
+    state["device"] = VOLUME
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount", "--force"])
+    assert mount.main() == 1
+    err = capsys.readouterr().err
+    assert VOLUME in err and "not a folder mapping" in err
+    assert "still mounted" not in err
+    assert state["calls"] == []
+
+
+def test_unmount_refuses_on_unreachable_non_folder_device(fake_drive, monkeypatch, capsys):
+    _, state = fake_drive
+    state["device"] = VOLUME
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 1
+    assert "cannot remove it" in capsys.readouterr().err
+    assert state["calls"] == []
+
+
+# ---------- cache contents and platform ----------
+
+@pytest.mark.parametrize("text", ["[]", r'"C:\\Work"', "42", "null", '{"work_drive_path": 5}', "{not json"])
+def test_cache_that_is_not_the_expected_object_is_no_cache(isolated, text):
+    mount.CACHE.parent.mkdir(parents=True)
+    mount.CACHE.write_text(text, encoding="utf-8")
+    assert mount.get_cached_path() is None
+    assert mount.find_work_drive() == (None, None)
+
+
+def test_main_off_windows_fails_with_windows_only(monkeypatch, capsys):
+    monkeypatch.setattr(mount.sys, "platform", "linux")
+    monkeypatch.setattr(mount.subprocess, "run", lambda *a, **k: pytest.fail("must not run anything"))
+    for argv in (["mount.py"], ["mount.py", "--unmount"]):
+        monkeypatch.setattr("sys.argv", argv)
+        assert mount.main() == 1
+        assert "[FAIL] Windows-only" in capsys.readouterr().err

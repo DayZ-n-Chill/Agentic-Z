@@ -2,6 +2,7 @@
   "agents": [
     {
       "name": "claude",
+      "default": false,
       "env_home_vars": ["CLAUDE_CONFIG_DIR"],
       "default_home": "~/.claude",
       "skills_subdir": "skills"

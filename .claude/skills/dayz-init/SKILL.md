@@ -1,6 +1,6 @@
 ---
 name: dayz-init
-description: "Front door for DayZ work in an Agentic-Z clone: a first-run setup wizard (environment check, scaffold or import a mod, optional test server) and afterwards a status hub that dispatches to the /dayz-* skills. Use when the user starts DayZ modding, says \"init\" or \"set up DayZ\", or wants a status overview and next action."
+description: "Runs first-run DayZ setup in an Agentic-Z clone (environment check, scaffold or import a mod, optional test server), then serves as a status hub that dispatches to the /dayz-* skills. Use when the user starts DayZ modding, says \"init\" or \"set up DayZ\", or wants a status overview and next action."
 ---
 
 <!-- skill-dir-note -->
@@ -51,16 +51,16 @@ Ask questions 1 to 3 in one AskUserQuestion call, putting the usual choice first
 Then ask in chat for the free-text values:
 
 - Mod name (letters, digits and underscores, starting with a letter, at most 64 characters; `plan.py` refuses any other name). For an import, offer the source folder's name as the default.
-- Import only: the source folder path, and whether to write missing scaffold pieces into it (`--scaffold`) or only link it (`--no-scaffold`).
+- Import only: the source folder path or a GitHub (or other git) link, which `/dayz-import-mod` clones, and whether to write missing scaffold pieces into it (`--scaffold`) or only link it (`--no-scaffold`).
 - New mod, or import with `--scaffold`, when `.claude/local-memory/dayz-author.txt` does not exist: the author handle shown in mod descriptions (a scaffolded import writes it into `config.cpp`). Pass it as `--author`.
 - Optional spec, only when `workspace\<ModName>\spec.md` does not exist and the mod is not a `--no-scaffold` import: "What should the mod do? Say skip to leave it for later." This is the only spec question. If the user skips, pass no spec flags. Otherwise turn the answer into one `--goal` sentence plus `--item` (each item or class the mod adds), `--behavior` (each thing a player can do or see in game) and `--done-check` (each check that proves it works), all repeatable. Use the user's own words and don't invent features they did not ask for. The plan writes these to `spec.md`, and dayz-mod-architect reads it first when it plans the mod.
 - The spec question is not asked when `workspace\<ModName>` is a linked import, because `plan.py` never writes into a linked source folder on a re-run.
-- Import with launch: read the source folder's `config.cpp` `requiredAddons[]` (the same check as the hub's `Needs:` line). When it lists anything that does not start with `DZ_`, such as `JM_CF_Scripts`, ask which `@mods` under `P:\Mods\` provide those addons, in load order, and pass them as `--deps`. Without them the mod fails to load on the first launch, so `plan.py` refuses `--launch` (exit 2, naming the addons) until `--deps` is given. A prebuilt bundle (an `Addons\*.pbo` folder) is not checked, the same as `/dayz-gate ingame`.
+- Import with launch: read the source folder's `config.cpp` `requiredAddons[]` (the same check as the hub's `Needs:` line). When it lists anything that does not start with `DZ_`, such as `JM_CF_Scripts`, ask which `@mods` under `P:\Mods\` provide those addons, in load order, and pass them as `--deps`. Without them the mod fails to load on the first launch, so `plan.py` refuses `--launch` (exit 2, naming the addons) until `--deps` is given. A prebuilt bundle (an `Addons\*.pbo` folder) is not checked, the same as `/dayz-gate ingame`. For a GitHub link there is no folder to read yet, so the plan adds a step after the clone that checks the cloned `config.cpp` and stops with exit 2, naming the addons, before the build and launch; re-run with `--deps` (the import is kept and skipped on the re-run).
 
 ## Step 4: show the plan
 
 ```
-python "<skill-dir>\plan.py" --mod <ModName> [--import-from <path> --scaffold|--no-scaffold] [--author <handle>] [--goal <text> [--item <text>]... [--behavior <text>]... [--done-check <text>]...] [--server <map>] [--build] [--launch [--deps <mod> ...]]
+python "<skill-dir>\plan.py" --mod <ModName> [--import-from <path-or-link> --scaffold|--no-scaffold] [--author <handle>] [--goal <text> [--item <text>]... [--behavior <text>]... [--done-check <text>]...] [--server <map>] [--build] [--launch [--deps <mod> ...]]
 ```
 
 Prints the numbered plan, for example:
@@ -75,7 +75,7 @@ Plan:
   6. Launch DayZ Diag with MyMod on chernarus
 ```
 
-The spec step appears only with `--goal`, and is skipped when `spec.md` already exists, so a spec the user edited is never overwritten.
+The `Check <ModName>'s requiredAddons need no --deps` step appears only for a link import with `--launch` and no `--deps`. The spec step appears only with `--goal`, and is skipped when `spec.md` already exists, so a spec the user edited is never overwritten.
 
 Scaffolding or importing is skipped when `workspace\<ModName>\` already exists (a folder or a link, including a `--no-scaffold` import that has no `config.cpp` yet), so re-running `/dayz-init` for an existing mod just makes it active. Show the plan in chat. Don't ask for a yes/no: the user already chose everything in it, and none of it is destructive.
 
@@ -86,7 +86,8 @@ Same command plus `--execute`. Each step's output streams through; the first fai
 | Step | Runs |
 |---|---|
 | new-mod | `dayz-new-mod\new_mod.py <ModName> [--author <handle>]` |
-| import-mod | `dayz-import-mod\import_mod.py --source <path> --name <ModName> --scaffold\|--no-scaffold [--author <handle>]` (author only with `--scaffold`) |
+| import-mod | `dayz-import-mod\import_mod.py --source <path-or-link> --name <ModName> --scaffold\|--no-scaffold [--author <handle>]` (author only with `--scaffold`) |
+| check-deps | reads the cloned `workspace\<ModName>\config.cpp` `requiredAddons[]`; exit 2 when they need `--deps` |
 | spec | writes `workspace\<ModName>\spec.md` with Goal, Items, Behaviors and Done checks sections |
 | record | writes the two state files above |
 | add-server | `dayz-add-server\add_server.py <map> --map <map>` |
@@ -107,8 +108,8 @@ Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and s
 |---|---|
 | Build and launch | `dispatch.py build`, then `dispatch.py launch --server <instance> [--deps CF ...]` (ask for the instance if there are several; offer add-server if there are none). When the status has a `Needs:` line, ask which `@mods` provide those addons, in load order, and pass them as `--deps`; `dispatch.py launch` refuses without them (exit 2) |
 | Lint the mod | `dispatch.py lint` (`/dayz-lint`) |
-| Gate the build | `dispatch.py gate-build` (`/dayz-gate build`: lint, build and a stored result) |
-| Gate in game | `dispatch.py gate-ingame --server <instance> [--deps CF ...]` (`/dayz-gate ingame`; ask for `--deps` as for launch) |
+| Gate the build | `dispatch.py gate-build [--yes]` (`/dayz-gate build`: lint, build and a stored result) |
+| Gate in game | `dispatch.py gate-ingame [--server <instance>] [--deps CF ...] [--yes]` (`/dayz-gate ingame`; `--server` defaults to chernarus; ask for `--deps` as for launch) |
 | Show mod health | `dispatch.py health` (`/dayz-health`: last build, last test and open findings) |
 | Stop DayZ Diag | `dispatch.py stop` |
 | Show the server log | Read the newest `script*.log` in `.server\<instance>\Profiles\` |
@@ -119,7 +120,9 @@ Shows the active mod, PBO age, test servers, whether DayZ Diag is running, and s
 | Set up search | See "Search (optional)" below, then `dispatch.py search-download` |
 | Set up or switch to another mod | Go back to Step 3 for that mod; `plan.py` skips scaffolding for a mod that already exists |
 
-All `dispatch.py` actions default `--mod` to the active mod (`launch` and `gate-ingame` also take `--deps`) and exit with the child skill's exit code (2 when a required value is missing). `python "<skill-dir>\dispatch.py" --list` prints the actions.
+When the status's `Diag:` line says `running` (for example right after "Build and launch"), both gate actions must stop that session first, and `/dayz-gate` does that only with `--yes`; without it the gate exits with an error telling you to rerun with `--yes`. Before a gate choice in that state, ask the user with AskUserQuestion whether the gate may stop the running DayZ Diag session (offer "Stop DayZ Diag" as the alternative), and pass `--yes` only on a yes. Never pass `--yes` without asking.
+
+All `dispatch.py` actions default `--mod` to the active mod (only `add-server`, `launch` and `gate-ingame` take `--server`; only `launch` and `gate-ingame` take `--deps`; only `gate-build` and `gate-ingame` take `--yes`) and exit with the child skill's exit code (2 when a required value is missing or an action got an option it cannot use). `python "<skill-dir>\dispatch.py" --list` prints the actions.
 
 ## Search (optional)
 

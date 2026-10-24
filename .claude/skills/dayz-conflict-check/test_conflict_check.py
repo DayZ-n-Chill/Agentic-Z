@@ -8,6 +8,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -102,12 +103,21 @@ def rules(report: dict) -> list[str]:
 
 # --- clean -------------------------------------------------------------------
 
-def test_clean_mod_passes(world):
+def test_clean_mod_against_packed_mods_is_partial_not_pass(world):
+    # CF and COT are PBOs: their classes were never compared, so a clean result is not a PASS.
     report = check(world, make_mod(world / "workspace" / "MyVest", script="class MyVest_Helper\n{\n};\n"))
-    assert report["verdict"] == "PASS"
+    assert report["verdict"] == "PARTIAL"
     assert report["findings"] == []
     assert [s["mod"] for s in report["scanned"]] == ["@CF", "@Community-Online-Tools", "@DayZ-Expansion-Core"]
-    assert "PBO headers only" in report["note"]
+    assert report["header_only"] == ["@CF", "@Community-Online-Tools"]
+    assert "PBO headers only" in report["note"] and "--ingame" in report["note"]
+
+
+def test_clean_mod_against_unpacked_mods_passes(world):
+    report = check(world, make_mod(world / "workspace" / "MyVest", script="class MyVest_Helper\n{\n};\n"),
+                   against=["DayZ-Expansion-Core"])
+    assert report["verdict"] == "PASS"
+    assert report["header_only"] == [] and "note" not in report
 
 
 # --- planted collisions -------------------------------------------------------
@@ -146,7 +156,7 @@ def test_config_class_collision_and_override(world):
     required = config.replace('{"DZ_Data"}', '{"DZ_Data", "DayZExpansion_Core"}')
     report = check(world, make_mod(world / "workspace" / "MyVest", config=required))
     assert "class-override" in rules(report) and "class-collision" not in rules(report)
-    assert report["verdict"] == "PASS"
+    assert report["verdict"] == "PARTIAL"  # warnings only, and CF and COT are header-only
 
 
 def test_vanilla_class_both_change_is_a_warning(world):
@@ -155,6 +165,66 @@ def test_vanilla_class_both_change_is_a_warning(world):
     report = check(world, make_mod(world / "workspace" / "MyVest", config=config, script="class MyVest_Helper\n{\n};\n"))
     assert rules(report) == ["vanilla-class-overlap"]
     assert report["findings"][0]["severity"] == "warning"
+
+
+@pytest.fixture
+def vanilla_world(world):
+    """The world fixture with a populated P:\\DZ, shaped like the real files: PlateCarrierVest in
+    CfgVehicles (P:\\DZ\\characters\\vests\\config.cpp:18 and :24) and Mosin9130 in cfgWeapons
+    (P:\\DZ\\weapons\\firearms\\mosin9130\\config.cpp:28 and :300), plus an unpacked mod defining both."""
+    write(world / "P" / "DZ" / "characters" / "vests" / "config.cpp",
+          "class CfgPatches { class DZ_Characters_Vests { requiredAddons[] = {}; }; };\n"
+          "class CfgVehicles\n{\n\tclass Clothing;\n\tclass PlateCarrierVest: Clothing\n\t{\n\t};\n};\n")
+    write(world / "P" / "DZ" / "weapons" / "firearms" / "mosin9130" / "config.cpp",
+          "class cfgWeapons\n{\n\tclass Mosin9130_Base;\n\tclass Mosin9130: Mosin9130_Base\n\t{\n\t};\n};\n")
+    write(world / "Theirs" / "$PBOPREFIX$", "Theirs\n")
+    write(world / "Theirs" / "config.cpp",
+          "class CfgPatches { class Theirs_P { requiredAddons[] = {}; }; };\n"
+          "class CfgVehicles { class Clothing; class PlateCarrierVest: Clothing {}; };\n"
+          "class CfgAmmo { class Bullet_Base; class Mosin9130: Bullet_Base {}; };\n")
+    return world
+
+
+VANILLA_SHAPED_CONFIG = OUR_CONFIG.replace("MyVest_Plate: Clothing", "PlateCarrierVest: Clothing") + \
+    "class CfgAmmo\n{\n    class Bullet_Base;\n    class Mosin9130: Bullet_Base\n    {\n    };\n};\n"
+
+
+def test_vanilla_lookup_is_keyed_by_section(vanilla_world):
+    # Mosin9130 is vanilla only in cfgWeapons, so two mods defining it in CfgAmmo really collide.
+    mod = make_mod(vanilla_world / "workspace" / "MyVest", config=VANILLA_SHAPED_CONFIG, script="class MyVest_Helper\n{\n};\n")
+    report = check(vanilla_world, mod, against=[str(vanilla_world / "Theirs")])
+    found = {(f["rule"], f["message"].split()[0]) for f in report["findings"]}
+    assert found == {("vanilla-class-overlap", "PlateCarrierVest"), ("class-collision", "Mosin9130")}
+    assert report["verdict"] == "FAIL" and "note" not in report
+
+
+def test_vanilla_scan_says_so_on_stderr_and_keeps_stdout_clean(vanilla_world, capsys):
+    mod = make_mod(vanilla_world / "workspace" / "MyVest", config=VANILLA_SHAPED_CONFIG, script="class MyVest_Helper\n{\n};\n")
+    rc = cc.main(["--mod-dir", str(mod), "--against", str(vanilla_world / "Theirs"), "--json"])
+    out, err = capsys.readouterr()
+    assert rc == 1 and out.startswith("FAIL\n")
+    json.loads(out.partition("\n")[2])
+    assert "reading vanilla config classes from" in err
+
+
+def test_vanilla_scan_of_a_large_config_stays_fast(world):
+    # P:\DZ\sounds\hpp\config.cpp is about 10 MB with about 19,000 classes in its Cfg sections.
+    # Counting lines from the file start for every class made that one file take over a minute.
+    body = "\t\tsamples[] = {{\"DZ\\\\sounds\\\\x\", 1}};\n\t\tvolume = 1;\n" * 10
+    classes = "".join(f"\tclass Shader_{i}\n\t{{\n{body}\t}};\n" for i in range(20000))
+    text = f"class CfgSoundShaders\n{{\n{classes}}};\n"
+    assert len(text) > 8_000_000
+    write(world / "P" / "DZ" / "sounds" / "hpp" / "config.cpp", text)
+    vanilla = cc.Vanilla(world / "P")
+    start = time.perf_counter()
+    assert vanilla.config_class("CfgSoundShaders", "Shader_19999")
+    assert not vanilla.config_class("CfgVehicles", "Shader_19999")
+    assert time.perf_counter() - start < 10
+    facts = cc.Facts("v")
+    cc.scan_config(text, "big", facts)
+    lines = text.splitlines()
+    _, where = facts.classes[("cfgsoundshaders", "shader_19999")]
+    assert lines[int(where.rsplit(":", 1)[1]) - 1] == "\tclass Shader_19999"
 
 
 def test_script_class_collision(world):
@@ -175,7 +245,7 @@ def test_script_file_name_in_pbo_header_is_a_likely_overlap(world):
     report = check(world, make_mod(world / "workspace" / "MyVest"))
     f = next(f for f in report["findings"] if f["rule"] == "script-name-match")
     assert f["mod"] == "@CF" and "4_World\\Entities\\PlayerBase.c" in f["message"]
-    assert report["verdict"] == "PASS"
+    assert report["verdict"] == "PARTIAL"  # a warning, and CF's classes were not compared
 
 
 def test_comments_and_strings_are_not_declarations(world):
@@ -227,6 +297,64 @@ def test_against_names_and_own_mod(tmp_path):
         cc.resolve_targets(["Missing"], False, tmp_path, "MyVest")
 
 
+def test_all_uses_the_expansion_bundle_alone(tmp_path):
+    for name in ("@CF", "@DayZ-Expansion-Core", "@DayZ-Expansion-Bundle", "@DayZ-Expansion-Vehicles", "@Other"):
+        (tmp_path / name).mkdir()
+    assert [p.name for p in cc.resolve_targets([], True, tmp_path, "MyVest")] == ["@CF", "@DayZ-Expansion-Bundle", "@Other"]
+
+
+def test_against_relative_source_folder(world, monkeypatch):
+    source = make_mod(world / "src" / "OtherSource", prefix="OtherSource")
+    monkeypatch.chdir(world)
+    for item in ("src/OtherSource", "src\\OtherSource", "./src/OtherSource"):
+        assert cc.resolve_targets([item], False, world / "Mods", "MyVest") == [source.resolve()]
+    # A bare word is a mod name first, and a folder in the current folder only when no such mod exists.
+    (world / "CF").mkdir()
+    assert cc.resolve_targets(["CF"], False, world / "Mods", "MyVest") == [world / "Mods" / "@CF"]
+    assert cc.resolve_targets(["src"], False, world / "Mods", "MyVest") == [(world / "src").resolve()]
+
+
+def test_cli_relative_against_folder_is_compared(world, monkeypatch, capsys):
+    make_mod(world / "src" / "OtherSource", prefix="MyVest")
+    mod = make_mod(world / "workspace" / "MyVest")
+    monkeypatch.chdir(world)
+    rc = cc.main(["--mod-dir", str(mod), "--mods-root", str(world / "Mods"), "--against", "src/OtherSource", "--json"])
+    verdict, _, body = capsys.readouterr().out.partition("\n")
+    assert rc == 1 and verdict == "FAIL"
+    assert "prefix-same" in rules(json.loads(body))
+
+
+@pytest.mark.parametrize("extra", [[], ["--all"], ["--against", "CF"]])
+def test_cli_missing_mods_folder_says_so(world, capsys, extra):
+    missing = world / "NoSuchDrive" / "Mods"
+    rc = cc.main(["--mod-dir", str(make_mod(world / "workspace" / "MyVest")), "--mods-root", str(missing), *extra])
+    out = capsys.readouterr().out
+    assert rc == 2 and out.startswith("ERROR\n")
+    assert f"mods folder {missing} not found (is P:\\ mounted?)" in out
+
+
+def test_against_source_paths_need_no_mods_folder(world):
+    source = make_mod(world / "OtherSource", prefix="OtherSource")
+    assert cc.resolve_targets([str(source)], False, world / "Missing", "MyVest") == [source.resolve()]
+
+
+def test_only_own_mod_in_against_says_so(tmp_path):
+    (tmp_path / "@MyVest").mkdir()
+    with pytest.raises(cc.ConflictError, match="@MyVest is your own mod") as e:
+        cc.resolve_targets(["@MyVest"], False, tmp_path, "MyVest")
+    assert "none of CF" not in str(e.value)
+
+
+def test_empty_targets_message_names_the_case(tmp_path):
+    with pytest.raises(cc.ConflictError, match="--all found no @mod folder"):
+        cc.resolve_targets([], True, tmp_path, "MyVest")
+    with pytest.raises(cc.ConflictError, match="none of CF, COT or Expansion is under"):
+        cc.resolve_targets([], False, tmp_path, "MyVest")
+    (tmp_path / "@MyVest").mkdir()
+    with pytest.raises(cc.ConflictError, match="is your own mod"):
+        cc.resolve_targets([], True, tmp_path, "MyVest")
+
+
 # --- CLI ----------------------------------------------------------------------
 
 def test_cli_json_fail(world, capsys):
@@ -241,8 +369,31 @@ def test_cli_json_fail(world, capsys):
 def test_cli_text_lists_owner_and_fix(world, capsys):
     rc = cc.main(["--mod-dir", str(make_mod(world / "workspace" / "MyVest")), "--mods-root", str(world / "Mods")])
     out = capsys.readouterr().out
-    assert rc == 0 and out.startswith("PASS\n")
+    assert rc == 0 and out.startswith("PARTIAL\n")
     assert "-> dayz-script-specialist:" in out and "scanned @CF: 1 PBO header(s)" in out
+
+
+def test_cli_header_only_says_so_right_under_the_verdict(world, capsys):
+    mod = make_mod(world / "workspace" / "MyVest", script="class MyVest_Helper\n{\n};\n")
+    rc = cc.main(["--mod-dir", str(mod), "--mods-root", str(world / "Mods"), "--against", "CF", "Community-Online-Tools"])
+    verdict, second = capsys.readouterr().out.splitlines()[:2]
+    assert rc == 0 and verdict == "PARTIAL"
+    assert "not a full check" in second and "--ingame" in second
+
+
+@pytest.mark.parametrize("as_json", [False, True])
+def test_cli_bad_arguments_print_the_error_verdict(capsys, as_json):
+    rc = cc.main(["--bogus", *(["--json"] if as_json else [])])
+    verdict, _, body = capsys.readouterr().out.partition("\n")
+    assert rc == 2 and verdict == "ERROR"
+    message = json.loads(body)["error"] if as_json else body
+    assert "--bogus" in message and "Usage:" in message
+
+
+def test_cli_no_mod_prints_the_error_verdict(capsys):
+    rc = cc.main([])
+    out = capsys.readouterr().out
+    assert rc == 2 and out.startswith("ERROR\n") and "give a <ModName> or --mod-dir" in out
 
 
 def test_cli_error_when_nothing_to_compare(world, capsys):
@@ -271,6 +422,10 @@ def test_ingame_runs_the_gate_with_the_compared_mods(world, monkeypatch, capsys,
     rc = cc.main(["MyVest", "--mods-root", str(world / "Mods"), "--ingame", "--server", "chernarus-hc"], run=fake_run)
     out = capsys.readouterr().out
     assert rc == rc_expected
+    # CF and COT are header-only, but the game loaded them, so a passing gate turns PARTIAL into PASS
+    assert out.startswith(gate_verdict + "\n")
+    if gate_verdict == "PASS":
+        assert "not a full check" not in out and "checked in game by --ingame" in out
     cmd = calls[0]
     assert cmd[0] == sys.executable and Path(cmd[1]).name == "gate.py"
     assert cmd[2:] == ["ingame", "MyVest", "--deps", "@CF", "@Community-Online-Tools", "@DayZ-Expansion-Core",

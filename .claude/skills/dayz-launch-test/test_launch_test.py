@@ -55,6 +55,35 @@ def test_main_keeps_server_only_mods_off_mod_list(monkeypatch, tmp_path, capsys)
     assert f"-serverMod={launch.MODS_ROOT / '@SrvMod'} " in server_line
 
 
+@pytest.mark.parametrize("argv", [
+    ["CF", "--server-only", "Srv", "MyMod"],  # nargs="+" put MyMod on -serverMod= only
+    ["CF", "--port", "2402", "MyMod"],
+])
+def test_main_refuses_mod_name_after_an_option(monkeypatch, tmp_path, capsys, argv):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, argv + ["--dry-run"])
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert "unexpected arguments: MyMod" in captured.err
+    assert "Server cmd:" not in captured.out
+
+
+def test_server_only_takes_one_name_per_flag(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, [
+        "CF", "MyMod", "--server-only", "SrvA", "--server-only", "SrvB", "--dry-run",
+    ])
+    assert launch.main() == 0
+    out = capsys.readouterr().out
+    server_line = next(l for l in out.splitlines() if "Server cmd:" in l)
+    client_line = next(l for l in out.splitlines() if "Client cmd:" in l)
+    shared = f"-mod={launch.MODS_ROOT / '@CF'};{launch.MODS_ROOT / '@MyMod'} "
+    assert shared in server_line and shared in client_line
+    assert f"-serverMod={launch.MODS_ROOT / '@SrvA'};{launch.MODS_ROOT / '@SrvB'} " in server_line
+    assert "@Srv" not in client_line
+
 
 def test_main_refuses_mod_named_shared_and_server_only(monkeypatch, tmp_path, capsys):
     _instance(tmp_path)
@@ -64,6 +93,33 @@ def test_main_refuses_mod_named_shared_and_server_only(monkeypatch, tmp_path, ca
     assert exc.value.code == 2
     captured = capsys.readouterr()
     assert "mod named both as shared and --server-only: SrvMod" in captured.err
+    assert "Server cmd:" not in captured.out
+
+
+def test_main_refuses_shared_and_server_only_differing_in_case(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["CF", "--server-only", "cf", "--dry-run"])
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert "mod named both as shared and --server-only: cf" in captured.err
+    assert "Server cmd:" not in captured.out
+
+
+@pytest.mark.parametrize("argv", [
+    ["CF", "CF", "MyMod"],
+    ["CF", "@cf", "MyMod"],
+    ["MyMod", "--server-only", "Srv", "--server-only", "srv"],
+])
+def test_main_refuses_duplicate_mod_names(monkeypatch, tmp_path, capsys, argv):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, argv + ["--dry-run"])
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert "mod named more than once" in captured.err
     assert "Server cmd:" not in captured.out
 
 def test_build_client_cmd_with_display_prefs():
@@ -159,6 +215,15 @@ def test_cfg_without_template_line_refuses(tmp_path):
     with pytest.raises(SystemExit) as exc:
         launch.verify_instance_environment("chernarus", tmp_path)
     assert "template" in str(exc.value.code)
+
+
+def test_verify_instance_reads_ansi_cfg(tmp_path):
+    inst = _instance(tmp_path)
+    (inst / "serverDZ.cfg").write_bytes(
+        ('hostname = "Café Server";\npassword = "été";\n' + CFG + FP).encode("cp1252")
+    )
+    _, _, mission, _ = launch.verify_instance_environment("chernarus", tmp_path)
+    assert mission == inst / "dayzOffline.chernarusplus"
 
 
 def test_read_cfg_template():
@@ -342,6 +407,152 @@ def test_port_in_use_refuses_before_spawning(monkeypatch, tmp_path):
     assert "port 2402 in use; run /dayz-stop-test or pass --port" in str(exc.value.code)
 
 
+# --- argument validation ---------------------------------------------------------------
+
+@pytest.mark.parametrize("bad", ["..\\x", "../x", "a/b", "C:x", "..", ".", "", "!ClientDiagLogs"])
+def test_server_rejects_paths_and_shared_folders(monkeypatch, tmp_path, capsys, bad):
+    # '..\\x' was joined onto .server/ and looked outside the project.
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "--server", bad, "--dry-run"])
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    assert exc.value.code == 2
+    assert "instance" in capsys.readouterr().err
+
+
+def test_server_accepts_gate_behavior_copy(monkeypatch, tmp_path):
+    # /dayz-gate behavior launches its <instance>-behavior copy through this script.
+    _instance(tmp_path, "chernarus-behavior")
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "--server", "chernarus-behavior", "--dry-run"])
+    assert launch.main() == 0
+
+
+@pytest.mark.parametrize("bad", ["..\\x", "a/b", "@", "..", "P:\\Mods\\@CF"])
+def test_mod_name_rejects_paths(monkeypatch, tmp_path, capsys, bad):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, [bad, "--dry-run"])
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    assert exc.value.code == 2
+    assert "is not a mod name" in capsys.readouterr().err
+
+
+def test_mod_name_drops_leading_at(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["@CF", "MyMod", "--dry-run"])
+    assert launch.main() == 0
+    server_line = next(l for l in capsys.readouterr().out.splitlines() if "Server cmd:" in l)
+    assert f"-mod={launch.MODS_ROOT / '@CF'};{launch.MODS_ROOT / '@MyMod'} " in server_line
+
+
+# --- requiredAddons dependency gate ------------------------------------------------------
+
+def _source_mod(project: Path, name: str, config: str, rel: str = "config.cpp") -> Path:
+    mod = project / "workspace" / name
+    (mod / rel).parent.mkdir(parents=True, exist_ok=True)
+    (mod / rel).write_text(config, encoding="utf-8")
+    return mod
+
+
+NEEDS_CF = """class CfgPatches
+{
+    class MyMod
+    {
+        requiredAddons[] =
+        {
+            "DZ_Data",
+            "JM_CF_Scripts"
+        };
+    };
+};
+"""
+
+
+def test_config_patches_reads_names_and_required_addons():
+    text = NEEDS_CF + 'class CfgVehicles { class MyVest { displayName = "a { b"; }; };\n'
+    patches, required = launch.config_patches(text)
+    assert patches == {"MyMod"}  # CfgVehicles classes and string braces do not count
+    assert required == ["DZ_Data", "JM_CF_Scripts"]
+
+
+def test_config_patches_reads_appended_required_addons():
+    text = 'class CfgPatches { class MyMod { requiredAddons[] += {"JM_CF_Scripts"}; }; };\n'
+    assert launch.config_patches(text) == ({"MyMod"}, ["JM_CF_Scripts"])
+
+
+def test_config_patches_reads_vanilla_ai_config():
+    vanilla = Path("P:/DZ/AI/config.cpp")
+    if not vanilla.is_file():
+        pytest.skip("P:\\ not mounted")
+    patches, required = launch.config_patches(vanilla.read_text(encoding="utf-8", errors="replace"))
+    assert "DZ_AI" in patches and "DZ_Data" in required
+
+
+def test_launch_refuses_mod_whose_required_addon_is_not_loaded(monkeypatch, tmp_path):
+    # Run directly, `/dayz-launch-test MyMod` for a mod that needs CF started a
+    # session in which the mod failed to load; only /dayz-init checked this.
+    _instance(tmp_path)
+    _source_mod(tmp_path, "MyMod", NEEDS_CF)
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "--dry-run"])
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    msg = str(exc.value.code)
+    assert "MyMod requires JM_CF_Scripts" in msg and "/dayz-launch-test CF MyMod" in msg
+    assert "DZ_Data" not in msg
+
+
+def test_required_addon_in_subfolder_config_is_checked(tmp_path):
+    _source_mod(tmp_path, "MyMod", "class CfgPatches { class MyMod { requiredAddons[] = {}; }; };\n")
+    _source_mod(tmp_path, "MyMod", NEEDS_CF.replace("class MyMod", "class MyMod_Data"), "data/config.cpp")
+    assert launch.missing_dependencies(["MyMod"], [], tmp_path) == {"MyMod": ["JM_CF_Scripts"]}
+
+
+def test_dependency_listed_first_satisfies_gate(monkeypatch, tmp_path):
+    _instance(tmp_path)
+    _source_mod(tmp_path, "MyMod", NEEDS_CF)
+    _patch_main(monkeypatch, tmp_path, ["CF", "MyMod", "--dry-run"])
+    assert launch.main() == 0
+
+
+def test_dependency_listed_after_the_mod_does_not_count(tmp_path):
+    _source_mod(tmp_path, "MyMod", NEEDS_CF)
+    assert launch.missing_dependencies(["MyMod", "CF"], [], tmp_path) == {"MyMod": ["JM_CF_Scripts"]}
+
+
+def test_workspace_dependency_must_declare_the_patch(tmp_path):
+    _source_mod(tmp_path, "MyMod", NEEDS_CF.replace("JM_CF_Scripts", "MyBase"))
+    _source_mod(tmp_path, "Other", "class CfgPatches { class OtherPatch {}; };\n")
+    assert launch.missing_dependencies(["Other", "MyMod"], [], tmp_path) == {"MyMod": ["MyBase"]}
+    _source_mod(tmp_path, "Base", "class CfgPatches { class mybase { requiredAddons[] = {}; }; };\n")
+    assert launch.missing_dependencies(["Base", "MyMod"], [], tmp_path) == {}  # case-insensitive
+
+
+def test_mod_can_require_its_own_patch(tmp_path):
+    cfg = "class CfgPatches { class A { }; class B { requiredAddons[] = {\"A\"}; }; };\n"
+    _source_mod(tmp_path, "MyMod", cfg)
+    assert launch.missing_dependencies(["MyMod"], [], tmp_path) == {}
+
+
+def test_prebuilt_bundle_and_unknown_mods_are_not_checked(tmp_path):
+    mod = _source_mod(tmp_path, "Bundle", NEEDS_CF)
+    (mod / "Addons").mkdir()
+    (mod / "Addons" / "Bundle.pbo").write_bytes(b"")
+    assert launch.missing_dependencies(["Bundle", "NotInWorkspace"], [], tmp_path) == {}
+
+
+def test_shared_mod_cannot_rely_on_server_only_mod(tmp_path):
+    _source_mod(tmp_path, "MyMod", NEEDS_CF)
+    assert launch.missing_dependencies(["MyMod"], ["CF"], tmp_path) == {"MyMod": ["JM_CF_Scripts"]}
+    _source_mod(tmp_path, "SrvMod", NEEDS_CF)
+    assert launch.missing_dependencies(["CF"], ["SrvMod"], tmp_path) == {}  # shared mods load first
+
+
+def test_addons_and_keys_configs_are_skipped(tmp_path):
+    _source_mod(tmp_path, "MyMod", "class CfgPatches { class MyMod {}; };\n")
+    _source_mod(tmp_path, "MyMod", NEEDS_CF, "Keys/config.cpp")
+    assert launch.missing_dependencies(["MyMod"], [], tmp_path) == {}
+
+
 # --- built mods and display prefs -------------------------------------------------
 
 def test_verify_built_mods_requires_a_pbo(monkeypatch, tmp_path):
@@ -400,6 +611,42 @@ def test_wait_for_port_succeeds_once_server_binds(monkeypatch, fake_clock):
     monkeypatch.setattr(launch.h, "udp_port_free", lambda port: next(probes))
     assert launch.wait_for_server_port(2302, _ServerProc(), timeout_s=60) is True
     assert fake_clock[0] == 2  # slept once per free probe
+
+
+def _interrupt(port):
+    raise KeyboardInterrupt
+
+
+def test_wait_for_port_ctrl_c_kills_server_and_exits_130(monkeypatch, fake_clock, capsys):
+    # Before the fix Ctrl+C printed a traceback and left the detached server
+    # holding the port, so the next launch was refused with "port in use".
+    monkeypatch.setattr(launch.h, "udp_port_free", _interrupt)
+    server = _FakeProc()
+    with pytest.raises(SystemExit) as exc:
+        launch.wait_for_server_port(2302, server, timeout_s=60)
+    assert exc.value.code == 130
+    assert server.killed
+    assert "Interrupted while waiting for the server; killed it (PID 4242)" in capsys.readouterr().out
+
+
+def test_main_ctrl_c_during_bind_wait_never_starts_client(monkeypatch, tmp_path):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod"])
+    procs = []
+    monkeypatch.setattr(launch.subprocess, "Popen", lambda cmd, **k: procs.append(_FakeProc()) or procs[-1])
+    monkeypatch.setattr(launch.time, "sleep", lambda s: None)
+    probes = iter([True])  # the port gate sees it free, then Ctrl+C during the wait
+
+    def probe(port):
+        if next(probes, False):
+            return True
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(launch.h, "udp_port_free", probe)
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    assert exc.value.code == 130
+    assert len(procs) == 1 and procs[0].killed
 
 
 def test_wait_for_port_times_out(monkeypatch, fake_clock):

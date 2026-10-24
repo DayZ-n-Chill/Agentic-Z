@@ -2,11 +2,12 @@
 
 ## Config.cpp Validation
 
-### Baked-in P:\ Drive Paths (WARNING, fails the run)
+### Baked-in P:\ Drive Paths (P-DRIVE, fails the run)
 
 Absolute paths like `P:\DZ\gear\consumables\data\rag_co.paa` only exist on the
-developer's machine. `audit_p3d.py` reports each one as a WARNING with its line
-number, and any WARNING in a text file makes the run exit 1. Convert them to
+developer's machine. `audit_p3d.py` reports each one as a P-DRIVE finding with its line
+number, and any P-DRIVE finding makes the run exit 1. A path inside a `//` or
+`/* */` comment is ignored. Convert them to
 game-relative paths:
 
 ```cpp
@@ -60,7 +61,7 @@ Visual LOD of the P3D. Missing selections silently fail (no texture swap occurs)
 
 ### P:\ Drive Paths in .rvmat Files
 
-Same rule and severity as config.cpp (WARNING, fails the run); `P:\` paths break on distribution:
+Same rule and severity as config.cpp (P-DRIVE, fails the run); `P:\` paths break on distribution:
 
 ```text
 // WRONG:

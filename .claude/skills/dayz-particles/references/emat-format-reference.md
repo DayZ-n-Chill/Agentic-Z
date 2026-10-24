@@ -179,7 +179,7 @@ This creates blue electric sparks using vanilla spark texture.
 1. Create a DDS texture (DXT5 for alpha, DXT1 for opaque)
 2. Rename `.dds` → `.edds`
 3. Place in mod: `MyMod/data/particles/sprites/my_texture.edds`
-4. Reference in .emat by path only (no GUID for mod files — needs testing):
+4. Reference in .emat by path only (mod files have no GUID; vanilla's own path-only reference is at `P:\graphics\particles\contaminated_area_gas_around_tiny.ptc:13`, see SKILL.md "GUID references"):
    `AlbedoMap "MyMod/data/particles/sprites/my_texture.edds"`
 
 ### Vanilla sprite texture GUIDs (extracted from .emat files)

@@ -56,13 +56,16 @@ SETTLE_S = 10        # seconds after the player appears before the first check
 
 # One test per gate tick (1 s), so a script error in one check only loses that check.
 # Engine calls, all in vanilla P:\scripts:
-#   CallLater / Remove         2_gamelib/tools.c (ScriptCallQueue)
-#   GetPlayers, CreateObjectEx, ObjectDelete, ConfigIsExisting   3_game/global/game.c
-#   ECE_PLACE_ON_SURFACE       3_game/ce/centraleconomy.c
-#   CreateAttachment(Ex), CreateEntityInCargo, FindAttachment, GetSlotId(Count),
-#   HasAttachmentSlot, AttachmentCount, GetAttachmentFromIndex   3_game/systems/inventory/inventory.c
-#   CreateInHands, GetEntityInHands   3_game/systems/inventory/humaninventory.c
-#   InventorySlots.INVALID, GetSlotName   3_game/systems/inventory/inventoryslots.c
+#   CallLater / Remove         2_gamelib/tools.c:61 / :65 (ScriptCallQueue)
+#   GetPlayers, CreateObjectEx, ObjectDelete, ConfigIsExisting   3_game/global/game.c:945, :703, :705, :612
+#   ECE_PLACE_ON_SURFACE       3_game/ce/centraleconomy.c:38
+#   CreateEntityInCargo, GetSlotId, GetSlotIdCount, HasAttachmentSlot, AttachmentCount,
+#   CreateAttachment, CreateAttachmentEx, GetAttachmentFromIndex
+#                              3_game/systems/inventory/inventory.c:143, :171, :175, :188, :205, :209, :215, :220
+#   CreateInHands, GetEntityInHands   3_game/systems/inventory/humaninventory.c:44, :16
+#   InventorySlots.INVALID, GetSlotName   3_game/systems/inventory/inventoryslots.c:17, :48
+# test_behavior.py (VANILLA_CALLS) holds the full list, every engine name the
+# class uses, and fails when a call is added that has not been checked there.
 SCRIPT = """\
 {begin}
 class AZ_BehaviorTest
@@ -375,12 +378,26 @@ def make_junction(link: Path, target: Path) -> None:
         raise BehaviorError(f"could not create junction {link}: {(result.stderr or result.stdout).strip()}")
 
 
+# Server profile files that are logs or dumps, not settings: the gate reads the
+# copy's own logs, so the instance's must not be copied in with the settings.
+PROFILE_LOG_SUFFIXES = (".log", ".rpt", ".mdmp", ".bidmp")
+
+
+def _profile_logs(_folder: str, names: list[str]) -> set[str]:
+    """shutil.copytree ignore: the logs and crash dumps among `names`."""
+    return {n for n in names if n.lower().endswith(PROFILE_LOG_SUFFIXES) or n.lower().startswith("crash")}
+
+
 def prepare_instance(project_dir: Path, instance: str, checks: list[dict]) -> dict:
     """Copy .server/<instance>/ to .server/<instance>-behavior/ with the test mission injected.
 
     The copy gets serverDZ.cfg, mission/ (without storage_* persistence, so the
     test world starts fresh), the <template>/ junction /dayz-launch-test needs
-    and an empty Profiles/. A previous copy is replaced; its Profiles/ logs stay.
+    and the instance's Profiles/ settings: every file and folder there except
+    logs and crash dumps (PROFILE_LOG_SUFFIXES and crash*), so a mod or CF/COT
+    that reads its config from the server profile behaves as on the instance.
+    A previous copy is replaced; the copy's own Profiles/ logs stay, and its
+    settings files are overwritten by the instance's.
     """
     check_instance(instance)
     if instance.endswith(INSTANCE_SUFFIX):
@@ -413,7 +430,10 @@ def prepare_instance(project_dir: Path, instance: str, checks: list[dict]) -> di
     (mission / "init.c").write_bytes(inject(text, checks).encode("utf-8"))
     shutil.copy2(cfg, dst / "serverDZ.cfg")
     make_junction(link, mission)
-    (dst / "Profiles").mkdir(exist_ok=True)
+    if (src / "Profiles").is_dir():
+        shutil.copytree(src / "Profiles", dst / "Profiles", ignore=_profile_logs, dirs_exist_ok=True)
+    else:
+        (dst / "Profiles").mkdir(exist_ok=True)
     return {"instance": name, "dir": dst, "init": mission / "init.c", "template": template}
 
 

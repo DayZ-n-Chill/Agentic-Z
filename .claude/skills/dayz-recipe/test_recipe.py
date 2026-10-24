@@ -384,6 +384,62 @@ def test_bad_arguments_are_errors(vanilla, project, capsys, args, message):
     assert out.splitlines()[0] == "ERROR" and message in out
 
 
+def _cache_project(monkeypatch, tmp_path, cached):
+    """Point /dayz-init's state at a fresh clone whose cache holds `cached` (None: no cache)."""
+    clone = tmp_path / "clone"
+    memory = clone / ".claude" / "local-memory"
+    memory.mkdir(parents=True)
+    if cached is not None:
+        (memory / "dayz-current-project.txt").write_text(str(cached), encoding="utf-8")
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(clone))
+
+
+def test_no_cached_project_puts_the_verdict_first(vanilla, tmp_path, monkeypatch, capsys):
+    _cache_project(monkeypatch, tmp_path, None)
+    assert recipe.main(["vest", "MyVest", "--vanilla", str(vanilla)]) == 2
+    out, err = capsys.readouterr()
+    assert out.splitlines()[0] == "ERROR" and "no project cached" in out and "/dayz-init" in out
+    assert err == ""
+
+
+def test_cached_project_that_is_gone_is_an_error(vanilla, tmp_path, monkeypatch, capsys):
+    _cache_project(monkeypatch, tmp_path, tmp_path / "moved")
+    assert recipe.main(["vest", "MyVest", "--vanilla", str(vanilla)]) == 2
+    out, err = capsys.readouterr()
+    assert out.splitlines()[0] == "ERROR" and "no longer exists" in out and err == ""
+
+
+def test_cached_project_receives_the_plan(vanilla, project, tmp_path, monkeypatch, capsys):
+    _cache_project(monkeypatch, tmp_path, project)
+    assert recipe.main(["vest", "MyVest", "--vanilla", str(vanilla)]) == 0
+    assert (plan_dir(project, "MyVest") / "plan.md").is_file()
+
+
+@pytest.mark.parametrize("args, message", [
+    (["craftable", "1bad"], "mod name '1bad'"),
+    (["vest", "MyVest", "--item", "1Bad"], "--item '1Bad' is not a config class name"),
+])
+def test_bad_name_is_reported_before_the_project_lookup(vanilla, tmp_path, monkeypatch, capsys, args, message):
+    _cache_project(monkeypatch, tmp_path, None)
+    assert recipe.main(args + ["--vanilla", str(tmp_path / "nope")]) == 2
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "ERROR" and message in out
+    assert "no project" not in out and "/dayz-workdrive" not in out
+
+
+def test_missing_project_folder_is_an_error(vanilla, tmp_path, capsys):
+    assert recipe.main(["vest", "MyVest", "--vanilla", str(vanilla), "--project", str(tmp_path / "nope")]) == 2
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "ERROR" and "is not a folder" in out
+    assert not (tmp_path / "nope").exists()
+
+
+def test_unknown_flag_puts_the_verdict_first(vanilla, project, capsys):
+    assert run(vanilla, project, "vest", "MyVest", "--colour", "red") == 2
+    out, err = capsys.readouterr()
+    assert out.splitlines()[0] == "ERROR" and "--colour" in out and err == ""
+
+
 def test_no_vanilla_data_is_an_error(tmp_path, project, capsys):
     assert recipe.main(["vest", "MyVest", "--vanilla", str(tmp_path / "nope"), "--project", str(project)]) == 2
     assert "/dayz-workdrive" in capsys.readouterr().out
@@ -392,12 +448,83 @@ def test_no_vanilla_data_is_an_error(tmp_path, project, capsys):
 def test_existing_plan_needs_force(vanilla, project, capsys):
     assert run(vanilla, project, "vest", "MyVest") == 0
     plan = plan_dir(project, "MyVest") / "plan.md"
-    plan.write_text("the architect's final plan\n", encoding="utf-8")
+    draft = plan.read_text(encoding="utf-8")
     assert run(vanilla, project, "vest", "MyVest") == 2
     assert "already exists" in capsys.readouterr().out
-    assert plan.read_text(encoding="utf-8") == "the architect's final plan\n"
+    assert plan.read_text(encoding="utf-8") == draft
+
+
+def test_force_replaces_a_draft_and_backs_it_up(vanilla, project, capsys):
+    assert run(vanilla, project, "vest", "MyVest") == 0
+    folder = plan_dir(project, "MyVest")
+    plan = folder / "plan.md"
+    edited = plan.read_text(encoding="utf-8") + "\nnote added to the draft\n"
+    plan.write_text(edited, encoding="utf-8")
+    old_checks = (folder / "behavior-checks.json").read_text(encoding="utf-8")
+    capsys.readouterr()
     assert run(vanilla, project, "vest", "MyVest", "--force") == 0
-    assert plan.read_text(encoding="utf-8").startswith(recipe.DRAFT_MARK)
+    out = capsys.readouterr().out
+    backups = [d for d in (folder / ".bak").iterdir() if d.is_dir()]
+    assert len(backups) == 1
+    assert out.splitlines()[0] == "WROTE" and str(backups[0]) in out
+    assert (backups[0] / "plan.md").read_text(encoding="utf-8") == edited
+    assert (backups[0] / "behavior-checks.json").read_text(encoding="utf-8") == old_checks
+    assert "note added to the draft" not in plan.read_text(encoding="utf-8")
+
+
+def test_second_force_keeps_the_first_backup(vanilla, project, capsys):
+    # --force used to copy into one fixed .bak/, so a second --force overwrote the hand-edited draft saved by the first.
+    assert run(vanilla, project, "vest", "MyVest") == 0
+    folder = plan_dir(project, "MyVest")
+    plan = folder / "plan.md"
+    edited = plan.read_text(encoding="utf-8") + "\nnote added to the draft\n"
+    plan.write_text(edited, encoding="utf-8")
+    assert run(vanilla, project, "vest", "MyVest", "--force") == 0
+    assert run(vanilla, project, "vest", "MyVest", "--force") == 0
+    capsys.readouterr()
+    backups = sorted(d for d in (folder / ".bak").iterdir() if d.is_dir())
+    assert len(backups) == 2
+    saved = [(d / "plan.md").read_text(encoding="utf-8") for d in backups]
+    assert saved.count(edited) == 1 and "note added to the draft" not in plan.read_text(encoding="utf-8")
+
+
+def test_force_json_names_the_backup_folder(vanilla, project, capsys):
+    assert run(vanilla, project, "vest", "MyVest") == 0
+    capsys.readouterr()
+    assert run(vanilla, project, "vest", "MyVest", "--force", "--json") == 0
+    out = capsys.readouterr().out
+    data = json.loads(out.split("\n", 1)[1])
+    backup = Path(data["backup"])
+    assert backup.parent == plan_dir(project, "MyVest") / ".bak" and (backup / "plan.md").is_file()
+
+
+def test_force_never_replaces_a_finished_plan(vanilla, project, capsys):
+    # The architect's final plan drops the draft mark; --force used to replace it with no backup.
+    assert run(vanilla, project, "vest", "MyVest") == 0
+    folder = plan_dir(project, "MyVest")
+    (folder / "plan.md").write_text("# FINAL plan by architect\n", encoding="utf-8")
+    (folder / "behavior-checks.json").write_text('{"final": true}\n', encoding="utf-8")
+    capsys.readouterr()
+    assert run(vanilla, project, "vest", "MyVest", "--force") == 2
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "ERROR" and "is a finished plan" in out
+    assert (folder / "plan.md").read_text(encoding="utf-8") == "# FINAL plan by architect\n"
+    assert (folder / "behavior-checks.json").read_text(encoding="utf-8") == '{"final": true}\n'
+    assert not (folder / ".bak").exists()
+
+
+@pytest.mark.parametrize("args, message", [
+    (["weapon", "TestMod", "--item", "AKM"], "--item AKM is already a vanilla class (cfgWeapons at"),
+    # Case does not matter, and a class from another config root still clashes.
+    (["vest", "TestMod", "--item", "rag"], "--item rag is already a vanilla class (CfgVehicles at"),
+    (["craftable", "TestMod", "--item", "Mag_AKM_30Rnd"], "--item Mag_AKM_30Rnd is already a vanilla class"),
+])
+def test_item_that_is_a_vanilla_class_fails(vanilla, project, capsys, args, message):
+    assert run(vanilla, project, *args) == 1
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "FAIL" and message in out
+    assert "pick a new name such as TestMod_" in out and "Nothing was written." in out
+    assert not (project / "output").exists()
 
 
 def test_out_folder_and_json(vanilla, project, tmp_path, capsys):

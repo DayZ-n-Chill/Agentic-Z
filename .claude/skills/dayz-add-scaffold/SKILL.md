@@ -32,19 +32,21 @@ python "<skill-dir>\add_scaffold.py" <ModName> [--piece config|prefix|workbench|
 |---|---|---|
 | `<ModName>` | yes | Folder name under `workspace/`. The folder must already exist (real or a link). Same `[A-Za-z][A-Za-z0-9_]{0,63}` pattern as `/dayz-new-mod`. |
 | `--piece` | no | Default `all` = scan and add only missing file pieces. Pick one to scaffold a single piece even if others are missing. `junction` is never part of `all`. |
-| `--author` | no | Author handle for `config.cpp` and `README.md`. Same resolution chain as `/dayz-new-mod`: flag → cache → interactive prompt → fail. Resolved once, before any piece is written, and only when `config.cpp` or `README.md` is about to be written; if no handle is available (no flag, no cache, no TTY) the skill exits 1 with the folder untouched. A handle containing `"` or a line break is refused, since it is written inside a quoted `config.cpp` string. |
+| `--author` | no | Author handle for `config.cpp` and `README.md`. Same resolution chain as `/dayz-new-mod`: flag → cache (`.claude/local-memory/dayz-author.txt`) → interactive prompt → fail. A handle from the flag or the prompt is saved to that cache once the pieces are written, so later runs (including ones without a TTY) reuse it. Resolved once, before any piece is written, and only when `config.cpp` or `README.md` is about to be written; if no handle is available (no flag, no cache, no TTY) the skill exits 1 with the folder untouched. A handle containing `"` or a line break is refused, since it is written inside a quoted `config.cpp` string. |
 
 ### Pieces
 
 | Piece | What it writes | When |
 |---|---|---|
 | `config` | `config.cpp` (CfgPatches + CfgMods stub) | only if missing |
-| `prefix` | `$PBOPREFIX$` (contains `<ModName>`) | only if missing. An existing file that does not hold `<ModName>` (BOM and surrounding whitespace ignored) is left unchanged with a `[WARN]` that `/dayz-build-pbo` will refuse it, and counted as needing fixing by hand. |
-| `workbench` | `workbench/dayz.gproj` (vanilla copy + injected mod paths + dual FileSystem mounts) and `workbench/DayZSetting.xml` | gproj only if missing; xml only if missing. Skipped with a warning (and counted as skipped) if DayZ Tools is not detected, or if its `Bin\Workbench\dayz.gproj` is missing (the xml may still be copied). |
+| `prefix` | `$PBOPREFIX$` (contains `<ModName>`) | only if missing. An existing file that does not hold `<ModName>` (BOM and surrounding whitespace ignored), or is not UTF-8 text, is left unchanged with a `[WARN]` that `/dayz-build-pbo` will refuse it, and counted as needing fixing by hand. |
+| `workbench` | `workbench/dayz.gproj` (vanilla copy + injected mod paths + dual FileSystem mounts) and `workbench/DayZSetting.xml` | gproj only if missing; xml only if missing. Skipped with a warning (and counted as skipped) when `workbench/dayz.gproj` is missing and cannot be written: DayZ Tools is not detected, or its `Bin\Workbench\dayz.gproj` is missing (the xml may still be copied). When `workbench/dayz.gproj` is already present and only the xml cannot be copied, the piece counts as present, with a `[WARN]` about the missing xml. |
 | `readme` | `README.md` (light onboarding notes) | only if missing |
-| `skeleton` | `scripts/3_Game/`, `scripts/4_World/`, `scripts/5_Mission/`, `data/`, `gui/` (each with `.gitkeep`) | each subfolder only if missing |
+| `skeleton` | `scripts/3_Game/`, `scripts/4_World/`, `scripts/5_Mission/`, `data/`, `gui/` (each with `.gitkeep`) | each subfolder only if missing. A file sitting where one of these folders (or `scripts/`) belongs is left unchanged with a `[WARN] <name> exists as a file, not a folder`; the other folders are still created and the piece counts as needing fixing by hand. |
 | `junction` | the `P:\<ModName>\` link to `workspace/<ModName>/` (symlink, junction fallback; the same code `/dayz-new-mod` uses) | only if missing. Refuses if `P:\<ModName>\` is a real folder or a link pointing anywhere else. |
 | `all` | runs `config`, `prefix`, `workbench`, `readme`, `skeleton` in that order (not `junction`) | default |
+
+Wrong kind of entry: when `config.cpp`, `$PBOPREFIX$`, `README.md`, `workbench/dayz.gproj` or `workbench/DayZSetting.xml` exists as a folder, or `workbench` exists as a file, the skill leaves it unchanged, prints `[WARN] <name> exists as a folder, not a file` (or the reverse) and counts the piece as needing fixing by hand.
 
 Whatever piece you pick, the skill is idempotent: a second run on the same folder writes nothing.
 
@@ -59,8 +61,8 @@ The first line says `symlink` instead of `junction` when Windows allows symlinks
 
 ## Refuses to run if
 
-- `/dayz-preflight` returns non-zero (typically `P:\` not mounted) - preflight runs first and propagates its exit code.
-- `<ModName>` fails the name pattern.
+- `<ModName>` fails the name pattern. This is checked first, before preflight, so a typo fails fast.
+- `/dayz-preflight` returns non-zero (typically `P:\` not mounted) - preflight runs before anything is read or written and propagates its exit code.
 - No project is cached (run `/dayz-init`), or the cached project folder no longer exists.
 - `workspace/<ModName>/` does not exist. This skill never creates the top-level mod folder - that's `/dayz-new-mod` (for fresh) or `/dayz-import-mod` (for external).
 - `--piece junction` and `P:\<ModName>\` exists as a real folder or as a link to somewhere other than `workspace/<ModName>/`. Remove it by hand first; the skill never deletes anything on `P:\`.
@@ -90,7 +92,7 @@ Scaffolding workspace\MyMod\
 
 A piece counts as skipped when it is missing but cannot be written, such as `workbench` when DayZ Tools is not detected (no empty `workbench/` folder is created in that case). When the one piece named with `--piece` is skipped, the skill ends with `[FAIL] <piece> was not written` and exits 1, so callers can tell nothing was written; with `all`, skipped pieces are counted in the summary and the exit stays 0.
 
-A piece needs fixing by hand when it is present but holds content a later skill refuses: a `$PBOPREFIX$` that does not hold `<ModName>`. The file is left unchanged. `--piece prefix` then ends with `[FAIL] prefix is present but wrong` and exits 1; with `all`, the summary adds `, 1 need fixing by hand` and the exit stays 0.
+A piece needs fixing by hand when it is present but holds content a later skill refuses (a `$PBOPREFIX$` that does not hold `<ModName>`), or when a file sits where a folder belongs or the reverse (for example a file named `scripts`). Nothing is changed. `--piece <piece>` then ends with `[FAIL] <piece> is present but wrong` and exits 1; with `all`, the summary adds `, 1 need fixing by hand` and the exit stays 0.
 
 The summary line is tagged `[OK]` only when no piece was skipped or needs fixing; otherwise it is tagged `[WARN]`, for example:
 

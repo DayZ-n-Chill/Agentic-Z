@@ -747,3 +747,284 @@ def test_tag_change_line_names_the_removed_tags(types_file):
     te.upsert(root, "AKM", _args(tag=["floor", "shelves"]))
     changed, msg = te.upsert(root, "AKM", _args(tag=["floor"]))
     assert changed and msg.endswith("tag [floor, shelves] -> [floor] (removed shelves)")
+
+
+# --- class names ignore case (DayZ matches them case-insensitively) -----------------
+# Vanilla chernarusplus types.xml spells Bandana_Blackpattern (types.xml:3036) and
+# Camonet (types.xml:4607) for config classes Bandana_BlackPattern
+# (P:\DZ\characters\headgear\config.cpp:3084) and CamoNet (P:\DZ\gear\camping\config.cpp:9808).
+
+def test_upsert_with_other_case_updates_the_existing_block(vanilla_file, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(vanilla_file), "akm", "--nominal", "5"]) == 0
+    out = capsys.readouterr().out
+    assert 'Updated <type name="AKM">: nominal 3 -> 5' in out
+    assert "Added" not in out
+    after = vanilla_file.read_text(encoding="utf-8")
+    assert after == VANILLA.replace("<nominal>3</nominal>", "<nominal>5</nominal>")
+
+
+def test_dry_run_with_other_case_reports_an_update_not_an_add(vanilla_file, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(vanilla_file), "akm", "--nominal", "5", "--dry-run"]) == 0
+    out = capsys.readouterr().out
+    assert 'Updated <type name="AKM">' in out and "Added" not in out
+    assert vanilla_file.read_text(encoding="utf-8") == VANILLA
+
+
+def test_min_check_finds_the_entry_in_other_case(vanilla_file, monkeypatch):
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(vanilla_file), "akm", "--min", "4"])  # AKM nominal is 3
+    assert "greater than nominal" in str(exc.value.code)
+    assert vanilla_file.read_text(encoding="utf-8") == VANILLA
+
+
+def test_remove_with_other_case_removes_the_existing_block(vanilla_file, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(vanilla_file), "akm", "--remove"]) == 0
+    assert 'Removed <type name="AKM">' in capsys.readouterr().out
+    root = _roundtrip(vanilla_file)[1]
+    assert [t.get("name") for t in root.findall("type")] == ["AK74_WoodBttstck", "AKM_Gold"]
+
+
+def test_main_refuses_an_entry_duplicated_in_other_case(types_file, monkeypatch):
+    _with_duplicate(types_file, "akm")
+    before = types_file.read_bytes()
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "Akm", "--nominal", "3"])
+    assert 'more than one <type name="Akm">' in str(exc.value.code)
+    assert types_file.read_bytes() == before
+
+
+def test_duplicate_names_ignore_case(types_file):
+    _with_duplicate(types_file, "apple")
+    _with_duplicate(types_file, "Apple")
+    assert te.duplicate_names(_roundtrip(types_file)[1]) == ["apple"]
+
+
+def test_merge_with_other_case_replaces_in_place_and_keeps_the_files_spelling(
+        types_file, tmp_path, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(types_file), "--merge",
+                                   _chunk_file(tmp_path, _entry("akm", nominal=12, min_=6))]) == 0
+    assert 'Replaced <type name="AKM">: nominal 10 -> 12' in capsys.readouterr().out
+    root = _roundtrip(types_file)[1]
+    assert [t.get("name") for t in root.findall("type")] == ["AKM"]
+    assert _find(root, "AKM").findtext("nominal") == "12"
+
+
+def test_merge_of_same_block_in_other_case_changes_nothing(vanilla_file, tmp_path, monkeypatch, capsys):
+    block = "\n".join(_block_lines(VANILLA, "AKM")).replace('name="AKM"', 'name="akm"')
+    assert _run_main(monkeypatch, [str(vanilla_file), "--merge", _chunk_file(tmp_path, block)]) == 0
+    assert 'already matches' in capsys.readouterr().out
+    assert vanilla_file.read_text(encoding="utf-8") == VANILLA
+    assert not _backups(vanilla_file)
+
+
+def test_merge_refuses_a_chunk_listing_a_name_twice_in_different_case(types_file, tmp_path, monkeypatch):
+    before = types_file.read_bytes()
+    chunk = _chunk_file(tmp_path, _entry("MyMod_Vest") + _entry("mymod_vest"))
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "--merge", chunk])
+    assert "MyMod_Vest: listed 2 times in the chunk" in str(exc.value.code)
+    assert types_file.read_bytes() == before
+
+
+def test_merge_refuses_an_entry_the_file_lists_twice_in_different_case(types_file, tmp_path, monkeypatch):
+    _with_duplicate(types_file, "akm")
+    before = types_file.read_bytes()
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "--merge", _chunk_file(tmp_path, _entry("AKM"))])
+    assert "already has more than one" in str(exc.value.code)
+    assert types_file.read_bytes() == before
+
+
+LATIN1 = SAMPLE.replace('encoding="UTF-8"', 'encoding="ISO-8859-1"').replace(
+    "<!-- Vanilla weapons -->", "<!-- Vanilla weapons, café -->")
+
+
+@pytest.mark.parametrize("argv", [["AKM", "--nominal", "7"], ["MyMod_Vest", "--usage", "Militär"]])
+def test_iso_8859_1_file_is_written_back_in_its_own_encoding(tmp_path, monkeypatch, argv):
+    path = tmp_path / "types.xml"
+    path.write_bytes(LATIN1.encode("iso-8859-1"))
+    assert _run_main(monkeypatch, [str(path), *argv]) == 0
+    raw = path.read_bytes()
+    assert raw.startswith(b'<?xml version="1.0" encoding="ISO-8859-1"')
+    assert b"caf\xe9" in raw and b"caf\xc3\xa9" not in raw
+    tree, root = _roundtrip(path)
+    assert "Vanilla weapons, café" in [c.text.strip() for c in root.iter(ET.Comment)][0]
+    if argv[0] == "MyMod_Vest":
+        assert _find(root, "MyMod_Vest").find("usage").get("name") == "Militär"
+
+
+def test_iso_8859_1_whole_file_rewrite_keeps_its_encoding(tmp_path, monkeypatch):
+    # A self-closing <types/> cannot be patched block by block, so it is written whole.
+    path = tmp_path / "types.xml"
+    path.write_bytes('<?xml version="1.0" encoding="ISO-8859-1"?>\n<!-- café -->\n<types/>\n'.encode("iso-8859-1"))
+    assert _run_main(monkeypatch, [str(path), "MyMod_Vest", "--nominal", "2"]) == 0
+    raw = path.read_bytes()
+    assert raw.startswith(b'<?xml version="1.0" encoding="ISO-8859-1"?>')
+    assert b"<!-- caf\xe9 -->" in raw
+    assert _find(_roundtrip(path)[1], "MyMod_Vest").findtext("nominal") == "2"
+
+
+def test_ascii_file_gets_a_character_reference_for_a_name_it_cannot_hold(tmp_path, monkeypatch):
+    path = tmp_path / "types.xml"
+    path.write_text(SAMPLE.replace('encoding="UTF-8"', 'encoding="US-ASCII"'), encoding="ascii")
+    assert _run_main(monkeypatch, [str(path), "AKM", "--usage", "Militär"]) == 0
+    assert b'<usage name="Milit&#228;r"/>' in path.read_bytes()
+    assert _find(_roundtrip(path)[1], "AKM").find("usage").get("name") == "Militär"
+
+
+def test_utf16_file_stays_utf16(tmp_path, monkeypatch):
+    path = tmp_path / "types.xml"
+    path.write_bytes(SAMPLE.replace('encoding="UTF-8"', 'encoding="UTF-16"').encode("utf-16"))
+    assert _run_main(monkeypatch, [str(path), "AKM", "--nominal", "7"]) == 0
+    text = path.read_bytes().decode("utf-16")
+    assert "<nominal>7</nominal>" in text and "<!-- Vanilla weapons -->" in text
+
+
+def test_main_merge_refuses_a_chunk_file_that_is_not_utf8(types_file, tmp_path, monkeypatch):
+    before = types_file.read_bytes()
+    chunk = tmp_path / "chunk.xml"
+    chunk.write_bytes(("<!-- café -->" + _entry("MyMod_Vest")).encode("iso-8859-1"))
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "--merge", str(chunk)])
+    message = str(exc.value.code)
+    assert message.startswith(te.FAIL) and "is not UTF-8" in message and "was not changed" in message
+    assert types_file.read_bytes() == before
+    assert not _backups(types_file)
+
+
+def test_main_merge_refuses_stdin_that_is_not_utf8(types_file, monkeypatch):
+    import io
+    before = types_file.read_bytes()
+    raw = ("<!-- café -->" + _entry("MyMod_Vest")).encode("iso-8859-1")
+    monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(raw), encoding="cp1252"))
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "--merge", "-"])
+    assert "The chunk from stdin is not UTF-8" in str(exc.value.code)
+    assert types_file.read_bytes() == before
+
+
+def test_main_merge_reads_stdin_bytes_as_utf8_not_the_console_code_page(types_file, monkeypatch):
+    import io
+    raw = _entry("MyMod_Vest").replace('name="MyMod_Vest"', 'name="MyMod_Vešt"').encode("utf-8")
+    monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(raw), encoding="cp1252"))
+    assert _run_main(monkeypatch, [str(types_file), "--merge", "-"]) == 0
+    assert _find(_roundtrip(types_file)[1], "MyMod_Vešt") is not None
+
+
+# --- single-entry names must not be blank (the merge check already rejects them) ---
+
+@pytest.mark.parametrize("argv", [
+    [""], ["   "], ["", "--remove"],
+    ["AKM", "--category", ""], ["AKM", "--usage", ""], ["AKM", "--usage", "Military", "--usage", " "],
+    ["AKM", "--value", ""], ["AKM", "--tag", "  "],
+])
+def test_main_rejects_blank_names_in_single_entry_mode(types_file, monkeypatch, argv):
+    before = types_file.read_bytes()
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), *argv])
+    assert exc.value.code == 2  # argparse usage error
+    assert types_file.read_bytes() == before
+    assert not _backups(types_file)
+
+
+# --- half-set quantity: one of quantmin / quantmax at -1, the other set ------------
+# No vanilla entry has this: every entry with both tags in
+# P:\DZ\worlds\{chernarusplus,enoch,sakhal}\ce\db\types.xml has both -1 or both set.
+
+def test_main_warns_when_quantmin_is_set_beside_quantmax_minus_one(types_file, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(types_file), "Mag_New", "--quantmin", "50"]) == 0
+    out = capsys.readouterr().out
+    assert f"{te.WARN} Mag_New: quantmin is 50 but quantmax is -1" in out
+    assert "Pass --quantmin and --quantmax together" in out
+
+
+def test_main_warns_when_an_edit_leaves_one_quant_at_minus_one(vanilla_file, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(vanilla_file), "AKM", "--quantmax", "-1"]) == 0
+    assert "AKM: quantmin is 30 but quantmax is -1" in capsys.readouterr().out
+
+
+def test_main_no_half_set_warning_when_both_quants_match(types_file, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(types_file), "Mag_New", "--quantmin", "20", "--quantmax", "100"]) == 0
+    assert "quantmin is" not in capsys.readouterr().out
+
+
+def test_validate_type_warns_on_half_set_quant():
+    el = te.parse_chunk(_entry("X").replace("<quantmax>-1", "<quantmax>80"))[0]
+    errors, warnings = te.validate_type(el)
+    assert errors == []
+    assert "quantmin is -1 but quantmax is 80; vanilla sets both to -1 (not a quantity item) or both to 0 to 100" in warnings
+
+
+def test_main_merge_warns_on_half_set_quant(types_file, tmp_path, monkeypatch, capsys):
+    chunk = _chunk_file(tmp_path, _entry("MyMod_Mag").replace("<quantmin>-1", "<quantmin>40"))
+    assert _run_main(monkeypatch, [str(types_file), "--merge", chunk]) == 0
+    assert f"{te.WARN} MyMod_Mag: quantmin is 40 but quantmax is -1" in capsys.readouterr().out
+
+
+# --- a file that cannot be written: [FAIL], exit 1, no orphan backup ----------------
+
+def _fail_write(*_):
+    raise PermissionError(13, "Permission denied")
+
+
+def test_main_write_failure_fails_cleanly_and_removes_the_backup(types_file, monkeypatch):
+    import os
+    import stat
+    before = types_file.read_bytes()
+    os.chmod(types_file, stat.S_IREAD)  # copy2 copies this flag onto the backup
+    monkeypatch.setattr(te, "write_types", _fail_write)
+    try:
+        with pytest.raises(SystemExit) as exc:
+            _run_main(monkeypatch, [str(types_file), "AKM", "--nominal", "12"])
+    finally:
+        os.chmod(types_file, stat.S_IWRITE | stat.S_IREAD)
+    message = str(exc.value.code)
+    assert message.startswith(f"{te.FAIL} Could not write {types_file}: Permission denied")
+    assert "was not changed; the backup this run made was removed" in message
+    assert types_file.read_bytes() == before
+    assert not _backups(types_file)
+
+
+def test_main_real_read_only_file_fails_cleanly(types_file, monkeypatch):
+    import os
+    import stat
+    before = types_file.read_bytes()
+    os.chmod(types_file, stat.S_IREAD)
+    try:
+        with pytest.raises(SystemExit) as exc:
+            _run_main(monkeypatch, [str(types_file), "AKM", "--nominal", "12"])
+        message = str(exc.value.code)
+    finally:
+        os.chmod(types_file, stat.S_IWRITE | stat.S_IREAD)
+    assert exc.value.code != 0
+    assert message.startswith(te.FAIL) and "Could not write" in message
+    assert types_file.read_bytes() == before
+    assert not _backups(types_file)
+
+
+def test_main_partial_write_keeps_the_backup_and_says_restore(types_file, monkeypatch):
+    before = types_file.read_bytes()
+
+    def half_write(tree, path):
+        path.write_bytes(b"<types>")
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(te, "write_types", half_write)
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "AKM", "--nominal", "12"])
+    message = str(exc.value.code)
+    assert message.startswith(te.FAIL) and "may be partly written" in message
+    backups = _backups(types_file)
+    assert [b.read_bytes() for b in backups] == [before]
+    assert f"Restore it from {backups[0]}" in message
+
+
+def test_main_backup_failure_fails_cleanly(types_file, monkeypatch):
+    before = types_file.read_bytes()
+    monkeypatch.setattr(te.shutil, "copy2", _fail_write)
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(types_file), "AKM", "--nominal", "12"])
+    message = str(exc.value.code)
+    assert message.startswith(f"{te.FAIL} Could not back up {types_file}") and "was not changed" in message
+    assert types_file.read_bytes() == before
+    assert not _backups(types_file)

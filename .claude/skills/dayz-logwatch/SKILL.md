@@ -1,7 +1,7 @@
 ---
 name: dayz-logwatch
 description: "Watches the server and client script and RPT logs of a running test session and triages each new error line the moment it appears: a known error prints its fix and owner, a new one is flagged for dayz-mod-debugger. Use while you play a test session started with /dayz-launch-test."
-argument-hint: "[--server <instance>] [--since MINUTES] [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json] | --dir <folder> ..."
+argument-hint: "[--server <instance>] [--since MINUTES] [--duration S | --until-closed [--start-timeout S]] [--interval S] [--mod <ModName>] [--json] | --dir <folder> ..."
 ---
 
 <!-- skill-dir-note -->
@@ -16,28 +16,29 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python "<skill-dir>\logwatch.py" [--server <instance>] [--since MINUTES] [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
-python "<skill-dir>\logwatch.py" --dir <folder> [--dir <folder> ...] [--since MINUTES] [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
+python "<skill-dir>\logwatch.py" [--server <instance>] [--since MINUTES] [--duration S | --until-closed [--start-timeout S]] [--interval S] [--mod <ModName>] [--json]
+python "<skill-dir>\logwatch.py" --dir <folder> [--dir <folder> ...] [--since MINUTES] [--duration S | --until-closed [--start-timeout S]] [--interval S] [--mod <ModName>] [--json]
 ```
 
 | Argument | Notes |
 |---|---|
-| `--server` | Test server instance added with `/dayz-add-server`. Repeat it for more than one. Default: every instance under `.server/`. |
+| `--server` | Test server instance added with `/dayz-add-server`. Repeat it for more than one. Default: every instance under `.server/` except the `<instance>-behavior` copies that `/dayz-gate behavior` rebuilds (the `/dayz-init` hub hides them too); name one with `--server` to watch a gate run. |
 | `--dir` | Watch these folders instead of the project's session folders. |
 | `--since` | Read files changed in the last MINUTES from their start. Default 0: only lines written after the watch starts. A negative value stops with exit 2. |
 | `--duration` | Stop after S seconds. Must be more than 0; 0 or a negative value stops with exit 2. |
-| `--until-closed` | Stop once the game client has been seen running and then closes (checked every 5 seconds). The client is the `DayZDiag_x64.exe` whose command line has no `-server`, so a server left running after you close the client window does not keep the watch going. If the client never starts within 300 seconds, stop with `session never started`. If the process list cannot be read (PowerShell missing, or its `Get-CimInstance Win32_Process` query fails) 3 checks in a row, stop with `cannot read process list` instead of guessing; use `--duration` on such a machine. Not allowed with `--duration`. |
+| `--until-closed` | Stop once the game client has been seen running and then closes (checked every 5 seconds). The client is the `DayZDiag_x64.exe` whose command line has no `-server`, so a server left running after you close the client window does not keep the watch going. If the client never starts within the `--start-timeout` (default 300 seconds), stop with `session never started`. If a new `crash*.log` appears before the client was ever seen running (a client that crashes at startup can close between two checks), stop at once with `crashed before it was seen running`; crash logs read through `--since` do not count. Each check is one in-process Windows process snapshot, so it starts no PowerShell or other process. A process whose command line Windows will not show counts as the client, so the watch never stops early. If the process list cannot be read (not Windows, or the snapshot fails) 3 checks in a row, stop with `cannot read process list` instead of guessing; use `--duration` on such a machine. Not allowed with `--duration`. |
+| `--start-timeout` | With `--until-closed`, seconds to wait for the game client to start (default 300). Raise it when a build or a slow server start sits between starting the watch and the client appearing, for example `--start-timeout 900` when you run `/dayz-build-pbo` before `/dayz-launch-test`. Must be more than 0; 0, a negative value, `nan` or `inf`, or using it without `--until-closed`, stops with exit 2. |
 | `--interval` | Seconds between reads (default 1). Must be at least 0.1; a smaller or negative value stops with exit 2. |
 | `--mod` | Mod name, filled into fixes that mention `<ModName>`. |
 | `--json` | One JSON object per line instead of text. |
 
 Without `--duration` or `--until-closed` it runs until Ctrl+C. When the AI runs it, start it in the background with `--until-closed` and read its output as it comes in.
 
-It watches `.server/<instance>/Profiles/` (the server's RPT and script logs) and `.server/!ClientDiagLogs/` (the client's), in the project cached by `/dayz-init`. Only `.rpt` and `.log` files at the top of those folders are read. A folder that does not exist yet is watched once it appears.
+It watches `.server/<instance>/Profiles/` (the server's RPT and script logs; `<instance>-behavior` copies only when named with `--server`) and `.server/!ClientDiagLogs/` (the client's), in the project cached by `/dayz-init`. Only `.rpt` and `.log` files at the top of those folders are read. A folder that does not exist yet is watched once it appears.
 
 ## When to start it
 
-DayZ writes a new RPT and script log each launch, and a file that appears after the watch starts is read from its first line. So start the watch first, then `/dayz-launch-test`, and every line of the session is seen. With `--until-closed` the watch waits for the game client to start, then stops when you close the client window, even though the server keeps running until you close it or run `/dayz-stop-test`. If the session is already running, use `--since 5` to read the files it wrote in the last five minutes from the start.
+DayZ writes a new RPT and script log each launch, and a file that appears after the watch starts is read from its first line. So start the watch first, then `/dayz-launch-test`, and every line of the session is seen. The watch gives up if the client has not started within `--start-timeout` (300 seconds by default), so if you build with `/dayz-build-pbo` after starting the watch, or the server is slow to come up, raise it (for example `--start-timeout 900`), or start the watch after the build. With `--until-closed` the watch waits for the game client to start, then stops when you close the client window, even though the server keeps running until you close it or run `/dayz-stop-test`. If the session is already running, use `--since 5` to read the files it wrote in the last five minutes from the start.
 
 ## Output and exit codes
 
@@ -59,7 +60,7 @@ With `--json` each error is `{"event": "error", "status": "known" or "new", "id"
 
 An error line is one that triage classifies (compile errors, NULL pointers, missing classes, textures, models or config entries, crashes) or one that matches a known entry. The same error again, in any file and with any timestamp, has the same fingerprint and is only counted. A new `crash*.log` file is reported as a `new` crash for the debugger, and so is one written in the last MINUTES with `--since`.
 
-Exit code 0 means no error line was seen, 1 means at least one was, and 2 means it could not run (a bad `--duration`, `--since` or `--interval` value, no cached project and no `--dir`, no `.server/` folder, an unknown instance, or a broken known-errors or learned file: bad JSON, a bad regex, or a shipped entry without `pattern`) or, with `--until-closed`, that the session never started or the process list could not be read. Exit 1 takes precedence: if errors were seen (for example with `--since`) before either of those stops, the exit code is 1.
+Exit code 0 means no error line was seen, 1 means at least one was, and 2 means it could not run (a bad `--duration`, `--since`, `--interval` or `--start-timeout` value, no cached project and no `--dir`, no `.server/` folder, an unknown instance, or a broken known-errors or learned file: bad JSON, a bad regex, or an entry that is not an object, a shipped entry without `pattern`, a learned entry without `fingerprint`, or any entry without `id`, `meaning`, `fix` or `owner_agent`) or, with `--until-closed`, that the session never started or the process list could not be read. Exit 1 takes precedence: if errors were seen (for example with `--since`) before either of those stops, the exit code is 1.
 
 ## Then
 

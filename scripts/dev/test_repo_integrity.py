@@ -1,11 +1,13 @@
 """Repo-wide checks: agent team and plugin manifest, the references in agents, skills and packs,
 no-token .bat wrappers, the knowledge-pack index and citations (and, with P:\\ mounted, that each
-cited vanilla line exists and holds a symbol the citing line names), the preflight gate list, the Tier 1 files and the panel's skill scripts.
+cited vanilla line, in the packs and in the eval questions' verified fields, exists and holds a symbol
+the citation names), the preflight gate list, the Tier 1 files and the panel's skill scripts.
 
 Run with: py -m pytest scripts/dev/test_repo_integrity.py
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
@@ -272,49 +274,179 @@ def test_a_role_with_no_tools_line_fails_the_read_only_checks(tmp_path):
         _explicit_tools(agent)
 
 
-def test_ingame_tester_matches_gate():
-    # dayz-ingame-tester is the fallback for `/dayz-gate ingame`, so its ready line,
-    # settle time and client timeout must match the script's defaults.
+def _load_gate():
+    spec = importlib.util.spec_from_file_location("dayz_gate_for_integrity", SKILLS_DIR / "dayz-gate" / "gate.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+GATE = _load_gate()
+
+
+class _SessionRuntime:
+    """A DayZDiag session the gate did not start: running until stop_test.bat ends it."""
+
+    def __init__(self, confirm: bool, results: dict[str, tuple[int, str]] | None = None):
+        self.running = [4242]
+        self.calls: list[str] = []
+        self.asked = 0
+        self.answer = confirm
+        self.results = results or {}
+        self.now = 0.0
+
+    def runtime(self):
+        return GATE.Runtime(run=self.run, diag_pids=lambda: list(self.running), pid_alive=lambda p: p in self.running,
+                            sleep=self.sleep, clock=lambda: self.now, confirm=self.confirm)
+
+    def confirm(self, pids):
+        self.asked += 1
+        return self.answer
+
+    def sleep(self, seconds):
+        self.now += seconds
+
+    def run(self, cmd):
+        joined = " ".join(cmd)
+        if "stop_test.bat" in joined:
+            self.calls.append("stop")
+            self.running = []
+            return 0, "SUCCESS"
+        for key, result in self.results.items():
+            if key in joined:
+                self.calls.append(key)
+                return result
+        raise AssertionError(f"unexpected command {cmd}")
+
+
+def _assert_stop_session_asks_first():
+    # A session the gate did not start is stopped only when confirm says yes; one it started never asks.
+    refused = _SessionRuntime(confirm=False)
+    with pytest.raises(GATE.GateError, match="--yes"):
+        GATE.stop_session(refused.runtime())
+    assert refused.asked == 1 and refused.calls == [], "gate.py stop_session must ask before stopping a session it did not start"
+    agreed = _SessionRuntime(confirm=True)
+    GATE.stop_session(agreed.runtime())
+    assert agreed.calls == ["stop"], "gate.py stop_session must stop a session it did not start once confirmed"
+    own = _SessionRuntime(confirm=False)
+    GATE.stop_session(own.runtime(), started_by_gate=True)
+    assert own.asked == 0 and own.calls == ["stop"], "gate.py stop_session must not ask about a session it started"
+
+
+def _write_mod(mod_dir: Path, required_addons: str, bundle: bool) -> None:
+    mod_dir.mkdir(parents=True)
+    (mod_dir / "config.cpp").write_text(
+        f"class CfgPatches\n{{\n\tclass M\n\t{{\n\t\trequiredAddons[] = {{{required_addons}}};\n\t}};\n}};\n", encoding="utf-8"
+    )
+    if bundle:
+        (mod_dir / "Addons").mkdir()
+        (mod_dir / "Addons" / "payload.pbo").write_bytes(b"")
+
+
+def test_ingame_tester_matches_gate(tmp_path, monkeypatch):
+    # dayz-ingame-tester is the fallback for `/dayz-gate ingame`, so its ready line, settle time,
+    # client timeout and pass/fail rules must match what gate.py does. Each rule is checked by
+    # running gate.py's own functions, not by searching its source text.
     agent = (AGENTS_DIR / "dayz-ingame-tester.md").read_text(encoding="utf-8")
-    gate = (SKILLS_DIR / "dayz-gate" / "gate.py").read_text(encoding="utf-8")
-    ready_re = re.search(r'^DEFAULT_READY_RE = r"(.+)"$', gate, re.M).group(1)
-    settle = int(re.search(r"^DEFAULT_SETTLE_S = (\d+)", gate, re.M).group(1))
-    timeout = int(re.search(r"^DEFAULT_TIMEOUT_S = (\d+)", gate, re.M).group(1))
-    assert 'add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S' in gate, "gate.py --timeout must default to DEFAULT_TIMEOUT_S"
+    # The ingame CLI passes the module defaults to gate_ingame.
+    seen = {}
+
+    def fake_gate_ingame(mod, project_dir, rt, deps, server, port, timeout, settle, ready_pattern):
+        seen.update(timeout=timeout, settle=settle, ready=ready_pattern)
+        return {"verdict": "PASS"}
+
+    monkeypatch.setattr(GATE, "gate_ingame", fake_gate_ingame)
+    monkeypatch.setattr(GATE.h, "resolve_project_dir", lambda: tmp_path)
+    monkeypatch.setattr(GATE, "save_health", lambda report, project_dir: None)
+    monkeypatch.setattr(GATE, "emit", lambda report, as_json: None)
+    assert GATE.main(["ingame", "M"], rt=_SessionRuntime(confirm=False).runtime()) == 0
+    assert seen == {"timeout": GATE.DEFAULT_TIMEOUT_S, "settle": GATE.DEFAULT_SETTLE_S, "ready": GATE.DEFAULT_READY_RE}, (
+        "gate.py ingame must default --timeout, --settle and --ready-pattern to its DEFAULT_* constants"
+    )
     ready_line = re.search(r"log line matching `([^`]+)`", agent).group(1)
-    assert re.search(ready_re, ready_line), "dayz-ingame-tester ready line must match gate.py DEFAULT_READY_RE"
-    assert (settle, timeout) == (30, 300), "gate.py settle and timeout defaults must stay 30 s and 300 s, as dayz-ingame-tester states"
+    assert re.search(GATE.DEFAULT_READY_RE, ready_line), "dayz-ingame-tester ready line must match gate.py DEFAULT_READY_RE"
+    assert (GATE.DEFAULT_SETTLE_S, GATE.DEFAULT_TIMEOUT_S) == (30, 300), "gate.py settle and timeout defaults must stay 30 s and 300 s, as dayz-ingame-tester states"
     assert "keep reading 30 more seconds" in agent, "dayz-ingame-tester must state the 30 second settle time"
     assert "Give up after five minutes" in agent, "dayz-ingame-tester must state the five minute client timeout"
-    # judge_entries: NULL pointer and Can't find lines that don't name the mod never fail.
-    assert re.search(r'^MOD_QUALIFIED = \{"null_pointer", "cant_find"\}$', gate, re.M), "gate.py MOD_QUALIFIED must be null_pointer and cant_find"
+    # judge_entries: a line naming the mod fails; NULL pointer and Can't find lines that name nothing
+    # of the mod are warnings; any other such line fails once a vanilla-only run exists and is a
+    # warning without one; a line found in the vanilla-only run is noise.
+    identity = GATE.ModIdentity("M", re.compile(r"@M\b"), None, [])
+
+    def entry(category, text):
+        return {"category": category, "text": text, "context": []}
+
+    named = entry("compile", "@M/scripts/x.c(3): Unknown type 'Foo'")
+    null_ptr = entry("null_pointer", "NULL pointer to instance")
+    cant_find = entry("cant_find", "Can't find thing")
+    other = entry("missing_config", "No entry 'bin\\config.bin/CfgVehicles.Foo'")
+    known = entry("missing_texture", "Cannot load texture dz\\x.paa")
+    baseline = {GATE.triage.fingerprint(known["text"])}
+    entries = [named, null_ptr, cant_find, other, known]
+    assert GATE.judge_entries(entries, identity, baseline, True) == ([named, other], [null_ptr, cant_find], [known]), (
+        "gate.py judge_entries must fail unqualified non-vanilla lines when a baseline exists"
+    )
+    assert GATE.judge_entries(entries, identity, set(), False) == ([named], [null_ptr, cant_find, other, known], []), (
+        "gate.py judge_entries must only warn about lines naming nothing of the mod when no baseline exists"
+    )
     assert (
         "A `NULL pointer` or `Can't find` line that names nothing of the mod is never a failure: "
         "report it as a warning when it is not in the vanilla-only run." in agent
     ), "dayz-ingame-tester must state that unqualified NULL pointer and Can't find lines are warnings"
-    # A payload-only bundle is deployed under its PBOs' own names, never as <ModName>.pbo, and
-    # ingame_session skips the missing --deps error for a bundle (bundle_layout payload).
+    assert "Any other error line that names nothing of the mod and is not in an existing vanilla-only run fails the gate." in agent, (
+        "dayz-ingame-tester must state that other unqualified lines not in the vanilla-only run fail, as judge_entries does"
+    )
+    # A payload-only bundle is deployed under its PBOs' own names, never as <ModName>.pbo, and the
+    # missing --deps error exempts a bundle.
     assert r"Addons\<ModName>.pbo`" not in agent, "dayz-ingame-tester must not require <ModName>.pbo: a bundle deploys its PBOs under their own names"
     assert r"for a bundle at least one `.pbo`, exists under `P:\Mods\@<ModName>\Addons\`" in agent, "dayz-ingame-tester step 1 must accept any .pbo for a bundle"
-    # stop_session stops a session the gate did not start only with --yes; the agent must ask too.
-    assert "if not started_by_gate and not rt.confirm(pids):" in gate, "gate.py must stop a session it did not start only on confirm"
+    plain, bundle = tmp_path / "workspace" / "Plain", tmp_path / "workspace" / "Bundle"
+    _write_mod(plain, '"DZ_Data", "JM_CF_Scripts"', bundle=False)
+    _write_mod(bundle, '"DZ_Data", "JM_CF_Scripts"', bundle=True)
+    assert GATE.required_deps(GATE.mod_identity("Bundle", bundle), bundle, []) == [], (
+        "gate.py required_deps must exempt a bundle from the missing --deps error"
+    )
+    assert GATE.required_deps(GATE.mod_identity("Plain", plain), plain, ["@CF"]) == ["CF"], "gate.py required_deps must strip '@' from --deps"
+    no_launch = _SessionRuntime(confirm=False)
+    with pytest.raises(GATE.GateError, match="no --deps were given"):
+        GATE.ingame_session("Plain", tmp_path, no_launch.runtime(), [], "chernarus", 2302, 1, 1, GATE.DEFAULT_READY_RE)
+    assert no_launch.calls == [], "gate.py ingame_session must refuse missing --deps before it stops or launches anything"
+    assert "A bundle is exempt: when no dependencies are named" in agent, "dayz-ingame-tester must give a bundle the same dependency exemption as gate.py"
+    # stop_session stops a session the gate did not start only on confirm; the agent must ask too.
+    _assert_stop_session_asks_first()
     step0 = re.search(r"^0\. .+$", agent, re.M).group(0)
     assert "ask the caller" in step0 and "Don't stop it" in step0, "dayz-ingame-tester step 0 must ask the caller, not stop a session it did not start"
     conv = (SKILLS_DIR / "_shared" / "dayz-conventions.md").read_text(encoding="utf-8")
     config_row = next(l for l in conv.splitlines() if l.startswith("| `conventions/config.md` |"))
     assert "conventions/config.md" in agent and "ingame-tester" in config_row.rsplit("|", 2)[1], "conventions/config.md Read by must list ingame-tester, which cites it"
-    session = gate.split("def ingame_session(", 1)[1].split("\ndef ", 1)[0]
-    assert "not bundle_layout(mod_dir)[1]" in session, "gate.py ingame_session must exempt a bundle from the missing --deps error"
-    assert "A bundle is exempt: when no dependencies are named" in agent, "dayz-ingame-tester must give a bundle the same dependency exemption as gate.py"
+    # find_baseline: a vanilla-only RPT plus the script logs created 0 to 30 s after it.
+    logs = tmp_path / "logs"
+    logs.mkdir()
+    (logs / "DayZDiag_x64_2026-01-01_10-00-00.RPT").write_text('CLI params: "-mod=@CF"\n', encoding="utf-8")
+    for name in ("script_2026-01-01_09-59-55.log", "script_2026-01-01_10-00-20.log", "script_2026-01-01_10-00-45.log"):
+        (logs / name).write_text("x\n", encoding="utf-8")
+    _, used = GATE.find_baseline([logs], GATE.snapshot([logs]), "M")
+    assert sorted(Path(p).name for p in used) == ["DayZDiag_x64_2026-01-01_10-00-00.RPT", "script_2026-01-01_10-00-20.log"], (
+        "gate.py find_baseline must pair script logs created within 30 s after the RPT"
+    )
+    assert "plus the script logs created within 30 seconds after that RPT" in agent, "dayz-ingame-tester vanilla-only run must include the script logs created within 30 s after the RPT"
+    assert GATE.POLL_S == 2 and "every 2 seconds, the gate's interval" in agent, "dayz-ingame-tester step 3 must poll every POLL_S (2) seconds, like gate.py"
 
 
-def test_build_checker_matches_gate():
+def test_build_checker_matches_gate(tmp_path, monkeypatch):
     # dayz-build-checker is the fallback for `/dayz-gate build`: lint first, then stop the
     # session and build, and a bundle's payload is checked with /dayz-deploy-pbo.
     agent = (AGENTS_DIR / "dayz-build-checker.md").read_text(encoding="utf-8")
-    gate = (SKILLS_DIR / "dayz-gate" / "gate.py").read_text(encoding="utf-8")
-    build = gate.split("def gate_build(", 1)[1].split("\ndef ", 1)[0]
-    assert build.index("run_lint(") < build.index("stop_session(") < build.index("BUILD_PY"), "gate_build must lint, then stop the session, then build"
+    _write_mod(tmp_path / "workspace" / "M", '"DZ_Data"', bundle=False)
+    session = _SessionRuntime(confirm=True, results={"build.py": (0, "")})
+
+    def fake_lint(report, mod, mod_dir, project_dir):
+        session.calls.append("lint")
+        return True
+
+    monkeypatch.setattr(GATE, "run_lint", fake_lint)
+    assert GATE.gate_build("M", tmp_path, session.runtime())["verdict"] == "PASS"
+    assert session.calls == ["lint", "stop", "build.py"], "gate_build must lint, then stop the session, then build"
     for needle in ("/dayz-lint", "/dayz-deploy-pbo", ".bisign"):
         assert needle in agent, f"dayz-build-checker must mention {needle}"
     assert agent.index("/dayz-lint") < agent.index("/dayz-stop-test") < agent.index("`/dayz-build-pbo <ModName>` succeeds"), (
@@ -327,9 +459,7 @@ def test_build_checker_never_stops_an_unstarted_session_unasked():
     # because it may be the user's own play session. The fallback agent never launches the
     # game, so every running session is one it did not start: it must report BLOCKED and
     # stop the session only when the user agreed.
-    gate = (SKILLS_DIR / "dayz-gate" / "gate.py").read_text(encoding="utf-8")
-    stop = gate.split("def stop_session(", 1)[1].split("\ndef ", 1)[0]
-    assert "if not started_by_gate and not rt.confirm(pids):" in stop, "gate.py stop_session must ask before stopping a session it did not start"
+    _assert_stop_session_asks_first()
     agent = (AGENTS_DIR / "dayz-build-checker.md").read_text(encoding="utf-8")
     step = agent.split("\n2. ", 1)[1].split("\n3. ", 1)[0]
     assert "BLOCKED: step 2" in step, "dayz-build-checker step 2 must report BLOCKED for a session it did not start"
@@ -357,6 +487,20 @@ def test_orchestrator_runs_every_gate_mode():
         name = re.search(r'^\w+_FILENAME = "([\w.-]+\.json)"', source, re.M).group(1)
         assert f"output/<ModName>-plan/{name}" in step, f"dayz-orchestrator must gate on output/<ModName>-plan/{name}"
         assert f"output/<ModName>-plan/{name}" in architect, f"dayz-mod-architect must write output/<ModName>-plan/{name}"
+
+
+def test_orchestrator_sets_up_the_gate_server_instance_before_gating():
+    # The in-game gates run with --server <instance>. Without a step that picks the instance and
+    # runs /dayz-add-server when .server/<instance>/ is missing, a new mod's first in-game gate
+    # fails on a missing instance and uses up one of its three rounds.
+    orchestrator = (AGENTS_DIR / "dayz-orchestrator.md").read_text(encoding="utf-8")
+    setup = orchestrator.split("3. **Approval", 1)[1].split("4. **Run a wave.**", 1)[0]
+    assert "`/dayz-add-server <instance>" in setup, "step 3 must run /dayz-add-server for a missing instance"
+    assert ".server/<instance>/" in setup, "step 3 must check .server/<instance>/ before adding it"
+    gate_default = re.search(r"default `(\w+)`", (SKILLS_DIR / "dayz-gate" / "SKILL.md").read_text(encoding="utf-8"))
+    assert gate_default and f"`{gate_default.group(1)}`" in setup, "step 3's default instance must match /dayz-gate's --server default"
+    gate_step = orchestrator.split("5. **Gate the wave.**", 1)[1].split("6. **Next wave.**", 1)[0]
+    assert "--server <instance>" in gate_step and "step 3" in gate_step, "the gate step must use the instance from step 3"
 
 
 BAT_FILES = sorted((REPO / "scripts").glob("*/*.bat"))
@@ -432,6 +576,27 @@ def test_dayz_wrapper_falls_back_to_py_launcher(name, has_python, tmp_path):
     assert "PY-CLEAN" in lines, f"{name} left PY set in the calling terminal: {result.stdout!r}"
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="runs cmd.exe")
+@pytest.mark.parametrize("broken_py", [False, True], ids=["no-launcher", "py-without-python"])
+@pytest.mark.parametrize("name", [n for n in DAYZ_WRAPPERS if n != "dayz-search.bat"])
+def test_dayz_wrapper_says_python_is_missing(name, broken_py, tmp_path):
+    # With neither python nor py working, the wrappers printed only "'py' is not
+    # recognized as an internal or external command". py-without-python is the py
+    # launcher on a machine with no Python 3 left (it runs but exits non-zero).
+    if broken_py:
+        (tmp_path / "py.bat").write_text("@echo off\r\necho RAN-py %*\r\nexit /b 103\r\n", encoding="ascii")
+    system32 = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32"
+    env = {k: v for k, v in os.environ.items() if k.upper() != "PY"}
+    env["PATH"] = f"{tmp_path};{system32}"
+    bat = REPO / "scripts" / "dayz" / name
+    result = subprocess.run(f'cmd /d /c ""{bat}" --help"', env=env, capture_output=True, text=True, timeout=30)
+    assert result.returncode == 9009, f"{name} exit {result.returncode}: {result.stdout!r} {result.stderr!r}"
+    assert result.stderr.strip() == (
+        "[FAIL] Python 3 not found: install it from python.org or add python/py to PATH"
+    ), f"{name} stderr: {result.stderr!r}"
+    assert "--help" not in result.stdout, f"{name} still ran the script: {result.stdout!r}"
+
+
 def test_dayz_wrapper_list_is_complete():
     # Every scripts\dayz wrapper except stop-test.bat (a taskkill .bat, no Python) is covered above.
     assert len(DAYZ_WRAPPERS) == len(list((REPO / "scripts" / "dayz").glob("*.bat"))) - 1
@@ -470,7 +635,112 @@ def test_readme_says_evals_bat_costs_tokens():
     assert "exception is `evals.bat`" in readme, "the no-token intro must name evals.bat as the exception"
 
 
-RUNNABLE_WITHOUT_BAT = {"dayz-particles", "dayz-record-correction"}  # reference-only skills, no script
+def test_readme_names_the_wrappers_that_call_paid_apis():
+    # The intro said no wrapper but evals.bat spends tokens, yet ask, dayz-search and
+    # search-index embed through Voyage AI and route asks TypeSafe's Jev when keyed.
+    readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
+    intro = readme.split("## Daily DayZ work", 1)[0]
+    for script, api in [
+        (".claude/skills/dayz-ask/ask.py", "voyage"),
+        ("scripts/dayz/dayz-search.py", "voyage"),
+        (".claude/skills/dayz-search-index/index.py", "voyage"),
+        (".claude/skills/dayz-route/jev.py", "typesafe"),
+    ]:
+        assert api in (REPO / script).read_text(encoding="utf-8").lower(), f"{script} no longer calls {api}"
+    for bat in ("ask.bat", "dayz-search.bat", "search-index.bat", "route.bat"):
+        assert f"`{bat}`" in intro, f"the intro must say {bat} calls a paid API"
+    assert "Voyage" in intro and "TYPESAFE_API_KEY" in intro
+    assert "`search-download.bat`" in intro, "the intro must point to search-download.bat as the free path"
+
+
+def test_readme_python_fallback_claims_match_the_wrappers():
+    # The intro said every wrapper falls back to py, but stop-test.bat only calls a taskkill .bat,
+    # and dayz-search.bat has the fallback without the [FAIL] Python 3 not found line.
+    readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
+    intro = readme.split("## Daily DayZ work", 1)[0]
+    bats = sorted((REPO / "scripts").glob("*/*.bat"))
+    no_fallback = {b.name for b in bats if 'set "PY=py"' not in b.read_text(encoding="utf-8")}
+    dayz_no_fail = {
+        b.name for b in bats
+        if b.parent.name == "dayz" and "Python 3 not found" not in b.read_text(encoding="utf-8")
+    }
+    fallback_line = next(line for line in intro.splitlines() if "falls back to the `py` launcher" in line)
+    for name in no_fallback:
+        assert f"except `{name}`" in fallback_line, f"the intro must name {name} as having no py fallback"
+    for name in dayz_no_fail - no_fallback:
+        assert f"other than `{name}`" in fallback_line, f"the intro must name {name} as lacking the [FAIL] line"
+
+
+def test_readme_clean_rows_say_what_they_delete():
+    # The clean-repo.bat row said "Clear generated files before a push", but it deletes managed
+    # mod folders under workspace\, their P:\ junctions and deployed copies, and all of .server\.
+    readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
+    flags = (REPO / ".claude" / "skills" / "clean-repo" / "clean.py").read_text(encoding="utf-8")
+    assert '"--dry-run"' in flags and '"--keep-server"' in flags
+    row = next(r for r in readme.splitlines() if r.startswith("| `clean-repo.bat`"))
+    for needle in ("`workspace\\`", "`P:\\Mods\\@<ModName>\\`", "`.server\\`", "`--dry-run`", "`--keep-server`"):
+        assert needle in row, f"the clean-repo.bat row must mention {needle}"
+    row = next(r for r in readme.splitlines() if r.startswith("| `clean-workspace.bat`"))
+    for needle in ("`workspace\\`", "`P:\\Mods\\@<ModName>\\`", "`--dry-run`"):
+        assert needle in row, f"the clean-workspace.bat row must mention {needle}"
+
+
+def test_readme_clean_rows_say_deployed_copies_need_the_ownership_marker():
+    # Both rows said the deployed P:\Mods\@<ModName>\ copy is deleted, but clean.py removes it
+    # only when owns_deploy_dir finds the toolkit's ownership marker; any other copy stays.
+    readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
+    code = (REPO / ".claude" / "skills" / "dayz-clean-workspace" / "clean.py").read_text(encoding="utf-8")
+    helpers = (SHARED_DIR / "skill_helpers.py").read_text(encoding="utf-8")
+    assert "h.owns_deploy_dir(deployed, name)" in code
+    marker = re.search(r'^SCAFFOLD_MARKER = "([^"]+)"', helpers, re.M).group(1)
+    for bat in ("clean-workspace.bat", "clean-repo.bat"):
+        row = next(r for r in readme.splitlines() if r.startswith(f"| `{bat}`"))
+        assert "ownership marker" in row and f"`{marker}`" in row, f"the {bat} row must name the {marker} marker"
+
+
+def test_readme_sync_skills_row_matches_the_default_agent_list():
+    # The row said `--agents claude` adds Claude Code, but --agents replaces the default list,
+    # so that command links only Claude Code and drops Codex and Gemini.
+    readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
+    cfg = json.loads((SKILLS_DIR / "sync-skills" / "agents.json").read_text(encoding="utf-8"))
+    names = [a["name"] for a in cfg["agents"]]
+    off_by_default = [a["name"] for a in cfg["agents"] if a.get("default", True) is False]
+    assert off_by_default == ["claude"], f"agents.json defaults changed: {off_by_default}"
+    sync = (SKILLS_DIR / "sync-skills" / "sync.py").read_text(encoding="utf-8")
+    assert 'a["name"] in args.agents if args.agents else a.get("default", True)' in sync
+    row = next(r for r in readme.splitlines() if r.startswith("| `sync-skills.bat`"))
+    assert f"`--agents {' '.join(names)}` links all three" in row
+    assert "`--agents claude` alone links only Claude Code" in row
+
+
+def test_readme_says_what_unguarded_wrappers_print_without_python():
+    # Only the scripts\dayz wrappers print [FAIL] Python 3 not found; the setup and dev
+    # wrappers (preflight.bat first among them) fail with cmd's bare "not recognized" error.
+    readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
+    intro = readme.split("## Daily DayZ work", 1)[0]
+    unguarded = [
+        b for b in sorted((REPO / "scripts").glob("*/*.bat"))
+        if b.parent.name in ("setup", "dev") and "Python 3 not found" not in b.read_text(encoding="utf-8")
+    ]
+    assert unguarded, "every setup/dev wrapper now has the [FAIL] guard; update the README intro"
+    for folder in sorted({b.parent.name for b in unguarded}):
+        assert f"`scripts\\{folder}`" in intro, f"the intro must say scripts\\{folder} wrappers have no [FAIL] guard"
+    assert "is not recognized as an internal or external command" in intro
+
+
+def test_readme_ask_note_names_the_free_grep_fallback():
+    # The note said every ask.bat question goes to Voyage, but ask.py falls back to Grep on its
+    # own when VOYAGE_API_KEY is unset or no index is installed.
+    readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
+    code = (REPO / ".claude" / "skills" / "dayz-ask" / "ask.py").read_text(encoding="utf-8")
+    assert "VOYAGE_API_KEY not set" in code and "no search index" in code
+    line = next(r for r in readme.splitlines() if r.startswith("- `ask.bat`"))
+    assert "`VOYAGE_API_KEY` is not set" in line and "no search index" in line
+
+
+# dayz-particles is reference-only (no script). dayz-record-correction ships check.py, but only
+# the agent running the skill calls it (root, baseline, compare steps in its SKILL.md), never a user.
+RUNNABLE_WITHOUT_BAT = {"dayz-particles", "dayz-record-correction"}
 
 
 def test_every_runnable_skill_has_a_bat_wrapper():
@@ -688,8 +958,25 @@ def _vanilla_lines_of():
 # Checked by hand against P:\ (game storage version 144): each cites a value, a
 # statement or a member deep inside a class the line names (a config value, an
 # OnStoreSave override of the named class), or a built-in type such as `int` whose
-# name is a keyword. Keyed by citing file under .claude/skills/.
+# name is a keyword. Keyed by citing file under .claude/skills/, or by the
+# evals/questions/ file whose verified note names a function the cited body sits in.
 CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
+    # object.c:1251-1255 is the loop branch inside PlaySoundSet, declared at :1247.
+    "evals/questions/dayz-audio-fx-specialist.json": {
+        "P:/scripts/3_game/entities/object.c:1251-1255",
+    },
+    # basebuildingbase.c:420 opens OnStoreSave, which writes m_SyncParts01 at :425;
+    # entityai.c:1393 is GetEntityByPersitentID inside EEOnAfterLoad (:1381) and
+    # :3041 its "cannot be called here" comment inside OnStoreLoad.
+    # plugindiagmenumodding.c:21 is "modded class PluginDiagMenu"; its note is an aside about another file.
+    "evals/questions/dayz-script-specialist.json": {
+        "P:/scripts/4_world/plugins/pluginbase/plugindiagmenu/plugindiagmenumodding.c:21",
+    },
+    "evals/questions/dayz-persistence-specialist.json": {
+        "P:/scripts/4_world/entities/itembase/basebuildingbase.c:420",
+        "P:/scripts/3_game/entities/entityai.c:1393",
+        "P:/scripts/3_game/entities/entityai.c:3041",
+    },
     "_shared/ai/perception.md": {
         r"P:\scripts\3_game\playerconstants.c:263",
     },
@@ -753,6 +1040,10 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "_shared/textures/surface-recipes.md": {
         r"P:\DZ\characters\glasses\config.cpp:598",
     },
+    # particlelist.c:316 registers "contaminated_area_gas_around_tiny"; the citing line backticks only that effect's .ptc path.
+    "dayz-particles/SKILL.md": {
+        r"P:\scripts\3_game\particles\particlelist.c:316",
+    },
     "_shared/vehicles/simulation.md": {
         r"P:\DZ\vehicles\water\config.cpp:124",
     },
@@ -772,6 +1063,106 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
 }
 
 
+# The eval questions' "verified" fields cite without backticks, as
+# "P:/x.c:12 (Symbol) and :16 (OTHER_SYMBOL)": a bare ":N" continues the last P:
+# file (a non-P "name.ext:N" ends that), " to :M" widens a citation to a range, and
+# the parenthesized note right after a citation, or else the one around it, names its symbols.
+_EVAL_CITE_RE = re.compile(
+    r"(?P<file>P:[\\/][^\s`:*?\"<>|()]+\.\w+):(?P<a>\d+)(?:-(?P<b>\d+))?(?: to :(?P<c>\d+))?"
+    r"|(?P<other>[\w.\\/-]+\.\w+):\d+"
+    r"|(?<![\w.\\/:]):(?P<na>\d+)(?:-(?P<nb>\d+))?(?: to :(?P<nc>\d+))?"
+)
+# Paths and file names in a note name no symbol.
+_NOTE_FILE_RE = re.compile(r"\S*[\\/]\S*|[\w-]+\.(?:c|cpp|hpp|h|md|json|layout|p3d|paa|rvmat|py|xml)\b")
+# A note's symbols: code-like identifiers (a capital, a digit or an underscore after the
+# first letter, or a leading capital), a lower-case config key written key=value, and "quoted" text.
+_NOTE_CODE_WORD_RE = re.compile(r"\b(?:[A-Za-z_]\w*[A-Z0-9_]\w*|[A-Z]\w+)\b|\b[a-z]\w+(?==)")
+_NOTE_QUOTED_RE = re.compile(r'"([^"\n]{2,})"')
+
+
+def _paren_body(text: str, start: int) -> str:
+    """The text from start up to the ")" that closes the "(" just before start, on the same line."""
+    depth = 1
+    for i in range(start, len(text)):
+        if text[i] == "\n":
+            return text[start:i]
+        depth += {"(": 1, ")": -1}.get(text[i], 0)
+        if depth == 0:
+            return text[start:i]
+    return text[start:]
+
+
+def _citation_note(text: str, start: int, end: int) -> str:
+    """The parenthesized note right after text[start:end], else the one on its line enclosing it, else ""."""
+    after = re.compile(r"[ \t]*\(").match(text, end)
+    if after:
+        return _paren_body(text, after.end())
+    depth = 0
+    for i in range(start - 1, text.rfind("\n", 0, start), -1):
+        if text[i] == ")":
+            depth += 1
+        elif text[i] == "(":
+            if depth == 0:
+                return _paren_body(text, i + 1)
+            depth -= 1
+    return ""
+
+
+def _note_symbols(note: str) -> set[str]:
+    snippets = {s.lower() for s in _NOTE_QUOTED_RE.findall(note)}
+    note = _NOTE_FILE_RE.sub(" ", note)
+    words = {w.lower() for w in _NOTE_CODE_WORD_RE.findall(note) if len(w) >= 3}
+    return (words | snippets) - _GENERIC_WORDS
+
+
+def _eval_citations(text: str) -> list[tuple[str, str, int, int, set[str]]]:
+    """(label, P: file, first line, last line, symbols) for each citation in an eval question's text."""
+    found = []
+    current = None
+    for m in _EVAL_CITE_RE.finditer(text):
+        if m.group("other"):
+            current = None
+            continue
+        if m.group("file"):
+            current, label, (a, b, c) = m.group("file"), m.group(0), m.group("a", "b", "c")
+        elif current is None:
+            continue
+        else:
+            label, (a, b, c) = current + m.group(0), m.group("na", "nb", "nc")
+        first = int(a)
+        found.append((label, current, first, int(c or b or first), _note_symbols(_citation_note(text, m.start(), m.end()))))
+    return found
+
+
+def _eval_symbol_mismatches(text: str, lines_of) -> list[str]:
+    """Each eval citation whose cited lines (within SYMBOL_WINDOW) hold none of its note's symbols.
+    A missing file or a line past the end is _missing_eval_lines' to report; no symbol, nothing to check."""
+    bad = []
+    for label, file, first, last, symbols in _eval_citations(text):
+        lines = lines_of(file)
+        if lines is None or last > len(lines) or not symbols:
+            continue
+        window = "\n".join(lines[max(0, first - 1 - SYMBOL_WINDOW) : last + SYMBOL_WINDOW]).lower()
+        if not any(s in window for s in symbols):
+            bad.append(label)
+    return bad
+
+
+def _missing_eval_lines(text: str, line_count) -> list[str]:
+    """Each eval citation, bare ":N" continuations and " to :M" ends included, whose file is missing or too short."""
+    bad = []
+    for label, file, _first, last, _symbols in _eval_citations(text):
+        count = line_count(file)
+        if count is None or last > count:
+            bad.append(f"{label} ({'missing' if count is None else f'has {count} lines'})")
+    return bad
+
+
+def _eval_question_texts():
+    for path in EVAL_QUESTION_FILES:
+        yield _ref_id(path), "\n".join(_json_strings(json.loads(path.read_text(encoding="utf-8"))))
+
+
 def _all_symbol_mismatches() -> dict[str, list[str]]:
     lines_of = _vanilla_lines_of()
     found = {}
@@ -779,7 +1170,62 @@ def _all_symbol_mismatches() -> dict[str, list[str]]:
         bad = _symbol_mismatches(path.read_text(encoding="utf-8", errors="replace"), lines_of)
         if bad:
             found[_ref_id(path).removeprefix(".claude/skills/")] = bad
+    for rel, text in _eval_question_texts():
+        bad = _eval_symbol_mismatches(text, lines_of)
+        if bad:
+            found[rel] = bad
     return found
+
+
+@pytest.mark.skipif(not Path("P:/scripts").is_dir(), reason="P:\\ is not mounted with vanilla scripts")
+def test_eval_continued_citations_exist_on_p():
+    # The line test reads only full P: citations, so ":16" in "P:/x.c:1 (A) and :16 (B)"
+    # and the end of "P:/x.c:3 to :6" were never checked against P:.
+    cache: dict[str, int | None] = {}
+
+    def line_count(cited: str) -> int | None:
+        if cited not in cache:
+            file = Path(cited)
+            cache[cited] = len(file.read_bytes().splitlines()) if file.is_file() else None
+        return cache[cited]
+
+    bad = [f"{rel}: {miss}" for rel, text in _eval_question_texts() for miss in _missing_eval_lines(text, line_count)]
+    assert not bad, "eval question citations of vanilla lines that do not exist:\n" + "\n".join(bad)
+
+
+def test_eval_citation_check_follows_continuations_notes_and_ranges():
+    # The eval questions' verified citations had only a line count, so a citation
+    # that drifted inside its file still passed.
+    text = r"P:\scripts\foo.c:5 (Foo.Bar) and :38 (Baz); P:\scripts\foo.c:3 to :6 (m_Count)"
+    assert [c[:4] for c in _eval_citations(text)] == [
+        (r"P:\scripts\foo.c:5", r"P:\scripts\foo.c", 5, 5),
+        (r"P:\scripts\foo.c:38", r"P:\scripts\foo.c", 38, 38),
+        (r"P:\scripts\foo.c:3 to :6", r"P:\scripts\foo.c", 3, 6),
+    ]
+    assert _eval_symbol_mismatches(text, _fake_lines_of) == []
+    # The same symbols, each line moved: the line count alone passes both.
+    assert _eval_symbol_mismatches(r"P:\scripts\foo.c:30 (Foo.Bar) and :20 (Baz)", _fake_lines_of) == [
+        r"P:\scripts\foo.c:30",
+        r"P:\scripts\foo.c:20",
+    ]
+    # A ":N" inside a note takes the note's symbols; a non-P file:N ends the P: file it continues.
+    assert _eval_symbol_mismatches(r"P:\scripts\foo.c:38 (Baz, in class Foo at :1)", _fake_lines_of) == []
+    # A note never reaches across lines: each JSON string of a question is its own line.
+    assert _eval_citations("(Foo\n" + r"see P:\scripts\foo.c:30")[0][4] == set()
+    assert _eval_citations(r"P:\scripts\foo.c:30 (Bar" + "\nFoo)")[0][4] == {"bar"}
+    assert _eval_citations(r"P:\scripts\foo.c:5 (Bar); lint.py:30 and :31") == [
+        (r"P:\scripts\foo.c:5", r"P:\scripts\foo.c", 5, 5, {"bar"}),
+    ]
+    # key=value names its key, "quoted" text is a snippet, plain words and file names are not symbols.
+    assert _note_symbols('range=100 on "usti hlavne" in weight grams, see creatures.md') == {"range", "usti hlavne"}
+    assert _eval_symbol_mismatches(r"P:\scripts\foo.c:30 (weight in grams)", _fake_lines_of) == []
+    # Ends past the file are reported as missing lines, not as symbol mismatches.
+    assert _eval_symbol_mismatches(r"P:\scripts\foo.c:5 to :99 (Bar)", _fake_lines_of) == []
+    counts = {r"P:\scripts\foo.c": 38}
+    assert _missing_eval_lines(r"P:\scripts\foo.c:5 (Bar) and :39; P:\scripts\gone.c:1", counts.get) == [
+        r"P:\scripts\foo.c:39 (has 38 lines)",
+        r"P:\scripts\gone.c:1 (missing)",
+    ]
 
 
 @pytest.mark.skipif(not Path("P:/scripts").is_dir(), reason="P:\\ is not mounted with vanilla scripts")
@@ -890,6 +1336,16 @@ def test_physics_specialist_reports_to_main_session_on_direct_call():
     report = text.split("## Report", 1)[1]
     assert "main session" in report, "Report names only a lead; a direct call has no lead"
     assert "start each owner" in report, "Report must tell the main session to start each named owner"
+
+
+def test_physics_specialist_listed_as_reader_of_assets_conventions():
+    # The agent follows conventions/assets.md (LOD table); the 'Read by' column must
+    # list it so an edit to assets.md flags this agent as a reader.
+    agent = (AGENTS_DIR / "dayz-physics-specialist.md").read_text(encoding="utf-8")
+    assert "conventions/assets.md" in agent
+    core = (REPO / ".claude" / "skills" / "_shared" / "dayz-conventions.md").read_text(encoding="utf-8")
+    row = next(line for line in core.splitlines() if line.startswith("| `conventions/assets.md`"))
+    assert "physics-specialist" in row.rsplit("|", 2)[1], "conventions/assets.md Read by must list physics-specialist"
 
 
 def test_orchestrator_agent_list_covers_every_agent_the_leads_start():

@@ -18,6 +18,8 @@ dayz-gate/known-errors.json (owner agent and fix). /dayz-gate build and
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import re
@@ -46,7 +48,7 @@ ERROR, WARNING = "error", "warning"
 # Every rule lint can report; each has a "lint-<rule>" entry in dayz-gate/known-errors.json.
 RULES = (
     "config-missing", "config-syntax", "cfgpatches-missing", "cfgpatches-empty", "cfgpatches-field",
-    "cfgpatches-field-missing", "required-addons-missing", "required-addon-name", "required-addon-duplicate", "pboprefix-missing", "pboprefix-mismatch",
+    "cfgpatches-field-missing", "required-addons-missing", "required-addon-name", "required-addon-duplicate", "pboprefix-missing", "pboprefix-encoding", "pboprefix-mismatch",
     "p-link", "p-not-mounted", "script-module-path", "script-module-layer", "script-module-unlisted",
     "modded-class-extends", "script-suffix", "missing-model", "missing-texture", "missing-file",
     "absolute-path", "texture-format", "texture-suffix", "rvmat-syntax",
@@ -80,12 +82,20 @@ UNPACKED_IMAGE_EXTS = {".png", ".tga", ".jpg", ".jpeg", ".dds", ".bmp"}
 # Strings checked for a texture role suffix (Tier 2 conventions/assets.md).
 ROLE_SUFFIX_PROPS = re.compile(r"(?i)^(?:hiddenSelectionsTextures|texture)$")
 
-MODDED_EXTENDS_RE = re.compile(r"^\s*modded\s+class\s+\w+\s*(?:extends|:)\s*\w+")
+# Run on the whole comment-free source, not line by line: \s also matches a line
+# break, so "modded class Foo" with "extends Bar" on the next line is caught too.
+MODDED_EXTENDS_RE = re.compile(r"^[ \t]*modded\s+class\s+\w+\s*(?:extends\b|:)\s*\w+", re.MULTILINE)
+UTF16_BOMS = (b"\xff\xfe", b"\xfe\xff")
 ADDON_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class LintError(Exception):
     """Lint cannot run (exit 2); not a verdict on the mod."""
+
+
+def q(text: str) -> str:
+    """Quote a value for a message. repr() would double every backslash in a DayZ path."""
+    return f"'{text}'"
 
 
 # --- config tree --------------------------------------------------------------
@@ -219,10 +229,22 @@ class Lint:
             self.add("pboprefix-missing", ERROR, path, None,
                      f"$PBOPREFIX$ is missing; the PBO would have no root for paths starting {self.mod}\\.")
             return
-        prefix = path.read_text(encoding="utf-8-sig").strip()
+        data = path.read_bytes()
+        try:
+            if data.startswith(UTF16_BOMS):
+                raise UnicodeError("UTF-16 byte-order mark")
+            prefix = data.decode("utf-8-sig").strip()
+        except UnicodeError:
+            # Windows PowerShell 5.1 writes UTF-16 for `echo MyMod > $PBOPREFIX$`.
+            kind = "UTF-16" if data.startswith(UTF16_BOMS) else "not UTF-8"
+            self.add("pboprefix-encoding", ERROR, path, 1,
+                     f"$PBOPREFIX$ is {kind} text, so its prefix cannot be read; "
+                     f"save it as plain ASCII or UTF-8 holding only {self.mod}.")
+            self.check_link(path)
+            return
         if prefix != self.mod:
             self.add("pboprefix-mismatch", ERROR, path, 1,
-                     f"$PBOPREFIX$ is {prefix!r}, expected {self.mod!r} (the mod folder name /dayz-build-pbo packs under).")
+                     f"$PBOPREFIX$ is {q(prefix)}, expected {q(self.mod)} (the mod folder name /dayz-build-pbo packs under).")
         if prefix:
             self.prefix = prefix
         self.check_link(path)
@@ -240,7 +262,9 @@ class Lint:
         target = h.link_target(link)
         if target is None:
             self.add("p-link", ERROR, prefix_file, None, f"{link} is a real folder, not a link to {self.mod_dir}.")
-        elif not h.paths_equal(target, self.mod_dir):
+        elif not (h.paths_equal(target, self.mod_dir) or h.paths_equal(target.resolve(), self.mod_dir.resolve())):
+            # Both sides resolved: --mod-dir arrives resolved through a workspace junction, while the
+            # P:\ link that /dayz-import-mod creates points at that junction, not at its final target.
             self.add("p-link", ERROR, prefix_file, None, f"{link} points at {target}, not at {self.mod_dir}.")
 
     # config.cpp
@@ -288,7 +312,7 @@ class Lint:
             low = name.lower()
             if not ADDON_NAME_RE.match(name):
                 self.add("required-addon-name", ERROR, cfg, line,
-                         f"requiredAddons entry {name!r} is not a CfgPatches class name (no paths, .pbo files, @mod folders or spaces).")
+                         f"requiredAddons entry {q(name)} is not a CfgPatches class name (no paths, .pbo files, @mod folders or spaces).")
             elif low in own:
                 self.add("required-addon-name", ERROR, cfg, line, f"requiredAddons lists {name}, a CfgPatches class of this mod itself.")
             elif vanilla is not None and low.startswith("dz_") and low not in vanilla:
@@ -326,17 +350,17 @@ class Lint:
                         rel = self.in_mod(value)
                         if rel is None:
                             self.add("script-module-path", ERROR, cfg, line,
-                                     f"{module.name} lists {value!r}, which is not inside this mod (paths start {self.prefix}/).")
+                                     f"{module.name} lists {q(value)}, which is not inside this mod (paths start {self.prefix}/).")
                             continue
                         listed.add(rel.lower())
                         if not (self.mod_dir / rel).is_dir():
                             self.add("script-module-path", ERROR, cfg, line,
-                                     f"{module.name} lists {value!r}, but {self.rel(self.mod_dir / rel)}/ does not exist.")
+                                     f"{module.name} lists {q(value)}, but {self.rel(self.mod_dir / rel)}/ does not exist.")
                         layer = Path(rel).name
                         want = MODULE_LAYERS[key]
                         if layer.lower() in LAYER_MODULE and layer.lower() != want.lower():
                             self.add("script-module-layer", ERROR, cfg, line,
-                                     f"{module.name} compiles the {want} layer, but {value!r} is a {layer} folder "
+                                     f"{module.name} compiles the {want} layer, but {q(value)} is a {layer} folder "
                                      f"(that belongs in {MODULE_SPELLING[LAYER_MODULE[layer.lower()]]}).")
         scripts = self.mod_dir / "scripts"
         for folder in sorted(p for p in scripts.iterdir() if p.is_dir()) if scripts.is_dir() else []:
@@ -373,18 +397,20 @@ class Lint:
                 continue
             if re.match(r"^[A-Za-z]:[\\/]", value) or value.replace("/", "\\").lower().startswith("workspace\\"):
                 self.add("absolute-path", ERROR, source, tok.line,
-                         f"{value!r} is a disk path; in game paths start at the PBO prefix, {self.prefix}\\...")
+                         f"{q(value)} is a disk path; in game paths start at the PBO prefix, {self.prefix}\\...")
+                continue
+            if ext in UNPACKED_IMAGE_EXTS:
+                # One finding per reference: the fix (pack it, point at the .paa) also settles whether the file exists.
+                self.add("texture-format", ERROR, source, tok.line,
+                         f"{q(value)} is a {ext} image; the game loads textures as .paa. Pack it with /dayz-pack-texture.")
                 continue
             rel = self.in_mod(value)
-            if ext in UNPACKED_IMAGE_EXTS:
-                self.add("texture-format", ERROR, source, tok.line,
-                         f"{value!r} is a {ext} image; the game loads textures as .paa. Pack it with /dayz-pack-texture.")
             if rel is None:
                 continue  # vanilla or another mod: not ours to check
             if not (self.mod_dir / rel).is_file():
                 rule = {".p3d": "missing-model", ".paa": "missing-texture", ".edds": "missing-texture",
                         ".rvmat": "missing-texture"}.get(ext, "missing-file")
-                self.add(rule, ERROR, source, tok.line, f"{value!r} points at {self.rel(self.mod_dir / rel)}, which does not exist.")
+                self.add(rule, ERROR, source, tok.line, f"{q(value)} points at {self.rel(self.mod_dir / rel)}, which does not exist.")
             elif ext == ".paa" and ROLE_SUFFIX_PROPS.match(last_ident) and not pack_texture.SUFFIX_RE.search(Path(rel).stem):
                 self.add("texture-suffix", WARNING, source, tok.line,
                          f"{Path(rel).name} has no texture role suffix (_co, _ca, _nohq, _smdi, ...); ImageToPAA picks its format from it.")
@@ -412,17 +438,50 @@ class Lint:
                          f"{path.name} is under scripts/ but is not a .c file, so it is never compiled.")
                 continue
             source = path.read_text(encoding="utf-8", errors="replace")
-            # Drop // and /* */ comments but keep their newlines, so line numbers stay right.
-            source = re.sub(r"//[^\n]*|/\*.*?\*/", lambda m: "\n" * m.group().count("\n"), source, flags=re.DOTALL)
-            for number, text in enumerate(source.splitlines(), 1):
-                if MODDED_EXTENDS_RE.search(text):
-                    self.add("modded-class-extends", ERROR, path, number,
-                             f"{text.strip()}: a modded class with an extends clause is a silent no-op.")
+            source = strip_comments(source, backslash_escapes=True)
+            for m in MODDED_EXTENDS_RE.finditer(source):
+                number = source.count("\n", 0, m.start()) + 1  # the line holding "modded"
+                clause = " ".join(m.group().split())
+                self.add("modded-class-extends", ERROR, path, number,
+                         f"{clause}: a modded class with an extends clause is a silent no-op.")
+
+
+def strip_comments(text: str, backslash_escapes: bool) -> str:
+    """Drop // and /* */ comments outside string literals, keeping their newlines so line numbers stay right.
+
+    A "//" or "/*" inside a string (for example "MyMod/scripts/*") is not a comment.
+    backslash_escapes: Enforce Script strings escape a quote as \"; config.cpp strings
+    do not (a backslash there is a path separator, and "" is a quote). A string
+    never runs past the end of its line.
+    """
+    out, i, n = [], 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == '"':
+            j = i + 1
+            while j < n and text[j] not in '"\n':
+                j += 2 if backslash_escapes and text[j] == "\\" else 1
+            if j < n and text[j] == '"':
+                j += 1
+            out.append(text[i:j])
+            i = j
+        elif text.startswith("//", i):
+            j = text.find("\n", i)
+            i = n if j < 0 else j
+        elif text.startswith("/*", i):
+            j = text.find("*/", i + 2)
+            j = n if j < 0 else j + 2
+            out.append("\n" * text.count("\n", i, j))
+            i = j
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
 
 
 def patch_names(text: str) -> set[str]:
     """Lowercased class names directly inside class CfgPatches { }."""
-    text = re.sub(r"//[^\n]*|/\*.*?\*/", "", text, flags=re.DOTALL)
+    text = strip_comments(text, backslash_escapes=False)
     m = re.search(r"\bclass\s+CfgPatches\s*\{", text)
     if not m:
         return set()
@@ -460,9 +519,9 @@ def lint_mod(
     not there). check_link=False skips the link check, for /dayz-build-pbo,
     which checks the link itself. project_dir: for the learned known-errors
     file used in triage. in_workspace=False: the folder is not
-    <project>\\workspace\\<ModName>\\, so the p-link fix points at
-    /dayz-import-mod or mklink /J instead of /dayz-add-scaffold, which only
-    works on workspace mods.
+    <project>\\workspace\\<ModName>\\, so fixes that name /dayz-add-scaffold,
+    which only works on workspace mods, point at /dayz-import-mod, mklink /J
+    or a hand edit instead.
     """
     if not mod_dir.is_dir():
         raise LintError(f"{mod_dir} not found")
@@ -471,14 +530,18 @@ def lint_mod(
     note = lint.run()
     known = triage.load_known(triage.KNOWN_ERRORS, triage.learned_path(project_dir) if project_dir else None)
     context = {"ModName": mod}
+    folder = lint.rel(mod_dir)
     for f in lint.findings:
         f["triage"] = triage.match_line(f["text"], known, context)
-        if f["rule"] == "p-link" and not in_workspace and f["triage"]["status"] == "known":
-            f["triage"]["fix"] = outside_link_fix(p_drive / lint.prefix, mod_dir)
-        elif f["rule"] == "script-module-path" and f["triage"]["status"] == "known":
-            # The catalog fix names workspace/<ModName>/; name the folder actually linted instead.
-            f["triage"]["fix"] = (f"Point files[] at {mod}/scripts/<layer> and make sure that folder "
-                                  f"exists under {lint.rel(mod_dir)}/.")
+        t = f["triage"]
+        if t["status"] != "known":
+            continue
+        # Catalog fixes name workspace/<ModName>/; name the folder actually linted instead.
+        t["fix"] = t["fix"].replace(f"workspace/{mod}/", f"{folder}/")
+        if not in_workspace:
+            fix = outside_fix(f["rule"], mod, folder, p_drive / lint.prefix, mod_dir)
+            if fix:
+                t["fix"] = fix
     findings = sorted(lint.findings, key=lambda f: (f["severity"] != ERROR, f["file"], f["line"] or 0))
     errors = sum(f["severity"] == ERROR for f in findings)
     report = {
@@ -494,10 +557,17 @@ def lint_mod(
     return report
 
 
-def outside_link_fix(link: Path, mod_dir: Path) -> str:
-    """The p-link fix for a folder outside workspace\\ (/dayz-add-scaffold refuses those)."""
-    return (f'Run /dayz-import-mod --source "{mod_dir}" to link it into workspace\\ and create {link}, '
-            f'or link it by hand: mklink /J "{link}" "{mod_dir}".')
+def outside_fix(rule: str, mod: str, folder: str, link: Path, mod_dir: Path) -> Optional[str]:
+    """The fix for a folder outside workspace\\, where /dayz-add-scaffold refuses to run; None keeps the catalog fix."""
+    if rule == "p-link":
+        return (f'Run /dayz-import-mod --source "{mod_dir}" to link it into workspace\\ and create {link}, '
+                f'or link it by hand: mklink /J "{link}" "{mod_dir}".')
+    if rule == "pboprefix-missing":
+        return f"Create {folder}/$PBOPREFIX$ holding the single line {mod}."
+    if rule == "config-missing":
+        return (f"Add a config.cpp with a CfgPatches class to {folder}/, or mark the folder as a payload bundle "
+                f"by putting its prebuilt PBOs in {folder}/Addons/.")
+    return None
 
 
 def cached_workspace() -> Optional[Path]:
@@ -515,6 +585,31 @@ def is_workspace_mod(mod_dir: Path, mod: str) -> bool:
     return entry.is_dir() and h.paths_equal(entry.resolve(), mod_dir.resolve())
 
 
+def project_root() -> Path:
+    """The cached project root. Raises LintError with the reason instead of printing it first on stderr."""
+    captured = io.StringIO()
+    try:
+        with contextlib.redirect_stderr(captured):
+            return h.resolve_project_dir()
+    except SystemExit:
+        reason = " ".join(line.strip().removeprefix(h.FAIL.strip()).strip()
+                          for line in captured.getvalue().splitlines() if line.strip())
+        raise LintError(f"{reason} Or pass --mod-dir <folder>." if reason
+                        else "no usable project: run /dayz-init, or pass --mod-dir") from None
+
+
+def check_mod_name(name: str) -> None:
+    """A <ModName> is one folder name under workspace\\; a path would be joined outside it."""
+    if name in (".", "..") or any(c in name for c in "/\\:"):
+        raise LintError(f"{q(name)} is not a mod folder name; give the name of a folder under workspace/, "
+                        f"or pass a path with --mod-dir.")
+
+
+class _Parser(argparse.ArgumentParser):
+    def error(self, message: str):  # argparse would print usage on stderr and exit 2 with no verdict line
+        raise LintError(f"{message}. {self.format_usage().strip()}")
+
+
 def render_text(report: dict) -> str:
     out = []
     for f in report["findings"]:
@@ -530,27 +625,30 @@ def render_text(report: dict) -> str:
 
 
 def main(argv: Optional[list[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="Find errors that would stop a DayZ mod loading, before packing.")
+    argv = sys.argv[1:] if argv is None else argv
+    parser = _Parser(description="Find errors that would stop a DayZ mod loading, before packing.")
     parser.add_argument("mod", nargs="?", help="Mod name under workspace/ in the project cached by /dayz-init.")
-    parser.add_argument("--mod-dir", type=Path, help="Lint this folder instead (its name is the mod name).")
+    parser.add_argument("--mod-dir", type=Path, help="Lint this folder instead (its name is the mod name unless <ModName> is given too).")
     parser.add_argument("--json", action="store_true", help="Print the report as JSON after the verdict line.")
     try:
         args = parser.parse_args(argv)
         if not args.mod and not args.mod_dir:
             parser.error("give a <ModName> or --mod-dir")
-    except SystemExit as e:
-        return 0 if e.code == 0 else 2
+    except SystemExit as e:  # only --help gets here now
+        return 0 if e.code in (0, None) else 2
+    except LintError as e:
+        return _error(str(e), "--json" in argv)
 
     try:
+        if args.mod:
+            check_mod_name(args.mod)
         if args.mod_dir:
             mod_dir = args.mod_dir.resolve()
             mod = args.mod or mod_dir.name
             report = lint_mod(mod, mod_dir, display_root=Path.cwd(), in_workspace=is_workspace_mod(mod_dir, mod))
         else:
-            project_dir = h.resolve_project_dir()
+            project_dir = project_root()
             report = lint_mod(args.mod, project_dir / "workspace" / args.mod, project_dir, project_dir=project_dir)
-    except SystemExit:  # resolve_project_dir already printed why on stderr
-        return _error("no usable project: run /dayz-init, or pass --mod-dir", args.json)
     except (LintError, OSError, ValueError) as e:
         return _error(str(e), args.json)
     print(report["verdict"])

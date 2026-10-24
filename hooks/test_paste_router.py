@@ -359,7 +359,7 @@ REPO = Path(__file__).resolve().parents[1]
 def test_hook_is_registered_for_plugin_and_clone(config, root):
     hooks = json.loads((REPO / config).read_text(encoding="utf-8"))["hooks"]["UserPromptSubmit"]
     commands = [h["command"] for entry in hooks for h in entry["hooks"]]
-    assert f'python "{root}/hooks/paste_router.py"' in commands
+    assert f"""P=python; python -c '' >/dev/null 2>&1 || P=py; "$P" "{root}/hooks/paste_router.py\"""" in commands
 
 
 def test_suggested_name_is_cleaned_to_ascii():

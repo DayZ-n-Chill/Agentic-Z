@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/paste_router.py\"",
+            "command": "P=python; python -c '' >/dev/null 2>&1 || P=py; \"$P\" \"${CLAUDE_PLUGIN_ROOT}/hooks/paste_router.py\"",
             "timeout": 10
           }
         ]
@@ -14,11 +14,11 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|MultiEdit",
+        "matcher": "Edit|Write|MultiEdit|Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/scope_guard.py\"",
+            "command": "P=python; python -c '' >/dev/null 2>&1 || P=py; \"$P\" \"${CLAUDE_PLUGIN_ROOT}/hooks/scope_guard.py\"",
             "timeout": 10
           }
         ]
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/edit_check.py\"",
+            "command": "P=python; python -c '' >/dev/null 2>&1 || P=py; \"$P\" \"${CLAUDE_PLUGIN_ROOT}/hooks/edit_check.py\"",
             "timeout": 15
           }
         ]
