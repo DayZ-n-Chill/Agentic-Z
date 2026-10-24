@@ -154,7 +154,7 @@ def test_stop_session_noop_when_nothing_runs():
 
 def test_stop_session_runs_stop_test_bat():
     fake = FakeRuntime(running=[5])
-    step = gate.stop_session(fake.runtime())
+    step = gate.stop_session(fake.runtime(), started_by_gate=True)
     assert "stopped PIDs [5]" in step["result"]
     assert fake.calls[0][:2] == ["cmd", "/c"] and fake.calls[0][2].endswith("stop_test.bat")
 
@@ -163,14 +163,91 @@ def test_stop_session_failure_is_gate_error():
     fake = FakeRuntime(running=[5])
     fake.stop_rc = 1
     with pytest.raises(gate.GateError, match="exited 1"):
-        gate.stop_session(fake.runtime())
+        gate.stop_session(fake.runtime(), started_by_gate=True)
 
 
 def test_stop_session_survivors_are_gate_error():
     fake = FakeRuntime(running=[5])
     fake.stop_leaves = [5]
     with pytest.raises(gate.GateError, match="still running"):
+        gate.stop_session(fake.runtime(), started_by_gate=True)
+    assert fake.now >= gate.STOP_WAIT_S  # it waited before giving up
+
+
+def test_stop_session_waits_for_a_slow_exit():
+    # The live AZTestVest run: taskkill returned, but the server was still exiting
+    # at the single 2 s check, so the in-game gate errored three times.
+    fake = FakeRuntime(running=[5])
+    fake.stop_leaves = [5]
+    fake.at(8, lambda: setattr(fake, "running", []))
+    assert "stopped PIDs [5]" in gate.stop_session(fake.runtime(), started_by_gate=True)["result"]
+
+
+# A session the gate did not start may be the user's own play session: the gate
+# used to kill it with no prompt. Now it needs --yes or a yes at the terminal.
+
+def test_stop_session_refuses_a_session_it_did_not_start():
+    fake = FakeRuntime(running=[5])
+    with pytest.raises(gate.GateError, match=r"already running \(PIDs \[5\]\).*--yes"):
         gate.stop_session(fake.runtime())
+    assert fake.calls == [] and fake.running == [5]
+
+
+def test_stop_session_stops_a_foreign_session_once_confirmed():
+    fake = FakeRuntime(running=[5])
+    asked = []
+    rt = fake.runtime()._replace(confirm=lambda pids: asked.append(pids) or True)
+    assert "stopped PIDs [5]" in gate.stop_session(rt)["result"]
+    assert asked == [[5]]
+
+
+def test_stop_session_never_asks_about_its_own_session():
+    fake = FakeRuntime(running=[5])
+    rt = fake.runtime()._replace(confirm=lambda pids: pytest.fail("asked about the gate's own session"))
+    assert "stopped PIDs [5]" in gate.stop_session(rt, started_by_gate=True)["result"]
+
+
+class _Stdin:
+    def __init__(self, tty: bool):
+        self.tty = tty
+
+    def isatty(self) -> bool:
+        return self.tty
+
+
+@pytest.mark.parametrize("tty, answer, expected", [
+    (False, "y", False),  # no terminal (an agent or a pipe): never assume yes
+    (True, "y", True),
+    (True, "YES", True),
+    (True, "", False),
+    (True, "n", False),
+])
+def test_confirm_at_terminal(monkeypatch, tty, answer, expected):
+    monkeypatch.setattr(gate.sys, "stdin", _Stdin(tty))
+    prompts = []
+    monkeypatch.setattr("builtins.input", lambda prompt: prompts.append(prompt) or answer)
+    assert gate.confirm_at_terminal([5]) is expected
+    assert bool(prompts) == tty
+
+
+def test_confirm_at_terminal_eof_is_no(monkeypatch):
+    monkeypatch.setattr(gate.sys, "stdin", _Stdin(True))
+
+    def eof(prompt):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", eof)
+    assert gate.confirm_at_terminal([5]) is False
+
+
+@pytest.mark.parametrize("mode", ["build", "ingame"])  # behavior and visual: their own test files
+def test_every_launching_mode_refuses_a_foreign_session_without_yes(project, capsys, mode):
+    fake = FakeRuntime({"build.py": (0, BUILD_OK), "launch.py": launch_ok()}, running=[42])
+    rc, first, data = run_main([mode, "MyMod", "--json"], fake, capsys)
+    assert (rc, first) == (2, "ERROR")
+    assert "--yes" in data["error"]
+    assert fake.stops() == 0 and fake.running == [42]
+    assert not fake.ran("launch.py") and not fake.ran("build.py")
 
 
 # --- build gate --------------------------------------------------------------------
@@ -268,7 +345,7 @@ def test_build_missing_mod_folder_is_a_gate_error(project, capsys):
 
 def test_build_stops_running_session_first(project, capsys):
     fake = FakeRuntime({"build.py": (0, BUILD_OK)}, running=[42])
-    rc, _, data = run_main(["build", "MyMod", "--json"], fake, capsys)
+    rc, _, data = run_main(["build", "MyMod", "--json", "--yes"], fake, capsys)
     assert rc == 0
     assert "stop_test.bat" in " ".join(fake.calls[0]) and "build.py" in " ".join(fake.calls[1])
     assert data["steps"][0]["result"] == "stopped PIDs [42]"
@@ -315,6 +392,22 @@ def test_build_finding_points_to_files(project):
     findings = gate.parse_build_output("[AddonBuilder] x\nError: In File P:\\MyMod\\config.cpp: Line 12 something\n")
     assert findings[0]["points_to"] == ["P:\\MyMod\\config.cpp"]
     assert findings[0]["line"] == 2
+
+
+def test_build_crash_is_a_finding_and_keeps_the_output_tail(project, capsys):
+    # The live AZTestVest build: AddonBuilder crashed with only [FATAL] and exception
+    # lines, and the gate kept neither, so the debugger could not see the cause.
+    out = BUILD_OK.replace(
+        "Packing MyMod...",
+        "[2026-10-24 02:47:53,566] [FATAL]: System.ArgumentNullException: Value cannot be null.\n"
+        "Parameter name: path",
+    ) + "[FAIL]  AddonBuilder reported success but P:\\Mods\\@MyMod\\Addons\\MyMod.pbo is missing.\n"
+    fake = FakeRuntime({"build.py": (1, out)})
+    rc, _, data = run_main(["build", "MyMod", "--json"], fake, capsys)
+    assert rc == 1
+    assert any("[FATAL]" in f["text"] for f in data["failures"] if f["category"] == "build_error")
+    step = next(s for s in data["steps"] if s.get("step") == "dayz-build-pbo")
+    assert any("ArgumentNullException" in line for line in step["tail"])
 
 
 def test_build_ignores_preflight_warnings_and_zero_error_summaries(project):
@@ -450,7 +543,7 @@ def ingame(fake: FakeRuntime, capsys, *extra: str) -> tuple[int, str, dict]:
 def test_ingame_pass_stops_session_and_reports_ready(project, capsys):
     fake = FakeRuntime({"launch.py": launch_ok()}, running=[7])
     session(fake, project)
-    rc, first, data = ingame(fake, capsys)
+    rc, first, data = ingame(fake, capsys, "--yes")
     assert (rc, first) == (0, "PASS")
     assert data["ready"]["text"] == READY
     assert fake.stops() == 2  # the leftover session before, ours after

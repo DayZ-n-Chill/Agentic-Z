@@ -54,28 +54,25 @@ array<string> stringArray = new array<string>;
 
 ```
 TStringArray allowedItems;     // typedef array<string>, P:\scripts\1_core\proto\enscript.c:731
-autoptr TVectorArray spawnPoints; // autoptr for managed arrays
+ref TVectorArray m_SpawnPoints; // ref: this object owns the array
 ```
 
 ### References
 
-Use `ref` or `autoptr` for managed references on member variables:
+Use `ref` for owned (strong) references on member variables:
 
 ```
 ref MyMod_SettingsMenu m_MyMod_SettingsMenu;
-autoptr TVectorArray SpawnPoints;
+ref TVectorArray m_SpawnPoints;
 ```
 
-**Understanding `ref` vs `autoptr`:**
-
-- **`ref`**: Instance is deleted when the **last reference** to it is removed (reference counting)
-- **`autoptr`**: Instance is deleted when the **parent instance** is deleted (ownership semantics)
+- **`ref`**: a strong reference. The instance is deleted when the last strong reference to it goes away (`../enscript/references/language_memory.md`).
+- **`autoptr`**: the older owning qualifier, not a separate model. Vanilla keeps it in ten files, mostly `1_core` docs and examples (`autoptr map<string, float> m_values;`, `P:\scripts\1_core\proto\serializer.c:14`). Newer vanilla code uses `ref` for members. Use `ref` in mod code (`../enscript/references/language_memory.md`, section `autoptr`).
 
 ```
 class Example
 {
-    ref MyClass m_RefInstance;      // Deleted when all references gone
-    autoptr MyClass m_AutoInstance; // Deleted when Example is deleted
+    ref MyClass m_Instance; // owned by Example
 }
 ```
 

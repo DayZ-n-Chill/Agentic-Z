@@ -95,6 +95,7 @@ def test_find_project_dir_walks_up_to_the_cache(tmp_path, monkeypatch):
 
 def test_find_project_dir_prefers_env_then_falls_back_to_cwd(tmp_path, monkeypatch):
     monkeypatch.setattr(state.Path, "home", classmethod(lambda cls: tmp_path.resolve()))
+    monkeypatch.setattr(state, "SCRIPT_CLONE", tmp_path / "no-clone")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path / "env"))
     assert state.find_project_dir() == (tmp_path / "env").resolve()
@@ -107,6 +108,19 @@ def test_find_project_dir_ignores_a_cache_in_home(tmp_path, monkeypatch):
     sub = home / "repos" / "Other"
     sub.mkdir(parents=True)
     monkeypatch.setattr(state.Path, "home", classmethod(lambda cls: home))
+    monkeypatch.setattr(state, "SCRIPT_CLONE", tmp_path / "no-clone")
     monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
     monkeypatch.chdir(sub)
     assert state.find_project_dir() == sub
+
+
+def test_find_project_dir_outside_any_project_uses_the_scripts_clone(tmp_path, monkeypatch):
+    # The live AZTestVest run: a worker's shell started in the home folder, which
+    # holds a stray cache pointing at another clone, and its build went there.
+    home = _seed_cache(tmp_path.resolve() / "home")
+    clone = _seed_cache(tmp_path.resolve() / "clone")
+    monkeypatch.setattr(state.Path, "home", classmethod(lambda cls: home))
+    monkeypatch.setattr(state, "SCRIPT_CLONE", clone)
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(home)
+    assert state.find_project_dir() == clone

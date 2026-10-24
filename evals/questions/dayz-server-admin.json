@@ -6,9 +6,9 @@
       "question": "Answer only, do not edit any file. A guide told me to add `class CfgSpawnablesTypes { class MyMod_Canteen { nominal = 15; min = 5; }; };` to my mod's config.cpp, but the item never spawns as loot. Where do the nominal and min values for loot really go? Answer in a few lines; you do not need to search all of P:\\ to prove the class is missing.",
       "must_include": [
         "types.xml",
-        "re:mission"
+        "re:\\bmission\\b"
       ],
-      "verified": "No CfgSpawnablesTypes or CfgRandomPresence class exists in any config.cpp or script under P:/DZ or P:/scripts; the CE values are read from the mission's types.xml (CEItemProfile comments, P:/scripts/3_game/ce/centraleconomy.c:754-765)"
+      "verified": "No CfgSpawnablesTypes or CfgRandomPresence class exists in any config.cpp or script under P:/DZ or P:/scripts; the CEItemProfile getters (GetNominal, GetMin, GetLifetime, GetRestock, GetCost, P:/scripts/3_game/ce/centraleconomy.c:754-765) only read the values back and do not name their source; types.xml in the mission as the source is the repo rule in .claude/skills/_shared/conventions/server.md:11"
     },
     {
       "id": "objectspawner-json",

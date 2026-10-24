@@ -1,7 +1,7 @@
 ---
 name: dayz-upgrade-guard
 description: "Snapshots every vanilla class on P:\\ (script classes with their parent and method signatures, config classes with their parent and the properties they set). After a DayZ update it takes a new snapshot, diffs it with the last one and lists the mod classes whose vanilla parents changed, with file:line and the reason. Can rebuild the search index afterwards. Use before and after a DayZ update, or when a mod broke after one."
-argument-hint: "snapshot [--label <text>] | check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--json] | diff [--old <a> --new <b>] [<ModName> ...] [--mod-dir <folder>] [--json] | reindex"
+argument-hint: "snapshot [--label <text>] [--accept] | check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--accept] [--json] | diff [--old <a> --new <b>] [<ModName> ...] [--mod-dir <folder>] [--json] | reindex"
 ---
 
 <!-- skill-dir-note -->
@@ -15,6 +15,8 @@ A script does the work: it reads the vanilla files on `P:\`, saves a snapshot an
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
+It does not gate on `/dayz-preflight`; `dayz-conventions.md` lists it as an exception. It needs only the unpacked game data on `P:\`, not DayZ Tools, the game install or the `P:\Mods` junction, and it checks that data itself: with no `P:\scripts` or `P:\DZ` folder it stops with an ERROR and saves nothing.
+
 ## When to run it
 
 1. **Before** a DayZ update, while `P:\` still holds the old game data: `snapshot`.
@@ -26,8 +28,8 @@ If there is no earlier snapshot, `check` saves the first one as the baseline and
 ## How to run
 
 ```cmd
-python "<skill-dir>\upgrade_guard.py" snapshot [--label 1.28]
-python "<skill-dir>\upgrade_guard.py" check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--json]
+python "<skill-dir>\upgrade_guard.py" snapshot [--label 1.28] [--accept]
+python "<skill-dir>\upgrade_guard.py" check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--accept] [--json]
 python "<skill-dir>\upgrade_guard.py" diff [--old <snapshot> --new <snapshot>] [<ModName> ...] [--mod-dir <folder>] [--json]
 python "<skill-dir>\upgrade_guard.py" reindex
 ```
@@ -37,9 +39,10 @@ python "<skill-dir>\upgrade_guard.py" reindex
 | `snapshot` | Read every vanilla class and save a snapshot. `--label` adds text to the file name, such as the game version. |
 | `check` | Take a snapshot now, diff it with the newest saved one and check the mods. When nothing changed it keeps the old snapshot instead of saving a copy. `--label` adds text to the new snapshot's file name. |
 | `diff` | Compare two saved snapshots without reading `P:\`. With no `--old` and `--new` it uses the two newest. Use it to see a report again. |
-| `reindex` | Rebuild the search index (`/dayz-search-index --full`) on its own. Use it after a `check` without `--reindex` reported that vanilla changed: that check saved the new snapshot as the baseline, so a second `check --reindex` sees no change and rebuilds nothing. Exits with the indexer's code. |
-| `<ModName>` | A mod under `workspace/` in the project cached by `/dayz-init`. With no name and no `--mod-dir`, every mod in `workspace/` is checked. With no name, no `--mod-dir` and no cached project, `check` stops with an ERROR (exit 2) asking for the mod and saves nothing; `diff` then reports the vanilla changes only. |
+| `reindex` | Rebuild the search index (`/dayz-search-index --full`) on its own. Use it after a `check` without `--reindex` reported that vanilla changed: that check saved the new snapshot as the baseline, so a second `check --reindex` sees no change and rebuilds nothing. Exits 0 when the rebuild worked, or 2 with an `ERROR` line after the indexer's output when it failed (never 1, which means FAIL). |
+| `<ModName>` | A mod under `workspace/` in the project cached by `/dayz-init`. With no name and no `--mod-dir`, every mod in `workspace/` is checked. When that finds no mod (no cached project, or a cached project whose `workspace/` holds no mod folder), `check` stops with an ERROR (exit 2) that says which, and saves nothing; `diff` then reports the vanilla changes only and says why no mod was checked. |
 | `--mod-dir` | Check this folder too. Repeat it for more folders. |
+| `--accept` | With `snapshot` or `check`: save the new snapshot even when the game data looks only partly unpacked (see "What a snapshot holds"). Use it only when you know the drop is real. |
 | `--reindex` | With `check`: when vanilla changed, rebuild the search index (`/dayz-search-index --full`) so search answers match the new files. It uses Voyage tokens, so it only runs when you ask. |
 | `--json` | Print the full report as JSON after the verdict line. Stdout then holds only those two parts; the reindex note and the indexer's output go to stderr. |
 | `--store`, `--p-root` | Another snapshot folder (default `~/.claude/dayz-upgrade-guard/`) or game data root (default `P:\`). |
@@ -53,7 +56,11 @@ python "<skill-dir>\upgrade_guard.py" reindex
 
 A snapshot of the full game data takes about ten seconds and is about 10 MB.
 
-A snapshot saved before config keys became case blind (format 1) is refused with an ERROR. Take a new snapshot; if the game has already been updated, the new one becomes the baseline for the next update.
+A snapshot is not saved, and the command stops with an ERROR (exit 2), when the game data looks only partly unpacked: it has no script classes or no config classes, or fewer than half the script or config classes of the newest saved snapshot. Saving it would make it the baseline, and the next `check` would compare the real game data with it. Finish unpacking and run again, or pass `--accept`.
+
+A snapshot is written to a `.tmp` file and renamed once it is complete, so an interrupted save (Ctrl-C, a full disk) never leaves a half written snapshot in the store. When a command picks saved snapshots itself (`snapshot`, `check`, and `diff` without `--old` and `--new`), it uses the newest ones it can read. A file it cannot read (corrupt, not a snapshot, or an older format) is skipped with a `Skipped:` note on stderr that names the file and the reason, so one bad file never blocks a check; delete or move that file to stop the note.
+
+A snapshot saved before config keys became case blind (format 1) is skipped as above, and refused with an ERROR when you name it with `--old` or `--new`. If it is the only snapshot, `check` saves the new one as the baseline for the next update.
 
 ## What it flags
 
@@ -70,7 +77,7 @@ A script `modded class X` is checked against X itself; `class Y extends X` is ch
 
 ## Output and exit codes
 
-The first line is the verdict: `PASS` (exit 0, no mod class affected), `FAIL` (exit 1, at least one) or `ERROR` (exit 2: bad arguments, no game data on `P:\`, fewer than two snapshots to diff, a mod folder that does not exist, or a `check` with no mod to check and no cached project). A missing mod folder is caught before `check` saves anything, so a mistyped name never uses up the update. `snapshot` prints the saved path instead. With `--json`, the first `check` prints `{"verdict": "PASS", "baseline": "<path>"}` after the verdict line.
+The first line is the verdict: `PASS` (exit 0, no mod class affected), `FAIL` (exit 1, at least one) or `ERROR` (exit 2: bad arguments, no game data on `P:\`, game data only partly unpacked (nothing saved), fewer than two readable snapshots to diff, a snapshot named with `--old` or `--new` that cannot be read, a snapshot that cannot be saved, a mod folder that does not exist, or a `check` with no mod to check). A missing mod folder is caught before `check` saves anything, so a mistyped name or an empty `workspace/` never uses up the update. A failed rebuild under `check --reindex` is reported in a note and keeps the verdict's exit code; the `reindex` command's own codes are in the table above. `snapshot` prints the saved path instead. With `--json`, the first `check` prints `{"verdict": "PASS", "baseline": "<path>"}` after the verdict line.
 
 ```
 FAIL
@@ -94,7 +101,7 @@ FAIL
 - It compares class shapes, not behaviour. A method that keeps its signature but works differently is not flagged; `/dayz-gate ingame` and `/dayz-gate behavior` catch that.
 - Config property values are not compared, only whether a property is still set.
 - `#ifdef` branches are read as if all were on.
-- `check` always compares with the newest saved snapshot. After an update the first `check` saves the new snapshot, so running `check` again says the vanilla classes did not change. Use `diff` to see the update report again.
+- `check` always compares with the newest saved snapshot it can read. After an update the first `check` saves the new snapshot, so running `check` again says the vanilla classes did not change. Use `diff` to see the update report again.
 
 ## Do not
 

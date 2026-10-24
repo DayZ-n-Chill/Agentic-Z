@@ -139,9 +139,12 @@ def age(seconds: float) -> str:
     return f"{int(seconds // 86400)}d"
 
 
-def render(machine: dict, mod: Optional[str], cached: bool, now: float) -> str:
+def render(machine: dict, mod: Optional[str], cached: Optional[bool], now: float) -> str:
+    """cached: True/False for project cache present/absent, None when the lookup itself failed."""
     p = {True: "P: mounted", False: "P: NOT mounted"}.get(machine.get("p"), "P: ?")
-    if not cached:
+    if cached is None:
+        m = "mod ?"  # broken state file or state.py: re-running /dayz-init is not the fix
+    elif not cached:
         m = "no project (/dayz-init)"
     else:
         m = f"mod {mod}" if mod else "no active mod"
@@ -168,7 +171,10 @@ def main() -> int:
             sys.stdout.reconfigure(errors="replace")  # a mod name the console can't encode stays printable
         now = time.time()
         project = project_dir(sys.stdin.read())
-        mod, cached = _safe(lambda: active_mod(project)) or (None, False)
+        try:
+            mod, cached = active_mod(project)
+        except Exception:
+            mod, cached = None, None
         print(render(machine_state(now), mod, cached, now))
     except Exception:
         print(FALLBACK)

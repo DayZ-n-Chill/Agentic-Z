@@ -8,8 +8,10 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -24,6 +26,9 @@ _nm = h.load_module("dayz_new_mod_module", h.SKILLS_DIR / "dayz-new-mod" / "new_
 
 INCLUDE_LIST = Path(__file__).resolve().parent / "include.lst"
 # Patterns left out of the PBO, including .gui-sources/ (imageset sprite sources).
+# build.py applies them itself while staging the mod (see stage_source): AddonBuilder
+# 1.0.240639 crashes on any -exclude= (ArgumentNullException in TextureHeaderBinazrizeTask,
+# because BuilderConfiguration leaves ExcludeListFilename null when -exclude is given).
 EXCLUDE_LIST = Path(__file__).resolve().parent / "exclude.lst"
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
@@ -42,6 +47,13 @@ def verify_workspace(modname: str, project_dir: Path) -> Path:
         sys.exit(
             f"{FAIL} {rel} not found.\n"
             f"       Run /dayz-new-mod {modname} (or /dayz-import-mod) first."
+        )
+    addons = target / "Addons"
+    if not (target / "config.cpp").exists() and addons.is_dir() and any(addons.glob("*.pbo")):
+        # A payload-only bundle (prebuilt Addons\*.pbo, no source) has nothing to build.
+        sys.exit(
+            f"{FAIL} {rel}\\ is a payload-only bundle (prebuilt Addons\\*.pbo, no config.cpp).\n"
+            f"       There is nothing to build. Deploy it with /dayz-deploy-pbo {modname}."
         )
     for required in ("config.cpp", "$PBOPREFIX$"):
         if not (target / required).exists():
@@ -145,11 +157,77 @@ def build_addon_builder_cmd(
         f"-prefix={modname}",
         f"-temp={temp_dir}",
         f"-include={INCLUDE_LIST}",
-        f"-exclude={EXCLUDE_LIST}",
     ]
     if clean:
         cmd.append("-clear")
     return cmd
+
+
+def exclude_patterns() -> list[str]:
+    """The patterns in exclude.lst, without blank and ';' comment lines."""
+    lines = EXCLUDE_LIST.read_text(encoding="utf-8").splitlines()
+    return [line.strip() for line in lines if line.strip() and not line.strip().startswith(";")]
+
+
+def is_excluded(rel_path: str, patterns: list[str]) -> bool:
+    """True when a mod-relative path (backslash separators) matches an exclude pattern.
+
+    The whole relative path is matched, case-insensitive, and '*' crosses folder
+    separators, so "workbench\\*" drops every file in the root workbench folder
+    (extensionless ones too) and
+    "*.bak" drops .bak files at any depth.
+    """
+    rel = rel_path.lower()
+    return any(fnmatch.fnmatchcase(rel, pat.lower()) for pat in patterns)
+
+
+def remove_tree(folder: Path) -> None:
+    """shutil.rmtree that also deletes read-only files.
+
+    shutil.copy2 keeps a source file's read-only flag, so a stage built from a
+    read-only file would otherwise make the next build's rmtree fail.
+    """
+    def _force(func, path, _exc):
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(folder, onexc=_force)
+    else:
+        shutil.rmtree(folder, onerror=_force)
+
+
+def stage_source(source: Path, stage: Path, patterns: list[str]) -> tuple[int, int]:
+    """Copy source to a fresh stage folder, leaving out excluded files.
+
+    Returns (files copied, files left out). AddonBuilder then packs the stage, so the
+    exclude list holds without passing -exclude=. Exits with [FAIL] when a file in the
+    old stage or the source cannot be removed or copied (usually a lock held by a
+    crashed AddonBuilder or by Workbench).
+    """
+    copied = skipped = 0
+    try:
+        if stage.exists():
+            remove_tree(stage)
+        for path in sorted(source.rglob("*")):
+            if not path.is_file():
+                continue
+            rel = str(path.relative_to(source)).replace("/", "\\")
+            if is_excluded(rel, patterns):
+                skipped += 1
+                continue
+            dest = stage / path.relative_to(source)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, dest)
+            copied += 1
+    except OSError as e:
+        sys.exit(
+            f"{FAIL} Could not stage the mod in {stage}: {e.filename or stage} is locked or unreadable"
+            f" ({e.strerror or e}).\n"
+            "       Close Workbench or any program that has the file open, or stop a stuck AddonBuilder\n"
+            "       with: taskkill /im AddonBuilder.exe /f   Then build again."
+        )
+    return copied, skipped
 
 
 def other_pbos(addons_dir: Path, modname: str) -> list[str]:
@@ -167,14 +245,47 @@ def other_pbos(addons_dir: Path, modname: str) -> list[str]:
     )
 
 
+def signatures(addons_dir: Path) -> list[str]:
+    """Names of .bisign files in addons_dir (sorted).
+
+    AddonBuilder never writes them: they are copied in by /dayz-deploy-pbo or
+    made by hand with DSSignFile, so -clear would delete them for good.
+    """
+    if not addons_dir.is_dir():
+        return []
+    return sorted(f.name for f in addons_dir.iterdir() if f.is_file() and f.suffix.lower() == ".bisign")
+
+
+def own_signatures(addons_dir: Path, modname: str) -> list[str]:
+    """The <modname>.pbo.<key>.bisign names in addons_dir (case-insensitive)."""
+    prefix = f"{modname}.pbo.".lower()
+    return [name for name in signatures(addons_dir) if name.lower().startswith(prefix)]
+
+
 def gate_clean(addons_dir: Path, modname: str) -> None:
-    """Exit if --clean would wipe PBOs other than <modname>.pbo."""
+    """Exit if --clean would wipe PBOs other than <modname>.pbo, or any .bisign."""
     others = other_pbos(addons_dir, modname)
-    if others:
+    sigs = signatures(addons_dir)
+    if others or sigs:
         sys.exit(
-            f"{FAIL} --clean would wipe other PBOs in {addons_dir}\\: {', '.join(others)}\n"
-            "       They are deployed payload (/dayz-deploy-pbo). Build without --clean,\n"
-            "       or remove them yourself first and re-deploy afterwards."
+            f"{FAIL} --clean would wipe files in {addons_dir}\\ that AddonBuilder does not make: "
+            f"{', '.join(others + sigs)}\n"
+            "       Other PBOs and .bisign signatures are deployed payload (/dayz-deploy-pbo) or\n"
+            "       hand-made signatures. Build without --clean, or move them aside first and\n"
+            "       re-deploy or re-sign afterwards."
+        )
+
+
+def warn_stale_signatures(addons_dir: Path, modname: str) -> None:
+    """Warn about <modname>.pbo.*.bisign files left from before this build.
+
+    AddonBuilder does not sign, so any such signature was made for an earlier
+    <modname>.pbo and does not cover the one just built.
+    """
+    for name in own_signatures(addons_dir, modname):
+        print(
+            f"{WARN} {addons_dir / name} was made for an earlier {modname}.pbo, not this build.\n"
+            f"       Re-sign {modname}.pbo with DayZ Tools\\Bin\\DsUtils\\DSSignFile.exe, or delete the old signature."
         )
 
 
@@ -203,19 +314,22 @@ def main() -> int:
         "--clean",
         action="store_true",
         help="Wipe P:\\Mods\\@<ModName>\\Addons\\ before building (AddonBuilder -clear). "
-        "Refused while Addons\\ holds PBOs other than <ModName>.pbo.",
+        "Refused while Addons\\ holds PBOs other than <ModName>.pbo, or any .bisign.",
     )
     args = parser.parse_args()
 
     _nm.validate_name(args.modname)
     project_dir = h.resolve_project_dir()
-    gate_on_lint(args.modname, project_dir)
+    # Preflight first (L2 rule): a dismounted P:\ must be the first error shown.
     h.gate_on_preflight()
+    # The workspace check runs before lint, so a missing file or a payload-only
+    # bundle gets its own repair hint instead of a lint error.
+    workspace_target = verify_workspace(args.modname, project_dir)
+    gate_on_lint(args.modname, project_dir)
     p_mods_err = validate_p_mods()
     if p_mods_err is not None:
         sys.exit(f"{FAIL} {p_mods_err}")
     print(f"{OK} P:\\Mods junction valid")
-    workspace_target = verify_workspace(args.modname, project_dir)
     verify_junction(args.modname, workspace_target)
     addon_builder = resolve_addon_builder()
 
@@ -235,12 +349,16 @@ def main() -> int:
     if created_root and not h.write_marker(deploy_root, args.modname):
         return 1
     temp_dir.mkdir(parents=True, exist_ok=True)
+    # The stage keeps the <ModName> folder name, which AddonBuilder uses for the PBO name.
+    stage = TEMP_ROOT / "_stage" / args.modname
+    copied, skipped = stage_source(workspace_target, stage, exclude_patterns())
+    print(f"{OK} Staged {copied} files in {stage} ({skipped} left out by exclude.lst)")
 
-    cmd = build_addon_builder_cmd(
-        addon_builder, P_DRIVE / args.modname, target_dir, args.modname, temp_dir, args.clean
-    )
+    cmd = build_addon_builder_cmd(addon_builder, stage, target_dir, args.modname, temp_dir, args.clean)
     print()
-    print(f"[AddonBuilder] {' '.join(cmd)}")
+    # list2cmdline quotes arguments with spaces (the default path holds "DayZ Tools"),
+    # so the echoed line can be pasted into a terminal and run as is.
+    print(f"[AddonBuilder] {subprocess.list2cmdline(cmd)}")
     print()
     sys.stdout.flush()  # our lines land before AddonBuilder takes over stdout
     build_started = time.time()
@@ -249,23 +367,28 @@ def main() -> int:
     print()
     if rc != 0:
         print(f"{FAIL} AddonBuilder exited {rc}")
-        print(f"       Temp dir kept for debugging: {temp_dir}")
+        print(f"       Kept for debugging: temp dir {temp_dir}, stage dir {stage}")
         return rc
 
     pbo_path = target_dir / f"{args.modname}.pbo"
     error = check_pbo_output(pbo_path, build_started)
     if error is not None:
         print(f"{FAIL} {error}")
-        print(f"       Temp dir kept for inspection: {temp_dir}")
+        print(f"       Kept for inspection: temp dir {temp_dir}, stage dir {stage}")
         return 1
 
     print(f"{OK} Built: {pbo_path} ({pbo_path.stat().st_size:,} bytes)")
+    warn_stale_signatures(target_dir, args.modname)
 
-    try:
-        shutil.rmtree(temp_dir)
-        print(f"{OK} Cleaned temp dir")
-    except OSError as e:
-        print(f"{WARN} Could not remove {temp_dir}: {e}")
+    cleaned = True
+    for folder in (temp_dir, stage):
+        try:
+            remove_tree(folder)
+        except OSError as e:
+            cleaned = False
+            print(f"{WARN} Could not remove {folder}: {e}")
+    if cleaned:
+        print(f"{OK} Cleaned temp and stage dirs")
 
     return 0
 

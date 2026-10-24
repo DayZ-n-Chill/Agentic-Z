@@ -499,7 +499,9 @@ def shadowed_by_project() -> bool:
 
     A clone with the agentic-z plugin enabled wires each hook twice: once from
     .claude/settings.json and once from the plugin's hooks.json. The plugin
-    copy then steps aside so the project copy runs alone.
+    copy then steps aside so the project copy runs alone. It steps aside only
+    when the project copy both exists and is wired in the project's settings,
+    so a clone that keeps hooks/ but drops the wiring still gets the plugin copy.
     """
     project = os.environ.get("CLAUDE_PROJECT_DIR")
     if not project:
@@ -508,7 +510,25 @@ def shadowed_by_project() -> bool:
     root = Path(project).resolve()
     if here.is_relative_to(root):
         return False
-    return (root / "hooks" / here.name).is_file()
+    if not (root / "hooks" / here.name).is_file():
+        return False
+    return any(_wires(root / ".claude" / name, here.name) for name in ("settings.json", "settings.local.json"))
+
+
+def _wires(settings: Path, hook: str) -> bool:
+    """True when a settings file has a hook command that runs the project's hooks/<hook>."""
+    try:
+        config = json.loads(settings.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    events = config.get("hooks") if isinstance(config, dict) else None
+    for groups in (events.values() if isinstance(events, dict) else []):
+        for group in groups if isinstance(groups, list) else []:
+            for entry in (group.get("hooks") or []) if isinstance(group, dict) else []:
+                command = str(entry.get("command") or "") if isinstance(entry, dict) else ""
+                if f"hooks/{hook}" in command.replace("\\", "/") and "CLAUDE_PLUGIN_ROOT" not in command:
+                    return True
+    return False
 
 
 def main(argv: list[str]) -> int:
@@ -520,10 +540,14 @@ def main(argv: list[str]) -> int:
             print(format_reason(path, problems))
             return 1
         return 0
-    if shadowed_by_project():
+    try:
+        shadowed = shadowed_by_project()
+    except Exception:  # a broken shadow check must not switch this copy off; run it instead
+        shadowed = False
+    if shadowed:
         return 0
     try:
-        data = json.loads(sys.stdin.read() or "{}")
+        data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace") or "{}")  # Claude Code sends UTF-8
         file_path = (data.get("tool_input") or {}).get("file_path")
         if not file_path:
             return 0

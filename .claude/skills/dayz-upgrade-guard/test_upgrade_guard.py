@@ -465,7 +465,8 @@ def test_no_mods_named_and_no_project_checks_vanilla_only(tmp_path, capsys, monk
     monkeypatch.setattr(guard, "_cached_project", lambda: None)
     args = ["diff", "--old", str(FIXTURES / "snapshot_old.json"), "--new", str(FIXTURES / "snapshot_new.json")]
     assert guard.main(args) == 0
-    assert "No mods checked" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "No mods checked: no mod was named" in out and "run /dayz-init" in out
 
 
 def test_check_with_no_mod_and_no_project_is_an_error_and_saves_nothing(tmp_path, capsys, monkeypatch):
@@ -477,6 +478,35 @@ def test_check_with_no_mod_and_no_project_is_an_error_and_saves_nothing(tmp_path
     assert out.splitlines()[0] == "ERROR"
     assert "Name the mod" in out and "Nothing was saved" in out
     assert guard.stored_snapshots(store) == []
+
+
+@pytest.mark.parametrize("make_workspace", [False, True])
+def test_check_with_a_cached_project_but_no_mods_is_an_error_and_saves_nothing(
+        tmp_path, capsys, monkeypatch, make_workspace):
+    project = tmp_path / "project"
+    project.mkdir()
+    if make_workspace:
+        (project / "workspace").mkdir()
+        (project / "workspace" / ".hidden").mkdir()  # dot folders are not mods
+    monkeypatch.setattr(guard, "_cached_project", lambda: project)
+    store = tmp_path / "store"
+    p_root = str(_fake_p(tmp_path / "p", "Clothing_Base", True))
+    for _ in range(2):  # a rerun must not find a baseline saved by the first run
+        assert guard.main(["check", "--p-root", p_root, "--store", str(store)]) == 2
+        out = capsys.readouterr().out
+        assert out.splitlines()[0] == "ERROR"
+        assert "has no mod folders in workspace/" in out and "Nothing was saved" in out
+        assert "run /dayz-init" not in out
+        assert guard.stored_snapshots(store) == []
+
+
+def test_diff_with_a_cached_project_but_no_mods_names_the_empty_workspace(tmp_path, capsys, monkeypatch):
+    (tmp_path / "workspace").mkdir()
+    monkeypatch.setattr(guard, "_cached_project", lambda: tmp_path)
+    args = ["diff", "--old", str(FIXTURES / "snapshot_old.json"), "--new", str(FIXTURES / "snapshot_new.json")]
+    assert guard.main(args) == 0
+    out = capsys.readouterr().out
+    assert "No mods checked: the cached project" in out and "has no mod folders in workspace/" in out
 
 
 def test_reindex_command_rebuilds_after_a_check_that_saved_the_new_baseline(tmp_path, capsys, monkeypatch):
@@ -497,10 +527,12 @@ def test_reindex_command_rebuilds_after_a_check_that_saved_the_new_baseline(tmp_
     assert len(fake.calls) == 1 and fake.calls[0][1:] == [str(guard.INDEXER), "--full"]
 
 
-def test_reindex_command_passes_on_a_failed_rebuild(capsys, monkeypatch):
-    monkeypatch.setattr(guard.subprocess, "run", _FakeRun(3))
-    assert guard.main(["reindex"]) == 3
-    assert "old index is still in place" in capsys.readouterr().out
+@pytest.mark.parametrize("indexer_code", [1, 3])
+def test_a_failed_reindex_command_is_an_error_not_a_fail(capsys, monkeypatch, indexer_code):
+    monkeypatch.setattr(guard.subprocess, "run", _FakeRun(indexer_code))
+    assert guard.main(["reindex"]) == 2
+    out = capsys.readouterr().out
+    assert "ERROR" in out.splitlines() and "old index is still in place" in out
 
 
 def test_every_mod_in_the_workspace_is_checked_by_default(tmp_path, capsys, monkeypatch):
@@ -539,3 +571,160 @@ def test_argparse_errors_still_print_error_first_line(argv, capsys):
     assert out[0] == "ERROR"
     if "--json" in argv:
         assert json.loads("\n".join(out[1:]))["verdict"] == "ERROR"
+
+
+# --- partly unpacked game data never becomes the baseline ------------------------------
+
+def _empty_config_p(root: Path) -> Path:
+    """Scripts unpacked, the DZ folder present but with no config.cpp yet: an empty config section."""
+    _fake_p(root, "Clothing_Base", True)
+    shutil.rmtree(root / "DZ")
+    (root / "DZ").mkdir()
+    return root
+
+
+def _few_scripts_p(root: Path) -> Path:
+    """Only one of the four script classes unpacked; config complete."""
+    _fake_p(root, "Clothing_Base", True)
+    (root / "scripts" / "4_world" / "itembase.c").write_text("class ItemBase extends InventoryItem {}\n", encoding="utf-8")
+    (root / "scripts" / "4_world" / "modded_part.c").unlink()
+    return root
+
+
+@pytest.mark.parametrize("command", ["snapshot", "check"])
+def test_a_snapshot_with_an_empty_config_section_is_refused(tmp_path, capsys, command):
+    store = tmp_path / "store"
+    p_root = _empty_config_p(tmp_path / "p")
+    assert guard.take_snapshot(p_root)["config"] == {}
+    args = [command, "--p-root", str(p_root), "--store", str(store)] + (["--mod-dir", str(MOD)] if command == "check" else [])
+    assert guard.main(args) == 2
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "ERROR"
+    assert "no config classes" in out and "Nothing was saved" in out and "--accept" in out
+    assert guard.stored_snapshots(store) == []
+    # --accept saves it anyway.
+    assert guard.main(args + ["--accept"]) == 0
+    assert len(guard.stored_snapshots(store)) == 1
+
+
+def test_missing_dz_folder_is_an_error_and_saves_nothing(tmp_path, capsys):
+    store = tmp_path / "store"
+    p_root = _fake_p(tmp_path / "p", "Clothing_Base", True)
+    shutil.rmtree(p_root / "DZ")
+    assert guard.main(["check", "--p-root", str(p_root), "--store", str(store), "--mod-dir", str(MOD)]) == 2
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "ERROR" and "no DZ folder" in out
+    assert guard.stored_snapshots(store) == []
+
+
+def test_check_refuses_a_sharp_drop_and_keeps_the_baseline(tmp_path, capsys):
+    store = tmp_path / "store"
+    common = ["--store", str(store), "--mod-dir", str(MOD)]
+    assert guard.main(["check", "--p-root", str(_fake_p(tmp_path / "before", "Clothing_Base", True)), *common]) == 0
+    baseline = guard.stored_snapshots(store)
+    capsys.readouterr()
+
+    partial = ["check", "--p-root", str(_few_scripts_p(tmp_path / "partial")), *common]
+    assert guard.main(partial) == 2
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "ERROR"
+    assert "1 script classes, fewer than half of the 4" in out
+    assert guard.stored_snapshots(store) == baseline
+    # The real update still compares with the untouched baseline.
+    assert guard.main(["check", "--p-root", str(_fake_p(tmp_path / "after", "ItemBase", False)), *common]) == 1
+    assert "MyVest_Base" in capsys.readouterr().out
+
+
+def test_check_accept_saves_a_real_drop(tmp_path, capsys):
+    store = tmp_path / "store"
+    common = ["--store", str(store), "--mod-dir", str(MOD)]
+    guard.main(["check", "--p-root", str(_fake_p(tmp_path / "before", "Clothing_Base", True)), *common])
+    capsys.readouterr()
+    code = guard.main(["check", "--p-root", str(_few_scripts_p(tmp_path / "partial")), "--accept", *common])
+    assert code in (0, 1) and capsys.readouterr().out.splitlines()[0] in ("PASS", "FAIL")
+    assert len(guard.stored_snapshots(store)) == 2
+
+
+def test_snapshot_command_compares_with_the_newest_readable_snapshot(tmp_path, capsys):
+    store = tmp_path / "store"
+    assert guard.main(["snapshot", "--p-root", str(_fake_p(tmp_path / "full", "Clothing_Base", True)),
+                       "--store", str(store)]) == 0
+    capsys.readouterr()
+    partial = ["snapshot", "--p-root", str(_few_scripts_p(tmp_path / "partial")), "--store", str(store)]
+    assert guard.main(partial) == 2
+    assert "fewer than half" in capsys.readouterr().out
+    assert len(guard.stored_snapshots(store)) == 1
+    # A newest snapshot in an older format is skipped, so it never blocks a fresh one.
+    for path in guard.stored_snapshots(store):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["format"] = 1
+        path.write_text(json.dumps(data), encoding="utf-8")
+    assert guard.main(partial) == 0
+
+
+def test_incomplete_reason_passes_a_normal_update():
+    assert guard.incomplete_reason(NEW, OLD) is None
+    assert guard.incomplete_reason({"script": OLD["script"], "config": {}}, None) == "the new snapshot has no config classes"
+
+
+def test_check_skips_a_corrupt_newest_snapshot_and_uses_the_older_baseline(tmp_path, capsys):
+    store = tmp_path / "store"
+    common = ["--store", str(store), "--mod-dir", str(MOD)]
+    assert guard.main(["check", "--p-root", str(_fake_p(tmp_path / "before", "Clothing_Base", True)), *common]) == 0
+    baseline = guard.stored_snapshots(store)[0]
+    capsys.readouterr()
+    # A half written or stray file that sorts after the real baseline.
+    bad = store / "99999999-999999.json"
+    bad.write_text('{"script": {', encoding="utf-8")
+
+    assert guard.main(["check", "--p-root", str(_fake_p(tmp_path / "after", "ItemBase", False)), *common]) == 1
+    captured = capsys.readouterr()
+    assert captured.out.startswith("FAIL")
+    assert f"old: {baseline}" in captured.out and "MyVest_Base" in captured.out
+    assert f"Skipped: Cannot read snapshot {bad}" in captured.err and "Delete or move that file" in captured.err
+
+
+def test_diff_uses_the_two_newest_readable_snapshots(capsys, tmp_path):
+    store = tmp_path / "store"
+    store.mkdir()
+    shutil.copy(FIXTURES / "snapshot_old.json", store / "20260101-000000.json")
+    shutil.copy(FIXTURES / "snapshot_new.json", store / "20260102-000000.json")
+    (store / "20260103-000000.json").write_text("not json", encoding="utf-8")
+    assert guard.main(["diff", "--store", str(store), "--mod-dir", str(MOD)]) == 1
+    captured = capsys.readouterr()
+    assert "20260101-000000.json" in captured.out and "20260102-000000.json" in captured.out
+    assert "20260103-000000.json" in captured.err
+
+
+def test_diff_with_only_one_readable_snapshot_is_an_error(capsys, tmp_path):
+    store = tmp_path / "store"
+    store.mkdir()
+    shutil.copy(FIXTURES / "snapshot_old.json", store / "20260101-000000.json")
+    (store / "20260102-000000.json").write_text("not json", encoding="utf-8")
+    assert guard.main(["diff", "--store", str(store), "--mod-dir", str(MOD)]) == 2
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "ERROR" and "need two readable snapshots" in out
+
+
+def test_an_interrupted_save_leaves_no_snapshot(tmp_path, monkeypatch):
+    store = tmp_path / "store"
+
+    def interrupted(src, dst):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(guard.os, "replace", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        guard.save_snapshot(OLD, store)
+    assert guard.stored_snapshots(store) == []
+
+
+def test_a_failed_save_is_an_error_and_cleans_up(tmp_path, monkeypatch):
+    store = tmp_path / "store"
+
+    def full_disk(src, dst):
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(guard.os, "replace", full_disk)
+    with pytest.raises(guard.GuardError, match="Nothing was saved"):
+        guard.save_snapshot(OLD, store)
+    assert list(store.iterdir()) == []

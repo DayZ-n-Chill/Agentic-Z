@@ -4,6 +4,8 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import hub_status  # noqa: E402
 from state import write_state  # noqa: E402
@@ -91,3 +93,22 @@ def test_prebuilt_bundle_has_no_needs_line(tmp_path, monkeypatch):
     s = hub_status.gather_status(project, mods_root=tmp_path / "Mods")
     assert s.needs == []
     assert "Needs:" not in hub_status.render_status(s)
+
+
+def test_help_prints_usage_and_skips_the_status(monkeypatch, capsys):
+    # scripts/README.md promises --help on status.bat; main() used to ignore it and print the status.
+    def boom(*_a, **_k):
+        raise AssertionError("--help must not gather the status")
+
+    monkeypatch.setattr(hub_status, "gather_status", boom)
+    with pytest.raises(SystemExit) as exc:
+        hub_status.main(["--help"])
+    assert exc.value.code == 0
+    assert "usage:" in capsys.readouterr().out
+
+
+def test_unknown_argument_exits_2_without_status(monkeypatch):
+    monkeypatch.setattr(hub_status, "gather_status", lambda *_a, **_k: pytest.fail("ran with a bad argument"))
+    with pytest.raises(SystemExit) as exc:
+        hub_status.main(["--bogus"])
+    assert exc.value.code == 2

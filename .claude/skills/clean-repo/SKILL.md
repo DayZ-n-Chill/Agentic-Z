@@ -1,7 +1,7 @@
 ---
 name: clean-repo
 description: "Removes every template-managed artifact across all domains by running each domain's clean-workspace skill after one combined dry run and prompt. Use when the user wants a full pre-push reset; for one domain or one mod, use that domain's cleanup skill instead."
-argument-hint: "[--yes] [--dry-run]"
+argument-hint: "[--yes] [--dry-run] [--keep-server] [--plan <ID>] [--other-project]"
 disable-model-invocation: true
 ---
 
@@ -17,33 +17,38 @@ This is a thin orchestrator. It finds every `.claude/skills/<domain>-clean-works
 ## How to run
 
 ```cmd
-python "<skill-dir>\clean.py" [--yes] [--dry-run]
+python "<skill-dir>\clean.py" [--yes] [--dry-run] [--keep-server] [--plan <ID>] [--other-project]
 ```
 
 | Argument | Notes |
 |---|---|
 | `--yes` | Skip the confirmation prompt. Required when stdin isn't a TTY. |
-| `--dry-run` | Show the combined plan and stop without removing anything. |
+| `--dry-run` | Show the combined plan and its plan ID, then stop without removing anything. |
+| `--keep-server` | Keep `.server/` (test-server configs, missions, logs). Children run without `--include-server`. |
+| `--plan <ID>` | The plan ID from an earlier `--dry-run`. Refuses (exit 3) if the current plan differs, so nothing the user did not see is removed. Use the same `--keep-server` choice as the dry run. Not valid with `--dry-run` (exit 2). |
+| `--other-project` | Allow cleaning the project cached by `/dayz-init` when it is not this checkout. Without it, that case is refused (exit 2). |
 
 ### From an agent shell
 
 The agent's shell is not a TTY, so the script cannot prompt there. Ask in chat instead:
 
-1. Run `python "<skill-dir>\clean.py" --dry-run`.
-2. Show the user the combined plan it printed, including the project folder from its `Project:` line.
-3. Ask in chat whether to remove everything listed from that project. Stop if they do not clearly say yes.
-4. On a yes, run `python "<skill-dir>\clean.py" --yes`.
+1. Run `python "<skill-dir>\clean.py" --dry-run` (add `--keep-server` if the user wants to keep their server configs and missions).
+2. Show the user the combined plan it printed, including the project folder from its `Project:` line, any `[WARN]` lines and the `Plan ID:` line.
+3. Ask in chat whether to remove everything listed from that project. Stop if they do not clearly say yes. If a `[WARN]` line says the cached project is not this checkout, say so in the question.
+4. On a yes, run the command the dry run printed after `To remove exactly this plan, run:`. It already carries `--yes --plan <ID>` plus `--keep-server` and `--other-project` when they apply. If it exits 3, the plan changed: show the new plan and ask again.
 
 ## What it does
 
 Each child cleans the project cached by `/dayz-init` (shown as `Project:` in the plan), which may not be this checkout; run `/dayz-init` in the checkout you mean to clean first.
 
-1. Without `--dry-run` or `--yes`, refuses (exit 2) if stdin isn't a TTY, before running anything.
-2. When the cached project is not this checkout (for example a run from a git worktree or a second clone), prints `[WARN] Cleanup targets the cached project <path>, not this checkout <path>`.
-3. Runs each child with `--include-server --dry-run` and prints the output under a `=== /<skill> (--dry-run) ===` header. That output is the combined plan. If any child's dry run fails, stops with exit 1 and removes nothing.
-4. With `--dry-run`, stops here with exit 0.
-5. Asks once, `Remove everything listed above from <project>? [y/N]`, unless `--yes` was passed. Any answer other than `y` or `yes` aborts with exit 0.
-6. Runs each child with `--include-server --yes` under a `=== /<skill> (--yes) ===` header. Exits 1 if any child failed, 0 otherwise.
+- **Plan first.** Every run starts with each child's dry run, printed under a `=== /<skill> (--dry-run) ===` header. That is the combined plan. If any child's dry run fails, nothing is removed (exit 1).
+- **Versioned server files.** Unless `--keep-server` is passed, it asks git which files under the project's `.server/` are tracked or kept trackable by `.gitignore` (`serverDZ.cfg`, `mission/` edits) and warns with up to five of their paths. If git cannot be run there or fails (for example the project is not a git repository), a dry run warns and prints no removal command, and a removal run refuses with exit 1. Pass `--keep-server` to clean without touching `.server/`.
+- **Plan ID.** `Plan ID: <ID>` is a 12-character hash of the server choice, every child's dry-run output and the path, size and modification time of each versioned `.server/` file. Anything added or edited after the dry run, including a mission file or `serverDZ.cfg`, changes it. `--plan <ID>` refuses (exit 3) when the ID no longer matches.
+- **Confirmation.** Without `--yes` it asks `Remove everything listed above from <project>? [y/N]`. Any answer other than `y` or `yes`, or end of input, aborts with exit 0. After a yes it repeats the check silently and refuses (exit 3) if the plan changed while the prompt was open.
+- **Other checkout.** When the cached project is not this checkout (a git worktree or second clone), it prints a `[WARN]`, and a removal run refuses (exit 2) unless `--other-project` is passed.
+- **Removal.** Runs each child with `--include-server --yes` (just `--yes` with `--keep-server`) under a `=== /<skill> (--yes) ===` header.
+
+Each child still decides what to remove from its own state when it runs; the plan check narrows the gap to the moment between the last dry run and the removal.
 
 It does not gate on `/dayz-preflight`, because it is domain-agnostic. Each child gates on its own preflight.
 
@@ -52,12 +57,13 @@ It does not gate on `/dayz-preflight`, because it is domain-agnostic. Each child
 | Code | Meaning |
 |---|---|
 | 0 | Completed, dry run completed, user aborted, or no cleanup skills found |
-| 1 | A child's dry run or cleanup failed |
-| 2 | Not a TTY and `--yes` not passed |
+| 1 | A child's dry run or cleanup failed, the `/dayz-init` project cache could not be read, or git could not list the versioned `.server/` files and `--keep-server` was not passed |
+| 2 | `--plan` combined with `--dry-run`, not a TTY and `--yes` not passed, or the cached project is not this checkout and `--other-project` not passed |
+| 3 | The plan changed since it was shown or approved (`--plan` mismatch, or a change while the prompt was open); nothing was removed |
 
 ## Discovery
 
-Any folder in `.claude/skills/` whose name ends in `-clean-workspace` and contains `clean.py` is picked up. Folders starting with `_` are skipped. A new domain plugs in by shipping a `<domain>-clean-workspace` skill that accepts `--include-server`, `--dry-run` and `--yes`.
+Any folder in `.claude/skills/` whose name ends in `-clean-workspace` and contains `clean.py` is picked up. Folders starting with `_` are skipped. A new domain plugs in by shipping a `<domain>-clean-workspace` skill that accepts `--include-server`, `--dry-run` and `--yes`, keeps server staging unless `--include-server` is passed, and prints the same dry-run output (stdout and stderr) for the same state (the plan ID hashes it).
 
 ## When to use this vs. a single domain cleanup
 
@@ -66,3 +72,4 @@ Any folder in `.claude/skills/` whose name ends in `-clean-workspace` and contai
 | Remove one mod's DayZ artifacts | `/dayz-clean-workspace --mod <Name>` |
 | Remove all DayZ artifacts (mods and server staging) | `/dayz-clean-workspace --include-server` |
 | Remove everything across every domain before a push | `/clean-repo` |
+| Same, but keep `.server/` configs and missions | `/clean-repo --keep-server` |

@@ -36,7 +36,7 @@
       "question": "Answer only, do not edit any file. Which slot name must my rifle list in attachments[] so it accepts the vanilla LongrangeOptic, and does any vanilla weapon already offer that slot?",
       "must_include": [
         "weaponOpticsLRS",
-        "re:\\bno\\b|\\bnone\\b|\\bnot\\b|n't"
+        "re:\\b(no|none of the|not any|not a single|zero)\\s+(vanilla\\s+|base[- ]game\\s+|existing\\s+|other\\s+)*(weapons?|rifles?|firearms?|guns?)\\b|\\b(vanilla|base[- ]game)\\s+(weapons?|rifles?|firearms?|guns?)\\s+(\\w+\\s+){0,2}(do(es)?\\s*n['’]?t|do(es)?\\s+not|never)\\b"
       ],
       "verified": "P:/DZ/weapons/attachments/optics/config.cpp:1326 (class LongrangeOptic) and :1338 to :1340 (inventorySlot[] weaponOpticsLRS); P:/scripts/config.cpp:399 (Slot_weaponOpticsLRS); grep of P:/DZ/weapons/firearms finds no weapon listing weaponOpticsLRS"
     },

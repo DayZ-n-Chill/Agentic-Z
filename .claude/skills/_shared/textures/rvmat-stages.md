@@ -116,7 +116,7 @@ Write three materials per surface: `<name>.rvmat`, `<name>_damage.rvmat` and `<n
 - `Stage6` becomes `fresnel(1.28,0.5)` and `Stage7` becomes `#(argb,8,8,3)color(0.15,0.15,0.15,1,CO)`, so the worn item stops reflecting.
 - Stages 1, 2, 4 and 5 keep the item's own textures.
 
-Pointing a mod's damage materials at the vanilla wear macro is fine; the path stays `dz\...`. The `healthLevels[]` entry itself is config work for dayz-config-specialist.
+Pointing a mod's damage materials at the vanilla wear macro is fine; the path stays `dz\...`. The `healthLevels[]` entry itself is config work for the worker who owns the item's class: dayz-wearables-specialist for clothing, gear and characters, dayz-vehicle-specialist for vehicles, dayz-weapon-specialist for weapons, and dayz-config-specialist for anything else.
 
 ## Thermal stage
 

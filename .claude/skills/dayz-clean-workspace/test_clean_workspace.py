@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import importlib.util
+import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -12,6 +14,7 @@ _spec = importlib.util.spec_from_file_location("dayz_clean_workspace_under_test"
 clean = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(clean)
 h = clean.h
+_real_running_blockers = clean.running_blockers
 
 
 @pytest.fixture(autouse=True)
@@ -21,6 +24,12 @@ def p_drive(monkeypatch, tmp_path):
     monkeypatch.setattr(clean, "P_DRIVE", drive)
     monkeypatch.setattr(clean, "MODS_ROOT", drive / "Mods")
     return drive
+
+
+@pytest.fixture(autouse=True)
+def no_blockers(monkeypatch):
+    """No DayZ or Workbench process by default (a real one may be running on the test machine)."""
+    monkeypatch.setattr(clean, "running_blockers", lambda: [])
 
 
 @pytest.fixture(autouse=True)
@@ -108,7 +117,7 @@ def test_payload_bundle_plan_removes_deployed_and_workspace(p_drive, tmp_path):
     deployed.mkdir()
     h.write_marker(deployed, "Bundle")
     plan, warnings = clean.find_artifacts(bundle)
-    assert plan == [("deployed", deployed), ("workspace", bundle)]
+    assert plan == [("workspace-files", bundle), ("deployed", deployed), ("workspace", bundle)]
     assert warnings == []
 
 
@@ -125,6 +134,43 @@ def test_discover_mods_target_not_managed_explains_and_hints(tmp_path):
     assert "rmdir /s /q" in msg
 
 
+def test_discover_mods_target_missing_says_not_found(tmp_path):
+    (tmp_path / "workspace").mkdir()
+    with pytest.raises(SystemExit) as exc:
+        clean.discover_mods(tmp_path / "workspace", "Typo")
+    msg = str(exc.value.code)
+    assert "not found" in msg
+    assert "not a managed mod" not in msg and "rmdir" not in msg
+
+
+def test_discover_mods_target_empty_name_never_sweeps(tmp_path, junctions):
+    """An empty --mod must not fall through to the all-mods sweep."""
+    _native(tmp_path / "workspace", "MyMod", junctions)
+    with pytest.raises(SystemExit):
+        clean.discover_mods(tmp_path / "workspace", "")
+
+
+@pytest.mark.parametrize("bad", ["", "..", r"..\SomeLink", "../SomeLink", r"..\..\Windows", "My Mod", "@MyMod", "1Mod"])
+def test_main_refuses_invalid_mod_name_before_touching_disk(project, monkeypatch, bad):
+    """A --mod outside the name rule could resolve outside workspace\\ (a link there counts as managed)."""
+    outside = project.parent / "SomeLink"
+    outside.mkdir()
+    monkeypatch.setattr(h, "is_link", lambda p: True)
+    monkeypatch.setattr(h, "resolve_project_dir", lambda: pytest.fail("resolved the project for a bad name"))
+    monkeypatch.setattr(clean, "remove_artifact", lambda *a: pytest.fail("removed for a bad name"))
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--mod", bad, "--yes")
+    assert "Invalid mod name" in str(exc.value.code)
+    assert outside.is_dir()
+
+
+def test_main_missing_mod_says_not_found(project, monkeypatch):
+    monkeypatch.setattr(clean, "remove_artifact", lambda *a: pytest.fail("removed a missing mod"))
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--mod", "Typo", "--yes")
+    assert "not found" in str(exc.value.code)
+
+
 def test_discover_mods_target_with_git_refuses(tmp_path, junctions):
     mod = _native(tmp_path / "workspace", "MyMod", junctions)
     (mod / ".git").mkdir()
@@ -135,7 +181,8 @@ def test_discover_mods_target_with_git_refuses(tmp_path, junctions):
 
 # --- find_artifacts: ownership + order ------------------------------------------
 
-def test_plan_order_junction_deployed_workspace(p_drive, tmp_path, monkeypatch):
+def test_plan_order_keeps_proofs_until_last(p_drive, tmp_path, monkeypatch):
+    """Workspace files first (most often locked), proofs (marker, junction) after, empty folder last."""
     mod = _native(tmp_path / "workspace", "MyMod")
     deployed = p_drive / "Mods" / "@MyMod"
     deployed.mkdir()
@@ -144,8 +191,8 @@ def test_plan_order_junction_deployed_workspace(p_drive, tmp_path, monkeypatch):
 
     plan, warnings = clean.find_artifacts(mod)
 
-    assert [kind for kind, _ in plan] == ["junction", "deployed", "workspace"]
-    assert plan[0][1] == p_drive / "MyMod"
+    assert [kind for kind, _ in plan] == ["workspace-files", "deployed", "junction", "workspace"]
+    assert plan[2][1] == p_drive / "MyMod"
     assert warnings == []
 
 
@@ -155,7 +202,7 @@ def test_unmarked_deploy_dir_is_skipped_with_warning(p_drive, tmp_path):
 
     plan, warnings = clean.find_artifacts(mod)
 
-    assert [kind for kind, _ in plan] == ["workspace"]
+    assert [kind for kind, _ in plan] == ["workspace-files", "workspace"]
     assert len(warnings) == 1 and h.SCAFFOLD_MARKER in warnings[0]
 
 
@@ -177,12 +224,52 @@ def test_junction_pointing_elsewhere_is_left_alone(p_drive, tmp_path, monkeypatc
     assert "junction" not in [kind for kind, _ in plan]
 
 
+def _mklink_j(link: Path, target: Path) -> None:
+    subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)], check=True, capture_output=True)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="directory junctions are a Windows feature")
+@pytest.mark.parametrize("argv", [(), ("--mod", "Imported")], ids=["sweep", "mod"])
+def test_broken_imported_link_is_cleaned_with_its_junction_and_deploy_dir(project, p_drive, monkeypatch, argv):
+    """An imported mod whose external source was deleted: the link, P:\\<Name> and the deploy dir all go."""
+    pf = h._preflight()
+    monkeypatch.setattr(h, "link_target", pf.link_target)
+    monkeypatch.setattr(h, "paths_equal", pf.paths_equal)
+    source = project.parent / "external" / "Imported"
+    source.mkdir(parents=True)
+    (source / "config.cpp").write_text("", encoding="utf-8")
+    link = project / "workspace" / "Imported"
+    _mklink_j(link, source)
+    junction = p_drive / "Imported"
+    _mklink_j(junction, link)
+    deployed = p_drive / "Mods" / "@Imported"
+    (deployed / "Addons").mkdir(parents=True)
+    (deployed / "Addons" / "Imported.pbo").write_text("", encoding="utf-8")
+    h.write_marker(deployed, "Imported")
+    shutil.rmtree(source)
+    assert h.is_link(link) and not link.is_dir()
+
+    assert clean.unmanaged_reason(link) is None
+    plan, _ = clean.find_artifacts(link)
+    assert plan == [("deployed", deployed), ("junction", junction), ("workspace-link", link)]
+
+    assert _main(monkeypatch, *argv, "--yes") == 0
+    for p in (link, junction, deployed):
+        assert not h.is_link(p) and not p.exists()
+
+
+def test_file_symlink_is_not_a_dir_link(tmp_path, monkeypatch):
+    (tmp_path / "notes.txt").write_text("", encoding="utf-8")
+    monkeypatch.setattr(h, "is_link", lambda p: True)
+    assert clean.unmanaged_reason(tmp_path / "notes.txt") is not None
+
+
 def test_imported_link_is_planned_as_workspace_link(p_drive, tmp_path, monkeypatch):
     mod = tmp_path / "workspace" / "Imported"
     mod.mkdir(parents=True)
     monkeypatch.setattr(h, "is_link", lambda p: p == mod)
     plan, _ = clean.find_artifacts(mod)
-    assert plan[-1] == ("workspace-link", mod)
+    assert plan == [("workspace-link", mod)]
 
 
 # --- remove_artifact never recurses into links -------------------------------
@@ -196,10 +283,44 @@ def test_remove_artifact_uses_rmdir_for_links(monkeypatch, tmp_path):
     assert [c[:3] for c in calls] == [["cmd", "/c", "rmdir"]] * 2
 
 
-def test_remove_artifact_rmtree_for_folders(tmp_path):
+def test_remove_artifact_empties_then_removes_workspace(tmp_path):
     mod = _native(tmp_path, "MyMod")
+    (mod / "Scripts" / "4_World").mkdir(parents=True)
+    clean.remove_artifact("workspace-files", mod)
+    assert mod.is_dir() and list(mod.iterdir()) == []
     clean.remove_artifact("workspace", mod)
     assert not mod.exists()
+
+
+def test_remove_artifact_deployed_removes_marker_last(p_drive, monkeypatch):
+    deployed = p_drive / "Mods" / "@MyMod"
+    (deployed / "Addons").mkdir(parents=True)
+    (deployed / "Addons" / "MyMod.pbo").write_text("", encoding="utf-8")
+    (deployed / "zz_readme.txt").write_text("", encoding="utf-8")
+    h.write_marker(deployed, "MyMod")
+    order = []
+    real_unlink = Path.unlink
+
+    def record(self, *a, **kw):
+        order.append(self.name)
+        real_unlink(self, *a, **kw)
+
+    monkeypatch.setattr(Path, "unlink", record)
+    clean.remove_artifact("deployed", deployed)
+    assert not deployed.exists()
+    assert order[-1] == h.SCAFFOLD_MARKER
+
+
+def test_remove_entry_removes_a_link_without_its_target(tmp_path, monkeypatch):
+    target = tmp_path / "external"
+    target.mkdir()
+    (target / "keep.txt").write_text("", encoding="utf-8")
+    link = tmp_path / "link"
+    link.mkdir()
+    monkeypatch.setattr(h, "is_link", lambda p: p == link)
+    monkeypatch.setattr(clean.shutil, "rmtree", lambda p: pytest.fail("rmtree ran on a link"))
+    clean._remove_entry(link)
+    assert not link.exists() and (target / "keep.txt").is_file()
 
 
 # --- main() -------------------------------------------------------------------
@@ -312,3 +433,98 @@ def test_main_include_server_does_not_list_health_twice(project, monkeypatch, ca
     assert _main(monkeypatch, "--include-server", "--dry-run") == 0
     out = capsys.readouterr().out
     assert "(health)" not in out and "(server staging)" in out
+
+
+# --- a locked file must not cost the proof of ownership ----------------------
+
+def _fake_link_removal(monkeypatch, junctions):
+    """cmd /c rmdir on a faked P:\\<Name> junction: forget the fake link instead."""
+    def run(cmd, **kw):
+        assert cmd[:3] == ["cmd", "/c", "rmdir"]
+        junctions.pop(Path(cmd[3]), None)
+    monkeypatch.setattr(clean.subprocess, "run", run)
+
+
+def test_locked_workspace_file_keeps_proof_and_rerun_finishes(project, p_drive, monkeypatch, capsys, junctions):
+    """Workbench holding a workspace file stops run 1; run 2 still sees the mod as managed and finishes."""
+    mod = _native(project / "workspace", "MyMod", junctions)
+    (mod / "Scripts").mkdir()
+    deployed = p_drive / "Mods" / "@MyMod"
+    (deployed / "Addons").mkdir(parents=True)
+    h.write_marker(deployed, "MyMod")
+    _fake_link_removal(monkeypatch, junctions)
+    real_rmtree = clean.shutil.rmtree
+
+    def locked(path, *a, **kw):
+        raise PermissionError(32, "The process cannot access the file", str(path))
+
+    monkeypatch.setattr(clean.shutil, "rmtree", locked)
+    assert _main(monkeypatch, "--yes") == 1
+    assert "could not remove (workspace-files)" in capsys.readouterr().out
+    assert p_drive / "MyMod" in junctions and h.owns_deploy_dir(deployed, "MyMod")
+    assert [m.name for m in clean.discover_mods(project / "workspace", None)[0]] == ["MyMod"]
+
+    monkeypatch.setattr(clean.shutil, "rmtree", real_rmtree)
+    assert _main(monkeypatch, "--yes") == 0
+    assert not mod.exists() and not deployed.exists() and p_drive / "MyMod" not in junctions
+
+
+def test_locked_pbo_keeps_marker_and_junction(project, p_drive, monkeypatch, capsys, junctions):
+    """DayZ holding the deployed .pbo stops the run with the marker and junction still in place."""
+    mod = _native(project / "workspace", "MyMod", junctions)
+    deployed = p_drive / "Mods" / "@MyMod"
+    (deployed / "Addons").mkdir(parents=True)
+    h.write_marker(deployed, "MyMod")
+    _fake_link_removal(monkeypatch, junctions)
+    real_rmtree = clean.shutil.rmtree
+
+    def pbo_locked(path, *a, **kw):
+        if Path(path).name == "Addons":
+            raise PermissionError(32, "The process cannot access the file", str(path))
+        real_rmtree(path, *a, **kw)
+
+    monkeypatch.setattr(clean.shutil, "rmtree", pbo_locked)
+    assert _main(monkeypatch, "--yes") == 1
+    assert "could not remove (deployed)" in capsys.readouterr().out
+    assert h.owns_deploy_dir(deployed, "MyMod") and p_drive / "MyMod" in junctions
+    assert mod.is_dir()
+    assert [m.name for m in clean.discover_mods(project / "workspace", None)[0]] == ["MyMod"]
+
+
+# --- running DayZ or Workbench ------------------------------------------------
+
+def test_main_refuses_while_dayz_or_workbench_runs(project, monkeypatch, junctions):
+    mod = _native(project / "workspace", "MyMod", junctions)
+    monkeypatch.setattr(clean, "running_blockers", lambda: ["DayZDiag_x64.exe"])
+    monkeypatch.setattr(clean, "remove_artifact", lambda *a: pytest.fail("removed while DayZ runs"))
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--yes")
+    msg = str(exc.value.code)
+    assert "DayZDiag_x64.exe is running" in msg and "/dayz-stop-test" in msg
+    assert mod.is_dir()
+
+
+def test_dry_run_warns_while_dayz_or_workbench_runs(project, monkeypatch, capsys, junctions):
+    _native(project / "workspace", "MyMod", junctions)
+    monkeypatch.setattr(clean, "running_blockers", lambda: ["workbenchApp.exe"])
+    assert _main(monkeypatch, "--dry-run") == 0
+    out = capsys.readouterr().out
+    assert "[WARN]" in out and "workbenchApp.exe is running" in out and "(--dry-run) nothing removed." in out
+
+
+def test_running_blockers_reads_tasklist(monkeypatch):
+    queries = []
+
+    class _Done:
+        def __init__(self, stdout):
+            self.stdout = stdout
+
+    def tasklist(cmd, **kw):
+        queries.append(cmd)
+        if "DayZDiag_x64.exe" in cmd[2]:
+            return _Done('"DayZDiag_x64.exe","1234","Console","1","2,000 K"\n')
+        return _Done("INFO: No tasks are running which match the specified criteria.\n")
+
+    monkeypatch.setattr(clean.subprocess, "run", tasklist)
+    assert _real_running_blockers() == ["DayZDiag_x64.exe"]
+    assert [q[:2] for q in queries] == [["tasklist", "/FI"]] * 2

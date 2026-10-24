@@ -1,0 +1,58 @@
+{
+  "agent": "dayz-mod-architect",
+  "questions": [
+    {
+      "id": "action-and-menu-layers",
+      "question": "Answer only, do not edit any file. My mod plan has two script pieces: a custom user action derived from vanilla ActionBase, and a menu opened from a modded MissionGameplay. Which script layer folder does each one go in?",
+      "must_include": [
+        "re:4_world",
+        "re:5_mission"
+      ],
+      "verified": "P:/scripts/4_world/classes/useractionscomponent/actionbase.c:51 (class ActionBase) and P:/scripts/5_mission/mission/missiongameplay.c:1 (class MissionGameplay)"
+    },
+    {
+      "id": "vest-parent-addon",
+      "question": "Answer only, do not edit any file. I'm planning a plate carrier vest MyMod_Carrier built on the vanilla plate carrier. Which vanilla class should it inherit from, and which vanilla addon must its CfgPatches requiredAddons list?",
+      "must_include": [
+        "PlateCarrierVest",
+        "DZ_Characters_Vests",
+        "requiredAddons"
+      ],
+      "verified": "P:/DZ/characters/vests/config.cpp:3 (class DZ_Characters_Vests) and :24 (class PlateCarrierVest: Clothing)"
+    },
+    {
+      "id": "attach-behavior-check",
+      "question": "Answer only, do not edit any file. Write the one behavior-checks.json entry for the feature 'the pouch MyVest_Pouch attaches to the vest MyVest_Carrier'.",
+      "must_include": [
+        "re:\"action\"\\s*:\\s*\"attach\"",
+        "re:\"item\"\\s*:\\s*\"MyVest_Carrier\"",
+        "re:\"with\"\\s*:\\s*\"MyVest_Pouch\""
+      ],
+      "verified": ".claude/skills/dayz-gate/checks-file.md (attach: spawns item, then creates with as its attachment)"
+    },
+    {
+      "id": "firing-needs-a-person",
+      "question": "Answer only, do not edit any file. My mod adds a rifle MyMod_Rifle and the feature is 'the rifle fires'. What do I put in behavior-checks.json for it, and what does the plan say about firing?",
+      "must_include": [
+        "re:\"action\"\\s*:\\s*\"(hands|spawn)\"",
+        "re:person|human|by hand|manual|tester|player (must|has to|needs to|should)"
+      ],
+      "must_not_include": [
+        "re:\"action\"\\s*:\\s*\"(fire|shoot|firing)\""
+      ],
+      "verified": ".claude/agents/dayz-mod-architect.md step 6 (no fire action; closest check plus a person tries it) and .claude/skills/dayz-gate/checks-file.md (actions spawn, hands, wear, attach, cargo)"
+    },
+    {
+      "id": "loot-numbers-in-types",
+      "question": "Answer only, do not edit any file. In my mod plan, where do the vest's nominal, min and lifetime get set, config.cpp or types.xml, and which team owns that task?",
+      "must_include": [
+        "types.xml",
+        "re:server"
+      ],
+      "must_not_include": [
+        "re:(set|put|add)s? (them |the loot numbers )?in (the )?config\\.cpp"
+      ],
+      "verified": ".claude/skills/_shared/conventions/server.md:11 (loot numbers live only in the mission's types.xml; P:/scripts/3_game/ce/centraleconomy.c:754-765 only reads them back)"
+    }
+  ]
+}

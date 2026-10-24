@@ -190,3 +190,15 @@ def test_udp_port_free_detects_a_held_port():
         holder.close()
     assert h.udp_port_free(port) is True
     h.gate_on_free_port(port)  # free again: passes
+
+
+def test_steam_running_reads_tasklist(monkeypatch):
+    row = '"steam.exe","43900","Console","1","605,712 K"\n'
+    monkeypatch.setattr(h.subprocess, "run", lambda *a, **k: h.subprocess.CompletedProcess(a, 0, row, ""))
+    assert h.steam_running()
+    none = "INFO: No tasks are running which match the specified criteria.\n"
+    monkeypatch.setattr(h.subprocess, "run", lambda *a, **k: h.subprocess.CompletedProcess(a, 0, none, ""))
+    assert not h.steam_running()
+    with pytest.raises(SystemExit) as exc:
+        h.gate_on_steam()
+    assert "Steam is not running" in str(exc.value.code)

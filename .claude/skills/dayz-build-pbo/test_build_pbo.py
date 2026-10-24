@@ -1,6 +1,7 @@
 """Tests for build.py: workspace, junction, ownership-marker and stale-PBO checks."""
 from __future__ import annotations
 
+import fnmatch
 import importlib.util
 import os
 import time
@@ -136,18 +137,106 @@ def test_build_cmd_includes_include_list_and_clear(tmp_path):
     )
 
 
-def test_build_cmd_passes_exclude_list_that_drops_gui_sources():
+def test_build_cmd_never_passes_exclude():
+    # AddonBuilder 1.0.240639 crashes on any -exclude= (ArgumentNullException in
+    # TextureHeaderBinazrizeTask); the live AZTestVest build hit it. build.py stages
+    # the mod with exclude.lst applied instead.
     cmd = build.build_addon_builder_cmd(
-        Path("AB.exe"), Path("P:/MyMod"), Path("P:/Mods/@MyMod/Addons"), "MyMod", Path("P:/temp/MyMod"), clean=False
+        Path("AB.exe"), Path("P:/temp/_stage/MyMod"), Path("P:/Mods/@MyMod/Addons"), "MyMod",
+        Path("P:/temp/MyMod"), clean=False
     )
-    assert f"-exclude={build.EXCLUDE_LIST}" in cmd
-    patterns = [
-        line.strip() for line in build.EXCLUDE_LIST.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.startswith(";")
-    ]
-    assert ".gui-sources\\*.*" in patterns and "*\\.gui-sources\\*" in patterns
-    assert "*\\.git\\*" in patterns
-    assert "workbench\\*.*" in patterns and "*\\workbench\\*" in patterns
+    assert not any(a.startswith("-exclude") for a in cmd)
+    patterns = build.exclude_patterns()
+    assert ".gui-sources\\*" in patterns and "*\\.gui-sources\\*" in patterns
+    assert "*\\.git\\*" in patterns and ".git\\*" in patterns
+    assert "workbench\\*" in patterns and "*\\workbench\\*" in patterns
+
+
+def test_stage_source_leaves_out_excluded_files(tmp_path):
+    src = tmp_path / "MyMod"
+    for rel in ["config.cpp", "scripts/4_World/Temp/MyHelper.c", "workbench/dayz.gproj",
+                "gui/.gui-sources/icon.png", "data/old.bak", "Source/model.blend"]:
+        (src / rel).parent.mkdir(parents=True, exist_ok=True)
+        (src / rel).write_text("x", encoding="utf-8")
+    stage = tmp_path / "stage" / "MyMod"
+    (stage / "stale.c").parent.mkdir(parents=True)
+    (stage / "stale.c").write_text("old", encoding="utf-8")  # a previous stage is replaced
+    assert build.stage_source(src, stage, build.exclude_patterns()) == (2, 4)
+    kept = sorted(p.relative_to(stage).as_posix() for p in stage.rglob("*") if p.is_file())
+    assert kept == ["config.cpp", "scripts/4_World/Temp/MyHelper.c"]
+
+
+@pytest.mark.parametrize("rel,dropped", [
+    ("scripts\\editor\\plugins\\TextureSuffixCheck.c", True),
+    ("scripts\\Editor\\Plugins\\Sub\\Helper.c", True),
+    ("scripts\\3_Game\\MyMod.c", False),
+    ("scripts\\4_World\\editor\\Thing.c", False),
+])
+def test_exclude_list_drops_workbench_plugins_only(rel, dropped):
+    # Workbench plugins under scripts\editor\ are editor-only; before the
+    # scripts\editor\* rule they shipped in the PBO.
+    assert _excluded(rel, _exclude_patterns()) is dropped
+
+
+def _exclude_patterns():
+    return build.exclude_patterns()
+
+
+def _excluded(rel_path, patterns):
+    return build.is_excluded(rel_path, patterns)
+
+
+@pytest.mark.parametrize("rel", [
+    "scripts\\4_World\\Temp\\MyHelper.c",
+    "scripts\\3_Game\\source\\Util.c",
+    "data\\doc\\sign.p3d",
+    "data\\Doc\\sign_co.paa",
+    "gui\\layouts\\temp\\panel.layout",
+    "config.cpp",
+])
+def test_exclude_list_keeps_nested_source_temp_doc_folders(rel):
+    # A folder named Source, Temp or Doc below the mod root is part of the mod.
+    # The old *\Source\*, *\Temp\* and *\Doc\* patterns dropped these files
+    # silently, so their classes went missing in game.
+    assert not _excluded(rel, _exclude_patterns())
+
+
+@pytest.mark.parametrize("rel", ["Source\\model.blend", "temp\\scratch.c", "Doc\\readme.txt"])
+def test_exclude_list_still_drops_root_source_temp_doc_folders(rel):
+    assert _excluded(rel, _exclude_patterns())
+
+
+@pytest.mark.parametrize("rel", [
+    ".git\\HEAD",
+    ".git\\objects\\ab\\cd1234",
+    ".svn\\entries",
+    "Source\\README",
+    "Temp\\scratch",
+    "Doc\\LICENSE",
+    "workbench\\dayz",
+    ".gui-sources\\icon",
+])
+def test_exclude_list_drops_root_folder_files_without_extension(rel):
+    # The old '.git\*.*', 'Source\*.*' (and similar) patterns only matched names
+    # with a dot, so a root .git object store and extensionless files were staged.
+    assert _excluded(rel, _exclude_patterns())
+
+
+@pytest.mark.parametrize("rel", [".gitignore", ".gitattributes", "Sources\\a.c", "Documents\\b.c"])
+def test_exclude_list_root_folder_patterns_do_not_catch_similar_names(rel):
+    assert not _excluded(rel, _exclude_patterns())
+
+
+def test_exclude_list_header_says_build_py_applies_it():
+    header = build.EXCLUDE_LIST.read_text(encoding="utf-8").split("\n\n")[0]
+    assert "build.py" in header and "Passed to AddonBuilder" not in header
+
+
+def test_exclude_list_anchors_source_temp_doc_to_mod_root():
+    for pat in _exclude_patterns():
+        folder = pat.lstrip("*\\").split("\\")[0].lower()
+        if folder in ("source", "temp", "doc"):
+            assert not pat.startswith("*"), f"unanchored exclude {pat!r} drops nested {folder} folders"
 
 
 @pytest.mark.parametrize("bad", ["..", "../Other", r"..\Other", r"..\..\Windows", "My Mod", "@MyMod", "1Mod"])
@@ -259,6 +348,34 @@ def test_failed_first_build_does_not_block_the_rebuild(p_drive, tmp_path, monkey
     assert (deploy / "Addons" / "MyMod.pbo").is_file()
 
 
+def test_echoed_addonbuilder_command_is_quoted(p_drive, tmp_path, monkeypatch, capsys):
+    """The default AddonBuilder path holds 'DayZ Tools'; the echoed line must quote it
+    so it can be pasted and re-run by hand."""
+    project = tmp_path / "proj"
+    _scaffold(project)
+    deploy = p_drive / "Mods" / "@MyMod"
+    exe = Path("C:/Program Files (x86)/Steam/steamapps/common/DayZ Tools/Bin/AddonBuilder/AddonBuilder.exe")
+    monkeypatch.setattr(build, "TEMP_ROOT", tmp_path / "temp")
+    monkeypatch.setattr(build.h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(build.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(build, "validate_p_mods", lambda: None)
+    monkeypatch.setattr(build, "verify_junction", lambda m, w: None)
+    monkeypatch.setattr(build, "resolve_addon_builder", lambda: exe)
+    monkeypatch.setattr("sys.argv", ["build.py", "MyMod"])
+    ran = []
+
+    def fake_run(cmd):
+        ran.append(cmd)
+        (deploy / "Addons" / "MyMod.pbo").write_bytes(b"pbo")
+        return build.subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(build.subprocess, "run", fake_run)
+    assert build.main() == 0
+    line = next(l for l in capsys.readouterr().out.splitlines() if l.startswith("[AddonBuilder] "))
+    assert line == "[AddonBuilder] " + build.subprocess.list2cmdline(ran[0])
+    assert f'"{exe}"' in line
+
+
 # --- /dayz-lint gate -------------------------------------------------------
 
 def test_lint_gate_passes_a_clean_scaffold(p_drive, tmp_path, capsys):
@@ -268,7 +385,7 @@ def test_lint_gate_passes_a_clean_scaffold(p_drive, tmp_path, capsys):
     assert "/dayz-lint passed" in capsys.readouterr().out
 
 
-def test_main_stops_on_lint_errors_before_preflight(p_drive, tmp_path, monkeypatch, capsys):
+def test_main_stops_on_lint_errors_after_preflight(p_drive, tmp_path, monkeypatch, capsys):
     project = tmp_path / "proj"
     mod = _scaffold(project)
     (mod / "scripts" / "4_World").mkdir(parents=True)
@@ -285,4 +402,258 @@ def test_main_stops_on_lint_errors_before_preflight(p_drive, tmp_path, monkeypat
     # An unlisted scripts folder does not stop loading, so it is a warning, not one of the errors.
     assert "no CfgMods defs entry" not in message
     assert "[WARN]  lint workspace/MyMod/config.cpp: scripts/4_World/ holds scripts" in capsys.readouterr().out
-    assert called == []
+    assert called == ["preflight"]
+
+
+def test_main_gates_on_preflight_before_lint(p_drive, tmp_path, monkeypatch):
+    # L2 rule: preflight runs at the start, so an unmounted P:\ is reported
+    # before any lint output or lint FAIL can hide it.
+    project = tmp_path / "proj"
+    _scaffold(project)
+    order = []
+
+    def failing_preflight():
+        order.append("preflight")
+        raise SystemExit("[FAIL]  P:\\ is not mounted")
+
+    monkeypatch.setattr(build.h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(build.h, "gate_on_preflight", failing_preflight)
+    monkeypatch.setattr(build, "gate_on_lint", lambda *a: order.append("lint"))
+    monkeypatch.setattr("sys.argv", ["build.py", "MyMod"])
+    with pytest.raises(SystemExit) as exc:
+        build.main()
+    assert "P:\\ is not mounted" in str(exc.value.code)
+    assert order == ["preflight"]
+
+
+# --- workspace check runs before lint --------------------------------------
+
+def _payload_bundle(project: Path, name: str = "MyBundle") -> Path:
+    mod = project / "workspace" / name
+    (mod / "Addons").mkdir(parents=True)
+    (mod / "Addons" / "Payload.pbo").write_bytes(b"pbo")
+    return mod
+
+
+def test_verify_workspace_points_payload_only_bundle_at_deploy(tmp_path):
+    _payload_bundle(tmp_path)
+    with pytest.raises(SystemExit) as exc:
+        build.verify_workspace("MyBundle", tmp_path)
+    message = str(exc.value.code)
+    assert "payload-only bundle" in message
+    assert "/dayz-deploy-pbo MyBundle" in message
+    assert "/dayz-add-scaffold" not in message
+
+
+def test_verify_workspace_bundle_with_linker_config_is_buildable(tmp_path):
+    mod = _scaffold(tmp_path, "MyBundle")
+    (mod / "Addons").mkdir()
+    (mod / "Addons" / "Payload.pbo").write_bytes(b"pbo")
+    assert build.verify_workspace("MyBundle", tmp_path) == mod
+
+
+def _main_until_lint(project, monkeypatch, name):
+    monkeypatch.setattr(build.h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(build.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(build, "gate_on_lint", lambda *a: pytest.fail("lint ran before the workspace check"))
+    monkeypatch.setattr("sys.argv", ["build.py", name])
+    with pytest.raises(SystemExit) as exc:
+        build.main()
+    return str(exc.value.code)
+
+
+def test_main_payload_only_bundle_hints_deploy_not_lint(p_drive, tmp_path, monkeypatch):
+    project = tmp_path / "proj"
+    _payload_bundle(project)
+    message = _main_until_lint(project, monkeypatch, "MyBundle")
+    assert "/dayz-deploy-pbo MyBundle" in message
+
+
+def test_main_missing_pboprefix_gets_scaffold_hint_not_lint_error(p_drive, tmp_path, monkeypatch):
+    project = tmp_path / "proj"
+    mod = _scaffold(project)
+    (mod / "$PBOPREFIX$").unlink()
+    message = _main_until_lint(project, monkeypatch, "MyMod")
+    assert "$PBOPREFIX$ missing" in message
+    assert "/dayz-add-scaffold MyMod" in message
+
+
+def test_main_order_is_preflight_workspace_then_lint(p_drive, tmp_path, monkeypatch):
+    project = tmp_path / "proj"
+    _scaffold(project)
+    order = []
+    real_verify = build.verify_workspace
+    monkeypatch.setattr(build.h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(build.h, "gate_on_preflight", lambda: order.append("preflight"))
+    monkeypatch.setattr(build, "verify_workspace", lambda m, p: (order.append("workspace"), real_verify(m, p))[1])
+
+    def stop_at_lint(*a):
+        order.append("lint")
+        raise SystemExit("stop")
+
+    monkeypatch.setattr(build, "gate_on_lint", stop_at_lint)
+    monkeypatch.setattr("sys.argv", ["build.py", "MyMod"])
+    with pytest.raises(SystemExit):
+        build.main()
+    assert order == ["preflight", "workspace", "lint"]
+
+
+# --- staging errors ----------------------------------------------------------
+
+def _source(tmp_path: Path) -> Path:
+    src = tmp_path / "MyMod"
+    src.mkdir()
+    (src / "config.cpp").write_text("x", encoding="utf-8")
+    return src
+
+
+def test_stage_source_locked_source_file_fails_with_hint(tmp_path, monkeypatch):
+    # A source file held open (Workbench) used to end the build with a raw traceback.
+    src = _source(tmp_path)
+    locked = src / "config.cpp"
+
+    def deny(s, d, *a, **k):
+        raise PermissionError(13, "Permission denied", str(s))
+
+    monkeypatch.setattr(build.shutil, "copy2", deny)
+    with pytest.raises(SystemExit) as exc:
+        build.stage_source(src, tmp_path / "stage" / "MyMod", [])
+    msg = str(exc.value.code)
+    assert msg.startswith(build.FAIL)
+    assert str(locked) in msg
+    assert "Workbench" in msg and "taskkill /im AddonBuilder.exe /f" in msg
+
+
+def test_stage_source_locked_old_stage_fails_with_hint(tmp_path, monkeypatch):
+    # A crashed AddonBuilder holding a file in the old stage used to raise from rmtree.
+    src = _source(tmp_path)
+    stage = tmp_path / "stage" / "MyMod"
+    stage.mkdir(parents=True)
+    held = stage / "config.cpp"
+    held.write_text("old", encoding="utf-8")
+
+    def locked(folder):
+        raise PermissionError(32, "The process cannot access the file", str(held))
+
+    monkeypatch.setattr(build, "remove_tree", locked)
+    with pytest.raises(SystemExit) as exc:
+        build.stage_source(src, stage, [])
+    msg = str(exc.value.code)
+    assert msg.startswith(build.FAIL) and str(held) in msg
+    assert "taskkill /im AddonBuilder.exe /f" in msg
+
+
+def test_stage_source_replaces_a_read_only_old_stage(tmp_path):
+    # copy2 keeps a source file's read-only flag, so a plain rmtree of the old
+    # stage failed on the next build.
+    src = _source(tmp_path)
+    os.chmod(src / "config.cpp", 0o444)
+    stage = tmp_path / "stage" / "MyMod"
+    try:
+        assert build.stage_source(src, stage, []) == (1, 0)
+        assert build.stage_source(src, stage, []) == (1, 0)
+        build.remove_tree(stage)
+        assert not stage.exists()
+    finally:
+        os.chmod(src / "config.cpp", 0o666)
+
+
+# --- signatures ----------------------------------------------------------------
+
+@pytest.mark.parametrize("sig", ["MyMod.pbo.mykey.bisign", "Payload.pbo.key.BISIGN"])
+def test_gate_clean_refuses_when_signatures_present(tmp_path, sig):
+    # -clear wipes every .bisign; a signature copied in by /dayz-deploy-pbo or made
+    # by hand was deleted without warning.
+    addons = tmp_path / "Addons"
+    addons.mkdir()
+    (addons / "MyMod.pbo").write_text("x", encoding="utf-8")
+    (addons / sig).write_text("sig", encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        build.gate_clean(addons, "MyMod")
+    assert "--clean would wipe" in str(exc.value.code) and sig in str(exc.value.code)
+
+
+def test_own_signatures_match_only_this_mods_pbo(tmp_path):
+    addons = tmp_path / "Addons"
+    addons.mkdir()
+    for name in ("MyMod.pbo", "mymod.pbo.a.bisign", "MyMod.pbo.b.bisign", "MyMod_Data.pbo.a.bisign", "x.bisign"):
+        (addons / name).write_text("x", encoding="utf-8")
+    assert build.own_signatures(addons, "MyMod") == ["MyMod.pbo.b.bisign", "mymod.pbo.a.bisign"]
+    assert build.own_signatures(tmp_path / "missing", "MyMod") == []
+
+
+# --- main: failure output and signatures -------------------------------------
+
+def _main_env(p_drive, tmp_path, monkeypatch, run):
+    project = tmp_path / "proj"
+    _scaffold(project)
+    monkeypatch.setattr(build, "TEMP_ROOT", tmp_path / "temp")
+    monkeypatch.setattr(build.h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(build.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(build, "validate_p_mods", lambda: None)
+    monkeypatch.setattr(build, "verify_junction", lambda m, w: None)
+    monkeypatch.setattr(build, "resolve_addon_builder", lambda: Path("AB.exe"))
+    monkeypatch.setattr(build.subprocess, "run", run)
+    monkeypatch.setattr("sys.argv", ["build.py", "MyMod"])
+    return p_drive / "Mods" / "@MyMod"
+
+
+def test_main_failed_build_names_kept_stage_dir(p_drive, tmp_path, monkeypatch, capsys):
+    _main_env(p_drive, tmp_path, monkeypatch, lambda cmd: build.subprocess.CompletedProcess(cmd, 2))
+    assert build.main() == 2
+    out = capsys.readouterr().out
+    stage = tmp_path / "temp" / "_stage" / "MyMod"
+    assert f"stage dir {stage}" in out and f"temp dir {tmp_path / 'temp' / 'MyMod'}" in out
+    assert stage.is_dir()
+
+
+def test_main_stale_pbo_names_kept_stage_dir(p_drive, tmp_path, monkeypatch, capsys):
+    deploy = p_drive / "Mods" / "@MyMod"
+
+    def stale_build(cmd):
+        pbo = deploy / "Addons" / "MyMod.pbo"
+        pbo.write_bytes(b"old")
+        old = time.time() - 3600
+        os.utime(pbo, (old, old))
+        return build.subprocess.CompletedProcess(cmd, 0)
+
+    _main_env(p_drive, tmp_path, monkeypatch, stale_build)
+    assert build.main() == 1
+    out = capsys.readouterr().out
+    assert "stale PBO" in out and f"stage dir {tmp_path / 'temp' / '_stage' / 'MyMod'}" in out
+
+
+def test_main_warns_that_an_old_signature_no_longer_matches(p_drive, tmp_path, monkeypatch, capsys):
+    deploy = p_drive / "Mods" / "@MyMod"
+    (deploy / "Addons").mkdir(parents=True)
+    h.write_marker(deploy, "MyMod")
+    (deploy / "Addons" / "MyMod.pbo.mykey.bisign").write_bytes(b"sig")
+
+    def good_build(cmd):
+        (deploy / "Addons" / "MyMod.pbo").write_bytes(b"pbo")
+        return build.subprocess.CompletedProcess(cmd, 0)
+
+    _main_env(p_drive, tmp_path, monkeypatch, good_build)
+    assert build.main() == 0
+    out = capsys.readouterr().out
+    assert f"{build.WARN} {deploy / 'Addons' / 'MyMod.pbo.mykey.bisign'} was made for an earlier MyMod.pbo" in out
+    assert "DSSignFile.exe" in out
+
+
+def test_main_does_not_claim_cleanup_when_removal_fails(p_drive, tmp_path, monkeypatch, capsys):
+    deploy = p_drive / "Mods" / "@MyMod"
+
+    def good_build(cmd):
+        (deploy / "Addons" / "MyMod.pbo").write_bytes(b"pbo")
+        return build.subprocess.CompletedProcess(cmd, 0)
+
+    _main_env(p_drive, tmp_path, monkeypatch, good_build)
+    monkeypatch.setattr(build, "stage_source", lambda source, stage, patterns: (0, 0))
+
+    def fail_remove(folder):
+        raise PermissionError(32, "in use", str(folder))
+
+    monkeypatch.setattr(build, "remove_tree", fail_remove)
+    assert build.main() == 0
+    out = capsys.readouterr().out
+    assert "Could not remove" in out and "Cleaned temp and stage dirs" not in out

@@ -1,7 +1,7 @@
 """dayz-upgrade-guard: see which mod classes a DayZ update affects.
 
-  upgrade_guard.py snapshot [--label <text>]
-  upgrade_guard.py check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--json]
+  upgrade_guard.py snapshot [--label <text>] [--accept]
+  upgrade_guard.py check [<ModName> ...] [--mod-dir <folder>] [--label <text>] [--reindex] [--accept] [--json]
   upgrade_guard.py diff [--old <snapshot> --new <snapshot>] [<ModName> ...] [--mod-dir <folder>] [--json]
   upgrade_guard.py reindex
 
@@ -19,12 +19,15 @@ since the first saved the new snapshot as the baseline).
 
 The first output line is the verdict: PASS (exit 0, no mod class affected),
 FAIL (exit 1, at least one) or ERROR (exit 2: bad arguments, P:\\ not mounted,
-no snapshot to diff). `snapshot` prints the saved path instead. See SKILL.md.
+game data only partly unpacked, fewer than two readable snapshots to diff, a
+snapshot that cannot be saved). Unreadable files in the store are skipped with
+a note on stderr. `snapshot` prints the saved path instead. See SKILL.md.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -50,6 +53,10 @@ FORMAT = 2
 # Vanilla script files live under P:\scripts\ and a few DLC folders under P:\DZ\ (data_sakhal/scripts/4_World).
 SCRIPT_ROOTS = ("scripts", "DZ")
 CONFIG_ROOT = "DZ"
+# A new snapshot with fewer than this share of the newest saved one's script or
+# config classes was read from half unpacked game data and is not saved without
+# --accept. A real update adds and removes a few hundred classes out of thousands.
+MIN_KEPT = 0.5
 
 
 class GuardError(Exception):
@@ -343,6 +350,9 @@ def take_snapshot(p_root: Path, label: str = "") -> dict:
     """Read every vanilla class on p_root. Raises GuardError when there are no vanilla scripts."""
     if not (p_root / "scripts").is_dir():
         raise GuardError(f"{p_root} has no scripts folder. Mount the work drive with /dayz-workdrive and unpack the game data first.")
+    if not (p_root / CONFIG_ROOT).is_dir():
+        raise GuardError(f"{p_root} has no {CONFIG_ROOT} folder, so it holds no vanilla config.cpp files. "
+                         "Unpack the game data fully first. Nothing was saved.")
     script: dict[str, dict] = {}
     config: dict[str, dict] = {}
     skipped: list[str] = []
@@ -398,6 +408,30 @@ def take_snapshot(p_root: Path, label: str = "") -> dict:
     }
 
 
+def incomplete_reason(new: dict, prev: Optional[dict], prev_path: Optional[Path] = None) -> Optional[str]:
+    """Why new looks read from partly unpacked game data, or None when it looks whole.
+
+    Saving such a snapshot would make it the baseline, and the next check would
+    then compare the real game data against it.
+    """
+    for kind in ("script", "config"):
+        count = len(new[kind])
+        if count == 0:
+            return f"the new snapshot has no {kind} classes"
+        if prev is not None and count < len(prev[kind]) * MIN_KEPT:
+            where = prev_path.name if prev_path else "the newest snapshot"
+            return f"the new snapshot has {count} {kind} classes, fewer than half of the {len(prev[kind])} in {where}"
+    return None
+
+
+def refuse_incomplete(new: dict, prev: Optional[dict], prev_path: Optional[Path], accept: bool) -> None:
+    """Raise GuardError when new looks incomplete, unless accept is set."""
+    reason = None if accept else incomplete_reason(new, prev, prev_path)
+    if reason:
+        raise GuardError(f"{new['p_root']} looks only partly unpacked: {reason}. Nothing was saved. "
+                         "Unpack the game data fully and run again, or pass --accept if the drop is real.")
+
+
 def same_classes(a: dict, b: dict) -> bool:
     return a["script"] == b["script"] and a["config"] == b["config"]
 
@@ -422,7 +456,15 @@ def save_snapshot(snap: dict, store: Path) -> Path:
         k += 1
         head = f"{stamp}_{k:02d}"
     path = store / (f"{head}-{label}.json" if label else f"{head}.json")
-    path.write_text(json.dumps(snap, separators=(",", ":")), encoding="utf-8")
+    # Write a .tmp file (not matched by *.json) and rename it, so an interrupted
+    # write (Ctrl-C, full disk) never leaves a half written snapshot in the store.
+    tmp = path.with_name(path.name + ".tmp")
+    try:
+        tmp.write_text(json.dumps(snap, separators=(",", ":")), encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError as e:
+        tmp.unlink(missing_ok=True)
+        raise GuardError(f"Cannot save snapshot {path}: {e}. Nothing was saved.") from e
     return path
 
 
@@ -441,6 +483,24 @@ def load_snapshot(ref: str, store: Path) -> tuple[dict, Path]:
     if snap.get("format") != FORMAT:
         raise GuardError(f"{path} was saved by an older version of the guard. Take a new snapshot.")
     return snap, path
+
+
+def newest_snapshots(store: Path, count: int) -> list[tuple[dict, Path]]:
+    """Up to `count` saved snapshots this version can read, newest first.
+
+    An unreadable file (corrupt, not a snapshot, an older format) is skipped with
+    a note on stderr naming it, so one bad file never blocks every later check.
+    """
+    found: list[tuple[dict, Path]] = []
+    for path in reversed(stored_snapshots(store)):
+        if len(found) == count:
+            break
+        try:
+            found.append(load_snapshot(str(path), store))
+        except GuardError as e:
+            # The GuardError message already names the file.
+            print(f"  Skipped: {str(e).rstrip('.')}. Delete or move that file to stop this note.", file=sys.stderr)
+    return found
 
 
 # --- diff ---------------------------------------------------------------------
@@ -669,7 +729,16 @@ def build_report(old: dict, new: dict, old_path: Path, new_path: Path, mods: lis
     }
 
 
-def render_text(report: dict) -> str:
+def no_mods_reason(project: Optional[Path]) -> str:
+    """Why no mod was found, for the check ERROR and the diff report."""
+    if project is None:
+        return ("no mod was named, no --mod-dir was given and no project is cached by /dayz-init. "
+                "Name the mod (<ModName>), pass --mod-dir <folder>, or run /dayz-init first")
+    return (f"the cached project {project} has no mod folders in workspace/. "
+            "Add the mod with /dayz-new-mod or /dayz-import-mod, or pass --mod-dir <folder>")
+
+
+def render_text(report: dict, project: Optional[Path] = None) -> str:
     diff = report["diff"]
     lines = [f"  old: {report['old']}", f"  new: {report['new']}"]
     s, c = diff["script"], diff["config"]
@@ -687,7 +756,7 @@ def render_text(report: dict) -> str:
             for name in changes["removed"]:
                 lines.append(f"    {kind} {name} removed")
     if not report["mods"]:
-        lines.append("  No mods checked. Name one, pass --mod-dir, or run /dayz-init so workspace mods are found.")
+        lines.append(f"  No mods checked: {no_mods_reason(project)}.")
     for r in report["mods"]:
         lines.append(f"  {r['mod']}: {r['classes_checked']} class(es) built on vanilla, {len(r['findings'])} affected")
         for f in r["findings"]:
@@ -749,6 +818,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     snap_p = sub.add_parser("snapshot", parents=[common], help="Save a snapshot of the vanilla classes on P:\\.")
     snap_p.add_argument("--label", default="", help="Text added to the file name, for example the game version.")
+    snap_p.add_argument("--accept", action="store_true", help="Save even when the game data looks only partly unpacked.")
     # check saves the new snapshot as the baseline, so a second check --reindex
     # sees no change; this command rebuilds the index on its own afterwards.
     sub.add_parser("reindex", help="Rebuild the search index after a check found vanilla changes (uses Voyage tokens).")
@@ -764,6 +834,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         if name == "check":
             p.add_argument("--label", default="", help="Text added to the new snapshot's file name.")
             p.add_argument("--reindex", action="store_true", help="Rebuild the search index when vanilla changed.")
+            p.add_argument("--accept", action="store_true",
+                           help="Save the new snapshot even when the game data looks only partly unpacked.")
     try:
         args = parser.parse_args(argv)
     except SystemExit as e:
@@ -781,12 +853,17 @@ def main(argv: Optional[list[str]] = None) -> int:
     if args.command == "reindex":
         code = run_reindex()
         if code != 0:
+            # 2, not the indexer's own code, so a failed rebuild never reads as FAIL (1).
+            print("ERROR")
             print(f"  The search index rebuild exited with {code}; the old index is still in place.")
-        return code
+            return 2
+        return 0
 
     try:
         if args.command == "snapshot":
             snap = take_snapshot(args.p_root, args.label)
+            prev, prev_path = (newest_snapshots(args.store, 1) or [(None, None)])[0]
+            refuse_incomplete(snap, prev, prev_path, args.accept)
             path = save_snapshot(snap, args.store)
             print(f"Snapshot saved: {path}")
             print(f"  {len(snap['script'])} script classes, {len(snap['config'])} config classes, {len(snap['skipped'])} file(s) skipped")
@@ -797,35 +874,35 @@ def main(argv: Optional[list[str]] = None) -> int:
         for _, mod_dir in mods:
             if not mod_dir.is_dir():
                 raise GuardError(f"Mod folder {mod_dir} does not exist.")
-        if args.command == "check" and not mods and project is None:
-            # Saving a snapshot here would use up the update with nothing checked.
-            raise GuardError("No mod to check and no project cached. Name the mod (check <ModName>), pass "
-                             "--mod-dir <folder>, or run /dayz-init first. Nothing was saved.")
+        if args.command == "check" and not mods:
+            # Saving a snapshot here would use up the update with nothing checked, whether no
+            # project is cached or the cached project's workspace/ holds no mod.
+            raise GuardError(f"No mod to check: {no_mods_reason(project)}. Nothing was saved.")
         if args.command == "diff":
-            saved = stored_snapshots(args.store)
             if args.old and args.new:
                 old, old_path = load_snapshot(args.old, args.store)
                 new, new_path = load_snapshot(args.new, args.store)
             elif args.old or args.new:
                 raise GuardError("give both --old and --new, or neither for the two newest snapshots")
-            elif len(saved) < 2:
-                raise GuardError(f"need two snapshots in {args.store}; take one before and one after the update")
             else:
-                old, old_path = load_snapshot(str(saved[-2]), args.store)
-                new, new_path = load_snapshot(str(saved[-1]), args.store)
+                readable = newest_snapshots(args.store, 2)
+                if len(readable) < 2:
+                    raise GuardError(f"need two readable snapshots in {args.store}; take one before and one "
+                                     "after the update, or pass --old and --new")
+                (new, new_path), (old, old_path) = readable
         else:
-            saved = stored_snapshots(args.store)
             new = take_snapshot(args.p_root, args.label)
-            if not saved:
+            old, old_path = (newest_snapshots(args.store, 1) or [(None, None)])[0]
+            refuse_incomplete(new, old, old_path, args.accept)
+            if old is None:
                 path = save_snapshot(new, args.store)
                 print("PASS")
                 if as_json:
                     print(json.dumps({"verdict": "PASS", "baseline": str(path)}, indent=2))
                 else:
-                    print(f"  No earlier snapshot, so this one is the baseline: {path}")
+                    print(f"  No earlier snapshot it can read, so this one is the baseline: {path}")
                     print("  Run check again after the next DayZ update.")
                 return 0
-            old, old_path = load_snapshot(str(saved[-1]), args.store)
             if same_classes(old, new):
                 new_path = old_path  # nothing changed; keep the baseline instead of a copy
             else:
@@ -837,7 +914,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 2
 
     print(report["verdict"])
-    print(json.dumps(report, indent=2) if as_json else render_text(report))
+    print(json.dumps(report, indent=2) if as_json else render_text(report, project))
     if args.command == "check" and report["vanilla_changed"]:
         # With --json, notes go to stderr so stdout holds only the verdict line and the report.
         notes = sys.stderr if as_json else sys.stdout

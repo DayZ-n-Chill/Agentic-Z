@@ -148,6 +148,62 @@ def test_injected_script_is_balanced_and_prints_only_the_line_format():
         assert gate.triage.classify(reason) is None, reason
 
 
+# Every engine name the injected AZ_BehaviorTest class uses, with the vanilla
+# declaration it was checked against. The mission has not yet run in a live
+# session, so this list is what stands between an edit and an Enforce compile
+# error in the first live run: a call that is not here fails the test until
+# someone opens P:\scripts and adds its declaration.
+VANILLA_CALLS = {
+    "GetGame": r"P:\scripts\3_game\gameplay.c:636",
+    "GetCallQueue": r"P:\scripts\3_game\global\game.c:1549",
+    "CallLater": r"P:\scripts\2_gamelib\tools.c:61",
+    "Remove": r"P:\scripts\2_gamelib\tools.c:65",
+    "GetPlayers": r"P:\scripts\3_game\global\game.c:945",
+    "CreateObjectEx": r"P:\scripts\3_game\global\game.c:703",
+    "ObjectDelete": r"P:\scripts\3_game\global\game.c:705",
+    "ConfigIsExisting": r"P:\scripts\3_game\global\game.c:612",
+    "CastTo": r"P:\scripts\1_core\proto\enscript.c:110",
+    "GetPosition": r"P:\scripts\3_game\entities\object.c:287",
+    "GetInventory": r"P:\scripts\3_game\entities\entityai.c:1884",
+    "GetHumanInventory": r"P:\scripts\3_game\entities\man.c:81",
+    "GetEntityInHands": r"P:\scripts\3_game\systems\inventory\humaninventory.c:16",
+    "CreateInHands": r"P:\scripts\3_game\systems\inventory\humaninventory.c:44",
+    "CreateEntityInCargo": r"P:\scripts\3_game\systems\inventory\inventory.c:143",
+    "GetSlotId": r"P:\scripts\3_game\systems\inventory\inventory.c:171",
+    "GetSlotIdCount": r"P:\scripts\3_game\systems\inventory\inventory.c:175",
+    "HasAttachmentSlot": r"P:\scripts\3_game\systems\inventory\inventory.c:188",
+    "AttachmentCount": r"P:\scripts\3_game\systems\inventory\inventory.c:205",
+    "CreateAttachment": r"P:\scripts\3_game\systems\inventory\inventory.c:209",
+    "CreateAttachmentEx": r"P:\scripts\3_game\systems\inventory\inventory.c:215",
+    "GetAttachmentFromIndex": r"P:\scripts\3_game\systems\inventory\inventory.c:220",
+    "GetSlotName": r"P:\scripts\3_game\systems\inventory\inventoryslots.c:48",
+    "Count": r"P:\scripts\1_core\proto\enscript.c:380",
+    "Insert": r"P:\scripts\1_core\proto\enscript.c:407",
+    "ToString": r"P:\scripts\1_core\proto\enconvert.c:30",
+    "Print": r"P:\scripts\1_core\proto\endebug.c:96",
+}
+VANILLA_CONSTANTS = {
+    "CALL_CATEGORY_GAMEPLAY": r"P:\scripts\3_game\tools\tools.c:10",
+    "ECE_PLACE_ON_SURFACE": r"P:\scripts\3_game\ce\centraleconomy.c:38",
+    "InventorySlots.INVALID": r"P:\scripts\3_game\systems\inventory\inventoryslots.c:17",
+}
+ENFORCE_KEYWORDS = {"if", "for", "while"}
+
+
+def test_injected_script_calls_only_vanilla_checked_engine_names():
+    script = behavior.render_script(CHECKS)
+    own = set(re.findall(r"^\t(?:static\s+)?[\w<>]+\s+(\w+)\s*\(", script, re.MULTILINE)) | {"AZ_BehaviorTest"}
+    called = set(re.findall(r"\b([A-Za-z_]\w*)\s*\(", behavior._mask(script))) - own - ENFORCE_KEYWORDS
+    assert called == set(VANILLA_CALLS), (
+        f"unchecked engine calls {sorted(called - set(VANILLA_CALLS))}; "
+        f"no longer used {sorted(set(VANILLA_CALLS) - called)}"
+    )
+    masked = behavior._mask(script)
+    constants = set(re.findall(r"(?<!\.)\b[A-Z][A-Z_]{3,}\b", masked))
+    constants |= set(re.findall(r"\b\w+\.[A-Z][A-Z_]{3,}\b", masked))
+    assert constants == set(VANILLA_CONSTANTS)
+
+
 def test_inject_keeps_crlf_line_endings():
     crlf = FIXTURE_INIT.replace("\n", "\r\n")
     out = behavior.inject(crlf, CHECKS)
@@ -177,6 +233,28 @@ def test_prepare_instance_copies_and_injects(project):
     assert (dst / "Profiles").is_dir()
     # the user's instance is untouched
     assert (project / ".server" / "chernarus" / "mission" / "init.c").read_text(encoding="utf-8") == original
+
+
+def test_prepare_instance_copies_profile_settings_but_not_logs(project):
+    src = project / ".server" / "chernarus" / "Profiles"
+    (src / "CommunityOnlineTools" / "Roles").mkdir(parents=True)
+    (src / "CommunityOnlineTools" / "Roles" / "admin.txt").write_text("Admin 2\n", encoding="utf-8")
+    (src / "Users" / "Survivor").mkdir(parents=True)
+    (src / "Users" / "Survivor" / "Server_settings.DayZProfile").write_text("x\n", encoding="utf-8")
+    for log in ("script_2026-10-20_12-00-00.log", "DayZDiag_x64_2026-10-20_12-00-00.RPT", "crash_2026-10-20.log",
+                "ErrorMessage_DayZDiag_x64.mdmp", "crash.txt"):
+        (src / log).write_text("old\n", encoding="utf-8")
+    dst = project / ".server" / "chernarus-behavior" / "Profiles"
+    dst.mkdir(parents=True)
+    (dst / "script_own.log").write_text("the copy's own log\n", encoding="utf-8")
+    behavior.prepare_instance(project, "chernarus", CHECKS)
+    assert (dst / "CommunityOnlineTools" / "Roles" / "admin.txt").read_text(encoding="utf-8") == "Admin 2\n"
+    assert (dst / "Users" / "Survivor" / "Server_settings.DayZProfile").is_file()
+    assert sorted(p.name for p in dst.iterdir() if p.is_file()) == ["script_own.log"]
+    # a changed setting on the instance reaches the copy on the next prepare
+    (src / "CommunityOnlineTools" / "Roles" / "admin.txt").write_text("Admin 0\n", encoding="utf-8")
+    behavior.prepare_instance(project, "chernarus", CHECKS)
+    assert (dst / "CommunityOnlineTools" / "Roles" / "admin.txt").read_text(encoding="utf-8") == "Admin 0\n"
 
 
 def test_prepared_copy_passes_launch_test_instance_check(project):
@@ -329,7 +407,27 @@ def test_logs_mode_without_logs_or_checks_is_an_error(project, capsys):
 def test_prepare_only(project, capsys):
     rc, first, data = run_main(["behavior", "MyMod", "--prepare-only", "--json"], capsys)
     assert (rc, first, data["instance"], data["checks"]) == (0, "PREPARED", "chernarus-behavior", len(IDS))
+    assert data["launch"] == "/dayz-launch-test MyMod --server chernarus-behavior"
     assert (project / ".server" / "chernarus-behavior" / TEMPLATE).is_dir()
+
+
+def _require_cf(project: Path) -> None:
+    cfg = project / "workspace" / "MyMod" / "config.cpp"
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace('{"DZ_Data"}', '{"DZ_Data", "JM_CF_Scripts"}'), encoding="utf-8")
+
+
+def test_prepare_only_hint_lists_the_dependency_mods_before_the_mod(project, capsys):
+    _require_cf(project)
+    rc, first, text = run_main(["behavior", "MyMod", "--deps", "@CF", "Dabs", "--prepare-only"], capsys)
+    assert (rc, first) == (0, "PREPARED")
+    assert "run: /dayz-launch-test CF Dabs MyMod --server chernarus-behavior, then gate.py behavior MyMod --logs" in text
+
+
+def test_prepare_only_refuses_a_mod_that_needs_deps_without_deps(project, capsys):
+    _require_cf(project)
+    rc, first, text = run_main(["behavior", "MyMod", "--prepare-only"], capsys)
+    assert (rc, first) == (2, "ERROR") and "no --deps were given" in text
+    assert not (project / ".server" / "chernarus-behavior").exists()  # refused before writing
 
 
 class FakeSession:
@@ -445,3 +543,20 @@ def test_behavior_wait_flag_is_not_called_settle(project, capsys):
     assert gate.main(["behavior", "MyMod", "--settle", "6"]) == 2
     assert "unrecognized arguments: --settle" in capsys.readouterr().err
 
+
+def test_full_run_refuses_a_session_it_did_not_start_without_yes(project, capsys):
+    # The gate used to kill a user's own DayZDiag session with no prompt.
+    fake = FakeSession(project, [])
+    fake.running = [42]
+    rc, first, data = run_main(["behavior", "MyMod", "--json"], capsys, fake.runtime())
+    assert (rc, first) == (2, "ERROR") and "--yes" in data["error"]
+    assert fake.calls == [] and fake.running == [42]
+
+
+def test_full_run_with_yes_stops_a_session_it_did_not_start(project, capsys):
+    lines = (FIXTURES / "logs" / "script_pass.log").read_text(encoding="utf-8").splitlines()
+    fake = FakeSession(project, lines)
+    fake.running = [42]
+    rc, first, data = run_main(["behavior", "MyMod", "--json", "--yes"], capsys, fake.runtime())
+    assert (rc, first) == (0, "PASS"), data["failures"]
+    assert "stop_test.bat" in " ".join(fake.calls[0])

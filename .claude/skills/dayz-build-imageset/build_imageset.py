@@ -4,14 +4,19 @@ Reads `<mod>/.gui-sources/<setname>/*.png`, shelf-packs into the smallest
 power-of-two atlas (rectangular allowed) with a 10px gutter, splitting across
 several atlases (next-fit) when one 4096x4096 atlas is not enough, converts to
 .paa via ImageToPAA.exe, and writes a matching .imageset definition file under
-`<mod>/gui/imagesets/`. Outputs left over from a previous run with a different
-split count are removed.
+`<mod>/gui/imagesets/`. Every part is converted into a staging folder first and
+only moved over the real outputs once all parts of the set converted, so a
+failed run leaves the previous outputs untouched. Outputs left over from a
+previous run with a different split count are removed. Generated outputs whose
+.gui-sources/<set>/ folder no longer exists are reported, and deleted with
+--prune. --dry-run prints the plan without writing or deleting anything.
 
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -43,12 +48,36 @@ REQUIREMENTS = Path(__file__).resolve().parent / "requirements.txt"
 
 # A sprite's file stem becomes its ImageSetDefClass name, an unquoted
 # identifier in the .imageset file, so it must be a plain identifier.
+# A set folder's name becomes the imageset Name, which .layout files reference
+# as one space-separated token ("set:dayz_gui image:Close" at
+# P:\gui\layouts\day_z_book.layout:141), so it is held to the same rule.
 SPRITE_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+OUTPUT_SUFFIXES = (".paa", ".imageset")
+# <set>_N, the stem of one part of a split set.
+PART_STEM_RE = re.compile(r"(.+)_\d+")
 
 
 def bad_sprite_names(pngs) -> list[str]:
     """File names whose stem cannot be an ImageSetDefClass name."""
     return [p.name for p in pngs if not SPRITE_NAME_RE.fullmatch(p.stem)]
+
+
+def is_valid_set_name(name: str) -> bool:
+    """True when a .gui-sources/ subfolder name can be an imageset Name."""
+    return SPRITE_NAME_RE.fullmatch(name) is not None
+
+
+def colliding_part_stems(set_name: str, part_count: int, other_sets) -> list[str]:
+    """Split stems <set>_N that are also another source set's name.
+
+    Compared case-insensitively because Windows file names are, so icons_1.paa
+    from a split of "icons" and from a set named "Icons_1" are the same file.
+    """
+    if part_count < 2:
+        return []
+    others = {o.casefold() for o in other_sets}
+    return [f"{set_name}_{i}" for i in range(1, part_count + 1)
+            if f"{set_name}_{i}".casefold() in others]
 
 
 def resolve_image_to_paa() -> Path:
@@ -162,53 +191,54 @@ def write_imageset_file(path: Path, set_name: str, atlas_w: int, atlas_h: int,
 
 
 def write_one_atlas(stem: str, atlas_w: int, atlas_h: int, placed,
-                    mod_name: str, out_dir: Path, image_to_paa: Path) -> bool:
-    """Compose, convert, and emit a single atlas + .imageset for `placed` sprites."""
+                    mod_name: str, stage_dir: Path, image_to_paa: Path) -> bool:
+    """Compose and convert one atlas, writing <stem>.paa and <stem>.imageset into `stage_dir`.
+
+    `stage_dir` is a fresh staging folder, never the real output folder, so a
+    conversion that fails partway (or truncates its output) cannot damage the
+    outputs of an earlier run. build_one() moves the staged files into place.
+    """
     atlas = Image.new("RGBA", (atlas_w, atlas_h), (0, 0, 0, 0))
     for sprite_path, _, _, x, y in placed:
         with Image.open(sprite_path) as sprite:
             atlas.paste(sprite.convert("RGBA"), (x, y))
 
-    paa_path = out_dir / f"{stem}.paa"
-    imageset_path = out_dir / f"{stem}.imageset"
-
-    # A .paa from an earlier run must not pass for this run's output, so the
-    # file has to be new or have a later modification time after conversion.
-    previous_mtime = paa_path.stat().st_mtime_ns if paa_path.exists() else None
-    with tempfile.TemporaryDirectory() as td:
-        temp_png = Path(td) / f"{stem}.png"
-        atlas.save(temp_png, "PNG")
-        result = subprocess.run([str(image_to_paa), str(temp_png), str(paa_path)])
-        if result.returncode != 0:
-            print(f"{FAIL} ImageToPAA exited {result.returncode} on {stem}", file=sys.stderr)
-            return False
-        if not paa_path.exists():
-            print(f"{FAIL} ImageToPAA reported success but {paa_path} is missing", file=sys.stderr)
-            return False
-        if previous_mtime is not None and paa_path.stat().st_mtime_ns <= previous_mtime:
-            print(
-                f"{FAIL} ImageToPAA reported success but did not rewrite {paa_path.name};\n"
-                "       the file on disk is from an earlier run.",
-                file=sys.stderr,
-            )
-            return False
-
-    print(f"{OK} Wrote {paa_path.name} ({paa_path.stat().st_size:,} bytes)")
+    paa_path = stage_dir / f"{stem}.paa"
+    temp_png = stage_dir / f"{stem}.png"
+    atlas.save(temp_png, "PNG")
+    result = subprocess.run([str(image_to_paa), str(temp_png), str(paa_path)])
+    temp_png.unlink()
+    if result.returncode != 0:
+        print(f"{FAIL} ImageToPAA exited {result.returncode} on {stem}", file=sys.stderr)
+        return False
+    if not paa_path.is_file():
+        print(f"{FAIL} ImageToPAA reported success but wrote no {stem}.paa", file=sys.stderr)
+        return False
+    print(f"{OK} Converted {stem}.paa ({paa_path.stat().st_size:,} bytes)")
 
     paa_path_in_mod = f"{mod_name}\\gui\\imagesets\\{stem}.paa"
-    write_imageset_file(imageset_path, stem, atlas_w, atlas_h, paa_path_in_mod, placed)
-    print(f"{OK} Wrote {imageset_path.name}")
+    write_imageset_file(stage_dir / f"{stem}.imageset", stem, atlas_w, atlas_h,
+                        paa_path_in_mod, placed)
     return True
 
 
+def promote_staged(stage_dir: Path, out_dir: Path) -> None:
+    """Move every staged .paa / .imageset over its final file in `out_dir`."""
+    for f in sorted(stage_dir.iterdir()):
+        if f.suffix.lower() in OUTPUT_SUFFIXES:
+            os.replace(f, out_dir / f.name)
+            print(f"{OK} Wrote {f.name}")
+
+
 def remove_stale_outputs(out_dir: Path, set_name: str, part_count: int,
-                         other_sets: frozenset = frozenset()) -> list:
+                         other_sets: frozenset = frozenset(), dry_run: bool = False) -> list:
     """Delete <set>.{paa,imageset} / <set>_N.{paa,imageset} this run won't rewrite.
 
     part_count == 1 keeps <set>.*; part_count > 1 keeps <set>_1 .. <set>_<part_count>;
     part_count == 0 (the set's folder is empty) keeps nothing.
     Stems that are the name of another source set are never touched.
-    Returns the removed paths.
+    With dry_run, only reports what it would delete.
+    Returns the removed (or, with dry_run, the would-be removed) paths.
     """
     if not out_dir.is_dir():
         return []
@@ -216,34 +246,124 @@ def remove_stale_outputs(out_dir: Path, set_name: str, part_count: int,
         keep = {set_name}
     else:
         keep = {f"{set_name}_{i}" for i in range(1, part_count + 1)}
-    part_re = re.compile(re.escape(set_name) + r"_\d+")
+    # Compared ignoring case, like colliding_part_stems(), because Windows file
+    # names are: after renaming the folder Icons to icons, Icons_2.paa is stale.
+    spared = {s.casefold() for s in keep} | {o.casefold() for o in other_sets}
+    part_re = re.compile(re.escape(set_name) + r"_\d+", re.IGNORECASE)
     removed = []
     for f in sorted(out_dir.iterdir()):
-        if not f.is_file() or f.suffix.lower() not in (".paa", ".imageset"):
+        if not f.is_file() or f.suffix.lower() not in OUTPUT_SUFFIXES:
             continue
         stem = f.stem
-        if stem in keep or stem in other_sets:
+        if stem.casefold() in spared:
             continue
-        if stem == set_name or part_re.fullmatch(stem):
-            f.unlink()
+        if stem.casefold() == set_name.casefold() or part_re.fullmatch(stem):
+            if dry_run:
+                print(f"{INFO} Would remove stale {f.name}")
+            else:
+                f.unlink()
+                print(f"{INFO} Removed stale {f.name}")
             removed.append(f)
-            print(f"{INFO} Removed stale {f.name}")
     return removed
 
 
+def looks_generated(imageset: Path) -> bool:
+    """True when an .imageset file has the shape write_imageset_file() writes.
+
+    It must start with "ImageSetClass {", name itself after its own stem and
+    point at <something>\\gui\\imagesets\\<stem>.paa. Hand-made or vanilla-style
+    imagesets (P:\\gui\\imagesets\\playstation_buttons2.imageset:7 uses
+    "Gui/imagesets/....edds") do not match.
+    """
+    try:
+        text = imageset.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    stem = re.escape(imageset.stem)
+    return (
+        text.startswith("ImageSetClass {")
+        and re.search(rf'^ Name "{stem}"$', text, re.MULTILINE) is not None
+        and re.search(rf'^   path "[^"\n]*\\gui\\imagesets\\{stem}\.paa"$', text,
+                      re.MULTILINE | re.IGNORECASE) is not None
+    )
+
+
+def find_orphan_outputs(out_dir: Path, set_names) -> list:
+    """Generated outputs in `out_dir` whose .gui-sources/<set>/ folder is gone.
+
+    A stem belongs to a current set when it is the set name or <set>_N
+    (ignoring case, as Windows file names do). For every other stem whose
+    .imageset looks generated, that .imageset and its <stem>.paa are returned.
+    Files this skill did not write are never returned.
+    """
+    if not out_dir.is_dir():
+        return []
+    current = {s.casefold() for s in set_names}
+    orphans = []
+    for f in sorted(out_dir.iterdir()):
+        if not f.is_file() or f.suffix.lower() != ".imageset":
+            continue
+        stem = f.stem
+        part = PART_STEM_RE.fullmatch(stem)
+        if stem.casefold() in current or (part and part.group(1).casefold() in current):
+            continue
+        if not looks_generated(f):
+            continue
+        orphans.append(f)
+        paa = out_dir / f"{stem}.paa"
+        if paa.is_file():
+            orphans.append(paa)
+    return sorted(orphans)
+
+
+def handle_orphans(out_dir: Path, set_names, prune: bool, dry_run: bool) -> list:
+    """Report orphan outputs, or delete them when `prune` is set (dry run: report only).
+
+    Returns the orphan paths found.
+    """
+    orphans = find_orphan_outputs(out_dir, set_names)
+    if not orphans:
+        return orphans
+    print()
+    print("[Orphans]")
+    for f in orphans:
+        if prune and dry_run:
+            print(f"{INFO} Would remove orphan {f.name}")
+        elif prune:
+            f.unlink()
+            print(f"{INFO} Removed orphan {f.name}")
+        else:
+            print(f"{WARN} orphan {f.name}: no .gui-sources/ folder matches it, "
+                  "so /dayz-build-pbo still packs it")
+    if not prune:
+        print(f"{WARN} Re-run with --prune to delete them (add --dry-run to preview).")
+    return orphans
+
+
 def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path,
-              other_sets: frozenset = frozenset()) -> bool:
+              other_sets: frozenset = frozenset(), dry_run: bool = False) -> bool:
     set_name = set_dir.name
-    pngs = sorted(p for p in set_dir.iterdir() if p.is_file() and p.suffix.lower() == ".png")
 
     print()
     print(f"[Pack] {set_name}")
+
+    if not is_valid_set_name(set_name):
+        print(
+            f"{FAIL} {set_name!r}: set folder names must be identifiers (letters, digits,\n"
+            "       underscores; not starting with a digit), because the folder name becomes\n"
+            "       the imageset Name that .layout files reference as set:<name>.\n"
+            f"       Rename the folder {set_dir}",
+            file=sys.stderr,
+        )
+        return False
+
+    pngs = sorted(p for p in set_dir.iterdir() if p.is_file() and p.suffix.lower() == ".png")
 
     if not pngs:
         print(f"{WARN} {set_name}: no .png files in {set_dir}, skipping")
         # Outputs from when the folder still had sprites would otherwise ship
         # sprites the user has deleted.
-        remove_stale_outputs(out_dir, set_name, 0, other_sets)
+        remove_stale_outputs(out_dir, set_name, 0, other_sets, dry_run)
         return True
 
     bad = bad_sprite_names(pngs)
@@ -256,10 +376,25 @@ def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path,
         )
         return False
 
+    # A corrupt, truncated or 0-byte .png fails this set only, so the other
+    # sets still build. Pillow's UnidentifiedImageError is an OSError; load()
+    # catches files whose header reads but whose pixel data is cut short.
     metas = []
+    unreadable = []
     for p in pngs:
-        with Image.open(p) as im:
-            metas.append((p, im.width, im.height))
+        try:
+            with Image.open(p) as im:
+                im.load()
+                metas.append((p, im.width, im.height))
+        except OSError as e:
+            unreadable.append(f"{p.name} ({e})")
+    if unreadable:
+        print(
+            f"{FAIL} {set_name}: cannot read as PNG images. Re-export or remove:\n"
+            + "\n".join(f"       {u}" for u in unreadable),
+            file=sys.stderr,
+        )
+        return False
 
     atlases = pack_split(metas)
     if atlases is None:
@@ -271,29 +406,98 @@ def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path,
         )
         return False
 
-    out_dir.mkdir(parents=True, exist_ok=True)
+    clashes = colliding_part_stems(set_name, len(atlases), other_sets)
+    if clashes:
+        print(
+            f"{FAIL} {set_name}: splits into {len(atlases)} atlases, but {', '.join(clashes)} "
+            "is also a source set name,\n"
+            "       so the two would overwrite each other's .paa and .imageset. "
+            "Rename one of the set folders.",
+            file=sys.stderr,
+        )
+        return False
 
     if len(atlases) == 1:
-        (atlas_w, atlas_h), placed = atlases[0]
+        stems = [set_name]
+        (atlas_w, atlas_h), _ = atlases[0]
         print(f"{INFO} {len(pngs)} sprite(s) -> {atlas_w}x{atlas_h} atlas")
-        all_ok = write_one_atlas(set_name, atlas_w, atlas_h, placed, mod_name, out_dir, image_to_paa)
     else:
+        stems = [f"{set_name}_{i}" for i in range(1, len(atlases) + 1)]
         print(
             f"{INFO} {len(pngs)} sprite(s) won't fit in one atlas, splitting into "
-            f"{len(atlases)} parts: {set_name}_1 ... {set_name}_{len(atlases)}"
+            f"{len(atlases)} parts: {stems[0]} ... {stems[-1]}"
         )
-        all_ok = True
-        for idx, ((atlas_w, atlas_h), placed) in enumerate(atlases, start=1):
-            stem = f"{set_name}_{idx}"
+        for stem, ((atlas_w, atlas_h), placed) in zip(stems, atlases):
             print(f"{INFO}   {stem}: {len(placed)} sprite(s) -> {atlas_w}x{atlas_h} atlas")
-            if not write_one_atlas(stem, atlas_w, atlas_h, placed, mod_name, out_dir, image_to_paa):
-                all_ok = False
 
-    # Only once every atlas converted: if a conversion fails, the earlier good
-    # outputs stay in place instead of being deleted with nothing to replace them.
-    if all_ok:
-        remove_stale_outputs(out_dir, set_name, len(atlases), other_sets)
-    return all_ok
+    if dry_run:
+        planned = ", ".join(f"{stem}.paa + {stem}.imageset" for stem in stems)
+        print(f"{INFO} Dry run: would write {planned}")
+        remove_stale_outputs(out_dir, set_name, len(atlases), other_sets, dry_run=True)
+        return True
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    # Stage inside out_dir so os.replace() is a same-volume rename; the folder
+    # is removed on exit whether or not the set converted.
+    with tempfile.TemporaryDirectory(dir=out_dir, prefix=".staging-") as td:
+        stage_dir = Path(td)
+        all_ok = True
+        for stem, ((atlas_w, atlas_h), placed) in zip(stems, atlases):
+            if not write_one_atlas(stem, atlas_w, atlas_h, placed, mod_name, stage_dir, image_to_paa):
+                all_ok = False
+        if not all_ok:
+            print(f"{FAIL} {set_name}: not every atlas converted; previous outputs left unchanged",
+                  file=sys.stderr)
+            return False
+        promote_staged(stage_dir, out_dir)
+
+    # Only after every atlas converted and moved into place.
+    remove_stale_outputs(out_dir, set_name, len(atlases), other_sets)
+    return True
+
+
+def is_path_form(arg: str) -> bool:
+    """True when the argument is a path to a mod root rather than a <ModName>."""
+    return arg in (".", "..") or any(c in arg for c in "/\\:")
+
+
+def resolve_mod_root(arg: str) -> Path:
+    """The mod root for a <ModName> or a path argument.
+
+    A <ModName> resolves to workspace/<ModName>/ under the project cached by
+    /dayz-init, like the sibling /dayz-* skills, so the skill works from the
+    repo root. A path (the older form) is used as given.
+    """
+    if is_path_form(arg):
+        mod_root = Path(arg).resolve()
+        if not mod_root.is_dir():
+            sys.exit(f"{FAIL} mod root not a directory: {mod_root}")
+        return mod_root
+    project_dir = h.resolve_project_dir()
+    mod_root = project_dir / "workspace" / arg
+    if not mod_root.is_dir():
+        sys.exit(
+            f"{FAIL} workspace\\{arg} not found under {project_dir}.\n"
+            f"       Run /dayz-new-mod {arg} (or /dayz-import-mod) first, or pass a path to the mod root."
+        )
+    return mod_root
+
+
+def default_mod_name(mod_root: Path) -> str:
+    """The root for the .imageset path field: the mod's $PBOPREFIX$.
+
+    In-PBO paths are rooted at the PBO prefix, not the folder name: vanilla
+    P:\\DZ\\gui.txt:1 has prefix=gui\\ and P:\\gui\\imagesets\\playstation_buttons2.imageset:7
+    references "Gui/imagesets/playstation_buttons2.edds". Falls back to the
+    folder name, with a warning, when the mod has no $PBOPREFIX$ yet.
+    """
+    prefix_file = mod_root / "$PBOPREFIX$"
+    if prefix_file.is_file():
+        prefix = prefix_file.read_text(encoding="utf-8-sig").strip().strip("\\/")
+        if prefix:
+            return prefix
+    print(f"{WARN} no $PBOPREFIX$ in {mod_root}; using the folder name {mod_root.name!r} as the mod name")
+    return mod_root.name
 
 
 def main() -> int:
@@ -301,15 +505,28 @@ def main() -> int:
         description="Pack .gui-sources/<setname>/*.png into DayZ imagesets in <mod>/gui/imagesets/."
     )
     parser.add_argument(
-        "mod_root",
-        nargs="?",
-        default=".",
-        help="Mod root containing .gui-sources/ (default: current directory).",
+        "mod",
+        help="<ModName> (resolved to workspace/<ModName>/ in the project cached by /dayz-init) "
+             "or a path to a mod root containing .gui-sources/ (any argument with a slash, "
+             "backslash or drive, or . / ..).",
     )
     parser.add_argument(
         "--mod-name",
         default=None,
-        help="Mod name used in the path field of the .imageset (default: basename of mod_root).",
+        help="Root used in the path field of the .imageset (default: the mod's $PBOPREFIX$, "
+             "else the mod folder name).",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the planned atlases and the stale outputs that would be deleted; "
+             "write and delete nothing.",
+    )
+    parser.add_argument(
+        "--prune",
+        action="store_true",
+        help="Delete generated .paa/.imageset files in gui/imagesets/ whose .gui-sources/<set>/ "
+             "folder no longer exists (default: only report them).",
     )
     args = parser.parse_args()
 
@@ -321,9 +538,7 @@ def main() -> int:
             f'       Install it: py -m pip install -r "{REQUIREMENTS}"'
         )
 
-    mod_root = Path(args.mod_root).resolve()
-    if not mod_root.is_dir():
-        sys.exit(f"{FAIL} mod_root not a directory: {mod_root}")
+    mod_root = resolve_mod_root(args.mod)
 
     sources_dir = mod_root / ".gui-sources"
     if not sources_dir.is_dir():
@@ -332,15 +547,19 @@ def main() -> int:
             f"       Create {sources_dir}\\<setname>\\*.png and re-run."
         )
 
-    set_dirs = sorted(d for d in sources_dir.iterdir() if d.is_dir())
+    out_dir = mod_root / "gui" / "imagesets"
+    # Dot folders (.git, .vscode) are tooling, not imagesets.
+    set_dirs = sorted(d for d in sources_dir.iterdir()
+                      if d.is_dir() and not d.name.startswith("."))
     if not set_dirs:
+        # Every set folder was removed, so every generated output is an orphan.
+        handle_orphans(out_dir, (), args.prune, args.dry_run)
         sys.exit(
             f"{FAIL} no imageset subfolders under {sources_dir}\n"
             f"       Each subfolder of .gui-sources/ becomes one imageset."
         )
 
-    mod_name = args.mod_name or mod_root.name
-    out_dir = mod_root / "gui" / "imagesets"
+    mod_name = args.mod_name or default_mod_name(mod_root)
 
     print()
     image_to_paa = resolve_image_to_paa()
@@ -350,16 +569,22 @@ def main() -> int:
     print(f"{INFO} sources:    {sources_dir}")
     print(f"{INFO} output dir: {out_dir}")
     print(f"{INFO} {len(set_dirs)} imageset(s): {', '.join(d.name for d in set_dirs)}")
+    if args.dry_run:
+        print(f"{INFO} dry run: nothing will be written or deleted")
 
     set_names = frozenset(d.name for d in set_dirs)
     success = 0
     for set_dir in set_dirs:
-        if build_one(set_dir, mod_name, out_dir, image_to_paa, set_names - {set_dir.name}):
+        if build_one(set_dir, mod_name, out_dir, image_to_paa, set_names - {set_dir.name},
+                     args.dry_run):
             success += 1
+
+    handle_orphans(out_dir, set_names, args.prune, args.dry_run)
 
     total = len(set_dirs)
     print()
-    print(f"{OK if success == total else FAIL}{success} of {total} imagesets built.")
+    verb = "planned (dry run)" if args.dry_run else "built"
+    print(f"{OK if success == total else FAIL}{success} of {total} imagesets {verb}.")
     return 0 if success == total else 1
 
 

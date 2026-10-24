@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import sys
 import time
@@ -64,6 +65,25 @@ def test_project_without_active_mod(sl, tmp_path, monkeypatch, capsys):
     assert "| no active mod |" in capsys.readouterr().out
 
 
+def test_null_last_intent_shows_unknown_mod_not_init_hint(sl, tmp_path, monkeypatch, capsys):
+    # A cached project whose state file holds "last_intent": null makes the
+    # lookup raise; the user already ran /dayz-init, so do not tell them to again.
+    project = _project(tmp_path, None)
+    (project / ".claude" / "local-memory" / "dayz-init-state.json").write_text(
+        json.dumps({"last_intent": None}), encoding="utf-8")
+    monkeypatch.setattr(sys, "stdin", _stdin({"workspace": {"project_dir": str(project)}}))
+    sl.main()
+    assert capsys.readouterr().out.strip() == "P: mounted | mod ? | Diag off | RAG not indexed"
+
+
+def test_missing_state_py_shows_unknown_mod(sl, tmp_path, monkeypatch, capsys):
+    project = _project(tmp_path, "MyVest")
+    monkeypatch.setattr(sl, "STATE_PY", tmp_path / "no-such" / "state.py")
+    monkeypatch.setattr(sys, "stdin", _stdin({"workspace": {"project_dir": str(project)}}))
+    sl.main()
+    assert capsys.readouterr().out.strip() == "P: mounted | mod ? | Diag off | RAG not indexed"
+
+
 def test_cache_is_reused_within_ttl(sl, monkeypatch):
     calls = []
     monkeypatch.setattr(sl, "p_mounted", lambda: calls.append(1) or True)
@@ -82,6 +102,21 @@ def test_failed_check_shows_unknown(sl, monkeypatch):
     monkeypatch.setattr(sl, "p_mounted", boom)
     line = sl.render(sl.machine_state(5.0), None, False, 5.0)
     assert line.startswith("P: ? |")
+
+
+def test_index_time_reads_index_py_manifest(sl):
+    # dayz-search-index/index.py writes indexed_at as int(time.time()).
+    sl.MANIFEST.write_text(json.dumps({"indexed_at": 1700000000, "indexed_at_iso": "2023-11-14T22:13:20"}),
+                           encoding="utf-8")
+    assert sl.index_time() == 1700000000.0
+    line = sl.render(sl.machine_state(1700000000.0 + 7200), None, False, 1700000000.0 + 7200)
+    assert line.endswith("| RAG 2h old")
+
+
+def test_non_numeric_index_time_shows_not_indexed(sl):
+    sl.MANIFEST.write_text(json.dumps({"indexed_at": "yesterday"}), encoding="utf-8")
+    line = sl.render(sl.machine_state(5.0), None, False, 5.0)
+    assert line.endswith("| RAG not indexed")
 
 
 def test_corrupt_cache_is_ignored(sl):
@@ -165,6 +200,21 @@ def test_remove_restores_users_previous_status_line(inst):
     assert _settings(inst)["statusLine"] == mine
 
 
+@pytest.mark.parametrize("bad_record", ["{broken", "[1, 2]"])
+def test_remove_refuses_on_corrupt_record_without_changes(inst, bad_record):
+    mine = {"type": "command", "command": "~/.claude/my-line.sh"}
+    inst.SETTINGS_LOCAL.parent.mkdir(parents=True)
+    inst.SETTINGS_LOCAL.write_text(json.dumps({"statusLine": mine}), encoding="utf-8")
+    assert inst.main([]) == 0
+    inst.RECORD.write_text(bad_record, encoding="utf-8")
+    before = inst.SETTINGS_LOCAL.read_text(encoding="utf-8")
+    backups = sorted(inst.SETTINGS_LOCAL.parent.glob("*.bak"))
+    assert inst.main(["--remove"]) == 1
+    assert inst.SETTINGS_LOCAL.read_text(encoding="utf-8") == before
+    assert inst.RECORD.read_text(encoding="utf-8") == bad_record
+    assert sorted(inst.SETTINGS_LOCAL.parent.glob("*.bak")) == backups
+
+
 def test_reinstall_updates_old_plugin_path(inst):
     old = {"type": "command", "command": 'python "C:/old/plugin/.claude/skills/dayz-statusline/statusline.py"'}
     inst.SETTINGS_LOCAL.parent.mkdir(parents=True)
@@ -173,6 +223,29 @@ def test_reinstall_updates_old_plugin_path(inst):
     assert _settings(inst)["statusLine"] == inst.our_entry()
     inst.main(["--remove"])
     assert "statusLine" not in _settings(inst)
+
+
+def test_stale_record_is_not_restored_after_key_deleted(inst):
+    # Install over the user's own line, they delete statusLine by hand, then
+    # reinstall and remove: the line they deleted must not come back.
+    mine = {"type": "command", "command": "~/.claude/my-line.sh"}
+    inst.SETTINGS_LOCAL.parent.mkdir(parents=True)
+    inst.SETTINGS_LOCAL.write_text(json.dumps({"statusLine": mine}), encoding="utf-8")
+    assert inst.main([]) == 0
+    data = _settings(inst)
+    del data["statusLine"]
+    inst.SETTINGS_LOCAL.write_text(json.dumps(data), encoding="utf-8")
+    assert inst.main([]) == 0
+    assert inst.main(["--remove"]) == 0
+    assert "statusLine" not in _settings(inst)
+    assert not inst.RECORD.exists()
+
+
+def test_status_with_non_object_status_line(inst, capsys):
+    inst.SETTINGS_LOCAL.parent.mkdir(parents=True)
+    inst.SETTINGS_LOCAL.write_text(json.dumps({"statusLine": "my-line.sh"}), encoding="utf-8")
+    assert inst.main(["--status"]) == 0
+    assert "A different status line is set: my-line.sh" in capsys.readouterr().out
 
 
 def test_remove_leaves_foreign_status_line_alone(inst):
@@ -192,4 +265,70 @@ def test_invalid_settings_refuses_without_changes(inst):
 
 def test_command_points_at_this_script(inst):
     cmd = inst.our_entry()["command"]
-    assert cmd.startswith('python "') and cmd.endswith('dayz-statusline/statusline.py"')
+    assert cmd.startswith(f'"{Path(sys.executable).as_posix()}" "') and cmd.endswith('dayz-statusline/statusline.py"')
+
+
+def test_installed_command_runs_without_python_on_path(inst, tmp_path):
+    # A bare `python "..."` fails here, as it does where `python` is only the
+    # Microsoft Store alias: the status line would stay blank with no error.
+    env = {k: v for k, v in os.environ.items() if k.upper() not in ("PATH", "PATHEXT")}
+    empty = tmp_path / "empty-path"
+    empty.mkdir()
+    env["PATH"] = str(empty)
+    r = subprocess.run(
+        inst.our_entry()["command"], shell=True, input="{}", capture_output=True, text=True, env=env, timeout=30
+    )
+    assert r.returncode == 0, r.stderr
+    lines = r.stdout.strip().splitlines()
+    assert len(lines) == 1 and lines[0] and lines[0] != "DayZ status unavailable"
+
+
+def test_backups_never_replace_an_older_one(inst):
+    original = {"permissions": {"allow": ["Bash(git status)"]}}
+    inst.SETTINGS_LOCAL.parent.mkdir(parents=True)
+    inst.SETTINGS_LOCAL.write_text(json.dumps(original), encoding="utf-8")
+    inst.main([])
+    inst.main(["--remove"])
+    inst.main([])
+    backups = sorted(p.name for p in inst.SETTINGS_LOCAL.parent.glob("settings.local.json*.bak"))
+    assert backups == ["settings.local.json.2.bak", "settings.local.json.3.bak", "settings.local.json.bak"]
+    # The first backup still holds the user's untouched original.
+    first = inst.SETTINGS_LOCAL.with_name("settings.local.json.bak")
+    assert json.loads(first.read_text(encoding="utf-8")) == original
+
+
+def test_project_found_from_a_subfolder(inst, tmp_path, monkeypatch):
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    project = tmp_path / "proj"
+    sub = project / "workspace" / "MyMod" / "scripts"
+    sub.mkdir(parents=True)
+    (project / ".claude").mkdir()
+    assert inst.find_project_dir(sub, home=tmp_path / "home") == project
+
+
+def test_no_project_found_returns_none_and_stops_at_home(inst, tmp_path, monkeypatch):
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    home = tmp_path / "home"
+    sub = home / "Documents" / "stuff"
+    sub.mkdir(parents=True)
+    (home / ".claude").mkdir()  # Claude Code's user config, not a project
+    assert inst.find_project_dir(sub, home=home) is None
+
+
+def test_env_project_dir_wins(inst, tmp_path, monkeypatch):
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path / "proj"))
+    assert inst.find_project_dir(tmp_path, home=tmp_path / "home") == (tmp_path / "proj").resolve()
+
+
+def test_install_refuses_without_project_and_writes_nothing(tmp_path, capsys):
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
+    home = tmp_path / "home"
+    sub = home / "somewhere"
+    sub.mkdir(parents=True)
+    env["USERPROFILE"] = env["HOME"] = str(home)
+    r = subprocess.run(
+        [sys.executable, str(HERE / "install.py")], cwd=sub, env=env, capture_output=True, text=True, timeout=30
+    )
+    assert r.returncode == 1
+    assert "No project found" in r.stderr
+    assert not (sub / ".claude").exists()

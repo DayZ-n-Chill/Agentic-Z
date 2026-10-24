@@ -110,6 +110,67 @@ def test_import_launch_with_deps_runs(env_ok, runs, tmp_path):
     assert runs["argv"][-1][2:] == ["CF", "M", "--server", "chernarus"]
 
 
+GIT_SOURCE = "https://github.com/a/b"
+
+
+def test_link_import_launch_checks_deps_after_the_clone(env_ok, runs, monkeypatch, tmp_path, capsys):
+    # A link has no config.cpp to read before the clone; the import step then
+    # lands it at workspace/M, and check-deps must stop before build and launch.
+    def fake_run(argv):
+        runs["argv"].append(argv)
+        if Path(argv[1]).parent.name == "dayz-import-mod":
+            _cf_source(tmp_path / "workspace" / "M")
+        return 0
+
+    monkeypatch.setattr(plan, "run", fake_run)
+    rc = plan.main(
+        ["--mod", "M", "--import-from", GIT_SOURCE, "--no-scaffold", "--server", "chernarus", "--launch",
+         "--execute"],
+        project=tmp_path,
+    )
+    assert rc == 2
+    assert _skills_run(runs) == ["dayz-import-mod"]  # nothing after the failed check
+    assert "JM_CF_Scripts" in capsys.readouterr().err
+
+
+def test_link_import_plan_shows_the_deps_check(env_ok, runs, tmp_path, capsys):
+    rc = plan.main(
+        ["--mod", "M", "--import-from", GIT_SOURCE, "--no-scaffold", "--server", "chernarus", "--launch"],
+        project=tmp_path,
+    )
+    assert rc == 0
+    steps = build_steps(Intent("M", source=GIT_SOURCE, scaffold=False, server_map="chernarus", launch=True), False)
+    assert _actions(steps) == ["import-mod", "check-deps", "record", "add-server", "build", "launch"]
+    assert "requiredAddons" in capsys.readouterr().out
+
+
+def test_link_import_with_vanilla_addons_launches(env_ok, runs, monkeypatch, tmp_path):
+    def fake_run(argv):
+        runs["argv"].append(argv)
+        if Path(argv[1]).parent.name == "dayz-import-mod":
+            mod = tmp_path / "workspace" / "M"
+            mod.mkdir(parents=True)
+            (mod / "config.cpp").write_text(
+                'class CfgPatches { class M { requiredAddons[] = {"DZ_Data"}; }; };\n', encoding="utf-8")
+        return 0
+
+    monkeypatch.setattr(plan, "run", fake_run)
+    rc = plan.main(
+        ["--mod", "M", "--import-from", GIT_SOURCE, "--no-scaffold", "--server", "chernarus", "--launch",
+         "--execute"],
+        project=tmp_path,
+    )
+    assert rc == 0
+    assert _skills_run(runs)[-1] == "dayz-launch-test"
+
+
+def test_link_import_with_deps_or_local_folder_has_no_deps_step(tmp_path):
+    with_deps = Intent("M", source=GIT_SOURCE, scaffold=False, server_map="chernarus", launch=True, deps=["CF"])
+    assert "check-deps" not in _actions(build_steps(with_deps, False))
+    local = Intent("M", source=str(tmp_path), scaffold=False, server_map="chernarus", launch=True)
+    assert "check-deps" not in _actions(build_steps(local, False))
+
+
 def test_deps_without_launch_is_a_usage_error():
     with pytest.raises(SystemExit) as exc:
         plan.parse_args(["--mod", "M", "--server", "chernarus", "--deps", "CF"])
@@ -179,14 +240,23 @@ def test_unmounted_p_refuses(monkeypatch, runs, tmp_path):
     assert runs["argv"] == []
 
 
-@pytest.mark.parametrize("name", ["1Mod", "_Mod", "My-Mod", "My Mod", "Mod.v2", ""])
+@pytest.mark.parametrize("name", ["1Mod", "_Mod", "My-Mod", "My Mod", "Mod.v2", "", "M" * 65])
 def test_bad_mod_name_is_a_usage_error(name):
     with pytest.raises(SystemExit) as exc:
         plan.parse_args(["--mod", name])
     assert exc.value.code == 2
 
 
-@pytest.mark.parametrize("name", ["M", "MyMod", "My_Mod_2"])
+def test_mod_name_cap_matches_new_mod():
+    # The wizard must refuse exactly what dayz-new-mod refuses, or step 1 fails after the plan prints.
+    import skill_helpers as h
+    nm = h.load_module("dayz_new_mod_for_plan_test", h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py")
+    NAME_PATTERN = nm.NAME_PATTERN
+    for name in ["M" * 64, "M" * 65]:
+        assert bool(plan.MOD_NAME_RE.fullmatch(name)) == bool(NAME_PATTERN.match(name))
+
+
+@pytest.mark.parametrize("name", ["M", "MyMod", "My_Mod_2", "M" * 64])
 def test_good_mod_names_are_accepted(name):
     assert plan.parse_args(["--mod", name]).mod == name
 

@@ -3,19 +3,25 @@
   balance.py <ModName> [--json] [--ratio 1.5] [--min-peers 3]
   balance.py --mod-dir <folder> [--json] [--vanilla-root P:\\]
 
-Reads every config.cpp in the mod and every config.cpp under P:\\DZ\\ (the
-unpacked vanilla data). For each mod item (scope = 2 in CfgVehicles,
-CfgWeapons or CfgMagazines; any CfgAmmo class that does not set scope = 0)
+Reads every config.cpp in the mod, with the files they #include from the
+mod folder (an include it cannot follow is a WARN line), and every
+config.cpp under P:\\DZ\\ (the unpacked vanilla data). For each mod item
+(scope = 2 in CfgVehicles, CfgWeapons or CfgMagazines; any CfgAmmo class
+that does not set scope = 0)
 it finds the nearest vanilla ancestor, takes the vanilla items under that
-ancestor as peers, and compares
+ancestor as peers (for CfgAmmo, only ammo of the same family: firearm
+rounds, melee hits, explosives, flares and smoke, 40mm launcher rounds,
+or syringe darts), and compares
 each stat the mod sets itself: weight, health (hitpoints), damage dealt,
 protection (armor multipliers and the Protection class), cargo capacity and
 maximum quantity. A value outside the peers' range and at least --ratio times
 away from their median is an outlier.
 
 The first output line is the verdict: PASS (exit 0, no outliers), FLAG
-(exit 1, at least one outlier) or ERROR (exit 2: bad arguments, no project,
-no mod folder, no vanilla data, or a config.cpp that does not parse). The
+(exit 1, at least one outlier), ERROR (exit 2: bad arguments, no project,
+no mod folder, no vanilla data, or a config.cpp that does not parse) or
+UNCHECKED (exit 3: no outliers, but no item could be compared, for example
+when every item inherits from another mod's base classes). The
 script only measures; deciding whether an outlier is intended is the AI's
 and the user's call. See SKILL.md.
 """
@@ -23,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import statistics
 import sys
 from pathlib import Path
@@ -45,6 +52,30 @@ DAMAGE_TYPES = ("Health", "Blood", "Shock")
 # so a vest is never measured against every Inventory_Base item.
 MAX_WIDEN = 2
 PEER_SAMPLE = 5
+# check_item's note for an item whose every compared stat is the vanilla parent's.
+INHERITS_VANILLA = "sets none of the compared stats"
+# #include "file" or #include <file>, the directive the tokenizer otherwise skips.
+INCLUDE = re.compile(r'^\s*#\s*include\s*["<]([^">]+)[">]')
+# CfgAmmo puts every kind of hit under Bullet_Base, so a round is only measured
+# against vanilla ammo of the same family (see Balance.ammo_family). Labels for the report.
+AMMO_FAMILIES = {
+    "bullet": "firearm rounds",
+    "melee": "melee and environment hits",
+    "explosive": "explosive rounds",
+    "illumination": "flare and smoke rounds",
+    "launcher": "40mm launcher rounds",
+    "dart": "syringe darts",
+}
+# Vanilla CfgAmmo classes that start a family of their own: a class with one of
+# these above it (or that is one) is not a firearm round. Bullet_40mm_Base is the
+# inert 40mm grenade and Bullet_40mm_ChemGas inherits it
+# (P:\DZ\weapons\projectiles\config.cpp:6875, 6949); Dart_Syringe is the
+# shock pistol dart (line 6445), fired from Mag_ShockCartridge
+# (P:\DZ\weapons\attachments\magazine\config.cpp:2208, ammo= at 2217).
+AMMO_FAMILY_BASES = {
+    "bullet_40mm_base": "launcher",
+    "dart_syringe": "dart",
+}
 
 
 class BalanceError(Exception):
@@ -62,8 +93,8 @@ class Node:
         self.line = line
         self.file = file
         self.classes: dict[str, Node] = {}
-        # lower name -> (values, line); scalars are one value lists
-        self.props: dict[str, tuple[list, int]] = {}
+        # lower name -> (values, line, file); scalars are one value lists
+        self.props: dict[str, tuple[list, int, Optional[Path]]] = {}
 
     def merge(self, other: "Node") -> None:
         """Apply a later definition of the same class on top of this one."""
@@ -77,9 +108,18 @@ class Node:
                 self.classes[key] = child
 
 
-def parse_config(text: str, file: Optional[Path] = None) -> Node:
-    """Build the class tree. Raises edit_check.TokenizeError on text that does not tokenize."""
+def parse_config(text: str, file: Optional[Path] = None, linemap: Optional[list[tuple[Path, int]]] = None) -> Node:
+    """Build the class tree. Raises edit_check.TokenizeError on text that does not tokenize.
+
+    linemap, from expand_includes, gives the real file and line of each line of text.
+    """
     toks = edit_check.tokenize(text)
+
+    def where(line: int) -> tuple[Optional[Path], int]:
+        if linemap and 0 < line <= len(linemap):
+            return linemap[line - 1]
+        return file, line
+
     root = Node("", None, 0, file)
     stack = [root]
     i, n = 0, len(toks)
@@ -101,7 +141,8 @@ def parse_config(text: str, file: Optional[Path] = None) -> Node:
                 parent = toks[j + 1].text
                 j += 2
             if punct(j, "{"):
-                node = Node(name.text, parent, name.line, file)
+                at_file, at_line = where(name.line)
+                node = Node(name.text, parent, at_line, at_file)
                 key = name.text.lower()
                 if key in stack[-1].classes:
                     stack[-1].classes[key].merge(node)
@@ -130,7 +171,8 @@ def parse_config(text: str, file: Optional[Path] = None) -> Node:
                 elif t.kind in ("str", "ident"):
                     values.append(t.text)
                 j += 1
-            stack[-1].props[tok.text.lower()] = (values, tok.line)
+            at_file, at_line = where(tok.line)
+            stack[-1].props[tok.text.lower()] = (values, at_line, at_file)
             i = j
         else:
             i += 1
@@ -166,30 +208,99 @@ class Index:
         return self.sections[section].get(name.lower()) if name else None
 
 
-def load_vanilla(vanilla_root: Path) -> Index:
+def load_vanilla(vanilla_root: Path, unread: Optional[list[dict]] = None) -> Index:
+    """Index every config.cpp under <vanilla_root>/DZ. unread collects the files that do not tokenize."""
     dz = vanilla_root / "DZ"
     if not dz.is_dir():
-        raise BalanceError(f"no vanilla data at {dz}: mount P: with /dayz-workdrive, or pass --vanilla-root")
+        raise BalanceError(f"no vanilla data at {dz}: run /dayz-preflight to see what is missing (it names /dayz-workdrive when P: is not mounted), or pass --vanilla-root")
+    unread = [] if unread is None else unread
     index = Index()
     for path in sorted(dz.rglob("config.cpp")):
         try:
             index.add(parse_config(path.read_text(encoding="utf-8", errors="replace"), path))
-        except edit_check.TokenizeError:
-            continue  # a vanilla file we cannot read is one less source of peers
+        except edit_check.TokenizeError as e:
+            # One less source of peers; reported so a PASS never hides it.
+            unread.append({"file": path, "error": f"line {e.line}: {e.message}"})
     return index
 
 
-def load_mod(mod_dir: Path) -> Index:
+def _include_target(name: str, path: Path, mod_dir: Path) -> Optional[Path]:
+    """The file an #include names, when it is inside the mod folder.
+
+    A plain name is relative to the including file. A name that starts with a
+    backslash is a P: drive path (\\<Prefix>\\...), followed only when its
+    first folder is the mod folder's name, the prefix /dayz-new-mod links at
+    P:\\<ModName>\\. That is how mods are packed with that prefix; vanilla
+    P:\\DZ\\ config.cpp files use no #include, so it is unverified against vanilla.
+    """
+    parts = [p for p in re.split(r"[\\/]", name) if p]
+    if not parts:
+        return None
+    if name[0] in "\\/":
+        if parts[0].lower() != mod_dir.name.lower():
+            return None
+        target = mod_dir.joinpath(*parts[1:])
+    else:
+        target = path.parent.joinpath(*parts)
+    target = target.resolve()
+    try:
+        target.relative_to(mod_dir.resolve())
+    except ValueError:
+        return None
+    return target
+
+
+def expand_includes(
+    path: Path, mod_dir: Path, warnings: list[dict], _open: tuple[Path, ...] = ()
+) -> tuple[str, list[tuple[Path, int]]]:
+    """The file's text with each #include from the mod folder put in its place.
+
+    Returns the text and, for each of its lines, the file and line it came from.
+    An include that cannot be followed is left out and added to warnings.
+    """
+    lines: list[str] = []
+    linemap: list[tuple[Path, int]] = []
+    opened = _open + (path.resolve(),)
+    for number, line in enumerate(path.read_text(encoding="utf-8", errors="replace").split("\n"), 1):
+        m = INCLUDE.match(line)
+        if m is None:
+            lines.append(line)
+            linemap.append((path, number))
+            continue
+        name = m.group(1).strip()
+        target = _include_target(name, path, mod_dir)
+        if target is None:
+            reason = "is outside the mod folder"
+        elif not target.is_file():
+            reason = "was not found"
+        elif target in opened:
+            reason = "includes itself"
+        else:
+            sub_text, sub_map = expand_includes(target, mod_dir, warnings, opened)
+            lines += sub_text.split("\n")
+            linemap += sub_map
+            continue
+        warnings.append({"file": path, "line": number, "include": name, "reason": reason})
+        lines.append("")  # keep the line count; the directive holds no config
+        linemap.append((path, number))
+    return "\n".join(lines), linemap
+
+
+def load_mod(mod_dir: Path, warnings: Optional[list[dict]] = None) -> Index:
+    """Index the mod's config.cpp files. warnings collects the includes that were not followed."""
     configs = sorted(mod_dir.rglob("config.cpp"))
     if not configs:
         raise BalanceError(f"{mod_dir} has no config.cpp, so there are no item stats to compare")
+    warnings = [] if warnings is None else warnings
     index = Index()
     for path in configs:
-        text = path.read_text(encoding="utf-8", errors="replace")
+        text, linemap = expand_includes(path, mod_dir, warnings)
         problems = edit_check.check_config(text)
         if problems:
-            raise BalanceError(f"{path} does not parse (line {problems[0].line}: {problems[0].message}); run /dayz-lint and fix it first")
-        index.add(parse_config(text, path))
+            line = problems[0].line
+            bad_file, bad_line = linemap[line - 1] if 0 < line <= len(linemap) else (path, line)
+            raise BalanceError(f"{bad_file} does not parse (line {bad_line}: {problems[0].message}); run /dayz-lint and fix it first")
+        index.add(parse_config(text, path, linemap))
     return index
 
 
@@ -230,7 +341,7 @@ class Resolver:
         return out
 
     @staticmethod
-    def find(chain: list[tuple[Node, bool]], path: tuple[str, ...]) -> Optional[tuple[list, int, Node, bool]]:
+    def find(chain: list[tuple[Node, bool]], path: tuple[str, ...]) -> Optional[tuple[list, int, Optional[Path], bool]]:
         for node, is_mod in chain:
             cur = node
             for part in path[:-1]:
@@ -240,7 +351,7 @@ class Resolver:
             else:
                 hit = cur.props.get(path[-1].lower())
                 if hit is not None:
-                    return hit[0], hit[1], node, is_mod
+                    return hit[0], hit[1], hit[2] or node.file, is_mod
         return None
 
     @staticmethod
@@ -293,7 +404,7 @@ class Resolver:
             hit = self.find(chain, path)
             if hit is None:
                 continue
-            values, line, owner, is_mod = hit
+            values, line, file, is_mod = hit
             nums = [v for v in values if isinstance(v, float)]
             if key == "capacity":
                 if len(nums) != 2:
@@ -303,7 +414,7 @@ class Resolver:
                 value = nums[0]
             else:
                 continue
-            out[key] = {"value": value, "line": line, "file": owner.file, "from_mod": is_mod}
+            out[key] = {"value": value, "line": line, "file": file, "from_mod": is_mod}
         return out
 
     def slots(self, section: str, node: Node, mod_first: bool) -> frozenset[str]:
@@ -333,6 +444,7 @@ class Balance:
         self._children: dict[str, dict[str, list[str]]] = {}
         self._stats: dict[tuple[str, str], dict] = {}
         self._slots: dict[tuple[str, str], frozenset[str]] = {}
+        self._family: dict[str, str] = {}
 
     def children(self, section: str) -> dict[str, list[str]]:
         if section not in self._children:
@@ -354,6 +466,42 @@ class Balance:
             node = self.vanilla.sections[section][key]
             self._slots[(section, key)] = self.r.slots(section, node, mod_first=False)
         return self._slots[(section, key)]
+
+    def ammo_family(self, node: Node, mod_first: bool) -> str:
+        """Which kind of CfgAmmo class this is; peers come from the same kind only.
+
+        Every vanilla hit inherits Bullet_Base, so without this a bullet is measured
+        against 230 classes that include melee hits (class MeleeDamage: Bullet_Base,
+        P:\\DZ\\weapons\\melee\\config.cpp:19, with FinisherHit damage = 1000 at
+        line 151), explosives (explosive=1 on GrenadeM4, Rocket_RPG7_Base and
+        Bullet_40mm_Explosive, P:\\DZ\\weapons\\projectiles\\config.cpp:6593, 6663,
+        6943) and flares and smoke (simulation="shotIlluminating", Bullet_Flare at
+        line 6508), and almost any bullet damage falls inside that range.
+
+        Explosive and smoke 40mm rounds go to those families first; the 40mm rounds
+        left (Bullet_40mm_Base, Bullet_40mm_ChemGas) and Dart_Syringe deal health
+        damage like a bullet but are not fired from a firearm, so they get their
+        own families (AMMO_FAMILY_BASES) instead of skewing the firearm median.
+        """
+        chain = self.r.chain("cfgammo", node, mod_first)
+        names = {n.name.lower() for n, _ in chain}
+        if "meleedamage" in names:
+            return "melee"
+        hit = self.r.find(chain, ("explosive",))
+        if hit is not None and any(isinstance(v, float) and v > 0 for v in hit[0]):
+            return "explosive"
+        hit = self.r.find(chain, ("simulation",))
+        if hit is not None and any(isinstance(v, str) and v.strip('"').lower() == "shotilluminating" for v in hit[0]):
+            return "illumination"
+        for base, family in AMMO_FAMILY_BASES.items():
+            if base in names:
+                return family
+        return "bullet"
+
+    def vanilla_family(self, key: str) -> str:
+        if key not in self._family:
+            self._family[key] = self.ammo_family(self.vanilla.sections["cfgammo"][key], mod_first=False)
+        return self._family[key]
 
     def is_item(self, section: str, node: Node, mod_first: bool) -> bool:
         if section == "cfgammo":
@@ -384,17 +532,23 @@ class Balance:
 
     def check_item(self, section: str, node: Node) -> tuple[list[dict], Optional[str]]:
         """Outliers for one mod item, or a note saying why it was not compared."""
-        own = {k: v for k, v in self.r.stats(section, node, mod_first=True).items() if v["from_mod"]}
-        if not own:
-            return [], "sets none of the compared stats"
+        # Ancestors first: an item that sets nothing but inherits another mod's
+        # base (CF, Expansion) has stats we never saw, so it is not vanilla's.
         ancestors = self.ancestors(section, node)
         if not ancestors:
             return [], f"has no vanilla parent (parent {node.parent or 'none'})"
+        own = {k: v for k, v in self.r.stats(section, node, mod_first=True).items() if v["from_mod"]}
+        if not own:
+            return [], INHERITS_VANILLA
         slots = self.r.slots(section, node, mod_first=True)
+        ammo = None
+        if section == "cfgammo":
+            health = self.r.stats(section, node, mod_first=True).get("damage.health")
+            ammo = (self.ammo_family(node, mod_first=True), health is None or health["value"] > 0)
         findings = []
         compared = 0
         for stat, mine in own.items():
-            group = self.peer_values(section, ancestors, stat, slots)
+            group = self.peer_values(section, ancestors, stat, slots, ammo)
             if group is None:
                 continue
             compared += 1
@@ -425,12 +579,32 @@ class Balance:
         return findings, None
 
     def peer_values(
-        self, section: str, ancestors: list[Node], stat: str, slots: frozenset[str] = frozenset()
+        self,
+        section: str,
+        ancestors: list[Node],
+        stat: str,
+        slots: frozenset[str] = frozenset(),
+        ammo: Optional[tuple[str, bool]] = None,
     ) -> Optional[tuple[str, list[tuple[str, float]]]]:
+        """The peer group name and (class, value) peers for one stat, or None if too few.
+
+        ammo is (family, lethal) for a CfgAmmo class: peers must share the family,
+        and a lethal round (health damage above 0) leaves out the non-lethal ones
+        (Bullet_12GaugeBeanbag and Bullet_12GaugeRubberSlug deal health damage 0,
+        P:\\DZ\\weapons\\projectiles\\config.cpp:4176 and 4134).
+        """
         for depth, base in enumerate(ancestors[: MAX_WIDEN + 1]):
             wanted = {s.lower() for s in slots}
             peers, same_slot = [], []
             for key in self.descendants(section, base.name.lower()):
+                if ammo is not None:
+                    family, lethal = ammo
+                    if self.vanilla_family(key) != family:
+                        continue
+                    if lethal and family == "bullet":
+                        health = self.vanilla_stats(section, key).get("damage.health")
+                        if health is not None and health["value"] <= 0:
+                            continue
                 hit = self.vanilla_stats(section, key).get(stat)
                 if hit is not None:
                     peer = (self.vanilla.sections[section][key].name, hit["value"])
@@ -445,7 +619,7 @@ class Balance:
             if slots and self.min_peers <= len(same_slot) < len(peers):
                 return f"{base.name} in slot {', '.join(sorted(slots))}", same_slot
             if len(peers) >= self.min_peers:
-                return base.name, peers
+                return (f"{base.name} ({AMMO_FAMILIES[ammo[0]]})" if ammo else base.name), peers
         return None
 
     def judge(self, value: float, values: list[float]) -> Optional[dict]:
@@ -457,7 +631,9 @@ class Balance:
             direction = "low"
         else:
             return None
-        ratio = round(value / median, 2) if median else None
+        # Four significant figures, not fixed decimals: round(1 / 12000, 2) is 0,
+        # which hid how far below the median a tiny value is.
+        ratio = float(f"{value / median:.4g}") if median else None
         return {"median": median, "direction": direction, "ratio": ratio}
 
 
@@ -502,8 +678,10 @@ def balance_mod(
         raise BalanceError("--ratio must be greater than 1")
     if min_peers < 1:
         raise BalanceError("--min-peers must be at least 1")
-    mod_index = load_mod(mod_dir)
-    vanilla = load_vanilla(vanilla_root or P_DRIVE)
+    include_warnings: list[dict] = []
+    vanilla_unread: list[dict] = []
+    mod_index = load_mod(mod_dir, include_warnings)
+    vanilla = load_vanilla(vanilla_root or P_DRIVE, vanilla_unread)
     bal = Balance(mod_index, vanilla, ratio, min_peers)
     display_root = display_root or mod_dir.parent
 
@@ -515,7 +693,7 @@ def balance_mod(
         except ValueError:
             return path.as_posix()
 
-    findings, skipped, items = [], [], 0
+    findings, skipped, inherits, items, compared = [], [], [], 0, 0
     for section in SECTIONS:
         for node in mod_index.sections[section].values():
             if not bal.is_item(section, node, mod_first=True):
@@ -525,19 +703,38 @@ def balance_mod(
             for f in found:
                 f["file"] = rel(f["file"])
             findings += found
-            if note:
-                skipped.append({"item": node.name, "section": section, "file": rel(node.file), "line": node.line, "reason": note})
+            entry = {"item": node.name, "section": section, "file": rel(node.file), "line": node.line, "reason": note}
+            # An item that only inherits vanilla stats is vanilla's own balance, so it
+            # counts as compared and is listed apart from the items that were not.
+            if note == INHERITS_VANILLA:
+                inherits.append(entry)
+            elif note:
+                skipped.append(entry)
+            if note is None or note == INHERITS_VANILLA:
+                compared += 1
     findings.sort(key=lambda f: (f["file"] or "", f["line"], f["stat"]))
+    # PASS means items were measured and none stood out. When nothing could be
+    # measured (every item skipped, or no items at all) say so instead.
+    if findings:
+        verdict = "FLAG"
+    elif compared == 0:
+        verdict = "UNCHECKED"
+    else:
+        verdict = "PASS"
     return {
-        "verdict": "FLAG" if findings else "PASS",
+        "verdict": verdict,
         "mod": mod,
         "mod_dir": str(mod_dir),
         "ratio": ratio,
         "min_peers": min_peers,
         "items": items,
+        "compared": compared,
         "outliers": len(findings),
         "findings": findings,
         "skipped": skipped,
+        "inherits_vanilla": inherits,
+        "includes_skipped": [{**w, "file": rel(w["file"])} for w in include_warnings],
+        "vanilla_unread": [{"file": str(u["file"]), "error": u["error"]} for u in vanilla_unread],
     }
 
 
@@ -545,19 +742,40 @@ def _fmt(value: float) -> str:
     return f"{value:g}"
 
 
+def _times(x: float) -> str:
+    # Four significant figures, but whole numbers past 1000 so 10000 never
+    # prints as 1e+04.
+    return str(round(x)) if x >= 1000 else f"{x:.4g}"
+
+
 def render_text(report: dict) -> str:
     out = []
     for f in report["findings"]:
-        times = f"{f['ratio']:g}x the" if f["ratio"] is not None else "above the"
+        if f["ratio"] is None:
+            times = "above the"
+        elif f["direction"] == "low":
+            # A low value reads as how many times below the median it is, so
+            # weight 1 against 12000 says "12000x below", not "0x".
+            times = f"{_times(f['median'] / f['value'])}x below the" if f["value"] > 0 else "below the"
+        else:
+            times = f"{_times(f['ratio'])}x the"
         out.append(
             f"- {f['file']}:{f['line']}  {f['item']} {f['stat']} = {_fmt(f['value'])}: {f['meaning']}, "
             f"{times} median {_fmt(f['median'])} of {f['peer_count']} vanilla items under {f['peer_base']} "
             f"(range {_fmt(f['min'])} to {_fmt(f['max'])})"
         )
         out.append("    closest: " + ", ".join(f"{p['class']} {_fmt(p['value'])}" for p in f["peers"]))
+    for s in report["inherits_vanilla"]:
+        out.append(f"  compared (inherits vanilla stats): {s['item']} {s['reason']}")
     for s in report["skipped"]:
         out.append(f"  not compared: {s['item']} {s['reason']}")
-    out.append(f"  {report['outliers']} outlier(s) in {report['items']} item(s)")
+    for w in report["includes_skipped"]:
+        out.append(f"  WARN {w['file']}:{w['line']}  #include \"{w['include']}\" not read: it {w['reason']}, so its classes were not compared")
+    for u in report["vanilla_unread"]:
+        out.append(f"  WARN {u['file']}  vanilla config not read ({u['error']}), so its classes are not peers")
+    out.append(f"  {report['outliers']} outlier(s) in {report['items']} item(s), {report['compared']} compared")
+    if report["verdict"] == "UNCHECKED":
+        out.append("  no item was compared with vanilla, so this is not a PASS; see the not compared lines")
     return "\n".join(out)
 
 
@@ -593,7 +811,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         return _error(str(e), args.json)
     print(report["verdict"])
     print(json.dumps(report, indent=2) if args.json else render_text(report))
-    return 0 if report["verdict"] == "PASS" else 1
+    return {"PASS": 0, "FLAG": 1, "UNCHECKED": 3}[report["verdict"]]
 
 
 def _error(message: str, as_json: bool) -> int:

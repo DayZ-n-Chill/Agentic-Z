@@ -15,7 +15,7 @@ from env_check import classify, run_all
 def main() -> int:
     auto, hard = classify(run_all())
     for issue in hard:
-        print("HARD", issue.name, issue.message, issue.fix_link or "")
+        print("HARD", issue.name, issue.message, *([issue.fix_link] if issue.fix_link else []))
     for issue in auto:
         print("AUTO", issue.name, issue.message)
     if not (auto or hard):

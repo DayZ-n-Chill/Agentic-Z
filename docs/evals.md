@@ -7,7 +7,7 @@ Answer tests check what an agent actually says. Each agent has a set of question
 | Path | What it holds |
 |---|---|
 | `evals/questions/<agent>.json` | The questions for one agent. The file name is the agent name. |
-| `evals/baseline.json` | The last accepted score for each agent that has a question file. It is committed, and a test fails when a question file has no entry. |
+| `evals/baseline.json` | The last accepted score for each agent that has a question file, the ids of the questions it passed (`passed`), and what produced it: the date (`recorded`), the model (`model`, the model id claude reports it answered with, such as `claude-opus-5-5`; the `--model` value or `claude CLI default` only when claude reports none) and the `claude --version` output (`claude_version`). It is committed, and a test fails when a question file has no entry or an entry lacks any of these three fields. |
 | `scripts/dev/run_evals.py` | The runner. |
 | `scripts/dev/evals.bat` | The no-token wrapper for the runner. |
 | `output/evals/` | Results files, one per run. Not committed. |
@@ -22,9 +22,7 @@ Answer tests check what an agent actually says. Each agent has a set of question
       "id": "cfgpatches-parent-addon",
       "question": "Answer only, do not edit any file. I'm adding class MyMod_PlateCarrier ...",
       "must_include": ["requiredAddons", "DZ_Characters_Vests", "re:units\\[\\]"],
-      "must_not_include": [],
-      "cite": "characters/vests/config.cpp",
-      "verified": "P:/DZ/characters/vests/config.cpp:3 and :24"
+      "verified": "P:/DZ/characters/vests/config.cpp:3 (class DZ_Characters_Vests) and :24 (class PlateCarrierVest: Clothing)"
     }
   ]
 }
@@ -36,8 +34,8 @@ Answer tests check what an agent actually says. Each agent has a set of question
 | `question` | yes | The exact text sent to the agent. Start with "Answer only, do not edit any file" so the agent does not try to change the repo. |
 | `must_include` | yes | Checks the answer must pass. A plain string matches anywhere, ignoring case. A string that starts with `re:` is a regex, ignoring case, with `^` and `$` matching at each line. Use `\A` to anchor to the very start of the answer. |
 | `must_not_include` | no | Checks the answer must fail. Same syntax. |
-| `cite` | no | A path the answer must name. Slashes and case are ignored, so `P:\scripts\3_game\entities\entityai.c` matches `3_game/entities/entityai.c`. |
-| `unchanged` | no | Repo paths the agent must leave alone, such as a fixture a gate judges. The runner hashes each file before and after the question, and a changed file fails it. Fixtures live under `evals/fixtures/<agent>/`. |
+| `cite` | no | A path the answer must contain. Slashes and case are ignored, and a shorter cite matches inside a longer path, so the cite `3_game/entities/entityai.c` is satisfied by an answer that names `P:\scripts\3_Game\Entities\EntityAI.c`. A cite longer than the path the answer names does not match. |
+| `unchanged` | no | Repo paths the agent must leave alone, such as a fixture a gate judges. The runner hashes each file before and after the question, and a changed file fails it. Fixtures made only for evals live under `evals/fixtures/<agent>/`; a question may also guard an existing repo fixture, such as `.claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp`. |
 | `verified` | yes for shipped files | Where you checked the expected answer: a `P:\` path and line, or the agent rule it tests. Every fact behind a question must be checked on `P:\` or in the repo before the question goes in. |
 
 A question passes only when every check passes. An agent's score is the number of questions that passed.
@@ -52,19 +50,19 @@ scripts\dev\evals.bat --agent dayz-config-specialist
 scripts\dev\evals.bat --baseline
 ```
 
-`--dry-run` checks every question file and lists the calls without asking anything. A real run sends each question to `claude -p --agent <name>` with read-only tools (`Read`, `Glob`, `Grep` and the search tools). `--allowedTools` only grants tools, so the runner also removes `Edit`, `Write`, `NotebookEdit`, `Bash`, `PowerShell`, `Agent`, `Task`, `WebFetch` and `WebSearch` with `--disallowedTools`. The agent can look things up on `P:\` but cannot edit, run commands, hand the question to a subagent or answer from the web. It writes the answers and scores to `output/evals/results-<time>.json` (or `--out`). A run costs tokens: one agent session per question.
+`--dry-run` checks every question file and lists the calls without asking anything. A real run sends each question to `claude -p --agent <name> --output-format json` with read-only tools (`Read`, `Glob`, `Grep` and the search tools). `--allowedTools` only grants tools, so the runner also removes `Edit`, `Write`, `NotebookEdit`, `Bash`, `PowerShell`, `Agent`, `Task`, `WebFetch` and `WebSearch` with `--disallowedTools`. The agent can look things up on `P:\` but cannot edit, run commands, hand the question to a subagent or answer from the web. It writes the answers and scores to `output/evals/results-<time>.json` (or `--out`), rewriting the file after every question so a crash or a killed run keeps the answers collected so far. Any failure while asking or scoring one question is recorded as an error for that question and the run goes on. A run costs tokens: one agent session per question.
 
-Exit codes: `0` passed, `1` a score went below the baseline, `2` a question file is invalid or an agent name is unknown.
+Exit codes: `0` the run finished and, with `--baseline`, no agent dropped (without `--baseline`, `0` only means the run finished, even if every question failed or errored; read the scores or the results file), `1` a score went below the baseline or a question the baseline lists as passed now fails, `2` a question file is invalid or an agent name is unknown, `130` the run was stopped with Ctrl+C. A stopped run still writes the results file with the questions asked so far, marks the one it was on as an error, and neither checks nor updates the baseline.
 
 ## How evals gate a change
 
 1. Before the change, the baseline in `evals/baseline.json` holds each agent's last accepted score.
 2. Make the change, then run `scripts\dev\evals.bat --baseline` for the agents it touches (or all of them).
-3. If any agent scored lower, or has no baseline entry yet, the run exits `1` and lists the agent. The change is not finished: fix it, or fix the question if the question was wrong, and run again.
-4. If every score held or went up, record the new scores with `--update-baseline` and commit `evals/baseline.json` with the change. `--update-baseline` refuses to write when a score went down, so the baseline can only rise.
+3. If any agent scored lower, fails a question its baseline lists as passed, or has no baseline entry yet, the run exits `1` and lists the agent. Under each one it prints the date, model and claude version of the baseline entry and of this run (`not recorded` for an old entry), so a drop that came with a model or CLI change is plain to see. The change is not finished: fix it, or fix the question if the question was wrong, and run again.
+4. If every score held or went up, record the new scores with `--update-baseline` and commit `evals/baseline.json` with the change. `--update-baseline` stamps each entry it writes with the date, model and claude version. It refuses to write when a score went down, when a passed question now fails, or when any question errored (the `claude` CLI missing, a nonzero exit, a timeout or an answer that is not valid UTF-8), so the baseline can only rise and an error is never recorded as a score of 0. Only the passed questions that are still in the question file are compared: after you rename or remove a bad question, `--update-baseline` records the new set instead of reporting the old id as lost.
 
 Answers vary a little from run to run. When a question fails once and passes on a rerun, look at the answer in the results file: if the agent was right but phrased it differently, widen the check; if it was wrong, treat it as a real failure.
 
 ## Adding questions
 
-Every agent should get its own question file, and every new specialist ships with one. 23 of the 30 agents have one so far; `evals/README.md` lists the ones still missing. Add five questions at a time, each checked on `P:\` first and recorded in `verified`. Run the new questions, then record the baseline with `--agent <name> --update-baseline` and commit it with the question file. The unit tests in `scripts/dev/test_run_evals.py` check that every question file is valid; they never call `claude`.
+Every agent should get its own question file, and every new specialist ships with one. `evals/README.md` gives the count so far and lists the ones still missing. Add five questions at a time, each checked on `P:\` first and recorded in `verified`. Run the new questions, then record the baseline with `--agent <name> --update-baseline` and commit it with the question file. The unit tests in `scripts/dev/test_run_evals.py` check that every question file is valid; they never call `claude`.

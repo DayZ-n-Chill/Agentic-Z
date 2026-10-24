@@ -1,6 +1,6 @@
 ---
 name: dayz-particles
-description: "Reference for creating and playing custom DayZ particle effects without Workbench: .ptc and .emat files, .edds sprites, the Particle, ParticleManager and SEffectManager script API, and the vanilla particle catalog. Use when writing or debugging any particle effect code or file."
+description: "Reference for creating and playing custom DayZ particle effects without Workbench: .ptc and .emat files, .edds sprites, the Particle, ParticleManager and SEffectManager script API, and the vanilla particle catalog. Use when an agent needs to look up a particle format, API call or vanilla effect; the dayz-audio-fx-specialist agent reads it when it writes, changes or debugs an effect in a mod."
 ---
 
 # DayZ particle effects
@@ -35,7 +35,7 @@ Resources reference each other as `{HEXGUID}relative/path.ext`.
 - Mod `.ptc` to vanilla `.emat`, or mod `.emat` to vanilla `.edds`: copy the vanilla GUID plus path, exactly as vanilla files do.
 - Mod `.ptc` to mod `.emat`: path only; mod-owned resources resolve by PBO path.
 
-Unverified: whether the engine resolves by GUID or by path first, and whether a path-only reference to a vanilla `.emat` fails. Copying GUID plus path is the safe default; test in game before relying on either behavior.
+Path-only references resolve: vanilla itself ships one. `P:\graphics\particles\contaminated_area_gas_around_tiny.ptc:13` has `Material "Graphics/Particles/materials/enviroment/water_splash_01_em.emat"` with no GUID, and that effect is registered at `P:\scripts\3_game\particles\particlelist.c:316` and played by the contaminated area (`P:\scripts\4_world\classes\contaminatedarea\effectarea.c:80`). Every vanilla `.emat` texture reference carries a GUID, so for vanilla resources copy GUID plus path to match vanilla, and the path alone is a working fallback.
 
 ## Script API in one screen
 
@@ -61,19 +61,14 @@ modded class ParticleList
 };
 ```
 
-AddonBuilder include filter must keep the particle files:
-
-```
-*.emat;*.edds;*.ptc;*.c;*.imageset;*.layout;*.ogg;*.json;*.xml;*.paa;*.rvmat
-```
+Packing: `/dayz-build-pbo` already packs `.ptc`, `.emat` and `.edds` (its include filter is `.claude/skills/dayz-build-pbo/include.lst`), so no change is needed. Only with a custom AddonBuilder setup, add whichever of `*.ptc;*.emat;*.edds` are missing to your existing include filter; do not replace the filter, or other file types such as `.p3d` models are dropped from the PBO.
 
 ## Pitfalls
 
-1. Particles are client-only. Guard with a runtime `GetGame().IsDedicatedServer()` check (Pattern A and Tier 2), not `#ifndef SERVER`: testing runs `DayZDiag_x64.exe` for both ends, and a compile-time define does not separate them.
+1. Particles are client-only. Guard with a runtime `GetGame().IsHeadlessOrDedicatedServer()` check, as every pattern in `references/integration-patterns.md` does (Pattern A shows it first). It is the same gate vanilla's particle pool uses (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`); `IsDedicatedServer()` alone lets the code run on a headless client. Vanilla `PowerGeneratorBase` gates its smoke on `IsClient() || !IsMultiplayer()` instead (`P:\scripts\4_world\entities\itembase\powergenerator.c:196`); Pattern D, which follows that class, still uses `IsHeadlessOrDedicatedServer()` so one gate covers every pattern. Do not use `#ifndef SERVER`: testing runs `DayZDiag_x64.exe` for both ends, and a compile-time define does not separate them.
 2. Looping particles (`Repeat 1`) never end on their own. Stop them and null the reference; clean up in `EEDelete`, power-off and the destructor.
 3. `Stop()` fades out gradually; use `StopParticleFlags.IMMEDIATE` for instant removal.
 4. `ObjectDelete(particle)` is valid only for a `ParticleSource` with `DisableAutoDestroy()`.
-5. Unverified: particles are said to stop rendering beyond about 200 m. No engine constant for this was found in `P:\scripts`; test in game before designing around it.
-6. Give `.ptc` files a mod prefix (`mymod_`) so filenames don't collide across mods.
-7. `AIR_RESISTANCE` controls how fast smoke rises; use `forceWorldRot = true` for smoke and steam that should always rise straight up.
-8. `EffectTime` is the master-curve cycle; `Repeat` loops the whole effect. A one-shot (`Repeat 0`) plays once for `EffectTime`.
+5. Give `.ptc` files a mod prefix (`mymod_`) so filenames don't collide across mods.
+6. `AIR_RESISTANCE` controls how fast smoke rises; use `forceWorldRot = true` for smoke and steam that should always rise straight up.
+7. `EffectTime` is the master-curve cycle; `Repeat` loops the whole effect. A one-shot (`Repeat 0`) plays once for `EffectTime`.

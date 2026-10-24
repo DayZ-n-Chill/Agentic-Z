@@ -1,7 +1,6 @@
 # Token-saving layer
 
-Status: **built, on branch feature/token-saver** (stacked on `feature/agent-team`, PR #52).
-This file fills in as each piece lands. Open it in your editor to watch progress.
+Status: **shipped** (merged in PR #53).
 
 ## Why
 
@@ -26,7 +25,7 @@ Most of what the mod team does between "the user asks" and "the user sees a resu
 
 **What it is.** `/dayz-gate` (`.claude/skills/dayz-gate/gate.py`) runs the orchestrator's two DayZ gates as a script. It calls the existing skill scripts as subprocesses and applies the rules written in `dayz-build-checker` and `dayz-ingame-tester`:
 
-- `build` stops any running `DayZDiag_x64.exe` (with `/dayz-stop-test`), runs `/dayz-build-pbo`, and fails on a non-zero exit, a `[FAIL]` line, or an AddonBuilder error or warning about missing files, textures or unknown classes. A payload-only bundle (no `config.cpp`, PBOs in `Addons/`) skips the build and must pass `/dayz-deploy-pbo` with no `[FAIL]` and no missing `.bisign`; a bundle with a linker `config.cpp` gets both.
+- `build` first runs `/dayz-lint` on the mod. Its errors are failures and its warnings are warnings, and when lint fails the gate stops there, without stopping a running session or building. When lint passes, it stops any running `DayZDiag_x64.exe` (with `/dayz-stop-test`), runs `/dayz-build-pbo`, and fails on a non-zero exit, a `[FAIL]` line, or an AddonBuilder error or warning about missing files, textures or unknown classes. A payload-only bundle (no `config.cpp`, PBOs in `Addons/`) skips the build and must pass `/dayz-deploy-pbo` with no `[FAIL]` and no missing `.bisign`; a bundle with a linker `config.cpp` gets both.
 - `ingame` stops any session, notes the size of every server and client log, runs `/dayz-launch-test`, and polls the new lines until the client script log shows `Creating Mission: mpmissions\__cur_mp.` (the vanilla print when the client joins) plus 30 s, or 5 minutes pass. It stops early on a script-module compile failure, a new crash log, or a server or client process exiting, and always stops the session. Then it judges only the new lines: compile errors, missing config entries, textures or models and crashes fail; `NULL pointer` and `Can't find` fail when they or their stack trace name the mod's folder, `$PBOPREFIX$` or classes. A line that names nothing of the mod is vanilla noise when it also appears in an older session without `@<ModName>`, and a warning when no such session exists.
 
 **How to use it.** The orchestrator runs it per wave:
@@ -36,7 +35,7 @@ python .claude\skills\dayz-gate\gate.py build MyVest --json
 python .claude\skills\dayz-gate\gate.py ingame MyVest --deps CF --server chernarus --json
 ```
 
-The first output line is `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit 2). The JSON lists each failure with its log file, line, stack trace, the mod files it points to, and its triage (section 2). On exit 2 (bad arguments, no cached project, the stop step failed, or the gate crashed) the orchestrator falls back to the `dayz-build-checker` or `dayz-ingame-tester` agent; an exit 2 that asks for `--deps` is fixed by passing them.
+The first output line is `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit 2). The JSON lists each failure with its log file, line, stack trace, the mod files it points to, and its triage (section 2). On exit 2 (bad arguments, no cached project, a lint error that stops `/dayz-lint` from running at all, the stop step failed, or the gate crashed) the orchestrator falls back to the `dayz-build-checker` or `dayz-ingame-tester` agent; an exit 2 that asks for `--deps` is fixed by passing them.
 
 **What it saves.** Two gate agent runs per wave, each of which read skill output and several log files into context. A passing wave now costs one command and a few lines of JSON; a failing one costs the failing lines only, deduplicated, with vanilla noise and warnings capped at 30 each.
 
@@ -82,14 +81,14 @@ A result with a `route` is followed directly. `{"route": null, "next": "dayz-rou
 
 ## 4. Edit hooks
 
-Two Python hooks in `hooks/` run on every `Edit`, `Write` and `MultiEdit`. The plugin loads them from `hooks/hooks.json`; a clone of this repo loads the same scripts from `.claude/settings.json`. Both need `python` on `PATH`, use no network, and finish in about 0.1 s.
+Two Python hooks in `hooks/` run on every `Edit`, `Write` and `MultiEdit`. The plugin loads them from `hooks/hooks.json`; a clone of this repo loads the same scripts from `.claude/settings.json`. Each hook command runs `python` when it works and otherwise the `py` launcher (so the Microsoft Store alias, which exits 9009, is skipped); both hooks use no network and finish in about 0.1 s.
 
 - **Syntax check** (`hooks/edit_check.py`, PostToolUse). After an edit to `config.cpp` (anywhere), a `.cpp` or `.hpp` under a `workspace/` folder, or a `.layout`, it re-reads the file and checks:
   - config files: balanced braces, `};` after every class body, `;` after every property and array, `[]` on array properties, `,` (not `;`) between array elements, closed strings and comments;
   - layouts: the brace format (XML is refused), balanced blocks, one root widget, child widgets inside the parent's bare `{ }` children block, properties inside a widget block.
 
-  A clean file produces no output. On a problem, Claude gets each `file:line` and its fix next to the edit result and corrects it in the same turn. The check passes all 1,090 vanilla and community `config.cpp`, `.hpp` and `.layout` files on a mounted P:\ with no false alarms.
-- **Scope guard** (`hooks/scope_guard.py`, PreToolUse). While `/dayz-scope-mod <Mod>` is active (it writes `.claude/local-memory/dayz-active-scope.json`), any edit to another mod's `workspace/<Other>/`, `P:\<Other>\` or `P:\Mods\@<Other>\` is denied with a reason that names the active mod and how to change scope. It backs up the deny rules `/dayz-scope-mod` writes, and also covers mod folders created after the scope was set.
+  A clean file produces no output. On a problem, Claude gets each `file:line` and its fix next to the edit result and corrects it in the same turn. On a mounted P:\ it reports no false alarms on the 1,087 vanilla and community `config.cpp` and `.layout` files there (a `.hpp` outside `workspace/`, such as `P:\DZ\data\basicdefines.hpp`, is not checked).
+- **Scope guard** (`hooks/scope_guard.py`, PreToolUse). While `/dayz-scope-mod <Mod>` is active (it writes `.claude/local-memory/dayz-active-scope.json`), any Edit, Write or MultiEdit to another mod's `workspace/<Other>/`, `P:\<Other>\` or `P:\Mods\@<Other>\`, and any Bash or PowerShell command whose redirect, copy, move, delete or in-place edit targets one, is denied with a reason that names the active mod and how to change scope. It backs up the deny rules `/dayz-scope-mod` writes, and also covers mod folders created after the scope was set: every other top-level `workspace/` folder counts as a mod, except helper folders whose names start with `_` (such as `workspace/_notes/`).
 
 A third hook, the **paste-in router** (`hooks/paste_router.py`, UserPromptSubmit), runs on every prompt and only adds context; it never blocks one. It looks at what was pasted:
 
@@ -104,7 +103,7 @@ Check a file by hand: `python hooks/edit_check.py --file workspace/MyMod/config.
 
 **Saves:** the review round, or the failed AddonBuilder or Workbench run, that a missing `;` or `}` otherwise costs, plus the tokens of reading the binarize error back. The model sees nothing when the file is clean.
 
-**Limits:** it is a structure check, not a binarizer. It doesn't know class names, inheritance, value types or macro expansion (macro lines are skipped), and it skips files over 2 MB. A clone that also has the plugin installed runs each hook twice; that is harmless but shows a syntax problem twice.
+**Limits:** it is a structure check, not a binarizer. It doesn't know class names, inheritance, value types or macro expansion (macro lines are skipped), and it skips files over 2 MB. A clone that also has the plugin installed wires each hook twice, but the plugin copy steps aside when the project has its own copy, so each problem is reported once.
 
 ## 5. Status line
 
@@ -134,7 +133,7 @@ Install writes `statusLine` into `.claude/settings.local.json` after backing the
 
 Two release workers are pinned to cheaper models in their frontmatter, each with a comment marking it as a deliberate cost decision:
 
-- `dayz-build-engineer` runs on `haiku`: it runs `/dayz-stop-test`, `/dayz-build-pbo`, `/dayz-add-server` and `/dayz-launch-test` in a fixed order and quotes their output.
+- `dayz-build-engineer` runs on `haiku`: it runs `/dayz-stop-test`, `/dayz-build-pbo`, `/dayz-deploy-pbo`, `/dayz-add-server` and `/dayz-launch-test` in a fixed order and quotes their output.
 - `dayz-docs-writer` runs on `sonnet`: it writes plain docs, but its classname list depends on reading `config.cpp` inheritance and `scope` correctly, which is more than Haiku should be trusted with.
 - `dayz-router` (piece 3) also runs on `haiku`.
 
@@ -152,19 +151,19 @@ Every other agent stays on the inherited session model because its output is jud
 |---|---|---|
 | `conventions/config.md` | Config conventions, `inventorySlot` string vs array, Bundle / umbrella mods | 52 |
 | `conventions/assets.md` | Asset conventions, LOD canonical resolutions | 32 |
-| `conventions/scripts.md` | Script conventions | 12 |
-| `conventions/ui.md` | UI scripting realities | 15 |
+| `conventions/scripts.md` | Script conventions, Client and server ownership | 56 |
+| `conventions/ui.md` | UI scripting realities, Reference packs for UI work | 24 |
 | `conventions/server.md` | Server / economy, Test server instances (`.server/`), Mission and DayZ Server install notes | 27 |
 
-**How to use it.** Each agent's Tier 2 line names the core file plus its topic files, for example `Follow Tier 2 (.claude/skills/_shared/dayz-conventions.md plus .claude/skills/_shared/conventions/scripts.md)`. Script and Workbench specialists load `scripts.md`; config specialist, build checker and build engineer `config.md`; asset specialist and object builder `assets.md`; UI specialist, Figma-to-layout and layout validator `ui.md`; server admin, map specialist and in-game tester `server.md`; the architect `scripts.md` and `assets.md`; the debugger `scripts.md` and `server.md`; the reviewer the topic files its change touches (usually config, assets and scripts). The orchestrator, lead and docs writer read the core only. A new rule goes in the core only when every DayZ agent needs it; otherwise in its topic file (`/dayz-record-correction` says so).
+**How to use it.** Each agent's Tier 2 line names the core file plus its topic files, for example `Follow Tier 2 (.claude/skills/_shared/dayz-conventions.md plus .claude/skills/_shared/conventions/scripts.md)`. Script, Workbench, AI and persistence specialists load `scripts.md`; config specialist, build checker, build engineer and wearables specialist `config.md`; the weapon specialist `config.md` (plus `scripts.md` for script it writes); asset, animation and physics specialists and object builder `assets.md`; UI specialist, Figma node normalizer, Figma-to-layout and layout validator `ui.md`; server admin, map specialist and in-game tester `server.md`; audio-FX and vehicle specialists `config.md` and `scripts.md`; the architect `scripts.md` and `assets.md`; the debugger `scripts.md` and `server.md`; the reviewer the topic files its change touches (usually config, assets and scripts). The orchestrator, lead and docs writer read the core only. A new rule goes in the core only when every DayZ agent needs it; otherwise in its topic file (`/dayz-record-correction` says so).
 
 **What it saves.** Measured in lines of Tier 2 text loaded per agent run:
 
-- Old file: 239 lines (22,655 characters, about 5,700 tokens). Core now: 137 lines (13,196 characters, about 3,300 tokens).
-- Per agent, before and after: orchestrator, lead, docs writer 239 to 137 (43% less); script and Workbench specialists 239 to 149 (38%); UI specialist, Figma-to-layout, layout validator 239 to 152 (36%); server admin, map specialist, in-game tester 239 to 164 (31%); asset specialist, object builder 239 to 169 (29%); debugger 239 to 176 (26%); architect 239 to 181 (24%); config specialist, build checker, build engineer 239 to 189 (21%); reviewer with all three of its usual topics 239 to 233 (3%).
-- Across one run of each of the 19 agents that read Tier 2: 4,541 to 3,152 lines (31% less; 430,445 to 298,466 characters). Every DayZ skill reads only the core, so each skill load drops from 239 to 137 lines (43%).
+- Old file: 239 lines (22,655 characters, about 5,700 tokens). Core now: 143 lines (13,718 characters, about 3,400 tokens).
+- Per agent, before and after: orchestrator, lead, docs writer 239 to 143 (40% less); script, Workbench, AI and persistence specialists 239 to 199 (17%); UI specialist, Figma node normalizer, Figma-to-layout, layout validator 239 to 167 (30%); server admin, map specialist, in-game tester 239 to 170 (29%); asset, animation and physics specialists, object builder 239 to 175 (27%); config specialist, build checker, build engineer, weapon and wearables specialists 239 to 195 (18%); debugger 239 to 226 (5%); architect 239 to 231 (3%); audio-FX and vehicle specialists 239 to 251 (5% more); reviewer with all three of its usual topics 239 to 283 (18% more).
+- Across one run of each of the 28 agents that read Tier 2: 6,692 to 5,320 lines (21% less; 634,340 to 502,709 characters). Every DayZ skill reads only the core, so each skill load drops from 239 to 143 lines (40%).
 
-**Limits.** The saving depends on agents loading only the topic files their line names; nothing enforces that. Each topic file carries a 4-line header, so an agent that loads every topic reads about 20 lines more than before. The Docusaurus wiki mirrors only the core file (`/docs-sync` maps `dayz-conventions.md`); the topic files have no wiki pages yet.
+**Limits.** The saving depends on agents loading only the topic files their line names; nothing enforces that. Each topic file carries a 4-line header, and the topic files have grown since the split, so an agent that loads every topic reads about 95 lines more than the old single file. The React wiki (`wiki/src/content/`) describes the core and the topic files by hand and does not mirror either one; `/docs-sync` checks that wiki against the source and does not copy these files.
 
 ## 8. Launcher buttons
 
@@ -200,7 +199,7 @@ Each run shows a toast when it finishes and keeps the result line (the first `[F
 
 **Where it finds Agentic-Z:** the clone that holds the session folder (that folder or its nearest parent with the Agentic-Z skills, so a session started in `workspace\MyVest` works), otherwise the newest version in the plugin cache.
 
-**Limits:** Windows only, like the rest of Agentic-Z. Launch uses the default server instance; pick another with `/dayz-launch-test --server`. Checked with `claude plugin validate` and a test (`claude plugin test mods/agentic-z-panel`) that draws the panel on all four surfaces and presses Build. A second test presses the two check buttons, a third the logs, health and release pack buttons, and a fourth types a question into the ask field. The other tests press every remaining button, check that a second press while an action runs starts nothing, that the mod buttons only show a toast when there is no active mod, that the panel picks the newest plugin cache version by number, that a session started in a subfolder of the clone still finds it, that a press uses a mod picked with `/dayz-init` after the panel opened, that a plugin install finds the project state file above a subfolder, and that it says so when Agentic-Z is not found. CI runs pytest only, so `scripts/dev/test_repo_integrity.py` also checks that every script a button names exists.
+**Limits:** Windows only, like the rest of Agentic-Z. Launch uses the default server instance; pick another with `/dayz-launch-test --server`. Checked with `claude plugin validate` and a test (`claude plugin test mods/agentic-z-panel`) that draws the panel on all four surfaces and presses Build. A second test presses the two check buttons, a third the logs, health and release pack buttons, and a fourth types a question into the ask field. The other tests press every remaining button, check that a second press while an action runs starts nothing, that the mod buttons only show a toast when there is no active mod, that the panel picks the newest plugin cache version by number, that a session started in a subfolder of the clone still finds it, that a press uses a mod picked with `/dayz-init` after the panel opened, that a plugin install finds the project state file above a subfolder, and that it says so when Agentic-Z is not found. CI runs pytest and the docs-sync check, not the panel tests, so `scripts/dev/test_repo_integrity.py` also checks that every script a button names exists.
 
 **Version 0.2.0** adds three buttons: Check build (`c`, `/dayz-gate build`), Check in game (`g`, `/dayz-gate ingame`) and Deploy prebuilt PBOs (`d`, `/dayz-deploy-pbo`).
 
@@ -222,11 +221,13 @@ Each run shows a toast when it finishes and keeps the result line (the first `[F
 
 **What it is:** Claude Code loads every skill and agent description into every session, so Claude knows they exist. The bodies load only when used. Every description was rewritten to say what it does and when to use it, without implementation detail, and each agent keeps one example instead of two or three.
 
-**Saved:** 31,301 characters down to 22,907, about 2,100 tokens off every session before any work starts.
+**Saved (measured at commit 0ee441d, when the repo had 34 skills and 22 agents):** 31,301 characters down to 22,907, about 2,100 tokens off every session before any work starts.
 
 | | Before | After |
 |---|---|---|
 | 34 skills | 12,848 | 9,246 |
 | 22 agents | 18,453 | 13,661 |
 
-**Limits:** a few descriptions stay just over 300 characters where cutting would drop a trigger phrase or a who-calls-whom fact (for example `dayz-p3d-audit`'s list of symptoms).
+Skills and agents added since then have brought the total back to about 35,100 characters (44 skills about 13,000; 30 agents about 22,100).
+
+**Limits:** fourteen skill descriptions run 301 to 424 characters where cutting would drop a trigger phrase or a who-calls-whom fact (for example `dayz-p3d-audit`'s list of symptoms). Agent descriptions run 470 to 1,230 characters because each keeps one example.

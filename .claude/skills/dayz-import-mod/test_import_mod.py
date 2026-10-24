@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 import io
+import os
 from pathlib import Path
 
 import pytest
@@ -11,6 +13,7 @@ HERE = Path(__file__).resolve().parent
 _spec = importlib.util.spec_from_file_location("dayz_import_mod_under_test", HERE / "import_mod.py")
 imp = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(imp)
+_REAL_CLONE_REPO = imp.clone_repo  # the git_project fixture swaps clone_repo for a fake
 
 
 class _NoTTY(io.StringIO):
@@ -243,7 +246,8 @@ def git_project(monkeypatch, tmp_path, workspace):
     monkeypatch.setattr(imp, "P_DRIVE", p_drive)
     monkeypatch.setattr(imp, "PROJECT_DIR", workspace.parent)
     monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: None)
-    monkeypatch.setattr(imp._nm, "sync_project_cache", lambda: None)
+    synced = []
+    monkeypatch.setattr(imp._nm, "sync_project_cache", synced.append)
     monkeypatch.setattr(imp.sys, "stdin", _NoTTY())
     clones = []
 
@@ -254,7 +258,7 @@ def git_project(monkeypatch, tmp_path, workspace):
             (target / name).write_text("x", encoding="utf-8")
 
     monkeypatch.setattr(imp, "clone_repo", fake_clone)
-    return {"workspace": workspace, "p": p_drive, "clones": clones}
+    return {"workspace": workspace, "p": p_drive, "clones": clones, "synced": synced}
 
 
 def _main(monkeypatch, *argv):
@@ -270,6 +274,7 @@ def test_github_link_clones_into_workspace_and_links_p(git_project, monkeypatch,
     assert git_project["clones"] == [(imp.GitSource("https://github.com/Owner/MyMod.git", "MyMod", "dev"), target)]
     assert (target / "config.cpp").is_file()
     assert (git_project["p"] / "MyMod").exists()
+    assert git_project["synced"] == ["MyMod"]  # the clone becomes the active /dayz-init mod
     assert "workbench/dayz.gproj missing" in out
     assert "skipping workbench/dayz.gproj (--no-scaffold)" in out
     # clean-workspace refuses folders that hold .git, so the hint must not send the user there.
@@ -318,7 +323,9 @@ def subfolder_project(git_project, monkeypatch, tmp_path):
         (target / "MyVest" / "config.cpp").write_text("x", encoding="utf-8")
 
     monkeypatch.setattr(imp, "clone_repo", fake_clone)
-    return {**git_project, "imports": imports}
+    freshness_checks = []  # warn_if_behind has its own tests; here it must not shell out to git
+    monkeypatch.setattr(imp, "warn_if_behind", freshness_checks.append)
+    return {**git_project, "imports": imports, "freshness_checks": freshness_checks}
 
 
 def test_subfolder_link_imports_the_subfolder_not_the_root(subfolder_project, monkeypatch, capsys):
@@ -344,6 +351,66 @@ def test_subfolder_link_with_a_missing_folder_removes_the_clone(subfolder_projec
     assert "Other is not in branch main" in str(exc.value.code)
     assert not (subfolder_project["imports"] / "Owner__Mods__main").exists()
     assert not (subfolder_project["workspace"] / "Other").exists()
+
+
+@pytest.mark.parametrize("which", ["workspace", "p"])
+def test_subfolder_link_failure_removes_the_new_clone(subfolder_project, monkeypatch, which):
+    real = imp._nm.make_dir_link
+
+    def failing(target, link):
+        if which == "workspace" or link.parent == subfolder_project["p"]:
+            raise OSError("link refused")
+        return real(target, link)
+
+    monkeypatch.setattr(imp._nm, "make_dir_link", failing)
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/MyVest", "--no-scaffold")
+    assert "link refused" in str(exc.value.code)
+    assert "Removed the clone" in str(exc.value.code)
+    assert not (subfolder_project["imports"] / "Owner__Mods__main").exists()
+    assert not (subfolder_project["workspace"] / "MyVest").exists()
+
+
+def test_subfolder_link_failure_keeps_a_reused_clone(subfolder_project, monkeypatch):
+    clone = subfolder_project["imports"] / "Owner__Mods__main"
+    (clone / "MyVest").mkdir(parents=True)
+
+    def failing(target, link):
+        raise OSError("link refused")
+
+    monkeypatch.setattr(imp._nm, "make_dir_link", failing)
+    with pytest.raises(SystemExit):
+        _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/MyVest", "--no-scaffold")
+    assert (clone / "MyVest").is_dir()
+    assert subfolder_project["clones"] == []
+
+
+@pytest.mark.parametrize("ref", ["main/../..", "main/MyVest/../../Other", r"main/..\Other"])
+def test_subfolder_with_dotdot_is_refused_before_cloning(subfolder_project, monkeypatch, ref):
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", f"https://github.com/Owner/Mods/tree/{ref}", "--name", "Escape", "--no-scaffold")
+    assert "contains '..'" in str(exc.value.code)
+    assert subfolder_project["clones"] == []
+    assert not (subfolder_project["workspace"] / "Escape").exists()
+
+
+def test_subfolder_resolving_outside_the_clone_is_refused(subfolder_project, monkeypatch, tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "config.cpp").write_text("x", encoding="utf-8")
+
+    def fake_clone(src, target):
+        subfolder_project["clones"].append((src, target))
+        target.mkdir(parents=True)
+        imp._nm.make_dir_link(outside, target / "MyVest")
+
+    monkeypatch.setattr(imp, "clone_repo", fake_clone)
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/MyVest", "--no-scaffold")
+    assert "resolves outside the clone" in str(exc.value.code)
+    assert not (subfolder_project["workspace"] / "MyVest").exists()
+    assert not (subfolder_project["imports"] / "Owner__Mods__main").exists()
+    assert (outside / "config.cpp").is_file()
 
 
 def test_clone_repo_runs_git_and_failed_clone_leaves_nothing(tmp_path):
@@ -424,6 +491,104 @@ def test_single_segment_branch_skips_ls_remote(fake_git, tmp_path):
     assert _clone_cmd(fake_git)[:4] == ["git", "clone", "--branch", "dev"]
 
 
+def _offline_git(monkeypatch):
+    """subprocess.run for git where ls-remote fails (offline); records every call."""
+    calls = []
+
+    def run(cmd, **_kw):
+        calls.append(cmd)
+        if cmd[1] == "ls-remote":
+            return _Run(returncode=128, stderr="fatal: unable to access 'https://github.com/': Could not resolve host")
+        Path(cmd[-1]).mkdir(parents=True)
+        return _Run()
+
+    monkeypatch.setattr(imp.shutil, "which", lambda _name: "git")
+    monkeypatch.setattr(imp.subprocess, "run", run)
+    return calls
+
+
+def test_failed_ls_remote_refuses_instead_of_guessing_the_branch(monkeypatch, tmp_path):
+    calls = _offline_git(monkeypatch)
+    target = tmp_path / "MyMod"
+    with pytest.raises(SystemExit) as exc:
+        imp.clone_repo(imp.parse_git_source("https://github.com/Owner/MyMod/tree/feature/x"), target)
+    message = str(exc.value.code)
+    assert "Could not list the branches" in message and "tree/feature/x" in message
+    assert "Could not resolve host" in message
+    assert [c[1] for c in calls] == ["ls-remote"]  # never cloned as branch 'feature'
+    assert not target.exists()
+
+
+def test_failed_ls_remote_on_a_tree_link_refuses_before_cloning(git_project, monkeypatch):
+    calls = _offline_git(monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/MyMod/tree/feature/x", "--no-scaffold")
+    assert "Could not list the branches" in str(exc.value.code)
+    assert [c[1] for c in calls] == ["ls-remote"]
+    assert git_project["clones"] == []
+    assert list(git_project["workspace"].iterdir()) == []
+
+
+def _interrupted_clone(monkeypatch):
+    """subprocess.run for git where the clone writes part of the repo, then Ctrl+C."""
+    def run(cmd, **_kw):
+        target = Path(cmd[-1])
+        (target / ".git").mkdir(parents=True)
+        (target / "config.cpp").write_text("x", encoding="utf-8")
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(imp.shutil, "which", lambda _name: "git")
+    monkeypatch.setattr(imp.subprocess, "run", run)
+
+
+def test_interrupted_clone_leaves_no_folder(monkeypatch, tmp_path):
+    _interrupted_clone(monkeypatch)
+    target = tmp_path / "ws" / "MyMod"
+    with pytest.raises(SystemExit) as exc:
+        imp.clone_repo(imp.GitSource("https://github.com/Owner/MyMod.git", "MyMod", None), target)
+    assert "interrupted" in str(exc.value.code)
+    assert "Removed the partial clone" in str(exc.value.code)
+    assert not target.exists()  # so the retry is not refused with 'already exists'
+
+
+def test_interrupted_clone_that_cannot_be_removed_names_the_rmdir(monkeypatch, tmp_path):
+    _interrupted_clone(monkeypatch)
+
+    def locked(_target):
+        raise PermissionError("in use")
+
+    monkeypatch.setattr(imp, "remove_clone", locked)
+    target = tmp_path / "MyMod"
+    with pytest.raises(SystemExit) as exc:
+        imp.clone_repo(imp.GitSource("https://github.com/Owner/MyMod.git", "MyMod", None), target)
+    assert f'cmd /c rmdir /s /q "{target}"' in str(exc.value.code)
+
+
+def test_interrupted_repo_link_clone_lets_the_retry_run(git_project, monkeypatch):
+    monkeypatch.setattr(imp, "clone_repo", _REAL_CLONE_REPO)
+    _interrupted_clone(monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/MyMod", "--no-scaffold")
+    assert "interrupted" in str(exc.value.code)
+    assert not (git_project["workspace"] / "MyMod").exists()
+    imp.check_workspace_target(git_project["workspace"] / "MyMod")  # the retry is not refused
+
+
+def test_repo_link_p_junction_failure_removes_the_clone(git_project, monkeypatch):
+    def failing(target, link):
+        raise OSError("junction refused")
+
+    monkeypatch.setattr(imp._nm, "make_dir_link", failing)
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/MyMod", "--no-scaffold")
+    message = str(exc.value.code)
+    assert "junction refused" in message and "The clone was removed" in message
+    assert len(git_project["clones"]) == 1
+    assert not (git_project["workspace"] / "MyMod").exists()
+    assert not (git_project["p"] / "MyMod").exists()
+    assert git_project["synced"] == []  # the failed import never became the active mod
+
+
 # --- finish: an existing $PBOPREFIX$ must be the mod name ----------------------------
 
 def _finish(tmp_path, prefix):
@@ -439,8 +604,60 @@ def _finish(tmp_path, prefix):
 def test_finish_warns_when_prefix_is_not_the_mod_name(tmp_path, capsys):
     assert _finish(tmp_path, "Author\\MyMod\n") == 0
     out = capsys.readouterr().out
-    assert "$PBOPREFIX$ is 'Author\\\\MyMod', not 'MyMod', so /dayz-build-pbo will refuse it." in out
+    # The raw prefix, one backslash, not the repr() form 'Author\\MyMod'.
+    assert "$PBOPREFIX$ is 'Author\\MyMod', not 'MyMod', so /dayz-build-pbo will refuse it." in out
+    assert "Author\\\\MyMod" not in out
     assert "Build: set $PBOPREFIX$ to MyMod, then /dayz-build-pbo MyMod" in out
+
+
+def test_finish_names_an_empty_prefix(tmp_path, capsys):
+    assert _finish(tmp_path, "\n") == 0
+    assert "$PBOPREFIX$ is empty, not 'MyMod'" in capsys.readouterr().out
+
+
+# --- link_source: a failed P:\ link rolls back the workspace link ----------------
+
+def _failing_p_link(monkeypatch, p_drive):
+    real = imp._nm.make_dir_link
+
+    def make(target, link):
+        if link.parent == p_drive:
+            raise OSError("junction refused")
+        return real(target, link)
+
+    monkeypatch.setattr(imp._nm, "make_dir_link", make)
+
+
+def test_link_source_p_failure_rolls_back_the_workspace_link(tmp_path, monkeypatch, workspace):
+    source = tmp_path / "MyMod"
+    source.mkdir()
+    (source / "config.cpp").write_text("x", encoding="utf-8")
+    p_drive = tmp_path / "P"
+    p_drive.mkdir()
+    _failing_p_link(monkeypatch, p_drive)
+
+    with pytest.raises(SystemExit) as exc:
+        imp.link_source(source, workspace / "MyMod", p_drive / "MyMod")
+    msg = str(exc.value.code)
+    assert "junction refused" in msg and "Workspace link rolled back." in msg
+    assert not os.path.lexists(workspace / "MyMod")
+    assert (source / "config.cpp").is_file()  # the user's source is untouched
+
+
+def test_link_source_reports_a_failed_rollback(tmp_path, monkeypatch, workspace):
+    source = tmp_path / "MyMod"
+    source.mkdir()
+    p_drive = tmp_path / "P"
+    p_drive.mkdir()
+    _failing_p_link(monkeypatch, p_drive)
+
+    def no_remove(_link):
+        raise OSError("in use")
+
+    monkeypatch.setattr(imp._nm, "_remove_link", no_remove)
+    with pytest.raises(SystemExit) as exc:
+        imp.link_source(source, workspace / "MyMod", p_drive / "MyMod")
+    assert f'Could not roll back {workspace / "MyMod"}; remove it with: cmd /c rmdir' in str(exc.value.code)
 
 
 def test_finish_accepts_prefix_equal_to_the_mod_name(tmp_path, capsys):
@@ -475,7 +692,7 @@ def test_project_found_from_subfolder_without_claude_project_dir(tmp_path, monke
 
     monkeypatch.setattr(fresh, "P_DRIVE", p_drive)
     monkeypatch.setattr(fresh.h, "gate_on_preflight", lambda: None)
-    monkeypatch.setattr(fresh._nm, "sync_project_cache", lambda: None)
+    monkeypatch.setattr(fresh._nm, "sync_project_cache", lambda modname: None)
     monkeypatch.setattr(fresh.sys, "stdin", _NoTTY())
     monkeypatch.setattr("sys.argv", ["import_mod.py", "--source", str(source), "--no-scaffold"])
     assert fresh.main() == 0
@@ -518,3 +735,177 @@ def test_reused_clone_missing_the_folder_says_to_update_it(subfolder_project, mo
     assert "Other is not in branch main" in msg and "came from an earlier import" in msg and "pull" in msg
     assert clone.is_dir()  # an earlier import's clone is never deleted
     assert subfolder_project["clones"] == []
+
+
+def test_reused_clone_is_checked_against_upstream(subfolder_project, monkeypatch):
+    clone = subfolder_project["imports"] / "Owner__Mods__main"
+    (clone / "MyVest").mkdir(parents=True)
+    _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/MyVest", "--no-scaffold")
+    assert subfolder_project["freshness_checks"] == [clone]
+
+
+def test_new_clone_skips_the_upstream_check(subfolder_project, monkeypatch):
+    _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/MyVest", "--no-scaffold")
+    assert subfolder_project["freshness_checks"] == []
+
+
+def _fake_git_run(monkeypatch, fetch_rc=0, behind="0"):
+    """subprocess.run for warn_if_behind: fetch returns fetch_rc, rev-list prints behind."""
+    calls = []
+
+    def run(cmd, **_kw):
+        calls.append(cmd)
+        out = behind if "rev-list" in cmd else ""
+        return imp.subprocess.CompletedProcess(cmd, fetch_rc if "fetch" in cmd else 0, out, "")
+
+    monkeypatch.setattr(imp.shutil, "which", lambda _name: "git")
+    monkeypatch.setattr(imp.subprocess, "run", run)
+    return calls
+
+
+def test_clone_behind_upstream_prints_the_pull(tmp_path, monkeypatch, capsys):
+    calls = _fake_git_run(monkeypatch, behind="3\n")
+    imp.warn_if_behind(tmp_path)
+    out = capsys.readouterr().out
+    assert "3 commit(s) behind upstream" in out
+    assert f'git -C "{tmp_path}" pull --ff-only' in out
+    assert not any("pull" in cmd for cmd in calls)  # it only warns; the clone is never changed
+
+
+def test_clone_up_to_date_prints_nothing(tmp_path, monkeypatch, capsys):
+    _fake_git_run(monkeypatch, behind="0\n")
+    imp.warn_if_behind(tmp_path)
+    assert capsys.readouterr().out == ""
+
+
+def test_failed_fetch_warns_the_clone_may_be_stale(tmp_path, monkeypatch, capsys):
+    calls = _fake_git_run(monkeypatch, fetch_rc=1)
+    imp.warn_if_behind(tmp_path)
+    out = capsys.readouterr().out
+    assert "may be out of date" in out and "pull --ff-only" in out
+    assert not any("rev-list" in cmd for cmd in calls)
+
+
+# --- the interactive source prompt ---------------------------------------------
+
+def _prompt_answers(monkeypatch, answer):
+    monkeypatch.setattr(imp, "stdin_is_interactive", lambda: True)
+    prompts = []
+
+    def fake_input(prompt):
+        prompts.append(prompt)
+        return answer
+
+    monkeypatch.setattr("builtins.input", fake_input)
+    return prompts
+
+
+def test_prompted_github_link_is_cloned_not_treated_as_a_path(git_project, monkeypatch):
+    prompts = _prompt_answers(monkeypatch, "https://github.com/Owner/MyMod")
+    assert _main(monkeypatch, "--no-scaffold") == 0
+    assert prompts == ["Path or GitHub link: "]
+    target = git_project["workspace"] / "MyMod"
+    assert git_project["clones"] == [(imp.GitSource("https://github.com/Owner/MyMod.git", "MyMod", None), target)]
+    assert (git_project["p"] / "MyMod").exists()
+
+
+def test_prompted_workshop_link_is_refused_before_preflight(monkeypatch):
+    _prompt_answers(monkeypatch, "https://steamcommunity.com/sharedfiles/filedetails/?id=1559212036")
+    monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: pytest.fail("refuse before preflight"))
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch)
+    assert "Steam Workshop links are not imported" in str(exc.value.code)
+
+
+def test_prompted_local_path_is_imported(git_project, monkeypatch, tmp_path):
+    source = tmp_path / "src" / "MyMod"
+    source.mkdir(parents=True)
+    (source / "config.cpp").write_text("x", encoding="utf-8")
+    _prompt_answers(monkeypatch, str(source))
+    assert _main(monkeypatch, "--no-scaffold") == 0
+    assert (git_project["workspace"] / "MyMod").resolve() == source.resolve()
+    assert git_project["clones"] == []
+
+
+def test_null_stdin_without_source_refuses_instead_of_prompting(monkeypatch):
+    # NUL reports isatty() True on Windows, so the old isatty() check prompted and read EOF.
+    monkeypatch.setattr(imp, "stdin_is_interactive", lambda: False)
+    monkeypatch.setattr("builtins.input", lambda _p: pytest.fail("must not prompt"))
+    monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: pytest.fail("refuse before preflight"))
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch)
+    assert "--source is required" in str(exc.value.code)
+
+
+def test_folder_import_makes_the_imported_mod_the_hub_active_mod(tmp_path, monkeypatch, workspace):
+    """/dayz-import-mod B with A active: the /dayz-init hub must then show B, not A."""
+    project = workspace.parent.resolve()
+    source = tmp_path / "src" / "ModB"
+    (source / "workbench").mkdir(parents=True)
+    for name in ("config.cpp", "$PBOPREFIX$", "workbench/dayz.gproj"):
+        (source / name).write_text("ModB", encoding="utf-8")
+    p_drive = tmp_path / "P"
+    p_drive.mkdir()
+    monkeypatch.setattr(imp, "P_DRIVE", p_drive)
+    monkeypatch.setattr(imp, "PROJECT_DIR", project)
+    monkeypatch.setattr(imp._nm, "PROJECT_DIR", project)
+    monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(imp.sys, "stdin", _NoTTY())
+    imp._nm._state.write_state(project, {"last_intent": {"mod_name": "ModA"}})
+
+    assert _main(monkeypatch, "--source", str(source), "--no-scaffold") == 0
+
+    monkeypatch.syspath_prepend(str(HERE.parent / "dayz-init"))
+    spec = importlib.util.spec_from_file_location(
+        "dayz_init_hub_status_for_import", HERE.parent / "dayz-init" / "hub_status.py")
+    hub = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, "dayz_init_hub_status_for_import", hub)  # dataclasses look the module up
+    spec.loader.exec_module(hub)
+    monkeypatch.setattr(hub, "_diag_running", lambda: False)
+    status = hub.gather_status(project, mods_root=tmp_path / "Mods")
+    assert status.mod == "ModB"
+
+
+# --- real console vs a null stdin ----------------------------------------------
+
+class _TTYAtEOF(io.StringIO):
+    """Claims to be a TTY but every read is end-of-file, like NUL on Windows."""
+    def isatty(self):
+        return True
+
+
+def test_null_device_stdin_is_not_interactive(monkeypatch):
+    # On Windows NUL is a character device, so isatty() is True; it is still not a console.
+    with open(os.devnull, encoding="utf-8") as null:
+        monkeypatch.setattr(imp.sys, "stdin", null)
+        assert imp.stdin_is_interactive() is False
+
+
+def test_tty_claiming_stream_without_a_handle_is_not_interactive(monkeypatch):
+    monkeypatch.setattr(imp.sys, "stdin", _TTYAtEOF())
+    assert imp.stdin_is_interactive() is False
+
+
+@pytest.mark.parametrize("make_stdin", [_TTYAtEOF, lambda: open(os.devnull, encoding="utf-8")])
+def test_eof_stdin_without_decision_refuses_before_linking(make_stdin, tmp_path, monkeypatch, workspace):
+    """A null stdin used to pass the TTY check, link both folders, and read EOF as
+    'no' at every prompt, finishing as a silent --no-scaffold."""
+    source = tmp_path / "src" / "MyMod"
+    source.mkdir(parents=True)
+    (source / "config.cpp").write_text("x", encoding="utf-8")
+    p_drive = tmp_path / "P"
+    p_drive.mkdir()
+    monkeypatch.setattr(imp, "P_DRIVE", p_drive)
+    monkeypatch.setattr(imp, "PROJECT_DIR", workspace.parent)
+    monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(imp._nm, "sync_project_cache", lambda _name: None)
+    stdin = make_stdin()
+    monkeypatch.setattr(imp.sys, "stdin", stdin)
+    try:
+        with pytest.raises(SystemExit) as exc:
+            _main(monkeypatch, "--source", str(source))
+    finally:
+        stdin.close()
+    assert "--scaffold" in str(exc.value.code) and "--no-scaffold" in str(exc.value.code)
+    assert not (workspace / "MyMod").exists()
+    assert not (p_drive / "MyMod").exists()

@@ -1,0 +1,64 @@
+{
+  "agent": "dayz-ingame-tester",
+  "questions": [
+    {
+      "id": "bundle-pbo-check-passes",
+      "question": "Answer only, do not edit any file and do not run anything. The in-game gate script errored. In-game test MyBundle on chernarus; the instance is set up and no dependencies are named. workspace/MyBundle/ has no config.cpp and its Addons/ holds MyBundle_Core.pbo and MyBundle_Gear.pbo. P:\\Mods\\@MyBundle\\Addons\\ holds those same two PBOs, deployed with /dayz-deploy-pbo, and there is no MyBundle.pbo. Does the PBO check in step 1 fail? If not, write the exact /dayz-launch-test command you run.",
+      "must_include": [
+        "re:/dayz-launch-test\\s+@?MyBundle\\s+--server\\s+chernarus\\b"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*FAIL\\b",
+        "re:\\byes\\b[^.\\n]*\\bfail"
+      ],
+      "verified": ".claude/agents/dayz-ingame-tester.md step 1 (the mod's PBO, or for a bundle at least one .pbo, under P:\\Mods\\@<ModName>\\Addons\\); .claude/skills/dayz-gate/gate.py bundle_layout (any Addons/*.pbo is a payload) and ingame_session (no PBO name check); .claude/skills/_shared/conventions/config.md 'Bundle / umbrella mods' (payload PBOs keep their own names)"
+    },
+    {
+      "id": "bundle-exempt-from-deps",
+      "question": "Answer only, do not edit any file and do not run anything. The in-game gate script errored. In-game test MyBundle on chernarus; the instance is set up and the brief names no dependencies. workspace/MyBundle/ has a linker config.cpp whose CfgPatches has requiredAddons[] = {\"MyBundle_Core\", \"MyBundle_Gear\"};, and its Addons/ holds MyBundle_Core.pbo and MyBundle_Gear.pbo, both deployed to P:\\Mods\\@MyBundle\\Addons\\ next to the built MyBundle.pbo. Do you stop because of the unmapped dependencies, or launch? Write the exact /dayz-launch-test command if you launch.",
+      "must_include": [
+        "re:/dayz-launch-test\\s+@?MyBundle\\s+--server\\s+chernarus\\b"
+      ],
+      "must_not_include": [
+        "re:/dayz-launch-test\\s+@?MyBundle_(Core|Gear)\\b"
+      ],
+      "verified": ".claude/agents/dayz-ingame-tester.md step 2 (a bundle with no named dependencies and .pbo files in workspace/<ModName>/Addons/ is launched alone); .claude/skills/dayz-gate/gate.py ingame_session (the missing --deps error is skipped when bundle_layout finds a payload)"
+    },
+    {
+      "id": "non-bundle-unmapped-dep-stops",
+      "question": "Answer only, do not edit any file and do not run anything. The in-game gate script errored. In-game test MyVest on chernarus; the instance is set up, P:\\Mods\\@MyVest\\Addons\\MyVest.pbo exists and the brief names no dependencies. workspace/MyVest/ has no Addons/ folder, and its config.cpp has requiredAddons[] = {\"DZ_Data\", \"DZ_Characters_Vests\", \"JM_CF_Scripts\"};. You cannot tell which @mod ships JM_CF_Scripts. What do you do?",
+      "must_include": [
+        "JM_CF_Scripts",
+        "re:\\bstop|\\bhalt|won't launch|will not launch|do not launch|don't launch|not launch"
+      ],
+      "must_not_include": [
+        "re:^\\s*`?/dayz-launch-test\\s+@?MyVest\\s+--server"
+      ],
+      "verified": ".claude/agents/dayz-ingame-tester.md step 2 (a dependency that can't be mapped to an @mod: stop and report instead of launching); .claude/skills/dayz-gate/gate.py non_vanilla_addons (any requiredAddons entry without the DZ_ prefix) and ingame_session (GateError when no --deps and no bundle payload)"
+    },
+    {
+      "id": "ready-line-and-settle",
+      "question": "Answer only, do not edit any file and do not run anything. After /dayz-launch-test returns, which log line tells you the client is in the mission, in which logs do you look for it, and how long do you keep reading after it before stopping the session?",
+      "must_include": [
+        "Creating Mission",
+        "re:__cur_mp",
+        "re:client",
+        "re:\\b30\\b"
+      ],
+      "must_not_include": [],
+      "verified": "P:\\scripts\\5_mission\\somemission.c:3 (Print(\"Creating Mission: \"+ path)); .claude/skills/dayz-gate/gate.py DEFAULT_READY_RE and DEFAULT_SETTLE_S = 30; .claude/agents/dayz-ingame-tester.md step 3 (client script log under .server/!ClientDiagLogs/, 30 more seconds)"
+    },
+    {
+      "id": "unqualified-null-pointer-is-warning",
+      "question": "Answer only, do not edit any file and do not run anything. During an in-game test of MyVest the client script log shows a NULL pointer line that names no file under MyVest's folder or $PBOPREFIX$ and no class MyVest defines. There is no older vanilla-only session in the log folder to compare against. Does this line fail the gate? Say how you report it.",
+      "must_include": [
+        "re:warning"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*FAIL\\b",
+        "re:\\byes\\b[^.\\n]*\\bfail"
+      ],
+      "verified": ".claude/agents/dayz-ingame-tester.md 'What fails the gate' (a NULL pointer or Can't find line that names nothing of the mod is never a failure; with no vanilla-only run, report it as a warning); .claude/skills/dayz-gate/gate.py MOD_QUALIFIED and judge_entries"
+    }
+  ]
+}

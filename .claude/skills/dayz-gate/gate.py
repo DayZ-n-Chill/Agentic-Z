@@ -1,17 +1,18 @@
 """dayz-gate: script-only build and in-game gates for the mod team.
 
-  gate.py build  <ModName> [--json]
+  gate.py build  <ModName> [--yes] [--json]
   gate.py ingame <ModName> [--deps CF ...] [--server <instance>] [--port N]
-                 [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
+                 [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json]
   gate.py behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>]
                  [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX]
-                 [--prepare-only | --logs FILE ...] [--json]
+                 [--prepare-only | --logs [FILE ...]] [--yes] [--json]
   gate.py visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N]
                  [--timeout S] [--threshold R] [--ready-pattern REGEX]
-                 [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--json]
+                 [--compare [DIR] | --accept [DIR] [--shot ID ... [--replace-failed]]] [--yes] [--json]
 
 Every mode that packs or launches stops a running DayZDiag session first
-(build only once lint passes; behavior --logs and --prepare-only and visual
+(build only once lint passes; a session the gate did not start is stopped only
+with --yes or a yes at the terminal prompt, else the gate exits ERROR; behavior --logs and --prepare-only and visual
 --compare and --accept launch nothing and leave a session alone), runs the existing skill
 scripts (/dayz-build-pbo, /dayz-deploy-pbo, /dayz-launch-test) as subprocesses,
 applies the pass/fail rules of the dayz-build-checker and dayz-ingame-tester
@@ -61,6 +62,7 @@ DEFAULT_TIMEOUT_S = 300  # dayz-ingame-tester gives the client five minutes
 DEFAULT_SETTLE_S = 30    # keep reading after the ready signal to catch spawn-time errors
 BEHAVIOR_DONE_TIMEOUT_S = 600  # behavior: upper bound after the ready signal; the test mission's DONE line ends it sooner
 POLL_S = 2
+STOP_WAIT_S = 30  # how long stop_session waits for killed DayZDiag processes to exit
 MAX_LISTED = 30          # cap per list in the report; the rest is counted
 
 # The client's script log prints this when it creates the multiplayer mission
@@ -75,7 +77,8 @@ MOD_QUALIFIED = {"null_pointer", "cant_find"}
 # AddonBuilder diagnostics (dayz-build-checker: errors, and warnings about missing
 # files, missing textures or unknown classes). Matched by keyword because
 # AddonBuilder, CfgConvert and Binarize each word their messages differently.
-BUILD_ERROR_RE = re.compile(r"(?i)\berror\b|\bfailed\b|undefined base class|encountered instead of")
+# [FATAL] and .NET exceptions: AddonBuilder 1.0.240639 crashed on -exclude= with only these lines.
+BUILD_ERROR_RE = re.compile(r"(?i)\berror\b|\bfailed\b|\bfatal\b|\w+exception\b|undefined base class|encountered instead of")
 BUILD_ERROR_EXCLUDE_RE = re.compile(r"(?i)\b0 errors?\b|\bno errors?\b")
 BUILD_WARNING_RE = re.compile(
     r"(?i)(?=.*\bwarn(?:ing)?\b)(?=.*(?:missing|not found|cannot (?:open|find|load)|can't (?:open|find|load)"
@@ -106,6 +109,7 @@ class Runtime(NamedTuple):
     sleep: Callable[[float], None] = time.sleep
     clock: Callable[[], float] = time.monotonic
     capture: Callable[[int, Path], None] = visual.capture_window
+    confirm: Callable[[list[int]], bool] = lambda pids: confirm_at_terminal(pids)
 
 
 def run_captured(cmd: list[str]) -> tuple[int, str]:
@@ -130,6 +134,22 @@ def parse_tasklist(output: str, pid: Optional[int] = None) -> list[int]:
     return pids
 
 
+def confirm_at_terminal(pids: list[int]) -> bool:
+    """Ask on an interactive terminal whether to end a DayZDiag session the gate did not start.
+
+    No terminal (an agent or a pipe) means no: the caller must pass --yes.
+    """
+    stdin = sys.stdin
+    if stdin is None or not stdin.isatty():
+        return False
+    prompt = f"{DIAG_EXE} is already running (PIDs {pids}); the gate must stop it. Stop it now? [y/N] "
+    try:
+        answer = input(prompt)
+    except EOFError:
+        return False
+    return answer.strip().lower() in ("y", "yes")
+
+
 def real_runtime() -> Runtime:
     def diag_pids() -> list[int]:
         _, out = run_captured(["tasklist", "/FI", f"IMAGENAME eq {DIAG_EXE}", "/FO", "CSV", "/NH"])
@@ -144,18 +164,34 @@ def real_runtime() -> Runtime:
 
 # --- shared steps -------------------------------------------------------------
 
-def stop_session(rt: Runtime) -> dict:
-    """Stop every DayZDiag_x64.exe with /dayz-stop-test; GateError if any survive."""
+def stop_session(rt: Runtime, started_by_gate: bool = False) -> dict:
+    """Stop every DayZDiag_x64.exe with /dayz-stop-test; GateError if any survive.
+
+    A session the gate did not start may be the user's own play session, so it
+    is stopped only when rt.confirm agrees (--yes, or a yes at the terminal).
+    """
     pids = rt.diag_pids()
     if not pids:
         return {"step": "stop-session", "result": "no DayZDiag session running"}
+    if not started_by_gate and not rt.confirm(pids):
+        raise GateError(
+            f"{DIAG_EXE} is already running (PIDs {pids}) and the gate did not start it. "
+            "Close it yourself, or rerun with --yes to let the gate stop it."
+        )
     rc, out = rt.run(["cmd", "/c", str(STOP_BAT)])
     if rc != 0:
         raise GateError(f"/dayz-stop-test exited {rc}: {out.strip()}")
+    # taskkill /F returns before Windows has torn the processes down; a DayZ server
+    # flushing its logs can take several seconds. The live AZTestVest run errored
+    # three times on a single 2 s check, so poll up to STOP_WAIT_S.
+    deadline = rt.clock() + STOP_WAIT_S
     rt.sleep(POLL_S)
     left = rt.diag_pids()
+    while left and rt.clock() < deadline:
+        rt.sleep(POLL_S)
+        left = rt.diag_pids()
     if left:
-        raise GateError(f"{DIAG_EXE} still running after /dayz-stop-test (PIDs {left})")
+        raise GateError(f"{DIAG_EXE} still running {STOP_WAIT_S}s after /dayz-stop-test (PIDs {left})")
     return {"step": "stop-session", "result": f"stopped PIDs {pids}"}
 
 
@@ -260,7 +296,10 @@ def gate_build(mod: str, project_dir: Path, rt: Runtime) -> dict:
     if has_cfg or not has_payload:
         rc, out = rt.run([sys.executable, str(BUILD_PY), mod])
         findings = parse_build_output(out)
-        report["steps"].append({"step": "dayz-build-pbo", "rc": rc})
+        step = {"step": "dayz-build-pbo", "rc": rc}
+        if rc != 0:
+            step["tail"] = tail(out)  # the build output, kept so a failure can be diagnosed
+        report["steps"].append(step)
         if rc != 0 and not findings:
             findings.append(_finding("script_fail", f"dayz-build-pbo exited {rc}", "dayz-build-pbo", None, tail(out)))
         report["failures"] += findings
@@ -489,6 +528,19 @@ def gate_ingame(
     return finish(report, project_dir, {"instance": instance})
 
 
+def required_deps(identity: ModIdentity, mod_dir: Path, deps: list[str]) -> list[str]:
+    """`deps` without '@', or GateError when config.cpp needs non-vanilla addons and none were given."""
+    deps = [d.lstrip("@") for d in deps]
+    missing_deps = non_vanilla_addons(identity)
+    if missing_deps and not deps and not bundle_layout(mod_dir)[1]:
+        raise GateError(
+            f"config.cpp requires non-vanilla addons {missing_deps} but no --deps were given. "
+            "Map each to the @mod under P:\\Mods\\ that ships it and pass them in load order, "
+            "for example --deps CF."
+        )
+    return deps
+
+
 def ingame_session(
     mod: str,
     project_dir: Path,
@@ -510,14 +562,7 @@ def ingame_session(
     report = new_report(mode, mod)
     mod_dir = project_dir / "workspace" / mod
     identity = mod_identity(mod, mod_dir)
-    deps = [d.lstrip("@") for d in deps]
-    missing_deps = non_vanilla_addons(identity)
-    if missing_deps and not deps and not bundle_layout(mod_dir)[1]:
-        raise GateError(
-            f"config.cpp requires non-vanilla addons {missing_deps} but no --deps were given. "
-            "Map each to the @mod under P:\\Mods\\ that ships it and pass them in load order, "
-            "for example --deps CF."
-        )
+    deps = required_deps(identity, mod_dir, deps)
     ready_re = re.compile(ready_pattern)
     server_dir = project_dir / ".server" / instance / "Profiles"
     client_dir = project_dir / ".server" / "!ClientDiagLogs"
@@ -546,7 +591,7 @@ def ingame_session(
             if problem is not None:
                 extra.append(problem)
     finally:
-        report["steps"].append(stop_session(rt))  # always, even after a failure
+        report["steps"].append(stop_session(rt, started_by_gate=True))  # always, even after a failure
     lines += logs.poll(final=True)
 
     for path in logs.new_files():
@@ -840,12 +885,16 @@ def emit(report: dict, as_json: bool) -> None:
     print(json.dumps(report, indent=2) if as_json else render_text(report))
 
 
+YES_HELP = "Stop a DayZDiag session the gate did not start without asking (it may be your own play session)."
+
+
 def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     parser = argparse.ArgumentParser(description="Script-only build and in-game gates.")
     sub = parser.add_subparsers(dest="mode", required=True)
     b = sub.add_parser("build", help="Build (or deploy a bundle) and check the output.")
     b.add_argument("mod")
     b.add_argument("--json", action="store_true")
+    b.add_argument("--yes", action="store_true", help=YES_HELP)
     g = sub.add_parser("ingame", help="Launch server and client, read the logs, stop the session.")
     g.add_argument("mod")
     g.add_argument("--deps", nargs="+", default=[], metavar="MOD", help="Dependency mods in load order (CF or @CF).")
@@ -855,6 +904,7 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     g.add_argument("--settle", type=float, default=DEFAULT_SETTLE_S, help="Seconds to keep reading after the ready signal.")
     g.add_argument("--ready-pattern", default=DEFAULT_READY_RE, help="Regex in the client script log that means the mission is running.")
     g.add_argument("--json", action="store_true")
+    g.add_argument("--yes", action="store_true", help=YES_HELP)
     v = sub.add_parser("behavior", help="Run a test mission that spawns and uses each item in a checks file.")
     v.add_argument("mod")
     v.add_argument("--checks", type=Path, help="Checks JSON (default output/<ModName>-plan/behavior-checks.json).")
@@ -870,6 +920,7 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     only.add_argument("--logs", nargs="*", type=Path, metavar="FILE",
                       help="Judge logs of a session already run (no files: the copy's server script logs).")
     v.add_argument("--json", action="store_true")
+    v.add_argument("--yes", action="store_true", help=YES_HELP)
     s = sub.add_parser("visual", help="Capture the client window during the in-game test and compare with baselines.")
     s.add_argument("mod")
     s.add_argument("--shots", type=Path, help="Shots JSON (default output/<ModName>-plan/visual-shots.json).")
@@ -885,7 +936,10 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     offline.add_argument("--accept", nargs="?", const=True, type=Path, metavar="DIR",
                          help="Make captures the new baselines (no folder: the newest run).")
     s.add_argument("--shot", nargs="+", metavar="ID", help="--accept: only these shots.")
+    s.add_argument("--replace-failed", action="store_true",
+                   help="--accept --shot: also accept these shots when their capture FAILs against the current baseline.")
     s.add_argument("--json", action="store_true")
+    s.add_argument("--yes", action="store_true", help=YES_HELP)
     try:
         args = parser.parse_args(argv)
     except SystemExit as e:
@@ -900,18 +954,23 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
             re.compile(args.ready_pattern)
         if args.mode == "visual" and args.shot and args.accept is None:
             raise GateError("--shot works with --accept only")
+        if args.mode == "visual" and args.replace_failed and not (args.accept is not None and args.shot):
+            raise GateError("--replace-failed works with --accept --shot <id> only, so each changed look is named")
         if args.mode == "visual" and args.threshold is not None and not 0 <= args.threshold <= 1:
             raise GateError("--threshold must be from 0 to 1")
         project_dir = h.resolve_project_dir()
         rt = rt or real_runtime()
+        if args.yes:
+            rt = rt._replace(confirm=lambda pids: True)
         if args.mode == "build":
             report = gate_build(args.mod, project_dir, rt)
         elif args.mode == "behavior" and args.prepare_only:
-            return _prepared(args.mod, project_dir, args.checks, args.server, args.json)
+            return _prepared(args.mod, project_dir, args.checks, args.server, args.deps, args.json)
         elif args.mode == "behavior" and args.logs is not None:
             report = gate_behavior_logs(args.mod, project_dir, args.checks, args.server, args.logs)
         elif args.mode == "visual" and args.accept is not None:
-            return _accepted(args.mod, project_dir, args.shots, args.accept, args.shot, args.json)
+            return _accepted(args.mod, project_dir, args.shots, args.accept, args.shot, args.threshold,
+                             args.replace_failed, args.json)
         elif args.mode == "visual" and args.compare is not None:
             report = gate_visual_compare(args.mod, project_dir, args.shots, _dir_arg(args.compare), args.threshold)
         elif args.mode == "visual":
@@ -940,17 +999,22 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     return 0 if report["verdict"] == "PASS" else 1
 
 
-def _prepared(mod: str, project_dir: Path, checks_path: Optional[Path], instance: str, as_json: bool) -> int:
-    """--prepare-only: write the copy, print PREPARED and how to run it by hand."""
+def _prepared(mod: str, project_dir: Path, checks_path: Optional[Path], instance: str, deps: list[str],
+              as_json: bool) -> int:
+    """--prepare-only: write the copy, print PREPARED and the launch command, dependency mods first."""
     checks = behavior.load_checks(checks_path or behavior.default_checks_path(project_dir, mod))
+    mod_dir = project_dir / "workspace" / mod
+    deps = required_deps(mod_identity(mod, mod_dir), mod_dir, deps)  # before writing anything
     prepared = behavior.prepare_instance(project_dir, instance, checks)
-    info = {"verdict": "PREPARED", "instance": prepared["instance"], "init": _rel(prepared["init"], project_dir), "checks": len(checks)}
+    launch = " ".join(["/dayz-launch-test", *deps, mod, "--server", prepared["instance"]])
+    info = {"verdict": "PREPARED", "instance": prepared["instance"], "init": _rel(prepared["init"], project_dir),
+            "checks": len(checks), "launch": launch}
     print("PREPARED")
     if as_json:
         print(json.dumps(info, indent=2))
     else:
         print(f"  instance {info['instance']}: {info['checks']} checks in {info['init']}")
-        print(f"  run: /dayz-launch-test {mod} --server {info['instance']}, then gate.py behavior {mod} --logs")
+        print(f"  run: {launch}, then gate.py behavior {mod} --logs")
     return 0
 
 
@@ -960,15 +1024,26 @@ def _dir_arg(value: object) -> Optional[Path]:
 
 
 def _accepted(mod: str, project_dir: Path, shots_path: Optional[Path], run_dir: object,
-              only: Optional[list[str]], as_json: bool) -> int:
-    """--accept: copy captures into the baseline folder, print ACCEPTED."""
+              only: Optional[list[str]], threshold: Optional[float], replace_failed: bool, as_json: bool) -> int:
+    """--accept: back up and replace baselines with captures, print ACCEPTED."""
     spec = visual.load_shots(shots_path or visual.default_shots_path(project_dir, mod))
     run_dir = _dir_arg(run_dir) or visual.latest_run_dir(project_dir, mod)
-    done = visual.accept(spec, run_dir, visual.baseline_dir(project_dir, mod), only)
-    info = {"verdict": "ACCEPTED", "shots": done, "from": _rel(run_dir, project_dir),
-            "baseline": _rel(visual.baseline_dir(project_dir, mod), project_dir)}
+    if not run_dir.is_dir():
+        raise GateError(f"no folder {run_dir}")
+    result = visual.accept(spec, run_dir, visual.baseline_dir(project_dir, mod), only, threshold, replace_failed)
+    done = result["accepted"]
+    info = {"verdict": "ACCEPTED", "shots": done, "skipped": result["skipped"], "from": _rel(run_dir, project_dir),
+            "baseline": _rel(visual.baseline_dir(project_dir, mod), project_dir),
+            "backups": {sid: _rel(p, project_dir) for sid, p in result["backups"].items()}}
     print("ACCEPTED")
-    print(json.dumps(info, indent=2) if as_json else f"  {len(done)} baseline(s) in {info['baseline']}: {', '.join(done)}")
+    if as_json:
+        print(json.dumps(info, indent=2))
+    else:
+        print(f"  {len(done)} baseline(s) in {info['baseline']}: {', '.join(done)}")
+        if info["skipped"]:
+            print(f"  skipped, no capture in {info['from']}: {', '.join(info['skipped'])} (baseline unchanged)")
+        for sid, path in info["backups"].items():
+            print(f"  previous {sid} kept at {path}")
     return 0
 
 

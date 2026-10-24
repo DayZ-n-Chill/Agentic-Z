@@ -4,6 +4,21 @@ These produce ZERO engine errors but break functionality completely. Built from
 production debugging where models rendered correctly but had zero collision,
 missing animations, or broken textures.
 
+**Contents**
+
+1. Inverted Face Winding
+2. Component Selection Name
+3. Missing `autocenter=0` LOD property
+4. Missing Memory LOD or Geometry LOD
+5. Missing `pos center` Memory Point
+6. Missing Animation Selections & Axes
+7. Missing `box_placing_min` / `box_placing_max` Memory Points
+8. Incomplete Component Coverage
+9. Non-Watertight Collision Mesh
+10. Missing Surface/Material Assignment on Collision LODs
+- Common Blender Export Pitfalls
+- Script-Side Gotchas
+
 ## 1. Inverted Face Winding (CRITICAL: Most Common from Blender)
 
 Geometry LOD faces have normals pointing INWARD. Raycasts from outside pass through
@@ -114,8 +129,8 @@ pass through gaps.
 
 ## 10. Missing Surface/Material Assignment on Collision LODs (CRITICAL)
 
-Every face in the collision LODs (Geometry / GeoPhys / FireGeometry / ViewGeometry /
-HitPoints) MUST have a `material` assigned, pointing to a penetration `.rvmat` that in
+Every face in the collision LODs (Geometry / GeoPhys / FireGeometry / HitPoints) MUST
+have a `material` assigned (ViewGeometry is the exception, see below), pointing to a penetration `.rvmat` that in
 turn references a `.bisurf` file. Without this assignment, the engine raycasts hit the
 geometry but cannot resolve a surface to consult: bullets pass through, footstep sound
 is missing, and action cursor may not register.
@@ -129,8 +144,13 @@ Vanilla items always ship this: verifiable via `strings <p3d> | grep penetration
 | `sea_chest`      | `dz\data\data\penetration\wood_desk.rvmat` + `wood_desk.bisurf` |
 | `MilitaryCrate` (a6_base_storage) | `dz\data\data\penetration\plastic.rvmat` + `plastic.bisurf` |
 
-`audit_p3d.py` runs this check on the Geometry, GeoPhys, FireGeo and ViewGeo LODs and
-reports any face with no material as CRITICAL. Detection (py3d):
+`audit_p3d.py` runs this check on the Geometry, GeoPhys, FireGeo and ViewGeo LODs. A
+face with no material is CRITICAL in Geometry, GeoPhys and FireGeo, but only a WARNING
+in ViewGeo: View Geometry blocks sight and the action cursor, and BI models commonly
+leave its faces without a penetration material. (Unverified: the vanilla models on P:\
+are binarized ODOL, which the audit cannot read, and the `strings` evidence above shows
+a model carries a penetration material, not which LOD's faces use it. So the audit does
+not fail a run on a material-less ViewGeo.) Detection (py3d):
 
 ```python
 for lod in p.lods:

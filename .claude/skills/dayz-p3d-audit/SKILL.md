@@ -1,6 +1,7 @@
 ---
 name: dayz-p3d-audit
 description: "Audits DayZ .p3d models and their config.cpp, model.cfg and .rvmat for collision, action, physics, animation and path problems (report only). Use when an object has no collision or actions, players walk through it, a Blender export fails, textures are missing, animations don't play, or the user asks to review, check or audit a .p3d model, its model.cfg or its .rvmat."
+argument-hint: "<model.p3d ...> [--config <config.cpp>] [--model-cfg <model.cfg>] [--rvmat <file.rvmat>]... | --scan-dir <mod-dir>"
 ---
 
 <!-- skill-dir-note -->
@@ -34,13 +35,17 @@ python "<skill-dir>\scripts\audit_p3d.py" model.p3d --config path\to\config.cpp 
 
 **Check .rvmat materials for P:\ paths:**
 ```cmd
-python "<skill-dir>\scripts\audit_p3d.py" --rvmat path\to\a.rvmat path\to\b.rvmat
+python "<skill-dir>\scripts\audit_p3d.py" --rvmat path\to\a.rvmat --rvmat path\to\b.rvmat
 ```
+Repeat `--rvmat` once per file; a `.p3d` written after it is still audited as a model.
+`P:\` paths inside `//` or `/* */` comments are ignored, since the engine never reads them.
 
 **Full mod sweep** (all .p3d, config.cpp, .rvmat, model.cfg; other inputs are ignored):
 ```cmd
 python "<skill-dir>\scripts\audit_p3d.py" --scan-dir path\to\mod\
 ```
+The sweep ends with a `SCAN SUMMARY` line counting CRITICAL findings, `P:\` paths and
+ODOL rejects across the failing files, then one line per failing file with its own counts.
 
 Animations are checked from model.cfg. The script finds the `CfgModels` class named
 after the model file (inherited from its parent class when it has no `Animations` of
@@ -57,19 +62,31 @@ the same file). Kits and ordinary items do not use it, so they get no finding. T
 same config decides the `pos center` checks: a missing `pos center` (WARNING) or one far
 from the origin (NOTE) is reported only for those autocenter=0 items. The missing `box_placing_min/max` NOTE
 appears only for a model with no Geometry LOD (the hologram uses the Geometry LOD
-bounding box first) and never when `boundingbox_min/max` are present.
+bounding box first) and never when `boundingbox_min/max` are present. Memory LOD point
+names match without case (`Pos Center` counts as `pos center`), like the animation lookups.
+A config.cpp that exists but cannot be read is an `ERROR` that fails the run, since the
+autocenter and `pos center` checks could not be decided.
+
+Degenerate faces are measured over the whole polygon: a quad is split into two triangles,
+so a valid quad whose first three vertices lie on one line is not flagged.
 
 Exit codes:
 
-- **0**: no CRITICAL finding and no `P:\` path. WARNING and NOTE findings on .p3d files
-  are printed but don't fail the run.
-- **1**: any .p3d has a CRITICAL finding, any text file has a `P:\` path, or a file or
+- **0**: no CRITICAL, P-DRIVE or ERROR finding. WARNING and NOTE findings are printed
+  but never fail the run.
+- **1**: any .p3d has a CRITICAL finding, any text file (config.cpp, .rvmat, model.cfg)
+  has a `P:\` path, printed as a `P-DRIVE` finding with its line number, or a file or
   the `--scan-dir` folder is missing or unreadable. A binarized ODOL .p3d (not MLOD) and
-  a .p3d that cannot be read also give exit 1, with a `[FAIL]` line naming why.
+  a .p3d that cannot be read also give exit 1, with a `[FAIL]` line on stderr naming why. When
+  the only failures are ODOL files, the last line is `OVERALL: NOT AUDITED` (the file was
+  never checked) instead of `OVERALL: ISSUES FOUND`.
 - **2**: no input was given, or py3d is not installed. The second case prints the
   `python -m pip install -r` line above.
 
-Only MLOD source files can be audited; binarized ODOL files are rejected. When a model
+Only MLOD source files can be audited; binarized ODOL files are rejected. Audit the
+MLOD the model was built from (the .p3d Object Builder saves; Addon Builder binarizes it
+when packing). Agentic-Z ships no debinarizer, so a vanilla or third-party ODOL model
+with no source cannot be audited here. When a model
 has several Visual LODs, LOD0 is the one checked. Interpret findings with the
 references below.
 
@@ -112,9 +129,11 @@ references below.
    h. Geometry LOD mass set?     → The audit prints the mass as a NOTE, or says
                                     the LOD has none
    i. Collision faces have a     → CRITICAL when any face in the Geometry,
-      material?                     GeoPhys, FireGeo or ViewGeo LOD has none:
-                                    assign a penetration .rvmat
-                                    (references/p3d-killers.md section 10)
+      material?                     GeoPhys or FireGeo LOD has none: assign a
+                                    penetration .rvmat (references/p3d-killers.md
+                                    section 10). In the ViewGeo LOD it is only a
+                                    WARNING, since View Geometry faces often
+                                    carry no material
 
 6. Animations not playing?
    → Run audit_p3d.py with --model-cfg: the selection each model.cfg

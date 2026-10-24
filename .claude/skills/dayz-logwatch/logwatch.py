@@ -9,12 +9,15 @@ dayz-mod-debugger. The same error again (same fingerprint) is only counted.
 
 Usage:
   python logwatch.py [--server <instance> ...] [--since MINUTES]
-                     [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
+                     [--duration S | --until-closed [--start-timeout S]] [--interval S]
+                     [--mod <ModName>] [--json]
   python logwatch.py --dir DIR [--dir DIR ...] [--since MINUTES]
-                     [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
+                     [--duration S | --until-closed [--start-timeout S]] [--interval S]
+                     [--mod <ModName>] [--json]
 
 Exit codes: 0 no error lines seen, 1 at least one error line, 2 cannot run
-(or --until-closed saw no session start and no error line).
+(or --until-closed saw no session start, or could not read the process list,
+and saw no error line).
 See SKILL.md for details.
 """
 from __future__ import annotations
@@ -23,7 +26,6 @@ import argparse
 import json
 import math
 import re
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -42,8 +44,10 @@ DEBUGGER = "dayz-mod-debugger"
 POLL_S = 1.0
 MIN_INTERVAL_S = 0.1
 CLOSED_CHECK_S = 5.0  # how often --until-closed asks whether the DayZ Diag client still runs
-START_GRACE_S = 300.0  # how long --until-closed waits for the DayZ Diag client to start before giving up
+START_GRACE_S = 300.0  # default --start-timeout: how long --until-closed waits for the client to start
+QUERY_FAILURES_MAX = 3  # failed process-list queries in a row before --until-closed gives up
 SERVER_FLAG = re.compile(r"(?i)(?:^|\s)-server(?:\s|$)")
+BEHAVIOR_SUFFIX = "-behavior"  # the /dayz-gate behavior copies, .server/<instance>-behavior/
 
 
 def is_log(path: Path) -> bool:
@@ -51,7 +55,13 @@ def is_log(path: Path) -> bool:
 
 
 def session_dirs(project: Path, instances: list[str]) -> list[Path]:
-    """Server Profiles/ of each instance (all of them when none are named) and the client log folder."""
+    """Server Profiles/ of each instance and the client log folder.
+
+    With no instance named it watches every instance made by /dayz-add-server,
+    leaving out the shared `!` folders and the `<instance>-behavior` copies that
+    /dayz-gate behavior rebuilds (the /dayz-init hub hides them too). Name such a
+    copy with --server to watch it.
+    """
     server_root = project / ".server"
     if not server_root.is_dir():
         raise FileNotFoundError(f"no .server/ folder in {project}; run /dayz-add-server first")
@@ -60,7 +70,8 @@ def session_dirs(project: Path, instances: list[str]) -> list[Path]:
         if missing:
             raise FileNotFoundError(f"no test server instance {', '.join(missing)} under {server_root}")
     else:
-        instances = sorted(p.name for p in server_root.iterdir() if p.is_dir() and not p.name.startswith("!"))
+        instances = sorted(p.name for p in server_root.iterdir() if p.is_dir() and not p.name.startswith("!")
+                           and not p.name.endswith(BEHAVIOR_SUFFIX))
     return [server_root / i / "Profiles" for i in instances] + [server_root / CLIENT_DIR]
 
 
@@ -121,6 +132,27 @@ class Tail:
         return new
 
 
+ENTRY_KEYS = ("id", "meaning", "fix", "owner_agent")  # what triage.match_line reads from a matched entry
+
+
+def check_known(known: list[dict]) -> list[dict]:
+    """Raise ValueError for an entry a match would crash on, so a broken file stops the watch at start.
+
+    triage.load_known only checks that shipped entries have a pattern. A learned
+    entry (no compiled regex) also needs its fingerprint, and every entry needs
+    the keys match_line copies into the result.
+    """
+    for number, entry in enumerate(known, 1):
+        learned = entry.get("_re") is None
+        needed = ENTRY_KEYS + (("fingerprint",) if learned else ())
+        missing = [key for key in needed if key not in entry]
+        if missing:
+            kind = "learned" if learned else "shipped"
+            name = entry.get("id", f"entry {number}")
+            raise ValueError(f"{kind} entry {name!r} is missing {', '.join(missing)}")
+    return known
+
+
 def triage_line(path: Path, number: int, text: str, known: list[dict], context: dict) -> Optional[dict]:
     """The triage result for an error line, or None for a line that reports no error."""
     category = triage.classify(text)
@@ -156,11 +188,12 @@ class Watcher:
             self.seen[fp] = result
             self.emit({"event": "error", **result})
 
-    def feed_files(self, paths: list[Path]) -> None:
-        """A new crash log means the game crashed, whatever its lines say."""
-        for path in paths:
-            if path.name.lower().startswith("crash"):
-                self.feed_crash(path)
+    def feed_files(self, paths: list[Path]) -> int:
+        """A new crash log means the game crashed, whatever its lines say. Returns how many there were."""
+        crashes = [path for path in paths if path.name.lower().startswith("crash")]
+        for path in crashes:
+            self.feed_crash(path)
+        return len(crashes)
 
     def feed_crash(self, path: Path) -> None:
         result = {
@@ -194,28 +227,102 @@ def is_client(command_line: str) -> bool:
     return not SERVER_FLAG.search(command_line)
 
 
-def client_running() -> bool:
+def diag_command_lines(exe: str = DIAG_EXE) -> Optional[list[str]]:
+    """Command lines of the running processes named exe, or None if the process list cannot be read.
+
+    One in-process Win32 query (a Toolhelp process snapshot, then
+    NtQueryInformationProcess class 60, ProcessCommandLineInformation, Windows
+    8.1 and later) instead of a PowerShell Get-CimInstance call, which costs
+    about 1.5 s of cold start on every check. tasklist cannot show command
+    lines, and wmic is gone from current Windows 11. A process whose command
+    line Windows will not show (access denied, it exited meanwhile) is listed
+    as "". None off Windows or when the snapshot fails.
+    """
+    try:
+        import ctypes
+        from ctypes import wintypes
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        ntdll = ctypes.WinDLL("ntdll")
+    except (ImportError, OSError, AttributeError):  # not Windows
+        return None
+
+    class PROCESSENTRY32W(ctypes.Structure):
+        _fields_ = [
+            ("dwSize", wintypes.DWORD), ("cntUsage", wintypes.DWORD), ("th32ProcessID", wintypes.DWORD),
+            ("th32DefaultHeapID", ctypes.c_size_t), ("th32ModuleID", wintypes.DWORD),
+            ("cntThreads", wintypes.DWORD), ("th32ParentProcessID", wintypes.DWORD),
+            ("pcPriClassBase", wintypes.LONG), ("dwFlags", wintypes.DWORD),
+            ("szExeFile", wintypes.WCHAR * 260),
+        ]
+
+    class UNICODE_STRING(ctypes.Structure):
+        _fields_ = [("Length", wintypes.USHORT), ("MaximumLength", wintypes.USHORT), ("Buffer", ctypes.c_void_p)]
+
+    kernel32.CreateToolhelp32Snapshot.argtypes = [wintypes.DWORD, wintypes.DWORD]
+    kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    for name in ("Process32FirstW", "Process32NextW"):
+        getattr(kernel32, name).argtypes = [wintypes.HANDLE, ctypes.POINTER(PROCESSENTRY32W)]
+        getattr(kernel32, name).restype = wintypes.BOOL
+    kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    ntdll.NtQueryInformationProcess.argtypes = [
+        wintypes.HANDLE, wintypes.ULONG, ctypes.c_void_p, wintypes.ULONG, ctypes.POINTER(wintypes.ULONG)]
+    ntdll.NtQueryInformationProcess.restype = wintypes.LONG
+
+    TH32CS_SNAPPROCESS = 0x2
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    PROCESS_COMMAND_LINE_INFORMATION = 60
+    invalid = ctypes.c_void_p(-1).value
+
+    def command_line(pid: int) -> str:
+        handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            return ""
+        try:
+            size = wintypes.ULONG(0)
+            ntdll.NtQueryInformationProcess(handle, PROCESS_COMMAND_LINE_INFORMATION, None, 0, ctypes.byref(size))
+            if size.value < ctypes.sizeof(UNICODE_STRING):
+                return ""
+            buf = ctypes.create_string_buffer(size.value)
+            if ntdll.NtQueryInformationProcess(handle, PROCESS_COMMAND_LINE_INFORMATION, buf, size,
+                                               ctypes.byref(size)) != 0:
+                return ""
+            text = UNICODE_STRING.from_buffer(buf)
+            return ctypes.wstring_at(text.Buffer, text.Length // 2) if text.Buffer else ""
+        finally:
+            kernel32.CloseHandle(handle)
+
+    snap = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
+    if not snap or snap == invalid:
+        return None
+    try:
+        entry = PROCESSENTRY32W()
+        entry.dwSize = ctypes.sizeof(PROCESSENTRY32W)
+        if not kernel32.Process32FirstW(snap, ctypes.byref(entry)):
+            return None
+        lines = []
+        while True:
+            if entry.szExeFile.lower() == exe.lower():
+                lines.append(command_line(entry.th32ProcessID))
+            if not kernel32.Process32NextW(snap, ctypes.byref(entry)):
+                return lines
+    finally:
+        kernel32.CloseHandle(snap)
+
+
+def client_running() -> Optional[bool]:
     """True while a DayZDiag_x64.exe without -server (the game client) is running.
 
-    tasklist cannot show command lines, so this asks Win32_Process. Each process
-    prints one "proc:" line; one whose command line Windows will not show counts
-    as a client, and so does a query that fails, so the watch never stops early
-    on a process it cannot read.
+    A process whose command line Windows will not show counts as a client, so
+    the watch never stops early on a process it cannot read. Returns None when
+    the process list cannot be read: the answer is unknown, and watch() gives
+    up after QUERY_FAILURES_MAX in a row.
     """
-    query = (
-        f"Get-CimInstance Win32_Process -Filter \"Name='{DIAG_EXE}'\" "
-        "| ForEach-Object { 'proc:' + $_.CommandLine }"
-    )
-    try:
-        proc = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command", query],
-            capture_output=True, text=True, errors="replace",
-        )
-    except OSError:  # PowerShell missing from PATH: cannot tell, so keep watching
-        return True
-    if proc.returncode != 0:  # the query failed (CIM timeout and the like): keep watching
-        return True
-    return any(is_client(line[5:]) for line in proc.stdout.splitlines() if line.startswith("proc:"))
+    lines = diag_command_lines()
+    if lines is None:
+        return None
+    return any(is_client(line) for line in lines)
 
 
 def watch(
@@ -224,7 +331,7 @@ def watch(
     *,
     interval: float = POLL_S,
     duration: Optional[float] = None,
-    session_alive: Optional[Callable[[], bool]] = None,
+    session_alive: Optional[Callable[[], Optional[bool]]] = None,
     start_grace: Optional[float] = None,
     sleep: Callable[[float], None] = time.sleep,
     clock: Callable[[], float] = time.monotonic,
@@ -234,7 +341,13 @@ def watch(
     A session counts as closed only after it has been seen running, so a watch
     started before /dayz-launch-test waits for the game. If it never starts
     within start_grace seconds (default START_GRACE_S), the watch stops with
-    reason "session never started".
+    reason "session never started". A crash log that appears after the first
+    read while the game has not been seen running yet ends the wait at once
+    with reason "crashed before it was seen running": a client that crashes
+    between two process checks is never seen running. Crash logs read on the
+    first pass (the --since files) do not count. session_alive returning None means the
+    check failed; after QUERY_FAILURES_MAX failures in a row the watch stops with
+    reason "cannot read process list" instead of guessing.
 
     One last read after stopping catches the lines written at the end, including a
     last line without a newline.
@@ -242,19 +355,31 @@ def watch(
     started = clock()
     last_check = None
     seen_alive = False
+    failures = 0
     grace = START_GRACE_S if start_grace is None else start_grace
     reason = "interrupted"
+    first_pass = True
     try:
         while True:
-            watcher.feed_files(tail.new_files())
+            crashes = watcher.feed_files(tail.new_files())
             watcher.feed(tail.poll())
+            if session_alive is not None and crashes and not seen_alive and not first_pass:
+                reason = "crashed before it was seen running"
+                break
+            first_pass = False
             now = clock()
             if duration is not None and now - started >= duration:
                 reason = "duration"
                 break
             if session_alive is not None and (last_check is None or now - last_check >= CLOSED_CHECK_S):
                 last_check = now
-                if session_alive():
+                alive = session_alive()
+                failures = failures + 1 if alive is None else 0
+                if alive is None:
+                    if failures >= QUERY_FAILURES_MAX:
+                        reason = "cannot read process list"
+                        break
+                elif alive:
                     seen_alive = True
                 elif seen_alive:
                     reason = "session closed"
@@ -314,7 +439,7 @@ def print_summary(summary: dict, out: TextIO, as_json: bool) -> None:
 def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
     parser = argparse.ArgumentParser(description="Tail a test session's logs and triage each new error line.")
     parser.add_argument("--server", action="append", default=[], metavar="INSTANCE",
-                        help="Test server instance to watch (repeatable; default: every instance).")
+                        help="Test server instance to watch (repeatable; default: every instance except the -behavior copies).")
     parser.add_argument("--dir", action="append", default=[], type=Path, metavar="DIR",
                         help="Watch this folder instead of the project's session folders (repeatable).")
     parser.add_argument("--since", type=float, default=0, metavar="MINUTES",
@@ -323,6 +448,9 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
     stop_on.add_argument("--duration", type=float, metavar="S", help="Stop after S seconds.")
     stop_on.add_argument("--until-closed", action="store_true",
                          help=f"Stop once the {DIAG_EXE} client (no -server) seen running has closed.")
+    parser.add_argument("--start-timeout", type=float, metavar="S",
+                        help=f"With --until-closed, seconds to wait for the client to start "
+                             f"(default {START_GRACE_S:g}).")
     parser.add_argument("--interval", type=float, default=POLL_S, metavar="S",
                         help=f"Seconds between reads (default 1, at least {MIN_INTERVAL_S}).")
     parser.add_argument("--mod", help="Mod name, filled into fixes that mention <ModName>.")
@@ -333,6 +461,19 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
     # 0 would spin a CPU core, a negative value crashes time.sleep and inf overflows it.
     if not (math.isfinite(args.interval) and args.interval >= MIN_INTERVAL_S):
         parser.error(f"--interval must be at least {MIN_INTERVAL_S} seconds")
+    # 0 or less would stop after one read and report a clean session; nan never stops.
+    if args.duration is not None and not (math.isfinite(args.duration) and args.duration > 0):
+        parser.error("--duration must be more than 0 seconds")
+    # 0 is the default (only new lines); a negative value would silently act as 0
+    # and nan would read every file from its start.
+    if not (math.isfinite(args.since) and args.since >= 0):
+        parser.error("--since must be 0 or more minutes")
+    if args.start_timeout is not None:
+        if not args.until_closed:
+            parser.error("--start-timeout needs --until-closed")
+        # 0 or less would give up before the first process check; nan never gives up.
+        if not (math.isfinite(args.start_timeout) and args.start_timeout > 0):
+            parser.error("--start-timeout must be more than 0 seconds")
 
     project = triage.cached_project_dir()
     if args.dir:
@@ -348,7 +489,7 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
             return 2
     learned = triage.learned_path(project) if project else None
     try:
-        known = triage.load_known(triage.KNOWN_ERRORS, learned)
+        known = check_known(triage.load_known(triage.KNOWN_ERRORS, learned))
     except (ValueError, json.JSONDecodeError, re.error, KeyError, TypeError) as e:
         print(f"{h.FAIL} Could not load known errors: {e}", file=sys.stderr)
         return 2
@@ -369,12 +510,17 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
         interval=args.interval,
         duration=args.duration,
         session_alive=client_running if args.until_closed else None,
+        start_grace=args.start_timeout,
     )
     print_summary(summary, out, args.json)
-    # Errors seen (for example read with --since) win over "session never started".
+    if summary["stopped"] == "cannot read process list":
+        print(f"{h.FAIL} Cannot read the process list (the Windows process snapshot failed "
+              f"{QUERY_FAILURES_MAX} times in a row), so --until-closed cannot tell when the client closes. "
+              "Use --duration instead.", file=sys.stderr)
+    # Errors seen (for example read with --since) win over the exit-2 stop reasons.
     if summary["errors"]:
         return 1
-    return 2 if summary["stopped"] == "session never started" else 0
+    return 2 if summary["stopped"] in ("session never started", "cannot read process list") else 0
 
 
 if __name__ == "__main__":

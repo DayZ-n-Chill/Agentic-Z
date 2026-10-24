@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/hooks/paste_router.py\"",
+            "command": "P=python; python -c '' >/dev/null 2>&1 || P=py; \"$P\" \"$CLAUDE_PROJECT_DIR/hooks/paste_router.py\"",
             "timeout": 10
           }
         ]
@@ -70,11 +70,11 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|MultiEdit",
+        "matcher": "Edit|Write|MultiEdit|Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/hooks/scope_guard.py\"",
+            "command": "P=python; python -c '' >/dev/null 2>&1 || P=py; \"$P\" \"$CLAUDE_PROJECT_DIR/hooks/scope_guard.py\"",
             "timeout": 10
           }
         ]
@@ -86,7 +86,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/hooks/edit_check.py\"",
+            "command": "P=python; python -c '' >/dev/null 2>&1 || P=py; \"$P\" \"$CLAUDE_PROJECT_DIR/hooks/edit_check.py\"",
             "timeout": 15
           }
         ]
@@ -97,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/skills/agentic-z-update/update.py\" --check --quiet",
+            "command": "P=python; python -c '' >/dev/null 2>&1 || P=py; \"$P\" \"$CLAUDE_PROJECT_DIR/.claude/skills/agentic-z-update/update.py\" --check --quiet",
             "timeout": 20
           }
         ]
@@ -108,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/skills/docs-sync/sync.py\" --check --quiet",
+            "command": "\"$CLAUDE_PROJECT_DIR/scripts/dev/docs-sync.bat\" --check --quiet",
             "timeout": 15
           }
         ]

@@ -25,8 +25,8 @@ Each method should do one thing well:
 ```
 void SetDefaults()
 {
-    MaxItems = DEFAULT_MAX_ITEMS;
-    EnableWelcomeMsg = true;
+	MaxItems = DEFAULT_MAX_ITEMS;
+	EnableWelcomeMsg = true;
 }
 ```
 
@@ -48,8 +48,8 @@ Initialize in constructor or at declaration:
 ```
 void MyMod_Settings()
 {
-    AllowedItems = new TStringArray;
-    m_IsLoaded = false;
+	AllowedItems = new TStringArray;
+	m_IsLoaded = false;
 }
 ```
 
@@ -60,10 +60,12 @@ void MyMod_Settings()
 int oldMaxItems = MaxItems;
 Load();
 if (MaxItems != oldMaxItems)
-    OnMaxItemsChanged(oldMaxItems);
+	OnMaxItemsChanged(oldMaxItems);
 ```
 
 ### 6. Use Bitwise Operations Appropriately
+
+`PhxInteractionLayers` is a vanilla enum (`P:\scripts\3_game\global\dayzphysics.c:1`; `BUILDING` at :6, `TERRAIN` at :23):
 
 ```
 layerMask |= PhxInteractionLayers.BUILDING;
@@ -82,44 +84,42 @@ EMyMod_State state;
 PlayerBase player = PlayerBase.Cast(entity);
 if (player)
 {
-    // Safe to use player
+	// Safe to use player
 }
 ```
 
 ### 8. Avoid Complex Expressions in Array Assignments
 
-**Segfault Risk:**
-
-Some language constructs that work in other languages cause segfaults in EnScript:
+**Unverified engine behaviour:** the wiki reports that assigning a complex expression straight into an array element segfaults. The compiler and runtime are engine code, so this cannot be checked on `P:\`; treat it as a report, not a rule:
 
 ```
 class MyClass
 {
-    bool m_IsInside[3];
+	bool m_IsInside[3];
 
-    // WRONG: Causes segfault
-    void TestBad(int index, vector a, vector b, float distSq)
-    {
-        m_IsInside[index] = vector.DistanceSq(a, b) <= distSq;
-    }
+	// AVOID: reported (unverified) to segfault
+	void TestBad(int index, vector a, vector b, float distSq)
+	{
+		m_IsInside[index] = vector.DistanceSq(a, b) <= distSq;
+	}
 
-    // CORRECT: Use intermediate variable
-    void TestGood(int index, vector a, vector b, float distSq)
-    {
-        bool isInside = vector.DistanceSq(a, b) <= distSq;
-        m_IsInside[index] = isInside;
-    }
+	// CORRECT: Use intermediate variable
+	void TestGood(int index, vector a, vector b, float distSq)
+	{
+		bool isInside = vector.DistanceSq(a, b) <= distSq;
+		m_IsInside[index] = isInside;
+	}
 }
 ```
 
-**Rule:** For array assignments with complex expressions, use an intermediate variable.
+Workaround (safe either way): for array assignments with complex expressions, use an intermediate variable.
 
 ### 9. Be Aware of Integer Limits
 
-**Integer Comparison Quirk:**
+**Unverified engine behaviour:** the wiki reports this comparison quirk. Integer comparison is engine code, so it cannot be checked on `P:\`:
 
 ```
-// int.MIN = -2147483648
+// int.MIN = -2147483648 (P:\scripts\1_core\proto\enconvert.c:28)
 
 1 < int.MIN;      // Returns TRUE in EnScript!
 1 < -2147483647;  // Also returns TRUE!
@@ -140,7 +140,7 @@ Compile errors involving:
 - Undefined classes (missing addon not loaded)
 - Variable name conflicts
 
-Will **NOT** show the correct filename and line number. Instead, they show the last successfully parsed `.c` file at EOF, which is misleading and unhelpful.
+Are reported to **NOT** show the correct filename and line number, but the last successfully parsed `.c` file at EOF instead (unverified engine behaviour: the compiler is engine code, so this cannot be checked on `P:\`).
 
 **What to do:**
 
@@ -150,22 +150,21 @@ Will **NOT** show the correct filename and line number. Instead, they show the l
 
 ### Understanding Log Files
 
-- **Exception logs:** `crash_<date>_<time>.log`: Contains exceptions (NOT crashes)
-- **Actual crashes:** Segfaults create different crash dumps
+- **Exception logs:** `crash_<date>_<time>.log`: Contains exceptions (NOT crashes). Unverified: the engine writes these files, so the naming cannot be checked on `P:\`
+- **Actual crashes:** Segfaults create different crash dumps (unverified, same reason)
 - Check both log types when debugging issues
 
 ### Common Segfault Causes
 
-1. **Complex array assignments**: Use intermediate variables
-2. **Empty preprocessor blocks**: Must contain at least one statement
-3. **Misused `delete` keyword**: Let garbage collection handle it
-4. **Over-specified `ref` usage**: Only use on members/typedefs
+1. **Complex array assignments** (unverified, see Best Practice 8): Use intermediate variables
+2. **Misused `delete` keyword** (unverified as a segfault cause): `delete` on a script object is valid and vanilla does it (`P:\scripts\4_world\entities\manbase\playerbase.c:1224`), but never `delete` an entity; use `Delete()` or `DeleteSafe()` (`_shared/enscript/references/language_memory.md`, "Deleting entities")
+3. **Over-specified `ref` usage** (unverified as a segfault cause): put `ref` on members and on container element types (`ref array<ref MyData>`, `language_memory.md` rule 2); two `ref`s pointing at each other leak both (`language_memory.md` rule 3)
 
 ### Performance Considerations
 
-- Aggressive garbage collection destroys function-scope instances immediately
-- Use `ref`/`autoptr` on class members to prevent premature collection
-- Avoid creating temporary objects in tight loops
+- A local created with `new` lives for the scope that uses it, so short lived helpers need no `ref` (engine behaviour, `language_memory.md` "Locals"; vanilla example `P:\scripts\3_game\entities\entityai.c:2140`)
+- A member created with `new` that nothing else holds must be `ref`, or it is freed at once (engine behaviour, `language_memory.md` rule 1)
+- Avoid creating temporary objects in tight loops (unverified engine behaviour: performance is not visible on `P:\scripts`)
 
 ---
 
@@ -189,9 +188,9 @@ This style guide reflects the conventions used in professional DayZ modding. Con
 - Document complex logic with comments
 - Use preprocessor directives for conditional compilation
 - Follow the modded class pattern for extending vanilla code
-- Where possible, use proto methods over custom methods for expensive logic
-- CfgMod class names are defines in script as of 1.26
-- **NEVER use `ref` in method parameters, return types, or local variables**: only on member variables and templates
+- Where possible, use proto methods over custom methods for expensive logic (unverified engine behaviour: performance is not visible on `P:\scripts`)
+- CfgMod class names are reported to be defines in script as of 1.26 (unverified engine behaviour; nothing on `P:\scripts` shows it, so declare your own `defines[]` instead of relying on it)
+- Style rule, not a crash rule: mod code puts `ref` on member variables and on container element types (`array<ref T>`, `language_memory.md` rule 2), and leaves it off method parameters, return types and locals. Vanilla does use `ref` on returns and locals (`ref map<int, string> GetAttachSoundSets()`, `P:\scripts\3_game\inventoryitemtype.c:20`; `ref set<Object> victims`, `P:\scripts\4_world\classes\areadamage\areadamage.c:175`), so code like that is not a defect
 - **NEVER add inheritance (`: ParentClass`) to `modded` classes**: they already inherit from the original class
 
 ### References

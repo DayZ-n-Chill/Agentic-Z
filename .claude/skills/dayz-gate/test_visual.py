@@ -235,14 +235,75 @@ def test_compare_mode_errors(project, capsys):
     assert (rc, first) == (2, "ERROR")
 
 
-def test_accept_makes_a_failing_capture_the_baseline(project, capsys):
+def test_accept_makes_a_failing_capture_the_baseline_and_keeps_the_old_one(project, capsys):
     run = run_dir_from(project, "run_fail")
-    rc, first, data = run_main(["visual", "MyMod", "--accept", str(run), "--shot", "hud", "--json"], capsys)
-    assert (rc, first, data["shots"]) == (0, "ACCEPTED", ["hud"])
     base = project / "output" / "MyMod-visual" / "baseline" / "hud.png"
+    old = base.read_bytes()
+    rc, first, data = run_main(["visual", "MyMod", "--accept", str(run), "--shot", "hud", "--replace-failed", "--json"], capsys)
+    assert (rc, first, data["shots"]) == (0, "ACCEPTED", ["hud"])
     assert base.read_bytes() == (run / "hud.png").read_bytes()
+    [backup] = (base.parent / ".prev").glob("hud.*.png")
+    assert backup.read_bytes() == old
+    assert data["backups"] == {"hud": str(backup.relative_to(project))}
     rc, first, _ = run_main(["visual", "MyMod", "--compare", str(run)], capsys)
     assert (rc, first) == (0, "PASS")
+
+
+def test_accept_refuses_a_failing_capture_without_replace_failed(project, capsys):
+    run = run_dir_from(project, "run_fail")
+    base_dir = project / "output" / "MyMod-visual" / "baseline"
+    before = {p.name: p.read_bytes() for p in base_dir.iterdir()}
+    for argv in (["--accept", str(run)], ["--accept", str(run), "--shot", "hud"], ["--accept"]):
+        rc, first, rest = run_main(["visual", "MyMod", *argv], capsys)
+        assert (rc, first) == (2, "ERROR"), argv
+        assert "hud (1.56% of pixels differ" in rest and "--replace-failed" in rest
+        # nothing is copied, not even menu, whose capture passes
+        assert {p.name: p.read_bytes() for p in base_dir.iterdir()} == before
+    # the shot's compare uses --threshold like the gate does, so a looser one lets it through
+    rc, first, _ = run_main(["visual", "MyMod", "--accept", str(run), "--threshold", "0.05"], capsys)
+    assert (rc, first) == (0, "ACCEPTED")
+
+
+def test_replace_failed_needs_accept_and_shot(project, capsys):
+    run = run_dir_from(project, "run_fail")
+    for argv in (["--accept", str(run), "--replace-failed"], ["--compare", str(run), "--replace-failed"]):
+        rc, first, rest = run_main(["visual", "MyMod", *argv], capsys)
+        assert (rc, first) == (2, "ERROR") and "--replace-failed works with --accept --shot" in rest
+
+
+def test_accept_backs_up_every_replaced_baseline(project, capsys):
+    run = run_dir_from(project, "run_pass")
+    base_dir = project / "output" / "MyMod-visual" / "baseline"
+    old = {i: (base_dir / f"{i}.png").read_bytes() for i in ("hud", "menu")}
+    (base_dir / "menu.png").unlink()  # menu is NEW: nothing to back up
+    rc, first, text = run_main(["visual", "MyMod", "--accept", str(run)], capsys)
+    assert (rc, first) == (0, "ACCEPTED")
+    assert "previous hud kept at" in text and "previous menu" not in text
+    [backup] = (base_dir / ".prev").iterdir()
+    assert backup.name.startswith("hud.") and backup.read_bytes() == old["hud"]
+    assert (base_dir / "menu.png").read_bytes() == (run / "menu.png").read_bytes()
+    # a second accept keeps both earlier versions of hud
+    result = visual.accept(SPEC, run, base_dir, ["hud"])
+    assert result["accepted"] == ["hud"] and len(list((base_dir / ".prev").glob("hud.*.png"))) == 2
+
+
+def test_accept_without_shot_names_the_shots_it_skipped(project, capsys):
+    run = run_dir_from(project, "run_pass")
+    base_dir = project / "output" / "MyMod-visual" / "baseline"
+    old_menu = (base_dir / "menu.png").read_bytes()
+    (run / "menu.png").unlink()  # menu was never captured
+    rc, first, data = run_main(["visual", "MyMod", "--accept", str(run), "--json"], capsys)
+    assert (rc, first, data["shots"], data["skipped"]) == (0, "ACCEPTED", ["hud"], ["menu"])
+    assert (base_dir / "menu.png").read_bytes() == old_menu
+    rc, first, text = run_main(["visual", "MyMod", "--accept", str(run)], capsys)
+    assert (rc, first) == (0, "ACCEPTED")
+    assert "skipped, no capture in" in text and "menu (baseline unchanged)" in text
+    # nothing skipped: no skipped line, and an empty list in --json
+    shutil.copy2(FIXTURES / "run_pass" / "menu.png", run / "menu.png")
+    rc, first, text = run_main(["visual", "MyMod", "--accept", str(run)], capsys)
+    assert rc == 0 and "skipped" not in text
+    rc, first, data = run_main(["visual", "MyMod", "--accept", str(run), "--json"], capsys)
+    assert data["skipped"] == []
 
 
 def test_accept_refuses_unknown_shots_and_empty_runs(project, capsys):
@@ -253,6 +314,8 @@ def test_accept_refuses_unknown_shots_and_empty_runs(project, capsys):
         png.unlink()
     rc, first, _ = run_main(["visual", "MyMod", "--accept"], capsys)
     assert (rc, first) == (2, "ERROR")
+    rc, first, rest = run_main(["visual", "MyMod", "--accept", str(project / "nowhere")], capsys)
+    assert (rc, first) == (2, "ERROR") and "no folder" in rest
 
 
 # --- full run with a fake session and capture -----------------------------------------------
@@ -370,10 +433,17 @@ class _NoShcore:
 
 
 class _FakeUser32:
-    """Just enough of user32 for capture_window: one visible client window."""
+    """Just enough of user32 for capture_window: one visible client window.
 
-    def __init__(self, pid: int, switch_works: bool):
+    switch_works: "always" (SetForegroundWindow takes at once), "never" (Windows
+    keeps the other window in front) or "after_alt" (the foreground lock lets
+    the switch through only once this process has sent the last input event).
+    """
+
+    def __init__(self, pid: int, switch_works: str):
         self.pid, self.switch_works, self.front = pid, switch_works, 1
+        self.keys: list[tuple[int, int]] = []
+        self.switch_calls = 0
 
     def SetProcessDPIAware(self):
         return 1
@@ -400,16 +470,23 @@ class _FakeUser32:
         return self.front
 
     def SetForegroundWindow(self, hwnd):
-        if self.switch_works:
+        self.switch_calls += 1
+        took = self.switch_works == "always" or (
+            self.switch_works == "after_alt" and self.keys[-2:] == [(0x12, 0), (0x12, 2)]
+        )
+        if took:
             self.front = hwnd
-        return int(self.switch_works)
+        return int(took)
+
+    def keybd_event(self, vk, scan, flags, extra):
+        self.keys.append((vk, flags))
 
     def ClientToScreen(self, hwnd, point):
         return 1
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="capture_window is Windows only")
-@pytest.mark.parametrize("switch_works", [False, True])
+@pytest.mark.parametrize("switch_works", ["never", "always", "after_alt"])
 def test_capture_refuses_when_another_window_stays_in_front(monkeypatch, tmp_path, switch_works):
     import ctypes
 
@@ -421,7 +498,7 @@ def test_capture_refuses_when_another_window_stays_in_front(monkeypatch, tmp_pat
     import PIL.ImageGrab
 
     monkeypatch.setattr(PIL.ImageGrab, "grab", lambda bbox, all_screens: grabbed.append(bbox) or Image.new("RGB", (64, 48)))
-    if switch_works:
+    if switch_works != "never":
         visual.capture_window(222, tmp_path / "hud.png")
         assert grabbed == [(0, 0, 64, 48)] and (tmp_path / "hud.png").exists()
     else:
@@ -429,3 +506,45 @@ def test_capture_refuses_when_another_window_stays_in_front(monkeypatch, tmp_pat
             visual.capture_window(222, tmp_path / "hud.png")
         assert grabbed == []  # nothing else on screen was copied
 
+
+def test_bring_to_front_gets_past_the_foreground_lock_with_an_alt_tap():
+    # A background gate's plain SetForegroundWindow is refused by Windows'
+    # foreground lock, so every live shot used to end MISSING.
+    fake = _FakeUser32(222, "after_alt")
+    visual.bring_to_front(fake, 42, 222, sleep=lambda s: None)
+    assert fake.front == 42
+    assert fake.keys == [(0x12, 0), (0x12, 2)] and fake.switch_calls == 2
+
+
+def test_bring_to_front_sends_no_keys_when_the_switch_takes_or_is_not_needed():
+    fake = _FakeUser32(222, "always")
+    visual.bring_to_front(fake, 42, 222, sleep=lambda s: None)
+    assert (fake.front, fake.keys, fake.switch_calls) == (42, [], 1)
+    already = _FakeUser32(222, "never")
+    already.front = 42
+    visual.bring_to_front(already, 42, 222, sleep=lambda s: None)
+    assert (already.keys, already.switch_calls) == ([], 0)
+
+
+def test_bring_to_front_gives_up_after_one_alt_retry():
+    fake = _FakeUser32(222, "never")
+    with pytest.raises(visual.VisualError, match="could not be brought to the front"):
+        visual.bring_to_front(fake, 42, 222, sleep=lambda s: None)
+    assert fake.keys == [(0x12, 0), (0x12, 2)] and fake.switch_calls == 2 and fake.front == 1
+
+
+def test_full_run_refuses_a_session_it_did_not_start_without_yes(project, capsys):
+    # The gate used to kill a user's own DayZDiag session with no prompt.
+    fake = FakeSession(project)
+    fake.running = [42]
+    rc, first, data = run_main(["visual", "MyMod", "--json"], capsys, fake.runtime())
+    assert (rc, first) == (2, "ERROR") and "--yes" in data["error"]
+    assert fake.calls == [] and fake.captures == [] and fake.running == [42]
+
+
+def test_full_run_with_yes_stops_a_session_it_did_not_start(project, capsys):
+    fake = FakeSession(project)
+    fake.running = [42]
+    rc, first, data = run_main(["visual", "MyMod", "--json", "--yes"], capsys, fake.runtime())
+    assert (rc, first) == (0, "PASS"), data["failures"]
+    assert "stop_test.bat" in " ".join(fake.calls[0])

@@ -11,6 +11,38 @@ BAT = Path(__file__).resolve().parent / "stop_test.bat"
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="stop_test.bat needs cmd.exe")
 
 
+WRAPPER = Path(__file__).resolve().parents[3] / "scripts" / "dayz" / "stop-test.bat"
+
+
+def _run_args(tmp_path: Path, bat: Path, *args: str) -> tuple[subprocess.CompletedProcess, Path]:
+    """Run bat with args and a recording taskkill.cmd stub; returns the result and the stub's args file."""
+    stub_dir = tmp_path / "bin"
+    stub_dir.mkdir()
+    (stub_dir / "taskkill.cmd").write_text(
+        "@echo off\r\necho %* > \"%~dp0args.txt\"\r\nexit /b 128\r\n", encoding="ascii"
+    )
+    env = dict(os.environ, PATH=f"{stub_dir}{os.pathsep}{os.environ['PATH']}", TEMP=str(tmp_path))
+    result = subprocess.run(["cmd", "/c", str(bat), *args], cwd=tmp_path, env=env, capture_output=True, text=True)
+    return result, stub_dir / "args.txt"
+
+
+@pytest.mark.parametrize("bat", [BAT, WRAPPER], ids=["skill", "wrapper"])
+@pytest.mark.parametrize("flag", ["--help", "-h", "--HELP"])
+def test_help_prints_usage_and_never_kills(tmp_path, bat, flag):
+    # scripts/README.md promises --help on every wrapper; this one used to run taskkill instead.
+    result, args_file = _run_args(tmp_path, bat, flag)
+    assert result.returncode == 0
+    assert "Usage: stop-test.bat" in result.stdout
+    assert not args_file.exists(), "--help must not call taskkill"
+
+
+def test_unknown_argument_is_refused_without_killing(tmp_path):
+    result, args_file = _run_args(tmp_path, WRAPPER, "chernarus")
+    assert result.returncode == 2
+    assert "Unknown argument: chernarus" in result.stderr
+    assert not args_file.exists()
+
+
 def _run(tmp_path: Path, stub_rc: int, stub_err: str = "") -> subprocess.CompletedProcess:
     stub_dir = tmp_path / "bin"
     stub_dir.mkdir()

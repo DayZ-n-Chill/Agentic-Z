@@ -30,7 +30,7 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `--source <path>` | yes (or interactive) | Path to the existing mod folder (absolute or relative, `~` expanded), or a GitHub link to clone. If omitted on a TTY, the skill prompts for a path. |
+| `--source <path>` | yes (or interactive) | Path to the existing mod folder (absolute or relative, `~` expanded), or a GitHub link to clone. If omitted on an interactive console, the skill prompts `Path or GitHub link:`; the answer goes through the same Workshop and GitHub-link checks as `--source`. |
 | `--name <ModName>` | no | Override the name the mod is imported under. Defaults to the source folder's basename, validated against `[A-Za-z][A-Za-z0-9_]{0,63}`. Required if the basename has spaces or other invalid characters. |
 | `--scaffold` | no | Auto-yes for every "scaffold this missing piece?" prompt. Required for non-TTY use when missing pieces would otherwise prompt. |
 | `--no-scaffold` | no | Auto-no - link only, never write into the source folder. |
@@ -38,14 +38,14 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 
 ## What it does
 
-1. Gates on `/dayz-preflight`.
+1. Takes the source from `--source` or the prompt, refuses a Steam Workshop link, then gates on `/dayz-preflight`.
 2. Resolves and validates the source path (must exist, be a directory, not be inside `<repo>/workspace/`, not be a UNC path).
 3. Derives the mod name (from `--name` or source basename), validates the name pattern.
 4. Refuses if `workspace/<Name>/` already exists, or if `P:\<Name>\` exists pointing somewhere else (auto-cleans a stale link pointing at our about-to-be-created `workspace/<Name>/`).
-   Also refuses, before linking anything, when scaffold pieces are missing, stdin is not a TTY, and neither `--scaffold` nor `--no-scaffold` was passed.
+   Also refuses, before linking anything, when scaffold pieces are missing, stdin is not an interactive console, and neither `--scaffold` nor `--no-scaffold` was passed.
 5. Creates `workspace/<Name>` → source path (symlink, junction fallback).
 6. Creates `P:\<Name>\` → `workspace/<Name>` (matching `/dayz-new-mod`'s pattern, so `/dayz-clean-workspace` can detect it via the existing junction-target check). If this fails, the workspace link is rolled back.
-   Then, like `/dayz-new-mod`, points the `/dayz-init` project cache at this project.
+   Then, like `/dayz-new-mod`, points the `/dayz-init` project cache at this project and records `<Name>` as the active `/dayz-init` mod (`last_intent.mod_name` in `dayz-init-state.json`).
 7. Scans for missing scaffold pieces (`config.cpp`, `$PBOPREFIX$`, `workbench/dayz.gproj`).
 8. For each missing piece:
    - `--scaffold` → write it
@@ -55,18 +55,14 @@ python "<skill-dir>\import_mod.py" [--source <path>] [--name <ModName>] [--scaff
 
 ## GitHub links
 
-`--source` also takes a git link:
+`--source` (and the prompt) also takes a GitHub link (`github.com/<owner>/<repo>`, optionally `/tree/<branch>` or `/tree/<branch>/<folder>`) or any other git remote. `git` must be on `PATH`.
 
-- `https://github.com/<owner>/<repo>`, with or without `.git` or `https://`
-- `https://github.com/<owner>/<repo>/tree/<branch>` clones that branch (a branch name with a slash, such as feature/x, works)
-- `https://github.com/<owner>/<repo>/tree/<branch>/<folder>` imports that subfolder as the mod (see below)
-- any other `https://.../<repo>.git` or `git@host:.../<repo>.git` remote
+- A repo link is cloned straight into `workspace/<ModName>/` and gets the same junction and scaffold check. The name comes from the repo (or `--name`).
+- A tree link to a subfolder clones the repo to `.imports\<owner>__<repo>__<branch>\` and links the subfolder as the mod.
+- When a later step refuses, a clone this run made is deleted again so a retry starts clean.
+- `/dayz-clean-workspace` refuses a folder that holds `.git`; the import prints the `rmdir` commands to remove a clone by hand.
 
-A tree link to a subfolder (`tree/main/MyMod`) treats the subfolder as the mod. The whole repo is cloned to `.imports\<owner>__<repo>__<branch>\` (gitignored, outside `workspace/`, one clone per owner, repo and branch, reused only when another subfolder of that same branch is imported, so a second branch or a fork never picks up another clone's files), then `workspace/<ModName>` is linked to the subfolder exactly as a folder import is, and the scaffold check and any accepted pieces go into the subfolder, never the repo root. The mod name comes from the subfolder name (or `--name`). If the folder is not in the branch (a reused clone may just be out of date; the error gives the `git pull` to run), or a non-TTY run has missing pieces and no decision flag, a clone this run made is deleted again. `/dayz-clean-workspace --mod <Name>` removes the links; delete the clone under `.imports\` by hand.
-
-Otherwise the mod name comes from the repo name (or `--name`). A name the rule refuses, such as `DayZ-Expansion` with its hyphen, needs `--name` (for example `--name DayZExpansion`); the paste-in hook suggests the command with a valid `--name` already filled in. The repo is cloned with `git` straight into `workspace/<ModName>/` as a real folder, because a clone has no other home on disk. It then gets the same `P:\<ModName>\` junction, project cache update and scaffold check as a folder import, and accepted pieces are written into the clone. The same refusals apply before anything is cloned (the name, an existing `workspace/<Name>/`, a `P:\<Name>\` that points elsewhere). If a later step refuses (a non-TTY run with missing pieces and no `--scaffold` or `--no-scaffold`, or the junction fails), the clone is deleted again so a retry starts clean. `git` must be on `PATH`, and a private repo needs your usual git credentials. For a repo link without a subfolder the scaffold check looks at the repo root; for a repo that keeps the mod in a subfolder, paste the tree link to that subfolder.
-
-`/dayz-clean-workspace --mod <Name>` never deletes a folder that holds `.git`, so it refuses a clone and prints the `rmdir` command. Push anything you want to keep, then delete the folder by hand (`cmd /c rmdir /s /q workspace\<Name>`) and remove the `P:\<Name>\` junction (`cmd /c rmdir P:\<Name>`). The import prints both commands at the end.
+Accepted link forms, naming, clone reuse and cleanup steps: [references/github-and-cleanup.md](references/github-and-cleanup.md).
 
 ## Workshop links
 
@@ -77,7 +73,7 @@ A Steam Workshop link (`steamcommunity.com/sharedfiles/filedetails/?id=...` or `
 ```
 ... (preflight output)
 
-Path to existing mod folder: C:\Users\me\repos\MyMod
+Path or GitHub link: C:\Users\me\repos\MyMod
 [OK]    Source validated: C:\Users\me\repos\MyMod
 [INFO]  Derived mod name: MyMod
 [OK]    workspace\MyMod -> C:\Users\me\repos\MyMod (junction)
@@ -106,7 +102,7 @@ An existing `$PBOPREFIX$` must hold exactly the mod name, because `/dayz-build-p
 Scaffolding check:
   [OK]    config.cpp present
   [OK]    $PBOPREFIX$ present
-  [WARN]  $PBOPREFIX$ is 'Author\\MyMod', not 'MyMod', so /dayz-build-pbo will refuse it.
+  [WARN]  $PBOPREFIX$ is 'Author\MyMod', not 'MyMod', so /dayz-build-pbo will refuse it.
           Set the file to the single line MyMod and make config.cpp paths start with MyMod\.
 ...
 Next steps:
@@ -116,15 +112,16 @@ Next steps:
 ## Refuses to run if
 
 - `/dayz-preflight` returns non-zero (typically `P:\` not mounted).
-- `--source` is a Steam Workshop link.
-- `--source` missing and stdin isn't a TTY.
+- `--source` (or the prompted answer) is a Steam Workshop link.
+- `--source` missing and stdin isn't an interactive console (checked before preflight, so nothing is prompted or touched).
 - Source path doesn't exist, isn't a directory, or is a UNC path (`\\server\share\...` - junctions can't target them on Windows).
 - Source path is inside `<repo>/workspace/` (avoids self-referential / circular links). The error points at `/dayz-add-scaffold <Name> --piece junction`, which links a mod that is already in `workspace/`.
 - Derived/given mod name fails the pattern (`[A-Za-z][A-Za-z0-9_]{0,63}`).
 - `workspace/<Name>/` already exists (won't clobber).
-- A git link is given and `git` is not on `PATH`, or `git clone` fails (its last lines are shown).
+- A git link is given and `git` is not on `PATH`, or `git clone` fails (its last lines are shown). A failed or interrupted (Ctrl+C) clone is deleted, so the retry is not refused with "already exists".
+- A tree link has more than one segment after `/tree/` (such as `tree/feature/x`) and `git ls-remote` cannot list the remote's branches (offline, bad credentials), so the branch and the folder cannot be told apart. Nothing is cloned; the message says to fix the connection, link the repo without `/tree/...`, or clone it yourself and import the folder by path.
 - `P:\<Name>\` exists as a real folder, or as a link pointing somewhere other than the new `workspace/<Name>/`.
-- Non-TTY run with missing scaffold pieces and neither `--scaffold` nor `--no-scaffold` was passed. This check runs before any link is created, so nothing is left half-done.
+- Missing scaffold pieces, neither `--scaffold` nor `--no-scaffold` passed, and stdin is not an interactive console. A null stdin such as `< NUL` or an agent's tool shell counts as non-interactive even though Windows reports it as a TTY. This check runs before any link is created, so nothing is left half-done.
 
 ### Stale-junction auto-clean
 
@@ -132,13 +129,7 @@ Same behavior as `/dayz-new-mod`: if `P:\<Name>\` exists as a junction pointing 
 
 ## Cleanup behavior
 
-`/dayz-clean-workspace --mod <Name>` recognizes imported mods automatically:
-
-- The `workspace/<Name>/` link is removed via `cmd /c rmdir` (no recursion into the link target). Your source folder is never touched.
-- The `P:\<Name>\` junction is removed (per existing logic: only when its target matches `workspace/<Name>/`).
-- The `P:\Mods\@<Name>\` deployed dir is removed if it has the Agentic-Z ownership marker (written by `/dayz-build-pbo` and `/dayz-deploy-pbo`).
-
-The plan labels an imported mod `(workspace-link) workspace\MyMod` (link removed, source kept) and a native scaffold `(workspace) workspace\NativeMod` (folder and contents removed).
+`/dayz-clean-workspace --mod <Name>` recognizes an imported mod: it removes the `workspace/<Name>/` link and the `P:\<Name>\` junction and never touches your source folder. Details, including cloned imports: [references/github-and-cleanup.md](references/github-and-cleanup.md).
 
 ## Do not
 

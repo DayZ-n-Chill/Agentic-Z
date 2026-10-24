@@ -155,14 +155,46 @@ def test_force_skips_dirty_tree_check(monkeypatch):
 
 
 def test_working_tree_clean_for_parses_porcelain(monkeypatch):
-    out = " M .claude/skills/a/SKILL.md\n?? docs/new.md\n"
-    monkeypatch.setattr(update, "run", lambda *a, **k: SimpleNamespace(stdout=out, returncode=0))
+    calls = []
+
+    def fake_run(cmd, *a, **k):
+        calls.append(cmd)
+        return SimpleNamespace(stdout=out, returncode=0)
+
+    out = " M .claude/skills/a/SKILL.md\0R  docs/new.md\0docs/old.md\0"
+    monkeypatch.setattr(update.subprocess, "run", fake_run)
     assert update.working_tree_clean_for(update.TEMPLATE_PATHS) == (
         False,
         [".claude/skills/a/SKILL.md", "docs/new.md"],
     )
-    monkeypatch.setattr(update, "run", lambda *a, **k: SimpleNamespace(stdout="", returncode=0))
+    assert "-z" in calls[0] and "--untracked-files=no" in calls[0]
+    out = ""
     assert update.working_tree_clean_for(update.TEMPLATE_PATHS) == (True, [])
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
+def test_dirty_gate_ignores_untracked_and_keeps_non_ascii_verbatim(tmp_path, monkeypatch):
+    """An untracked skill the user just added must not block the update (it is
+    classified local-only-edit and left alone). A tracked edit still blocks, and
+    its non-ASCII name is reported as the real path, not octal-escaped."""
+    _git(tmp_path, "init", "-q")
+    for key, val in [("user.name", "t"), ("user.email", "t@example.com"),
+                     ("commit.gpgsign", "false"), ("core.autocrlf", "false"),
+                     ("core.quotePath", "true")]:
+        _git(tmp_path, "config", key, val)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "café.md").write_text("v0\n", encoding="utf-8")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "baseline")
+    monkeypatch.chdir(tmp_path)
+
+    mine = tmp_path / ".claude" / "skills" / "my-skill"
+    mine.mkdir(parents=True)
+    (mine / "SKILL.md").write_text("mine\n", encoding="utf-8")  # untracked
+    assert update.working_tree_clean_for(update.TEMPLATE_PATHS) == (True, [])
+
+    (tmp_path / "docs" / "café.md").write_text("edited\n", encoding="utf-8")
+    assert update.working_tree_clean_for(update.TEMPLATE_PATHS) == (False, ["docs/café.md"])
 
 
 # ---------- baseline advance after apply ----------
@@ -330,7 +362,7 @@ def _tracked_files() -> list[str]:
 
 
 # Tracked top-level folders that belong to the upstream repo itself, not the template.
-NOT_TEMPLATE: set[str] = set()
+NOT_TEMPLATE: set[str] = {"archive"}  # the retired Docusaurus wiki; clones never get it
 
 
 def test_template_paths_cover_every_tracked_top_level_folder():
@@ -395,6 +427,43 @@ def test_quiet_check_with_wrong_upstream_prints_set_url_fix_and_exits_0(in_tmp, 
     assert len(out) == 1
     assert "https://example.com/fork.git" in out[0]
     assert f"git remote set-url upstream {update.UPSTREAM_URL}" in out[0]
+
+
+def test_quiet_check_when_remote_add_fails_prints_one_line_and_exits_0(in_tmp, monkeypatch, capsys):
+    """`git remote add` failing (locked config, read-only .git) must not raise a
+    CalledProcessError traceback into the SessionStart hook."""
+    monkeypatch.setattr(update, "repo_root", lambda: in_tmp)
+    monkeypatch.setattr(update, "remote_url", lambda name: None)
+
+    def failing_run(cmd, check=True, capture=False):
+        assert cmd[:3] == ["git", "remote", "add"], cmd
+        raise subprocess.CalledProcessError(
+            128, cmd, output="", stderr="error: could not lock config file .git/config"
+        )
+
+    monkeypatch.setattr(update, "run", failing_run)
+
+    def no_fetch():
+        raise AssertionError("must not fetch without an upstream remote")
+
+    monkeypatch.setattr(update, "fetch_upstream", no_fetch)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--check", "--quiet"])
+    assert update.main() == 0
+    out = capsys.readouterr().out.strip().splitlines()
+    assert len(out) == 1
+    assert f"git remote add upstream {update.UPSTREAM_URL}" in out[0]
+
+
+def test_ensure_upstream_returns_false_when_remote_add_fails(monkeypatch, capsys):
+    monkeypatch.setattr(update, "_QUIET", False)
+    monkeypatch.setattr(update, "remote_url", lambda name: None)
+
+    def failing_run(cmd, check=True, capture=False):
+        raise subprocess.CalledProcessError(128, cmd, output="", stderr="fatal: boom")
+
+    monkeypatch.setattr(update, "run", failing_run)
+    assert update.ensure_upstream() is False
+    assert "fatal: boom" in capsys.readouterr().out
 
 
 def test_quiet_without_check_is_rejected(monkeypatch):
@@ -618,6 +687,38 @@ def test_crlf_working_copy_is_not_a_local_edit(tmp_path, monkeypatch):
     assert update.compute_drift(baseline, "up") == {"docs/a.md": S.CONFLICT}
 
 
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
+def test_candidate_paths_keep_non_ascii_names_verbatim(tmp_path, monkeypatch):
+    """With core.quotePath on (git's default), plain --porcelain and --name-only
+    print "docs/caf\\303\\251.md". The -z forms give the real path, so drift
+    lands on files that exist."""
+    _git(tmp_path, "init", "-q")
+    for key, val in [("user.name", "t"), ("user.email", "t@example.com"),
+                     ("commit.gpgsign", "false"), ("core.autocrlf", "false"),
+                     ("core.quotePath", "true")]:
+        _git(tmp_path, "config", key, val)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "café.md").write_text("v0\n", encoding="utf-8")
+    (tmp_path / "docs" / "old ñame.md").write_text("keep\n", encoding="utf-8")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "baseline")
+    baseline = _git(tmp_path, "rev-parse", "HEAD").strip()
+    _git(tmp_path, "checkout", "-q", "-b", "up")
+    (tmp_path / "docs" / "café.md").write_text("v1\n", encoding="utf-8")
+    _git(tmp_path, "commit", "-q", "-am", "upstream change")
+    _git(tmp_path, "checkout", "-q", baseline)
+    (tmp_path / "docs" / "naïve.md").write_text("mine\n", encoding="utf-8")  # untracked
+    _git(tmp_path, "mv", "docs/old ñame.md", "docs/new ñame.md")  # staged rename
+
+    monkeypatch.chdir(tmp_path)
+    assert update._candidate_paths(baseline, "up") == {
+        "docs/café.md", "docs/naïve.md", "docs/old ñame.md", "docs/new ñame.md",
+    }
+    drift = update.compute_drift(baseline, "up")
+    assert drift["docs/café.md"] == S.SAFE_OVERWRITE
+    assert drift["docs/naïve.md"] == S.LOCAL_ONLY_EDIT
+
+
 # ---------- first run in an old clone uses the merge base ----------
 
 @pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
@@ -673,6 +774,62 @@ def test_first_run_in_old_clone_offers_upstream_changes_since_clone(tmp_path, mo
         "docs/a.md": S.SAFE_OVERWRITE,
         ".claude/skills/new-skill/SKILL.md": S.NEW,
     }
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
+def test_first_run_dry_run_previews_what_the_real_first_run_offers(tmp_path, monkeypatch, capsys):
+    """No baseline yet and upstream has moved since the clone. --dry-run must
+    preview against the merge base (as the real first run does) without writing
+    it, so upstream's changes show as pending instead of 'Up to date.'"""
+    up = tmp_path / "upstream"
+    up.mkdir()
+    _git(up, "init", "-q", "-b", "main")
+    for key, val in [("user.name", "t"), ("user.email", "t@example.com"),
+                     ("commit.gpgsign", "false"), ("core.autocrlf", "false")]:
+        _git(up, "config", key, val)
+    (up / "docs").mkdir()
+    (up / "docs/a.md").write_text("v0\n", encoding="utf-8")
+    _git(up, "add", ".")
+    _git(up, "commit", "-q", "-m", "C0")
+    c0 = _git(up, "rev-parse", "HEAD").strip()
+
+    clone = tmp_path / "clone"
+    _git(tmp_path, "clone", "-q", str(up), str(clone))
+    _git(clone, "config", "core.autocrlf", "false")
+    _git(clone, "remote", "add", "upstream", str(up))
+
+    (up / "docs/a.md").write_text("v1\n", encoding="utf-8")
+    _git(up, "commit", "-q", "-am", "C1")
+    _git(clone, "fetch", "-q", "upstream", "main")
+
+    monkeypatch.chdir(clone)
+    monkeypatch.setattr(update, "_QUIET", False)
+    monkeypatch.setattr(update, "ensure_upstream", lambda: True)
+    monkeypatch.setattr(update, "fetch_upstream", lambda: True)
+    monkeypatch.setattr(update, "search_index_update_available", lambda: None)
+    seen = {}
+    real_drift = update.compute_drift
+
+    def spy_drift(baseline, ref):
+        seen["baseline"] = baseline
+        seen["drift"] = real_drift(baseline, ref)
+        return seen["drift"]
+
+    def must_not_apply(*a, **k):
+        raise AssertionError("--dry-run must not apply")
+
+    monkeypatch.setattr(update, "compute_drift", spy_drift)
+    monkeypatch.setattr(update, "apply_drift", must_not_apply)
+    monkeypatch.setattr(sys, "argv", ["update.py", "--dry-run"])
+    assert update.main() == 0
+
+    assert seen["baseline"] == c0
+    assert seen["drift"] == {"docs/a.md": S.SAFE_OVERWRITE}
+    out = capsys.readouterr().out
+    assert "docs/a.md" in out
+    assert "Up to date." not in out
+    assert not (clone / update.BASELINE_FILE).exists()
+    assert (clone / "docs/a.md").read_text(encoding="utf-8") == "v0\n"
 
 
 # ---------- per-file keep is a decision, skip defers ----------

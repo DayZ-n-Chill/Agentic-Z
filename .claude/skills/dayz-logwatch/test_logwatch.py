@@ -57,6 +57,18 @@ def test_session_dirs_watch_every_instance_and_the_client(tmp_path):
     assert logwatch.session_dirs(proj, ["livonia"])[0] == proj / ".server" / "livonia" / "Profiles"
 
 
+def test_session_dirs_skip_the_gate_behavior_copies_unless_named(tmp_path):
+    """The /dayz-gate copies used to be watched by default, so a gate run's errors showed up
+    under an instance the user never added."""
+    proj = make_project(tmp_path, ("chernarus", "chernarus-behavior"))
+    assert logwatch.session_dirs(proj, []) == [
+        proj / ".server" / "chernarus" / "Profiles",
+        proj / ".server" / "!ClientDiagLogs",
+    ]
+    assert logwatch.session_dirs(proj, ["chernarus-behavior"])[0] == (
+        proj / ".server" / "chernarus-behavior" / "Profiles")
+
+
 def test_session_dirs_refuse_a_missing_server(tmp_path):
     with pytest.raises(FileNotFoundError, match="dayz-add-server"):
         logwatch.session_dirs(tmp_path, [])
@@ -262,6 +274,112 @@ def test_cli_errors_win_over_session_never_started(tmp_path, monkeypatch):
     assert "Stopped (session never started)" in out.getvalue()
 
 
+def test_cli_start_timeout_reaches_watch(tmp_path, monkeypatch):
+    """START_GRACE_S was hard-coded: a build between starting the watch and the launch could outlast it."""
+    monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
+    seen = {}
+    real_watch = logwatch.watch
+
+    def spy(*a, **k):
+        seen["start_grace"] = k.get("start_grace")
+        return real_watch(*a, **{**k, "session_alive": lambda: False, "start_grace": 0})
+
+    monkeypatch.setattr(logwatch, "watch", spy)
+    args = ["--dir", str(tmp_path), "--until-closed", "--interval", "0.1"]
+    assert logwatch.main(args + ["--start-timeout", "900"], io.StringIO()) == 2
+    assert seen["start_grace"] == 900
+    assert logwatch.main(args, io.StringIO()) == 2
+    assert seen["start_grace"] is None  # watch() falls back to START_GRACE_S
+
+
+@pytest.mark.parametrize("value", ["0", "-5", "nan", "inf"])
+def test_start_timeout_zero_negative_or_not_finite_exits_2(value, capsys):
+    with pytest.raises(SystemExit) as exc:
+        logwatch.main(["--dir", ".", "--until-closed", "--start-timeout", value])
+    assert exc.value.code == 2
+    assert "--start-timeout must be more than 0 seconds" in capsys.readouterr().err
+
+
+def test_start_timeout_without_until_closed_exits_2(capsys):
+    with pytest.raises(SystemExit) as exc:
+        logwatch.main(["--dir", ".", "--duration", "1", "--start-timeout", "60"])
+    assert exc.value.code == 2
+    assert "--start-timeout needs --until-closed" in capsys.readouterr().err
+
+
+def test_watch_honours_a_longer_start_grace(tmp_path):
+    tail = logwatch.Tail([tmp_path])
+    events, watcher = collect()
+    summary = logwatch.watch(tail, watcher, interval=0, session_alive=lambda: False, start_grace=900,
+                             sleep=lambda s: None, clock=_stepping_clock(logwatch.CLOSED_CHECK_S))
+    assert summary["stopped"] == "session never started"
+    assert summary["seconds"] >= 900
+
+
+def test_watch_stops_at_once_on_a_crash_before_the_client_was_seen(tmp_path):
+    """A client that crashed within one process check was never seen running, so the watch waited 300 s."""
+    tail = logwatch.Tail([tmp_path])
+    events, watcher = collect()
+    polls = []
+
+    def sleep(_):
+        polls.append(1)
+        if len(polls) == 2:
+            append(tmp_path / "crash_2026-10-21_10-00-00.log", "Exception code: C0000005 ACCESS_VIOLATION")
+
+    summary = logwatch.watch(tail, watcher, interval=0, session_alive=lambda: False, sleep=sleep,
+                             clock=_stepping_clock(0.1))
+    assert summary["stopped"] == "crashed before it was seen running"
+    assert len(polls) == 2 and summary["errors"] == 1
+    assert events[0]["category"] == "crash"
+
+
+def test_watch_ignores_an_old_crash_read_with_since_before_the_start(tmp_path):
+    """A crash log from --since is read on the first pass; it must not end the wait for the new session."""
+    append(tmp_path / "crash_2026-10-21_09-00-00.log", "old crash")
+    tail = logwatch.Tail([tmp_path], since_s=300)
+    events, watcher = collect()
+    states = iter([False, True, False])
+    summary = logwatch.watch(tail, watcher, interval=0, session_alive=lambda: next(states), sleep=lambda s: None,
+                             clock=_stepping_clock(logwatch.CLOSED_CHECK_S))
+    assert summary["stopped"] == "session closed"
+    assert summary["errors"] == 1  # still reported
+
+
+def test_watch_crash_does_not_stop_a_plain_watch(tmp_path):
+    tail = logwatch.Tail([tmp_path])
+    events, watcher = collect()
+    polls = []
+
+    def sleep(_):
+        polls.append(1)
+        if len(polls) == 1:
+            append(tmp_path / "crash_2026-10-21_10-00-00.log", "x")
+
+    summary = logwatch.watch(tail, watcher, interval=0, duration=1, sleep=sleep, clock=_stepping_clock(0.1))
+    assert summary["stopped"] == "duration" and summary["errors"] == 1
+
+
+def test_cli_crash_before_start_exits_1(tmp_path, monkeypatch):
+    monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
+    monkeypatch.setattr(logwatch, "client_running", lambda: False)
+    real_tail = logwatch.Tail
+
+    class CrashingTail(real_tail):
+        calls = 0
+
+        def new_files(self):
+            CrashingTail.calls += 1
+            if CrashingTail.calls == 2:
+                append(tmp_path / "crash_2026-10-21_10-00-00.log", "x")
+            return super().new_files()
+
+    monkeypatch.setattr(logwatch, "Tail", CrashingTail)
+    out = io.StringIO()
+    assert logwatch.main(["--dir", str(tmp_path), "--until-closed", "--interval", "0.1"], out) == 1
+    assert "Stopped (crashed before it was seen running)" in out.getvalue()
+
+
 @pytest.mark.parametrize("cmdline, client", [
     ('"C:/DayZ/DayZDiag_x64.exe" -profiles=x -mod=P:/Mods/@A -connect=127.0.0.1 -port=2302', True),
     ('"C:/DayZ/DayZDiag_x64.exe" -server -config=c -mod=P:/Mods/@A -port=2302', False),
@@ -273,43 +391,117 @@ def test_is_client_looks_for_the_server_switch(cmdline, client):
 
 
 def test_client_running_ignores_the_server_process(monkeypatch):
-    server = 'proc:"C:/DayZ/DayZDiag_x64.exe" -server -config=c -serverMod=P:/Mods/@S'
-    client = 'proc:"C:/DayZ/DayZDiag_x64.exe" -connect=127.0.0.1'
-
-    def fake_run(stdout):
-        return lambda *a, **k: subprocess.CompletedProcess(a, 0, stdout=stdout, stderr="")
-
-    monkeypatch.setattr(logwatch.subprocess, "run", fake_run(server + "\n"))
+    server = '"C:/DayZ/DayZDiag_x64.exe" -server -config=c -serverMod=P:/Mods/@S'
+    client = '"C:/DayZ/DayZDiag_x64.exe" -connect=127.0.0.1'
+    monkeypatch.setattr(logwatch, "diag_command_lines", lambda: [server])
     assert logwatch.client_running() is False  # server left running after the client window closed
-    monkeypatch.setattr(logwatch.subprocess, "run", fake_run(server + "\n" + client + "\n"))
+    monkeypatch.setattr(logwatch, "diag_command_lines", lambda: [server, client])
     assert logwatch.client_running() is True
-    monkeypatch.setattr(logwatch.subprocess, "run", fake_run(""))
+    monkeypatch.setattr(logwatch, "diag_command_lines", lambda: [server, ""])
+    assert logwatch.client_running() is True  # a hidden command line counts as the client
+    monkeypatch.setattr(logwatch, "diag_command_lines", lambda: [])
     assert logwatch.client_running() is False
 
 
-def test_client_running_keeps_watching_when_the_query_fails(monkeypatch):
-    monkeypatch.setattr(logwatch.subprocess, "run",
-                        lambda *a, **k: subprocess.CompletedProcess(a, 1, stdout="", stderr="CIM timeout"))
-    assert logwatch.client_running() is True
-
-    def missing(*a, **k):
-        raise FileNotFoundError("powershell")
-
-    monkeypatch.setattr(logwatch.subprocess, "run", missing)
-    assert logwatch.client_running() is True
+def test_client_running_reports_unknown_when_the_query_fails(monkeypatch):
+    monkeypatch.setattr(logwatch, "diag_command_lines", lambda: None)
+    assert logwatch.client_running() is None
 
 
-@pytest.mark.parametrize("entries", [
-    [{"id": "bad-regex", "pattern": "Unknown type ('"}],
-    [{"id": "no-pattern", "fix": "x"}],
-], ids=["bad regex", "missing pattern"])
-def test_cli_broken_known_errors_file_exits_2(tmp_path, monkeypatch, capsys, entries):
+@pytest.mark.skipif(sys.platform != "win32", reason="the process query is Windows only")
+def test_diag_command_lines_reads_real_command_lines_without_starting_a_process(monkeypatch):
+    """It used to start PowerShell (about 1.5 s cold start) on every 5-second check."""
+    marker = "zzlogwatch-cmdline-marker"
+    proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)", marker])
+    try:
+        def no_process(*a, **k):
+            raise AssertionError("diag_command_lines must not start a process")
+
+        monkeypatch.setattr(subprocess, "run", no_process)
+        monkeypatch.setattr(subprocess, "Popen", no_process)
+        lines = logwatch.diag_command_lines(Path(sys.executable).name)
+        assert lines is not None and any(marker in line for line in lines)
+        assert logwatch.diag_command_lines("zz-no-such-process.exe") == []
+    finally:
+        proc.kill()
+        proc.wait()
+
+
+def test_watch_stops_when_the_process_query_keeps_failing(tmp_path):
+    """A failing query used to count as "client running", so the watch never stopped."""
+    tail = logwatch.Tail([tmp_path])
+    events, watcher = collect()
+    calls = []
+
+    def failing():
+        calls.append(1)
+        return None
+
+    summary = logwatch.watch(tail, watcher, interval=0, session_alive=failing, sleep=lambda s: None,
+                             clock=_stepping_clock(logwatch.CLOSED_CHECK_S))
+    assert summary["stopped"] == "cannot read process list"
+    assert len(calls) == logwatch.QUERY_FAILURES_MAX
+
+
+def test_watch_forgives_a_failed_query_between_good_ones(tmp_path):
+    tail = logwatch.Tail([tmp_path])
+    events, watcher = collect()
+    states = iter([True, None, None, True, None, None, False])
+    summary = logwatch.watch(tail, watcher, interval=0, session_alive=lambda: next(states), sleep=lambda s: None,
+                             clock=_stepping_clock(logwatch.CLOSED_CHECK_S))
+    assert summary["stopped"] == "session closed"
+
+
+def test_cli_failing_process_query_exits_2(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
+
+    monkeypatch.setattr(logwatch, "diag_command_lines", lambda: None)
+    monkeypatch.setattr(logwatch, "CLOSED_CHECK_S", 0)
+    out = io.StringIO()
+    assert logwatch.main(["--dir", str(tmp_path), "--until-closed", "--interval", "0.1"], out) == 2
+    assert "Stopped (cannot read process list)" in out.getvalue()
+    assert "Cannot read the process list" in capsys.readouterr().err
+
+
+GOOD_SHIPPED = {"id": "ok", "pattern": "Unknown type", "meaning": "m", "fix": "f", "owner_agent": "a"}
+GOOD_LEARNED = {"id": "learned-ok", "fingerprint": "fp", "meaning": "m", "fix": "f", "owner_agent": "a"}
+
+
+@pytest.mark.parametrize("entries,learned", [
+    ([{"id": "bad-regex", "pattern": "Unknown type ('"}], None),
+    ([{"id": "no-pattern", "fix": "x"}], None),
+    ([{k: v for k, v in GOOD_SHIPPED.items() if k != "owner_agent"}], None),
+    ([GOOD_SHIPPED], [{k: v for k, v in GOOD_LEARNED.items() if k != "meaning"}]),
+    ([GOOD_SHIPPED], [{k: v for k, v in GOOD_LEARNED.items() if k != "fingerprint"}]),
+    ([GOOD_SHIPPED], ["not an entry"]),
+], ids=["bad regex", "missing pattern", "shipped missing owner_agent", "learned missing meaning",
+        "learned missing fingerprint", "learned entry not a dict"])
+def test_cli_broken_known_errors_file_exits_2(tmp_path, monkeypatch, capsys, entries, learned):
     shipped = tmp_path / "known-errors.json"
     shipped.write_text(json.dumps(entries), encoding="utf-8")
-    monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
+    project = None
+    if learned is not None:
+        project = tmp_path / "project"
+        learned_file = logwatch.triage.learned_path(project)
+        learned_file.parent.mkdir(parents=True)
+        learned_file.write_text(json.dumps(learned), encoding="utf-8")
+    monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: project)
     monkeypatch.setattr(logwatch.triage, "KNOWN_ERRORS", shipped)
-    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0", "--interval", "0.1"], io.StringIO()) == 2
+    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0.1", "--interval", "0.1"], io.StringIO()) == 2
     assert "Could not load known errors" in capsys.readouterr().err
+
+
+def test_cli_valid_learned_entry_loads(tmp_path, monkeypatch):
+    """The check is not too strict: a complete learned entry next to a complete shipped one runs."""
+    shipped = tmp_path / "known-errors.json"
+    shipped.write_text(json.dumps([GOOD_SHIPPED]), encoding="utf-8")
+    project = tmp_path / "project"
+    learned_file = logwatch.triage.learned_path(project)
+    learned_file.parent.mkdir(parents=True)
+    learned_file.write_text(json.dumps([GOOD_LEARNED]), encoding="utf-8")
+    monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: project)
+    monkeypatch.setattr(logwatch.triage, "KNOWN_ERRORS", shipped)
+    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0.1", "--interval", "0.1"], io.StringIO()) == 0
 
 
 def test_duration_and_until_closed_are_mutually_exclusive(capsys):
@@ -346,7 +538,7 @@ def test_cli_text_output_and_exit_code(tmp_path, monkeypatch):
     monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
     out = io.StringIO()
     append(tmp_path / "script.log", "nothing wrong here")
-    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0", "--interval", "0.1"], out) == 0
+    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0.1", "--interval", "0.1"], out) == 0
     assert "Watching 1 folder(s)" in out.getvalue() and "0 error(s)" in out.getvalue()
 
     log = tmp_path / "later" / "script.log"
@@ -360,7 +552,7 @@ def test_cli_text_output_and_exit_code(tmp_path, monkeypatch):
 
     monkeypatch.setattr(logwatch, "Tail", tail_then_write)
     out = io.StringIO()
-    assert logwatch.main(["--dir", str(tmp_path / "later"), "--duration", "0", "--interval", "0.1", "--mod", "MyVest"], out) == 1
+    assert logwatch.main(["--dir", str(tmp_path / "later"), "--duration", "0.1", "--interval", "0.1", "--mod", "MyVest"], out) == 1
     text = out.getvalue()
     assert "known script-unknown-type -> dayz-script-specialist" in text
     assert "fix: " in text and "1 known, 0 new" in text
@@ -378,3 +570,19 @@ def test_interval_below_minimum_exits_2(value, capsys):
         logwatch.main(["--dir", ".", "--duration", "1", "--interval", value])
     assert exc.value.code == 2
     assert "--interval must be at least" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("value", ["0", "-5", "nan", "inf"])
+def test_duration_zero_negative_or_not_finite_exits_2(value, capsys):
+    with pytest.raises(SystemExit) as exc:
+        logwatch.main(["--dir", ".", "--duration", value])
+    assert exc.value.code == 2
+    assert "--duration must be more than 0 seconds" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("value", ["-1", "-0.5", "nan", "inf"])
+def test_since_negative_or_not_finite_exits_2(value, capsys):
+    with pytest.raises(SystemExit) as exc:
+        logwatch.main(["--dir", ".", "--duration", "1", "--since", value])
+    assert exc.value.code == 2
+    assert "--since must be 0 or more minutes" in capsys.readouterr().err

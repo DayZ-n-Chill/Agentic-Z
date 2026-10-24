@@ -5,6 +5,13 @@ Field-verified winding-validation methodology from production DayZ mod debugging
 Face Winding") in `p3d-killers.md` with validation methodology, known traps, and a
 complete Blender-import checklist.
 
+**Contents**
+
+- How NOT to verify: heuristics that mislead
+- How to verify correctly
+- Known traps (lessons learned)
+- Checklist when importing a new model from Blender
+
 ## How NOT to verify: heuristics that mislead
 
 **Centroid-based check (`cross(e1, e2) · (face_centroid - LOD_centroid) > 0`):**

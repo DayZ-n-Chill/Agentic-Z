@@ -7,7 +7,7 @@
       "must_include": [
         "re:_co\\b",
         "re:rename",
-        "re:art lead|report|suffix is missing|no( texture(-role)?)? suffix|missing (a |the )?suffix"
+        "re:art lead|report|send it back|suffix is missing|no( texture(-role)?)? (suffix|ending)|missing (a |the )?(suffix|ending)|(doesn't|does not) end in an? (texture(-role)? )?(suffix|ending)|refuses"
       ],
       "must_not_include": [
         "re:\\bI (have |will |'ll )?renamed\\b"
@@ -70,7 +70,7 @@
       "must_not_include": [
         "re:\\bI (have |will |'ll )?resized\\b"
       ],
-      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 2(b) and 2(c) (one refused file leaves the batch unpacked; take it out and rerun with the rest, report it as blocked); .claude/skills/dayz-pack-texture/SKILL.md 'Nothing is converted until every input passes' and the power of two refusal"
+      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 2 (drop each refused file and rerun with the rest, report it as blocked); .claude/skills/dayz-pack-texture/SKILL.md 'Nothing is converted until every input passes' and the power of two refusal"
     },
     {
       "id": "smdi-is-specular",

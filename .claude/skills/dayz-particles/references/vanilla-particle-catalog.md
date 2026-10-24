@@ -5,6 +5,48 @@ Access each one as `ParticleList.CONSTANT_NAME` in Enforce Script.
 Paths are relative to `graphics/particles/` and omit the `.ptc` extension. After a game update, check `particlelist.c` for additions.
 
 To register a particle from your own mod, use the two-argument form shown at the top of `particlelist.c`: `static const int MY_PARTICLE = RegisterParticle("mod_folder/", "my_particle");` inside a `modded class ParticleList`.
+## Contents
+
+- [Key categories for device mods](#key-categories-for-device-mods)
+- [Debug](#debug)
+- [Fireplace](#fireplace)
+- [Cooking](#cooking)
+- [Torch](#torch)
+- [Broom torch](#broom-torch)
+- [Roadflare](#roadflare)
+- [Flare projectile](#flare-projectile)
+- [Digging](#digging)
+- [Smoke grenades](#smoke-grenades)
+- [Flash grenade (M84)](#flash-grenade-m84)
+- [Fragmentation grenades](#fragmentation-grenades)
+- [Grenade explosion by surface](#grenade-explosion-by-surface)
+- [Electricity](#electricity)
+- [Player](#player)
+- [Guns](#guns)
+- [Bullet and melee impacts](#bullet-and-melee-impacts)
+- [Explosions](#explosions)
+- [Environment effects](#environment-effects)
+- [Vehicles](#vehicles)
+- [Corpse decay](#corpse-decay)
+- [Bonfire](#bonfire)
+- [Contaminated areas](#contaminated-areas)
+- [Fireworks](#fireworks)
+- [Fireworks anniversary](#fireworks-anniversary)
+- [Pox grenade](#pox-grenade)
+- [Claymore](#claymore)
+- [Water jet/spilling](#water-jetspilling)
+- [Drowning bubbles](#drowning-bubbles)
+- [Cupid's bolt](#cupids-bolt)
+- [Volcanic](#volcanic)
+- [Fishing](#fishing)
+- [Steps](#steps)
+- [Ceiling dust](#ceiling-dust)
+- [Part destruction](#part-destruction)
+- [Vehicle wheels](#vehicle-wheels)
+- [Tree falling particles](#tree-falling-particles)
+- [Tree passing (ParticleSource)](#tree-passing-particlesource)
+- [Dust and oil fire (no heading in source)](#dust-and-oil-fire-no-heading-in-source)
+
 
 ## Key categories for device mods
 

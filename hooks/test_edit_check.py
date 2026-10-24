@@ -215,6 +215,22 @@ def test_hook_never_fails_on_bad_input(stdin):
     assert (r.returncode, r.stdout) == (0, "")
 
 
+def test_hook_reads_a_non_ascii_path_from_utf8_stdin(tmp_path):
+    # Claude Code sends UTF-8 with non-ASCII left unescaped. Reading stdin in the
+    # console code page turned workspace\Café\ into CafÃ© and skipped the check.
+    f = tmp_path / "workspace" / "Café" / "config.cpp"
+    f.parent.mkdir(parents=True)
+    f.write_text("class A\n{\n\tscope = 2\n};\n", encoding="utf-8")
+    env = {k: v for k, v in __import__("os").environ.items() if k not in ("PYTHONUTF8", "CLAUDE_PROJECT_DIR")}
+    env["PYTHONIOENCODING"] = "cp1252"
+    r = subprocess.run([sys.executable, str(SCRIPT)], input=json.dumps(_payload(f), ensure_ascii=False).encode("utf-8"),
+                       capture_output=True, env=env, timeout=30)
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout)
+    assert out["decision"] == "block"
+    assert f"{f}:3: missing ';' after 'scope'" in out["reason"]
+
+
 def test_manual_file_mode(tmp_path):
     f = tmp_path / "hud.layout"
     f.write_text("<layout/>", encoding="utf-8")

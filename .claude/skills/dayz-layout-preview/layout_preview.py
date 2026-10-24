@@ -26,10 +26,20 @@ except ImportError:  # reported with an install hint in main(); parsing and layo
 
 OK = "[OK]   "
 WARN = "[WARN] "
+NOTE = "[NOTE] "
 FAIL = "[FAIL] "
 
 REQUIREMENTS = Path(__file__).resolve().parent / "requirements.txt"
+# This file is <root>\.claude\skills\dayz-layout-preview\layout_preview.py. resolve()
+# follows the /sync-skills link, so this is the clone even when run from a home skills folder.
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_OUT = PROJECT_ROOT / "output" / "layout-preview"
+# Vanilla layouts live on the DayZ work drive. A missing file there usually means the drive is not mounted.
+P_DRIVE = Path("P:/")
 DEFAULT_SIZES = [(1280, 720), (1920, 1080), (2560, 1440), (3440, 1440)]
+# Largest width or height --sizes accepts. 8192 covers 8K (7680x4320); a bigger canvas
+# needs gigabytes of memory for one preview and is almost always a typo.
+MAX_SIDE = 8192
 # `scaled 1` grows exact pixel values with the screen height. 1080 is the
 # reference height this preview assumes; the game's own scale may differ.
 SCALE_REF_HEIGHT = 1080
@@ -42,6 +52,9 @@ ONE_WORD_KEYS = {
 }
 _TOKEN = re.compile(r'"[^"\n]*"|[{}]|[^\s{}"]+')
 _NUMBER = re.compile(r"-?\d+(?:\.\d+)?(?:[eE]-?\d+)?$")
+# The part of a line before a '//' comment, skipping '//' inside a quoted string. Vanilla
+# layouts under P:\gui\layouts\ have no comment at the end of a line; hand-edited ones may.
+_CODE = re.compile(r'(?:[^"/]|"[^"\n]*"?|/(?!/))*')
 
 
 class LayoutError(ValueError):
@@ -84,9 +97,7 @@ def parse(text: str) -> Widget:
     root = Widget("", "", 0)  # top level acts like a children block
     stack: list[tuple[str, Widget]] = [("children", root)]
     for lineno, raw in enumerate(text.splitlines(), 1):
-        if raw.strip().startswith("//"):
-            continue
-        tokens = _TOKEN.findall(raw)
+        tokens = _TOKEN.findall(_CODE.match(raw).group())
         words: list[str] = []
         for tok in tokens + ["\n"]:
             kind, owner = stack[-1]
@@ -267,15 +278,38 @@ def _wrap_spots(spacer: Widget, kids: list, rect: tuple, screen_h: int) -> list[
 
 # ------------------------------------------------------------------- checks
 
+# Each exact toggle and the value it governs: (property, index into its values).
+TOGGLE_TARGET = {"hexactpos": ("position", 0), "vexactpos": ("position", 1),
+                 "hexactsize": ("size", 0), "vexactsize": ("size", 1)}
+
+
+def missing_toggles(widget: Widget) -> list[str]:
+    """Exact toggles a widget leaves out where the choice changes its box.
+
+    A toggle only decides whether its value is pixels or a fraction of the parent, so
+    a missing toggle over a value of 0 (or an unset value) cannot move the box. Vanilla
+    files rely on this: day_z_hud.layout:1 has `position 0 0` with no hexactpos or vexactpos,
+    and :4851 has `position 0 0.2` with only vexactpos."""
+    out = []
+    for key in EXACT_KEYS:
+        prop, index = TOGGLE_TARGET[key]
+        if key not in widget.props and prop in widget.props and widget.num(prop, index) != 0:
+            out.append(key)
+    return out
+
+
 def findings(root: Widget, boxes_by_size: dict) -> list[dict]:
     """What a person should look at, from the boxes at every size."""
     out: list[dict] = []
 
     def walk(widget: Widget) -> None:
-        missing = [k for k in EXACT_KEYS if k not in widget.props]
-        if widget.is_widget and missing and ("size" in widget.props or "position" in widget.props):
-            out.append({"severity": "warning", "rule": "missing-toggle", "widget": widget.name, "line": widget.line,
-                        "message": f"{widget.name} has no {', '.join(missing)}; the preview reads it as 0 (relative)"})
+        missing = missing_toggles(widget)
+        if widget.is_widget and missing:
+            # A note, not a warning: vanilla layouts leave toggles out and load fine, and the
+            # preview reads them the way those files need. Only the repo's own rule is broken.
+            out.append({"severity": "note", "rule": "missing-toggle", "widget": widget.name, "line": widget.line,
+                        "message": f"{widget.name} has no {', '.join(missing)}; drawn as 0 (relative). "
+                                   "figma-to-dayz-rules.md section 6 asks for every toggle to be written"})
         for child in widget.children:
             walk(child)
 
@@ -370,10 +404,14 @@ def render(screen_w: int, screen_h: int, boxes: list[Box], labels: bool = True):
             bw, bh = x1 - x0 + 1, y1 - y0 + 1
             tx = (bw - tw) / 2 if halign == "center" else bw - tw if halign == "right" else 2
             ty = (bh - px) / 2 if valign == "center" else bh - px if valign == "bottom" else 0
-            # Draw on a layer the size of the box so text is clipped to it, as in game.
-            layer = Image.new("RGBA", (bw, bh), (0, 0, 0, 0))
-            ImageDraw.Draw(layer).text((tx, ty), text, fill=color, font=font)
-            overlay.alpha_composite(layer, dest=(max(x0, 0), max(y0, 0)), source=(max(-x0, 0), max(-y0, 0)))
+            # Draw on a layer the size of the box so text is clipped to it, as in game. Only the
+            # on-screen part is pasted; a box wholly off screen shows no text, and Pillow refuses
+            # a source offset past the layer's own edge.
+            sx, sy = max(-x0, 0), max(-y0, 0)
+            if sx < bw and sy < bh and x0 < screen_w and y0 < screen_h:
+                layer = Image.new("RGBA", (bw, bh), (0, 0, 0, 0))
+                ImageDraw.Draw(layer).text((tx, ty), text, fill=color, font=font)
+                overlay.alpha_composite(layer, dest=(max(x0, 0), max(y0, 0)), source=(sx, sy))
         elif labels and w.cls == "ImageWidgetClass" and w.word("image0") and b.w >= 60:
             draw.text((x0 + 3, y0 + 3), w.word("image0"), fill=outline, font=label_font)
         if labels and b.w >= 40 and b.h >= 14:
@@ -389,13 +427,57 @@ def parse_sizes(value: str) -> list[tuple[int, int]]:
         m = re.fullmatch(r"\s*(\d{2,5})[xX](\d{2,5})\s*", part)
         if not m:
             raise argparse.ArgumentTypeError(f"'{part}' is not WIDTHxHEIGHT, for example 1920x1080")
-        sizes.append((int(m.group(1)), int(m.group(2))))
+        w, h = int(m.group(1)), int(m.group(2))
+        if not (1 <= w <= MAX_SIDE and 1 <= h <= MAX_SIDE):
+            raise argparse.ArgumentTypeError(
+                f"'{part.strip()}': width and height must each be 1 to {MAX_SIDE} pixels")
+        sizes.append((w, h))
     return sizes
 
 
+def png_names(paths: list) -> dict:
+    """A unique PNG base name per layout path: the file stem, with parent folder names
+    prefixed (`parent_stem`, then `grand_parent_stem`) only where two different
+    layouts in the same run would otherwise share a name."""
+    resolved = {p: p.resolve() for p in paths}
+    depth = dict.fromkeys(paths, 0)
+
+    def name(p: Path) -> str:
+        folders = resolved[p].parent.parts
+        return "_".join(folders[len(folders) - depth[p]:] + (resolved[p].stem,)) if depth[p] else resolved[p].stem
+
+    while True:
+        owners: dict = {}
+        for p in paths:
+            owners.setdefault(name(p), set()).add(resolved[p])
+        clashing = [p for p in paths
+                    if len(owners[name(p)]) > 1 and depth[p] < len(resolved[p].parent.parts)]
+        if not clashing:
+            return {p: name(p) for p in paths}
+        for p in clashing:
+            depth[p] += 1
+
+
+def inside_mod_workspace(out_dir: Path) -> bool:
+    """True when out_dir is workspace\\<Mod>\\ or below it, where PNGs would be packed into the PBO.
+    resolve() follows the P:\\<ModName>\\ junction, so that route is caught too."""
+    try:
+        rel = out_dir.resolve().relative_to((PROJECT_ROOT / "workspace").resolve())
+    except ValueError:
+        return False
+    return len(rel.parts) >= 1
+
+
+def on_unmounted_p(path: Path) -> bool:
+    """True when path is on P:\\ and P:\\ is not mounted, so the fix is /dayz-workdrive, not the path."""
+    return path.drive.upper() == P_DRIVE.drive.upper() and not P_DRIVE.exists()
+
+
 def preview(path: Path, sizes: list, out_dir: Optional[Path], show_hidden: bool = False,
-            labels: bool = True) -> dict:
-    """Lay out (and draw, when out_dir is given) one layout at every size. Returns the report."""
+            labels: bool = True, name: Optional[str] = None) -> dict:
+    """Lay out (and draw, when out_dir is given) one layout at every size. Returns the report.
+
+    PNGs are named <name>_<W>x<H>.png; name defaults to the layout's file stem."""
     root = parse(path.read_text(encoding="utf-8", errors="replace"))
     boxes_by_size = {size: layout(root, *size, show_hidden=show_hidden) for size in sizes}
     report = {"layout": str(path), "root": root.name, "sizes": [], "findings": findings(root, boxes_by_size)}
@@ -403,7 +485,7 @@ def preview(path: Path, sizes: list, out_dir: Optional[Path], show_hidden: bool 
         entry = {"size": f"{sw}x{sh}", "widgets": [b.as_dict() for b in boxes]}
         if out_dir is not None:
             out_dir.mkdir(parents=True, exist_ok=True)
-            png = out_dir / f"{path.stem}_{sw}x{sh}.png"
+            png = out_dir / f"{name or path.stem}_{sw}x{sh}.png"
             render(sw, sh, boxes, labels).convert("RGB").save(png)
             entry["png"] = str(png)
         report["sizes"].append(entry)
@@ -413,35 +495,63 @@ def preview(path: Path, sizes: list, out_dir: Optional[Path], show_hidden: bool 
 def main(argv: Optional[list] = None) -> int:
     ap = argparse.ArgumentParser(description="Render a DayZ .layout to approximate PNGs at several screen sizes.")
     ap.add_argument("layouts", nargs="+", type=Path, help=".layout file(s) to preview")
-    ap.add_argument("--sizes", type=parse_sizes, default=DEFAULT_SIZES,
+    ap.add_argument("--sizes", default=None,
                     help="Comma separated WIDTHxHEIGHT list (default 1280x720,1920x1080,2560x1440,3440x1440)")
-    ap.add_argument("--out", type=Path, default=Path("output") / "layout-preview",
-                    help="Folder for the PNGs (default output/layout-preview)")
+    ap.add_argument("--out", type=Path, default=DEFAULT_OUT,
+                    help="Folder for the PNGs (default output/layout-preview under the project root)")
     ap.add_argument("--show-hidden", action="store_true", help="Also draw widgets with visible 0, faded")
     ap.add_argument("--no-labels", action="store_true", help="Do not print widget names on the boxes")
-    ap.add_argument("--json", action="store_true", help="Print the full report (every widget box) as JSON")
+    ap.add_argument("--json", action="store_true",
+                    help="Print the full report (every widget box) as JSON on stdout; text lines go to stderr")
     args = ap.parse_args(argv)
+    # With --json, stdout carries only the JSON so it can be piped straight into a parser.
+    log = sys.stderr if args.json else sys.stdout
 
     if Image is None:
-        print(f"{FAIL}Pillow is not installed.\n       Install it: python -m pip install -r \"{REQUIREMENTS}\"")
+        print(f"{FAIL}Pillow is not installed.\n       Install it: python -m pip install -r \"{REQUIREMENTS}\"",
+              file=log)
         return 2
+    if inside_mod_workspace(args.out):
+        print(f"{FAIL}{args.out}: is inside a mod under workspace\\, so the PNGs would be packed into its PBO.\n"
+              f"       Leave --out off to use {DEFAULT_OUT}, or pick a folder outside workspace\\.", file=log)
+        return 1
+    # --sizes is checked here, not by argparse, so a bad value is a [FAIL] line and exit 1
+    # like every other bad input (argparse would exit 2, which means "Pillow is missing").
+    try:
+        sizes = DEFAULT_SIZES if args.sizes is None else parse_sizes(args.sizes)
+    except argparse.ArgumentTypeError as e:
+        print(f"{FAIL}--sizes {e}", file=log)
+        return 1
+    if args.out.exists() and not args.out.is_dir():
+        print(f"{FAIL}{args.out}: --out names a file, not a folder. Pick a folder for the PNGs.", file=log)
+        return 1
     reports, failed = [], 0
+    names = png_names(args.layouts)
     for path in args.layouts:
         if not path.is_file():
-            print(f"{FAIL}{path}: no such file")
+            if on_unmounted_p(path):
+                print(f"{FAIL}{path}: P:\\ is not mounted, so vanilla files can't be read. Run /dayz-workdrive.",
+                      file=log)
+            else:
+                print(f"{FAIL}{path}: no such file", file=log)
             failed += 1
             continue
         try:
-            report = preview(path, args.sizes, args.out, args.show_hidden, not args.no_labels)
+            report = preview(path, sizes, args.out, args.show_hidden, not args.no_labels, names[path])
         except LayoutError as e:
-            print(f"{FAIL}{path}: {e}")
+            print(f"{FAIL}{path}: {e}", file=log)
+            failed += 1
+            continue
+        except OSError as e:  # unreadable layout, or an --out folder that can't be made or written
+            print(f"{FAIL}{path}: {e.strerror or e}" + (f" ({e.filename})" if e.filename else ""), file=log)
             failed += 1
             continue
         reports.append(report)
         for entry in report["sizes"]:
-            print(f"{OK}{entry['png']}  ({len(entry['widgets'])} widgets)")
+            print(f"{OK}{entry['png']}  ({len(entry['widgets'])} widgets)", file=log)
         for f in report["findings"]:
-            print(f"{WARN}{path.name}:{f['line']} {f['rule']}: {f['message']}")
+            tag = NOTE if f["severity"] == "note" else WARN
+            print(f"{tag}{path.name}:{f['line']} {f['rule']}: {f['message']}", file=log)
     if args.json:
         print(json.dumps(reports, indent=2))
     return 1 if failed else 0

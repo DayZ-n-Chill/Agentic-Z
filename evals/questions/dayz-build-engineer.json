@@ -23,7 +23,20 @@
         "re:dependenc"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-build-engineer.md step 4 (no dependency list and a requiredAddons entry without the DZ_ prefix: stop and report instead of launching); every vanilla CfgPatches class under P:/DZ starts with DZ_, and JM_CF_Scripts is the Community Framework addon used in .claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp:8"
+      "verified": ".claude/agents/dayz-build-engineer.md step 4c (no dependency list: launch with none; /dayz-launch-test refuses on a requiredAddons entry without the DZ_ prefix that is not the mod's own CfgPatches class, and the agent stops and reports it); .claude/skills/dayz-launch-test/launch.py:146-179 (missing_dependencies); every vanilla CfgPatches class under P:/DZ starts with DZ_, and JM_CF_Scripts is the Community Framework addon used in .claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp:8"
+    },
+    {
+      "id": "own-patch-requirement-launches",
+      "question": "Answer only, do not edit any file and do not run anything. Release team brief: build MyVest and start a test session on chernarus. The brief gives no dependency list. MyVest is not a bundle. workspace/MyVest/config.cpp declares class CfgPatches { class MyVest_Data { requiredAddons[] = {\"DZ_Data\", \"DZ_Characters_Vests\"}; }; }; and workspace/MyVest/scripts/config.cpp declares class CfgPatches { class MyVest_Scripts { requiredAddons[] = {\"DZ_Scripts\", \"MyVest_Data\"}; }; };. Do you launch, and with which dependencies? Write the exact /dayz-launch-test command you run, or say why you stop.",
+      "must_include": [
+        "re:/dayz-launch-test\\s+@?MyVest\\b",
+        "re:--server\\s+chernarus\\b"
+      ],
+      "must_not_include": [
+        "re:BLOCKED:\\s*step\\s*4",
+        "re:/dayz-launch-test\\s+\\S*MyVest_Data"
+      ],
+      "verified": ".claude/agents/dayz-build-engineer.md step 4c (no dependency list and not a bundle: launch with no dependencies and let /dayz-launch-test run the requiredAddons check); .claude/skills/dayz-launch-test/launch.py:118-143 (workspace_patches reads every config.cpp, skipping .git, Addons and Keys) and :167-177 (the mod's own patches count as provided); vanilla patches start with DZ_, e.g. P:/DZ/AI/config.cpp:1-11"
     },
     {
       "id": "server-only-dep-uses-flag",

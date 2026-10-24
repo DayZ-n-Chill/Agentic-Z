@@ -58,7 +58,7 @@ class ClassName : ParentClass
 
 **Braces:**
 
-- Opening brace on the same line as declaration
+- Opening brace on its own line under the declaration (Allman), as vanilla does (`P:\scripts\4_world\entities\manbase\playerbase.c:49-50`)
 - Closing brace on new line, aligned with declaration
 
 ```

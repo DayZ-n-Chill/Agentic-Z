@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -42,11 +43,14 @@ DEFAULT_INSTANCE = "chernarus"
 DEFAULT_PORT = 2302
 DEFAULT_TIMEOUT = 600  # 10 minutes
 STOP_TIMEOUT_S = 30
+# How long to wait after pass 1 for the stopped server to release its UDP port.
+PORT_RELEASE_TIMEOUT_S = 30
 
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
 _launch = h.load_module("dayz_launch_test_module", h.SKILLS_DIR / "dayz-launch-test" / "launch.py")
 verify_built_mods = _launch.verify_built_mods
+port_arg = _launch.port
 resolve_diag_client = _launch.resolve_diag_client
 verify_instance_environment = _launch.verify_instance_environment
 build_server_cmd = _launch.build_server_cmd
@@ -69,14 +73,42 @@ def verify_cf_cot_subscribed() -> None:
             )
 
 
+# Characters that cannot appear in a mod folder name, plus ';', which
+# separates entries in -mod=.
+_BAD_MOD_CHARS = set('\\/:*?"<>|;')
+
+
+def mod_name(value: str) -> str:
+    """argparse type for a mod name: accepts `MyMod` or `@MyMod` and returns
+    `MyMod` (the script adds the @ itself when it builds P:\\Mods\\@<name>)."""
+    name = value.strip().lstrip("@").strip()
+    if not name or name in (".", "..") or _BAD_MOD_CHARS & set(name):
+        raise argparse.ArgumentTypeError(
+            f"invalid mod name {value!r}: give the folder name under P:\\Mods\\ "
+            "without a path, ';' or any of \\ / : * ? \" < > |"
+        )
+    return name
+
+
+def positive_int(value: str) -> int:
+    """argparse type for --timeout: a whole number of seconds, 1 or more."""
+    n = int(value)
+    if n < 1:
+        raise argparse.ArgumentTypeError("must be 1 or more")
+    return n
+
+
 def dedup_with_cf_cot(user_mods: list[str]) -> list[str]:
     """Prepend CF + COT to the mod chain, dropping duplicates the user passed.
-    CF must load before COT, and both before user mods that may depend on them."""
+    CF must load before COT, and both before user mods that may depend on them.
+    Names compare case-insensitively, as Windows folder names do, so `cf`
+    does not load @CF a second time."""
     seen: set[str] = set()
     out: list[str] = []
     for name in (CF_MOD, COT_MOD, *user_mods):
-        if name not in seen:
-            seen.add(name)
+        key = name.casefold()
+        if key not in seen:
+            seen.add(key)
             out.append(name)
     return out
 
@@ -148,14 +180,26 @@ def stop_session(procs: list[subprocess.Popen]) -> None:
             print(f"{WARN} PID {proc.pid} did not exit within {STOP_TIMEOUT_S}s; close it manually.")
 
 
+def backup_file(path: Path) -> Path:
+    """Copy path to <name>.bak beside it before an in-place edit, replacing any
+    older backup. The .bak suffix keeps it out of the *.json / *.txt globs."""
+    bak = path.with_name(path.name + ".bak")
+    shutil.copy2(path, bak)
+    return bak
+
+
 def grant_admin_role(player_json: Path) -> bool | None:
     """Add 'admin' to the player's Roles list. Returns True if the file was
     modified, False if it already had the role, None if it could not be read
     or parsed (the grant failed)."""
     try:
-        data = json.loads(player_json.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as e:
+        # utf-8-sig also reads a file that starts with a byte-order mark.
+        data = json.loads(player_json.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
         print(f"{FAIL} Could not parse {player_json.name}: {e}")
+        return None
+    if not isinstance(data, dict):
+        print(f"{FAIL} Could not parse {player_json.name}: top level is not a JSON object")
         return None
     roles = data.get("Roles")
     if not isinstance(roles, list):
@@ -165,6 +209,7 @@ def grant_admin_role(player_json: Path) -> bool | None:
         return False
     roles.append("admin")
     data["Roles"] = roles
+    backup_file(player_json)
     # Match COT's own formatting (4-space indent, trailing newline).
     player_json.write_text(json.dumps(data, indent=4) + "\n", encoding="utf-8")
     print(f"{OK} Granted admin to {player_json.stem}")
@@ -172,12 +217,18 @@ def grant_admin_role(player_json: Path) -> bool | None:
 
 
 def flip_zeros_to_twos(perms_file: Path) -> int:
-    """Replace every line ending in ' 0' with ' 2' in perms_file. Returns the
-    number of lines changed. Keeps the space and line endings. Idempotent."""
-    text = perms_file.read_text(encoding="utf-8")
-    new_text, n = re.subn(r" 0(\r?\n|$)", r" 2\1", text)
+    """Replace every line ending in ' 0' (optionally followed by spaces or
+    tabs) with ' 2' in perms_file. Returns the number of lines changed. Keeps
+    any trailing whitespace and the file's own line endings (LF or CRLF):
+    newline="" turns off newline translation on both the read and the write.
+    Idempotent."""
+    with perms_file.open(encoding="utf-8", newline="") as fh:
+        text = fh.read()
+    new_text, n = re.subn(r" 0(?=[ \t]*(?:\r?\n|$))", " 2", text)
     if n:
-        perms_file.write_text(new_text, encoding="utf-8")
+        backup_file(perms_file)
+        with perms_file.open("w", encoding="utf-8", newline="") as fh:
+            fh.write(new_text)
     return n
 
 
@@ -219,7 +270,10 @@ def edit_permissions(profile_dir: Path, triggered: list[Path]) -> bool:
     ok = True
     for json_path in triggered:
         if grant_admin_role(json_path) is None:
+            # No role was granted, so leave this player's perms file alone:
+            # flipping it anyway would leave a half-applied grant.
             ok = False
+            continue
         perms_file = perms_file_for(profile_dir, json_path)
         # wait_for_perms_files already waited while the server ran; the server
         # is stopped now, so only check that the file is there.
@@ -235,6 +289,31 @@ def edit_permissions(profile_dir: Path, triggered: list[Path]) -> bool:
     return ok
 
 
+def wait_for_port_release(port: int, timeout_s: int = PORT_RELEASE_TIMEOUT_S) -> bool:
+    """Poll until UDP port is free again (a killed server can hold it for a few
+    seconds). True once it is free, False if it is still taken at the deadline."""
+    deadline = time.time() + timeout_s
+    while True:
+        if h.udp_port_free(port):
+            return True
+        if time.time() >= deadline:
+            return False
+        time.sleep(1)
+
+
+def admin_players(players_dir: Path) -> list[str]:
+    """Ids of Players/*.json files whose Roles already include 'admin'."""
+    out = []
+    for p in (sorted(players_dir.glob("*.json")) if players_dir.exists() else []):
+        try:
+            roles = json.loads(p.read_text(encoding="utf-8-sig")).get("Roles")
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError, AttributeError):
+            continue
+        if isinstance(roles, list) and "admin" in roles:
+            out.append(p.stem)
+    return out
+
+
 def launch_pair(
     diag_exe: Path,
     mod_arg: str,
@@ -246,27 +325,47 @@ def launch_pair(
     display: dict,
     label: str,
 ) -> list[subprocess.Popen]:
-    """Check the port is free, spawn server, wait for its port, then spawn the
-    client. Returns both handles. Mirrors the /dayz-launch-test contract."""
+    """Check the port is free and Steam is running, spawn server, wait for its
+    port, then spawn the client. Returns both handles. Mirrors the
+    /dayz-launch-test contract. If the client cannot start, or Ctrl+C lands
+    while waiting on the server, the server it started is stopped first."""
     print(f"[{label}] Launching server + client...")
     h.gate_on_free_port(port)
+    h.gate_on_steam()
     server_cmd = build_server_cmd(diag_exe, mod_arg, port, cfg_path, profile_dir, mission_path)
     client_cmd = build_client_cmd(diag_exe, mod_arg, port, client_diag_dir, display)
 
     game_dir = diag_exe.parent
-    print(f"[Launch] Server: {' '.join(server_cmd)}")
+    # list2cmdline is the quoting Popen applies on Windows, so the printed
+    # command pastes as is even with spaces in a path.
+    print(f"[Launch] Server: {subprocess.list2cmdline(server_cmd)}")
     sys.stdout.flush()
-    server_proc = subprocess.Popen(server_cmd, cwd=str(game_dir))
+    # Detached (shared DETACH_FLAGS) so closing the agent's shell does not take
+    # the pass-2 server and client down with it.
+    try:
+        server_proc = subprocess.Popen(server_cmd, cwd=str(game_dir), creationflags=h.DETACH_FLAGS)
+    except OSError as err:
+        sys.exit(f"{FAIL} Failed to spawn DayZDiag_x64.exe: {err}")
     print(f"{OK} Server PID: {server_proc.pid}")
     sys.stdout.flush()
-    if not wait_for_server_port(port, server_proc, timeout_s=SERVER_BIND_TIMEOUT_S):
-        stop_session([server_proc])
-        sys.exit(f"{FAIL} Server did not bind UDP port {port} within {SERVER_BIND_TIMEOUT_S}s.")
+    try:
+        if not wait_for_server_port(port, server_proc, timeout_s=SERVER_BIND_TIMEOUT_S):
+            stop_session([server_proc])
+            sys.exit(f"{FAIL} Server did not bind UDP port {port} within {SERVER_BIND_TIMEOUT_S}s.")
 
-    print()
-    print(f"[Launch] Client: {' '.join(client_cmd)}")
-    sys.stdout.flush()
-    client_proc = subprocess.Popen(client_cmd, cwd=str(game_dir))
+        print()
+        print(f"[Launch] Client: {subprocess.list2cmdline(client_cmd)}")
+        sys.stdout.flush()
+        try:
+            client_proc = subprocess.Popen(client_cmd, cwd=str(game_dir), creationflags=h.DETACH_FLAGS)
+        except OSError as err:
+            stop_session([server_proc])
+            sys.exit(f"{FAIL} Failed to spawn DayZDiag_x64.exe: {err}")
+    except KeyboardInterrupt:
+        print()
+        print(f"{WARN} Interrupted; stopping the server this run started...")
+        stop_session([server_proc])
+        raise
     print(f"{OK} Client PID: {client_proc.pid}")
     return [server_proc, client_proc]
 
@@ -276,21 +375,26 @@ def main() -> int:
         description="Bootstrap COT admin on a DayZ test server (two-pass: launch, wait, edit perms, relaunch)."
     )
     parser.add_argument(
-        "modnames", nargs="*",
-        help="User mod names already built (PBOs at P:\\Mods\\@<name>\\Addons\\). "
-             "CF and Community-Online-Tools are auto-prepended.",
+        "modnames", nargs="*", type=mod_name,
+        help="User mod names already built (PBOs at P:\\Mods\\@<name>\\Addons\\), with or "
+             "without the leading @. CF and Community-Online-Tools are auto-prepended.",
     )
     parser.add_argument(
         "--server", default=DEFAULT_INSTANCE,
         help=f"Server instance (default: {DEFAULT_INSTANCE}). Must be added via /dayz-add-server.",
     )
     parser.add_argument(
-        "--port", type=int, default=DEFAULT_PORT,
+        "--port", type=port_arg, default=DEFAULT_PORT,
         help=f"Server port (default: {DEFAULT_PORT}).",
     )
     parser.add_argument(
-        "--timeout", type=int, default=DEFAULT_TIMEOUT,
+        "--timeout", type=positive_int, default=DEFAULT_TIMEOUT,
         help=f"Seconds to wait for COT to register your character on pass 1 (default: {DEFAULT_TIMEOUT}).",
+    )
+    parser.add_argument(
+        "--skip-pass1", action="store_true",
+        help="Skip pass 1 and the edit, and go straight to the relaunch. For a rerun after "
+             "pass 2 could not start; refuses unless a Players JSON already has the admin role.",
     )
     args = parser.parse_args()
 
@@ -316,6 +420,15 @@ def main() -> int:
     mod_arg = ";".join(str(MODS_ROOT / f"@{name}") for name in full_mods)
     players_dir = profile_dir / "PermissionsFramework" / "Players"
 
+    if args.skip_pass1:
+        admins = admin_players(players_dir)
+        if not admins:
+            print(f"{FAIL} --skip-pass1: no Players JSON in {players_dir} has the admin role yet.")
+            print("       Run without --skip-pass1 so pass 1 can create and edit the files.")
+            return 1
+        print(f"{OK} --skip-pass1: admin already granted to {', '.join(admins)}; skipping pass 1 and the edit.")
+        return run_pass2(args, diag_exe, mod_arg, cfg_path, profile_dir, mission_path, client_diag_dir, display)
+
     # === Pass 1: launch and wait for COT to register the player ===
     print()
     print("[Pass 1/2] Booting so COT can generate permission files for your character.")
@@ -327,15 +440,22 @@ def main() -> int:
         client_diag_dir, display, "Pass 1",
     )
 
-    triggered = wait_for_cot_player(players_dir, baseline, args.timeout, session)
+    # Ctrl+C during the long wait must not leave the pass-1 game running.
+    try:
+        triggered = wait_for_cot_player(players_dir, baseline, args.timeout, session)
+        if triggered:
+            wait_for_perms_files(profile_dir, triggered)
+    except KeyboardInterrupt:
+        print()
+        print(f"{WARN} Interrupted; stopping the pass-1 server and client. No files were edited.")
+        stop_session(session)
+        return 130
     if not triggered:
         print(f"       Check script.log and the server RPT in {profile_dir}\\,")
         print(f"       and the client's script.log in {client_diag_dir}\\.")
         print("       Stopping the pass-1 server and client before exiting...")
         stop_session(session)
         return 1
-
-    wait_for_perms_files(profile_dir, triggered)
 
     # === Stop, edit, relaunch ===
     print()
@@ -350,11 +470,35 @@ def main() -> int:
         return 1
 
     print()
+    print(f"        Waiting up to {PORT_RELEASE_TIMEOUT_S}s for UDP port {args.port} to be released...")
+    sys.stdout.flush()
+    if not wait_for_port_release(args.port):
+        print(f"{FAIL} UDP port {args.port} is still in use {PORT_RELEASE_TIMEOUT_S}s after pass 1 stopped.")
+        print("       The permission edits are saved. Run /dayz-stop-test, then rerun this skill")
+        print("       with --skip-pass1 to go straight to the relaunch.")
+        return 1
+    return run_pass2(args, diag_exe, mod_arg, cfg_path, profile_dir, mission_path, client_diag_dir, display)
+
+
+def run_pass2(args, diag_exe, mod_arg, cfg_path, profile_dir, mission_path, client_diag_dir, display) -> int:
+    """Relaunch server + client with the admin grant in place and print the summary."""
+    print()
     print("[Pass 2/2] Relaunching with admin permissions applied.")
-    server_proc, client_proc = launch_pair(
-        diag_exe, mod_arg, args.port, cfg_path, profile_dir, mission_path,
-        client_diag_dir, display, "Pass 2",
-    )
+    try:
+        server_proc, client_proc = launch_pair(
+            diag_exe, mod_arg, args.port, cfg_path, profile_dir, mission_path,
+            client_diag_dir, display, "Pass 2",
+        )
+    except SystemExit as err:
+        # A launch gate (port, Steam, bind, spawn) failed. The admin grant is
+        # already saved, so point at the rerun that skips pass 1 and the edit.
+        if isinstance(err.code, str):
+            print(err.code)
+        elif err.code not in (None, 0):
+            raise
+        print("       The permission edits are saved. Fix the cause above, then rerun this")
+        print("       skill with --skip-pass1 to go straight to the relaunch.")
+        return 1
 
     print()
     print(f"You are now COT admin on '{args.server}'. In game, press Y to open the COT menu (End turns COT on or off; both can be rebound in Controls).")
@@ -365,4 +509,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        # launch_pair and the pass-1 wait already stopped what they started.
+        print(f"{WARN} Interrupted.")
+        sys.exit(130)

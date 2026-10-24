@@ -3,6 +3,7 @@ audit of a tiny synthetic MLOD file written byte by byte in the test."""
 from __future__ import annotations
 
 import importlib.util
+import os
 import struct
 from pathlib import Path
 
@@ -181,6 +182,33 @@ def test_degenerate_face_detected():
     assert _severities(audit.check_degenerate_faces(lod)) == ["WARNING"]
 
 
+def _quad_lod(coords):
+    points = [_Obj(coords=c) for c in coords]
+    face = _Obj(vertices=[_Obj(point=pt) for pt in points], material=PEN)
+    return _Obj(points=points, faces=[face], selections={}, properties={})
+
+
+def test_quad_with_collinear_first_three_vertices_is_not_degenerate():
+    # The area was once taken from vertices 0, 1, 2 only, so this valid 2x1
+    # quad (vertex 1 lies on the edge from 0 to 2) got a false zero-area WARNING.
+    quad = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (2.0, 1.0, 0.0)]
+    assert audit.face_area(quad) == pytest.approx(1.0)
+    assert audit.check_degenerate_faces(_quad_lod(quad)) == []
+
+
+def test_quad_collapsed_by_fourth_vertex_is_degenerate():
+    # Vertices 0, 1, 2 form a real triangle, but vertex 3 folds the quad into a
+    # bow tie whose halves cancel; the first-three-vertex check missed it.
+    quad = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (1.0, 1.0, 0.0)]
+    assert audit.face_area(quad) == pytest.approx(0.0)
+    assert _severities(audit.check_degenerate_faces(_quad_lod(quad))) == ["WARNING"]
+
+
+def test_face_area_of_plain_quad_and_triangle():
+    assert audit.face_area([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (1.0, 1.0, 0.0), (0.0, 1.0, 0.0)]) == pytest.approx(1.0)
+    assert audit.face_area([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]) == pytest.approx(0.5)
+
+
 def test_required_lods_firegeo_note_uses_7e15():
     issues = audit.check_required_lods({"Visual": 0, "Geometry": 0, "Memory": 0, "ViewGeo": 0})
     assert issues == [("NOTE", "Missing FireGeo LOD (res ~7e15). No ballistic damage zones.")]
@@ -296,6 +324,19 @@ def test_pos_center_checked_only_for_autocenter_zero_items():
     assert _severities(audit.check_memory_lod(off_origin, wants_zero=True)) == ["NOTE"]
 
 
+def test_memory_points_match_without_case():
+    # 'pos center' was once looked up with exact case, so 'Pos Center' on an
+    # autocenter = 0 item gave a false 'Missing pos center' WARNING.
+    lod = _points_lod([(0.0, 0.0, 0.0)], {"Pos Center": [0]})
+    assert audit.check_memory_lod(lod, wants_zero=True) == []
+    off = _points_lod([(0.0, 2.0, 0.0)], {"POS CENTER": [0]})
+    assert _severities(audit.check_memory_lod(off, wants_zero=True)) == ["NOTE"]
+    boxes = _points_lod([(0.0, 0.0, 0.0)], {"pos center": [0], "Box_Placing_Min": [0], "BOX_PLACING_MAX": [0]})
+    assert audit.check_memory_lod(boxes, has_geometry=False) == []
+    bbox = _points_lod([(0.0, 0.0, 0.0)], {"BoundingBox_Min": [0], "boundingbox_MAX": [0]})
+    assert audit.check_memory_lod(bbox, has_geometry=False) == []
+
+
 def test_box_placing_note_only_without_geometry_lod():
     bare = _points_lod([(0.0, 0.0, 0.0)], {"pos center": [0]})
     assert audit.check_memory_lod(bare, has_geometry=True) == []
@@ -340,8 +381,9 @@ def test_missing_py3d_exits_2_with_requirements_hint(monkeypatch, capsys):
     with pytest.raises(SystemExit) as exc:
         audit.load_py3d()
     assert exc.value.code == 2
-    out = capsys.readouterr().out
-    assert "python -m pip install -r" in out and "requirements.txt" in out
+    captured = capsys.readouterr()
+    assert "python -m pip install -r" in captured.err and "requirements.txt" in captured.err
+    assert "[FAIL]" in captured.err and captured.out == ""
     assert audit.REQUIREMENTS.is_file()
 
 
@@ -350,6 +392,15 @@ def test_collision_materials_flag_faces_without_one():
     issues = audit.check_collision_materials(_stub_lod(material=""), "FireGeo")
     assert [sev for sev, _ in issues] == ["CRITICAL"]
     assert "4/4 faces in the FireGeo LOD have no material" in issues[0][1]
+
+
+def test_viewgeo_without_materials_is_only_a_warning():
+    # Any ViewGeo face without a material once failed the run as CRITICAL,
+    # though View Geometry faces commonly carry no penetration material.
+    issues = audit.check_collision_materials(_stub_lod(material=""), "ViewGeo")
+    assert _severities(issues) == ["WARNING"]
+    assert "4/4 faces in the ViewGeo LOD have no material" in issues[0][1]
+    assert audit.check_collision_materials(_stub_lod(), "ViewGeo") == []
 
 
 def test_face_winding_check_removed():
@@ -429,9 +480,24 @@ def test_audit_p3d_flags_collision_lods_without_materials(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "--- GeoPhys LOD[2] ---" in out
     assert "CRITICAL: 4/4 faces in the Geometry LOD have no material" in out
-    assert "CRITICAL: 4/4 faces in the ViewGeo LOD have no material" in out
+    assert "WARNING: 4/4 faces in the ViewGeo LOD have no material" in out
     assert "GeoPhys LOD have no material" not in out
-    assert "RESULT: 2 CRITICAL" in out
+    assert "RESULT: 1 CRITICAL" in out
+
+
+def test_audit_p3d_viewgeo_without_materials_still_passes(tmp_path, capsys):
+    pytest.importorskip("py3d")
+    geometry = _write_lod(1e13, TETRA_POINTS, TETRA_FACES, selections=[("Component01", FULL)])
+    viewgeo = _write_lod(6e15, TETRA_POINTS, TETRA_FACES, material="")
+    memory = _write_lod(1e15, [(0.0, 0.0, 0.0)], [])
+    visual = _write_lod(0.0, TETRA_POINTS, TETRA_FACES)
+    model = tmp_path / "viewgeo_bare.p3d"
+    _write_mlod(model, [visual, geometry, viewgeo, memory])
+
+    assert audit.audit_p3d(str(model)) is True
+    out = capsys.readouterr().out
+    assert "WARNING: 4/4 faces in the ViewGeo LOD have no material" in out
+    assert "CRITICAL:" not in out and "RESULT: 0 CRITICAL, 1 WARNING" in out
 
 
 def test_audit_p3d_reports_geometry_mass(tmp_path, capsys):
@@ -484,8 +550,54 @@ def test_audit_p3d_checks_model_cfg_animations(tmp_path, capsys):
 def test_audit_p3d_rejects_odol(tmp_path, capsys):
     model = tmp_path / "binarized.p3d"
     model.write_bytes(b"ODOL" + b"\0" * 16)
-    assert audit.audit_p3d(str(model)) is False
-    assert "Not MLOD" in capsys.readouterr().out
+    tally = {}
+    assert audit.audit_p3d(str(model), tally=tally) is False
+    captured = capsys.readouterr()
+    err = captured.err
+    assert "[FAIL]" in err and "Not MLOD" in err and "binarized ODOL model, so it was not audited" in err
+    assert "Audit the MLOD source" in err
+    assert "[FAIL]" not in captured.out  # [FAIL] lines go to stderr
+    assert tally == {"odol": 1}
+
+
+def test_audit_p3d_non_p3d_signature_is_unreadable_not_odol(tmp_path, capsys):
+    # Any non-MLOD file was once counted and summarised as an 'ODOL reject'.
+    model = tmp_path / "junk.p3d"
+    model.write_bytes(b"\x89PNG" + b"\0" * 16)
+    tally = {}
+    assert audit.audit_p3d(str(model), tally=tally) is False
+    assert "not a .p3d model" in capsys.readouterr().err
+    assert tally == {"unreadable": 1}
+
+
+def test_main_odol_only_says_not_audited(no_gate, tmp_path, capsys):
+    # An ODOL-only run once ended 'ISSUES FOUND: fix before building PBO',
+    # although the file was never audited.
+    model = tmp_path / "binarized.p3d"
+    model.write_bytes(b"ODOL" + b"\0" * 16)
+    assert _run_main([str(model)]) == 1
+    out = capsys.readouterr().out
+    assert "OVERALL: NOT AUDITED: 1 binarized ODOL .p3d file(s)" in out
+    assert "ISSUES FOUND" not in out
+
+
+def test_main_odol_plus_real_issue_reports_both(no_gate, tmp_path, capsys):
+    model = tmp_path / "binarized.p3d"
+    model.write_bytes(b"ODOL" + b"\0" * 16)
+    mat = tmp_path / "box.rvmat"
+    mat.write_text(r'texture = "P:\MyMod\data\box_co.paa";', encoding="utf-8")
+    assert _run_main([str(model), "--rvmat", str(mat)]) == 1
+    out = capsys.readouterr().out
+    assert "OVERALL: ISSUES FOUND: fix before building PBO (1 binarized ODOL .p3d file(s) not audited)" in out
+
+
+@pytest.mark.parametrize("odol, other, expected", [
+    (0, 0, "OVERALL: ALL PASSED"),
+    (2, 0, "OVERALL: NOT AUDITED: 2 binarized ODOL .p3d file(s); audit the MLOD source instead"),
+    (0, 1, "OVERALL: ISSUES FOUND: fix before building PBO"),
+])
+def test_overall_line(odol, other, expected):
+    assert audit.overall_line(odol, other) == expected
 
 
 
@@ -548,13 +660,15 @@ def test_main_without_inputs_exits_2_before_gate(no_gate, capsys):
 def test_main_missing_scan_dir_exits_1(no_gate, tmp_path, capsys):
     assert _run_main(["--scan-dir", str(tmp_path / "nope")]) == 1
     assert no_gate == []
-    assert "Directory not found" in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert "[FAIL]" in captured.err and "Directory not found" in captured.err and "Directory not found" not in captured.out
 
 
 @pytest.mark.parametrize("flag", ["--config", "--model-cfg", "--rvmat"])
 def test_main_missing_option_file_exits_1(no_gate, tmp_path, capsys, flag):
     assert _run_main([flag, str(tmp_path / "missing.txt")]) == 1
-    assert "File not found" in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert "[FAIL]" in captured.err and "File not found" in captured.err and "File not found" not in captured.out
 
 
 def test_main_clean_text_files_exit_0(no_gate, tmp_path):
@@ -570,6 +684,27 @@ def test_main_p_drive_path_exits_1(no_gate, tmp_path):
     mat = tmp_path / "box.rvmat"
     mat.write_text(r'texture = "P:\MyMod\data\box_co.paa";', encoding="utf-8")
     assert _run_main(["--rvmat", str(mat)]) == 1
+
+
+def test_main_p3d_after_rvmat_is_still_audited_as_model(no_gate, tmp_path, monkeypatch):
+    # `--rvmat a.rvmat model.p3d` once swallowed model.p3d into the rvmat list, so the
+    # model only got the P:\ text scan and the run could exit 0 without auditing it.
+    mat = tmp_path / "box.rvmat"
+    mat.write_text('texture = "MyMod/data/box_co.paa";', encoding="utf-8")
+    model = tmp_path / "m.p3d"
+    model.write_bytes(b"MLOD" + b"\0" * 8)
+    audited = []
+    monkeypatch.setattr(audit, "audit_p3d", lambda f, cfg=None, config=None, tally=None: audited.append(f) or False)
+    assert _run_main(["--rvmat", str(mat), str(model)]) == 1
+    assert audited == [str(model)]
+
+
+def test_main_rvmat_repeats_for_several_files(no_gate, tmp_path):
+    clean = tmp_path / "a.rvmat"
+    clean.write_text('texture = "MyMod/data/a_co.paa";', encoding="utf-8")
+    bad = tmp_path / "b.rvmat"
+    bad.write_text(r'texture = "P:\MyMod\data\b_co.paa";', encoding="utf-8")
+    assert _run_main(["--rvmat", str(clean), "--rvmat", str(bad)]) == 1
 
 
 def test_scan_dir_audits_text_files(no_gate, tmp_path):
@@ -614,6 +749,33 @@ def test_autocenter_checked_only_on_geometry_lod(tmp_path, monkeypatch, capsys):
 
 
 
+def test_unreadable_config_is_an_error_not_a_silent_skip(tmp_path, monkeypatch, capsys):
+    # An unreadable --config was once treated as "does not set autocenter = 0",
+    # so the autocenter and pos center checks were skipped without a word.
+    unreadable = tmp_path / "config.cpp"
+    unreadable.mkdir()  # reading a folder raises OSError, like a locked file
+    with pytest.raises(OSError):
+        audit.config_sets_autocenter_zero(str(unreadable), "m.p3d")
+
+    lods = [_stub_lod(), _stub_lod(selections={"Component01": FULL}), _stub_lod(), _stub_lod(),
+            _stub_lod(face_indices=[], selections={"pos center": ([0], [])})]
+    for lod, res in zip(lods, (0.0, 1e13, 6e15, 7e15, 1e15)):
+        lod.resolution = res
+    fake_py3d = type("FakePy3d", (), {"P3D": staticmethod(lambda f: _Obj(lods=lods))})
+    monkeypatch.setattr(audit, "load_py3d", lambda: fake_py3d)
+    monkeypatch.setattr(audit, "check_visual_lod", lambda lod: [])
+    model = tmp_path / "m.p3d"
+    model.write_bytes(b"MLOD" + b"\0" * 8)
+
+    tally = {}
+    assert audit.audit_p3d(str(model), config=str(unreadable), tally=tally) is False
+    out = capsys.readouterr().out
+    assert f"ERROR: Cannot read config {unreadable}" in out
+    assert "autocenter and pos center checks were skipped" in out
+    assert "RESULT: 0 CRITICAL, 1 ERROR" in out
+    assert tally["unreadable"] == 1
+
+
 def test_ordinary_item_without_pos_center_passes_and_autocenter_item_does_not(tmp_path, monkeypatch, capsys):
     def lod(resolution, **kw):
         stub = _stub_lod(**kw)
@@ -651,3 +813,81 @@ def test_component_coverage_matches_lowercase_components():
     assert "cover 3/4 vertices" in issues[0][1]
     full = _stub_lod(selections={"component01": ([0, 1, 2], [0]), "COMPONENT02": ([0, 1, 3, 2], [1, 2, 3])})
     assert audit.check_component_coverage(full) == []
+
+
+def test_scan_dir_summary_names_odol_reject(no_gate, tmp_path, capsys):
+    # A mod holding one reused vanilla (binarized, "ODOL") model once failed the
+    # whole sweep as 'ISSUES FOUND' with nothing saying which file caused it.
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "basin_a.p3d").write_bytes(b"ODOL" + b"\0" * 8)
+    (tmp_path / "config.cpp").write_text("class CfgPatches {};\n", encoding="utf-8")
+    assert _run_main(["--scan-dir", str(tmp_path)]) == 1
+    out = capsys.readouterr().out
+    assert r"SCAN SUMMARY: 1 of 2 file(s) failed: 0 CRITICAL, 0 P:\ path(s), 1 ODOL reject(s)" in out
+    assert os.path.join("data", "basin_a.p3d") + ": ODOL reject" in out
+    assert "OVERALL: NOT AUDITED: 1 binarized ODOL .p3d file(s)" in out
+
+
+def test_scan_dir_summary_counts_critical_and_p_drive_per_file(no_gate, tmp_path, capsys, monkeypatch):
+    (tmp_path / "a.p3d").write_bytes(b"MLOD")
+    (tmp_path / "ok.rvmat").write_text('texture = "MyMod/data/ok_co.paa";', encoding="utf-8")
+    (tmp_path / "bad.rvmat").write_text('a = "P:\\x\\a.paa";\nb = "P:\\x\\b.paa";\n', encoding="utf-8")
+
+    def fake_audit(f, cfg=None, config=None, tally=None):
+        tally.update(audit.tally_issues([("CRITICAL", "no geometry"), ("CRITICAL", "no memory"),
+                                         ("WARNING", "Component name")]))
+        return False
+
+    monkeypatch.setattr(audit, "audit_p3d", fake_audit)
+    assert _run_main(["--scan-dir", str(tmp_path)]) == 1
+    out = capsys.readouterr().out
+    assert r"SCAN SUMMARY: 2 of 3 file(s) failed: 2 CRITICAL, 2 P:\ path(s), 0 ODOL reject(s)" in out
+    assert "a.p3d: 2 CRITICAL, 1 other WARNING" in out
+    assert r"bad.rvmat: 2 P:\ path(s)" in out
+    assert "ok.rvmat:" not in out
+
+
+def test_scan_dir_clean_mod_summary_and_exit_0(no_gate, tmp_path, capsys):
+    (tmp_path / "config.cpp").write_text("class CfgPatches {};\n", encoding="utf-8")
+    assert _run_main(["--scan-dir", str(tmp_path)]) == 0
+    assert "SCAN SUMMARY: 0 of 1 file(s) failed" in capsys.readouterr().out
+
+
+# --- P:\ paths in comments and the P-DRIVE severity ------------------------------
+
+def test_p_drive_path_only_in_comments_exits_0(no_gate, tmp_path, capsys):
+    # A config.cpp whose only P:\ reference was a commented-out old path once
+    # printed 'ISSUES FOUND' and exited 1, though the engine never reads comments.
+    cfg = tmp_path / "config.cpp"
+    cfg.write_text('// old: P:/MyMod/data/a.paa\n'
+                   '/* was:\n   texture = "P:\\MyMod\\data\\b.paa"; */\n'
+                   'model = "MyMod\\data\\box.p3d"; // P:\\MyMod\\data\\box.p3d\n', encoding="utf-8")
+    assert _run_main(["--config", str(cfg)]) == 0
+    out = capsys.readouterr().out
+    assert "OK: No P:\\ paths found." in out and "OVERALL: ALL PASSED" in out
+
+
+def test_comment_stripping_keeps_line_numbers_and_strings():
+    text = '/* a\nb */ x = "P:/real/one.paa";\nurl = "http://a.org"; y = "P:/two.paa";\n'
+    stripped = audit.strip_comments(text)
+    assert stripped.count("\n") == text.count("\n")
+    assert '"http://a.org"' in stripped and '"P:/two.paa"' in stripped
+
+
+def test_p_drive_after_comment_block_reports_real_line(tmp_path):
+    mat = tmp_path / "a.rvmat"
+    mat.write_text('/* header\n   P:/old/x.paa\n*/\ntexture = "P:\\dz\\data\\x_co.paa";\n', encoding="utf-8")
+    issues = audit.check_p_drive_paths_in_file(str(mat))
+    assert len(issues) == 1 and issues[0][0] == "P-DRIVE" and issues[0][1].startswith("Line 4:")
+
+
+def test_p_drive_finding_is_labelled_p_drive_not_warning(tmp_path, capsys):
+    # Text-file P:\ paths fail the run, while .p3d WARNINGs do not; they once
+    # shared the WARNING label, so the output did not say which ones failed.
+    cfg = tmp_path / "config.cpp"
+    cfg.write_text('model = "P:\\MyMod\\box.p3d";\n', encoding="utf-8")
+    assert audit.audit_text_file(str(cfg), "config.cpp") is False
+    out = capsys.readouterr().out
+    assert "P-DRIVE: Line 1:" in out and "WARNING" not in out
+    assert audit.tally_issues(audit.check_p_drive_paths_in_file(str(cfg))) == {
+        "critical": 0, "p_drive": 1, "warning": 0, "unreadable": 0}

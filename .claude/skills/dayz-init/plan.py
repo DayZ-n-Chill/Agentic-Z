@@ -12,7 +12,10 @@ exiting with that step's exit code. Refuses (exit 2) while the environment
 check reports a hard stop or P:\\ is not mounted.
 
 Steps, in order (each skipped when not needed):
-  1. new-mod / import-mod   skipped when workspace/<mod> already exists
+  1. new-mod / import-mod   skipped when workspace/<mod> already exists;
+                     --import-from takes a folder or a GitHub (or other git) link
+     check-deps      --launch without --deps from a link: after the clone, refuse
+                     (exit 2) when its config.cpp requiredAddons need --deps
   2. spec            --goal; writes workspace/<mod>/spec.md for the
                      dayz-mod-architect, skipped when spec.md already exists
   3. record          write the per-clone project cache and the active mod
@@ -90,6 +93,10 @@ def build_steps(
             # A scaffolded config.cpp needs the author handle.
             params["author"] = intent.author
         steps.append(Step("import-mod", f"Import {intent.source} as {mod}", params))
+        if intent.launch and not intent.deps and not Path(intent.source).is_dir():
+            # A link's config.cpp is only readable after the clone, so check it
+            # then, before the build and launch.
+            steps.append(Step("check-deps", f"Check {mod}'s requiredAddons need no --deps"))
     else:
         steps.append(Step("new-mod", f"Scaffold workspace\\{mod}", {"mod": mod, "author": intent.author}))
 
@@ -155,6 +162,14 @@ def execute(steps: list[Step], intent: Intent, project: Path) -> int:
         if step.action == "spec":
             write_spec(project, intent)
             continue
+        if step.action == "check-deps":
+            needs = launch_needs(project / "workspace" / intent.mod_name)
+            if needs:
+                print(f"[FAIL] {needs_message(intent.mod_name, needs)}", file=sys.stderr)
+                print(f"[FAIL] Step {i}/{len(steps)} ({step.label}) failed; re-run with --deps. "
+                      "The import is kept and is skipped on the re-run.", file=sys.stderr)
+                return 2
+            continue
         rc = run(command_for(step.action, **step.params))
         if rc != 0:
             print(f"[FAIL] Step {i}/{len(steps)} ({step.label}) exited with {rc}.", file=sys.stderr)
@@ -164,13 +179,16 @@ def execute(steps: list[Step], intent: Intent, project: Path) -> int:
 
 
 # The mod name rule SKILL.md states: it becomes a folder, a PBO name and a CfgPatches class.
-MOD_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]*")
+# Same rule as NAME_PATTERN in dayz-new-mod/new_mod.py (also used by import_mod.py),
+# including its 64-character cap, so a name accepted here never fails in step 1.
+MOD_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,63}")
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Plan and run /dayz-init setup.")
     parser.add_argument("--mod", required=True, help="Mod name (folder under workspace/)")
-    parser.add_argument("--import-from", dest="source", help="Existing mod folder to import")
+    parser.add_argument("--import-from", dest="source",
+                        help="Existing mod folder, or a GitHub (or other git) link, to import")
     scaffold = parser.add_mutually_exclusive_group()
     scaffold.add_argument("--scaffold", dest="scaffold", action="store_true", default=None,
                           help="Import: write missing pieces into the source folder")
@@ -193,7 +211,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--execute", action="store_true", help="Run the plan instead of printing it")
     args = parser.parse_args(argv)
     if not MOD_NAME_RE.fullmatch(args.mod):
-        parser.error(f"--mod {args.mod!r}: use letters, digits and underscores, starting with a letter")
+        parser.error(f"--mod {args.mod!r}: use letters, digits and underscores, starting with a letter, "
+                     "at most 64 characters")
     if args.launch and not args.server:
         parser.error("--launch needs --server")
     if args.deps and not args.launch:
@@ -224,10 +243,11 @@ def main(argv: list[str] | None = None, project: Path | None = None) -> int:
     )
 
     if args.launch and not args.deps:
-        # The mod folder once it exists, else the folder being imported.
+        # The mod folder once it exists, else a local folder being imported.
+        # A link is checked by the check-deps step after its clone.
         mod_dir = project / "workspace" / args.mod
         source = mod_dir if mod_dir.is_dir() else Path(args.source) if args.source else None
-        needs = launch_needs(source) if source else []
+        needs = launch_needs(source) if source and source.is_dir() else []
         if needs:
             print(f"[FAIL] {needs_message(args.mod, needs)}", file=sys.stderr)
             return 2

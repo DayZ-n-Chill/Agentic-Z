@@ -8,6 +8,11 @@ Part of Tier 2. Server economy files, the `.server/<instance>/` test-server layo
 - `cfgeconomycore.xml`, `cfgspawnabletypes.xml`, `events.xml`: economy structure.
 - `cfggameplay.json`: runtime tuning.
 - `mission/init.c`: server-side world init logic.
+- Loot numbers (`nominal`, `min`, `lifetime`, `restock`, `cost`) live only in the mission's `types.xml`. No config.cpp class sets them: there is no `CfgSpawnablesTypes` or `CfgRandomPresence` in any `config.cpp` under `P:\DZ` or in `P:\scripts`, so a mod that adds one changes nothing. The script side only reads them back (`CEItemProfile` getters, `P:\scripts\3_game\ce\centraleconomy.c:754-765`).
+- `<lifetime>` is how long an item lies untouched on the ground before cleanup deletes it; `<restock>` is the wait before a missing item may respawn when the economy needs it (`centraleconomy.c:762` and `:763`).
+- Fixed props without `init.c` code: list spawner JSON files in `cfggameplay.json` under `WorldsData.objectSpawnersArr` (`P:\scripts\3_game\cfggameplaydatajson.c:17` and `:195`). Each file's top-level key is `Objects`, an array of `{ name, pos, ypr, scale, enableCEPersistency, customString }` (`P:\scripts\3_game\objectspawner.c:95-108`). The paths are relative to the mission folder (`objectspawner.c:18` prefixes `$mission:`), and `cfggameplay.json` is only read when the server config sets `enableCfgGameplayFile = 1;` (`P:\scripts\3_game\cfggameplayhandler.c:53`).
+- `$mission:` is the path prefix for a file in the running mission folder (`P:\scripts\3_game\cfgbunkerbroadcasthandler.c:23`).
+- To keep an object made with `CreateObjectEx` out of the world save, add `ECE_NOPERSISTENCY_WORLD` (`P:\scripts\3_game\ce\centraleconomy.c:31`).
 
 ## Test server instances (`.server/`)
 

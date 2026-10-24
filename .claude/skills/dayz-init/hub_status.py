@@ -5,6 +5,7 @@ Usage:
 """
 from __future__ import annotations
 
+import argparse
 import os
 import re
 import subprocess
@@ -143,7 +144,11 @@ def render_status(s: Status) -> str:
     return "\n".join(lines)
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    argparse.ArgumentParser(
+        description="Print the /dayz-init status: active mod, PBO age, test servers, DayZ Diag and search. "
+                    "Takes no options.",
+    ).parse_args(argv)
     print(render_status(gather_status(PROJECT_DIR)))
     return 0
 

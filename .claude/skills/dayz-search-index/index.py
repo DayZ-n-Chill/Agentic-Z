@@ -15,13 +15,14 @@ Run:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
 import re
 import sys
 import time
-import xml.etree.ElementTree as ET
+from array import array
 from pathlib import Path
 from typing import Iterator, Optional
 from xml.parsers import expat
@@ -94,6 +95,9 @@ INFO = "[INFO] "
 VOYAGE_FREE_TIER_BUDGET = 200_000_000
 TIER_WARN_THRESHOLD = 0.80  # warn when projected usage hits 80%
 USAGE_LOG_NAME = "usage.log"
+# Written by /dayz-search-download to name the installed release. A local
+# build replaces that index, so a successful build removes the file.
+RELEASE_TAG_FILE = "release-tag.txt"
 
 
 def _usage_log_path() -> Path:
@@ -139,24 +143,53 @@ def _append_usage_entry(tokens: int, cost_usd: float, skill: str) -> None:
         f.write(json.dumps(entry) + "\n")
 
 
+def _free_tier_budget() -> int:
+    """The free-tier token budget: VOYAGE_FREE_TIER_TOKENS, else VOYAGE_FREE_TIER_BUDGET.
+
+    Raises ValueError with a user-facing message when the variable is set but is
+    not a positive whole number.
+    """
+    raw = os.environ.get("VOYAGE_FREE_TIER_TOKENS", "").strip()
+    if not raw:
+        return VOYAGE_FREE_TIER_BUDGET
+    try:
+        budget = int(raw.replace("_", "").replace(",", ""))
+    except ValueError:
+        budget = 0
+    if budget <= 0:
+        raise ValueError(
+            f"VOYAGE_FREE_TIER_TOKENS must be a positive whole number of tokens "
+            f"(for example 200000000), got {raw!r}. Fix or unset it."
+        )
+    return budget
+
+
+def _key_hint(api_key: str) -> str:
+    """How the key is named in output: its last 4 characters only, so transcripts never hold a usable prefix."""
+    return f"ending ...{api_key[-4:]}" if len(api_key) > 8 else "set"
+
+
 def _check_voyage_tier(
     estimated_tokens: int, ignore_warning: bool, model: str = DEFAULT_EMBED_MODEL
 ) -> bool:
-    """Pre-build tier check. Returns True if user wants to proceed.
+    """Pre-build tier check. Returns True if the build may proceed.
+
+    On a refusal (the user answers no, or stdin is not interactive) it prints
+    one [FAIL] line to stderr saying why, and returns False.
 
     Uses local cumulative tracking only; Voyage doesn't expose a public
     usage API. The overage estimate uses `model`'s rate from COST_PER_MTOKEN.
     See references/cost-and-free-tier.md for caveats.
     """
-    budget = int(os.environ.get("VOYAGE_FREE_TIER_TOKENS", VOYAGE_FREE_TIER_BUDGET))
+    budget = _free_tier_budget()
     used = _read_logged_usage_tokens()
     projected = used + estimated_tokens
-    pct_projected = projected / budget if budget > 0 else 0
+    pct_projected = projected / budget
 
     if pct_projected < TIER_WARN_THRESHOLD:
         return True
 
-    pct_used = used / budget if budget > 0 else 0
+    pct_used = used / budget
     print()
     print(f"{WARN} Voyage free-tier projection:")
     print(f"        Logged so far:     {used:,} tokens ({pct_used*100:.1f}% of {budget/1_000_000:.0f}M)")
@@ -183,10 +216,18 @@ def _check_voyage_tier(
     try:
         answer = input("        Continue? [y/N]: ").strip().lower()
     except EOFError:
-        # Non-interactive shell: refuse by default.
-        print(f"{FAIL} Non-interactive shell. Pass --ignore-tier-warning to override.")
+        # Non-interactive shell: nobody can answer, so refuse by default.
+        print()
+        print(
+            f"{FAIL} The free-tier prompt needs an answer, but this shell is not interactive. "
+            f"Re-run with --ignore-tier-warning to build anyway. No tokens consumed.",
+            file=sys.stderr,
+        )
         return False
-    return answer in ("y", "yes")
+    if answer in ("y", "yes"):
+        return True
+    print(f"{FAIL} Cancelled at the free-tier prompt. No tokens consumed.", file=sys.stderr)
+    return False
 
 
 def _require_deps() -> None:
@@ -331,6 +372,19 @@ def _read_text(path: Path) -> str:
         return ""
 
 
+def _split_lines(text: str) -> list[str]:
+    """text cut after each "\\n", newlines kept.
+
+    str.splitlines also breaks at \\f, \\v, \\x1c-\\x1e, \\x85 and \\u2028, which
+    would put chunk line numbers out of step with the file's real lines.
+    """
+    parts = text.split("\n")
+    lines = [part + "\n" for part in parts[:-1]]
+    if parts[-1]:
+        lines.append(parts[-1])
+    return lines
+
+
 def _split_windows(body: str, first_line: int, max_chars: int) -> list[tuple[int, int, str]]:
     """Split body into (line_start, line_end, text) windows of at most max_chars.
 
@@ -343,7 +397,7 @@ def _split_windows(body: str, first_line: int, max_chars: int) -> list[tuple[int
     """
     if len(body) <= max_chars:
         return [(first_line, first_line + body.count("\n"), body)]
-    lines = body.splitlines(keepends=True)
+    lines = _split_lines(body)
     boundaries: set[int] = set()
     depth = 0
     for i, line in enumerate(lines):
@@ -424,33 +478,71 @@ def chunk_rvmat(path: Path, seen_hashes: set[str]) -> list[dict] | None:
 XML_BATCH_SIZE = 50  # max top-level elements in one chunk; EMBED_MAX_CHARS also caps it
 
 
-def _xml_child_line_spans(text: str) -> list[tuple[int, int]]:
-    """(start_line, end_line) of each top-level child element, in document order.
+def _xml_outline(text: str) -> tuple[str, list[tuple[str, int, int]], int, int]:
+    """Parse text and return (root_tag, elements, first_line, last_line).
 
-    end_line is the line of the closing tag (or of the start tag for a
-    self-closing element). Raises expat.ExpatError on malformed XML.
+    elements holds (name, start_line, end_line) for each top-level child, in
+    document order; name is its name/Name attribute, else its tag. first_line
+    and last_line bound the text worth indexing: from the line after the root
+    start tag (line 1 when comments or processing instructions come before the
+    root) to the last element's end line (the last line of the file when
+    comments, processing instructions or text follow it). Raises
+    expat.ExpatError on malformed XML.
     """
-    parser = expat.ParserCreate()
-    spans: list[tuple[int, int]] = []
+    data = text.encode("utf-8")
+    # The text is already decoded, so its own encoding declaration no longer applies.
+    parser = expat.ParserCreate(encoding="utf-8")
+    elements: list[tuple[str, int, int]] = []
     depth = 0
-    start = 0
+    root_tag = ""
+    root_line = 1
+    current = ("", 0)
+    before_root = False  # a comment or PI ahead of the root element
+    extra_line = 0  # last line holding a comment, PI or text outside the elements
 
-    def on_start(_name, _attrs):
-        nonlocal depth, start
+    def on_start(name, attrs):
+        nonlocal depth, root_tag, root_line, current
         depth += 1
-        if depth == 2:
-            start = parser.CurrentLineNumber
+        if depth == 1:
+            root_tag, root_line = name, parser.CurrentLineNumber
+        elif depth == 2:
+            current = (attrs.get("name") or attrs.get("Name") or name, parser.CurrentLineNumber)
 
     def on_end(_name):
         nonlocal depth
         if depth == 2:
-            spans.append((start, parser.CurrentLineNumber))
+            # An end tag may break before its ">" (</type\n>); an empty
+            # element is reported after its "/>", so its line is already right.
+            i = parser.CurrentByteIndex
+            end = parser.CurrentLineNumber
+            if data.startswith(b"</", i):
+                end += data.count(b"\n", i, data.find(b">", i))
+            elements.append((current[0], current[1], end))
         depth -= 1
+
+    def on_extra(*_args):
+        nonlocal before_root, extra_line
+        if not root_tag:
+            before_root = True
+        elif depth <= 1:
+            extra_line = parser.CurrentLineNumber
+
+    def on_text(chars):
+        if depth == 1 and chars.strip():
+            on_extra()
 
     parser.StartElementHandler = on_start
     parser.EndElementHandler = on_end
-    parser.Parse(text, True)
-    return spans
+    parser.CommentHandler = on_extra
+    parser.ProcessingInstructionHandler = on_extra
+    parser.CharacterDataHandler = on_text
+    parser.Parse(data, True)
+    total_lines = len(_split_lines(text))
+    first_line = 1 if before_root else root_line + 1
+    last_line = elements[-1][2] if elements else total_lines
+    if extra_line > last_line:
+        last_line = total_lines
+    return root_tag, elements, first_line, last_line
 
 
 def _window_chunks(path: Path, file_type: str, text: str, header: str = "") -> list[dict]:
@@ -459,6 +551,8 @@ def _window_chunks(path: Path, file_type: str, text: str, header: str = "") -> l
 
     header (a CSV header line) is repeated at the top of every window so each
     one still names its columns; the line range is that of the window's rows.
+    A header longer than EMBED_MAX_CHARS // 2 is not repeated (it would leave
+    too little room for rows), so only the first window of such a file has it.
     """
     if len(text) <= EMBED_MAX_CHARS:
         windows = [(1, text.count("\n") + 1, text)]
@@ -480,26 +574,29 @@ def _window_chunks(path: Path, file_type: str, text: str, header: str = "") -> l
     ]
 
 
-def _xml_name(el) -> str:
-    return el.get("name") or el.get("Name") or el.tag
-
-
 def chunk_xml(path: Path, file_type: str = "xml", batch_size: int = XML_BATCH_SIZE) -> list[dict]:
     """Chunk XML by groups of top-level child elements. Caps explosion on
     types.xml-style files (many entries per chunk instead of one per entry).
 
     - Small files (<4KB): one whole-file chunk
-    - Files with many children: consecutive elements are batched until the next
-      one would push the chunk past EMBED_MAX_CHARS (or past batch_size
-      elements), each chunk carrying the real line range of its first and last
-      element. An element larger than EMBED_MAX_CHARS on its own is windowed
-      with _split_windows. No text is cut.
-    - Parse errors: fall back to whole-file windows (_window_chunks)
+    - Files with 5 or more top-level elements: each chunk is a slice of the
+      file's own lines, so comments (commented-out entries included),
+      processing instructions and formatting are kept as written. An element's
+      slice runs from the line after the previous element up to its own end
+      line, so the comments above it travel with it; comments after the last
+      element go into the last chunk. Elements sharing a line stay together.
+      Consecutive elements are batched until the next one would push the chunk
+      past EMBED_MAX_CHARS (or past batch_size elements); a slice larger than
+      EMBED_MAX_CHARS on its own is windowed with _split_windows. No text
+      inside the root element is cut. The lines before the root's first child
+      (XML declaration, DOCTYPE, root start tag) and the root's end tag are
+      left out, unless a comment or processing instruction sits before the
+      root or after the last element, in which case those lines are kept too.
+    - Fewer elements, or a file that does not parse: whole-file windows (_window_chunks)
     """
     text = _read_text(path)
     if not text:
         return []
-    total_lines = text.count("\n") + 1
     if len(text) < 4000:
         return [
             {
@@ -507,75 +604,83 @@ def chunk_xml(path: Path, file_type: str = "xml", batch_size: int = XML_BATCH_SI
                 "file_type": file_type,
                 "parent_context": "",
                 "line_start": 1,
-                "line_end": total_lines,
+                "line_end": text.count("\n") + 1,
                 "content": text,
             }
         ]
     try:
-        root = ET.fromstring(text)
-        children = list(root)
-        try:
-            spans = _xml_child_line_spans(text)
-        except expat.ExpatError:
-            spans = []
-        if len(spans) != len(children):  # never mislabel lines; fall back to the whole file
-            spans = [(1, total_lines)] * len(children)
-        if len(children) >= 5:
-            chunks: list[dict] = []
-            batch: list[tuple] = []  # (element, (line_start, line_end), serialized text)
-            size = 0
+        root_tag, elements, first_line, last_line = _xml_outline(text)
+    except expat.ExpatError:
+        return _window_chunks(path, file_type, text)
+    if len(elements) < 5:
+        return _window_chunks(path, file_type, text)
 
-            def add(parent_context: str, line_start: int, line_end: int, content: str) -> None:
-                chunks.append(
-                    {
-                        "path": str(path),
-                        "file_type": file_type,
-                        "parent_context": parent_context,
-                        "line_start": line_start,
-                        "line_end": line_end,
-                        "content": content,
-                    }
-                )
+    lines = _split_lines(text)
+    # [first name, last name, element count, line_start, line_end] per slice.
+    slices: list[list] = []
+    for name, start, end in elements:
+        if slices and start <= slices[-1][4]:  # shares a line with the previous slice
+            slices[-1][1] = name
+            slices[-1][2] += 1
+            slices[-1][4] = max(slices[-1][4], end)
+        else:
+            line_start = slices[-1][4] + 1 if slices else min(first_line, start)
+            slices.append([name, name, 1, line_start, end])
+    slices[-1][4] = max(slices[-1][4], last_line)
 
-            def flush() -> None:
-                nonlocal batch, size
-                if not batch:
-                    return
-                first, last = _xml_name(batch[0][0]), _xml_name(batch[-1][0])
-                if len(batch) == 1:
-                    parent_context = f"{root.tag} > {first}"
-                else:
-                    parent_context = f"{root.tag} > {first}..{last} ({len(batch)} items)"
-                add(parent_context, batch[0][1][0], batch[-1][1][1], "\n".join(b[2] for b in batch))
-                batch, size = [], 0
+    def label(first: str, last: str, count: int) -> str:
+        return f"{root_tag} > {first}" if count == 1 else f"{root_tag} > {first}..{last} ({count} items)"
 
-            for child, span in zip(children, spans):
-                snippet = ET.tostring(child, encoding="unicode")
-                if len(snippet) > EMBED_MAX_CHARS:
-                    flush()
-                    for ws, we, window in _split_windows(snippet, span[0], EMBED_MAX_CHARS):
-                        add(f"{root.tag} > {_xml_name(child)}", min(ws, span[1]), min(we, span[1]), window)
-                    continue
-                if batch and (size + 1 + len(snippet) > EMBED_MAX_CHARS or len(batch) >= batch_size):
-                    flush()
-                size += len(snippet) + (1 if batch else 0)
-                batch.append((child, span, snippet))
+    chunks: list[dict] = []
+
+    def add(parent_context: str, line_start: int, line_end: int, content: str) -> None:
+        chunks.append(
+            {
+                "path": str(path),
+                "file_type": file_type,
+                "parent_context": parent_context,
+                "line_start": line_start,
+                "line_end": line_end,
+                "content": content,
+            }
+        )
+
+    batch: list[tuple[list, str]] = []  # (slice, its text)
+
+    def flush() -> None:
+        if batch:
+            first, last = batch[0][0], batch[-1][0]
+            count = sum(s[2] for s, _ in batch)
+            add(label(first[0], last[1], count), first[3], last[4], "".join(body for _, body in batch))
+            batch.clear()
+
+    for s in slices:
+        body = "".join(lines[s[3] - 1 : s[4]])
+        if len(body) > EMBED_MAX_CHARS:
             flush()
-            return chunks
-    except ET.ParseError:
-        pass
-    return _window_chunks(path, file_type, text)
+            for ws, we, window in _split_windows(body, s[3], EMBED_MAX_CHARS):
+                add(label(s[0], s[1], s[2]), ws, we, window)
+            continue
+        if batch and (
+            sum(len(b) for _, b in batch) + len(body) > EMBED_MAX_CHARS
+            or sum(x[2] for x, _ in batch) + s[2] > batch_size
+        ):
+            flush()
+        batch.append((s, body))
+    flush()
+    return chunks
 
 
 def chunk_whole_file(path: Path, file_type: str) -> list[dict]:
     """json/csv: one chunk per file, windowed when it passes EMBED_MAX_CHARS.
 
-    A CSV's header line is repeated at the top of each window.
+    A CSV's header line is repeated at the top of each window when it is at
+    most EMBED_MAX_CHARS // 2 characters (see _window_chunks).
     """
     text = _read_text(path)
     if not text:
         return []
-    header = text.splitlines(keepends=True)[0] if file_type == "csv" else ""
+    header = _split_lines(text)[0] if file_type == "csv" else ""
     return _window_chunks(path, file_type, text, header)
 
 
@@ -638,105 +743,292 @@ def _pack_batches(texts: list[str]) -> Iterator[list[str]]:
 
 EMBED_ATTEMPTS = 5
 
+# Every embedded batch is appended here as it comes back, so a build that
+# fails or is interrupted late does not pay for the finished batches again:
+# the next run reuses them. A successful build deletes the file. Each record is
+# a 32-byte sha256 of (model, text) followed by EMBED_DIM float32 values.
+CHECKPOINT_NAME = "embed-checkpoint.bin"
+_KEY_BYTES = 32
+_RECORD_BYTES = _KEY_BYTES + EMBED_DIM * 4
+
+
+def _checkpoint_key(model: str, text: str) -> bytes:
+    """Checkpoint key for one text: a vector is reused only for the same model and the same text."""
+    return hashlib.sha256(f"{model}\0{text}".encode("utf-8")).digest()
+
+
+def _load_checkpoint(path: Path) -> dict[bytes, list[float]]:
+    """Read the vectors saved by an earlier, unfinished build (key -> vector).
+
+    A record cut short by a crash or Ctrl+C mid-write is dropped and the file
+    truncated to its whole records, so later appends stay aligned. A missing
+    or unreadable file means nothing to reuse.
+    """
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return {}
+    whole = len(data) - len(data) % _RECORD_BYTES
+    if whole != len(data):
+        with contextlib.suppress(OSError), path.open("r+b") as f:
+            f.truncate(whole)
+    saved: dict[bytes, list[float]] = {}
+    for off in range(0, whole, _RECORD_BYTES):
+        vec = array("f")
+        vec.frombytes(data[off + _KEY_BYTES : off + _RECORD_BYTES])
+        saved[data[off : off + _KEY_BYTES]] = vec.tolist()
+    return saved
+
 
 class EmbedError(Exception):
-    """An embed batch failed for good. Carries the tokens already billed for the
-    batches that succeeded, so the caller can log them before exiting."""
+    """The embed stopped for good. Carries the tokens already billed for the
+    batches that succeeded, so the caller can log them before exiting.
 
-    def __init__(self, cause: Exception, tokens_used: int, transient: bool):
+    kind is "transient" (still failing after EMBED_ATTEMPTS), "rejected" (a
+    non-transient Voyage error such as a bad key), "response" (wrong vector
+    count or dimension), "checkpoint" (the checkpoint file could not be
+    written) or "interrupted" (Ctrl+C).
+    """
+
+    def __init__(self, cause: BaseException, tokens_used: int, transient: bool, kind: Optional[str] = None):
         self.cause = cause
         self.tokens_used = tokens_used
         self.transient = transient
+        self.kind = kind or ("transient" if transient else "rejected")
         detail = " ".join(str(cause).split()) or "no message"
         super().__init__(f"{type(cause).__name__}: {detail}")
 
 
-def embed_or_fail(texts: list[str], model: str, api_key: str) -> Optional[tuple[list[list[float]], int]]:
-    """Run embed_all. On failure, log the tokens spent so far to usage.log,
-    print one [FAIL] line and return None."""
+def embed_or_fail(
+    texts: list[str],
+    model: str,
+    api_key: str,
+    saved: Optional[dict[bytes, list[float]]] = None,
+    checkpoint: Optional[Path] = None,
+) -> Optional[tuple[list[list[float]], int]]:
+    """Run embed_all. On failure or Ctrl+C, log the tokens spent so far to
+    usage.log, print one [FAIL] line and return None."""
     try:
-        return embed_all(texts, model, api_key)
+        return embed_all(texts, model, api_key, saved, checkpoint)
     except EmbedError as exc:
         if exc.tokens_used:
             cost = round((exc.tokens_used / 1_000_000) * (_rate(model) or 0), 4)
             _append_usage_entry(exc.tokens_used, cost, "dayz-search-index")
-        if exc.transient:
+        if exc.kind == "transient":
             what = f"Voyage embedding failed after {EMBED_ATTEMPTS} attempts ({exc})."
+        elif exc.kind == "interrupted":
+            what = "Embedding interrupted (Ctrl+C)."
+        elif exc.kind == "response":
+            what = f"Voyage returned unusable embeddings ({exc})."
+        elif exc.kind == "checkpoint":
+            what = f"Could not save embedded batches to {CHECKPOINT_NAME} ({exc})."
         else:
             what = f"Voyage rejected the embed request ({exc}). Check VOYAGE_API_KEY in .env and your Voyage account."
         spent = (
-            f"{exc.tokens_used:,} tokens used before the failure were logged to {USAGE_LOG_NAME}"
+            f"{exc.tokens_used:,} tokens used before the stop were logged to {USAGE_LOG_NAME}"
             if exc.tokens_used
             else "No tokens were used"
         )
-        print(f"{FAIL} {what} {spent}; the existing index is unchanged.", file=sys.stderr)
+        resume = ""
+        if checkpoint is not None and exc.kind != "checkpoint" and (exc.tokens_used or saved):
+            resume = f" Embedded batches are saved in {CHECKPOINT_NAME}; re-running with --full embeds only the rest."
+        print(f"{FAIL} {what} {spent}; the existing index is unchanged.{resume}", file=sys.stderr)
         return None
 
 
-def embed_all(texts: list[str], model: str, api_key: str) -> tuple[list[list[float]], int]:
+def embed_all(
+    texts: list[str],
+    model: str,
+    api_key: str,
+    saved: Optional[dict[bytes, list[float]]] = None,
+    checkpoint: Optional[Path] = None,
+) -> tuple[list[list[float]], int]:
     """Embed all texts via Voyage in dynamically-packed batches. Returns
-    (vectors, total_tokens).
+    (vectors, tokens spent by this run).
 
+    - Texts whose (model, text) key is in saved reuse that vector, no API call
+    - Each new batch is appended to checkpoint (when given) as soon as it returns
     - Uses input_type="document" (asymmetric retrieval: matches "query" at search time)
     - truncation=True so over-context single inputs don't 400
+    - Every vector must have EMBED_DIM values (the table and the MCP server's
+      query vectors are 1024-dim); any other length stops the run before
+      anything is saved or written
     - Retries transient Voyage errors (voyage_common.is_transient: rate limit,
       timeout, connection, server) with exponential backoff, EMBED_ATTEMPTS per batch
+    - Ctrl+C raises EmbedError(kind="interrupted") carrying the tokens spent
     """
     import voyageai
     from tqdm import tqdm
 
+    saved = saved or {}
+    keys = [_checkpoint_key(model, t) for t in texts]
+    vectors: list[Optional[list[float]]] = [saved.get(k) for k in keys]
+    todo = [i for i, v in enumerate(vectors) if v is None]
     client = voyageai.Client(api_key=api_key)
-    vectors: list[list[float]] = []
     total_tokens = 0
     cost_per_m = _rate(model)
 
-    pbar = tqdm(total=len(texts), desc="  embedding", unit="chunk")
-    for batch in _pack_batches(texts):
-        delay = 2.0
-        for attempt in range(EMBED_ATTEMPTS):
+    pbar = tqdm(total=len(texts), initial=len(texts) - len(todo), desc="  embedding", unit="chunk")
+    out = None
+    try:
+        if checkpoint is not None and todo:
             try:
-                resp = client.embed(
-                    texts=batch,
-                    model=model,
-                    input_type="document",
-                    truncation=True,
+                out = checkpoint.open("ab")
+            except OSError as exc:
+                raise EmbedError(exc, 0, False, "checkpoint") from exc
+        done = 0
+        for batch in _pack_batches([texts[i] for i in todo]):
+            indices = todo[done : done + len(batch)]
+            done += len(batch)
+            delay = 2.0
+            for attempt in range(EMBED_ATTEMPTS):
+                try:
+                    resp = client.embed(
+                        texts=batch,
+                        model=model,
+                        input_type="document",
+                        truncation=True,
+                    )
+                    break
+                except Exception as exc:
+                    transient = voyage_common.is_transient(exc)
+                    if attempt == EMBED_ATTEMPTS - 1 or not transient:
+                        raise EmbedError(exc, total_tokens, transient) from exc
+                    pbar.write(f"{WARN} {exc}: retry in {delay:.0f}s (attempt {attempt + 1}/{EMBED_ATTEMPTS})")
+                    time.sleep(delay)
+                    delay *= 2
+            total_tokens += int(resp.total_tokens or 0)
+            embeddings = list(resp.embeddings or [])
+            if len(embeddings) != len(batch):
+                raise EmbedError(
+                    ValueError(f"got {len(embeddings)} vectors for a batch of {len(batch)} texts"),
+                    total_tokens, False, "response",
                 )
-                vectors.extend(resp.embeddings)
-                total_tokens += int(resp.total_tokens or 0)
-                break
-            except Exception as exc:
-                transient = voyage_common.is_transient(exc)
-                if attempt == EMBED_ATTEMPTS - 1 or not transient:
-                    pbar.close()
-                    raise EmbedError(exc, total_tokens, transient) from exc
-                pbar.write(f"{WARN} {exc}: retry in {delay:.0f}s (attempt {attempt + 1}/{EMBED_ATTEMPTS})")
-                time.sleep(delay)
-                delay *= 2
-        if cost_per_m is None:
-            pbar.set_postfix_str(f"{total_tokens:,} tok")
-        else:
-            cost_so_far = (total_tokens / 1_000_000) * cost_per_m
-            pbar.set_postfix_str(f"{total_tokens:,} tok / ~${cost_so_far:.3f}")
-        pbar.update(len(batch))
+            bad = next((len(v) for v in embeddings if len(v) != EMBED_DIM), None)
+            if bad is not None:
+                raise EmbedError(
+                    ValueError(
+                        f"{model} returned {bad}-dim vectors but the index needs {EMBED_DIM}; "
+                        f"set VOYAGE_MODEL to a model with {EMBED_DIM}-dim output, such as {DEFAULT_EMBED_MODEL}"
+                    ),
+                    total_tokens, False, "response",
+                )
+            for i, vec in zip(indices, embeddings):
+                vectors[i] = vec
+            if out is not None:
+                try:
+                    out.write(b"".join(keys[i] + array("f", vec).tobytes() for i, vec in zip(indices, embeddings)))
+                    out.flush()
+                except OSError as exc:
+                    raise EmbedError(exc, total_tokens, False, "checkpoint") from exc
+            if cost_per_m is None:
+                pbar.set_postfix_str(f"{total_tokens:,} tok")
+            else:
+                cost_so_far = (total_tokens / 1_000_000) * cost_per_m
+                pbar.set_postfix_str(f"{total_tokens:,} tok / ~${cost_so_far:.3f}")
+            pbar.update(len(batch))
+    except KeyboardInterrupt as exc:
+        raise EmbedError(exc, total_tokens, False, "interrupted") from exc
+    finally:
+        pbar.close()
+        if out is not None:
+            with contextlib.suppress(OSError):
+                out.close()
+    return vectors, total_tokens  # type: ignore[return-value]  # every slot is filled
 
-    pbar.close()
-    return vectors, total_tokens
 
 
-
-def write_table(db, rows: list[dict]) -> None:
+def write_table(db, rows: list[dict]) -> Optional[int]:
     """Write rows to the staging table, then swap them into TABLE_NAME.
 
     The live table is only touched after the staging write succeeded, and the
     swap is a single LanceDB overwrite (a new table version), so a failure at
     any step leaves the previous index readable. LanceDB OSS has no
     rename_table, hence the copy from staging.
+
+    Returns the live table's version before the swap (None when there was no
+    table), for rollback_table.
     """
+    previous = db.open_table(TABLE_NAME).version if TABLE_NAME in db.table_names() else None
     if STAGING_TABLE_NAME in db.table_names():
         db.drop_table(STAGING_TABLE_NAME)
     staging = db.create_table(STAGING_TABLE_NAME, data=rows)
     db.create_table(TABLE_NAME, data=staging.to_arrow(), mode="overwrite")
-    db.drop_table(STAGING_TABLE_NAME)
+    # The swap is done. A failed cleanup must not raise from here: commit_index
+    # would then skip both the sidecar replace and the rollback, leaving the
+    # new table next to the old config.json. The next build drops the leftover.
+    with contextlib.suppress(Exception):
+        db.drop_table(STAGING_TABLE_NAME)
+    return previous
+
+
+def rollback_table(db, previous: Optional[int]) -> None:
+    """Undo write_table: restore TABLE_NAME to version `previous` (an overwrite
+    keeps the old version), or drop it when there was no table before."""
+    if previous is None:
+        if TABLE_NAME in db.table_names():
+            db.drop_table(TABLE_NAME)
+        return
+    table = db.open_table(TABLE_NAME)
+    table.checkout(previous)
+    table.restore()
+
+
+class RollbackError(Exception):
+    """A post-embed write failed and putting the previous index back failed too."""
+
+
+def commit_index(db, rows: list[dict], sidecars: dict[str, str]) -> None:
+    """Swap in the new table and its sidecar files (name -> text, under
+    INDEX_ROOT) all or nothing.
+
+    Every sidecar is first written to a .tmp file, so a full disk fails before
+    the live table is touched. Then the table is swapped (write_table) and each
+    .tmp replaces its file with os.replace, in the dict's order. If a replace
+    fails (a locked file, for example), the table goes back to its previous
+    version and the files already replaced get their old contents back, so the
+    MCP server never pairs a new table with an old config.json: after a
+    VOYAGE_MODEL change that would embed queries with the wrong model. The
+    original error is re-raised; RollbackError means the undo failed too.
+    """
+    tmp = {name: INDEX_ROOT / f"{name}.tmp" for name in sidecars}
+    old: dict[str, Optional[bytes]] = {}
+    try:
+        for name, body in sidecars.items():
+            tmp[name].write_text(body, encoding="utf-8")
+            path = INDEX_ROOT / name
+            old[name] = path.read_bytes() if path.exists() else None
+        previous = write_table(db, rows)
+        replaced: list[str] = []
+        try:
+            for name in sidecars:
+                os.replace(tmp[name], INDEX_ROOT / name)
+                replaced.append(name)
+        except BaseException as exc:  # Ctrl+C here must roll back too
+            undo_errors: list[str] = []
+            try:
+                rollback_table(db, previous)
+            except Exception as undo:
+                undo_errors.append(f"table: {type(undo).__name__}: {undo}")
+            for name in replaced:
+                path = INDEX_ROOT / name
+                try:
+                    if old[name] is None:
+                        path.unlink(missing_ok=True)
+                    else:
+                        path.write_bytes(old[name])
+                except OSError as undo:
+                    undo_errors.append(f"{name}: {type(undo).__name__}: {undo}")
+            if undo_errors:
+                raise RollbackError(
+                    f"{type(exc).__name__}: {exc}; restoring the previous index also failed "
+                    f"({'; '.join(undo_errors)})"
+                ) from exc
+            raise
+    finally:
+        for path in tmp.values():
+            with contextlib.suppress(OSError):
+                path.unlink(missing_ok=True)
 
 
 # --------------- main ---------------
@@ -761,6 +1053,20 @@ def main(argv: Optional[list[str]] = None) -> int:
         print("No index. Run: python index.py --full", file=sys.stderr)
         return 1
 
+    # Refuse before preflight, dependency and key checks: nothing else matters
+    # if the build would be refused anyway. A table without a manifest (a
+    # half-removed index) counts as an index too.
+    if not args.full and (manifest_path.exists() or (db_path / f"{TABLE_NAME}.lance").exists()):
+        print(f"{FAIL} An index already exists at {INDEX_ROOT}. Re-run with --full to rebuild.", file=sys.stderr)
+        print(f"        Or: python index.py --status", file=sys.stderr)
+        return 1
+
+    try:
+        _free_tier_budget()
+    except ValueError as exc:
+        print(f"{FAIL} {exc}", file=sys.stderr)
+        return 1
+
     print("DayZ RAG indexer\n")
     h.gate_on_preflight()
     print()
@@ -775,18 +1081,13 @@ def main(argv: Optional[list[str]] = None) -> int:
     api_key = _load_env_and_key()
     embed_model = os.environ.get("VOYAGE_MODEL", DEFAULT_EMBED_MODEL).strip() or DEFAULT_EMBED_MODEL
 
-    print(f"{OK} VOYAGE_API_KEY loaded ({api_key[:6]}...{api_key[-4:]})")
+    print(f"{OK} VOYAGE_API_KEY loaded ({_key_hint(api_key)})")
     print(f"{INFO} Index: {INDEX_ROOT}")
     print(f"{INFO} Embedding model: {embed_model} ({EMBED_DIM}D, via Voyage cloud)")
     cost_per_m = _rate(embed_model)
     if cost_per_m is not None:
         print(f"{INFO} Estimate rate: ${cost_per_m:.2f} per 1M tokens (Voyage pricing page is authoritative)")
     print()
-
-    if manifest_path.exists() and not args.full:
-        print(f"{FAIL} Index already exists. Re-run with --full to rebuild.", file=sys.stderr)
-        print(f"        Or: python index.py --status", file=sys.stderr)
-        return 1
 
     import lancedb
     from tqdm import tqdm
@@ -895,16 +1196,30 @@ def main(argv: Optional[list[str]] = None) -> int:
     # Cap content length defensively (voyage-code-3 has 32k context but truncation=True handles it).
     texts = [(c["content"] or " ")[:EMBED_MAX_CHARS] for c in chunks]
 
-    # Voyage free-tier projection check. Estimate this build's tokens from
-    # local char-per-token ratio so we can warn before committing to the embed.
-    estimated_tokens = sum(_estimate_tokens(t) for t in texts)
-    if not _check_voyage_tier(estimated_tokens, args.ignore_tier_warning, embed_model):
-        print(f"{FAIL} Cancelled by user. No tokens consumed.", file=sys.stderr)
+    try:
+        INDEX_ROOT.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        print(f"{FAIL} Cannot create {INDEX_ROOT} ({type(exc).__name__}: {exc}). No tokens consumed.", file=sys.stderr)
         return 1
 
-    print(f"\nEmbedding {len(chunks)} chunks via Voyage ({embed_model}, document mode)...")
+    # Vectors saved by an earlier build that failed or was interrupted are
+    # reused, so only the rest is embedded (and estimated, and billed).
+    checkpoint = INDEX_ROOT / CHECKPOINT_NAME
+    saved = _load_checkpoint(checkpoint)
+    pending = [t for t in texts if _checkpoint_key(embed_model, t) not in saved] if saved else texts
+    reused = len(texts) - len(pending)
+    if reused:
+        print(f"{INFO} Resuming: {reused:,} of {len(texts):,} chunks were embedded by an earlier run ({CHECKPOINT_NAME})")
+
+    # Voyage free-tier projection check. Estimate this build's tokens from
+    # local char-per-token ratio so we can warn before committing to the embed.
+    estimated_tokens = sum(_estimate_tokens(t) for t in pending)
+    if not _check_voyage_tier(estimated_tokens, args.ignore_tier_warning, embed_model):
+        return 1  # _check_voyage_tier printed the reason
+
+    print(f"\nEmbedding {len(pending)} chunks via Voyage ({embed_model}, document mode)...")
     started = time.time()
-    embedded = embed_or_fail(texts, embed_model, api_key)
+    embedded = embed_or_fail(texts, embed_model, api_key, saved, checkpoint)
     if embedded is None:
         return 1
     embeddings, total_tokens = embedded
@@ -914,22 +1229,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     # the next run's tier check reads this log.
     _append_usage_entry(total_tokens, cost_estimate_usd, "dayz-search-index")
 
-    if len(embeddings) != len(chunks):
-        print(
-            f"\n{FAIL} Embedding count mismatch: got {len(embeddings)} for {len(chunks)} chunks.",
-            file=sys.stderr,
-        )
-        return 1
     for c, vec in zip(chunks, embeddings):
         c["vector"] = vec
 
-    INDEX_ROOT.mkdir(parents=True, exist_ok=True)
-    write_table(lancedb.connect(str(db_path)), chunks)
-
-    # file_hashes.json goes before the manifest, which is written last.
-    (INDEX_ROOT / "file_hashes.json").write_text(json.dumps(file_hashes), encoding="utf-8")
-
-    # Manifest
     manifest = {
         "indexed_at": int(time.time()),
         "indexed_at_iso": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -943,15 +1245,53 @@ def main(argv: Optional[list[str]] = None) -> int:
         "rvmat_duplicates_skipped": rvmat_dups,
         "total_chunks": len(chunks),
         "total_tokens": total_tokens,
+        "chunks_reused_from_checkpoint": reused,
         "cost_estimate_usd": cost_estimate_usd,
         "embed_seconds": round(elapsed, 1),
     }
-    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    # The MCP server reopens the table and rereads config.json when the
+    # manifest changes, so the manifest is replaced last.
+    sidecars = {
+        "file_hashes.json": json.dumps(file_hashes),
+        config_path.name: json.dumps({"embed_model": embed_model, "embed_provider": "voyage"}, indent=2),
+        manifest_path.name: json.dumps(manifest, indent=2),
+    }
+    kept = f"The embeddings stay in {CHECKPOINT_NAME}, so the re-run spends no tokens on them."
+    try:
+        commit_index(lancedb.connect(str(db_path)), chunks, sidecars)
+    except RollbackError as exc:
+        print(
+            f"\n{FAIL} Writing the index failed after the embed ({exc}). The index may be "
+            f"inconsistent; re-run with --full before searching. {kept}",
+            file=sys.stderr,
+        )
+        return 1
+    except KeyboardInterrupt:
+        # Ctrl+C can land mid table swap, where nothing can say which version is live.
+        print(
+            f"\n{FAIL} Interrupted (Ctrl+C) while writing the index. The index may be "
+            f"inconsistent; re-run with --full before searching. {kept}",
+            file=sys.stderr,
+        )
+        return 1
+    except Exception as exc:
+        print(
+            f"\n{FAIL} Writing the index failed after the embed ({type(exc).__name__}: {exc}). "
+            f"The previous index is unchanged; re-run with --full. {kept}",
+            file=sys.stderr,
+        )
+        return 1
 
-    config_path.write_text(
-        json.dumps({"embed_model": embed_model, "embed_provider": "voyage"}, indent=2),
-        encoding="utf-8",
-    )
+    try:
+        checkpoint.unlink(missing_ok=True)
+    except OSError as exc:
+        print(f"{WARN} Could not remove {CHECKPOINT_NAME} ({exc}); delete it by hand.")
+
+    # The index is now a local build, not the downloaded release.
+    try:
+        (INDEX_ROOT / RELEASE_TAG_FILE).unlink(missing_ok=True)
+    except OSError as exc:
+        print(f"{WARN} Could not remove {RELEASE_TAG_FILE} ({exc}); delete it by hand.")
 
     print(f"\n{OK} Index built: {len(chunks)} chunks at {INDEX_ROOT}")
     print(f"{INFO} Tokens used: {total_tokens:,}  |  Estimated cost: ${cost_estimate_usd:.4f}")

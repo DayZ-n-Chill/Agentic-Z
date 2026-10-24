@@ -22,15 +22,15 @@ python "<skill-dir>\lint.py" --mod-dir <folder> [--json]
 
 | Argument | Notes |
 |---|---|
-| `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. |
-| `--mod-dir` | Lint any folder instead. Its name is the mod name unless `<ModName>` is given too. |
+| `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. A plain folder name: a name holding `/`, `\`, `:` or `..` is refused with ERROR; pass a path with `--mod-dir`. |
+| `--mod-dir` | Lint any folder instead. Its name is the mod name unless `<ModName>` is given too. Paths in findings and fixes are shown from the current folder. |
 | `--json` | Print the full report as JSON after the verdict line. |
 
 You don't need to run it before a build: `/dayz-gate build` and `/dayz-build-pbo` run it first and stop on any error.
 
 ## Output and exit codes
 
-The first line is the verdict: `PASS` (exit 0, warnings allowed), `FAIL` (exit 1, at least one error) or `ERROR` (exit 2: bad arguments, no cached project, or the mod folder does not exist). Then one line per finding and its owner:
+The first line on stdout is always the verdict: `PASS` (exit 0, warnings allowed), `FAIL` (exit 1, at least one error) or `ERROR` (exit 2: bad arguments, no cached project, or the mod folder does not exist). On `ERROR` the next line says why (with `--json`, a `{"verdict": "ERROR", "error": "..."}` object), and nothing is printed on stderr first. Otherwise one line per finding and its owner:
 
 ```
 FAIL
@@ -53,7 +53,7 @@ With `--json`:
 }
 ```
 
-Each rule has a `lint-<rule>` entry in `.claude/skills/dayz-gate/known-errors.json` with its meaning, fix and owner, so lint findings are triaged the same way as log lines. Owner `user` means the user has to act; owner `dayz-orchestrator` means a skill run fixes it.
+Each rule has a `lint-<rule>` entry in `.claude/skills/dayz-gate/known-errors.json` with its meaning, fix and owner, so lint findings are triaged the same way as log lines. Owner `user` means the user has to act; owner `dayz-orchestrator` means a skill run fixes it. Fixes that name `workspace/<ModName>/` are rewritten to the folder actually linted. For a `--mod-dir` folder outside the cached project's `workspace\`, where `/dayz-add-scaffold` refuses to run, the `p-link`, `pboprefix-missing` and `config-missing` fixes say what to create by hand (or point at `/dayz-import-mod`) instead.
 
 ## Rules
 
@@ -70,16 +70,17 @@ A finding is an error only when it stops the mod packing or loading. Everything 
 | `required-addon-name` | error | An entry that is not a class name (a path, a `.pbo`, an `@mod` folder, a space), the mod's own patch class, or a `DZ_` name that no vanilla config on `P:\DZ\` or `P:\scripts\` declares. |
 | `required-addon-duplicate` | warning | The same entry twice. |
 | `pboprefix-missing`, `pboprefix-mismatch` | error | No `$PBOPREFIX$`, or one that does not hold exactly the mod name, which `/dayz-build-pbo` needs. |
-| `p-link` | error | `P:\<prefix>\` is missing, is a real folder, or points away from the mod folder. |
+| `pboprefix-encoding` | error | A `$PBOPREFIX$` that is UTF-16 (what Windows PowerShell 5.1 writes for `echo <ModName> > $PBOPREFIX$`) or not valid UTF-8, so its prefix cannot be read. Save it as plain ASCII or UTF-8 holding only the mod name. The other rules still run. |
+| `p-link` | error | `P:\<prefix>\` is missing, is a real folder, or points away from the mod folder. A link that reaches the mod folder through another junction (the `/dayz-import-mod` layout, `P:\<prefix>` to `workspace\<ModName>` to the source) counts as pointing at it. The fix is `/dayz-add-scaffold <ModName> --piece junction` for a mod in the cached project's `workspace\`; for a `--mod-dir` folder outside it, `/dayz-import-mod --source <folder>` or `mklink /J P:\<prefix> <folder>`. |
 | `p-not-mounted` | warning | `P:\` is not mounted, so the link and the vanilla `DZ_` names were not checked. |
 | `script-module-path` | error | A `CfgMods` script module lists a folder outside the mod or one that does not exist. |
 | `script-module-layer` | error | A module lists another layer's folder, for example `worldScriptModule` with `3_Game`. |
 | `script-module-unlisted` | warning | A `scripts/` folder holds `.c` files that no module lists. The mod still loads; the engine just ignores those files. |
-| `modded-class-extends` | error | `modded class Foo extends Foo` or `modded class Foo: Foo`, a silent no-op. |
+| `modded-class-extends` | error | `modded class Foo extends Foo` or `modded class Foo: Foo`, a silent no-op. Also caught when the `extends` or `:` is on the next line; the finding names the line holding `modded`. Commented-out code is ignored; `//` and `/*` inside a string are not comments. |
 | `script-suffix` | warning | A file under `scripts/` that is not `.c`, so it is never compiled. Dot files such as `.gitkeep` are skipped. |
 | `missing-model`, `missing-texture`, `missing-file` | error | A path in `config.cpp` or a `.rvmat` that starts with the prefix but names a file that is not in the mod. Paths into vanilla or other mods are not checked. |
 | `absolute-path` | error | A disk path (`P:\...`, `workspace\...`) where the game expects a path from the prefix. |
-| `texture-format` | error | A `.png`, `.tga`, `.jpg` or `.dds` where the game needs a `.paa`. |
+| `texture-format` | error | A `.png`, `.tga`, `.jpg`, `.jpeg`, `.bmp` or `.dds` where the game needs a `.paa`. That is the only finding for the reference: whether the image exists is not checked, since the fix replaces the path. |
 | `texture-suffix` | warning | A texture in `hiddenSelectionsTextures[]` or a `.rvmat` `texture` without a role suffix such as `_co`, `_nohq` or `_smdi`. |
 | `rvmat-syntax` | error | A `.rvmat` with an unclosed string or comment. |
 

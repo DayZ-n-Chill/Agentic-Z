@@ -10,7 +10,7 @@ cd Agentic-Z
 python .claude\skills\sync-skills\sync.py
 ```
 
-`sync-skills` symlinks (or junctions on Windows) the repo's `.claude/skills/` into Claude Code, Codex, and Gemini home dirs so all three discover the same slash commands during local testing. Restart or reload your agent session after running it.
+`sync-skills` symlinks (or junctions on Windows) the repo's `.claude/skills/` into the Codex and Gemini home dirs so they discover the same slash commands during local testing; Claude Code reads the repo's skills directly. Restart or reload your agent session after running it.
 
 ## Branch rules
 

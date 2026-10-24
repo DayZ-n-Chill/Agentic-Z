@@ -7,7 +7,7 @@ Usage:
     python audit_p3d.py model.p3d [model2.p3d ...]
     python audit_p3d.py model.p3d --config path/to/config.cpp
     python audit_p3d.py model.p3d --model-cfg path/to/model.cfg
-    python audit_p3d.py --rvmat a.rvmat b.rvmat
+    python audit_p3d.py --rvmat a.rvmat --rvmat b.rvmat  (repeat --rvmat once per file)
     python audit_p3d.py --scan-dir path/to/mod/  (scans all .p3d, config.cpp, .rvmat, model.cfg)
 
 With a model.cfg (--model-cfg, or the nearest one under --scan-dir) each
@@ -34,8 +34,8 @@ def load_py3d():
     try:
         import py3d
     except ImportError:
-        print(f"{h.FAIL} py3d not installed.")
-        print(f'Run: python -m pip install -r "{REQUIREMENTS}"')
+        print(f"{h.FAIL} py3d not installed.", file=sys.stderr)
+        print(f'Run: python -m pip install -r "{REQUIREMENTS}"', file=sys.stderr)
         sys.exit(2)
     return py3d
 
@@ -132,16 +132,22 @@ def model_animations(model_cfg_text, model_name):
     return {a.name: props(a) for a in anims.values()}
 
 
+def find_selection(lod, name):
+    """The LOD selection called name, matched without case (None when absent).
+
+    Used for every lookup by name: model.cfg animation selections and axes, and
+    Memory LOD points such as 'pos center' and box_placing_min/max.
+    """
+    return next((s for k, s in lod.selections.items() if k.lower() == name.lower()), None)
+
+
 def check_animations(anims, lod_map):
     """Check each model.cfg animation against the model: its selection in the Visual LOD,
     its axis (exactly 2 points) and its begin and end points in the Memory LOD."""
     issues = []
     visual = lod_map["Visual"][1] if "Visual" in lod_map else None
     memory = lod_map["Memory"][1] if "Memory" in lod_map else None
-
-    def find(lod, name):
-        # Selection names match without case in model.cfg lookups.
-        return next((s for k, s in lod.selections.items() if k.lower() == name.lower()), None)
+    find = find_selection
 
     for anim, p in anims.items():
         sel = p.get("selection")
@@ -300,13 +306,12 @@ def config_sets_autocenter_zero(config_path, p3d_path):
     Only the classes that use this model count, so a kit sharing a config.cpp
     with a proxy that sets autocenter = 0 is not flagged. Both model and
     autocenter are inherited from parent classes defined in the same file.
+    Raises OSError when config_path cannot be read, so the caller reports it
+    instead of silently treating the model as not needing autocenter = 0.
     """
     if not config_path or not p3d_path:
         return False
-    try:
-        text = Path(config_path).read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return False
+    text = Path(config_path).read_text(encoding="utf-8", errors="ignore")
 
     classes = {}
 
@@ -360,10 +365,19 @@ def check_autocenter_prop(lod, config_wants_zero=False):
 def check_collision_materials(lod, lod_type):
     """Check every face of a collision LOD has a material (references/p3d-killers.md
     section 10). Without one the engine finds no surface: bullets pass through and
-    footstep sounds and the action cursor can fail."""
+    footstep sounds can fail.
+
+    Geometry, GeoPhys and FireGeo faces without a material are CRITICAL. ViewGeo
+    faces are only a WARNING: View Geometry blocks sight and the action cursor,
+    and BI models commonly leave its faces without a penetration material, so a
+    missing one there is not known to break anything (references section 10)."""
     missing = sum(1 for face in lod.faces if not (face.material or "").strip())
     if not missing:
         return []
+    if lod_type == "ViewGeo":
+        return [("WARNING",
+                 f"{missing}/{len(lod.faces)} faces in the ViewGeo LOD have no material. Usually fine; "
+                 "assign a penetration .rvmat if the action cursor misses this object.")]
     return [("CRITICAL",
              f"{missing}/{len(lod.faces)} faces in the {lod_type} LOD have no material. Assign a "
              "penetration .rvmat (e.g. dz\\data\\data\\penetration\\wood_desk.rvmat) to every face.")]
@@ -391,19 +405,33 @@ def check_watertight(lod):
     return issues
 
 
+def face_area(coords):
+    """Area of a polygon (triangle or quad) from its vertex coordinates.
+
+    The whole polygon counts, not only its first three vertices: the quad is
+    split into the fan triangles (v0, v1, v2) and (v0, v2, v3), whose normals are
+    summed as vectors (Newell's method). A quad whose first three vertices lie
+    on one line keeps its real area, and a quad that folds onto itself (a bow
+    tie whose halves cancel) comes out as zero.
+    """
+    nx = ny = nz = 0.0
+    x0, y0, z0 = coords[0]
+    for (x1, y1, z1), (x2, y2, z2) in zip(coords[1:], coords[2:]):
+        ax, ay, az = x1 - x0, y1 - y0, z1 - z0
+        bx, by, bz = x2 - x0, y2 - y0, z2 - z0
+        nx += ay * bz - az * by
+        ny += az * bx - ax * bz
+        nz += ax * by - ay * bx
+    return 0.5 * (nx * nx + ny * ny + nz * nz) ** 0.5
+
+
 def check_degenerate_faces(lod):
-    """Check for zero-area faces."""
+    """Check for zero-area faces, measured over the whole polygon (face_area)."""
     issues = []
     degen = 0
     for face in lod.faces:
         verts = face.vertices
-        if len(verts) < 3:
-            degen += 1; continue
-        v = [v.point.coords for v in verts]
-        e1 = (v[1][0]-v[0][0], v[1][1]-v[0][1], v[1][2]-v[0][2])
-        e2 = (v[2][0]-v[0][0], v[2][1]-v[0][1], v[2][2]-v[0][2])
-        area = ((e1[1]*e2[2]-e1[2]*e2[1])**2 + (e1[2]*e2[0]-e1[0]*e2[2])**2 + (e1[0]*e2[1]-e1[1]*e2[0])**2) ** 0.5
-        if area < 1e-8:
+        if len(verts) < 3 or face_area([v.point.coords for v in verts]) < 1e-8:
             degen += 1
     if degen > 0:
         issues.append(("WARNING", f"{degen} degenerate (zero-area) faces won't register collision."))
@@ -419,16 +447,19 @@ def check_memory_lod(lod, wants_zero=False, has_geometry=True):
     bounding box first and box_placing_min/max only as a fallback (section 7).
     """
     issues = []
-    sels = list(lod.selections.keys())
 
-    # pos center, for autocenter=0 items only
-    if wants_zero and 'pos center' not in sels:
+    def has(name):
+        return find_selection(lod, name) is not None
+
+    # pos center, for autocenter=0 items only. Names match without case, as in
+    # the animation lookups, so 'Pos Center' counts.
+    center = find_selection(lod, 'pos center')
+    if wants_zero and center is None:
         issues.append(("WARNING",
             "Missing 'pos center' memory point. Engine auto-calculates bounding center, "
             "which may be wrong for tall/asymmetric objects. Add at (0,0,0)."))
     elif wants_zero:
-        sel = lod.selections['pos center']
-        for pt, w in sel.points.items():
+        for pt, w in center.points.items():
             c = pt.coords
             if abs(c[0]) > 0.5 or abs(c[1]) > 0.5 or abs(c[2]) > 0.5:
                 issues.append(("NOTE",
@@ -436,13 +467,13 @@ def check_memory_lod(lod, wants_zero=False, has_geometry=True):
                     f"for autocenter=0 items this should be near (0,0,0)."))
 
     # box_placing_min / box_placing_max
-    has_min = 'box_placing_min' in sels
-    has_max = 'box_placing_max' in sels
+    has_min = has('box_placing_min')
+    has_max = has('box_placing_max')
     if has_min != has_max:
         issues.append(("WARNING",
             f"Only one of box_placing_min/max found. Both are needed for hologram placement."))
     elif not has_min and not has_geometry and not (
-            'boundingbox_min' in sels and 'boundingbox_max' in sels):
+            has('boundingbox_min') and has('boundingbox_max')):
         issues.append(("NOTE",
             "No box_placing_min/max points and no Geometry LOD. Deployable items need one "
             "of them for hologram placement."))
@@ -478,20 +509,40 @@ def check_visual_lod(lod):
     return issues
 
 
+# A double-quoted string, a /* */ comment or a // comment. Strings come first so a
+# "//" inside one (url = "http://...") is kept, not read as a comment.
+_TEXT_COMMENT = re.compile(r'"[^"\n]*"|/\*.*?\*/|//[^\n]*', re.S)
+
+
+def strip_comments(text):
+    """Blank out // and /* */ comments, keeping strings and line breaks.
+
+    Each comment becomes the newlines it held, so line numbers stay correct.
+    """
+    def repl(m):
+        tok = m.group(0)
+        return tok if tok.startswith('"') else "\n" * tok.count("\n")
+    return _TEXT_COMMENT.sub(repl, text)
+
+
 def check_p_drive_paths_in_file(filepath):
-    """Check for P:\\ drive paths in text files (config.cpp, .rvmat)."""
+    """Check for P:\\ drive paths in text files (config.cpp, .rvmat, model.cfg).
+
+    Each one is a P-DRIVE finding, which fails the run. Paths that appear only
+    in a comment are ignored: the engine never reads them.
+    """
     issues = []
     try:
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            lines = f.readlines()
+            lines = strip_comments(f.read()).split("\n")
         for i, line in enumerate(lines, 1):
             # Match P:\ or P:/ paths (case-insensitive), but not the "p://" inside a
             # URL such as url = "http://www.dayzgame.com" in CfgMods.
             matches = re.findall(r'(?<![A-Za-z0-9])(P:[\\\/][^"\';\s]+)', line, re.IGNORECASE)
             for m in matches:
-                issues.append(("WARNING",
-                    f"Line {i}: Absolute P:\\ path '{m}': breaks on other machines. "
-                    f"Use game-relative path (remove 'P:\\' prefix)."))
+                issues.append(("P-DRIVE",
+                    f"Line {i}: Absolute P:\\ path '{m}': breaks on other machines "
+                    f"and fails the run. Use game-relative path (remove 'P:\\' prefix)."))
     except Exception as e:
         issues.append(("ERROR", f"Cannot read {filepath}: {e}"))
     return issues
@@ -501,12 +552,16 @@ def check_p_drive_paths_in_file(filepath):
 # MAIN AUDIT
 # ============================================================================
 
-def audit_p3d(filepath, model_cfg=None, config=None):
+def audit_p3d(filepath, model_cfg=None, config=None, tally=None):
     """Full audit of one P3D file.
 
     model_cfg is the model.cfg whose animations are checked; config is the
     config.cpp that decides whether the autocenter LOD property is needed.
+    tally, when given, is a dict filled with this file's counts for the
+    --scan-dir summary (see tally_issues).
     """
+    if tally is None:
+        tally = {}
     print(f"\n{'='*70}")
     print(f"AUDITING P3D: {filepath}")
     print(f"{'='*70}")
@@ -514,13 +569,23 @@ def audit_p3d(filepath, model_cfg=None, config=None):
     try:
         with open(filepath, 'rb') as f:
             sig = f.read(4)
+            if sig == b'ODOL':
+                print(f"  {h.FAIL} Not MLOD format (sig={sig}): this is a binarized ODOL model, so it "
+                      f"was not audited. Audit the MLOD source it was built from (the .p3d Object "
+                      f"Builder saves; Addon Builder binarizes it into ODOL when packing the PBO).",
+                      file=sys.stderr)
+                tally["odol"] = 1
+                return False
             if sig != b'MLOD':
-                print(f"  {h.FAIL} Not MLOD format (sig={sig}). Cannot audit ODOL. Provide source MLOD.")
+                print(f"  {h.FAIL} Not MLOD format (sig={sig}): not a .p3d model this script can read.",
+                      file=sys.stderr)
+                tally["unreadable"] = 1
                 return False
             f.seek(0)
             p = load_py3d().P3D(f)
     except Exception as e:
-        print(f"  {h.FAIL} Failed to read: {e}")
+        print(f"  {h.FAIL} Failed to read: {e}", file=sys.stderr)
+        tally["unreadable"] = 1
         return False
 
     size = os.path.getsize(filepath)
@@ -543,7 +608,14 @@ def audit_p3d(filepath, model_cfg=None, config=None):
     all_issues.extend(check_required_lods(lod_map))
 
     # Decided once: gates the autocenter property and the 'pos center' checks.
-    wants_zero = config_sets_autocenter_zero(config, filepath)
+    # An unreadable config.cpp is an ERROR that fails the run, not a silent "no".
+    try:
+        wants_zero = config_sets_autocenter_zero(config, filepath)
+    except OSError as e:
+        wants_zero = False
+        msg = f"Cannot read config {config}: {e}. The autocenter and pos center checks were skipped."
+        print(f"  ERROR: {msg}")
+        all_issues.append(("ERROR", msg))
 
     # Collision LODs
     for lt in ["Geometry", "GeoPhys", "FireGeo", "ViewGeo"]:
@@ -618,18 +690,52 @@ def audit_p3d(filepath, model_cfg=None, config=None):
                 all_issues.append((sev, msg))
 
     # Summary
+    tally.update(tally_issues(all_issues))
     crits = sum(1 for s, _ in all_issues if s == "CRITICAL")
+    errors = sum(1 for s, _ in all_issues if s == "ERROR")
     warns = sum(1 for s, _ in all_issues if s == "WARNING")
     notes = sum(1 for s, _ in all_issues if s == "NOTE")
     print(f"\n  {'='*50}")
-    if crits == 0 and warns == 0:
+    if crits == 0 and errors == 0 and warns == 0:
         print(f"  RESULT: ALL CHECKS PASSED ({notes} notes)")
+    elif errors:
+        print(f"  RESULT: {crits} CRITICAL, {errors} ERROR, {warns} WARNING, {notes} NOTE")
     else:
         print(f"  RESULT: {crits} CRITICAL, {warns} WARNING, {notes} NOTE")
-    return crits == 0
+    return crits == 0 and errors == 0
 
 
-def audit_text_file(filepath, label="file"):
+def tally_issues(issues):
+    """Count (severity, message) issues for the --scan-dir summary.
+
+    'warning' counts only warnings that are not P:\\ paths, so the counts
+    never overlap.
+    """
+    return {
+        "critical": sum(1 for sev, _ in issues if sev == "CRITICAL"),
+        "p_drive": sum(1 for sev, _ in issues if sev == "P-DRIVE"),
+        "warning": sum(1 for sev, _ in issues if sev == "WARNING"),
+        "unreadable": sum(1 for sev, _ in issues if sev == "ERROR"),
+    }
+
+
+def describe_tally(t):
+    """Summary fragment for one failing file, e.g. '2 CRITICAL, 1 P:\\ path'."""
+    if t.get("odol"):
+        return "ODOL reject (binarized model; audit the source MLOD)"
+    parts = []
+    if t.get("critical"):
+        parts.append(f"{t['critical']} CRITICAL")
+    if t.get("p_drive"):
+        parts.append(f"{t['p_drive']} P:\\ path(s)")
+    if t.get("warning"):
+        parts.append(f"{t['warning']} other WARNING")
+    if t.get("unreadable"):
+        parts.append("unreadable")
+    return ", ".join(parts) or "failed"
+
+
+def audit_text_file(filepath, label="file", tally=None):
     """Audit a text file for P:\\ paths."""
     print(f"\n{'='*70}")
     print(f"AUDITING {label}: {filepath}")
@@ -639,39 +745,64 @@ def audit_text_file(filepath, label="file"):
         print(f"  {sev}: {msg}")
     if not issues:
         print(f"  OK: No P:\\ paths found.")
-    return not any(sev in ("CRITICAL", "WARNING", "ERROR") for sev, _ in issues)
+    if tally is not None:
+        tally.update(tally_issues(issues))
+    return not any(sev in ("CRITICAL", "P-DRIVE", "ERROR") for sev, _ in issues)
+
+
+def overall_line(odol, other):
+    """Final verdict line from the count of ODOL rejects and of other failed files.
+
+    An ODOL .p3d was never audited, so a run whose only failures are ODOL
+    rejects says NOT AUDITED instead of claiming issues were found in it.
+    """
+    noun = "binarized ODOL .p3d file(s)"
+    if not odol and not other:
+        return "OVERALL: ALL PASSED"
+    if not other:
+        return f"OVERALL: NOT AUDITED: {odol} {noun}; audit the MLOD source instead"
+    line = "OVERALL: ISSUES FOUND: fix before building PBO"
+    if odol:
+        line += f" ({odol} {noun} not audited)"
+    return line
 
 
 def scan_directory(dirpath):
-    """Scan entire mod directory for all auditable files."""
+    """Scan entire mod directory for all auditable files.
+
+    Ends with a summary: one line of totals (CRITICAL findings, P:\\ paths,
+    ODOL rejects), then one line per failing file, so a single binarized
+    .p3d in the mod is named instead of hiding inside 'ISSUES FOUND'.
+    Returns the tally of each failed file (empty when everything passed).
+    """
     print(f"\nScanning directory: {dirpath}")
-    all_pass = True
+    results = []  # (path, passed, tally)
 
     # P3D files
-    p3d_files = glob.glob(os.path.join(dirpath, '**', '*.p3d'), recursive=True)
-    for f in sorted(p3d_files):
-        if not audit_p3d(f, find_model_cfg(f, dirpath), find_model_cfg(f, dirpath, "config.cpp")):
-            all_pass = False
+    for f in sorted(glob.glob(os.path.join(dirpath, '**', '*.p3d'), recursive=True)):
+        t = {}
+        ok = audit_p3d(f, find_model_cfg(f, dirpath), find_model_cfg(f, dirpath, "config.cpp"), tally=t)
+        results.append((f, ok, t))
 
-    # config.cpp
-    cfg_files = glob.glob(os.path.join(dirpath, '**/config.cpp'), recursive=True)
-    for f in sorted(cfg_files):
-        if not audit_text_file(f, "config.cpp"):
-            all_pass = False
+    # config.cpp, .rvmat files, model.cfg
+    for pattern, label in (('**/config.cpp', "config.cpp"), ('**/*.rvmat', ".rvmat"),
+                           ('**/model.cfg', "model.cfg")):
+        for f in sorted(glob.glob(os.path.join(dirpath, pattern), recursive=True)):
+            t = {}
+            ok = audit_text_file(f, label, tally=t)
+            results.append((f, ok, t))
 
-    # .rvmat files
-    rvmat_files = glob.glob(os.path.join(dirpath, '**', '*.rvmat'), recursive=True)
-    for f in sorted(rvmat_files):
-        if not audit_text_file(f, ".rvmat"):
-            all_pass = False
+    failed = [(f, t) for f, ok, t in results if not ok]
+    crit = sum(t.get("critical", 0) for _, t in failed)
+    pdrive = sum(t.get("p_drive", 0) for _, t in failed)
+    odol = sum(t.get("odol", 0) for _, t in failed)
+    print(f"\n{'='*70}")
+    print(f"SCAN SUMMARY: {len(failed)} of {len(results)} file(s) failed: "
+          f"{crit} CRITICAL, {pdrive} P:\\ path(s), {odol} ODOL reject(s)")
+    for f, t in failed:
+        print(f"  {os.path.relpath(f, dirpath)}: {describe_tally(t)}")
 
-    # model.cfg
-    mcfg_files = glob.glob(os.path.join(dirpath, '**/model.cfg'), recursive=True)
-    for f in sorted(mcfg_files):
-        if not audit_text_file(f, "model.cfg"):
-            all_pass = False
-
-    return all_pass
+    return [t for _, t in failed]
 
 
 def main(argv=None):
@@ -681,7 +812,10 @@ def main(argv=None):
                         '(also decides whether the Geometry LOD needs the autocenter property)')
     parser.add_argument('--model-cfg', help='model.cfg whose CfgModels animations are checked against '
                         'the .p3d (also scanned for absolute P-drive paths)')
-    parser.add_argument('--rvmat', nargs='*', default=[], help='.rvmat files to check for absolute P-drive paths')
+    # action='append' (one file per flag), not nargs='*': a greedy list swallowed a following
+    # model.p3d, which then only got the P:\ text scan and could pass without being audited.
+    parser.add_argument('--rvmat', action='append', default=[], metavar='RVMAT',
+                        help='.rvmat file to check for absolute P-drive paths (repeat for more)')
     parser.add_argument('--scan-dir', help='Scan a whole mod directory (ignores the other inputs)')
     args = parser.parse_args(argv)
 
@@ -689,15 +823,14 @@ def main(argv=None):
         parser.error("nothing to audit: give .p3d files, --config, --model-cfg, --rvmat or --scan-dir")
 
     if args.scan_dir and not os.path.isdir(args.scan_dir):
-        print(f"{h.FAIL} Directory not found: {args.scan_dir}")
+        print(f"{h.FAIL} Directory not found: {args.scan_dir}", file=sys.stderr)
         sys.exit(1)
 
     h.gate_on_preflight()
-    all_pass = True
+    failed = []  # tally of each failed input; {"odol": 1} marks an ODOL reject
 
     if args.scan_dir:
-        if not scan_directory(args.scan_dir):
-            all_pass = False
+        failed = scan_directory(args.scan_dir)
     else:
         targets = [(f, None) for f in args.files]
         if args.config:
@@ -707,20 +840,22 @@ def main(argv=None):
         targets.extend((rv, ".rvmat") for rv in args.rvmat)
         for f, label in targets:
             if not os.path.isfile(f):
-                print(f"{h.FAIL} File not found: {f}")
-                all_pass = False
+                print(f"{h.FAIL} File not found: {f}", file=sys.stderr)
+                failed.append({})
             elif label is None and f.lower().endswith('.p3d'):
                 cfg = args.model_cfg if args.model_cfg and os.path.isfile(args.model_cfg) else None
                 config = args.config if args.config and os.path.isfile(args.config) else None
-                if not audit_p3d(f, cfg, config):
-                    all_pass = False
+                t = {}
+                if not audit_p3d(f, cfg, config, tally=t):
+                    failed.append(t)
             elif not audit_text_file(f, label or "file"):
-                all_pass = False
+                failed.append({})
 
+    odol = sum(1 for t in failed if t.get("odol"))
     print(f"\n{'='*70}")
-    print(f"OVERALL: {'ALL PASSED' if all_pass else 'ISSUES FOUND: fix before building PBO'}")
+    print(overall_line(odol, len(failed) - odol))
     print(f"{'='*70}")
-    sys.exit(0 if all_pass else 1)
+    sys.exit(1 if failed else 0)
 
 
 if __name__ == "__main__":

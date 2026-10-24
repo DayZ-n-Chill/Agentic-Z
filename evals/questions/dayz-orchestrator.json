@@ -1,0 +1,61 @@
+{
+  "agent": "dayz-orchestrator",
+  "questions": [
+    {
+      "id": "new-mod-needs-server-instance-before-ingame-gate",
+      "question": "Answer only, do not edit any file, do not run any command and do not start any agent. The user approved the plan for a brand-new mod MyVest, which you just scaffolded. Nobody named a test server, and .server/ has no instance folder yet. Before the first /dayz-gate ingame run, what do you run, and which --server instance do you pass to the gates?",
+      "must_include": [
+        "/dayz-add-server",
+        "chernarus"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-orchestrator.md step 3 (pick the instance the user or plan names, otherwise chernarus; run /dayz-add-server <instance> when .server/<instance>/serverDZ.cfg is missing) and .claude/skills/dayz-gate/SKILL.md --server row (default chernarus)"
+    },
+    {
+      "id": "foreign-session-error-asks-before-yes",
+      "question": "Answer only, do not edit any file, do not run any command and do not start any agent. /dayz-gate ingame MyVest returned ERROR (exit 2) because a DayZDiag_x64.exe session the gate did not start is running. What do you do, and when may you add --yes?",
+      "must_include": [
+        "--yes",
+        "re:\\bask|close",
+        "re:agree|consent|permission|say(s)? yes|confirm|may stop|let the gate stop|allow"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-orchestrator.md step 5 ERROR (ask the user to close it or let the gate stop it; add --yes only when they agree, it may be their play session) and .claude/skills/dayz-gate/SKILL.md 'Do not' (don't pass --yes for the user)"
+    },
+    {
+      "id": "known-failure-goes-to-owning-lead",
+      "question": "Answer only, do not edit any file, do not run any command and do not start any agent. /dayz-gate ingame MyVest returned FAIL with one failure whose triage is known, with owner_agent dayz-wearables-specialist and a fix. Who do you send it to, and what do you send with it?",
+      "must_include": [
+        "re:\\bart\\b|team (that|which) (has|includes|owns)|lead (of|for) the team",
+        "re:\\blead\\b",
+        "points_to",
+        "fix"
+      ],
+      "must_not_include": [
+        "re:^\\W*(send|give) it (straight |directly )?to (`)?dayz-wearables-specialist"
+      ],
+      "verified": ".claude/agents/dayz-orchestrator.md step 5 FAIL (a known entry with a worker owner goes with the fix, the quoted line and points_to to the lead whose team has that worker) and .claude/agents/dayz-lead.md 'Your workers' (wearables-specialist is on the Art row)"
+    },
+    {
+      "id": "new-failure-goes-to-debugger",
+      "question": "Answer only, do not edit any file, do not run any command and do not start any agent. /dayz-gate build MyVest returned FAIL with one failure whose triage status is new. Who diagnoses it, what do you give them, and what do you do with a high-confidence diagnosis?",
+      "must_include": [
+        "dayz-mod-debugger",
+        "--learn"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-orchestrator.md step 5 FAIL (new entries go to dayz-mod-debugger with the gate JSON, the diagnosis to the owning lead, a high-confidence diagnosis recorded with triage.py --learn) and .claude/skills/dayz-gate/SKILL.md Triage (--learn)"
+    },
+    {
+      "id": "first-visual-shot-waits-for-user",
+      "question": "Answer only, do not edit any file, do not run any command and do not start any agent. The first /dayz-gate visual run for MyVest reports every shot as NEW. Do you accept the baselines yourself? What do you do?",
+      "must_include": [
+        "re:\\bno\\b|\\bnot\\b|n't|never|only (when|after|if)",
+        "--accept",
+        "re:capture|diff"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-orchestrator.md step 5 visual (show each shot's capture and diff; run --accept --shot <id> only when the user says the look is right; the first visual gate always waits for the user) and .claude/skills/dayz-gate/SKILL.md 'Do not' (don't --accept a capture nobody has looked at)"
+    }
+  ]
+}

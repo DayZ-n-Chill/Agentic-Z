@@ -9,7 +9,7 @@ argument-hint: "<ModName> [--json] | --all [--json] | record <ModName> <build|li
 
 # /dayz-health
 
-A script reads the stored results and writes the page. It starts no process and needs no DayZ Tools. The AI only reads the summary and tells the user what is open and who owns it.
+A script reads the stored results and writes the page. It starts no process and needs no DayZ Tools. It reads nothing on `P:\`, so it does not gate on `/dayz-preflight`. The AI only reads the summary and tells the user what is open and who owns it.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -23,16 +23,16 @@ python "<skill-dir>\health.py" record <ModName> <kind> [FILE] [--json]
 
 | Argument | Notes |
 |---|---|
-| `<ModName>` | Rebuild and summarize this mod's page. A mod with no results gets a page that says so. |
+| `<ModName>` | Rebuild and summarize this mod's page. A mod that has a `workspace/<ModName>/` folder but no results gets a page that says so. A name with neither a workspace folder nor stored results (usually a typo) is refused with `ERROR`, and nothing is created; the message lists the mods that do have results. `record` applies the same check. |
 | `--all` | Every mod that has stored results. |
 | `record` | Store one result by hand. `<kind>` is `build`, `lint`, `ingame`, `behavior`, `visual` or `review`. `FILE` is the report; without it the script reads standard input. |
 | `--json` | Print the summary as JSON after the first line. |
 
-`record` takes the JSON output of `/dayz-gate <mode> --json` or `/dayz-lint --json` (the verdict line before the JSON is fine), or a `dayz-mod-reviewer` report as text: a `PASS` or `FAIL` line, then lines of the form `<SEVERITY> path:line: what is wrong, and the fix -> <owner>`. `ERROR` reports are refused, since they say nothing about the mod.
+`record` takes the JSON output of `/dayz-gate <mode> --json` or `/dayz-lint --json` (the verdict line before the JSON, text after it and a UTF-8 byte order mark are all fine), or a `dayz-mod-reviewer` report as text: a `PASS` or `FAIL` line, then lines of the form `<SEVERITY> path:line: what is wrong, and the fix -> <owner>`. A review may also be JSON with a `findings` list (it is read as JSON only when the report opens with `{`, so a text review whose finding quotes braces, such as `modded class Foo {}`, stays text); its `severity` is `CRITICAL`, `WARN` or `NIT` as in the text form (`fail` or `error` also count as failures), and any other severity is refused. A `/dayz-gate build` report with a `lint` block is stored as two results, the lint step and the build, exactly as `/dayz-gate` stores it, and `record` prints both paths (`also_recorded` in `--json` names the lint one). `ERROR` reports are refused, since they say nothing about the mod. A report that is missing a field (for example a finding with no `text`, or a behavior check with no `id`) or has a field of the wrong type is refused with `ERROR` naming the field, and nothing is stored. A JSON report whose `mod` is not `<ModName>` is refused, so one mod's results never land on another's page. A `FAIL` review with no line of that form is refused; a review line that looks like a finding but does not match (for example `ERROR path:12: ...` or a missing colon) is not stored, and `record` prints a warning naming it (`unparsed` in `--json`).
 
 ## Where results go
 
-`/dayz-gate` stores every `PASS` or `FAIL` it gives, so the history fills itself. A `build` run stores two results, one for its lint step and one for the build. Each result is one file:
+`/dayz-gate` stores every `PASS` or `FAIL` it gives, so the history fills itself. A `build` run stores two results, one for its lint step and one for the build (the same happens when you `record` a build report by hand). Both carry the same time; the lint file is named one microsecond earlier, so the history lists the lint step before the build it belongs to. Each result is one file:
 
 ```
 .server/!Health/<ModName>/results/<UTC time>-<kind>.json
@@ -68,7 +68,7 @@ Times are UTC. Open `health.html` in a browser, or read `health.md` in the edito
 
 ## Output and exit codes
 
-The first line is `OK` (exit 0) or `ERROR` (exit 2: bad arguments, no cached project, a bad mod name, or a report that is not a `PASS` or `FAIL` result). Then one line per mod and the paths of its two pages:
+The first line is `OK` (exit 0) or `ERROR` (exit 2: bad or missing arguments, no cached project, a bad mod name, a mod with no workspace folder and no stored results, or a report that is not a `PASS` or `FAIL` result or is missing a field). On `ERROR` the next line says why (with `--json`, a JSON object with `"verdict": "ERROR"` and `error`). On `OK` there follows one line per mod and the paths of its two pages:
 
 ```
 OK

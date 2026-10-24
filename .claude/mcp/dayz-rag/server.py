@@ -16,6 +16,10 @@ Repeated searches are answered from an in-memory cache keyed on the query,
 its filters and the index build time. A rebuilt index (a new manifest.json)
 empties the cache and reopens the table on the next search.
 
+The tools are async and run their blocking work (the Voyage call with its
+retries, the LanceDB search, file reads) in a worker thread, so a slow or
+hung Voyage call never stalls the other tools or the MCP session.
+
 Embedding: Voyage AI cloud (default voyage-code-3, 1024D). Uses input_type="query"
 for asymmetric retrieval — matches the "document" mode used at index time.
 
@@ -28,6 +32,7 @@ import hashlib
 import json
 import os
 import sys
+import threading
 import time
 from collections import OrderedDict
 from pathlib import Path
@@ -41,6 +46,8 @@ TABLE_NAME = "chunks"
 DEFAULT_EMBED_MODEL = "voyage-code-3"
 MAX_TOP_K = 25
 MAX_FILE_BYTES = 200_000
+ALLOWED_DRIVE = "P:"  # get_dayz_file reads only this drive (tests point it at a temp drive)
+SNIPPET_MAX_CHARS = 1500  # each search hit's snippet is cut to this many characters
 CACHE_MAX = 256  # repeated search answers kept in memory, oldest dropped first
 
 # Optional distance ceiling for search results. LanceDB returns L2² distance
@@ -66,13 +73,21 @@ VALID_FILE_TYPES = {"c", "cpp", "hpp", "h", "layout", "cfg", "rvmat", "xml", "js
 
 
 def _load_embed_model_name() -> str:
-    """Read model from index config. Falls back to env override, then default."""
-    cfg = INDEX_ROOT / "config.json"
-    if cfg.exists():
+    """Return the model the index was built with.
+
+    manifest.json's embed_model comes first: it is the file whose change tells
+    the server the index was rebuilt, so the model and the rebuild signal
+    always arrive together. config.json is next (for an index whose manifest
+    lacks the field), then the VOYAGE_MODEL env var, then the default.
+    """
+    for name in ("manifest.json", "config.json"):
         try:
-            return json.loads(cfg.read_text(encoding="utf-8")).get("embed_model", DEFAULT_EMBED_MODEL)
-        except (json.JSONDecodeError, OSError):
-            pass
+            data = json.loads((INDEX_ROOT / name).read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError, ValueError):
+            continue
+        model = data.get("embed_model") if isinstance(data, dict) else None
+        if isinstance(model, str) and model.strip():
+            return model.strip()
     return os.environ.get("VOYAGE_MODEL", DEFAULT_EMBED_MODEL).strip() or DEFAULT_EMBED_MODEL
 
 
@@ -87,6 +102,9 @@ _file_hashes: Optional[dict] = None  # path -> sha256 the indexer recorded; set 
 # is_stale flag is still checked against the file on every answer.
 _search_cache: "OrderedDict[tuple, list[dict]]" = OrderedDict()
 _manifest_stamp: Optional[int] = None  # manifest.json mtime the cache and open table belong to
+# Searches run in worker threads (see build_app), so the cache and the index
+# sync are guarded. The lock is never held across the Voyage call.
+_state_lock = threading.Lock()
 
 
 def _get_index_built_at() -> Optional[float]:
@@ -116,9 +134,10 @@ def _manifest_mtime() -> Optional[int]:
 def _sync_with_index() -> None:
     """Forget cached answers, the open table, the build time and the embed model once the index is rebuilt.
 
-    The indexer writes manifest.json last, so a changed manifest mtime means a
-    new index. Checking it costs one stat per search. A --full rebuild may use a
-    different VOYAGE_MODEL, so the query model is read again from config.json.
+    A changed manifest.json mtime means a new index. Checking it costs one
+    stat per search. A --full rebuild may use a different VOYAGE_MODEL, so the
+    query model is read again, from manifest.json itself (see
+    _load_embed_model_name), so it can never lag behind the rebuild signal.
     """
     global _manifest_stamp, _table, _index_built_at, _file_hashes, _embed_model
     stamp = _manifest_mtime()
@@ -244,7 +263,7 @@ def _format_hit(row: dict) -> dict:
         "line_start": int(row.get("line_start", 0)),
         "line_end": int(row.get("line_end", 0)),
         "distance": float(row.get("_distance", 0.0)),
-        "snippet": (row.get("content", "") or "")[:1500],
+        "snippet": (row.get("content", "") or "")[:SNIPPET_MAX_CHARS],
         "is_stale": is_stale,
     }
     if stale_reason:
@@ -259,20 +278,26 @@ def search_dayz_source_impl(
     max_distance: Optional[float] = None,
 ) -> list[dict]:
     """Semantic search over indexed vanilla DayZ source. Returns top_k chunks."""
+    if file_type is not None and file_type not in VALID_FILE_TYPES:
+        raise ValueError(f"file_type must be one of {sorted(VALID_FILE_TYPES)} or None")
+    # Distances are L2² (never negative) and a perfect match is rare, so a
+    # cutoff of 0 or below would silently return nothing: reject it instead.
+    if max_distance is not None and not float(max_distance) > 0:
+        raise ValueError(f"max_distance must be greater than 0 (got {max_distance})")
     if not query or not query.strip():
         return []
     top_k = max(1, min(int(top_k), MAX_TOP_K))
-    if file_type is not None and file_type not in VALID_FILE_TYPES:
-        raise ValueError(f"file_type must be one of {sorted(VALID_FILE_TYPES)} or None")
 
     threshold = max_distance if max_distance is not None else DEFAULT_MAX_DISTANCE
     query = " ".join(query.split())
 
-    _sync_with_index()
-    key = (query, top_k, file_type, _get_index_built_at())
-    rows = _search_cache.get(key)
+    with _state_lock:
+        _sync_with_index()
+        key = (query, top_k, file_type, _get_index_built_at())
+        rows = _search_cache.get(key)
+        if rows is not None:
+            _search_cache.move_to_end(key)
     if rows is not None:
-        _search_cache.move_to_end(key)
         return _finish(rows, threshold)
 
     table = _get_table()
@@ -283,9 +308,10 @@ def search_dayz_source_impl(
         # file_type is checked against VALID_FILE_TYPES above, so quoting it is safe.
         q = q.where(f"file_type = '{file_type}'", prefilter=True)
     rows = q.limit(top_k).to_list()
-    _search_cache[key] = rows
-    if len(_search_cache) > CACHE_MAX:
-        _search_cache.popitem(last=False)
+    with _state_lock:
+        _search_cache[key] = rows
+        if len(_search_cache) > CACHE_MAX:
+            _search_cache.popitem(last=False)
     return _finish(rows, threshold)
 
 
@@ -304,9 +330,14 @@ def _slice_lines(path: str, text: str, line_start: Optional[int], line_end: Opti
     """Return the whole text, or the inclusive 1-based line range, as a result dict.
 
     line_end past the end of the file is clamped; a start past the end or an
-    inverted range is a bad argument.
+    inverted range is a bad argument. Lines are split on "\n" only, the same
+    way the indexer (dayz-search-index/index.py _split_lines) numbers them:
+    str.splitlines also breaks at \f, \v, \x1c-\x1e, \x85 and \u2028, which
+    would put search hit line numbers out of step with this tool.
     """
-    lines = text.splitlines()
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()
     if line_start is None and line_end is None:
         return {"path": path, "line_start": 1, "line_end": len(lines), "content": text}
     s = 1 if line_start is None else int(line_start)
@@ -325,10 +356,11 @@ def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Op
     """Fetch a file (or line range) from disk for follow-up after a search hit.
 
     `path` should be one returned by search_dayz_source. Only paths on the P:
-    drive are accepted, to stop arbitrary file reads.
+    drive (ALLOWED_DRIVE) are accepted, to stop arbitrary file reads.
 
     The check is lexical: os.path.normpath collapses `..` and `.` without
-    touching the filesystem, and the drive must still be P: afterwards.
+    touching the filesystem, and the drive must still be P: afterwards, so
+    `P:\\..\\Windows` normalises to `P:\\Windows` and never leaves the drive.
     Path.resolve() is deliberately not used because P:\\ is usually a `subst`
     drive and resolve() would map it back to the host folder. The flip side is
     that junctions and symlinks under P:\\ (for example P:\\Mods or the
@@ -338,10 +370,10 @@ def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Op
     p = Path(path)
     if not p.is_absolute():
         raise ValueError(f"path must be absolute (got {path!r})")
-    if p.drive.upper() != "P:":
+    if p.drive.upper() != ALLOWED_DRIVE.upper():
         raise ValueError(f"refusing to read outside P:\\ (got {p.drive or '<no drive>'})")
     normalized = Path(os.path.normpath(str(p)))
-    if normalized.drive.upper() != "P:":
+    if normalized.drive.upper() != ALLOWED_DRIVE.upper():
         raise ValueError(f"refusing to read outside P:\\ (normalized to {normalized})")
     if not normalized.is_file():
         raise FileNotFoundError(f"not a file: {normalized}")
@@ -351,7 +383,16 @@ def get_dayz_file_impl(path: str, line_start: Optional[int] = None, line_end: Op
             f"{normalized} is {size} bytes (>{MAX_FILE_BYTES}); pass line_start/line_end to fetch a slice"
         )
     text = normalized.read_text(encoding="utf-8", errors="replace")
-    return _slice_lines(str(normalized), text, line_start, line_end)
+    out = _slice_lines(str(normalized), text, line_start, line_end)
+    # A range can be open-ended (only line_start) or simply wide, so the cap
+    # applies to what is returned, not only to whole-file reads.
+    returned = len(out["content"].encode("utf-8"))
+    if returned > MAX_FILE_BYTES:
+        raise ValueError(
+            f"lines {out['line_start']}-{out['line_end']} of {normalized} are {returned} bytes "
+            f"(>{MAX_FILE_BYTES}); pass a narrower line_start/line_end"
+        )
+    return out
 
 
 def _read_manifest(path: Path) -> Optional[dict]:
@@ -359,7 +400,7 @@ def _read_manifest(path: Path) -> Optional[dict]:
         return None
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as e:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as e:
         raise RuntimeError(f"{path} is unreadable ({e}); rebuild that index with --full") from e
 
 
@@ -376,16 +417,23 @@ def list_indexed_sources_impl() -> dict:
 def build_app():
     """Build the FastMCP app with its three read-only tools. Raises ImportError
     when the mcp SDK is missing."""
+    import anyio
     from mcp.server.fastmcp import FastMCP
     from mcp.types import ToolAnnotations
 
     mcp = FastMCP("dayz-rag")
-    read_only = ToolAnnotations(readOnlyHint=True)
+    # The MCP spec defaults openWorldHint to true, so the local-only tools
+    # (they read only P:\ and the local index) must set it to False explicitly.
+    read_only = ToolAnnotations(readOnlyHint=True, openWorldHint=False)
     # Every uncached search calls the Voyage API, so it reaches outside this machine.
     read_only_remote = ToolAnnotations(readOnlyHint=True, openWorldHint=True)
 
+    # Each tool is async and runs its blocking body in a worker thread. FastMCP
+    # calls a sync tool directly on the event loop, so a search stuck in
+    # Voyage retries (4 attempts, 30 s timeout each) would freeze every other
+    # tool and the session until it gave up.
     @mcp.tool(annotations=read_only_remote)
-    def search_dayz_source(
+    async def search_dayz_source(
         query: str,
         top_k: int = 5,
         file_type: Optional[str] = None,
@@ -406,11 +454,15 @@ def build_app():
             max_distance: drop hits whose `distance` (LanceDB L2² distance) is
                 above this threshold. Lower = closer match. Thresholds are model
                 and corpus dependent; calibrate by running unfiltered queries
-                first. Default None = no filter (or env var DAYZ_RAG_MAX_DISTANCE
-                if set).
+                first. Must be greater than 0. Default None = no filter (or env
+                var DAYZ_RAG_MAX_DISTANCE if set).
 
         Returns: list of {path, file_type, parent_context, line_start, line_end,
-        distance, snippet, is_stale, stale_reason}. `is_stale=True` means the file
+        distance, snippet, is_stale}, plus stale_reason ("modified" or
+        "missing") only on hits where is_stale is true. `snippet` is the chunk's
+        text cut to its first 1500 characters, while line_start/line_end span
+        the whole chunk: fetch those lines with get_dayz_file to see all of it.
+        `is_stale=True` means the file
         changed since the index was built (newer mtime and a different content
         hash) or is missing; the snippet may not match what's currently on disk.
         An index built without content hashes compares mtime only, so after
@@ -420,13 +472,14 @@ def build_app():
         .claude/skills/_shared/dayz-conventions.md). A repeated search is
         answered from a cache until the index is rebuilt.
         """
-        return search_dayz_source_impl(query, top_k, file_type, max_distance)
+        return await anyio.to_thread.run_sync(search_dayz_source_impl, query, top_k, file_type, max_distance)
 
     @mcp.tool(annotations=read_only)
-    def get_dayz_file(path: str, line_start: Optional[int] = None, line_end: Optional[int] = None) -> dict:
+    async def get_dayz_file(path: str, line_start: Optional[int] = None, line_end: Optional[int] = None) -> dict:
         """Fetch a vanilla DayZ source file (or line range) from P:\\ for follow-up.
 
-        Files over 200 KB need a line range.
+        Files over 200 KB need a line range, and a range whose lines add up
+        to more than 200 KB is refused: ask for a narrower one.
 
         Args:
             path: a path returned by search_dayz_source (must be under P:\\)
@@ -435,10 +488,10 @@ def build_app():
 
         Returns: {path, line_start, line_end, content}.
         """
-        return get_dayz_file_impl(path, line_start, line_end)
+        return await anyio.to_thread.run_sync(get_dayz_file_impl, path, line_start, line_end)
 
     @mcp.tool(annotations=read_only)
-    def list_indexed_sources() -> dict:
+    async def list_indexed_sources() -> dict:
         """Return {"source": manifest} for the vanilla source index (P:\\). The
         value is null when the index has not been built. The manifest includes
         per-type counts, embed model, indexed-at timestamp, token usage, and cost
@@ -446,7 +499,7 @@ def build_app():
 
         Useful to verify the index is fresh, or to confirm what was indexed.
         """
-        return list_indexed_sources_impl()
+        return await anyio.to_thread.run_sync(list_indexed_sources_impl)
 
     return mcp
 

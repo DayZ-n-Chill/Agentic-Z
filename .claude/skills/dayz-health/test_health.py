@@ -18,7 +18,7 @@ T0 = datetime(2026, 10, 20, 12, 0, 0, tzinfo=timezone.utc)
 @pytest.fixture
 def project(tmp_path, monkeypatch):
     proj = tmp_path / "proj"
-    proj.mkdir()
+    (proj / "workspace" / "MyVest").mkdir(parents=True)
     monkeypatch.setattr(health.h, "resolve_project_dir", lambda: proj)
     return proj
 
@@ -71,9 +71,17 @@ def test_gate_report_stores_one_file_per_result_and_lint_separately(project):
     fixture_history(project)
     files = sorted((project / ".server" / "!Health" / "MyVest" / "results").glob("*.json"))
     kinds = [json.loads(f.read_text(encoding="utf-8"))["kind"] for f in files]
-    assert kinds == ["build", "lint", "build", "lint", "ingame", "behavior"]
+    # Oldest first: each build's lint step ran before the build, so it is listed before it.
+    assert kinds == ["lint", "build", "lint", "build", "ingame", "behavior"]
     first = json.loads(files[0].read_text(encoding="utf-8"))
     assert first["schema"] == 1 and first["mod"] == "MyVest" and first["time"] == "2026-10-20T12:00:00Z"
+    assert json.loads(files[1].read_text(encoding="utf-8"))["time"] == first["time"]
+
+
+def test_history_lists_a_builds_lint_step_before_the_build(project, capsys):
+    report = gate_report("build", "PASS", lint={"verdict": "PASS", "errors": 0, "warnings": 0})
+    assert health.main(["record", "MyVest", "build"], stdin=io.StringIO(json.dumps(report))) == 0
+    assert [r["kind"] for r in health.health(project, "MyVest")["history"]] == ["build", "lint"]  # newest first
 
 
 def test_health_has_last_build_last_test_open_findings_and_history(project):
@@ -258,9 +266,91 @@ def test_cli_usage_errors_exit_2(project, capsys, argv):
     assert not list(project.glob(".server/!Health/*/results/*.json"))
 
 
+@pytest.mark.parametrize("argv", [["--bogus"], ["record"], ["record", "MyVest"], ["MyVest", "--bogus"],
+                                  ["record", "MyVest", "frobnicate"]])
+def test_cli_bad_arguments_print_error_first(project, capsys, argv):
+    assert health.main(argv, stdin=io.StringIO("PASS\n{}")) == 2
+    out = capsys.readouterr().out
+    assert out.startswith("ERROR\n") and "usage:" in out
+
+
+def test_cli_bad_arguments_with_json_print_error_json(project, capsys):
+    assert health.main(["record", "--json"]) == 2
+    first, _, rest = capsys.readouterr().out.partition("\n")
+    assert first == "ERROR" and json.loads(rest)["verdict"] == "ERROR"
+
+
+def test_cli_help_exits_0(project, capsys):
+    assert health.main(["--help"]) == 0
+
+
+def test_cli_show_unknown_mod_is_refused_and_creates_nothing(project, capsys):
+    health.store(project, "ModA", {"kind": "build", "verdict": "PASS", "findings": [], "warnings": 0}, T0)
+    assert health.main(["MyVst"]) == 2
+    out = capsys.readouterr().out
+    assert out.startswith("ERROR\n") and "workspace/MyVst/" in out and "ModA" in out
+    assert not (project / ".server" / "!Health" / "MyVst").exists()
+
+
+def test_cli_record_unknown_mod_is_refused_and_creates_nothing(project, capsys):
+    text = "PASS\n" + json.dumps(gate_report("ingame", "PASS") | {"mod": "MyVst"})
+    assert health.main(["record", "MyVst", "ingame"], stdin=io.StringIO(text)) == 2
+    assert capsys.readouterr().out.startswith("ERROR")
+    assert not (project / ".server" / "!Health" / "MyVst").exists()
+
+
+def test_cli_show_mod_with_workspace_but_no_results(project, capsys):
+    assert health.main(["MyVest"]) == 0
+    assert "No gate results yet" in (project / ".server" / "!Health" / "MyVest" / "health.md").read_text(encoding="utf-8")
+
+
+def test_cli_show_mod_with_results_but_no_workspace(project, capsys):
+    health.store(project, "OldMod", {"kind": "build", "verdict": "PASS", "findings": [], "warnings": 0}, T0)
+    assert health.main(["OldMod"]) == 0
+
+
 def test_cli_bad_report_exits_2(project, capsys):
     assert health.main(["record", "MyVest", "build"], stdin=io.StringIO("not a report")) == 2
     assert capsys.readouterr().out.startswith("ERROR")
+
+
+def test_cli_report_for_another_mod_exits_2(project, capsys):
+    report = gate_report("ingame", "FAIL", [failure("SCRIPT (E): NULL pointer")])
+    report["mod"] = "ModA"
+    assert health.main(["record", "ModB", "ingame"], stdin=io.StringIO("FAIL\n" + json.dumps(report))) == 2
+    out = capsys.readouterr().out
+    assert out.startswith("ERROR") and "'ModA'" in out and "'ModB'" in out
+    assert not list(project.glob(".server/!Health/*/results/*.json"))
+
+
+def test_lint_report_for_another_mod_is_refused():
+    lint = {"verdict": "PASS", "mod": "ModA", "errors": 0, "warnings": 0, "findings": []}
+    assert health.parse_report("lint", json.dumps(lint), "ModA")["verdict"] == "PASS"
+    with pytest.raises(health.HealthError, match="ModA"):
+        health.parse_report("lint", json.dumps(lint), "ModB")
+
+
+@pytest.mark.parametrize("line", ["ERROR workspace/MyVest/config.cpp:12: missing texture -> dayz-asset-specialist",
+                                  "CRITICAL workspace/MyVest/config.cpp:12 missing texture",
+                                  "critical workspace/MyVest/config.cpp:12: missing texture"])
+def test_fail_review_with_no_parsed_finding_is_refused(project, capsys, line):
+    text = f"FAIL\n{line}\nChecked config.cpp.\n"
+    assert health.main(["record", "MyVest", "review"], stdin=io.StringIO(text)) == 2
+    assert capsys.readouterr().out.startswith("ERROR")
+    assert not list(project.glob(".server/!Health/*/results/*.json"))
+
+
+def test_review_lines_that_do_not_parse_are_counted_and_warned(project, capsys):
+    bad = "ERROR workspace/MyVest/config.cpp:40: requiredAddons misspelled -> dayz-config-specialist"
+    text = REVIEW_TEXT + bad + "\n"
+    result = health.parse_report("review", text)
+    assert len(result["findings"]) == 3 and result["unparsed"] == [bad]
+    assert "unparsed" not in health.parse_report("review", REVIEW_TEXT)  # the closing prose line is not a finding
+    assert health.main(["record", "MyVest", "review"], stdin=io.StringIO(text)) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("OK\n") and "warning: 1 review line(s)" in out and bad in out
+    assert health.main(["record", "MyVest", "review", "--json"], stdin=io.StringIO(text)) == 0
+    assert json.loads(capsys.readouterr().out.partition("\n")[2])["unparsed"] == [bad]
 
 
 def test_cli_no_project_exits_2(monkeypatch, capsys):
@@ -311,3 +401,95 @@ def test_cli_record_visual(project, tmp_path, capsys):
     report.write_text("PASS\n" + json.dumps(visual_report("PASS")), encoding="utf-8")
     assert health.main(["record", "MyVest", "visual", str(report)]) == 0
     assert health.load_results(project, "MyVest")[0]["kind"] == "visual"
+
+
+# --- malformed and hand-recorded reports -----------------------------------------------
+
+def _results_dir(proj):
+    return proj / ".server" / "!Health" / "MyVest" / "results"
+
+
+@pytest.mark.parametrize("kind, report, field", [
+    ("review", {"verdict": "FAIL", "mod": "MyVest", "findings": [{"severity": "WARN", "message": "x"}]}, "text"),
+    ("build", {"verdict": "FAIL", "mode": "build", "mod": "MyVest", "failures": [{"category": "build_error"}]}, "text"),
+    ("lint", {"verdict": "FAIL", "mod": "MyVest", "findings": [{"severity": "error", "file": "a.c"}]}, "text"),
+    ("behavior", {"verdict": "FAIL", "mode": "behavior", "mod": "MyVest", "checks": [{"status": "FAIL"}]}, "id"),
+    ("build", {"verdict": "PASS", "mode": "build", "mod": "MyVest", "lint": {"verdict": "PASS"}}, "warnings"),
+])
+def test_cli_report_missing_a_field_exits_2_and_names_it(project, capsys, kind, report, field):
+    # These used to raise an uncaught KeyError: a traceback with exit 1 instead of ERROR and exit 2.
+    assert health.main(["record", "MyVest", kind], stdin=io.StringIO(json.dumps(report))) == 2
+    out = capsys.readouterr().out
+    assert out.startswith("ERROR\n") and repr(field) in out
+    assert not _results_dir(project).exists()
+
+
+def test_cli_report_with_a_wrong_type_exits_2(project, capsys):
+    report = gate_report("build", "FAIL", [dict(failure("x"), count="many")])
+    assert health.main(["record", "MyVest", "build"], stdin=io.StringIO(json.dumps(report))) == 2
+    assert capsys.readouterr().out.startswith("ERROR\n")
+    assert not _results_dir(project).exists()
+
+
+def test_json_review_critical_is_a_failure_counted_once(project):
+    report = {"verdict": "FAIL", "mod": "MyVest",
+              "findings": [{"severity": "CRITICAL", "text": "missing texture", "file": "config.cpp", "line": 12}]}
+    result = health.parse_report("review", json.dumps(report))
+    assert result["findings"][0]["severity"] == "fail" and result["warnings"] == 0
+    assert health.main(["record", "MyVest", "review"], stdin=io.StringIO(json.dumps(report))) == 0
+    md = (project / ".server" / "!Health" / "MyVest" / "health.md").read_text(encoding="utf-8")
+    assert "| Review | FAIL | 1 | 0 |" in md  # history row: one failure, no warning
+
+
+@pytest.mark.parametrize("sev, stored", [("WARN", "warn"), ("warning", "warn"), ("NIT", "nit"), ("error", "fail")])
+def test_json_review_severities_map_like_the_text_form(sev, stored):
+    report = {"verdict": "FAIL", "findings": [{"severity": sev, "text": "x"}]}
+    result = health.parse_report("review", json.dumps(report))
+    assert result["findings"][0]["severity"] == stored
+    assert result["warnings"] == (0 if stored == "fail" else 1)
+
+
+def test_json_review_unknown_severity_is_refused():
+    with pytest.raises(health.HealthError, match="severity"):
+        health.parse_report("review", json.dumps({"verdict": "FAIL", "findings": [{"severity": "BAD", "text": "x"}]}))
+
+
+def test_cli_hand_recorded_build_stores_its_lint_step(project, capsys):
+    lint_warn = failure("[lint:suffix] vest.paa has no suffix", category="lint", triage=None)
+    report = gate_report("build", "PASS", warnings=[lint_warn], lint={"verdict": "PASS", "errors": 0, "warnings": 1})
+    assert health.main(["record", "MyVest", "build", "--json"], stdin=io.StringIO("PASS\n" + json.dumps(report))) == 0
+    out = json.loads(capsys.readouterr().out.split("\n", 1)[1])
+    assert out["recorded"].endswith("-build.json") and out["also_recorded"][0].endswith("-lint.json")
+    latest = health.health(project, "MyVest")["latest"]
+    assert latest["lint"]["verdict"] == "PASS" and latest["lint"]["warnings"] == 1
+    assert latest["lint"]["findings"][0]["text"] == "[lint:suffix] vest.paa has no suffix"
+    assert latest["build"]["verdict"] == "PASS"
+
+
+def test_hand_recorded_build_without_lint_stores_one_result():
+    assert [r["kind"] for r in health.parse_reports("build", json.dumps(gate_report("build", "PASS")))] == ["build"]
+
+
+def test_cli_stdin_with_byte_order_mark_is_read(project, capsys):
+    assert health.main(["record", "MyVest", "review"], stdin=io.StringIO("\ufeff" + REVIEW_TEXT)) == 0
+    assert capsys.readouterr().out.startswith("OK\n")
+    assert health.load_results(project, "MyVest")[0]["verdict"] == "FAIL"
+
+
+def test_json_report_followed_by_trailing_text_is_parsed():
+    text = "PASS\n" + json.dumps(gate_report("build", "PASS")) + "\nBuild finished in 12s.\n"
+    assert health.parse_report("build", text)["verdict"] == "PASS"
+
+
+@pytest.mark.parametrize("quote", ["has an empty body {}", 'quotes {"a": 1} from the config'])
+def test_text_review_whose_finding_quotes_braces_is_parsed_as_text(project, capsys, quote):
+    text = f"FAIL\nCRITICAL workspace/MyVest/a.c:12: modded class Foo {quote}, add the override -> dayz-script-specialist\n"
+    result = health.parse_report("review", text)
+    assert result["verdict"] == "FAIL" and result["findings"][0]["line"] == 12 and quote in result["findings"][0]["text"]
+    assert health.main(["record", "MyVest", "review"], stdin=io.StringIO(text)) == 0
+    assert health.load_results(project, "MyVest")[0]["verdict"] == "FAIL"
+
+
+def test_json_review_with_leading_whitespace_is_still_json():
+    report = {"verdict": "PASS", "findings": [{"severity": "NIT", "text": "x"}]}
+    assert health.parse_report("review", "\n  " + json.dumps(report))["findings"][0]["severity"] == "nit"

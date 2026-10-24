@@ -3,6 +3,12 @@
 Verified from 9 vanilla particle files. Properties are per-emitter unless noted.
 All values are space-separated. Curves use keyframe pairs: `time value [time value ...]`.
 
+## Contents
+
+- [Structure](#structure)
+- [Complete property table](#complete-property-table)
+- [Vanilla examples (annotated)](#vanilla-examples-annotated)
+
 ---
 
 ## Structure

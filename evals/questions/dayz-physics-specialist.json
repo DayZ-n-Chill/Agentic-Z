@@ -15,7 +15,7 @@
       "question": "Answer only, do not edit any file. My class MyMod_Crate inherits from vanilla WoodenCrate. Players can drop it but can never throw it. Is that a bug in my mod?",
       "must_include": [
         "re:heavy",
-        "re:\\bnot a bug\\b|expected|by design|intended|normal|\\bno\\b"
+        "re:\\bnot a bug\\b|n['’]t a bug\\b|expected|by design|intended|normal|\\bno\\b"
       ],
       "verified": "P:/scripts/4_world/entities/dayzplayerimplementthrowing.c:187 and :231 (no throw with a HEAVY hand profile), P:/scripts/4_world/entities/manbase/dayzplayer/dayzplayercfgbase.c:854 (WoodenCrate uses heavyItemBehaviour), P:/DZ/gear/camping/config.cpp:10176 (itemBehaviour=0)"
     },

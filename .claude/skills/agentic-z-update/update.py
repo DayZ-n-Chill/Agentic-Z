@@ -22,11 +22,11 @@ from __future__ import annotations
 import argparse
 import datetime
 import enum
+import http.client
 import json
 import os
 import subprocess
 import sys
-import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Iterable, Optional
@@ -160,12 +160,30 @@ def repo_root() -> Optional[Path]:
 
 
 def working_tree_clean_for(paths: list[str]) -> tuple[bool, list[str]]:
-    """Check if any of the given paths have uncommitted changes."""
-    r = run(["git", "status", "--porcelain", "--", *paths], capture=True)
-    if not r.stdout.strip():
-        return True, []
-    dirty = [line[3:] for line in r.stdout.splitlines() if line.strip()]
-    return False, dirty
+    """Check if any tracked file under the given paths has uncommitted changes.
+
+    Untracked files are ignored (--untracked-files=no): a skill the user just
+    added is classified local-only-edit and left alone, and an untracked file at
+    a path upstream adds is a conflict, so neither needs the gate. -z keeps
+    non-ASCII paths verbatim instead of octal-escaped; git writes them as UTF-8.
+    """
+    r = subprocess.run(
+        ["git", "status", "--porcelain", "-z", "--untracked-files=no", "--", *paths],
+        check=True, capture_output=True, text=True, encoding="utf-8",
+    )
+    # Each -z entry is `XY path`; a rename or copy is followed by its original path.
+    entries = r.stdout.split("\0")
+    dirty: list[str] = []
+    i = 0
+    while i < len(entries):
+        entry = entries[i]
+        i += 1
+        if len(entry) <= 3:
+            continue
+        dirty.append(entry[3:])
+        if "R" in entry[:2] or "C" in entry[:2]:
+            i += 1
+    return not dirty, dirty
 
 
 def remote_url(name: str) -> str | None:
@@ -182,7 +200,15 @@ def ensure_upstream() -> bool:
     existing = remote_url(UPSTREAM_REMOTE)
     if existing is None:
         log("INFO", f"Adding {UPSTREAM_REMOTE} remote = {UPSTREAM_URL}")
-        run(["git", "remote", "add", UPSTREAM_REMOTE, UPSTREAM_URL])
+        try:
+            run(["git", "remote", "add", UPSTREAM_REMOTE, UPSTREAM_URL], capture=True)
+        except subprocess.CalledProcessError as e:
+            # Return False instead of raising so --check --quiet (the SessionStart
+            # hook) still prints its one line and exits 0.
+            detail = (e.stderr or "").strip().splitlines()
+            log("ERR", f"git remote add {UPSTREAM_REMOTE} failed: {detail[-1] if detail else e}")
+            log("ERR", f"Fix: git remote add {UPSTREAM_REMOTE} {UPSTREAM_URL}")
+            return False
         return True
     if normalize_remote_url(existing) != normalize_remote_url(UPSTREAM_URL):
         log("ERR", f"upstream remote points to {existing}, expected {UPSTREAM_URL}")
@@ -218,25 +244,64 @@ def git_show_blob(ref: str, path: str) -> Optional[bytes]:
     return r.stdout
 
 
-def git_object_id(ref: str, path: str) -> Optional[str]:
-    """Return the blob id of `path` at `ref`, or None if it doesn't exist there.
+def tree_object_ids(ref: str) -> dict[str, str]:
+    """{path: object id} for every template file at `ref`, from one `git ls-tree`.
 
-    `ref` is a commit SHA, a branch name, or 'WORKING_TREE' for the on-disk file.
-    The working-tree id comes from `git hash-object --path=<p>`, which applies the
-    same clean filters as `git add` (core.autocrlf, .gitattributes eol). Comparing
-    ids instead of raw bytes keeps a CRLF checkout of an untouched LF file from
-    looking like a local edit.
+    One git process per revision instead of one per file: at about 50 ms per git
+    call on Windows, a per-file lookup of a few hundred drifted files runs past
+    the SessionStart hook's timeout. An unknown ref gives {} (every file missing).
     """
-    if ref == "WORKING_TREE":
-        if not Path(path).is_file():
-            return None
-        cmd = ["git", "hash-object", f"--path={path}", "--", path]
-    else:
-        cmd = ["git", "rev-parse", "--verify", "--quiet", f"{ref}:{path}"]
-    r = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    r = subprocess.run(
+        ["git", "ls-tree", "-r", "-z", ref, "--", *TEMPLATE_PATHS],
+        check=False, capture_output=True, text=True, encoding="utf-8",
+    )
     if r.returncode != 0:
-        return None
-    return r.stdout.strip() or None
+        return {}
+    ids: dict[str, str] = {}
+    for entry in r.stdout.split("\0"):
+        meta, sep, path = entry.partition("\t")  # "<mode> <type> <id>\t<path>"
+        if sep:
+            ids[path] = meta.split()[2]
+    return ids
+
+
+def _c_quote(path: str) -> str:
+    """Quote a path the way `git hash-object --stdin-paths` unquotes it, so a
+    name holding a newline, a quote or a backslash still reads as one path."""
+    escaped = (path.replace("\\", "\\\\").replace('"', '\\"')
+               .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t"))
+    return f'"{escaped}"'
+
+
+def working_tree_object_ids(paths: Iterable[str]) -> dict[str, str]:
+    """{path: blob id} for each path that is a file on disk; missing files are left out.
+
+    Hashes every file in one `git hash-object --stdin-paths` call. Each file is
+    hashed as if added at its own path, so the same clean filters as `git add`
+    apply (core.autocrlf, .gitattributes eol): comparing ids instead of raw bytes
+    keeps a CRLF checkout of an untouched LF file from looking like a local edit.
+    If the batch fails (a file vanished mid-run), each file is hashed on its own.
+    """
+    files = [p for p in paths if Path(p).is_file()]
+    if not files:
+        return {}
+    r = subprocess.run(
+        ["git", "hash-object", "--stdin-paths"],
+        input="".join(_c_quote(p) + "\n" for p in files),
+        check=False, capture_output=True, text=True, encoding="utf-8",
+    )
+    ids = r.stdout.split()
+    if r.returncode == 0 and len(ids) == len(files):
+        return dict(zip(files, ids))
+    result: dict[str, str] = {}
+    for p in files:
+        one = subprocess.run(
+            ["git", "hash-object", f"--path={p}", "--", p],
+            check=False, capture_output=True, text=True,
+        )
+        if one.returncode == 0 and one.stdout.strip():
+            result[p] = one.stdout.strip()
+    return result
 
 
 def _candidate_paths(baseline_sha: str, upstream_ref: str) -> set[str]:
@@ -250,36 +315,38 @@ def _candidate_paths(baseline_sha: str, upstream_ref: str) -> set[str]:
     """
     candidates: set[str] = set()
 
-    def diff_pair(left: str, right: str) -> None:
+    # -z keeps paths verbatim: without it git quotes and octal-escapes any path
+    # with non-ASCII characters (core.quotePath), which names no real file.
+    # Git writes paths as UTF-8, so decode as UTF-8, not the Windows code page.
+    def git_z(*args: str) -> Optional[list[str]]:
         r = subprocess.run(
-            ["git", "diff", "--name-only", left, right, "--", *TEMPLATE_PATHS],
-            check=False, capture_output=True, text=True,
+            ["git", *args], check=False, capture_output=True, text=True, encoding="utf-8",
         )
-        if r.returncode == 0:
-            for line in r.stdout.splitlines():
-                if line.strip():
-                    candidates.add(line.strip())
+        return r.stdout.split("\0") if r.returncode == 0 else None
+
+    def diff_pair(left: str, right: str) -> None:
+        for path in git_z("diff", "--name-only", "-z", left, right, "--", *TEMPLATE_PATHS) or []:
+            if path:
+                candidates.add(path)
 
     if baseline_sha != upstream_ref:
         diff_pair(baseline_sha, upstream_ref)
     diff_pair(baseline_sha, "HEAD")
 
-    # Uncommitted + untracked. --porcelain output is `XY path` (2-char status + space).
-    r = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=all", "--", *TEMPLATE_PATHS],
-        check=False, capture_output=True, text=True,
-    )
-    if r.returncode == 0:
-        for line in r.stdout.splitlines():
-            if len(line) > 3:
-                # Strip rename arrows: "R  oldpath -> newpath" → take both halves.
-                tail = line[3:].strip()
-                if " -> " in tail:
-                    old, new = tail.split(" -> ", 1)
-                    candidates.add(old.strip().strip('"'))
-                    candidates.add(new.strip().strip('"'))
-                else:
-                    candidates.add(tail.strip('"'))
+    # Uncommitted + untracked. Each -z entry is `XY path`; a rename or copy
+    # (R or C in XY) is followed by one more entry holding the original path.
+    entries = git_z("status", "--porcelain", "-z", "--untracked-files=all", "--", *TEMPLATE_PATHS) or []
+    i = 0
+    while i < len(entries):
+        entry = entries[i]
+        i += 1
+        if len(entry) <= 3:
+            continue
+        candidates.add(entry[3:])
+        if "R" in entry[:2] or "C" in entry[:2]:
+            if i < len(entries) and entries[i]:
+                candidates.add(entries[i])
+            i += 1
 
     return candidates
 
@@ -299,12 +366,18 @@ def compute_drift(baseline_sha: Optional[str], upstream_ref: str) -> dict[str, F
         baseline_sha = upstream_ref
 
     candidates = _candidate_paths(baseline_sha, upstream_ref)
+    if not candidates:
+        return {}
+    # A fixed number of git calls however many files drifted (see tree_object_ids).
+    baseline_ids = tree_object_ids(baseline_sha)
+    upstream_ids = baseline_ids if upstream_ref == baseline_sha else tree_object_ids(upstream_ref)
+    local_ids = working_tree_object_ids(sorted(candidates))
     result: dict[str, FileStatus] = {}
     for path in sorted(candidates):
         status = classify_per_file(
-            baseline=git_object_id(baseline_sha, path),
-            local=git_object_id("WORKING_TREE", path),
-            upstream=git_object_id(upstream_ref, path),
+            baseline=baseline_ids.get(path),
+            local=local_ids.get(path),
+            upstream=upstream_ids.get(path),
         )
         if status != FileStatus.UNCHANGED:
             result[path] = status
@@ -314,20 +387,32 @@ def compute_drift(baseline_sha: Optional[str], upstream_ref: str) -> dict[str, F
 def stage_and_commit(updated: list[str], upstream_sha: str) -> bool:
     """Stage the updated paths and commit only them.
 
-    `git commit --only -- <paths>` keeps anything else the user had staged out
-    of the update commit; it stays staged afterwards.
+    `git commit --only` keeps anything else the user had staged out of the
+    update commit; it stays staged afterwards. The paths go to git on stdin
+    (--pathspec-from-file), not the command line: a large first update lists
+    hundreds of paths, which would pass Windows' ~32,000 character command-line
+    limit. --literal-pathspecs keeps a name holding '*' or '[' to that one file.
     """
-    r = run(["git", "add", "--", *updated], check=False)
-    if r.returncode != 0:
+    pathspec = "".join(p + "\0" for p in updated)
+
+    def git_with_paths(*args: str) -> int:
+        return subprocess.run(
+            ["git", "--literal-pathspecs", *args, "--pathspec-from-file=-", "--pathspec-file-nul"],
+            input=pathspec, check=False, text=True, encoding="utf-8",
+        ).returncode
+
+    if git_with_paths("add") != 0:
         return False
     # Skip commit if nothing actually changed in the applied paths.
-    diff = run(["git", "diff", "--cached", "--quiet", "--", *updated], check=False)
-    if diff.returncode == 0:
+    staged = subprocess.run(
+        ["git", "diff", "--cached", "--name-only", "--no-renames", "-z"],
+        check=False, capture_output=True, text=True, encoding="utf-8",
+    )
+    if staged.returncode == 0 and not set(updated) & set(staged.stdout.split("\0")):
         log("OK", "no template changes to commit (working tree already matches upstream)")
         return True
     msg = f"chore: pull Agentic-Z upstream ({upstream_sha[:8]})"
-    r = run(["git", "commit", "--only", "-m", msg, "--", *updated], check=False)
-    if r.returncode != 0:
+    if git_with_paths("commit", "--only", "-m", msg) != 0:
         log("WARN", "commit failed; staged changes left in index for manual handling")
         return False
     log("OK", f"committed: {msg}")
@@ -380,6 +465,9 @@ def run_sync_skills() -> None:
 
 BASELINE_FILE = Path(".claude/.upstream-baseline")
 LOCK_FILE = Path(".claude/.upstream-update.lock")
+# Held for a moment while one run replaces a stale lock, so two runs that both
+# found the same dead-PID lock cannot both replace it.
+LOCK_TAKEOVER_FILE = Path(".claude/.upstream-update.lock.takeover")
 
 
 def read_baseline() -> Optional[str]:
@@ -437,17 +525,30 @@ def read_lock() -> Optional[dict]:
 def write_lock() -> None:
     """Create the lock file with this process's PID and an ISO timestamp.
 
-    The file is created with O_CREAT | O_EXCL, so creating it is atomic: when two
-    updates race, exactly one succeeds and the other gets FileExistsError.
+    The payload is written to a private temp file first and then hard-linked to
+    the lock path. Linking fails with FileExistsError when the lock exists, so
+    creating it is atomic (exactly one of two racing updates succeeds) and the
+    lock is never visible half-written, where another run would read it as
+    unreadable and therefore stale. On a filesystem without hard links it falls
+    back to an O_CREAT | O_EXCL create, which is still exclusive.
     """
     LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
+    payload = json.dumps({
         "pid": os.getpid(),
         "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
-    }
-    fd = os.open(LOCK_FILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        f.write(json.dumps(payload))
+    })
+    tmp = LOCK_FILE.with_name(f"{LOCK_FILE.name}.{os.getpid()}.tmp")
+    tmp.write_text(payload, encoding="utf-8")
+    try:
+        os.link(tmp, LOCK_FILE)
+    except FileExistsError:
+        raise
+    except OSError:
+        fd = os.open(LOCK_FILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(payload)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def release_lock() -> None:
@@ -475,7 +576,8 @@ def installed_search_index_tag() -> Optional[str]:
 
 def latest_search_index_tag() -> Optional[str]:
     """Query GitHub for the latest release that has a dayz-search-index-* asset.
-    Returns None on any failure (offline, rate-limited, no matching asset)."""
+    Returns None on any failure (offline, rate-limited, dropped connection,
+    malformed reply, no matching asset)."""
     req = urllib.request.Request(
         GITHUB_LATEST_RELEASE_URL,
         headers={"Accept": "application/vnd.github+json", "User-Agent": "agentic-z-update"},
@@ -483,13 +585,20 @@ def latest_search_index_tag() -> Optional[str]:
     try:
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError):
+    # OSError covers URLError, timeouts, ssl.SSLError and connection resets
+    # (http.client.RemoteDisconnected); HTTPException covers IncompleteRead;
+    # ValueError covers bad JSON and bad UTF-8.
+    except (OSError, http.client.HTTPException, ValueError):
         return None
-    assets = data.get("assets", [])
+    if not isinstance(data, dict):
+        return None
+    tag = data.get("tag_name")
+    assets = data.get("assets")
+    if not isinstance(tag, str) or not isinstance(assets, list):
+        return None
     for a in assets:
-        name = a.get("name", "")
-        if name.startswith(SEARCH_INDEX_ASSET_PREFIX):
-            return data.get("tag_name")
+        if isinstance(a, dict) and str(a.get("name", "")).startswith(SEARCH_INDEX_ASSET_PREFIX):
+            return tag
     return None
 
 
@@ -767,29 +876,70 @@ def finish_apply(
     return "advanced"
 
 
+def _read_lock_bytes() -> Optional[bytes]:
+    """Return the lock file's raw bytes, or None if there is no lock."""
+    try:
+        return LOCK_FILE.read_bytes()
+    except FileNotFoundError:
+        return None
+
+
+def _remove_stale_lock(seen: bytes) -> str:
+    """Remove the lock only if it still holds `seen`, the bytes judged stale.
+
+    Runs under LOCK_TAKEOVER_FILE (created exclusively), so only one run at a
+    time can replace a stale lock. Re-reading under that guard stops a run that
+    read the stale lock earlier from deleting the fresh lock another run has
+    just created in its place. Returns "removed", "changed" (the lock is no
+    longer the stale one; re-check it) or "busy" (another run is taking over).
+    """
+    try:
+        fd = os.open(LOCK_TAKEOVER_FILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        return "busy"
+    try:
+        os.write(fd, str(os.getpid()).encode("ascii"))
+        os.close(fd)
+        if _read_lock_bytes() != seen:
+            return "changed"
+        LOCK_FILE.unlink(missing_ok=True)
+        return "removed"
+    finally:
+        LOCK_TAKEOVER_FILE.unlink(missing_ok=True)
+
+
 def acquire_lock() -> bool:
     """Acquire the update lock. Returns True if acquired, False if another live process holds it.
 
-    The lock file is created atomically (see write_lock). Stale locks (PID dead
-    or unreadable) are removed and the create is retried once.
+    The lock file is created atomically (see write_lock). A stale lock (PID dead
+    or unreadable) is replaced through _remove_stale_lock, so when two runs find
+    the same stale lock only one of them ends up holding the new one.
     """
-    for _attempt in range(2):
+    for _attempt in range(3):
         try:
             write_lock()
             return True
         except FileExistsError:
             pass
-        existing = read_lock() or {}
+        seen = _read_lock_bytes()
+        if seen is None:
+            continue  # Released between our create and our read; try again.
         try:
+            existing = json.loads(seen.decode("utf-8"))
             pid = int(existing.get("pid", 0))
-        except (TypeError, ValueError):
-            pid = 0
+        except (ValueError, TypeError, AttributeError):
+            existing, pid = {}, 0
         if pid > 0 and _pid_alive(pid):
             log("FAIL", f"Another update is running (PID {pid}, started {existing.get('started_at', '?')}).")
             log("FAIL", "If you're sure it's stuck, delete .claude/.upstream-update.lock")
             return False
-        log("WARN", f"Found stale lock from dead PID {pid}; taking over.")
-        release_lock()
+        result = _remove_stale_lock(seen)
+        if result == "busy":
+            log("FAIL", "Another update is taking over a stale lock right now. Rerun in a moment.")
+            log("FAIL", "If this repeats, delete .claude/.upstream-update.lock.takeover")
+            return False
+        if result == "removed":
+            log("WARN", f"Found stale lock from dead PID {pid}; taking over.")
     log("FAIL", "Could not take the update lock; another update grabbed it first.")
     return False
 
@@ -863,10 +1013,17 @@ def main() -> int:
 
     if not ensure_upstream():
         if args.quiet:
-            print(
-                f"agentic-z: upstream remote points to {remote_url(UPSTREAM_REMOTE)}; "
-                f"run git remote set-url {UPSTREAM_REMOTE} {UPSTREAM_URL}"
-            )
+            existing = remote_url(UPSTREAM_REMOTE)
+            if existing is None:
+                print(
+                    f"agentic-z: could not add the {UPSTREAM_REMOTE} remote; "
+                    f"run git remote add {UPSTREAM_REMOTE} {UPSTREAM_URL}"
+                )
+            else:
+                print(
+                    f"agentic-z: upstream remote points to {existing}; "
+                    f"run git remote set-url {UPSTREAM_REMOTE} {UPSTREAM_URL}"
+                )
             return 0
         return 1
 
@@ -904,7 +1061,11 @@ def main() -> int:
     # upstream HEAD instead, so nothing is overwritten or added on this run: a
     # template file missing locally is in the baseline, so it classifies as
     # locally-deleted and stays deleted unless restored with --per-file.
-    if baseline_sha is None and not args.dry_run:
+    # --dry-run previews against that same baseline but does not write it, so
+    # its preview matches what the real first run would offer.
+    if baseline_sha is None and args.dry_run:
+        baseline_sha = merge_base_sha() or upstream_sha
+    elif baseline_sha is None:
         if not acquire_lock():
             return 1
         first = merge_base_sha() or upstream_sha
