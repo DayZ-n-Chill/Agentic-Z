@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -42,6 +43,8 @@ DEFAULT_INSTANCE = "chernarus"
 DEFAULT_PORT = 2302
 DEFAULT_TIMEOUT = 600  # 10 minutes
 STOP_TIMEOUT_S = 30
+# How long to wait after pass 1 for the stopped server to release its UDP port.
+PORT_RELEASE_TIMEOUT_S = 30
 
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
@@ -148,6 +151,14 @@ def stop_session(procs: list[subprocess.Popen]) -> None:
             print(f"{WARN} PID {proc.pid} did not exit within {STOP_TIMEOUT_S}s; close it manually.")
 
 
+def backup_file(path: Path) -> Path:
+    """Copy path to <name>.bak beside it before an in-place edit, replacing any
+    older backup. The .bak suffix keeps it out of the *.json / *.txt globs."""
+    bak = path.with_name(path.name + ".bak")
+    shutil.copy2(path, bak)
+    return bak
+
+
 def grant_admin_role(player_json: Path) -> bool | None:
     """Add 'admin' to the player's Roles list. Returns True if the file was
     modified, False if it already had the role, None if it could not be read
@@ -165,6 +176,7 @@ def grant_admin_role(player_json: Path) -> bool | None:
         return False
     roles.append("admin")
     data["Roles"] = roles
+    backup_file(player_json)
     # Match COT's own formatting (4-space indent, trailing newline).
     player_json.write_text(json.dumps(data, indent=4) + "\n", encoding="utf-8")
     print(f"{OK} Granted admin to {player_json.stem}")
@@ -177,6 +189,7 @@ def flip_zeros_to_twos(perms_file: Path) -> int:
     text = perms_file.read_text(encoding="utf-8")
     new_text, n = re.subn(r" 0(\r?\n|$)", r" 2\1", text)
     if n:
+        backup_file(perms_file)
         perms_file.write_text(new_text, encoding="utf-8")
     return n
 
@@ -233,6 +246,31 @@ def edit_permissions(profile_dir: Path, triggered: list[Path]) -> bool:
         else:
             print(f"        {perms_file.name}: no 0 entries (already permissive or empty)")
     return ok
+
+
+def wait_for_port_release(port: int, timeout_s: int = PORT_RELEASE_TIMEOUT_S) -> bool:
+    """Poll until UDP port is free again (a killed server can hold it for a few
+    seconds). True once it is free, False if it is still taken at the deadline."""
+    deadline = time.time() + timeout_s
+    while True:
+        if h.udp_port_free(port):
+            return True
+        if time.time() >= deadline:
+            return False
+        time.sleep(1)
+
+
+def admin_players(players_dir: Path) -> list[str]:
+    """Ids of Players/*.json files whose Roles already include 'admin'."""
+    out = []
+    for p in (sorted(players_dir.glob("*.json")) if players_dir.exists() else []):
+        try:
+            roles = json.loads(p.read_text(encoding="utf-8")).get("Roles")
+        except (OSError, json.JSONDecodeError, AttributeError):
+            continue
+        if isinstance(roles, list) and "admin" in roles:
+            out.append(p.stem)
+    return out
 
 
 def launch_pair(
@@ -292,6 +330,11 @@ def main() -> int:
         "--timeout", type=int, default=DEFAULT_TIMEOUT,
         help=f"Seconds to wait for COT to register your character on pass 1 (default: {DEFAULT_TIMEOUT}).",
     )
+    parser.add_argument(
+        "--skip-pass1", action="store_true",
+        help="Skip pass 1 and the edit, and go straight to the relaunch. For a rerun after "
+             "pass 2 could not start; refuses unless a Players JSON already has the admin role.",
+    )
     args = parser.parse_args()
 
     h.gate_on_preflight()
@@ -315,6 +358,15 @@ def main() -> int:
 
     mod_arg = ";".join(str(MODS_ROOT / f"@{name}") for name in full_mods)
     players_dir = profile_dir / "PermissionsFramework" / "Players"
+
+    if args.skip_pass1:
+        admins = admin_players(players_dir)
+        if not admins:
+            print(f"{FAIL} --skip-pass1: no Players JSON in {players_dir} has the admin role yet.")
+            print("       Run without --skip-pass1 so pass 1 can create and edit the files.")
+            return 1
+        print(f"{OK} --skip-pass1: admin already granted to {', '.join(admins)}; skipping pass 1 and the edit.")
+        return run_pass2(args, diag_exe, mod_arg, cfg_path, profile_dir, mission_path, client_diag_dir, display)
 
     # === Pass 1: launch and wait for COT to register the player ===
     print()
@@ -349,6 +401,19 @@ def main() -> int:
         print(f"       Fix the files under {profile_dir / 'PermissionsFramework'} and rerun this skill.")
         return 1
 
+    print()
+    print(f"        Waiting up to {PORT_RELEASE_TIMEOUT_S}s for UDP port {args.port} to be released...")
+    sys.stdout.flush()
+    if not wait_for_port_release(args.port):
+        print(f"{FAIL} UDP port {args.port} is still in use {PORT_RELEASE_TIMEOUT_S}s after pass 1 stopped.")
+        print("       The permission edits are saved. Run /dayz-stop-test, then rerun this skill")
+        print("       with --skip-pass1 to go straight to the relaunch.")
+        return 1
+    return run_pass2(args, diag_exe, mod_arg, cfg_path, profile_dir, mission_path, client_diag_dir, display)
+
+
+def run_pass2(args, diag_exe, mod_arg, cfg_path, profile_dir, mission_path, client_diag_dir, display) -> int:
+    """Relaunch server + client with the admin grant in place and print the summary."""
     print()
     print("[Pass 2/2] Relaunching with admin permissions applied.")
     server_proc, client_proc = launch_pair(

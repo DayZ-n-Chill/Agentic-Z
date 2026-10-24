@@ -110,6 +110,25 @@ def test_shipped_question_files_are_valid(agent):
         assert q.get("verified"), f"{agent}/{q['id']} has no verified source"
 
 
+def test_no_vanilla_human_ai_rejects_an_answer_that_does_not_open_with_no():
+    data, _ = run_evals.validate(run_evals.QUESTIONS_DIR / "dayz-ai-specialist.json")
+    q = next(q for q in data["questions"] if q["id"] == "no-vanilla-human-ai")
+    assert run_evals.score("**No.** Vanilla AI is only DayZInfected and AnimalBase.", q)["passed"]
+    # A wrong answer that says "no" somewhere and mentions infected must still fail.
+    assert not run_evals.score("Sure, inherit SurvivorBase. There is no extra setup; infected are separate.", q)["passed"]
+
+
+def test_long_range_optic_slot_rejects_a_wrong_yes_that_says_not_elsewhere():
+    data, _ = run_evals.validate(run_evals.QUESTIONS_DIR / "dayz-weapon-specialist.json")
+    q = next(q for q in data["questions"] if q["id"] == "long-range-optic-slot")
+    assert run_evals.score("Use weaponOpticsLRS. **No vanilla weapon offers the slot:** only the optic lists it.", q)["passed"]
+    assert run_evals.score("List weaponOpticsLRS. No vanilla gun lists the slot in attachments[].", q)["passed"]
+    assert run_evals.score("Add weaponOpticsLRS. Vanilla weapons don't list it anywhere.", q)["passed"]
+    # A wrong answer that says "not" somewhere must still fail.
+    assert not run_evals.score(
+        "Use weaponOpticsLRS. Yes, the vanilla SVD offers it, so you do not need a custom proxy.", q)["passed"]
+
+
 def test_every_question_file_is_valid():
     suites, problems = run_evals.load_suites(None)
     assert problems == []
@@ -295,3 +314,111 @@ def test_shipped_baseline_has_every_question_file():
     baseline = json.loads(run_evals.BASELINE.read_text(encoding="utf-8"))
     missing = [p.stem for p in sorted(run_evals.QUESTIONS_DIR.glob("*.json")) if p.stem not in baseline]
     assert not missing, f"no baseline for {missing}; run scripts\\dev\\evals.bat --agent <name> --update-baseline"
+
+
+def test_shipped_baseline_entries_record_passed_questions():
+    """compare() checks lost questions only for entries with a "passed" list; without it that check is dead."""
+    baseline = json.loads(run_evals.BASELINE.read_text(encoding="utf-8"))
+    for agent, entry in baseline.items():
+        assert "passed" in entry, f"{agent}: baseline entry has no passed list; rerun with --update-baseline"
+        data = json.loads((run_evals.QUESTIONS_DIR / f"{agent}.json").read_text(encoding="utf-8"))
+        ids = {q["id"] for q in data["questions"]}
+        assert set(entry["passed"]) <= ids, f"{agent}: passed names unknown questions {set(entry['passed']) - ids}"
+        assert len(set(entry["passed"])) == entry["score"], f"{agent}: passed list does not match the score"
+        assert entry["total"] == len(ids), f"{agent}: total {entry['total']} != {len(ids)} questions"
+
+
+def _results(agent, passed, failed):
+    rows = [{"id": i, "passed": True} for i in passed] + [{"id": i, "passed": False} for i in failed]
+    return {"agents": {agent: {"score": len(passed), "total": len(rows), "questions": rows}}}
+
+
+def test_compare_catches_swapped_questions_at_the_same_score():
+    """A run that passes as many questions as the baseline, but different ones, must not pass the gate."""
+    baseline = {"a": {"score": 2, "total": 3, "passed": ["q1", "q2"]}}
+    assert run_evals.compare(_results("a", ["q2", "q3"], ["q1"]), baseline) == ["a: no longer passes q1"]
+    assert run_evals.compare(_results("a", ["q1", "q2", "q3"], []), baseline) == []
+
+
+def test_baseline_gate_fails_when_a_passed_question_now_fails(monkeypatch, tmp_path):
+    baseline = tmp_path / "baseline.json"
+    monkeypatch.setattr(run_evals, "BASELINE", baseline)
+    data, _ = run_evals.validate(run_evals.QUESTIONS_DIR / "dayz-script-specialist.json")
+    ids = [q["id"] for q in data["questions"]]
+    # The baseline says the first question passed; this run passes the second one instead.
+    baseline.write_text(json.dumps({"dayz-script-specialist": {"score": 1, "total": len(ids), "passed": [ids[0]]}}),
+                        encoding="utf-8")
+    by_text = {q["question"]: q for q in data["questions"]}
+    monkeypatch.setattr(run_evals, "ask", lambda agent, q, timeout, model=None:
+                        " ".join(by_text[q]["must_include"]) + " " + by_text[q].get("cite", "")
+                        if by_text[q]["id"] == ids[1] else "")
+    args = ["--agent", "dayz-script-specialist", "--out", str(tmp_path / "r.json")]
+    assert run_evals.main(args + ["--baseline"]) == 1
+    assert run_evals.main(args + ["--update-baseline"]) == 1
+    assert json.loads(baseline.read_text(encoding="utf-8"))["dayz-script-specialist"]["passed"] == [ids[0]]
+
+
+def test_update_baseline_records_the_passed_questions(monkeypatch, tmp_path):
+    baseline = tmp_path / "baseline.json"
+    monkeypatch.setattr(run_evals, "BASELINE", baseline)
+    monkeypatch.setattr(run_evals, "ask", lambda agent, q, timeout, model=None: "")
+    assert run_evals.main(["--agent", "dayz-script-specialist", "--out", str(tmp_path / "r.json"),
+                           "--update-baseline"]) == 0
+    entry = json.loads(baseline.read_text(encoding="utf-8"))["dayz-script-specialist"]
+    assert entry["passed"] == [] and entry["score"] == 0
+
+
+def test_update_baseline_refuses_a_run_where_claude_is_missing(monkeypatch, tmp_path):
+    """Without the claude CLI every question errors; that must not become a first baseline of 0."""
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(run_evals, "BASELINE", baseline)
+    monkeypatch.setattr(run_evals.shutil, "which", lambda name: None)
+    assert run_evals.main(["--agent", "dayz-script-specialist", "--out", str(tmp_path / "r.json"),
+                           "--update-baseline"]) == 1
+    assert json.loads(baseline.read_text(encoding="utf-8")) == {}
+
+
+def test_update_baseline_refuses_when_one_question_times_out(monkeypatch, tmp_path):
+    baseline = tmp_path / "baseline.json"
+    monkeypatch.setattr(run_evals, "BASELINE", baseline)
+    calls = []
+
+    def flaky_ask(agent, q, timeout, model=None):
+        calls.append(q)
+        if len(calls) == 2:
+            raise subprocess.TimeoutExpired("claude", timeout)
+        return ""
+    monkeypatch.setattr(run_evals, "ask", flaky_ask)
+    assert run_evals.main(["--agent", "dayz-script-specialist", "--out", str(tmp_path / "r.json"),
+                           "--update-baseline"]) == 1
+    assert not baseline.exists()
+
+
+def _shipped_question(agent, qid):
+    data = json.loads((run_evals.REPO / "evals" / "questions" / f"{agent}.json").read_text(encoding="utf-8"))
+    return next(q for q in data["questions"] if q["id"] == qid)
+
+
+@pytest.mark.parametrize("answer", [
+    "PlaySoundSet bails out because the sound is already set; call StopSoundSet first.",
+    "m_EngineLoop still holds the normal loop, so PlaySoundSet returns true. Call StopSoundSet(m_EngineLoop) first.",
+    "The EffectSound is not null, so it returns early. Fix: StopSoundSet, then PlaySoundSetLoop.",
+])
+def test_restart_loop_question_accepts_correct_wordings(answer):
+    """The old two-lookahead regex failed a correct 'already set ... StopSoundSet' answer."""
+    q = _shipped_question("dayz-audio-fx-specialist", "restart-loop-needs-stop")
+    assert run_evals.score(answer, q)["passed"]
+
+
+def test_restart_loop_question_rejects_an_answer_without_stop():
+    q = _shipped_question("dayz-audio-fx-specialist", "restart-loop-needs-stop")
+    assert not run_evals.score("The sound is already set, so use a different sound set name.", q)["passed"]
+
+
+def test_shader_range_question_does_not_score_the_unverified_unit():
+    """No P: file states the unit of CfgSoundShaders range, so the question must not score one."""
+    q = _shipped_question("dayz-audio-fx-specialist", "shader-range-unit")
+    checks = " ".join(q["must_include"] + q.get("must_not_include", []))
+    assert "met" not in checks and "unverified" in q["verified"]
+    assert run_evals.score("The range key sets it, for example range=100.", q)["passed"]

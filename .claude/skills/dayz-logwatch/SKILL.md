@@ -24,9 +24,9 @@ python "<skill-dir>\logwatch.py" --dir <folder> [--dir <folder> ...] [--since MI
 |---|---|
 | `--server` | Test server instance added with `/dayz-add-server`. Repeat it for more than one. Default: every instance under `.server/`. |
 | `--dir` | Watch these folders instead of the project's session folders. |
-| `--since` | Read files changed in the last MINUTES from their start. Default 0: only lines written after the watch starts. |
-| `--duration` | Stop after S seconds. |
-| `--until-closed` | Stop once the game client has been seen running and then closes (checked every 5 seconds). The client is the `DayZDiag_x64.exe` whose command line has no `-server`, so a server left running after you close the client window does not keep the watch going. If the client never starts within 300 seconds, stop with `session never started`. Not allowed with `--duration`. |
+| `--since` | Read files changed in the last MINUTES from their start. Default 0: only lines written after the watch starts. A negative value stops with exit 2. |
+| `--duration` | Stop after S seconds. Must be more than 0; 0 or a negative value stops with exit 2. |
+| `--until-closed` | Stop once the game client has been seen running and then closes (checked every 5 seconds). The client is the `DayZDiag_x64.exe` whose command line has no `-server`, so a server left running after you close the client window does not keep the watch going. If the client never starts within 300 seconds, stop with `session never started`. If the process list cannot be read (PowerShell missing, or its `Get-CimInstance Win32_Process` query fails) 3 checks in a row, stop with `cannot read process list` instead of guessing; use `--duration` on such a machine. Not allowed with `--duration`. |
 | `--interval` | Seconds between reads (default 1). Must be at least 0.1; a smaller or negative value stops with exit 2. |
 | `--mod` | Mod name, filled into fixes that mention `<ModName>`. |
 | `--json` | One JSON object per line instead of text. |
@@ -59,7 +59,7 @@ With `--json` each error is `{"event": "error", "status": "known" or "new", "id"
 
 An error line is one that triage classifies (compile errors, NULL pointers, missing classes, textures, models or config entries, crashes) or one that matches a known entry. The same error again, in any file and with any timestamp, has the same fingerprint and is only counted. A new `crash*.log` file is reported as a `new` crash for the debugger, and so is one written in the last MINUTES with `--since`.
 
-Exit code 0 means no error line was seen, 1 means at least one was, and 2 means it could not run (no cached project and no `--dir`, no `.server/` folder, an unknown instance, or a broken known-errors or learned file: bad JSON, a bad regex, or a shipped entry without `pattern`) or, with `--until-closed`, that the session never started. Exit 1 takes precedence: if errors were seen (for example with `--since`) before the session failed to start, the exit code is 1.
+Exit code 0 means no error line was seen, 1 means at least one was, and 2 means it could not run (a bad `--duration`, `--since` or `--interval` value, no cached project and no `--dir`, no `.server/` folder, an unknown instance, or a broken known-errors or learned file: bad JSON, a bad regex, or a shipped entry without `pattern`) or, with `--until-closed`, that the session never started or the process list could not be read. Exit 1 takes precedence: if errors were seen (for example with `--since`) before either of those stops, the exit code is 1.
 
 ## Then
 

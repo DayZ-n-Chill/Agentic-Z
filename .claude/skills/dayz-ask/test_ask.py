@@ -196,6 +196,59 @@ def test_grep_ranks_the_file_holding_more_terms_first(p_drive):
     assert {Path(c["path"]).name for c in cites} == {"foodstage.c", "bleedingsource.c"}
 
 
+# Shaped like P:\scripts\5_mission\gui\scriptshuddebug\huddebugwinhorticulture.c, which a
+# live "how does food spoilage work" run ranked first: gameplay words in widget names only.
+HUD_DEBUG_C = """class HudDebugWinHorticulture : HudDebugWinBase
+{
+	protected EditBoxWidget m_FoodSpoilEditBox;
+	protected EditBoxWidget m_SpoilRemoveEditBox;
+
+	void HudDebugWinHorticulture(Widget widget_root)
+	{
+		m_FoodSpoilEditBox = EditBoxWidget.Cast(m_WgtRoot.FindAnyWidget("FoodSpoilEBox"));
+		m_SpoilRemoveEditBox = EditBoxWidget.Cast(m_WgtRoot.FindAnyWidget("SpoilRemoveEBox"));
+	}
+};
+"""
+
+
+def _add_hud_debug(p_drive, folder=("5_mission", "gui", "scriptshuddebug")):
+    d = p_drive.joinpath("scripts", *folder)
+    d.mkdir(parents=True)
+    (d / "huddebugwinhorticulture.c").write_text(HUD_DEBUG_C, encoding="utf-8")
+
+
+def test_grep_ranks_gameplay_class_above_debug_hud(p_drive):
+    _add_hud_debug(p_drive)
+    report = ask.ask("how does food spoilage work", force_grep=True)
+    assert Path(report["citations"][0]["path"]).name == "foodstage.c"
+
+
+def test_grep_down_weights_debug_and_gui_paths(p_drive, monkeypatch):
+    monkeypatch.setattr(ask, "_declared_names", lambda _lines: [])  # path weight alone
+    _add_hud_debug(p_drive)
+    paths = [c["path"] for c in ask.grep_vanilla(["food", "spoil"], ["scripts"], None, 5, root=p_drive)]
+    assert Path(paths[0]).name == "foodstage.c" and "scriptshuddebug" in paths[-1]
+
+
+def test_grep_boosts_files_declaring_the_terms(p_drive, monkeypatch):
+    monkeypatch.setattr(ask, "DEBUG_GUI_WEIGHT", 1.0)  # name boost alone
+    _add_hud_debug(p_drive, folder=("4_world", "plants"))
+    paths = [c["path"] for c in ask.grep_vanilla(["food", "spoil"], ["scripts"], None, 5, root=p_drive)]
+    assert Path(paths[0]).name == "foodstage.c"
+
+
+def test_declared_names_and_debug_gui_paths(p_drive):
+    assert ask._declared_names(SPOIL_C.splitlines()) == ["foodstage", "updatespoilage"]
+    assert ask._declared_names(["\treturn Foo(x);", "\tm_A = Bar(1);", "\toverride void ProcessDecay(float d)"]) == [
+        "processdecay"]
+    is_dg = ask._is_debug_or_gui
+    assert is_dg(p_drive / "scripts" / "5_mission" / "gui" / "scriptshuddebug" / "x.c", p_drive)
+    assert is_dg(p_drive / "scripts" / "1_core" / "debug" / "x.c", p_drive)
+    assert not is_dg(p_drive / "scripts" / "4_world" / "classes" / "foodstage" / "foodstage.c", p_drive)
+    assert not is_dg(p_drive / "gui" / "layouts" / "x.layout", p_drive)  # --folder gui is not penalized
+
+
 def test_grep_merges_overlapping_windows(p_drive):
     cites = ask.grep_vanilla(["spoil"], ["scripts"], None, 5, root=p_drive)
     assert [(c["line_start"], c["line_end"]) for c in cites] == [(1, 9)]

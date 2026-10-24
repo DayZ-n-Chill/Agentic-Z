@@ -209,3 +209,126 @@ def test_main_exits_1_on_partial_failure(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr("sys.argv", ["pack_texture.py", str(good), str(bad)])
     assert pt.main() == 1
     assert "1 of 2 textures packed." in capsys.readouterr().out
+
+
+def test_pack_one_backs_up_existing_paa_before_overwrite(monkeypatch, tmp_path):
+    src = tmp_path / "vest_co.png"
+    src.write_bytes(b"")
+    dst = tmp_path / "vest_co.paa"
+    dst.write_bytes(b"hand tuned")
+    os.utime(dst, ns=(1_000_000_000, 1_000_000_000))
+
+    def run(cmd):
+        Path(cmd[2]).write_bytes(b"new paa")
+        return _Result(0)
+
+    monkeypatch.setattr(pt.subprocess, "run", run)
+    assert pt.pack_one(tmp_path / "ImageToPAA.exe", src) is True
+    assert dst.read_bytes() == b"new paa"
+    assert (tmp_path / "vest_co.paa.bak").read_bytes() == b"hand tuned"
+
+
+def test_pack_one_keeps_backup_when_conversion_fails(monkeypatch, tmp_path):
+    src = tmp_path / "vest_co.png"
+    src.write_bytes(b"")
+    dst = tmp_path / "vest_co.paa"
+    dst.write_bytes(b"hand tuned")
+
+    def run(cmd):
+        Path(cmd[2]).write_bytes(b"half written")
+        return _Result(1)
+
+    monkeypatch.setattr(pt.subprocess, "run", run)
+    assert pt.pack_one(tmp_path / "ImageToPAA.exe", src) is False
+    assert (tmp_path / "vest_co.paa.bak").read_bytes() == b"hand tuned"
+
+
+def test_pack_one_never_overwrites_an_earlier_backup(monkeypatch, tmp_path):
+    src = tmp_path / "vest_co.png"
+    src.write_bytes(b"")
+    dst = tmp_path / "vest_co.paa"
+    dst.write_bytes(b"second")
+    os.utime(dst, ns=(1_000_000_000, 1_000_000_000))
+    (tmp_path / "vest_co.paa.bak").write_bytes(b"first")
+
+    def run(cmd):
+        Path(cmd[2]).write_bytes(b"third")
+        return _Result(0)
+
+    monkeypatch.setattr(pt.subprocess, "run", run)
+    assert pt.pack_one(tmp_path / "ImageToPAA.exe", src) is True
+    assert (tmp_path / "vest_co.paa.bak").read_bytes() == b"first"
+    assert (tmp_path / "vest_co.paa.bak.1").read_bytes() == b"second"
+
+
+def test_pack_one_without_existing_paa_writes_no_backup(monkeypatch, tmp_path):
+    src = tmp_path / "vest_co.png"
+    src.write_bytes(b"")
+
+    def run(cmd):
+        Path(cmd[2]).write_bytes(b"paa")
+        return _Result(0)
+
+    monkeypatch.setattr(pt.subprocess, "run", run)
+    assert pt.pack_one(tmp_path / "ImageToPAA.exe", src) is True
+    assert not list(tmp_path.glob("*.bak*"))
+
+
+def test_main_dry_run_lists_and_writes_nothing(monkeypatch, tmp_path, capsys):
+    fresh = tmp_path / "fresh_co.png"
+    tuned = tmp_path / "tuned_nohq.png"
+    for p in (fresh, tuned):
+        p.write_bytes(_png(512, 512))
+    (tmp_path / "tuned_nohq.paa").write_bytes(b"hand tuned")
+    before = sorted(p.name for p in tmp_path.iterdir())
+
+    def no_run(*a, **k):
+        raise AssertionError("dry run must not invoke ImageToPAA")
+
+    monkeypatch.setattr(pt.subprocess, "run", no_run)
+    monkeypatch.setattr(pt.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(pt, "resolve_image_to_paa", lambda: tmp_path / "ImageToPAA.exe")
+    monkeypatch.setattr("sys.argv", ["pack_texture.py", "--dry-run", str(fresh), str(tuned)])
+    assert pt.main() == 0
+    out = capsys.readouterr().out
+    assert "fresh_co.png  ->  fresh_co.paa" in out
+    assert "tuned_nohq.png  ->  tuned_nohq.paa" in out
+    assert "would back up the existing tuned_nohq.paa to tuned_nohq.paa.bak" in out
+    assert "fresh_co.paa to" not in out
+    assert sorted(p.name for p in tmp_path.iterdir()) == before
+    assert (tmp_path / "tuned_nohq.paa").read_bytes() == b"hand tuned"
+
+
+def test_main_dry_run_still_validates(monkeypatch, tmp_path):
+    bad = tmp_path / "vest.png"
+    bad.write_bytes(_png(512, 512))
+    monkeypatch.setattr(pt.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr("sys.argv", ["pack_texture.py", "--dry-run", str(bad)])
+    with pytest.raises(SystemExit) as exc:
+        pt.main()
+    assert "basename must end with" in str(exc.value)
+
+
+@pytest.mark.parametrize("names", [("vest_co.png", "vest_co.tga"), ("vest_co.png", "vest_co.png")])
+def test_main_refuses_two_inputs_with_the_same_paa(monkeypatch, tmp_path, names):
+    paths = []
+    for name in names:
+        path = tmp_path / name
+        path.write_bytes(_image(name))
+        paths.append(str(path))
+
+    def no_run(*a, **k):
+        raise AssertionError("nothing may convert when two inputs share a .paa")
+
+    monkeypatch.setattr(pt.subprocess, "run", no_run)
+    monkeypatch.setattr(pt.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(pt, "resolve_image_to_paa", lambda: tmp_path / "ImageToPAA.exe")
+    monkeypatch.setattr("sys.argv", ["pack_texture.py", *paths])
+    with pytest.raises(SystemExit) as exc:
+        pt.main()
+    assert "would both write vest_co.paa" in str(exc.value)
+    assert not (tmp_path / "vest_co.paa").exists()
+
+
+def test_check_unique_outputs_allows_distinct_paa_names(tmp_path):
+    pt.check_unique_outputs([tmp_path / "vest_co.png", tmp_path / "vest_nohq.tga"])  # no SystemExit

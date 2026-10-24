@@ -37,6 +37,22 @@ OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 
 find_dayz_server = h.preflight.find_dayz_server
 
+# Windows device names. A folder called one of these, in any case and with or
+# without an extension, opens the device instead of a folder.
+_RESERVED_DEVICE_NAMES = frozenset(
+    {"con", "prn", "aux", "nul"}
+    | {f"{p}{n}" for p in ("com", "lpt") for n in "0123456789¹²³"}
+)
+
+
+def windows_name_problem(name: str) -> str | None:
+    """Why Windows cannot hold a folder called `name`, or None when it can."""
+    if name.split(".", 1)[0].rstrip(" ").lower() in _RESERVED_DEVICE_NAMES:
+        return "it is a Windows reserved device name (CON, PRN, AUX, NUL, COM0-9, LPT0-9)"
+    if name.endswith((".", " ")):
+        return "Windows strips a trailing dot or space from folder names"
+    return None
+
 
 def validate_instance(instance: str) -> str:
     """argparse type for <instance>: one folder name directly under .server/."""
@@ -46,6 +62,9 @@ def validate_instance(instance: str) -> str:
             "(no path separators, drive letters, '..', or the characters * ? \" < > | "
             "that Windows forbids in file names)."
         )
+    problem = windows_name_problem(instance)
+    if problem:
+        raise argparse.ArgumentTypeError(f"'{instance}' is not a valid instance name: {problem}.")
     if instance.startswith("!"):
         raise argparse.ArgumentTypeError(
             f"'{instance}' is reserved: names starting with '!' belong to shared .server "
@@ -77,6 +96,9 @@ def validate_map(map_arg: str) -> str:
             "single mission folder name such as dayzOffline.namalsk (no path separators, "
             "drive letters, '..', or the characters * ? \" < > |)."
         )
+    problem = windows_name_problem(map_arg)
+    if problem:
+        raise argparse.ArgumentTypeError(f"'{map_arg}' is not a valid map: {problem}.")
     return map_arg
 
 
@@ -98,11 +120,14 @@ def resolve_map_name(instance: str, map_arg: str | None) -> str:
     known map alias, use it as the map. Otherwise fail and force the user to
     be explicit, since we have no way to guess the mission template from a
     free-form name like 'my-test-server'.
+
+    Aliases match in any case (Chernarus, CHERNARUS) and come back lowercase;
+    a custom mission folder name keeps its case.
     """
     if map_arg:
-        return map_arg
-    if instance in KNOWN_MAPS:
-        return instance
+        return map_arg.lower() if map_arg.lower() in KNOWN_MAPS else map_arg
+    if instance.lower() in KNOWN_MAPS:
+        return instance.lower()
     sys.exit(
         f"{FAIL} '{instance}' is not a known map alias and --map was not given.\n"
         f"       Specify --map (one of: {', '.join(KNOWN_MAPS)}, or a custom\n"

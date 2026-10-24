@@ -90,16 +90,35 @@ def mission_types_files(mission: Path) -> list[Path]:
     return [f for f in files if f.is_file()]
 
 
-def resolve_mission(value: Optional[str], project: Optional[Path]) -> Optional[Path]:
-    """A mission folder, or a test server instance name under .server/<instance>/mission/."""
+def resolve_mission(value: Optional[str], roots: list[Path]) -> Optional[Path]:
+    """A mission folder, or a test server instance name under <root>/.server/<instance>/mission/.
+
+    The first root that holds the instance wins.
+    """
     if not value:
         return None
     path = Path(value)
     if path.is_dir():
         return path.resolve()
-    if project is not None and (project / ".server" / value / "mission").is_dir():
-        return project / ".server" / value / "mission"
+    for root in roots:
+        if (root / ".server" / value / "mission").is_dir():
+            return root / ".server" / value / "mission"
     raise ReleaseError(f"--mission {value!r} is not a folder or a .server/<instance>/ test server")
+
+
+def instance_roots(mod_dir_given: bool, mod_dir: Path) -> list[Path]:
+    """Where a --mission instance name is looked up.
+
+    <ModName> form: the cached project the mod lives in. --mod-dir form: the
+    current folder, then the project cached by /dayz-init, if any.
+    """
+    if not mod_dir_given:
+        return [mod_dir.parents[1]]
+    roots = [Path.cwd()]
+    cached = h.load_module("dayz_init_state_module", h.DAYZ_INIT_STATE).cached_project_root()
+    if cached is not None and cached.is_dir():
+        roots.append(cached.resolve())
+    return roots
 
 
 def collect_types(facts: dict, mod_dir: Path, mission: Optional[Path]) -> tuple[list[str], dict]:
@@ -247,11 +266,13 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 0 if e.code == 0 else 2
     try:
         mod, mod_dir, out_dir = rp.resolve_mod(args.mod, args.mod_dir, args.out)
-        project = None if args.mod_dir else mod_dir.parents[1]
-        mission = resolve_mission(args.mission, project)
+        mission = resolve_mission(args.mission, instance_roots(bool(args.mod_dir), mod_dir) if args.mission else [])
         report = server_kit(mod, mod_dir, out_dir, mission, args.deps)
     except (ReleaseError, OSError, ValueError) as e:
-        print(json.dumps({"error": str(e)}, indent=2) if args.json else f"[FAIL] {e}")
+        if args.json:
+            print(json.dumps({"error": str(e)}, indent=2))
+        else:
+            print(f"[FAIL] {e}", file=sys.stderr)
         return 2
     print(json.dumps(report, indent=2) if args.json else render_text(report))
     return 0

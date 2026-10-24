@@ -50,7 +50,7 @@ Ask questions 1 to 3 in one AskUserQuestion call, putting the usual choice first
 
 Then ask in chat for the free-text values:
 
-- Mod name (letters, digits and underscores, starting with a letter; `plan.py` refuses any other name). For an import, offer the source folder's name as the default.
+- Mod name (letters, digits and underscores, starting with a letter, at most 64 characters; `plan.py` refuses any other name). For an import, offer the source folder's name as the default.
 - Import only: the source folder path, and whether to write missing scaffold pieces into it (`--scaffold`) or only link it (`--no-scaffold`).
 - New mod, or import with `--scaffold`, when `.claude/local-memory/dayz-author.txt` does not exist: the author handle shown in mod descriptions (a scaffolded import writes it into `config.cpp`). Pass it as `--author`.
 - Optional spec, only when `workspace\<ModName>\spec.md` does not exist and the mod is not a `--no-scaffold` import: "What should the mod do? Say skip to leave it for later." This is the only spec question. If the user skips, pass no spec flags. Otherwise turn the answer into one `--goal` sentence plus `--item` (each item or class the mod adds), `--behavior` (each thing a player can do or see in game) and `--done-check` (each check that proves it works), all repeatable. Use the user's own words and don't invent features they did not ask for. The plan writes these to `spec.md`, and dayz-mod-architect reads it first when it plans the mod.

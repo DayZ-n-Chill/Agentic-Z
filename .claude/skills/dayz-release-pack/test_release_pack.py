@@ -136,6 +136,42 @@ def test_changelog_from_git_groups_conventional_commits(mod, tmp_path):
     assert report["changes"]["commits"] == 1
 
 
+def test_tag_on_head_starts_after_the_tag_before_it(mod, tmp_path):
+    git(mod, "init", "-q")
+    commit(mod, mod / "config.cpp", "feat: add the black vest")
+    git(mod, "tag", "v0.9.0")
+    commit(mod, mod / "config.cpp", "feat: add the green vest")
+    git(mod, "tag", "v1.0.0")  # tagged before writing the notes
+    report, files = pack(mod, tmp_path, version="1.0.0")
+    assert report["changes"] == {"since": "v0.9.0", "from": "tag", "commits": 1, "skipped": "v1.0.0"}
+    assert "- Add the green vest" in files["changelog.md"] and "black vest" not in files["changelog.md"]
+    assert not any(w.startswith("changelog-") for w in report["warnings"])
+    assert "changelog starts after v0.9.0, the tag before v1.0.0" in rp.render_text(report)
+
+
+def test_tag_matching_version_is_skipped_when_not_on_head(mod, tmp_path):
+    git(mod, "init", "-q")
+    commit(mod, mod / "config.cpp", "feat: add the black vest")
+    git(mod, "tag", "v0.9.0")
+    commit(mod, mod / "config.cpp", "feat: add the green vest")
+    git(mod, "tag", "1.0.0")
+    commit(mod, mod / "mod.cpp", "fix: green vest texture path")
+    report, files = pack(mod, tmp_path, version="1.0.0")
+    assert report["changes"]["since"] == "v0.9.0" and report["changes"]["skipped"] == "1.0.0"
+    assert "Add the green vest" in files["changelog.md"] and "Green vest texture path" in files["changelog.md"]
+
+
+def test_only_tag_on_head_lists_whole_history(mod, tmp_path):
+    git(mod, "init", "-q")
+    commit(mod, mod / "config.cpp", "feat: add the black vest")
+    git(mod, "tag", "v1.0.0")
+    report, files = pack(mod, tmp_path, version="1.0.0")
+    assert report["changes"] == {"since": None, "from": None, "commits": 1, "skipped": "v1.0.0"}
+    assert "- Add the black vest" in files["changelog.md"]
+    [warning] = [w for w in report["warnings"] if w.startswith("changelog-")]
+    assert warning.startswith("changelog-full-history: v1.0.0 is this release")
+
+
 def test_own_repo_without_tags_warns_full_history(mod, tmp_path):
     git(mod, "init", "-q")
     commit(mod, mod / "config.cpp", "feat: add the black vest")
@@ -215,6 +251,26 @@ def test_broken_config_is_an_error(mod, tmp_path):
         pack(mod, tmp_path)
 
 
+def test_rerun_keeps_an_edited_workshop_description(mod, tmp_path):
+    out = tmp_path / "out"
+    rp.release_pack("MyVest", mod, out, p_mods=None, date="2026-10-21", deps=["CF"])
+    desc = out / "workshop-description.txt"
+    edited = desc.read_text(encoding="utf-8").replace("SERVER_KIT_LINK", "https://example.com/kit.zip")
+    desc.write_text(edited, encoding="utf-8")
+    report = rp.release_pack("MyVest", mod, out, p_mods=None, date="2026-10-21", deps=["CF"])
+    assert (out / "workshop-description.txt.bak").read_text(encoding="utf-8") == edited
+    assert "SERVER_KIT_LINK" in desc.read_text(encoding="utf-8")
+    assert any(w.startswith("kept-backup:") and "workshop-description.txt.bak" in w for w in report["warnings"])
+    # Unchanged files get no backup, and a second edited rerun never replaces the first backup.
+    assert not (out / "classnames.md.bak").exists()
+    desc.write_text("second edit\n", encoding="utf-8")
+    rp.release_pack("MyVest", mod, out, p_mods=None, date="2026-10-21", deps=["CF"])
+    assert (out / "workshop-description.txt.bak").read_text(encoding="utf-8") == edited
+    assert (out / "workshop-description.txt.2.bak").read_text(encoding="utf-8") == "second edit\n"
+    report = rp.release_pack("MyVest", mod, out, p_mods=None, date="2026-10-21", deps=["CF"])
+    assert not any(w.startswith("kept-backup:") for w in report["warnings"])
+
+
 def test_cli_json_and_errors(mod, tmp_path):
     out = tmp_path / "cli"
     r = subprocess.run([sys.executable, str(HERE / "release_pack.py"), "--mod-dir", str(mod), "--out", str(out),
@@ -224,6 +280,7 @@ def test_cli_json_and_errors(mod, tmp_path):
     assert (out / "workshop-description.txt").is_file()
     r = subprocess.run([sys.executable, str(HERE / "release_pack.py"), "--mod-dir", str(tmp_path / "missing")],
                        capture_output=True, text=True)
-    assert r.returncode == 2 and r.stdout.startswith("[FAIL]")
+    assert r.returncode == 2 and r.stderr.startswith("[FAIL]") and "[FAIL]" not in r.stdout
     r = subprocess.run([sys.executable, str(HERE / "release_pack.py")], capture_output=True, text=True)
     assert r.returncode == 2
+

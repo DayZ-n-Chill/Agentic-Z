@@ -84,6 +84,8 @@ DayZ RAG index downloader
 - **Checksum:** GitHub publishes a SHA-256 `digest` for release assets it stores. The download must match it, or the skill exits non-zero and leaves the existing index untouched. This catches corrupted or truncated downloads only: the digest comes from the same GitHub release as the file, so it does not prove who published the asset. An asset with no digest is refused before downloading unless you pass `--allow-unverified`, which installs it with a warning.
 - **Safe extraction:** archive entries that would land outside the extract folder (absolute paths, `..` traversal, links pointing outside) are refused. On Python 3.12+ this uses the `tarfile` `data` filter.
 - **Network errors** (offline, DNS, proxy, HTTP errors, and timeouts or dropped connections partway through the download) exit non-zero with the URL and the reason, leaving the existing index untouched.
+- **GitHub API rate limit:** without a token GitHub allows 60 API requests an hour per IP address. When that runs out (HTTP 403 or 429 with `X-RateLimit-Remaining: 0`), the skill says so and prints the reset time instead of blaming your connection. Set `GITHUB_TOKEN` in your environment to send it with the release lookup and raise the limit to 5,000 an hour.
+- **Index in use:** on Windows a running dayz-rag MCP server keeps the LanceDB files open, so the old index cannot be moved aside. The skill then exits non-zero with "Close Claude Code (or disconnect dayz-rag with /mcp) and rerun", leaving the existing index untouched.
 
 ## After downloading
 
@@ -92,7 +94,7 @@ The dayz-rag MCP server reads the index when it starts. Restart Claude Code (or 
 ## Dependencies
 
 - Python 3.8+ (stdlib only: `urllib`, `tarfile`, `hashlib`, `json`)
-- No `gh` CLI required; uses GitHub's public REST API for release metadata
+- No `gh` CLI required; uses GitHub's public REST API for release metadata (optional `GITHUB_TOKEN` for a higher rate limit)
 
 ## Do not
 

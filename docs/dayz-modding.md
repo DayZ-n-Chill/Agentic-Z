@@ -376,6 +376,7 @@ When a Superpowers workflow (`/brainstorming`, `/writing-plans`, `/executing-pla
 | whole mod, many parts | `dayz-orchestrator` as the main session (`claude --agent agentic-z:dayz-orchestrator`) |
 | planning / design a mod | `dayz-mod-architect` |
 | build check / verification | `dayz-build-checker`, then `dayz-ingame-tester` |
+| release build and test session (build the PBO, start a session for the user) | `dayz-build-engineer` |
 | code review | `dayz-mod-reviewer` |
 | scripting (Enforce Script) | `dayz-script-specialist` |
 | config / data (config.cpp, CfgVehicles, etc.) | `dayz-config-specialist` |
@@ -394,6 +395,7 @@ When a Superpowers workflow (`/brainstorming`, `/writing-plans`, `/executing-pla
 | sound sets, sound shaders, particles | `dayz-audio-fx-specialist` |
 | weight, collision, dropping and throwing | `dayz-physics-specialist` |
 | log / crash forensics (RPT, script.log, BattlEye) | `dayz-mod-debugger` |
+| README, changelog, Workshop text, server owner kit | `dayz-docs-writer` |
 | Figma → `.layout` conversion | `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator` (gate mode), then `dayz-ui-specialist` for the widget script (in order) |
 
 How to apply: when a Superpowers skill says "dispatch a code reviewer" while you're working on DayZ files, call `Agent(subagent_type="dayz-mod-reviewer", ...)` instead of the default. Same idea for the other roles. For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generic agents are fine.

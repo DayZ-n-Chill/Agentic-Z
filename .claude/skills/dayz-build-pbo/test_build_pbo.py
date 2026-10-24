@@ -1,6 +1,7 @@
 """Tests for build.py: workspace, junction, ownership-marker and stale-PBO checks."""
 from __future__ import annotations
 
+import fnmatch
 import importlib.util
 import os
 import time
@@ -150,6 +151,49 @@ def test_build_cmd_passes_exclude_list_that_drops_gui_sources():
     assert "workbench\\*.*" in patterns and "*\\workbench\\*" in patterns
 
 
+def _exclude_patterns():
+    return [
+        line.strip() for line in build.EXCLUDE_LIST.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith(";")
+    ]
+
+
+def _excluded(rel_path, patterns):
+    # Model of AddonBuilder's matching: whole path relative to the mod root,
+    # case-insensitive, '*' crosses folder separators. AddonBuilder is closed
+    # source, so this model is unverified; it is the reading under which an
+    # unanchored *\Temp\* pattern drops nested folders.
+    rel = rel_path.lower()
+    return any(fnmatch.fnmatchcase(rel, pat.lower()) for pat in patterns)
+
+
+@pytest.mark.parametrize("rel", [
+    "scripts\\4_World\\Temp\\MyHelper.c",
+    "scripts\\3_Game\\source\\Util.c",
+    "data\\doc\\sign.p3d",
+    "data\\Doc\\sign_co.paa",
+    "gui\\layouts\\temp\\panel.layout",
+    "config.cpp",
+])
+def test_exclude_list_keeps_nested_source_temp_doc_folders(rel):
+    # A folder named Source, Temp or Doc below the mod root is part of the mod.
+    # The old *\Source\*, *\Temp\* and *\Doc\* patterns dropped these files
+    # silently, so their classes went missing in game.
+    assert not _excluded(rel, _exclude_patterns())
+
+
+@pytest.mark.parametrize("rel", ["Source\\model.blend", "temp\\scratch.c", "Doc\\readme.txt"])
+def test_exclude_list_still_drops_root_source_temp_doc_folders(rel):
+    assert _excluded(rel, _exclude_patterns())
+
+
+def test_exclude_list_anchors_source_temp_doc_to_mod_root():
+    for pat in _exclude_patterns():
+        folder = pat.lstrip("*\\").split("\\")[0].lower()
+        if folder in ("source", "temp", "doc"):
+            assert not pat.startswith("*"), f"unanchored exclude {pat!r} drops nested {folder} folders"
+
+
 @pytest.mark.parametrize("bad", ["..", "../Other", r"..\Other", r"..\..\Windows", "My Mod", "@MyMod", "1Mod"])
 def test_main_refuses_invalid_mod_name_before_touching_disk(p_drive, tmp_path, monkeypatch, bad):
     monkeypatch.setattr(build.h, "resolve_project_dir", lambda: pytest.fail("resolved the project for a bad name"))
@@ -268,7 +312,7 @@ def test_lint_gate_passes_a_clean_scaffold(p_drive, tmp_path, capsys):
     assert "/dayz-lint passed" in capsys.readouterr().out
 
 
-def test_main_stops_on_lint_errors_before_preflight(p_drive, tmp_path, monkeypatch, capsys):
+def test_main_stops_on_lint_errors_after_preflight(p_drive, tmp_path, monkeypatch, capsys):
     project = tmp_path / "proj"
     mod = _scaffold(project)
     (mod / "scripts" / "4_World").mkdir(parents=True)
@@ -285,4 +329,25 @@ def test_main_stops_on_lint_errors_before_preflight(p_drive, tmp_path, monkeypat
     # An unlisted scripts folder does not stop loading, so it is a warning, not one of the errors.
     assert "no CfgMods defs entry" not in message
     assert "[WARN]  lint workspace/MyMod/config.cpp: scripts/4_World/ holds scripts" in capsys.readouterr().out
-    assert called == []
+    assert called == ["preflight"]
+
+
+def test_main_gates_on_preflight_before_lint(p_drive, tmp_path, monkeypatch):
+    # L2 rule: preflight runs at the start, so an unmounted P:\ is reported
+    # before any lint output or lint FAIL can hide it.
+    project = tmp_path / "proj"
+    _scaffold(project)
+    order = []
+
+    def failing_preflight():
+        order.append("preflight")
+        raise SystemExit("[FAIL]  P:\ is not mounted")
+
+    monkeypatch.setattr(build.h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(build.h, "gate_on_preflight", failing_preflight)
+    monkeypatch.setattr(build, "gate_on_lint", lambda *a: order.append("lint"))
+    monkeypatch.setattr("sys.argv", ["build.py", "MyMod"])
+    with pytest.raises(SystemExit) as exc:
+        build.main()
+    assert "P:\ is not mounted" in str(exc.value.code)
+    assert order == ["preflight"]

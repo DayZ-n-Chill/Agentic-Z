@@ -380,7 +380,9 @@ def build_app():
     from mcp.types import ToolAnnotations
 
     mcp = FastMCP("dayz-rag")
-    read_only = ToolAnnotations(readOnlyHint=True)
+    # The MCP spec defaults openWorldHint to true, so the local-only tools
+    # (they read only P:\ and the local index) must set it to False explicitly.
+    read_only = ToolAnnotations(readOnlyHint=True, openWorldHint=False)
     # Every uncached search calls the Voyage API, so it reaches outside this machine.
     read_only_remote = ToolAnnotations(readOnlyHint=True, openWorldHint=True)
 

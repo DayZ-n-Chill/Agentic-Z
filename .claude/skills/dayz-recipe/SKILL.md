@@ -59,7 +59,7 @@ The first line is the verdict.
 | Verdict | Exit | Means |
 |---|---|---|
 | `WROTE` | 0 | Every check passed. One `[OK]` line per vanilla class with `path:line` and its addon, per script symbol and per fit, then the files written. |
-| `FAIL` | 1 | A class is missing or a fit does not hold. One `[FAIL]` line each, saying what to pass instead. Nothing was written. |
+| `FAIL` | 1 | A class is missing or a fit does not hold. One `[FAIL]` line each, saying what to pass instead: for a missed slot, the spawnable (`scope = 2`) vanilla items for each of the parent's slots; for a missed magazine, the parent's `magazines[]`. Nothing was written. |
 | `ERROR` | 2 | Bad arguments, no project, no vanilla data at `P:\` (mount it with `/dayz-workdrive`), or plan files already there without `--force`. |
 
 It writes three files to `output/<ModName>-plan/`:

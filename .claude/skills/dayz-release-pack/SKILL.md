@@ -25,7 +25,7 @@ python "<skill-dir>\release_pack.py" --mod-dir <folder> [options]
 | `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. |
 | `--mod-dir` | Use any folder instead. Its name is the mod name unless `<ModName>` is given too. |
 | `--version` | The version for the changelog heading and the Workshop text. Default `Unreleased`. |
-| `--since` | Git ref the changelog starts after. Default: the latest tag when the mod folder is its own repository, and the script prints which one; with no tag the entry lists the whole history and warns `changelog-full-history`. Inside a bigger repository (an Agentic-Z clone) it is the newest `chore(release)` commit that touched the mod folder, and the script prints which one. With no such commit the entry lists the folder's whole history and warns `changelog-full-history`. |
+| `--since` | Git ref the changelog starts after. Default: the latest tag when the mod folder is its own repository, and the script prints which one. When that tag is this release (it sits on HEAD, or it is `--version` or `v<version>`, as when you tag before writing the notes), the entry starts after the tag before it, and the script says so; with no tag the entry lists the whole history and warns `changelog-full-history`. Inside a bigger repository (an Agentic-Z clone) it is the newest `chore(release)` commit that touched the mod folder, and the script prints which one. With no such commit the entry lists the folder's whole history and warns `changelog-full-history`. |
 | `--deps` | Dependency mods in load order, with or without `@` (`--deps CF`). Map each non vanilla `requiredAddons` entry to the Workshop mod that ships it. |
 | `--out` | Output folder. Default `output\<ModName>-release\`. |
 | `--json` | Print the report as JSON. |
@@ -54,10 +54,11 @@ The script exits 0 with `[WARN]` lines when something needs a person or the AI:
 | `no-bikey` | No `.bikey` in `Keys\` or `P:\Mods\@<ModName>\Keys\`. Sign the PBO before release. |
 | `private-key-in-mod` | A `.biprivatekey` sits inside the mod folder. It is never written anywhere, but move it out of the mod so it can never ship. |
 | `no-git` | The mod folder is not in a git repository, so the changelog entry is empty. |
-| `changelog-full-history` | No start ref was found, so the entry lists every change the mod ever had. When the mod folder is its own repository, it has no tag: tag the release (`git tag v<version>`) so the next run starts after it, or pass `--since <ref>`. Inside a bigger repository, no `chore(release)` commit touched its folder: rerun with `--since <ref>` to limit the entry, or commit the release as `chore(release): <version>` so the next run starts after it. |
+| `changelog-full-history` | No start ref was found, so the entry lists every change the mod ever had. When the only tag is this release, there is nothing earlier to start from; pass `--since <ref>` to limit the entry. When the mod folder is its own repository with no tag: tag the release (`git tag v<version>`) so the next run starts after it, or pass `--since <ref>`. Inside a bigger repository, no `chore(release)` commit touched its folder: rerun with `--since <ref>` to limit the entry, or commit the release as `chore(release): <version>` so the next run starts after it. |
+| `kept-backup` | A file in the output folder held other text than this run writes (your hand edits, such as the `SERVER_KIT_LINK` address or the summary line), so the script copied it to `<file>.bak` (then `<file>.2.bak`, never replacing an older backup) before writing the new text. Copy the edits you still want into the new file, then delete the backups. |
 | `changelog-empty` | No commits touched the mod folder since the start ref, so the entry lists no changes. Commit the changes first, or pass an earlier `--since`. |
 
-Exit 2 means it could not run: bad arguments, no cached project, no mod folder, no `config.cpp`, a `config.cpp` that does not parse (run `/dayz-lint`), or a `--since` ref that is not in the history.
+Exit 2 means it could not run: bad arguments, no cached project, no mod folder, no `config.cpp`, a `config.cpp` that does not parse (run `/dayz-lint`), or a `--since` ref that is not in the history. The `[FAIL]` line goes to stderr; with `--json` the error is a JSON object on stdout.
 
 ## Then
 

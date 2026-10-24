@@ -142,7 +142,7 @@ def test_edit_permissions_already_admin_counts_as_success(tmp_path):
 
 # --- main: pass 2 only after a successful edit ---------------------------------------
 
-def _patch_main(monkeypatch, tmp_path, triggered, edit_ok=True):
+def _patch_main(monkeypatch, tmp_path, triggered, edit_ok=True, argv=("MyMod",), port_released=True):
     """Stub everything main() touches; returns the list of launched pass labels."""
     profile = tmp_path / "Profiles"
     monkeypatch.setattr(cot.h, "gate_on_preflight", lambda: None)
@@ -167,7 +167,8 @@ def _patch_main(monkeypatch, tmp_path, triggered, edit_ok=True):
     monkeypatch.setattr(cot.time, "sleep", lambda s: None)
     monkeypatch.setattr(cot, "edit_permissions", lambda p, t: edit_ok)
     monkeypatch.setattr(cot, "wait_for_perms_files", lambda p, t: None)
-    monkeypatch.setattr(cot.sys, "argv", ["bootstrap.py", "MyMod"])
+    monkeypatch.setattr(cot, "wait_for_port_release", lambda port: port_released)
+    monkeypatch.setattr(cot.sys, "argv", ["bootstrap.py", *argv])
     return launches
 
 
@@ -313,3 +314,88 @@ def test_perms_file_written_after_the_json_is_waited_for_before_stop(monkeypatch
     assert perms.read_text(encoding="utf-8") == "A 2\n"
     assert "admin" in json.loads(player.read_text(encoding="utf-8"))["Roles"]
 
+
+
+# --- backups before in-place edits -----------------------------------------------
+
+def test_grant_admin_writes_backup_of_original(tmp_path):
+    f = tmp_path / "abc.json"
+    original = json.dumps({"Roles": ["everyone"]})
+    f.write_text(original, encoding="utf-8")
+    assert cot.grant_admin_role(f) is True
+    assert (tmp_path / "abc.json.bak").read_text(encoding="utf-8") == original
+
+
+def test_flip_writes_backup_of_original(tmp_path):
+    f = tmp_path / "abc.txt"
+    f.write_bytes(b"A 0\r\nB 2\r\n")
+    assert cot.flip_zeros_to_twos(f) == 1
+    assert (tmp_path / "abc.txt.bak").read_bytes() == b"A 0\r\nB 2\r\n"
+
+
+def test_unchanged_files_get_no_backup(tmp_path):
+    j, t = tmp_path / "abc.json", tmp_path / "abc.txt"
+    j.write_text(json.dumps({"Roles": ["admin"]}), encoding="utf-8")
+    t.write_text("A 2\n", encoding="utf-8")
+    cot.grant_admin_role(j)
+    cot.flip_zeros_to_twos(t)
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["abc.json", "abc.txt"]
+
+
+def test_backup_is_not_picked_up_as_a_player_file(tmp_path):
+    players = tmp_path / "Players"
+    players.mkdir()
+    f = players / "abc.json"
+    f.write_text(json.dumps({"Roles": []}), encoding="utf-8")
+    cot.grant_admin_role(f)
+    assert set(cot.snapshot_player_files(players)) == {"abc"}
+
+
+# --- port release between pass 1 and pass 2 --------------------------------------
+
+def test_wait_for_port_release_polls_until_free(monkeypatch):
+    answers = iter([False, False, True])
+    monkeypatch.setattr(cot.h, "udp_port_free", lambda port: next(answers))
+    sleeps = []
+    monkeypatch.setattr(cot.time, "sleep", sleeps.append)
+    assert cot.wait_for_port_release(2302, timeout_s=30) is True
+    assert len(sleeps) == 2
+
+
+def test_wait_for_port_release_gives_up_at_deadline(monkeypatch):
+    now = [0.0]
+    monkeypatch.setattr(cot.time, "time", lambda: now[0])
+    monkeypatch.setattr(cot.time, "sleep", lambda s: now.__setitem__(0, now[0] + s))
+    monkeypatch.setattr(cot.h, "udp_port_free", lambda port: False)
+    assert cot.wait_for_port_release(2302, timeout_s=30) is False
+    assert now[0] == 30
+
+
+def test_main_waits_for_port_before_pass_two(monkeypatch, tmp_path, capsys):
+    launches = _patch_main(monkeypatch, tmp_path, [tmp_path / "Profiles" / "abc.json"], port_released=False)
+    assert cot.main() == 1
+    assert launches == ["Pass 1"]
+    assert "--skip-pass1" in capsys.readouterr().out
+
+
+# --- --skip-pass1 goes straight to the relaunch ----------------------------------
+
+def test_skip_pass1_relaunches_without_pass_one_or_edit(monkeypatch, tmp_path):
+    players = tmp_path / "Profiles" / "PermissionsFramework" / "Players"
+    players.mkdir(parents=True)
+    (players / "abc.json").write_text(json.dumps({"Roles": ["admin"]}), encoding="utf-8")
+    launches = _patch_main(monkeypatch, tmp_path, [], argv=("MyMod", "--skip-pass1"))
+    monkeypatch.setattr(cot, "wait_for_cot_player", lambda *a: pytest.fail("pass 1 wait ran"))
+    monkeypatch.setattr(cot, "edit_permissions", lambda *a: pytest.fail("edit ran"))
+    assert cot.main() == 0
+    assert launches == ["Pass 2"]
+
+
+def test_skip_pass1_refuses_when_no_player_is_admin(monkeypatch, tmp_path, capsys):
+    players = tmp_path / "Profiles" / "PermissionsFramework" / "Players"
+    players.mkdir(parents=True)
+    (players / "abc.json").write_text(json.dumps({"Roles": []}), encoding="utf-8")
+    launches = _patch_main(monkeypatch, tmp_path, [], argv=("--skip-pass1",))
+    assert cot.main() == 1
+    assert launches == []
+    assert "no Players JSON" in capsys.readouterr().out

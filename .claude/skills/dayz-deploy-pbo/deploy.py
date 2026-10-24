@@ -72,6 +72,32 @@ def unsigned_pbos(pbos: list[Path], bisigns: list[Path]) -> list[Path]:
     return [p for p in pbos if not any(s.name.startswith(p.name + ".") for s in bisigns)]
 
 
+def linker_collision(modname: str, bundle: Path, pbos: list[Path]) -> Path | None:
+    """The bundle's Addons/<ModName>.pbo when the bundle also carries a linker
+    config.cpp. /dayz-build-pbo writes the linker to that same deploy path, so
+    copying the payload PBO would silently replace the built linker."""
+    if not (bundle / "config.cpp").is_file():
+        return None
+    own = f"{modname}.pbo".lower()
+    return next((p for p in pbos if p.name.lower() == own), None)
+
+
+def stale_pbos(modname: str, bundle: Path, pbos: list[Path], deployed_addons: Path) -> list[Path]:
+    """Deployed .pbo files the bundle no longer ships (dropped or renamed).
+    The built linker <ModName>.pbo is excluded when the bundle has a linker
+    config.cpp, since /dayz-build-pbo owns it. Deploy never deletes, so these
+    keep loading in game until removed by hand."""
+    if not deployed_addons.is_dir():
+        return []
+    keep = {p.name.lower() for p in pbos}
+    if (bundle / "config.cpp").is_file():
+        keep.add(f"{modname}.pbo".lower())
+    return sorted(
+        f for f in deployed_addons.iterdir()
+        if f.is_file() and f.suffix.lower() == ".pbo" and f.name.lower() not in keep
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Deploy pre-compiled PBOs from a workspace bundle to P:\\Mods\\@<ModName>\\."
@@ -100,6 +126,16 @@ def main() -> int:
     bikeys = sorted(keys_src.glob("*.bikey")) if keys_src.is_dir() else []
     metas = [bundle / n for n in ("meta.cpp", "mod.cpp") if (bundle / n).is_file()]
 
+    clash = linker_collision(args.modname, bundle, pbos)
+    if clash is not None:
+        rel = bundle.relative_to(project_dir)
+        sys.exit(
+            f"{FAIL} {rel}\\Addons\\{clash.name} has the same name as the linker PBO that\n"
+            f"       /dayz-build-pbo builds from {rel}\\config.cpp, so deploying it would overwrite\n"
+            f"       the linker in {deploy_root}\\Addons\\. Rename the payload PBO, or remove\n"
+            "       the linker config.cpp + $PBOPREFIX$ if the bundle has no linker."
+        )
+
     plan = (
         [(f, deploy_root / "Addons") for f in pbos + bisigns]
         + [(f, deploy_root / "Keys") for f in bikeys]
@@ -123,6 +159,12 @@ def main() -> int:
     for p in unsigned_pbos(pbos, bisigns):
         print(f"{WARN} {p.name} has no matching .bisign - clients with signature "
               "verification enabled will reject it.")
+
+    stale = stale_pbos(args.modname, bundle, pbos, deploy_root / "Addons")
+    for p in stale:
+        print(f"{WARN} {p.name} is deployed but not in the bundle - it still loads in game.")
+        print("       Deploy never deletes. If the bundle dropped or renamed it, remove it by hand:")
+        print(f'       del "{p}" "{p}.*.bisign"')
 
     print()
     print(f"{OK} Deployed to {deploy_root}\\ - "

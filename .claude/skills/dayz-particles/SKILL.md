@@ -61,15 +61,11 @@ modded class ParticleList
 };
 ```
 
-AddonBuilder include filter must keep the particle files:
-
-```
-*.emat;*.edds;*.ptc;*.c;*.imageset;*.layout;*.ogg;*.json;*.xml;*.paa;*.rvmat
-```
+Packing: `/dayz-build-pbo` already packs `.ptc`, `.emat` and `.edds` (its include filter is `.claude/skills/dayz-build-pbo/include.lst`), so no change is needed. Only with a custom AddonBuilder setup, add whichever of `*.ptc;*.emat;*.edds` are missing to your existing include filter; do not replace the filter, or other file types such as `.p3d` models are dropped from the PBO.
 
 ## Pitfalls
 
-1. Particles are client-only. Guard with a runtime `GetGame().IsDedicatedServer()` check (Pattern A and Tier 2), not `#ifndef SERVER`: testing runs `DayZDiag_x64.exe` for both ends, and a compile-time define does not separate them.
+1. Particles are client-only. Guard with a runtime `GetGame().IsHeadlessOrDedicatedServer()` check (Pattern A and Tier 2), the same gate vanilla uses (`P:\scripts\3_Game\Particles\ParticleManager\ParticleManager.c:65`); `IsDedicatedServer()` alone lets the code run on a headless client. Do not use `#ifndef SERVER`: testing runs `DayZDiag_x64.exe` for both ends, and a compile-time define does not separate them.
 2. Looping particles (`Repeat 1`) never end on their own. Stop them and null the reference; clean up in `EEDelete`, power-off and the destructor.
 3. `Stop()` fades out gradually; use `StopParticleFlags.IMMEDIATE` for instant removal.
 4. `ObjectDelete(particle)` is valid only for a `ParticleSource` with `DisableAutoDestroy()`.

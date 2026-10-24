@@ -263,6 +263,45 @@ def test_cli_bad_report_exits_2(project, capsys):
     assert capsys.readouterr().out.startswith("ERROR")
 
 
+def test_cli_report_for_another_mod_exits_2(project, capsys):
+    report = gate_report("ingame", "FAIL", [failure("SCRIPT (E): NULL pointer")])
+    report["mod"] = "ModA"
+    assert health.main(["record", "ModB", "ingame"], stdin=io.StringIO("FAIL\n" + json.dumps(report))) == 2
+    out = capsys.readouterr().out
+    assert out.startswith("ERROR") and "'ModA'" in out and "'ModB'" in out
+    assert not list(project.glob(".server/!Health/*/results/*.json"))
+
+
+def test_lint_report_for_another_mod_is_refused():
+    lint = {"verdict": "PASS", "mod": "ModA", "errors": 0, "warnings": 0, "findings": []}
+    assert health.parse_report("lint", json.dumps(lint), "ModA")["verdict"] == "PASS"
+    with pytest.raises(health.HealthError, match="ModA"):
+        health.parse_report("lint", json.dumps(lint), "ModB")
+
+
+@pytest.mark.parametrize("line", ["ERROR workspace/MyVest/config.cpp:12: missing texture -> dayz-asset-specialist",
+                                  "CRITICAL workspace/MyVest/config.cpp:12 missing texture",
+                                  "critical workspace/MyVest/config.cpp:12: missing texture"])
+def test_fail_review_with_no_parsed_finding_is_refused(project, capsys, line):
+    text = f"FAIL\n{line}\nChecked config.cpp.\n"
+    assert health.main(["record", "MyVest", "review"], stdin=io.StringIO(text)) == 2
+    assert capsys.readouterr().out.startswith("ERROR")
+    assert not list(project.glob(".server/!Health/*/results/*.json"))
+
+
+def test_review_lines_that_do_not_parse_are_counted_and_warned(project, capsys):
+    bad = "ERROR workspace/MyVest/config.cpp:40: requiredAddons misspelled -> dayz-config-specialist"
+    text = REVIEW_TEXT + bad + "\n"
+    result = health.parse_report("review", text)
+    assert len(result["findings"]) == 3 and result["unparsed"] == [bad]
+    assert "unparsed" not in health.parse_report("review", REVIEW_TEXT)  # the closing prose line is not a finding
+    assert health.main(["record", "MyVest", "review"], stdin=io.StringIO(text)) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("OK\n") and "warning: 1 review line(s)" in out and bad in out
+    assert health.main(["record", "MyVest", "review", "--json"], stdin=io.StringIO(text)) == 0
+    assert json.loads(capsys.readouterr().out.partition("\n")[2])["unparsed"] == [bad]
+
+
 def test_cli_no_project_exits_2(monkeypatch, capsys):
     def refuse():
         raise SystemExit(2)

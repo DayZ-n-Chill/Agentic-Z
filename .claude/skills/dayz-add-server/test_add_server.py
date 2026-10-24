@@ -283,6 +283,44 @@ def test_instance_name_accepts_folder_names(good):
     assert srv.validate_instance(good) == good
 
 
+@pytest.mark.parametrize("bad", ["con", "NUL", "Aux", "prn", "com1", "LPT9", "nul.txt", "con.chernarus"])
+def test_instance_name_rejects_windows_device_names(bad):
+    with pytest.raises(srv.argparse.ArgumentTypeError, match="reserved device name"):
+        srv.validate_instance(bad)
+
+
+@pytest.mark.parametrize("bad", ["chernarus.", "chernarus ", "test. "])
+def test_instance_name_rejects_trailing_dot_or_space(bad):
+    with pytest.raises(srv.argparse.ArgumentTypeError, match="trailing dot or space"):
+        srv.validate_instance(bad)
+
+
+@pytest.mark.parametrize("bad", ["con", "COM3", "aux.enoch", "dayzOffline.namalsk.", "dayzOffline.namalsk "])
+def test_map_rejects_windows_device_names_and_trailing_dot_or_space(bad):
+    with pytest.raises(srv.argparse.ArgumentTypeError, match="not a valid map"):
+        srv.validate_map(bad)
+
+
+@pytest.mark.parametrize("good", ["console", "nullmap", "com10", "auxiliary", "dayzOffline.con"])
+def test_device_name_check_does_not_catch_lookalikes(good):
+    assert srv.validate_instance(good) == good
+    assert srv.validate_map(good) == good
+
+
+@pytest.mark.parametrize("instance", ["Chernarus", "CHERNARUS", "Livonia"])
+def test_instance_named_after_map_matches_any_case(instance):
+    assert srv.resolve_map_name(instance, None) == instance.lower()
+
+
+def test_map_alias_matches_any_case():
+    assert srv.resolve_map_name("hardcore", "Sakhal") == "sakhal"
+    assert srv.resolve_mission_template(srv.resolve_map_name("hardcore", "Sakhal")) == "dayzOffline.sakhal"
+
+
+def test_custom_mission_folder_keeps_its_case():
+    assert srv.resolve_map_name("ns", "dayzOffline.Namalsk") == "dayzOffline.Namalsk"
+
+
 def test_shard_id_is_six_chars():
     cfg = srv.default_server_cfg("ab", "t")
     assert 'shardId = "abshar";' in cfg

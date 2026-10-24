@@ -203,6 +203,37 @@ class Vanilla:
             cur = self.find(cur.parent, cur.root, _rel(self.root, cur.file)) if cur.parent else None
         return None
 
+    def items_for_slots(self, root: str, slots: list[str]) -> dict[str, list[str]]:
+        """Spawnable (scope 2) classes in a config root per slot their resolved inventorySlot names."""
+        if self._all is None:
+            self._all = sorted((self.root / "dz").rglob("config.cpp"))
+        index: dict[str, ClassDef] = {}
+        for path in self._all:
+            for c in self._classes(path):
+                if c.root.lower() == root.lower():
+                    index.setdefault(c.name.lower(), c)
+
+        def resolved(cls: ClassDef, prop: str) -> object:
+            seen = set()
+            cur: Optional[ClassDef] = cls
+            while cur is not None and cur.name.lower() not in seen:
+                seen.add(cur.name.lower())
+                props = properties(cur.body)
+                if prop in props:
+                    return props[prop]
+                cur = index.get(cur.parent.lower()) if cur.parent else None
+            return None
+
+        out: dict[str, list[str]] = {s: [] for s in slots}
+        by_lower = {s.lower(): s for s in slots}
+        for c in index.values():
+            if resolved(c, "scope") != "2":
+                continue
+            for s in _as_list(resolved(c, "inventorySlot")):
+                if s.lower() in by_lower:
+                    out[by_lower[s.lower()]].append(c.name)
+        return out
+
     def find_script(self, pattern: str, hint: Optional[str] = None) -> Optional[tuple[Path, int]]:
         rx = re.compile(pattern, re.MULTILINE)
         scripts = self.root / "scripts"
@@ -345,8 +376,13 @@ def _check_fit(fit: dict, host: ClassDef, guest: Optional[ClassDef], vanilla: Va
         common = [s for s in offered if s.lower() in slots]
         ok = bool(common)
         what = f"{guest.name} fits {host.name} in slot {', '.join(common)}"
-        miss = (f"{guest.name} fits no attachment slot of {host.name}. Pass --{opt} with an item whose "
-                f"inventorySlot is one of: {', '.join(offered) or '(none)'}")
+        miss = f"{guest.name} fits no attachment slot of {host.name}."
+        if not offered:
+            miss += f" {host.name} has no attachments[]"
+        elif not ok:  # list the vanilla items that do fit, so the user need not look one up
+            items = vanilla.items_for_slots(guest.root, offered)
+            listed = "; ".join(f"{s}: {', '.join(items[s]) or '(no vanilla item)'}" for s in offered)
+            miss += f" Pass --{opt} with a vanilla item for one of its slots, {listed}"
     elif kind == "magazine":
         mags = _as_list(vanilla.resolve(host, "magazines"))
         ok = guest.name.lower() in {m.lower() for m in mags}

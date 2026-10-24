@@ -33,7 +33,7 @@ python "<skill-dir>\update.py" [--check] [--quiet] [--yes] [--per-file] [--force
 | `--yes` | Skip the confirmation prompt (CI / scripted use) |
 | `--per-file` | Walk each conflict and `locally-deleted` file interactively: keep / take / diff / skip. Keep is a decision: the file stays yours and no longer holds the baseline back. Skip (also Enter, or no terminal) decides later: the file is offered again on the next run |
 | `--force` | Override the dirty-tree check |
-| `--dry-run` | Show preview, do not apply (and do not record a first baseline) |
+| `--dry-run` | Show preview, do not apply. With no baseline yet, previews against the baseline the first real run would record, without writing it |
 | `--no-sync` | Skip the post-update `sync-skills` run (useful when Claude Code is the only agent CLI in use) |
 
 ## Automatic commit
@@ -112,7 +112,7 @@ output/                     # one-shot deliverables
 ## When not to run
 
 - Mid-merge, mid-rebase, mid-cherry-pick or mid-revert (it refuses; finish or abort first).
-- With uncommitted changes to template files (it refuses; commit first, or pass `--force`).
+- With uncommitted changes to tracked template files (it refuses; commit first, or pass `--force`). Untracked files, such as a skill you just added, do not block it.
 - On a fork that has diverged heavily from upstream main (manual cherry-pick is safer).
 
 ## Files this skill creates
@@ -140,7 +140,7 @@ To skip the check: ensure `~/.claude/dayz-search-index/release-tag.txt` doesn't 
 ## Refuse rules (exit 1)
 
 - Not a git repo: "Run from inside an Agentic-Z clone." With `--check --quiet` this prints that one line and exits 0, so the hook shows it.
-- Uncommitted changes in template paths (skipped with `--force`, and not checked by `--check`). Nothing is fetched or changed.
+- Uncommitted changes to tracked files in template paths (skipped with `--force`, and not checked by `--check`). Untracked files are ignored: the update leaves a file only you have alone, and treats one at a path upstream adds as a conflict. Nothing is fetched or changed.
 - A merge, rebase, cherry-pick or revert is in progress (checked even with `--force`; not checked by `--check` or `--dry-run`, which write nothing). Its commit would fail and leave the applied files staged inside your operation, so nothing is fetched or changed.
 - The `upstream` remote points somewhere else: prints the `git remote set-url` fix. With `--check --quiet` the fix is one line and the exit is 0.
 - `git fetch` fails (with `--check --quiet` this exits 0 silently so the hook stays quiet).

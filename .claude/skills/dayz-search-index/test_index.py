@@ -632,13 +632,14 @@ def test_missing_key_exits_1_with_fail_line(monkeypatch, capsys):
     assert "VOYAGE_API_KEY not set" in capsys.readouterr().err
 
 
-def test_usage_is_logged_even_when_the_table_write_fails(tmp_path, monkeypatch):
-    """Tokens are billed once the embed returns, so a LanceDB failure after it must not lose them."""
+def _stub_build(tmp_path, monkeypatch):
+    """Run main() against a one-file fake P drive with the embed and LanceDB stubbed. Returns the index root."""
     p_root = tmp_path / "P"
     (p_root / "scripts").mkdir(parents=True)
     _write(p_root / "scripts", "a.c", "class A { int x; };\n")
+    idx = tmp_path / "idx"
     monkeypatch.setattr(index, "P_ROOT", p_root)
-    monkeypatch.setattr(index, "INDEX_ROOT", tmp_path / "idx")
+    monkeypatch.setattr(index, "INDEX_ROOT", idx)
     monkeypatch.setattr(index.h, "gate_on_preflight", lambda: None)
     monkeypatch.setattr(index.h.preflight, "find_vanilla_data", lambda: None)
     monkeypatch.setattr(index, "_require_deps", lambda: None)
@@ -646,13 +647,68 @@ def test_usage_is_logged_even_when_the_table_write_fails(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "lancedb", SimpleNamespace(connect=lambda _p: object()))
     monkeypatch.setitem(sys.modules, "tqdm", SimpleNamespace(tqdm=lambda it=None, **_k: it))
     monkeypatch.setattr(index, "embed_or_fail", lambda texts, model, key: ([[0.0]] * len(texts), 1234))
+    monkeypatch.setattr(index, "write_table", lambda _db, _rows: None)
+    return idx
+
+
+def _fail_lines(err: str) -> list[str]:
+    return [line for line in err.splitlines() if line.startswith(index.FAIL)]
+
+
+def test_table_write_failure_is_one_fail_line_and_keeps_usage(tmp_path, monkeypatch, capsys):
+    """Tokens are billed once the embed returns, so a LanceDB failure after it must not lose them."""
+    idx = _stub_build(tmp_path, monkeypatch)
 
     def broken_write(_db, _rows):
         raise OSError("disk full")
 
     monkeypatch.setattr(index, "write_table", broken_write)
-    with pytest.raises(OSError):
-        index.main(["--full", "--ignore-tier-warning"])
-    entries = _usage_entries(tmp_path / "idx" / index.USAGE_LOG_NAME)
-    assert [e["tokens"] for e in entries] == [1234]
-    assert not (tmp_path / "idx" / "manifest.json").exists()
+    assert index.main(["--full", "--ignore-tier-warning"]) == 1
+    fails = _fail_lines(capsys.readouterr().err)
+    assert len(fails) == 1 and "OSError: disk full" in fails[0]
+    assert [e["tokens"] for e in _usage_entries(idx / index.USAGE_LOG_NAME)] == [1234]
+    assert not (idx / "manifest.json").exists()
+
+
+def test_manifest_write_failure_is_one_fail_line(tmp_path, monkeypatch, capsys):
+    idx = _stub_build(tmp_path, monkeypatch)
+    real_write_text = Path.write_text
+
+    def write_text(self, *args, **kwargs):
+        if self.name == "manifest.json":
+            raise PermissionError("manifest locked")
+        return real_write_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", write_text)
+    assert index.main(["--full", "--ignore-tier-warning"]) == 1
+    fails = _fail_lines(capsys.readouterr().err)
+    assert len(fails) == 1 and "PermissionError: manifest locked" in fails[0]
+
+
+def test_full_build_removes_downloaded_release_tag(tmp_path, monkeypatch):
+    """A local build replaces the downloaded index, so /dayz-search-download must not see its old tag."""
+    idx = _stub_build(tmp_path, monkeypatch)
+    idx.mkdir()
+    (idx / index.RELEASE_TAG_FILE).write_text("v1.4.0\n", encoding="utf-8")
+    assert index.main(["--full", "--ignore-tier-warning"]) == 0
+    assert (idx / "manifest.json").exists()
+    assert not (idx / index.RELEASE_TAG_FILE).exists()
+
+
+def test_failed_build_keeps_release_tag(tmp_path, monkeypatch):
+    """The downloaded index is still the one in place when the write fails, so its tag stays."""
+    idx = _stub_build(tmp_path, monkeypatch)
+    idx.mkdir()
+    (idx / index.RELEASE_TAG_FILE).write_text("v1.4.0\n", encoding="utf-8")
+
+    def broken_write(_db, _rows):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(index, "write_table", broken_write)
+    assert index.main(["--full", "--ignore-tier-warning"]) == 1
+    assert (idx / index.RELEASE_TAG_FILE).exists()
+
+
+def test_release_tag_name_matches_download_skill():
+    download = (Path(__file__).parent.parent / "dayz-search-download" / "download.py").read_text(encoding="utf-8")
+    assert f'INSTALLED_TAG_FILE = "{index.RELEASE_TAG_FILE}"' in download

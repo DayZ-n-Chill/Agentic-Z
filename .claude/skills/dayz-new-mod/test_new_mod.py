@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 import subprocess
 from pathlib import Path
 
@@ -215,6 +216,24 @@ def test_no_author_without_tty_fails(author_cache, monkeypatch):
     assert not author_cache.exists()
 
 
+def test_eof_on_tty_stdin_gives_author_hint(author_cache, monkeypatch):
+    """A null stdin (the PowerShell tool) can report a TTY and then hit end-of-file at
+    once; the failure must still name --author and the cache file."""
+    monkeypatch.setattr(nm.sys, "stdin", _TTY(True))
+
+    def eof(_prompt):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", eof)
+    with pytest.raises(SystemExit) as exc:
+        nm.resolve_author(None)
+    msg = str(exc.value.code)
+    assert "No author handle provided" in msg
+    assert "--author" in msg
+    assert "dayz-author.txt" in msg
+    assert not author_cache.exists()
+
+
 @pytest.mark.parametrize("bad", ['Say "hi"', "Two\nLines", "Tab\there"])
 def test_author_flag_with_quote_or_control_char_refused(author_cache, bad):
     with pytest.raises(SystemExit) as exc:
@@ -256,22 +275,55 @@ def _seed_cache(monkeypatch, project, cached):
 
 def test_sync_cache_sets_when_empty(monkeypatch, tmp_path, capsys):
     _seed_cache(monkeypatch, tmp_path.resolve(), None)
-    nm.sync_project_cache()
+    nm.sync_project_cache("MyMod")
     assert _cache(tmp_path).read_text(encoding="utf-8") == str(tmp_path.resolve())
     assert "Project cache set" in capsys.readouterr().out
 
 
 def test_sync_cache_noop_when_already_current(monkeypatch, tmp_path, capsys):
     _seed_cache(monkeypatch, tmp_path.resolve(), tmp_path)
-    nm.sync_project_cache()
+    nm._state.write_state(tmp_path.resolve(), {"last_intent": {"mod_name": "MyMod"}})
+    nm.sync_project_cache("MyMod")
     assert capsys.readouterr().out == ""
 
 
 def test_sync_cache_repoints_other_project(monkeypatch, tmp_path, capsys):
     _seed_cache(monkeypatch, tmp_path.resolve(), tmp_path / "other")
-    nm.sync_project_cache()
+    nm.sync_project_cache("MyMod")
     assert _cache(tmp_path).read_text(encoding="utf-8") == str(tmp_path.resolve())
     assert "repointed" in capsys.readouterr().out
+
+
+def _hub_status(monkeypatch):
+    """dayz-init's hub_status module, the code /dayz-init's hub and dispatch defaults read."""
+    monkeypatch.syspath_prepend(str(HERE.parent / "dayz-init"))
+    spec = importlib.util.spec_from_file_location(
+        "dayz_init_hub_status_for_new_mod", HERE.parent / "dayz-init" / "hub_status.py")
+    hub = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, "dayz_init_hub_status_for_new_mod", hub)  # dataclasses look the module up
+    spec.loader.exec_module(hub)
+    return hub
+
+
+def test_sync_makes_the_new_mod_the_hub_active_mod(monkeypatch, tmp_path):
+    """/dayz-new-mod B with A active: the /dayz-init hub must then show B, not A."""
+    project = tmp_path.resolve()
+    _seed_cache(monkeypatch, project, project)
+    nm._state.write_state(project, {"last_intent": {"mod_name": "ModA"}})
+    nm.sync_project_cache("ModB")
+    hub = _hub_status(monkeypatch)
+    monkeypatch.setattr(hub, "_diag_running", lambda: False)
+    status = hub.gather_status(project, mods_root=tmp_path / "Mods")
+    assert status.mod == "ModB"
+    assert "/dayz-init: ModB" in hub.render_status(status)
+
+
+def test_sync_keeps_other_state_keys(monkeypatch, tmp_path):
+    project = tmp_path.resolve()
+    _seed_cache(monkeypatch, project, project)
+    nm._state.write_state(project, {"last_intent": {"mod_name": "ModA"}, "other": 1})
+    nm.sync_project_cache("ModB")
+    assert nm._state.read_state(project) == {"last_intent": {"mod_name": "ModB"}, "other": 1}
 
 
 # --- main(): rollback on failure -------------------------------------------------------
@@ -286,17 +338,20 @@ def main_env(monkeypatch, tmp_path):
     monkeypatch.setattr(h, "gate_on_preflight", lambda: None)
     monkeypatch.setattr(nm, "find_dayz_tools", lambda: None)
     monkeypatch.setattr(nm, "resolve_author", lambda cli: "Tester")
-    monkeypatch.setattr(nm, "sync_project_cache", lambda: None)
+    monkeypatch.setattr(nm, "sync_project_cache", lambda modname: None)
     monkeypatch.setattr(nm.sys, "argv", ["new_mod.py", "MyMod"])
     return project / "workspace" / "MyMod"
 
 
 def test_main_success_links_and_scaffolds(main_env, monkeypatch):
     links = []
+    synced = []
     monkeypatch.setattr(nm, "make_dir_link", lambda src, dst: links.append((src, dst)) or "junction")
+    monkeypatch.setattr(nm, "sync_project_cache", synced.append)
     assert nm.main() == 0
     assert (main_env / "config.cpp").is_file()
     assert links == [(main_env, nm.P_DRIVE / "MyMod")]
+    assert synced == ["MyMod"]  # the new mod becomes the active /dayz-init mod
 
 
 def test_main_without_tools_points_at_add_scaffold(main_env, monkeypatch, capsys):

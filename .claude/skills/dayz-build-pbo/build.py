@@ -209,8 +209,9 @@ def main() -> int:
 
     _nm.validate_name(args.modname)
     project_dir = h.resolve_project_dir()
-    gate_on_lint(args.modname, project_dir)
+    # Preflight first (L2 rule): a dismounted P:\ must be the first error shown.
     h.gate_on_preflight()
+    gate_on_lint(args.modname, project_dir)
     p_mods_err = validate_p_mods()
     if p_mods_err is not None:
         sys.exit(f"{FAIL} {p_mods_err}")

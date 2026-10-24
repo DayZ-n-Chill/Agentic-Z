@@ -2,8 +2,10 @@
 
 Sends every question in evals/questions/<agent>.json to its agent with
 `claude -p --agent <name>`, scores each answer with plain string and regex
-checks, and writes a results file. With --baseline it compares the scores
-against evals/baseline.json and exits 1 when any agent scored lower.
+checks, and writes a results file. With --baseline it compares the run
+against evals/baseline.json and exits 1 when any agent scored lower or lost a
+question it passed before. --update-baseline refuses a run where a question
+errored, so a missing claude CLI can never be recorded as a score of 0.
 
 Run with: py scripts/dev/run_evals.py [--agent NAME] [--dry-run] [--baseline]
 """
@@ -205,7 +207,7 @@ def run(suites: list[dict], timeout: int, model: str | None = None) -> dict:
                 row["passed"] = not row["failed_checks"]
             except (RuntimeError, subprocess.TimeoutExpired) as exc:
                 answer = ""
-                row = {"id": q["id"], "passed": False, "failed_checks": [f"error: {exc}"]}
+                row = {"id": q["id"], "passed": False, "error": True, "failed_checks": [f"error: {exc}"]}
             row["answer"] = answer
             print(f"  {'PASS' if row['passed'] else 'FAIL'} {'; '.join(row['failed_checks'])}", flush=True)
             rows.append(row)
@@ -214,25 +216,42 @@ def run(suites: list[dict], timeout: int, model: str | None = None) -> dict:
     return results
 
 
-def compare(results: dict, baseline: dict, require_baseline: bool = False) -> list[str]:
-    """List every agent whose score fell below its baseline.
+def passed_ids(entry: dict) -> list[str]:
+    return sorted(r["id"] for r in entry["questions"] if r["passed"])
 
+
+def compare(results: dict, baseline: dict, require_baseline: bool = False) -> list[str]:
+    """List every agent whose score fell below its baseline or that lost a passed question.
+
+    A baseline entry with a "passed" list is compared question by question, so
+    a run that passes as many questions but different ones is still caught.
     With require_baseline (the --baseline check), an agent with no baseline
     entry is listed too, since a drop could never be caught for it.
     """
     drops = []
     for agent, entry in results["agents"].items():
-        before = baseline.get(agent, {}).get("score")
-        if before is None:
+        before = baseline.get(agent, {})
+        if before.get("score") is None:
             if require_baseline:
                 drops.append(f"{agent}: no baseline entry; record one with --update-baseline")
-        elif entry["score"] < before:
-            drops.append(f"{agent}: {entry['score']}/{entry['total']} is below the baseline {before}")
+            continue
+        if entry["score"] < before["score"]:
+            drops.append(f"{agent}: {entry['score']}/{entry['total']} is below the baseline {before['score']}")
+        if "passed" in before and "questions" in entry:
+            lost = sorted(set(before["passed"]) - set(passed_ids(entry)))
+            if lost:
+                drops.append(f"{agent}: no longer passes {', '.join(lost)}")
     return drops
 
 
+def errors_of(results: dict) -> list[str]:
+    """Every question that errored (claude missing, nonzero exit, timeout) as agent/id."""
+    return [f"{a}/{r['id']}" for a, e in results["agents"].items() for r in e["questions"] if r.get("error")]
+
+
 def scores_of(results: dict) -> dict:
-    return {a: {"score": e["score"], "total": e["total"]} for a, e in results["agents"].items()}
+    return {a: {"score": e["score"], "total": e["total"], "passed": passed_ids(e)}
+            for a, e in results["agents"].items()}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -276,10 +295,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"REGRESSION {d}", file=sys.stderr)
         code = 1 if drops else 0
     if args.update_baseline:
+        errors = errors_of(results)
+        if errors:
+            print(f"baseline not updated: these questions errored: {', '.join(errors)}", file=sys.stderr)
+            return 1
         baseline = json.loads(BASELINE.read_text(encoding="utf-8")) if BASELINE.exists() else {}
         drops = compare(results, baseline)
         if drops:
-            print("baseline not updated: a score went down", file=sys.stderr)
+            print("baseline not updated: a score went down or a passed question was lost", file=sys.stderr)
             return 1
         baseline.update(scores_of(results))
         BASELINE.write_text(json.dumps(baseline, indent=2) + "\n", encoding="utf-8")

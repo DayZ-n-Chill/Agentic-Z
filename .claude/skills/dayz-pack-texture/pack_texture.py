@@ -3,14 +3,18 @@
 Validates that each input ends in a texture-role suffix used by vanilla DayZ
 (_co, _nohq, _smdi and the rest of ALLOWED_SUFFIXES) so ImageToPAA and the
 engine treat the texture as the right kind, and that both sides of the image are
-powers of two. An existing .paa next to the source is overwritten.
+powers of two. An existing .paa next to the source is copied to a backup
+(<name>.paa.bak, or .paa.bak.1, .paa.bak.2 ... if that is taken) before it is
+overwritten. --dry-run validates and lists what would be written, writing nothing.
 
 See SKILL.md for full usage.
 """
 from __future__ import annotations
 
 import argparse
+import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -102,10 +106,49 @@ def validate_input(path: Path) -> None:
         )
 
 
+def check_unique_outputs(inputs: list[Path]) -> None:
+    """Refuse two inputs that would write the same .paa (vest_co.png and vest_co.tga),
+    since the second conversion would silently replace the first."""
+    seen: dict[str, Path] = {}
+    for src in inputs:
+        # normcase: Windows paths are case-insensitive, so VEST_CO.png and vest_co.tga collide too.
+        key = os.path.normcase(str(src.with_suffix(".paa")))
+        if key in seen:
+            sys.exit(
+                f"{h.FAIL} {seen[key].name} and {src.name} would both write "
+                f"{src.with_suffix('.paa').name}.\n"
+                "       Pass only one of them, or rename one."
+            )
+        seen[key] = src
+
+
+def backup_path(dst: Path) -> Path:
+    """First free backup name for dst, so an earlier backup is never overwritten."""
+    candidate = dst.with_name(dst.name + ".bak")
+    n = 1
+    while candidate.exists():
+        candidate = dst.with_name(f"{dst.name}.bak.{n}")
+        n += 1
+    return candidate
+
+
+def plan_one(src: Path) -> None:
+    """Dry run: say what pack_one would write, touching nothing."""
+    dst = src.with_suffix(".paa")
+    print(f"[Dry run] {src.name}  ->  {dst.name}")
+    if dst.exists():
+        print(f"          would back up the existing {dst.name} to {backup_path(dst).name}")
+
+
 def pack_one(image_to_paa: Path, src: Path) -> bool:
     dst = src.with_suffix(".paa")
     print()
     print(f"[Pack] {src.name}  ->  {dst.name}")
+    if dst.exists():
+        # Keep the existing .paa (possibly hand-tuned) before ImageToPAA replaces it.
+        bak = backup_path(dst)
+        shutil.copy2(dst, bak)
+        print(f"{h.OK} Backed up existing {dst.name} to {bak.name}")
     sys.stdout.flush()
     # Remember an existing .paa's mtime so a run that exits 0 without writing
     # is not mistaken for success because the old file is still there.
@@ -139,6 +182,12 @@ def main() -> int:
         help="One or more PNG/TGA files. Basenames must end with a DayZ texture-role "
         "suffix such as _co, _ca, _nohq or _smdi (full list in SKILL.md).",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate the inputs and list the .paa files and backups that would be "
+        "written, without converting or writing anything.",
+    )
     args = parser.parse_args()
 
     h.gate_on_preflight()
@@ -147,8 +196,17 @@ def main() -> int:
     inputs = [Path(p).resolve() for p in args.inputs]
     for src in inputs:
         validate_input(src)
+    check_unique_outputs(inputs)
 
     image_to_paa = resolve_image_to_paa()
+
+    if args.dry_run:
+        print()
+        for src in inputs:
+            plan_one(src)
+        print()
+        print(f"{h.OK} Dry run: {len(inputs)} textures would be packed; nothing written.")
+        return 0
 
     success = 0
     for src in inputs:

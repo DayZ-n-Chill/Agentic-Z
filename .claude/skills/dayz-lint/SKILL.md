@@ -70,7 +70,7 @@ A finding is an error only when it stops the mod packing or loading. Everything 
 | `required-addon-name` | error | An entry that is not a class name (a path, a `.pbo`, an `@mod` folder, a space), the mod's own patch class, or a `DZ_` name that no vanilla config on `P:\DZ\` or `P:\scripts\` declares. |
 | `required-addon-duplicate` | warning | The same entry twice. |
 | `pboprefix-missing`, `pboprefix-mismatch` | error | No `$PBOPREFIX$`, or one that does not hold exactly the mod name, which `/dayz-build-pbo` needs. |
-| `p-link` | error | `P:\<prefix>\` is missing, is a real folder, or points away from the mod folder. |
+| `p-link` | error | `P:\<prefix>\` is missing, is a real folder, or points away from the mod folder. The fix is `/dayz-add-scaffold <ModName> --piece junction` for a mod in the cached project's `workspace\`; for a `--mod-dir` folder outside it, `/dayz-import-mod --source <folder>` or `mklink /J P:\<prefix> <folder>`. |
 | `p-not-mounted` | warning | `P:\` is not mounted, so the link and the vanilla `DZ_` names were not checked. |
 | `script-module-path` | error | A `CfgMods` script module lists a folder outside the mod or one that does not exist. |
 | `script-module-layer` | error | A module lists another layer's folder, for example `worldScriptModule` with `3_Game`. |

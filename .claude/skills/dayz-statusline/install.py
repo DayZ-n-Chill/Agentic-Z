@@ -36,9 +36,12 @@ REFRESH_SECONDS = 10
 
 
 def our_entry() -> dict:
+    # The absolute path of the interpreter running this installer, not a bare
+    # "python": where "python" on PATH is only the Microsoft Store alias, a bare
+    # command exits 9009 and the status line stays blank with no error.
     return {
         "type": "command",
-        "command": f'python "{STATUSLINE.as_posix()}"',
+        "command": f'"{Path(sys.executable).as_posix()}" "{STATUSLINE.as_posix()}"',
         "refreshInterval": REFRESH_SECONDS,
     }
 

@@ -1,17 +1,18 @@
 """dayz-gate: script-only build and in-game gates for the mod team.
 
-  gate.py build  <ModName> [--json]
+  gate.py build  <ModName> [--yes] [--json]
   gate.py ingame <ModName> [--deps CF ...] [--server <instance>] [--port N]
-                 [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
+                 [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json]
   gate.py behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>]
                  [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX]
-                 [--prepare-only | --logs FILE ...] [--json]
+                 [--prepare-only | --logs FILE ...] [--yes] [--json]
   gate.py visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N]
                  [--timeout S] [--threshold R] [--ready-pattern REGEX]
-                 [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--json]
+                 [--compare [DIR] | --accept [DIR] [--shot ID ...]] [--yes] [--json]
 
 Every mode that packs or launches stops a running DayZDiag session first
-(build only once lint passes; behavior --logs and --prepare-only and visual
+(build only once lint passes; a session the gate did not start is stopped only
+with --yes or a yes at the terminal prompt, else the gate exits ERROR; behavior --logs and --prepare-only and visual
 --compare and --accept launch nothing and leave a session alone), runs the existing skill
 scripts (/dayz-build-pbo, /dayz-deploy-pbo, /dayz-launch-test) as subprocesses,
 applies the pass/fail rules of the dayz-build-checker and dayz-ingame-tester
@@ -106,6 +107,7 @@ class Runtime(NamedTuple):
     sleep: Callable[[float], None] = time.sleep
     clock: Callable[[], float] = time.monotonic
     capture: Callable[[int, Path], None] = visual.capture_window
+    confirm: Callable[[list[int]], bool] = lambda pids: confirm_at_terminal(pids)
 
 
 def run_captured(cmd: list[str]) -> tuple[int, str]:
@@ -130,6 +132,22 @@ def parse_tasklist(output: str, pid: Optional[int] = None) -> list[int]:
     return pids
 
 
+def confirm_at_terminal(pids: list[int]) -> bool:
+    """Ask on an interactive terminal whether to end a DayZDiag session the gate did not start.
+
+    No terminal (an agent or a pipe) means no: the caller must pass --yes.
+    """
+    stdin = sys.stdin
+    if stdin is None or not stdin.isatty():
+        return False
+    prompt = f"{DIAG_EXE} is already running (PIDs {pids}); the gate must stop it. Stop it now? [y/N] "
+    try:
+        answer = input(prompt)
+    except EOFError:
+        return False
+    return answer.strip().lower() in ("y", "yes")
+
+
 def real_runtime() -> Runtime:
     def diag_pids() -> list[int]:
         _, out = run_captured(["tasklist", "/FI", f"IMAGENAME eq {DIAG_EXE}", "/FO", "CSV", "/NH"])
@@ -144,11 +162,20 @@ def real_runtime() -> Runtime:
 
 # --- shared steps -------------------------------------------------------------
 
-def stop_session(rt: Runtime) -> dict:
-    """Stop every DayZDiag_x64.exe with /dayz-stop-test; GateError if any survive."""
+def stop_session(rt: Runtime, started_by_gate: bool = False) -> dict:
+    """Stop every DayZDiag_x64.exe with /dayz-stop-test; GateError if any survive.
+
+    A session the gate did not start may be the user's own play session, so it
+    is stopped only when rt.confirm agrees (--yes, or a yes at the terminal).
+    """
     pids = rt.diag_pids()
     if not pids:
         return {"step": "stop-session", "result": "no DayZDiag session running"}
+    if not started_by_gate and not rt.confirm(pids):
+        raise GateError(
+            f"{DIAG_EXE} is already running (PIDs {pids}) and the gate did not start it. "
+            "Close it yourself, or rerun with --yes to let the gate stop it."
+        )
     rc, out = rt.run(["cmd", "/c", str(STOP_BAT)])
     if rc != 0:
         raise GateError(f"/dayz-stop-test exited {rc}: {out.strip()}")
@@ -546,7 +573,7 @@ def ingame_session(
             if problem is not None:
                 extra.append(problem)
     finally:
-        report["steps"].append(stop_session(rt))  # always, even after a failure
+        report["steps"].append(stop_session(rt, started_by_gate=True))  # always, even after a failure
     lines += logs.poll(final=True)
 
     for path in logs.new_files():
@@ -840,12 +867,16 @@ def emit(report: dict, as_json: bool) -> None:
     print(json.dumps(report, indent=2) if as_json else render_text(report))
 
 
+YES_HELP = "Stop a DayZDiag session the gate did not start without asking (it may be your own play session)."
+
+
 def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     parser = argparse.ArgumentParser(description="Script-only build and in-game gates.")
     sub = parser.add_subparsers(dest="mode", required=True)
     b = sub.add_parser("build", help="Build (or deploy a bundle) and check the output.")
     b.add_argument("mod")
     b.add_argument("--json", action="store_true")
+    b.add_argument("--yes", action="store_true", help=YES_HELP)
     g = sub.add_parser("ingame", help="Launch server and client, read the logs, stop the session.")
     g.add_argument("mod")
     g.add_argument("--deps", nargs="+", default=[], metavar="MOD", help="Dependency mods in load order (CF or @CF).")
@@ -855,6 +886,7 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     g.add_argument("--settle", type=float, default=DEFAULT_SETTLE_S, help="Seconds to keep reading after the ready signal.")
     g.add_argument("--ready-pattern", default=DEFAULT_READY_RE, help="Regex in the client script log that means the mission is running.")
     g.add_argument("--json", action="store_true")
+    g.add_argument("--yes", action="store_true", help=YES_HELP)
     v = sub.add_parser("behavior", help="Run a test mission that spawns and uses each item in a checks file.")
     v.add_argument("mod")
     v.add_argument("--checks", type=Path, help="Checks JSON (default output/<ModName>-plan/behavior-checks.json).")
@@ -870,6 +902,7 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     only.add_argument("--logs", nargs="*", type=Path, metavar="FILE",
                       help="Judge logs of a session already run (no files: the copy's server script logs).")
     v.add_argument("--json", action="store_true")
+    v.add_argument("--yes", action="store_true", help=YES_HELP)
     s = sub.add_parser("visual", help="Capture the client window during the in-game test and compare with baselines.")
     s.add_argument("mod")
     s.add_argument("--shots", type=Path, help="Shots JSON (default output/<ModName>-plan/visual-shots.json).")
@@ -886,6 +919,7 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
                          help="Make captures the new baselines (no folder: the newest run).")
     s.add_argument("--shot", nargs="+", metavar="ID", help="--accept: only these shots.")
     s.add_argument("--json", action="store_true")
+    s.add_argument("--yes", action="store_true", help=YES_HELP)
     try:
         args = parser.parse_args(argv)
     except SystemExit as e:
@@ -904,6 +938,8 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
             raise GateError("--threshold must be from 0 to 1")
         project_dir = h.resolve_project_dir()
         rt = rt or real_runtime()
+        if args.yes:
+            rt = rt._replace(confirm=lambda pids: True)
         if args.mode == "build":
             report = gate_build(args.mod, project_dir, rt)
         elif args.mode == "behavior" and args.prepare_only:

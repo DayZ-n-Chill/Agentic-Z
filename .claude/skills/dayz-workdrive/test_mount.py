@@ -184,6 +184,8 @@ def fake_drive(monkeypatch, tmp_path):
     monkeypatch.setattr(mount, "find_dayz_tools", lambda: None)  # no settings.ini, so Letter= is P
     monkeypatch.setattr(mount, "is_p_mounted", lambda: state["mounted"])
     monkeypatch.setattr(mount.subprocess, "run", fake_run)
+    state["running"] = []  # processes the unmount guard sees; none by default
+    monkeypatch.setattr(mount, "running_p_drive_users", lambda: state["running"])
     return exe, state
 
 
@@ -251,6 +253,56 @@ def test_main_success_caches_folder(fake_drive, monkeypatch, tmp_path):
     assert mount.get_cached_path() == work
 
 
+def test_main_relative_path_is_mounted_and_cached_absolute(fake_drive, monkeypatch, tmp_path):
+    exe, state = fake_drive
+    state["effects"][str(exe)] = True
+    work = tmp_path / "PDrive"
+    work.mkdir()
+    run_dir = tmp_path / "scripts"
+    run_dir.mkdir()
+    monkeypatch.chdir(run_dir)
+    monkeypatch.setattr(mount, "CACHE", tmp_path / "cache.json")
+    monkeypatch.setattr("sys.argv", ["mount.py", "--path", "..\\PDrive" if mount.sys.platform == "win32" else "../PDrive"])
+    assert mount.main() == 0
+    expected = work.resolve()
+    assert state["calls"] == [[str(exe), "/Mount", str(expected)]]
+    cached = json.loads((tmp_path / "cache.json").read_text(encoding="utf-8"))["work_drive_path"]
+    assert Path(cached).is_absolute() and Path(cached) == expected
+    monkeypatch.chdir(tmp_path)  # a later run from another folder still finds it
+    assert mount.get_cached_path() == expected
+
+
+def test_run_workdrive_passes_a_timeout(monkeypatch):
+    seen = {}
+
+    def fake_run(args, **kwargs):
+        seen.update(kwargs)
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(mount.subprocess, "run", fake_run)
+    mount._run_workdrive(["WorkDrive.exe", "/Mount", "C:\\Work"])
+    assert seen["timeout"] == mount.WORKDRIVE_TIMEOUT
+
+
+def test_hung_workdrive_exe_falls_through_to_subst(fake_drive, monkeypatch, tmp_path, capsys):
+    exe, state = fake_drive
+    calls = state["calls"]
+
+    def fake_run(args, **kwargs):
+        calls.append(list(args))
+        if args[0] == str(exe):
+            raise mount.subprocess.TimeoutExpired(args, kwargs.get("timeout"))
+        state["mounted"] = True
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(mount.subprocess, "run", fake_run)
+    assert mount.invoke_mount(tmp_path) is True
+    assert calls == [[str(exe), "/Mount", str(tmp_path)], ["subst", "P:", str(tmp_path)]]
+    captured = capsys.readouterr()
+    assert "rc=-1" in captured.out and "falling back to subst" in captured.out
+    assert "did not exit within" in captured.err
+
+
 def test_main_already_mounted_runs_nothing(fake_drive, monkeypatch):
     _, state = fake_drive
     state["mounted"] = True
@@ -290,6 +342,69 @@ def test_unmount_fails_when_drive_stays(fake_drive, monkeypatch, capsys):
     monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
     assert mount.main() == 1
     assert "still mounted=True" in capsys.readouterr().err
+
+
+# ---------- --unmount guard against running DayZ Tools / DayZDiag ----------
+
+TASKLIST_CSV = (
+    '"System Idle Process","0","Services","0","8 K"\n'
+    '"WorkbenchApp.exe","4120","Console","1","812,004 K"\n'
+    '"notepad.exe","5000","Console","1","9,000 K"\n'
+    '"DayZDiag_x64.exe","6100","Console","1","2,100,000 K"\n'
+    '"DayZDiag_x64.exe","6200","Console","1","1,900,000 K"\n'
+)
+
+
+def test_parse_tasklist_images_reads_first_column():
+    assert mount.parse_tasklist_images(TASKLIST_CSV) == [
+        "System Idle Process", "WorkbenchApp.exe", "notepad.exe", "DayZDiag_x64.exe", "DayZDiag_x64.exe",
+    ]
+
+
+def test_running_p_drive_users_matches_case_insensitively_and_dedupes(monkeypatch):
+    calls = []
+
+    def fake_run(args, **kwargs):
+        calls.append(list(args))
+        return SimpleNamespace(returncode=0, stdout=TASKLIST_CSV.replace("WorkbenchApp", "workbenchapp"), stderr="")
+
+    monkeypatch.setattr(mount.subprocess, "run", fake_run)
+    assert mount.running_p_drive_users() == ["DayZDiag_x64.exe", "workbenchapp.exe"]
+    assert calls == [["tasklist", "/FO", "CSV", "/NH"]]
+
+
+@pytest.mark.parametrize("name", ["WorkbenchApp.exe", "ObjectBuilder.exe", "AddonBuilder.exe",
+                                  "binarize.exe", "DayZDiag_x64.exe"])
+def test_unmount_refuses_while_p_drive_user_runs(fake_drive, monkeypatch, capsys, name):
+    exe, state = fake_drive
+    state["mounted"] = True
+    state["effects"][str(exe)] = False
+    state["running"] = [name]
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 1
+    assert state["calls"] == []  # nothing dismounted
+    assert state["mounted"] is True
+    err = capsys.readouterr().err
+    assert name in err and "--force" in err
+
+
+def test_unmount_force_proceeds_with_warning(fake_drive, monkeypatch, capsys):
+    exe, state = fake_drive
+    state["mounted"] = True
+    state["effects"][str(exe)] = False
+    state["running"] = ["ObjectBuilder.exe"]
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount", "--force"])
+    assert mount.main() == 0
+    assert state["calls"] == [[str(exe), "/Dismount"]]
+    assert "--force" in capsys.readouterr().out
+
+
+def test_unmount_guard_not_checked_when_not_mounted(fake_drive, monkeypatch):
+    _, state = fake_drive
+    state["running"] = ["DayZDiag_x64.exe"]
+    monkeypatch.setattr("sys.argv", ["mount.py", "--unmount"])
+    assert mount.main() == 0
+    assert state["calls"] == []
 
 
 # ---------- --path while already mounted ----------

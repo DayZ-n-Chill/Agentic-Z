@@ -164,7 +164,9 @@ def execute(steps: list[Step], intent: Intent, project: Path) -> int:
 
 
 # The mod name rule SKILL.md states: it becomes a folder, a PBO name and a CfgPatches class.
-MOD_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]*")
+# Same rule as NAME_PATTERN in dayz-new-mod/new_mod.py (also used by import_mod.py),
+# including its 64-character cap, so a name accepted here never fails in step 1.
+MOD_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,63}")
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -193,7 +195,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--execute", action="store_true", help="Run the plan instead of printing it")
     args = parser.parse_args(argv)
     if not MOD_NAME_RE.fullmatch(args.mod):
-        parser.error(f"--mod {args.mod!r}: use letters, digits and underscores, starting with a letter")
+        parser.error(f"--mod {args.mod!r}: use letters, digits and underscores, starting with a letter, "
+                     "at most 64 characters")
     if args.launch and not args.server:
         parser.error("--launch needs --server")
     if args.deps and not args.launch:

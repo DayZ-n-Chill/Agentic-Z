@@ -31,7 +31,7 @@ First hit wins:
 1. `--author "Name"` flag — also writes to the cache for next time.
 2. Cached value at `.claude/local-memory/dayz-author.txt` (per-clone, gitignored).
 3. Interactive prompt if stdin is a TTY — written to cache after.
-4. Hard fail with instructions otherwise.
+4. Hard fail with instructions otherwise. The prompt reading an empty answer or end-of-file fails the same way (a null stdin, such as an agent's PowerShell tool, can report itself as a TTY); the message names `--author` and the cache file.
 
 The handle is written inside quoted strings in `config.cpp`, so a handle containing `"` or a line break is refused wherever it comes from (flag, cache or prompt).
 
@@ -82,7 +82,7 @@ Junctions don't require admin; symlinks do (Windows only creates them automatica
 
 ### Project cache
 
-After the junction is created, the skill points the `/dayz-init` project cache at this project. `/dayz-build-pbo`, `/dayz-deploy-pbo`, `/dayz-launch-test` and `/dayz-clean-workspace` follow that cache, so scaffolding here makes this the active project. When the cache pointed at a different project, the skill prints `[WARN] Project cache repointed: <old> -> <new>`.
+After the junction is created, the skill points the `/dayz-init` project cache at this project. `/dayz-build-pbo`, `/dayz-deploy-pbo`, `/dayz-launch-test` and `/dayz-clean-workspace` follow that cache, so scaffolding here makes this the active project. When the cache pointed at a different project, the skill prints `[WARN] Project cache repointed: <old> -> <new>`. It also records the new mod as the active mod (`last_intent.mod_name` in `.claude/local-memory/dayz-init-state.json`, the same record `/dayz-init` writes) and prints `[OK] Active /dayz-init mod: <ModName>`, so the `/dayz-init` hub and its build and launch defaults act on the new mod, not the one active before.
 
 ## Refuses to run if
 
@@ -91,7 +91,7 @@ After the junction is created, the skill points the `/dayz-init` project cache a
 - `workspace/<ModName>/` already exists (won't clobber an in-progress project).
 - `P:\<ModName>\` exists as a real folder (won't clobber non-link content).
 - `P:\<ModName>\` exists as a link pointing somewhere other than `workspace/<ModName>/` (won't redirect a junction the user set up for a different project).
-- No author handle is available and stdin is not a TTY.
+- No author handle is available and stdin is not a TTY, or the prompt reads an empty answer or end-of-file.
 - The author handle contains `"` or a line break.
 
 ### Stale-junction auto-clean
@@ -117,6 +117,7 @@ Preflight complete.
 [OK]    workbench/dayz.gproj written (mod paths + filesystem mounts injected)
 [OK]    workbench/DayZSetting.xml copied
 [OK]    P:\MyMod junction -> workspace\MyMod
+[OK]    Active /dayz-init mod: MyMod
 [OK]    Project cache set: C:\...\MyProject
 
 Next steps:

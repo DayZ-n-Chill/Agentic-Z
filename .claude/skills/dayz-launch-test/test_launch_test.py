@@ -197,6 +197,30 @@ def test_dry_run_is_side_effect_free(monkeypatch, tmp_path):
     assert _snapshot(tmp_path) == before  # no Profiles/, no prefs file
 
 
+SPACED_DIAG = Path("C:/Program Files (x86)/Steam/steamapps/common/DayZ/DayZDiag_x64.exe")
+
+
+@pytest.mark.parametrize("dry_run", [True, False])
+def test_printed_commands_quote_paths_with_spaces(monkeypatch, tmp_path, capsys, dry_run):
+    project = tmp_path / "DayZ n Chill"
+    project.mkdir()
+    _instance(project)
+    _patch_main(monkeypatch, project, ["MyMod", *(["--dry-run"] if dry_run else [])])
+    monkeypatch.setattr(launch, "resolve_diag_client", lambda: SPACED_DIAG)
+    spawned = []
+    monkeypatch.setattr(launch.subprocess, "Popen", lambda cmd, **k: spawned.append(cmd) or _FakeProc())
+    monkeypatch.setattr(launch, "wait_for_server_port", lambda port, proc, timeout_s: True)
+    assert launch.main() == 0
+    prefix = "[DRY-RUN] Server cmd: " if dry_run else "[Launch] Server: "
+    lines = [l for l in capsys.readouterr().out.splitlines() if "Server" in l and l.startswith(prefix)]
+    assert len(lines) == 1
+    printed = lines[0][len(prefix):]
+    assert printed.startswith(f'"{SPACED_DIAG}" ')  # exe path quoted, so the line pastes as is
+    assert f'"-config={project}' in printed  # cfg path under a spaced folder stays one argument
+    if not dry_run:
+        assert printed == launch.subprocess.list2cmdline(spawned[0])
+
+
 @pytest.mark.parametrize("extra", [[], ["--dry-run"]])
 def test_port_out_of_range_exits_2(monkeypatch, tmp_path, capsys, extra):
     _instance(tmp_path)

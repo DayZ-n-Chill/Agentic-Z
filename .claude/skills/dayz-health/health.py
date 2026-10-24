@@ -47,6 +47,9 @@ REVIEW_LINE_RE = re.compile(
     r"^\s*[-*]?\s*(?P<sev>CRITICAL|WARN|NIT)\b[:\s]+(?P<where>\S+?)(?::(?P<line>\d+))?:\s+(?P<text>.+?)"
     r"(?:\s+->\s+(?P<owner>[\w:-]+))?\s*$"
 )
+# A line that looks like a finding (an all-caps first word, a `path:line:` or an `-> owner`) but did not
+# match REVIEW_LINE_RE, e.g. `ERROR a.c:12: x` or `CRITICAL a.c:12 x`. The closing prose lines don't.
+REVIEW_SUSPECT_RE = re.compile(r"^\s*[-*]?\s*[A-Z]{3,}\b|\S:\d+:\s|\s->\s")
 
 
 class HealthError(Exception):
@@ -131,19 +134,29 @@ def from_review_text(text: str) -> dict:
     lines = [line for line in text.splitlines() if line.strip()]
     if not lines or lines[0].strip().upper() not in ("PASS", "FAIL"):
         raise HealthError("a review report starts with a PASS or FAIL line")
-    findings = []
+    verdict = lines[0].strip().upper()
+    findings, unparsed = [], []
     for line in lines[1:]:
         m = REVIEW_LINE_RE.match(line)
         if m:
             sev = m["sev"].lower()
             findings.append(_finding("fail" if sev == "critical" else sev, m["text"], m["where"],
                                      int(m["line"]) if m["line"] else None, "review", m["owner"] or ""))
-    return {"kind": "review", "verdict": lines[0].strip().upper(), "findings": findings,
-            "warnings": sum(f["severity"] != "fail" for f in findings)}
+        elif REVIEW_SUSPECT_RE.search(line):
+            unparsed.append(line.strip())
+    if verdict == "FAIL" and not findings:
+        raise HealthError("a FAIL review has no finding line of the form "
+                          "`CRITICAL|WARN|NIT path:line: what is wrong -> owner`")
+    result = {"kind": "review", "verdict": verdict, "findings": findings,
+              "warnings": sum(f["severity"] != "fail" for f in findings)}
+    if unparsed:
+        result["unparsed"] = unparsed
+    return result
 
 
-def parse_report(kind: str, text: str) -> dict:
-    """Turn what `record` was given into a stored result of `kind`."""
+def parse_report(kind: str, text: str, mod: Optional[str] = None) -> dict:
+    """Turn what `record` was given into a stored result of `kind`. A JSON report naming another
+    mod than `mod` is refused, so one mod's failures never land on another's page."""
     if kind not in KINDS:
         raise HealthError(f"kind must be one of {', '.join(KINDS)}")
     brace = text.find("{")
@@ -157,6 +170,8 @@ def parse_report(kind: str, text: str) -> dict:
         return from_review_text(text)
     if not isinstance(data, dict) or data.get("verdict") not in ("PASS", "FAIL"):
         raise HealthError("the report is not JSON with a PASS or FAIL verdict (run the gate or lint with --json)")
+    if mod and data.get("mod") and data["mod"] != mod:
+        raise HealthError(f"the report is for mod {data['mod']!r}, not {mod!r}")
     if kind == "review":
         findings = [_finding(str(f.get("severity", "warn")).lower(), f["text"], f.get("file"), f.get("line"),
                              "review", f.get("owner", "")) for f in data.get("findings", [])]
@@ -465,10 +480,12 @@ def main(argv: Optional[list[str]] = None, stdin=None) -> int:
         project_dir = h.resolve_project_dir()
         if args.cmd == "record":
             text = args.file.read_text(encoding="utf-8-sig") if args.file else (stdin or sys.stdin).read()
-            path = store(project_dir, args.mod, parse_report(args.kind, text))
+            result = parse_report(args.kind, text, args.mod)
+            unparsed = result.get("unparsed", [])
+            path = store(project_dir, args.mod, result)
             mods = [args.mod]
         else:
-            path = None
+            path, unparsed = None, []
             mods = mods_with_results(project_dir) if args.all else [args.mod]
         summaries = [_summary(*render(project_dir, m), project_dir) for m in mods]
     except SystemExit:  # resolve_project_dir already printed why on stderr
@@ -481,10 +498,16 @@ def main(argv: Optional[list[str]] = None, stdin=None) -> int:
         out = {"mods": summaries}
         if path is not None:
             out["recorded"] = _rel(path, project_dir)
+        if unparsed:
+            out["unparsed"] = unparsed
         print(json.dumps(out, indent=2))
         return 0
     if path is not None:
         print(f"  recorded {_rel(path, project_dir)}")
+    if unparsed:
+        print(f"  warning: {len(unparsed)} review line(s) look like findings but do not parse, so they were not stored:")
+        for line in unparsed:
+            print(f"    {line}")
     if not summaries:
         print("  no gate results stored yet")
     for summary in summaries:

@@ -53,6 +53,15 @@
         "re:\"name\"\\s*:\\s*\""
       ],
       "verified": ".claude/agents/figma-node-normalizer.md Rules (with no Figma tool available and no pasted tree, stop and say a Figma MCP server must be installed and signed in; never build the JSON from the URL or from memory)"
+    },
+    {
+      "id": "position-in-free-frame",
+      "question": "Answer only, do not edit any file, and do not call any Figma MCP tool: the node tree below is the get_metadata output, already fetched. Normalize it for figma-to-dayz-layout.\n\n<frame id=\"50:1\" name=\"panel_header\" x=\"0\" y=\"0\" width=\"240\" height=\"40\" layout=\"none\" sizing=\"fixed,fixed\">\n  <rectangle id=\"50:2\" name=\"img_icon\" x=\"200\" y=\"10\" width=\"20\" height=\"20\" sizing=\"fixed,fixed\"/>\n  <text id=\"50:3\" name=\"txt_title\" x=\"12\" y=\"8\" width=\"120\" height=\"24\" sizing=\"fixed,hug\">Header</text>\n</frame>\n\nReturn your usual report.",
+      "must_include": [
+        "re:(?s)\"img_icon\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*200\\s*,\\s*\"y\"\\s*:\\s*10\\s*\\}",
+        "re:(?s)\"txt_title\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*12\\s*,\\s*\"y\"\\s*:\\s*8\\s*\\}"
+      ],
+      "verified": ".claude/agents/figma-node-normalizer.md JSON shape (position is required on every child of a layout: none parent, x and y relative to the parent) and .claude/skills/_shared/figma-to-dayz-rules.md section 10 (free-placed icon example)"
     }
   ]
 }

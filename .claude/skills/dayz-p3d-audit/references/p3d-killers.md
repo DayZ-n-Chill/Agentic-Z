@@ -4,6 +4,21 @@ These produce ZERO engine errors but break functionality completely. Built from
 production debugging where models rendered correctly but had zero collision,
 missing animations, or broken textures.
 
+**Contents**
+
+1. Inverted Face Winding
+2. Component Selection Name
+3. Missing `autocenter=0` LOD property
+4. Missing Memory LOD or Geometry LOD
+5. Missing `pos center` Memory Point
+6. Missing Animation Selections & Axes
+7. Missing `box_placing_min` / `box_placing_max` Memory Points
+8. Incomplete Component Coverage
+9. Non-Watertight Collision Mesh
+10. Missing Surface/Material Assignment on Collision LODs
+- Common Blender Export Pitfalls
+- Script-Side Gotchas
+
 ## 1. Inverted Face Winding (CRITICAL: Most Common from Blender)
 
 Geometry LOD faces have normals pointing INWARD. Raycasts from outside pass through

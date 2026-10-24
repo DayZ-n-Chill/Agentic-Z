@@ -107,9 +107,75 @@ def decide(text, env=NO_KEY):
         ("Where is bleeding started in vanilla?", "dayz-ask", None),
         ("what does vanilla use for the AKM recoil?", "dayz-ask", None),
         ("How does DayZ decide when food goes bad?", "dayz-ask", None),
+        # Tool and setup skills: opening Workbench is not plugin work, packing files is not texture design.
+        ("open Workbench on MyVest", "dayz-launch-workbench", {"mod": "MyVest"}),
+        ("start workbench with vanilla dayz", "dayz-launch-workbench", None),
+        ("add a test server for chernarus-hardcore", "dayz-add-server", None),
+        ("create a test server for my mod", "dayz-add-server", None),
+        ("refresh the mission after the update", "dayz-add-server", None),
+        ("pack this texture", "dayz-pack-texture", None),
+        ("run ImageToPAA on vest_co.png", "dayz-pack-texture", None),
+        ("build an imageset for my HUD icons", "dayz-build-imageset", None),
+        ("rebuild the imageset from .gui-sources", "dayz-build-imageset", None),
+        ("set up COT admin on my test server", "dayz-cot-bootstrap", None),
+        ("give me admin in Community Online Tools", "dayz-cot-bootstrap", None),
+        ("init", "dayz-init", None),
+        ("set up DayZ modding", "dayz-init", None),
+        ("what's my next step?", "dayz-init", None),
     ],
 )
 def test_rules_route_confidently(text, expected, args):
+    _assert_confident(text, expected, args)
+
+
+# Tool skills that a nearby agent or skill cannot do: the object-builder agent cannot open
+# Object Builder, and dayz-build-pbo runs AddonBuilder instead of copying prebuilt PBOs.
+@pytest.mark.parametrize(
+    "text, expected, args",
+    [
+        ("Open my vest.p3d in Object Builder", "dayz-launch-objectbuilder", None),
+        ("launch Object Builder", "dayz-launch-objectbuilder", None),
+        ("Copy these prebuilt PBOs to P:", "dayz-deploy-pbo", None),
+        ("deploy the pbos for UmbrellaPack", "dayz-deploy-pbo", {"mod": "UmbrellaPack"}),
+        ("audit my vest.p3d for collision problems", "dayz-p3d-audit", None),
+        ("check the p3d and its model.cfg", "dayz-p3d-audit", None),
+        ("split my types.xml into categories", "dayz-split-types", None),
+        ("scope the session to MyVest", "dayz-scope-mod", {"mod": "MyVest"}),
+        ("lift the scope", "dayz-scope-mod", None),
+        # These used to fall through, or worse, "rebuild the search index" was a PBO build of a mod named "search".
+        ("mount my P drive", "dayz-workdrive", None),
+        ("unmount the work drive", "dayz-workdrive", None),
+        ("P: is not mounted", "dayz-workdrive", None),
+        ("rebuild the search index", "dayz-search-index", None),
+        ("build the vanilla search index", "dayz-search-index", None),
+        ("add the missing scaffold to MyVest", "dayz-add-scaffold", None),
+        ("add a gproj to MyVest", "dayz-add-scaffold", None),
+        ("create the P: link for MyVest", "dayz-add-scaffold", None),
+        ("set up Object Builder", "dayz-setup-objectbuilder", None),
+        ("Object Builder opens with broken panels", "dayz-setup-objectbuilder", None),
+        ("show me the vanilla particle catalog", "dayz-particles", None),
+    ],
+)
+def test_tool_skills_beat_their_neighbours(text, expected, args):
+    _assert_confident(text, expected, args)
+
+
+@pytest.mark.parametrize("text", ["is P: drive mounted", "check my environment"])
+def test_checking_the_drive_is_still_preflight(text):
+    assert decide(text)["route"] == "dayz-preflight"
+
+
+@pytest.mark.parametrize("text", ["add smoke particles to my generator", "make a spark particle effect"])
+def test_making_a_particle_effect_is_still_the_specialists(text):
+    assert decide(text)["route"] == "dayz-audio-fx-specialist"
+
+
+@pytest.mark.parametrize("text", ["add named selections to my vest.p3d", "add a view LOD in Object Builder"])
+def test_model_changes_still_go_to_object_builder(text):
+    assert decide(text)["route"] == "dayz-object-builder"
+
+
+def _assert_confident(text, expected, args):
     d = decide(text)
     assert d["route"] == expected
     assert d["source"] == "rules"

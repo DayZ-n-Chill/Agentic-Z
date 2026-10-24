@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -224,6 +225,57 @@ def test_link_missing_is_an_error(mod, p_drive):
     [f] = run(mod, p_drive)["findings"]
     assert (f["rule"], f["severity"]) == ("p-link", "error")
     assert f["triage"]["fix"] == "Run /dayz-add-scaffold MyMod --piece junction."
+
+
+def test_link_fix_outside_workspace_points_at_import_not_add_scaffold(mod, tmp_path, p_drive, monkeypatch, capsys):
+    # /dayz-add-scaffold --piece junction only works on workspace\<Mod>\, so it must not be the hint here.
+    outside = tmp_path / "repos" / "MyMod"
+    shutil.copytree(mod, outside)
+    (p_drive / "MyMod").rmdir()
+    monkeypatch.setattr(lint, "P_DRIVE", p_drive)
+    monkeypatch.setattr(lint, "cached_workspace", lambda: tmp_path / "proj" / "workspace")
+    assert lint.main(["--mod-dir", str(outside), "--json"]) == 1
+    data = json.loads(capsys.readouterr().out.partition("\n")[2])
+    [fix] = [f["triage"]["fix"] for f in data["findings"] if f["rule"] == "p-link"]
+    assert "/dayz-add-scaffold" not in fix
+    assert f'/dayz-import-mod --source "{outside}"' in fix
+    assert f'mklink /J "{p_drive / "MyMod"}" "{outside}"' in fix
+
+
+def test_link_fix_for_workspace_mod_via_mod_dir_keeps_add_scaffold(mod, p_drive, monkeypatch, capsys):
+    (p_drive / "MyMod").rmdir()
+    monkeypatch.setattr(lint, "P_DRIVE", p_drive)
+    monkeypatch.setattr(lint, "cached_workspace", lambda: mod.parent)
+    assert lint.main(["--mod-dir", str(mod), "--json"]) == 1
+    data = json.loads(capsys.readouterr().out.partition("\n")[2])
+    [f] = data["findings"]
+    assert f["triage"]["fix"] == "Run /dayz-add-scaffold MyMod --piece junction."
+
+
+def test_script_module_path_fix_names_the_linted_folder(mod, p_drive):
+    edit(mod / "config.cpp", '"MyMod/scripts/5_Mission"', '"MyMod/scripts/5_Misson"')
+    [f] = [f for f in run(mod, p_drive)["findings"] if f["rule"] == "script-module-path"]
+    assert f["triage"]["fix"].endswith("make sure that folder exists under workspace/MyMod/.")
+
+
+def test_script_module_path_fix_outside_workspace_names_the_mod_dir(mod, tmp_path, p_drive, monkeypatch, capsys):
+    # A --mod-dir folder outside workspace\ must not be told to fix workspace/<Mod>/.
+    outside = tmp_path / "repos" / "MyMod"
+    shutil.copytree(mod, outside)
+    edit(outside / "config.cpp", '"MyMod/scripts/5_Mission"', '"MyMod/scripts/5_Misson"')
+    monkeypatch.setattr(lint, "P_DRIVE", p_drive)
+    monkeypatch.setattr(lint, "cached_workspace", lambda: tmp_path / "proj" / "workspace")
+    monkeypatch.chdir(tmp_path)
+    assert lint.main(["--mod-dir", str(outside), "--json"]) == 1
+    data = json.loads(capsys.readouterr().out.partition("\n")[2])
+    [fix] = [f["triage"]["fix"] for f in data["findings"] if f["rule"] == "script-module-path"]
+    assert "workspace/" not in fix
+    assert fix == "Point files[] at MyMod/scripts/<layer> and make sure that folder exists under repos/MyMod/."
+
+
+def test_no_cached_project_means_not_a_workspace_mod(mod, monkeypatch):
+    monkeypatch.setattr(lint, "cached_workspace", lambda: None)
+    assert not lint.is_workspace_mod(mod, "MyMod")
 
 
 def test_link_that_is_a_real_folder_is_an_error(mod, p_drive, monkeypatch):

@@ -194,6 +194,71 @@ def test_build_one_rejects_bad_sprite_name_before_reading_images(tmp_path, capsy
     assert not (tmp_path / "out").exists()
 
 
+class _ReadableImg:
+    width = height = 64
+
+    def __init__(self, fail_on_load=False):
+        self.fail_on_load = fail_on_load
+
+    def load(self):
+        if self.fail_on_load:
+            raise OSError("image file is truncated")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+class _UnidentifiedImageError(OSError):
+    """Stands in for PIL.UnidentifiedImageError, which subclasses OSError."""
+
+
+def _fake_open(path):
+    if path.name == "empty.png":
+        raise _UnidentifiedImageError(f"cannot identify image file '{path}'")
+    return _ReadableImg(fail_on_load=path.name == "cut.png")
+
+
+def test_build_one_fails_set_naming_unreadable_pngs(monkeypatch, tmp_path, capsys):
+    set_dir = tmp_path / ".gui-sources" / "icons"
+    set_dir.mkdir(parents=True)
+    (set_dir / "empty.png").write_bytes(b"")
+    (set_dir / "cut.png").write_bytes(b"x")
+    (set_dir / "hud_ok.png").write_bytes(b"x")
+    out_dir = tmp_path / "gui" / "imagesets"
+    _touch_outputs(out_dir, "icons")
+    monkeypatch.setattr(bi, "Image", type("I", (), {"open": staticmethod(_fake_open)}))
+    monkeypatch.setattr(bi, "write_one_atlas", lambda *a: pytest.fail("must not convert"))
+
+    assert bi.build_one(set_dir, "MyMod", out_dir, Path("ImageToPAA.exe")) is False
+    err = capsys.readouterr().err
+    assert "[FAIL]" in err and "empty.png" in err and "cut.png" in err
+    assert "hud_ok.png" not in err
+    # Earlier good outputs stay in place.
+    assert (out_dir / "icons.paa").is_file() and (out_dir / "icons.imageset").is_file()
+
+
+def test_main_builds_remaining_sets_after_unreadable_png(monkeypatch, tmp_path, capsys):
+    mod = tmp_path / "MyMod"
+    for name, files in (("a_bad", ["empty.png"]), ("b_good", ["hud_ok.png"])):
+        d = mod / ".gui-sources" / name
+        d.mkdir(parents=True)
+        for f in files:
+            (d / f).write_bytes(b"" if f == "empty.png" else b"x")
+    built = []
+    monkeypatch.setattr(bi.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(bi, "Image", type("I", (), {"open": staticmethod(_fake_open)}))
+    monkeypatch.setattr(bi, "resolve_image_to_paa", lambda: Path("ImageToPAA.exe"))
+    monkeypatch.setattr(bi, "write_one_atlas", lambda stem, *a: built.append(stem) or True)
+    monkeypatch.setattr("sys.argv", ["build_imageset.py", str(mod), "--mod-name", "MyMod"])
+
+    assert bi.main() == 1
+    assert built == ["b_good"]
+    assert "1 of 2 imagesets built." in capsys.readouterr().out
+
+
 def test_build_pbo_excludes_gui_sources():
     """SKILL.md promises the source PNGs stay out of the PBO; /dayz-build-pbo's exclude.lst does that."""
     exclude = Path(__file__).resolve().parents[1] / "dayz-build-pbo" / "exclude.lst"
@@ -272,6 +337,9 @@ def _split_set(monkeypatch, tmp_path, convert_ok):
     class _Img:
         width = height = 64
 
+        def load(self):
+            pass
+
         def __enter__(self):
             return self
 
@@ -303,3 +371,97 @@ def test_install_hint_uses_py_launcher():
                  (here / "build_imageset.py").read_text(encoding="utf-8")):
         assert "python -m pip" not in text
         assert "py -m pip install -r" in text
+
+
+def _run_main(monkeypatch, cwd, argv, project=None):
+    """Run main() with preflight, Pillow, ImageToPAA and packing stubbed; return build_one calls."""
+    calls = []
+    monkeypatch.setattr(bi.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(bi, "Image", object())
+    monkeypatch.setattr(bi, "resolve_image_to_paa", lambda: Path("ImageToPAA.exe"))
+    if project is not None:
+        monkeypatch.setattr(bi.h, "resolve_project_dir", lambda: project)
+    monkeypatch.setattr(
+        bi, "build_one",
+        lambda set_dir, mod_name, out_dir, *a: calls.append((set_dir, mod_name, out_dir)) or True,
+    )
+    monkeypatch.chdir(cwd)
+    monkeypatch.setattr("sys.argv", ["build_imageset.py", *argv])
+    assert bi.main() == 0
+    return calls
+
+
+def _mod(root, folder, prefix=None):
+    mod = root / folder
+    (mod / ".gui-sources" / "icons").mkdir(parents=True)
+    if prefix is not None:
+        (mod / "$PBOPREFIX$").write_text(prefix, encoding="utf-8")
+    return mod
+
+
+def test_modname_resolves_workspace_from_cached_project(monkeypatch, tmp_path):
+    """Run from the repo root (or anywhere) with <ModName>, like the sibling skills."""
+    project = tmp_path / "project"
+    mod = _mod(project / "workspace", "MyMod", prefix="MyMod")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    calls = _run_main(monkeypatch, elsewhere, ["MyMod"], project=project)
+    assert [(c[0], c[2]) for c in calls] == [
+        (mod / ".gui-sources" / "icons", mod / "gui" / "imagesets")
+    ]
+
+
+def test_modname_missing_from_workspace_exits_with_hint(monkeypatch, tmp_path):
+    (tmp_path / "workspace").mkdir()
+    monkeypatch.setattr(bi.h, "resolve_project_dir", lambda: tmp_path)
+    with pytest.raises(SystemExit) as exc:
+        bi.resolve_mod_root("NoSuchMod")
+    assert "workspace\\NoSuchMod not found" in str(exc.value)
+    assert "/dayz-new-mod NoSuchMod" in str(exc.value)
+
+
+def test_path_form_still_works_without_a_cached_project(monkeypatch, tmp_path):
+    mod = _mod(tmp_path, "SomeFolder", prefix="SomeFolder")
+
+    def no_project():
+        raise AssertionError("path form must not need a cached project")
+
+    monkeypatch.setattr(bi.h, "resolve_project_dir", no_project)
+    calls = _run_main(monkeypatch, tmp_path, [str(mod)])
+    assert calls[0][2] == mod / "gui" / "imagesets"
+    calls = _run_main(monkeypatch, tmp_path, [".\\SomeFolder"])
+    assert calls[0][2] == mod / "gui" / "imagesets"
+
+
+@pytest.mark.parametrize("arg,expected", [
+    ("MyMod", False), ("My_Mod2", False),
+    (".", True), ("..", True), ("workspace/MyMod", True),
+    ("workspace\\MyMod", True), ("C:\\mods\\MyMod", True), ("P:MyMod", True),
+])
+def test_is_path_form(arg, expected):
+    assert bi.is_path_form(arg) is expected
+
+
+def test_mod_name_defaults_to_pboprefix_not_folder_name(monkeypatch, tmp_path):
+    """The .imageset path field is rooted at the PBO prefix, which may differ from the folder."""
+    mod = _mod(tmp_path, "checkout-folder", prefix="MyMod")
+    calls = _run_main(monkeypatch, tmp_path, [str(mod)])
+    assert calls[0][1] == "MyMod"
+    calls = _run_main(monkeypatch, tmp_path, [str(mod), "--mod-name", "Override"])
+    assert calls[0][1] == "Override"
+
+
+@pytest.mark.parametrize("content,expected", [
+    ("MyMod", "MyMod"), ("MyMod\r\n", "MyMod"), ("\ufeffMyMod", "MyMod"),
+    ("Author\\MyMod\\", "Author\\MyMod"),
+])
+def test_default_mod_name_reads_pboprefix(tmp_path, content, expected):
+    (tmp_path / "$PBOPREFIX$").write_text(content, encoding="utf-8")
+    assert bi.default_mod_name(tmp_path) == expected
+
+
+def test_default_mod_name_falls_back_to_folder_with_warning(tmp_path, capsys):
+    mod = tmp_path / "Folder"
+    mod.mkdir()
+    assert bi.default_mod_name(mod) == "Folder"
+    assert "[WARN]" in capsys.readouterr().out

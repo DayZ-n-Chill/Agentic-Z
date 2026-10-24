@@ -19,7 +19,19 @@ Workbench plugin APIs are thinly documented and change between DayZ Tools versio
 
 1. Find real plugin code first: Grep the vanilla Workbench scripts in `P:\scripts\editor\plugins\`, `P:\scripts\editor\workbench\` and `P:\scripts\1_core\workbenchapi.c`, then use `search_dayz_source` for plugin examples by meaning.
 2. Use only classes, methods and attributes you found there, and cite each as `path:line`.
-3. If you can't find how something is done (plugin registration, where plugins load from, spawning a process), say so and ask the script lead. Don't invent a manifest format, a C++ SDK or an install folder.
+3. If you can't find how something is done (for example a call or attribute that isn't in those files), say so and ask the script lead or your caller. Don't invent a manifest format, a C++ SDK or an install folder. Where plugin files go is known; see the next section.
+
+## Where plugin files go
+
+Workbench compiles plugins from the `workbench` script module of the gproj it opens. In the vanilla `<DayZ Tools>\Bin\Workbench\dayz.gproj` (lines 75-82) that module's `Paths` are only `"scripts/editor/Workbench"` and `"scripts/editor/plugins"`. The mod's `workbench\dayz.gproj` is a copy of that file. The scaffold adds mod paths to the `game`, `world` and `mission` modules only (`WORKBENCH_MODULE_INJECTIONS` in `.claude/skills/dayz-new-mod/new_mod.py:40-44`). It mounts `P:/` and `P:/<ModName>/` (`rewrite_filesystem_block`, same file). So a scaffolded gproj does not load the mod's plugins yet. To fix that:
+
+1. Write plugin scripts to `workspace/<ModName>/scripts/editor/plugins/`, which is the vanilla folder name inside the mod.
+2. In `workspace/<ModName>/workbench/dayz.gproj`, add `"<ModName>/scripts/editor/plugins"` as the last line of the `workbench` module's `Paths { }`. Use the same form as the scaffold's `"<ModName>/scripts/3_Game"` entries. Add it only if it is missing.
+3. Tell the user to reopen Workbench on the mod so it recompiles.
+
+`scripts/editor/` is a Workbench-only folder. No `CfgMods` script module lists it, on purpose: the scaffolded `config.cpp` loads only `scripts/3_Game`, `4_World` and `5_Mission` in game (`new_mod.py:92-102`). `/dayz-lint` still flags it as `script-module-unlisted` (`.claude/skills/dayz-lint/lint.py:341-351` warns on any `scripts/` subfolder holding `.c` files that no module lists), and dayz-mod-reviewer reports that rule as CRITICAL (`.claude/agents/dayz-mod-reviewer.md:15`). So in every plugin report, tell the script lead that the `script-module-unlisted` finding on `scripts/editor/` is expected and the reviewer must not fail it. Never add `scripts/editor/` to `config.cpp` to silence lint.
+
+The plugin source ships in the PBO. `/dayz-build-pbo` leaves out only what `.claude/skills/dayz-build-pbo/exclude.lst` matches (lines 1-2), and that file has no rule for `scripts\editor\`. Don't edit `exclude.lst` yourself; it belongs to the build. Put this under "Note for the release lead" in your report: add the line `scripts\editor\*` to `exclude.lst` to keep the plugin out of the PBO, then check the built PBO, since whether that pattern also matches files in subfolders such as `scripts\editor\plugins\` is unverified.
 
 ## Rules
 
@@ -30,4 +42,4 @@ Workbench plugin APIs are thinly documented and change between DayZ Tools versio
 
 ## Report
 
-To the script lead: files written (path), every API used with its source (`path:line` or URL), the command that opens Workbench on the mod and the steps to load and run the plugin there, and what is unverified.
+To the script lead or your caller: files written (path), every API used with its source (`path:line` or URL), the command that opens Workbench on the mod and the steps to load and run the plugin there, the expected `script-module-unlisted` finding on `scripts/editor/` that the reviewer must not fail, a "Note for the release lead" with the `scripts\editor\*` line for `exclude.lst`, and what is unverified.

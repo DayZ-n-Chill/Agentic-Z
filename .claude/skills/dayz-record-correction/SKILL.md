@@ -44,13 +44,21 @@ Show the draft and ask for yes, a change, or no. Keep it short.
 First find where this skill really lives. `/sync-skills` exposes it through a link (a junction on Windows) under `~/.claude/skills/`, and the harness reports the link path as the base directory, so resolve the link before deciding anything:
 
 ```cmd
-python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "<skill-dir>"
+python "<skill-dir>\check.py" root "<skill-dir>"
 ```
 
-`os.path.realpath` follows symlinks and junctions. Then read the resolved path:
+It follows symlinks and junctions and prints JSON with `kind` (`clone`, `plugin` or `unknown`), the resolved path, the repo `root` and any `missing` required files. Exit 0 means a usable clone or a plugin install; exit 2 means stop and ask the user where their Agentic-Z repo is. What it checks:
 
 - Under `~/.claude/plugins/cache/` (for example `C:\Users\<you>\.claude\plugins\cache\...`): a plugin install.
-- Ending in `\.claude\skills\dayz-record-correction`: a clone. The Agentic-Z repo root is three levels up from it (the folder that holds `.claude\`), and every file the tiers name (`CLAUDE.md`, `.claude\skills\_shared\dayz-conventions.md`, `.claude\agents\...`) is relative to that root, not to the current project.
+- Ending in `\.claude\skills\dayz-record-correction`: a clone. The Agentic-Z repo root is three levels up from it (the folder that holds `.claude\`), and every file the tiers name (`CLAUDE.md`, `.claude\skills\_shared\dayz-conventions.md`, `.claude\agents\...`) is relative to that root, not to the current project. Before you treat that folder as the repo root, check that it holds both `.claude\skills\_shared\dayz-conventions.md` and `CLAUDE.md`. If either is missing (for example the skill was copied, not linked, into `~/.claude/skills/`, so three levels up is your home folder), stop and ask the user where their Agentic-Z repo is. Write nothing until they answer.
+
+In a clone, record a baseline before you edit anything (step 3b compares against it). The repo checks can already fail before your edit, and without a baseline every pre-existing failure looks like yours:
+
+```cmd
+python "<skill-dir>\check.py" baseline --root "<repo root>" --out "%TEMP%\record-correction-baseline.json"
+```
+
+It runs the full test suite and `docs-sync --check` once and saves the failing test ids and wiki problems. Run it now, before the edit.
 
 - In a clone, edit the file the tier names under that repo root, even when the session was started in another project. Keep the edit small and in the file's existing style.
 - In a clone, if the edit changes the length of `.claude\skills\_shared\dayz-conventions.md` or a topic file under `.claude\skills\_shared\conventions\`, or adds, renames or removes an agent or skill, run `/docs-sync` so the React wiki under `wiki\src\` still states the right line counts, names and numbers (`--apply` rewrites wrong counts; names need a hand edit). Otherwise the Stop hook reports wiki problems at the end of the session.
@@ -58,17 +66,16 @@ python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "<skill-dir>"
 
 ## 3b. Check it (clones only)
 
-From the repo root, run the tests and the wiki check. The tests need pytest once: `python -m pip install pytest`.
+From the repo root, compare against the baseline from step 3. The tests need pytest once: `python -m pip install pytest`.
 
 ```cmd
-python -m pytest -q .claude scripts/dev hooks
-python .claude/skills/docs-sync/sync.py --check
+python "<skill-dir>\check.py" compare --root "<repo root>" --baseline "%TEMP%\record-correction-baseline.json"
 ```
 
-The root `pytest.ini` skips `.claude/worktrees/`, where Claude Code keeps full copies of the repo for its worktree sessions, so the run sees only this checkout.
+It runs the same two checks as the baseline (`python -m pytest -q .claude scripts/dev hooks` and `python .claude/skills/docs-sync/sync.py --check`), prints each `NEW` failure and each one that was `fixed`, and exits 1 only when something is new. Wiki problems are matched without their line numbers, so a shifted line is not counted as new. Failures already in the baseline are not yours: report them, never revert for them. The root `pytest.ini` skips `.claude/worktrees/`, where Claude Code keeps full copies of the repo for its worktree sessions, so the run sees only this checkout.
 
-An edit to an agent file or a rules file can break the repo tests (for example `test_route.py` checks the agent list against `rules.json`). If either command fails because of your edit, fix the problem or revert the edit, then run both again. A failure in a test file outside the area you edited (for example a skill test that also fails with your edit undone) is not a reason to revert; report it instead.
+An edit to an agent file or a rules file can break the repo tests (for example `test_route.py` checks the agent list against `rules.json`). If `compare` reports a new failure, fix the problem or revert the edit, then run `compare` again. A new wiki problem after a rules-file edit usually means `/docs-sync` still needs to run (step 3).
 
 ## 4. Say what changed
 
-One line: the rule and the file it went into. When `/docs-sync` ran, also name the wiki file it updated, for example `wiki\src\content\guide.md`. In a clone, add the result of step 3b: tests passed and the wiki is in sync, or what failed and whether you fixed or reverted it.
+One line: the rule and the file it went into. When `/docs-sync` ran, also name the wiki file it updated, for example `wiki\src\content\guide.md`. In a clone, add the result of step 3b: no new failures, or each new one and whether you fixed or reverted it, plus the count of failures that were already in the baseline.

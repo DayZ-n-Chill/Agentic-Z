@@ -429,3 +429,19 @@ def test_capture_refuses_when_another_window_stays_in_front(monkeypatch, tmp_pat
             visual.capture_window(222, tmp_path / "hud.png")
         assert grabbed == []  # nothing else on screen was copied
 
+
+def test_full_run_refuses_a_session_it_did_not_start_without_yes(project, capsys):
+    # The gate used to kill a user's own DayZDiag session with no prompt.
+    fake = FakeSession(project)
+    fake.running = [42]
+    rc, first, data = run_main(["visual", "MyMod", "--json"], capsys, fake.runtime())
+    assert (rc, first) == (2, "ERROR") and "--yes" in data["error"]
+    assert fake.calls == [] and fake.captures == [] and fake.running == [42]
+
+
+def test_full_run_with_yes_stops_a_session_it_did_not_start(project, capsys):
+    fake = FakeSession(project)
+    fake.running = [42]
+    rc, first, data = run_main(["visual", "MyMod", "--json", "--yes"], capsys, fake.runtime())
+    assert (rc, first) == (0, "PASS"), data["failures"]
+    assert "stop_test.bat" in " ".join(fake.calls[0])

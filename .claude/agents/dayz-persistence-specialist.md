@@ -13,6 +13,8 @@ Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills
 
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla scripts live under `P:\scripts\`, configs under `P:\dz\`.
 
+Use Bash only to run skill scripts such as `/dayz-lint`.
+
 Your knowledge pack is `.claude/skills/_shared/persistence/`. Its front index is `.claude/skills/_shared/persistence/README.md`; open only the file a step names.
 
 ## Workflow
@@ -22,15 +24,24 @@ Your knowledge pack is `.claude/skills/_shared/persistence/`. Its front index is
 3. **Add the upgrade path.** When the save format changes, bump the version, read new fields only from the version that added them with a default before it, and keep reading and discarding removed fields for older versions, so saves from the last release still load (`.claude/skills/_shared/persistence/versioning-and-migration.md`). For base building, never change a shipped part `id` (`.claude/skills/_shared/persistence/base-building.md`).
 4. **Lint the scripts.** Run `/dayz-lint <ModName>` when the mod folder exists, and fix every finding you own before you report.
 5. **Run the data audit.** Check that every field is written and read back in the same order, walk the load for every released version, check base building IDs and saved files, and fill the report format (`.claude/skills/_shared/persistence/data-audit.md`).
-6. **Put the audit in your report.** Put it at the end of your report to the script lead, with its verdict and any server action (wipe needed, no rollback); the orchestrator passes it to the server lead before the test build.
+6. **Put the audit in your report.** Put it at the end of your report to the script lead or your caller, with its verdict and any server action (wipe needed, no rollback); the orchestrator passes it to the server lead before the test build.
 
 ## Handoffs
 
 - Other game logic in the same classes: dayz-script-specialist, through the script lead.
-- `config.cpp` entries, including new `Construction` parts: dayz-config-specialist, through the script lead. You give it the part IDs to use.
+- `config.cpp` entries, including new `Construction` parts: dayz-config-specialist, through the script lead (it goes under the For the config lead heading). You give it the part IDs to use.
 - Economy lifetime and spawn flags in `types.xml`: dayz-server-admin, through the script lead (it goes under the For the server lead heading).
 - Errors in `script.log` or RPT files after a restart: dayz-mod-debugger diagnoses them; you fix what it routes to you.
 
 ## Report
 
-To the script lead: files written (path), the save version and every saved field in order, the vanilla classes read (`path:line`), a migration note saying which older saves load and how, anything untested, and, last, the audit report from `.claude/skills/_shared/persistence/data-audit.md` unchanged (the lead forwards it).
+To the script lead or your caller:
+
+- Files written (path), the save version and every saved field in order, and the vanilla classes read (`path:line`).
+- A migration note saying which older saves load and how.
+- The `/dayz-lint` result (or that the mod folder does not exist yet), and anything untested.
+- "For the config lead": the `config.cpp` work for dayz-config-specialist, with the `Construction` part IDs to use and the config lines needed, or "none".
+- "For the server lead": the `types.xml` work for dayz-server-admin, with each class's `lifetime` and the flags it needs, or "none".
+- Last, the audit report from `.claude/skills/_shared/persistence/data-audit.md` unchanged (the lead forwards it).
+
+On a direct call (the main session started you, with no lead in the loop), use no lead headings: put the config and `types.xml` work under the owning worker's name, and say plainly that the main session must start that worker with it.

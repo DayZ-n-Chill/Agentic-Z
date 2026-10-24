@@ -30,7 +30,10 @@ FAIL = "[FAIL] "
 # Fixed by DayZ engine convention. Module-level so tests can point them at tmp dirs.
 P_DRIVE = Path("P:\\")
 MODS_LINK = P_DRIVE / "Mods"
-VANILLA_DIR_NAMES = ("dz", "DZ", "dta")
+# Windows paths are case-insensitive, so P:\dz also matches the P:\DZ that Extract Game Data writes.
+VANILLA_DIR_NAMES = ("dz",)
+# DZ_Scripts is unpacked beside P:\DZ, not inside it (P:\scripts\config.cpp:3 declares class DZ_Scripts).
+VANILLA_SCRIPTS_DIR = "scripts"
 
 
 def read_registry_string(hive, subkey: str, value_name: str) -> Optional[str]:
@@ -226,7 +229,7 @@ def find_vanilla_data() -> Optional[Path]:
 
     Resolution order:
       1. $DAYZ_VANILLA_DATA_PATH env var
-      2. Canonical names: P:\\dz, P:\\DZ, P:\\dta
+      2. P:\\dz (also matches P:\\DZ: Windows paths are case-insensitive)
 
     A candidate counts only if it exists and is non-empty.
     """
@@ -244,6 +247,17 @@ def find_vanilla_data() -> Optional[Path]:
                 return path
         except OSError:
             continue
+    return None
+
+
+def find_vanilla_scripts() -> Optional[Path]:
+    """P:\\scripts (vanilla DZ_Scripts) if it exists and is non-empty, else None."""
+    path = P_DRIVE / VANILLA_SCRIPTS_DIR
+    try:
+        if path.is_dir() and any(path.iterdir()):
+            return path
+    except OSError:
+        pass
     return None
 
 
@@ -277,10 +291,17 @@ def check_vanilla_data() -> None:
     path = find_vanilla_data()
     if path:
         print(f"{OK} Vanilla data found: {path}")
-        return
-    print(f"{WARN} Vanilla DayZ data not detected on P:\\")
-    print("        Tried: $DAYZ_VANILLA_DATA_PATH, P:\\dz, P:\\DZ, P:\\dta.")
-    print("        Unpack vanilla PBOs via DayZ Tools 'Extract Game Data'.")
+    else:
+        print(f"{WARN} Vanilla DayZ data not detected on P:\\")
+        print("        Tried: $DAYZ_VANILLA_DATA_PATH, P:\\dz.")
+        print("        Unpack vanilla PBOs via DayZ Tools 'Extract Game Data'.")
+    scripts = find_vanilla_scripts()
+    if scripts:
+        print(f"{OK} Vanilla scripts found: {scripts}")
+    else:
+        print(f"{WARN} Vanilla scripts not detected: {P_DRIVE / VANILLA_SCRIPTS_DIR} is missing or empty")
+        print("        Linting and vanilla search need DZ_Scripts there.")
+        print("        Re-run DayZ Tools 'Extract Game Data' so it unpacks scripts.pbo too.")
 
 
 def link_target(path: Path) -> Optional[Path]:

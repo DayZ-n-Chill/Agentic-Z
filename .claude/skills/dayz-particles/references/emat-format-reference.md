@@ -2,6 +2,16 @@
 
 Verified from 8 vanilla particle material files. Plain text format.
 
+## Contents
+
+- [Two shader types](#two-shader-types)
+- [Complete property table](#complete-property-table)
+- [BlendMode values](#blendmode-values)
+- [Sort values](#sort-values)
+- [Vanilla examples (annotated)](#vanilla-examples-annotated)
+- [Creating custom materials](#creating-custom-materials)
+- [.meta files (for reference only, not needed for mods)](#meta-files-for-reference-only-not-needed-for-mods)
+
 ---
 
 ## Two shader types

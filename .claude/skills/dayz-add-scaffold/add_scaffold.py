@@ -39,6 +39,7 @@ AUTHOR_PIECES = {"config": "config.cpp", "readme": "README.md"}
 ADDED = "added"      # wrote at least one file or folder
 PRESENT = "present"  # everything the piece covers already exists
 SKIPPED = "skipped"  # missing, but could not be written (e.g. DayZ Tools not installed)
+WRONG = "wrong"      # present, left unchanged, but holds content a later skill refuses
 
 _nm = h.load_module("dayz_new_mod_module", NEW_MOD)
 
@@ -60,6 +61,14 @@ def add_config(target: Path, modname: str, get_author) -> str:
 def add_prefix(target: Path, modname: str) -> str:
     f = target / "$PBOPREFIX$"
     if f.exists():
+        # Read it the way /dayz-build-pbo's gate_on_prefix does (BOM and
+        # surrounding whitespace ignored), so the warning matches its refusal.
+        prefix = f.read_text(encoding="utf-8-sig").strip()
+        if prefix != modname:
+            print(f"{WARN} $PBOPREFIX$ present but holds {prefix!r}, not {modname!r} (left unchanged)")
+            print("       /dayz-build-pbo will refuse to build until the file holds the single")
+            print(f"       line {modname} and config.cpp paths use {modname}\\ as their root.")
+            return WRONG
         print(f"{SKIP} $PBOPREFIX$ present")
         return PRESENT
     f.write_text(modname, encoding="utf-8")
@@ -152,7 +161,10 @@ def add_workbench(target: Path, modname: str) -> str:
         print(f"{OK} workbench/DayZSetting.xml copied")
         wrote_anything = True
 
-    return ADDED if wrote_anything else SKIPPED
+    # The gproj is the piece's purpose: copying only DayZSetting.xml (vanilla
+    # dayz.gproj missing from DayZ Tools) still leaves Workbench unopenable,
+    # so it counts as skipped and `--piece workbench` exits 1.
+    return ADDED if wrote_anything and gproj.exists() else SKIPPED
 
 
 def add_junction(target: Path, modname: str) -> str:
@@ -188,7 +200,7 @@ def add_junction(target: Path, modname: str) -> str:
 
 
 def add_piece(piece: str, target: Path, modname: str, get_author) -> str:
-    """Add one piece; returns ADDED, PRESENT or SKIPPED. Used by /dayz-import-mod too."""
+    """Add one piece; returns ADDED, PRESENT, SKIPPED or WRONG. Used by /dayz-import-mod too."""
     if piece == "config":
         return add_config(target, modname, get_author)
     if piece == "prefix":
@@ -266,17 +278,28 @@ def main() -> int:
     print()
 
     results = [add_piece(piece, target, args.modname, get_author) for piece in pieces]
-    added, present, skipped = (results.count(s) for s in (ADDED, PRESENT, SKIPPED))
+    added, present, skipped, wrong = (results.count(s) for s in (ADDED, PRESENT, SKIPPED, WRONG))
 
     print()
     if args.piece == JUNCTION:
         # Only the link was checked, so say nothing about the other pieces.
         link = P_DRIVE / args.modname
         print(f"{OK} {link} link {'created' if added else 'already in place'}.")
-    elif added == 0 and skipped == 0:
+    elif added == 0 and skipped == 0 and wrong == 0:
         print(f"{OK} Nothing to add - {rel} is already fully scaffolded.")
     else:
-        print(f"{OK} {added} piece(s) added, {present} already present, {skipped} skipped.")
+        # [OK] only when every piece is now in place; a skipped or wrong piece is a warning.
+        tag = WARN if skipped or wrong else OK
+        line = f"{tag} {added} piece(s) added, {present} already present, {skipped} skipped"
+        print(f"{line}, {wrong} need fixing by hand." if wrong else f"{line}.")
+    if args.piece != "all" and skipped:
+        # The one piece asked for was not written; callers need a failing exit.
+        print(f"{FAIL} {args.piece} was not written - see the warning above.")
+        return 1
+    if args.piece != "all" and wrong:
+        # The one piece asked for is present but will be refused downstream.
+        print(f"{FAIL} {args.piece} is present but wrong - see the warning above.")
+        return 1
     return 0
 
 

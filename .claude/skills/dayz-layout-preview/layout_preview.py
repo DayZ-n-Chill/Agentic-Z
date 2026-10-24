@@ -29,6 +29,12 @@ WARN = "[WARN] "
 FAIL = "[FAIL] "
 
 REQUIREMENTS = Path(__file__).resolve().parent / "requirements.txt"
+# This file is <root>\.claude\skills\dayz-layout-preview\layout_preview.py. resolve()
+# follows the /sync-skills link, so this is the clone even when run from a home skills folder.
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_OUT = PROJECT_ROOT / "output" / "layout-preview"
+# Vanilla layouts live on the DayZ work drive. A missing file there usually means the drive is not mounted.
+P_DRIVE = Path("P:/")
 DEFAULT_SIZES = [(1280, 720), (1920, 1080), (2560, 1440), (3440, 1440)]
 # `scaled 1` grows exact pixel values with the screen height. 1080 is the
 # reference height this preview assumes; the game's own scale may differ.
@@ -393,9 +399,49 @@ def parse_sizes(value: str) -> list[tuple[int, int]]:
     return sizes
 
 
+def png_names(paths: list) -> dict:
+    """A unique PNG base name per layout path: the file stem, with parent folder names
+    prefixed (`parent_stem`, then `grand_parent_stem`) only where two different
+    layouts in the same run would otherwise share a name."""
+    resolved = {p: p.resolve() for p in paths}
+    depth = dict.fromkeys(paths, 0)
+
+    def name(p: Path) -> str:
+        folders = resolved[p].parent.parts
+        return "_".join(folders[len(folders) - depth[p]:] + (resolved[p].stem,)) if depth[p] else resolved[p].stem
+
+    while True:
+        owners: dict = {}
+        for p in paths:
+            owners.setdefault(name(p), set()).add(resolved[p])
+        clashing = [p for p in paths
+                    if len(owners[name(p)]) > 1 and depth[p] < len(resolved[p].parent.parts)]
+        if not clashing:
+            return {p: name(p) for p in paths}
+        for p in clashing:
+            depth[p] += 1
+
+
+def inside_mod_workspace(out_dir: Path) -> bool:
+    """True when out_dir is workspace\\<Mod>\\ or below it, where PNGs would be packed into the PBO.
+    resolve() follows the P:\\<ModName>\\ junction, so that route is caught too."""
+    try:
+        rel = out_dir.resolve().relative_to((PROJECT_ROOT / "workspace").resolve())
+    except ValueError:
+        return False
+    return len(rel.parts) >= 1
+
+
+def on_unmounted_p(path: Path) -> bool:
+    """True when path is on P:\\ and P:\\ is not mounted, so the fix is /dayz-workdrive, not the path."""
+    return path.drive.upper() == P_DRIVE.drive.upper() and not P_DRIVE.exists()
+
+
 def preview(path: Path, sizes: list, out_dir: Optional[Path], show_hidden: bool = False,
-            labels: bool = True) -> dict:
-    """Lay out (and draw, when out_dir is given) one layout at every size. Returns the report."""
+            labels: bool = True, name: Optional[str] = None) -> dict:
+    """Lay out (and draw, when out_dir is given) one layout at every size. Returns the report.
+
+    PNGs are named <name>_<W>x<H>.png; name defaults to the layout's file stem."""
     root = parse(path.read_text(encoding="utf-8", errors="replace"))
     boxes_by_size = {size: layout(root, *size, show_hidden=show_hidden) for size in sizes}
     report = {"layout": str(path), "root": root.name, "sizes": [], "findings": findings(root, boxes_by_size)}
@@ -403,7 +449,7 @@ def preview(path: Path, sizes: list, out_dir: Optional[Path], show_hidden: bool 
         entry = {"size": f"{sw}x{sh}", "widgets": [b.as_dict() for b in boxes]}
         if out_dir is not None:
             out_dir.mkdir(parents=True, exist_ok=True)
-            png = out_dir / f"{path.stem}_{sw}x{sh}.png"
+            png = out_dir / f"{name or path.stem}_{sw}x{sh}.png"
             render(sw, sh, boxes, labels).convert("RGB").save(png)
             entry["png"] = str(png)
         report["sizes"].append(entry)
@@ -415,33 +461,46 @@ def main(argv: Optional[list] = None) -> int:
     ap.add_argument("layouts", nargs="+", type=Path, help=".layout file(s) to preview")
     ap.add_argument("--sizes", type=parse_sizes, default=DEFAULT_SIZES,
                     help="Comma separated WIDTHxHEIGHT list (default 1280x720,1920x1080,2560x1440,3440x1440)")
-    ap.add_argument("--out", type=Path, default=Path("output") / "layout-preview",
-                    help="Folder for the PNGs (default output/layout-preview)")
+    ap.add_argument("--out", type=Path, default=DEFAULT_OUT,
+                    help="Folder for the PNGs (default output/layout-preview under the project root)")
     ap.add_argument("--show-hidden", action="store_true", help="Also draw widgets with visible 0, faded")
     ap.add_argument("--no-labels", action="store_true", help="Do not print widget names on the boxes")
-    ap.add_argument("--json", action="store_true", help="Print the full report (every widget box) as JSON")
+    ap.add_argument("--json", action="store_true",
+                    help="Print the full report (every widget box) as JSON on stdout; text lines go to stderr")
     args = ap.parse_args(argv)
+    # With --json, stdout carries only the JSON so it can be piped straight into a parser.
+    log = sys.stderr if args.json else sys.stdout
 
     if Image is None:
-        print(f"{FAIL}Pillow is not installed.\n       Install it: python -m pip install -r \"{REQUIREMENTS}\"")
+        print(f"{FAIL}Pillow is not installed.\n       Install it: python -m pip install -r \"{REQUIREMENTS}\"",
+              file=log)
         return 2
+    if inside_mod_workspace(args.out):
+        print(f"{FAIL}{args.out}: is inside a mod under workspace\\, so the PNGs would be packed into its PBO.\n"
+              f"       Leave --out off to use {DEFAULT_OUT}, or pick a folder outside workspace\\.", file=log)
+        return 1
     reports, failed = [], 0
+    names = png_names(args.layouts)
     for path in args.layouts:
         if not path.is_file():
-            print(f"{FAIL}{path}: no such file")
+            if on_unmounted_p(path):
+                print(f"{FAIL}{path}: P:\\ is not mounted, so vanilla files can't be read. Run /dayz-workdrive.",
+                      file=log)
+            else:
+                print(f"{FAIL}{path}: no such file", file=log)
             failed += 1
             continue
         try:
-            report = preview(path, args.sizes, args.out, args.show_hidden, not args.no_labels)
+            report = preview(path, args.sizes, args.out, args.show_hidden, not args.no_labels, names[path])
         except LayoutError as e:
-            print(f"{FAIL}{path}: {e}")
+            print(f"{FAIL}{path}: {e}", file=log)
             failed += 1
             continue
         reports.append(report)
         for entry in report["sizes"]:
-            print(f"{OK}{entry['png']}  ({len(entry['widgets'])} widgets)")
+            print(f"{OK}{entry['png']}  ({len(entry['widgets'])} widgets)", file=log)
         for f in report["findings"]:
-            print(f"{WARN}{path.name}:{f['line']} {f['rule']}: {f['message']}")
+            print(f"{WARN}{path.name}:{f['line']} {f['rule']}: {f['message']}", file=log)
     if args.json:
         print(json.dumps(reports, indent=2))
     return 1 if failed else 0

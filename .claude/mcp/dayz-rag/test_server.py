@@ -446,3 +446,22 @@ def test_app_registers_three_read_only_tools():
     for tool in tools.values():
         assert tool.annotations is not None and tool.annotations.readOnlyHint is True
     assert tools["search_dayz_source"].annotations.openWorldHint is True
+    # The MCP spec defaults openWorldHint to true, so the local tools must say False.
+    assert tools["get_dayz_file"].annotations.openWorldHint is False
+    assert tools["list_indexed_sources"].annotations.openWorldHint is False
+
+
+def test_tool_error_reaches_client_as_is_error_result():
+    pytest.importorskip("mcp")
+    import asyncio
+
+    from mcp.shared.memory import create_connected_server_and_client_session
+
+    async def call():
+        app = server.build_app()
+        async with create_connected_server_and_client_session(app._mcp_server) as client:
+            return await client.call_tool("get_dayz_file", {"path": "C:\\Windows\\win.ini"})
+
+    result = asyncio.run(call())
+    assert result.isError is True
+    assert "P:" in result.content[0].text

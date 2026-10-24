@@ -309,9 +309,9 @@ The font's name suffix (e.g. `24`) is the SDF generation size, not the render si
 Surface red flags that the output is wrong. The generator must never emit these. The validator, a read-only gate, fails the layout on any of them and reports each with its line, and `figma-to-dayz-layout` fixes them in repair mode.
 
 - **XML syntax**: `<Tag>`, `</Tag>`, `/>`, `name="value"` attribute pairs, namespace prefixes.
-- **`=` between key and value.** DayZ is `key value`, not `key = value`.
+- **`=` between key and value.** DayZ is `key value`, not `key = value`. Inside a quoted value `=` is valid, such as the rich-text `set=` tag in the `text` value at `P:\gui\layouts\repro\alphamask.layout:71`.
 - **Quoted values where vanilla leaves them bare.** Quote string values the way vanilla does: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`, `items`, `layout`, `Mask` and `ScriptParamsClass` values (for example `items` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`). Numbers, flags and enum words such as `style`, `halign` and `valign` stay bare. Multi-word keys are quoted too (`"exact text" 1`).
-- **Semicolons** as line terminators.
+- **Semicolons** as line terminators. Inside a quoted value semicolons are valid list separators: `colums "Item;80;Value;50;"` at `P:\gui\layouts\debug\day_z_debug_remoteinfo.layout:38` and `items "TIME;SPEED"` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`.
 - **CSS-flavored property names**, spelled exactly as CSS spells them (case sensitive): `borderRadius`, `border-radius`, `display`, `flex`, `flexDirection`, `justifyContent`, `alignItems`, `boxShadow`, `box-shadow`, `padding`, `margin`, `gap`. Spacer widgets' vanilla `Padding` and `Margin` (capitalized, for example `Padding 0` at `P:\gui\layouts\new_ui\options\msstore\keybinding_menu.layout:61`) are valid and must be kept.
 - **Opacity as a separate property or percentage.** Alpha lives as the fourth float on `color`. This bans a bare `opacity` key only; quoted vanilla keys that contain the word, such as `"shadow opacity"` (`P:\gui\layouts\day_z_hud_watermark.layout:55`), are valid.
 - **Property names vanilla does not spell that way.** Write each name exactly as vanilla spells it (`imageTexture`, `userID`, `"exact text size"`); no CSS names.
@@ -370,7 +370,26 @@ Frame "StatusCard"  auto-layout vertical
 }
 ```
 
-Every node, leaves included, carries the eight core fields: `name`, `type`, `layout`, `spacing`, `padding`, `size`, `sizing` and `children`. The generator reads `sizing` on each axis to pick the size toggle (section 5), so a node without it cannot be made responsive. The other fields (`text`, `font`, `style`, `anchor`) appear only when the source node carries that data.
+Every node, leaves included, carries the eight core fields: `name`, `type`, `layout`, `spacing`, `padding`, `size`, `sizing` and `children`. The generator reads `sizing` on each axis to pick the size toggle (section 5), so a node without it cannot be made responsive. A child of a `layout: none` parent also carries `position`, `{ "x", "y" }` in pixels from the parent's top-left corner, since no auto-layout places it; children of `horizontal` and `vertical` parents omit it. The other fields (`text`, `font`, `style`, `anchor`) appear only when the source node carries that data.
+
+For example, an icon at x=200, y=10 inside a free-placed 240 by 40 header frame:
+
+```json
+{ "name": "panel_header", "type": "panel", "layout": "none", "spacing": 0,
+  "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+  "size": { "width": 240, "height": 40 },
+  "sizing": { "width": "fixed", "height": "fixed" },
+  "children": [
+    { "name": "img_icon", "type": "image", "layout": "none", "spacing": 0,
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "size": { "width": 20, "height": 20 },
+      "sizing": { "width": "fixed", "height": "fixed" },
+      "position": { "x": 200, "y": 10 }, "children": [] }
+  ]
+}
+```
+
+The generator writes that child as `position 200 10` with `hexactpos 1` and `vexactpos 1` (section 6, "Fixed-size button or icon").
 
 ### Generator output (`.layout`, property-file)
 

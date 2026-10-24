@@ -13,6 +13,8 @@ A script reads the `.layout`, works out every widget's box at each screen size a
 
 Follow `.claude/skills/_shared/dayz-conventions.md`. The layout format itself is in `.claude/skills/_shared/figma-to-dayz-rules.md`.
 
+It does not gate on `/dayz-preflight`: it reads only the `.layout` files you pass and needs no DayZ Tools, so a layout in your clone previews with P:\ unmounted. When an input path is on P:\ (a vanilla layout) and P:\ is not mounted, the script says so and points you to `/dayz-workdrive` instead of reporting a plain missing file.
+
 ## Requirements
 
 Pillow draws the PNGs. If it is missing the script exits 2 with an install hint:
@@ -31,16 +33,16 @@ python "<skill-dir>\layout_preview.py" <file.layout> [more.layout ...] [options]
 |---|---|
 | `<file.layout>` | One or more layouts. Vanilla ones under `P:\gui\layouts\` work too. |
 | `--sizes` | Comma separated `WIDTHxHEIGHT` list. Default `1280x720,1920x1080,2560x1440,3440x1440`. |
-| `--out` | Folder for the PNGs. Default `output\layout-preview\` under the current folder. |
+| `--out` | Folder for the PNGs. Default `output\layout-preview\` under the project root, wherever you run it from. A folder inside `workspace\<ModName>\` is refused (exit 1). |
 | `--show-hidden` | Also draw widgets with `visible 0`, faded. By default they and their children are left out. |
 | `--no-labels` | Leave widget names off the boxes. |
-| `--json` | Print every widget's box at every size, and the findings, as JSON. |
+| `--json` | Print every widget's box at every size, and the findings, as JSON. Stdout then holds only the JSON; the `[OK]`, `[WARN]` and `[FAIL]` lines go to stderr. |
 
-Each PNG is named `<layout>_<W>x<H>.png`.
+Each PNG is named `<layout>_<W>x<H>.png`. When two layouts in one run share a file name, their parent folder names go in front (`modA_gui_hud_1280x720.png`, `modB_gui_hud_1280x720.png`) so neither overwrites the other.
 
 ## Output and exit codes
 
-One `[OK]` line per PNG, then one `[WARN]` line per finding. Exit 0 when every layout was drawn, 1 when a file is missing or cannot be parsed (the line says why), 2 when Pillow is missing.
+One `[OK]` line per PNG, then one `[WARN]` line per finding. Exit 0 when every layout was drawn, 1 when a file is missing or cannot be parsed, a path is on P:\ while P:\ is not mounted (the line says to run `/dayz-workdrive`), or `--out` is inside a mod's workspace folder (the line says why), 2 when Pillow is missing.
 
 | Finding | Means |
 |---|---|
@@ -70,4 +72,4 @@ One `[OK]` line per PNG, then one `[WARN]` line per finding. Exit 0 when every l
 ## Do not
 
 - Don't treat a clean preview as proof the layout loads. Workbench and the game are the judges; `dayz-layout-validator` checks the rules.
-- Don't write PNGs into a mod folder; they would be packed into the PBO.
+- Don't write PNGs into a mod folder; they would be packed into the PBO. The script refuses an `--out` under `workspace\<ModName>\`.

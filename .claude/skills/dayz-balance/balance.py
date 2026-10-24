@@ -3,9 +3,11 @@
   balance.py <ModName> [--json] [--ratio 1.5] [--min-peers 3]
   balance.py --mod-dir <folder> [--json] [--vanilla-root P:\\]
 
-Reads every config.cpp in the mod and every config.cpp under P:\\DZ\\ (the
-unpacked vanilla data). For each mod item (scope = 2 in CfgVehicles,
-CfgWeapons or CfgMagazines; any CfgAmmo class that does not set scope = 0)
+Reads every config.cpp in the mod, with the files they #include from the
+mod folder (an include it cannot follow is a WARN line), and every
+config.cpp under P:\\DZ\\ (the unpacked vanilla data). For each mod item
+(scope = 2 in CfgVehicles, CfgWeapons or CfgMagazines; any CfgAmmo class
+that does not set scope = 0)
 it finds the nearest vanilla ancestor, takes the vanilla items under that
 ancestor as peers, and compares
 each stat the mod sets itself: weight, health (hitpoints), damage dealt,
@@ -23,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import statistics
 import sys
 from pathlib import Path
@@ -45,6 +48,8 @@ DAMAGE_TYPES = ("Health", "Blood", "Shock")
 # so a vest is never measured against every Inventory_Base item.
 MAX_WIDEN = 2
 PEER_SAMPLE = 5
+# #include "file" or #include <file>, the directive the tokenizer otherwise skips.
+INCLUDE = re.compile(r'^\s*#\s*include\s*["<]([^">]+)[">]')
 
 
 class BalanceError(Exception):
@@ -62,8 +67,8 @@ class Node:
         self.line = line
         self.file = file
         self.classes: dict[str, Node] = {}
-        # lower name -> (values, line); scalars are one value lists
-        self.props: dict[str, tuple[list, int]] = {}
+        # lower name -> (values, line, file); scalars are one value lists
+        self.props: dict[str, tuple[list, int, Optional[Path]]] = {}
 
     def merge(self, other: "Node") -> None:
         """Apply a later definition of the same class on top of this one."""
@@ -77,9 +82,18 @@ class Node:
                 self.classes[key] = child
 
 
-def parse_config(text: str, file: Optional[Path] = None) -> Node:
-    """Build the class tree. Raises edit_check.TokenizeError on text that does not tokenize."""
+def parse_config(text: str, file: Optional[Path] = None, linemap: Optional[list[tuple[Path, int]]] = None) -> Node:
+    """Build the class tree. Raises edit_check.TokenizeError on text that does not tokenize.
+
+    linemap, from expand_includes, gives the real file and line of each line of text.
+    """
     toks = edit_check.tokenize(text)
+
+    def where(line: int) -> tuple[Optional[Path], int]:
+        if linemap and 0 < line <= len(linemap):
+            return linemap[line - 1]
+        return file, line
+
     root = Node("", None, 0, file)
     stack = [root]
     i, n = 0, len(toks)
@@ -101,7 +115,8 @@ def parse_config(text: str, file: Optional[Path] = None) -> Node:
                 parent = toks[j + 1].text
                 j += 2
             if punct(j, "{"):
-                node = Node(name.text, parent, name.line, file)
+                at_file, at_line = where(name.line)
+                node = Node(name.text, parent, at_line, at_file)
                 key = name.text.lower()
                 if key in stack[-1].classes:
                     stack[-1].classes[key].merge(node)
@@ -130,7 +145,8 @@ def parse_config(text: str, file: Optional[Path] = None) -> Node:
                 elif t.kind in ("str", "ident"):
                     values.append(t.text)
                 j += 1
-            stack[-1].props[tok.text.lower()] = (values, tok.line)
+            at_file, at_line = where(tok.line)
+            stack[-1].props[tok.text.lower()] = (values, at_line, at_file)
             i = j
         else:
             i += 1
@@ -179,17 +195,83 @@ def load_vanilla(vanilla_root: Path) -> Index:
     return index
 
 
-def load_mod(mod_dir: Path) -> Index:
+def _include_target(name: str, path: Path, mod_dir: Path) -> Optional[Path]:
+    """The file an #include names, when it is inside the mod folder.
+
+    A plain name is relative to the including file. A name that starts with a
+    backslash is a P: drive path (\\<Prefix>\\...), followed only when its
+    first folder is the mod folder's name, the prefix /dayz-new-mod links at
+    P:\\<ModName>\\. That is how mods are packed with that prefix; vanilla
+    P:\\DZ\\ config.cpp files use no #include, so it is unverified against vanilla.
+    """
+    parts = [p for p in re.split(r"[\\/]", name) if p]
+    if not parts:
+        return None
+    if name[0] in "\\/":
+        if parts[0].lower() != mod_dir.name.lower():
+            return None
+        target = mod_dir.joinpath(*parts[1:])
+    else:
+        target = path.parent.joinpath(*parts)
+    target = target.resolve()
+    try:
+        target.relative_to(mod_dir.resolve())
+    except ValueError:
+        return None
+    return target
+
+
+def expand_includes(
+    path: Path, mod_dir: Path, warnings: list[dict], _open: tuple[Path, ...] = ()
+) -> tuple[str, list[tuple[Path, int]]]:
+    """The file's text with each #include from the mod folder put in its place.
+
+    Returns the text and, for each of its lines, the file and line it came from.
+    An include that cannot be followed is left out and added to warnings.
+    """
+    lines: list[str] = []
+    linemap: list[tuple[Path, int]] = []
+    opened = _open + (path.resolve(),)
+    for number, line in enumerate(path.read_text(encoding="utf-8", errors="replace").split("\n"), 1):
+        m = INCLUDE.match(line)
+        if m is None:
+            lines.append(line)
+            linemap.append((path, number))
+            continue
+        name = m.group(1).strip()
+        target = _include_target(name, path, mod_dir)
+        if target is None:
+            reason = "is outside the mod folder"
+        elif not target.is_file():
+            reason = "was not found"
+        elif target in opened:
+            reason = "includes itself"
+        else:
+            sub_text, sub_map = expand_includes(target, mod_dir, warnings, opened)
+            lines += sub_text.split("\n")
+            linemap += sub_map
+            continue
+        warnings.append({"file": path, "line": number, "include": name, "reason": reason})
+        lines.append("")  # keep the line count; the directive holds no config
+        linemap.append((path, number))
+    return "\n".join(lines), linemap
+
+
+def load_mod(mod_dir: Path, warnings: Optional[list[dict]] = None) -> Index:
+    """Index the mod's config.cpp files. warnings collects the includes that were not followed."""
     configs = sorted(mod_dir.rglob("config.cpp"))
     if not configs:
         raise BalanceError(f"{mod_dir} has no config.cpp, so there are no item stats to compare")
+    warnings = [] if warnings is None else warnings
     index = Index()
     for path in configs:
-        text = path.read_text(encoding="utf-8", errors="replace")
+        text, linemap = expand_includes(path, mod_dir, warnings)
         problems = edit_check.check_config(text)
         if problems:
-            raise BalanceError(f"{path} does not parse (line {problems[0].line}: {problems[0].message}); run /dayz-lint and fix it first")
-        index.add(parse_config(text, path))
+            line = problems[0].line
+            bad_file, bad_line = linemap[line - 1] if 0 < line <= len(linemap) else (path, line)
+            raise BalanceError(f"{bad_file} does not parse (line {bad_line}: {problems[0].message}); run /dayz-lint and fix it first")
+        index.add(parse_config(text, path, linemap))
     return index
 
 
@@ -230,7 +312,7 @@ class Resolver:
         return out
 
     @staticmethod
-    def find(chain: list[tuple[Node, bool]], path: tuple[str, ...]) -> Optional[tuple[list, int, Node, bool]]:
+    def find(chain: list[tuple[Node, bool]], path: tuple[str, ...]) -> Optional[tuple[list, int, Optional[Path], bool]]:
         for node, is_mod in chain:
             cur = node
             for part in path[:-1]:
@@ -240,7 +322,7 @@ class Resolver:
             else:
                 hit = cur.props.get(path[-1].lower())
                 if hit is not None:
-                    return hit[0], hit[1], node, is_mod
+                    return hit[0], hit[1], hit[2] or node.file, is_mod
         return None
 
     @staticmethod
@@ -293,7 +375,7 @@ class Resolver:
             hit = self.find(chain, path)
             if hit is None:
                 continue
-            values, line, owner, is_mod = hit
+            values, line, file, is_mod = hit
             nums = [v for v in values if isinstance(v, float)]
             if key == "capacity":
                 if len(nums) != 2:
@@ -303,7 +385,7 @@ class Resolver:
                 value = nums[0]
             else:
                 continue
-            out[key] = {"value": value, "line": line, "file": owner.file, "from_mod": is_mod}
+            out[key] = {"value": value, "line": line, "file": file, "from_mod": is_mod}
         return out
 
     def slots(self, section: str, node: Node, mod_first: bool) -> frozenset[str]:
@@ -457,7 +539,9 @@ class Balance:
             direction = "low"
         else:
             return None
-        ratio = round(value / median, 2) if median else None
+        # Four significant figures, not fixed decimals: round(1 / 12000, 2) is 0,
+        # which hid how far below the median a tiny value is.
+        ratio = float(f"{value / median:.4g}") if median else None
         return {"median": median, "direction": direction, "ratio": ratio}
 
 
@@ -502,7 +586,8 @@ def balance_mod(
         raise BalanceError("--ratio must be greater than 1")
     if min_peers < 1:
         raise BalanceError("--min-peers must be at least 1")
-    mod_index = load_mod(mod_dir)
+    include_warnings: list[dict] = []
+    mod_index = load_mod(mod_dir, include_warnings)
     vanilla = load_vanilla(vanilla_root or P_DRIVE)
     bal = Balance(mod_index, vanilla, ratio, min_peers)
     display_root = display_root or mod_dir.parent
@@ -538,6 +623,7 @@ def balance_mod(
         "outliers": len(findings),
         "findings": findings,
         "skipped": skipped,
+        "includes_skipped": [{**w, "file": rel(w["file"])} for w in include_warnings],
     }
 
 
@@ -545,10 +631,23 @@ def _fmt(value: float) -> str:
     return f"{value:g}"
 
 
+def _times(x: float) -> str:
+    # Four significant figures, but whole numbers past 1000 so 10000 never
+    # prints as 1e+04.
+    return str(round(x)) if x >= 1000 else f"{x:.4g}"
+
+
 def render_text(report: dict) -> str:
     out = []
     for f in report["findings"]:
-        times = f"{f['ratio']:g}x the" if f["ratio"] is not None else "above the"
+        if f["ratio"] is None:
+            times = "above the"
+        elif f["direction"] == "low":
+            # A low value reads as how many times below the median it is, so
+            # weight 1 against 12000 says "12000x below", not "0x".
+            times = f"{_times(f['median'] / f['value'])}x below the" if f["value"] > 0 else "below the"
+        else:
+            times = f"{_times(f['ratio'])}x the"
         out.append(
             f"- {f['file']}:{f['line']}  {f['item']} {f['stat']} = {_fmt(f['value'])}: {f['meaning']}, "
             f"{times} median {_fmt(f['median'])} of {f['peer_count']} vanilla items under {f['peer_base']} "
@@ -557,6 +656,8 @@ def render_text(report: dict) -> str:
         out.append("    closest: " + ", ".join(f"{p['class']} {_fmt(p['value'])}" for p in f["peers"]))
     for s in report["skipped"]:
         out.append(f"  not compared: {s['item']} {s['reason']}")
+    for w in report["includes_skipped"]:
+        out.append(f"  WARN {w['file']}:{w['line']}  #include \"{w['include']}\" not read: it {w['reason']}, so its classes were not compared")
     out.append(f"  {report['outliers']} outlier(s) in {report['items']} item(s)")
     return "\n".join(out)
 

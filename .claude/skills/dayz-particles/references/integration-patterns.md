@@ -4,6 +4,16 @@ Complete code examples for integrating particles into modded devices.
 All code follows Enforce Script hard rules (no ternary, no ++, no foreach,
 no string literals as params, explicit typing, m_ prefix on members).
 
+## Contents
+
+- [Pattern A: FireplaceBase-style helpers (recommended)](#pattern-a-fireplacebase-style-helpers-recommended)
+- [Pattern B: SyncVar-driven toggle (Sprinkler example)](#pattern-b-syncvar-driven-toggle-sprinkler-example)
+- [Pattern C: Overload sparks (one-shot on state change)](#pattern-c-overload-sparks-one-shot-on-state-change)
+- [Pattern D: Generator/Furnace smoke (SEffectManager approach)](#pattern-d-generatorfurnace-smoke-seffectmanager-approach)
+- [Pattern E: Parameter tuning at runtime](#pattern-e-parameter-tuning-at-runtime)
+- [Cleanup checklist (apply to every device with particles)](#cleanup-checklist-apply-to-every-device-with-particles)
+- [Vanilla particles for placed devices](#vanilla-particles-for-placed-devices)
+
 ---
 
 ## Pattern A: FireplaceBase-style helpers (recommended)
@@ -20,7 +30,7 @@ protected bool MyMod_PlayParticle(out Particle particle, int particleType, vecto
     if (particle)
         return false;
 
-    if (GetGame().IsDedicatedServer())
+    if (GetGame().IsHeadlessOrDedicatedServer())
         return false;
 
     ParticleManager pm = ParticleManager.GetInstance();
@@ -37,7 +47,7 @@ protected bool MyMod_StopParticle(out Particle particle)
     if (!particle)
         return false;
 
-    if (GetGame().IsDedicatedServer())
+    if (GetGame().IsHeadlessOrDedicatedServer())
         return false;
 
     particle.Stop();
@@ -74,7 +84,7 @@ class MyMod_Sprinkler : MyMod_DeviceBase
     // ---- VarSync: toggle particle on client ----
     override void MyMod_OnVarSync()
     {
-        if (GetGame().IsDedicatedServer())
+        if (GetGame().IsHeadlessOrDedicatedServer())
             return;
 
         if (m_SprinklerActive && !m_SprayEffect)
@@ -133,7 +143,7 @@ class MyMod_SomeDevice : MyMod_DeviceBase
 
     override void MyMod_OnVarSync()
     {
-        if (GetGame().IsDedicatedServer())
+        if (GetGame().IsHeadlessOrDedicatedServer())
             return;
 
         // Detect transition to overloaded
@@ -190,7 +200,7 @@ class MyMod_Furnace : MyMod_DeviceBase
 
     override void MyMod_OnVarSync()
     {
-        if (GetGame().IsDedicatedServer())
+        if (GetGame().IsHeadlessOrDedicatedServer())
             return;
 
         if (m_SourceOn && !m_SmokeEffect)
@@ -257,7 +267,7 @@ if (m_SmokeEffect)
 ```
 protected void MyMod_CleanupClientFX()
 {
-    if (GetGame().IsDedicatedServer())
+    if (GetGame().IsHeadlessOrDedicatedServer())
         return;
 
     MyMod_StopParticle(m_EffectA);

@@ -15,6 +15,7 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
+import csv
 import os
 import subprocess
 import sys
@@ -30,6 +31,8 @@ P_DRIVE = Path("P:\\")
 
 OK, WARN, FAIL = h.OK, h.WARN, h.FAIL
 INFO = "[INFO] "
+
+WB_EXE_NAME = "workbenchApp.exe"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -78,6 +81,23 @@ def resolve_gproj(mod_arg: Optional[str], gproj_arg: Optional[str]) -> Optional[
     return None
 
 
+def running_workbench_pids() -> list[int]:
+    """PIDs of running workbenchApp.exe processes (tasklist matches names case-insensitively)."""
+    try:
+        out = subprocess.check_output(
+            ["tasklist", "/FI", f"IMAGENAME eq {WB_EXE_NAME}", "/FO", "CSV", "/NH"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return []
+    return [
+        int(row[1])
+        for row in csv.reader(out.splitlines())
+        if len(row) >= 2 and row[0].lower() == WB_EXE_NAME.lower() and row[1].isdigit()
+    ]
+
+
 def main() -> int:
     args = build_parser().parse_args()
 
@@ -115,6 +135,19 @@ def main() -> int:
     # dayz.gproj" from anywhere else even when a valid project is passed.
     workbench_dir = wb_exe.parent
     print(f"{OK} Working directory: {workbench_dir}")
+
+    # tasklist does not show a process's command line, so a running Workbench's
+    # project is unknown; refuse any second instance rather than risk two on
+    # the same gproj.
+    running = running_workbench_pids()
+    if running:
+        pids = ", ".join(str(pid) for pid in running)
+        print(
+            f"{FAIL} Workbench is already running (PID {pids}).\n"
+            f"       Use that window, or close it and run this again.",
+            file=sys.stderr,
+        )
+        return 1
 
     try:
         proc = subprocess.Popen(

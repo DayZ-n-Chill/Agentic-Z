@@ -33,6 +33,7 @@ One shape for every stage:
   - `dayz-gate` with `args.mode` `triage`: pasted crash log or RPT lines. Pipe the pasted text to `triage.py --stdin --json` (in `dayz-gate`). Hand each `known` result's fix to its `owner_agent`, and dispatch `dayz-mod-debugger` with only the `new` lines.
   - `dayz-edit-types` with `args.mode` `merge`: a pasted chunk of `<type>` entries. Run `types_edit.py <types.xml> --merge -` with the chunk on stdin.
   - `dayz-import-mod` with `args.source`: a GitHub link to clone into `workspace\`, or a Steam Workshop link, which the skill refuses with the reason.
+  - `dayz-cot-bootstrap` has model invocation turned off, so you cannot run it. Tell the user to type `/dayz-cot-bootstrap` themselves.
 - `kind` `agent`: dispatch that agent with the user's request. When the route is `figma-node-normalizer`, run the whole Figma pipeline in order: `figma-node-normalizer`, then `figma-to-dayz-layout`, then `dayz-layout-validator` in gate mode.
 - `kind` `team` (`route` is `orchestrator`): a whole-mod build. Tell the user to start `claude --agent agentic-z:dayz-orchestrator` (or `claude --agent dayz-orchestrator` in a clone).
 - `{"route": null, "next": "dayz-router", "note": "..."}`: no stage was confident. Dispatch the `dayz-router` agent with the request; it returns the same shape with `source` `router`. Follow it when `confidence` is 0.8 or more, otherwise handle the routing yourself or ask the user.

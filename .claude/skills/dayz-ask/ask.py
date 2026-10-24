@@ -10,7 +10,9 @@ evidence and writes the answer.
 2. Every hit is checked against the file on P:\\: the cited lines must still
    hold the indexed text. A hit whose text moved is re-cited at its new line;
    one whose text is gone is dropped.
-3. With no key, no index, a search error or no checked hit, a keyword scan
+3. A checked hit is kept only when it is on topic: its distance is at most
+   RAG_MAX_DISTANCE and its text or class holds a search term from the question.
+4. With no key, no index, a search error or no kept hit, a keyword scan
    of the vanilla folders on P:\\ (the Grep fallback) gives the evidence.
 
 The first output line is the verdict: EVIDENCE (exit 0), NONE (exit 1, nothing
@@ -45,6 +47,20 @@ MAX_TOP_K = 25
 EXCERPT_LINES = 60  # longest excerpt printed per citation
 LINES_PER_FILE = 3  # matching lines kept per file in the Grep fallback
 CONTEXT = 2  # lines shown around a Grep match
+# Grep score multiplier for debug and GUI code (a folder named gui, or "debug" in any
+# folder or file name, e.g. scripts\5_mission\gui\scriptshuddebug). Those files name
+# gameplay terms in widgets and debug readouts, so they rank below the gameplay classes.
+DEBUG_GUI_WEIGHT = 0.5
+# Farthest RAG hit kept (LanceDB L2 squared distance, voyage-code-3 index). Calibrated on
+# live runs: on-topic hits for bleeding, stamina and CanDecay questions sat at 0.70 to 1.06;
+# nonsense questions ("make pizza fly to the moon", "banana republic stock market tax")
+# returned nothing closer than 1.24.
+RAG_MAX_DISTANCE = 1.15
+
+# A class or function declaration: "class FoodStage", "override void ProcessDecay(".
+_KEYWORDS = {"return", "if", "while", "for", "foreach", "switch", "else", "new", "delete", "case"}
+_CLASS_DECL = re.compile(r"^\s*(?:modded\s+)?class\s+(\w+)")
+_FUNC_DECL = re.compile(r"^\s*((?:[\w<>,\[\]]+\s+)+)(\w+)\s*\(")
 
 # The vanilla folders /dayz-search-index walks (index.py VANILLA_FOLDERS).
 VANILLA_FOLDERS = ("scripts", "dz", "gui", "core", "graphics", "languagecore")
@@ -166,6 +182,46 @@ def verify_hit(hit: dict) -> dict:
     return {**cite, "status": "changed", "reason": "cited lines no longer match the index"}
 
 
+def off_topic(cite: dict, terms: list[str]) -> Optional[str]:
+    """Why a checked RAG hit is off topic, or None when it is kept.
+
+    Off topic means farther than RAG_MAX_DISTANCE, or no search term in its
+    excerpt or class context (a hit can match by meaning and still be about
+    something else, e.g. a cooking config class for a food spoilage question).
+    """
+    dist = cite.get("distance")
+    if dist is not None and dist > RAG_MAX_DISTANCE:
+        return f"off topic: distance {dist:.3f} is above {RAG_MAX_DISTANCE}"
+    text = f"{cite.get('excerpt', '')}\n{cite.get('context') or ''}".lower()
+    if terms and not any(t in text for t in terms):
+        return "off topic: holds no search term from the question"
+    return None
+
+
+def _declared_names(lines: list[str]) -> list[str]:
+    """Lower-case class and function names declared in a script file."""
+    names = []
+    for line in lines:
+        m = _CLASS_DECL.match(line)
+        if m:
+            names.append(m.group(1).lower())
+            continue
+        m = _FUNC_DECL.match(line)
+        if m and m.group(1).split()[0] not in _KEYWORDS:
+            names.append(m.group(2).lower())
+    return names
+
+
+def _is_debug_or_gui(path: Path, root: Path) -> bool:
+    """True for a file under a gui folder, or with "debug" in a folder or file name.
+
+    The vanilla folder scanned (scripts, dz, gui, ...) is not counted, so a
+    --folder gui scan is not down-weighted as a whole.
+    """
+    parts = [x.lower() for x in path.relative_to(root).parts[1:]]
+    return "gui" in parts[:-1] or any("debug" in x for x in parts)
+
+
 def grep_vanilla(terms: list[str], folders: list[str], file_type: Optional[str], top_k: int,
                  root: Optional[Path] = None) -> list[dict]:
     """Keyword scan of the vanilla folders: the Grep fallback.
@@ -210,6 +266,10 @@ def grep_vanilla(terms: list[str], folders: list[str], file_type: Optional[str],
                 line_scores.append((w, i))
         line_scores.sort(key=lambda x: (-x[0], x[1]))
         score = sum(weight[t] for t in present) + line_scores[0][0]
+        names = _declared_names(lines)
+        score += sum(weight[t] for t in present if any(t in n for n in names))
+        if _is_debug_or_gui(Path(path), root):
+            score *= DEBUG_GUI_WEIGHT
         scored.append((score, len(lines), path, lines, line_scores, len(present)))
     scored.sort(key=lambda s: (-s[0], s[1], s[2]))
     cites = []
@@ -260,6 +320,7 @@ def ask(question: str, top_k: int = DEFAULT_TOP_K, file_type: Optional[str] = No
     cites: list[dict] = []
     dropped: list[dict] = []
     mode = "grep"
+    terms = search_terms(question)
     if force_grep:
         notes.append("Grep forced with --grep")
     else:
@@ -274,16 +335,26 @@ def ask(question: str, top_k: int = DEFAULT_TOP_K, file_type: Optional[str] = No
                 notes.append(f"RAG search failed: {exc}")
             else:
                 mode = "rag"
+                stale = unrelated = 0
                 for hit in hits:
                     c = verify_hit(hit)
-                    (cites if c["status"] != "changed" else dropped).append(c)
-                if dropped:
-                    notes.append(f"{len(dropped)} hit(s) dropped: the file no longer holds the indexed text; "
+                    if c["status"] == "changed":
+                        stale += 1
+                        dropped.append(c)
+                    elif why_off := off_topic(c, terms):
+                        unrelated += 1
+                        dropped.append({**c, "reason": why_off})
+                    else:
+                        cites.append(c)
+                if stale:
+                    notes.append(f"{stale} hit(s) dropped: the file no longer holds the indexed text; "
                                  "rebuild with /dayz-search-index --full")
+                if unrelated:
+                    notes.append(f"{unrelated} hit(s) dropped as off topic (distance above "
+                                 f"{RAG_MAX_DISTANCE}, or no search term in the hit)")
                 if not cites:
-                    notes.append("no RAG hit survived the check; used Grep")
+                    notes.append("no RAG hit survived the checks; used Grep")
     if not cites:
-        terms = search_terms(question)
         cites = grep_vanilla(terms, folders, file_type, top_k)
         mode = "grep" if mode == "grep" or not cites else "rag+grep"
         where = ", ".join(str(P_DRIVE / f) for f in folders)

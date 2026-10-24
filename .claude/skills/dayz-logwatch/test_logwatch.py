@@ -287,16 +287,55 @@ def test_client_running_ignores_the_server_process(monkeypatch):
     assert logwatch.client_running() is False
 
 
-def test_client_running_keeps_watching_when_the_query_fails(monkeypatch):
+def test_client_running_reports_unknown_when_the_query_fails(monkeypatch):
     monkeypatch.setattr(logwatch.subprocess, "run",
                         lambda *a, **k: subprocess.CompletedProcess(a, 1, stdout="", stderr="CIM timeout"))
-    assert logwatch.client_running() is True
+    assert logwatch.client_running() is None
 
     def missing(*a, **k):
         raise FileNotFoundError("powershell")
 
     monkeypatch.setattr(logwatch.subprocess, "run", missing)
-    assert logwatch.client_running() is True
+    assert logwatch.client_running() is None
+
+
+def test_watch_stops_when_the_process_query_keeps_failing(tmp_path):
+    """A failing query used to count as "client running", so the watch never stopped."""
+    tail = logwatch.Tail([tmp_path])
+    events, watcher = collect()
+    calls = []
+
+    def failing():
+        calls.append(1)
+        return None
+
+    summary = logwatch.watch(tail, watcher, interval=0, session_alive=failing, sleep=lambda s: None,
+                             clock=_stepping_clock(logwatch.CLOSED_CHECK_S))
+    assert summary["stopped"] == "cannot read process list"
+    assert len(calls) == logwatch.QUERY_FAILURES_MAX
+
+
+def test_watch_forgives_a_failed_query_between_good_ones(tmp_path):
+    tail = logwatch.Tail([tmp_path])
+    events, watcher = collect()
+    states = iter([True, None, None, True, None, None, False])
+    summary = logwatch.watch(tail, watcher, interval=0, session_alive=lambda: next(states), sleep=lambda s: None,
+                             clock=_stepping_clock(logwatch.CLOSED_CHECK_S))
+    assert summary["stopped"] == "session closed"
+
+
+def test_cli_failing_process_query_exits_2(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
+
+    def missing(*a, **k):
+        raise FileNotFoundError("powershell")
+
+    monkeypatch.setattr(logwatch.subprocess, "run", missing)
+    monkeypatch.setattr(logwatch, "CLOSED_CHECK_S", 0)
+    out = io.StringIO()
+    assert logwatch.main(["--dir", str(tmp_path), "--until-closed", "--interval", "0.1"], out) == 2
+    assert "Stopped (cannot read process list)" in out.getvalue()
+    assert "Cannot read the process list" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("entries", [
@@ -308,7 +347,7 @@ def test_cli_broken_known_errors_file_exits_2(tmp_path, monkeypatch, capsys, ent
     shipped.write_text(json.dumps(entries), encoding="utf-8")
     monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
     monkeypatch.setattr(logwatch.triage, "KNOWN_ERRORS", shipped)
-    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0", "--interval", "0.1"], io.StringIO()) == 2
+    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0.1", "--interval", "0.1"], io.StringIO()) == 2
     assert "Could not load known errors" in capsys.readouterr().err
 
 
@@ -346,7 +385,7 @@ def test_cli_text_output_and_exit_code(tmp_path, monkeypatch):
     monkeypatch.setattr(logwatch.triage, "cached_project_dir", lambda: None)
     out = io.StringIO()
     append(tmp_path / "script.log", "nothing wrong here")
-    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0", "--interval", "0.1"], out) == 0
+    assert logwatch.main(["--dir", str(tmp_path), "--duration", "0.1", "--interval", "0.1"], out) == 0
     assert "Watching 1 folder(s)" in out.getvalue() and "0 error(s)" in out.getvalue()
 
     log = tmp_path / "later" / "script.log"
@@ -360,7 +399,7 @@ def test_cli_text_output_and_exit_code(tmp_path, monkeypatch):
 
     monkeypatch.setattr(logwatch, "Tail", tail_then_write)
     out = io.StringIO()
-    assert logwatch.main(["--dir", str(tmp_path / "later"), "--duration", "0", "--interval", "0.1", "--mod", "MyVest"], out) == 1
+    assert logwatch.main(["--dir", str(tmp_path / "later"), "--duration", "0.1", "--interval", "0.1", "--mod", "MyVest"], out) == 1
     text = out.getvalue()
     assert "known script-unknown-type -> dayz-script-specialist" in text
     assert "fix: " in text and "1 known, 0 new" in text
@@ -378,3 +417,19 @@ def test_interval_below_minimum_exits_2(value, capsys):
         logwatch.main(["--dir", ".", "--duration", "1", "--interval", value])
     assert exc.value.code == 2
     assert "--interval must be at least" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("value", ["0", "-5", "nan", "inf"])
+def test_duration_zero_negative_or_not_finite_exits_2(value, capsys):
+    with pytest.raises(SystemExit) as exc:
+        logwatch.main(["--dir", ".", "--duration", value])
+    assert exc.value.code == 2
+    assert "--duration must be more than 0 seconds" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("value", ["-1", "-0.5", "nan", "inf"])
+def test_since_negative_or_not_finite_exits_2(value, capsys):
+    with pytest.raises(SystemExit) as exc:
+        logwatch.main(["--dir", ".", "--duration", "1", "--since", value])
+    assert exc.value.code == 2
+    assert "--since must be 0 or more minutes" in capsys.readouterr().err

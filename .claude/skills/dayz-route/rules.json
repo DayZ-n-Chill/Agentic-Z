@@ -21,6 +21,22 @@
     "dayz-server-kit": {"kind": "skill", "description": "Zip types.xml entries, cfgeconomycore lines, load order and the public .bikey for server owners"},
     "dayz-recipe": {"kind": "skill", "description": "Start a mod plan from a recipe: new weapon, new vest or new craftable"},
     "dayz-ask": {"kind": "skill", "description": "Answer a question about how vanilla DayZ works, with path:line citations"},
+    "dayz-init": {"kind": "skill", "description": "First-run setup wizard, and afterwards the status hub: what is set up, the active mod and the next action"},
+    "dayz-launch-workbench": {"kind": "skill", "description": "Open Enfusion Workbench on vanilla DayZ or on a mod's gproj"},
+    "dayz-add-server": {"kind": "skill", "description": "Set up a local test server instance under .server/<instance>/, or refresh its mission after a DayZ update"},
+    "dayz-pack-texture": {"kind": "skill", "description": "Convert PNG or TGA images with a texture-role suffix to .paa with ImageToPAA"},
+    "dayz-build-imageset": {"kind": "skill", "description": "Build a mod's .imageset and .paa atlas from the PNG sprites in its .gui-sources/ folders"},
+    "dayz-cot-bootstrap": {"kind": "skill", "description": "Grant the developer Community-Online-Tools (COT) admin on a local test server; the user starts it by typing /dayz-cot-bootstrap"},
+    "dayz-launch-objectbuilder": {"kind": "skill", "description": "Open DayZ Tools' Object Builder, optionally on a .p3d or the one .p3d in a mod's data folder"},
+    "dayz-deploy-pbo": {"kind": "skill", "description": "Copy prebuilt PBOs and keys from workspace/<ModName>/Addons and Keys to P:\\Mods\\@<ModName>\\ without AddonBuilder"},
+    "dayz-p3d-audit": {"kind": "skill", "description": "Report-only audit of .p3d models and their config.cpp, model.cfg and .rvmat for collision, action, physics, animation and path problems"},
+    "dayz-split-types": {"kind": "skill", "description": "Split a monolithic types.xml into per-category files under types/ and register them in cfgeconomycore.xml"},
+    "dayz-scope-mod": {"kind": "skill", "description": "Restrict edits to one mod under workspace/<ModName>/, show the current scope, or lift it"},
+    "dayz-workdrive": {"kind": "skill", "description": "Mount or unmount P:\\ as the DayZ work drive without the DayZ Tools GUI, usually after a reboot"},
+    "dayz-add-scaffold": {"kind": "skill", "description": "Add missing scaffold pieces (config.cpp, $PBOPREFIX$, Workbench gproj, README, folders) or the P:\\ link to a mod already in workspace/, never overwriting"},
+    "dayz-search-index": {"kind": "skill", "description": "Build or rebuild the semantic search index over vanilla DayZ source on P:\\ for the dayz-rag MCP server"},
+    "dayz-particles": {"kind": "skill", "description": "Reference for DayZ particle effects: .ptc and .emat formats, the particle script API and the vanilla particle catalog"},
+    "dayz-setup-objectbuilder": {"kind": "skill", "description": "Configure Object Builder by importing DayZ Tools' default registry settings, on first use, after a reinstall or when its panels look broken"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
     "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, inheritance, hidden selections"},
     "dayz-script-specialist": {"kind": "agent", "description": "Write or change Enforce Script (.c) code, modded classes, RPCs"},
@@ -64,6 +80,101 @@
       "absorbs": true,
       "args": {"mode": "triage"},
       "patterns": ["access violation", "unhandled exception", "exception code", "\\bSCRIPT\\s+\\(E\\)", "can't compile \"\\w+\" script module", "NULL pointer to instance", "\\.c\\(\\d+\\):", "cannot load texture", "cannot open object", "\\bNo entry '", "0x00020005", "mission script has no main function"]
+    },
+    {
+      "route": "dayz-launch-workbench",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bdayz-launch-workbench\\b", "\\b(?:open|launch|start|run|boot)\\s+(?:up\\s+)?(?:the\\s+)?(?:enfusion\\s+)?workbench\\b(?!\\s+(?:plugin|tool|script)s?\\b)(?:\\s+(?:on|for|with)\\s+(?!(?:my|the|this|it|vanilla|dayz|a|an)\\b)(?P<mod>[A-Za-z][\\w-]*))?"]
+    },
+    {
+      "route": "dayz-add-server",
+      "confidence": 0.96,
+      "absorbs": true,
+      "patterns": ["\\bdayz-add-server\\b", "\\b(?:add|create|set\\s*up|make)\\s+(?:a\\s+|an\\s+|another\\s+|the\\s+)?(?:new\\s+)?(?:local\\s+)?(?:test\\s+)?server\\s+instance\\b", "\\b(?:add|create|set\\s*up|make)\\s+(?:a\\s+|another\\s+|the\\s+)?(?:new\\s+)?(?:local\\s+)?test\\s+server\\b", "\\brefresh\\s+(?:the\\s+)?(?:server\\s+)?mission\\b"]
+    },
+    {
+      "route": "dayz-cot-bootstrap",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\b(?:dayz-)?cot[\\s-]bootstrap\\b", "\\bcot\\s+(?:admin|permissions?)\\b", "\\badmin\\s+(?:in|on|for|with|through)\\s+(?:cot|community[\\s-]online[\\s-]tools)\\b", "\\bcommunity[\\s-]online[\\s-]tools\\s+(?:admin|permissions?)\\b"]
+    },
+    {
+      "route": "dayz-build-imageset",
+      "confidence": 0.96,
+      "absorbs": true,
+      "patterns": ["\\bdayz-build-imageset\\b", "\\b(?:build|rebuild|generate|regenerate)\\s+(?:(?:a|an|the|my|this|its|new)\\s+){0,2}imagesets?\\b", "\\.gui-sources\\b"]
+    },
+    {
+      "route": "dayz-pack-texture",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bdayz-pack-texture\\b", "\\bimage\\s*to\\s*paa\\b", "\\b(?:pack|repack)\\s+(?:(?:this|the|my|these|those|a|an|new)\\s+){0,2}textures?\\b(?![^\\n]*\\b(?:rvmats?|materials?)\\b)"]
+    },
+    {
+      "route": "dayz-init",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bdayz-init\\b", "^\\s*(?:run\\s+)?init\\s*$", "\\bset\\s*up\\s+dayz(?:\\s+modding)?\\b", "\\b(?:dayz|modding|project)\\s+status\\b", "\\bstatus\\s+(?:overview|hub)\\b", "\\bwhat(?:'s|\\s+is)?\\s+(?:my\\s+|the\\s+)?next\\s+(?:step|action)\\b"]
+    },
+    {
+      "route": "dayz-launch-objectbuilder",
+      "confidence": 0.96,
+      "absorbs": true,
+      "patterns": ["\\bdayz-launch-objectbuilder\\b", "\\b(?:open|launch|start|run|boot)\\s+(?:up\\s+)?(?:the\\s+)?object\\s*builder\\b", "\\bopen\\b[^\\n]{0,60}?\\.p3d\\b[^\\n]{0,20}?\\bin\\s+(?:the\\s+)?object\\s*builder\\b"]
+    },
+    {
+      "route": "dayz-deploy-pbo",
+      "confidence": 0.95,
+      "patterns": ["\\bdayz-deploy-pbo\\b", "\\b(?:copy|deploy|mirror|install)\\s+(?:(?:the|these|those|my|its|all|prebuilt|pre-built|built)\\s+){0,2}pbos?\\b(?:\\s+(?:for|of)\\s+(?!(?:the|my|this|it|mod|all|everything)\\b)(?P<mod>[A-Za-z][\\w-]*))?", "\\b(?:pre-?built|pre-?compiled|already[\\s-]built)\\s+pbos?\\b"]
+    },
+    {
+      "route": "dayz-p3d-audit",
+      "confidence": 0.96,
+      "absorbs": true,
+      "patterns": ["\\bdayz-p3d-audit\\b", "\\bp3d\\s+audit\\b", "\\b(?:audit|check|validate|scan|lint)\\b[^\\n]{0,40}?\\bp3d\\b", "\\bp3d\\b[^\\n]{0,40}?\\b(?:audit|validat(?:e|ion)|sanity[\\s-]check)\\b"]
+    },
+    {
+      "route": "dayz-split-types",
+      "confidence": 0.96,
+      "absorbs": true,
+      "patterns": ["\\bdayz-split-types\\b", "\\bsplit\\b[^\\n]{0,30}?\\btypes(?:\\.xml|\\s+files?)\\b", "\\btypes\\.xml\\b[^\\n]{0,40}?\\b(?:per[\\s-]category|categori[sz]ed|into\\s+categories)\\b"]
+    },
+    {
+      "route": "dayz-scope-mod",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bdayz-scope-mod\\b", "\\bscope\\s+(?:(?:the|this)\\s+)?(?:session|agent|edits?|work)?\\s*to\\s+(?!(?:the|my|this|it|one|a|mod)\\b)(?P<mod>[A-Za-z][\\w-]*)", "\\b(?:lift|clear|remove|drop)\\s+(?:the\\s+)?(?:mod\\s+)?scope\\b"]
+    },
+    {
+      "route": "dayz-workdrive",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bdayz-workdrive\\b", "\\b(?:mount|unmount|dismount|remount)\\s+(?:the\\s+|my\\s+)?(?:p:?\\\\?(?=\\s|$)|p\\s+drive\\b|work\\s*drive\\b)", "\\bp:?\\\\?\\s+(?:drive\\s+)?(?:is\\s+)?(?:not|isn't|is\\s+not)\\s+mounted\\b"]
+    },
+    {
+      "route": "dayz-search-index",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bdayz-search-index\\b", "\\b(?:build|rebuild|refresh|update|re-?index)\\s+(?:the\\s+|my\\s+)?(?:vanilla\\s+)?(?:(?:rag|semantic|vector|dayz-rag)\\s+)?(?:search\\s+)?index\\b"]
+    },
+    {
+      "route": "dayz-add-scaffold",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bdayz-add-scaffold\\b", "\\bmissing\\s+scaffold(?:ing)?\\b", "\\b(?:add|fill(?:\\s+in)?|restore)\\b[^\\n]{0,30}?\\b(?:scaffold(?:ing)?\\s+(?:pieces?|parts?|files?)|\\$?pbopre?fix\\$?|(?:dayz\\.)?gproj)\\b", "\\b(?:create|make|add|fix|restore)\\s+(?:the\\s+|its\\s+|a\\s+)?p:?\\\\?\\s*(?:drive\\s+)?(?:link|junction)\\b"]
+    },
+    {
+      "route": "dayz-setup-objectbuilder",
+      "confidence": 0.96,
+      "absorbs": true,
+      "patterns": ["\\bdayz-setup-objectbuilder\\b", "\\b(?:set\\s*up|configure|reset)\\s+(?:the\\s+)?object\\s*builder\\b", "\\bobject\\s*builder\\b[^\\n]{0,60}?\\b(?:broken|blank|messed\\s+up)\\s+(?:panels?|layouts?|windows?)\\b", "\\bobject\\s*builder\\b[^\\n]{0,30}?\\b(?:default\\s+settings|registry)\\b"]
+    },
+    {
+      "route": "dayz-particles",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bdayz-particles\\b", "\\bparticles?\\s+(?:catalog(?:ue)?|reference|api)\\b", "\\bparticles?\\b[^\\n]{0,30}?\\bcatalog(?:ue)?\\b"]
     },
     {
       "route": "dayz-recipe",

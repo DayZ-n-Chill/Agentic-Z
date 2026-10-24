@@ -1,94 +1,306 @@
 {
   "dayz-config-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "cfgpatches-parent-addon",
+      "change-vanilla-class",
+      "forward-declaration",
+      "hidden-selection-count",
+      "inventoryslot-append"
+    ]
   },
   "dayz-mod-reviewer": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "hidden-selection-mismatch",
+      "modded-class-extends",
+      "procedural-texture-pass",
+      "texture-suffix-warn",
+      "types-min-above-nominal"
+    ]
   },
   "dayz-script-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "action-layer",
+      "layer-visibility",
+      "modded-class-extends",
+      "net-sync-calls",
+      "server-only-gate"
+    ]
   },
   "dayz-weapon-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "barrel-memory-points",
+      "cz527-parents",
+      "long-range-optic-slot",
+      "magazine-ammo-keys",
+      "recoil-is-script"
+    ]
   },
   "dayz-audio-fx-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "loop-and-stop-helpers",
+      "restart-loop-needs-stop",
+      "shader-range-unit",
+      "sound-required-addon",
+      "weapon-particle-registration"
+    ]
   },
   "dayz-object-builder": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "audit-after-save",
+      "door-axis-memory-points",
+      "door-needs-view-geometry-component",
+      "proxy-selection-name",
+      "viewgeo-firegeo-resolutions"
+    ]
   },
   "dayz-ai-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "fake-gunshot-noise",
+      "infected-mind-states",
+      "no-vanilla-human-ai",
+      "soldier-behaviour-template",
+      "spawn-with-ai"
+    ]
   },
   "dayz-animation-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "angle-radians",
+      "building-door-source",
+      "fence-gate-phase",
+      "lid-client-sync",
+      "user-source-missing"
+    ]
   },
   "dayz-persistence-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "base-part-id-renumber",
+      "cargo-saved-by-engine",
+      "persistent-id-lookup-event",
+      "removed-field-read-and-discard",
+      "version-param-is-game"
+    ]
   },
   "dayz-physics-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "bullets-pass-through",
+      "config-weight-is-not-body-mass",
+      "heavy-crate-cannot-be-thrown",
+      "make-resting-item-fall",
+      "spawn-without-physics"
+    ]
   },
   "dayz-vehicle-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "anim-instance-missing",
+      "bigger-fuel-tank",
+      "diesel-needs-glowplug",
+      "new-door-slot",
+      "vanilla-helicopter"
+    ]
   },
   "dayz-wearables-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "color-selection-names",
+      "drenched-insulation",
+      "mask-blocks-helmet",
+      "plate-carrier-cargo",
+      "survivor-scope"
+    ]
   },
   "dayz-asset-specialist": {
     "score": 7,
-    "total": 7
+    "total": 7,
+    "passed": [
+      "cloth-rvmat-base",
+      "glass-color-texture-is-ca",
+      "in-game-path-uses-pboprefix",
+      "missing-suffix-is-reported-not-renamed",
+      "power-of-two-sizes",
+      "refused-size-reruns-the-rest",
+      "smdi-is-specular"
+    ]
   },
   "dayz-layout-validator": {
     "score": 8,
-    "total": 8
+    "total": 8,
+    "passed": [
+      "clean-layout-passes",
+      "equals-and-semicolons-fail",
+      "frame-btn-close-fails-on-line-1",
+      "opacity-property-fails",
+      "pasted-content-not-written",
+      "quoted-shadow-opacity-passes",
+      "syntax-script-runs-first",
+      "xml-style-fails-on-line-1"
+    ]
   },
   "dayz-ui-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "chat-open-check",
+      "hud-mod-ingamehud",
+      "layout-root-format",
+      "listbox-onitemselected-signature",
+      "listbox-two-columns"
+    ]
   },
   "dayz-map-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "clutter-model-classes",
+      "surface-clutter-link",
+      "surface-dig-plant",
+      "surface-texture-match",
+      "surfaces-required-addon"
+    ]
   },
   "dayz-workbench-specialist": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "plugin-settings-dialog",
+      "plugin-skeleton",
+      "resource-context-menu",
+      "run-external-command",
+      "script-editor-current-file"
+    ]
   },
   "dayz-server-admin": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "ce-not-in-config",
+      "mission-path-token",
+      "objectspawner-json",
+      "spawn-not-saved",
+      "types-restock"
+    ]
   },
   "dayz-mod-debugger": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "cant-find-required-addons",
+      "filepatching-0x00020005",
+      "modded-class-extends-noop",
+      "onstoreload-read-failure",
+      "review-gate-no-log"
+    ]
   },
   "figma-node-normalizer": {
-    "score": 5,
-    "total": 5
+    "score": 6,
+    "total": 6,
+    "passed": [
+      "children-source-order",
+      "no-figma-tool",
+      "position-in-free-frame",
+      "prefix-typing-btn-close",
+      "removal-in-summary",
+      "sizing-on-every-node"
+    ]
   },
   "dayz-build-engineer": {
     "score": 4,
-    "total": 4
+    "total": 4,
+    "passed": [
+      "instance-without-map-stops",
+      "non-dz-addon-without-deps-stops",
+      "payload-bundle-deploys",
+      "server-only-dep-uses-flag"
+    ]
   },
   "dayz-docs-writer": {
-    "score": 4,
-    "total": 4
+    "score": 5,
+    "total": 5,
+    "passed": [
+      "classnames-only-scope-2",
+      "git-limited-to-mod-folder",
+      "payload-only-bundle-skips-kit",
+      "private-key-is-a-release-blocker",
+      "summary-missing-goes-in-readme"
+    ]
   },
   "agent-creator": {
     "score": 5,
-    "total": 5
+    "total": 5,
+    "passed": [
+      "baseline-via-runner",
+      "gate-gets-no-write-or-memory",
+      "model-is-omitted",
+      "new-worker-registration",
+      "no-memory-section-in-body"
+    ]
+  },
+  "figma-to-dayz-layout": {
+    "score": 5,
+    "total": 5,
+    "passed": [
+      "fill-width-is-relative",
+      "format-four-toggles-one-space",
+      "hex-color-to-floats",
+      "prefix-beats-frame-type",
+      "raw-figma-url-needs-normalizer"
+    ]
+  },
+  "dayz-ingame-tester": {
+    "score": 5,
+    "total": 5,
+    "passed": [
+      "bundle-exempt-from-deps",
+      "bundle-pbo-check-passes",
+      "non-bundle-unmapped-dep-stops",
+      "ready-line-and-settle",
+      "unqualified-null-pointer-is-warning"
+    ]
+  },
+  "dayz-router": {
+    "score": 7,
+    "total": 7,
+    "passed": [
+      "add-test-server-instance",
+      "build-imageset-from-sprites",
+      "cot-admin-bootstrap",
+      "open-workbench-is-the-launcher",
+      "pack-texture-vs-wrong-texture",
+      "status-hub-is-init",
+      "stretched-texture-is-not-packing"
+    ]
+  },
+  "dayz-build-checker": {
+    "score": 5,
+    "total": 5,
+    "passed": [
+      "agreed-session-stops-first",
+      "lint-error-fails-before-build",
+      "payload-bundle-deploys",
+      "pbo-path",
+      "unstarted-session-blocks"
+    ]
   }
 }

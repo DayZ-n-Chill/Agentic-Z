@@ -39,8 +39,8 @@ python "<skill-dir>\add_scaffold.py" <ModName> [--piece config|prefix|workbench|
 | Piece | What it writes | When |
 |---|---|---|
 | `config` | `config.cpp` (CfgPatches + CfgMods stub) | only if missing |
-| `prefix` | `$PBOPREFIX$` (contains `<ModName>`) | only if missing |
-| `workbench` | `workbench/dayz.gproj` (vanilla copy + injected mod paths + dual FileSystem mounts) and `workbench/DayZSetting.xml` | gproj only if missing; xml only if missing. Skipped with a warning (and counted as skipped) if DayZ Tools is not detected. |
+| `prefix` | `$PBOPREFIX$` (contains `<ModName>`) | only if missing. An existing file that does not hold `<ModName>` (BOM and surrounding whitespace ignored) is left unchanged with a `[WARN]` that `/dayz-build-pbo` will refuse it, and counted as needing fixing by hand. |
+| `workbench` | `workbench/dayz.gproj` (vanilla copy + injected mod paths + dual FileSystem mounts) and `workbench/DayZSetting.xml` | gproj only if missing; xml only if missing. Skipped with a warning (and counted as skipped) if DayZ Tools is not detected, or if its `Bin\Workbench\dayz.gproj` is missing (the xml may still be copied). |
 | `readme` | `README.md` (light onboarding notes) | only if missing |
 | `skeleton` | `scripts/3_Game/`, `scripts/4_World/`, `scripts/5_Mission/`, `data/`, `gui/` (each with `.gitkeep`) | each subfolder only if missing |
 | `junction` | the `P:\<ModName>\` link to `workspace/<ModName>/` (symlink, junction fallback; the same code `/dayz-new-mod` uses) | only if missing. Refuses if `P:\<ModName>\` is a real folder or a link pointing anywhere else. |
@@ -88,7 +88,15 @@ Scaffolding workspace\MyMod\
 [OK]    3 piece(s) added, 2 already present, 0 skipped.
 ```
 
-A piece counts as skipped when it is missing but cannot be written, such as `workbench` when DayZ Tools is not detected (no empty `workbench/` folder is created in that case).
+A piece counts as skipped when it is missing but cannot be written, such as `workbench` when DayZ Tools is not detected (no empty `workbench/` folder is created in that case). When the one piece named with `--piece` is skipped, the skill ends with `[FAIL] <piece> was not written` and exits 1, so callers can tell nothing was written; with `all`, skipped pieces are counted in the summary and the exit stays 0.
+
+A piece needs fixing by hand when it is present but holds content a later skill refuses: a `$PBOPREFIX$` that does not hold `<ModName>`. The file is left unchanged. `--piece prefix` then ends with `[FAIL] prefix is present but wrong` and exits 1; with `all`, the summary adds `, 1 need fixing by hand` and the exit stays 0.
+
+The summary line is tagged `[OK]` only when no piece was skipped or needs fixing; otherwise it is tagged `[WARN]`, for example:
+
+```
+[WARN]  4 piece(s) added, 0 already present, 1 skipped.
+```
 
 If everything is already present:
 

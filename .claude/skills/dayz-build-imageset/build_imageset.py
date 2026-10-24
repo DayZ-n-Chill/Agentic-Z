@@ -256,10 +256,25 @@ def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path,
         )
         return False
 
+    # A corrupt, truncated or 0-byte .png fails this set only, so the other
+    # sets still build. Pillow's UnidentifiedImageError is an OSError; load()
+    # catches files whose header reads but whose pixel data is cut short.
     metas = []
+    unreadable = []
     for p in pngs:
-        with Image.open(p) as im:
-            metas.append((p, im.width, im.height))
+        try:
+            with Image.open(p) as im:
+                im.load()
+                metas.append((p, im.width, im.height))
+        except OSError as e:
+            unreadable.append(f"{p.name} ({e})")
+    if unreadable:
+        print(
+            f"{FAIL} {set_name}: cannot read as PNG images. Re-export or remove:\n"
+            + "\n".join(f"       {u}" for u in unreadable),
+            file=sys.stderr,
+        )
+        return False
 
     atlases = pack_split(metas)
     if atlases is None:
@@ -296,20 +311,65 @@ def build_one(set_dir: Path, mod_name: str, out_dir: Path, image_to_paa: Path,
     return all_ok
 
 
+def is_path_form(arg: str) -> bool:
+    """True when the argument is a path to a mod root rather than a <ModName>."""
+    return arg in (".", "..") or any(c in arg for c in "/\\:")
+
+
+def resolve_mod_root(arg: str) -> Path:
+    """The mod root for a <ModName> or a path argument.
+
+    A <ModName> resolves to workspace/<ModName>/ under the project cached by
+    /dayz-init, like the sibling /dayz-* skills, so the skill works from the
+    repo root. A path (the older form) is used as given.
+    """
+    if is_path_form(arg):
+        mod_root = Path(arg).resolve()
+        if not mod_root.is_dir():
+            sys.exit(f"{FAIL} mod root not a directory: {mod_root}")
+        return mod_root
+    project_dir = h.resolve_project_dir()
+    mod_root = project_dir / "workspace" / arg
+    if not mod_root.is_dir():
+        sys.exit(
+            f"{FAIL} workspace\\{arg} not found under {project_dir}.\n"
+            f"       Run /dayz-new-mod {arg} (or /dayz-import-mod) first, or pass a path to the mod root."
+        )
+    return mod_root
+
+
+def default_mod_name(mod_root: Path) -> str:
+    """The root for the .imageset path field: the mod's $PBOPREFIX$.
+
+    In-PBO paths are rooted at the PBO prefix, not the folder name: vanilla
+    P:\\DZ\\gui.txt:1 has prefix=gui\\ and P:\\gui\\imagesets\\playstation_buttons2.imageset:7
+    references "Gui/imagesets/playstation_buttons2.edds". Falls back to the
+    folder name, with a warning, when the mod has no $PBOPREFIX$ yet.
+    """
+    prefix_file = mod_root / "$PBOPREFIX$"
+    if prefix_file.is_file():
+        prefix = prefix_file.read_text(encoding="utf-8-sig").strip().strip("\\/")
+        if prefix:
+            return prefix
+    print(f"{WARN} no $PBOPREFIX$ in {mod_root}; using the folder name {mod_root.name!r} as the mod name")
+    return mod_root.name
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Pack .gui-sources/<setname>/*.png into DayZ imagesets in <mod>/gui/imagesets/."
     )
     parser.add_argument(
-        "mod_root",
-        nargs="?",
-        default=".",
-        help="Mod root containing .gui-sources/ (default: current directory).",
+        "mod",
+        help="<ModName> (resolved to workspace/<ModName>/ in the project cached by /dayz-init) "
+             "or a path to a mod root containing .gui-sources/ (any argument with a slash, "
+             "backslash or drive, or . / ..).",
     )
     parser.add_argument(
         "--mod-name",
         default=None,
-        help="Mod name used in the path field of the .imageset (default: basename of mod_root).",
+        help="Root used in the path field of the .imageset (default: the mod's $PBOPREFIX$, "
+             "else the mod folder name).",
     )
     args = parser.parse_args()
 
@@ -321,9 +381,7 @@ def main() -> int:
             f'       Install it: py -m pip install -r "{REQUIREMENTS}"'
         )
 
-    mod_root = Path(args.mod_root).resolve()
-    if not mod_root.is_dir():
-        sys.exit(f"{FAIL} mod_root not a directory: {mod_root}")
+    mod_root = resolve_mod_root(args.mod)
 
     sources_dir = mod_root / ".gui-sources"
     if not sources_dir.is_dir():
@@ -339,7 +397,7 @@ def main() -> int:
             f"       Each subfolder of .gui-sources/ becomes one imageset."
         )
 
-    mod_name = args.mod_name or mod_root.name
+    mod_name = args.mod_name or default_mod_name(mod_root)
     out_dir = mod_root / "gui" / "imagesets"
 
     print()

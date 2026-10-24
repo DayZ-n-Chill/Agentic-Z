@@ -15,7 +15,7 @@ Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`.claude/skills/_shared/dayz-conventions
 
 - `.layout` is DayZ's property-file format, not XML. Read `.claude/skills/_shared/figma-to-dayz-rules.md` before writing or changing one; it is the spec for format, widget classes, naming prefixes, sizing and the Hard NO list.
 - Examples to mirror: the numbered `.layout` files in `.claude/skills/_shared/enscript/examples/`, and vanilla layouts under `P:\gui\layouts\`.
-- After a change to anchors or sizes, run `/dayz-layout-preview` on the file (`python .claude/skills/dayz-layout-preview/layout_preview.py <file.layout>`). Look at the PNGs for 1280x720 and 3440x1440, and fix any `off-screen` or `no-area` finding. It is an approximation, so name what still needs checking in game.
+- After a change to anchors or sizes, run `/dayz-layout-preview` on the file (or the `layout_preview.py` path its SKILL.md gives). Use Bash only to run skill scripts. Look at the PNGs for 1280x720 and 3440x1440, and fix any `off-screen` or `no-area` finding. It is an approximation, so name what still needs checking in game.
 - Layout properties and the widget class list: `.claude/skills/_shared/enscript/references/gui_layout.md`.
 
 ## Widget scripts
@@ -31,7 +31,7 @@ When the UI needs its own icons:
 
 1. Ask the caller for the PNG sprites, or check that they are in `workspace/<ModName>/.gui-sources/<setname>/`. One file per icon, and each file name is the image name the layout will use (letters, digits and underscores).
 2. Run `/dayz-build-imageset workspace/<ModName>`. It writes `gui/imagesets/<setname>.imageset` and its `.paa`. If it fails, report its output to your caller and stop; do not write an `.imageset` by hand.
-3. Register the imageset in `config.cpp` under `CfgMods` `defs` `imageSets`. Send the `CfgMods` > `defs` > `imageSets` entry to `dayz-config-specialist` through your lead (under the lead's handoff block). Add it yourself only when called directly with no lead, as shown in `widget_api.md` ("Imagesets in layouts and script").
+3. Register the imageset in `config.cpp` under `CfgMods` `defs` `imageSets`. When a lead called you, put the `CfgMods` > `defs` > `imageSets` entry in your report under a "For the config lead" heading that names `dayz-config-specialist` and the task (register this imageset in the mod's `config.cpp`). Add it yourself only when called directly with no lead, as shown in `widget_api.md` ("Imagesets in layouts and script").
 4. Reference each icon as `image0 "set:<setname> image:<file stem>"` in the layout, or with `ImageWidget.LoadImageFile(0, "set:<setname> image:<file stem>")` in script.
 
 ## Figma input
@@ -55,4 +55,4 @@ Grep `P:\gui\` and `P:\scripts\5_mission\gui\` for known names, RAG (`search_day
 
 ## Report
 
-To the UI lead or your caller: the files you wrote or changed, the `/dayz-lint` result (or that the mod folder does not exist yet), how the UI is opened from script, any imageset you built and where it is registered, anything you couldn't verify against vanilla (and any Dabs Framework facts you relied on), and what to look at in game.
+To the UI lead or your caller: the files you wrote or changed, the `/dayz-lint` result (or that the mod folder does not exist yet), how the UI is opened from script, any imageset you built and where it is registered (when a lead called you, its `imageSets` entry under "For the config lead", naming `dayz-config-specialist` and the task, as in step 3 of Icons and imagesets), anything you couldn't verify against vanilla (and any Dabs Framework facts you relied on), and what to look at in game.

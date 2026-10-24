@@ -244,9 +244,39 @@ def require_scaffold_decision(
     if missing and not (scaffold or no_scaffold or interactive):
         names = ", ".join(rel for _key, rel, _why in missing)
         sys.exit(
-            f"{FAIL} Missing scaffold pieces ({names}) and stdin is not a TTY.\n"
+            f"{FAIL} Missing scaffold pieces ({names}) and stdin is not an interactive console.\n"
             "       Re-run with --scaffold (write all missing) or --no-scaffold (link only)."
         )
+
+
+def stdin_is_interactive() -> bool:
+    """True only when stdin is a real console someone can type into.
+
+    isatty() is not enough on Windows: NUL (the stdin of a non-interactive
+    tool run, or `< NUL`) is a character device, so Python reports it as a TTY
+    and every prompt then reads end-of-file. GetConsoleMode succeeds only on a
+    real console handle. A stream with no OS handle is never a console.
+    """
+    stdin = sys.stdin
+    try:
+        if stdin is None or not stdin.isatty():
+            return False
+        fd = stdin.fileno()
+    except (AttributeError, OSError, ValueError):
+        return False
+    if os.name != "nt":
+        return True
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+    try:
+        handle = msvcrt.get_osfhandle(fd)
+    except OSError:
+        return False
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.GetConsoleMode.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+    kernel32.GetConsoleMode.restype = wintypes.BOOL
+    return bool(kernel32.GetConsoleMode(handle, ctypes.byref(wintypes.DWORD())))
 
 
 def prompt_yn(prompt: str) -> bool:
@@ -277,7 +307,7 @@ def add_missing_pieces(
         if no_scaffold:
             print(f"  {INFO} skipping {rel} (--no-scaffold)")
             continue
-        # require_scaffold_decision guaranteed a TTY when neither flag is set.
+        # require_scaffold_decision guaranteed a real console when neither flag is set.
         if not (scaffold or prompt_yn(f"  Add {rel} to your source folder? [y/N]: ")):
             continue
         try:
@@ -345,13 +375,13 @@ def main() -> int:
 
     check_workspace_target(workspace_target)
     missing = detect_missing_pieces(source)
-    require_scaffold_decision(missing, args.scaffold, args.no_scaffold, sys.stdin.isatty())
+    require_scaffold_decision(missing, args.scaffold, args.no_scaffold, stdin_is_interactive())
     # Reuses dayz-new-mod's stale-junction auto-clean / refuse-on-mismatch logic.
     _nm.check_or_clean_p_drive_link(p_drive_link, workspace_target)
 
     link_source(source, workspace_target, p_drive_link)
     # Same rule as /dayz-new-mod: importing here makes this the active project.
-    _nm.sync_project_cache()
+    _nm.sync_project_cache(modname)
     return finish(source, workspace_target, modname, missing, args,
                   f"Remove the import (keeps your source intact): /dayz-clean-workspace --mod {modname}")
 
@@ -450,7 +480,7 @@ def import_from_git(src: GitSource, args: argparse.Namespace) -> int:
 
     missing = detect_missing_pieces(workspace_target)
     try:
-        require_scaffold_decision(missing, args.scaffold, args.no_scaffold, sys.stdin.isatty())
+        require_scaffold_decision(missing, args.scaffold, args.no_scaffold, stdin_is_interactive())
     except SystemExit:
         remove_clone(workspace_target)
         print(f"{INFO} Removed the clone so the retry starts clean.")
@@ -463,7 +493,7 @@ def import_from_git(src: GitSource, args: argparse.Namespace) -> int:
         sys.exit(f"{FAIL} Failed to create {p_drive_link} junction: {e}\n       The clone was removed.")
     print(f"{OK} {p_drive_link} -> {_display(workspace_target)} ({kind_p})")
 
-    _nm.sync_project_cache()
+    _nm.sync_project_cache(modname)
     return finish(workspace_target, workspace_target, modname, missing, args,
                   "Remove the clone: it holds .git, so /dayz-clean-workspace refuses it. Push anything\n"
                   "    worth keeping, then delete it by hand:\n"
@@ -499,6 +529,9 @@ def import_git_subfolder(src: GitSource, subfolder: str, args: argparse.Namespac
     """A tree link to a subfolder: the repo is cloned to .imports/<owner>__<repo>__<branch>/
     (outside workspace/), and the subfolder is linked and scaffold-checked as the mod,
     the same way a local folder import is. Nothing is written at the repo root."""
+    # A link such as tree/main/../.. would point outside the clone; refuse it before cloning.
+    if ".." in re.split(r"[\\/]", subfolder):
+        sys.exit(f"{FAIL} The link's folder {subfolder} contains '..'; link straight to a folder inside the repo.")
     print(f"{INFO} The link points at {subfolder} inside branch {src.branch}; that folder is imported as the mod.")
     modname = derive_modname(Path(subfolder), args.name)
     print(f"{INFO} {'Mod name (override)' if args.name else 'Mod name from the subfolder'}: {modname}")
@@ -523,6 +556,8 @@ def import_git_subfolder(src: GitSource, subfolder: str, args: argparse.Namespac
         sys.exit(msg)
 
     source = clone / subfolder
+    if not source.resolve().is_relative_to(clone.resolve()):
+        undo(f"{FAIL} The link's folder {subfolder} resolves outside the clone at {_display(clone)}.")
     if not source.is_dir():
         stale = "" if made_clone else (
             f"\n       The clone at {_display(clone)} came from an earlier import; if the folder was added"
@@ -530,12 +565,15 @@ def import_git_subfolder(src: GitSource, subfolder: str, args: argparse.Namespac
         undo(f"{FAIL} The link's folder {subfolder} is not in branch {src.branch} of {src.url}.{stale}")
     missing = detect_missing_pieces(source)
     try:
-        require_scaffold_decision(missing, args.scaffold, args.no_scaffold, sys.stdin.isatty())
+        require_scaffold_decision(missing, args.scaffold, args.no_scaffold, stdin_is_interactive())
     except SystemExit as e:
         undo(str(e.code))
 
-    link_source(source, workspace_target, p_drive_link)
-    _nm.sync_project_cache()
+    try:
+        link_source(source, workspace_target, p_drive_link)
+    except SystemExit as e:
+        undo(str(e.code))
+    _nm.sync_project_cache(modname)
     return finish(source, workspace_target, modname, missing, args,
                   f"Remove the import: /dayz-clean-workspace --mod {modname} removes the links;\n"
                   f"    the clone stays at {_display(clone)} (push anything worth keeping, then delete it by hand).")

@@ -23,12 +23,12 @@
       "question": "Answer only, do not edit any file. Is a DayZ .layout file XML? Show the first line of a layout whose root is a frame widget named Root.",
       "must_include": [
         "re:FrameWidgetClass\\s+Root\\s*\\{",
-        "re:\\bnot\\b|isn't|is not|no\\b"
+        "re:\\b(?:not|isn't|isn’t|no)\\b[^\\n]{0,60}?\\bXML\\b|\\bnon-XML\\b"
       ],
       "must_not_include": [
         "re:<FrameWidget"
       ],
-      "verified": "P:/gui/layouts/ (every vanilla layout opens with '<Type>WidgetClass <name> {'); .claude/skills/_shared/enscript/references/gui_layout.md 'File Format'"
+      "verified": "P:/gui/layouts/day_z_hud.layout:1 (FrameWidgetClass HudFrameWidget {); every vanilla layout under P:/gui/layouts/ opens with '<Type>WidgetClass <name> {'; .claude/skills/_shared/enscript/references/gui_layout.md 'File Format'"
     },
     {
       "id": "chat-open-check",

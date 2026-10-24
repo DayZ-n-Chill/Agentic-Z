@@ -53,6 +53,11 @@ def _find(root, name):
     return next((t for t in root.findall("type") if t.get("name") == name), None)
 
 
+def _backups(path):
+    """Every <name>.<stamp>.bak backup beside path."""
+    return sorted(path.parent.glob(f"{path.name}.*.bak"))
+
+
 def test_upsert_new_entry_gets_defaults_and_survives_write(types_file):
     tree, root = _roundtrip(types_file)
     changed, msg = te.upsert(root, "MyMod_Vest", _args(nominal=3, usage=["Police", "Military"]))
@@ -166,12 +171,12 @@ def test_header_comment_survives_a_bom(tmp_path):
     assert "<!-- MyMod types -->\n<types>" in path.read_text(encoding="utf-8")
 
 
-def test_file_without_outer_comments_writes_as_before(types_file):
+def test_unchanged_tree_writes_the_file_back_byte_for_byte(types_file):
+    # The original XML declaration is kept, not replaced by ElementTree's own.
+    before = types_file.read_bytes()
     tree, _ = _roundtrip(types_file)
     te.write_types(tree, types_file)
-    text = types_file.read_text(encoding="utf-8")
-    assert text.startswith("<?xml version='1.0' encoding='utf-8'?>\n<types>")
-    assert text.endswith("</types>")
+    assert types_file.read_bytes() == before
 
 
 def _run_main(monkeypatch, argv):
@@ -184,13 +189,13 @@ def test_main_no_change_skips_backup_and_write(types_file, monkeypatch):
     before = types_file.read_bytes()
     assert _run_main(monkeypatch, [str(types_file), "AKM", "--nominal", "10"]) == 0
     assert types_file.read_bytes() == before
-    assert not types_file.with_suffix(".xml.bak").exists()
+    assert not _backups(types_file)
 
 
 def test_main_change_writes_backup_of_original(types_file, monkeypatch):
     before = types_file.read_bytes()
     assert _run_main(monkeypatch, [str(types_file), "AKM", "--remove"]) == 0
-    assert types_file.with_suffix(".xml.bak").read_bytes() == before
+    assert [b.read_bytes() for b in _backups(types_file)] == [before]
     ET.parse(types_file)  # still valid XML
     assert "AKM" not in types_file.read_text(encoding="utf-8")
 
@@ -233,7 +238,7 @@ def test_main_rejects_min_above_nominal(types_file, monkeypatch, argv):
         _run_main(monkeypatch, [str(types_file), *argv])
     assert "greater than nominal" in str(exc.value.code)
     assert types_file.read_bytes() == before
-    assert not types_file.with_suffix(".xml.bak").exists()
+    assert not _backups(types_file)
 
 
 def test_main_accepts_min_equal_to_nominal(types_file, monkeypatch):
@@ -249,7 +254,7 @@ def test_main_refuses_file_without_types_root(tmp_path, monkeypatch):
         _run_main(monkeypatch, [str(events), "AKM", "--nominal", "3"])
     assert "root element <events>, not <types>" in str(exc.value.code)
     assert events.read_bytes() == before
-    assert not events.with_suffix(".xml.bak").exists()
+    assert not _backups(events)
 
 
 def _with_duplicate(types_file, name):
@@ -339,7 +344,7 @@ def test_main_merge_adds_replaces_and_backs_up_once(types_file, tmp_path, monkey
     assert "Checked 2 <type> entries" in out
     assert 'Added <type name="MyMod_Vest">' in out
     assert 'Replaced <type name="AKM">: nominal 10 -> 12' in out
-    assert types_file.with_suffix(".xml.bak").read_bytes() == before
+    assert [b.read_bytes() for b in _backups(types_file)] == [before]
     tree, root = _roundtrip(types_file)
     assert [t.get("name") for t in root.findall("type")] == ["AKM", "MyMod_Vest"]  # AKM replaced in place
     assert _find(root, "AKM").findtext("nominal") == "12"
@@ -350,12 +355,12 @@ def test_main_merge_same_chunk_twice_changes_nothing(types_file, tmp_path, monke
     chunk = _chunk_file(tmp_path, CHUNK)
     assert _run_main(monkeypatch, [str(types_file), "--merge", chunk]) == 0
     after_first = types_file.read_bytes()
-    types_file.with_suffix(".xml.bak").unlink()
+    [b.unlink() for b in _backups(types_file)]
     capsys.readouterr()
     assert _run_main(monkeypatch, [str(types_file), "--merge", chunk]) == 0
     assert "already matches" in capsys.readouterr().out
     assert types_file.read_bytes() == after_first
-    assert not types_file.with_suffix(".xml.bak").exists()
+    assert not _backups(types_file)
 
 
 def test_main_merge_refuses_whole_chunk_when_one_entry_is_bad(types_file, tmp_path, monkeypatch):
@@ -367,7 +372,7 @@ def test_main_merge_refuses_whole_chunk_when_one_entry_is_bad(types_file, tmp_pa
     assert "Broken: min (4) is greater than nominal (1)" in message
     assert "MyMod_Vest: listed 2 times in the chunk" in message
     assert types_file.read_bytes() == before
-    assert not types_file.with_suffix(".xml.bak").exists()
+    assert not _backups(types_file)
 
 
 def test_main_merge_reads_stdin_and_dry_run_writes_nothing(types_file, monkeypatch, capsys):
@@ -400,7 +405,7 @@ def test_main_dry_run_reports_upsert_or_remove_and_writes_nothing(types_file, mo
     assert "Dry run" in out
     assert any(word in out for word in ("Added", "Updated", "Removed"))
     assert types_file.read_bytes() == before
-    assert not types_file.with_suffix(".xml.bak").exists()
+    assert not _backups(types_file)
 
 
 def test_main_dry_run_still_refuses_min_above_nominal(types_file, monkeypatch):
@@ -505,3 +510,240 @@ def test_user_groups_not_checked_without_the_user_file(mission_types):
     el = te.ET.fromstring('<type name="X"><usage user="AnyGroup"/><usage name="Militar"/></type>')
     problems = te.undefined_limit_names(el, limits)
     assert problems == ['usage name "Militar" is not defined in cfglimitsdefinition.xml']
+
+
+# Three blocks copied verbatim from vanilla P:\DZ\worlds\chernarusplus\ce\db\types.xml
+# (declaration at line 1, AK74_WoodBttstck at line 112, AKM at 124, AKM_Gold at 137):
+# 4-space indent, LF line endings, and self-closing tags with no space before "/>".
+VANILLA = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<types>
+    <type name="AK74_WoodBttstck">
+        <nominal>5</nominal>
+        <lifetime>14400</lifetime>
+        <restock>0</restock>
+        <min>2</min>
+        <quantmin>-1</quantmin>
+        <quantmax>-1</quantmax>
+        <cost>100</cost>
+        <flags count_in_cargo="0" count_in_hoarder="0" count_in_map="1" count_in_player="0" crafted="0" deloot="0"/>
+        <category name="weapons"/>
+        <usage name="Military"/>
+    </type>
+    <type name="AKM">
+        <nominal>3</nominal>
+        <lifetime>7200</lifetime>
+        <restock>3600</restock>
+        <min>2</min>
+        <quantmin>30</quantmin>
+        <quantmax>80</quantmax>
+        <cost>100</cost>
+        <flags count_in_cargo="0" count_in_hoarder="0" count_in_map="1" count_in_player="0" crafted="0" deloot="0"/>
+        <category name="weapons"/>
+        <usage name="Military"/>
+        <value name="Tier4"/>
+    </type>
+    <type name="AKM_Gold">
+        <nominal>0</nominal>
+        <lifetime>14400</lifetime>
+        <restock>2700</restock>
+        <min>0</min>
+        <quantmin>-1</quantmin>
+        <quantmax>-1</quantmax>
+        <cost>100</cost>
+        <flags count_in_cargo="0" count_in_hoarder="0" count_in_map="1" count_in_player="0" crafted="0" deloot="0"/>
+        <category name="weapons"/>
+        <usage name="Military"/>
+        <value name="Unique"/>
+    </type>
+</types>
+"""
+
+
+@pytest.fixture
+def vanilla_file(tmp_path):
+    path = tmp_path / "types.xml"
+    path.write_bytes(VANILLA.encode("utf-8"))
+    return path
+
+
+def _block_lines(text: str, name: str):
+    """The lines of the <type name=name> block in text."""
+    lines = text.splitlines()
+    start = lines.index(f'    <type name="{name}">')
+    return lines[start:lines.index("    </type>", start) + 1]
+
+
+def _changed_lines(before: str, after: str):
+    """(removed, added) lines of a line diff."""
+    import difflib
+    diff = list(difflib.ndiff(before.splitlines(), after.splitlines()))
+    return ([l[2:] for l in diff if l.startswith("- ")], [l[2:] for l in diff if l.startswith("+ ")])
+
+
+def test_one_field_edit_of_a_vanilla_file_changes_only_that_line(vanilla_file, monkeypatch):
+    assert _run_main(monkeypatch, [str(vanilla_file), "AKM", "--nominal", "12"]) == 0
+    after = vanilla_file.read_text(encoding="utf-8")
+    assert _changed_lines(VANILLA, after) == (["        <nominal>3</nominal>"], ["        <nominal>12</nominal>"])
+    assert after == VANILLA.replace("<nominal>3</nominal>", "<nominal>12</nominal>")
+
+
+def test_list_edit_of_a_vanilla_file_changes_only_that_block(vanilla_file, monkeypatch):
+    assert _run_main(monkeypatch, [str(vanilla_file), "AKM", "--usage", "Police"]) == 0
+    removed, added = _changed_lines(VANILLA, vanilla_file.read_text(encoding="utf-8"))
+    assert removed == ['        <usage name="Military"/>'] and added == ['        <usage name="Police"/>']
+    # The other blocks still hold their own <usage name="Military"/>.
+    assert vanilla_file.read_text(encoding="utf-8").count('<usage name="Military"/>') == 2
+
+
+def test_remove_from_a_vanilla_file_drops_only_that_blocks_lines(vanilla_file, monkeypatch):
+    assert _run_main(monkeypatch, [str(vanilla_file), "AKM", "--remove"]) == 0
+    akm = "\n".join(_block_lines(VANILLA, "AKM")) + "\n"
+    assert vanilla_file.read_text(encoding="utf-8") == VANILLA.replace(akm, "", 1)
+
+
+def test_new_entry_in_a_vanilla_file_adds_only_its_lines_in_vanilla_style(vanilla_file, monkeypatch):
+    assert _run_main(monkeypatch, [str(vanilla_file), "MyMod_Vest", "--category", "clothes"]) == 0
+    after = vanilla_file.read_text(encoding="utf-8")
+    removed, added = _changed_lines(VANILLA, after)
+    assert removed == []
+    assert added[0] == '    <type name="MyMod_Vest">' and added[-1] == "    </type>"
+    assert '        <category name="clothes"/>' in added
+    assert not any(" />" in line for line in added)
+    assert after.endswith("    </type>\n</types>\n")
+    assert _find(ET.parse(vanilla_file).getroot(), "MyMod_Vest") is not None
+
+
+def test_merge_into_a_vanilla_file_changes_only_the_replaced_and_added_blocks(vanilla_file, tmp_path, monkeypatch):
+    chunk = _entry("AKM", nominal=12, min_=6) + "\n" + _entry("MyMod_Vest")
+    assert _run_main(monkeypatch, [str(vanilla_file), "--merge", _chunk_file(tmp_path, chunk)]) == 0
+    after = vanilla_file.read_text(encoding="utf-8")
+    # The declaration and the untouched blocks are line for line the same, and
+    # every removed line comes from the replaced AKM block.
+    assert after.startswith(VANILLA.split('    <type name="AKM">')[0])
+    assert _block_lines(after, "AKM_Gold") == _block_lines(VANILLA, "AKM_Gold")
+    removed, _ = _changed_lines(VANILLA, after)
+    assert removed and set(removed) <= set(_block_lines(VANILLA, "AKM"))
+    root = ET.parse(vanilla_file).getroot()
+    assert [t.get("name") for t in root.findall("type")] == ["AK74_WoodBttstck", "AKM", "AKM_Gold", "MyMod_Vest"]
+    assert _find(root, "AKM").findtext("nominal") == "12"
+    assert " />" not in after
+
+
+def test_crlf_file_keeps_crlf_and_its_other_lines(tmp_path, monkeypatch):
+    path = tmp_path / "types.xml"
+    original = VANILLA.replace("\n", "\r\n").encode("utf-8")
+    path.write_bytes(original)
+    assert _run_main(monkeypatch, [str(path), "AKM", "--nominal", "12"]) == 0
+    assert path.read_bytes() == original.replace(b"<nominal>3</nominal>", b"<nominal>12</nominal>")
+
+
+def test_commented_out_block_is_left_alone(tmp_path, monkeypatch):
+    path = tmp_path / "types.xml"
+    text = VANILLA.replace("<types>\n", '<types>\n    <!-- <type name="Old"><nominal>1</nominal></type> -->\n')
+    path.write_text(text, encoding="utf-8")
+    assert _run_main(monkeypatch, [str(path), "AKM", "--nominal", "12"]) == 0
+    assert path.read_text(encoding="utf-8") == text.replace("<nominal>3</nominal>", "<nominal>12</nominal>")
+
+
+def test_empty_self_closing_root_is_written_whole_with_its_declaration(tmp_path, monkeypatch):
+    path = tmp_path / "types.xml"
+    path.write_text('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<types/>\n', encoding="utf-8")
+    assert _run_main(monkeypatch, [str(path), "MyMod_Vest"]) == 0
+    text = path.read_text(encoding="utf-8")
+    assert text.startswith('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<types>\n    <type name="MyMod_Vest">')
+    assert " />" not in text
+    assert _find(ET.parse(path).getroot(), "MyMod_Vest") is not None
+
+
+def test_empty_root_with_close_tag_gets_the_new_block_inside(tmp_path, monkeypatch):
+    path = tmp_path / "types.xml"
+    path.write_text('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<types>\n</types>\n', encoding="utf-8")
+    assert _run_main(monkeypatch, [str(path), "MyMod_Vest"]) == 0
+    text = path.read_text(encoding="utf-8")
+    assert text.startswith('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<types>\n    <type name="MyMod_Vest">\n        <nominal>1</nominal>')
+    assert text.endswith("    </type>\n</types>\n")
+
+
+def test_each_changing_run_keeps_its_own_backup(vanilla_file, monkeypatch):
+    assert _run_main(monkeypatch, [str(vanilla_file), "AKM", "--nominal", "12"]) == 0
+    first = vanilla_file.read_bytes()
+    assert _run_main(monkeypatch, [str(vanilla_file), "AKM", "--nominal", "13"]) == 0
+    backups = _backups(vanilla_file)
+    assert sorted(b.read_bytes() for b in backups) == sorted([VANILLA.encode("utf-8"), first])
+    assert all(b.name.startswith("types.xml.") and b.suffix == ".bak" for b in backups)
+
+
+# --- --quantmin / --quantmax and the "set, not add" list flags --------------
+# Vanilla AKM (P:\DZ\worlds\chernarusplus\ce\db\types.xml:129-130) has
+# quantmin 30, quantmax 80; every vanilla value is -1 or 0 to 100.
+
+def test_quant_flags_edit_a_vanilla_entry_in_one_line(vanilla_file, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(vanilla_file), "AKM", "--quantmax", "90"]) == 0
+    assert "quantmax 80 -> 90" in capsys.readouterr().out
+    after = vanilla_file.read_text(encoding="utf-8")
+    assert _changed_lines(VANILLA, after) == (["        <quantmax>80</quantmax>"], ["        <quantmax>90</quantmax>"])
+
+
+def test_quant_flags_add_missing_tags_in_vanilla_order(types_file, monkeypatch):
+    # SAMPLE's AKM has no quant tags; they go after <min>, before <cost>.
+    assert _run_main(monkeypatch, [str(types_file), "AKM", "--quantmin", "30", "--quantmax", "80"]) == 0
+    akm = _find(_roundtrip(types_file)[1], "AKM")
+    assert [c.tag for c in akm][:7] == ["nominal", "lifetime", "restock", "min", "quantmin", "quantmax", "cost"]
+    assert akm.findtext("quantmin") == "30" and akm.findtext("quantmax") == "80"
+
+
+def test_new_entry_takes_quant_flags_and_passes_its_own_merge_check(types_file, monkeypatch):
+    assert _run_main(monkeypatch, [str(types_file), "Mag_New", "--quantmin", "20", "--quantmax", "100"]) == 0
+    mag = _find(_roundtrip(types_file)[1], "Mag_New")
+    assert mag.findtext("quantmin") == "20" and mag.findtext("quantmax") == "100"
+    assert te.validate_type(mag)[0] == []
+
+
+@pytest.mark.parametrize("argv", [
+    ["--quantmin", "101"], ["--quantmax", "150"], ["--quantmin", "-2"], ["--quantmax", "x"],
+])
+def test_main_rejects_quant_values_outside_minus_one_or_0_to_100(vanilla_file, monkeypatch, argv):
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(vanilla_file), "AKM", *argv])
+    assert exc.value.code == 2  # argparse usage error, same range as the merge check
+    assert vanilla_file.read_text(encoding="utf-8") == VANILLA
+
+
+@pytest.mark.parametrize("argv", [
+    ["AKM", "--quantmin", "90"],                          # existing quantmax is 80
+    ["AKM", "--quantmax", "20"],                          # existing quantmin is 30
+    ["NewMag", "--quantmin", "60", "--quantmax", "50"],
+])
+def test_main_rejects_quantmin_above_quantmax(vanilla_file, monkeypatch, argv):
+    with pytest.raises(SystemExit) as exc:
+        _run_main(monkeypatch, [str(vanilla_file), *argv])
+    assert "greater than quantmax" in str(exc.value.code)
+    assert vanilla_file.read_text(encoding="utf-8") == VANILLA
+    assert not _backups(vanilla_file)
+
+
+def test_main_accepts_minus_one_beside_a_set_quant(vanilla_file, monkeypatch):
+    # -1 means "not a quantity item" and is never compared.
+    assert _run_main(monkeypatch, [str(vanilla_file), "AKM", "--quantmin", "-1"]) == 0
+    assert _find(_roundtrip(vanilla_file)[1], "AKM").findtext("quantmin") == "-1"
+
+
+def test_usage_change_line_names_the_removed_usages(vanilla_file, monkeypatch, capsys):
+    assert _run_main(monkeypatch, [str(vanilla_file), "AKM", "--usage", "Police"]) == 0
+    assert "usage [Military] -> [Police] (removed Military)" in capsys.readouterr().out
+
+
+def test_list_change_line_has_no_removed_note_when_nothing_is_dropped(vanilla_file, monkeypatch, capsys):
+    argv = [str(vanilla_file), "AKM", "--usage", "Military", "--usage", "Police", "--value", "Tier3", "--value", "Tier4"]
+    assert _run_main(monkeypatch, argv) == 0
+    out = capsys.readouterr().out
+    assert "usage [Military] -> [Military, Police]," in out
+    assert "value [Tier4] -> [Tier3, Tier4]" in out
+    assert "removed" not in out
+
+
+def test_tag_change_line_names_the_removed_tags(types_file):
+    _, root = _roundtrip(types_file)
+    te.upsert(root, "AKM", _args(tag=["floor", "shelves"]))
+    changed, msg = te.upsert(root, "AKM", _args(tag=["floor"]))
+    assert changed and msg.endswith("tag [floor, shelves] -> [floor] (removed shelves)")

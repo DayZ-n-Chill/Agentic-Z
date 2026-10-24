@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import sys
 import time
@@ -192,4 +193,19 @@ def test_invalid_settings_refuses_without_changes(inst):
 
 def test_command_points_at_this_script(inst):
     cmd = inst.our_entry()["command"]
-    assert cmd.startswith('python "') and cmd.endswith('dayz-statusline/statusline.py"')
+    assert cmd.startswith(f'"{Path(sys.executable).as_posix()}" "') and cmd.endswith('dayz-statusline/statusline.py"')
+
+
+def test_installed_command_runs_without_python_on_path(inst, tmp_path):
+    # A bare `python "..."` fails here, as it does where `python` is only the
+    # Microsoft Store alias: the status line would stay blank with no error.
+    env = {k: v for k, v in os.environ.items() if k.upper() not in ("PATH", "PATHEXT")}
+    empty = tmp_path / "empty-path"
+    empty.mkdir()
+    env["PATH"] = str(empty)
+    r = subprocess.run(
+        inst.our_entry()["command"], shell=True, input="{}", capture_output=True, text=True, env=env, timeout=30
+    )
+    assert r.returncode == 0, r.stderr
+    lines = r.stdout.strip().splitlines()
+    assert len(lines) == 1 and lines[0] and lines[0] != "DayZ status unavailable"

@@ -355,3 +355,100 @@ def test_archive_without_known_top_folder_is_refused(dl, monkeypatch):
         dl.main([])
     assert "'dayz-rag-index/'" in str(exc.value)
     assert not dl.INDEX_ROOT.exists()
+
+
+# --- GitHub API rate limit ------------------------------------------------
+
+def _http_error(code, headers):
+    import email.message
+
+    msg = email.message.Message()
+    for k, v in headers.items():
+        msg[k] = v
+    return urllib.error.HTTPError("https://api.github.com/x", code, "Forbidden", msg, None)
+
+
+@pytest.mark.parametrize("code", [403, 429])
+def test_rate_limit_reported_as_rate_limit_with_reset(dl, monkeypatch, code):
+    reset = 1893456000  # 2030-01-01 UTC
+
+    def limited(*a, **k):
+        raise _http_error(code, {"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": str(reset)})
+
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.setattr(dl, "fetch_json", limited)
+    with pytest.raises(SystemExit) as exc:
+        dl.resolve_release(None)
+    msg = str(exc.value)
+    assert "rate limit" in msg
+    assert f"HTTP {code}" in msg
+    assert dl.time.strftime("%Y-%m-%d %H:%M:%S", dl.time.localtime(reset)) in msg
+    assert "GITHUB_TOKEN" in msg
+    assert "internet connection" not in msg
+
+
+def test_plain_403_still_reported_as_network_error(dl, monkeypatch):
+    def forbidden(*a, **k):
+        raise _http_error(403, {"X-RateLimit-Remaining": "42"})
+
+    monkeypatch.setattr(dl, "fetch_json", forbidden)
+    with pytest.raises(SystemExit) as exc:
+        dl.resolve_release(None)
+    assert "Could not reach" in str(exc.value)
+    assert "HTTP 403" in str(exc.value)
+    assert "rate limit" not in str(exc.value)
+
+
+class _JsonResponse:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return b'{"tag_name": "v1"}'
+
+
+def test_fetch_json_sends_github_token_when_set(dl, monkeypatch):
+    seen = {}
+
+    def capture(req, timeout=None):
+        seen["auth"] = req.get_header("Authorization")
+        return _JsonResponse()
+
+    monkeypatch.setattr(dl.urllib.request, "urlopen", capture)
+    monkeypatch.setenv("GITHUB_TOKEN", "abc123")
+    assert dl.fetch_json("https://api.github.com/x") == {"tag_name": "v1"}
+    assert seen["auth"] == "Bearer abc123"
+
+    monkeypatch.delenv("GITHUB_TOKEN")
+    dl.fetch_json("https://api.github.com/x")
+    assert seen["auth"] is None
+
+
+# --- index locked by the running MCP server -------------------------------
+
+def test_install_locked_index_exits_with_clear_message(dl, tmp_path, monkeypatch):
+    dl.INDEX_ROOT.mkdir(parents=True)
+    (dl.INDEX_ROOT / "old.txt").write_text("old", encoding="utf-8")
+    extracted = tmp_path / "extracted"
+    extracted.mkdir()
+    (extracted / "manifest.json").write_text("{}", encoding="utf-8")
+
+    real_rename = Path.rename
+
+    def locked_rename(self, target):
+        if self == dl.INDEX_ROOT:
+            raise PermissionError(13, "Access is denied", str(self))
+        return real_rename(self, target)
+
+    monkeypatch.setattr(Path, "rename", locked_rename)
+    with pytest.raises(SystemExit) as exc:
+        dl.install(extracted, dl.INDEX_ROOT, "v1.0.0")
+    msg = str(exc.value)
+    assert "Close Claude Code" in msg
+    assert "disconnect dayz-rag" in msg
+    assert "rerun" in msg
+    assert (dl.INDEX_ROOT / "old.txt").exists()
+    assert not dl.INDEX_ROOT.with_name(dl.INDEX_ROOT.name + ".new").exists()

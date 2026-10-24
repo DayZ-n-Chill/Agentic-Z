@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 import io
+import os
 from pathlib import Path
 
 import pytest
@@ -243,7 +245,8 @@ def git_project(monkeypatch, tmp_path, workspace):
     monkeypatch.setattr(imp, "P_DRIVE", p_drive)
     monkeypatch.setattr(imp, "PROJECT_DIR", workspace.parent)
     monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: None)
-    monkeypatch.setattr(imp._nm, "sync_project_cache", lambda: None)
+    synced = []
+    monkeypatch.setattr(imp._nm, "sync_project_cache", synced.append)
     monkeypatch.setattr(imp.sys, "stdin", _NoTTY())
     clones = []
 
@@ -254,7 +257,7 @@ def git_project(monkeypatch, tmp_path, workspace):
             (target / name).write_text("x", encoding="utf-8")
 
     monkeypatch.setattr(imp, "clone_repo", fake_clone)
-    return {"workspace": workspace, "p": p_drive, "clones": clones}
+    return {"workspace": workspace, "p": p_drive, "clones": clones, "synced": synced}
 
 
 def _main(monkeypatch, *argv):
@@ -270,6 +273,7 @@ def test_github_link_clones_into_workspace_and_links_p(git_project, monkeypatch,
     assert git_project["clones"] == [(imp.GitSource("https://github.com/Owner/MyMod.git", "MyMod", "dev"), target)]
     assert (target / "config.cpp").is_file()
     assert (git_project["p"] / "MyMod").exists()
+    assert git_project["synced"] == ["MyMod"]  # the clone becomes the active /dayz-init mod
     assert "workbench/dayz.gproj missing" in out
     assert "skipping workbench/dayz.gproj (--no-scaffold)" in out
     # clean-workspace refuses folders that hold .git, so the hint must not send the user there.
@@ -344,6 +348,66 @@ def test_subfolder_link_with_a_missing_folder_removes_the_clone(subfolder_projec
     assert "Other is not in branch main" in str(exc.value.code)
     assert not (subfolder_project["imports"] / "Owner__Mods__main").exists()
     assert not (subfolder_project["workspace"] / "Other").exists()
+
+
+@pytest.mark.parametrize("which", ["workspace", "p"])
+def test_subfolder_link_failure_removes_the_new_clone(subfolder_project, monkeypatch, which):
+    real = imp._nm.make_dir_link
+
+    def failing(target, link):
+        if which == "workspace" or link.parent == subfolder_project["p"]:
+            raise OSError("link refused")
+        return real(target, link)
+
+    monkeypatch.setattr(imp._nm, "make_dir_link", failing)
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/MyVest", "--no-scaffold")
+    assert "link refused" in str(exc.value.code)
+    assert "Removed the clone" in str(exc.value.code)
+    assert not (subfolder_project["imports"] / "Owner__Mods__main").exists()
+    assert not (subfolder_project["workspace"] / "MyVest").exists()
+
+
+def test_subfolder_link_failure_keeps_a_reused_clone(subfolder_project, monkeypatch):
+    clone = subfolder_project["imports"] / "Owner__Mods__main"
+    (clone / "MyVest").mkdir(parents=True)
+
+    def failing(target, link):
+        raise OSError("link refused")
+
+    monkeypatch.setattr(imp._nm, "make_dir_link", failing)
+    with pytest.raises(SystemExit):
+        _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/MyVest", "--no-scaffold")
+    assert (clone / "MyVest").is_dir()
+    assert subfolder_project["clones"] == []
+
+
+@pytest.mark.parametrize("ref", ["main/../..", "main/MyVest/../../Other", "main/..\Other"])
+def test_subfolder_with_dotdot_is_refused_before_cloning(subfolder_project, monkeypatch, ref):
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", f"https://github.com/Owner/Mods/tree/{ref}", "--name", "Escape", "--no-scaffold")
+    assert "contains '..'" in str(exc.value.code)
+    assert subfolder_project["clones"] == []
+    assert not (subfolder_project["workspace"] / "Escape").exists()
+
+
+def test_subfolder_resolving_outside_the_clone_is_refused(subfolder_project, monkeypatch, tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "config.cpp").write_text("x", encoding="utf-8")
+
+    def fake_clone(src, target):
+        subfolder_project["clones"].append((src, target))
+        target.mkdir(parents=True)
+        imp._nm.make_dir_link(outside, target / "MyVest")
+
+    monkeypatch.setattr(imp, "clone_repo", fake_clone)
+    with pytest.raises(SystemExit) as exc:
+        _main(monkeypatch, "--source", "https://github.com/Owner/Mods/tree/main/MyVest", "--no-scaffold")
+    assert "resolves outside the clone" in str(exc.value.code)
+    assert not (subfolder_project["workspace"] / "MyVest").exists()
+    assert not (subfolder_project["imports"] / "Owner__Mods__main").exists()
+    assert (outside / "config.cpp").is_file()
 
 
 def test_clone_repo_runs_git_and_failed_clone_leaves_nothing(tmp_path):
@@ -475,7 +539,7 @@ def test_project_found_from_subfolder_without_claude_project_dir(tmp_path, monke
 
     monkeypatch.setattr(fresh, "P_DRIVE", p_drive)
     monkeypatch.setattr(fresh.h, "gate_on_preflight", lambda: None)
-    monkeypatch.setattr(fresh._nm, "sync_project_cache", lambda: None)
+    monkeypatch.setattr(fresh._nm, "sync_project_cache", lambda modname: None)
     monkeypatch.setattr(fresh.sys, "stdin", _NoTTY())
     monkeypatch.setattr("sys.argv", ["import_mod.py", "--source", str(source), "--no-scaffold"])
     assert fresh.main() == 0
@@ -518,3 +582,77 @@ def test_reused_clone_missing_the_folder_says_to_update_it(subfolder_project, mo
     assert "Other is not in branch main" in msg and "came from an earlier import" in msg and "pull" in msg
     assert clone.is_dir()  # an earlier import's clone is never deleted
     assert subfolder_project["clones"] == []
+
+
+def test_folder_import_makes_the_imported_mod_the_hub_active_mod(tmp_path, monkeypatch, workspace):
+    """/dayz-import-mod B with A active: the /dayz-init hub must then show B, not A."""
+    project = workspace.parent.resolve()
+    source = tmp_path / "src" / "ModB"
+    (source / "workbench").mkdir(parents=True)
+    for name in ("config.cpp", "$PBOPREFIX$", "workbench/dayz.gproj"):
+        (source / name).write_text("ModB", encoding="utf-8")
+    p_drive = tmp_path / "P"
+    p_drive.mkdir()
+    monkeypatch.setattr(imp, "P_DRIVE", p_drive)
+    monkeypatch.setattr(imp, "PROJECT_DIR", project)
+    monkeypatch.setattr(imp._nm, "PROJECT_DIR", project)
+    monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(imp.sys, "stdin", _NoTTY())
+    imp._nm._state.write_state(project, {"last_intent": {"mod_name": "ModA"}})
+
+    assert _main(monkeypatch, "--source", str(source), "--no-scaffold") == 0
+
+    monkeypatch.syspath_prepend(str(HERE.parent / "dayz-init"))
+    spec = importlib.util.spec_from_file_location(
+        "dayz_init_hub_status_for_import", HERE.parent / "dayz-init" / "hub_status.py")
+    hub = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, "dayz_init_hub_status_for_import", hub)  # dataclasses look the module up
+    spec.loader.exec_module(hub)
+    monkeypatch.setattr(hub, "_diag_running", lambda: False)
+    status = hub.gather_status(project, mods_root=tmp_path / "Mods")
+    assert status.mod == "ModB"
+
+
+# --- real console vs a null stdin ----------------------------------------------
+
+class _TTYAtEOF(io.StringIO):
+    """Claims to be a TTY but every read is end-of-file, like NUL on Windows."""
+    def isatty(self):
+        return True
+
+
+def test_null_device_stdin_is_not_interactive(monkeypatch):
+    # On Windows NUL is a character device, so isatty() is True; it is still not a console.
+    with open(os.devnull, encoding="utf-8") as null:
+        monkeypatch.setattr(imp.sys, "stdin", null)
+        assert imp.stdin_is_interactive() is False
+
+
+def test_tty_claiming_stream_without_a_handle_is_not_interactive(monkeypatch):
+    monkeypatch.setattr(imp.sys, "stdin", _TTYAtEOF())
+    assert imp.stdin_is_interactive() is False
+
+
+@pytest.mark.parametrize("make_stdin", [_TTYAtEOF, lambda: open(os.devnull, encoding="utf-8")])
+def test_eof_stdin_without_decision_refuses_before_linking(make_stdin, tmp_path, monkeypatch, workspace):
+    """A null stdin used to pass the TTY check, link both folders, and read EOF as
+    'no' at every prompt, finishing as a silent --no-scaffold."""
+    source = tmp_path / "src" / "MyMod"
+    source.mkdir(parents=True)
+    (source / "config.cpp").write_text("x", encoding="utf-8")
+    p_drive = tmp_path / "P"
+    p_drive.mkdir()
+    monkeypatch.setattr(imp, "P_DRIVE", p_drive)
+    monkeypatch.setattr(imp, "PROJECT_DIR", workspace.parent)
+    monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: None)
+    monkeypatch.setattr(imp._nm, "sync_project_cache", lambda _name: None)
+    stdin = make_stdin()
+    monkeypatch.setattr(imp.sys, "stdin", stdin)
+    try:
+        with pytest.raises(SystemExit) as exc:
+            _main(monkeypatch, "--source", str(source))
+    finally:
+        stdin.close()
+    assert "--scaffold" in str(exc.value.code) and "--no-scaffold" in str(exc.value.code)
+    assert not (workspace / "MyMod").exists()
+    assert not (p_drive / "MyMod").exists()

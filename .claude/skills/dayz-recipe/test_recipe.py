@@ -93,9 +93,16 @@ class CfgVehicles
     class Inventory_Base;
     class AK_WoodBttstck: Inventory_Base
     {
+        scope = 2;
         inventorySlot[] = {"weaponButtstockAK"};
     };
     class M4_OEBttstck: Inventory_Base
+    {
+        scope = 2;
+        inventorySlot = "weaponButtstockM4";
+    };
+    class M4_OEBttstck_Black: M4_OEBttstck {};
+    class M4_Bttstck_Base: Inventory_Base
     {
         inventorySlot = "weaponButtstockM4";
     };
@@ -314,6 +321,19 @@ def test_failed_check_writes_nothing(vanilla, project, capsys, args, message):
     out = capsys.readouterr().out
     assert out.splitlines()[0] == "FAIL"
     assert message in out and "Nothing was written." in out
+    assert not (project / "output").exists()
+
+
+def test_parent_alone_names_fitting_attachments_and_magazines(vanilla, project, capsys):
+    # Swapping only --parent keeps the AK attachment and magazine; both errors must name vanilla
+    # classes that fit M4A1, not just slot names.
+    assert run(vanilla, project, "weapon", "MyGun", "--parent", "M4A1") == 1
+    out = capsys.readouterr().out
+    slot_line = next(line for line in out.splitlines() if "fits no attachment slot of M4A1" in line)
+    # Scope 2 items for the slot, inherited scope included; the scope 0 base class is left out.
+    assert "weaponButtstockM4: M4_OEBttstck, M4_OEBttstck_Black" in slot_line
+    assert "M4_Bttstck_Base" not in slot_line
+    assert "Pass --magazine with one of: Mag_STANAG_30Rnd" in out
     assert not (project / "output").exists()
 
 

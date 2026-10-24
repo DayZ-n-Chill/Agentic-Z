@@ -17,10 +17,9 @@ workbench\*.*
 *.rpt
 *.bak
 
-; Source, doc and temp folders, archives, image sources
-*\Source\*
-*\Temp\*
-*\Doc\*
+; Source, doc and temp folders at the mod root only, archives, image sources.
+; These stay anchored to the root: AddonBuilder matches case-insensitively, so
+; an unanchored *\Temp\* would also drop scripts\4_World\Temp\ or data\doc\.
 Source\*.*
 Temp\*.*
 Doc\*.*

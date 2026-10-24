@@ -25,21 +25,20 @@
       "question": "Answer only, do not edit any file. My device swaps its running loop when fuel is low. I call PlaySoundSetLoop(m_EngineLoop, \"MyMod_LowFuel_SoundSet\", 0.3, 0.3) while m_EngineLoop still holds the normal loop. The normal loop keeps playing and the low fuel loop never starts. Why, and what is the fix?",
       "must_include": [
         "StopSoundSet",
-        "re:already|still holds|not null|non-null|existing|returns true"
+        "re:\\b(already|still)\\s+(set|holds|assigned|playing|running|non-null|not null)\\b|\\b(not|non)[- ]null\\b"
       ],
-      "verified": "P:/scripts/3_game/entities/object.c:1251-1255 (PlaySoundSet returns true without playing when sound is set and loop is true); P:/scripts/4_world/entities/itembase/powergenerator.c:257-258 (vanilla calls StopSoundSet then StartLoopSound)"
+      "verified": "P:/scripts/3_game/entities/object.c:1273-1275 (PlaySoundSetLoop calls PlaySoundSet with loop=true) and :1251-1255 (PlaySoundSet returns true without playing when sound is set and loop is true); P:/scripts/4_world/entities/itembase/powergenerator.c:257-258 (vanilla calls StopSoundSet then StartLoopSound)"
     },
     {
       "id": "shader-range-unit",
-      "question": "Answer only, do not edit any file. In a CfgSoundShaders class, which key sets how far away the sound can be heard, and in what unit is it?",
+      "question": "Answer only, do not edit any file. In a CfgSoundShaders class, which key sets how far away the sound can be heard?",
       "must_include": [
-        "re:\\brange\\b",
-        "re:met(er|re)s?|\\bm\\b"
+        "re:\\brange\\b"
       ],
       "must_not_include": [
         "re:volumeFactor\\s+sets how far"
       ],
-      "verified": "P:/DZ/sounds/hpp/config.cpp:5775 (range=100 on powerGeneratorLoop_Soundshader) and :17078-17090 (reloadWeapon_SoundShader range=30 with an inline rangeCurve[] from 0 to 30)"
+      "verified": "P:/DZ/sounds/hpp/config.cpp:5775 (range=100 on powerGeneratorLoop_Soundshader) and :17078-17090 (reloadWeapon_SoundShader range=30 with an inline rangeCurve[] from 0 to 30); the unit of range (meters) is unverified: no P: file states it for CfgSoundShaders (object.c:1234 says meters only for the script PlaySound range argument), so it is not asked or scored"
     },
     {
       "id": "weapon-particle-registration",

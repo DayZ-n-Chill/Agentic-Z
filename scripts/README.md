@@ -1,6 +1,6 @@
 # No-token commands
 
-Every `.bat` here runs an Agentic-Z script directly (a skill script, or the repo tools in this folder). Run it from a terminal (a double-clicked window closes before you can read the result): no AI is involved, so it costs no tokens. Each forwards its arguments to the script; add `--help` for the full options.
+Every `.bat` here runs an Agentic-Z script directly (a skill script, or the repo tools in this folder). Run it from a terminal (a double-clicked window closes before you can read the result): no AI is involved, so it costs no tokens. The one exception is `evals.bat`, which runs `claude -p` once per question (except with `--dry-run`), so a real run spends tokens. Each forwards its arguments to the script; add `--help` for the full options. Every wrapper runs `python` when it works and otherwise falls back to the `py` launcher, so either one on PATH is enough.
 
 Use the slash command instead when you want Claude to run the step as part of a bigger task and read the result for you.
 
@@ -62,6 +62,6 @@ Use the slash command instead when you want Claude to run the step as part of a 
 |---|---|
 | `docs-sync.bat` | Keep the wiki matching the source files |
 | `clean-repo.bat` | Clear generated files before a push |
-| `evals.bat` | Ask agents their answer tests (`--baseline` compares the scores with the baseline, `--dry-run` asks nothing) |
+| `evals.bat` | Ask agents their answer tests (`--baseline` compares the scores with the baseline, `--dry-run` asks nothing). Costs tokens: one `claude -p` call per question |
 
 Prefer buttons? The `agentic-z-panel` plugin puts the common ones beside the chat: `/plugin install agentic-z-panel@dayz-n-chill`, then `/dayz-panel`.

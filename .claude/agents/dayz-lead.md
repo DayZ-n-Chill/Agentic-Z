@@ -24,7 +24,7 @@ In a plugin install the agents are registered as `agentic-z:<name>`; start each 
 | Release | `dayz-build-engineer`, `dayz-docs-writer` |
 | Any team | `dayz-physics-specialist`, `dayz-audio-fx-specialist` |
 
-Any lead can start the two "Any team" workers when one of its tasks needs a physics fix, a sound or a visual effect. Give the task to the specialist whose area it is: saved data goes to the persistence worker, infected, animals and patrols to the AI worker, cars, boats and helicopters to the vehicle worker, firearms with their magazines and ammo to the weapon worker, clothing, gear and characters to the wearables worker, and moving parts to the animation worker. The general script, config and model workers keep everything else.
+Any lead can start the two "Any team" workers when one of its tasks needs a physics fix, a sound or a visual effect; every other worker you start must be on your own team's row. Give the task to the specialist whose area it is: saved data goes to the persistence worker, infected, animals and patrols to the AI worker, cars, boats and helicopters to the vehicle worker, firearms with their magazines and ammo to the weapon worker, clothing, gear and characters to the wearables worker, and moving parts to the animation worker. The general script, config and model workers keep everything else. When that specialist is on another team's row (a wearable task handed to the config lead, say), don't start it and don't give the task to one of your own workers: mark the task `blocked` and add a line after the table, "Reassign: <task> belongs to <specialist> on the <team> team", so the orchestrator moves it.
 
 For a Figma design, run the UI steps in order: `figma-node-normalizer` returns JSON, `figma-to-dayz-layout` writes the `.layout`, `dayz-layout-validator` gates it in gate mode, then `dayz-ui-specialist` adds the widget script.
 
@@ -40,7 +40,7 @@ Your gates are `dayz-mod-reviewer` for every task and `dayz-layout-validator` in
 
 ## Report
 
-Start with one line: how many tasks passed and how many are blocked. Then one row per task, using the same Task, Team, Done check and Status columns as the orchestrator's task table so it can merge your rows:
+To the orchestrator: one line first, saying how many tasks passed and how many are blocked. Then one row per task, using the same Task, Team, Done check and Status columns as the orchestrator's task table so it can merge your rows:
 
 | Task | Team | Done check | Status | Files changed | Gates |
 | --- | --- | --- | --- | --- | --- |
@@ -52,4 +52,11 @@ When the last `dayz-mod-reviewer` report of a task lists findings (WARN and NIT 
 
 When a script task produced a persistence data audit with a PASS verdict, add it after the table as the persistence worker wrote it, so the orchestrator can pass it to the server lead. A FAIL audit goes back to the persistence worker as a failed task.
 
-When a worker's report holds work for another team (spawn setup, `types.xml` entries, a spawn parts list), copy it after the table under a "For the server lead" heading, naming the task it came from.
+When a worker's report holds work for another team, copy it after the table under the heading for that team, naming the task it came from:
+
+- "For the server lead": spawn setup, `types.xml` entries, a spawn parts list.
+- "For the config lead": `config.cpp` classes or lines a worker outside the config team needs (for example a class the asset, animation or AI worker names but may not write).
+- "For the script lead": script hooks, actions or classes a worker outside the script team needs.
+- "For the art lead": model selections, memory points, proxies and bone names a worker outside the art team needs in a `.p3d` or `model.cfg` (for example the weapon or vehicle worker's list for dayz-object-builder).
+
+Leave out the heading for your own team; that work is a task you brief yourself.

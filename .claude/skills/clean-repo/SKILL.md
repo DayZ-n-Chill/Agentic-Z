@@ -1,7 +1,7 @@
 ---
 name: clean-repo
 description: "Removes every template-managed artifact across all domains by running each domain's clean-workspace skill after one combined dry run and prompt. Use when the user wants a full pre-push reset; for one domain or one mod, use that domain's cleanup skill instead."
-argument-hint: "[--yes] [--dry-run]"
+argument-hint: "[--yes] [--dry-run] [--keep-server]"
 disable-model-invocation: true
 ---
 
@@ -17,22 +17,23 @@ This is a thin orchestrator. It finds every `.claude/skills/<domain>-clean-works
 ## How to run
 
 ```cmd
-python "<skill-dir>\clean.py" [--yes] [--dry-run]
+python "<skill-dir>\clean.py" [--yes] [--dry-run] [--keep-server]
 ```
 
 | Argument | Notes |
 |---|---|
 | `--yes` | Skip the confirmation prompt. Required when stdin isn't a TTY. |
 | `--dry-run` | Show the combined plan and stop without removing anything. |
+| `--keep-server` | Keep `.server/` (test-server configs, missions, logs). Children run without `--include-server`. |
 
 ### From an agent shell
 
 The agent's shell is not a TTY, so the script cannot prompt there. Ask in chat instead:
 
 1. Run `python "<skill-dir>\clean.py" --dry-run`.
-2. Show the user the combined plan it printed, including the project folder from its `Project:` line.
+2. Show the user the combined plan it printed, including the project folder from its `Project:` line and any `.server/` warning.
 3. Ask in chat whether to remove everything listed from that project. Stop if they do not clearly say yes.
-4. On a yes, run `python "<skill-dir>\clean.py" --yes`.
+4. On a yes, run `python "<skill-dir>\clean.py" --yes`. If they want to keep their server configs and missions, add `--keep-server` to both runs.
 
 ## What it does
 
@@ -40,10 +41,11 @@ Each child cleans the project cached by `/dayz-init` (shown as `Project:` in the
 
 1. Without `--dry-run` or `--yes`, refuses (exit 2) if stdin isn't a TTY, before running anything.
 2. When the cached project is not this checkout (for example a run from a git worktree or a second clone), prints `[WARN] Cleanup targets the cached project <path>, not this checkout <path>`.
-3. Runs each child with `--include-server --dry-run` and prints the output under a `=== /<skill> (--dry-run) ===` header. That output is the combined plan. If any child's dry run fails, stops with exit 1 and removes nothing.
-4. With `--dry-run`, stops here with exit 0.
-5. Asks once, `Remove everything listed above from <project>? [y/N]`, unless `--yes` was passed. Any answer other than `y` or `yes` aborts with exit 0.
-6. Runs each child with `--include-server --yes` under a `=== /<skill> (--yes) ===` header. Exits 1 if any child failed, 0 otherwise.
+3. Runs each child with `--include-server --dry-run` (just `--dry-run` with `--keep-server`) and prints the output under a `=== /<skill> (--dry-run) ===` header. That output is the combined plan. If any child's dry run fails, stops with exit 1 and removes nothing.
+4. Unless `--keep-server` was passed, asks git which files under the project's `.server/` are tracked or not ignored. `.gitignore` keeps `.server/*/serverDZ.cfg` and `.server/*/mission/` trackable, so these are user edits. If there are any, prints `[WARN] .server/ holds <n> file(s) git tracks or keeps trackable ... Pass --keep-server to keep them.` with up to five paths.
+5. With `--dry-run`, stops here with exit 0.
+6. Asks once, `Remove everything listed above from <project>? [y/N]`, unless `--yes` was passed. Any answer other than `y` or `yes` aborts with exit 0.
+7. Runs each child with `--include-server --yes` (just `--yes` with `--keep-server`) under a `=== /<skill> (--yes) ===` header. Exits 1 if any child failed, 0 otherwise.
 
 It does not gate on `/dayz-preflight`, because it is domain-agnostic. Each child gates on its own preflight.
 
@@ -57,7 +59,7 @@ It does not gate on `/dayz-preflight`, because it is domain-agnostic. Each child
 
 ## Discovery
 
-Any folder in `.claude/skills/` whose name ends in `-clean-workspace` and contains `clean.py` is picked up. Folders starting with `_` are skipped. A new domain plugs in by shipping a `<domain>-clean-workspace` skill that accepts `--include-server`, `--dry-run` and `--yes`.
+Any folder in `.claude/skills/` whose name ends in `-clean-workspace` and contains `clean.py` is picked up. Folders starting with `_` are skipped. A new domain plugs in by shipping a `<domain>-clean-workspace` skill that accepts `--include-server`, `--dry-run` and `--yes`, and keeps server staging unless `--include-server` is passed.
 
 ## When to use this vs. a single domain cleanup
 
@@ -66,3 +68,4 @@ Any folder in `.claude/skills/` whose name ends in `-clean-workspace` and contai
 | Remove one mod's DayZ artifacts | `/dayz-clean-workspace --mod <Name>` |
 | Remove all DayZ artifacts (mods and server staging) | `/dayz-clean-workspace --include-server` |
 | Remove everything across every domain before a push | `/clean-repo` |
+| Same, but keep `.server/` configs and missions | `/clean-repo --keep-server` |

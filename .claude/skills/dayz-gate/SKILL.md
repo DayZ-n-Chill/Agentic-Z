@@ -16,12 +16,12 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python "<skill-dir>\gate.py" build <ModName> [--json]
-python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--json]
-python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--json]
+python "<skill-dir>\gate.py" build <ModName> [--yes] [--json]
+python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json]
+python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--yes] [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --prepare-only
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --logs [FILE ...] [--json]
-python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--ready-pattern REGEX] [--json]
+python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--ready-pattern REGEX] [--yes] [--json]
 python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--threshold R] --compare [DIR] [--json]
 python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] --accept [DIR] [--shot ID ...] [--json]
 ```
@@ -42,11 +42,12 @@ python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] --accept [DIR] [--s
 | `--threshold` | `visual`: the share of pixels, 0 to 1, that may differ for a shot that sets no threshold of its own. It beats the shots file's `threshold`; the default is 0.01. |
 | `--compare` | `visual`: compare captures already taken instead of launching. With no folder it uses the newest run. |
 | `--accept` | `visual`: copy captures into the baselines. With no folder it uses the newest run; `--shot` limits it to some shots (`--shot` without `--accept` is refused, exit 2). The first line is `ACCEPTED` (exit 0). |
+| `--yes` | `build`, `ingame`, `behavior`, `visual` runs that stop a session: stop a `DayZDiag_x64.exe` session the gate did not start without asking. Without it the gate asks `[y/N]` on an interactive terminal and, with no terminal (an agent or a pipe), refuses with `ERROR` (exit 2) and leaves the session running, since it may be your own play session. The session the gate launches itself is always stopped without asking. |
 | `--json` | Print the full report as JSON after the verdict line. |
 
 ## Output and exit codes
 
-The first line is the verdict: `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit 2: bad arguments, no cached project, `/dayz-stop-test` failed, a dependency list is needed, or the gate crashed). Then a short summary, or with `--json`:
+The first line is the verdict: `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit 2: bad arguments, no cached project, `/dayz-stop-test` failed, a session the gate did not start is running and was not confirmed, a dependency list is needed, or the gate crashed). Then a short summary, or with `--json`:
 
 ```json
 {
@@ -71,7 +72,7 @@ Every `PASS` or `FAIL` is stored for `/dayz-health` under `.server/!Health/<ModN
 ## What `build` does
 
 1. Runs `/dayz-lint <ModName>` first. Any lint error is a FAIL (category `lint`, file and line from the lint finding, triaged by its `lint-<rule>` entry) and the gate stops there, leaving a running session alone. Lint warnings join the report's warnings, and the report gains `"lint": {"verdict", "errors", "warnings"}`.
-2. Stops any running `DayZDiag_x64.exe` with `/dayz-stop-test` (a session holds the PBO open).
+2. Stops any running `DayZDiag_x64.exe` with `/dayz-stop-test` (a session holds the PBO open), only after `--yes` or a yes at the prompt (see `--yes`).
 3. Runs `/dayz-build-pbo <ModName>`. FAIL on a non-zero exit (every `[FAIL]` line is quoted with its hint), or on any AddonBuilder line after the command echo that reports an error, or a warning about missing files, textures or unknown classes.
 4. Bundles ("Bundle / umbrella mods" in `.claude/skills/_shared/conventions/config.md`): with no `config.cpp` and a payload in `workspace/<ModName>/Addons/*.pbo`, the build is skipped and `/dayz-deploy-pbo <ModName>` runs instead; it must exit 0, and every `[FAIL]` and every `[WARN]` about a missing `.bisign` fails the gate. A bundle with a linker `config.cpp` gets both, build first.
 
@@ -175,6 +176,6 @@ An existing `<id>` lends its meaning, fix and owner; a new id needs all three. L
 
 ## Do not
 
-- Don't use the gate while the user is playing a test session: it stops every `DayZDiag_x64.exe` first.
+- Don't pass `--yes` for the user: a running `DayZDiag_x64.exe` the gate did not start may be their play session. On that `ERROR`, ask them to close it or to agree to the gate stopping it.
 - Don't edit `known-errors.json` from `--learn`; learned fingerprints are per project.
 - Don't `--accept` a capture nobody has looked at; the baseline is the expected look.

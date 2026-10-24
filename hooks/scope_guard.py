@@ -5,9 +5,11 @@
 .claude/skills/dayz-scope-mod/scope.py) and adds Edit deny rules for the
 sibling mods that existed at that moment. This hook backs those rules up with
 a reason Claude can act on, and also covers mod folders created after the
-scope was set:
+scope was set. A workspace folder counts as a mod when it has config.cpp or
+$PBOPREFIX$ at its root, or when the edit creates one of those there, so a
+helper folder such as workspace/_notes/ stays editable:
 
-  - <project>/workspace/<Other>/...   any folder other than the active mod
+  - <project>/workspace/<Other>/...   any mod folder other than the active mod
   - P:\\<Other>\\... and P:\\Mods\\@<Other>\\...   when <Other> is a mod in workspace/
 
 The hook matches Edit, Write and MultiEdit only. Shell commands are not
@@ -44,11 +46,18 @@ def _norm(path: str) -> list[str]:
     return [p.lower() for p in _parts(path)]
 
 
+MOD_MARKERS = ("config.cpp", "$PBOPREFIX$")
+
+
+def _is_mod_dir(folder: Path) -> bool:
+    return any((folder / m).is_file() for m in MOD_MARKERS)
+
+
 def workspace_mods(project: Path) -> list[str]:
     ws = project / "workspace"
     if not ws.is_dir():
         return []
-    return [p.name for p in ws.iterdir() if p.is_dir() and not p.name.startswith(".")]
+    return [p.name for p in ws.iterdir() if p.is_dir() and not p.name.startswith(".") and _is_mod_dir(p)]
 
 
 def target_mod(file_path: str, project: Path, mods: list[str]) -> Optional[str]:
@@ -58,7 +67,12 @@ def target_mod(file_path: str, project: Path, mods: list[str]) -> Optional[str]:
     ws = _norm(str(project / "workspace"))
     if len(low) > len(ws) + 1 and low[: len(ws)] == ws:
         name = parts[len(ws)]
-        return None if name.startswith(".") else name
+        if name.startswith("."):
+            return None
+        creates_marker = len(low) == len(ws) + 2 and low[-1] in {m.lower() for m in MOD_MARKERS}
+        if name.lower() in {m.lower() for m in mods} or creates_marker:
+            return name
+        return None
     if low and low[0] == "p:":
         known = {m.lower() for m in mods}
         if len(low) > 3 and low[1] == "mods" and low[2].startswith("@") and low[2][1:] in known:
@@ -93,7 +107,9 @@ def shadowed_by_project() -> bool:
 
     A clone with the agentic-z plugin enabled wires each hook twice: once from
     .claude/settings.json and once from the plugin's hooks.json. The plugin
-    copy then steps aside so the project copy runs alone.
+    copy then steps aside so the project copy runs alone. It steps aside only
+    when the project copy both exists and is wired in the project's settings,
+    so a clone that keeps hooks/ but drops the wiring still gets the plugin copy.
     """
     project = os.environ.get("CLAUDE_PROJECT_DIR")
     if not project:
@@ -102,14 +118,32 @@ def shadowed_by_project() -> bool:
     root = Path(project).resolve()
     if here.is_relative_to(root):
         return False
-    return (root / "hooks" / here.name).is_file()
+    if not (root / "hooks" / here.name).is_file():
+        return False
+    return any(_wires(root / ".claude" / name, here.name) for name in ("settings.json", "settings.local.json"))
+
+
+def _wires(settings: Path, hook: str) -> bool:
+    """True when a settings file has a hook command that runs the project's hooks/<hook>."""
+    try:
+        config = json.loads(settings.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    events = config.get("hooks") if isinstance(config, dict) else None
+    for groups in (events.values() if isinstance(events, dict) else []):
+        for group in groups if isinstance(groups, list) else []:
+            for entry in (group.get("hooks") or []) if isinstance(group, dict) else []:
+                command = str(entry.get("command") or "") if isinstance(entry, dict) else ""
+                if f"hooks/{hook}" in command.replace("\\", "/") and "CLAUDE_PLUGIN_ROOT" not in command:
+                    return True
+    return False
 
 
 def main() -> int:
-    if shadowed_by_project():
-        return 0
     try:
-        data = json.loads(sys.stdin.read() or "{}")
+        if shadowed_by_project():
+            return 0
+        data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace") or "{}")  # Claude Code sends UTF-8
         project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd())
         reason = decide(data, project)
     except Exception:  # a guard bug must not block unrelated edits

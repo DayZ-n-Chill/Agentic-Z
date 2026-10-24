@@ -28,7 +28,7 @@ python "<skill-dir>\health.py" record <ModName> <kind> [FILE] [--json]
 | `record` | Store one result by hand. `<kind>` is `build`, `lint`, `ingame`, `behavior`, `visual` or `review`. `FILE` is the report; without it the script reads standard input. |
 | `--json` | Print the summary as JSON after the first line. |
 
-`record` takes the JSON output of `/dayz-gate <mode> --json` or `/dayz-lint --json` (the verdict line before the JSON is fine), or a `dayz-mod-reviewer` report as text: a `PASS` or `FAIL` line, then lines of the form `<SEVERITY> path:line: what is wrong, and the fix -> <owner>`. `ERROR` reports are refused, since they say nothing about the mod.
+`record` takes the JSON output of `/dayz-gate <mode> --json` or `/dayz-lint --json` (the verdict line before the JSON is fine), or a `dayz-mod-reviewer` report as text: a `PASS` or `FAIL` line, then lines of the form `<SEVERITY> path:line: what is wrong, and the fix -> <owner>`. `ERROR` reports are refused, since they say nothing about the mod. A JSON report whose `mod` is not `<ModName>` is refused, so one mod's results never land on another's page. A `FAIL` review with no line of that form is refused; a review line that looks like a finding but does not match (for example `ERROR path:12: ...` or a missing colon) is not stored, and `record` prints a warning naming it (`unparsed` in `--json`).
 
 ## Where results go
 

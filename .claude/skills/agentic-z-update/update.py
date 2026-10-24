@@ -160,12 +160,30 @@ def repo_root() -> Optional[Path]:
 
 
 def working_tree_clean_for(paths: list[str]) -> tuple[bool, list[str]]:
-    """Check if any of the given paths have uncommitted changes."""
-    r = run(["git", "status", "--porcelain", "--", *paths], capture=True)
-    if not r.stdout.strip():
-        return True, []
-    dirty = [line[3:] for line in r.stdout.splitlines() if line.strip()]
-    return False, dirty
+    """Check if any tracked file under the given paths has uncommitted changes.
+
+    Untracked files are ignored (--untracked-files=no): a skill the user just
+    added is classified local-only-edit and left alone, and an untracked file at
+    a path upstream adds is a conflict, so neither needs the gate. -z keeps
+    non-ASCII paths verbatim instead of octal-escaped; git writes them as UTF-8.
+    """
+    r = subprocess.run(
+        ["git", "status", "--porcelain", "-z", "--untracked-files=no", "--", *paths],
+        check=True, capture_output=True, text=True, encoding="utf-8",
+    )
+    # Each -z entry is `XY path`; a rename or copy is followed by its original path.
+    entries = r.stdout.split("\0")
+    dirty: list[str] = []
+    i = 0
+    while i < len(entries):
+        entry = entries[i]
+        i += 1
+        if len(entry) <= 3:
+            continue
+        dirty.append(entry[3:])
+        if "R" in entry[:2] or "C" in entry[:2]:
+            i += 1
+    return not dirty, dirty
 
 
 def remote_url(name: str) -> str | None:
@@ -182,7 +200,15 @@ def ensure_upstream() -> bool:
     existing = remote_url(UPSTREAM_REMOTE)
     if existing is None:
         log("INFO", f"Adding {UPSTREAM_REMOTE} remote = {UPSTREAM_URL}")
-        run(["git", "remote", "add", UPSTREAM_REMOTE, UPSTREAM_URL])
+        try:
+            run(["git", "remote", "add", UPSTREAM_REMOTE, UPSTREAM_URL], capture=True)
+        except subprocess.CalledProcessError as e:
+            # Return False instead of raising so --check --quiet (the SessionStart
+            # hook) still prints its one line and exits 0.
+            detail = (e.stderr or "").strip().splitlines()
+            log("ERR", f"git remote add {UPSTREAM_REMOTE} failed: {detail[-1] if detail else e}")
+            log("ERR", f"Fix: git remote add {UPSTREAM_REMOTE} {UPSTREAM_URL}")
+            return False
         return True
     if normalize_remote_url(existing) != normalize_remote_url(UPSTREAM_URL):
         log("ERR", f"upstream remote points to {existing}, expected {UPSTREAM_URL}")
@@ -250,36 +276,38 @@ def _candidate_paths(baseline_sha: str, upstream_ref: str) -> set[str]:
     """
     candidates: set[str] = set()
 
-    def diff_pair(left: str, right: str) -> None:
+    # -z keeps paths verbatim: without it git quotes and octal-escapes any path
+    # with non-ASCII characters (core.quotePath), which names no real file.
+    # Git writes paths as UTF-8, so decode as UTF-8, not the Windows code page.
+    def git_z(*args: str) -> Optional[list[str]]:
         r = subprocess.run(
-            ["git", "diff", "--name-only", left, right, "--", *TEMPLATE_PATHS],
-            check=False, capture_output=True, text=True,
+            ["git", *args], check=False, capture_output=True, text=True, encoding="utf-8",
         )
-        if r.returncode == 0:
-            for line in r.stdout.splitlines():
-                if line.strip():
-                    candidates.add(line.strip())
+        return r.stdout.split("\0") if r.returncode == 0 else None
+
+    def diff_pair(left: str, right: str) -> None:
+        for path in git_z("diff", "--name-only", "-z", left, right, "--", *TEMPLATE_PATHS) or []:
+            if path:
+                candidates.add(path)
 
     if baseline_sha != upstream_ref:
         diff_pair(baseline_sha, upstream_ref)
     diff_pair(baseline_sha, "HEAD")
 
-    # Uncommitted + untracked. --porcelain output is `XY path` (2-char status + space).
-    r = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=all", "--", *TEMPLATE_PATHS],
-        check=False, capture_output=True, text=True,
-    )
-    if r.returncode == 0:
-        for line in r.stdout.splitlines():
-            if len(line) > 3:
-                # Strip rename arrows: "R  oldpath -> newpath" → take both halves.
-                tail = line[3:].strip()
-                if " -> " in tail:
-                    old, new = tail.split(" -> ", 1)
-                    candidates.add(old.strip().strip('"'))
-                    candidates.add(new.strip().strip('"'))
-                else:
-                    candidates.add(tail.strip('"'))
+    # Uncommitted + untracked. Each -z entry is `XY path`; a rename or copy
+    # (R or C in XY) is followed by one more entry holding the original path.
+    entries = git_z("status", "--porcelain", "-z", "--untracked-files=all", "--", *TEMPLATE_PATHS) or []
+    i = 0
+    while i < len(entries):
+        entry = entries[i]
+        i += 1
+        if len(entry) <= 3:
+            continue
+        candidates.add(entry[3:])
+        if "R" in entry[:2] or "C" in entry[:2]:
+            if i < len(entries) and entries[i]:
+                candidates.add(entries[i])
+            i += 1
 
     return candidates
 
@@ -863,10 +891,17 @@ def main() -> int:
 
     if not ensure_upstream():
         if args.quiet:
-            print(
-                f"agentic-z: upstream remote points to {remote_url(UPSTREAM_REMOTE)}; "
-                f"run git remote set-url {UPSTREAM_REMOTE} {UPSTREAM_URL}"
-            )
+            existing = remote_url(UPSTREAM_REMOTE)
+            if existing is None:
+                print(
+                    f"agentic-z: could not add the {UPSTREAM_REMOTE} remote; "
+                    f"run git remote add {UPSTREAM_REMOTE} {UPSTREAM_URL}"
+                )
+            else:
+                print(
+                    f"agentic-z: upstream remote points to {existing}; "
+                    f"run git remote set-url {UPSTREAM_REMOTE} {UPSTREAM_URL}"
+                )
             return 0
         return 1
 
@@ -904,7 +939,11 @@ def main() -> int:
     # upstream HEAD instead, so nothing is overwritten or added on this run: a
     # template file missing locally is in the baseline, so it classifies as
     # locally-deleted and stays deleted unless restored with --per-file.
-    if baseline_sha is None and not args.dry_run:
+    # --dry-run previews against that same baseline but does not write it, so
+    # its preview matches what the real first run would offer.
+    if baseline_sha is None and args.dry_run:
+        baseline_sha = merge_base_sha() or upstream_sha
+    elif baseline_sha is None:
         if not acquire_lock():
             return 1
         first = merge_base_sha() or upstream_sha

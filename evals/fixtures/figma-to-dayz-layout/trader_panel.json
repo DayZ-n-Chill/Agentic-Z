@@ -1,0 +1,34 @@
+{
+  "name": "panel_trader",
+  "type": "panel",
+  "layout": "vertical",
+  "spacing": 8,
+  "padding": { "top": 8, "right": 8, "bottom": 8, "left": 8 },
+  "size": { "width": 400, "height": 300 },
+  "sizing": { "width": "fixed", "height": "fixed" },
+  "style": { "color": "#161616", "alpha": 0.9 },
+  "anchor": { "halign": "center", "valign": "center", "offsetX": 0, "offsetY": 0 },
+  "children": [
+    { "name": "txt_title", "type": "text", "layout": "none", "spacing": 0,
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "size": { "width": 384, "height": 24 },
+      "sizing": { "width": "fill", "height": "hug" },
+      "text": "Trader", "font": "metron_book_18", "children": [] },
+    { "name": "bar_health", "type": "frame", "layout": "none", "spacing": 0,
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "size": { "width": 384, "height": 12 },
+      "sizing": { "width": "fill", "height": "fixed" },
+      "children": [] },
+    { "name": "btn_close", "type": "frame", "layout": "horizontal", "spacing": 0,
+      "padding": { "top": 4, "right": 8, "bottom": 4, "left": 8 },
+      "size": { "width": 80, "height": 28 },
+      "sizing": { "width": "hug", "height": "hug" },
+      "children": [
+        { "name": "txt_close", "type": "text", "layout": "none", "spacing": 0,
+          "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+          "size": { "width": 64, "height": 20 },
+          "sizing": { "width": "hug", "height": "hug" },
+          "text": "Close", "font": "metron_book_14", "children": [] }
+      ] }
+  ]
+}

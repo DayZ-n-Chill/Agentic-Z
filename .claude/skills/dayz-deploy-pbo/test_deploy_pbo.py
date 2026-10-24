@@ -155,3 +155,61 @@ def test_main_refuses_invalid_mod_name_before_touching_disk(deploy_env, monkeypa
         deploy.main()
     assert "Invalid mod name" in str(exc.value.code)
     assert not deploy_env.exists()
+
+
+# --- stale payload and linker collision ----------------------------------------
+
+def test_main_warns_on_deployed_pbo_the_bundle_dropped(deploy_env, capsys):
+    addons_out = deploy_env / "@Bundle" / "Addons"
+    addons_out.mkdir(parents=True)
+    h.write_marker(deploy_env / "@Bundle", "Bundle")
+    (addons_out / "old_name.pbo").write_bytes(b"renamed away")
+    assert deploy.main() == 0
+    out = capsys.readouterr().out
+    assert "[WARN]  old_name.pbo is deployed but not in the bundle" in out
+    assert f'del "{addons_out / "old_name.pbo"}"' in out
+    assert "extras.pbo is deployed" not in out
+    # Still never deletes.
+    assert (addons_out / "old_name.pbo").exists()
+
+
+def test_stale_pbos_ignores_built_linker_when_bundle_has_config(tmp_path):
+    bundle = tmp_path / "Bundle"
+    bundle.mkdir()
+    (bundle / "config.cpp").write_text("class CfgPatches {};", encoding="utf-8")
+    out = tmp_path / "Addons"
+    out.mkdir()
+    for n in ("Bundle.pbo", "extras.pbo", "gone.pbo", "gone.pbo.key.bisign"):
+        (out / n).write_bytes(b"")
+    assert deploy.stale_pbos("Bundle", bundle, [Path("Extras.PBO")], out) == [out / "gone.pbo"]
+
+
+def test_stale_pbos_flags_modname_pbo_without_linker(tmp_path):
+    bundle = tmp_path / "Bundle"
+    bundle.mkdir()
+    out = tmp_path / "Addons"
+    out.mkdir()
+    (out / "Bundle.pbo").write_bytes(b"")
+    assert deploy.stale_pbos("Bundle", bundle, [], out) == [out / "Bundle.pbo"]
+
+
+def test_main_refuses_payload_named_like_linker(deploy_env, capsys):
+    bundle = deploy_env.parent / "project" / "workspace" / "Bundle"
+    (bundle / "config.cpp").write_text("class CfgPatches {};", encoding="utf-8")
+    (bundle / "Addons" / "bundle.pbo").write_bytes(b"payload")
+    built = deploy_env / "@Bundle" / "Addons"
+    built.mkdir(parents=True)
+    h.write_marker(deploy_env / "@Bundle", "Bundle")
+    (built / "Bundle.pbo").write_bytes(b"linker")
+    with pytest.raises(SystemExit) as exc:
+        deploy.main()
+    assert "same name as the linker PBO" in str(exc.value.code)
+    assert (built / "Bundle.pbo").read_bytes() == b"linker"
+    assert not (built / "extras.pbo").exists()
+
+
+def test_main_allows_modname_pbo_without_linker_config(deploy_env):
+    bundle = deploy_env.parent / "project" / "workspace" / "Bundle"
+    (bundle / "Addons" / "Bundle.pbo").write_bytes(b"payload")
+    assert deploy.main() == 0
+    assert (deploy_env / "@Bundle" / "Addons" / "Bundle.pbo").read_bytes() == b"payload"

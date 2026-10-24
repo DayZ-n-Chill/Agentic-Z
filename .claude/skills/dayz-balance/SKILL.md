@@ -9,7 +9,7 @@ argument-hint: "<ModName> [--json] [--ratio 1.5] [--min-peers 3] | --mod-dir <fo
 
 # /dayz-balance
 
-A script reads the mod's `config.cpp` files and the unpacked vanilla configs on `P:\DZ\`, and measures each mod item against the vanilla items that share its parent class. It checks weight, health, damage, protection, cargo capacity and maximum quantity, and lists every stat far outside vanilla with file:line, the vanilla median and the closest vanilla items. It starts no process and needs no DayZ Tools. Reading all of `P:\DZ\` takes about five seconds. The script only measures. The AI reads the outliers and asks whether each one is intended; a mod may want a tougher vest on purpose.
+A script reads the mod's `config.cpp` files, with the files they `#include` from the mod folder, and the unpacked vanilla configs on `P:\DZ\`, and measures each mod item against the vanilla items that share its parent class. It checks weight, health, damage, protection, cargo capacity and maximum quantity, and lists every stat far outside vanilla with file:line, the vanilla median and the closest vanilla items. It starts no process and needs no DayZ Tools. Reading all of `P:\DZ\` takes about five seconds. The script only measures. The AI reads the outliers and asks whether each one is intended; a mod may want a tougher vest on purpose.
 
 Follow `.claude/skills/_shared/dayz-conventions.md`.
 
@@ -56,6 +56,8 @@ An item is a class with `scope = 2` in `CfgVehicles`, `CfgWeapons` or `CfgMagazi
 
 A value is an outlier when it is outside the peers' whole range and at least `--ratio` times away from their median.
 
+The text report gives a high outlier as `N x the median` and a low one as `N x below the median` (the median divided by the value), so weight 1 against a median of 12000 reads `12000x below the median 12000`.
+
 ## Output and exit codes
 
 The first line is the verdict: `PASS` (exit 0, no outliers), `FLAG` (exit 1, at least one outlier) or `ERROR` (exit 2: bad arguments, no cached project, no mod folder, no `config.cpp`, one that does not parse, or no vanilla data at `--vanilla-root`). Then one entry per outlier, and the items that were not compared:
@@ -65,10 +67,11 @@ FLAG
 - workspace/MyVest/config.cpp:12  MyVest_Plate health = 5000: tougher than vanilla, 22.22x the median 225 of 6 vanilla items under PlateCarrierVest (range 225 to 225)
     closest: PlateCarrierVest 225, PlateCarrierVest_Black 225, PlateCarrierVest_Camo 225, PlateCarrierVest_Desert 225, PlateCarrierVest_Green 225
   not compared: MyVest_Gadget has no vanilla parent (parent MyVest_Unknown)
+  WARN workspace/MyVest/config.cpp:20  #include "items\missing.hpp" not read: it was not found, so its classes were not compared
   1 outlier(s) in 2 item(s)
 ```
 
-With `--json` each finding has `item`, `section`, `stat`, `value`, `file`, `line`, `peer_base`, `peer_count`, `median`, `min`, `max`, `direction` (`high` or `low`), `meaning`, `ratio` and the closest `peers`. Items not compared are under `skipped` with a `reason`.
+With `--json` each finding has `item`, `section`, `stat`, `value`, `file`, `line`, `peer_base`, `peer_count`, `median`, `min`, `max`, `direction` (`high` or `low`), `meaning`, `ratio` (value divided by median, to four significant figures, so a tiny low value stays above 0) and the closest `peers`. Items not compared are under `skipped` with a `reason`. Includes that were not followed are under `includes_skipped` with `file`, `line`, `include` and `reason`.
 
 ## After the run
 
@@ -79,4 +82,4 @@ With `--json` each finding has `item`, `section`, `stat`, `value`, `file`, `line
 
 - Stats that depend on script code (`OnStoreLoad`, custom damage handling) are not seen.
 - Only the four item sections are read. Vehicles are compared like any `CfgVehicles` item, which says little about how they drive.
-- `#include` files are not followed, the same as `/dayz-lint`.
+- `#include "file"` is followed when the file is inside the mod folder: a plain name is relative to the including file, and a name that starts with `\` is followed when its first folder is the mod folder's name (the `P:\<ModName>\` prefix). Findings point at the included file and line. An include outside the mod folder, missing, or including itself is not read and prints a `WARN` line, so a `PASS` never hides classes that were not compared. Vanilla `P:\DZ\` configs use no `#include`.

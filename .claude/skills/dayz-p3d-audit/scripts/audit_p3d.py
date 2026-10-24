@@ -7,7 +7,7 @@ Usage:
     python audit_p3d.py model.p3d [model2.p3d ...]
     python audit_p3d.py model.p3d --config path/to/config.cpp
     python audit_p3d.py model.p3d --model-cfg path/to/model.cfg
-    python audit_p3d.py --rvmat a.rvmat b.rvmat
+    python audit_p3d.py --rvmat a.rvmat --rvmat b.rvmat  (repeat --rvmat once per file)
     python audit_p3d.py --scan-dir path/to/mod/  (scans all .p3d, config.cpp, .rvmat, model.cfg)
 
 With a model.cfg (--model-cfg, or the nearest one under --scan-dir) each
@@ -501,12 +501,16 @@ def check_p_drive_paths_in_file(filepath):
 # MAIN AUDIT
 # ============================================================================
 
-def audit_p3d(filepath, model_cfg=None, config=None):
+def audit_p3d(filepath, model_cfg=None, config=None, tally=None):
     """Full audit of one P3D file.
 
     model_cfg is the model.cfg whose animations are checked; config is the
     config.cpp that decides whether the autocenter LOD property is needed.
+    tally, when given, is a dict filled with this file's counts for the
+    --scan-dir summary (see tally_issues).
     """
+    if tally is None:
+        tally = {}
     print(f"\n{'='*70}")
     print(f"AUDITING P3D: {filepath}")
     print(f"{'='*70}")
@@ -516,11 +520,13 @@ def audit_p3d(filepath, model_cfg=None, config=None):
             sig = f.read(4)
             if sig != b'MLOD':
                 print(f"  {h.FAIL} Not MLOD format (sig={sig}). Cannot audit ODOL. Provide source MLOD.")
+                tally["odol"] = 1
                 return False
             f.seek(0)
             p = load_py3d().P3D(f)
     except Exception as e:
         print(f"  {h.FAIL} Failed to read: {e}")
+        tally["unreadable"] = 1
         return False
 
     size = os.path.getsize(filepath)
@@ -618,6 +624,7 @@ def audit_p3d(filepath, model_cfg=None, config=None):
                 all_issues.append((sev, msg))
 
     # Summary
+    tally.update(tally_issues(all_issues))
     crits = sum(1 for s, _ in all_issues if s == "CRITICAL")
     warns = sum(1 for s, _ in all_issues if s == "WARNING")
     notes = sum(1 for s, _ in all_issues if s == "NOTE")
@@ -629,7 +636,37 @@ def audit_p3d(filepath, model_cfg=None, config=None):
     return crits == 0
 
 
-def audit_text_file(filepath, label="file"):
+def tally_issues(issues):
+    """Count (severity, message) issues for the --scan-dir summary.
+
+    'warning' counts only warnings that are not P:\\ paths, so the counts
+    never overlap.
+    """
+    return {
+        "critical": sum(1 for sev, _ in issues if sev == "CRITICAL"),
+        "p_drive": sum(1 for sev, msg in issues if sev == "WARNING" and "P:\\" in msg),
+        "warning": sum(1 for sev, msg in issues if sev == "WARNING" and "P:\\" not in msg),
+        "unreadable": sum(1 for sev, _ in issues if sev == "ERROR"),
+    }
+
+
+def describe_tally(t):
+    """Summary fragment for one failing file, e.g. '2 CRITICAL, 1 P:\\ path'."""
+    if t.get("odol"):
+        return "ODOL reject (binarized model; audit the source MLOD)"
+    parts = []
+    if t.get("critical"):
+        parts.append(f"{t['critical']} CRITICAL")
+    if t.get("p_drive"):
+        parts.append(f"{t['p_drive']} P:\\ path(s)")
+    if t.get("warning"):
+        parts.append(f"{t['warning']} other WARNING")
+    if t.get("unreadable"):
+        parts.append("unreadable")
+    return ", ".join(parts) or "failed"
+
+
+def audit_text_file(filepath, label="file", tally=None):
     """Audit a text file for P:\\ paths."""
     print(f"\n{'='*70}")
     print(f"AUDITING {label}: {filepath}")
@@ -639,39 +676,46 @@ def audit_text_file(filepath, label="file"):
         print(f"  {sev}: {msg}")
     if not issues:
         print(f"  OK: No P:\\ paths found.")
+    if tally is not None:
+        tally.update(tally_issues(issues))
     return not any(sev in ("CRITICAL", "WARNING", "ERROR") for sev, _ in issues)
 
 
 def scan_directory(dirpath):
-    """Scan entire mod directory for all auditable files."""
+    """Scan entire mod directory for all auditable files.
+
+    Ends with a summary: one line of totals (CRITICAL findings, P:\\ paths,
+    ODOL rejects), then one line per failing file, so a single binarized
+    .p3d in the mod is named instead of hiding inside 'ISSUES FOUND'.
+    """
     print(f"\nScanning directory: {dirpath}")
-    all_pass = True
+    results = []  # (path, passed, tally)
 
     # P3D files
-    p3d_files = glob.glob(os.path.join(dirpath, '**', '*.p3d'), recursive=True)
-    for f in sorted(p3d_files):
-        if not audit_p3d(f, find_model_cfg(f, dirpath), find_model_cfg(f, dirpath, "config.cpp")):
-            all_pass = False
+    for f in sorted(glob.glob(os.path.join(dirpath, '**', '*.p3d'), recursive=True)):
+        t = {}
+        ok = audit_p3d(f, find_model_cfg(f, dirpath), find_model_cfg(f, dirpath, "config.cpp"), tally=t)
+        results.append((f, ok, t))
 
-    # config.cpp
-    cfg_files = glob.glob(os.path.join(dirpath, '**/config.cpp'), recursive=True)
-    for f in sorted(cfg_files):
-        if not audit_text_file(f, "config.cpp"):
-            all_pass = False
+    # config.cpp, .rvmat files, model.cfg
+    for pattern, label in (('**/config.cpp', "config.cpp"), ('**/*.rvmat', ".rvmat"),
+                           ('**/model.cfg', "model.cfg")):
+        for f in sorted(glob.glob(os.path.join(dirpath, pattern), recursive=True)):
+            t = {}
+            ok = audit_text_file(f, label, tally=t)
+            results.append((f, ok, t))
 
-    # .rvmat files
-    rvmat_files = glob.glob(os.path.join(dirpath, '**', '*.rvmat'), recursive=True)
-    for f in sorted(rvmat_files):
-        if not audit_text_file(f, ".rvmat"):
-            all_pass = False
+    failed = [(f, t) for f, ok, t in results if not ok]
+    crit = sum(t.get("critical", 0) for _, t in failed)
+    pdrive = sum(t.get("p_drive", 0) for _, t in failed)
+    odol = sum(t.get("odol", 0) for _, t in failed)
+    print(f"\n{'='*70}")
+    print(f"SCAN SUMMARY: {len(failed)} of {len(results)} file(s) failed: "
+          f"{crit} CRITICAL, {pdrive} P:\\ path(s), {odol} ODOL reject(s)")
+    for f, t in failed:
+        print(f"  {os.path.relpath(f, dirpath)}: {describe_tally(t)}")
 
-    # model.cfg
-    mcfg_files = glob.glob(os.path.join(dirpath, '**/model.cfg'), recursive=True)
-    for f in sorted(mcfg_files):
-        if not audit_text_file(f, "model.cfg"):
-            all_pass = False
-
-    return all_pass
+    return not failed
 
 
 def main(argv=None):
@@ -681,7 +725,10 @@ def main(argv=None):
                         '(also decides whether the Geometry LOD needs the autocenter property)')
     parser.add_argument('--model-cfg', help='model.cfg whose CfgModels animations are checked against '
                         'the .p3d (also scanned for absolute P-drive paths)')
-    parser.add_argument('--rvmat', nargs='*', default=[], help='.rvmat files to check for absolute P-drive paths')
+    # action='append' (one file per flag), not nargs='*': a greedy list swallowed a following
+    # model.p3d, which then only got the P:\ text scan and could pass without being audited.
+    parser.add_argument('--rvmat', action='append', default=[], metavar='RVMAT',
+                        help='.rvmat file to check for absolute P-drive paths (repeat for more)')
     parser.add_argument('--scan-dir', help='Scan a whole mod directory (ignores the other inputs)')
     args = parser.parse_args(argv)
 

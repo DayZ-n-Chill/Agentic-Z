@@ -1,6 +1,7 @@
 ---
 name: dayz-p3d-audit
 description: "Audits DayZ .p3d models and their config.cpp, model.cfg and .rvmat for collision, action, physics, animation and path problems (report only). Use when an object has no collision or actions, players walk through it, a Blender export fails, textures are missing, animations don't play, or the user asks to review, check or audit a .p3d model, its model.cfg or its .rvmat."
+argument-hint: "<model.p3d ...> [--config <config.cpp>] [--model-cfg <model.cfg>] [--rvmat <file.rvmat>]... | --scan-dir <mod-dir>"
 ---
 
 <!-- skill-dir-note -->
@@ -34,13 +35,16 @@ python "<skill-dir>\scripts\audit_p3d.py" model.p3d --config path\to\config.cpp 
 
 **Check .rvmat materials for P:\ paths:**
 ```cmd
-python "<skill-dir>\scripts\audit_p3d.py" --rvmat path\to\a.rvmat path\to\b.rvmat
+python "<skill-dir>\scripts\audit_p3d.py" --rvmat path\to\a.rvmat --rvmat path\to\b.rvmat
 ```
+Repeat `--rvmat` once per file; a `.p3d` written after it is still audited as a model.
 
 **Full mod sweep** (all .p3d, config.cpp, .rvmat, model.cfg; other inputs are ignored):
 ```cmd
 python "<skill-dir>\scripts\audit_p3d.py" --scan-dir path\to\mod\
 ```
+The sweep ends with a `SCAN SUMMARY` line counting CRITICAL findings, `P:\` paths and
+ODOL rejects across the failing files, then one line per failing file with its own counts.
 
 Animations are checked from model.cfg. The script finds the `CfgModels` class named
 after the model file (inherited from its parent class when it has no `Animations` of

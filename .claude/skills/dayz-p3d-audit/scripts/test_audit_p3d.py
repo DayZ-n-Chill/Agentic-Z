@@ -3,6 +3,7 @@ audit of a tiny synthetic MLOD file written byte by byte in the test."""
 from __future__ import annotations
 
 import importlib.util
+import os
 import struct
 from pathlib import Path
 
@@ -572,6 +573,27 @@ def test_main_p_drive_path_exits_1(no_gate, tmp_path):
     assert _run_main(["--rvmat", str(mat)]) == 1
 
 
+def test_main_p3d_after_rvmat_is_still_audited_as_model(no_gate, tmp_path, monkeypatch):
+    # `--rvmat a.rvmat model.p3d` once swallowed model.p3d into the rvmat list, so the
+    # model only got the P:\ text scan and the run could exit 0 without auditing it.
+    mat = tmp_path / "box.rvmat"
+    mat.write_text('texture = "MyMod/data/box_co.paa";', encoding="utf-8")
+    model = tmp_path / "m.p3d"
+    model.write_bytes(b"MLOD" + b"\0" * 8)
+    audited = []
+    monkeypatch.setattr(audit, "audit_p3d", lambda f, cfg=None, config=None: audited.append(f) or False)
+    assert _run_main(["--rvmat", str(mat), str(model)]) == 1
+    assert audited == [str(model)]
+
+
+def test_main_rvmat_repeats_for_several_files(no_gate, tmp_path):
+    clean = tmp_path / "a.rvmat"
+    clean.write_text('texture = "MyMod/data/a_co.paa";', encoding="utf-8")
+    bad = tmp_path / "b.rvmat"
+    bad.write_text(r'texture = "P:\MyMod\data\b_co.paa";', encoding="utf-8")
+    assert _run_main(["--rvmat", str(clean), "--rvmat", str(bad)]) == 1
+
+
 def test_scan_dir_audits_text_files(no_gate, tmp_path):
     (tmp_path / "data").mkdir()
     (tmp_path / "config.cpp").write_text("class CfgPatches {};\n", encoding="utf-8")
@@ -651,3 +673,40 @@ def test_component_coverage_matches_lowercase_components():
     assert "cover 3/4 vertices" in issues[0][1]
     full = _stub_lod(selections={"component01": ([0, 1, 2], [0]), "COMPONENT02": ([0, 1, 3, 2], [1, 2, 3])})
     assert audit.check_component_coverage(full) == []
+
+
+def test_scan_dir_summary_names_odol_reject(no_gate, tmp_path, capsys):
+    # A mod holding one reused vanilla (binarized, "ODOL") model once failed the
+    # whole sweep as 'ISSUES FOUND' with nothing saying which file caused it.
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "basin_a.p3d").write_bytes(b"ODOL" + b"\0" * 8)
+    (tmp_path / "config.cpp").write_text("class CfgPatches {};\n", encoding="utf-8")
+    assert _run_main(["--scan-dir", str(tmp_path)]) == 1
+    out = capsys.readouterr().out
+    assert r"SCAN SUMMARY: 1 of 2 file(s) failed: 0 CRITICAL, 0 P:\ path(s), 1 ODOL reject(s)" in out
+    assert os.path.join("data", "basin_a.p3d") + ": ODOL reject" in out
+
+
+def test_scan_dir_summary_counts_critical_and_p_drive_per_file(no_gate, tmp_path, capsys, monkeypatch):
+    (tmp_path / "a.p3d").write_bytes(b"MLOD")
+    (tmp_path / "ok.rvmat").write_text('texture = "MyMod/data/ok_co.paa";', encoding="utf-8")
+    (tmp_path / "bad.rvmat").write_text('a = "P:\\x\\a.paa";\nb = "P:\\x\\b.paa";\n', encoding="utf-8")
+
+    def fake_audit(f, cfg=None, config=None, tally=None):
+        tally.update(audit.tally_issues([("CRITICAL", "no geometry"), ("CRITICAL", "no memory"),
+                                         ("WARNING", "Component name")]))
+        return False
+
+    monkeypatch.setattr(audit, "audit_p3d", fake_audit)
+    assert _run_main(["--scan-dir", str(tmp_path)]) == 1
+    out = capsys.readouterr().out
+    assert r"SCAN SUMMARY: 2 of 3 file(s) failed: 2 CRITICAL, 2 P:\ path(s), 0 ODOL reject(s)" in out
+    assert "a.p3d: 2 CRITICAL, 1 other WARNING" in out
+    assert r"bad.rvmat: 2 P:\ path(s)" in out
+    assert "ok.rvmat:" not in out
+
+
+def test_scan_dir_clean_mod_summary_and_exit_0(no_gate, tmp_path, capsys):
+    (tmp_path / "config.cpp").write_text("class CfgPatches {};\n", encoding="utf-8")
+    assert _run_main(["--scan-dir", str(tmp_path)]) == 0
+    assert "SCAN SUMMARY: 0 of 1 file(s) failed" in capsys.readouterr().out

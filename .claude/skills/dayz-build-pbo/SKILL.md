@@ -27,8 +27,8 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 ## What it does
 
 1. **Project** - reads the project root cached by `/dayz-init`.
-2. **Lint gate**: runs `/dayz-lint <ModName>` and stops with `[FAIL]` and each `file:line` if it finds an error, since the mod would not load. Lint warnings print as `[WARN]` and the build goes on. The `P:\<ModName>\` link is left to step 5, the junction check.
-3. **Preflight gate** - runs `/dayz-preflight`; halts on non-zero. Then confirms `P:\Mods\` is a junction to the DayZ `!Workshop` folder.
+2. **Preflight gate** - runs `/dayz-preflight`; halts on non-zero, so an unmounted `P:\` is the first error shown.
+3. **Lint gate**: runs `/dayz-lint <ModName>` and stops with `[FAIL]` and each `file:line` if it finds an error, since the mod would not load. Lint warnings print as `[WARN]` and the build goes on. Then confirms `P:\Mods\` is a junction to the DayZ `!Workshop` folder. The `P:\<ModName>\` link is left to step 5, the junction check.
 4. **Workspace check** - `workspace/<ModName>/` exists and contains `config.cpp` and `$PBOPREFIX$`, and `$PBOPREFIX$` holds exactly `<ModName>` (surrounding whitespace and a BOM are ignored; case must match). The build always packs with `-prefix=<ModName>` through the `P:\<ModName>\` junction, so a different prefix means the mod's config paths expect another root; it refuses rather than build a PBO whose paths do not resolve.
 5. **Junction check** - `P:\<ModName>\` is a link pointing at `workspace/<ModName>/` (created by `/dayz-new-mod` or `/dayz-import-mod`).
 6. **Tools check** - resolves `AddonBuilder.exe` through `find_dayz_tools()` (env var, registry, Steam libraries).
@@ -45,7 +45,7 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 
 ## exclude.lst
 
-`exclude.lst` (next to `build.py`) is passed as `-exclude=`. AddonBuilder leaves files matching its patterns (one per line, `;` starts a comment) out of the final PBO. It drops `.gui-sources\` (the sprite source PNGs for `/dayz-build-imageset`; only the packed atlas and `.imageset` under `gui/imagesets/` ship), the `workbench\` folder, version-control folders, binarization logs, archives, signatures and keys, and source, doc and temp folders.
+`exclude.lst` (next to `build.py`) is passed as `-exclude=`. AddonBuilder leaves files matching its patterns (one per line, `;` starts a comment) out of the final PBO. It drops `.gui-sources\` (the sprite source PNGs for `/dayz-build-imageset`; only the packed atlas and `.imageset` under `gui/imagesets/` ship), the `workbench\` folder, version-control folders, binarization logs, archives, signatures and keys, and the `Source\`, `Doc\` and `Temp\` folders at the mod root. Those three are anchored to the root, so a nested folder with the same name (for example `scripts\4_World\Temp\` or `data\doc\`) still ships.
 
 ## Refuses to run if
 
@@ -63,14 +63,14 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 ## Output
 
 ```
-[WARN]  lint config.cpp:9: requiredAddons lists DZ_Data twice in MyMod.
-[OK]    /dayz-lint passed
 DayZ preflight
 
 [OK]    P:\ is mounted
 ...     (rest of the /dayz-preflight report)
 
 Preflight complete.
+[WARN]  lint config.cpp:9: requiredAddons lists DZ_Data twice in MyMod.
+[OK]    /dayz-lint passed
 [OK]    P:\Mods junction valid
 [OK]    workspace\MyMod\ found
 [OK]    $PBOPREFIX$ matches MyMod
@@ -86,7 +86,7 @@ Preflight complete.
 [OK]    Cleaned temp dir
 ```
 
-The lint gate runs first. Each `/dayz-lint` warning prints as a `[WARN]  lint` line and does not stop the build; any lint error stops it before preflight. The ownership line appears only when `@MyMod` already exists. Failures print `[FAIL]  <reason>` followed by an indented hint.
+The preflight gate runs first, then the lint gate. Each `/dayz-lint` warning prints as a `[WARN]  lint` line and does not stop the build; any lint error stops it before the junction and tools checks. The ownership line appears only when `@MyMod` already exists. Failures print `[FAIL]  <reason>` followed by an indented hint.
 
 ## Do not
 

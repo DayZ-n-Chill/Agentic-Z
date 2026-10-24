@@ -115,9 +115,9 @@ def test_no_key_is_reported(mod, tmp_path):
 def test_mission_by_instance_name(tmp_path):
     project = tmp_path / "proj"
     shutil.copytree(FIXTURES / "mission", project / ".server" / "chernarus" / "mission")
-    assert kit.resolve_mission("chernarus", project) == project / ".server" / "chernarus" / "mission"
+    assert kit.resolve_mission("chernarus", [project]) == project / ".server" / "chernarus" / "mission"
     with pytest.raises(kit.ReleaseError):
-        kit.resolve_mission("nowhere", project)
+        kit.resolve_mission("nowhere", [project])
 
 
 def test_cli_json_and_errors(mod, tmp_path):
@@ -129,4 +129,30 @@ def test_cli_json_and_errors(mod, tmp_path):
     assert (out / "MyVest-server-kit.zip").is_file()
     r = subprocess.run([sys.executable, str(HERE / "server_kit.py"), "--mod-dir", str(mod), "--mission", str(tmp_path / "x")],
                        capture_output=True, text=True)
-    assert r.returncode == 2 and r.stdout.startswith("[FAIL]")
+    assert r.returncode == 2 and r.stderr.startswith("[FAIL]") and r.stdout == ""
+
+
+def test_cli_mod_dir_with_instance_name(mod, tmp_path):
+    """--mod-dir plus an instance name resolves .server/<instance>/mission/ under the current folder."""
+    project = tmp_path / "proj"
+    shutil.copytree(FIXTURES / "mission", project / ".server" / "chernarus" / "mission")
+    r = subprocess.run([sys.executable, str(HERE / "server_kit.py"), "--mod-dir", str(mod), "--out", str(tmp_path / "cli"),
+                        "--mission", "chernarus", "--json"], capture_output=True, text=True, cwd=project)
+    assert r.returncode == 0, r.stdout + r.stderr
+    report = json.loads(r.stdout)
+    assert Path(report["mission"]) == project / ".server" / "chernarus" / "mission"
+    assert report["types"]["mission"] == ["MyVest_Green", "MyVest_Pouch"]
+
+
+def test_mod_dir_instance_roots_include_the_cached_project(mod, tmp_path, monkeypatch):
+    cached = tmp_path / "cached"
+    cached.mkdir()
+
+    class FakeState:
+        @staticmethod
+        def cached_project_root():
+            return cached
+
+    monkeypatch.setattr(kit.h, "load_module", lambda name, path: FakeState)
+    monkeypatch.chdir(tmp_path)
+    assert kit.instance_roots(True, mod) == [tmp_path, cached.resolve()]

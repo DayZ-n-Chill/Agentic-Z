@@ -179,14 +179,23 @@ def test_unmounted_p_refuses(monkeypatch, runs, tmp_path):
     assert runs["argv"] == []
 
 
-@pytest.mark.parametrize("name", ["1Mod", "_Mod", "My-Mod", "My Mod", "Mod.v2", ""])
+@pytest.mark.parametrize("name", ["1Mod", "_Mod", "My-Mod", "My Mod", "Mod.v2", "", "M" * 65])
 def test_bad_mod_name_is_a_usage_error(name):
     with pytest.raises(SystemExit) as exc:
         plan.parse_args(["--mod", name])
     assert exc.value.code == 2
 
 
-@pytest.mark.parametrize("name", ["M", "MyMod", "My_Mod_2"])
+def test_mod_name_cap_matches_new_mod():
+    # The wizard must refuse exactly what dayz-new-mod refuses, or step 1 fails after the plan prints.
+    import skill_helpers as h
+    nm = h.load_module("dayz_new_mod_for_plan_test", h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py")
+    NAME_PATTERN = nm.NAME_PATTERN
+    for name in ["M" * 64, "M" * 65]:
+        assert bool(plan.MOD_NAME_RE.fullmatch(name)) == bool(NAME_PATTERN.match(name))
+
+
+@pytest.mark.parametrize("name", ["M", "MyMod", "My_Mod_2", "M" * 64])
 def test_good_mod_names_are_accepted(name):
     assert plan.parse_args(["--mod", name]).mod == name
 

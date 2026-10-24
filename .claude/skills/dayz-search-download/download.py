@@ -17,10 +17,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import sys
 import tarfile
 import tempfile
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -59,8 +61,37 @@ def _network_error(url: str, err: OSError) -> SystemExit:
     )
 
 
+def _rate_limit_error(url: str, err: urllib.error.HTTPError) -> SystemExit | None:
+    """GitHub answers an exhausted API quota (60 requests an hour without a
+    token) with 403 or 429 and X-RateLimit-Remaining: 0. Name it as such, with
+    the reset time, rather than blaming the connection."""
+    if err.code not in (403, 429) or err.headers is None:
+        return None
+    if err.headers.get("X-RateLimit-Remaining") != "0":
+        return None
+    reset = err.headers.get("X-RateLimit-Reset", "")
+    when = (
+        "at " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(reset)))
+        if reset.isdigit()
+        else "within an hour"
+    )
+    hint = (
+        "\tThe GITHUB_TOKEN in your environment has used its quota too."
+        if os.environ.get("GITHUB_TOKEN")
+        else "\tSet GITHUB_TOKEN to a GitHub token to raise the limit to 5,000 an hour."
+    )
+    return SystemExit(
+        f"[ERR]\tGitHub API rate limit reached for {url} (HTTP {err.code}).\n"
+        f"\tThe limit resets {when}. Try again then.\n{hint}"
+    )
+
+
 def fetch_json(url: str) -> dict:
-    req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+    headers = {"Accept": "application/vnd.github+json"}
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=30) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
@@ -78,7 +109,7 @@ def resolve_release(tag: str | None) -> dict:
                 f"[ERR]\tRelease not found: {tag or 'latest'}.\n"
                 f"\tCheck https://github.com/{REPO}/releases."
             )
-        raise _network_error(url, e)
+        raise _rate_limit_error(url, e) or _network_error(url, e)
     except OSError as e:  # URLError, plus timeouts and resets while reading
         raise _network_error(url, e)
 
@@ -191,7 +222,17 @@ def install(extracted: Path, index_root: Path, tag: str) -> None:
 
     had_old = index_root.exists()
     if had_old:
-        index_root.rename(backup)
+        try:
+            index_root.rename(backup)
+        except OSError as e:
+            # On Windows a running dayz-rag MCP server holds the LanceDB files
+            # open, so the folder cannot be moved aside.
+            shutil.rmtree(staging, ignore_errors=True)
+            raise SystemExit(
+                f"[ERR]\tCould not move the existing index at {index_root} aside: {e}\n"
+                "\tIt is probably in use by the dayz-rag MCP server. Close Claude Code "
+                "(or disconnect dayz-rag with /mcp) and rerun. Existing index left untouched."
+            )
     try:
         staging.rename(index_root)
     except OSError:

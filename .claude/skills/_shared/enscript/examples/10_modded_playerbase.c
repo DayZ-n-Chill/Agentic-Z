@@ -20,12 +20,9 @@
 const int MYMOD_PLAYER_STORE_VERSION = 2;
 
 // ---- RPC IDs used by OnRPC below -------------------------------------------
-// The same enum as 04_rpc_patterns.c. A mod declares it once, so keep a single
-// copy if you take both files.
-enum MyMod_ERPCs
-{
-    RPC_SHOW_NOTIFICATION = 20000,
-}
+// MyMod_ERPCs (RPC_SHOW_NOTIFICATION = 20000 and the rest) is declared once in
+// 04_rpc_patterns.c. Declaring it here as well would be a duplicate type when
+// both files go into one mod, so take that enum with this file.
 
 // ---- Shared between server and client via NetSync --------------------------
 enum MyMod_PlayerSyncFlags
@@ -85,6 +82,7 @@ modded class PlayerBase
         if (held && held.IsInherited(MyMod_CustomCanteen))
             flags |= MyMod_PlayerSyncFlags.HAS_CANTEEN;
 
+        // 200 is an example threshold for this mod, not a vanilla constant.
         if (GetSingleAgentCount(eAgents.FOOD_POISON) > 200)
             flags |= MyMod_PlayerSyncFlags.IS_POISONED;
 
@@ -210,13 +208,15 @@ modded class PlayerBase
     // Stat helpers – thin wrappers so callers don't need to dig into managers
     // -----------------------------------------------------------------------
 
-    // Get current health (0..100)
+    // Get current health (0..100: SurvivorBase GlobalHealth Health hitpoints=100,
+    // P:\DZ\characters\data\config.cpp:122,378-382)
     float MyMod_GetHealth()
     {
         return GetHealth("", "");
     }
 
-    // Get blood volume (0..5000 ml). Blood is a health type, not a player stat:
+    // Get blood volume (0..5000 ml: Blood hitpoints=5000,
+    // P:\DZ\characters\data\config.cpp:412-414). Blood is a health type, not a player stat:
     // vanilla reads it with GetHealth("GlobalHealth", "Blood")
     // (P:\scripts\4_world\classes\playermodifiers\modifiers\bloodregen.c:14).
     float MyMod_GetBlood()
@@ -224,18 +224,26 @@ modded class PlayerBase
         return GetHealth("GlobalHealth", "Blood");
     }
 
-    // Get energy (0..5000 kcal)
+    // Get energy (0..5000 kcal: the Energy stat is registered with min 0 and
+    // max PlayerConstants.SL_ENERGY_MAX, P:\scripts\4_world\classes\playerstats\playerstatspco.c:340,
+    // and SL_ENERGY_MAX = 5000, P:\scripts\3_game\playerconstants.c:45)
     float MyMod_GetEnergy()
     {
         return GetStatEnergy().Get();
     }
 
-    // Get stamina (0..100)
+    // Get stamina as a percentage (0..100). Raw stamina runs 0..staminaMax: the
+    // handler starts stamina and its cap at CfgGameplayHandler.GetStaminaMax()
+    // (P:\scripts\4_world\classes\staminahandler.c:335-338), which reads cfggameplay.json's
+    // staminaMax (P:\scripts\3_game\cfggameplayhandler.c:217-220), default
+    // GameConstants.STAMINA_MAX = 100 (P:\scripts\3_game\cfggameplaydatajson.c:135,
+    // P:\scripts\3_game\constants.c:749). Dividing by that maximum keeps the result
+    // 0..100 on a server that changes staminaMax.
     float MyMod_GetStaminaPct()
     {
         if (!m_StaminaHandler)
             return 100;
-        return m_StaminaHandler.GetStamina();
+        return m_StaminaHandler.GetStamina() / CfgGameplayHandler.GetStaminaMax() * 100;
     }
 
     // -----------------------------------------------------------------------

@@ -290,6 +290,11 @@ def test_plugin_copy_steps_aside_for_the_project_copy(tmp_path, monkeypatch, cap
     (tmp_path / "hooks").mkdir()
     (tmp_path / "hooks" / "paste_router.py").write_text("", encoding="utf-8")
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    assert not pr.shadowed_by_project()  # the file alone is not enough: settings.json must wire it
+    (tmp_path / ".claude").mkdir()
+    command = 'python "$CLAUDE_PROJECT_DIR/hooks/paste_router.py"'
+    (tmp_path / ".claude" / "settings.json").write_text(json.dumps(
+        {"hooks": {"UserPromptSubmit": [{"hooks": [{"type": "command", "command": command}]}]}}), encoding="utf-8")
     assert pr.shadowed_by_project()  # this copy lives outside tmp_path, like a plugin copy
     monkeypatch.setattr("sys.stdin", __import__("io").StringIO(json.dumps({"prompt": "https://github.com/O/R"})))
     assert pr.main() == 0

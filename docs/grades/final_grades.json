@@ -1,452 +1,896 @@
 [
-{
-"batch": "agents-a",
-"item": "dayz-ai-specialist",
-"grade": "A+",
-"reason": "The description is a clear contract with an example. Tools are minimal (no Bash, both dayz-rag names present). Handoffs to the server admin, debugger and script specialist are explicit, and the Report names the script lead. Every P: fact I checked is correct: DZInfectedPackBeh is at P:\\DZ\\data\\aiconfigs\\config.cpp:304; CfgAIBehaviours is at line 14 of both P:\\DZ\\AI\\config.cpp and P:\\DZ\\AI_bliss\\config.cpp; the three vanilla script folders exist; ModCommandHandlerBefore, Inside and After are declared in dayzanimal.c and overridden in zombiebase.c; OverrideMovementSpeed and OverrideAlertLevel are in dayzcreatureaiinputcontroller.c. There is one MUST, which is within the caps budget. I found nothing concrete to fix."
-},
-{
-"batch": "agents-a",
-"item": "dayz-animation-specialist",
-"grade": "A+",
-"reason": "Ownership is split precisely with dayz-object-builder (skeletonBones and class Animations here; the skeleton class, sections[] and the .p3d stay with object-builder). Each step points at its own file in the animation pack, and every referenced pack file exists. The claim that vanilla ships no model.cfg text holds: no model.cfg exists under P:\\DZ. Out-of-scope work (.anm and graph changes) is stated, and the Report lists its recipient and every item it returns. Nothing concrete to fix."
-},
-{
-"batch": "agents-a",
-"item": "dayz-config-specialist",
-"grade": "A+",
-"reason": "Ownership with the weapon, vehicle, wearables and audio specialists is sharp, and handbacks go through the config lead. Every section it cites exists: 'Config conventions', the inventorySlot string-versus-array bug (T148506) in conventions/config.md, and container-base.md. The workflow covers vanilla parent citation, the requiredAddons ordering, forward declarations, the redeclare-only-changed-entries rule, path checks for $PBOPREFIX$ and \\DZ, and a syntax check. Tools are minimal. Nothing concrete to fix."
-},
-{
-"batch": "agents-a",
-"item": "dayz-audio-fx-specialist",
-"grade": "A+",
-"reason": "Every DayZ fact checked out on P:. Both sound config files exist, and their CfgPatches classes are DZ_Sounds_Effects and DZ_Sounds_Bliss. particlelist.c and P:\\graphics\\particles exist. powergenerator.c plays a start, loop and stop sound with PlaySoundSet, PlaySoundSetLoop and StopSoundSet, and plays its smoke with SEffectManager.PlayOnObject. Object.c defines all three sound helpers. The tools are the minimum the job needs (no Bash), the handoffs are clear, it is honest that no file gate can hear or see the result, and it names who gets its report. Nothing concrete to fix."
-},
-{
-"batch": "agents-a",
-"item": "dayz-build-checker",
-"grade": "A+",
-"reason": "It matches gate_build in gate.py: lint first, then stop the session, then build, a payload-only bundle skips the build, and a bundle with a linker config.cpp gets both build and deploy (FAIL lines and missing-.bisign WARN lines). test_build_checker_matches_gate enforces this order. It has read-only tools and no memory (it is in READ_ONLY_GATES), the PBO path matches build.py, the verdict comes first, and it names who gets the report. Nothing concrete to fix."
-},
-{
-"batch": "agents-a",
-"item": "dayz-ingame-tester",
-"grade": "A+",
-"reason": "It matches gate.py: the ready pattern is DEFAULT_READY_RE, the line comes from vanilla P:\\scripts\\5_mission\\somemission.c:3 as cited, the settle time is 30 seconds and the timeout 300, MOD_QUALIFIED covers NULL pointer and Can't find, and the vanilla-only baseline uses the two newest sessions whose CLI params line lacks the mod. test_ingame_tester_matches_gate enforces this. It has read-only tools, no memory, always stops the session, puts the verdict first and names who gets the report. Nothing concrete to fix."
-},
-{
-"batch": "agents-a",
-"item": "dayz-lead",
-"grade": "A+",
-"reason": "Every worker in the table is a real agent (test_lead_workers_are_agents), and it has no write tools and no memory (NO_WRITE_ROLES). Starting workers from a lead is valid under the current spec, which allows a subagent with Agent to start its own subagents up to three levels deep; the spec ignores a type list here, so a bare Agent tool is correct. The table columns match the orchestrator's task table, and the persistence audit, the For the server lead block and the health-page quote all line up with the orchestrator and persistence-specialist files. The Figma steps follow the order in CLAUDE.md, and the gate boundaries are clear. Nothing concrete to fix."
-},
-{
-"batch": "agents-a",
-"item": "agent-creator",
-"grade": "A+",
-"reason": "The description is a clear trigger with an example, and the tools fit its job. Every path, list and test it names exists on develop, every integrity assert now names its rule, and it runs the answer tests with py scripts/dev/run_evals.py, which works from Bash. The integrity test passes."
-},
-{
-"batch": "agents-a",
-"item": "dayz-asset-specialist",
-"grade": "A+",
-"reason": "Both earlier defects are fixed. It sends dayz-config-specialist the healthLevels[] material paths, which P:\\DZ\\characters\\vests\\config.cpp uses, and it no longer forwards the skill's suggested _co suffix for normal or specular maps. The suffix set, the power of two refusal and the overwrite behavior match pack_texture.py, and every pack section it cites exists."
-},
-{
-"batch": "agents-a",
-"item": "dayz-build-engineer",
-"grade": "A+",
-"reason": "Every skill it names exists with the flags and behavior it describes, including the /dayz-stop-test OK line, /dayz-build-pbo refusing --clean when other PBOs are present and the --server-only flag. Its Bash use is narrowly limited. It stops and reports to the release lead whenever the map or the dependency list is missing."
-},
-{
-"batch": "agents-a",
-"item": "dayz-docs-writer",
-"grade": "A+",
-"reason": "Every flag it passes to /dayz-release-pack and /dayz-server-kit is real, and the output files it merges are the ones those scripts write. Its warning list matches both skills. Its git commands are scoped to the mod folder and read only, and it stops and reports when there is no git or no version."
-},
-{
-"batch": "agents-a",
-"item": "dayz-layout-validator",
-"grade": "A+",
-"reason": "Semicolons and = signs inside quotes are allowed, citing vanilla lines that exist on P: (remoteinfo:38, camera_tools:98, watermark:55). Step 3 matches what edit_check.py does with a missing file, a file over 2 MB and the five problem cap. The agent is gate only with no write tools, matching READ_ONLY_GATES."
-},
-{
-"batch": "agents-b",
-"item": "dayz-map-specialist",
-"grade": "A+",
-"reason": "Clear server-team trigger and example, write tools fit the role, Report names the server lead. Checked on P: and true: P:\\DZ\\surfaces\\config.cpp holds CfgWorlds > CAWorld > Clutter (line 20), CfgSurfaceCharacters (257) and CfgSurfaces (613); surfaces_bliss and surfaces_sakhal exist; no layers.cfg anywhere under P:\\DZ\\worlds; the world config is at P:\\DZ\\worlds\\chernarusplus\\world\\config.cpp. Nothing concrete to fix."
-},
-{
-"batch": "agents-b",
-"item": "dayz-mod-architect",
-"grade": "A+",
-"reason": "Plan-only role with Write and no Edit. The recipe draft marker matches DRAFT_MARK in dayz-recipe/recipe.py. The behavior actions match ACTIONS in dayz-gate/behavior.py (spawn, hands, wear, attach, cargo), and the id rule matches ID_RE. The Report names the orchestrator and the output paths. Nothing concrete to fix."
-},
-{
-"batch": "agents-b",
-"item": "dayz-orchestrator",
-"grade": "A+",
-"reason": "Clear main-session contract. The Agent() list carries both the plain and agentic-z: names. Every skill call matches its argument-hint: /dayz-gate build, ingame and behavior with --deps, --server and --json; /dayz-new-mod --author with the cached dayz-author.txt (new_mod.py:34); /dayz-recipe <weapon|vest|craftable> <ModName>; /dayz-health record <ModName> review reading standard input (health.py:467); triage.py --learn. Gate routing, fallbacks and the three-round stop are consistent with dayz-lead and dayz-gate. Nothing concrete to fix."
-},
-{
-"batch": "agents-b",
-"item": "dayz-router",
-"grade": "A+",
-"reason": "Minimal tools (Read only); the Haiku pin is documented as a cost decision; output is a single JSON line. Its 41 routes match rules.json targets exactly, names and kinds both (checked by script), and the args keys agree with dayz-route/SKILL.md. Nothing concrete to fix."
-},
-{
-"batch": "agents-b",
-"item": "dayz-script-specialist",
-"grade": "A+",
-"reason": "Precise reference map, a correct layer rule, side checks matching conventions/scripts.md lines 20-24, a /dayz-lint step with the Bash and Skill tools it needs, and full handoffs. P:\\scripts\\3_game\\colors.c and 5_mission\\gui\\ exist. Nothing concrete to fix."
-},
-{
-"batch": "agents-b",
-"item": "dayz-server-admin",
-"grade": "A+",
-"reason": "Task and done-check table matches the skills. The /dayz-edit-types backup-only-on-change claim is covered by test_types_edit.py. The /dayz-add-server --map and /dayz-launch-test --server arguments match their argument-hints. The cfgeconomycore folder rule matches split-types, and the audit intake matches data-audit.md. It never starts the server itself. Nothing concrete to fix."
-},
-{
-"batch": "agents-b",
-"item": "dayz-wearables-specialist",
-"grade": "A+",
-"reason": "Clear art-team contract. Every reference file exists. P: paths verified: CfgSlots in P:\\scripts\\config.cpp, clothing scripts in 4_world/entities/itembase/clothing and clothing_base.c. It runs /dayz-lint with the tools it needs and returns behavior checks without overwriting the plan file. Nothing concrete to fix."
-},
-{
-"batch": "agents-b",
-"item": "dayz-workbench-specialist",
-"grade": "A+",
-"reason": "Verify-before-write rule with real sources: P:\\scripts\\editor\\plugins, editor\\workbench and 1_core\\workbenchapi.c all exist. The launch commands match /dayz-launch-workbench --mod and /dayz-add-scaffold --piece workbench, and scripts/dayz/workbench.bat exists. It never opens Workbench itself. Nothing concrete to fix."
-},
-{
-"batch": "agents-b",
-"item": "figma-to-dayz-layout",
-"grade": "A+",
-"reason": "Prefix-first mapping and per-axis sizing match figma-to-dayz-rules.md sections 3 to 9. The one-space indentation claim is verified against P:\\gui\\layouts\\camera_checkerboard.layout. The file_type=\"layout\" filter exists in the dayz-rag server. Handoff to dayz-layout-validator in gate mode, then dayz-ui-specialist. Nothing concrete to fix."
-},
-{
-"batch": "agents-b",
-"item": "dayz-persistence-specialist",
-"grade": "A+",
-"reason": "Nothing concrete to fix. The description is a precise trigger with a realistic example. It has the minimum tools for a script-writing worker, with Bash and Skill for /dayz-lint. The workflow is script first (lint) and has a verification step (the data audit from data-audit.md). Every pack file it names exists. The vanilla hooks check out against P:/scripts/3_game/entities/entityai.c (OnStoreLoad :2978, EEOnAfterLoad :1381, AfterStoreLoad :1419). The audit route agrees with dayz-orchestrator step 6 and the 'For the server lead' heading in dayz-lead. The report names its recipient, and the evals pass 5/5."
-},
-{
-"batch": "agents-b",
-"item": "dayz-weapon-specialist",
-"grade": "A+",
-"reason": "Nothing concrete to fix. The description is a precise trigger with an example. It has the minimum tools for a config and script writer. Its ownership line with dayz-config-specialist is clear, and every pack file it names exists. Its DayZ facts check out on P:. Weapon classes go in units[] with weapons[] empty, which matches P:/DZ/weapons/firearms/mosin9130/config.cpp and weapon-config.md. chamberableFrom, spawnPileType, ammoItems, recoilModifier, simpleHiddenSelections and class Particles are vanilla keys. RecoilBase and SpawnRecoilObject are in 4_world. It checks by script (/dayz-lint), returns behavior checks in the checks-file format with only supported actions (spawn, hands, attach), gives a person-run checklist for what the gate cannot test, names its recipient, and its evals pass 5/5."
-},
-{
-"batch": "agents-b",
-"item": "dayz-ui-specialist",
-"grade": "A+",
-"reason": "Nothing concrete to fix. The description is third person, says when to use it, and sends Figma input back to the pipeline, as the CLAUDE.md routing rule requires. Every path exists (figma rules, gui_layout.md, widget_api.md with its 'Imagesets in layouts and script' section, 08_gui_menu.c, the numbered .layout examples, dabs_framework.md, ui.md 'UI scripting realities'). The /dayz-layout-preview sizes and finding names match its SKILL.md. The /dayz-build-imageset .gui-sources flow matches its SKILL.md. The P: facts hold: P:\\gui\\layouts exists, LoadImageFile(int, string) is in enwidgets.c:257, and 'set:dayz_gui image:' is used in ingamehud.c and vanilla layouts. Tools fit the role, and the report names its recipient."
-},
-{
-"batch": "agents-b",
-"item": "dayz-mod-debugger",
-"grade": "A+",
-"reason": "It is read only, which suits a role that fixes nothing. With no triage it checks both known-errors.json and the learned file triage.py loads, and pasted logs are quoted as <pasted>:<line>. Every owner agent it names exists and its DayZ facts check out."
-},
-{
-"batch": "agents-b",
-"item": "dayz-mod-reviewer",
-"grade": "A+",
-"reason": "Lint findings keep lint's own owner, so setup faults go to dayz-orchestrator and an unmounted P: goes to the user, matching known-errors.json. The lint rule names, the --json flag and exit 2 match lint.py. The hidden selection examples are true on P:."
-},
-{
-"batch": "agents-b",
-"item": "dayz-object-builder",
-"grade": "A+",
-"reason": "No defect found. The description is clear about ownership (animation and physics hand-offs) and has a realistic example; that example's config owner, dayz-wearables-specialist, agrees with line 22. Its tools fit a worker that writes model.cfg and runs /dayz-p3d-audit. Every referenced pack file and section exists on origin/develop: models/README.md, lods.md, memory-points.md, named-properties.md, proxies.md and doors.md; p3d-killers.md sections 3 and 5; and the 'Required Properties for Placed Objects' section of config-rvmat-checks.md. The LOD values (Geometry 1.0e+13, Memory 1.0e+15, ViewGeometry 6.0e+15, FireGeometry 7.0e+15) match conventions/assets.md. The proxy example points at P:\\DZ\\gear\\camping\\combination_lock3.p3d, which exists. dBodyGetMass exists (P:\\scripts\\1_core\\proto\\enphysics.c:122). The mass and autocenter rules match named-properties.md and mass-and-weight.md. The ODOL-versus-MLOD limit and the 'user must save in Object Builder' step are stated honestly, and both are covered in the report."
-},
-{
-"batch": "agents-b",
-"item": "dayz-physics-specialist",
-"grade": "A+",
-"reason": "No defect found. It is a diagnose-only role: no Edit, Write or memory (enforced by NO_WRITE_ROLES in test_repo_integrity.py), Bash is limited to the audit script, and it is never named as the owner, which matches the debugger and the reviewer. All pack files exist, and the README's symptom table matches the workflow. Its DayZ facts check out on P:. WoodenCrate is at P:\\DZ\\gear\\camping\\config.cpp:10157. dBodyGetMass, dBodyIsDynamic, RaycastRV and ObjIntersectFire are all in P:\\scripts. The claim that neither /dayz-gate behavior nor dayz-ingame-tester can drop, throw or shoot matches the behavior gate's actions (spawn, hands, wear, attach, cargo). Its config hand-offs match dayz-lead's 'Any team' table. The in-game test steps needing a live diag session are stated honestly as a limitation. It has eval questions in evals/questions/dayz-physics-specialist.json."
-},
-{
-"batch": "agents-b",
-"item": "dayz-vehicle-specialist",
-"grade": "A+",
-"reason": "Nothing concrete to fix. Its ownership split with dayz-config-specialist is clear, handoffs go through the config lead, the workflow ends with lint and behavior checks, and the Report names the config lead. Eval 5/5. Every pack file exists. The DayZ facts were spot-checked on P: and all hold: CfgPatches DZ_Vehicles_Wheeled, DZ_Vehicles_Water and DZ_Vehicles_Parts; the native Transport, Car, Boat and Helicopter classes in P:\\bin\\config.cpp:1404-1563; CfgSlots in P:\\scripts\\config.cpp:11; Helicopter, HelicopterAuto and HelicopterScript in scripts/3_game/vehicles/helicopter.c and 4_world/entities/vehicles/helicopterscript.c; MotorbikeScript and P:\\DZ\\vehicles\\singletrack\\. GetAnimInstance, GetSeatAnimationType and CrewCanGetThrough are in inheritedcars/civiliansedan.c. The IsVital* methods, script reading the 'Engine' and 'FuelTank' zones by name, the boat SimulationModule's Engine, Gearbox and Propeller, and GUIInventoryAttachmentsProps and fuelCapacity in the wheeled config are all there."
-},
-{
-"batch": "agents-b",
-"item": "figma-node-normalizer",
-"grade": "A+",
-"reason": "Nothing concrete to fix. Least privilege: read-only tools plus the Figma MCP tools under all three server names, and it writes no files. The trigger matches the CLAUDE.md pipeline rule. It stops if no Figma tool is loaded, and it never builds JSON from memory. Its 13 prefixes match rules-doc section 4 exactly (bar_ maps to progress). The JSON shape matches the eight core fields in rules-doc section 10. It is deterministic and lists every removal in its summary. The Report names the caller and the next stage (figma-to-dayz-layout). Eval 5/5."
-},
-{
-"batch": "skills-a",
-"item": "clean-repo",
-"grade": "A+",
-"reason": "A thin orchestrator: it finds every domain clean-workspace skill, runs one combined dry run, asks once, and refuses on a non-TTY without --yes (exit 2). The non-TTY flow for agents is explicit, disable-model-invocation is set for a destructive skill, every claim matches clean.py, and the 9 tests cover discovery and the exit codes. Nothing concrete to fix."
-},
-{
-"batch": "skills-a",
-"item": "dayz-add-scaffold",
-"grade": "A+",
-"reason": "Every claim checked against add_scaffold.py holds: pieces run in the documented order, the author is resolved before anything is written, --piece junction is never part of all, a real folder or a foreign link is refused, it is idempotent, the SKIP and OK lines match the samples, and the templates come from new_mod.py. It gates on preflight first and has 34 tests. Nothing concrete to fix in this skill. The DayZSetting.xml it writes ends up packed into the PBO, but that is fixed in dayz-build-pbo."
-},
-{
-"batch": "skills-a",
-"item": "dayz-build-imageset",
-"grade": "A+",
-"reason": "The generated .imageset structure (ImageSetClass, RefSize, ImageSetTextureClass with mpix 0, ImageSetDefClass with Name, Pos, Size and Flags 0) matches the vanilla files in P:\\gui\\imagesets\\ line for line. The code matches the doc: power-of-two rectangular atlases, a 10px gutter, next-fit splitting, removal of stale outputs only after every atlas converted, detection of an unchanged .paa, and identifier checks on sprite names. Preflight runs first, there is a requirements.txt, and there are 31 tests. Nothing concrete to fix."
-},
-{
-"batch": "skills-a",
-"item": "dayz-clean-workspace",
-"grade": "A+",
-"reason": "The ownership rules are proof-based: a link, or a folder without .git that has a junction pointing at it or an ownership marker. Links are removed with cmd /c rmdir and never rmtree. The plan order, the health-folder cleanup, the dry-run flow for agents, the stop on first failure and the warnings all match clean.py. Destructive actions are guarded by a dry run, a prompt and disable-model-invocation, and there are 26 tests. Nothing concrete to fix."
-},
-{
-"batch": "skills-a",
-"item": "dayz-conflict-check",
-"grade": "A+",
-"reason": "Run read-only against the real P:\\Mods (@CF, @Community-Online-Tools, @DayZ-Expansion-Bundle with 246 PBO headers), it finished in 0.67 s, which matches 'about a second'. Bundle-only selection, script-name-match from PBO headers, owner and fix lines, and the never-extract rule all behave as documented, and the folder names in the doc match P:\\Mods. Limits are stated honestly. Nothing concrete to fix."
-},
-{
-"batch": "skills-a",
-"item": "dayz-health",
-"grade": "A+",
-"reason": "Checked against health.py: KEEP=200 and HISTORY_ROWS=50 match the doc, 'show' is inserted as the default command, findings close when a newer result of the same gate drops them, ERROR reports are refused, the stored folder is git-ignored by .server/*/*, and both page files are rebuilt on every record. It starts no process and has 34 tests. Nothing concrete to fix."
-},
-{
-"batch": "skills-a",
-"item": "dayz-ask",
-"grade": "A+",
-"reason": "The trigger description is precise and the work is script first: RAG, then a check of every hit against P:, then a Grep fallback. The verdict line and exit codes match the code. The JSON keys, the 60-line excerpt cap, the default folders and the --top-k bounds all match ask.py. The ready-made answer rules forbid answering from memory. Tests cover verified, moved and dropped hits, every fallback reason, ranking, and the CLI. Nothing concrete to fix."
-},
-{
-"batch": "skills-a",
-"item": "dayz-build-pbo",
-"grade": "A+",
-"reason": "Every numbered step matches the order in build.py main(): name check, project, lint gate, preflight, P:\\Mods junction, workspace and prefix, junction, tools, ownership gate, clean gate, marker before the build, AddonBuilder, then a fresh-PBO check and cleanup. The guards on destructive steps (ownership marker, refusing --clean while payload PBOs exist) are tested, and include.lst and exclude.lst match their descriptions. Nothing concrete to fix."
-},
-{
-"batch": "skills-a",
-"item": "dayz-cot-bootstrap",
-"grade": "A+",
-"reason": "Correctly marked disable-model-invocation, since it launches the game. The edit is strictly per player (it never touches Roles/*.txt), the timings (600 s, 15 s, 30 s) match the constants, and it kills only the processes it started. Pass 2 runs only after a successful edit. The keybinds were checked against the COT scripts.pbo on P:\\Mods: UACOTToggleButtons is kY and UACOTModuleToggleCOT is kEnd, which matches the closing message. Tests are thorough. Nothing concrete to fix."
-},
-{
-"batch": "skills-a",
-"item": "dayz-deploy-pbo",
-"grade": "A+",
-"reason": "Pure additive copy with an ownership gate, size plus 2 s mtime idempotence, locked-file failure handling that still writes the marker, and an unsigned-PBO warning. The <name>.pbo.<key>.bisign pattern was confirmed against real Workshop folders on P:\\Mods. The docs match deploy.py line for line, and the tests cover each refusal. Nothing concrete to fix."
-},
-{
-"batch": "skills-a",
-"item": "dayz-import-mod",
-"grade": "A+",
-"reason": "Clear trigger, including the GitHub and Workshop cases. The Workshop refusal happens before preflight, the non-TTY decision check happens before any link is made, the workspace link is rolled back when the P: junction fails, and the clone is removed on a later refusal. The $PBOPREFIX$ mismatch warning matches the build-pbo rule, and the code matches the docs. 51 tests cover the risky paths. Nothing concrete to fix."
-},
-{
-"batch": "skills-a",
-"item": "agentic-z-update",
-"grade": "A+",
-"reason": "The per-file resolve command is now built relative to the repo root the script runs from, and the quiet nudge names only the commands that apply. The SessionStart hook matches the SKILL.md, with a 20 second timeout and an exit code that is always 0. All 98 tests pass."
-},
-{
-"batch": "skills-a",
-"item": "dayz-add-server",
-"grade": "A+",
-"reason": "I found nothing worth fixing. The map aliases match the real DayZ Server mpmissions folders on this machine (chernarusplus, enoch, sakhal, nasdara), and Steam appid 223350 is correct. The SKILL output samples and refusal list match add_server.py. Refresh keeps a timestamped backup. The template-mismatch gate, the reserved-name checks (! and -behavior), the ANSI-safe config rewrite and the junction failure exit all exist and are tested."
-},
-{
-"batch": "skills-a",
-"item": "dayz-balance",
-"grade": "A+",
-"reason": "A bad argument now prints ERROR on stdout and exits 2, as SKILL.md says. The mask facts check out on P:, including GasMask at line 21 and Inventory_Base biological=0. All 34 tests pass."
-},
-{
-"batch": "skills-a",
-"item": "dayz-edit-types",
-"grade": "A+",
-"reason": "Children are written in the vanilla order category, tag, usage, value, which matches the Chernarus types.xml. Without cfglimitsdefinitionuser.xml, user= groups are skipped instead of warned on. A dry run on the vanilla mission flagged only the real misspelling Militar, and all 64 tests pass."
-},
-{
-"batch": "skills-a",
-"item": "dayz-gate",
-"grade": "A+",
-"reason": "All gate logic lives in scripts, and the 227 tests run against fixture missions, logs and images. Every option in SKILL.md matches gate.py, bad arguments exit 2 with a clear ERROR line, and commented out requiredAddons lines are ignored. The parts not yet run against live DayZ are stated honestly in its Limits section."
-},
-{
-"batch": "skills-a",
-"item": "dayz-init",
-"grade": "A+",
-"reason": "The hub, plan.py and the launch dispatch share one rule, so prebuilt bundles are no longer asked for dependencies. Every dispatch action exists, bad input gets clear messages, and the four maps match the installed missions. All 109 tests pass."
-},
-{
-"batch": "skills-b",
-"item": "dayz-layout-preview",
-"grade": "A+",
-"reason": "The trigger is clear, the work is script-first (the AI only reads the PNGs), and the exit codes (0, 1, 2) match main(). Limits are stated honestly: the 1080 reference for 'scaled 1' and plain halign values treated like the _ref ones. Spot check on P:\\gui\\layouts confirms that plain 'right' and 'center' appear in vanilla (390 and 287 uses), so treating them is needed. It has fixtures and tests and is listed as a preflight exception in dayz-conventions.md. Nothing concrete to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-lint",
-"grade": "A+",
-"reason": "RULES in lint.py matches the SKILL.md table and the lint-* entries in dayz-gate/known-errors.json one to one (25 rules each, counting required-addon-duplicate). The claim that /dayz-build-pbo lints before preflight matches build.py (gate_on_lint before h.gate_on_preflight). DayZ facts check out on P:\\: DZ_data_aiconfigs has an empty body in P:\\DZ\\data\\aiconfigs\\config.cpp, and P:\\DZ\\data_sakhal\\config.cpp maps worldScriptModule to scripts/4_World. Procedural #(...) textures are skipped correctly. It has 359 lines of tests. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-new-mod",
-"grade": "A+",
-"reason": "A precise description with routing to sibling skills, refusal cases, a stale-junction auto-clean with rollback on partial failure, author-handle validation and 357 lines of tests. The workbench/dayz.gproj and DayZSetting.xml it copies exist in DayZ Tools\\Bin\\Workbench on this machine. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-pack-texture",
-"grade": "A+",
-"reason": "Checked the suffix table against DayZ Tools\\Bin\\ImageToPAA\\TexConvert.cfg on this machine: every accepted suffix has a rule there, as the skill claims. It refuses a stale .paa whose modification time did not change, validates every input before converting any, gates on preflight and is tested. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-particles",
-"grade": "A+",
-"reason": "A reference skill that says why it has no preflight gate. Checked on P:\\: POOL_SIZE 10000 is at particlemanager.c:25, GetInstance() returns null on headless or dedicated servers, the StopParticleFlags enum exists in particlesource.c, the two-argument RegisterParticle(root_path, file_name) form exists in particlelist.c:452, and ScaleParticleParamFromOriginal is used by vanilla. Unverified items are marked as unverified. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-preflight",
-"grade": "A+",
-"reason": "Its only repair (mklink /J when P:\\Mods is missing) is narrow and justified, the resolver order is documented, the resolvers are shared, and there are 285 lines of tests. Running it on this machine found P:\\ mounted and DayZ Tools at the default Steam path, matching the documented resolution. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-recipe",
-"grade": "A+",
-"reason": "Script-first, verifies against P:\\, writes nothing on failure, protects existing plans with --force and hands off clearly to dayz-mod-architect. Every default checked on P:\\: AKM (akm/config.cpp:191), AK_WoodBttstck, Mag_AKM_30Rnd, SmershVest, SmershBag, RecipeBase, PluginRecipesManager, RegisterRecipies (pluginrecipesmanagerbase.c:14) and CraftRagRope. Listed as a preflight exception. It has 406 lines of tests. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-release-pack",
-"grade": "A+",
-"reason": "Every fact comes from the mod's files, each warning has a stated action, the exit-code contract is clear and the handoff to /dayz-server-kit is explicit. The scope keyword mapping (public, protected, private = 2, 1, 0) matches DayZ's config defines. It has fixtures and 229 lines of tests, and the skill is in the preflight exception list. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-route",
-"grade": "A+",
-"reason": "route.py does exactly what the doc describes: rules first, conflict_factor 0.5, absorbs, threshold 0.8 from rules.json, then Jev only when keyed, then a null/next dayz-router result. It says that request text goes to api.typesafe.ai. test_route.py keeps rules.json in sync with dayz-router.md, and that agent exists. This matches the CLAUDE.md routing rule. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-scope-mod",
-"grade": "A+",
-"reason": "Least privilege done right: it adds deny rules only, records exactly what it added so --clear undoes only that, refuses names that would read as pattern syntax, says what it does not protect, and is backed by the scope_guard hook for mods created later. Listed preflight exception, with tests. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-server-kit",
-"grade": "A+",
-"reason": "Refuses to zip a .biprivatekey in code (ReleaseError) as well as in the docs. The placeholder entries (nominal 0) are commented and listed in README.txt. The types source order is documented and the code matches it, and --mission accepts an instance name. Tests exist. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-setup-objectbuilder",
-"grade": "A+",
-"reason": "Destructive --force is guarded by a prompt (or --yes when there is no terminal), a reg export backup, an HKCU-only check and an 'Object Builder is running' refusal. Checked on this machine: ObjectBuilder_defaultSettings.reg is in Bin\\ObjectBuilder, the CConfig key exists, and '#View background LOD' = 1 matches the preferred flags. It has 414 lines of tests. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-split-types",
-"grade": "A+",
-"reason": "A thin wrapper around a vendored tool, with timestamped backups, the <ce folder> fix and a result check that decides success because the upstream script always exits 0. Checked: the vendored typeSplitter.py defines exactly the 19 categories listed. Tests exist. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-statusline",
-"grade": "A+",
-"reason": "Edits only settings.local.json, keeps a backup, records the status line it replaced so --remove restores it, refuses invalid JSON and fails quietly ('DayZ status unavailable'). The RAG age segment reads the indexed_at field, which exists in the real manifest. Listed preflight exception, with tests. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-stop-test",
-"grade": "A+",
-"reason": "A trivial .bat is the right tool for one taskkill call, which matches the repo's tooling rule. The errorlevel 128 handling and the stderr pass-through match the doc's table exactly, it is a documented preflight exception, and it is tested with a taskkill stub. Nothing to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-launch-objectbuilder",
-"grade": "A+",
-"reason": "The trigger description is clear, and every claim in SKILL.md matches launch.py: preflight runs first, --file and --mod are mutually exclusive, --mod opens the single .p3d under data/ or lists several and asks for --file, the registry check is reused from setup.py, the launch is detached with the right working directory, and OSError is handled. The sample output matches the print statements. The 17 tests cover the risky paths. On disk I confirmed ObjectBuilder.exe exists under DayZ Tools\\Bin\\ObjectBuilder and that /dayz-new-mod scaffolds data/. Tests were not run because pytest was denied in this session. I found nothing concrete to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-launch-workbench",
-"grade": "A+",
-"reason": "The description is precise and the documentation matches the code: preflight, then the exe check, then gproj resolution with distinct errors for a missing mod folder and a missing gproj, then a detached launch with cwd set to Bin\\Workbench. I spot-checked the DayZ facts in the real binary: WorkbenchApp.exe contains the '-gproj' switch and the 'CurrentDir:dayz.gproj' default, and dta/, platforms/, ToolAddons/ and dayz.gproj sit next to it. The 10 tests cover flag handling, cwd and the -gproj= argument. Tests were not run because pytest was denied. I found nothing concrete to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-search-download",
-"grade": "A+",
-"reason": "The stdlib-only script is safe and matches the documentation exactly: tag idempotency through release-tag.txt, refusal of an asset with no digest before downloading, a SHA-256 check, a safe tar extract (data filter or manual check), a staged swap with restore, a clear network error path, and a prompt that exits 1 when declined or non-interactive. I checked the release claims against the live GitHub API. 1.4.0, 1.1.0, 1.0.1, v1.0.0 and v0.1.0 ship dayz-rag-index-v0.1.0.tar.gz; 1.2.0 and 1.2.1 ship dayz-search-index-<ver>.tar.gz; 1.2.2 has no asset; every asset has a sha256 digest. The 1.4.0 asset has the same digest as v0.1.0, which supports the claim that the release index predates windowing. The 30 tests cover the risky paths. Tests were not run because pytest was denied. I found nothing concrete to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-launch-test",
-"grade": "A+",
-"reason": "I checked every claim in SKILL.md against launch.py and the shared skill_helpers.py on origin/develop and they all match: step order, the dry run writing nothing, exit 2 for bad ports and for a mod named both ways, the port gate, the 180 s bind wait with a kill on timeout, the server being killed when the client fails to spawn, detached processes and the display-preferences fallback. The sample output matches the real prefixes. The 33 tests cover the risky paths, and all 181 tests across the four scripted skills pass. The wiki mirror is identical. Remaining limits (a live server bind, the in-game connect) need a live DayZ session, which the skill already depends on. Nothing concrete to fix."
-},
-{
-"batch": "skills-b",
-"item": "dayz-logwatch",
-"grade": "A+",
-"reason": "An interval of zero, a negative, nan or inf now stops with a clear error and exit 2, and the usage line lists every flag. The SKILL.md matches logwatch.py on folders, crash logs, exit codes and JSON fields. All tests pass."
-},
-{
-"batch": "skills-b",
-"item": "dayz-p3d-audit",
-"grade": "A+",
-"reason": "All 71 tests pass, and the exit codes behave as documented, including a clear Not MLOD failure for a vanilla ODOL file. The P: path check skips URLs, kits get no autocenter finding, and component names match in any case so the coverage check always runs. The penetration rvmats and bisurfs its references cite exist on P:."
-},
-{
-"batch": "skills-b",
-"item": "dayz-record-correction",
-"grade": "A+",
-"reason": "Step 1 now also searches the Agentic-Z rules section of the project's CLAUDE.md, AGENTS.md and GEMINI.md in a plugin install. Every path it names exists, and its step 3b check passed on a copy of develop."
-},
-{
-"batch": "skills-b",
-"item": "dayz-search-index",
-"grade": "A+",
-"reason": "All 49 tests pass, and --status and the refusal to overwrite an existing index behave and exit as documented, with nothing spent. Running the chunker over P: without embedding gave exactly the 61,757 chunks the docs claim, with no chunk over 6,000 characters. The six vanilla folders it names exist, and the cost rates and free tier logic match its reference."
-},
-{
-"batch": "skills-c",
-"item": "dayz-workdrive",
-"grade": "A+",
-"reason": "Nothing concrete left to fix. The description is a clear trigger. It is script-first, and it explains well why it does not gate on preflight. The order it searches for the work-drive folder matches the code. Both the WorkDrive.exe route and the subst fallback check whether P:\\ is actually there rather than trusting the return code. It warns when settings.ini names a letter other than P. The exit codes match the SKILL.md table. The 33 tests pass. I checked the DayZ facts against this machine: DayZ Tools\\Bin\\WorkDrive\\WorkDrive.exe exists, and settings.ini has [ProjectDrive] path= and Letter=P, exactly as the skill reads them."
-},
-{
-"batch": "skills-c",
-"item": "docs-sync",
-"grade": "A+",
-"reason": "Nothing concrete to fix. The description is third person and says both what it does and when to use it. Everything runs from a script, and the SKILL.md matches the code: the modes, the exit codes 0, 1 and 2, the mirror map, the orphan rules (about.md and _-prefixed files are kept), and the YAML-missing behaviour under --quiet. The Stop hook is wired in .claude/settings.json as 'sync.py --check --quiet' with a 15 second timeout, prints a valid systemMessage JSON line, never fails the session, and took 0.23 seconds. CI runs 'sync.py --check' in .github/workflows/tests.yml. On origin/develop, 'sync.py --check' reports the wiki in sync, and the 59 tests across test_apply.py and test_docs_sync.py pass. Dry runs cover --apply. The em dashes in apply.py are real UTF-8, not mojibake."
-},
-{
-"batch": "skills-c",
-"item": "clean-repo",
-"grade": "A+",
-"reason": "Nothing concrete to fix. disable-model-invocation is set, which suits a destructive repo-wide wipe. The description says what it does and when to use it, and points one-domain cleanups to the domain skill. The orchestrator stays domain-agnostic. Every child dry run finishes before anything is removed, any dry-run failure aborts with nothing removed, a run without --yes in a non-TTY shell is refused (exit 2) before anything runs, and the prompt names the cached project, with a warning when that project is not this checkout. The 'From an agent shell' steps give the right chat-confirmation flow. The child contract (--include-server, --dry-run, --yes) matches dayz-clean-workspace/clean.py, which runs its own preflight gate (h.gate_on_preflight), as the SKILL.md says. The 13 tests cover each of these paths and pass, and the .bat wrapper matches."
-},
-{
-"batch": "skills-c",
-"item": "dayz-upgrade-guard",
-"grade": "A+",
-"reason": "All 39 tests pass and cover all six finding reasons. A real snapshot of P: took 9.6 seconds and came to 10 MB with no files skipped, matching the docs. The check, diff, missing project, older format and bad argument paths all print the documented verdict first with the right exit code, and a separate reindex command rebuilds the search index after a failed check."
-},
-{
-"batch": "skills-c",
-"item": "sync-skills",
-"grade": "A+",
-"reason": "I found nothing concrete to fix. The description says what the skill does and when to use it. The instructions match sync.py: the OK, REFRESH, FOREIGN, LINK, SKIP and PRUNE states, the --force takeover, the rule that links into a worktree count as foreign, case and separator normalisation of paths, exit 1 on a failed link or folder creation, exit 2 on a bad agents.json, an unknown agent name or a missing skills folder, and the sample '[FAILED] cannot create' line. The per-agent paths in SKILL.md and agents.json (Claude via CLAUDE_CONFIG_DIR or ~/.claude/skills, Codex at ~/.agents/skills, Gemini via GEMINI_CLI_HOME/.gemini or ~/.gemini/skills) agree with the skill discovery paths in the repo's CLAUDE.md, AGENTS.md and GEMINI.md on develop. The script never deletes a real folder, has a dry run, and leaves another clone's links alone unless --force is given. It also tells the user how to reload each agent CLI and how to check the skill counts afterwards. All 26 of its pytest tests pass on origin/develop; they cover foreign, worktree, orphan pruning, real folders, malformed agents.json, the --skip and --agents options, and the environment variables that move each agent's home. The thin wrapper at scripts/setup/sync-skills.bat forwards its arguments correctly."
-}
+  {
+    "batch": "agents-a",
+    "item": "dayz-ai-specialist",
+    "grade": "A+",
+    "reason": "The description is a clear contract with an example. Tools are minimal (no Bash, both dayz-rag names present). Handoffs to the server admin, debugger and script specialist are explicit, and the Report names the script lead. Every P: fact I checked is correct: DZInfectedPackBeh is at P:\\DZ\\data\\aiconfigs\\config.cpp:304; CfgAIBehaviours is at line 14 of both P:\\DZ\\AI\\config.cpp and P:\\DZ\\AI_bliss\\config.cpp; the three vanilla script folders exist; ModCommandHandlerBefore, Inside and After are declared in dayzanimal.c and overridden in zombiebase.c; OverrideMovementSpeed and OverrideAlertLevel are in dayzcreatureaiinputcontroller.c. There is one MUST, which is within the caps budget. I found nothing concrete to fix."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-animation-specialist",
+    "grade": "A+",
+    "reason": "Ownership is split precisely with dayz-object-builder (skeletonBones and class Animations here; the skeleton class, sections[] and the .p3d stay with object-builder). Each step points at its own file in the animation pack, and every referenced pack file exists. The claim that vanilla ships no model.cfg text holds: no model.cfg exists under P:\\DZ. Out-of-scope work (.anm and graph changes) is stated, and the Report lists its recipient and every item it returns. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-config-specialist",
+    "grade": "A+",
+    "reason": "Ownership with the weapon, vehicle, wearables and audio specialists is sharp, and handbacks go through the config lead. Every section it cites exists: 'Config conventions', the inventorySlot string-versus-array bug (T148506) in conventions/config.md, and container-base.md. The workflow covers vanilla parent citation, the requiredAddons ordering, forward declarations, the redeclare-only-changed-entries rule, path checks for $PBOPREFIX$ and \\DZ, and a syntax check. Tools are minimal. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-audio-fx-specialist",
+    "grade": "A+",
+    "reason": "Every DayZ fact checked out on P:. Both sound config files exist, and their CfgPatches classes are DZ_Sounds_Effects and DZ_Sounds_Bliss. particlelist.c and P:\\graphics\\particles exist. powergenerator.c plays a start, loop and stop sound with PlaySoundSet, PlaySoundSetLoop and StopSoundSet, and plays its smoke with SEffectManager.PlayOnObject. Object.c defines all three sound helpers. The tools are the minimum the job needs (no Bash), the handoffs are clear, it is honest that no file gate can hear or see the result, and it names who gets its report. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-build-checker",
+    "grade": "A+",
+    "reason": "It matches gate_build in gate.py: lint first, then stop the session, then build, a payload-only bundle skips the build, and a bundle with a linker config.cpp gets both build and deploy (FAIL lines and missing-.bisign WARN lines). test_build_checker_matches_gate enforces this order. It has read-only tools and no memory (it is in READ_ONLY_GATES), the PBO path matches build.py, the verdict comes first, and it names who gets the report. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-ingame-tester",
+    "grade": "A+",
+    "reason": "It matches gate.py: the ready pattern is DEFAULT_READY_RE, the line comes from vanilla P:\\scripts\\5_mission\\somemission.c:3 as cited, the settle time is 30 seconds and the timeout 300, MOD_QUALIFIED covers NULL pointer and Can't find, and the vanilla-only baseline uses the two newest sessions whose CLI params line lacks the mod. test_ingame_tester_matches_gate enforces this. It has read-only tools, no memory, always stops the session, puts the verdict first and names who gets the report. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-lead",
+    "grade": "A+",
+    "reason": "Every worker in the table is a real agent (test_lead_workers_are_agents), and it has no write tools and no memory (NO_WRITE_ROLES). Starting workers from a lead is valid under the current spec, which allows a subagent with Agent to start its own subagents up to three levels deep; the spec ignores a type list here, so a bare Agent tool is correct. The table columns match the orchestrator's task table, and the persistence audit, the For the server lead block and the health-page quote all line up with the orchestrator and persistence-specialist files. The Figma steps follow the order in CLAUDE.md, and the gate boundaries are clear. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-a",
+    "item": "agent-creator",
+    "grade": "A+",
+    "reason": "The description is a clear trigger with an example, and the tools fit its job. Every path, list and test it names exists on develop, every integrity assert now names its rule, and it runs the answer tests with py scripts/dev/run_evals.py, which works from Bash. The integrity test passes."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-asset-specialist",
+    "grade": "A+",
+    "reason": "Both earlier defects are fixed. It sends dayz-config-specialist the healthLevels[] material paths, which P:\\DZ\\characters\\vests\\config.cpp uses, and it no longer forwards the skill's suggested _co suffix for normal or specular maps. The suffix set, the power of two refusal and the overwrite behavior match pack_texture.py, and every pack section it cites exists."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-build-engineer",
+    "grade": "A+",
+    "reason": "Every skill it names exists with the flags and behavior it describes, including the /dayz-stop-test OK line, /dayz-build-pbo refusing --clean when other PBOs are present and the --server-only flag. Its Bash use is narrowly limited. It stops and reports to the release lead whenever the map or the dependency list is missing."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-docs-writer",
+    "grade": "A+",
+    "reason": "Every flag it passes to /dayz-release-pack and /dayz-server-kit is real, and the output files it merges are the ones those scripts write. Its warning list matches both skills. Its git commands are scoped to the mod folder and read only, and it stops and reports when there is no git or no version."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-layout-validator",
+    "grade": "A+",
+    "reason": "Semicolons and = signs inside quotes are allowed, citing vanilla lines that exist on P: (remoteinfo:38, camera_tools:98, watermark:55). Step 3 matches what edit_check.py does with a missing file, a file over 2 MB and the five problem cap. The agent is gate only with no write tools, matching READ_ONLY_GATES."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-map-specialist",
+    "grade": "A+",
+    "reason": "Clear server-team trigger and example, write tools fit the role, Report names the server lead. Checked on P: and true: P:\\DZ\\surfaces\\config.cpp holds CfgWorlds > CAWorld > Clutter (line 20), CfgSurfaceCharacters (257) and CfgSurfaces (613); surfaces_bliss and surfaces_sakhal exist; no layers.cfg anywhere under P:\\DZ\\worlds; the world config is at P:\\DZ\\worlds\\chernarusplus\\world\\config.cpp. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-mod-architect",
+    "grade": "A+",
+    "reason": "Plan-only role with Write and no Edit. The recipe draft marker matches DRAFT_MARK in dayz-recipe/recipe.py. The behavior actions match ACTIONS in dayz-gate/behavior.py (spawn, hands, wear, attach, cargo), and the id rule matches ID_RE. The Report names the orchestrator and the output paths. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-orchestrator",
+    "grade": "A+",
+    "reason": "Clear main-session contract. The Agent() list carries both the plain and agentic-z: names. Every skill call matches its argument-hint: /dayz-gate build, ingame and behavior with --deps, --server and --json; /dayz-new-mod --author with the cached dayz-author.txt (new_mod.py:34); /dayz-recipe <weapon|vest|craftable> <ModName>; /dayz-health record <ModName> review reading standard input (health.py:467); triage.py --learn. Gate routing, fallbacks and the three-round stop are consistent with dayz-lead and dayz-gate. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-router",
+    "grade": "A+",
+    "reason": "Minimal tools (Read only); the Haiku pin is documented as a cost decision; output is a single JSON line. Its 41 routes match rules.json targets exactly, names and kinds both (checked by script), and the args keys agree with dayz-route/SKILL.md. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-script-specialist",
+    "grade": "A+",
+    "reason": "Precise reference map, a correct layer rule, side checks matching conventions/scripts.md lines 20-24, a /dayz-lint step with the Bash and Skill tools it needs, and full handoffs. P:\\scripts\\3_game\\colors.c and 5_mission\\gui\\ exist. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-server-admin",
+    "grade": "A+",
+    "reason": "Task and done-check table matches the skills. The /dayz-edit-types backup-only-on-change claim is covered by test_types_edit.py. The /dayz-add-server --map and /dayz-launch-test --server arguments match their argument-hints. The cfgeconomycore folder rule matches split-types, and the audit intake matches data-audit.md. It never starts the server itself. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-wearables-specialist",
+    "grade": "A+",
+    "reason": "Clear art-team contract. Every reference file exists. P: paths verified: CfgSlots in P:\\scripts\\config.cpp, clothing scripts in 4_world/entities/itembase/clothing and clothing_base.c. It runs /dayz-lint with the tools it needs and returns behavior checks without overwriting the plan file. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-workbench-specialist",
+    "grade": "A+",
+    "reason": "Verify-before-write rule with real sources: P:\\scripts\\editor\\plugins, editor\\workbench and 1_core\\workbenchapi.c all exist. The launch commands match /dayz-launch-workbench --mod and /dayz-add-scaffold --piece workbench, and scripts/dayz/workbench.bat exists. It never opens Workbench itself. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-b",
+    "item": "figma-to-dayz-layout",
+    "grade": "A+",
+    "reason": "Prefix-first mapping and per-axis sizing match figma-to-dayz-rules.md sections 3 to 9. The one-space indentation claim is verified against P:\\gui\\layouts\\camera_checkerboard.layout. The file_type=\"layout\" filter exists in the dayz-rag server. Handoff to dayz-layout-validator in gate mode, then dayz-ui-specialist. Nothing concrete to fix."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-persistence-specialist",
+    "grade": "A+",
+    "reason": "Nothing concrete to fix. The description is a precise trigger with a realistic example. It has the minimum tools for a script-writing worker, with Bash and Skill for /dayz-lint. The workflow is script first (lint) and has a verification step (the data audit from data-audit.md). Every pack file it names exists. The vanilla hooks check out against P:/scripts/3_game/entities/entityai.c (OnStoreLoad :2978, EEOnAfterLoad :1381, AfterStoreLoad :1419). The audit route agrees with dayz-orchestrator step 6 and the 'For the server lead' heading in dayz-lead. The report names its recipient, and the evals pass 5/5."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-weapon-specialist",
+    "grade": "A+",
+    "reason": "Nothing concrete to fix. The description is a precise trigger with an example. It has the minimum tools for a config and script writer. Its ownership line with dayz-config-specialist is clear, and every pack file it names exists. Its DayZ facts check out on P:. Weapon classes go in units[] with weapons[] empty, which matches P:/DZ/weapons/firearms/mosin9130/config.cpp and weapon-config.md. chamberableFrom, spawnPileType, ammoItems, recoilModifier, simpleHiddenSelections and class Particles are vanilla keys. RecoilBase and SpawnRecoilObject are in 4_world. It checks by script (/dayz-lint), returns behavior checks in the checks-file format with only supported actions (spawn, hands, attach), gives a person-run checklist for what the gate cannot test, names its recipient, and its evals pass 5/5."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-ui-specialist",
+    "grade": "A+",
+    "reason": "Nothing concrete to fix. The description is third person, says when to use it, and sends Figma input back to the pipeline, as the CLAUDE.md routing rule requires. Every path exists (figma rules, gui_layout.md, widget_api.md with its 'Imagesets in layouts and script' section, 08_gui_menu.c, the numbered .layout examples, dabs_framework.md, ui.md 'UI scripting realities'). The /dayz-layout-preview sizes and finding names match its SKILL.md. The /dayz-build-imageset .gui-sources flow matches its SKILL.md. The P: facts hold: P:\\gui\\layouts exists, LoadImageFile(int, string) is in enwidgets.c:257, and 'set:dayz_gui image:' is used in ingamehud.c and vanilla layouts. Tools fit the role, and the report names its recipient."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-mod-debugger",
+    "grade": "A+",
+    "reason": "It is read only, which suits a role that fixes nothing. With no triage it checks both known-errors.json and the learned file triage.py loads, and pasted logs are quoted as <pasted>:<line>. Every owner agent it names exists and its DayZ facts check out."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-mod-reviewer",
+    "grade": "A+",
+    "reason": "Lint findings keep lint's own owner, so setup faults go to dayz-orchestrator and an unmounted P: goes to the user, matching known-errors.json. The lint rule names, the --json flag and exit 2 match lint.py. The hidden selection examples are true on P:."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-object-builder",
+    "grade": "A+",
+    "reason": "No defect found. The description is clear about ownership (animation and physics hand-offs) and has a realistic example; that example's config owner, dayz-wearables-specialist, agrees with line 22. Its tools fit a worker that writes model.cfg and runs /dayz-p3d-audit. Every referenced pack file and section exists on origin/develop: models/README.md, lods.md, memory-points.md, named-properties.md, proxies.md and doors.md; p3d-killers.md sections 3 and 5; and the 'Required Properties for Placed Objects' section of config-rvmat-checks.md. The LOD values (Geometry 1.0e+13, Memory 1.0e+15, ViewGeometry 6.0e+15, FireGeometry 7.0e+15) match conventions/assets.md. The proxy example points at P:\\DZ\\gear\\camping\\combination_lock3.p3d, which exists. dBodyGetMass exists (P:\\scripts\\1_core\\proto\\enphysics.c:122). The mass and autocenter rules match named-properties.md and mass-and-weight.md. The ODOL-versus-MLOD limit and the 'user must save in Object Builder' step are stated honestly, and both are covered in the report."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-physics-specialist",
+    "grade": "A+",
+    "reason": "No defect found. It is a diagnose-only role: no Edit, Write or memory (enforced by NO_WRITE_ROLES in test_repo_integrity.py), Bash is limited to the audit script, and it is never named as the owner, which matches the debugger and the reviewer. All pack files exist, and the README's symptom table matches the workflow. Its DayZ facts check out on P:. WoodenCrate is at P:\\DZ\\gear\\camping\\config.cpp:10157. dBodyGetMass, dBodyIsDynamic, RaycastRV and ObjIntersectFire are all in P:\\scripts. The claim that neither /dayz-gate behavior nor dayz-ingame-tester can drop, throw or shoot matches the behavior gate's actions (spawn, hands, wear, attach, cargo). Its config hand-offs match dayz-lead's 'Any team' table. The in-game test steps needing a live diag session are stated honestly as a limitation. It has eval questions in evals/questions/dayz-physics-specialist.json."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-vehicle-specialist",
+    "grade": "A+",
+    "reason": "Nothing concrete to fix. Its ownership split with dayz-config-specialist is clear, handoffs go through the config lead, the workflow ends with lint and behavior checks, and the Report names the config lead. Eval 5/5. Every pack file exists. The DayZ facts were spot-checked on P: and all hold: CfgPatches DZ_Vehicles_Wheeled, DZ_Vehicles_Water and DZ_Vehicles_Parts; the native Transport, Car, Boat and Helicopter classes in P:\\bin\\config.cpp:1404-1563; CfgSlots in P:\\scripts\\config.cpp:11; Helicopter, HelicopterAuto and HelicopterScript in scripts/3_game/vehicles/helicopter.c and 4_world/entities/vehicles/helicopterscript.c; MotorbikeScript and P:\\DZ\\vehicles\\singletrack\\. GetAnimInstance, GetSeatAnimationType and CrewCanGetThrough are in inheritedcars/civiliansedan.c. The IsVital* methods, script reading the 'Engine' and 'FuelTank' zones by name, the boat SimulationModule's Engine, Gearbox and Propeller, and GUIInventoryAttachmentsProps and fuelCapacity in the wheeled config are all there."
+  },
+  {
+    "batch": "agents-b",
+    "item": "figma-node-normalizer",
+    "grade": "A+",
+    "reason": "Nothing concrete to fix. Least privilege: read-only tools plus the Figma MCP tools under all three server names, and it writes no files. The trigger matches the CLAUDE.md pipeline rule. It stops if no Figma tool is loaded, and it never builds JSON from memory. Its 13 prefixes match rules-doc section 4 exactly (bar_ maps to progress). The JSON shape matches the eight core fields in rules-doc section 10. It is deterministic and lists every removal in its summary. The Report names the caller and the next stage (figma-to-dayz-layout). Eval 5/5."
+  },
+  {
+    "batch": "skills-a",
+    "item": "clean-repo",
+    "grade": "A+",
+    "reason": "A thin orchestrator: it finds every domain clean-workspace skill, runs one combined dry run, asks once, and refuses on a non-TTY without --yes (exit 2). The non-TTY flow for agents is explicit, disable-model-invocation is set for a destructive skill, every claim matches clean.py, and the 9 tests cover discovery and the exit codes. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-add-scaffold",
+    "grade": "A+",
+    "reason": "Every claim checked against add_scaffold.py holds: pieces run in the documented order, the author is resolved before anything is written, --piece junction is never part of all, a real folder or a foreign link is refused, it is idempotent, the SKIP and OK lines match the samples, and the templates come from new_mod.py. It gates on preflight first and has 34 tests. Nothing concrete to fix in this skill. The DayZSetting.xml it writes ends up packed into the PBO, but that is fixed in dayz-build-pbo."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-build-imageset",
+    "grade": "A+",
+    "reason": "The generated .imageset structure (ImageSetClass, RefSize, ImageSetTextureClass with mpix 0, ImageSetDefClass with Name, Pos, Size and Flags 0) matches the vanilla files in P:\\gui\\imagesets\\ line for line. The code matches the doc: power-of-two rectangular atlases, a 10px gutter, next-fit splitting, removal of stale outputs only after every atlas converted, detection of an unchanged .paa, and identifier checks on sprite names. Preflight runs first, there is a requirements.txt, and there are 31 tests. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-clean-workspace",
+    "grade": "A+",
+    "reason": "The ownership rules are proof-based: a link, or a folder without .git that has a junction pointing at it or an ownership marker. Links are removed with cmd /c rmdir and never rmtree. The plan order, the health-folder cleanup, the dry-run flow for agents, the stop on first failure and the warnings all match clean.py. Destructive actions are guarded by a dry run, a prompt and disable-model-invocation, and there are 26 tests. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-conflict-check",
+    "grade": "A+",
+    "reason": "Run read-only against the real P:\\Mods (@CF, @Community-Online-Tools, @DayZ-Expansion-Bundle with 246 PBO headers), it finished in 0.67 s, which matches 'about a second'. Bundle-only selection, script-name-match from PBO headers, owner and fix lines, and the never-extract rule all behave as documented, and the folder names in the doc match P:\\Mods. Limits are stated honestly. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-health",
+    "grade": "A+",
+    "reason": "Checked against health.py: KEEP=200 and HISTORY_ROWS=50 match the doc, 'show' is inserted as the default command, findings close when a newer result of the same gate drops them, ERROR reports are refused, the stored folder is git-ignored by .server/*/*, and both page files are rebuilt on every record. It starts no process and has 34 tests. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-ask",
+    "grade": "A+",
+    "reason": "The trigger description is precise and the work is script first: RAG, then a check of every hit against P:, then a Grep fallback. The verdict line and exit codes match the code. The JSON keys, the 60-line excerpt cap, the default folders and the --top-k bounds all match ask.py. The ready-made answer rules forbid answering from memory. Tests cover verified, moved and dropped hits, every fallback reason, ranking, and the CLI. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-build-pbo",
+    "grade": "A+",
+    "reason": "Every numbered step matches the order in build.py main(): name check, project, lint gate, preflight, P:\\Mods junction, workspace and prefix, junction, tools, ownership gate, clean gate, marker before the build, AddonBuilder, then a fresh-PBO check and cleanup. The guards on destructive steps (ownership marker, refusing --clean while payload PBOs exist) are tested, and include.lst and exclude.lst match their descriptions. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-cot-bootstrap",
+    "grade": "A+",
+    "reason": "Correctly marked disable-model-invocation, since it launches the game. The edit is strictly per player (it never touches Roles/*.txt), the timings (600 s, 15 s, 30 s) match the constants, and it kills only the processes it started. Pass 2 runs only after a successful edit. The keybinds were checked against the COT scripts.pbo on P:\\Mods: UACOTToggleButtons is kY and UACOTModuleToggleCOT is kEnd, which matches the closing message. Tests are thorough. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-deploy-pbo",
+    "grade": "A+",
+    "reason": "Pure additive copy with an ownership gate, size plus 2 s mtime idempotence, locked-file failure handling that still writes the marker, and an unsigned-PBO warning. The <name>.pbo.<key>.bisign pattern was confirmed against real Workshop folders on P:\\Mods. The docs match deploy.py line for line, and the tests cover each refusal. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-import-mod",
+    "grade": "A+",
+    "reason": "Clear trigger, including the GitHub and Workshop cases. The Workshop refusal happens before preflight, the non-TTY decision check happens before any link is made, the workspace link is rolled back when the P: junction fails, and the clone is removed on a later refusal. The $PBOPREFIX$ mismatch warning matches the build-pbo rule, and the code matches the docs. 51 tests cover the risky paths. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-a",
+    "item": "agentic-z-update",
+    "grade": "A+",
+    "reason": "The per-file resolve command is now built relative to the repo root the script runs from, and the quiet nudge names only the commands that apply. The SessionStart hook matches the SKILL.md, with a 20 second timeout and an exit code that is always 0. All 98 tests pass."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-add-server",
+    "grade": "A+",
+    "reason": "I found nothing worth fixing. The map aliases match the real DayZ Server mpmissions folders on this machine (chernarusplus, enoch, sakhal, nasdara), and Steam appid 223350 is correct. The SKILL output samples and refusal list match add_server.py. Refresh keeps a timestamped backup. The template-mismatch gate, the reserved-name checks (! and -behavior), the ANSI-safe config rewrite and the junction failure exit all exist and are tested."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-balance",
+    "grade": "A+",
+    "reason": "A bad argument now prints ERROR on stdout and exits 2, as SKILL.md says. The mask facts check out on P:, including GasMask at line 21 and Inventory_Base biological=0. All 34 tests pass."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-edit-types",
+    "grade": "A+",
+    "reason": "Children are written in the vanilla order category, tag, usage, value, which matches the Chernarus types.xml. Without cfglimitsdefinitionuser.xml, user= groups are skipped instead of warned on. A dry run on the vanilla mission flagged only the real misspelling Militar, and all 64 tests pass."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-gate",
+    "grade": "A+",
+    "reason": "All gate logic lives in scripts, and the 227 tests run against fixture missions, logs and images. Every option in SKILL.md matches gate.py, bad arguments exit 2 with a clear ERROR line, and commented out requiredAddons lines are ignored. The parts not yet run against live DayZ are stated honestly in its Limits section."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-init",
+    "grade": "A+",
+    "reason": "The hub, plan.py and the launch dispatch share one rule, so prebuilt bundles are no longer asked for dependencies. Every dispatch action exists, bad input gets clear messages, and the four maps match the installed missions. All 109 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-layout-preview",
+    "grade": "A+",
+    "reason": "The trigger is clear, the work is script-first (the AI only reads the PNGs), and the exit codes (0, 1, 2) match main(). Limits are stated honestly: the 1080 reference for 'scaled 1' and plain halign values treated like the _ref ones. Spot check on P:\\gui\\layouts confirms that plain 'right' and 'center' appear in vanilla (390 and 287 uses), so treating them is needed. It has fixtures and tests and is listed as a preflight exception in dayz-conventions.md. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-lint",
+    "grade": "A+",
+    "reason": "RULES in lint.py matches the SKILL.md table and the lint-* entries in dayz-gate/known-errors.json one to one (25 rules each, counting required-addon-duplicate). The claim that /dayz-build-pbo lints before preflight matches build.py (gate_on_lint before h.gate_on_preflight). DayZ facts check out on P:\\: DZ_data_aiconfigs has an empty body in P:\\DZ\\data\\aiconfigs\\config.cpp, and P:\\DZ\\data_sakhal\\config.cpp maps worldScriptModule to scripts/4_World. Procedural #(...) textures are skipped correctly. It has 359 lines of tests. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-new-mod",
+    "grade": "A+",
+    "reason": "A precise description with routing to sibling skills, refusal cases, a stale-junction auto-clean with rollback on partial failure, author-handle validation and 357 lines of tests. The workbench/dayz.gproj and DayZSetting.xml it copies exist in DayZ Tools\\Bin\\Workbench on this machine. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-pack-texture",
+    "grade": "A+",
+    "reason": "Checked the suffix table against DayZ Tools\\Bin\\ImageToPAA\\TexConvert.cfg on this machine: every accepted suffix has a rule there, as the skill claims. It refuses a stale .paa whose modification time did not change, validates every input before converting any, gates on preflight and is tested. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-particles",
+    "grade": "A+",
+    "reason": "A reference skill that says why it has no preflight gate. Checked on P:\\: POOL_SIZE 10000 is at particlemanager.c:25, GetInstance() returns null on headless or dedicated servers, the StopParticleFlags enum exists in particlesource.c, the two-argument RegisterParticle(root_path, file_name) form exists in particlelist.c:452, and ScaleParticleParamFromOriginal is used by vanilla. Unverified items are marked as unverified. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-preflight",
+    "grade": "A+",
+    "reason": "Its only repair (mklink /J when P:\\Mods is missing) is narrow and justified, the resolver order is documented, the resolvers are shared, and there are 285 lines of tests. Running it on this machine found P:\\ mounted and DayZ Tools at the default Steam path, matching the documented resolution. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-recipe",
+    "grade": "A+",
+    "reason": "Script-first, verifies against P:\\, writes nothing on failure, protects existing plans with --force and hands off clearly to dayz-mod-architect. Every default checked on P:\\: AKM (akm/config.cpp:191), AK_WoodBttstck, Mag_AKM_30Rnd, SmershVest, SmershBag, RecipeBase, PluginRecipesManager, RegisterRecipies (pluginrecipesmanagerbase.c:14) and CraftRagRope. Listed as a preflight exception. It has 406 lines of tests. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-release-pack",
+    "grade": "A+",
+    "reason": "Every fact comes from the mod's files, each warning has a stated action, the exit-code contract is clear and the handoff to /dayz-server-kit is explicit. The scope keyword mapping (public, protected, private = 2, 1, 0) matches DayZ's config defines. It has fixtures and 229 lines of tests, and the skill is in the preflight exception list. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-route",
+    "grade": "A+",
+    "reason": "route.py does exactly what the doc describes: rules first, conflict_factor 0.5, absorbs, threshold 0.8 from rules.json, then Jev only when keyed, then a null/next dayz-router result. It says that request text goes to api.typesafe.ai. test_route.py keeps rules.json in sync with dayz-router.md, and that agent exists. This matches the CLAUDE.md routing rule. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-scope-mod",
+    "grade": "A+",
+    "reason": "Least privilege done right: it adds deny rules only, records exactly what it added so --clear undoes only that, refuses names that would read as pattern syntax, says what it does not protect, and is backed by the scope_guard hook for mods created later. Listed preflight exception, with tests. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-server-kit",
+    "grade": "A+",
+    "reason": "Refuses to zip a .biprivatekey in code (ReleaseError) as well as in the docs. The placeholder entries (nominal 0) are commented and listed in README.txt. The types source order is documented and the code matches it, and --mission accepts an instance name. Tests exist. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-setup-objectbuilder",
+    "grade": "A+",
+    "reason": "Destructive --force is guarded by a prompt (or --yes when there is no terminal), a reg export backup, an HKCU-only check and an 'Object Builder is running' refusal. Checked on this machine: ObjectBuilder_defaultSettings.reg is in Bin\\ObjectBuilder, the CConfig key exists, and '#View background LOD' = 1 matches the preferred flags. It has 414 lines of tests. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-split-types",
+    "grade": "A+",
+    "reason": "A thin wrapper around a vendored tool, with timestamped backups, the <ce folder> fix and a result check that decides success because the upstream script always exits 0. Checked: the vendored typeSplitter.py defines exactly the 19 categories listed. Tests exist. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-statusline",
+    "grade": "A+",
+    "reason": "Edits only settings.local.json, keeps a backup, records the status line it replaced so --remove restores it, refuses invalid JSON and fails quietly ('DayZ status unavailable'). The RAG age segment reads the indexed_at field, which exists in the real manifest. Listed preflight exception, with tests. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-stop-test",
+    "grade": "A+",
+    "reason": "A trivial .bat is the right tool for one taskkill call, which matches the repo's tooling rule. The errorlevel 128 handling and the stderr pass-through match the doc's table exactly, it is a documented preflight exception, and it is tested with a taskkill stub. Nothing to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-launch-objectbuilder",
+    "grade": "A+",
+    "reason": "The trigger description is clear, and every claim in SKILL.md matches launch.py: preflight runs first, --file and --mod are mutually exclusive, --mod opens the single .p3d under data/ or lists several and asks for --file, the registry check is reused from setup.py, the launch is detached with the right working directory, and OSError is handled. The sample output matches the print statements. The 17 tests cover the risky paths. On disk I confirmed ObjectBuilder.exe exists under DayZ Tools\\Bin\\ObjectBuilder and that /dayz-new-mod scaffolds data/. Tests were not run because pytest was denied in this session. I found nothing concrete to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-launch-workbench",
+    "grade": "A+",
+    "reason": "The description is precise and the documentation matches the code: preflight, then the exe check, then gproj resolution with distinct errors for a missing mod folder and a missing gproj, then a detached launch with cwd set to Bin\\Workbench. I spot-checked the DayZ facts in the real binary: WorkbenchApp.exe contains the '-gproj' switch and the 'CurrentDir:dayz.gproj' default, and dta/, platforms/, ToolAddons/ and dayz.gproj sit next to it. The 10 tests cover flag handling, cwd and the -gproj= argument. Tests were not run because pytest was denied. I found nothing concrete to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-search-download",
+    "grade": "A+",
+    "reason": "The stdlib-only script is safe and matches the documentation exactly: tag idempotency through release-tag.txt, refusal of an asset with no digest before downloading, a SHA-256 check, a safe tar extract (data filter or manual check), a staged swap with restore, a clear network error path, and a prompt that exits 1 when declined or non-interactive. I checked the release claims against the live GitHub API. 1.4.0, 1.1.0, 1.0.1, v1.0.0 and v0.1.0 ship dayz-rag-index-v0.1.0.tar.gz; 1.2.0 and 1.2.1 ship dayz-search-index-<ver>.tar.gz; 1.2.2 has no asset; every asset has a sha256 digest. The 1.4.0 asset has the same digest as v0.1.0, which supports the claim that the release index predates windowing. The 30 tests cover the risky paths. Tests were not run because pytest was denied. I found nothing concrete to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-launch-test",
+    "grade": "A+",
+    "reason": "I checked every claim in SKILL.md against launch.py and the shared skill_helpers.py on origin/develop and they all match: step order, the dry run writing nothing, exit 2 for bad ports and for a mod named both ways, the port gate, the 180 s bind wait with a kill on timeout, the server being killed when the client fails to spawn, detached processes and the display-preferences fallback. The sample output matches the real prefixes. The 33 tests cover the risky paths, and all 181 tests across the four scripted skills pass. The wiki mirror is identical. Remaining limits (a live server bind, the in-game connect) need a live DayZ session, which the skill already depends on. Nothing concrete to fix."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-logwatch",
+    "grade": "A+",
+    "reason": "An interval of zero, a negative, nan or inf now stops with a clear error and exit 2, and the usage line lists every flag. The SKILL.md matches logwatch.py on folders, crash logs, exit codes and JSON fields. All tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-p3d-audit",
+    "grade": "A+",
+    "reason": "All 71 tests pass, and the exit codes behave as documented, including a clear Not MLOD failure for a vanilla ODOL file. The P: path check skips URLs, kits get no autocenter finding, and component names match in any case so the coverage check always runs. The penetration rvmats and bisurfs its references cite exist on P:."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-record-correction",
+    "grade": "A+",
+    "reason": "Step 1 now also searches the Agentic-Z rules section of the project's CLAUDE.md, AGENTS.md and GEMINI.md in a plugin install. Every path it names exists, and its step 3b check passed on a copy of develop."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-search-index",
+    "grade": "A+",
+    "reason": "All 49 tests pass, and --status and the refusal to overwrite an existing index behave and exit as documented, with nothing spent. Running the chunker over P: without embedding gave exactly the 61,757 chunks the docs claim, with no chunk over 6,000 characters. The six vanilla folders it names exist, and the cost rates and free tier logic match its reference."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-workdrive",
+    "grade": "A+",
+    "reason": "Nothing concrete left to fix. The description is a clear trigger. It is script-first, and it explains well why it does not gate on preflight. The order it searches for the work-drive folder matches the code. Both the WorkDrive.exe route and the subst fallback check whether P:\\ is actually there rather than trusting the return code. It warns when settings.ini names a letter other than P. The exit codes match the SKILL.md table. The 33 tests pass. I checked the DayZ facts against this machine: DayZ Tools\\Bin\\WorkDrive\\WorkDrive.exe exists, and settings.ini has [ProjectDrive] path= and Letter=P, exactly as the skill reads them."
+  },
+  {
+    "batch": "skills-c",
+    "item": "docs-sync",
+    "grade": "A+",
+    "reason": "Nothing concrete to fix. The description is third person and says both what it does and when to use it. Everything runs from a script, and the SKILL.md matches the code: the modes, the exit codes 0, 1 and 2, the mirror map, the orphan rules (about.md and _-prefixed files are kept), and the YAML-missing behaviour under --quiet. The Stop hook is wired in .claude/settings.json as 'sync.py --check --quiet' with a 15 second timeout, prints a valid systemMessage JSON line, never fails the session, and took 0.23 seconds. CI runs 'sync.py --check' in .github/workflows/tests.yml. On origin/develop, 'sync.py --check' reports the wiki in sync, and the 59 tests across test_apply.py and test_docs_sync.py pass. Dry runs cover --apply. The em dashes in apply.py are real UTF-8, not mojibake."
+  },
+  {
+    "batch": "skills-c",
+    "item": "clean-repo",
+    "grade": "A+",
+    "reason": "Nothing concrete to fix. disable-model-invocation is set, which suits a destructive repo-wide wipe. The description says what it does and when to use it, and points one-domain cleanups to the domain skill. The orchestrator stays domain-agnostic. Every child dry run finishes before anything is removed, any dry-run failure aborts with nothing removed, a run without --yes in a non-TTY shell is refused (exit 2) before anything runs, and the prompt names the cached project, with a warning when that project is not this checkout. The 'From an agent shell' steps give the right chat-confirmation flow. The child contract (--include-server, --dry-run, --yes) matches dayz-clean-workspace/clean.py, which runs its own preflight gate (h.gate_on_preflight), as the SKILL.md says. The 13 tests cover each of these paths and pass, and the .bat wrapper matches."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-upgrade-guard",
+    "grade": "A+",
+    "reason": "All 39 tests pass and cover all six finding reasons. A real snapshot of P: took 9.6 seconds and came to 10 MB with no files skipped, matching the docs. The check, diff, missing project, older format and bad argument paths all print the documented verdict first with the right exit code, and a separate reindex command rebuilds the search index after a failed check."
+  },
+  {
+    "batch": "skills-c",
+    "item": "sync-skills",
+    "grade": "A+",
+    "reason": "I found nothing concrete to fix. The description says what the skill does and when to use it. The instructions match sync.py: the OK, REFRESH, FOREIGN, LINK, SKIP and PRUNE states, the --force takeover, the rule that links into a worktree count as foreign, case and separator normalisation of paths, exit 1 on a failed link or folder creation, exit 2 on a bad agents.json, an unknown agent name or a missing skills folder, and the sample '[FAILED] cannot create' line. The per-agent paths in SKILL.md and agents.json (Claude via CLAUDE_CONFIG_DIR or ~/.claude/skills, Codex at ~/.agents/skills, Gemini via GEMINI_CLI_HOME/.gemini or ~/.gemini/skills) agree with the skill discovery paths in the repo's CLAUDE.md, AGENTS.md and GEMINI.md on develop. The script never deletes a real folder, has a dry run, and leaves another clone's links alone unless --force is given. It also tells the user how to reload each agent CLI and how to check the skill counts afterwards. All 26 of its pytest tests pass on origin/develop; they cover foreign, worktree, orphan pruning, real folders, malformed agents.json, the --skip and --agents options, and the environment variables that move each agent's home. The thin wrapper at scripts/setup/sync-skills.bat forwards its arguments correctly."
+  },
+  {
+    "batch": "agents-a",
+    "item": "agent-creator",
+    "grade": "A-",
+    "reason": "Has a precise third-person description with an example, a tool set that fits the role, and an accurate registration checklist (every path, test name and flag checked out). The defect: the Validate step runs only scripts/dev/test_repo_integrity.py, and the Bash constraint allows only that test and the eval runner. That rules out scripts/dev/test_cross_team_headings.py, the test that enforces the 'add a forwarding heading to the lead' step this same file asks for. A new worker with a misspelled 'For the X lead' heading passes validation, and its handoff is silently dropped."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-ai-specialist",
+    "grade": "B+",
+    "reason": "Vanilla facts are correct (DZ_AI at P:\\DZ\\AI\\config.cpp:3, DZInfectedPackBeh in aiconfigs, the AI script folders), and it references the pack well. But dayz-route lists it as a direct target, and both the Report and the handoffs assume a script lead ('for the script lead to forward to the server lead'). When a user's 'add a guard patrol' request goes straight to it from the main session, nobody forwards the spawn entries or the extra config.cpp classes, and no reviewer gate runs. It also writes CfgAIBehaviours into config.cpp without reading conventions/config.md, and it is missing from that file's 'Read by' row."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-animation-specialist",
+    "grade": "B+",
+    "reason": "Lean, ownership against dayz-object-builder is clearly split, and the pack references are correct. But it is a direct dayz-route target, and the Report goes only 'To the art lead'. The config lines and script hooks it hands to the config, vehicle and script owners depend on a lead copying them under 'For the config lead' or 'For the script lead'. On a direct call from the main session, those lines are returned with no one assigned to apply them."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-asset-specialist",
+    "grade": "B",
+    "reason": "Texture facts are correct (the ballisticvest_as.paa path and vests config.cpp:69 healthLevels check out). Step 2 (a)-(d), however, re-describes /dayz-pack-texture's dry-run, backup naming, power-of-two refusal and all-or-nothing batch behavior, all of which already live in that skill's SKILL.md. That is inlining that will go stale when the script changes. As a direct dayz-route target, its Report goes only 'To the art lead' and it waits for 'the art lead's go-ahead' on re-packs, so a direct call has no one to give that go-ahead or forward the hiddenSelections paths."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-audio-fx-specialist",
+    "grade": "B+",
+    "reason": "Accurate (DZ_Sounds_Effects and DZ_Sounds_Bliss at line 3 of their configs, powergenerator.c, particlelist.c), with clear ownership boundaries. But it is a direct route target and assumes a lead: 'the lead passes it to the config lead' for requiredAddons, and 'The lead sends your work to dayz-mod-reviewer'. When the main session calls it directly, the required addons never reach dayz-config-specialist, so the mod can load before DZ_Sounds_Effects with no review."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-build-checker",
+    "grade": "B",
+    "reason": "It says to keep this file in step with /dayz-gate build, but step 2 stops any running DayZDiag_x64.exe with /dayz-stop-test without asking. gate.py stops a session it did not start only with --yes or a terminal yes, because that session may be the user's own play session. Started from /dayz-route or by hand, it kills the user's game. It also has no evals/questions file (evals/README.md lists it as not yet covered), which the repo's agent standard requires."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-build-engineer",
+    "grade": "B+",
+    "reason": "The skill flags are correct (--server-only, the --map aliases, --clean refused when other PBOs are present), and the Haiku pin has a justified cost comment. Step 1, however, runs /dayz-stop-test unconditionally, which kills a DayZ session the user is playing. The orchestrator and gate.py treat that as needing the user's yes. As a dayz-route target, its Report goes only to 'the release lead', so a direct call has no one to supply the map or the dependency list it stops and asks for."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-config-specialist",
+    "grade": "B+",
+    "reason": "Workflow is correct and cites a real fact (DZ_AI at P:\\DZ\\AI\\config.cpp:3). The opening paragraph is a wall of about 150 words on routing ownership that repeats the description. All of its handoffs ('hand ... back to the config lead', 'marked as an art-team task for the orchestrator') assume a lead. It is a direct dayz-route target, so a direct request that contains a vest class has no one to reassign it. Terrain CfgWorlds classes are not mentioned, so it and dayz-map-specialist can both edit a terrain's config.cpp."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-docs-writer",
+    "grade": "B",
+    "reason": "Skill references and the warning keys (summary-missing, scope-unknown, server-kit-link and the rest) match the release-pack and server-kit SKILL.md files. But scope-unknown classes go 'to the release lead for dayz-config-specialist' with no 'For the config lead' heading. dayz-lead forwards cross-team work only under those headings, so the scope fix is likely dropped. It reads 'Bundle / umbrella mods' in conventions/config.md but is missing from that file's 'Read by' row. The 'Read what changed first' section is one dense 200-word paragraph."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-ingame-tester",
+    "grade": "A-",
+    "reason": "Precise and in step with gate.py: the ready regex, the 300-second timeout, the 30-second settle and the somemission.c:3 line all check out. One defect: step 0 stops any running DayZDiag_x64.exe as 'stale', while the gate stops a session it did not start only with --yes. Started outside the orchestrator, it can kill the user's play session. It also cites the config.md bundle section without being in that file's 'Read by' row."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-layout-validator",
+    "grade": "A-",
+    "reason": "Gate rules are correct: no Write, Edit or memory, and edit_check.py's --file flag, 5-problem cap and 2 MB limit, plus layout_preview.py's exit codes and warning rules, all match the code. It does inline the rules doc's section 9 exceptions (quoted '=', case-sensitive Padding and Margin, 'shadow opacity') and admits the drift risk ('rules doc wins'). When those exceptions change, this file gives a stale verdict. It also both holds Skill and tells itself to run layout_preview.py directly through Bash, which are two routes to the same thing."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-lead",
+    "grade": "A-",
+    "reason": "The team table, forwarding headings, Reassign mechanism and gate split match the orchestrator and the integrity tests. But it has no evals/questions file (evals/README.md lists it as not yet covered), so a regression in its routing table or gate rules is unguarded. 'dayz-mod-reviewer for every task' also sends JSON-only figma-node-normalizer tasks, which change no files, to a file reviewer."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-map-specialist",
+    "grade": "B+",
+    "reason": "Lean, and its vanilla facts are verified: no layers.cfg under P:\\DZ\\worlds, CfgWorlds > CAWorld > Clutter and CfgSurfaces in P:\\DZ\\surfaces\\config.cpp, and world\\config.cpp for each map. It does not say who owns the terrain addon's CfgPatches, and dayz-config-specialist claims all of config.cpp, so the two can overwrite each other in worlds\\config.cpp. As a direct route target, its Report goes only to the server lead."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-mod-architect",
+    "grade": "B+",
+    "reason": "Plan outputs match what the integrity test and the gate read, and the /dayz-recipe draft marker is correct. But it has no evals/questions file (not covered per evals/README.md). It repeats checks-file.md's action list, id rule and JSON example while pointing vaguely at 'the /dayz-gate skill' rather than .claude/skills/dayz-gate/checks-file.md. It plans CfgPatches, config classes and types.xml yet reads neither conventions/config.md nor conventions/server.md."
+  },
+  {
+    "batch": "agents-a",
+    "item": "dayz-mod-debugger",
+    "grade": "A-",
+    "reason": "Read-only tools, accurate log locations, an owner list consistent with known-errors.json (including the 0x00020005 case owned by the orchestrator), and a Report that names its recipient. 'Who fixes what' is a single 250-word line that is hard to scan. When it is started with no triage, it has no Bash, so it has to hand-match regexes from two JSON files that triage.py already applies. Most known errors are config faults, yet it does not read conventions/config.md."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-mod-reviewer",
+    "grade": "B+",
+    "reason": "The description, the read-only tools (no Write, Edit or memory) and the owner routing are all good, and the cited vanilla lines check out (headgear config.cpp:642 has four selections and three textures). The defect is a false FAIL on every Workbench plugin task. dayz-workbench-specialist is told to put plugins in workspace/<ModName>/scripts/editor/plugins/. Lint flags any scripts folder holding .c files that CfgMods does not list (lint.py:341-351), and this file raises that warning to CRITICAL. Check 2 also requires every .c file to sit in 3_Game, 4_World or 5_Mission. So the plugin task fails three rounds and ends blocked. The 'Run lint first' section is also one 200-word paragraph."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-object-builder",
+    "grade": "A-",
+    "reason": "Tools match the body: Write for model.cfg, and Bash limited to the p3d audit. Ownership boundaries and the forwarding headings match dayz-lead, and the pack references all exist. The defect: it hands the user numbered Object Builder steps but never says how to open Object Builder (/dayz-launch-objectbuilder, or /dayz-setup-objectbuilder on first use). A new user gets steps for a tool they have not started. The heading rules for a direct call are also stated twice, in item 3 and again in the Report, and the autocenter bullet chains three citations that named-properties.md already holds."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-orchestrator",
+    "grade": "A-",
+    "reason": "The team flow, gate order, triage routing and approval step are consistent with dayz-lead and /dayz-gate, and every flag it uses exists (--deps, --server, --json, --accept, --shot, --yes, triage --learn, health record, recipe, new-mod --author). The defect: it runs '/dayz-gate ingame ... --server <instance>' but never says where the instance name comes from, and never runs /dayz-add-server after scaffolding. A brand-new mod's first in-game gate therefore fails on a missing server instance and uses up one of its three rounds. Step 5 is also a dense paragraph that repeats most of the /dayz-gate SKILL.md."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-persistence-specialist",
+    "grade": "A-",
+    "reason": "The workflow is accurate (super first, save version written first, migration path, EEOnAfterLoad for linked entities). The handoffs and the forwarding of the audit match dayz-lead and dayz-server-admin, and the direct-call rule is present. The defects: Bash is granted with no statement of what it is for, unlike the object-builder and physics agents. It also reads conventions/scripts.md but is missing from that file's 'Read by' column in dayz-conventions.md, which agent-creator requires, so an edit to scripts.md will not flag this agent as a reader."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-physics-specialist",
+    "grade": "A-",
+    "reason": "This is a model diagnose-only role: no Write, Edit or memory. It handles a direct call explicitly, sends each fix to the right config owner, and is honest about the limits of in-game testing. The one concrete defect is a consistency gap: it reads conventions/assets.md, but dayz-conventions.md's 'Read by' column for assets.md does not list physics-specialist. Line 9 also packs the role, the lesson rule and four ownership rules into one sentence block."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-router",
+    "grade": "A-",
+    "reason": "Pinning it to Haiku is deliberate and commented, the tools are minimal (Read only), the Report names the main session, and the route list matches rules.json (the integrity test passes). The defect: ten DayZ skills have no route, including dayz-workdrive, dayz-add-scaffold, dayz-search-index, dayz-particles and dayz-setup-objectbuilder. So 'mount my P drive' or 'rebuild the search index' gets forced onto a wrong route such as dayz-preflight or dayz-upgrade-guard, often with high confidence. And dayz-workbench-specialist tells users to run /dayz-add-scaffold, which the router cannot route."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-script-specialist",
+    "grade": "A-",
+    "reason": "The reference map, the layer and side-check rules and the lint step are accurate, and every file it references exists. The defect: the handoff 'Vehicle script classes: dayz-vehicle-specialist' gives no route. That worker is on the config team, so the script lead cannot start it, and the Report has no 'For the config lead' entry or Reassign note for this work, so the vehicle script task is lost. The eight-bullet reference list also repeats the enscript README."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-server-admin",
+    "grade": "A",
+    "reason": "The task table with done checks is precise, and the facts are verified: cfgspawnabletypes.xml lines 177, 324 and 3618, cfggameplayhandler.c:53 for enableCfgGameplayFile, the backup-only-on-change behavior and the --map flag. Ownership and the rule against starting sessions are consistent with the orchestrator and build-engineer, and the Report names the lead. The only issue is redundancy: lines 12 and 14 both say to read server.md 'Server / economy' first. A user would not hit it."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-ui-specialist",
+    "grade": "A-",
+    "reason": "It is consistent with the L1 rule for the Figma pipeline, the imageset flow and conventions/ui.md, and the facts check out: the preview sizes 1280x720 and 3440x1440 and the 'off-screen' and 'no-area' rules exist in layout_preview.py, and widget_api.md has its imagesets section. The defect: it hardcodes 'python .claude/skills/dayz-layout-preview/layout_preview.py'. In a plugin install, that relative path does not exist in the user's project, so the preview step fails. dayz-mod-reviewer avoids this with 'or the path the SKILL.md gives'. Bash is also granted with no stated use."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-vehicle-specialist",
+    "grade": "B+",
+    "reason": "The vanilla facts are right: the DZ_Vehicles_Wheeled, Water and Parts addons exist, Helicopter is at P:\\bin\\config.cpp:1563, and BoatScript and HelicopterScript exist. The split with the config specialist is explicit. The same two defects as wearables. Its Report uses 'For the art lead' and 'For the server lead' headings with no direct-call rule, although the router sends vehicle requests straight to it. And 'Either of you may add a CfgPatches entry' contradicts dayz-config-specialist's 'The CfgPatches class is yours alone'. It is also missing from the 'Read by' column for both config.md and scripts.md."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-weapon-specialist",
+    "grade": "A-",
+    "reason": "This is a strong worker. Its vanilla facts are verified (Mosin9130 is at types.xml:16046, and guns, magazines and ammo use category 'weapons'). It has a direct-call clause, the art and server headings, and behavior checks. The defect: it says it writes 'the CfgPatches entry' for its classes, while dayz-config-specialist says the CfgPatches class is its own alone. When both work on one config.cpp, one of them will either duplicate or overwrite units[] and weapons[]. It is also missing from the config.md and scripts.md 'Read by' columns."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-wearables-specialist",
+    "grade": "B+",
+    "reason": "The scope is clear, it points to its knowledge pack file by file, and the behavior-check output is right. Two defects. First, the Report has no rule for a direct call. dayz-router sends clothing requests straight to this agent, but the Report puts script and types.xml work under 'For the script lead' and 'For the server lead' headings with no lead to forward them, so that work is silently lost. The weapon, persistence and object-builder agents all handle this case. Second, it edits CfgPatches requiredAddons, while dayz-config-specialist says 'The CfgPatches class is yours alone' (line 19), so two workers on one config.cpp can write duplicate CfgPatches classes. It is also missing from the 'Read by' column for conventions/config.md in dayz-conventions.md."
+  },
+  {
+    "batch": "agents-b",
+    "item": "dayz-workbench-specialist",
+    "grade": "A-",
+    "reason": "Its verification discipline is excellent, and its citations are correct: dayz.gproj lines 75-82 and new_mod.py:40-44 and 92-102 match. Its tools fit a role that never launches anything. The defect: it puts plugins in scripts/editor/plugins/ without warning that lint flags that folder as script-module-unlisted and that dayz-mod-reviewer treats it as CRITICAL, so its lead's gate fails every plugin task. It also leaves 'does AddonBuilder pack scripts/editor/' as unverified, although exclude.lst has no rule for it, so the plugin source ships in the PBO."
+  },
+  {
+    "batch": "agents-b",
+    "item": "figma-node-normalizer",
+    "grade": "A-",
+    "reason": "The Figma server's create_session and design-to-code ordering is handled, it lists all three tool-name variants, it writes nothing, and the Report names its caller and the next stage. The defect: the JSON shape has no position field and says 'Emit no other fields'. figma-to-dayz-layout is told to 'compute position from the node's bounds', so absolutely placed children of a layout:none frame (an icon at x=200, y=10) lose their coordinates and stack at 0 0. The only offsets allowed, in the optional 'anchor', are not required."
+  },
+  {
+    "batch": "agents-b",
+    "item": "figma-to-dayz-layout",
+    "grade": "A-",
+    "reason": "The prefix-first class mapping, the per-axis sizing toggles, repair mode and one-space indentation all match vanilla (checked on P:\\gui\\layouts), and it defers to the rules doc. The defect is the other half of the normalizer's: step 3 says 'Compute position from the node's bounds', but the normalizer's JSON carries no bounds. For any child not in an auto-layout, the agent must either guess or write position 0 0, and its own rule says never to guess."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-release-pack",
+    "grade": "B+",
+    "reason": "Name and description are good, the warnings table matches the script, rerun backups are kept, and the exit codes are clear. 21 of 21 tests pass. The script reads only `<mod>/config.cpp` at the mod root. I tested a mod whose items live in `data/config.cpp` (common in imported mods): the run printed '0 spawnable classes' and wrote an empty `classnames.md`. No warning appeared, and `requiredAddons` from that file was ignored too. The sibling skills lint, balance and conflict-check all scan every config.cpp recursively."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-route",
+    "grade": "A-",
+    "reason": "162 of 162 tests pass, the JSON contract is clear, and Jev never raises. Two problems I reproduced. First, 'rebuild and launch' and 'build it and test' are routed straight to dayz-launch-test at confidence 0.85, above the 0.8 threshold. The 0.85 'and launch' rule matches alone, so the build step is dropped, even though test_build_and_launch_is_two_steps says these are two steps. Second, ten skills, including dayz-workdrive, dayz-search-index, dayz-search-download, dayz-statusline and dayz-setup-objectbuilder, are not in `targets`. So 'mount P:' or 'mount the P: drive' cannot be routed to /dayz-workdrive by any stage, and the router agent shares the same target list."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-scope-mod",
+    "grade": "A-",
+    "reason": "Rules are recorded precisely, rules the user already had survive --clear, metacharacters are guarded, and 24 of 24 tests pass. Three gaps a user can hit. PROJECT_DIR is `CLAUDE_PROJECT_DIR` or the current folder, with no ancestor search like /dayz-workdrive's. Run from `workspace\\MyVest`, it looks for `workspace\\MyVest\\workspace` and fails with 'does not exist'. If `dayz-active-scope.json` is unreadable, the state is treated as absent: the old deny rules are orphaned in `settings.local.json`, and --clear says 'Nothing to clear'. Finally, `settings.local.json` is rewritten with no backup."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-search-download",
+    "grade": "A",
+    "reason": "The integrity work is solid: checksums are verified, archives are extracted safely, the old index is swapped out atomically and restored on failure, and rate limits and a locked index get clear messages. 35 of 35 tests pass. The SKILL.md matches the script and the live releases (1.4.0 is latest and has a digest). One remaining defect: with no `--tag`, the script takes `releases/latest` and exits with an error if that release has no index asset. Release 1.2.2 already shipped without one, so the default run breaks for everyone whenever that happens again, even though an older release has a usable index. Error lines use `[ERR]` while the repo convention is `[FAIL]`."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-search-index",
+    "grade": "A",
+    "reason": "53 of 53 tests pass. It gates on preflight, refuses to overwrite an index without --full, has a free-tier prompt and a chunk ceiling, logs tokens before writes, and stages the table write. The SKILL.md is accurate. Small defects remain. In a non-interactive shell the tier check prints its FAIL line to stdout and then 'Cancelled by user. No tokens consumed.', which blames the user for an EOF. A non-numeric `VOYAGE_FREE_TIER_TOKENS` crashes with a ValueError traceback. The startup line prints 10 characters of the Voyage key into agent transcripts."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-server-kit",
+    "grade": "B+",
+    "reason": "The private-key guard, the type-source order and the instance lookup are well designed and match the SKILL.md. 12 of 12 tests pass. Spawnable classes come from release-pack's `mod_facts()`, which reads only the root config.cpp. For a mod whose items are in a sub-folder config.cpp, the kit ships a `types.xml` with no entries and no placeholder warning, so server owners get nothing to spawn. There is no test for a mission whose cfgeconomycore.xml does not parse, or for the folders that mod type files are skipped from."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-setup-objectbuilder",
+    "grade": "A",
+    "reason": "The reset is guarded properly: confirmation, or --yes without a terminal; a `reg export` backup; a refusal for a .reg that writes outside HKEY_CURRENT_USER; a refusal while Object Builder is running; and a check after import. It gates on preflight. 37 of 37 tests pass and the SKILL.md matches the code. One defect a user can hit: on `--force`, if `reg delete` succeeds but `reg import` then fails, the script returns with the user's Object Builder settings deleted. It only prints the restore command and does not run it."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-split-types",
+    "grade": "A-",
+    "reason": "Each run makes timestamped backups, the `ce folder` path is fixed, other `ce` blocks are restored, the result is checked, and types.xml is emptied to avoid double loading. 10 of 10 tests pass. Two issues. On a failed check (exit 1), the cfgeconomycore.xml that upstream rewrote and the regenerated `types/` folder are left in place, so the user has to restore them from the .bak files by hand. Also, the hard preflight gate blocks a pure XML task: a server owner, or anyone without `P:\\` mounted, cannot split a mission's types.xml, although nothing on `P:\\` is read."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-statusline",
+    "grade": "A-",
+    "reason": "Install, remove and status are idempotent. An invalid settings file is refused without changes, and the user's previous status line is restored on remove. 24 of 24 tests pass, and the script always prints one line. Defects: every install and every remove copies over the same `settings.local.json.bak`, so a second run destroys the backup of the user's original file. PROJECT_DIR falls back to the current folder with no ancestor search, so running install.py from a subfolder silently creates a stray `.claude\\settings.local.json` there, and the status line never appears."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-stop-test",
+    "grade": "A+",
+    "reason": "Does exactly what SKILL.md says: one taskkill call, errorlevel 128 maps to exit 0 with taskkill's 'not found' line dropped, other failures re-print taskkill's error on stderr with its exit code, and unknown arguments are refused with exit 2. The documented exception to the preflight rule is honoured and only DayZDiag_x64.exe is touched; 11 tests pass using taskkill stubs."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-upgrade-guard",
+    "grade": "B+",
+    "reason": "Thorough diffing logic, a clear PASS, FAIL or ERROR contract, and 39 of 39 tests pass. I reproduced a baseline-poisoning bug. If `P:\\` is only partly unpacked (scripts present, `DZ` missing or incomplete), `check` accepts it, reports every config class as removed, flags every mod class, and saves that broken snapshot as the newest baseline. The next real `check` then compares against garbage. The script also does not gate on `/dayz-preflight`, which the repo rules require for skills that read `P:\\`, and the SKILL.md does not say why."
+  },
+  {
+    "batch": "skills-c",
+    "item": "dayz-workdrive",
+    "grade": "A",
+    "reason": "Idempotent. The work-drive folder resolution is documented accurately, WorkDrive.exe gets a timeout with a subst fallback, a mismatched settings.ini letter is handled, and unmount refuses while P:-dependent processes run unless --force is given. 45 of 45 tests pass, and the documented reason for skipping preflight is valid. Two defects. If `tasklist` fails, the process list comes back empty, so `--unmount` goes ahead even while Workbench or DayZDiag is running. `--force` without `--unmount` is silently ignored. The settings.ini letter warning also reads awkwardly ('set to mount X: ([ProjectDrive] Letter= ...')."
+  },
+  {
+    "batch": "skills-c",
+    "item": "docs-sync",
+    "grade": "A+",
+    "reason": "202 of 202 tests pass. --check ran against the real wiki and correctly reported 13 problems (11 fixable). --dry-run without --apply exits 2 as documented. --apply writes all fixed files or none, and the claims and hidden-section rules match the script. The current wiki drift is in the wiki content, not a defect in the skill. The .pytest_cache in the folder still lists two tests that no longer exist, which is harmless and ignored by git."
+  },
+  {
+    "batch": "skills-c",
+    "item": "sync-skills",
+    "grade": "A-",
+    "reason": "Links are created, refreshed and pruned safely. Foreign links and real folders are never clobbered, there is a dry run, agents come from config, and exit codes are clear. 26 of 26 tests pass and the SKILL.md matches the code. The default run links every repo skill into `~/.claude/skills`, which makes all `/dayz-*` skills global in every Claude Code project. With the plugin installed, every skill then appears twice; this session's skill list shows both `dayz-init` and `agentic-z:dayz-init`. The SKILL.md itself says the Claude link 'adds nothing' inside the repo, yet that remains the default. A failed re-link after `remove_link` during a refresh also leaves the skill with no link."
+  },
+  {
+    "batch": "skills-a",
+    "item": "agentic-z-update",
+    "grade": "A",
+    "reason": "102 tests pass. The name matches the folder and the description is third person with a clear 'use when'. The three-way blob-id classification, the atomic PID lock, the --only commit and the conditional baseline advance match SKILL.md. The apply step is guarded by a dirty-tree check, a check for an operation in progress, a y/N prompt and --dry-run."
+  },
+  {
+    "batch": "skills-a",
+    "item": "clean-repo",
+    "grade": "A-",
+    "reason": "19 tests pass. It is a thin orchestrator with a combined dry run, one y/N prompt, a refusal (exit 2) without a TTY, a warning before deleting files git tracks under .server/, and correct exit codes. disable-model-invocation is set."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-add-scaffold",
+    "grade": "A",
+    "reason": "39 tests pass. Preflight runs first. The script is idempotent and never overwrites a file. The author handle is resolved before anything is written. The junction piece refuses foreign links and real folders. It reuses new_mod.py so output is byte-identical. The docs match the code."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-add-server",
+    "grade": "A",
+    "reason": "97 tests pass. Instance and map names are validated (reserved names, Windows device names, path traversal). It refuses on a template mismatch. --refresh-mission renames mission/ to a timestamped backup instead of deleting it. ANSI config bytes survive through surrogateescape. A failed mklink exits non-zero."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-ask",
+    "grade": "A",
+    "reason": "28 tests pass. A live run returned verified citations through RAG. The verdict line and exit codes 0, 1 and 2 match the docs, P: is checked, and the Grep fallback covers a missing key or index. It is read-only, so skipping preflight is justified and documented."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-balance",
+    "grade": "A",
+    "reason": "39 tests pass. A live run against P:\\DZ correctly flagged the fixture outliers and a probe hat weighing 99999, comparing only against the Headgear slot, in about 5 seconds. All 208 vanilla configs parse. Includes it cannot follow are reported as WARN. Verdicts and exit codes match the docs."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-build-imageset",
+    "grade": "A-",
+    "reason": "48 tests pass. Preflight runs first, there is a Pillow hint, sprite names are validated, POT shelf-packing has a split, a stale .paa is detected by mtime, and old outputs are removed only after every atlas of the set converted. The docs match the code."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-build-pbo",
+    "grade": "A",
+    "reason": "45 tests pass. Name validation comes first, then preflight. There is a lint gate, a $PBOPREFIX$ match, a junction check, an ownership marker gate, a --clean refusal when payload PBOs are present, and a check that the PBO is fresh. The temp dir is kept on failure. It is well documented and destructive -clear is guarded."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-clean-workspace",
+    "grade": "A",
+    "reason": "26 tests pass. The ownership proof is strong: a link, or a P: junction or marker, and never a folder containing .git. Links are removed with cmd rmdir and never with rmtree. It has --dry-run, a y/N prompt, a refusal without a TTY, stop-on-first-failure and disable-model-invocation."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-conflict-check",
+    "grade": "B+",
+    "reason": "26 tests pass. It reads PBO headers safely and never extracts anything. The rules table, owner and fix fields, and the JSON contract are good. It is read-only, so no preflight is needed. However, a live default run against the real P:\\Mods found that CF, COT and the Expansion bundle are all packed (254 headers, 0 unpacked addons). The default check therefore never compares config or script classes and prints PASS on header-only evidence."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-cot-bootstrap",
+    "grade": "A-",
+    "reason": "37 tests pass. Preflight runs first. It reuses the launch helpers and kills only the PIDs it started. The grant is per player only and Roles/everyone.txt is never touched. A .bak is written before each edit, edits are idempotent, there is a port-release wait and a --skip-pass1 recovery, and disable-model-invocation is set."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-deploy-pbo",
+    "grade": "A",
+    "reason": "25 tests pass. Name validation comes first, then preflight, the P:\\Mods junction check and the ownership-marker gate. It refuses a linker collision before copying anything. The copy is purely additive and skips unchanged files by size and mtime. A locked file gives a clear [FAIL] and exit 1. Deployed PBOs the bundle no longer ships are reported."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-edit-types",
+    "grade": "A-",
+    "reason": "88 tests pass. A timestamped backup is written before every changing write, and --dry-run works in every mode. Only changed blocks are rewritten. Merge validation is thorough, names are checked against cfglimitsdefinition, and it refuses non-<types> roots and duplicate target entries. The docs are accurate."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-gate",
+    "grade": "B+",
+    "reason": "242 tests pass across gate, behavior, triage and visual. The verdict and exit contract is consistent, including ERROR on bad arguments. A session the gate did not start is never killed without --yes or a terminal yes. The instance copy for behavior runs protects the user's instance, and the triage and learn flow is solid. SKILL.md itself says two of the four modes have never run live."
+  },
+  {
+    "batch": "skills-a",
+    "item": "dayz-health",
+    "grade": "A-",
+    "reason": "40 tests pass. Results are stored with pruning (newest 200 kept). ERROR reports and reports for a different mod are refused, review lines that do not parse are surfaced, and the mod name is validated. Markdown and HTML pages are rendered, and the docs match the stored schema."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-import-mod",
+    "grade": "A-",
+    "reason": "Name matches the folder; the description is third person with clear use cases. Scaffold writes into the user's source folder only after a prompt or --scaffold, a failed P: link rolls back the workspace link, and a failed clone is deleted. 75/75 tests pass and cover Workshop refusal, git link parsing, subfolder clones, null stdin and rollback of clones."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-init",
+    "grade": "A",
+    "reason": "Name and description fit. The wizard steps match plan.py, dispatch.py and hub_status.py. Every dispatch target script exists, and plan.py refuses --launch without --server or needed --deps. check_env.py ran live and printed OK, and hub_status.py ran from the repo root. 114/114 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-launch-objectbuilder",
+    "grade": "A-",
+    "reason": "Gates on preflight first and validates --mod against new_mod's NAME_PATTERN. It reuses the setup skill's registry and running-instance checks, refuses a second instance and detects an immediate crash. 33/33 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-launch-test",
+    "grade": "A-",
+    "reason": "Accurate SKILL.md: server first, a wait for the port to bind, the server is killed if the client fails to spawn, the instance and allowFilePatching are validated, and --dry-run writes nothing. Exit codes and messages are clear. 40/40 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-launch-workbench",
+    "grade": "A-",
+    "reason": "Gates on preflight, uses the -gproj= switch and cwd=Bin\\Workbench as documented, refuses while Workbench is already running and names its PID. 16/16 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-layout-preview",
+    "grade": "A-",
+    "reason": "Ran live on a fixture and on vanilla P:\\gui\\layouts\\day_z_hud.layout and wrote correct PNGs. A missing file exits 1, a bad --sizes exits 2, and writing into a mod workspace is refused. It explains why it skips preflight. 26/26 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-lint",
+    "grade": "A-",
+    "reason": "On a broken sample mod it correctly reported the p-link, bad DZ_ addon, wrong script layer, missing model, .png texture and modded-class extends errors, plus the duplicate and unlisted-folder warnings, and exited 1. Each finding has an owner and a fix. 65/65 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-logwatch",
+    "grade": "A",
+    "reason": "Ran live with --dir and --since: it triaged an unknown-type line and a NULL-pointer line as known, with owner and fix, and exited 1. With no project it exits 2 with a clear hint. Its arguments are validated as documented, and it starts no process and writes no file. 47/47 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-new-mod",
+    "grade": "A",
+    "reason": "Clear contract. A failed scaffold or junction rolls back only the folder this run created, a stale junction is auto-cleaned only when it points at the target, and the author handle is checked for quotes and control characters. Output matches SKILL.md. 44/44 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-p3d-audit",
+    "grade": "A-",
+    "reason": "Report-only and gates on preflight. Exit codes were verified live: a vanilla ODOL .p3d gives exit 1 and no input gives exit 2. --scan-dir prints the summary line, and the py3d dependency is pinned to a commit. 76/76 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-pack-texture",
+    "grade": "A",
+    "reason": "Destructive overwrite is guarded: a numbered backup is never replaced and --dry-run writes nothing. All inputs are validated before any conversion: suffix, extension, power-of-two size and colliding outputs. A stale .paa is not reported as success. 74/74 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-particles",
+    "grade": "A-",
+    "reason": "A reference-only skill with no script, so it correctly needs no tests or preflight. Its descriptions and routing table are clear. Claims checked against P:\\ hold: POOL_SIZE 10000, the IsHeadlessOrDedicatedServer null return at particlemanager.c:63-65, the RegisterParticle(root_path, file_name) overload, and .ptc/.emat/.edds in build-pbo's include.lst."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-preflight",
+    "grade": "A",
+    "reason": "Ran live: all checks OK, exit 0. Its only write, the P:\\Mods junction, is created only when absent and to the resolved !Workshop folder. Wrong shapes are reported, never changed. P:\\ unmounted is a hard fail with exit 1 on stderr. 30/30 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-recipe",
+    "grade": "A-",
+    "reason": "Ran live: the vest and craftable recipes verified every vanilla class with path, line and addon, plus script symbols and fits, in under 0.5 s. A bad --attachment exits 1 and lists every valid slot item. An existing plan is refused without --force, and a bad name exits 2. 37/37 tests pass."
+  },
+  {
+    "batch": "skills-b",
+    "item": "dayz-record-correction",
+    "grade": "A-",
+    "reason": "Nothing is written without the user's yes. The tier routing is explicit, and check.py resolves junctions, refuses a copied-into-home install with exit 2, and compares against a baseline so only new failures count. 10/10 tests pass."
+  }
 ]

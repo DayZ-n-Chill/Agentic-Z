@@ -1,0 +1,87 @@
+{
+  "agent": "dayz-router",
+  "questions": [
+    {
+      "id": "open-workbench-is-the-launcher",
+      "question": "Answer only, do not edit any file. Route this request: open Workbench on my mod MyVest so I can debug its scripts.",
+      "must_include": [
+        "re:\"route\"\\s*:\\s*\"dayz-launch-workbench\"",
+        "re:\"kind\"\\s*:\\s*\"skill\""
+      ],
+      "must_not_include": [
+        "dayz-workbench-specialist"
+      ],
+      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-launch-workbench opens Workbench; dayz-workbench-specialist writes plugins and never opens it, .claude/agents/dayz-workbench-specialist.md:29)"
+    },
+    {
+      "id": "add-test-server-instance",
+      "question": "Answer only, do not edit any file. Route this request: add a new test server instance called chernarus-hardcore so I can test on it later.",
+      "must_include": [
+        "re:\"route\"\\s*:\\s*\"dayz-add-server\""
+      ],
+      "must_not_include": [
+        "dayz-launch-test",
+        "dayz-server-admin"
+      ],
+      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-add-server sets up .server/<instance>/; .claude/skills/dayz-add-server/SKILL.md description)"
+    },
+    {
+      "id": "pack-texture-vs-wrong-texture",
+      "question": "Answer only, do not edit any file. Route this request: pack vest_camo_co.png and vest_camo_nohq.png to .paa, nothing else.",
+      "must_include": [
+        "re:\"route\"\\s*:\\s*\"dayz-pack-texture\""
+      ],
+      "must_not_include": [
+        "dayz-asset-specialist",
+        "dayz-build-pbo"
+      ],
+      "verified": ".claude/agents/dayz-router.md Valid routes (only packing images to .paa is dayz-pack-texture; .claude/skills/dayz-pack-texture/SKILL.md description)"
+    },
+    {
+      "id": "stretched-texture-is-not-packing",
+      "question": "Answer only, do not edit any file. Route this request: the camo texture on my jacket looks stretched and blurry in game.",
+      "must_include": [
+        "re:\"route\"\\s*:\\s*\"dayz-asset-specialist\""
+      ],
+      "must_not_include": [
+        "dayz-pack-texture"
+      ],
+      "verified": ".claude/agents/dayz-router.md How to decide (a wrong, missing or stretched texture goes to dayz-asset-specialist)"
+    },
+    {
+      "id": "build-imageset-from-sprites",
+      "question": "Answer only, do not edit any file. Route this request: build the imageset from the PNG sprites in my mod's .gui-sources folder.",
+      "must_include": [
+        "re:\"route\"\\s*:\\s*\"dayz-build-imageset\""
+      ],
+      "must_not_include": [
+        "dayz-ui-specialist"
+      ],
+      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-build-imageset; .claude/skills/dayz-build-imageset/SKILL.md description)"
+    },
+    {
+      "id": "cot-admin-bootstrap",
+      "question": "Answer only, do not edit any file. Route this request: give me COT admin permissions on my local test server.",
+      "must_include": [
+        "re:\"route\"\\s*:\\s*\"dayz-cot-bootstrap\""
+      ],
+      "must_not_include": [
+        "dayz-server-admin",
+        "dayz-conflict-check"
+      ],
+      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-cot-bootstrap; .claude/skills/dayz-cot-bootstrap/SKILL.md description)"
+    },
+    {
+      "id": "status-hub-is-init",
+      "question": "Answer only, do not edit any file. Route this request: where am I with my DayZ setup, and what should I do next?",
+      "must_include": [
+        "re:\"route\"\\s*:\\s*\"dayz-init\""
+      ],
+      "must_not_include": [
+        "dayz-preflight",
+        "dayz-health"
+      ],
+      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-init is the status hub; .claude/skills/dayz-init/SKILL.md description)"
+    }
+  ]
+}

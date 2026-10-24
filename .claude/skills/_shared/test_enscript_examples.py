@@ -9,16 +9,50 @@ EXAMPLES = Path(__file__).resolve().parent / "enscript" / "examples"
 
 # A plain (not modded) class declaration at the start of a line.
 _CLASS = re.compile(r"^class\s+(\w+)", re.MULTILINE)
+# A top-level const at the start of a line (class members are indented).
+_CONST = re.compile(r"^(?:static\s+)?const\s+\w+\s+(\w+)\s*=", re.MULTILINE)
+
+
+def _duplicates(pattern: re.Pattern[str]) -> tuple[dict, dict]:
+    seen = defaultdict(list)
+    for path in sorted(EXAMPLES.glob("*.c")):
+        for name in pattern.findall(path.read_text(encoding="utf-8")):
+            seen[name].append(path.name)
+    return seen, {name: files for name, files in seen.items() if len(files) > 1}
 
 
 def test_examples_declare_each_class_once():
+    seen, duplicates = _duplicates(_CLASS)
+    assert seen, "no example classes found"
+    assert not duplicates, f"class declared more than once across examples: {duplicates}"
+
+
+def test_examples_declare_each_const_once():
+    seen, duplicates = _duplicates(_CONST)
+    assert seen, "no example consts found"
+    assert not duplicates, f"const declared more than once across examples: {duplicates}"
+
+
+def test_examples_declare_each_enum_once():
+    # Two files declaring the same enum fail to compile when copied into one mod.
     seen = defaultdict(list)
     for path in sorted(EXAMPLES.glob("*.c")):
-        for name in _CLASS.findall(path.read_text(encoding="utf-8")):
+        for name in re.findall(r"^enum\s+(\w+)", path.read_text(encoding="utf-8"), re.MULTILINE):
             seen[name].append(path.name)
-    assert seen, "no example classes found"
+    assert seen, "no example enums found"
     duplicates = {name: files for name, files in seen.items() if len(files) > 1}
-    assert not duplicates, f"class declared more than once across examples: {duplicates}"
+    assert not duplicates, f"enum declared more than once across examples: {duplicates}"
+
+
+def test_stamina_pct_divides_by_configured_max():
+    # Raw stamina runs 0..staminaMax from cfggameplay.json
+    # (P:\scripts\4_world\classes\staminahandler.c:335-338), so a percentage helper
+    # must divide by CfgGameplayHandler.GetStaminaMax() (cfggameplayhandler.c:217-220).
+    source = (EXAMPLES / "10_modded_playerbase.c").read_text(encoding="utf-8")
+    body = _method_body(source, "float MyMod_GetStaminaPct(")
+    assert re.search(
+        r"GetStamina\(\)\s*/\s*CfgGameplayHandler\.GetStaminaMax\(\)\s*\*\s*100", body
+    ), "MyMod_GetStaminaPct returns raw stamina instead of a 0..100 percentage"
 
 
 def test_player_eonframe_overrides_guard_local_client():

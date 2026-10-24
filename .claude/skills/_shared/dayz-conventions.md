@@ -46,7 +46,7 @@ Skills resolve paths in this order: env var, then Windows registry (DayZ Tools o
 | `DAYZ_GAME_PATH` | DayZ game install root (containing `DayZ_x64.exe` and `DayZDiag_x64.exe`). | Preflight (`P:\Mods` junction target); the diag client resolver. |
 | `DAYZ_DIAG_PATH` | Direct path to `DayZDiag_x64.exe` (override for non-standard installs). | `/dayz-launch-test`. |
 | `DAYZ_SERVER_PATH` | DayZ Server install root (containing `DayZServer_x64.exe`). Only its mission templates are read; testing runs diag for both ends. | `/dayz-add-server` (mission copy). |
-| `DAYZ_VANILLA_DATA_PATH` | Folder on `P:\` containing the unpacked vanilla DayZ PBOs (default candidates: `P:\dz`, `P:\DZ`, `P:\dta`). | Preflight. |
+| `DAYZ_VANILLA_DATA_PATH` | Folder on `P:\` containing the unpacked vanilla DayZ PBOs (default: `P:\dz`, which matches `P:\DZ` since Windows paths are case-insensitive; preflight also checks `P:\scripts`). | Preflight. |
 | `DAYZ_WORK_DRIVE` | Folder to mount as `P:\`; else the cached path from the last mount, then DayZ Tools' `settings.ini` `[ProjectDrive] path` (registry keys are not a source). No default: with none of these, `/dayz-workdrive` fails and asks for `--path`. | `/dayz-workdrive`. |
 
 Skills use the shared resolvers in `dayz-preflight/preflight.py` (`find_dayz_tools`, `find_dayz_game`, `find_dayz_diag`, `find_dayz_server`, `find_vanilla_data`) rather than re-implementing path discovery, so the resolution order stays the same across every skill.
@@ -122,9 +122,9 @@ The core above is what every DayZ agent and skill reads. Topic rules live in `.c
 
 | Topic file | Sections | Read by |
 |---|---|---|
-| `conventions/config.md` | Config conventions, `inventorySlot` string vs array (`T148506`), Bundle / umbrella mods | config-specialist, build-checker, build-engineer, mod-reviewer |
-| `conventions/assets.md` | Asset conventions (texture suffixes, `.rvmat`, `.p3d`), LOD canonical resolutions | asset-specialist, object-builder, mod-reviewer, mod-architect |
-| `conventions/scripts.md` | Script conventions (`scripts/` layers, `modded class` with no `extends`), Client and server ownership (which side runs what, who owns state, RPC direction, server validation) | script-specialist, workbench-specialist, mod-debugger, mod-reviewer, mod-architect |
+| `conventions/config.md` | Config conventions, `inventorySlot` string vs array (`T148506`), Bundle / umbrella mods | config-specialist, build-checker, build-engineer, mod-reviewer, audio-fx-specialist, ai-specialist, docs-writer, ingame-tester, mod-debugger, vehicle-specialist |
+| `conventions/assets.md` | Asset conventions (texture suffixes, `.rvmat`, `.p3d`), LOD canonical resolutions | asset-specialist, object-builder, animation-specialist, physics-specialist, mod-reviewer, mod-architect |
+| `conventions/scripts.md` | Script conventions (`scripts/` layers, `modded class` with no `extends`), Client and server ownership (which side runs what, who owns state, RPC direction, server validation) | script-specialist, workbench-specialist, mod-debugger, mod-reviewer, mod-architect, audio-fx-specialist, ai-specialist, persistence-specialist, vehicle-specialist |
 | `conventions/ui.md` | UI scripting realities (read before any "change the X color" task) | ui-specialist, figma-to-dayz-layout, layout-validator |
 | `conventions/server.md` | Server / economy, Test server instances (`.server/`), Mission and DayZ Server install notes | server-admin, map-specialist, ingame-tester, mod-debugger |
 

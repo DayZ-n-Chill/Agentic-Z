@@ -263,23 +263,32 @@ def _git(mod_dir: Path, *args: str) -> Optional[str]:
     return r.stdout if r.returncode == 0 else None
 
 
-def git_changes(mod_dir: Path, since: Optional[str]) -> dict:
+def git_changes(mod_dir: Path, since: Optional[str], version: Optional[str] = None) -> dict:
     """Commits that touched the mod folder since `since`.
 
     The default is the latest tag when the mod folder is its own repository. A mod
     inside a bigger repository (an Agentic-Z clone) cannot use that repository's
     tags, so it starts after the newest chore(release) commit that touched the mod
     folder, or takes the whole folder history when there is none.
+    When that tag is this release (it points at HEAD, or it is `version` or
+    v<version>), the user tagged before writing the notes, so the entry starts
+    after the tag before it instead; `skipped` names the tag passed over.
     `from` says where the start came from: "option", "tag", "release-commit" or None.
     """
     top = _git(mod_dir, "rev-parse", "--show-toplevel")
     if top is None:
         return {"git": False, "since": None, "from": None, "commits": []}
     own_repo = Path(top.strip()).resolve() == mod_dir.resolve()
-    origin = None
+    origin = skipped = None
     if since is None and own_repo:
-        tag = _git(mod_dir, "describe", "--tags", "--abbrev=0")
-        since = tag.strip() if tag and tag.strip() else None
+        tag = (_git(mod_dir, "describe", "--tags", "--abbrev=0") or "").strip() or None
+        if tag:
+            head = _git(mod_dir, "rev-parse", "HEAD")
+            at_tag = _git(mod_dir, "rev-parse", f"{tag}^{{commit}}")
+            if (head is not None and head == at_tag) or (version and tag in (version, f"v{version}")):
+                skipped = tag
+                tag = (_git(mod_dir, "describe", "--tags", "--abbrev=0", f"{tag}^{{commit}}~1") or "").strip() or None
+        since = tag
         origin = "tag" if since else None
     elif since is None:
         log = _git(mod_dir, "log", "--no-merges", "--format=%h%x1f%s", "--", ".") or ""
@@ -299,7 +308,8 @@ def git_changes(mod_dir: Path, since: Optional[str]) -> dict:
         parts = line.split("\x1f")
         if len(parts) == 3 and not SKIP_SUBJECT_RE.match(parts[2]):
             commits.append({"hash": parts[0], "date": parts[1], "subject": parts[2]})
-    return {"git": True, "since": since, "from": origin, "commits": commits, "own_repo": own_repo}
+    return {"git": True, "since": since, "from": origin, "commits": commits, "own_repo": own_repo,
+            "skipped": skipped}
 
 
 def group_changes(commits: list[dict]) -> dict[str, list[str]]:
@@ -425,16 +435,40 @@ def install_md(facts: dict) -> str:
 
 # --- run ----------------------------------------------------------------------
 
+def _backup_if_changed(path: Path, text: str) -> Optional[Path]:
+    """Copy path to a free <name>.bak (then <name>.2.bak, ...) when it holds other text than `text`.
+
+    The user edits workshop-description.txt by hand (SERVER_KIT_LINK, the summary
+    line), so a rerun must not drop those edits. An older backup is never replaced.
+    """
+    if not path.is_file():
+        return None
+    old = path.read_text(encoding="utf-8", errors="replace")
+    if old == text:
+        return None
+    backup = path.with_name(f"{path.name}.bak")
+    n = 2
+    while backup.exists():
+        backup = path.with_name(f"{path.name}.{n}.bak")
+        n += 1
+    backup.write_text(old, encoding="utf-8", newline="\n")
+    return backup
+
+
 def release_pack(mod: str, mod_dir: Path, out_dir: Path, version: str = "Unreleased", since: Optional[str] = None,
                  deps: Optional[list[str]] = None, p_mods: Optional[Path] = P_MODS, date: Optional[str] = None) -> dict:
     facts = mod_facts(mod, mod_dir, deps, p_mods)
-    changes = git_changes(mod_dir, since)
+    changes = git_changes(mod_dir, since, version)
     facts["warnings"].append("server-kit-link: the Workshop text links the server kit as SERVER_KIT_LINK; replace it "
                              "with the address where the kit is published (for example a GitHub release)")
     if not changes["git"]:
         facts["warnings"].append("no-git: the mod folder is not in a git repository, so the changelog entry is empty")
     else:
-        if changes["since"] is None and changes["own_repo"]:
+        if changes["since"] is None and changes.get("skipped"):
+            facts["warnings"].append(f"changelog-full-history: {changes['skipped']} is this release and there is no "
+                                     "tag before it, so the entry lists the whole history; pass --since <ref> to "
+                                     "limit the entry")
+        elif changes["since"] is None and changes["own_repo"]:
             facts["warnings"].append("changelog-full-history: the mod's repository has no tag, so the entry lists its "
                                      "whole history; tag the release (git tag v<version>) so the next run starts "
                                      "after it, or pass --since <ref> to limit the entry")
@@ -456,8 +490,16 @@ def release_pack(mod: str, mod_dir: Path, out_dir: Path, version: str = "Unrelea
         "server-install.md": install_md(facts),
     }
     out_dir.mkdir(parents=True, exist_ok=True)
+    backups = []
     for name, text in files.items():
+        backup = _backup_if_changed(out_dir / name, text)
+        if backup is not None:
+            backups.append(backup.name)
         (out_dir / name).write_text(text, encoding="utf-8", newline="\n")
+    if backups:
+        facts["warnings"].append(f"kept-backup: {backups} hold the previous texts, which differ from this run "
+                                 "(hand edits such as the SERVER_KIT_LINK address or the summary line are in there); "
+                                 "copy the edits you still want into the new files, then delete the backups")
     return {
         "mod": mod,
         "version": version,
@@ -467,7 +509,8 @@ def release_pack(mod: str, mod_dir: Path, out_dir: Path, version: str = "Unrelea
         "unresolved": [c["name"] for c in facts["unresolved"]],
         "load_order": load_order(facts),
         "keys": facts["keys"],
-        "changes": {"since": changes["since"], "from": changes["from"], "commits": len(changes["commits"])},
+        "changes": {"since": changes["since"], "from": changes["from"], "commits": len(changes["commits"]),
+                    **({"skipped": changes["skipped"]} if changes.get("skipped") else {})},
         "warnings": facts["warnings"],
     }
 
@@ -495,6 +538,9 @@ def render_text(report: dict) -> str:
     if report["changes"]["from"] == "release-commit":
         out.append(f"       changelog starts after {report['changes']['since']}, "
                    "the newest chore(release) commit in the mod folder")
+    elif report["changes"]["from"] == "tag" and report["changes"].get("skipped"):
+        out.append(f"       changelog starts after {report['changes']['since']}, the tag before "
+                   f"{report['changes']['skipped']} (that tag is this release)")
     elif report["changes"]["from"] == "tag":
         out.append(f"       changelog starts after {report['changes']['since']}, the latest tag in the mod's repository")
     out += [f"[WARN] {w}" for w in report["warnings"]]
@@ -521,7 +567,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         mod, mod_dir, out_dir = resolve_mod(args.mod, args.mod_dir, args.out)
         report = release_pack(mod, mod_dir, out_dir, args.version, args.since, args.deps)
     except (ReleaseError, OSError, ValueError) as e:
-        print(json.dumps({"error": str(e)}, indent=2) if args.json else f"[FAIL] {e}")
+        if args.json:
+            print(json.dumps({"error": str(e)}, indent=2))
+        else:
+            print(f"[FAIL] {e}", file=sys.stderr)
         return 2
     print(json.dumps(report, indent=2) if args.json else render_text(report))
     return 0

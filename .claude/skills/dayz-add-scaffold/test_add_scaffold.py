@@ -67,14 +67,19 @@ def test_second_run_changes_nothing(piece, tmp_path, fake_tools):
 
 
 @pytest.mark.parametrize(
-    "piece, rel",
-    [("config", "config.cpp"), ("prefix", "$PBOPREFIX$"), ("readme", "README.md")],
+    "piece, rel, status",
+    [
+        ("config", "config.cpp", scaf.PRESENT),
+        # "user content" is not "MyMod", so the prefix is kept but reported wrong.
+        ("prefix", "$PBOPREFIX$", scaf.WRONG),
+        ("readme", "README.md", scaf.PRESENT),
+    ],
 )
-def test_existing_file_is_left_untouched(piece, rel, tmp_path):
+def test_existing_file_is_left_untouched(piece, rel, status, tmp_path):
     target = tmp_path / "MyMod"
     target.mkdir()
     (target / rel).write_text("user content", encoding="utf-8")
-    assert _run_piece(piece, target) == scaf.PRESENT
+    assert _run_piece(piece, target) == status
     assert (target / rel).read_text(encoding="utf-8") == "user content"
 
 
@@ -118,6 +123,17 @@ def test_workbench_skipped_without_tools(tmp_path, monkeypatch):
     target.mkdir()
     assert scaf.add_workbench(target, "MyMod") == scaf.SKIPPED
     assert not (target / "workbench").exists()
+
+
+def test_workbench_skipped_when_tools_gproj_missing(tmp_path, fake_tools):
+    # DayZ Tools present but Bin\Workbench\dayz.gproj missing: only the xml
+    # can be copied, which must not count as the workbench piece being added.
+    (fake_tools / "dayz.gproj").unlink()
+    target = tmp_path / "MyMod"
+    target.mkdir()
+    assert scaf.add_workbench(target, "MyMod") == scaf.SKIPPED
+    assert not (target / "workbench" / "dayz.gproj").exists()
+    assert (target / "workbench" / "DayZSetting.xml").exists()
 
 
 def test_unknown_piece_raises(tmp_path):
@@ -354,3 +370,84 @@ def test_main_junction_created_prints_link_summary(monkeypatch, tmp_path, p_driv
     out = capsys.readouterr().out
     assert "link created" in out
     assert "fully scaffolded" not in out
+
+
+# --- exit code and $PBOPREFIX$ content ---------------------------------------------
+
+def test_main_single_piece_skipped_exits_nonzero(monkeypatch, tmp_path, capsys):
+    """--piece workbench without DayZ Tools writes nothing, so the exit must fail."""
+    monkeypatch.setattr(scaf._nm, "find_dayz_tools", lambda: None)
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "workbench"]) == 1
+    assert "workbench was not written" in capsys.readouterr().out
+    assert not (target / "workbench").exists()
+
+
+def test_main_all_with_a_skipped_piece_still_exits_zero(monkeypatch, tmp_path):
+    """`all` reports skipped pieces in its summary; the other pieces were written."""
+    monkeypatch.setattr(scaf._nm, "find_dayz_tools", lambda: None)
+    (tmp_path / "project" / "workspace" / "MyMod").mkdir(parents=True)
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--author", "Tester"]) == 0
+
+
+def test_existing_prefix_with_other_content_warns_build_will_refuse(tmp_path, capsys):
+    target = tmp_path / "MyMod"
+    target.mkdir()
+    (target / "$PBOPREFIX$").write_text("OtherMod", encoding="utf-8")
+    assert scaf.add_prefix(target, "MyMod") == scaf.WRONG
+    out = capsys.readouterr().out
+    assert scaf.WARN in out and "'OtherMod'" in out and "/dayz-build-pbo will refuse" in out
+    assert "[SKIP]" not in out
+    assert (target / "$PBOPREFIX$").read_text(encoding="utf-8") == "OtherMod"
+
+
+def test_existing_prefix_matching_after_bom_and_newline_is_plain_skip(tmp_path, capsys):
+    """Same normalisation as /dayz-build-pbo's gate: BOM and trailing newline are fine."""
+    target = tmp_path / "MyMod"
+    target.mkdir()
+    (target / "$PBOPREFIX$").write_bytes(b"\xef\xbb\xbfMyMod\r\n")
+    assert scaf.add_prefix(target, "MyMod") == scaf.PRESENT
+    out = capsys.readouterr().out
+    assert "$PBOPREFIX$ present" in out and scaf.WARN not in out
+
+
+def test_main_single_prefix_piece_left_wrong_exits_nonzero(monkeypatch, tmp_path, capsys):
+    """--piece prefix on a $PBOPREFIX$ /dayz-build-pbo will refuse must not report success."""
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    (target / "$PBOPREFIX$").write_text("OtherMod", encoding="utf-8")
+    assert _run_main(monkeypatch, tmp_path, ["MyMod", "--piece", "prefix"]) == 1
+    out = capsys.readouterr().out
+    assert f"{scaf.FAIL} prefix is present but wrong" in out
+    assert "1 need fixing by hand." in out
+    assert "fully scaffolded" not in out
+    assert (target / "$PBOPREFIX$").read_text(encoding="utf-8") == "OtherMod"
+
+
+def test_main_all_with_wrong_prefix_warns_in_summary(monkeypatch, tmp_path, capsys, fake_tools):
+    """`all` on a fully present folder whose prefix is wrong is not 'fully scaffolded'."""
+    target = tmp_path / "project" / "workspace" / "MyMod"
+    target.mkdir(parents=True)
+    _run_main(monkeypatch, tmp_path, ["MyMod", "--author", "Tester"])
+    (target / "$PBOPREFIX$").write_text("OtherMod", encoding="utf-8")
+    capsys.readouterr()
+    assert _run_main(monkeypatch, tmp_path, ["MyMod"]) == 0
+    out = capsys.readouterr().out
+    assert "fully scaffolded" not in out
+    assert f"{scaf.WARN} 0 piece(s) added, 4 already present, 0 skipped, 1 need fixing by hand." in out
+
+
+def test_main_all_summary_tag_is_warn_when_a_piece_was_skipped(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(scaf._nm, "find_dayz_tools", lambda: None)
+    (tmp_path / "project" / "workspace" / "MyMod").mkdir(parents=True)
+    _run_main(monkeypatch, tmp_path, ["MyMod", "--author", "Tester"])
+    out = capsys.readouterr().out
+    assert f"{scaf.WARN} 4 piece(s) added, 0 already present, 1 skipped." in out
+    assert f"{scaf.OK} 4 piece(s) added" not in out
+
+
+def test_main_all_summary_tag_is_ok_when_everything_added(monkeypatch, tmp_path, capsys, fake_tools):
+    (tmp_path / "project" / "workspace" / "MyMod").mkdir(parents=True)
+    _run_main(monkeypatch, tmp_path, ["MyMod", "--author", "Tester"])
+    assert f"{scaf.OK} 5 piece(s) added, 0 already present, 0 skipped." in capsys.readouterr().out

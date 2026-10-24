@@ -1,5 +1,6 @@
 """Tests for clean-repo/clean.py: discovery, TTY refusal, dry-run-first ordering."""
 import importlib.util
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -30,8 +31,11 @@ def skills_dir(tmp_path, monkeypatch):
 def calls(monkeypatch):
     """Record child invocations; return codes are looked up per (skill, mode)."""
     record = {"cmds": [], "rc": {}}
+    real_run = subprocess.run
 
     def fake_run(cmd, *a, **k):
+        if cmd[0] == "git":  # versioned_server_files asks real git; only children are faked
+            return real_run(cmd, *a, **k)
         record["cmds"].append(cmd)
         key = (Path(cmd[1]).parent.name, cmd[-1])
         return SimpleNamespace(returncode=record["rc"].get(key, 0))
@@ -143,6 +147,8 @@ def test_other_cached_project_warns_and_is_named_in_the_prompt(skills_dir, calls
 def test_cached_project_equal_to_this_checkout_does_not_warn(skills_dir, calls, monkeypatch, capsys):
     _skill(skills_dir, "a-clean-workspace")
     _cache_project(skills_dir, clean.REPO_ROOT)
+    # This checkout's real .server/ may hold versioned files; that warning is tested below.
+    monkeypatch.setattr(clean, "versioned_server_files", lambda project: [])
     assert clean.main(["--dry-run"]) == 0
     assert "[WARN]" not in capsys.readouterr().out
 
@@ -161,3 +167,66 @@ def test_status_lines_have_a_single_space_after_the_label(skills_dir, calls, cap
 def test_no_cleanup_skills_is_ok(skills_dir, calls):
     assert clean.main(["--yes"]) == 0
     assert calls["cmds"] == []
+
+
+def test_keep_server_drops_include_server_from_every_child(skills_dir, calls):
+    _skill(skills_dir, "a-clean-workspace")
+    _skill(skills_dir, "b-clean-workspace")
+    assert clean.main(["--yes", "--keep-server"]) == 0
+    assert len(calls["cmds"]) == 4
+    assert not any("--include-server" in c for c in calls["cmds"])
+
+
+def test_default_passes_include_server_to_removal_runs_too(skills_dir, calls):
+    _skill(skills_dir, "a-clean-workspace")
+    assert clean.main(["--yes"]) == 0
+    assert [c for c in calls["cmds"] if c[-1] == "--yes"][0][2] == "--include-server"
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(cwd), *args], check=True, capture_output=True)
+
+
+@pytest.fixture
+def server_repo(tmp_path):
+    """A git repo with the template's .server/ ignore rules and one instance."""
+    repo = tmp_path / "proj"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    gitignore = (clean.REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
+    rules = [line for line in gitignore.splitlines() if line.lstrip("!").startswith(".server/")]
+    assert "!.server/*/serverDZ.cfg" in rules
+    (repo / ".gitignore").write_text("".join(rule + "\n" for rule in rules), encoding="utf-8")
+    inst = repo / ".server" / "chernarus"
+    for rel in ("serverDZ.cfg", "mission/init.c", "mission/storage_1/data.bin", "Profiles/server.RPT"):
+        (inst / rel).parent.mkdir(parents=True, exist_ok=True)
+        (inst / rel).write_text("x", encoding="utf-8")
+    return repo
+
+
+def test_versioned_server_files_lists_only_what_gitignore_keeps(server_repo):
+    assert sorted(clean.versioned_server_files(server_repo)) == [
+        ".server/chernarus/mission/init.c",
+        ".server/chernarus/serverDZ.cfg",
+    ]
+
+
+def test_versioned_server_files_empty_without_server_dir(tmp_path):
+    assert clean.versioned_server_files(tmp_path) == []
+
+
+def test_plan_warns_about_versioned_server_files(skills_dir, calls, server_repo, capsys):
+    _skill(skills_dir, "a-clean-workspace")
+    _cache_project(skills_dir, server_repo)
+    assert clean.main(["--dry-run"]) == 0
+    out = capsys.readouterr().out
+    assert "[WARN] .server/ holds 2 file(s)" in out
+    assert ".server/chernarus/serverDZ.cfg" in out
+    assert "--keep-server" in out
+
+
+def test_keep_server_plan_does_not_warn_about_server_files(skills_dir, calls, server_repo, capsys):
+    _skill(skills_dir, "a-clean-workspace")
+    _cache_project(skills_dir, server_repo)
+    assert clean.main(["--dry-run", "--keep-server"]) == 0
+    assert ".server/ holds" not in capsys.readouterr().out

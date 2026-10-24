@@ -451,6 +451,7 @@ def lint_mod(
     check_link: bool = True,
     p_drive: Optional[Path] = None,
     project_dir: Optional[Path] = None,
+    in_workspace: bool = True,
 ) -> dict:
     """Lint one mod folder and return the report.
 
@@ -458,7 +459,10 @@ def lint_mod(
     data used for the requiredAddons spelling check (skipped when P:\\DZ\\ is
     not there). check_link=False skips the link check, for /dayz-build-pbo,
     which checks the link itself. project_dir: for the learned known-errors
-    file used in triage.
+    file used in triage. in_workspace=False: the folder is not
+    <project>\\workspace\\<ModName>\\, so the p-link fix points at
+    /dayz-import-mod or mklink /J instead of /dayz-add-scaffold, which only
+    works on workspace mods.
     """
     if not mod_dir.is_dir():
         raise LintError(f"{mod_dir} not found")
@@ -469,6 +473,12 @@ def lint_mod(
     context = {"ModName": mod}
     for f in lint.findings:
         f["triage"] = triage.match_line(f["text"], known, context)
+        if f["rule"] == "p-link" and not in_workspace and f["triage"]["status"] == "known":
+            f["triage"]["fix"] = outside_link_fix(p_drive / lint.prefix, mod_dir)
+        elif f["rule"] == "script-module-path" and f["triage"]["status"] == "known":
+            # The catalog fix names workspace/<ModName>/; name the folder actually linted instead.
+            f["triage"]["fix"] = (f"Point files[] at {mod}/scripts/<layer> and make sure that folder "
+                                  f"exists under {lint.rel(mod_dir)}/.")
     findings = sorted(lint.findings, key=lambda f: (f["severity"] != ERROR, f["file"], f["line"] or 0))
     errors = sum(f["severity"] == ERROR for f in findings)
     report = {
@@ -482,6 +492,27 @@ def lint_mod(
     if note:
         report["note"] = note
     return report
+
+
+def outside_link_fix(link: Path, mod_dir: Path) -> str:
+    """The p-link fix for a folder outside workspace\\ (/dayz-add-scaffold refuses those)."""
+    return (f'Run /dayz-import-mod --source "{mod_dir}" to link it into workspace\\ and create {link}, '
+            f'or link it by hand: mklink /J "{link}" "{mod_dir}".')
+
+
+def cached_workspace() -> Optional[Path]:
+    """<project>\\workspace\\ of the project cached by /dayz-init, or None. Never exits."""
+    project = h.load_module("dayz_lint_init_state", h.DAYZ_INIT_STATE).cached_project_root()
+    return project / "workspace" if project is not None and project.is_dir() else None
+
+
+def is_workspace_mod(mod_dir: Path, mod: str) -> bool:
+    """True when mod_dir is (or is linked from) workspace\\<mod>\\ of the cached project."""
+    workspace = cached_workspace()
+    if workspace is None:
+        return False
+    entry = workspace / mod
+    return entry.is_dir() and h.paths_equal(entry.resolve(), mod_dir.resolve())
 
 
 def render_text(report: dict) -> str:
@@ -513,7 +544,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         if args.mod_dir:
             mod_dir = args.mod_dir.resolve()
-            report = lint_mod(args.mod or mod_dir.name, mod_dir, display_root=Path.cwd())
+            mod = args.mod or mod_dir.name
+            report = lint_mod(mod, mod_dir, display_root=Path.cwd(), in_workspace=is_workspace_mod(mod_dir, mod))
         else:
             project_dir = h.resolve_project_dir()
             report = lint_mod(args.mod, project_dir / "workspace" / args.mod, project_dir, project_dir=project_dir)

@@ -7,7 +7,7 @@
       "must_include": [
         "READ_ONLY_GATES",
         "re:(\\bno\\b|\\bnot\\b|n't|never|without|omit|leave out|drop)[^.\\n]*\\b(Write|Edit)\\b|\\b(Write|Edit)\\b[^.\\n]*(\\bno\\b|\\bnot\\b|n't|never|without|omit|leave out|drop)",
-        "re:(\\bno\\b|\\bnot\\b|n't|never|without|omit|leave out|drop)[^.\\n]*\\bmemory\\b|\\bmemory\\b[^.\\n]*(\\bno\\b|\\bnot\\b|n't|never|without|omit|leave out|drop)|\\bleave\\W+memory\\W+out\\b"
+        "re:(\\bno\\b|\\bnot\\b|n't|never|without|omit|leave out|drop)[^.\\n]*\\bmemory\\b|\\bmemory\\b[^.\\n]*(\\bno\\b|\\bnot\\b|n't|never|without|omit|leave out|drop)|\\bleave\\b[^.\\n]*\\bmemory\\b[^.\\n]*\\bout\\b"
       ],
       "must_not_include": [
         "re:^\\s*tools:(?![^\\n]*\\b(no|not|never|without)\\b)[^\\n]*\\b(Write|Edit)\\b",

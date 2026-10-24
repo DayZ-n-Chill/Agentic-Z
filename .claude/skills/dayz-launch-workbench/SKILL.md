@@ -21,7 +21,8 @@ Follow `.claude/skills/_shared/dayz-conventions.md`.
    - `--mod <ModName>` → uses `P:\<ModName>\workbench\dayz.gproj`. Fails fast if the mod folder or gproj isn't there; a missing gproj is added with `/dayz-add-scaffold <ModName> --piece workbench`.
    - `--gproj <path>` → uses an explicit `.gproj` path (escape hatch for non-scaffolded layouts).
    - Neither → no project arg; Workbench loads the default `dayz.gproj` shipped next to `workbenchApp.exe`.
-4. Spawns `workbenchApp.exe`, passing any project as `-gproj=<path>` (Workbench's own switch; with no switch it loads `$CurrentDir:dayz.gproj`, the vanilla one), with `cwd=<DayZ Tools>\Bin\Workbench` (so Workbench's support files resolve; see "Why cwd" below), detached so the shell returns immediately.
+4. Refuses (exit 1) when a `workbenchApp.exe` is already running, naming its PID. `tasklist` cannot show which project a running Workbench has open, so any running instance blocks a second launch.
+5. Spawns `workbenchApp.exe`, passing any project as `-gproj=<path>` (Workbench's own switch; with no switch it loads `$CurrentDir:dayz.gproj`, the vanilla one), with `cwd=<DayZ Tools>\Bin\Workbench` (so Workbench's support files resolve; see "Why cwd" below), detached so the shell returns immediately.
 
 ## How to run
 
@@ -89,4 +90,4 @@ The editor is spawned detached (shared `DETACH_FLAGS` in `_shared/skill_helpers.
 ## Do not
 
 - Don't pass `--mod` for a mod without `workbench/dayz.gproj`; add it first with `/dayz-add-scaffold <ModName> --piece workbench`.
-- Don't spam-launch; Workbench isn't designed to run multiple instances against the same project.
+- Don't spam-launch; Workbench isn't designed to run multiple instances against the same project. The launcher refuses while one is running: use that window, or close it and run the skill again.

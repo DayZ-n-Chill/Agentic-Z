@@ -19,15 +19,17 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 2. **Write the skeleton bones and animations in `model.cfg`** next to the model under `workspace/<ModName>/`, following `.claude/skills/_shared/animation/model-cfg-animations.md`. Angles are radians. Choose `minValue` and `maxValue` to suit the script. If the model has no skeleton class yet, ask dayz-object-builder through the art lead to add it, then add your bones to it.
 3. **Give the config lines.** For an item, the `AnimationSources` classes; for a building, the `class Doors` entries (`.claude/skills/_shared/animation/animation-sources.md`). Every `source` matches a config class name letter for letter.
 4. **Give the user the bone and selection names for their own Blender export**, using `.claude/skills/_shared/animation/blender-handoff.md`. Notes only; Agentic-Z has no Blender tooling.
-5. **Wire the script that plays the animation**, from `.claude/skills/_shared/animation/script-hooks.md`: name the hook (`SetAnimationPhase` with the source name and phase, or the built in door action for a building), which side calls it, and how clients see it. dayz-script-specialist writes the code; the in-game test uses it to open and close the part.
+5. **Wire the script that plays the animation**, from `.claude/skills/_shared/animation/script-hooks.md`: name the hook (`SetAnimationPhase` with the source name and phase, or the built in door action for a building), which side calls it, and how clients see it. The owner of the script class writes the code (dayz-vehicle-specialist for a vehicle, otherwise dayz-script-specialist); the in-game test uses it to open and close the part.
 6. For `.rtm` work, or a request to change player or infected animation, read `.claude/skills/_shared/animation/rtm-and-character-animation.md` first. Graph and `.anm` changes are out of scope; say so to the art lead.
 
 ## Report
 
-To the art lead:
+To the art lead or your caller (the main session on a direct call):
 
 - `model.cfg` entries written (path), with each animation's source, value range and angle or hide value.
 - The selection and bone names the model needs, the axis memory points and which LODs carry each, for dayz-object-builder and for the user's Blender export.
-- The config lines for dayz-config-specialist.
-- The script hook that plays each animation, for dayz-script-specialist and the in-game test.
+- "For the config lead": the config lines, naming the owner of the class: dayz-vehicle-specialist for a vehicle or vehicle door, dayz-weapon-specialist for a weapon, dayz-wearables-specialist for a wearable, otherwise dayz-config-specialist.
+- "For the script lead": the script hook that plays each animation, naming the owner of the script class (dayz-vehicle-specialist for a vehicle, otherwise dayz-script-specialist), and what the in-game test should do with it.
 - Anything you could not confirm, such as names you could not check in the mod's `.p3d`.
+
+On a direct call there is no lead to pass these on, so end the report by telling the main session which workers to start and with what: each worker named under "For the config lead" with its config lines, each worker named under "For the script lead" with its hook, and dayz-object-builder with the selection, bone and memory point names. Until they run, the part does not move in game.

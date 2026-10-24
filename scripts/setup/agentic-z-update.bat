@@ -7,4 +7,9 @@ REM message) from crashing the script on a cp1252 console. setlocal keeps the
 REM setting out of the terminal that ran this file.
 setlocal
 set PYTHONIOENCODING=utf-8
-python "%~dp0..\..\.claude\skills\agentic-z-update\update.py" %*
+REM Uses python when it runs, otherwise the py launcher. Running it (not just
+REM finding it) skips the Microsoft Store alias, which is on PATH but exits 9009.
+REM "call" lets a python.bat or python.cmd shim (pyenv-win) return here.
+set "PY=python"
+call python -c "" >nul 2>nul || set "PY=py"
+%PY% "%~dp0..\..\.claude\skills\agentic-z-update\update.py" %*

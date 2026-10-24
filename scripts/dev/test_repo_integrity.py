@@ -1,13 +1,16 @@
 """Repo-wide checks: agent team and plugin manifest, the references in agents, skills and packs,
 no-token .bat wrappers, the knowledge-pack index and citations (and, with P:\\ mounted, that each
-cited vanilla line exists), the preflight gate list, the Tier 1 files and the panel's skill scripts.
+cited vanilla line exists and holds a symbol the citing line names), the preflight gate list, the Tier 1 files and the panel's skill scripts.
 
 Run with: py -m pytest scripts/dev/test_repo_integrity.py
 """
 from __future__ import annotations
 
 import json
+import os
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -177,6 +180,61 @@ def test_every_dayz_worker_is_in_the_lead_table():
             assert name in workers, f"{name} is missing from dayz-lead's worker table"
 
 
+def _docs_routing_agents(text: str) -> set[str]:
+    section = text.split("## Superpowers ↔ DayZ specialist routing", 1)[1].split("\n## ", 1)[0]
+    table = "\n".join(line for line in section.splitlines() if line.startswith("|"))
+    assert table, "docs/dayz-modding.md must have a routing table under its Superpowers routing heading"
+    return set(re.findall(r"`([a-z-]+)`", table))
+
+
+def test_every_lead_worker_and_gate_is_in_the_docs_routing_table():
+    # Superpowers workflows dispatch from this table, so a worker missing here is never routed to.
+    routed = _docs_routing_agents((REPO / "docs" / "dayz-modding.md").read_text(encoding="utf-8"))
+    for name in sorted(_lead_workers() | READ_ONLY_GATES):
+        assert name in routed, f"{name} is missing from the routing table in docs/dayz-modding.md"
+
+
+def test_docs_routing_check_reads_only_the_routing_table():
+    text = "## Superpowers ↔ DayZ specialist routing\n\n| a | b |\n|---|---|\n| x | `dayz-x` |\n\n## Next\n| y | `dayz-y` |\n"
+    assert _docs_routing_agents(text) == {"dayz-x"}
+
+
+ROUTE = json.loads((SKILLS_DIR / "dayz-route" / "rules.json").read_text(encoding="utf-8"))
+
+# Lead workers reached only through another agent, never straight from /dayz-route.
+NOT_ROUTE_TARGETS = {"figma-to-dayz-layout"}  # stage 2 of the Figma pipeline, started by figma-node-normalizer
+
+
+def test_every_lead_worker_is_a_route_target():
+    # /dayz-route and dayz-router send work only to the targets in rules.json.
+    for name in sorted(_lead_workers() - NOT_ROUTE_TARGETS):
+        assert name in ROUTE["targets"], f"{name} is missing from the targets in .claude/skills/dayz-route/rules.json"
+
+
+# Lead workers that own no mod source file, so the debugger never names them as the Owner.
+NOT_DEBUGGER_OWNERS = {
+    "dayz-build-engineer",  # builds and launches; environment faults go to dayz-orchestrator
+    "figma-node-normalizer",  # Figma pipeline; dayz-ui-specialist owns the .layout afterwards
+    "figma-to-dayz-layout",
+}
+
+
+def _debugger_owners(text: str) -> set[str]:
+    section = text.split("## Who fixes what", 1)[1].split("\n## ", 1)[0]
+    return set(re.findall(r"`([a-z-]+)`", section))
+
+
+def test_every_file_owning_worker_is_a_debugger_owner():
+    owners = _debugger_owners((AGENTS_DIR / "dayz-mod-debugger.md").read_text(encoding="utf-8"))
+    for name in sorted(_lead_workers() - NOT_DEBUGGER_OWNERS):
+        assert name in owners, f"{name} is missing from 'Who fixes what' in dayz-mod-debugger.md"
+
+
+def test_debugger_owner_check_reads_only_its_section():
+    text = "## Who fixes what\n\n`dayz-x` for files.\n\n## Report\n**Owner:** `dayz-y`\n"
+    assert _debugger_owners(text) == {"dayz-x"}
+
+
 def _explicit_tools(path: Path) -> set[str]:
     # With no `tools:` line a subagent inherits every tool, Edit and Write
     # included, so a read-only role must list its tools.
@@ -234,6 +292,20 @@ def test_ingame_tester_matches_gate():
         "A `NULL pointer` or `Can't find` line that names nothing of the mod is never a failure: "
         "report it as a warning when it is not in the vanilla-only run." in agent
     ), "dayz-ingame-tester must state that unqualified NULL pointer and Can't find lines are warnings"
+    # A payload-only bundle is deployed under its PBOs' own names, never as <ModName>.pbo, and
+    # ingame_session skips the missing --deps error for a bundle (bundle_layout payload).
+    assert r"Addons\<ModName>.pbo`" not in agent, "dayz-ingame-tester must not require <ModName>.pbo: a bundle deploys its PBOs under their own names"
+    assert r"for a bundle at least one `.pbo`, exists under `P:\Mods\@<ModName>\Addons\`" in agent, "dayz-ingame-tester step 1 must accept any .pbo for a bundle"
+    # stop_session stops a session the gate did not start only with --yes; the agent must ask too.
+    assert "if not started_by_gate and not rt.confirm(pids):" in gate, "gate.py must stop a session it did not start only on confirm"
+    step0 = re.search(r"^0\. .+$", agent, re.M).group(0)
+    assert "ask the caller" in step0 and "Don't stop it" in step0, "dayz-ingame-tester step 0 must ask the caller, not stop a session it did not start"
+    conv = (SKILLS_DIR / "_shared" / "dayz-conventions.md").read_text(encoding="utf-8")
+    config_row = next(l for l in conv.splitlines() if l.startswith("| `conventions/config.md` |"))
+    assert "conventions/config.md" in agent and "ingame-tester" in config_row.rsplit("|", 2)[1], "conventions/config.md Read by must list ingame-tester, which cites it"
+    session = gate.split("def ingame_session(", 1)[1].split("\ndef ", 1)[0]
+    assert "not bundle_layout(mod_dir)[1]" in session, "gate.py ingame_session must exempt a bundle from the missing --deps error"
+    assert "A bundle is exempt: when no dependencies are named" in agent, "dayz-ingame-tester must give a bundle the same dependency exemption as gate.py"
 
 
 def test_build_checker_matches_gate():
@@ -248,6 +320,23 @@ def test_build_checker_matches_gate():
     assert agent.index("/dayz-lint") < agent.index("/dayz-stop-test") < agent.index("`/dayz-build-pbo <ModName>` succeeds"), (
         "dayz-build-checker must lint, then stop the session, then build, in the same order as gate_build"
     )
+
+
+def test_build_checker_never_stops_an_unstarted_session_unasked():
+    # gate.py stops a DayZDiag session it did not start only with --yes or a terminal yes,
+    # because it may be the user's own play session. The fallback agent never launches the
+    # game, so every running session is one it did not start: it must report BLOCKED and
+    # stop the session only when the user agreed.
+    gate = (SKILLS_DIR / "dayz-gate" / "gate.py").read_text(encoding="utf-8")
+    stop = gate.split("def stop_session(", 1)[1].split("\ndef ", 1)[0]
+    assert "if not started_by_gate and not rt.confirm(pids):" in stop, "gate.py stop_session must ask before stopping a session it did not start"
+    agent = (AGENTS_DIR / "dayz-build-checker.md").read_text(encoding="utf-8")
+    step = agent.split("\n2. ", 1)[1].split("\n3. ", 1)[0]
+    assert "BLOCKED: step 2" in step, "dayz-build-checker step 2 must report BLOCKED for a session it did not start"
+    assert "only when the brief or your caller says the user agreed" in step, (
+        "dayz-build-checker may run /dayz-stop-test only when the user agreed"
+    )
+    assert "BLOCKED: step 2" in agent.split("## Report", 1)[1], "dayz-build-checker's report must allow a BLOCKED verdict"
 
 
 def test_orchestrator_runs_every_gate_mode():
@@ -280,6 +369,105 @@ def test_bat_wrapper_targets_exist(path):
     text = path.read_text(encoding="utf-8", errors="replace")
     for target in re.findall(r'%~dp0([^"\s]+\.(?:py|bat))', text):
         assert (path.parent / target.replace("\\", "/")).resolve().exists(), f"{path.name} runs missing {target}"
+
+
+SETUP_WRAPPERS = [
+    "preflight.bat",
+    "workdrive.bat",
+    "setup-objectbuilder.bat",
+    "statusline.bat",
+    "sync-skills.bat",
+    "agentic-z-update.bat",
+]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="runs cmd.exe")
+@pytest.mark.parametrize("has_python", [False, True], ids=["py-only", "python"])
+@pytest.mark.parametrize("name", SETUP_WRAPPERS)
+def test_setup_wrapper_falls_back_to_py_launcher(name, has_python, tmp_path):
+    # A machine with only the py launcher used to get the Store alias (exit 9009)
+    # from a bare `python` call. PATH holds only fake launchers and System32.
+    # PY must stay inside the wrapper (setlocal), not leak into the caller's terminal.
+    for exe in ["py"] + (["python"] if has_python else []):
+        (tmp_path / f"{exe}.bat").write_text(f"@echo off\r\necho RAN-{exe} %*\r\n", encoding="ascii")
+    system32 = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32"
+    env = {k: v for k, v in os.environ.items() if k.upper() != "PY"}
+    env["PATH"] = f"{tmp_path};{system32}"
+    bat = REPO / "scripts" / "setup" / name
+    line = f'call "{bat}" --help & if defined PY (echo PY-LEAKED) else (echo PY-CLEAN)'
+    result = subprocess.run(f'cmd /d /s /c "{line}"', env=env, capture_output=True, text=True, timeout=30)
+    launcher = "RAN-python " if has_python else "RAN-py "
+    lines = [out.strip() for out in result.stdout.splitlines()]
+    assert any(out.startswith(launcher) and out.endswith(".py\" --help") for out in lines), (
+        f"{name} output: {result.stdout!r}"
+    )
+    assert "PY-CLEAN" in lines, f"{name} left PY set in the calling terminal: {result.stdout!r}"
+
+
+DAYZ_WRAPPERS = sorted(
+    p.name for p in (REPO / "scripts" / "dayz").glob("*.bat") if ".py" in p.read_text(encoding="utf-8", errors="replace")
+)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="runs cmd.exe")
+@pytest.mark.parametrize("has_python", [False, True], ids=["py-only", "python"])
+@pytest.mark.parametrize("name", DAYZ_WRAPPERS)
+def test_dayz_wrapper_falls_back_to_py_launcher(name, has_python, tmp_path):
+    # The scripts\dayz wrappers called bare `python`, so a machine with only the py
+    # launcher got the Store alias (exit 9009) while the setup wrappers worked.
+    # PATH holds only fake launchers and System32; PY must not leak to the caller.
+    for exe in ["py"] + (["python"] if has_python else []):
+        (tmp_path / f"{exe}.bat").write_text(f"@echo off\r\necho RAN-{exe} %*\r\n", encoding="ascii")
+    system32 = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32"
+    env = {k: v for k, v in os.environ.items() if k.upper() != "PY"}
+    env["PATH"] = f"{tmp_path};{system32}"
+    bat = REPO / "scripts" / "dayz" / name
+    line = f'call "{bat}" --help & if defined PY (echo PY-LEAKED) else (echo PY-CLEAN)'
+    result = subprocess.run(f'cmd /d /s /c "{line}"', env=env, capture_output=True, text=True, timeout=30)
+    launcher = "RAN-python " if has_python else "RAN-py "
+    lines = [out.strip() for out in result.stdout.splitlines()]
+    assert any(out.startswith(launcher) and out.endswith(".py\" --help") for out in lines), (
+        f"{name} output: {result.stdout!r}"
+    )
+    assert "PY-CLEAN" in lines, f"{name} left PY set in the calling terminal: {result.stdout!r}"
+
+
+def test_dayz_wrapper_list_is_complete():
+    # Every scripts\dayz wrapper except stop-test.bat (a taskkill .bat, no Python) is covered above.
+    assert len(DAYZ_WRAPPERS) == len(list((REPO / "scripts" / "dayz").glob("*.bat"))) - 1
+
+
+DEV_WRAPPERS = ["evals.bat", "clean-repo.bat", "docs-sync.bat"]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="runs cmd.exe")
+@pytest.mark.parametrize("has_python", [False, True], ids=["py-only", "python"])
+@pytest.mark.parametrize("name", DEV_WRAPPERS)
+def test_dev_wrapper_falls_back_to_py_and_keeps_py_local(name, has_python, tmp_path):
+    # evals.bat and clean-repo.bat called bare `python` (Store alias, exit 9009, on a
+    # py-only machine); docs-sync.bat had the fallback but no setlocal, so PY leaked
+    # into the caller's terminal. PATH holds only fake launchers and System32.
+    for exe in ["py"] + (["python"] if has_python else []):
+        (tmp_path / f"{exe}.bat").write_text(f"@echo off\r\necho RAN-{exe} %*\r\n", encoding="ascii")
+    system32 = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32"
+    env = {k: v for k, v in os.environ.items() if k.upper() != "PY"}
+    env["PATH"] = f"{tmp_path};{system32}"
+    bat = REPO / "scripts" / "dev" / name
+    line = f'call "{bat}" --help & if defined PY (echo PY-LEAKED) else (echo PY-CLEAN)'
+    result = subprocess.run(f'cmd /d /s /c "{line}"', env=env, capture_output=True, text=True, timeout=30)
+    launcher = "RAN-python " if has_python else "RAN-py "
+    lines = [out.strip() for out in result.stdout.splitlines()]
+    ran = [out for out in lines if out.startswith(launcher) and out.endswith("--help")]
+    assert ran, f"{name} output: {result.stdout!r}"
+    assert "PY-CLEAN" in lines, f"{name} left PY set in the calling terminal: {result.stdout!r}"
+
+
+def test_readme_says_evals_bat_costs_tokens():
+    # The intro said every .bat costs no tokens, but evals.bat runs `claude -p` per question.
+    readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
+    evals_row = next(row for row in readme.splitlines() if row.startswith("| `evals.bat`"))
+    assert "Costs tokens" in evals_row, "the evals.bat row must say it costs tokens"
+    assert "exception is `evals.bat`" in readme, "the no-token intro must name evals.bat as the exception"
 
 
 RUNNABLE_WITHOUT_BAT = {"dayz-particles", "dayz-record-correction"}  # reference-only skills, no script
@@ -345,8 +533,8 @@ CITATION_EXEMPT_FOLDERS = {"enscript-style"}  # the style guide's section files
 # (P:\scripts\...\x.c:12, x.c:12, config.cpp:40), a file on P:\ (binary .p3d
 # and .paa have no lines), or a scripts-relative file such as 3_game/global/game.c.
 CITATION_RE = re.compile(
-    r"P:\\[^\s`]+:\d+|\.c:\d+|config\.cpp:\d+"
-    r"|P:\\[^\s`]*\\[\w.-]+\.\w+"
+    r"P:[\\/][^\s`]+:\d+|\.c:\d+|config\.cpp:\d+"
+    r"|P:[\\/][^\s`]*[\\/][\w.-]+\.\w+"
     r"|\b[1-5]_\w+[/\\][^\s`]*\.c\b"
 )
 
@@ -362,24 +550,281 @@ def test_pack_files_cite_vanilla_at_least_once():
     assert not missing, f"pack files with no path:line citation of vanilla: {missing}"
 
 
-# P:\...\file.ext:N or :N-M. A cited file must exist and reach the cited line.
-CITED_LINE_RE = re.compile(r"(P:\\[^\s`:*?\"<>|()]+\.\w+):(\d+)(?:-(\d+))?")
+# P:\...\file.ext:N or :N-M, with backslashes or forward slashes (the eval questions'
+# "verified" fields write P:/DZ/.../config.cpp:822). A cited file must exist and reach the cited line.
+CITED_LINE_RE = re.compile(r"(P:[\\/][^\s`:*?\"<>|()]+\.\w+):(\d+)(?:-(\d+))?")
+
+EVAL_QUESTION_FILES = sorted((REPO / "evals" / "questions").glob("*.json"))
+
+
+def _json_strings(value) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        value = list(value.values())
+    if isinstance(value, list):
+        return [s for v in value for s in _json_strings(v)]
+    return []
+
+
+def _citation_texts():
+    """(id, text) for each file whose P: line citations are checked: the reference files,
+    the skills' .c files and the eval questions (their JSON strings, unescaped)."""
+    for path in REF_FILES + sorted(SKILLS_DIR.rglob("*.c")):
+        yield _ref_id(path), path.read_text(encoding="utf-8", errors="replace")
+    for path in EVAL_QUESTION_FILES:
+        yield _ref_id(path), "\n".join(_json_strings(json.loads(path.read_text(encoding="utf-8"))))
+
+
+def _missing_cited_lines(text: str, line_count) -> list[str]:
+    """Each citation in text whose file is missing (line_count gives None) or ends before the cited line."""
+    bad = []
+    for m in CITED_LINE_RE.finditer(text):
+        count = line_count(m.group(1))
+        if count is None or int(m.group(3) or m.group(2)) > count:
+            bad.append(f"{m.group(0)} ({'missing' if count is None else f'has {count} lines'})")
+    return bad
+
+
+def test_cited_line_check_reads_forward_slash_citations_and_eval_questions():
+    # CITED_LINE_RE matched only P:\..., so the P:/...:N citations in every eval
+    # question's "verified" field were never checked against P:.
+    counts = {r"P:\scripts\a.c": 10, "P:/DZ/b/config.cpp": 10}
+    text = r"P:\scripts\a.c:12, P:/DZ/b/config.cpp:822 (class GlowPlug) and P:/DZ/b/config.cpp:3-4"
+    assert _missing_cited_lines(text, counts.get) == [
+        r"P:\scripts\a.c:12 (has 10 lines)",
+        "P:/DZ/b/config.cpp:822 (has 10 lines)",
+    ]
+    assert _missing_cited_lines("P:/DZ/gone/config.cpp:1", counts.get) == ["P:/DZ/gone/config.cpp:1 (missing)"]
+    assert EVAL_QUESTION_FILES, "evals/questions holds no question files"
+    eval_ids = {_ref_id(p) for p in EVAL_QUESTION_FILES}
+    eval_texts = [text for rel, text in _citation_texts() if rel in eval_ids]
+    assert len(eval_texts) == len(eval_ids)
+    assert any(m.group(1).startswith("P:/") for t in eval_texts for m in CITED_LINE_RE.finditer(t)), (
+        "no P:/ citation read from evals/questions"
+    )
 
 
 @pytest.mark.skipif(not Path("P:/scripts").is_dir(), reason="P:\\ is not mounted with vanilla scripts")
 def test_cited_vanilla_lines_exist_on_p():
-    lines: dict[str, int | None] = {}
-    bad = []
-    for path in REF_FILES + sorted(SKILLS_DIR.rglob("*.c")):
-        for m in CITED_LINE_RE.finditer(path.read_text(encoding="utf-8", errors="replace")):
-            cited, last = m.group(1), int(m.group(3) or m.group(2))
-            if cited not in lines:
-                file = Path(cited)
-                lines[cited] = len(file.read_bytes().splitlines()) if file.is_file() else None
-            if lines[cited] is None or last > lines[cited]:
-                found = "missing" if lines[cited] is None else f"has {lines[cited]} lines"
-                bad.append(f"{_ref_id(path)}: {m.group(0)} ({found})")
+    cache: dict[str, int | None] = {}
+
+    def line_count(cited: str) -> int | None:
+        if cited not in cache:
+            file = Path(cited)
+            cache[cited] = len(file.read_bytes().splitlines()) if file.is_file() else None
+        return cache[cited]
+
+    bad = [f"{rel}: {miss}" for rel, text in _citation_texts() for miss in _missing_cited_lines(text, line_count)]
     assert not bad, "citations of vanilla lines that do not exist:\n" + "\n".join(bad)
+
+
+# A line count alone passes every stale citation once a DayZ update shifts the
+# file, so each cited line must also hold, within SYMBOL_WINDOW lines, one of the
+# symbols backticked on the line that cites it. "`:N` to `:M`" right after a
+# citation widens it to a range. A citing line with no backticked symbol is not checked.
+SYMBOL_WINDOW = 3
+_CITED_RANGE_END_RE = re.compile(r"`? to `:(\d+)`")
+_BACKTICKED_RE = re.compile(r"`([^`\n]+)`")
+_IDENT_RE = re.compile(r"[A-Za-z_]\w{2,}")
+# A backticked file name or bare line number names no symbol.
+_NOT_A_SYMBOL_RE = re.compile(
+    r"[\w./\\-]*\.(?:c|cpp|hpp|h|md|xml|json|layout|p3d|paa|rvmat|py|txt|imageset|edds)(?::\d+)?|:\d+(?:-\d+)?"
+)
+# Keywords and types that appear on almost every line, so they prove nothing.
+_GENERIC_WORDS = {
+    "and", "array", "auto", "bool", "class", "const", "else", "extends", "false", "float", "for", "inout",
+    "int", "map", "native", "new", "notnull", "null", "out", "private", "protected", "proto", "ref", "return",
+    "set", "static", "string", "the", "this", "true", "typename", "vector", "void",
+}
+
+
+def _cited_symbols(doc_line: str) -> tuple[set[str], set[str]]:
+    """The identifiers and the literal snippets backticked on a citing line, lower case."""
+    spans = [s.strip() for s in _BACKTICKED_RE.findall(doc_line)]
+    spans = [s for s in spans if "P:\\" not in s and "P:/" not in s and not _NOT_A_SYMBOL_RE.fullmatch(s)]
+    words = {w.lower() for s in spans for w in _IDENT_RE.findall(s) if w.lower() not in _GENERIC_WORDS}
+    return words, {s.lower() for s in spans if len(s) >= 2 and s.lower() not in _GENERIC_WORDS}
+
+
+def _symbol_mismatches(text: str, lines_of) -> list[str]:
+    """Each citation in text whose cited lines hold none of its line's backticked symbols.
+    lines_of(path) gives the vanilla file's lines, or None when it is missing; missing
+    files and lines past the end are the line test's to report."""
+    bad = []
+    for m in CITED_LINE_RE.finditer(text):
+        first = int(m.group(2))
+        last = int(m.group(3) or first)
+        to = _CITED_RANGE_END_RE.match(text, m.end())
+        if to and int(to.group(1)) >= first:
+            last = int(to.group(1))
+        lines = lines_of(m.group(1))
+        if lines is None or last > len(lines):
+            continue
+        start = text.rfind("\n", 0, m.start()) + 1
+        end = text.find("\n", m.end())
+        words, snippets = _cited_symbols(text[start : end if end >= 0 else len(text)])
+        if not words and not snippets:
+            continue
+        window = "\n".join(lines[max(0, first - 1 - SYMBOL_WINDOW) : last + SYMBOL_WINDOW]).lower()
+        if not any(w in window for w in words | snippets):
+            bad.append(m.group(0))
+    return bad
+
+
+def _vanilla_lines_of():
+    cache: dict[str, list[str] | None] = {}
+
+    def lines_of(cited: str) -> list[str] | None:
+        if cited not in cache:
+            file = Path(cited)
+            raw = file.read_bytes().splitlines() if file.is_file() else None
+            cache[cited] = None if raw is None else [b.decode("utf-8", errors="replace") for b in raw]
+        return cache[cited]
+
+    return lines_of
+
+
+# Checked by hand against P:\ (game storage version 144): each cites a value, a
+# statement or a member deep inside a class the line names (a config value, an
+# OnStoreSave override of the named class), or a built-in type such as `int` whose
+# name is a keyword. Keyed by citing file under .claude/skills/.
+CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
+    "_shared/ai/perception.md": {
+        r"P:\scripts\3_game\playerconstants.c:263",
+    },
+    "_shared/ai/spawning-and-performance.md": {
+        r"P:\scripts\4_world\entities\creatures\infected\zombiebase.c:29",
+    },
+    "_shared/animation/README.md": {
+        r"P:\scripts\4_world\entities\itembase\barrel_colorbase.c:144",
+    },
+    "_shared/animation/animation-sources.md": {
+        r"P:\DZ\structures\residential\config.cpp:7385",
+    },
+    "_shared/audio-fx/sound-script.md": {
+        r"P:\scripts\3_game\effect.c:336",
+    },
+    "_shared/container-base.md": {
+        r"P:\DZ\gear\camping\config.cpp:10261-10266",
+    },
+    "_shared/enscript/patterns/actions.md": {
+        r"P:\scripts\4_world\entities\building\underground\powergeneratorstatic.c:143",
+    },
+    "_shared/enscript/references/api_game.md": {
+        r"P:\scripts\3_game\global\game.c:5",
+    },
+    "_shared/enscript/references/api_network.md": {
+        r"P:\scripts\3_game\entities\entityai.c:3518",
+        r"P:\scripts\4_world\entities\itembase.c:190",
+    },
+    "_shared/enscript/references/api_player.md": {
+        r"P:\scripts\3_game\global\game.c:5",
+    },
+    "_shared/enscript/references/api_scheduling.md": {
+        r"P:\scripts\2_gamelib\tools.c:52",
+    },
+    "_shared/enscript/references/language_memory.md": {
+        r"P:\scripts\1_core\proto\enscript.c:10",
+        r"P:\scripts\2_gamelib\tools.c:56",
+    },
+    "_shared/enscript/references/language_types.md": {
+        r"P:\scripts\1_core\proto\enconvert.c:109",
+        r"P:\scripts\1_core\proto\enconvert.c:22",
+        r"P:\scripts\1_core\proto\enconvert.c:556",
+    },
+    "_shared/persistence/data-audit.md": {
+        r"P:\scripts\3_game\entities\entityai.c:1393",
+    },
+    "_shared/persistence/save-load-contract.md": {
+        r"P:\scripts\3_game\entities\entityai.c:3041",
+        r"P:\scripts\4_world\classes\codelockcomponent.c:257",
+        r"P:\scripts\4_world\entities\itembase\basebuildingbase\totem.c:101",
+        r"P:\scripts\4_world\entities\itembase\combinationlock.c:128",
+        r"P:\scripts\4_world\entities\manbase\playerbase.c:7353",
+    },
+    "_shared/persistence/versioning-and-migration.md": {
+        r"P:\scripts\3_game\entities\entityai.c:2910",
+        r"P:\scripts\4_world\entities\manbase\playerbase.c:7366",
+    },
+    "_shared/physics/drop-and-throw.md": {
+        r"P:\scripts\4_world\entities\dayzplayerimplementthrowing.c:187",
+    },
+    "_shared/textures/surface-recipes.md": {
+        r"P:\DZ\characters\glasses\config.cpp:598",
+    },
+    "_shared/vehicles/simulation.md": {
+        r"P:\DZ\vehicles\water\config.cpp:124",
+    },
+    "_shared/wearables/references/color-variants.md": {
+        r"P:\DZ\characters\tops\config.cpp:2269",
+        r"P:\DZ\characters\vests\config.cpp:578",
+    },
+    "_shared/wearables/references/protection-and-insulation.md": {
+        r"P:\DZ\characters\tops\config.cpp:2263",
+        r"P:\DZ\characters\vests\config.cpp:892",
+        r"P:\DZ\gear\consumables\config.cpp:259",
+        r"P:\DZ\gear\tools\config.cpp:1016",
+        r"P:\DZ\gear\tools\config.cpp:5365",
+        r"P:\scripts\3_game\constants.c:821",
+        r"P:\scripts\4_world\entities\itembase\clothing\gp5gasmask.c:13",
+    },
+}
+
+
+def _all_symbol_mismatches() -> dict[str, list[str]]:
+    lines_of = _vanilla_lines_of()
+    found = {}
+    for path in REF_FILES + sorted(SKILLS_DIR.rglob("*.c")):
+        bad = _symbol_mismatches(path.read_text(encoding="utf-8", errors="replace"), lines_of)
+        if bad:
+            found[_ref_id(path).removeprefix(".claude/skills/")] = bad
+    return found
+
+
+@pytest.mark.skipif(not Path("P:/scripts").is_dir(), reason="P:\\ is not mounted with vanilla scripts")
+def test_cited_vanilla_lines_hold_a_cited_symbol():
+    bad = [
+        f"{rel}: {cited}"
+        for rel, cites in _all_symbol_mismatches().items()
+        for cited in cites
+        if cited not in CITED_SYMBOL_EXEMPT.get(rel, set())
+    ]
+    assert not bad, (
+        f"citations whose vanilla lines (within {SYMBOL_WINDOW}) hold none of the symbols backticked beside "
+        "them; the line probably moved in a DayZ update:\n" + "\n".join(bad)
+    )
+
+
+@pytest.mark.skipif(not Path("P:/scripts").is_dir(), reason="P:\\ is not mounted with vanilla scripts")
+def test_cited_symbol_exemptions_are_still_needed():
+    found = _all_symbol_mismatches()
+    stale = [f"{rel}: {c}" for rel, cites in CITED_SYMBOL_EXEMPT.items() for c in cites if c not in found.get(rel, [])]
+    assert not stale, "exemptions that now pass or no longer exist; remove them:\n" + "\n".join(stale)
+
+
+_FAKE_VANILLA = ["class Foo", "{", "\tint m_Count;", "", "\tvoid Bar()", "\t{", "\t}"] + [""] * 30 + ["\tvoid Baz()"]
+
+
+def _fake_lines_of(cited: str) -> list[str] | None:
+    return _FAKE_VANILLA if cited == r"P:\scripts\foo.c" else None
+
+
+def test_symbol_check_flags_a_citation_whose_line_moved():
+    assert _symbol_mismatches(r"`Foo.Bar` is at (`P:\scripts\foo.c:5`).", _fake_lines_of) == []
+    # Same symbol, line shifted past the window: the line count alone would still pass this.
+    assert _symbol_mismatches(r"`Foo.Bar` is at (`P:\scripts\foo.c:30`).", _fake_lines_of) == [r"P:\scripts\foo.c:30"]
+
+
+def test_symbol_check_reads_ranges_and_skips_what_it_cannot_check():
+    # "to `:N`" widens the cited range to reach Baz.
+    assert _symbol_mismatches(r"`Baz` (`P:\scripts\foo.c:20` to `:38`)", _fake_lines_of) == []
+    assert _symbol_mismatches(r"`Baz` (`P:\scripts\foo.c:20`)", _fake_lines_of) == [r"P:\scripts\foo.c:20"]
+    # File names and line numbers are not symbols; no symbol means nothing to check.
+    assert _symbol_mismatches(r"See `creatures.md` and `:12` (`P:\scripts\foo.c:30`).", _fake_lines_of) == []
+    # Generic keywords prove nothing, a missing file is the line test's to report.
+    assert _symbol_mismatches(r"`int` (`P:\scripts\foo.c:30`)", _fake_lines_of) == []
+    assert _symbol_mismatches(r"`Bar` (`P:\scripts\gone.c:5`)", _fake_lines_of) == []
 
 
 def test_citation_exemptions_exist():
@@ -435,3 +880,13 @@ def test_panel_buttons_name_existing_skill_scripts():
     pairs += re.findall(r"join\(current\.root, '\.claude', 'skills', '([\w-]+)', '([\w.]+)'\)", text)
     missing = [f"{skill}/{script}" for skill, script in pairs if not (SKILLS_DIR / skill / script).is_file()]
     assert not missing, f"panel buttons name missing scripts: {missing}"
+
+
+def test_physics_specialist_reports_to_main_session_on_direct_call():
+    # dayz-router sends physics requests straight from the main session, so the
+    # Report must name the main session as recipient and tell it to start each owner.
+    assert "dayz-physics-specialist" in (AGENTS_DIR / "dayz-router.md").read_text(encoding="utf-8")
+    text = (AGENTS_DIR / "dayz-physics-specialist.md").read_text(encoding="utf-8")
+    report = text.split("## Report", 1)[1]
+    assert "main session" in report, "Report names only a lead; a direct call has no lead"
+    assert "start each owner" in report, "Report must tell the main session to start each named owner"

@@ -2,9 +2,10 @@
 
 Upserts or removes a <type name="..."> block, or with --merge checks every
 <type> in a pasted chunk and merges them all in one write. When the edit
-changes the file, backs it up to <file>.bak first; when nothing changes,
-writes nothing. Comments survive the round trip; the file is re-indented
-with 4 spaces.
+changes the file, backs it up to <file>.<stamp>.bak first; when nothing
+changes, writes nothing. Only the <type> blocks that changed are rewritten;
+every other byte of the file (declaration, comments, other blocks, line
+endings) is kept as it was.
 
 See SKILL.md for full usage.
 """
@@ -12,6 +13,8 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import copy
+from datetime import datetime
 import re
 import shutil
 import sys
@@ -54,16 +57,21 @@ DEFAULT_FLAGS = {
 CHILD_ORDER = (*DEFAULTS, "flags", "category", "tag", "usage", "value")
 
 
-def _add_named(parent: ET.Element, tag: str, name: str) -> None:
-    """Insert <tag name="name"/> after the last child that comes no later in CHILD_ORDER."""
-    rank = CHILD_ORDER.index(tag)
+def _insert_ordered(parent: ET.Element, el: ET.Element) -> None:
+    """Insert el after the last child that comes no later in CHILD_ORDER."""
+    rank = CHILD_ORDER.index(el.tag)
     pos = 0
     for i, child in enumerate(parent):
         if child.tag in CHILD_ORDER and CHILD_ORDER.index(child.tag) <= rank:
             pos = i + 1
+    parent.insert(pos, el)
+
+
+def _add_named(parent: ET.Element, tag: str, name: str) -> None:
+    """Insert <tag name="name"/> in its vanilla place among the children."""
     el = ET.Element(tag)
     el.set("name", name)
-    parent.insert(pos, el)
+    _insert_ordered(parent, el)
 
 
 def _set_int_child(parent: ET.Element, tag: str, value: int) -> Optional[tuple[str, str]]:
@@ -72,8 +80,9 @@ def _set_int_child(parent: ET.Element, tag: str, value: int) -> Optional[tuple[s
     el = parent.find(tag)
     new = str(value)
     if el is None:
-        sub = ET.SubElement(parent, tag)
+        sub = ET.Element(tag)
         sub.text = new
+        _insert_ordered(parent, sub)
         return ("(none)", new)
     old = (el.text or "").strip()
     if old == new:
@@ -146,7 +155,7 @@ def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> tuple[
         return True, f"Added <type name=\"{classname}\"> {summary}"
 
     changes: list[str] = []
-    for tag in ("nominal", "min", "lifetime", "restock", "cost"):
+    for tag in ("nominal", "min", "lifetime", "restock", "quantmin", "quantmax", "cost"):
         value = getattr(args, tag, None)
         if value is None:
             continue
@@ -162,7 +171,12 @@ def upsert(root: ET.Element, classname: str, args: argparse.Namespace) -> tuple[
             continue
         diff = _set_named_multi(type_el, tag, names)
         if diff:
-            changes.append(f"{tag}s {diff[0]} -> {diff[1]}")
+            old, new = diff
+            removed = [n for n in old if n not in new]
+            line = f"{tag} [{', '.join(old)}] -> [{', '.join(new)}]"
+            if removed:
+                line += f" (removed {', '.join(removed)})"
+            changes.append(line)
 
     if not changes:
         return False, f"<type name=\"{classname}\"> already matches; no change"
@@ -179,6 +193,30 @@ def min_exceeds_nominal(root: ET.Element, classname: str) -> Optional[tuple[int,
     except ValueError:
         return None  # a hand-edited non-number is left for the user to fix
     return (lo, hi) if lo > hi else None
+
+
+def quantmin_exceeds_quantmax(root: ET.Element, classname: str) -> Optional[tuple[int, int]]:
+    """(quantmin, quantmax) when both are set (not -1) and quantmin is above quantmax, else None."""
+    type_el = next((t for t in root.findall("type") if t.get("name") == classname), None)
+    if type_el is None:
+        return None
+    try:
+        lo, hi = int(type_el.findtext("quantmin", "-1")), int(type_el.findtext("quantmax", "-1"))
+    except ValueError:
+        return None  # a hand-edited non-number is left for the user to fix
+    return (lo, hi) if lo != -1 and hi != -1 and lo > hi else None
+
+
+def quant_value(text: str) -> int:
+    """argparse type for --quantmin / --quantmax: -1 (not a quantity item) or 0 to 100,
+    the same rule the merge check applies."""
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid int value: {text!r}")
+    if value != -1 and not 0 <= value <= 100:
+        raise argparse.ArgumentTypeError(f"must be -1 or 0 to 100, got {value}")
+    return value
 
 
 def non_negative_int(text: str) -> int:
@@ -442,20 +480,137 @@ def _outer_comments(path: Path, root_tag: str) -> tuple[list[str], list[str]]:
 
 
 def parse_types(path: Path) -> ET.ElementTree:
-    """Parse types.xml keeping comments, including those outside the root."""
+    """Parse types.xml keeping comments, including those outside the root.
+
+    Also records the source bytes and, for each <type> element, its original
+    serialization, so write_types can rewrite only the blocks that changed.
+    """
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
     tree = ET.parse(path, parser=parser)
     tree.outer_comments = _outer_comments(path, tree.getroot().tag)
+    tree.source = path.read_bytes()
+    tree.originals = [(el, ET.tostring(el)) for el in tree.getroot().findall("type")]
     return tree
 
 
+# A <type> block in the source text (comments blanked first, so a commented-out
+# block is not matched). Types never nest, so the lazy match ends at its own </type>.
+TYPE_SPAN_RE = re.compile(r"<type\b[^>]*?/>|<type\b[^>]*>.*?</type\s*>", re.DOTALL)
+# ElementTree writes <a b="c" />; vanilla types.xml writes <a b="c"/>.
+SELF_CLOSE_RE = re.compile(r"(<[^<>!?][^<>]*?) />")
+
+
+def _render(el: ET.Element, indent: str, step: str, nl: str) -> str:
+    """One <type> block in the file's own style. The first line carries no
+    indent (the text before the block already has it)."""
+    el = copy.deepcopy(el)
+    el.tail = None
+    ET.indent(el, space=step)
+    text = SELF_CLOSE_RE.sub(r"\1/>", ET.tostring(el, encoding="unicode"))
+    return text.replace("\n", nl + indent)
+
+
+def _line_indent(text: str, pos: int) -> Optional[str]:
+    """The whitespace from the start of pos's line to pos, or None if other text is there."""
+    head = text[text.rfind("\n", 0, pos) + 1:pos]
+    return head if not head.strip() else None
+
+
+def _splice(tree: ET.ElementTree) -> Optional[str]:
+    """The source text with only the changed, added and removed <type> blocks
+    rewritten, or None when the source cannot be patched block by block (not
+    UTF-8, a self-closing <types/>, or blocks the scan cannot pair up)."""
+    try:
+        text = tree.source.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    blanked = re.sub(r"<!--.*?-->", lambda m: " " * len(m.group()), text, flags=re.DOTALL)
+    root_tag = tree.getroot().tag
+    open_m = re.search(rf"<{root_tag}\b[^>]*>", blanked)
+    close = blanked.rfind(f"</{root_tag}")
+    if open_m is None or open_m.group().endswith("/>") or close < 0:
+        return None
+    spans = [m.span() for m in TYPE_SPAN_RE.finditer(blanked, open_m.end(), close)]
+    if len(spans) != len(tree.originals):
+        return None
+
+    nl = "\r\n" if "\r\n" in text else "\n"
+    indent = (_line_indent(text, spans[0][0]) if spans else None) or "    "
+    step = "    "
+    if spans:
+        child = re.search(r"\n([ \t]*)<", text[spans[0][0]:spans[0][1]])
+        if child and child.group(1).startswith(indent) and len(child.group(1)) > len(indent):
+            step = child.group(1)[len(indent):]
+
+    known = {id(el): (i, before) for i, (el, before) in enumerate(tree.originals)}
+    kept: set[int] = set()
+    ops: list[tuple[int, int, str]] = []  # (start, end, replacement) on the source text
+    anchor: Optional[int] = None  # end of the last kept block
+    pending: list[ET.Element] = []
+
+    def flush(at_start: Optional[int]) -> None:
+        if not pending:
+            return
+        blocks = [_render(el, indent, step, nl) for el in pending]
+        if anchor is not None:
+            ops.append((anchor, anchor, "".join(nl + indent + b for b in blocks)))
+        elif at_start is not None:
+            ops.append((at_start, at_start, "".join(b + nl + indent for b in blocks)))
+        else:  # no kept block at all: put them just inside the closing tag
+            pos = close
+            head = _line_indent(text, pos)
+            if head is not None:
+                pos -= len(head)
+                ops.append((pos, pos, "".join(indent + b + nl for b in blocks)))
+            else:
+                ops.append((pos, pos, "".join(nl + indent + b for b in blocks) + nl))
+        pending.clear()
+
+    for el in tree.getroot().findall("type"):
+        if id(el) not in known:
+            pending.append(el)
+            continue
+        i, before = known[id(el)]
+        start, end = spans[i]
+        flush(start)
+        kept.add(i)
+        if ET.tostring(el) != before:
+            ops.append((start, end, _render(el, _line_indent(text, start) or indent, step, nl)))
+        anchor = end
+    flush(None)
+
+    for i, (start, end) in enumerate(spans):
+        if i in kept:
+            continue
+        head = _line_indent(text, start)
+        if head is not None and text.startswith(nl, end):
+            start, end = start - len(head), end + len(nl)
+        ops.append((start, end, ""))
+
+    # Apply from the end so earlier offsets stay valid; at a shared start the
+    # removal (the longer span) goes first so it never eats an insertion.
+    for start, end, repl in sorted(ops, key=lambda op: (op[0], op[1]), reverse=True):
+        text = text[:start] + repl + text[end:]
+    return text
+
+
 def write_types(tree: ET.ElementTree, path: Path) -> None:
-    """Write types.xml re-indented with 4 spaces, with an XML declaration."""
+    """Write types.xml, rewriting only the <type> blocks that changed.
+
+    A tree that cannot be patched block by block (see _splice) is written
+    whole, re-indented with 4 spaces, keeping the original XML declaration.
+    """
+    spliced = _splice(tree) if hasattr(tree, "source") else None
+    if spliced is not None:
+        path.write_bytes(spliced.encode("utf-8"))
+        return
     ET.indent(tree, space="    ")
     before, after = getattr(tree, "outer_comments", ([], []))
-    out = "<?xml version='1.0' encoding='utf-8'?>\n"
+    source = getattr(tree, "source", b"").decode("utf-8-sig", errors="replace")
+    decl = re.match(r"\s*(<\?xml\b.*?\?>)", source, re.DOTALL)
+    out = (decl.group(1) if decl else '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>') + "\n"
     out += "".join(f"<!--{c}-->\n" for c in before)
-    out += ET.tostring(tree.getroot(), encoding="unicode")
+    out += SELF_CLOSE_RE.sub(r"\1/>", ET.tostring(tree.getroot(), encoding="unicode"))
     out += "".join(f"\n<!--{c}-->" for c in after)
     path.write_bytes(out.encode("utf-8"))
 
@@ -477,11 +632,13 @@ def main() -> int:
     parser.add_argument("--min", type=non_negative_int)
     parser.add_argument("--lifetime", type=non_negative_int)
     parser.add_argument("--restock", type=non_negative_int)
+    parser.add_argument("--quantmin", type=quant_value, help="-1 (not a quantity item) or 0 to 100.")
+    parser.add_argument("--quantmax", type=quant_value, help="-1 (not a quantity item) or 0 to 100.")
     parser.add_argument("--cost", type=non_negative_int)
     parser.add_argument("--category")
-    parser.add_argument("--usage", action="append", help="Repeatable. Replaces all existing usages.")
-    parser.add_argument("--value", action="append", help="Repeatable. Replaces all existing values.")
-    parser.add_argument("--tag", action="append", help="Repeatable. Replaces all existing tags.")
+    parser.add_argument("--usage", action="append", help="Repeatable. Sets the usages; any others are removed.")
+    parser.add_argument("--value", action="append", help="Repeatable. Sets the values; any others are removed.")
+    parser.add_argument("--tag", action="append", help="Repeatable. Sets the tags; any others are removed.")
     args = parser.parse_args()
     if (args.classname is None) == (args.merge is None):
         parser.error("give a ClassName, or --merge CHUNK (not both)")
@@ -513,6 +670,13 @@ def main() -> int:
                     f"{FAIL} min ({bad[0]}) would be greater than nominal ({bad[1]}) for {args.classname}.\n"
                     f"       Pass values with min <= nominal. {args.path} was not changed."
                 )
+        if args.quantmin is not None or args.quantmax is not None:
+            bad = quantmin_exceeds_quantmax(root, args.classname)
+            if bad:
+                sys.exit(
+                    f"{FAIL} quantmin ({bad[0]}) would be greater than quantmax ({bad[1]}) for {args.classname}.\n"
+                    f"       Pass values with quantmin <= quantmax. {args.path} was not changed."
+                )
     print(f"{OK} {msg}")
     if not args.remove:
         limits = load_limits(args.path)
@@ -526,8 +690,20 @@ def main() -> int:
     return 0
 
 
+def backup_path(path: Path) -> Path:
+    """<name>.<YYYYMMDD-HHMMSS>.bak beside the file, with a counter if that is
+    taken, so every changing run keeps its own backup (as /dayz-split-types does)."""
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    dest = path.with_name(f"{path.name}.{stamp}.bak")
+    n = 2
+    while dest.exists():
+        dest = path.with_name(f"{path.name}.{stamp}-{n}.bak")
+        n += 1
+    return dest
+
+
 def backup_and_write(tree: ET.ElementTree, path: Path) -> None:
-    backup = path.with_suffix(path.suffix + ".bak")
+    backup = backup_path(path)
     shutil.copy2(path, backup)
     print(f"{OK} Backup: {backup}")
     write_types(tree, path)

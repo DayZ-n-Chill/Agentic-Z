@@ -14,7 +14,8 @@ Usage:
                      [--duration S | --until-closed] [--interval S] [--mod <ModName>] [--json]
 
 Exit codes: 0 no error lines seen, 1 at least one error line, 2 cannot run
-(or --until-closed saw no session start and no error line).
+(or --until-closed saw no session start, or could not read the process list,
+and saw no error line).
 See SKILL.md for details.
 """
 from __future__ import annotations
@@ -43,6 +44,7 @@ POLL_S = 1.0
 MIN_INTERVAL_S = 0.1
 CLOSED_CHECK_S = 5.0  # how often --until-closed asks whether the DayZ Diag client still runs
 START_GRACE_S = 300.0  # how long --until-closed waits for the DayZ Diag client to start before giving up
+QUERY_FAILURES_MAX = 3  # failed process-list queries in a row before --until-closed gives up
 SERVER_FLAG = re.compile(r"(?i)(?:^|\s)-server(?:\s|$)")
 
 
@@ -194,13 +196,14 @@ def is_client(command_line: str) -> bool:
     return not SERVER_FLAG.search(command_line)
 
 
-def client_running() -> bool:
+def client_running() -> Optional[bool]:
     """True while a DayZDiag_x64.exe without -server (the game client) is running.
 
     tasklist cannot show command lines, so this asks Win32_Process. Each process
     prints one "proc:" line; one whose command line Windows will not show counts
-    as a client, and so does a query that fails, so the watch never stops early
-    on a process it cannot read.
+    as a client, so the watch never stops early on a process it cannot read.
+    Returns None when the query itself fails (PowerShell missing, CIM error):
+    the answer is unknown, and watch() gives up after QUERY_FAILURES_MAX in a row.
     """
     query = (
         f"Get-CimInstance Win32_Process -Filter \"Name='{DIAG_EXE}'\" "
@@ -211,10 +214,10 @@ def client_running() -> bool:
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", query],
             capture_output=True, text=True, errors="replace",
         )
-    except OSError:  # PowerShell missing from PATH: cannot tell, so keep watching
-        return True
-    if proc.returncode != 0:  # the query failed (CIM timeout and the like): keep watching
-        return True
+    except OSError:  # PowerShell missing from PATH: cannot tell
+        return None
+    if proc.returncode != 0:  # the query failed (CIM timeout and the like): cannot tell
+        return None
     return any(is_client(line[5:]) for line in proc.stdout.splitlines() if line.startswith("proc:"))
 
 
@@ -224,7 +227,7 @@ def watch(
     *,
     interval: float = POLL_S,
     duration: Optional[float] = None,
-    session_alive: Optional[Callable[[], bool]] = None,
+    session_alive: Optional[Callable[[], Optional[bool]]] = None,
     start_grace: Optional[float] = None,
     sleep: Callable[[float], None] = time.sleep,
     clock: Callable[[], float] = time.monotonic,
@@ -234,7 +237,9 @@ def watch(
     A session counts as closed only after it has been seen running, so a watch
     started before /dayz-launch-test waits for the game. If it never starts
     within start_grace seconds (default START_GRACE_S), the watch stops with
-    reason "session never started".
+    reason "session never started". session_alive returning None means the
+    check failed; after QUERY_FAILURES_MAX failures in a row the watch stops with
+    reason "cannot read process list" instead of guessing.
 
     One last read after stopping catches the lines written at the end, including a
     last line without a newline.
@@ -242,6 +247,7 @@ def watch(
     started = clock()
     last_check = None
     seen_alive = False
+    failures = 0
     grace = START_GRACE_S if start_grace is None else start_grace
     reason = "interrupted"
     try:
@@ -254,7 +260,13 @@ def watch(
                 break
             if session_alive is not None and (last_check is None or now - last_check >= CLOSED_CHECK_S):
                 last_check = now
-                if session_alive():
+                alive = session_alive()
+                failures = failures + 1 if alive is None else 0
+                if alive is None:
+                    if failures >= QUERY_FAILURES_MAX:
+                        reason = "cannot read process list"
+                        break
+                elif alive:
                     seen_alive = True
                 elif seen_alive:
                     reason = "session closed"
@@ -333,6 +345,13 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
     # 0 would spin a CPU core, a negative value crashes time.sleep and inf overflows it.
     if not (math.isfinite(args.interval) and args.interval >= MIN_INTERVAL_S):
         parser.error(f"--interval must be at least {MIN_INTERVAL_S} seconds")
+    # 0 or less would stop after one read and report a clean session; nan never stops.
+    if args.duration is not None and not (math.isfinite(args.duration) and args.duration > 0):
+        parser.error("--duration must be more than 0 seconds")
+    # 0 is the default (only new lines); a negative value would silently act as 0
+    # and nan would read every file from its start.
+    if not (math.isfinite(args.since) and args.since >= 0):
+        parser.error("--since must be 0 or more minutes")
 
     project = triage.cached_project_dir()
     if args.dir:
@@ -371,10 +390,14 @@ def main(argv: Optional[list[str]] = None, out: TextIO = sys.stdout) -> int:
         session_alive=client_running if args.until_closed else None,
     )
     print_summary(summary, out, args.json)
-    # Errors seen (for example read with --since) win over "session never started".
+    if summary["stopped"] == "cannot read process list":
+        print(f"{h.FAIL} Cannot read the process list (PowerShell Get-CimInstance Win32_Process failed "
+              f"{QUERY_FAILURES_MAX} times in a row), so --until-closed cannot tell when the client closes. "
+              "Use --duration instead.", file=sys.stderr)
+    # Errors seen (for example read with --since) win over the exit-2 stop reasons.
     if summary["errors"]:
         return 1
-    return 2 if summary["stopped"] == "session never started" else 0
+    return 2 if summary["stopped"] in ("session never started", "cannot read process list") else 0
 
 
 if __name__ == "__main__":

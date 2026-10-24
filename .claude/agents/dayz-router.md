@@ -11,7 +11,7 @@ You route one DayZ modding request to the handler that should take it. You don't
 
 ## Valid routes
 
-- `dayz-build-pbo` (skill): pack an existing mod from `workspace/<ModName>/` into a PBO. Put the mod name in `args.mod` when it is given.
+- `dayz-build-pbo` (skill): pack an existing mod from `workspace/<ModName>/` into a PBO with AddonBuilder. Put the mod name in `args.mod` when it is given. Copying PBOs that are already built is `dayz-deploy-pbo`.
 - `dayz-lint` (skill): check a mod for errors that would stop it loading, before packing. Put the mod name in `args.mod` when it is given.
 - `dayz-conflict-check` (skill): find class name and path collisions between a mod and CF, COT, Expansion or other mods. Put the mod name in `args.mod` when it is given.
 - `dayz-balance` (skill): compare a mod's item stats (weight, health, damage, protection, capacity, quantity) with similar vanilla items and flag outliers, for questions like "is this vest overpowered?". Put the mod name in `args.mod` when it is given.
@@ -30,16 +30,32 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-release-pack` (skill): write a mod's Steam Workshop description, changelog, classname list and server owner install notes in one go. Put the mod name in `args.mod` when it is given.
 - `dayz-server-kit` (skill): zip a mod's types.xml entries, cfgeconomycore lines, load order and public key for server owners. Put the mod name in `args.mod` when it is given.
 - `dayz-ask` (skill): answer a question about how vanilla DayZ does something or where it lives, with `path:line` citations. Changing anything goes to the matching specialist instead.
+- `dayz-init` (skill): first-run setup ("init", "set up DayZ"), and afterwards the status hub: what is set up, the active mod and the next action.
+- `dayz-launch-workbench` (skill): open Enfusion Workbench on vanilla DayZ or on a mod. Put the mod name in `args.mod` when it is given.
+- `dayz-add-server` (skill): set up a local test server instance under `.server/<instance>/`, or refresh its mission after a DayZ update. Put the instance name in `args.instance` when it is given.
+- `dayz-pack-texture` (skill): convert PNG or TGA images that already have a texture-role suffix (`_co`, `_nohq`, `_smdi` and so on) to `.paa`.
+- `dayz-build-imageset` (skill): build a mod's `.imageset` and `.paa` atlas from the PNG sprites in its `.gui-sources/` folders.
+- `dayz-cot-bootstrap` (skill): give the developer Community-Online-Tools (COT) admin on a local test server. The main session cannot start it; it tells the user to type `/dayz-cot-bootstrap`.
+- `dayz-launch-objectbuilder` (skill): open DayZ Tools' Object Builder, optionally on a `.p3d` or the one `.p3d` in a mod's data folder. Opening the tool is this skill; changing the model is `dayz-object-builder`.
+- `dayz-deploy-pbo` (skill): copy PBOs that are already built, with their keys, from `workspace/<ModName>/Addons` and `Keys` to `P:\Mods\@<ModName>\`, without AddonBuilder. Put the mod name in `args.mod` when it is given. Building PBOs from source is `dayz-build-pbo`.
+- `dayz-p3d-audit` (skill): a report-only check of `.p3d` models and their config.cpp, model.cfg and `.rvmat` for collision, action, physics, animation and path problems. Fixing the model is `dayz-object-builder`.
+- `dayz-split-types` (skill): split one large `types.xml` into per-category files and register them in `cfgeconomycore.xml`. Editing single entries is `dayz-edit-types`.
+- `dayz-scope-mod` (skill): restrict edits to one mod under `workspace/<ModName>/`, show the current scope, or lift it. Put the mod name in `args.mod` when it is given.
+- `dayz-workdrive` (skill): mount or unmount `P:\` as the work drive without the DayZ Tools GUI, usually after a reboot. Checking whether it is mounted is `dayz-preflight`.
+- `dayz-add-scaffold` (skill): add missing scaffold pieces (config.cpp, `$PBOPREFIX$`, Workbench gproj, README, folders) or the `P:\<ModName>\` link to a mod already in `workspace/`, never overwriting. Put the mod name in `args.mod` when it is given. A brand-new mod is `dayz-new-mod`.
+- `dayz-search-index` (skill): build or rebuild the semantic search index over vanilla DayZ source on `P:\` for the dayz-rag MCP server.
+- `dayz-particles` (skill): reference for particle effects, the `.ptc` and `.emat` formats, the particle script API and the vanilla particle catalog, for looking things up. Making or changing an effect is `dayz-audio-fx-specialist`.
+- `dayz-setup-objectbuilder` (skill): configure Object Builder by importing DayZ Tools' default registry settings, on first use, after a reinstall or when its panels look broken. Opening it is `dayz-launch-objectbuilder`.
 - `dayz-server-admin` (agent): types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json.
 - `dayz-config-specialist` (agent): config.cpp, CfgPatches, CfgVehicles, hidden selections.
 - `dayz-script-specialist` (agent): Enforce Script code, modded classes, RPCs.
-- `dayz-ui-specialist` (agent): .layout files, HUD, menus, widgets, UI colors, icon imagesets, Dabs Framework views.
-- `dayz-object-builder` (agent): .p3d models, LODs, named selections, proxies.
+- `dayz-ui-specialist` (agent): .layout files, HUD, menus, widgets, UI colors, designing icons and registering imagesets, Dabs Framework views. Only building an imageset from existing sprites is `dayz-build-imageset`.
+- `dayz-object-builder` (agent): .p3d models, LODs, named selections, proxies. It cannot open Object Builder; opening it is `dayz-launch-objectbuilder`, and a report-only check of a `.p3d` is `dayz-p3d-audit`.
 - `dayz-mod-debugger` (agent): a crash or error described in words, or log lines triage marked new.
 - `dayz-mod-reviewer` (agent): review or audit a mod.
-- `dayz-asset-specialist` (agent): textures, `.paa` packing, `.rvmat` materials.
+- `dayz-asset-specialist` (agent): texture and material work: a wrong or missing texture, suffix problems, `.rvmat` materials, packing together with a material. Only packing images to `.paa` is `dayz-pack-texture`.
 - `dayz-map-specialist` (agent): terrain and map building, Terrain Builder, heightmaps, layers.cfg, surfaces, clutter, DayZ Editor imports.
-- `dayz-workbench-specialist` (agent): Enfusion Workbench plugins and editor tools.
+- `dayz-workbench-specialist` (agent): writing Enfusion Workbench plugins and editor tools. It never opens Workbench; opening it is `dayz-launch-workbench`.
 - `dayz-build-engineer` (agent): a test build the user can play, with the PBO built and a test session started.
 - `dayz-docs-writer` (agent): a mod's README, changelog, install notes and classname list.
 - `dayz-persistence-specialist` (agent): data that must survive a server restart, `OnStoreSave` and `OnStoreLoad`, save versions, base building saves, the data loss audit.
@@ -61,6 +77,7 @@ The same list, with the keyword rules, is in `.claude/skills/dayz-route/rules.js
 - A request that needs two or more of the routes above goes to `orchestrator`.
 - A screenshot of a bug goes by what is wrong on screen. A widget, menu, HUD or text problem goes to `dayz-ui-specialist`. A wrong, missing or stretched texture or material goes to `dayz-asset-specialist`. An error message on screen goes to `dayz-mod-debugger` (or `dayz-gate` with `args.mode` `triage` when the text can be copied); wrong behavior with no error goes to `dayz-script-specialist`.
 - Set `confidence` to how sure you are, from 0 to 1. Use 0.6 or less when the request is vague, not about DayZ, or could reasonably go two ways.
+- A request for a skill or tool that has no route above, such as downloading the prebuilt search index or deleting a mod from the workspace, gets the closest route with confidence 0.6 or less, so the main session checks it.
 
 ## Report
 

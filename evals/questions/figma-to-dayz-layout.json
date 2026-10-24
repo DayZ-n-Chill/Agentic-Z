@@ -1,0 +1,86 @@
+{
+  "agent": "figma-to-dayz-layout",
+  "questions": [
+    {
+      "id": "prefix-beats-frame-type",
+      "question": "Answer only, do not edit or write any file. Read the normalized JSON from figma-node-normalizer at evals/fixtures/figma-to-dayz-layout/trader_panel.json and convert it to a DayZ .layout. Print the complete .layout in your answer, in one code block, instead of writing it.",
+      "must_include": [
+        "re:ButtonWidgetClass\\s+btn_close\\b",
+        "re:ProgressBarWidgetClass\\s+bar_health\\b",
+        "re:TextWidgetClass\\s+txt_title\\b"
+      ],
+      "must_not_include": [
+        "re:(Frame|Panel)WidgetClass\\s+btn_close\\b",
+        "re:(Frame|Panel)WidgetClass\\s+bar_health\\b"
+      ],
+      "unchanged": [
+        "evals/fixtures/figma-to-dayz-layout/trader_panel.json"
+      ],
+      "verified": ".claude/agents/figma-to-dayz-layout.md Workflow step 2 (prefix decides the class, btn_close is a ButtonWidgetClass even as a frame); .claude/skills/_shared/figma-to-dayz-rules.md section 4 (btn_ to ButtonWidgetClass, bar_ to ProgressBarWidgetClass); vanilla ButtonWidgetClass at P:/gui/layouts/camera_tools/camera_tools.layout:298, ProgressBarWidgetClass at P:/gui/layouts/day_z_hud.layout:3814"
+    },
+    {
+      "id": "fill-width-is-relative",
+      "question": "Answer only, do not edit or write any file. Read the normalized JSON from figma-node-normalizer at evals/fixtures/figma-to-dayz-layout/trader_panel.json and convert it to a DayZ .layout. Print the complete .layout in your answer, in one code block, instead of writing it.",
+      "must_include": [
+        "re:(?s)txt_title\\s*\\{[^}]*\\bsize\\s+1\\s+24\\b",
+        "re:(?s)txt_title\\s*\\{[^}]*\\bhexactsize\\s+0\\b",
+        "re:(?s)txt_title\\s*\\{[^}]*\\bvexactsize\\s+1\\b"
+      ],
+      "must_not_include": [
+        "re:(?s)txt_title\\s*\\{[^}]*\\bsize\\s+384\\s"
+      ],
+      "unchanged": [
+        "evals/fixtures/figma-to-dayz-layout/trader_panel.json"
+      ],
+      "verified": ".claude/agents/figma-to-dayz-layout.md Workflow step 3 (fill becomes 1 with toggle 0, hug and fixed become pixels with toggle 1); .claude/skills/_shared/figma-to-dayz-rules.md section 5 (Fill Container width emits hexactsize 0 with size 1 H); vanilla hexactsize 0 at P:/gui/layouts/camera_checkerboard.layout:6"
+    },
+    {
+      "id": "format-four-toggles-one-space",
+      "question": "Answer only, do not edit or write any file. Read the normalized JSON from figma-node-normalizer at evals/fixtures/figma-to-dayz-layout/trader_panel.json and convert it to a DayZ .layout. Print the complete .layout in your answer, in one code block, instead of writing it.",
+      "must_include": [
+        "re:(?s)(\\bhexactpos\\s+[01]\\b.*){5}",
+        "re:(?s)(\\bvexactpos\\s+[01]\\b.*){5}",
+        "re:(?s)(\\bhexactsize\\s+[01]\\b.*){5}",
+        "re:(?s)(\\bvexactsize\\s+[01]\\b.*){5}",
+        "re:^ (position|size|color|hexactpos|vexactpos|hexactsize|vexactsize|halign|valign)\\s"
+      ],
+      "must_not_include": [
+        "re:^ +[A-Za-z\\\"][\\w \\\"]*?\\s*=\\s*\\S",
+        "re:^[ \\t]+[A-Za-z\\\"][^\\\"\\n]*;[ \\t]*$",
+        "re:^\\t",
+        "re:</?[A-Za-z]+WidgetClass",
+        "re:^\\s*opacity\\b"
+      ],
+      "unchanged": [
+        "evals/fixtures/figma-to-dayz-layout/trader_panel.json"
+      ],
+      "verified": ".claude/agents/figma-to-dayz-layout.md Workflow step 3 (always emit all four toggles on each of the five widgets), step 5 (no <, no =, no semicolons) and Rules (one space per level); .claude/skills/_shared/figma-to-dayz-rules.md sections 1 and 9; one-space indentation at P:/gui/layouts/day_z_chat_item.layout:2-8"
+    },
+    {
+      "id": "hex-color-to-floats",
+      "question": "Answer only, do not edit or write any file. Convert this normalized JSON from figma-node-normalizer to a DayZ .layout and print the complete .layout in your answer, in one code block:\n\n{\"name\": \"panel_alert\", \"type\": \"panel\", \"layout\": \"none\", \"spacing\": 0, \"padding\": {\"top\": 0, \"right\": 0, \"bottom\": 0, \"left\": 0}, \"size\": {\"width\": 200, \"height\": 60}, \"sizing\": {\"width\": \"fixed\", \"height\": \"fixed\"}, \"style\": {\"color\": \"#FF5050\", \"alpha\": 0.5}, \"children\": []}",
+      "must_include": [
+        "re:PanelWidgetClass\\s+panel_alert\\b",
+        "re:^\\s*color\\s+1(\\.0+)?\\s+0\\.31\\d*\\s+0\\.31\\d*\\s+0\\.50*\\s*$"
+      ],
+      "must_not_include": [
+        "re:^\\s*color\\s+\\\"?#",
+        "re:^\\s*color\\s+255\\b",
+        "re:^\\s*opacity\\b",
+        "re:rgba?\\("
+      ],
+      "verified": ".claude/agents/figma-to-dayz-layout.md Workflow step 3 (colors per section 7); .claude/skills/_shared/figma-to-dayz-rules.md section 7 (#FF5050 is 1 0.314 0.314, alpha is the fourth float, never hex, rgba() or opacity)"
+    },
+    {
+      "id": "raw-figma-url-needs-normalizer",
+      "question": "Answer only, do not edit or write any file. Turn https://www.figma.com/design/abc123/Trader?node-id=10-42 into workspace/MyTrader/gui/layouts/trader_menu.layout.",
+      "must_include": [
+        "figma-node-normalizer"
+      ],
+      "must_not_include": [
+        "re:WidgetClass\\s+\\w+\\s*\\{"
+      ],
+      "verified": ".claude/agents/figma-to-dayz-layout.md Workflow step 1 (given a raw Figma URL or node, return to the caller and ask for figma-node-normalizer to run first)"
+    }
+  ]
+}

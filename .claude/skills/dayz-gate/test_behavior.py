@@ -445,3 +445,20 @@ def test_behavior_wait_flag_is_not_called_settle(project, capsys):
     assert gate.main(["behavior", "MyMod", "--settle", "6"]) == 2
     assert "unrecognized arguments: --settle" in capsys.readouterr().err
 
+
+def test_full_run_refuses_a_session_it_did_not_start_without_yes(project, capsys):
+    # The gate used to kill a user's own DayZDiag session with no prompt.
+    fake = FakeSession(project, [])
+    fake.running = [42]
+    rc, first, data = run_main(["behavior", "MyMod", "--json"], capsys, fake.runtime())
+    assert (rc, first) == (2, "ERROR") and "--yes" in data["error"]
+    assert fake.calls == [] and fake.running == [42]
+
+
+def test_full_run_with_yes_stops_a_session_it_did_not_start(project, capsys):
+    lines = (FIXTURES / "logs" / "script_pass.log").read_text(encoding="utf-8").splitlines()
+    fake = FakeSession(project, lines)
+    fake.running = [42]
+    rc, first, data = run_main(["behavior", "MyMod", "--json", "--yes"], capsys, fake.runtime())
+    assert (rc, first) == (0, "PASS"), data["failures"]
+    assert "stop_test.bat" in " ".join(fake.calls[0])

@@ -1,4 +1,4 @@
-"""Tests for the Object Builder launcher: flag exclusivity and target resolution."""
+"""Tests for the Object Builder launcher: flags, target resolution, the running-instance guard and the startup check."""
 from __future__ import annotations
 
 import importlib.util
@@ -117,17 +117,8 @@ def test_failed_preflight_stops_before_target_resolution(monkeypatch):
     assert exc.value.code == 1
 
 
-def test_launch_uses_shared_detach_flags(tmp_path, monkeypatch):
-    exe = tmp_path / "Bin" / "ObjectBuilder" / "ObjectBuilder.exe"
-    exe.parent.mkdir(parents=True)
-    exe.write_text("")
-    spawned = {}
-
-    class FakePopen:
-        pid = 4242
-
-        def __init__(self, cmd, **kwargs):
-            spawned.update(cmd=cmd, **kwargs)
+def _fake_launch_env(tmp_path, monkeypatch, running=False):
+    """Stub preflight, DayZ Tools, the registry check and the running check."""
 
     class FakePreflight:
         @staticmethod
@@ -137,6 +128,31 @@ def test_launch_uses_shared_detach_flags(tmp_path, monkeypatch):
     monkeypatch.setattr(ob.h, "gate_on_preflight", lambda: None)
     monkeypatch.setattr(ob.h, "preflight", FakePreflight, raising=False)
     monkeypatch.setattr(ob, "registry_has_objectbuilder_settings", lambda: True)
+    monkeypatch.setattr(ob, "objectbuilder_running", lambda: running)
+    monkeypatch.setattr(ob, "STARTUP_CHECK_SECONDS", 0)
+
+
+def _fake_exe(tmp_path):
+    exe = tmp_path / "Bin" / "ObjectBuilder" / "ObjectBuilder.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    return exe
+
+
+def test_launch_uses_shared_detach_flags(tmp_path, monkeypatch):
+    exe = _fake_exe(tmp_path)
+    spawned = {}
+
+    class FakePopen:
+        pid = 4242
+
+        def __init__(self, cmd, **kwargs):
+            spawned.update(cmd=cmd, **kwargs)
+
+        def poll(self):
+            return None  # still running
+
+    _fake_launch_env(tmp_path, monkeypatch)
     monkeypatch.setattr(ob.subprocess, "Popen", FakePopen)
     monkeypatch.setattr("sys.argv", ["launch.py"])
     assert ob.main() == 0
@@ -151,3 +167,102 @@ def test_registry_check_comes_from_setup_objectbuilder():
     assert Path(ob._setup.__file__).resolve() == setup_py
     assert ob.REG_KEY == ob._setup.REG_KEY
     assert ob.registry_has_objectbuilder_settings is ob._setup.registry_has_objectbuilder_settings
+
+
+def test_refuses_when_objectbuilder_already_running(tmp_path, monkeypatch, capsys):
+    _fake_exe(tmp_path)
+    _fake_launch_env(tmp_path, monkeypatch, running=True)
+    monkeypatch.setattr(ob.subprocess, "Popen", lambda *a, **k: pytest.fail("spawned a second ObjectBuilder.exe"))
+    monkeypatch.setattr("sys.argv", ["launch.py"])
+    assert ob.main() == 1
+    err = capsys.readouterr().err
+    assert "already running" in err and "Switch to its window" in err
+
+
+def test_running_check_is_reused_from_setup_objectbuilder():
+    assert ob.objectbuilder_running is ob._setup.objectbuilder_running
+
+
+def test_process_that_exits_at_once_is_reported_as_failure(tmp_path, monkeypatch, capsys):
+    _fake_exe(tmp_path)
+    _fake_launch_env(tmp_path, monkeypatch)
+
+    class DiesAtOnce:
+        pid = 4242
+
+        def __init__(self, cmd, **kwargs):
+            pass
+
+        def poll(self):
+            return 3
+
+    monkeypatch.setattr(ob.subprocess, "Popen", DiesAtOnce)
+    monkeypatch.setattr("sys.argv", ["launch.py"])
+    assert ob.main() == 1
+    out = capsys.readouterr()
+    assert "exited right after starting (exit code 3)" in out.err
+    assert "launched" not in out.out
+
+
+def test_wait_for_early_exit_polls_until_exit_within_window(monkeypatch):
+    monkeypatch.setattr(ob, "STARTUP_POLL_INTERVAL", 0)
+    results = iter([None, None, 5])
+
+    class ExitsLater:
+        polls = 0
+
+        def poll(self):
+            ExitsLater.polls += 1
+            return next(results)
+
+    assert ob.wait_for_early_exit(ExitsLater()) == 5
+    assert ExitsLater.polls == 3
+
+
+def test_wait_for_early_exit_returns_none_when_still_running(monkeypatch):
+    clock = iter([0.0, 0.5, 1.5])  # deadline set at 0.0; second check passes it
+    monkeypatch.setattr(ob.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(ob.time, "sleep", lambda s: None)
+
+    class Running:
+        def poll(self):
+            return None
+
+    assert ob.wait_for_early_exit(Running()) is None
+
+
+def test_mod_finds_p3d_outside_data(tmp_path, monkeypatch):
+    r"""A mod that keeps its models in models\ (not data\) still resolves."""
+    monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
+    model = tmp_path / "MyMod" / "models" / "crate.p3d"
+    model.parent.mkdir(parents=True)
+    model.write_bytes(b"")
+    (tmp_path / "MyMod" / "data").mkdir()
+    assert ob.resolve_target(None, "MyMod") == model
+
+
+def test_mod_without_p3d_names_the_whole_mod_tree(tmp_path, monkeypatch):
+    monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
+    (tmp_path / "MyMod" / "models").mkdir(parents=True)
+    with pytest.raises(SystemExit) as exc:
+        ob.resolve_target(None, "MyMod")
+    msg = str(exc.value.code)
+    assert f"No .p3d under {tmp_path / 'MyMod'} (searched every subfolder)" in msg
+
+
+@pytest.mark.parametrize(
+    "bad", [r"..\Windows", "../etc", "1Mod", "My Mod", "My-Mod", r"C:\Mod", "Mod\n", "A" * 65]
+)
+def test_invalid_mod_name_is_refused_before_touching_p_drive(bad, tmp_path, monkeypatch):
+    monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
+    # Without the check, r"..\Windows" would resolve outside P:\ and report a "missing mod".
+    with pytest.raises(SystemExit) as exc:
+        ob.resolve_target(None, bad)
+    assert "Invalid mod name" in str(exc.value.code)
+
+
+def test_mod_name_rule_comes_from_new_mod():
+    r"""One mod name rule, owned by /dayz-new-mod, which creates P:\<ModName>\."""
+    new_mod_py = Path(ob.__file__).resolve().parents[1] / "dayz-new-mod" / "new_mod.py"
+    assert Path(ob._new_mod.__file__).resolve() == new_mod_py
+    assert ob.MOD_NAME_PATTERN is ob._new_mod.NAME_PATTERN

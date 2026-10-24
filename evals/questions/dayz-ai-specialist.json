@@ -45,7 +45,7 @@
       "id": "no-vanilla-human-ai",
       "question": "Answer only, do not edit any file. Does vanilla DayZ ship a human AI class, such as a bandit or soldier NPC, that I can inherit from for my base guards? Start with yes or no, then explain what vanilla AI does exist.",
       "must_include": [
-        "re:\\bno\\b|does not|doesn't|there is no",
+        "re:\\A\\W*no\\b",
         "re:infected|zombie"
       ],
       "must_not_include": [

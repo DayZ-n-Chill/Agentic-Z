@@ -77,6 +77,64 @@ def test_findings_carry_line_peers_and_meaning():
     assert {p["class"] for p in pack["peers"]} == {"TaloonBag_Blue", "TaloonBag_Green", "TaloonBag_Orange", "TaloonBag_Violet"}
 
 
+# --- #include ---------------------------------------------------------------------
+
+INCLUDE_MOD = FIXTURES / "IncludeMod"
+
+
+def test_items_in_included_files_are_compared_and_point_at_the_included_file():
+    # Before includes were followed this mod had no items and passed with exit 0.
+    report = run(INCLUDE_MOD, display_root=FIXTURES)
+    assert report["verdict"] == "FLAG"
+    assert report["items"] == 2
+    assert flagged(report) == {
+        ("IncludeMod_HeavyPlate", "health", "high"),
+        ("IncludeMod_HugePack", "capacity", "high"),
+    }
+    plate = next(f for f in report["findings"] if f["item"] == "IncludeMod_HeavyPlate")
+    assert plate["file"] == "IncludeMod/items/vests.hpp"
+    lines = (INCLUDE_MOD / "items" / "vests.hpp").read_text(encoding="utf-8").splitlines()
+    assert "hitpoints = 5000" in lines[plate["line"] - 1]
+    pack = next(f for f in report["findings"] if f["item"] == "IncludeMod_HugePack")
+    assert pack["file"] == "IncludeMod/items/backpacks.hpp"
+
+
+def test_include_that_cannot_be_followed_is_a_warning(tmp_path):
+    report = run(INCLUDE_MOD, display_root=FIXTURES)
+    assert report["includes_skipped"] == [
+        {"file": "IncludeMod/config.cpp", "line": 18, "include": "items\\missing.hpp", "reason": "was not found"},
+    ]
+    text = balance.render_text(report)
+    assert 'WARN IncludeMod/config.cpp:18  #include "items\\missing.hpp" not read: it was not found' in text
+
+
+def test_include_outside_the_mod_or_of_itself_is_a_warning_not_a_silent_pass(tmp_path):
+    (tmp_path / "outside.hpp").write_text("class CfgVehicles { };", encoding="utf-8")
+    mod = make_mod(tmp_path, """
+class CfgVehicles
+{
+    #include "..\\outside.hpp"
+    #include "\\OtherMod\\items.hpp"
+};
+#include "config.cpp"
+""")
+    report = run(mod)
+    assert report["verdict"] == "PASS"
+    assert [(w["line"], w["reason"]) for w in report["includes_skipped"]] == [
+        (4, "is outside the mod folder"),
+        (5, "is outside the mod folder"),
+        (7, "includes itself"),
+    ]
+    assert "WARN" in balance.render_text(report)
+
+
+def test_parse_error_in_an_included_file_names_that_file(tmp_path):
+    mod = make_mod(tmp_path, 'class CfgVehicles\n{\n    #include "bad.hpp"\n};\n')
+    (mod / "bad.hpp").write_text("class X\n{\n    weight = 1\n};\n", encoding="utf-8")
+    with pytest.raises(balance.BalanceError, match=r"bad\.hpp does not parse \(line 3"):
+        run(mod)
+
+
 def test_protection_wording_follows_the_damage_multiplier():
     assert balance.meaning("protection.projectile.health", "low") == "more protection than vanilla"
     assert balance.meaning("protection.melee.shock", "high") == "less protection than vanilla"
@@ -363,6 +421,20 @@ def test_cli_text_report_exits_one_on_outliers():
     assert lines[0] == "FLAG"
     assert any("BalanceMod_Flask quantity = 9000: holds more than vanilla, 9x the median 1000" in line for line in lines)
     assert lines[-1].strip() == "5 outlier(s) in 7 item(s)"
+
+
+def test_value_thousands_of_times_below_the_median_reads_as_times_below(tmp_path):
+    # Rounding value / median to 2 decimals printed weight 1 against a 12000
+    # median as "0x the median"; the report must say how far below it is.
+    mod = make_mod(tmp_path, "class CfgVehicles { class PlateCarrierVest; class TestMod_Vest: PlateCarrierVest { scope = 2; weight = 1; }; };")
+    report = run(mod)
+    f = report["findings"][0]
+    assert (f["stat"], f["direction"]) == ("weight", "low")
+    assert f["median"] >= 10000
+    assert f["ratio"] == float(f"{1 / f['median']:.4g}") and f["ratio"] > 0
+    text = balance.render_text(report)
+    assert f"weight = 1: lighter than vanilla, {f['median'] / 1:g}x below the median {f['median']:g}" in text
+    assert "0x the median" not in text
 
 
 def test_cli_json_report(tmp_path):

@@ -3,7 +3,8 @@
 Orchestrator. Discovers every `<domain>-clean-workspace` skill under
 .claude/skills/, runs each one's clean.py with --include-server --dry-run to
 build a combined plan, asks for confirmation, then runs each with
---include-server --yes.
+--include-server --yes. --keep-server drops --include-server so every
+child leaves .server/ in place.
 
 Each domain owns its own cleanup logic; this skill just runs them all.
 
@@ -11,7 +12,8 @@ Maintainer rules: keep domain-specific knowledge out of this file (it belongs
 in each <domain>-clean-workspace skill), and pass children nothing beyond
 --include-server plus --dry-run or --yes, the contract every child accepts.
 The one allowed exception: cached_project() reads /dayz-init's cached project
-only to name it in the prompt.
+to name it in the prompt and to ask git which files under its .server/ are
+versioned (versioned_server_files), so the plan can warn before removing them.
 
 See SKILL.md for full usage.
 """
@@ -50,6 +52,23 @@ def cached_project() -> Path | None:
     return root.resolve() if root else None
 
 
+def versioned_server_files(project: Path) -> list[str]:
+    """Files under <project>/.server/ that git tracks or would track (not ignored).
+
+    .gitignore keeps user-edited server files (serverDZ.cfg, mission/) trackable,
+    so these are the files --include-server would delete that the user may have
+    versioned. Empty when .server/ is absent or git cannot answer.
+    """
+    if not (project / ".server").is_dir():
+        return []
+    cmd = ["git", "-C", str(project), "ls-files", "--cached", "--others", "--exclude-standard", "--", ".server"]
+    try:
+        out = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.CalledProcessError):
+        return []
+    return [line for line in out.splitlines() if line]
+
+
 def same_path(a: Path, b: Path) -> bool:
     return os.path.normcase(str(a.resolve())) == os.path.normcase(str(b.resolve()))
 
@@ -78,14 +97,15 @@ def confirm(prompt: str = "Proceed? [y/N]: ") -> bool:
         return False
 
 
-def run_children(skills: list[Path], mode_flag: str) -> list[str]:
-    """Run each skill's clean.py with --include-server <mode_flag>. Return names that failed."""
+def run_children(skills: list[Path], mode_flag: str, include_server: bool = True) -> list[str]:
+    """Run each skill's clean.py with [--include-server] <mode_flag>. Return names that failed."""
     failed: list[str] = []
+    server_flag = ["--include-server"] if include_server else []
     for skill in skills:
         print()
         print(f"=== /{skill.name} ({mode_flag}) ===")
         sys.stdout.flush()
-        cmd = [sys.executable, str(skill / "clean.py"), "--include-server", mode_flag]
+        cmd = [sys.executable, str(skill / "clean.py"), *server_flag, mode_flag]
         if subprocess.run(cmd).returncode != 0:
             failed.append(skill.name)
     return failed
@@ -100,6 +120,11 @@ def main(argv: list[str] | None = None) -> int:
         "--dry-run",
         action="store_true",
         help="Print the combined plan (each domain cleanup with --dry-run) and stop.",
+    )
+    parser.add_argument(
+        "--keep-server",
+        action="store_true",
+        help="Keep .server/ (test-server configs, missions, logs): do not pass --include-server to the children.",
     )
     args = parser.parse_args(argv)
 
@@ -116,11 +141,19 @@ def main(argv: list[str] | None = None) -> int:
     if project and not same_path(project, REPO_ROOT):
         print(f"{WARN}Cleanup targets the cached project {project}, not this checkout {REPO_ROOT}")
     print(f"Plan from {len(skills)} cleanup skill(s): {', '.join('/' + s.name for s in skills)}")
-    failed = run_children(skills, "--dry-run")
+    include_server = not args.keep_server
+    failed = run_children(skills, "--dry-run", include_server)
     print()
     if failed:
         print(f"{FAIL}Dry run failed for: {', '.join(failed)}. Nothing was removed.", file=sys.stderr)
         return 1
+    versioned = versioned_server_files(project) if project and include_server else []
+    if versioned:
+        shown = ", ".join(versioned[:5]) + (f" and {len(versioned) - 5} more" if len(versioned) > 5 else "")
+        print(
+            f"{WARN}.server/ holds {len(versioned)} file(s) git tracks or keeps trackable "
+            f"(serverDZ.cfg, mission edits) that this removes: {shown}. Pass --keep-server to keep them."
+        )
     if args.dry_run:
         print(f"{OK}Dry run complete. Nothing was removed.")
         return 0
@@ -130,7 +163,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Aborted. Nothing was removed.")
         return 0
 
-    failed = run_children(skills, "--yes")
+    failed = run_children(skills, "--yes", include_server)
     print()
     if failed:
         print(f"{FAIL}{len(failed)} cleanup skill(s) failed: {', '.join(failed)}", file=sys.stderr)

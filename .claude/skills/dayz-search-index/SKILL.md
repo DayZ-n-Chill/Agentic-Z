@@ -103,6 +103,8 @@ Embedding <n> chunks via Voyage (voyage-code-3, document mode)...
 
 - Missing dependency, missing `VOYAGE_API_KEY`, `P:\` not mounted, or no chunks produced: exits 1 before any tokens are spent.
 - Transient Voyage errors (the SDK's `RateLimitError`, `Timeout`, `APIConnectionError`, `TryAgain`, `ServiceUnavailableError` and `ServerError`) are retried with exponential backoff, 5 attempts per batch. Any other embed failure (a bad or revoked key, for example), or a transient one still failing after the last attempt, prints one `[FAIL]` line naming the error and exits 1 before LanceDB is touched. Tokens already spent on the batches that succeeded are appended to `usage.log` first, so the next free-tier check still counts them. The new rows are written to a `chunks_staging` table first and only then swapped into `chunks`, so a failed write also leaves the previous index usable.
+- A LanceDB or disk error while writing the table, `file_hashes.json`, `manifest.json` or `config.json` prints one `[FAIL]` line naming the error and exits 1. The tokens are already in `usage.log`; re-run with `--full`.
+- A successful build deletes `release-tag.txt` (written by `/dayz-search-download`), so the download skill no longer treats the local build as an installed release. A failed build leaves it in place.
 
 ## Do not
 

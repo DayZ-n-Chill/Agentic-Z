@@ -15,6 +15,8 @@ SCRIPT = Path(__file__).resolve().parent / "scope_guard.py"
 def _project(tmp_path: Path, active: str | None = "MyVest", mods=("MyVest", "OtherMod", ".git")) -> Path:
     for m in mods:
         (tmp_path / "workspace" / m).mkdir(parents=True)
+        if not m.startswith("."):
+            (tmp_path / "workspace" / m / "config.cpp").write_text("class CfgPatches {};", encoding="utf-8")
     if active:
         state = tmp_path / ".claude" / "local-memory" / "dayz-active-scope.json"
         state.parent.mkdir(parents=True)
@@ -103,3 +105,20 @@ def test_corrupt_state_file_never_blocks(tmp_path):
     p = _project(tmp_path)
     (p / ".claude" / "local-memory" / "dayz-active-scope.json").write_text("{not json", encoding="utf-8")
     assert _denied(_run(p, str(p / "workspace" / "OtherMod" / "config.cpp"))) is None
+
+
+@pytest.mark.parametrize("marker", ["config.cpp", "$PBOPREFIX$"])
+def test_only_folders_with_a_mod_marker_count_as_mods(tmp_path, marker):
+    p = _project(tmp_path)
+    notes = p / "workspace" / "_notes"
+    notes.mkdir()
+    assert _denied(_run(p, str(notes / "todo.md"))) is None  # helper folder, not a mod
+    other = p / "workspace" / "PboOnly"
+    other.mkdir()
+    (other / marker).write_text("x", encoding="utf-8")
+    assert _denied(_run(p, str(other / "scripts" / "x.c")))
+
+
+def test_creating_prefix_file_in_new_folder_is_blocked(tmp_path):
+    p = _project(tmp_path)
+    assert _denied(_run(p, str(p / "workspace" / "BrandNew" / "$PBOPREFIX$"), tool="Write"))

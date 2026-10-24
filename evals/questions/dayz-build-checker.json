@@ -1,0 +1,62 @@
+{
+  "agent": "dayz-build-checker",
+  "questions": [
+    {
+      "id": "unstarted-session-blocks",
+      "question": "Answer only, do not edit any file and do not run anything. The build gate script errored. Build check MyVest. /dayz-lint MyVest passed with no errors, and tasklist shows DayZDiag_x64.exe running as PIDs 4120 and 4388. You did not start it, and nobody has said anything about stopping it. What do you do next, and what is the first line of your report?",
+      "must_include": [
+        "re:BLOCKED",
+        "re:close|confirm|agree|permission|ask"
+      ],
+      "must_not_include": [
+        "re:^\\s*(\\d+\\.\\s*)?`?/dayz-build-pbo\\s+MyVest"
+      ],
+      "verified": ".claude/agents/dayz-build-checker.md step 2 (a session the agent did not start is never stopped unasked: report BLOCKED: step 2 and ask the caller); .claude/skills/dayz-gate/gate.py stop_session (a session the gate did not start is stopped only when rt.confirm agrees: --yes or a terminal yes)"
+    },
+    {
+      "id": "agreed-session-stops-first",
+      "question": "Answer only, do not edit any file and do not run anything. The build gate script errored. Build check MyVest. /dayz-lint MyVest passed with no errors. DayZDiag_x64.exe is running, and the brief says the user agreed to let you stop it. Which skill do you run before /dayz-build-pbo MyVest?",
+      "must_include": [
+        "/dayz-stop-test"
+      ],
+      "must_not_include": [
+        "re:\\ABLOCKED"
+      ],
+      "verified": ".claude/agents/dayz-build-checker.md step 2 (run /dayz-stop-test only when the brief or the caller says the user agreed), before step 3 (/dayz-build-pbo); same order as gate_build in .claude/skills/dayz-gate/gate.py (run_lint, then stop_session, then BUILD_PY)"
+    },
+    {
+      "id": "lint-error-fails-before-build",
+      "question": "Answer only, do not edit any file and do not run anything. The build gate script errored. Build check MyVest. /dayz-lint MyVest reports one error: \"config.cpp:12: missing semicolon\". No DayZDiag session is running. What is your verdict, and do you run /dayz-build-pbo?",
+      "must_include": [
+        "re:\\bFAIL\\b",
+        "config.cpp:12"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*PASS\\b"
+      ],
+      "verified": ".claude/agents/dayz-build-checker.md step 1 (any lint error is a FAIL: quote it and stop before stopping the session or building); gate_build in .claude/skills/dayz-gate/gate.py runs run_lint before stop_session and BUILD_PY"
+    },
+    {
+      "id": "payload-bundle-deploys",
+      "question": "Answer only, do not edit any file and do not run anything. The build gate script errored. Build check MyBundle. workspace/MyBundle/ has no config.cpp and holds three PBOs in Addons/. /dayz-lint MyBundle passed and no DayZDiag session is running. Which skill checks the bundle instead of /dayz-build-pbo, and which of its output lines must you quote?",
+      "must_include": [
+        "/dayz-deploy-pbo",
+        "[FAIL]",
+        ".bisign"
+      ],
+      "must_not_include": [
+        "re:^\\s*(\\d+\\.\\s*)?`?/dayz-build-pbo\\s+MyBundle"
+      ],
+      "verified": ".claude/agents/dayz-build-checker.md bundle paragraph (no config.cpp and Addons/*.pbo: skip /dayz-build-pbo, run /dayz-deploy-pbo, quote every [FAIL] and every [WARN] about a missing .bisign); .claude/skills/_shared/conventions/config.md 'Bundle / umbrella mods'"
+    },
+    {
+      "id": "pbo-path",
+      "question": "Answer only, do not edit any file and do not run anything. After /dayz-build-pbo MyVest succeeds, at what exact path must the PBO exist for the build check to pass?",
+      "must_include": [
+        "re:P:\\\\+Mods\\\\+@MyVest\\\\+Addons\\\\+MyVest\\.pbo|P:/Mods/@MyVest/Addons/MyVest\\.pbo"
+      ],
+      "must_not_include": [],
+      "verified": ".claude/agents/dayz-build-checker.md step 3 (P:\\Mods\\@<ModName>\\Addons\\<ModName>.pbo); .claude/skills/dayz-build-pbo/build.py:1 and :256 (pbo_path = target_dir / f\"{args.modname}.pbo\" under P:\\Mods\\@<ModName>\\Addons)"
+    }
+  ]
+}

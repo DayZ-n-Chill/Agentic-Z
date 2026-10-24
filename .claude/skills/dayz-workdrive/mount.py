@@ -10,11 +10,12 @@ that P:\ is mounted, this skill mounts it.
 Usage:
     python .claude/skills/dayz-workdrive/mount.py
     python .claude/skills/dayz-workdrive/mount.py --path "C:\P Drives\Vanilla"
-    python .claude/skills/dayz-workdrive/mount.py --unmount
+    python .claude/skills/dayz-workdrive/mount.py --unmount [--force]
 """
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import subprocess
@@ -38,6 +39,21 @@ INFO = "[INFO] "
 WARN = h.WARN
 FAIL = h.FAIL
 CMD = "[CMD]  "
+
+# WorkDrive.exe normally finishes in seconds; past this it is treated as hung.
+WORKDRIVE_TIMEOUT = 60
+
+# Processes that work from P:\ and break when it disappears under them: the DayZ
+# Tools apps (names as installed under <DayZ Tools>\Bin\Workbench, \ObjectBuilder,
+# \AddonBuilder, \Binarize) and the diag game that /dayz-launch-test runs.
+# Lower-case, because Windows image names are case-insensitive.
+P_DRIVE_USERS = (
+    "workbenchapp.exe",
+    "objectbuilder.exe",
+    "addonbuilder.exe",
+    "binarize.exe",
+    "dayzdiag_x64.exe",
+)
 
 # Reuse preflight's resolvers (loading the module does not run its checks).
 find_dayz_tools = h.preflight.find_dayz_tools
@@ -181,13 +197,20 @@ def _run_workdrive(args: list[str]) -> tuple[int, str, str]:
     when stdin is redirected. The work itself completes BEFORE the prompt, so
     callers should check actual P:\\ state rather than trusting the rc/stderr.
     Captured stderr is returned so callers can surface it ONLY on real failure.
+    If it is still running after WORKDRIVE_TIMEOUT seconds (stuck at the prompt
+    instead of crashing) it is killed and rc is -1, so callers check P:\\ and
+    fall through to subst instead of hanging.
     """
-    result = subprocess.run(
-        args,
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            args,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=WORKDRIVE_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        return -1, "", f"WorkDrive.exe did not exit within {WORKDRIVE_TIMEOUT}s and was stopped"
     return result.returncode, result.stdout, result.stderr
 
 
@@ -216,10 +239,35 @@ def invoke_mount(target: Path) -> bool:
     return False
 
 
-def invoke_unmount() -> int:
+def parse_tasklist_images(output: str) -> list[str]:
+    """Image names (first column) from `tasklist /FO CSV /NH` output."""
+    return [row[0] for row in csv.reader(output.splitlines()) if row]
+
+
+def running_p_drive_users() -> list[str]:
+    """Sorted, de-duplicated names of running processes listed in P_DRIVE_USERS."""
+    result = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True, text=True)
+    found = {n for n in parse_tasklist_images(result.stdout) if n.lower() in P_DRIVE_USERS}
+    return sorted(found, key=str.lower)
+
+
+def invoke_unmount(force: bool = False) -> int:
     if not is_p_mounted():
         print(f"{INFO}P:\\ is not currently mounted")
         return 0
+
+    # Pulling P:\ out from under Workbench, Object Builder, a build or DayZDiag breaks
+    # those sessions, so refuse unless the user asked for it with --force.
+    users = running_p_drive_users()
+    if users:
+        names = ", ".join(users)
+        if not force:
+            print(f"{FAIL}Not unmounting: {names} is running and works from P:\\. "
+                  "Unmounting now breaks those open sessions.", file=sys.stderr)
+            print("       Close them first (/dayz-stop-test stops DayZDiag), "
+                  "or re-run with --unmount --force.", file=sys.stderr)
+            return 1
+        print(f"{WARN}--force: unmounting while {names} is running; those sessions lose P:\\")
 
     # With another letter in settings.ini, WorkDrive.exe /Dismount would target that letter, not P:.
     exe = None if workdrive_letter_is_not_p() else find_workdrive_exe()
@@ -255,27 +303,35 @@ def main() -> int:
         action="store_true",
         help="Unmount P:\\ instead of mounting",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="With --unmount: unmount even while DayZ Tools or DayZDiag is running from P:\\",
+    )
     args = parser.parse_args()
+    # Absolute before comparing, mounting or caching: a relative --path cached as-is
+    # would point somewhere else (or nowhere) when the next run starts in another folder.
+    explicit = Path(args.path).resolve() if args.path else None
 
     print("DayZ P:\\ mount\n")
 
     if args.unmount:
-        return invoke_unmount()
+        return invoke_unmount(force=args.force)
 
     if is_p_mounted():
         current = current_p_target()
         print(f"{OK}P:\\ already mounted" + (f" -> {current}" if current else ""))
-        if args.path and current and not paths_equal(current, Path(args.path)):
-            print(f"{WARN}--path was not used: P:\\ already points to {current}, not {args.path}.")
+        if explicit and current and not paths_equal(current, explicit):
+            print(f"{WARN}--path was not used: P:\\ already points to {current}, not {explicit}.")
             print("       Run with --unmount first, then mount again with --path.")
-        elif args.path and current is None:
+        elif explicit and current is None:
             print(f"{WARN}--path was not used: P:\\ is mounted to something that is not a folder mapping "
-                  f"(a volume or network drive), not {args.path}.")
+                  f"(a volume or network drive), not {explicit}.")
             print("       Run with --unmount first, then mount again with --path.")
         return 0
 
-    if args.path:
-        work = Path(args.path)
+    if explicit:
+        work = explicit
         if not work.is_dir():
             print(f"{FAIL}Path does not exist or is not a directory: {work}", file=sys.stderr)
             return 1

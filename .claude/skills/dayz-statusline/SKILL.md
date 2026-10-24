@@ -41,7 +41,7 @@ Run from the project root, the folder Claude Code was started in: the setting go
 1. Reads `.claude\settings.local.json` (refuses, changing nothing, if it is not valid JSON).
 2. If our status line is already set, stops: nothing to do.
 3. Copies the file to `settings.local.json.bak`, and records any status line it replaces in `.claude\local-memory\dayz-statusline.json`.
-4. Sets `statusLine` to run `statusline.py` with a 10-second `refreshInterval`, so the Diag and `P:\` segments catch up while the session is idle.
+4. Sets `statusLine` to run `statusline.py` with a 10-second `refreshInterval`, so the Diag and `P:\` segments catch up while the session is idle. The command names the full path of the Python that ran the installer, so it works even where `python` on `PATH` is only the Microsoft Store alias.
 
 `--remove` only touches a status line this skill installed: it puts back the recorded one, or deletes the `statusLine` key.
 
@@ -51,6 +51,6 @@ A plugin cannot set the main `statusLine`: plugin settings accept only `agent` a
 
 ## Speed and failure
 
-The script reads the session JSON on stdin for the project folder, and caches the `P:\`, process and index checks in `%TEMP%\agentic-z-statusline.json` for 5 seconds. The process check uses a Windows process snapshot instead of spawning `tasklist`. A full run takes about 0.2 s, mostly Python start-up. Any error prints `DayZ status unavailable` instead of an error. It needs `python` on `PATH`, like the other skills.
+The script reads the session JSON on stdin for the project folder, and caches the `P:\`, process and index checks in `%TEMP%\agentic-z-statusline.json` for 5 seconds. The process check uses a Windows process snapshot instead of spawning `tasklist`. A full run takes about 0.2 s, mostly Python start-up. Any error prints `DayZ status unavailable` instead of an error. The installed command calls the Python that ran `install.py` by its full path, so it does not depend on `PATH`; if you remove or move that Python, re-run the install.
 
 Does not gate on `/dayz-preflight`: it only edits a settings file, and the status line exists to show a broken environment.

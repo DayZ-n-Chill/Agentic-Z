@@ -24,7 +24,7 @@ python "<skill-dir>\server_kit.py" --mod-dir <folder> [options]
 |---|---|
 | `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. |
 | `--mod-dir` | Use any folder instead. Its name is the mod name unless `<ModName>` is given too. |
-| `--mission` | A mission folder, or a test server instance name from `/dayz-add-server` (`chernarus` means `.server\chernarus\mission\`), to copy real types entries from. |
+| `--mission` | A mission folder, or a test server instance name from `/dayz-add-server` (`chernarus` means `.server\chernarus\mission\`), to copy real types entries from. With `--mod-dir` the instance is looked up in the current folder, then in the project cached by `/dayz-init`. |
 | `--deps` | Dependency mods in load order, with or without `@` (`--deps CF`). |
 | `--out` | Output folder. Default `output\<ModName>-release\`, the same folder `/dayz-release-pack` writes to. |
 | `--json` | Print the report as JSON. |

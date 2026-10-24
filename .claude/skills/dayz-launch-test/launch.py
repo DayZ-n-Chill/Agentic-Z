@@ -402,10 +402,12 @@ def main() -> int:
     )
     client_cmd = build_client_cmd(diag_exe, client_mod_arg, args.port, client_profile_dir, display)
 
+    # Printed with list2cmdline, the same quoting Popen applies on Windows, so a
+    # path with spaces (Program Files, a project under 'DayZ n Chill') pastes as is.
     if args.dry_run:
         print()
-        print(f"[DRY-RUN] Server cmd: {' '.join(server_cmd)}")
-        print(f"[DRY-RUN] Client cmd: {' '.join(client_cmd)}")
+        print(f"[DRY-RUN] Server cmd: {subprocess.list2cmdline(server_cmd)}")
+        print(f"[DRY-RUN] Client cmd: {subprocess.list2cmdline(client_cmd)}")
         return 0
 
     # A server already on this port would make the new one fail to bind, and
@@ -413,7 +415,7 @@ def main() -> int:
     h.gate_on_free_port(args.port)
 
     print()
-    print(f"[Launch] Server: {' '.join(server_cmd)}")
+    print(f"[Launch] Server: {subprocess.list2cmdline(server_cmd)}")
     sys.stdout.flush()
     # Detached (shared DETACH_FLAGS) so closing or killing the agent's shell
     # does not take the server and client down with it.
@@ -432,7 +434,7 @@ def main() -> int:
         return 1
 
     print()
-    print(f"[Launch] Client: {' '.join(client_cmd)}")
+    print(f"[Launch] Client: {subprocess.list2cmdline(client_cmd)}")
     sys.stdout.flush()
     try:
         client_proc = subprocess.Popen(client_cmd, close_fds=True, creationflags=h.DETACH_FLAGS)

@@ -94,6 +94,9 @@ INFO = "[INFO] "
 VOYAGE_FREE_TIER_BUDGET = 200_000_000
 TIER_WARN_THRESHOLD = 0.80  # warn when projected usage hits 80%
 USAGE_LOG_NAME = "usage.log"
+# Written by /dayz-search-download to name the installed release. A local
+# build replaces that index, so a successful build removes the file.
+RELEASE_TAG_FILE = "release-tag.txt"
 
 
 def _usage_log_path() -> Path:
@@ -923,35 +926,45 @@ def main(argv: Optional[list[str]] = None) -> int:
     for c, vec in zip(chunks, embeddings):
         c["vector"] = vec
 
-    INDEX_ROOT.mkdir(parents=True, exist_ok=True)
-    write_table(lancedb.connect(str(db_path)), chunks)
+    try:
+        INDEX_ROOT.mkdir(parents=True, exist_ok=True)
+        write_table(lancedb.connect(str(db_path)), chunks)
 
-    # file_hashes.json goes before the manifest, which is written last.
-    (INDEX_ROOT / "file_hashes.json").write_text(json.dumps(file_hashes), encoding="utf-8")
+        # file_hashes.json goes before the manifest, which is written last.
+        (INDEX_ROOT / "file_hashes.json").write_text(json.dumps(file_hashes), encoding="utf-8")
 
-    # Manifest
-    manifest = {
-        "indexed_at": int(time.time()),
-        "indexed_at_iso": time.strftime("%Y-%m-%dT%H:%M:%S"),
-        "embed_model": embed_model,
-        "embed_dim": EMBED_DIM,
-        "embed_provider": "voyage",
-        "vanilla_data_root": str(vanilla) if vanilla else None,
-        "vanilla_folders_scanned": VANILLA_FOLDERS,
-        "extensions_indexed": sorted(EXT_TYPE_MAP.keys()),
-        "counts_by_folder": counts_by_folder,
-        "rvmat_duplicates_skipped": rvmat_dups,
-        "total_chunks": len(chunks),
-        "total_tokens": total_tokens,
-        "cost_estimate_usd": cost_estimate_usd,
-        "embed_seconds": round(elapsed, 1),
-    }
-    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        # Manifest
+        manifest = {
+            "indexed_at": int(time.time()),
+            "indexed_at_iso": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "embed_model": embed_model,
+            "embed_dim": EMBED_DIM,
+            "embed_provider": "voyage",
+            "vanilla_data_root": str(vanilla) if vanilla else None,
+            "vanilla_folders_scanned": VANILLA_FOLDERS,
+            "extensions_indexed": sorted(EXT_TYPE_MAP.keys()),
+            "counts_by_folder": counts_by_folder,
+            "rvmat_duplicates_skipped": rvmat_dups,
+            "total_chunks": len(chunks),
+            "total_tokens": total_tokens,
+            "cost_estimate_usd": cost_estimate_usd,
+            "embed_seconds": round(elapsed, 1),
+        }
+        manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
-    config_path.write_text(
-        json.dumps({"embed_model": embed_model, "embed_provider": "voyage"}, indent=2),
-        encoding="utf-8",
-    )
+        config_path.write_text(
+            json.dumps({"embed_model": embed_model, "embed_provider": "voyage"}, indent=2),
+            encoding="utf-8",
+        )
+        # The index is now a local build, not the downloaded release.
+        (INDEX_ROOT / RELEASE_TAG_FILE).unlink(missing_ok=True)
+    except Exception as exc:
+        print(
+            f"\n{FAIL} Writing the index failed after the embed ({type(exc).__name__}: {exc}). "
+            f"Tokens are logged in {USAGE_LOG_NAME}; re-run with --full.",
+            file=sys.stderr,
+        )
+        return 1
 
     print(f"\n{OK} Index built: {len(chunks)} chunks at {INDEX_ROOT}")
     print(f"{INFO} Tokens used: {total_tokens:,}  |  Estimated cost: ${cost_estimate_usd:.4f}")

@@ -26,7 +26,7 @@ Run it before other DayZ skills, after a fresh clone, and after each reboot (`P:
 |---|---|---|
 | 1 | `P:\` drive is mounted | **hard fail**, exit 1 |
 | 2 | DayZ Tools installed (`Bin\AddonBuilder\AddonBuilder.exe` found) | warn |
-| 3 | Vanilla DayZ data unpacked under `P:\` | warn |
+| 3 | Vanilla DayZ data unpacked under `P:\`, and vanilla scripts under `P:\scripts` | warn |
 | 4 | `P:\Mods\` is a junction to `<DayZ install>\!Workshop\`. Absent: created. Real folder, dangling link, or link to anywhere else: reported, left untouched. | warn here; `/dayz-build-pbo` and `/dayz-deploy-pbo` hard-fail on it |
 
 Exit code 0 = ready (or warnings only). Exit 1 = `P:\` not mounted, named in stderr.
@@ -40,7 +40,8 @@ First hit wins:
 | **DayZ Tools** | `DAYZ_TOOLS_PATH` env var, then the registry (`Path` under `HKLM\SOFTWARE\WOW6432Node\Bohemia Interactive\DayZ Tools`, its non-WOW6432 and `HKCU` siblings, each tried in turn), then `DayZ Tools` in each Steam library. The first candidate containing `Bin\AddonBuilder\AddonBuilder.exe` wins. |
 | **DayZ Diag** | `DAYZ_DIAG_PATH` env var, then `DayZDiag_x64.exe` next to the resolved game, then `DayZ\DayZDiag_x64.exe` in each Steam library. |
 | **DayZ game** (for `!Workshop`) | `DAYZ_GAME_PATH` env var, then `DayZ` in each Steam library (must contain `DayZ_x64.exe`). |
-| **Vanilla data** | `DAYZ_VANILLA_DATA_PATH` env var, then `P:\dz`, `P:\DZ`, `P:\dta`. Must exist and be non-empty. |
+| **Vanilla data** | `DAYZ_VANILLA_DATA_PATH` env var, then `P:\dz` (case-insensitive, so `P:\DZ` matches). Must exist and be non-empty. |
+| **Vanilla scripts** | `P:\scripts` (vanilla `DZ_Scripts`, unpacked beside `P:\DZ`). Must exist and be non-empty; warns otherwise. |
 | **`P:\` and `P:\Mods\`** | Fixed by DayZ convention, not configurable. |
 
 Steam libraries come from the Steam root in the registry (or the default `C:\Program Files (x86)\Steam` and `C:\Program Files\Steam`) plus every library listed in its `steamapps\libraryfolders.vdf`, so installs on other drives are found.
@@ -55,6 +56,7 @@ DayZ preflight
 [OK]    P:\ is mounted
 [OK]    DayZ Tools found: C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools
 [OK]    Vanilla data found: P:\dz
+[OK]    Vanilla scripts found: P:\scripts
 [OK]    P:\Mods -> D:\SteamLibrary\steamapps\common\DayZ\!Workshop
 
 Preflight complete.

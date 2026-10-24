@@ -16,6 +16,7 @@ import argparse
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -36,6 +37,17 @@ _setup = h.load_module(
 )
 REG_KEY = _setup.REG_KEY
 registry_has_objectbuilder_settings = _setup.registry_has_objectbuilder_settings
+objectbuilder_running = _setup.objectbuilder_running
+
+# The mod name rule belongs to /dayz-new-mod, which creates P:\<ModName>\; reuse it
+# so --mod is checked against the same pattern before it is joined onto P:\.
+_new_mod = h.load_module("dayz_new_mod_module", h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py")
+MOD_NAME_PATTERN = _new_mod.NAME_PATTERN
+
+# How long to watch the new process before reporting it launched. A bad install
+# or a missing DLL makes ObjectBuilder.exe exit at once; a real start keeps running.
+STARTUP_CHECK_SECONDS = 1.0
+STARTUP_POLL_INTERVAL = 0.1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -47,7 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     target.add_argument(
         "--mod",
-        help=r"Mod name; opens the one .p3d under P:\<ModName>\data\ (lists them and asks for --file when there are several)",
+        help=r"Mod name; opens the one .p3d anywhere under P:\<ModName>\ (lists them and asks for --file when there are several)",
     )
     return parser
 
@@ -71,27 +83,43 @@ def resolve_target(file_arg: Optional[str], mod_arg: Optional[str]) -> Optional[
         return p
 
     if mod_arg:
+        if not MOD_NAME_PATTERN.fullmatch(mod_arg):
+            sys.exit(
+                f"{FAIL} Invalid mod name: {mod_arg!r}\n"
+                "       Must start with a letter; letters, digits, underscores only; max 64 chars."
+            )
         mod_root = P_DRIVE / mod_arg
         if not mod_root.exists():
             sys.exit(
                 f"{FAIL} --mod path does not exist: {mod_root}\n"
                 f"       Did you run /dayz-new-mod {mod_arg}?"
             )
-        data_dir = mod_root / "data"
-        models = sorted(data_dir.rglob("*.p3d")) if data_dir.is_dir() else []
+        # The whole mod tree, not only data\: mods keep models in models\, or elsewhere.
+        models = sorted(mod_root.rglob("*.p3d"))
         if not models:
             sys.exit(
-                f"{FAIL} No .p3d under {data_dir}\n"
+                f"{FAIL} No .p3d under {mod_root} (searched every subfolder)\n"
                 f"       Run without flags to open Object Builder empty, or pass --file <p3d>."
             )
         if len(models) > 1:
             listing = "\n".join(f"         {m}" for m in models)
             sys.exit(
-                f"{FAIL} {len(models)} .p3d files under {data_dir}; pick one with --file:\n{listing}"
+                f"{FAIL} {len(models)} .p3d files under {mod_root}; pick one with --file:\n{listing}"
             )
         return models[0]
 
     return None
+
+
+def wait_for_early_exit(proc: subprocess.Popen) -> Optional[int]:
+    """Poll the new process for STARTUP_CHECK_SECONDS. Return its exit code if it
+    already exited, or None if it is still running."""
+    deadline = time.monotonic() + STARTUP_CHECK_SECONDS
+    while True:
+        code = proc.poll()
+        if code is not None or time.monotonic() >= deadline:
+            return code
+        time.sleep(STARTUP_POLL_INTERVAL)
 
 
 def main() -> int:
@@ -127,6 +155,14 @@ def main() -> int:
         return 1
     print(f"{OK} Registry configured")
 
+    if objectbuilder_running():
+        print(
+            f"{FAIL} Object Builder is already running; not starting a second instance.\n"
+            f"       Switch to its window and open the model there, or close it and re-run.",
+            file=sys.stderr,
+        )
+        return 1
+
     cmd: list[str] = [str(ob_exe)]
     if target is not None:
         cmd.append(str(target))
@@ -143,6 +179,15 @@ def main() -> int:
         )
     except OSError as exc:
         print(f"{FAIL} Failed to spawn ObjectBuilder.exe: {exc}", file=sys.stderr)
+        return 1
+
+    exit_code = wait_for_early_exit(proc)
+    if exit_code is not None:
+        print(
+            f"{FAIL} ObjectBuilder.exe exited right after starting (exit code {exit_code}).\n"
+            f"       Check the DayZ Tools install, or run /dayz-setup-objectbuilder --force to reset its settings.",
+            file=sys.stderr,
+        )
         return 1
 
     print(f"\n{OK} Object Builder launched (PID {proc.pid}). The window may take a few seconds to appear.")

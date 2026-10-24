@@ -175,15 +175,21 @@ def resolve_author(cli_value: str | None) -> str:
         except EOFError:
             value = ""
         if not value:
-            sys.exit(f"{FAIL} No author handle provided.")
+            # A null stdin (for example an agent's PowerShell tool) can report a TTY and
+            # then hit end-of-file at once; give the same --author hint as the no-TTY path.
+            no_author_exit("No author handle provided.")
         check_author(value, "the prompt")
         AUTHOR_CACHE.parent.mkdir(parents=True, exist_ok=True)
         AUTHOR_CACHE.write_text(value + "\n", encoding="utf-8")
         return value
 
+    no_author_exit("No author handle available.")
+
+
+def no_author_exit(reason: str) -> None:
     rel = AUTHOR_CACHE.relative_to(PROJECT_DIR)
     sys.exit(
-        f"{FAIL} No author handle available.\n"
+        f"{FAIL} {reason}\n"
         "       Run with --author 'YourHandle' (cached for future runs)\n"
         f"       or write your handle to {rel}."
     )
@@ -419,16 +425,25 @@ def check_or_clean_p_drive_link(p_drive_link: Path, workspace_target: Path) -> N
     )
 
 
-def sync_project_cache() -> None:
-    """Point the /dayz-init project cache at this project.
+def sync_project_cache(modname: str) -> None:
+    """Make this project and `modname` the active /dayz-init project and mod.
 
     Downstream skills (build-pbo, launch-test, deploy-pbo) resolve the project
     from the cache, not from cwd — so scaffolding in a project the cache does
     not point at would make the very next /dayz-build-pbo fail with
     "workspace not found". Scaffolding here is an explicit signal that this is
     the active project, so repoint (visibly) rather than let that happen.
+
+    The active mod is last_intent.mod_name in dayz-init-state.json, the same
+    record /dayz-init's plan.py writes. The hub and `dispatch.py build` /
+    `launch` default to it, so it must name the mod just created, not the
+    one that was active before.
     """
     memory = PROJECT_DIR / ".claude" / "local-memory"
+    state = _state.read_state(PROJECT_DIR)
+    if state.get("last_intent", {}).get("mod_name") != modname:
+        _state.write_state(PROJECT_DIR, {**state, "last_intent": {"mod_name": modname}})
+        print(f"{OK} Active /dayz-init mod: {modname}")
     cached = _state.cached_project_root(memory)
     if cached is not None and cached.resolve() == PROJECT_DIR:
         return
@@ -482,7 +497,7 @@ def main() -> int:
         )
     print(f"{OK} P:\\{args.modname} {kind} -> {target.relative_to(PROJECT_DIR)}")
 
-    sync_project_cache()
+    sync_project_cache(args.modname)
 
     rel = target.relative_to(PROJECT_DIR)
     print()

@@ -68,8 +68,42 @@ def test_vanilla_data_found_under_canonical_name(p_drive):
 
 def test_vanilla_data_skips_empty_dir(p_drive):
     (p_drive / "dz").mkdir()
-    (p_drive / "dta" / "scripts").mkdir(parents=True)
-    assert preflight.find_vanilla_data() == p_drive / "dta"
+    assert preflight.find_vanilla_data() is None
+
+
+def test_vanilla_data_ignores_dta(p_drive):
+    # P:\dta is not a vanilla data folder; it used to count as one.
+    (p_drive / "dta" / "data").mkdir(parents=True)
+    assert preflight.find_vanilla_data() is None
+
+
+def test_vanilla_scripts_found(p_drive):
+    (p_drive / "scripts" / "3_game").mkdir(parents=True)
+    assert preflight.find_vanilla_scripts() == p_drive / "scripts"
+
+
+def test_vanilla_scripts_empty_or_missing(p_drive):
+    assert preflight.find_vanilla_scripts() is None
+    (p_drive / "scripts").mkdir()
+    assert preflight.find_vanilla_scripts() is None
+
+
+def test_check_vanilla_data_warns_when_scripts_missing(p_drive, capsys):
+    # A partial extraction with P:\dz but no P:\scripts used to pass silently.
+    (p_drive / "dz" / "data").mkdir(parents=True)
+    preflight.check_vanilla_data()
+    out = capsys.readouterr().out
+    assert "[OK]    Vanilla data found" in out
+    assert "[WARN]  Vanilla scripts not detected" in out
+
+
+def test_check_vanilla_data_ok_with_scripts(p_drive, capsys):
+    (p_drive / "dz" / "data").mkdir(parents=True)
+    (p_drive / "scripts" / "3_game").mkdir(parents=True)
+    preflight.check_vanilla_data()
+    out = capsys.readouterr().out
+    assert "[WARN]" not in out
+    assert "Vanilla scripts found" in out
 
 
 def test_vanilla_data_env_override_wins(p_drive, monkeypatch, tmp_path):
