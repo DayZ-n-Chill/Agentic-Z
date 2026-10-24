@@ -4,7 +4,7 @@ import { createTheme, alpha } from '@mui/material/styles';
 // Palette: field-slate neutrals with a signal-amber accent. Swap `brand` once the logo colors are final.
 export const brand = {
   amber: '#E2A33B',
-  amberDeep: '#A8670F',
+  amberDeep: '#8A520A',
   slate: '#0F1417',
   slatePaper: '#151C20',
   slateLine: '#26323A',

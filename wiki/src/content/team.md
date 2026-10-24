@@ -20,13 +20,11 @@ This document describes the Agentic-Z mod team: the 30 agents and 44 skills that
 - [Token savers and workflows](#token-savers-and-workflows)
     - [Save tokens](#save-tokens)
     - [Workflows](#workflows)
-- [Growing the team: new specialists](#growing-the-team-new-specialists)
-    - [The order it was built in](#the-order-it-was-built-in)
-    - [The same cycle for every specialist](#the-same-cycle-for-every-specialist)
+- [The specialists](#the-specialists)
 - [Open items and decisions](#open-items-and-decisions)
     - [Roadmap](#roadmap)
     - [What we take and what we leave](#what-we-take-and-what-we-leave)
-- [What changed from Agentic-Z 1.6.0](#what-changed-from-agentic-z-160)
+- [What changed from Agentic-Z 1.0.0](#what-changed-from-agentic-z-100)
 - [Agents](#agents)
 - [The skills](#the-skills)
     - [Specialist workflows](#specialist-workflows)
@@ -48,6 +46,16 @@ The flow has six stages:
 ![Diagram](images/team-01-1.svg)
 
 The leads run the mod review on each task, and the layout check on each task that changes a `.layout` file. The orchestrator runs the build check, the in-game test and, when the plan lists behavior checks, the behavior test. It runs these once per wave, one at a time, because there is only one mod folder and one test session. Workers run in parallel only when their tasks touch different files.
+
+### How one task moves through the team
+
+1. The user approves the mod plan from the architect, for example "a tactical vest with three retextures".
+2. The orchestrator splits the plan into tasks, such as "write the vest's config.cpp entry".
+3. The appropriate lead takes the task and starts a worker.
+4. The worker searches vanilla and checks the real file, reads the reference files that the task needs, and completes that one task.
+5. The work then passes through the gates described in [The team flow](#the-team-flow). If anything fails, a known error returns with its fix already named, and the debugger reads the logs for any new error. The task then goes back to the worker with notes.
+6. Work that passes is packed into a PBO and loaded on a test server.
+7. The user gives the final approval and publishes the mod to the Steam Workshop with DayZ Tools Publisher.
 
 ## What Agentic-Z gives an AI agent
 
@@ -83,7 +91,7 @@ This table lists everything Agentic-Z gives an AI agent beyond the agents themse
 | **Platform support** | | |
 | Three AI tools | `/sync-skills` links the same skills into Claude Code, Codex and Gemini. | Teams can use any of the three AI tools with the same skills. |
 | Plugin or clone | Agentic-Z installs as a Claude Code plugin, or the repository can be cloned as a mod template. | Plugin users update through the marketplace. Clones update with `/agentic-z-update`. |
-| Self-checking repository | A test suite, answer tests, a CI workflow on GitHub, and `/docs-sync` to keep the wiki in line with the source. For the counts, see Does it work? | Broken agents, missing files and wrong tool names are caught before release. |
+| Self-checking repository | A test suite, answer tests, a CI workflow on GitHub, and `/docs-sync` to check that the wiki matches the source. | Broken agents, missing files and wrong tool names are caught before release. |
 
 ## Status and next steps
 
@@ -99,7 +107,7 @@ The status column uses three values:
 
 | Feature | Status | What was checked |
 | --- | --- | --- |
-| Test suite | Works | `py -m pytest -q .claude scripts/dev hooks`, run in a clean worktree, collects 5,013 tests. The tests confirm that every agent and skill is registered, every file and skill they name exists, gates cannot edit, tier files match, and every wrapper points to a real script. |
+| Test suite | Works | `py -m pytest -q .claude scripts/dev hooks`, run in a clean worktree, collects 5,007 tests. The tests confirm that every agent and skill is registered, every file and skill they name exists, gates cannot edit, tier files match, and every wrapper points to a real script. |
 | CI on GitHub | Works | The tests workflow passed on GitHub. |
 | Answer tests (evals) | Works | All 30 agents have a question file and a score in `evals/baseline.json`. |
 | DayZ facts in the packs | Works | For every pack, the graders opened the cited lines on P:. The Enforce Script examples are checked on P: too, and a test keeps them in step with the vanilla files. |
@@ -110,13 +118,13 @@ The status column uses three values:
 
 The final grades cover 193 items, and 193 are at A+: 30 of the 30 agents, 44 of the 44 skills and 119 of the 119 shared items. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and the grading method note. The final review graded every item, and each item shows its latest grade. The grades come from `final_grades.json` and `final_grades_shared.json`. The `clean-repo` skill was graded twice and counts once.
 
-Independent reviewers graded every agent and skill at v1.6.0, at v1.7.0 and in the current Agentic-Z (see "How the grading works"). All three columns are their grades, and the final column is the final grade, not a target. The final grades also cover the hooks, the search server, the scripts, the answer tests and every shared reference folder under `_shared/`. An item that did not exist yet at a version shows "not built". A shared file that was not graded at a version shows "n/a".
+Independent reviewers graded every agent and skill at v1.0.0, at v1.5.0 and in the current Agentic-Z (see "How the grading works"). All three columns are their grades, and the final column is the final grade, not a target. The final grades also cover the hooks, the search server, the scripts, the answer tests and every shared reference folder under `_shared/`. An item that did not exist yet at a version shows "not built". A shared file that was not graded at a version shows "n/a".
 
 ![Agentic-Z versions and grades](images/team-02-1.svg)
 
-The test suite grew from 85 tests at v1.6.0 to 5,013 tests now.
+The test suite grew from 85 tests at v1.0.0 to 5,007 tests now.
 
-| Item | v1.6.0 released | v1.7.0 agent team | v2.0.0 final |
+| Item | v1.0.0 released | v1.5.0 agent team | v2.0.0 final |
 | --- | --- | --- | --- |
 | Agents | | | |
 | `agent-creator` | A- | A+ | A+ |
@@ -443,67 +451,164 @@ Output a table: Item | Grade | Why | To reach A+.
 Each run uses a new reviewer, so two runs can word their findings differently, and a stricter reviewer can find a new edge case. This is by design. Every round found real bugs, and each one was fixed and covered by a test.
 ## Token savers and workflows
 
-Every token saver and workflow in this section is new. Each one is built and tested.
+These features move mechanical work out of the AI, so it spends tokens only on work that needs judgment: planning, writing code and configs, review and real diagnosis. Each one is built and tested.
 
 ### Save tokens
 
-| Saver | Description |
-| --- | --- |
-| Script-only gates | `/dayz-gate build`, `ingame`, `behavior` and `visual` are plain scripts that print PASS, FAIL or ERROR. Claude is called only when a gate fails. This is the largest saving. |
-| Log triage | A list of 52 known errors, each with its fix and its owner. Only new errors go to the debugger, and `triage.py --learn` adds your own errors to the list. |
-| Router | Most requests are routed with no model tokens (see What Agentic-Z gives an AI agent). |
-| Hooks | The three hooks are described in What Agentic-Z gives an AI agent. |
-| Status line | Status line with no token cost (`/dayz-statusline`). |
-| Cheaper models | The build engineer and the router run on Haiku, and the docs writer runs on Sonnet. |
-| Smaller rules loading | The DayZ rules core is 144 lines, and each of the five topic files is 28 to 56 lines (see [The three tiers of rules](#the-three-tiers-of-rules)). Most skills read only the core, which is 40% less than the old 239-line file. `/dayz-deploy-pbo` and `/dayz-gate` also read the bundle mods section of the config topic file. An agent that reads one topic file loads 17% to 30% less than before. With two topic files, the result depends on the pair. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and FX specialists (251 lines) read more, as does the mod reviewer with three topic files (283 lines). |
-| Wrappers | A `.bat` wrapper for every runnable skill runs its script directly. |
-| Shorter descriptions | Every session loads about 2,100 fewer tokens. |
+![Router](images/guide-01-8.svg)
+
+| Feature | What it does | How to use it |
+| --- | --- | --- |
+| Script-only checks | Run the build and in-game checks with no AI involved, which saves tokens. | `/dayz-gate build <ModName>`, `/dayz-gate ingame <ModName>` |
+| Log triage | Matches failures against 52 known errors, each with its fix and owner. Only new errors go to the debugger. | Runs inside `/dayz-gate`. Use `triage.py --learn` to add your own. |
+| Router | Decides who handles a request: keyword rules first, then Jev, then a low-cost Haiku router. | `/dayz-route "<request>"` (the AI runs it first) |
+| Edit hooks | Check `config.cpp` and `.layout` syntax after every edit, and block edits to other mods while a scope is set. | Automatic with the plugin or a clone. |
+| Paste-in router | Reads what you paste and starts the matching workflow. | Automatic. See [Paste it in](#paste-it-in). |
+| Status line | Shows the state of P:, the active mod, whether DayZ Diag is running and the age of the search index. | Run `/dayz-statusline` once per project. |
+| Lower-cost models | The build engineer and the router run on Haiku. The docs writer runs on Sonnet. | Automatic. |
+| Smaller rules | The DayZ rules file is split into a 144-line core and five topic files of 28 to 56 lines. Most skills read only the core, which is 40% less than the old 239-line file. `/dayz-deploy-pbo` and `/dayz-gate` also read the bundle mods section of the config topic file. Each agent reads the core plus the topic files its job needs. With one topic file, an agent reads 17% to 30% less than before. With two, the result depends on which two. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and effects specialists (251 lines) read more, as does the mod reviewer, which reads three topic files (283 lines). | Automatic. |
+| No-token wrappers | Provide a `.bat` file for every runnable skill, so you can run it yourself with no AI involved. | See `scripts\README.md`. |
+| Shorter descriptions | Every skill and agent description loads into every session. The descriptions were shortened to save about 2,100 tokens. | Automatic. |
 
 ### Workflows
+
+Workflow skills are ready-made jobs for routine modding tasks. Each one runs as a script where possible and asks the AI only for decisions that need judgment. Each workflow skill is described in [The skills](#the-skills).
 
 | Group | Workflows |
 | --- | --- |
 | Paste in | Crash log or RPT; screenshot of a bug; Figma link; GitHub link; types.xml excerpt |
 | Build faster | Mod recipes; live log watch; behavior and visual gates; release pack |
-| Stay healthy | Upgrade guard; conflict check with CF, COT and Expansion; balance sheet against vanilla; health page for each mod |
+| Stay healthy | Upgrade guard; conflict check with CF, COT and Expansion if your mod uses them; balance sheet against vanilla; health page for each mod |
 | Serve owners | Server kit; cited answers about vanilla; answer tests; layout preview |
 
-## Growing the team: new specialists
+### Paste it in
 
-New specialists build on Agentic-Z, which remains the base. The team loop is unchanged. The new material adds only workers, their reference files and one check inside the existing build gate. Every fact was verified against the vanilla files on P: and written fresh in our own words. Nothing is copied from outside sources.
+Agentic-Z also recognizes the following content when it is pasted into a session.
 
-![Where the new specialists join the team](images/team-06-1.svg)
+| Pasted content | Result |
+| --- | --- |
+| A crash log or RPT file | Triage matches it against known errors, names the cause and the fix, and passes any new error to the debugger. |
+| A screenshot of a bug | The paste hook suggests a specialist: the UI specialist for a UI problem, the asset specialist for a texture or material problem, and the script specialist for an error message or incorrect behavior. For an error message shown on screen, the router agent sends the screenshot to the mod debugger (or to gate triage) instead, so the two can disagree in that case. |
+| A Figma link | Runs the Figma pipeline and returns a checked `.layout` file. |
+| A GitHub link | Suggests `/dayz-import-mod --source <link>`, which imports the mod into `workspace\` and can add any missing standard parts. |
+| A Steam Workshop link | Refused, with the reason stated: Workshop content is packed, binarized and often protected. |
+| A types.xml chunk | Checks the entries, lists any problems, and suggests `/dayz-edit-types --merge` to merge them. |
 
-### The order it was built in
+## The specialists
 
-1. **Research map.** Every topic from outside research and the existing reference notes, sorted into the subjects below. This map is private and is not in the repository.
-2. **Foundation.** Client and server ownership rules in the DayZ rules, a `references/` folder layout for specialists, and an empty folder for answer tests (evals).
-3. **`/dayz-lint`.** Our own load-error checker. Its findings feed the known-errors triage.
-4. **Saving data specialist (persistence).** Storage, save versions and migrations, base building, and a pre-release check that no data is lost.
-5. **Vehicle specialist.** Cars, boats, helicopters and flight.
-6. **Weapon specialist.** CfgWeapons, attachments, magazines and selections.
-7. **Wearables specialist.** Clothing, characters, slots and proxy alignment.
-8. **Animation specialist.** model.cfg animation sources, RTM, and the handoff to Blender.
-9. **Audio and FX specialist.** Sound shaders and sound sets, working with the existing particles skill.
-10. **Physics specialist.** Collision layers, contact and thrown objects.
-11. **AI specialist.** Infected, animals, and the patrols or guards built on them. All of it is written from vanilla code and never copied from another mod.
-12. **Upgrades to existing material.** A deeper script reference, UI coverage (Dabs and widgets), a texture and rvmat cookbook, model and LOD rules, animated doors in the object builder, a short spec step in `/dayz-init`, and a layout preview at several screen sizes.
+Each team lead hands its tasks to specialists. Besides the specialists for scripts, configs, art, UI, maps and servers (see [Agents](#agents)), Agentic-Z has specialists for saved data, vehicles, weapons, wearables, animation, audio, physics and AI. Each one works under a team lead and has its own reference pack. Every pack is checked against the vanilla game files, and a specialist loads its pack only when a task needs it. For the checks that run before a mod is packed, see [How the team checks work](#how-the-team-checks-work).
 
-### The same cycle for every specialist
+![The lead each specialist works under](images/team-06-1.svg)
 
-![Cycle for every new specialist](images/team-06-2.svg)
+### Each specialist in detail
+
+| `dayz-persistence-specialist` | Details |
+| --- | --- |
+| What it does | Makes modded items and systems keep their data across server restarts. It writes the save and load code (OnStoreSave and OnStoreLoad) and stamps every save with a version number. It also writes the upgrade path, so old saves still load after the mod changes. It covers base building parts that must survive restarts. Before release, it runs a data audit that confirms every saved field is written and read back in the same order. |
+| Example request | "Make my safe keep its code and contents after a restart, and do not break saves from the last version." |
+| Works under | Script lead (the release audit goes to the server lead) |
+| Hands back | Save and load code with a version number, a migration note for old saves, and an audit report for the server lead. |
+
+| `dayz-vehicle-specialist` | Details |
+| --- | --- |
+| What it does | Builds cars, boats and helicopters. It sets up the vehicle class and its simulation (engine, gearbox, axles and wheels). It also sets up the parts that attach to the vehicle (doors, hood, trunk, wheels, battery and spark plug), its fluids (fuel, oil, coolant and brake fluid), its seats and crew positions, and how it takes damage. Vanilla DayZ ships native helicopter base classes (Helicopter, HelicopterAuto and HelicopterScript) but no flyable helicopter. The specialist builds flyable helicopters on those classes with your own code and never copies code from another mod. |
+| Example request | "Add a four door pickup with its own doors and a bigger fuel tank." |
+| Works under | Config lead |
+| Hands back | CfgVehicles entries, the CarScript, BoatScript or HelicopterScript class, attachment slots, and a types.xml entry for the server lead. |
+
+| `dayz-weapon-specialist` | Details |
+| --- | --- |
+| What it does | Builds firearms and everything that goes with them: the weapon class, magazines, ammunition, attachment slots for optics, suppressors, stocks and handguards, recoil, fire modes and muzzle effects. It inherits from the closest vanilla weapon, so reloading, jamming and damage behave as they do in the base game. |
+| Example request | "Add a scoped hunting rifle that takes a five round magazine and the vanilla long range optics." |
+| Works under | Config lead |
+| Hands back | CfgWeapons, CfgMagazines and CfgAmmo entries, a recoil class, and a list of the model selections that the art lead must provide. |
+
+| `dayz-wearables-specialist` | Details |
+| --- | --- |
+| What it does | Builds clothing, gear and characters. It sets which inventory slot an item uses, how many slots it holds, and its protection and insulation. It sets the hidden selections that let one model carry several textures, and it defines how the item appears on the character through proxies. It also covers new survivor characters. |
+| Example request | "Make a plate carrier with three colors that fits the vest slot and holds six items." |
+| Works under | Art lead |
+| Hands back | Config entries, hidden selection names, texture slots for each color, and proxy notes for the Object Builder specialist. |
+
+| `dayz-animation-specialist` | Details |
+| --- | --- |
+| What it does | Makes objects move: doors, lids, hatches, triggers and other moving parts. It writes the skeletonBones for the moving parts and the class Animations block in model.cfg (rotations, movements and hidden parts). The Object Builder specialist maintains the rest of model.cfg. It handles .rtm animation files. For models built in Blender, it writes the handoff so that bones and selections line up when the model reaches Object Builder. |
+| Example request | "Make the doors on my bunker open and close when a player uses them." |
+| Works under | Art lead |
+| Hands back | The skeletonBones and class Animations entries for model.cfg, the selection and bone names that the model needs, and the script hook that plays the animation, which the script specialist writes. |
+
+| `dayz-audio-fx-specialist` | Details |
+| --- | --- |
+| What it does | Handles sound and visual effects: sound shaders and sound sets, how loud a sound is and how far it carries, and particle effects such as smoke, sparks and muzzle flashes. It uses the /dayz-particles skill for particle files. |
+| Example request | "Give my generator a running sound that fades with distance and a puff of exhaust smoke." |
+| Works under | Any lead that needs it |
+| Hands back | CfgSoundShaders and CfgSoundSets entries, particle files, and the script lines that play them. |
+
+| `dayz-physics-specialist` | Details |
+| --- | --- |
+| What it does | Makes objects behave physically. It sets their weight and their collision shapes in the Geometry and Fire Geometry LODs. It also controls how objects land when dropped or thrown and how they push against players and vehicles. It catches common faults, such as items that fall through floors or bullets that pass through walls. |
+| Example request | "My crate falls through the floor when I drop it. Fix it." |
+| Works under | Any lead that needs it |
+| Hands back | Geometry and mass fixes for the Object Builder specialist, and config lines for the worker who owns the class's config. |
+
+| `dayz-ai-specialist` | Details |
+| --- | --- |
+| What it does | Builds behavior for computer controlled characters: infected, animals and human AI such as patrols and guards. It studies how other modders build these behaviors to learn the patterns, and then writes your own version. It copies nothing from another mod. |
+| Example request | "Add a patrol of guards that walk a route around my military base and react to gunfire." |
+| Works under | Script lead |
+| Hands back | Script classes for the behavior, the config that the server lead needs to spawn the characters, and notes on server performance. |
+
+### How each specialist works
+
+Each specialist follows its own steps inside the team workflow described in [The mod team](#the-mod-team). The specialists that write DayZ content look up the vanilla files first, using the method in [RAG search](#rag-search). The build engineer, docs writer, build checker, in-game tester and Figma cleaner have no RAG tool. They work from the mod, its logs or the Figma file.
+
+| Specialist | Steps |
+| --- | --- |
+| **Script lead** | |
+| `dayz-script-specialist` | 1. Searches the vanilla scripts for the class it will change and reads the real file. 2. Writes a `modded class` in the correct layer (3\_Game, 4\_World or 5\_Mission) and calls `super`. 3. Adds RPCs only where the client and server must communicate, and confirms which side runs each line. 4. `/dayz-lint` and the build gate check and pack the mod (nothing compiles Enforce Script at this stage). The in-game gate catches compile errors and reads script.log. |
+| `dayz-workbench-specialist` | 1. Reads how vanilla Workbench plugins are registered. 2. Writes the plugin script using only the classes, methods and attributes it found there, and cites each one as `path:line`. 3. Never opens Workbench itself. Instead, it tells you to open Workbench with `/dayz-launch-workbench --mod <ModName>`. 4. Returns the plugin and the steps to load and run it. |
+| `dayz-persistence-specialist` | 1. Lists every value that must survive a restart. 2. Writes OnStoreSave and OnStoreLoad. 3. Adds the upgrade path for old saves. 4. Runs the data audit. 5. Places the audit at the end of its report to the script lead. The orchestrator passes the audit to the server lead before the test build. |
+| `dayz-ai-specialist` | 1. Studies how vanilla infected and animals decide what to do. 2. Writes the behavior as its own script classes. 3. Gives the server lead the spawn setup. 4. The in-game test checks the behavior and server performance. |
+| **Config lead** | |
+| `dayz-config-specialist` | 1. Finds the closest vanilla parent class and reads its definition on disk, cited as `path:line`. 2. Writes CfgPatches with the correct requiredAddons, and then the class itself. 3. Matches hiddenSelections to the names in the model. 4. `/dayz-lint` and the build gate confirm that the mod loads. |
+| `dayz-vehicle-specialist` | 1. Selects the closest vanilla vehicle as the parent. 2. Writes the vehicle class and its simulation. 3. Adds the attachment slots and the fluids. 4. Writes the CarScript, BoatScript or HelicopterScript class for seats, doors and damage. 5. Gives the server lead a types.xml entry. The behavior gate spawns the vehicle, and a person-run checklist covers driving. |
+| `dayz-weapon-specialist` | 1. Selects the closest vanilla weapon as the parent. 2. Writes the weapon, magazine and ammo classes and the attachment slots. 3. Sets recoil and fire modes. 4. Lists the model selections and memory points that the art lead must provide. 5. The behavior gate spawns the weapon and fits each attachment. A person-run checklist covers firing and reloading. |
+| **Art lead** | |
+| `dayz-object-builder` | 1. Specifies the LODs (visual, geometry, fire geometry, view geometry and memory) as numbered Object Builder steps. You build them, because the specialist cannot edit a .p3d. 2. Names the selections and memory points that the config and animations need, and writes model.cfg. 3. Runs `/dayz-p3d-audit` after you save the model. 4. Sends the selection names and config lines, through the art lead, to the worker who owns the class's config. |
+| `dayz-asset-specialist` | 1. Confirms that each texture has the correct suffix (\_co, \_nohq, \_smdi and the others). 2. Packs the textures with `/dayz-pack-texture`. 3. Writes the .rvmat for each material. 4. Writes a visual checklist for you to review in Object Builder or in game. It never launches either one. |
+| `dayz-wearables-specialist` | 1. Selects the inventory slot and the closest vanilla item as the parent. 2. Sets the slots held, protection and insulation. 3. Sets hidden selections so that one model carries every color. 4. Records the proxy positions for the Object Builder specialist. 5. The behavior gate wears each color class, and a person checks in game how each color looks. |
+| `dayz-animation-specialist` | 1. Lists the moving parts and their bones. 2. Writes its model.cfg entries (see [Each specialist in detail](#each-specialist-in-detail)). 3. Gives you the bone and selection names for your own Blender export. 4. Names the script hook that plays the animation. The script specialist writes that code, and the in-game test uses it. |
+| **UI lead** | |
+| `dayz-ui-specialist` | 1. Reads the vanilla layout closest to the new screen. 2. Writes the .layout and the script class that drives it. 3. Builds icons into an imageset with `/dayz-build-imageset`. 4. The layout checker checks the layout against the Figma-to-DayZ rules, and `/dayz-layout-preview` renders it. The in-game test opens it. |
+| `figma-node-normalizer` | 1. Reads the Figma frame. 2. Cleans up layer names and structure so that they map to DayZ widgets. 3. Returns the clean tree as JSON to its caller and names the layout converter as the next stage. |
+| `figma-to-dayz-layout` | 1. Converts the clean tree into a DayZ .layout. 2. Uses only widget types that the game supports. 3. Writes the file and names the layout checker as the next stage. |
+| **Server lead** | |
+| `dayz-server-admin` | 1. Writes types.xml entries with `/dayz-edit-types`. 2. Adds events, spawn points and gameplay settings where needed. 3. Splits large economy files with `/dayz-split-types`. 4. Sets up a missing test server instance with `/dayz-add-server`, which starts nothing. It gives you the `/dayz-launch-test` command instead of starting the server itself. |
+| `dayz-map-specialist` | 1. Writes layers.cfg and the surface and clutter configs. If it needs your own layers.cfg and the file is missing, it stops and asks you for it. 2. Provides numbered steps for the DayZ Editor export and the Terrain Builder import and generation, which you carry out. 3. Returns the files and the steps to rebuild the map. |
+| **Release lead** | |
+| `dayz-build-engineer` | 1. Packs the mod with `/dayz-build-pbo`. 2. Starts the test session with `/dayz-launch-test`. 3. Reports the build result to the release lead, who passes it to the orchestrator. |
+| `dayz-docs-writer` | 1. Reads what changed in the wave. 2. Updates the README, changelog and class name list. 3. Writes the Workshop text and server owner notes with `/dayz-release-pack`. |
+| **Any lead** | |
+| `dayz-audio-fx-specialist` | 1. Reads the vanilla sound or particle closest to the request. 2. Writes the sound shader and sound set, or writes the particle with `/dayz-particles`. 3. Adds the script line that plays it. 4. The in-game test checks how it sounds and looks. |
+| `dayz-physics-specialist` | 1. Reads the model's geometry LODs and mass. 2. Identifies the fault: missing geometry, incorrect mass or faulty collision. 3. Hands the fix, through the lead that called it, to the Object Builder specialist or to the worker who owns the class's config. It never edits files. 4. A person-run in-game test drops, throws and shoots the object, which the behavior gate cannot do. |
+| **Checks and fixes** | |
+| `dayz-mod-reviewer` | 1. Reviews the finished task against the DayZ rules file. 2. Lists each problem with the specialist who owns it. 3. Never edits files. |
+| `dayz-layout-validator` | 1. Checks the .layout against the Figma-to-DayZ rules: file format and widget classes. 2. Reports PASS or FAIL with each problem and its line number. It never edits files. |
+| `dayz-build-checker` | 1. Runs only when the `/dayz-gate build` script errors (exit 2) instead of giving a verdict. 2. Runs `/dayz-lint`, stops any running test session, rebuilds with `/dayz-build-pbo` (or checks a prebuilt bundle with `/dayz-deploy-pbo`), and reports PASS or FAIL with the AddonBuilder lines and the file they point to. |
+| `dayz-ingame-tester` | 1. Runs only when the `/dayz-gate ingame` script errors (exit 2) instead of giving a verdict. 2. Stops any leftover session, launches its own test session with `/dayz-launch-test`, reads the log lines written after it started, reports PASS or FAIL, and stops the session. |
+| `dayz-mod-debugger` | 1. Receives new errors that triage does not recognize. 2. Traces script.log, RPT and crash files back to the line that failed. 3. Reports the cause, evidence, location and fix to its caller (the orchestrator or a lead), and names the worker agent that owns the fix. |
 
 ## Open items and decisions
 
 | Item | Status | Next step |
 | --- | --- | --- |
-| RAG search | The installed plugin (1.6.0) has the search timeout bug. The fix is in the current Agentic-Z. | The updated plugin, a Voyage API key in `.env`, and a full re-index. |
+| RAG search | The installed plugin (1.0.0) has the search timeout bug. The fix is in the current Agentic-Z. | The updated plugin, a Voyage API key in `.env`, and a full re-index. |
 
 ### Roadmap
 
 1. **Add-ons plugin.** An optional `agentic-z-addons` plugin for outside tools. It will be built only after the core is complete, and only for the add-ons the user names.
 
-## What changed from Agentic-Z 1.6.0
+## What changed from Agentic-Z 1.0.0
 
 Each change comes from the quality review or the build.
 
@@ -526,53 +631,3 @@ Agentic-Z provides 44 slash commands that any agent or person can run. Of these,
 Some exempt skills still read P:. `/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe` and `/dayz-layout-preview` only read files and write a report. `/dayz-upgrade-guard` also saves snapshots under `~/.claude/dayz-upgrade-guard/` and rebuilds the search index only with `--reindex`. `/dayz-ask` only checks that P: is mounted. `/dayz-gate` runs its checks through the scripts it calls. `/dayz-stop-test` skips the check so that it still works as an emergency stop.
 
 :::skills
-
-### Specialist workflows
-
-Every task follows the team loop described in How one task moves through the team. Within that loop, each specialist works through its own steps, listed in the table below. Specialists that write DayZ content look up vanilla first. They use Grep for a class or symbol name they already know, and RAG search for questions by meaning or after two or three failed Grep searches. They then read the real file before relying on any hit. The build engineer, the docs writer, the build checker, the in-game tester and `figma-node-normalizer` have no RAG tool. They work from the mod, its logs or the Figma file.
-
-| Agent | Steps |
-| --- | --- |
-| **Script lead** | |
-| `dayz-script-specialist` | 1. Searches the vanilla scripts for the class it will change and reads the real file. 2. Writes a `modded class` in the correct layer (3\_Game, 4\_World or 5\_Mission) and calls `super`. 3. Adds RPCs only where the client and server must communicate, and checks which side runs each line. 4. `/dayz-lint` and the build gate check and pack the code. Neither compiles Enforce Script, so the in-game gate catches compile errors and reads script.log. |
-| `dayz-workbench-specialist` | 1. Reads how vanilla Workbench plugins are registered. 2. Writes the plugin script, using only APIs it found in vanilla and cited as `path:line`. 3. Never opens Workbench itself. Instead, it tells the user to open it with `/dayz-launch-workbench --mod <ModName>`. 4. Returns the plugin and the steps to load and run it. |
-| `dayz-persistence-specialist` | 1. Lists every value that must survive a restart. 2. Writes OnStoreSave and OnStoreLoad, with a version number written first. 3. Adds an upgrade path so that saves from the previous version still load. 4. Runs the data audit, which confirms that every field is written and read back in the same order. 5. Places the audit at the end of its report to the script lead. The orchestrator gives the audit to the server lead before the test build. |
-| `dayz-ai-specialist` | 1. Studies how vanilla infected and animals decide what to do. 2. Writes the behavior as its own script classes, never copied from another mod. 3. Includes the spawn setup in its report, for the script lead to forward to the server lead. 4. The in-game test watches the behavior and server performance. |
-| **Config lead** | |
-| `dayz-config-specialist` | 1. Finds the closest vanilla parent class and reads its definition on disk, cited as `path:line`. 2. Writes CfgPatches with the correct requiredAddons, then the class itself. 3. Matches hiddenSelections to the names in the model. 4. Checks that braces balance and that every entry ends with `;`. `/dayz-lint` and the build gate then check and pack the config. |
-| `dayz-vehicle-specialist` | 1. Selects the closest vanilla vehicle as the parent. 2. Writes the vehicle class and its simulation: engine, gearbox, axles and wheels. 3. Adds attachment slots for the doors, hood, trunk, wheels, battery and plug, and adds the fluids. 4. Writes the CarScript or BoatScript class for seats, doors and damage. 5. Gives the server lead a types.xml entry. The behavior gate spawns the vehicle, and a manual checklist covers driving. |
-| `dayz-weapon-specialist` | 1. Selects the closest vanilla weapon as the parent. 2. Writes the weapon, magazine and ammunition classes and the attachment slots. 3. Sets recoil and fire modes. 4. Lists the model selections and memory points that the art lead must provide. 5. The behavior gate spawns the weapon and fits each attachment. A manual checklist covers firing and reloading. |
-| **Art lead** | |
-| `dayz-object-builder` | 1. Specifies the LODs (visual, geometry, fire geometry, view geometry and memory) as numbered Object Builder steps. The user builds them, because the agent cannot edit a .p3d file. 2. Names the selections and memory points that the config and animations need, and writes model.cfg. 3. Runs `/dayz-p3d-audit` after the user saves the model. 4. Sends the selection names and config lines, through the art lead, to the worker that owns the class's config.cpp. |
-| `dayz-asset-specialist` | 1. Checks that each texture has the correct suffix (\_co, \_nohq, \_smdi and the others). 2. Packs the textures with `/dayz-pack-texture`. 3. Writes the .rvmat file for each material. 4. Writes a visual checklist for the user to review in Object Builder or in game. It never launches either one. |
-| `dayz-wearables-specialist` | 1. Selects the inventory slot and the closest vanilla item as the parent. 2. Sets the slots held, protection and insulation. 3. Sets hidden selections so that one model carries every color. 4. Records the proxy positions for the Object Builder specialist. 5. The behavior gate wears each color class, and a person checks in game how each color looks. |
-| `dayz-animation-specialist` | 1. Lists the moving parts and their bones. 2. Writes skeletonBones for the moving parts and the class Animations block in model.cfg. The Object Builder specialist maintains the rest of model.cfg. 3. Gives the user the bone and selection names for their own Blender export. 4. Names the script hook that plays the animation. The script specialist writes that code, and the in-game test uses it. |
-| **UI lead** | |
-| `dayz-ui-specialist` | 1. Reads the vanilla layout closest to the new screen. 2. Writes the .layout file and the script class that drives it. 3. Builds icons into an imageset with `/dayz-build-imageset`. 4. The layout validator checks the layout against the Figma-to-DayZ rules, `/dayz-layout-preview` renders it, and the in-game test opens it. |
-| `figma-node-normalizer` | 1. Reads the Figma frame. 2. Cleans up layer names and structure so that they map to DayZ widgets. 3. Returns the clean tree as JSON to its caller and names `figma-to-dayz-layout` as the next stage. |
-| `figma-to-dayz-layout` | 1. Converts the clean tree into a DayZ .layout file. 2. Uses only widget types that the game supports. 3. Writes the file, returns to its caller and names `dayz-layout-validator` as the next stage. |
-| **Server lead** | |
-| `dayz-server-admin` | 1. Writes types.xml entries with `/dayz-edit-types`. 2. Adds events, spawn points and gameplay settings where needed. 3. Splits large economy files with `/dayz-split-types`. 4. Sets up a missing test server instance with `/dayz-add-server`, which starts nothing. It gives the user the `/dayz-launch-test` command instead of starting the server itself. |
-| `dayz-map-specialist` | 1. Writes layers.cfg and the surface and clutter configs. If it needs the user's own layers.cfg and that file is missing, it stops and asks for it. 2. Provides numbered steps for the DayZ Editor export and for the Terrain Builder import and generation, which the user carries out. 3. Returns the files and the steps to rebuild the map. |
-| **Release lead** | |
-| `dayz-build-engineer` | 1. Packs the mod with `/dayz-build-pbo`. 2. Starts the test session with `/dayz-launch-test`. 3. Reports the build result to the release lead, who passes it to the orchestrator. |
-| `dayz-docs-writer` | 1. Reads what changed in the wave. 2. Updates the README, the changelog and the class name list. 3. Writes the Workshop text and the server owner notes with `/dayz-release-pack`. |
-| **Any lead** | |
-| `dayz-audio-fx-specialist` | 1. Reads the vanilla sound or particle effect closest to the request. 2. Writes the sound shader and sound set, or writes the particle effect with `/dayz-particles`. 3. Adds the script line that plays it. 4. The in-game test listens to the sound and watches the effect. |
-| `dayz-physics-specialist` | 1. Reads the model's geometry LODs and mass. 2. Finds the fault: missing geometry, incorrect mass or faulty collision. 3. Hands the fix to the Object Builder specialist or to the worker that owns the class's config.cpp. It never edits files. 4. A person runs an in-game test that drops, throws and shoots the object, which the behavior gate cannot do. |
-| **Checks and fixes** | |
-| `dayz-mod-reviewer` | 1. Reviews the finished task against the DayZ rules file. 2. Lists each problem with the specialist that owns it. |
-| `dayz-layout-validator` | 1. Checks the .layout file against the Figma-to-DayZ rules for file format and widget classes. 2. Reports PASS or FAIL, with each problem and its line number. |
-| `dayz-build-checker` | 1. Runs only when the `/dayz-gate build` script errors (exit 2) instead of giving a verdict. 2. Runs `/dayz-lint`, stops any running test session, rebuilds with `/dayz-build-pbo` (or checks a prebuilt bundle with `/dayz-deploy-pbo`), and reports PASS or FAIL with the AddonBuilder lines and the file they point to. |
-| `dayz-ingame-tester` | 1. Runs only when the `/dayz-gate ingame` script errors (exit 2) instead of giving a verdict. 2. Stops any leftover session, launches its own test session with `/dayz-launch-test`, reads the log lines written after it started, reports PASS or FAIL, and stops the session. |
-| `dayz-mod-debugger` | 1. Receives only new errors that triage does not recognize. 2. Traces script.log, RPT and crash files back to the line that failed. 3. Reports the cause, evidence, location and fix to its caller (the orchestrator or a lead), and names the worker agent that owns the fix. |
-
-### How one task moves through the team
-
-1. The user approves the mod plan from the architect, for example "a tactical vest with three retextures".
-2. The orchestrator splits the plan into tasks, such as "write the vest's config.cpp entry".
-3. The appropriate lead takes the task and starts a worker.
-4. The worker searches vanilla and checks the real file, reads the reference files that the task needs, and completes that one task.
-5. The work then passes through the gates described in The team flow. If anything fails, a known error returns with its fix already named, and the debugger reads the logs for any new error. The task then goes back to the worker with notes.
-6. Work that passes is packed into a PBO and loaded on a test server.
-7. The user gives the final approval and publishes the mod to the Steam Workshop with DayZ Tools Publisher.

@@ -95,7 +95,6 @@ CLAIMS = [
     Claim(GUIDE, "Agentic-Z includes {N} agents, {N} skills and {N} hooks.", ("agents", "skills", "hooks")),
     Claim(GUIDE, "Agentic-Z has {N} agents.", ("agents",)),
     Claim(GUIDE, "The {N} agents, the {N} skills, and the reference files", ("agents", "skills")),
-    Claim(GUIDE, "split into a {N}-line core and {N} topic files of {N} to {N} lines", _RULES),
     Claim(GUIDE, "Answer tests (evals) check {N} of the {N} agents", ("eval_agents", "agents")),
     Claim(GUIDE, "The final grades cover {N} items, and {N} are at A+: {N} of the {N} agents, "
                  "{N} of the {N} skills and {N} of the {N} shared items.", ("graded_total", "graded_aplus") + _GRADED),
@@ -110,8 +109,7 @@ CLAIMS = [
     Claim(TEAM, "The final grades cover {N} items, and {N} are at A+: {N} of the {N} agents, "
                 "{N} of the {N} skills and {N} of the {N} shared items.", ("graded_total", "graded_aplus") + _GRADED),
     Claim(TEAM, "The {N} shared items are neither agents nor skills", ("graded_shared",)),
-    Claim(TEAM, "The {N} hooks are described in", ("hooks",)),
-    Claim(TEAM, "The DayZ rules core is {N} lines, and each of the {N} topic files is {N} to {N} lines", _RULES),
+    Claim(TEAM, "split into a {N}-line core and {N} topic files of {N} to {N} lines", _RULES),
     Claim(TEAM, "Agentic-Z provides {N} slash commands", ("skills",)),
     Claim(TEAM, "| Agent memory | {N} of the {N} agents", ("memory_agents", "agents")),
     Claim(APP_JSX, "['{N}', 'agents'],", ("agents",)),

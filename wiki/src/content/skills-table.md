@@ -24,7 +24,7 @@
 | `/dayz-logwatch` | Watches the logs during a test session and triages each new error as it appears. |
 | **Checks, routing and status** | |
 | `/dayz-gate` | Runs the build, in-game, behavior and visual checks as scripts that print PASS or FAIL, with known-error triage. |
-| `/dayz-conflict-check` | Finds prefix, path and class collisions with CF, COT and Expansion. |
+| `/dayz-conflict-check` | If your mod uses add-ons such as CF, COT or Expansion, finds prefix, path and class collisions with them. |
 | `/dayz-upgrade-guard` | After a DayZ update, lists mod classes whose vanilla parent classes changed. |
 | `/dayz-balance` | Compares item stats with similar vanilla items and flags outliers. |
 | `/dayz-health` | Produces a page for each mod with the last build, last test, open findings and gate history. |

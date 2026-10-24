@@ -70,7 +70,7 @@ const GROUPS = [
       'agents',
       'the-mod-team',
       'how-the-team-works',
-      'growing-the-team-new-specialists',
+      'the-specialists',
       'what-agentic-z-gives-an-ai-agent',
     ],
   },
@@ -78,11 +78,12 @@ const GROUPS = [
     id: 'knowledge',
     title: 'Skills & knowledge',
     slugs: [
+      'one-source-of-truth',
+      'the-three-tiers-of-rules',
       'the-skills',
       'rag-search',
-      'the-three-tiers-of-rules',
       'token-savers-and-workflows',
-      'add-ons-planned',
+      'community-mods-and-add-ons',
     ],
   },
   {
@@ -93,12 +94,12 @@ const GROUPS = [
   {
     id: 'help',
     title: 'Help',
-    slugs: ['troubleshooting', 'faq', 'safety', 'getting-help-and-contributing'],
+    slugs: ['safety', 'faq', 'troubleshooting', 'getting-help-and-contributing'],
   },
 ];
 
 // Project-tracking chapters from the team doc. They describe the build, not how to use it, so the wiki leaves them out.
-const HIDDEN = new Set(['status-and-next-steps', 'open-items-and-decisions', 'what-changed-from-agentic-z-160']);
+const HIDDEN = new Set(['status-and-next-steps', 'open-items-and-decisions', 'what-changed-from-agentic-z-100']);
 
 const all = [...guidePages, ...teamPages];
 const bySlug = Object.fromEntries(all.map((p) => [p.slug, p]));

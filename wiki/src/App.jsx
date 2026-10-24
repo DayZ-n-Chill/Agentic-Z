@@ -14,6 +14,7 @@ import {
   InputAdornment,
   Link,
   List,
+  ListItem,
   ListItemButton,
   ListItemText,
   ListSubheader,
@@ -40,6 +41,9 @@ import { groups, pages, intro, searchIndex } from './content.js';
 import { makeTheme, fonts } from './theme.js';
 import Logo from './components/Logo.jsx';
 import Markdown from './components/Markdown.jsx';
+import RepoStats from './components/RepoStats.jsx';
+import HeroShader from './components/HeroShader.jsx';
+import HeroForge from './components/HeroForge.jsx';
 
 const DRAWER = 280;
 const REPO = 'https://github.com/DayZ-n-Chill/Agentic-Z';
@@ -64,9 +68,11 @@ function NavList({ slug, onNavigate }) {
   return (
     <Box component="nav" aria-label="Wiki pages" sx={{ px: 1.5, pb: 4 }}>
       <List dense disablePadding>
-        <ListItemButton selected={!slug} onClick={() => onNavigate('')} sx={{ mt: 1.5 }}>
-          <ListItemText primary="Overview" primaryTypographyProps={{ fontWeight: 600 }} />
-        </ListItemButton>
+        <ListItem disablePadding>
+          <ListItemButton selected={!slug} aria-current={!slug ? 'page' : undefined} onClick={() => onNavigate('')} sx={{ mt: 1.5 }}>
+            <ListItemText primary="Overview" primaryTypographyProps={{ fontWeight: 600 }} />
+          </ListItemButton>
+        </ListItem>
       </List>
       {groups.map((g) => (
         <List
@@ -93,9 +99,11 @@ function NavList({ slug, onNavigate }) {
           }
         >
           {g.pages.map((p) => (
-            <ListItemButton key={p.slug} selected={p.slug === slug} onClick={() => onNavigate(p.slug)}>
-              <ListItemText primary={p.title} primaryTypographyProps={{ fontSize: '0.875rem' }} />
-            </ListItemButton>
+            <ListItem key={p.slug} disablePadding>
+              <ListItemButton selected={p.slug === slug} aria-current={p.slug === slug ? 'page' : undefined} onClick={() => onNavigate(p.slug)}>
+                <ListItemText primary={p.title} primaryTypographyProps={{ fontSize: '0.875rem' }} />
+              </ListItemButton>
+            </ListItem>
           ))}
         </List>
       ))}
@@ -251,10 +259,15 @@ function Home({ onNavigate }) {
           backgroundImage: (t) =>
             `linear-gradient(${alpha(t.palette.text.primary, 0.045)} 1px, transparent 1px), linear-gradient(90deg, ${alpha(t.palette.text.primary, 0.045)} 1px, transparent 1px)`,
           backgroundSize: '28px 28px',
+          '& > :not(canvas)': { position: 'relative', zIndex: 1 },
+          // The 3D build sits in the empty right side; on narrow screens the text needs the whole card.
+          '& .hero-forge, & .hero-forge-solid': { display: { xs: 'none', lg: 'block' } },
         }}
       >
+        <HeroShader />
+        <HeroForge />
         <Stack direction={{ xs: 'column', sm: 'row' }} gap={3} alignItems={{ sm: 'center' }}>
-          <Logo size={88} />
+          <Logo size={96} />
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="overline" color="primary">
               DayZ modding · Claude Code · Codex · Gemini
@@ -376,7 +389,7 @@ export default function App() {
             onClick={() => navigate('')}
             sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}
           >
-            <Logo size={30} />
+            <Logo size={26} />
             <Typography sx={{ fontFamily: fonts.display, fontWeight: 700, fontSize: '1.15rem', display: { xs: 'none', sm: 'block' } }}>
               Agentic-Z
             </Typography>
@@ -454,9 +467,32 @@ export default function App() {
           </Box>
           <Box
             component="footer"
-            sx={{ borderTop: 1, borderColor: 'divider', py: 3, px: { md: 3 }, maxWidth: 1120, mx: 'auto', color: 'text.secondary', fontSize: '0.8rem' }}
+            sx={{
+              borderTop: 1,
+              borderColor: 'divider',
+              py: 3,
+              px: { md: 3 },
+              maxWidth: 1120,
+              mx: 'auto',
+              color: 'text.secondary',
+              fontSize: '0.8rem',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 2,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
           >
-            Agentic-Z: the most advanced agent stack for DayZ modding.
+            <span>Agentic-Z: a production-ready agent stack for DayZ modding.</span>
+            <RepoStats repoUrl={REPO} />
+            <Box
+              component="small"
+              sx={{ flexBasis: '100%', fontSize: '0.68rem', lineHeight: 1.5, opacity: 0.7 }}
+            >
+              Agentic-Z is an independent community project. It is not affiliated with, endorsed by, or sponsored by
+              Bohemia Interactive a.s. DayZ, Bohemia Interactive and their logos are trademarks or registered
+              trademarks of Bohemia Interactive a.s. All DayZ game content and materials are © Bohemia Interactive a.s.
+            </Box>
           </Box>
         </Box>
       </Box>

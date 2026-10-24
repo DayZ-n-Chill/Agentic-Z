@@ -4,6 +4,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { fonts } from '../theme.js';
+import Graph from './Graph.jsx';
 
 const mono = { fontFamily: fonts.mono, fontSize: '0.72rem' };
 
@@ -259,7 +260,7 @@ function Versions({ spec }) {
 }
 
 export default function Diagram({ spec, title }) {
-  const Body = { flow: Flow, tiers: Tiers, groups: Groups, versions: Versions }[spec.type];
+  const Body = { flow: Flow, tiers: Tiers, groups: Groups, versions: Versions, graph: Graph }[spec.type];
   return (
     <Box
       component="figure"

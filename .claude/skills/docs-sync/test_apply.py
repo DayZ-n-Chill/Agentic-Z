@@ -91,7 +91,7 @@ def test_dry_run_tells_apart_two_fixes_on_one_line(repo, capsys):
 
 def test_apply_fixes_counts_in_every_file_and_nothing_else(repo, capsys):
     t.edit(repo, sync.GUIDE, "includes 2 agents, 2 skills", "includes 3 agents, 9 skills")
-    t.edit(repo, sync.TEAM, "each of the two topic files", "each of the four topic files")
+    t.edit(repo, sync.TEAM, "and two topic files of", "and four topic files of")
     t.edit(repo, sync.APP_JSX, "['6', 'items graded A+']", "['7', 'items graded A+']")
     t.edit(repo, sync.APP_JSX, "['3', 'hooks']", "['9', 'hooks']")  # 3 hook scripts in hooks/
     before = snapshot(repo)
@@ -101,7 +101,7 @@ def test_apply_fixes_counts_in_every_file_and_nothing_else(repo, capsys):
     changed = {k for k in after if after[k] != before[k]}
     assert changed == {sync.GUIDE, sync.TEAM, sync.APP_JSX}
     assert "includes 2 agents, 2 skills" in (repo / sync.GUIDE).read_text(encoding="utf-8")
-    assert "each of the two topic files" in (repo / sync.TEAM).read_text(encoding="utf-8")
+    assert "and two topic files of" in (repo / sync.TEAM).read_text(encoding="utf-8")
     app = (repo / sync.APP_JSX).read_text(encoding="utf-8")
     assert "['6', 'items graded A+']" in app and "['3', 'hooks']" in app
     assert "Applied 5 fix(es) in 3 file(s)." in capsys.readouterr().out

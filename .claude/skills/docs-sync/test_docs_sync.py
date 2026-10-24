@@ -78,7 +78,7 @@ TEAM = """# Team
 | Agent memory | 1 of the 2 agents keep notes. |
 This document describes the 2 agents and 2 skills that work together. Agentic-Z provides 2 slash commands. The 3 hooks are described in the hooks section.
 
-The DayZ rules core is 3 lines, and each of the two topic files is 2 to 4 lines. The final grades cover 6 items, and all 6 are at A+: 2 of the 2 agents, 2 of the 2 skills and 2 of the 2 shared items. The 2 shared items are neither agents nor skills. The final grades cover 6 items, and 6 are at A+: 2 of the 2 agents, 2 of the 2 skills and 2 of the 2 shared items.
+The DayZ rules file is split into a 3-line core and two topic files of 2 to 4 lines. The final grades cover 6 items, and all 6 are at A+: 2 of the 2 agents, 2 of the 2 skills and 2 of the 2 shared items. The 2 shared items are neither agents nor skills. The final grades cover 6 items, and 6 are at A+: 2 of the 2 agents, 2 of the 2 skills and 2 of the 2 shared items.
 
 ## Quality by version
 
@@ -301,7 +301,7 @@ def test_each_claim_is_found_in_the_real_wiki(claim):
 # purpose. Any other count of agents, skills, hooks or items must sit inside a
 # CLAIMS match, or a source change would leave it stale with nothing flagging it.
 NOT_FACTS = {
-    (sync.GUIDE, "six items"),         # an example request: "holds six items"
+    (sync.TEAM, "six items"),          # an example request: "holds six items"
     (sync.GUIDE, "five gate agents"),
     (sync.GUIDE, "Two agents"),        # "Two agents have general web or remote design access"
     (sync.TEAM, "Three agents"),       # the Figma pipeline
@@ -397,9 +397,9 @@ def test_a_wrong_number_beside_a_claim_is_not_rewritten(repo):
 
 
 def test_number_words_are_read_and_rewritten_as_words(repo):
-    edit(repo, sync.GUIDE, "and two topic files of", "and Seven topic files of")
+    edit(repo, sync.TEAM, "and two topic files of", "and Seven topic files of")
     assert problems() == [
-        "wiki/src/content/guide.md:25: says Seven, expected 2 (topic files in .claude/skills/_shared/conventions/) [fixable]"]
+        "wiki/src/content/team.md:5: says Seven, expected 2 (topic files in .claude/skills/_shared/conventions/) [fixable]"]
     assert sync._spell(2, "Seven") == "Two" and sync._spell(2, "7") == "2" and sync._spell(30, "three") == "30"
     assert sync._number("Twenty") == 20 and sync._number("143") == 143
 
@@ -431,18 +431,17 @@ def test_hook_scripts_exclude_tests(repo):
     (repo / sync.HOOKS_DIR / "test_d_hook.py").write_text("", encoding="utf-8")
     out = problems()
     assert "wiki/src/App.jsx:4: says 3, expected 4 (hook scripts in hooks/ (not test_*.py)) [fixable]" in out
-    assert len(out) == 4  # App.jsx, the guide's opening sentence and tree, the team page
+    assert len(out) == 3  # App.jsx, the guide's opening sentence and its tree
 
 
 def test_rules_line_counts_are_checked(repo):
     (repo / sync.RULES_CORE).write_text("a\nb\nc\nd\n", encoding="utf-8")
     (repo / sync.RULES_TOPICS / "c.md").write_text("x\n" * 9, encoding="utf-8")
     out = problems()
-    assert any(p.startswith("wiki/src/content/guide.md:25: says 3, expected 4 (wc -l") for p in out)
-    assert any(p.startswith("wiki/src/content/guide.md:25: says two, expected 3 (topic files") for p in out)
-    assert any(p.startswith("wiki/src/content/guide.md:25: says 4, expected 9 (longest topic file") for p in out)
-    assert any(p.startswith("wiki/src/content/team.md:5: says 3, expected 4") for p in out)
-    assert any(p.startswith("wiki/src/content/team.md:5: says two, expected 3") for p in out)
+    # The rules sentence lives on the team page ("split into a N-line core and N topic files of N to N lines").
+    assert any(p.startswith("wiki/src/content/team.md:5: says 3, expected 4 (wc -l") for p in out)
+    assert any(p.startswith("wiki/src/content/team.md:5: says two, expected 3 (topic files") for p in out)
+    assert any(p.startswith("wiki/src/content/team.md:5: says 4, expected 9 (longest topic file") for p in out)
 
 
 @pytest.mark.parametrize("rel", [sync.RULES_CORE, f"{sync.RULES_TOPICS}/b.md"])
