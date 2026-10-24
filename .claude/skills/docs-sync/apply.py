@@ -69,7 +69,9 @@ def apply_fixes(repo_root: Path, problems: list, dry_run: bool = False) -> int:
     for rel, fixes in sorted(by_file.items()):
         path = repo_root / rel
         try:
-            text = path.read_text(encoding="utf-8", newline="")
+            # open(), not Path.read_text(newline=...), which needs Python 3.13; CI runs 3.12.
+            with open(path, encoding="utf-8", newline="") as f:
+                text = f.read()
         except (OSError, UnicodeDecodeError) as e:
             raise ReadError(f"could not read {rel}: {getattr(e, 'strerror', None) or e}") from e
         lines = text.split("\n")

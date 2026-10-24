@@ -1358,3 +1358,23 @@ def test_orchestrator_agent_list_covers_every_agent_the_leads_start():
     started = {n for n in re.findall(r"`([a-z-]+)`", lead) if n in AGENT_NAMES} - {"dayz-orchestrator"}
     missing = sorted(n for n in started for name in (n, f"agentic-z:{n}") if name not in allowed)
     assert not missing, f"agents the leads start but the orchestrator's Agent list leaves out: {missing}"
+
+
+def test_no_read_text_with_newline():
+    # Path.read_text(newline=...) is Python 3.13+. CI runs 3.12 (.github/workflows/tests.yml), so
+    # docs-sync's apply.py failed every CI run while passing on a 3.14 machine.
+    import ast
+
+    hits = []
+    for path in REPO.rglob("*.py"):
+        if any(part in {".git", "node_modules", "archive", "__pycache__"} for part in path.parts):
+            continue
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "read_text"
+                    and any(k.arg == "newline" for k in node.keywords)):
+                hits.append(f"{path.relative_to(REPO)}:{node.lineno}")
+    assert not hits, f"Path.read_text(newline=) needs Python 3.13; use open(..., newline=...) instead: {hits}"
