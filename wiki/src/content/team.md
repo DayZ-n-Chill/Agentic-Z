@@ -99,7 +99,7 @@ The status column uses three values:
 
 | Feature | Status | What was checked |
 | --- | --- | --- |
-| Test suite | Works | `py -m pytest -q .claude scripts/dev hooks`, run in a clean worktree, collects 5,005 tests. The tests confirm that every agent and skill is registered, every file and skill they name exists, gates cannot edit, tier files match, and every wrapper points to a real script. |
+| Test suite | Works | `py -m pytest -q .claude scripts/dev hooks`, run in a clean worktree, collects 5,013 tests. The tests confirm that every agent and skill is registered, every file and skill they name exists, gates cannot edit, tier files match, and every wrapper points to a real script. |
 | CI on GitHub | Works | The tests workflow passed on GitHub. |
 | Answer tests (evals) | Works | All 30 agents have a question file and a score in `evals/baseline.json`. |
 | DayZ facts in the packs | Works | For every pack, the graders opened the cited lines on P:. The Enforce Script examples are checked on P: too, and a test keeps them in step with the vanilla files. |
@@ -108,13 +108,13 @@ The status column uses three values:
 | Behavior and visual gates | Works | Both ran in the same live session. All 10 behavior checks passed, and the visual gate compared a capture with its baseline. |
 ## Quality by version
 
-The final grades cover 193 items, and 192 are at A+: 30 of the 30 agents, 44 of the 44 skills and 118 of the 119 shared items. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and the grading method note. The final review graded every item, and each item shows its latest grade. The grades come from `final_grades.json` and `final_grades_shared.json`. The `clean-repo` skill was graded twice and counts once. The one item below A+ is the Agentic-Z panel mod (`mods/agentic-z-panel`), at B+. It is a third-party piece, so it is kept exactly as it is and was not sent to the fixers.
+The final grades cover 193 items, and 193 are at A+: 30 of the 30 agents, 44 of the 44 skills and 119 of the 119 shared items. The shared items are the hooks, the search server, the scripts and wrappers, the answer tests, the rules files, the specialist reference files and the grading method note. The final review graded every item, and each item shows its latest grade. The grades come from `final_grades.json` and `final_grades_shared.json`. The `clean-repo` skill was graded twice and counts once.
 
 Independent reviewers graded every agent and skill at v1.6.0, at v1.7.0 and in the current Agentic-Z (see "How the grading works"). All three columns are their grades, and the final column is the final grade, not a target. The final grades also cover the hooks, the search server, the scripts, the answer tests and every shared reference folder under `_shared/`. An item that did not exist yet at a version shows "not built". A shared file that was not graded at a version shows "n/a".
 
 ![Agentic-Z versions and grades](images/team-02-1.svg)
 
-The test suite grew from 85 tests at v1.6.0 to 5,005 tests now.
+The test suite grew from 85 tests at v1.6.0 to 5,013 tests now.
 
 | Item | v1.6.0 released | v1.7.0 agent team | v2.0.0 final |
 | --- | --- | --- | --- |
@@ -271,7 +271,7 @@ The test suite grew from 85 tests at v1.6.0 to 5,005 tests now.
 | `hooks/scope_guard.py (+ test_scope_guard.py)` | not built | not built | A+ |
 | `hooks/paste_router.py (+ test_paste_router.py)` | not built | not built | A+ |
 | `dayz-rag MCP server (server.py, voyage_common.py, README, tests)` | not built | not built | A+ |
-| `mods/agentic-z-panel (plugin.json, hooks.json, register.tsx, register.test.tsx, types)` | not built | not built | B+ |
+| `mods/agentic-z-panel (plugin.json, hooks.json, register.tsx, register.test.tsx, types)` | not built | not built | A+ |
 | Answer tests (evals) | | | |
 | `evals/baseline.json` | not built | not built | A+ |
 | `evals/fixtures/dayz-layout-validator/*.layout` | not built | not built | A+ |
@@ -455,7 +455,7 @@ Every token saver and workflow in this section is new. Each one is built and tes
 | Hooks | The three hooks are described in What Agentic-Z gives an AI agent. |
 | Status line | Status line with no token cost (`/dayz-statusline`). |
 | Cheaper models | The build engineer and the router run on Haiku, and the docs writer runs on Sonnet. |
-| Smaller rules loading | The DayZ rules core is 143 lines, and each of the five topic files is 28 to 56 lines (see [The three tiers of rules](#the-three-tiers-of-rules)). Most skills read only the core, which is 40% less than the old 239-line file. `/dayz-deploy-pbo` and `/dayz-gate` also read the bundle mods section of the config topic file. An agent that reads one topic file loads 17% to 30% less than before. With two topic files, the result depends on the pair. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and FX specialists (251 lines) read more, as does the mod reviewer with three topic files (283 lines). |
+| Smaller rules loading | The DayZ rules core is 144 lines, and each of the five topic files is 28 to 56 lines (see [The three tiers of rules](#the-three-tiers-of-rules)). Most skills read only the core, which is 40% less than the old 239-line file. `/dayz-deploy-pbo` and `/dayz-gate` also read the bundle mods section of the config topic file. An agent that reads one topic file loads 17% to 30% less than before. With two topic files, the result depends on the pair. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and FX specialists (251 lines) read more, as does the mod reviewer with three topic files (283 lines). |
 | Wrappers | A `.bat` wrapper for every runnable skill runs its script directly. |
 | Shorter descriptions | Every session loads about 2,100 fewer tokens. |
 

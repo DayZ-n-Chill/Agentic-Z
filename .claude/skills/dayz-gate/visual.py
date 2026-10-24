@@ -1,8 +1,13 @@
 """dayz-gate visual: the shots file, window capture, baselines and the perceptual compare.
 
-gate.py imports this module. The visual gate runs the in-game flow and, at the
-seconds after the client joins that the shots file names, captures the DayZ
-client window to output/<ModName>-visual/runs/<stamp>/<shot id>.png. Each
+gate.py imports this module. The visual gate runs the in-game flow with a
+small helper mod loaded for the session only (visual_helper/, packed to
+P:\\Mods\\@AZ_VisualHelper\\ and removed afterwards). The helper sets a fixed
+scene: noon, clear windless weather, no pause menu, no HUD and a still camera
+at the centre of the map facing north. At the seconds after the scene is set
+that the shots file names, the gate captures the DayZ client window to
+output/<ModName>-visual/runs/<stamp>/<shot id>.png. The capture works in the
+background: it never moves the mouse or brings the window to the front. Each
 capture is compared with output/<ModName>-visual/baseline/<shot id>.png:
 
   * both images are shrunk to ANALYSIS_WIDTH with a box filter, which averages
@@ -15,8 +20,8 @@ capture is compared with output/<ModName>-visual/baseline/<shot id>.png:
 Every compare writes <shot id>.diff.png next to the capture: the baseline in
 pale grey, differing pixels in red and ignored areas in blue.
 
-capture_window() is the only part that needs Windows and a running client; the
-tests pass their own capture function instead.
+capture_window() and the helper packing need Windows, DayZ Tools and a running
+client; the tests pass their own capture and helper functions instead.
 """
 from __future__ import annotations
 
@@ -43,6 +48,69 @@ FILE_KEYS = {"mod", "threshold", "shots"}
 ID_RE = re.compile(r"^[A-Za-z0-9][\w.-]{0,63}$")
 
 PASS, FAIL, NEW, MISSING = "PASS", "FAIL", "NEW", "MISSING"
+
+# --- the helper mod ------------------------------------------------------------------
+#
+# DayZ scripts cannot save a screenshot that this gate could use: vanilla's
+# MakeScreenshot (P:\\scripts\\1_core\\proto\\proto.c:142) made the ScreenShots
+# folder in live runs but never wrote a file. So the helper only sets the scene,
+# and the gate captures the window from outside with PrintWindow.
+HELPER_NAME = "AZ_VisualHelper"
+HELPER_SOURCE = HERE / "visual_helper"
+SCENE_SETTLE_S = 15  # seconds after the client joins before the shot clock starts
+SCENE_RE = re.compile(r"\[AZ-VISUAL\]\s+SCENE\b")    # server: noon and clear weather set
+CAMERA_RE = re.compile(r"\[AZ-VISUAL\]\s+CAMERA\b")  # client: menu closed, HUD off, camera set
+
+
+def helper_root(p_drive: Path) -> Path:
+    return p_drive / "Mods" / f"@{HELPER_NAME}"
+
+
+def install_helper(p_drive: Path, addon_builder: Path, marker: str, run: Callable[[list[str]], tuple[int, str]]) -> Path:
+    """Pack visual_helper/ into P:\\Mods\\@AZ_VisualHelper\\Addons\\AZ_VisualHelper.pbo.
+
+    The source is copied to P:\\temp\\_azvisual\\ first, because AddonBuilder packs
+    only from the work drive. The folder gets the ownership marker so
+    remove_helper() and /dayz-clean-workspace may delete it. Raises VisualError
+    when a folder of that name is not ours or the PBO was not written.
+    """
+    root = helper_root(p_drive)
+    if root.exists() and not _owned(root, marker):
+        raise VisualError(f"{root} exists but is not the gate's helper folder; remove it or rename it")
+    stage = p_drive / "temp" / "_azvisual"
+    if stage.exists():
+        shutil.rmtree(stage)
+    shutil.copytree(HELPER_SOURCE, stage / HELPER_NAME)
+    addons = root / "Addons"
+    addons.mkdir(parents=True, exist_ok=True)
+    (root / marker).write_text(HELPER_NAME + "\n", encoding="utf-8")
+    cmd = [str(addon_builder), str(stage / HELPER_NAME), str(addons), f"-prefix={HELPER_NAME}",
+           f"-temp={stage / 'tmp'}", "-packonly"]
+    rc, out = run(cmd)
+    pbo = addons / f"{HELPER_NAME}.pbo"
+    if rc != 0 or not pbo.is_file():
+        raise VisualError(f"could not pack the visual helper (AddonBuilder exit {rc}): {out.strip()[-300:]}")
+    shutil.rmtree(stage, ignore_errors=True)
+    return root
+
+
+def remove_helper(p_drive: Path, marker: str) -> None:
+    """Delete P:\\Mods\\@AZ_VisualHelper\\ when it holds the gate's marker."""
+    root = helper_root(p_drive)
+    if root.exists() and _owned(root, marker):
+        shutil.rmtree(root)
+
+
+def _owned(root: Path, marker: str) -> bool:
+    try:
+        return (root / marker).read_text(encoding="utf-8").strip() == HELPER_NAME
+    except OSError:
+        return False
+
+
+def shifted(shots: list[dict]) -> list[dict]:
+    """The shots with SCENE_SETTLE_S added to `at`: the capture clock counts from the client joining."""
+    return [{**s, "at": s["at"] + SCENE_SETTLE_S} for s in shots]
 
 
 class VisualError(ValueError):
@@ -126,7 +194,7 @@ def validate_shots(data: object, where: str = "shots") -> dict:
         seen.add(sid)
         at = shot.get("at")
         if isinstance(at, bool) or not isinstance(at, (int, float)) or at < 0:
-            raise VisualError(f"{here} ({sid}): at must be the seconds after the client joins, 0 or more")
+            raise VisualError(f"{here} ({sid}): at must be the seconds after the scene is set, 0 or more")
         ignore = shot.get("ignore", [])
         if not isinstance(ignore, list) or not all(
             isinstance(r, list) and len(r) == 4 and all(isinstance(v, int) and not isinstance(v, bool) and v >= 0 for v in r)
@@ -141,59 +209,30 @@ def validate_shots(data: object, where: str = "shots") -> dict:
 
 
 def last_shot_at(spec: dict) -> float:
-    return max(s["at"] for s in spec["shots"])
+    """Seconds after the client joins when the last shot is taken."""
+    return max(s["at"] for s in spec["shots"]) + SCENE_SETTLE_S
 
 
 # --- capture -----------------------------------------------------------------------
 
-VK_MENU = 0x12          # the Alt key
-KEYEVENTF_KEYUP = 0x0002
-
-
-def bring_to_front(user32, hwnd: int, pid: int, sleep: Callable[[float], None] = time.sleep) -> None:
-    """Make hwnd the foreground window, or raise VisualError.
-
-    The gate runs as a background process (an agent's shell or a pipe), and
-    Windows' foreground lock refuses SetForegroundWindow from a process that
-    did not get the last input event, so a plain call only flashes the
-    taskbar button (SetForegroundWindow remarks:
-    https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-setforegroundwindow).
-    When the first call does not take, the gate sends one Alt press and
-    release (keybd_event), the usual workaround that makes this process the
-    sender of the last input event, and tries the switch once more. The tap
-    goes to whichever window is in front at that moment, just before the
-    client takes its place.
-    """
-    if user32.GetForegroundWindow() == hwnd:
-        return
-    user32.SetForegroundWindow(hwnd)
-    sleep(0.5)  # let the window draw a frame on top
-    if user32.GetForegroundWindow() != hwnd:
-        user32.keybd_event(VK_MENU, 0, 0, 0)
-        user32.keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0)
-        user32.SetForegroundWindow(hwnd)
-        sleep(0.5)
-    # Windows can still refuse the switch, so check it took.
-    if user32.GetForegroundWindow() != hwnd:
-        raise VisualError(
-            f"the DayZ client window (PID {pid}) could not be brought to the front; "
-            "click it and keep it uncovered while the gate runs"
-        )
+PW_CLIENTONLY = 0x1
+PW_RENDERFULLCONTENT = 0x2  # asks DWM for the window's own content, so DirectX windows behind others work
 
 
 def capture_window(pid: int, out: Path) -> None:
     """Save the client area of the visible window of process `pid` as a PNG (Windows only).
 
-    The window is brought to the front first, because the grab copies what is on
-    screen. Raises VisualError when the process has no visible window or the
-    window is minimized, or when Windows keeps another window in front (the grab
-    would copy that window instead).
+    Uses PrintWindow with PW_RENDERFULLCONTENT, which reads the window's own
+    content even when it is behind other windows, so the capture never takes the
+    mouse or brings the window to the front. Raises VisualError when the process
+    has no visible window, the window is minimized (a minimized window draws
+    nothing), PrintWindow fails, or the picture is all black.
     """
     import ctypes
     from ctypes import wintypes
 
-    user32 = ctypes.windll.user32
-    try:  # physical pixels, so the rectangle matches what ImageGrab copies on a scaled display
+    user32, gdi32 = ctypes.windll.user32, ctypes.windll.gdi32
+    try:  # physical pixels on a scaled display
         ctypes.windll.shcore.SetProcessDpiAwareness(2)
     except OSError:
         user32.SetProcessDPIAware()
@@ -214,18 +253,44 @@ def capture_window(pid: int, out: Path) -> None:
         raise VisualError(f"DayZ client PID {pid} has no visible window")
     hwnd = max(found)[1]
     if user32.IsIconic(hwnd):
-        raise VisualError(f"the DayZ client window (PID {pid}) is minimized")
-    bring_to_front(user32, hwnd, pid)
+        raise VisualError(f"the DayZ client window (PID {pid}) is minimized; a minimized window draws nothing")
     user32.GetClientRect(hwnd, ctypes.byref(rect))
-    origin = wintypes.POINT(0, 0)
-    user32.ClientToScreen(hwnd, ctypes.byref(origin))
-    if rect.right <= 0 or rect.bottom <= 0:
+    width, height = rect.right, rect.bottom
+    if width <= 0 or height <= 0:
         raise VisualError(f"the DayZ client window (PID {pid}) has no client area")
-    _pil()
-    from PIL import ImageGrab
 
-    bbox = (origin.x, origin.y, origin.x + rect.right, origin.y + rect.bottom)
-    ImageGrab.grab(bbox=bbox, all_screens=True).save(out)
+    class BITMAPINFOHEADER(ctypes.Structure):
+        _fields_ = [("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG), ("biHeight", wintypes.LONG),
+                    ("biPlanes", wintypes.WORD), ("biBitCount", wintypes.WORD), ("biCompression", wintypes.DWORD),
+                    ("biSizeImage", wintypes.DWORD), ("biXPelsPerMeter", wintypes.LONG),
+                    ("biYPelsPerMeter", wintypes.LONG), ("biClrUsed", wintypes.DWORD), ("biClrImportant", wintypes.DWORD)]
+
+    window_dc = user32.GetDC(hwnd)
+    memory_dc = gdi32.CreateCompatibleDC(window_dc)
+    bitmap = gdi32.CreateCompatibleBitmap(window_dc, width, height)
+    try:
+        gdi32.SelectObject(memory_dc, bitmap)
+        if not user32.PrintWindow(hwnd, memory_dc, PW_CLIENTONLY | PW_RENDERFULLCONTENT):
+            raise VisualError(f"PrintWindow could not read the DayZ client window (PID {pid})")
+        pixels = ctypes.create_string_buffer(width * height * 4)
+        header = BITMAPINFOHEADER(ctypes.sizeof(BITMAPINFOHEADER), width, -height, 1, 32, 0, 0, 0, 0, 0, 0)
+        gdi32.GetDIBits(memory_dc, bitmap, 0, height, pixels, ctypes.byref(header), 0)
+    finally:
+        gdi32.DeleteObject(bitmap)
+        gdi32.DeleteDC(memory_dc)
+        user32.ReleaseDC(hwnd, window_dc)
+    save_bgra(pixels.raw, width, height, out)
+
+
+def save_bgra(raw: bytes, width: int, height: int, out: Path) -> None:
+    """Write 32-bit BGRA pixels as a PNG; an all-black picture is a failed capture, not a shot."""
+    _pil()
+    from PIL import Image
+
+    image = Image.frombuffer("RGBA", (width, height), raw, "raw", "BGRA", 0, 1).convert("RGB")
+    if image.getextrema() == ((0, 0), (0, 0), (0, 0)):
+        raise VisualError("the capture is all black: the client drew nothing (is it still loading or minimized?)")
+    image.save(out)
 
 
 class Capturer:

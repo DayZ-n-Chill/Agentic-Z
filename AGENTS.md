@@ -28,6 +28,15 @@ These are the L1 (Tier 1) rules of the template. They apply to every clone of th
 2. **Tooling** — dedicated tools (`Read`/`Edit`/`Write`/`Glob`/`Grep`) first; Python for non-trivial; PowerShell only when faster.
 3. **Memory** — `.claude/local-memory/` for user/machine notes; never for rules.
 4. **Subagent routing**. For DayZ work, dispatch the matching `dayz-*` specialist instead of generic Superpowers agents. Role-to-specialist table in `docs/dayz-modding.md`.
+5. **Scope** — finish exactly what was asked, then stop; fix only real mistakes; "would be nice" ideas go in `docs/wishlist.md`.
+
+### Scope — finish what was asked, then stop
+
+- **Finish the job.** Keep working until what was asked is done properly and checked.
+- **Then stop.** Once it is done, don't keep going by inventing new work.
+- **Fix only real mistakes.** Graders, reviewers and fixers count only concrete defects: a wrong fact, a failing test, a doc that doesn't match the code, or a bug. Style preferences and missing extras are not defects.
+- **Wishes go on the wishlist.** Any "would be nice to add" idea goes in `docs/wishlist.md` and is never built during the job.
+- **Never add what wasn't asked for.** Ask the user first.
 
 ### Communication — answer first, caveat after
 

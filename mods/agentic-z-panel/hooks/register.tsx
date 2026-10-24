@@ -32,11 +32,16 @@ const LOGWATCH_SECONDS = '3'
 
 const join = (...parts: string[]) => parts.join('\\')
 
+const trimPath = (p: string) => p.replace(/\//g, '\\').replace(/\\+$/, '')
+
 // cwd itself or the nearest parent that holds the given path, so a session
-// started in a subfolder (workspace\MyVest) still finds the project.
-async function findUp($: any, cwd: string, rel: string): Promise<string | null> {
-  let dir = cwd.replace(/\//g, '\\').replace(/\\+$/, '')
+// started in a subfolder (workspace\MyVest) still finds the project. The walk
+// stops before `stop` (and returns null) when one is given.
+async function findUp($: any, cwd: string, rel: string, stop?: string): Promise<string | null> {
+  let dir = trimPath(cwd)
+  const stopAt = stop ? trimPath(stop).toLowerCase() : null
   while (dir) {
+    if (stopAt && dir.toLowerCase() === stopAt) return null
     if (await $.fs.exists(join(dir, rel))) return dir
     const cut = dir.lastIndexOf('\\')
     if (cut < 0) return null
@@ -48,11 +53,14 @@ async function findUp($: any, cwd: string, rel: string): Promise<string | null> 
 // The clone that holds cwd: the nearest folder with Agentic-Z's skills.
 const findClone = ($: any, cwd: string) => findUp($, cwd, join('.claude', 'skills', 'dayz-preflight', 'preflight.py'))
 
+const homeDir = async ($: any): Promise<string> =>
+  (await $.process.run(['cmd', '/c', 'echo %USERPROFILE%'])).stdout.trim()
+
 // Agentic-Z lives in the project itself (a clone) or in the plugin cache.
 async function findRoot($: any, cwd: string): Promise<string | null> {
   const clone = await findClone($, cwd)
   if (clone) return clone
-  const home = (await $.process.run(['cmd', '/c', 'echo %USERPROFILE%'])).stdout.trim()
+  const home = await homeDir($)
   const cache = join(home, '.claude', 'plugins', 'cache', 'dayz-n-chill', 'agentic-z')
   if (!(await $.fs.exists(cache))) return null
   // Numeric order, so 1.10.0 sorts after 1.9.0.
@@ -64,10 +72,12 @@ async function findRoot($: any, cwd: string): Promise<string | null> {
 }
 
 // The state file of the clone, or with no clone (a plugin install) of the
-// nearest folder above cwd that has one, as dayz-init's state.py finds it.
+// nearest folder at or above cwd that has one. Like dayz-init's state.py, the
+// walk stops before the home folder: ~\.claude is Claude Code's user config,
+// not a project, and the scripts ignore a state file there.
 async function activeMod($: any, cwd: string): Promise<string | null> {
   const state = join('.claude', 'local-memory', 'dayz-init-state.json')
-  const project = (await findClone($, cwd)) ?? (await findUp($, cwd, state))
+  const project = (await findClone($, cwd)) ?? (await findUp($, cwd, state, await homeDir($)))
   if (!project) return null
   const file = join(project, state)
   if (!(await $.fs.exists(file))) return null
@@ -118,6 +128,22 @@ async function runAction($: any, cwd: string, action: string, question?: string)
   }
 }
 
+const PYTHON_MISSING = 'Python 3 not found: install it from python.org or add python/py to PATH'
+
+// The interpreter the scripts\dayz wrappers use: python when it runs, else the py
+// launcher. Running it, not just finding it, skips the Microsoft Store alias,
+// which is on PATH but fails.
+async function findPython($: any): Promise<string | null> {
+  for (const exe of ['python', 'py']) {
+    try {
+      if ((await $.process.run([exe, '-c', ''], { timeoutMs: 15_000 })).exitCode === 0) return exe
+    } catch {
+      // not on PATH: try the next one
+    }
+  }
+  return null
+}
+
 async function runNow($: any, cwd: string, action: string, question?: string) {
   // Read the state afresh: /dayz-init may have run since the pane last refreshed.
   let current: PanelStatus
@@ -137,7 +163,13 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
     argv = ['cmd', '/c', join(current.root, '.claude', 'skills', 'dayz-stop-test', 'stop_test.bat')]
   } else {
     const [skill, script] = SKILL[action as keyof typeof SKILL]
-    argv = ['python', join(current.root, '.claude', 'skills', skill, script)]
+    const python = await findPython($)
+    if (!python) {
+      await update($, lastRun, () => ({ action, ok: false, outcome: 'failed', detail: PYTHON_MISSING }))
+      $.ui.toast(`${action}: failed (${PYTHON_MISSING})`)
+      return
+    }
+    argv = [python, join(current.root, '.claude', 'skills', skill, script)]
     if (action === 'gatebuild') argv.push('build')
     if (action === 'gateingame') argv.push('ingame')
     const needsMod = ['build', 'deploy', 'gatebuild', 'gateingame', 'launch', 'releasepack', 'health'].includes(action)
@@ -162,7 +194,9 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
   }
   let run: PanelRun
   try {
-    const result = await $.process.run(argv, { cwd, timeoutMs: 600_000 })
+    // Captured output is a pipe, where Python on Windows writes cp1252: a vanilla
+    // line with a character such as U+2192 would crash the script mid-answer.
+    const result = await $.process.run(argv, { cwd, timeoutMs: 600_000, env: { PYTHONIOENCODING: 'utf-8' } })
     const lines = (result.stdout + '\n' + result.stderr).trim().split(/\r?\n/)
     const failLine = lines.find((l: string) => l.startsWith('[FAIL]'))
     // An answer is the verdict, its reason or notes (the lines indented two

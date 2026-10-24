@@ -35,13 +35,15 @@ Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ te
 | Ask vanilla (a text field) | Enter | `dayz-ask/ask.py "<question>"` |
 | Refresh | `r` | re-checks the state |
 
+The Python scripts run with `python` when it works, otherwise the `py` launcher, the same as the `scripts\dayz` wrappers. With neither, the button runs nothing and shows a `Python 3 not found` message. Scripts run with UTF-8 output, so an answer that quotes a non-ASCII character cannot crash them.
+
 One action runs at a time; a second press while one runs only shows a toast. Every press reads the state again first, so a mod picked with `/dayz-init` after the panel opened is used without pressing Refresh. Each run shows a toast when it ends and keeps its result line in the panel. An ask keeps its verdict with the reason or notes under it, and one that finds nothing (`NONE`) shows "nothing found", not "failed".
 
 ## Where it finds Agentic-Z
 
 The clone that holds the session folder (that folder or the nearest parent with `.claude\skills\dayz-preflight\preflight.py`), otherwise the newest version in the plugin cache under `%USERPROFILE%\.claude\plugins\cache\dayz-n-chill\agentic-z`.
 
-The active mod comes from `.claude\local-memory\dayz-init-state.json` in that clone. With no clone (a plugin install), it comes from the nearest folder at or above the session folder that holds that file.
+The active mod comes from `.claude\local-memory\dayz-init-state.json` in that clone. With no clone (a plugin install), it comes from the nearest folder at or above the session folder that holds that file, stopping before the home folder (`%USERPROFILE%\.claude` is Claude Code's user config, and the skill scripts ignore a state file there too).
 
 ## Tests
 

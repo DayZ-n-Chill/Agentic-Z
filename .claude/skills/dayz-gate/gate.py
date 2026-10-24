@@ -101,6 +101,22 @@ class GateError(Exception):
     """The gate itself cannot run (exit 2); not a verdict on the mod."""
 
 
+P_DRIVE = Path("P:\\")
+
+
+def install_visual_helper() -> None:
+    """Pack the visual gate's helper mod into P:\\Mods\\@AZ_VisualHelper\\ (visual.install_helper)."""
+    tools = h.preflight.find_dayz_tools()
+    if tools is None:
+        raise GateError("DayZ Tools not found, so the visual helper mod cannot be packed. Run /dayz-preflight.")
+    addon_builder = tools / "Bin" / "AddonBuilder" / "AddonBuilder.exe"
+    visual.install_helper(P_DRIVE, addon_builder, h.SCAFFOLD_MARKER, run_captured)
+
+
+def remove_visual_helper() -> None:
+    visual.remove_helper(P_DRIVE, h.SCAFFOLD_MARKER)
+
+
 class Runtime(NamedTuple):
     """Everything that touches processes or time, so tests can run without DayZ."""
     run: Callable[[list[str]], tuple[int, str]]
@@ -110,6 +126,8 @@ class Runtime(NamedTuple):
     clock: Callable[[], float] = time.monotonic
     capture: Callable[[int, Path], None] = visual.capture_window
     confirm: Callable[[list[int]], bool] = lambda pids: confirm_at_terminal(pids)
+    install_helper: Callable[[], None] = install_visual_helper
+    remove_helper: Callable[[], None] = remove_visual_helper
 
 
 def run_captured(cmd: list[str]) -> tuple[int, str]:
@@ -554,6 +572,7 @@ def ingame_session(
     mode: str = "ingame",
     done_re: Optional[re.Pattern] = None,
     on_poll: Optional[Callable[[Optional[float], Optional[int]], None]] = None,
+    extra_mods: Optional[list[str]] = None,
 ) -> tuple[dict, list[tuple[Path, int, str]]]:
     """The in-game flow up to the verdict: (unfinished report, every new log line).
 
@@ -574,7 +593,7 @@ def ingame_session(
     lines: list[tuple[Path, int, str]] = []
     extra: list[dict] = []
     try:
-        cmd = [sys.executable, str(LAUNCH_PY), *deps, mod, "--server", instance, "--port", str(port)]
+        cmd = [sys.executable, str(LAUNCH_PY), *deps, mod, *(extra_mods or []), "--server", instance, "--port", str(port)]
         rc, out = rt.run(cmd)
         report["steps"].append({"step": "dayz-launch-test", "rc": rc})
         if rc != 0:
@@ -743,12 +762,24 @@ def gate_visual(
     """Run the in-game flow, capture each shot at its second, compare the captures with the baselines."""
     spec = visual.load_shots(shots_path or visual.default_shots_path(project_dir, mod))
     run_dir = visual.new_run_dir(project_dir, mod)
-    capturer = visual.Capturer(spec["shots"], run_dir, rt.capture)
-    report, _ = ingame_session(
-        mod, project_dir, rt, deps, instance, port, timeout, visual.last_shot_at(spec) + POLL_S, ready_pattern,
-        mode="visual", on_poll=capturer,
-    )
+    capturer = visual.Capturer(visual.shifted(spec["shots"]), run_dir, rt.capture)
+    # The helper mod sets the scene from inside the game (noon, clear weather, no
+    # pause menu, no HUD, a still camera) for this session only.
+    rt.install_helper()
+    try:
+        report, lines = ingame_session(
+            mod, project_dir, rt, deps, instance, port, timeout, visual.last_shot_at(spec) + POLL_S, ready_pattern,
+            mode="visual", on_poll=capturer, extra_mods=[visual.HELPER_NAME],
+        )
+    finally:
+        rt.remove_helper()
     capturer.finish()
+    report["steps"].insert(0, {"step": "helper", "result": f"{visual.HELPER_NAME} loaded for this session, then removed"})
+    for pattern, side in ((visual.SCENE_RE, "server: noon and clear weather"), (visual.CAMERA_RE, "client: menu, HUD and camera")):
+        if not any(pattern.search(text) for _, _, text in lines):
+            report["failures"].append(_finding(
+                "visual", f"[visual:no-scene] the helper never set the scene ({side}; no {pattern.pattern} line in the logs), "
+                "so the captures may not show the fixed scene", "helper", None))
     results = visual.compare_run(spec, run_dir, visual.baseline_dir(project_dir, mod), threshold, capturer.errors)
     add_visual_results(report, results, run_dir, project_dir)
     return finish(report, project_dir, {"instance": instance})

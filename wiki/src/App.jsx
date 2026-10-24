@@ -232,7 +232,7 @@ const STATS = [
   ['30', 'agents'],
   ['44', 'skills'],
   ['3', 'hooks'],
-  ['192', 'items graded A+'],
+  ['193', 'items graded A+'],
 ];
 
 function Home({ onNavigate }) {
