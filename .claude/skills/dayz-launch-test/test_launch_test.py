@@ -179,9 +179,29 @@ def _patch_main(monkeypatch, tmp_path, argv):
     monkeypatch.setattr(launch.h, "resolve_project_dir", lambda: tmp_path)
     monkeypatch.setattr(launch.h, "gate_on_preflight", lambda: None)
     monkeypatch.setattr(launch.h, "udp_port_free", lambda port: True)
+    monkeypatch.setattr(launch.h, "steam_running", lambda: True)
     monkeypatch.setattr(launch, "verify_built_mods", lambda names: None)
     monkeypatch.setattr(launch, "resolve_diag_client", lambda: DIAG)
     monkeypatch.setattr(launch.sys, "argv", ["launch.py", *argv])
+
+
+def test_launch_refuses_without_steam_before_spawning(monkeypatch, tmp_path):
+    # The live AZTestVest run: Steam was closed, the client crashed at start
+    # (a crash dump in !ClientDiagLogs) and the in-game gate only saw an early exit.
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod"])
+    monkeypatch.setattr(launch.h, "steam_running", lambda: False)
+    monkeypatch.setattr(launch.subprocess, "Popen", lambda *a, **k: pytest.fail("launched without Steam"))
+    with pytest.raises(SystemExit) as exc:
+        launch.main()
+    assert "Steam is not running" in str(exc.value.code)
+
+
+def test_dry_run_does_not_need_steam(monkeypatch, tmp_path):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "--dry-run"])
+    monkeypatch.setattr(launch.h, "steam_running", lambda: pytest.fail("dry run checked Steam"))
+    assert launch.main() == 0
 
 
 def _snapshot(root: Path) -> dict:

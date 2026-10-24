@@ -43,6 +43,7 @@ Name a mod's dependencies before the mod, in load order, for example `/dayz-laun
 4. **Diag client resolution**: finds `DayZDiag_x64.exe` via `find_dayz_diag()` (env var, DayZ game install, Steam paths). Both client and server run from this binary; the server adds `-server`. Retail `DayZ_x64.exe` blocks past the loading screen with `-filePatching` enabled, so the client must be diag, and the server runs the same diag binary so both sides match. Retail `DayZServer_x64.exe` is not used.
 5. **Instance check**: reads the mission template from the `template = "...";` line in `.server/<instance>/serverDZ.cfg`, confirms the cfg has an active `allowFilePatching = 1;` line (without it the server refuses `-filePatching` clients with error `0x00020005`; a missing line, a commented-out line or any other value counts as missing), and confirms `mission/` and the `<template>/` junction to it exist. The server's `-mission=` points at that junction (the engine resolves the template name during the connect handshake; without it the client connects but never spawns). Anything missing fails with a hint to run `/dayz-add-server <instance>`, which also sets `allowFilePatching = 1;`. This skill never edits the cfg. Outside `--dry-run` it creates the two profile dirs if absent.
 6. **Port check** (skipped with `--dry-run`): tries to bind UDP `<port>`; if something already holds it (usually a server left running), refuses with `port <port> in use; run /dayz-stop-test or pass --port` before spawning anything.
+   Then the **Steam check** (also skipped with `--dry-run`): refuses with `Steam is not running` when `steam.exe` is not in the process list. The diag client needs Steam; without it the client crashes at start and leaves an `ErrorMessage_DayZDiag_x64_*.mdmp` in `.server/!ClientDiagLogs/`.
 7. **Launch server**: spawns `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/<template> -mod=P:\Mods\@Mod1;P:\Mods\@Mod2 [-serverMod=P:\Mods\@ServerOnly1;...] -filePatching -port=<port>`. `-mod=` holds the shared mods; `--server-only` mods go on `-serverMod=` so clients are not told to load them. If the server cannot be spawned, the skill prints `[FAIL] Failed to spawn DayZDiag_x64.exe: <error>` and exits 1.
 8. **Wait for the port**: polls once a second, for up to 180 s, until the server has bound UDP `<port>` (a DayZ server can take 30 s or more to load the mission and mods). If the server exits, or the wait times out (the server is then killed), the skill exits 1 without starting the client.
 9. **Launch client**: spawns `DayZDiag_x64.exe -profiles=.server/!ClientDiagLogs -mod=... -connect=127.0.0.1 -port=<port> -filePatching` plus the display flags from the per-clone preferences. If the client cannot be spawned, the server is killed and the skill exits 1 with the same `[FAIL]` line.
@@ -58,6 +59,7 @@ Name a mod's dependencies before the mod, in load order, for example `/dayz-laun
 - `DayZDiag_x64.exe` is not found.
 - The `--server` instance is not set up: `serverDZ.cfg` missing, without a `template = "...";` line, or without an active `allowFilePatching = 1;` line; `mission/` missing; or the `<template>/` junction missing. Run `/dayz-add-server <instance>`.
 - UDP `--port` is already in use (not checked with `--dry-run`). Run `/dayz-stop-test` or pass another `--port`.
+- Steam is not running (not checked with `--dry-run`). Start Steam and sign in.
 
 ## Output (success)
 
@@ -73,6 +75,7 @@ Preflight complete.
 [OK]    Instance dir: .server\chernarus
 [OK]    Wrote default client display prefs to .claude\local-memory\dayz-client-display.json
 [OK]    UDP port 2302 is free
+[OK]    Steam is running
 
 [Launch] Server: DayZDiag_x64.exe -server -config=...\chernarus\serverDZ.cfg -profiles=...\chernarus\Profiles -mission=...\chernarus\dayzOffline.chernarusplus -mod=P:\Mods\@BuildTest -filePatching -port=2302
 [OK]    Server PID: 12345

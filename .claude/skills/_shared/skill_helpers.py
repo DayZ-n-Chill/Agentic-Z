@@ -218,6 +218,30 @@ def udp_port_free(port: int) -> bool:
     return True
 
 
+def steam_running() -> bool:
+    """True when steam.exe is in the Windows process list."""
+    try:
+        out = subprocess.run(
+            ["tasklist", "/FI", "IMAGENAME eq steam.exe", "/FO", "CSV", "/NH"],
+            capture_output=True, text=True, check=False,
+        ).stdout
+    except OSError:
+        return True  # cannot tell; let the launch go ahead rather than block on our own bug
+    return '"steam.exe"' in out.lower()
+
+
+def gate_on_steam() -> None:
+    """Exit before a launch when Steam is not running.
+
+    The DayZDiag client needs Steam: without it the client writes a crash dump
+    (ErrorMessage_DayZDiag_x64_*.mdmp) within seconds, and the in-game gate sees
+    a process that exited early instead of a clear cause.
+    """
+    if not steam_running():
+        sys.exit(f"{FAIL} Steam is not running. Start Steam and sign in, then launch again.")
+    print(f"{OK} Steam is running")
+
+
 def gate_on_free_port(port: int) -> None:
     """Exit before a server launch when UDP `port` is already taken.
 

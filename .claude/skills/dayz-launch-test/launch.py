@@ -413,6 +413,7 @@ def main() -> int:
     # A server already on this port would make the new one fail to bind, and
     # wait_for_server_port would mistake the old server for the new one.
     h.gate_on_free_port(args.port)
+    h.gate_on_steam()
 
     print()
     print(f"[Launch] Server: {subprocess.list2cmdline(server_cmd)}")
