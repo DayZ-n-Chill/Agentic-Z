@@ -258,7 +258,7 @@ These features move mechanical work out of the AI. The AI then spends tokens onl
 | Paste-in router | Reads what you paste and starts the matching workflow. | Automatic. See [Paste it in](#paste-it-in). |
 | Status line | Shows the state of P:, the active mod, whether DayZ Diag is running and the age of the search index. | Run `/dayz-statusline` once per project. |
 | Lower-cost models | The build engineer and the router run on Haiku. The docs writer runs on Sonnet. | Automatic. |
-| Smaller rules | The DayZ rules file is split into a 143-line core and five topic files of 28 to 56 lines. Most skills read only the core, which is 40% less than the old 239-line file. `/dayz-deploy-pbo` and `/dayz-gate` also read the bundle mods section of the config topic file. Each agent reads the core plus the topic files its job needs. With one topic file, an agent reads 17% to 30% less than before. With two, the result depends on which two. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and effects specialists (251 lines) read more, as does the mod reviewer, which reads three topic files (283 lines). | Automatic. |
+| Smaller rules | The DayZ rules file is split into a 144-line core and five topic files of 28 to 56 lines. Most skills read only the core, which is 40% less than the old 239-line file. `/dayz-deploy-pbo` and `/dayz-gate` also read the bundle mods section of the config topic file. Each agent reads the core plus the topic files its job needs. With one topic file, an agent reads 17% to 30% less than before. With two, the result depends on which two. The mod debugger (226 lines) and the mod architect (231 lines) still read slightly less. The vehicle, weapon, and audio and effects specialists (251 lines) read more, as does the mod reviewer, which reads three topic files (283 lines). | Automatic. |
 | No-token wrappers | Provide a `.bat` file for every runnable skill, so you can run it yourself with no AI involved. | See `scripts\README.md`. |
 | Shorter descriptions | Every skill and agent description loads into every session. The descriptions were shortened to save about 2,100 tokens. | Automatic. |
 ### Each specialist in detail
@@ -401,7 +401,7 @@ Answer tests (evals) check 30 of the 30 agents, and a change may only keep or ra
 
 ### The final count
 
-The final grades cover 193 items, and 192 are at A+: 30 of the 30 agents, 44 of the 44 skills and 118 of the 119 shared items. The shared items are the hooks, the search server, scripts and wrappers, answer tests, rules files, the shared reference packs and this method note. The one item below A+ is the Agentic-Z panel mod (`mods/agentic-z-panel`), at B+. It is a third-party piece, so it is kept exactly as it is and was not sent to the fixers.
+The final grades cover 193 items, and 193 are at A+: 30 of the 30 agents, 44 of the 44 skills and 119 of the 119 shared items. The shared items are the hooks, the search server, scripts and wrappers, answer tests, rules files, the shared reference packs and this method note.
 
 The final review graded every item. Fresh graders then regraded items after each fix round. In the last rounds every reviewer also got the defect rule under "Run it yourself", so only concrete defects counted against an item, not feature requests. Each item shows its latest grade. The grades come from `final_grades.json` and `final_grades_shared.json`. The `clean-repo` item was graded twice and counts once.
 
@@ -692,7 +692,7 @@ Two values in the table are not grades. "Not built" means that the item did not 
 | `hooks/scope_guard.py (+ test_scope_guard.py)` | not built | not built | A+ |
 | `hooks/paste_router.py (+ test_paste_router.py)` | not built | not built | A+ |
 | `dayz-rag MCP server (server.py, voyage_common.py, README, tests)` | not built | not built | A+ |
-| `mods/agentic-z-panel (plugin.json, hooks.json, register.tsx, register.test.tsx, types)` | not built | not built | B+ |
+| `mods/agentic-z-panel (plugin.json, hooks.json, register.tsx, register.test.tsx, types)` | not built | not built | A+ |
 | **Answer tests (evals)** | | | |
 | `evals/baseline.json` | not built | not built | A+ |
 | `evals/fixtures/dayz-layout-validator/*.layout` | not built | not built | A+ |

@@ -110,6 +110,7 @@ function engineWith(on: any, runs: string[][], opts: {
   hold?: (argv: string[]) => Promise<void> | undefined
   result?: (argv: string[]) => { exitCode: number; stdout: string; stderr: string } | undefined
   clockFails?: () => boolean
+  seen?: (e: any) => void
 } = {}) {
   const files: Record<string, string> = opts.files ?? {
     'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
@@ -134,6 +135,7 @@ function engineWith(on: any, runs: string[][], opts: {
   })
   on('process.run', async (_: unknown, e: any) => {
     runs.push(e.argv)
+    opts.seen?.(e)
     if (e.argv.join(' ') === 'cmd /c echo %USERPROFILE%') {
       return { value: { exitCode: 0, stdout: 'C:\\Users\\me\r\n', stderr: '' } }
     }
@@ -149,8 +151,50 @@ async function openPane($: any) {
   return $.ui.mount({ ...PANE, surface: 'terminal' })
 }
 
+// The script runs alone: no status calls and no "python -c ''" interpreter probes.
 const scriptRuns = (runs: string[][]) =>
-  runs.map(argv => argv.join(' ')).filter(line => !line.startsWith('tasklist') && !line.startsWith('cmd /c echo'))
+  runs
+    .filter(argv => argv[1] !== '-c')
+    .map(argv => argv.join(' '))
+    .filter(line => !line.startsWith('tasklist') && !line.startsWith('cmd /c echo'))
+
+test('with only the py launcher, buttons run their script with py', async ($, on) => {
+  // The B+ grade's defect: a hard-coded python failed every button but Stop on a py-only PC.
+  const runs: string[][] = []
+  engineWith(on, runs, {
+    result: argv => (argv[0] === 'python' ? { exitCode: 9009, stdout: '', stderr: 'not found' } : undefined),
+  })
+  const ui = await openPane($)
+  await ui.press({ key: 'deploy' })
+  await ui.unmount()
+  expect(scriptRuns(runs)).toEqual(['py C:\\proj\\.claude\\skills\\dayz-deploy-pbo\\deploy.py MyVest'])
+})
+
+test('with no Python at all, a button runs nothing and says how to fix it', async ($, on) => {
+  const runs: string[][] = []
+  const toasts: string[] = []
+  engineWith(on, runs, {
+    toasts,
+    result: argv => (argv[1] === '-c' ? { exitCode: 9009, stdout: '', stderr: '' } : undefined),
+  })
+  const ui = await openPane($)
+  await ui.press({ key: 'deploy' })
+  await ui.unmount()
+  expect(scriptRuns(runs)).toEqual([])
+  expect(toasts).toContain('deploy: failed (Python 3 not found: install it from python.org or add python/py to PATH)')
+})
+
+test('scripts run with UTF-8 output, so a non-ASCII answer cannot crash them', async ($, on) => {
+  // The B+ grade's defect: through a pipe Python wrote cp1252 and died on U+2192.
+  const inits: any[] = []
+  const runs: string[][] = []
+  engineWith(on, runs, { seen: e => e.argv.some((a: string) => a.endsWith('.py')) && inits.push(e.init) })
+  const ui = await openPane($)
+  await ui.press({ key: 'deploy' })
+  await ui.unmount()
+  expect(inits.length).toBe(1)
+  expect(inits[0].env).toEqual({ PYTHONIOENCODING: 'utf-8' })
+})
 
 test('stop, mount, deploy, launch, workbench and object builder run their scripts', async ($, on) => {
   const runs: string[][] = []
@@ -267,6 +311,29 @@ test('without a clone, a session in a subfolder finds the project state file abo
   expect(scriptRuns(runs)).toEqual([
     'python C:\\Users\\me\\.claude\\plugins\\cache\\dayz-n-chill\\agentic-z\\1.10.0\\.claude\\skills\\dayz-build-pbo\\build.py MyVest',
   ])
+})
+
+test('without a clone, a state file in the home folder is not the active mod', async ($, on) => {
+  // The A grade's defect: the walk reached ~\.claude, which state.py skips, so the
+  // pane showed a mod every script then refused with "No project cached".
+  const runs: string[][] = []
+  const toasts: string[] = []
+  engineWith(on, runs, {
+    toasts,
+    cacheDirs: ['1.10.0'],
+    files: {
+      'C:\\Users\\me\\.claude\\plugins\\cache\\dayz-n-chill\\agentic-z': '',
+      'C:\\Users\\me\\.claude\\local-memory\\dayz-init-state.json': '{"last_intent": {"mod_name": "MyVest"}}',
+    },
+  })
+  await $.session.start({ cwd: 'C:\\Users\\me\\proj', surface: 'desktop', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /Active mod:/ }))?.text).toBe('Active mod: none (run /dayz-init)')
+  await ui.press({ key: 'build' })
+  await ui.unmount()
+  expect(scriptRuns(runs)).toEqual([])
+  expect(toasts).toContain('No active mod yet. Run /dayz-init first.')
 })
 
 test('with Agentic-Z nowhere, the pane says so and a press only toasts', async ($, on) => {

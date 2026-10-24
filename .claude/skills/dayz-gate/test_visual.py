@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -74,7 +75,8 @@ def run_main(argv, capsys, rt=None):
 
 def test_fixture_shots_file_is_valid():
     assert [s["id"] for s in SPEC["shots"]] == ["hud", "menu"]
-    assert SPEC["threshold"] == 0.01 and visual.last_shot_at(SPEC) == 30
+    # last_shot_at counts from the client joining: the last shot's 30 s plus the helper's settle time
+    assert SPEC["threshold"] == 0.01 and visual.last_shot_at(SPEC) == 30 + visual.SCENE_SETTLE_S
 
 
 @pytest.mark.parametrize("change, message", [
@@ -323,8 +325,11 @@ def test_accept_refuses_unknown_shots_and_empty_runs(project, capsys):
 class FakeSession:
     """No DayZ: the fake launch writes the client ready line; the fake capture copies fixture images."""
 
-    def __init__(self, project: Path, source: str = "run_pass", fail_capture: bool = False, ready_line: str = READY):
+    def __init__(self, project: Path, source: str = "run_pass", fail_capture: bool = False, ready_line: str = READY,
+                 scene: bool = True):
         self.project = project
+        self.scene = scene  # whether the helper's SCENE and CAMERA lines appear
+        self.helper: list[str] = []  # "install" / "remove", in order
         self.ready_line = ready_line
         self.source = source
         self.fail_capture = fail_capture
@@ -335,7 +340,9 @@ class FakeSession:
 
     def runtime(self):
         return gate.Runtime(run=self.run, diag_pids=lambda: list(self.running), pid_alive=lambda p: p in self.running,
-                            sleep=self.sleep, clock=lambda: self.now, capture=self.capture)
+                            sleep=self.sleep, clock=lambda: self.now, capture=self.capture,
+                            install_helper=lambda: self.helper.append("install"),
+                            remove_helper=lambda: self.helper.append("remove"))
 
     def run(self, cmd: list[str]) -> tuple[int, str]:
         self.calls.append(cmd)
@@ -348,7 +355,13 @@ class FakeSession:
         server = self.project / ".server" / "chernarus" / "Profiles"
         client = self.project / ".server" / "!ClientDiagLogs"
         (server / "DayZDiag_x64_2026-10-21_12-00-00.RPT").write_text("CLI params: server mod P:\\Mods\\@MyMod\n", encoding="utf-8")
-        (client / "script_2026-10-21_12-00-31.log").write_text(self.ready_line + "\n", encoding="utf-8")
+        assert visual.HELPER_NAME in cmd and self.helper == ["install"], (cmd, self.helper)
+        client_lines = [self.ready_line]
+        if self.scene:
+            (server / "script_2026-10-21_12-00-05.log").write_text(
+                "SCRIPT       : [AZ-VISUAL] SCENE noon, clear weather, no wind\n", encoding="utf-8")
+            client_lines.append("SCRIPT       : [AZ-VISUAL] CAMERA <7680, 346, 7680> facing north")
+        (client / "script_2026-10-21_12-00-31.log").write_text("\n".join(client_lines) + "\n", encoding="utf-8")
         return 0, "[OK]    Server PID: 111\n[OK]    Client PID: 222\n"
 
     def capture(self, pid: int, out: Path) -> None:
@@ -366,8 +379,15 @@ def test_full_run_captures_each_shot_at_its_second_and_passes(project, capsys):
     rc, first, data = run_main(["visual", "MyMod", "--json"], capsys, fake.runtime())
     assert (rc, first) == (0, "PASS"), data["failures"]
     assert [(pid, name) for _, pid, name in fake.captures] == [(222, "hud.png"), (222, "menu.png")]
-    assert [round(t) for t, _, _ in fake.captures] == [20, 30]  # the ready line was read at 0 s
-    assert fake.now <= 34 and fake.running == []  # stopped soon after the last shot
+    # The ready line was read at 0 s; each shot waits the helper's settle time on top of its own second,
+    # and is taken on the first poll at or after that.
+    settle = visual.SCENE_SETTLE_S
+    for (t, _, _), due in zip(fake.captures, [20 + settle, 30 + settle]):
+        assert due <= t < due + gate.POLL_S
+    # Stopped soon after the last shot: one poll to notice, one for the stop, one of poll rounding.
+    assert fake.now < visual.last_shot_at(SPEC) + 3 * gate.POLL_S and fake.running == []
+    assert fake.helper == ["install", "remove"]  # loaded for the session only
+    assert data["steps"][0]["step"] == "helper"
     run = project / data["visual"]["run"]
     assert (run / "hud.png").is_file() and (run / "hud.diff.png").is_file()
 
@@ -411,6 +431,29 @@ def test_full_run_without_shots_file_is_an_error(project, capsys):
     assert fake.calls == []
 
 
+def test_full_run_without_the_helper_scene_fails(project, capsys):
+    fake = FakeSession(project, scene=False)
+    rc, first, data = run_main(["visual", "MyMod", "--json"], capsys, fake.runtime())
+    assert (rc, first) == (1, "FAIL")
+    assert sum("[visual:no-scene]" in f["text"] for f in data["failures"]) == 2  # server and client
+    assert fake.helper == ["install", "remove"]
+
+
+def test_helper_is_removed_even_when_the_launch_fails(project, capsys):
+    fake = FakeSession(project)
+    original = fake.run
+
+    def failing(cmd):
+        if "launch.py" in " ".join(cmd):
+            fake.calls.append(cmd)
+            return 1, "[FAIL]  Steam is not running.\n"
+        return original(cmd)
+
+    fake.run = failing
+    rc, first, data = run_main(["visual", "MyMod", "--json"], capsys, fake.runtime())
+    assert rc == 1 and fake.helper == ["install", "remove"]
+
+
 def test_capturer_marks_shots_the_session_never_reached(tmp_path):
     taken = []
     cap = visual.Capturer(SPEC["shots"], tmp_path, lambda pid, out: taken.append(out.name))
@@ -433,17 +476,15 @@ class _NoShcore:
 
 
 class _FakeUser32:
-    """Just enough of user32 for capture_window: one visible client window.
+    """Just enough of user32 for the background capture: one visible client window.
 
-    switch_works: "always" (SetForegroundWindow takes at once), "never" (Windows
-    keeps the other window in front) or "after_alt" (the foreground lock lets
-    the switch through only once this process has sent the last input event).
+    It has no SetForegroundWindow, SetCursorPos or keybd_event, so a capture
+    that tried to take the mouse or pull the window forward fails here.
     """
 
-    def __init__(self, pid: int, switch_works: str):
-        self.pid, self.switch_works, self.front = pid, switch_works, 1
-        self.keys: list[tuple[int, int]] = []
-        self.switch_calls = 0
+    def __init__(self, pid: int, minimized: bool = False, prints: bool = True):
+        self.pid, self.minimized, self.prints = pid, minimized, prints
+        self.print_flags: list[int] = []
 
     def SetProcessDPIAware(self):
         return 1
@@ -464,73 +505,177 @@ class _FakeUser32:
         return 1
 
     def IsIconic(self, hwnd):
-        return 0
+        return int(self.minimized)
 
-    def GetForegroundWindow(self):
-        return self.front
+    def GetDC(self, hwnd):
+        return 7
 
-    def SetForegroundWindow(self, hwnd):
-        self.switch_calls += 1
-        took = self.switch_works == "always" or (
-            self.switch_works == "after_alt" and self.keys[-2:] == [(0x12, 0), (0x12, 2)]
-        )
-        if took:
-            self.front = hwnd
-        return int(took)
+    def ReleaseDC(self, hwnd, dc):
+        return 1
 
-    def keybd_event(self, vk, scan, flags, extra):
-        self.keys.append((vk, flags))
+    def PrintWindow(self, hwnd, dc, flags):
+        self.print_flags.append(flags)
+        return int(self.prints)
 
-    def ClientToScreen(self, hwnd, point):
+
+class _FakeGdi32:
+    """Hands back a bitmap of one colour (BGRA bytes)."""
+
+    def __init__(self, bgra: bytes):
+        self.bgra = bgra
+
+    def CreateCompatibleDC(self, dc):
+        return 8
+
+    def CreateCompatibleBitmap(self, dc, width, height):
+        return 9
+
+    def SelectObject(self, dc, obj):
+        return 1
+
+    def GetDIBits(self, dc, bitmap, start, lines, buffer, info, usage):
+        size = len(buffer)
+        ctypes_buffer = (self.bgra * (size // 4))[:size]
+        import ctypes
+
+        ctypes.memmove(buffer, ctypes_buffer, size)
+        return lines
+
+    def DeleteObject(self, obj):
+        return 1
+
+    def DeleteDC(self, dc):
         return 1
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="capture_window is Windows only")
-@pytest.mark.parametrize("switch_works", ["never", "always", "after_alt"])
-def test_capture_refuses_when_another_window_stays_in_front(monkeypatch, tmp_path, switch_works):
+def _fake_windows(monkeypatch, user32, bgra=b"\x40\x80\xc0\xff"):
     import ctypes
 
-    fake = _FakeUser32(222, switch_works)
-    monkeypatch.setattr(ctypes.windll, "user32", fake, raising=False)
+    monkeypatch.setattr(ctypes.windll, "user32", user32, raising=False)
+    monkeypatch.setattr(ctypes.windll, "gdi32", _FakeGdi32(bgra), raising=False)
     monkeypatch.setattr(ctypes.windll, "shcore", _NoShcore(), raising=False)
-    monkeypatch.setattr(visual.time, "sleep", lambda s: None)
-    grabbed = []
-    import PIL.ImageGrab
 
-    monkeypatch.setattr(PIL.ImageGrab, "grab", lambda bbox, all_screens: grabbed.append(bbox) or Image.new("RGB", (64, 48)))
-    if switch_works != "never":
+
+@pytest.mark.skipif(sys.platform != "win32", reason="capture_window is Windows only")
+def test_capture_works_in_the_background_without_the_mouse_or_focus(monkeypatch, tmp_path):
+    # The owner's rule: the picture check never takes the mouse or needs the DayZ
+    # window in front. PrintWindow(PW_CLIENTONLY | PW_RENDERFULLCONTENT) reads the
+    # window's own content wherever it sits on screen.
+    fake = _FakeUser32(222)
+    _fake_windows(monkeypatch, fake)
+    visual.capture_window(222, tmp_path / "hud.png")
+    assert fake.print_flags == [visual.PW_CLIENTONLY | visual.PW_RENDERFULLCONTENT]
+    image = Image.open(tmp_path / "hud.png")
+    assert image.size == (64, 48) and image.getpixel((0, 0)) == (0xC0, 0x80, 0x40)  # BGRA turned into RGB
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="capture_window is Windows only")
+@pytest.mark.parametrize("user32, bgra, message", [
+    (_FakeUser32(222, minimized=True), b"\x40\x80\xc0\xff", "minimized"),
+    (_FakeUser32(222, prints=False), b"\x40\x80\xc0\xff", "PrintWindow could not read"),
+    (_FakeUser32(222), b"\x00\x00\x00\xff", "all black"),
+    (_FakeUser32(999), b"\x40\x80\xc0\xff", "has no visible window"),
+])
+def test_capture_refuses_a_window_it_cannot_read(monkeypatch, tmp_path, user32, bgra, message):
+    _fake_windows(monkeypatch, user32, bgra)
+    with pytest.raises(visual.VisualError, match=message):
         visual.capture_window(222, tmp_path / "hud.png")
-        assert grabbed == [(0, 0, 64, 48)] and (tmp_path / "hud.png").exists()
-    else:
-        with pytest.raises(visual.VisualError, match="could not be brought to the front"):
-            visual.capture_window(222, tmp_path / "hud.png")
-        assert grabbed == []  # nothing else on screen was copied
+    assert not (tmp_path / "hud.png").exists()
 
 
-def test_bring_to_front_gets_past_the_foreground_lock_with_an_alt_tap():
-    # A background gate's plain SetForegroundWindow is refused by Windows'
-    # foreground lock, so every live shot used to end MISSING.
-    fake = _FakeUser32(222, "after_alt")
-    visual.bring_to_front(fake, 42, 222, sleep=lambda s: None)
-    assert fake.front == 42
-    assert fake.keys == [(0x12, 0), (0x12, 2)] and fake.switch_calls == 2
+def test_visual_code_never_takes_the_mouse_or_the_window():
+    source = (HERE / "visual.py").read_text(encoding="utf-8") + (HERE / "gate.py").read_text(encoding="utf-8")
+    for call in ("SetForegroundWindow", "SetCursorPos", "keybd_event", "SendInput", "ImageGrab"):
+        assert call not in source, f"{call} would need the mouse or the window in front"
 
 
-def test_bring_to_front_sends_no_keys_when_the_switch_takes_or_is_not_needed():
-    fake = _FakeUser32(222, "always")
-    visual.bring_to_front(fake, 42, 222, sleep=lambda s: None)
-    assert (fake.front, fake.keys, fake.switch_calls) == (42, [], 1)
-    already = _FakeUser32(222, "never")
-    already.front = 42
-    visual.bring_to_front(already, 42, 222, sleep=lambda s: None)
-    assert (already.keys, already.switch_calls) == ([], 0)
+# Every engine name the helper mod calls, with where it is declared on P:.
+HELPER_CALLS = {
+    "OnUpdate": r"P:\scripts\5_mission\mission\missionserver.c:108 and missiongameplay.c:287",
+    "GetGame": r"P:\scripts\3_game\gameplay.c:636",
+    "GetWorld": r"P:\scripts\3_game\global\game.c:931",
+    "SetDate": r"P:\scripts\3_game\global\world.c:46",
+    "GetWeather": r"P:\scripts\3_game\global\game.c:1370",
+    "SetWeatherUpdateFreeze": r"P:\scripts\3_game\weather.c:397",
+    "GetOvercast": r"P:\scripts\3_game\weather.c:183",
+    "GetFog": r"P:\scripts\3_game\weather.c:186",
+    "GetRain": r"P:\scripts\3_game\weather.c:189",
+    "GetSnowfall": r"P:\scripts\3_game\weather.c:192",
+    "Set": r"P:\scripts\3_game\weather.c:49",
+    "SetDynVolFogDistanceDensity": r"P:\scripts\3_game\weather.c:360",
+    "SetDynVolFogHeightDensity": r"P:\scripts\3_game\weather.c:370",
+    "SetDynVolFogHeightBias": r"P:\scripts\3_game\weather.c:381",
+    "SetWindMaximumSpeed": r"P:\scripts\3_game\weather.c:269",
+    "SetWindFunctionParams": r"P:\scripts\3_game\weather.c:285",
+    "GetWindMagnitude": r"P:\scripts\3_game\weather.c:205",
+    "Print": r"P:\scripts\1_core\proto\endebug.c:96",
+    "Cast": r"P:\scripts\1_core\proto\enscript.c:94",
+    "GetPlayer": r"P:\scripts\3_game\global\game.c:944",
+    "IsPlayerLoaded": r"P:\scripts\4_world\entities\manbase\playerbase.c:8967",
+    "IsPaused": r"P:\scripts\5_mission\mission\missiongameplay.c:1294",
+    "Continue": r"P:\scripts\5_mission\mission\missiongameplay.c:1334",
+    "GetWorldSize": r"P:\scripts\3_game\global\world.c:82",
+    "Vector": r"P:\scripts\1_core\proto\enmath3d.c:18",
+    "SurfaceY": r"P:\scripts\3_game\global\game.c:1176",
+    "CastTo": r"P:\scripts\1_core\proto\enscript.c:110",
+    "CreateObject": r"P:\scripts\3_game\global\game.c:691 ('staticcamera' as in 5_mission\dayzintroscene.c:62)",
+    "SetOrientation": r"P:\scripts\3_game\entities\object.c:311",
+    "SetActive": r"P:\scripts\3_game\entities\camera.c:45",
+    "ToString": r"P:\scripts\1_core\proto\enconvert.c:138",
+    "GetHud": r"P:\scripts\3_game\gameplay.c:720",
+    "ShowHud": r"P:\scripts\3_game\gameplay.c:672",
+    "ShowQuickBar": r"P:\scripts\3_game\gameplay.c:670",
+}
 
 
-def test_bring_to_front_gives_up_after_one_alt_retry():
-    fake = _FakeUser32(222, "never")
-    with pytest.raises(visual.VisualError, match="could not be brought to the front"):
-        visual.bring_to_front(fake, 42, 222, sleep=lambda s: None)
-    assert fake.keys == [(0x12, 0), (0x12, 2)] and fake.switch_calls == 2 and fake.front == 1
+def test_helper_mod_calls_only_vanilla_checked_engine_names():
+    script = (visual.HELPER_SOURCE / "scripts" / "5_Mission" / "az_visual_helper.c").read_text(encoding="utf-8")
+    masked = gate.behavior._mask(script)
+    called = set(re.findall(r"\b([A-Za-z_]\w*)\s*\(", masked)) - {"if"}
+    assert called == set(HELPER_CALLS), (
+        f"unchecked engine calls {sorted(called - set(HELPER_CALLS))}; no longer used {sorted(set(HELPER_CALLS) - called)}"
+    )
+    # The menu flag it clears is vanilla's (missiongameplay.c:45), set when the window is not active (:298).
+    assert "m_PauseQueued = false;" in script
+
+
+def test_helper_mod_files_pack_as_one_addon():
+    config = (visual.HELPER_SOURCE / "config.cpp").read_text(encoding="utf-8")
+    assert f"class {visual.HELPER_NAME}" in config and f"{visual.HELPER_NAME}/scripts/5_Mission" in config
+    assert (visual.HELPER_SOURCE / "$PBOPREFIX$").read_text(encoding="utf-8").strip() == visual.HELPER_NAME
+
+
+def test_install_and_remove_helper_keep_to_their_own_folder(tmp_path):
+    p_drive = tmp_path / "P"
+    ran = []
+
+    def fake_addon_builder(cmd):
+        ran.append(cmd)
+        (Path(cmd[2]) / f"{visual.HELPER_NAME}.pbo").write_bytes(b"pbo")
+        return 0, "done"
+
+    root = visual.install_helper(p_drive, Path("AddonBuilder.exe"), ".agentic-z-scaffold", fake_addon_builder)
+    assert root == p_drive / "Mods" / "@AZ_VisualHelper"
+    assert "-packonly" in ran[0] and f"-prefix={visual.HELPER_NAME}" in ran[0]
+    assert (root / "Addons" / "AZ_VisualHelper.pbo").is_file()
+    assert not (p_drive / "temp" / "_azvisual").exists()  # the stage is cleaned up
+    visual.remove_helper(p_drive, ".agentic-z-scaffold")
+    assert not root.exists()
+
+
+def test_install_helper_refuses_a_folder_it_does_not_own(tmp_path):
+    root = tmp_path / "P" / "Mods" / "@AZ_VisualHelper"
+    root.mkdir(parents=True)
+    (root / "keep.txt").write_text("someone else's", encoding="utf-8")
+    with pytest.raises(visual.VisualError, match="not the gate's helper folder"):
+        visual.install_helper(tmp_path / "P", Path("AB.exe"), ".agentic-z-scaffold", lambda cmd: (0, ""))
+    visual.remove_helper(tmp_path / "P", ".agentic-z-scaffold")
+    assert (root / "keep.txt").is_file()  # never deleted without the marker
+
+
+def test_install_helper_reports_a_failed_pack(tmp_path):
+    with pytest.raises(visual.VisualError, match="could not pack the visual helper"):
+        visual.install_helper(tmp_path / "P", Path("AB.exe"), ".agentic-z-scaffold", lambda cmd: (1, "[FATAL] boom"))
 
 
 def test_full_run_refuses_a_session_it_did_not_start_without_yes(project, capsys):

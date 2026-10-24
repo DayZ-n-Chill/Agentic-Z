@@ -17,6 +17,6 @@ The shots file lists the screenshots `/dayz-gate visual` takes and compares. Its
 |---|---|
 | `id` | Letters, digits, `_`, `.` or `-` with no spaces. It names the capture, baseline and diff files. |
 | `feature` | Says in words what the shot shows. |
-| `at` | Seconds after the client joins the mission, 0 or more. |
+| `at` | Seconds after the scene is set, 0 or more. The gate starts this clock 15 seconds after the client joins, when its helper mod has set noon, clear weather and the fixed camera. |
 | `threshold` | Optional. The share of pixels, 0 to 1, that may change. File level is the default for every shot. |
 | `ignore` | Optional. Areas to leave out, each `[x, y, width, height]` in capture pixels: clocks, chat, anything that changes on its own. |

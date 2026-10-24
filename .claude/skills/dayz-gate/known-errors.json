@@ -447,9 +447,17 @@
   {
     "id": "visual-no-capture",
     "pattern": "^\\[visual:no-capture\\] ",
-    "meaning": "A shot was not captured: the client window was hidden or minimized, or the session ended first.",
-    "fix": "Keep the DayZ client window visible and not minimized during the gate, check the in-game failures in the same report, then gate again.",
+    "meaning": "A shot was not captured: the client window was minimized or drew nothing (an all-black capture), or the session ended first.",
+    "fix": "Leave the DayZ client window unminimized during the gate (it can stay behind other windows), check the in-game failures in the same report, then gate again.",
     "owner_agent": "user",
+    "source": "dayz-gate SKILL.md, What visual does"
+  },
+  {
+    "id": "visual-no-scene",
+    "pattern": "^\\[visual:no-scene\\] ",
+    "meaning": "The visual helper mod did not set its fixed scene: no [AZ-VISUAL] SCENE line in the server log or no [AZ-VISUAL] CAMERA line in the client log, so the captures may show another time, weather, camera or the pause menu.",
+    "fix": "Look in the same session's script logs for a compile error in AZ_VisualHelper or a client that never loaded the player, fix that, then gate again.",
+    "owner_agent": "dayz-mod-debugger",
     "source": "dayz-gate SKILL.md, What visual does"
   }
 ]

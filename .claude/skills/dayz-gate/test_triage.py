@@ -92,6 +92,7 @@ SAMPLES = [
     ("[visual:diff] hud: 1.56% of pixels differ (threshold 1.00%)", "visual-diff"),
     ("[visual:no-baseline] hud: no baseline yet: look at the capture and accept it if it shows the expected look", "visual-no-baseline"),
     ("[visual:no-capture] hud: capture failed: DayZ client PID 222 has no visible window", "visual-no-capture"),
+    ("[visual:no-scene] the helper never set the scene (client: menu, HUD and camera; no line in the logs)", "visual-no-scene"),
 ]
 
 
