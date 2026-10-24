@@ -890,3 +890,15 @@ def test_physics_specialist_reports_to_main_session_on_direct_call():
     report = text.split("## Report", 1)[1]
     assert "main session" in report, "Report names only a lead; a direct call has no lead"
     assert "start each owner" in report, "Report must tell the main session to start each named owner"
+
+
+def test_orchestrator_agent_list_covers_every_agent_the_leads_start():
+    # Run as the main session (claude --agent), the orchestrator's Agent(...) list limits which
+    # agents its subagents can start too. The live run's leads got "Agent type not found" for
+    # dayz-wearables-specialist and dayz-mod-reviewer until both were on this list.
+    text = (AGENTS_DIR / "dayz-orchestrator.md").read_text(encoding="utf-8")
+    allowed = {n.strip() for n in re.search(r"^tools:.*?Agent\(([^)]*)\)", text, re.M).group(1).split(",")}
+    lead = (AGENTS_DIR / "dayz-lead.md").read_text(encoding="utf-8")
+    started = {n for n in re.findall(r"`([a-z-]+)`", lead) if n in AGENT_NAMES} - {"dayz-orchestrator"}
+    missing = sorted(n for n in started for name in (n, f"agentic-z:{n}") if name not in allowed)
+    assert not missing, f"agents the leads start but the orchestrator's Agent list leaves out: {missing}"
