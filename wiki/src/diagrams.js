@@ -31,7 +31,7 @@ const versions = {
   versions: [
     { label: 'v1.0.0', note: 'Released', built: 52, top: 0, tests: '85 tests' },
     { label: 'v1.5.0', note: 'Agent team', built: 52, top: 20 },
-    { label: 'v2.0.0', note: 'Final', built: 193, top: 193, tests: '5,008 tests' },
+    { label: 'v2.0.0', note: 'Final', built: 193, top: 193, tests: '5,009 tests' },
   ],
   total: 193,
 };
