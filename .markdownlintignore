@@ -3,9 +3,6 @@
 # applies the same scope.
 
 # Build artifacts
-wiki/build/
-wiki/.docusaurus/
-wiki/node_modules/
 node_modules/
 
 # Per-clone state (gitignored — IDE may still scan)

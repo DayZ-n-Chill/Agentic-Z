@@ -98,7 +98,6 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 ├── CLAUDE.md / AGENTS.md / GEMINI.md   # L1 rules (one per CLI, same content)
 ├── docs/                   # deep docs (DayZ workflow, model routing)
 ├── mods/agentic-z-panel/   # Claude Code panel plugin (one-click DayZ buttons)
-├── wiki/                   # React + MUI website wiki (old Docusaurus wiki in archive/wiki-docusaurus/)
 ├── workspace/              # in-progress mods (workspace/<ModName>/)
 ├── .server/                # local test-server instances (.server/<instance>/)
 └── output/                 # one-shot deliverables
@@ -227,7 +226,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Exceptions, each
 |---|---|
 | [`/sync-skills`](.claude/skills/sync-skills/SKILL.md) | Link `.claude/skills/` into each agent CLI's home dir. Required after clone. |
 | [`/agentic-z-update`](.claude/skills/agentic-z-update/SKILL.md) | Pull upstream template improvements into your clone without touching `workspace/`. |
-| [`/docs-sync`](.claude/skills/docs-sync/SKILL.md) | Check the React wiki (`wiki/src/content/*.md`, `wiki/src/App.jsx`) against the source: every agent and skill is listed, counts match the repo and the grade files, and each graded item appears once in the grades tables; `--apply` updates only those computed counts. |
+| [`/docs-sync`](.claude/skills/docs-sync/SKILL.md) | Check the React wiki (its own private repo, `DayZ-n-Chill/Agentic-Z-Wiki`, cloned next to this one) against the source: every agent and skill is listed, counts match the repo and the grade files, and each graded item appears once in the grades tables; `--apply` updates only those computed counts. |
 | [`/clean-repo`](.claude/skills/clean-repo/SKILL.md) | Repo-wide cleanup orchestrator across every domain. |
 
 ---
@@ -299,7 +298,7 @@ The full text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
 - **[`docs/model-routing.md`](docs/model-routing.md)** — when to use Opus / Sonnet / Haiku and the subagent patterns.
 - **[`docs/evals.md`](docs/evals.md)**: answer tests that score each agent's answers, so a change can only keep or raise the score.
 - **[`docs/prompt-conventions.md`](docs/prompt-conventions.md)** — why agent and skill files use caps the way they do (RFC 2119 directives, when to cap, when to stay lowercase).
-- **`wiki/`** — React + MUI (Vite) website wiki; content in `wiki/src/content/`, checked against the source by `/docs-sync`. The old Docusaurus wiki is archived in `archive/wiki-docusaurus/`.
+- **The wiki** lives in its own private repo, `DayZ-n-Chill/Agentic-Z-Wiki` (React + MUI, Vite). `/docs-sync` checks it against this repo when it is cloned next to this one. The old Docusaurus wiki is archived in `archive/wiki-docusaurus/`.
 
 ---
 

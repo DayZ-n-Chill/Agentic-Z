@@ -74,7 +74,6 @@ hooks/
 mods/
 evals/
 docs/
-wiki/
 scripts/
 CLAUDE.md
 AGENTS.md

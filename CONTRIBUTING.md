@@ -60,4 +60,4 @@ If you add or rename a skill, update:
 - `docs/dayz-modding.md` if the skill appears in the workflow section.
 - The plugin manifests in `.claude-plugin/` if the skill should be exposed to plugin users.
 
-Do not touch `wiki/` — it regenerates via `/docs-sync` from the canonical sources.
+The wiki is not in this repo: it lives in `DayZ-n-Chill/Agentic-Z-Wiki`. Clone it next to this repo and `/docs-sync` checks it against the canonical sources.

@@ -1,6 +1,6 @@
 ---
 name: docs-sync
-description: "Checks the React wiki under wiki/src/ against the source: agent and skill lists, the count claims listed in its claims table, and the grade tables, and fixes wrong counts in place with --apply. Use after adding, renaming or removing an agent or skill, after a grading round, after editing the DayZ rules files, or when the Stop hook reports wiki problems."
+description: "Checks the React wiki (its own repo, cloned next to this one) against the source: agent and skill lists, the count claims listed in its claims table, and the grade tables, and fixes wrong counts in place with --apply. Use after adding, renaming or removing an agent or skill, after a grading round, after editing the DayZ rules files, or when the Stop hook reports wiki problems."
 ---
 
 <!-- skill-dir-note -->
@@ -8,7 +8,7 @@ description: "Checks the React wiki under wiki/src/ against the source: agent an
 
 # /docs-sync
 
-Keep the wiki in line with the repository. The wiki is hand-written Markdown under `wiki/src/content/` (`guide.md`, `team.md`, `skills-table.md`) plus the home-page `STATS` in `wiki/src/App.jsx`. One pure-Python script checks it; no model is called. It works only from inside a clone of this repository: the script finds the wiki and the source folders relative to its own location, so a copy of the skill installed elsewhere (for example through a plugin) has nothing to check.
+Keep the wiki in line with the repository. The wiki lives in its own private repository, `DayZ-n-Chill/Agentic-Z-Wiki`. docs-sync reads it from `$AGENTIC_Z_WIKI` when that is set (empty means no wiki), else from a clone named `Agentic-Z-Wiki` next to this repo. With no wiki it prints `no wiki to check` and exits 0, and the Stop hook stays silent. Problems still name wiki files as `wiki/src/...`, meaning `src/...` in the wiki repo. The wiki is hand-written Markdown under `wiki/src/content/` (`guide.md`, `team.md`, `skills-table.md`) plus the home-page `STATS` in `wiki/src/App.jsx`. One pure-Python script checks it; no model is called. It works only from inside a clone of this repository: the script finds the wiki and the source folders relative to its own location, so a copy of the skill installed elsewhere (for example through a plugin) has nothing to check.
 
 ## When to run it
 

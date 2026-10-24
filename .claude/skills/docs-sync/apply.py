@@ -52,7 +52,7 @@ def apply_to_text(text: str, fixes: list[tuple[int, tuple[int, int, str]]]) -> s
     return "\n".join(lines)
 
 
-def apply_fixes(repo_root: Path, problems: list, dry_run: bool = False) -> int:
+def apply_fixes(repo_root: Path, problems: list, dry_run: bool = False, resolve=None) -> int:
     """Apply every fixable problem; print one line per change. Returns the number of changes."""
     by_file: dict[str, list] = defaultdict(list)
     for p in problems:
@@ -67,7 +67,7 @@ def apply_fixes(repo_root: Path, problems: list, dry_run: bool = False) -> int:
     planned: list[tuple[Path, str, str]] = []  # (path, original text, fixed text)
     changes: list[tuple[str, str, str, int]] = []  # (file:line, old, new, column)
     for rel, fixes in sorted(by_file.items()):
-        path = repo_root / rel
+        path = resolve(rel) if resolve else repo_root / rel  # the wiki lives in its own checkout
         try:
             # open(), not Path.read_text(newline=...), which needs Python 3.13; CI runs 3.12.
             with open(path, encoding="utf-8", newline="") as f:

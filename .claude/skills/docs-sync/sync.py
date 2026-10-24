@@ -1,4 +1,11 @@
-"""Check the React wiki (wiki/src/) against the repository it describes.
+"""Check the React wiki against the repository it describes.
+
+The wiki lives in its own private repository (DayZ-n-Chill/Agentic-Z-Wiki). It is
+found at $AGENTIC_Z_WIKI when that is set (an empty value means "no wiki"), else
+at a wiki/ folder in this repo, else at a clone named Agentic-Z-Wiki next to this
+repo. With no wiki there is nothing to check: --check says so and exits 0, and the
+Stop hook stays silent. Problems still name wiki files as wiki/src/..., meaning
+src/... in the wiki repository.
 
 Pure-Python, deterministic checks; no model calls. Three checks:
   names   Every agent (.claude/agents/*.md) is named in the guide's "## Agents"
@@ -32,6 +39,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -41,6 +49,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+
+WIKI_ENV = "AGENTIC_Z_WIKI"
+WIKI_REPO = "DayZ-n-Chill/Agentic-Z-Wiki"
+WIKI_PREFIX = "wiki/"  # problems name wiki files as wiki/<path in the wiki repo>
+
+
+def wiki_dir() -> Path | None:
+    """The wiki checkout, or None when there is none to check."""
+    if WIKI_ENV in os.environ:
+        value = os.environ[WIKI_ENV]
+        return Path(value) if value and (Path(value) / "src").is_dir() else None
+    for candidate in (REPO_ROOT / "wiki", REPO_ROOT.parent / "Agentic-Z-Wiki"):
+        if (candidate / "src").is_dir():
+            return candidate
+    return None
+
+
+def source_path(rel: str) -> Path:
+    """Where a source lives: wiki/... in the wiki checkout, anything else in this repo."""
+    if rel.startswith(WIKI_PREFIX):
+        wiki = wiki_dir()
+        if wiki is None:
+            raise SourceError(f"cannot read {rel}: no wiki checkout (clone {WIKI_REPO} next to this repo)")
+        return wiki / rel[len(WIKI_PREFIX):]
+    return REPO_ROOT / rel
 
 # Where the grade files live, relative to the repo root. Both are required
 # sources. The one place to change when they move.
@@ -186,7 +219,7 @@ def line_count(path: Path) -> int:
 
 
 def read(rel: str) -> str:
-    path = REPO_ROOT / rel
+    path = source_path(rel)
     try:
         return path.read_text(encoding="utf-8")
     except OSError as e:
@@ -518,7 +551,7 @@ def print_map(facts: Facts) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Check the React wiki under wiki/src/ against the repository.")
+    p = argparse.ArgumentParser(description="Check the React wiki (its own repository) against this repository.")
     mode = p.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="Report problems (default)")
     mode.add_argument("--apply", action="store_true", help="Rewrite wrong numbers in matched claims in place")
@@ -530,6 +563,11 @@ def main(argv: list[str] | None = None) -> int:
         p.error("--dry-run only works with --apply")
     if args.quiet and (args.apply or args.map):
         p.error("--quiet only works with --check")
+    if wiki_dir() is None:
+        # Public clones and CI have no wiki: nothing to check is not a failure.
+        if not args.quiet:
+            print(f"{h.WARN}no wiki to check: clone {WIKI_REPO} next to this repo, or set {WIKI_ENV}")
+        return 0
 
     try:
         facts, problems = run_checks()
@@ -558,7 +596,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.apply:
         apply = h.load_module("docs_sync_apply", Path(__file__).parent / "apply.py")
         try:
-            apply.apply_fixes(REPO_ROOT, problems, dry_run=args.dry_run)
+            apply.apply_fixes(REPO_ROOT, problems, dry_run=args.dry_run, resolve=source_path)
         except apply.ReadError as e:
             print(f"{h.FAIL}{e}", file=sys.stderr)
             return 1

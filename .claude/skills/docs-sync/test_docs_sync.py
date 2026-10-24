@@ -13,6 +13,7 @@ import importlib.util
 import json
 import re
 import shutil
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -172,15 +173,23 @@ def edit(root: Path, rel: str, old: str, new: str) -> None:
     path.write_text(text.replace(old, new, 1), encoding="utf-8", newline="")
 
 
-def run_cli(root: Path, *args: str) -> subprocess.CompletedProcess:
+def run_cli(root: Path, *args: str, env: dict | None = None) -> subprocess.CompletedProcess:
     script = root / ".claude" / "skills" / "docs-sync" / "sync.py"
-    return subprocess.run([sys.executable, str(script), *args], capture_output=True, text=True, encoding="utf-8")
+    if env is None:
+        env = {k: v for k, v in os.environ.items() if k != sync.WIKI_ENV}  # the copy's own wiki/ folder
+    return subprocess.run([sys.executable, str(script), *args], capture_output=True, text=True, encoding="utf-8", env=env)
 
 
 @pytest.fixture
 def repo(tmp_path, monkeypatch):
     monkeypatch.setattr(sync, "REPO_ROOT", tmp_path)
+    monkeypatch.delenv(sync.WIKI_ENV, raising=False)  # the fixture's own wiki/ folder is the wiki
     return build_repo(tmp_path)
+
+
+# The real wiki lives in its own private repository, cloned next to this one. CI and
+# public clones have no copy, so the checks against the real wiki skip there.
+needs_wiki = pytest.mark.skipif(sync.wiki_dir() is None, reason=f"no {sync.WIKI_REPO} checkout next to this repo")
 
 
 def problems() -> list[str]:
@@ -284,6 +293,7 @@ def test_every_claim_names_known_facts_and_one_fact_per_number():
     assert len({(c.file, c.text) for c in sync.CLAIMS}) == len(sync.CLAIMS)
 
 
+@needs_wiki
 @pytest.mark.parametrize("claim", sync.CLAIMS, ids=CLAIM_IDS)
 def test_each_claim_is_found_in_the_real_wiki(claim):
     hidden = sync.hidden_slugs()
@@ -311,6 +321,7 @@ NOT_FACTS = {
 COUNT = re.compile(sync.NUMBER + r"(?: of the \d+)?(?: [\w-]+)? (?:agents|skills|hooks|items)\b")
 
 
+@needs_wiki
 def test_every_visible_count_is_a_claim_or_known_not_to_be_a_fact():
     hidden = sync.hidden_slugs()
     stray = []
@@ -326,6 +337,7 @@ def test_every_visible_count_is_a_claim_or_known_not_to_be_a_fact():
     assert stray == [], "add a CLAIMS entry for each count, or list it in NOT_FACTS if no fact computes it"
 
 
+@needs_wiki
 def test_real_repository_reports_no_missing_claim():
     _, found = sync.run_checks()
     assert not [str(p) for p in found if "claim not found" in p.message]
@@ -792,6 +804,7 @@ def test_cli_check_exits_1_on_problems_and_2_on_usage(cli_repo):
 
 # ---------------------------------------------------------------- the real repository
 
+@needs_wiki
 def test_checker_parses_the_real_repository():
     """The real wiki and sources parse; drift may be reported, but no source error and every section is found."""
     facts, found = sync.run_checks()
@@ -799,6 +812,36 @@ def test_checker_parses_the_real_repository():
     assert facts.counts["graded_total"][0] > 0
     assert all(isinstance(p, sync.Problem) for p in found)
     assert not [str(p) for p in found if p.message.startswith("no ")]  # every section was found
+
+
+def test_wiki_is_found_in_its_own_checkout(tmp_path, monkeypatch):
+    # The wiki moved to DayZ-n-Chill/Agentic-Z-Wiki: a clone next to this repo is used, an
+    # AGENTIC_Z_WIKI path wins, and an empty AGENTIC_Z_WIKI means there is no wiki.
+    repo, sibling, other = tmp_path / "Agentic-Z", tmp_path / "Agentic-Z-Wiki", tmp_path / "elsewhere"
+    for folder in (repo, sibling / "src" / "content", other / "src"):
+        folder.mkdir(parents=True)
+    (sibling / "src" / "content" / "guide.md").write_text("# Guide\n", encoding="utf-8")
+    monkeypatch.setattr(sync, "REPO_ROOT", repo)
+    monkeypatch.delenv(sync.WIKI_ENV, raising=False)
+    assert sync.wiki_dir() == sibling
+    assert sync.source_path(sync.GUIDE) == sibling / "src" / "content" / "guide.md"
+    assert sync.source_path("docs/grades/final_grades.json") == repo / "docs" / "grades" / "final_grades.json"
+    assert sync.read(sync.GUIDE) == "# Guide\n"
+    monkeypatch.setenv(sync.WIKI_ENV, str(other))
+    assert sync.wiki_dir() == other
+    monkeypatch.setenv(sync.WIKI_ENV, "")
+    assert sync.wiki_dir() is None
+    with pytest.raises(sync.SourceError, match="no wiki checkout"):
+        sync.source_path(sync.GUIDE)
+
+
+def test_no_wiki_is_nothing_to_check(cli_repo):
+    # Public clones and CI have no wiki: --check says so and exits 0, and the Stop hook stays silent.
+    env = {**os.environ, sync.WIKI_ENV: ""}
+    r = run_cli(cli_repo, "--check", env=env)
+    assert r.returncode == 0 and "no wiki to check" in r.stdout and sync.WIKI_REPO in r.stdout
+    r = run_cli(cli_repo, "--check", "--quiet", env=env)
+    assert (r.returncode, r.stdout) == (0, "")
 
 
 def test_real_grade_items_stay_distinct_after_normalising():

@@ -32,6 +32,7 @@ sync = t.sync
 @pytest.fixture
 def repo(tmp_path, monkeypatch):
     monkeypatch.setattr(sync, "REPO_ROOT", tmp_path)
+    monkeypatch.delenv(sync.WIKI_ENV, raising=False)  # the fixture's own wiki/ folder is the wiki
     return t.build_repo(tmp_path)
 
 
