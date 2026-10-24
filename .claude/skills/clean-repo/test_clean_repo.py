@@ -301,21 +301,37 @@ def _git(cwd: Path, *args: str) -> None:
     subprocess.run(["git", "-C", str(cwd), *args], check=True, capture_output=True)
 
 
-@pytest.fixture
-def server_repo(tmp_path):
-    """A git repo with the template's .server/ ignore rules and one instance."""
-    repo = tmp_path / "proj"
-    repo.mkdir()
-    _git(repo, "init", "-q")
-    gitignore = (clean.REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
-    rules = [line for line in gitignore.splitlines() if line.lstrip("!").startswith(".server/")]
-    assert "!.server/*/serverDZ.cfg" in rules
-    (repo / ".gitignore").write_text("".join(rule + "\n" for rule in rules), encoding="utf-8")
+# A clone that versions its server settings: the template ignores all of .server/,
+# and these are the exceptions such a clone adds.
+VERSIONING_RULES = [".server/*/*", "!.server/*/serverDZ.cfg", "!.server/*/mission/", ".server/*/mission/storage_*/"]
+
+
+def _server_files(repo):
     inst = repo / ".server" / "chernarus"
     for rel in ("serverDZ.cfg", "mission/init.c", "mission/storage_1/data.bin", "Profiles/server.RPT"):
         (inst / rel).parent.mkdir(parents=True, exist_ok=True)
         (inst / rel).write_text("x", encoding="utf-8")
+
+
+@pytest.fixture
+def server_repo(tmp_path):
+    """A git repo that versions its server settings, with one instance."""
+    repo = tmp_path / "proj"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    (repo / ".gitignore").write_text("".join(rule + "\n" for rule in VERSIONING_RULES), encoding="utf-8")
+    _server_files(repo)
     return repo
+
+
+def test_template_gitignore_keeps_no_server_file(tmp_path):
+    # The template's own rules: every machine's test server is its own, so nothing under .server/ is trackable.
+    repo = tmp_path / "proj"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    (repo / ".gitignore").write_text((clean.REPO_ROOT / ".gitignore").read_text(encoding="utf-8"), encoding="utf-8")
+    _server_files(repo)
+    assert clean.versioned_server_files(repo) == []
 
 
 def test_versioned_server_files_lists_only_what_gitignore_keeps(server_repo):

@@ -24,7 +24,7 @@ Part of Tier 2. Server economy files, the `.server/<instance>/` test-server layo
 - The instance, not the map, is the unit of identity: two instances can run variants of the same map (chernarus and chernarus-hardcore).
 - Setup and run are separate skills. `/dayz-add-server <instance>` copies the mission, writes the cfg and creates the profile dirs. `/dayz-launch-test <mod> --server <instance>` verifies and launches; it never copies missions or writes cfgs from scratch, and refuses with a hint to run `/dayz-add-server` when state is missing. It never edits the cfg: a cfg without an active `allowFilePatching = 1;` is refused with the `/dayz-add-server <instance>` hint.
 - The legacy `workspace/_server/` layout is not supported. `/dayz-add-server`, `/dayz-launch-test` and `/dayz-clean-workspace --include-server` refuse to run while it exists; the user deletes it manually.
-- `.server/` is gitignored except the user-edited `serverDZ.cfg` and `mission/` contents, which `.gitignore` negation patterns keep tracked.
+- `.server/` is gitignored as a whole; `/dayz-add-server` recreates it on each machine. A clone that wants its `serverDZ.cfg` or `mission/` edits versioned adds `!` exceptions to its own `.gitignore`.
 
 ## Mission and DayZ Server install notes
 

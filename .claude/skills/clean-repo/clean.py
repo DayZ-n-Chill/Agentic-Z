@@ -74,9 +74,9 @@ class ServerCheckError(Exception):
 def versioned_server_files(project: Path) -> list[str]:
     """Files under <project>/.server/ that git tracks or would track (not ignored).
 
-    .gitignore keeps user-edited server files (serverDZ.cfg, mission/) trackable,
-    so these are the files --include-server would delete that the user may have
-    versioned. Empty when .server/ is absent. Raises ServerCheckError when git
+    The template ignores all of .server/, but a clone may add .gitignore
+    exceptions to version its serverDZ.cfg or mission/ edits, so these are the
+    files --include-server would delete that the user may have versioned. Empty when .server/ is absent. Raises ServerCheckError when git
     cannot be run or exits non-zero (for example, the project is not a git repo).
     """
     if not (project / ".server").is_dir():

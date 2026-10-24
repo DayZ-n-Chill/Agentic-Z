@@ -351,7 +351,7 @@ Two locations hold per-clone, gitignored, user/machine-specific state:
 
 Override the author handle: `python .claude\skills\dayz-new-mod\new_mod.py MyMod --author "NewHandle"` (overwrites the cache) or delete `.claude/local-memory/dayz-author.txt`.
 
-`.server/` is gitignored by default except for `serverDZ.cfg` and `mission/` contents (so your tuned configs and mission edits stay in version control while logs and profiles do not). Override the gitignore in your clone if you want different behavior.
+`.server/` is gitignored as a whole: every machine's test server is its own, and `/dayz-add-server` recreates it. To keep your tuned `serverDZ.cfg` or mission edits in version control, add `!` exceptions to the `.gitignore` in your clone.
 
 ---
 
