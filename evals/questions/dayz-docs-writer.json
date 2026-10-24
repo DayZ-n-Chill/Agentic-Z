@@ -7,13 +7,16 @@
       "must_include": [
         "MyVest_Black",
         "MyVest_Green",
-        "re:MyVest_Base[^\\n]{0,160}(scope\\s*=?\\s*0|\\bbase\\b|skip|leave|left out|not spawnable|exclude)|(scope\\s*=?\\s*0|skip|leave|left out|not spawnable|exclude)[^\\n]{0,160}MyVest_Base"
+        "re:MyVest_Base[^\\n]{0,160}(scope\\s*=?\\s*0|\\bbase\\b|skip|leave|left out|not spawnable|exclude)|(scope\\s*=?\\s*0|skip|leave|left out|not spawnable|exclude)[^\\n]{0,160}MyVest_Base",
+        "re:MyVest_Patch[\\s\\S]{0,200}?(scope[- ]?unknown|no scope|scope not set|not set|(doesn't|does not|never) set|unresolved|unknown|can't (tell|confirm|determine)|cannot (tell|confirm|determine)|config-specialist)|(scope[- ]?unknown|no scope|scope not set|unresolved)[\\s\\S]{0,200}?MyVest_Patch"
       ],
-      "must_not_include": [],
+      "must_not_include": [
+        "re:<type\\s+name=\"MyVest_Hidden\"|MyVest_Hidden[`*\\s|:\\-]{0,6}(scope\\s*=?\\s*2\\b|spawnable)"
+      ],
       "unchanged": [
         ".claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp"
       ],
-      "verified": ".claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp (MyVest_Base scope = 0, MyVest_Black and MyVest_Green scope = 2); /dayz-release-pack on that fixture lists MyVest_Black, MyVest_Green and MyVest_Pouch as spawnable; .claude/agents/dayz-docs-writer.md 'What you keep current' (only scope = 2 classes, skip scope 0 and 1)"
+      "verified": ".claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp (MyVest_Base scope = 0, MyVest_Black and MyVest_Green scope = 2, MyVest_Hidden sets no scope and inherits 0 from MyVest_Base, MyVest_Patch sets no scope and its parent Armband_ColorBase is outside the mod); .claude/skills/dayz-release-pack/release_pack.py:87 to :125 item_classes on the fixture gives MyVest_Hidden scope 0 and MyVest_Patch scope None, and :221 to :225 report it as scope-unknown; P:\\DZ\\characters\\tops\\config.cpp:817 (vanilla Armband_ColorBase sets no scope of its own, only children such as Armband_White at :948 set scope=2); .claude/agents/dayz-docs-writer.md 'For a release' (scope-unknown: report under Scope not set for dayz-config-specialist); /dayz-release-pack on that fixture lists MyVest_Black, MyVest_Green and MyVest_Pouch as spawnable; .claude/agents/dayz-docs-writer.md 'What you keep current' (only scope = 2 classes, skip scope 0 and 1)"
     },
     {
       "id": "private-key-is-a-release-blocker",
@@ -45,7 +48,7 @@
         "re:\\brerun|re-run|run (it |the (skill|script|release pack) )?again"
       ],
       "must_not_include": [
-        "re:^(?!.*\\b(never|not|don't|do not|overwrit|regenerat|generated)\\b).*\\b(edit|write|change|replace)\\b[^.\\n]{0,60}workshop-description\\.txt"
+        "re:^(?!.*\\b(never|not|don't|do not|overwrit\\w*|regenerat\\w*|generated|rerun\\w*|re-run\\w*)\\b).*\\b(edit|write|change|replace)\\b[^.\\n]{0,60}workshop-description\\.txt"
       ],
       "verified": ".claude/skills/dayz-release-pack/release_pack.py:210 to :217 (summary from mod.cpp overview or the README's first paragraph; summary-missing text); .claude/agents/dayz-docs-writer.md 'For a release' summary-missing bullet (write it into README.md and rerun; never edit workshop-description.txt)"
     }

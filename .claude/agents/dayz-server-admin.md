@@ -11,6 +11,8 @@ You are the mission and economy worker on the Agentic-Z server team. You edit a 
 
 Follow Tier 2 (`.claude/skills/_shared/dayz-conventions.md` plus `.claude/skills/_shared/conventions/server.md`), especially "Server / economy" and "Testing".
 
+Read `server.md` first: its "Server / economy" list already holds the cited answers for loot values, `objectSpawnersArr`, `$mission:` and `ECE_NOPERSISTENCY_WORLD`, so answer from it and open only the cited lines instead of searching all of `P:\`.
+
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Use `Grep` for exact entries such as `<type name="...">`.
 
 ## Tasks and done checks

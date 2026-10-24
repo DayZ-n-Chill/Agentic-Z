@@ -7,6 +7,8 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -119,11 +121,11 @@ def test_every_question_file_is_valid():
 def test_ask_builds_read_only_claude_command(monkeypatch):
     seen = {}
 
-    def fake_run(cmd, **kwargs):
-        seen["cmd"], seen["input"] = cmd, kwargs["input"]
+    def fake_run(cmd, stdin, timeout):
+        seen["cmd"], seen["input"] = cmd, stdin
         return subprocess.CompletedProcess(cmd, 0, stdout="answer", stderr="")
     monkeypatch.setattr(run_evals.shutil, "which", lambda name: "claude")
-    monkeypatch.setattr(run_evals.subprocess, "run", fake_run)
+    monkeypatch.setattr(run_evals, "run_tree", fake_run)
     assert run_evals.ask("dayz-mod-reviewer", "Q?", timeout=5) == "answer"
     cmd = seen["cmd"]
     assert cmd[:4] == ["claude", "-p", "--agent", "dayz-mod-reviewer"]
@@ -150,10 +152,24 @@ def test_command_removes_editing_and_shell_tools():
 
 def test_ask_raises_on_nonzero_exit(monkeypatch):
     monkeypatch.setattr(run_evals.shutil, "which", lambda name: "claude")
-    monkeypatch.setattr(run_evals.subprocess, "run",
-                        lambda cmd, **kw: subprocess.CompletedProcess(cmd, 1, stdout="", stderr="boom"))
+    monkeypatch.setattr(run_evals, "run_tree",
+                        lambda cmd, stdin, timeout: subprocess.CompletedProcess(cmd, 1, stdout="", stderr="boom"))
     with pytest.raises(RuntimeError, match="boom"):
         run_evals.ask("a", "q", timeout=5)
+
+
+def test_timeout_kills_grandchild_that_holds_the_pipes():
+    """On Windows `claude` is claude.CMD, so claude.exe is a grandchild that holds stdout.
+
+    A timeout that kills only the direct child left the eval run hanging until
+    the grandchild exited on its own (the server-admin run hung for over an hour).
+    """
+    grandchild = "import time; time.sleep(60)"
+    child = f"import subprocess, sys, time; subprocess.Popen([sys.executable, '-c', {grandchild!r}]); time.sleep(60)"
+    started = time.monotonic()
+    with pytest.raises(subprocess.TimeoutExpired):
+        run_evals.run_tree([sys.executable, "-c", child], "", timeout=3)
+    assert time.monotonic() - started < 30
 
 
 def test_run_scores_and_counts_errors_as_failures(monkeypatch):

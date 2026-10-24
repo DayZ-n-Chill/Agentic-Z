@@ -30,40 +30,32 @@ class MyClass : Managed
 
 **Note:** Entities (`Object`, `EntityAI`, `ItemBase`, `PlayerBase`) are owned by the engine. Give your own helper and data classes `Managed` (or a vanilla class that has it) as the root; see `../enscript/references/language_memory.md`, "The two roots".
 
-### Garbage Collection
+### Freeing objects
 
-**Understanding EnScript Garbage Collection:**
-
-- Everything (except `Managed`) is a **weak reference by default**
-- The garbage collector is **very aggressive**: instances in function scope are destroyed immediately when scope ends
-- All instances (Managed or not) are garbage collected when reference count reaches zero
+A `Managed` object is freed when its last strong (`ref`) reference goes away; a plain reference does not keep it alive. This is engine behaviour, stated in `../enscript/references/language_memory.md`, "`ref` keeps an object alive".
 
 ### Deletion
 
-**STRONGLY DISCOURAGED:** Avoid using the `delete` keyword in almost all cases.
+**Never `delete` an entity** (`Object`, `EntityAI`, `ItemBase`, `PlayerBase`). Use the engine calls instead: `Delete()` (`P:\scripts\3_game\entities\entityai.c:779`) or, for items that may sit in a player's inventory, `DeleteSafe()` (`P:\scripts\3_game\entities\entityai.c:791`). See `../enscript/references/language_memory.md`, "Deleting entities".
 
 ```
-// AVOID: Using delete keyword
-delete myObject;
+// WRONG: delete on an entity
+delete item;
 
-// PREFERRED: Null the reference instead
-myObject = null;
+// CORRECT
+item.DeleteSafe();
 ```
 
-**Why avoid `delete`?**
-
-- Can cause segfaults if object is still referenced elsewhere
-- **NEVER use for entities**: will cause crashes
-- Should only be used in very specific, rare cases
-- Nulling references is safer and lets garbage collection handle cleanup
-
-**Rule:** Let the garbage collector handle object cleanup by nulling references.
+**`delete` on your own script object is allowed** and frees it now. Vanilla does it: `delete GetBleedingManagerServer();` (`P:\scripts\4_world\entities\manbase\playerbase.c:1224`), and an object may free itself with `delete this;` (`P:\scripts\4_world\classes\bullethitreaction\bullethitreaction.c:45`). Only do it when no other code still holds a reference to that object. When you just want to let go, set your last `ref` to `null` instead.
 
 ### Reference Management (CRITICAL)
 
-**WARNING: Improper use of `ref` keyword causes crashes and unexpected behavior!**
+`ref` makes a strong reference. Two mistakes have checked effects (`../enscript/references/language_memory.md`, rules 1 and 3, engine behaviour):
 
-The `ref` keyword creates strong references and must be used carefully to avoid memory management issues, reference counting problems, and crashes that affect your mod and others.
+- A member you create with `new` and that nothing else holds, without `ref`, is freed at once. It reads `null` right after it was set.
+- Two objects that hold `ref`s to each other keep each other alive forever (a leak). The parent owns the child with `ref`; the child points back without `ref`.
+
+Unverified: that `ref` mistakes crash the game or affect other mods. No vanilla source on `P:\scripts\` shows either.
 
 #### CORRECT Usage of `ref`
 
@@ -73,7 +65,7 @@ The `ref` keyword creates strong references and must be used carefully to avoid 
 class MyClass
 {
     ref MyOtherClass m_Member;        // Safe: member variable
-    autoptr array<string> m_Items;    // Safe: member variable with autoptr
+    ref array<string> m_Items;        // Safe: member variable
 
     void MyClass()
     {
@@ -82,14 +74,37 @@ class MyClass
 }
 ```
 
-**Note:** Do NOT use `ref` in typedefs:
+**Element types of containers you fill with your own objects:**
+
+`ref` on the member owns the container, not what is in it. If the container holds objects you create with `new`, the element type needs `ref` too, or nothing owns the elements and they are freed (`../enscript/references/language_memory.md`, rule 2). Vanilla spells out both forms: `typedef array<Managed> TManagedArray;` and `typedef array<ref Managed> TManagedRefArray;` (`P:\scripts\1_core\proto\enscript.c:736`, `:737`).
 
 ```
-// WRONG
+class MyMod_Registry
+{
+    ref array<ref MyData> m_Entries;  // Owns the array AND each MyData in it
+    ref array<EntityAI> m_Items;      // Entities: the engine owns them, no ref on the element
+
+    void MyMod_Registry()
+    {
+        m_Entries = new array<ref MyData>;
+        m_Entries.Insert(new MyData());  // Kept alive by the ref element type
+    }
+}
+```
+
+**Note:** `autoptr` is the older owning qualifier. Vanilla still has it in old code (`autoptr map<string, float> m_values;`, `P:\scripts\1_core\proto\serializer.c:14`), but use `ref` in mod code (`../enscript/references/language_memory.md`, "`autoptr`").
+
+**Note:** Do NOT put `ref` on the aliased type itself (`typedef ref T`). `ref` inside a template argument of a typedef is allowed and is how vanilla names owning containers: `typedef array<ref Managed> TManagedRefArray;` (`P:\scripts\1_core\proto\enscript.c:737`). No `typedef ref` form appears anywhere under `P:\scripts\`.
+
+```
+// WRONG: ref on the aliased type
 typedef ref MyClass MyClassRef;
 
 // CORRECT
 typedef MyClass MyClassRef;
+
+// ALSO CORRECT: ref on the element type, as vanilla does
+typedef array<ref MyData> MyDataRefArray;
 ```
 
 #### INCORRECT Usage of `ref`
@@ -99,7 +114,7 @@ typedef MyClass MyClassRef;
 1. **Method Parameters:**
 
 ```
-// WRONG: Causes memory issues
+// AVOID: ref on parameters and return type is not needed in mod code (style)
 ref MyClass MyMethod(ref MyClass1 a, ref MyClass2 b)
 {
     // ...
@@ -115,7 +130,8 @@ MyClass MyMethod(MyClass1 a, MyClass2 b)
 2. **Return Types:**
 
 ```
-// WRONG: Causes reference counting issues
+// AVOID: not needed in mod code (style). Vanilla does compile it, e.g.
+// `ref map<int, string> GetAttachSoundSets()` (P:\scripts\3_game\inventoryitemtype.c:20)
 ref MyClass GetObject()
 {
     ref MyClass obj = new MyClass();
@@ -133,12 +149,16 @@ MyClass GetObject()
 3. **Local Variables:**
 
 ```
+// AVOID: ref on a local is not needed in mod code (style). Vanilla does it,
+// e.g. `ref set<Object> victims = new set<Object>;` (P:\scripts\4_world\classes\areadamage\areadamage.c:175)
+void MyMethodAvoid()
+{
+    ref MyClass3 myClass3 = new ref MyClass3();
+}
+
+// CORRECT: No ref on local variables
 void MyMethod()
 {
-    // WRONG: Unnecessary ref on local variable
-    ref MyClass3 myClass3 = new ref MyClass3();
-
-    // CORRECT: No ref on local variables
     MyClass3 myClass3 = new MyClass3();
 }
 ```
@@ -146,7 +166,8 @@ void MyMethod()
 4. **`new` Keyword:**
 
 ```
-// WRONG: Never use ref with new
+// AVOID: ref with new (style: no vanilla file uses `new ref`, grep of P:\scripts;
+// whether it compiles is unverified)
 ref MyClass obj = new ref MyClass();
 
 // CORRECT
@@ -179,10 +200,16 @@ class MyMod_ItemTracker
 }
 ```
 
-**2. Avoid Creating Multiple Strong References:**
+**2. Prefer One Owner (style):**
+
+Two strong refs to the same object is valid shared ownership: it does not
+leak or crash (only freed-too-early and ref cycles are real effects, see
+`../enscript/references/language_memory.md`, rules 1 and 3). One owner is a style preference so lifetime is obvious.
+Keep shared ownership when both holders must keep the object alive: a weak
+copy reads null once the single owner lets go.
 
 ```
-// BAD: Multiple strong refs to same object
+// AVOID (style, no leak or crash): two owners make lifetime harder to follow
 class BadExample
 {
     ref MyClass m_Object1;
@@ -192,11 +219,11 @@ class BadExample
     {
         MyClass obj = new MyClass();
         m_Object1 = obj;
-        m_Object2 = obj;  // Two strong refs to same object!
+        m_Object2 = obj;  // Second owner: valid, just less obvious
     }
 }
 
-// GOOD: Single strong reference
+// PREFERRED (style): one owner, one weak observer
 class GoodExample
 {
     ref MyClass m_Object;
@@ -233,20 +260,20 @@ ref array<EntityAI> GetItems()
 
 #### Common Issues Caused by Incorrect `ref` Usage
 
-- **Crashes**: Reference counting errors lead to premature deletion or memory leaks
-- **Null pointer exceptions**: Objects deleted unexpectedly
-- **Cross-mod interference**: Your ref issues affect other mods
-- **Unpredictable behavior**: Objects existing longer than intended
-- **Memory leaks**: Objects never getting cleaned up
+- **Freed too early**: a member made with `new` and no `ref` is freed at once, so later uses find `null` (`../enscript/references/language_memory.md`, rule 1, engine behaviour)
+- **Leaks**: two objects holding `ref`s to each other are never freed (`../enscript/references/language_memory.md`, rule 3, engine behaviour)
+- **Unverified**: crashes or effects on other mods. No vanilla source on `P:\scripts\` shows that a `ref` mistake causes either.
+
+`ref` on parameters, return types and locals is a style point only (Quick Reference Rules, rule 2); it is not on this list.
 
 #### Quick Reference Rules
 
-1. **USE `ref` (or `autoptr`) for:** Member variables ONLY
-2. **NEVER use `ref` for:** Method parameters, return types, local variables, typedefs
-3. **NEVER use:** `new ref ClassName()`
+1. **USE `ref` for:** Member variables you own, and the element type of containers that hold objects you create (`ref array<ref MyData>`, as in `typedef array<ref Managed> TManagedRefArray;`, `P:\scripts\1_core\proto\enscript.c:737`)
+2. **Do not use `ref` for (style, not needed in mod code):** Method parameters, return types, local variables, and the aliased type of a typedef (`typedef ref T`)
+3. **Do not use (style):** `new ref ClassName()`. No vanilla file uses `new ref` (grep of `P:\scripts`); whether it compiles is unverified
 4. **ALWAYS use:** `new ClassName()`
 5. **Goal:** One strong reference per object when possible
-6. **NEVER use `delete`**: let garbage collection handle cleanup
-7. **Don't mix:** Use either `ref` OR `autoptr`, not both in the same codebase
+6. **NEVER `delete` an entity**: use `Delete()` or `DeleteSafe()`. `delete` on your own script object is allowed when nothing else holds it
+7. **No `autoptr`:** it is legacy; use `ref` in mod code
 
-**When in doubt, omit the `ref` keyword and let EnScript's automatic reference counting handle it.**
+**When in doubt on a parameter, return type or local, omit the `ref` keyword and let EnScript's automatic reference counting handle it. Owning members and their element types still need it.**

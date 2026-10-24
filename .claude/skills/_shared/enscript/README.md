@@ -14,9 +14,8 @@ This folder fills the gap between those: the recurring patterns themselves (nets
 
 Most of this folder started as a vendored mirror (see Attribution). Files are now in one of two states:
 
-- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md` (which marks its two native compiler reports as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md` and `scheduler.md` (which marks its one unverified report as such); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `02`, `03`, `07`, `10`, the three layouts and `layouts.md`.
+- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md` (which marks its two native compiler reports as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md` and `scheduler.md` (which marks its one unverified report as such); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `01` to `10`, the three layouts and `layouts.md`.
 - **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`) and `integrations/dabs_framework.md` (the Dabs scripts PBO).
-- **Vendored, not yet checked on `P:\`**: examples `01`, `04`, `05`, `06`, `08` and `09`. Use them for shape only and check each call on `P:\scripts\` before you copy it.
 
 ## Layout
 

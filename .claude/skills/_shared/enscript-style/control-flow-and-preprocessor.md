@@ -2,7 +2,7 @@
 
 Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
 
-Vanilla facts: Preprocessor defines (`SERVER`, `NO_GUI`, `DIAG_DEVELOPER`) are checked in `../enscript/references/language_compile.md`; `foreach` with an index is in `language_types.md`.
+Vanilla facts: Preprocessor defines (`SERVER`, `NO_GUI`, `DIAG_DEVELOPER`) are checked in `../enscript/references/language_compile.md`; `foreach` with an index is in `../enscript/references/language_types.md`.
 
 ## Control Flow
 
@@ -30,13 +30,13 @@ else
 
 **Bitwise Operators in Conditions:**
 
-EnScript follows C/C++ operator precedence where comparison comes before bitwise operations. Always use parentheses:
+Unverified: the style guide reports that Enforce Script follows C/C++ operator precedence, where `==` binds tighter than `&`, so `a & b == b` would parse as `a & (b == b)`. This guide has not checked that against the compiler or a vanilla file. Parentheses make the intent explicit whatever the precedence is, so always use them:
 
 ```
 int a = 1;
 int b = 2;
 
-// WRONG: Parsed as: a & (b == b)
+// AMBIGUOUS: reported (unverified) to parse as a & (b == b)
 if (a & b == b)
 
 // CORRECT: Explicit parentheses
@@ -72,7 +72,7 @@ foreach (string stateName : stateNames)
 
 **Foreach with Getters:**
 
-`foreach` should not be used directly on iterables returned by getter methods. You should assign to a variable first:
+Unverified: the style guide reports that `foreach` over a getter call calls the getter again on every iteration. This guide has not checked that against the compiler or a vanilla file. Assigning the result to a local first is correct either way, so prefer it:
 
 ```
 class MyClass
@@ -86,7 +86,7 @@ class MyClass
 
     void TestBad()
     {
-        // getter is called every foreach
+        // AVOID: reported (unverified) to call the getter every iteration
         foreach (string t : GetTest())
         {
             Print(t);
@@ -127,10 +127,10 @@ while (condition)
 
 **Switch Default Case Issue:**
 
-EnScript requires explicit return after switch even with default case:
+Unverified: the style guide reports that the compiler can still ask for a return after a `switch` whose `default` case returns. This guide has not checked that against the compiler or a vanilla file, so treat it as reported compiler behaviour, not a confirmed rule. Writing the last return after the `switch` is safe either way:
 
 ```
-// PROBLEMATIC: Compiler complains about missing return
+// REPORTED (unverified): compiler may complain about a missing return
 string Test(string what)
 {
     switch (what)
@@ -141,7 +141,7 @@ string Test(string what)
         default:
             return "Y";
     }
-    // Compiler error: function must return a value
+    // Reported (unverified) error: function must return a value
 }
 
 // WORKAROUND: Move last return outside switch
@@ -170,10 +170,11 @@ if (index >= 0 && index < list.Count())
     int value = list[index];
 }
 
-// NOTE: This is valid but has different semantics
-// Returns true if entry is null OR out of bounds
-if (!list[1])  // Evaluates to true for both null and out-of-bounds
+// NOT A BOUNDS CHECK: tests the value, not the index
+if (!list[index])
 ```
+
+`!list[index]` reads the element and tests its value, so it says nothing about whether `index` is in range. Unverified: the style guide reports that it is true for an out-of-range index. This guide has not checked what an out-of-range read does, so never use it as a bounds check.
 
 **Best Practice:** Use explicit index bounds checking: `if (index >= 0 && index < array.Count())`
 
@@ -199,31 +200,28 @@ if (!list[1])  // Evaluates to true for both null and out-of-bounds
 
 **Empty Preprocessor Blocks:**
 
-Empty `#ifdef`/`#ifndef` blocks cause segfaults, even if they only contain comments:
+Vanilla compiles `#ifdef` blocks that hold only a comment. `P:\scripts\4_world\classes\environment\environment.c:1-3` ships one, and the diag build defines `DIAG_DEVELOPER`, so it compiles this block:
 
 ```
-// WRONG: Causes segfault
-#ifdef FOO
-    // This will crash
+#ifdef DIAG_DEVELOPER
+//#define CHECK_SHADOW_VIZ
 #endif
-
-// CORRECT: Either remove or add actual code
-#ifdef FOO
-    int dummy;  // At least one statement
-#endif
-
-// BETTER: Remove if not needed
-// #ifdef FOO
-// #endif
 ```
+
+A comment-only block is therefore not a crash risk. Still delete blocks you no longer need, so the code stays readable.
 
 ### Defines
 
 **Common Directives:**
 
-- `#define`: Define preprocessor macros (not constants)
-- `#ifdef` / `#ifndef`: Conditional compilation
-- `#endif`: End conditional block
+Vanilla script uses `#ifdef`, `#ifndef`, `#else` and `#endif` (`_shared/enscript/references/language_compile.md:47`).
+
+- `#define NAME`: Declares a flag name that `#ifdef` and `#ifndef` test. Every `#define` in `P:\scripts` is a bare name with no value (for example `P:\scripts\1_core\defines.c:14`), and file local debug switches are left as commented `//#define NAME` lines (`P:\scripts\4_world\classes\codelockcomponent.c:1`).
+- `#ifdef` / `#ifndef`: Compile the block only when the name is, or is not, defined
+- `#else`: Start the alternative block
+- `#endif`: End the conditional block
+
+Unverified: whether `#define NAME value` substitutes a value the way a C macro does. No vanilla file does it, so do not rely on it.
 
 **Naming:**
 
@@ -235,4 +233,4 @@ Empty `#ifdef`/`#ifndef` blocks cause segfaults, even if they only contain comme
 #define MYMOD_FEATURE_X
 ```
 
-**Note:** `#define` creates preprocessor macros, not constants. For actual constants, use `const` or enums.
+**Note:** `#define` only declares a flag name for `#ifdef` and `#ifndef`; it is not a constant. For actual constants, use `const` or enums.

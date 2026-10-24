@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -153,6 +154,29 @@ def build_command(exe: str, agent: str, model: str | None = None) -> list[str]:
     return cmd
 
 
+def run_tree(cmd: list[str], stdin: str, timeout: int) -> subprocess.CompletedProcess:
+    """Run cmd and, on timeout, kill its whole process tree before raising TimeoutExpired.
+
+    On Windows `claude` resolves to claude.CMD, so the child is cmd.exe and the
+    real claude.exe is a grandchild. subprocess.run's timeout kills only cmd.exe;
+    the grandchild keeps the output pipes open and the run hangs for good.
+    """
+    posix = os.name != "nt"
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            text=True, encoding="utf-8", cwd=REPO, start_new_session=posix)
+    try:
+        out, err = proc.communicate(stdin, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        if posix:
+            os.killpg(proc.pid, 9)
+        else:
+            subprocess.call(["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        proc.communicate()
+        raise
+    return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
+
+
 def ask(agent: str, question: str, timeout: int, model: str | None = None) -> str:
     """Ask one agent one question through the Claude Code CLI and return its answer."""
     exe = shutil.which("claude")
@@ -160,8 +184,7 @@ def ask(agent: str, question: str, timeout: int, model: str | None = None) -> st
         raise RuntimeError("claude CLI not found on PATH")
     cmd = build_command(exe, agent, model)
     # The question goes in on stdin so Windows quoting never mangles code snippets.
-    proc = subprocess.run(cmd, input=question, capture_output=True, text=True, encoding="utf-8",
-                          timeout=timeout, cwd=REPO)
+    proc = run_tree(cmd, question, timeout)
     if proc.returncode != 0:
         raise RuntimeError(f"claude exited {proc.returncode}: {proc.stderr.strip()[:500]}")
     return proc.stdout

@@ -2,7 +2,7 @@
 
 Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
 
-Vanilla facts: Each topic has a checked file: `../enscript/patterns/modded_class.md`, `patterns/singleton.md`, `../persistence/save-load-contract.md`, `../enscript/integrations/input_bindings.md`.
+Vanilla facts: Each topic has a checked file: `../enscript/patterns/modded_class.md`, `../enscript/patterns/singleton.md`, `../persistence/save-load-contract.md`, `../enscript/integrations/input_bindings.md`.
 
 ## Modding Patterns
 
@@ -31,7 +31,7 @@ When using the `modded` keyword, **NEVER** add inheritance (`: ParentClass`). Th
 // WRONG: Adding inheritance to modded class
 modded class PlayerBase : ManBase
 {
-    // Inheritance declaration is ignored!
+    // Reported to make the whole modded class a silent no-op (overrides never run); see patterns/modded_class.md
 }
 
 // CORRECT: No inheritance declaration
@@ -43,7 +43,7 @@ modded class PlayerBase
 
 **Why This Matters:**
 
-- Adding inheritance to a `modded` class is **ignored by the compiler**
+- Adding inheritance to a `modded` class is **reported to make the whole modded class a silent no-op (overrides never run)**: it compiles without a warning but never joins the modded stack; see `../enscript/patterns/modded_class.md`
 - You cannot change the class hierarchy by modding an existing class
 - It's misleading to readers and should be omitted
 - The modded class already IS the class you're modding: you're just adding to it
@@ -52,7 +52,7 @@ modded class PlayerBase
 
 ### Accessing Private Members
 
-Modded classes in the same file can access private members:
+Modded classes can access the private members of the class they mod. **Unverified on `P:\`:** the compiler is native, so this comes from the style guide, not from a vanilla file; test it in your mod before you rely on it.
 
 ```
 // Original class
@@ -132,17 +132,22 @@ class MyClass
     private void MyClass() { }  // Private constructor
 }
 
-// ALSO GOOD: Public static instance
+// ALSO GOOD: Public static instance, set by a public constructor
 class MyClass
 {
     static ref MyClass Instance;
 
-    private void MyClass()
+    void MyClass()  // Public: the owner calls new MyClass() once
     {
         Instance = this;
     }
 }
+
+// In the owner's setup code (once):
+new MyClass();  // Instance now holds the object
 ```
+
+The second form only works if something calls the constructor, so it must stay public and one owner must create the object exactly once. Vanilla does this: `ColorManager` has a public `void ColorManager() { m_Instance = this; }` (`P:\scripts\5_mission\gui\inventorynew\colormanager.c:22-25`) and `Inventory` creates it with `new ColorManager();` (`P:\scripts\5_mission\gui\inventorynew\inventory.c:81`). With a private constructor and no static creator, `Instance` stays null forever.
 
 ### Accessing Globals
 
@@ -156,7 +161,7 @@ g_Game.GetPlayer();
 GetGame().GetPlayer();
 ```
 
-**Note:** While using getters is common in vanilla code, direct access is often clearer and more efficient. This is why `proto native CGame GetGame()` was replaced with `DayZGame GetGame() { return g_Game; }` (`P:\scripts\3_game\gameplay.c:636`): the script version is faster for simple global access due to the overhead of calling native methods.
+**Note:** While using getters is common in vanilla code, direct access is often clearer. Vanilla defines `GetGame()` in script as `DayZGame GetGame() { return g_Game; }` (`P:\scripts\3_game\gameplay.c:636`). **Unverified on `P:\`:** the style guide reports that this replaced an earlier `proto native CGame GetGame()` and that the script version is faster because native calls carry overhead. No older version or engine timing is on `P:\`, so treat the history and the speed claim as reports, not facts.
 
 ---
 
