@@ -268,7 +268,8 @@ function Home({ onNavigate }) {
         <HeroForge />
         {/* flex-start on phones: a stacked column would otherwise stretch the logo to full width. */}
         <Stack direction={{ xs: 'column', sm: 'row' }} gap={3} alignItems={{ xs: 'flex-start', sm: 'center' }}>
-          <Logo size={96} />
+          {/* Full width on phones, where the logo sits above the title. */}
+          <Logo size={96} sx={{ width: { xs: '100%', sm: 'auto' }, height: { xs: 'auto', sm: 96 } }} />
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="h1" sx={{ fontSize: { xs: '2.2rem', md: '3rem' } }}>
               Agentic-Z Wiki
