@@ -266,7 +266,8 @@ function Home({ onNavigate }) {
       >
         <HeroShader />
         <HeroForge />
-        <Stack direction={{ xs: 'column', sm: 'row' }} gap={3} alignItems={{ sm: 'center' }}>
+        {/* flex-start on phones: a stacked column would otherwise stretch the logo to full width. */}
+        <Stack direction={{ xs: 'column', sm: 'row' }} gap={3} alignItems={{ xs: 'flex-start', sm: 'center' }}>
           <Logo size={96} />
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="overline" color="primary">
@@ -280,7 +281,20 @@ function Home({ onNavigate }) {
         <Typography sx={{ mt: 2.5, maxWidth: '62ch', fontSize: '1.05rem' }} color="text.secondary">
           {intro.replace('This guide explains', 'Everything about')}
         </Typography>
-        <Stack direction="row" gap={1.5} sx={{ mt: 3, flexWrap: 'wrap' }}>
+        {/* On phones each button takes half the row; one that can't fit its label wraps, and then both fill the row. */}
+        <Stack
+          direction="row"
+          gap={1.5}
+          sx={{
+            mt: 3,
+            flexWrap: 'wrap',
+            '& > .MuiButton-root': {
+              flex: { xs: '1 1 calc(50% - 6px)', sm: '0 0 auto' },
+              minWidth: { xs: 'max-content', sm: 64 },
+              whiteSpace: 'nowrap',
+            },
+          }}
+        >
           <Button variant="contained" startIcon={<RocketLaunchOutlinedIcon />} onClick={() => onNavigate('install-and-first-setup')}>
             Install Agentic-Z
           </Button>
