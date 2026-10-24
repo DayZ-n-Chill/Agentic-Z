@@ -53,12 +53,12 @@ python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "<skill-dir>"
 - Ending in `\.claude\skills\dayz-record-correction`: a clone. The Agentic-Z repo root is three levels up from it (the folder that holds `.claude\`), and every file the tiers name (`CLAUDE.md`, `.claude\skills\_shared\dayz-conventions.md`, `.claude\agents\...`) is relative to that root, not to the current project.
 
 - In a clone, edit the file the tier names under that repo root, even when the session was started in another project. Keep the edit small and in the file's existing style.
-- In a clone, if the edited file is under `.claude\agents\` or `.claude\skills\` (a `SKILL.md`, `.claude\skills\_shared\dayz-conventions.md` or a topic file under `.claude\skills\_shared\conventions\`), run `/docs-sync` so the wiki mirror under `wiki\docs\` stays in sync. Otherwise the Stop hook reports wiki drift at the end of the session.
+- In a clone, if the edit changes the length of `.claude\skills\_shared\dayz-conventions.md` or a topic file under `.claude\skills\_shared\conventions\`, or adds, renames or removes an agent or skill, run `/docs-sync` so the React wiki under `wiki\src\` still states the right line counts, names and numbers (`--apply` rewrites wrong counts; names need a hand edit). Otherwise the Stop hook reports wiki problems at the end of the session.
 - In a plugin install, the plugin's files are replaced on every update. Write the rule under a `## Agentic-Z rules` heading in whichever of the project's `CLAUDE.md`, `AGENTS.md` and `GEMINI.md` exist, with the same text in each, and say that's why. For a Tier 1 rule, create any of the three that are missing, so Claude Code, Codex and Gemini all see it. For a Tier 2 or Tier 3 rule, create all three the same way when none of them exists.
 
 ## 3b. Check it (clones only)
 
-From the repo root, run the tests and the wiki drift check. They need pytest and pyyaml once: `python -m pip install pytest pyyaml`.
+From the repo root, run the tests and the wiki check. The tests need pytest once: `python -m pip install pytest`.
 
 ```cmd
 python -m pytest -q .claude scripts/dev hooks
@@ -71,4 +71,4 @@ An edit to an agent file or a rules file can break the repo tests (for example `
 
 ## 4. Say what changed
 
-One line: the rule and the file it went into. When `/docs-sync` ran, also name the wiki page it updated, for example `wiki\docs\agents\dayz-config-specialist.md`. In a clone, add the result of step 3b: tests passed and the wiki is in sync, or what failed and whether you fixed or reverted it.
+One line: the rule and the file it went into. When `/docs-sync` ran, also name the wiki file it updated, for example `wiki\src\content\guide.md`. In a clone, add the result of step 3b: tests passed and the wiki is in sync, or what failed and whether you fixed or reverted it.

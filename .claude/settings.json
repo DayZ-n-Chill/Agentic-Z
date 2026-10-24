@@ -108,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/skills/docs-sync/sync.py\" --check --quiet",
+            "command": "\"$CLAUDE_PROJECT_DIR/scripts/dev/docs-sync.bat\" --check --quiet",
             "timeout": 15
           }
         ]
