@@ -191,14 +191,15 @@ export default function TableCards({ source, renderInline }) {
 // Tables whose other columns are all short (grades, statuses): one even column per value.
 function Matrix({ header, groups, renderInline }) {
   const cols = header.length - 1;
-  // Wide enough for the longest column header on one line (about 7.5px per character at this size).
-  const colWidth = Math.max(112, Math.ceil(Math.max(...header.slice(1).map((h) => plain(h).length)) * 7.5) + 8);
+  // Wide enough for the longest column header on one line (about 7.5px per character at this size),
+  // capped so long headers wrap instead of squeezing the name column.
+  const colWidth = Math.min(136, Math.max(112, Math.ceil(Math.max(...header.slice(1).map((h) => plain(h).length)) * 7.5) + 8));
   const grid = {
     display: 'grid',
     alignItems: 'center',
     columnGap: 2,
     rowGap: 0.75,
-    gridTemplateColumns: { xs: `repeat(${cols}, minmax(0, 1fr))`, sm: `minmax(0, 1fr) repeat(${cols}, ${colWidth}px)` },
+    gridTemplateColumns: { xs: `repeat(${cols}, minmax(0, 1fr))`, sm: `minmax(220px, 1fr) repeat(${cols}, ${colWidth}px)` },
   };
   const nameSx = { gridColumn: { xs: '1 / -1', sm: 'auto' } };
   return (
@@ -213,7 +214,7 @@ function Matrix({ header, groups, renderInline }) {
               // On phones only the first word shows ("v1.5.0"), so every header stays on one line.
               const [first, ...rest] = plain(h).split(' ');
               return (
-                <Typography key={h} sx={{ fontFamily: fonts.mono, fontSize: '0.64rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary', lineHeight: 1.3, whiteSpace: 'nowrap' }}>
+                <Typography key={h} sx={{ fontFamily: fonts.mono, fontSize: '0.64rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary', lineHeight: 1.3, whiteSpace: { xs: 'nowrap', sm: 'normal' } }}>
                   {first}
                   {rest.length > 0 && <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}> {rest.join(' ')}</Box>}
                 </Typography>
