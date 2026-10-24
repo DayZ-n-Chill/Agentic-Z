@@ -384,6 +384,22 @@ def test_build_finding_points_to_files(project):
     assert findings[0]["line"] == 2
 
 
+def test_build_crash_is_a_finding_and_keeps_the_output_tail(project, capsys):
+    # The live AZTestVest build: AddonBuilder crashed with only [FATAL] and exception
+    # lines, and the gate kept neither, so the debugger could not see the cause.
+    out = BUILD_OK.replace(
+        "Packing MyMod...",
+        "[2026-10-24 02:47:53,566] [FATAL]: System.ArgumentNullException: Value cannot be null.\n"
+        "Parameter name: path",
+    ) + "[FAIL]  AddonBuilder reported success but P:\\Mods\\@MyMod\\Addons\\MyMod.pbo is missing.\n"
+    fake = FakeRuntime({"build.py": (1, out)})
+    rc, _, data = run_main(["build", "MyMod", "--json"], fake, capsys)
+    assert rc == 1
+    assert any("[FATAL]" in f["text"] for f in data["failures"] if f["category"] == "build_error")
+    step = next(s for s in data["steps"] if s.get("step") == "dayz-build-pbo")
+    assert any("ArgumentNullException" in line for line in step["tail"])
+
+
 def test_build_ignores_preflight_warnings_and_zero_error_summaries(project):
     assert gate.parse_build_output(BUILD_OK) == []
 

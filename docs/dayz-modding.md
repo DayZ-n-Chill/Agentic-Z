@@ -225,7 +225,7 @@ python .claude\skills\dayz-build-pbo\build.py <ModName> [--clean]
 7. Resolve `AddonBuilder.exe` via `find_dayz_tools()`.
 8. Ownership-marker gate: refuse to build into a `P:\Mods\@<ModName>\` that Agentic-Z did not create. With `--clean`, also refuse while `Addons\` holds PBOs other than `<ModName>.pbo`.
 9. Ensure `P:\Mods\@<ModName>\Addons\` and `P:\temp\<ModName>\` exist, writing the marker when this run created `@<ModName>`.
-10. Invoke `AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill>\include.lst -exclude=<skill>\exclude.lst [-clear]`. AddonBuilder's stdout/stderr stream live so you see binarization progress and config errors as they happen.
+10. Copy the mod to `P:\temp\_stage\<ModName>\` without the files `exclude.lst` names, then invoke `AddonBuilder.exe P:\temp\_stage\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill>\include.lst [-clear]`. It passes no `-exclude=`, because AddonBuilder 1.0.240639 crashes on that flag. AddonBuilder's stdout/stderr stream live so you see binarization progress and config errors as they happen.
 11. Verify `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and was refreshed by this build.
 12. Remove the temp dir on success (kept on failure for debugging).
 

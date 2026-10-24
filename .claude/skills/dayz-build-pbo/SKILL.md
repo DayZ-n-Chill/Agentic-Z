@@ -35,9 +35,10 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 7. **Ownership gate** - if `P:\Mods\@<ModName>\` already exists, it must contain `.agentic-z-scaffold` with content `<ModName>`. An unmarked folder could be a subscribed or hand-placed mod, so the build refuses to write into it or `-clear` it. This is the same rule `/dayz-deploy-pbo` uses.
 8. **Clean gate** (`--clean` only) - refuses if `P:\Mods\@<ModName>\Addons\` holds any `.pbo` other than `<ModName>.pbo`, since `-clear` would wipe that deployed payload.
 9. **Ownership marker** - when this run creates `P:\Mods\@<ModName>\`, it writes `.agentic-z-scaffold` there before AddonBuilder starts, so a failed first build leaves a marked folder that the next build accepts. The marker sits above `Addons\`, so `-clear` keeps it. `/dayz-clean-workspace` only removes deployed folders that carry it. If the marker cannot be written, the build prints `[FAIL]` and exits 1 without running AddonBuilder.
-10. **Build** - runs `AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill-dir>\include.lst -exclude=<skill-dir>\exclude.lst [-clear]`. Binarization is on.
-11. **Verify output** - `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and is newer than the build start. AddonBuilder can exit 0 while leaving an old PBO in place; that case fails as a stale PBO.
-12. **Cleanup** - removes `P:\temp\<ModName>\` on success; keeps it on failure for debugging.
+10. **Stage** - copies `workspace/<ModName>/` to `P:\temp\_stage\<ModName>\`, leaving out every file that matches `exclude.lst`, and prints how many files it copied and left out.
+11. **Build** - runs `AddonBuilder.exe P:\temp\_stage\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill-dir>\include.lst [-clear]`. Binarization is on. There is no `-exclude=`: AddonBuilder 1.0.240639 crashes on it with `ArgumentNullException` in `TextureHeaderBinazrizeTask`, because it leaves its exclude-list path empty when the flag is given, so the stage step applies the list instead.
+12. **Verify output** - `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and is newer than the build start. AddonBuilder can exit 0 while leaving an old PBO in place; that case fails as a stale PBO.
+13. **Cleanup** - removes `P:\temp\<ModName>\` and the stage on success; keeps both on failure for debugging.
 
 ## include.lst
 
@@ -45,7 +46,7 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 
 ## exclude.lst
 
-`exclude.lst` (next to `build.py`) is passed as `-exclude=`. AddonBuilder leaves files matching its patterns (one per line, `;` starts a comment) out of the final PBO. It drops `.gui-sources\` (the sprite source PNGs for `/dayz-build-imageset`; only the packed atlas and `.imageset` under `gui/imagesets/` ship), the `workbench\` folder, version-control folders, binarization logs, archives, signatures and keys, and the `Source\`, `Doc\` and `Temp\` folders at the mod root. Those three are anchored to the root, so a nested folder with the same name (for example `scripts\4_World\Temp\` or `data\doc\`) still ships.
+`exclude.lst` (next to `build.py`) is applied by `build.py` while it stages the mod: files matching its patterns (one per line, `;` starts a comment) are not copied, so they stay out of the final PBO. Each pattern matches the whole path relative to the mod root, ignoring case, and `*` crosses folders. It drops `.gui-sources\` (the sprite source PNGs for `/dayz-build-imageset`; only the packed atlas and `.imageset` under `gui/imagesets/` ship), the `workbench\` folder, version-control folders, binarization logs, archives, signatures and keys, and the `Source\`, `Doc\` and `Temp\` folders at the mod root. Those three are anchored to the root, so a nested folder with the same name (for example `scripts\4_World\Temp\` or `data\doc\`) still ships.
 
 ## Refuses to run if
 
@@ -78,12 +79,14 @@ Preflight complete.
 [OK]    AddonBuilder: C:\...\DayZ Tools\Bin\AddonBuilder\AddonBuilder.exe
 [OK]    P:\Mods\@MyMod\ ownership marker valid
 
-[AddonBuilder] C:\...\AddonBuilder.exe P:\MyMod P:\Mods\@MyMod\Addons -prefix=MyMod -temp=P:\temp\MyMod -include=...\include.lst -exclude=...\exclude.lst
+[OK]    Staged 9 files in P:\temp\_stage\MyMod (2 left out by exclude.lst)
+
+[AddonBuilder] C:\...\AddonBuilder.exe P:\temp\_stage\MyMod P:\Mods\@MyMod\Addons -prefix=MyMod -temp=P:\temp\MyMod -include=...\include.lst
 
 ... AddonBuilder's own output, streamed live ...
 
 [OK]    Built: P:\Mods\@MyMod\Addons\MyMod.pbo (12,345 bytes)
-[OK]    Cleaned temp dir
+[OK]    Cleaned temp and stage dirs
 ```
 
 The preflight gate runs first, then the lint gate. Each `/dayz-lint` warning prints as a `[WARN]  lint` line and does not stop the build; any lint error stops it before the junction and tools checks. The ownership line appears only when `@MyMod` already exists. Failures print `[FAIL]  <reason>` followed by an indented hint.

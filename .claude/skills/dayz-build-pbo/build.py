@@ -8,6 +8,7 @@ See SKILL.md for full usage.
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import os
 import shutil
 import subprocess
@@ -24,6 +25,9 @@ _nm = h.load_module("dayz_new_mod_module", h.SKILLS_DIR / "dayz-new-mod" / "new_
 
 INCLUDE_LIST = Path(__file__).resolve().parent / "include.lst"
 # Patterns left out of the PBO, including .gui-sources/ (imageset sprite sources).
+# build.py applies them itself while staging the mod (see stage_source): AddonBuilder
+# 1.0.240639 crashes on any -exclude= (ArgumentNullException in TextureHeaderBinazrizeTask,
+# because BuilderConfiguration leaves ExcludeListFilename null when -exclude is given).
 EXCLUDE_LIST = Path(__file__).resolve().parent / "exclude.lst"
 P_DRIVE = Path("P:\\")
 MODS_ROOT = P_DRIVE / "Mods"
@@ -145,11 +149,50 @@ def build_addon_builder_cmd(
         f"-prefix={modname}",
         f"-temp={temp_dir}",
         f"-include={INCLUDE_LIST}",
-        f"-exclude={EXCLUDE_LIST}",
     ]
     if clean:
         cmd.append("-clear")
     return cmd
+
+
+def exclude_patterns() -> list[str]:
+    """The patterns in exclude.lst, without blank and ';' comment lines."""
+    lines = EXCLUDE_LIST.read_text(encoding="utf-8").splitlines()
+    return [line.strip() for line in lines if line.strip() and not line.strip().startswith(";")]
+
+
+def is_excluded(rel_path: str, patterns: list[str]) -> bool:
+    """True when a mod-relative path (backslash separators) matches an exclude pattern.
+
+    The whole relative path is matched, case-insensitive, and '*' crosses folder
+    separators, so "workbench\\*.*" drops the root workbench folder only and
+    "*.bak" drops .bak files at any depth.
+    """
+    rel = rel_path.lower()
+    return any(fnmatch.fnmatchcase(rel, pat.lower()) for pat in patterns)
+
+
+def stage_source(source: Path, stage: Path, patterns: list[str]) -> tuple[int, int]:
+    """Copy source to a fresh stage folder, leaving out excluded files.
+
+    Returns (files copied, files left out). AddonBuilder then packs the stage, so the
+    exclude list holds without passing -exclude=.
+    """
+    if stage.exists():
+        shutil.rmtree(stage)
+    copied = skipped = 0
+    for path in sorted(source.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = str(path.relative_to(source)).replace("/", "\\")
+        if is_excluded(rel, patterns):
+            skipped += 1
+            continue
+        dest = stage / path.relative_to(source)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, dest)
+        copied += 1
+    return copied, skipped
 
 
 def other_pbos(addons_dir: Path, modname: str) -> list[str]:
@@ -236,10 +279,12 @@ def main() -> int:
     if created_root and not h.write_marker(deploy_root, args.modname):
         return 1
     temp_dir.mkdir(parents=True, exist_ok=True)
+    # The stage keeps the <ModName> folder name, which AddonBuilder uses for the PBO name.
+    stage = TEMP_ROOT / "_stage" / args.modname
+    copied, skipped = stage_source(workspace_target, stage, exclude_patterns())
+    print(f"{OK} Staged {copied} files in {stage} ({skipped} left out by exclude.lst)")
 
-    cmd = build_addon_builder_cmd(
-        addon_builder, P_DRIVE / args.modname, target_dir, args.modname, temp_dir, args.clean
-    )
+    cmd = build_addon_builder_cmd(addon_builder, stage, target_dir, args.modname, temp_dir, args.clean)
     print()
     print(f"[AddonBuilder] {' '.join(cmd)}")
     print()
@@ -262,11 +307,12 @@ def main() -> int:
 
     print(f"{OK} Built: {pbo_path} ({pbo_path.stat().st_size:,} bytes)")
 
-    try:
-        shutil.rmtree(temp_dir)
-        print(f"{OK} Cleaned temp dir")
-    except OSError as e:
-        print(f"{WARN} Could not remove {temp_dir}: {e}")
+    for folder in (temp_dir, stage):
+        try:
+            shutil.rmtree(folder)
+        except OSError as e:
+            print(f"{WARN} Could not remove {folder}: {e}")
+    print(f"{OK} Cleaned temp and stage dirs")
 
     return 0
 

@@ -76,7 +76,8 @@ MOD_QUALIFIED = {"null_pointer", "cant_find"}
 # AddonBuilder diagnostics (dayz-build-checker: errors, and warnings about missing
 # files, missing textures or unknown classes). Matched by keyword because
 # AddonBuilder, CfgConvert and Binarize each word their messages differently.
-BUILD_ERROR_RE = re.compile(r"(?i)\berror\b|\bfailed\b|undefined base class|encountered instead of")
+# [FATAL] and .NET exceptions: AddonBuilder 1.0.240639 crashed on -exclude= with only these lines.
+BUILD_ERROR_RE = re.compile(r"(?i)\berror\b|\bfailed\b|\bfatal\b|\w+exception\b|undefined base class|encountered instead of")
 BUILD_ERROR_EXCLUDE_RE = re.compile(r"(?i)\b0 errors?\b|\bno errors?\b")
 BUILD_WARNING_RE = re.compile(
     r"(?i)(?=.*\bwarn(?:ing)?\b)(?=.*(?:missing|not found|cannot (?:open|find|load)|can't (?:open|find|load)"
@@ -287,7 +288,10 @@ def gate_build(mod: str, project_dir: Path, rt: Runtime) -> dict:
     if has_cfg or not has_payload:
         rc, out = rt.run([sys.executable, str(BUILD_PY), mod])
         findings = parse_build_output(out)
-        report["steps"].append({"step": "dayz-build-pbo", "rc": rc})
+        step = {"step": "dayz-build-pbo", "rc": rc}
+        if rc != 0:
+            step["tail"] = tail(out)  # the build output, kept so a failure can be diagnosed
+        report["steps"].append(step)
         if rc != 0 and not findings:
             findings.append(_finding("script_fail", f"dayz-build-pbo exited {rc}", "dayz-build-pbo", None, tail(out)))
         report["failures"] += findings

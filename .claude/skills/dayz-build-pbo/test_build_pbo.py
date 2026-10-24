@@ -137,34 +137,41 @@ def test_build_cmd_includes_include_list_and_clear(tmp_path):
     )
 
 
-def test_build_cmd_passes_exclude_list_that_drops_gui_sources():
+def test_build_cmd_never_passes_exclude():
+    # AddonBuilder 1.0.240639 crashes on any -exclude= (ArgumentNullException in
+    # TextureHeaderBinazrizeTask); the live AZTestVest build hit it. build.py stages
+    # the mod with exclude.lst applied instead.
     cmd = build.build_addon_builder_cmd(
-        Path("AB.exe"), Path("P:/MyMod"), Path("P:/Mods/@MyMod/Addons"), "MyMod", Path("P:/temp/MyMod"), clean=False
+        Path("AB.exe"), Path("P:/temp/_stage/MyMod"), Path("P:/Mods/@MyMod/Addons"), "MyMod",
+        Path("P:/temp/MyMod"), clean=False
     )
-    assert f"-exclude={build.EXCLUDE_LIST}" in cmd
-    patterns = [
-        line.strip() for line in build.EXCLUDE_LIST.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.startswith(";")
-    ]
+    assert not any(a.startswith("-exclude") for a in cmd)
+    patterns = build.exclude_patterns()
     assert ".gui-sources\\*.*" in patterns and "*\\.gui-sources\\*" in patterns
     assert "*\\.git\\*" in patterns
     assert "workbench\\*.*" in patterns and "*\\workbench\\*" in patterns
 
 
+def test_stage_source_leaves_out_excluded_files(tmp_path):
+    src = tmp_path / "MyMod"
+    for rel in ["config.cpp", "scripts/4_World/Temp/MyHelper.c", "workbench/dayz.gproj",
+                "gui/.gui-sources/icon.png", "data/old.bak", "Source/model.blend"]:
+        (src / rel).parent.mkdir(parents=True, exist_ok=True)
+        (src / rel).write_text("x", encoding="utf-8")
+    stage = tmp_path / "stage" / "MyMod"
+    (stage / "stale.c").parent.mkdir(parents=True)
+    (stage / "stale.c").write_text("old", encoding="utf-8")  # a previous stage is replaced
+    assert build.stage_source(src, stage, build.exclude_patterns()) == (2, 4)
+    kept = sorted(p.relative_to(stage).as_posix() for p in stage.rglob("*") if p.is_file())
+    assert kept == ["config.cpp", "scripts/4_World/Temp/MyHelper.c"]
+
+
 def _exclude_patterns():
-    return [
-        line.strip() for line in build.EXCLUDE_LIST.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.startswith(";")
-    ]
+    return build.exclude_patterns()
 
 
 def _excluded(rel_path, patterns):
-    # Model of AddonBuilder's matching: whole path relative to the mod root,
-    # case-insensitive, '*' crosses folder separators. AddonBuilder is closed
-    # source, so this model is unverified; it is the reading under which an
-    # unanchored *\Temp\* pattern drops nested folders.
-    rel = rel_path.lower()
-    return any(fnmatch.fnmatchcase(rel, pat.lower()) for pat in patterns)
+    return build.is_excluded(rel_path, patterns)
 
 
 @pytest.mark.parametrize("rel", [
