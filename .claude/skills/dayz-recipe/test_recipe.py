@@ -133,6 +133,13 @@ class CfgVehicles
         itemsCargoSize[] = {4, 4};
         hiddenSelections[] = {"camoGround", "camoMale", "camoFemale"};
     };
+    class PlateCarrierVest: Clothing
+    {
+        attachments[] = {"VestHolster", "VestPouch"};
+        inventorySlot[] = {"Vest"};
+        hiddenSelections[] = {"camoGround", "camoMale", "camoFemale"};
+    };
+    class PlateCarrierHolster: Clothing { inventorySlot[] = {"VestHolster"}; };
 };
 """,
     "dz/characters/backpacks/config.cpp": """class CfgPatches
@@ -254,6 +261,17 @@ def test_vest_checks_cover_wear_attach_cargo(vanilla, project):
     assert set(actions) == {"spawn", "wear", "attach", "cargo"}
     assert actions["attach"]["with"] == "SmershBag" and actions["cargo"]["with"] == "Rag"
     assert all(c["item"] == "MyVest_Carrier" for c in checks["checks"])
+
+
+def test_vest_without_cargo_drops_the_cargo_check(vanilla, project):
+    # Vanilla PlateCarrierVest declares no itemsCargoSize; the recipe used to fail on it.
+    assert run(vanilla, project, "vest", "MyVest", "--parent", "PlateCarrierVest",
+               "--attachment", "PlateCarrierHolster") == 0
+    folder = plan_dir(project, "MyVest")
+    checks = json.loads((folder / "behavior-checks.json").read_text(encoding="utf-8"))
+    assert {c["action"] for c in checks["checks"]} == {"spawn", "wear", "attach"}
+    plan = (folder / "plan.md").read_text(encoding="utf-8")
+    assert "PlateCarrierVest has no cargo, so the cargo check is left out" in plan
 
 
 def test_craftable_uses_chosen_ingredients(vanilla, project):

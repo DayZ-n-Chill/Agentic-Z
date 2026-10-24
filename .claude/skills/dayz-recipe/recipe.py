@@ -396,6 +396,9 @@ def _check_fit(fit: dict, host: ClassDef, guest: Optional[ClassDef], vanilla: Va
     elif kind == "cargo":
         size = _numbers(vanilla.resolve(guest, "itemSize"))
         cargo = _numbers(vanilla.resolve(host, "itemsCargoSize"))
+        if not any(cargo):  # e.g. PlateCarrierVest declares no itemsCargoSize: nothing to fit, no cargo check
+            return {"kind": kind, "ok": True, "skipped": True,
+                    "what": f"{host.name} has no cargo, so the {fit['item']} check is left out"}
         ok = len(size) == 2 and len(cargo) == 2 and (
             (size[0] <= cargo[0] and size[1] <= cargo[1]) or (size[1] <= cargo[0] and size[0] <= cargo[1]))
         what = f"{guest.name} (itemSize {_dims(size)}) fits {host.name} cargo ({_dims(cargo)})"
@@ -422,7 +425,9 @@ def _dims(n: list[int]) -> str:
 # --- output ------------------------------------------------------------------------
 
 def checks_file(res: Result) -> dict:
-    data = {"mod": res.mod, "checks": fill(res.recipe["checks"], res.values)}
+    skipped = {f["kind"] for f in res.fits if f.get("skipped")}  # a skipped fit drops its behavior check
+    checks = [c for c in res.recipe["checks"] if c["action"] not in skipped]
+    data = {"mod": res.mod, "checks": fill(checks, res.values)}
     behavior.validate_checks(data, behavior.CHECKS_FILENAME)
     return data
 

@@ -49,7 +49,7 @@ Nothing is written unless every check passes.
 
 - Each vanilla class is defined (not just declared) in a `config.cpp` under `P:\dz\`, in the config root the recipe expects (`CfgWeapons`, `CfgVehicles` or `CfgMagazines`). The default classes are looked up in the file the recipe names first; a class you swap in is found by reading every `config.cpp`. The `CfgPatches` class of that file becomes the `requiredAddons[]` entry in the tasks.
 - Each script symbol the craftable recipe relies on (`RecipeBase`, `PluginRecipesManager`, `RegisterRecipies`, the `CraftRagRope` example) is defined under `P:\scripts\`.
-- Each fit holds on the vanilla config, following inheritance: the attachment's `inventorySlot` is one of the parent's `attachments[]`, the magazine is in the parent's `magazines[]`, the vest's `inventorySlot` includes `Vest`, and the cargo item's `itemSize` fits the parent's `itemsCargoSize`.
+- Each fit holds on the vanilla config, following inheritance: the attachment's `inventorySlot` is one of the parent's `attachments[]`, the magazine is in the parent's `magazines[]`, the vest's `inventorySlot` includes `Vest`, and the cargo item's `itemSize` fits the parent's `itemsCargoSize`. A parent with no cargo (the vanilla `PlateCarrierVest` declares no `itemsCargoSize`) skips the cargo fit, and its cargo behavior check is left out.
 - The parent's `hiddenSelections` are read and named in the texture tasks.
 
 ## Output and exit codes
