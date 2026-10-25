@@ -309,6 +309,9 @@ export const register: Register = on => {
     await $.command.register({ name: 'dayz-panel', description: 'Open the Agentic-Z panel' })
     void refreshQuietly($, cwd)
     void checkForUpdate($)
+    // Every session opens the panel itself: nobody should have to type
+    // /dayz-panel to get it. A narrow terminal holds it until there is room.
+    void $.ui.open({ id: PANE, title: 'Agentic-Z' }).catch(() => null)
     return next(e)
   })
 
