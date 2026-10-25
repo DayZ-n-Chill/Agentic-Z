@@ -312,8 +312,16 @@ export const register: Register = on => {
     const press = (action: string) => () => runAction($, cwd, action)
 
     // A titled card; the terminal draws it as a rounded frame, the app as a panel.
+    // A plain card's frame is dimmed so it groups without competing with the
+    // buttons; the last run's green or red frame stays at full strength.
     const card = (title: string, children: any, borderColor = 'subtle') => (
-      <Box flexDirection="column" borderStyle="round" borderColor={borderColor} paddingX={1}>
+      <Box
+        flexDirection="column"
+        borderStyle="round"
+        borderColor={borderColor}
+        borderDimColor={borderColor === 'subtle'}
+        paddingX={1}
+      >
         <Text weight="bold" size="heading" color="claude">
           {title}
         </Text>
