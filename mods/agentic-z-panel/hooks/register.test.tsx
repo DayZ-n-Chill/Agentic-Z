@@ -512,3 +512,26 @@ test('the same version in the marketplace shows no update notice', async ($, on)
   const reply = await startWithMarketplace($, on, '0.4.0')
   expect(reply.text).not.toContain('is out')
 })
+
+test('the start card checks setup, adds a server, and creates or imports a mod', async ($, on) => {
+  const runs: string[][] = []
+  engine(on, runs)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'terminal', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await ui.press({ key: 'preflight' })
+  await ui.press({ key: 'addserver' })
+  await ui.input({ key: 'newmod', text: '   ' })
+  await ui.input({ key: 'newmod', text: 'MyVest' })
+  await ui.input({ key: 'newmod', text: 'MyCrate by Brian' })
+  await ui.input({ key: 'importmod', text: 'D:\\mods\\OldVest' })
+  await ui.unmount()
+  const lines = runs.map(argv => argv.join(' ')).filter(l => l.startsWith('python C:'))
+  expect(lines).toEqual([
+    'python C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py',
+    'python C:\\proj\\.claude\\skills\\dayz-add-server\\add_server.py chernarus',
+    'python C:\\proj\\.claude\\skills\\dayz-new-mod\\new_mod.py MyVest',
+    'python C:\\proj\\.claude\\skills\\dayz-new-mod\\new_mod.py MyCrate --author Brian',
+    'python C:\\proj\\.claude\\skills\\dayz-import-mod\\import_mod.py --source D:\\mods\\OldVest',
+  ])
+})

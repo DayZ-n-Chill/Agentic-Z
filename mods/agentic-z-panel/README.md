@@ -32,6 +32,10 @@ Then restart Claude Code. Offline, the check shows nothing.
 
 | Button | Key | Runs |
 |---|---|---|
+| Check setup | `e` | `dayz-preflight/preflight.py` |
+| Add test server | `v` | `dayz-add-server/add_server.py chernarus` |
+| New mod (a text field) | Enter | `dayz-new-mod/new_mod.py <name>`; type `MyVest by YourName` for a first mod, to set the author |
+| Import mod (a text field) | Enter | `dayz-import-mod/import_mod.py --source <path or GitHub link>` |
 | Mount P: | `p` | `dayz-workdrive/mount.py` |
 | Build PBO | `b` | `dayz-build-pbo/build.py <active mod>` |
 | Check build | `c` | `dayz-gate/gate.py build <active mod>` |

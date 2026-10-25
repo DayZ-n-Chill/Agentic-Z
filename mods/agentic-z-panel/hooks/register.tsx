@@ -13,6 +13,10 @@ const busy = atom({ plugin: 'agentic-z-panel', key: 'busy' } as const, null)
 const newVersion = atom({ plugin: 'agentic-z-panel', key: 'newVersion' } as const, null)
 
 const SKILL = {
+  preflight: ['dayz-preflight', 'preflight.py'],
+  newmod: ['dayz-new-mod', 'new_mod.py'],
+  importmod: ['dayz-import-mod', 'import_mod.py'],
+  addserver: ['dayz-add-server', 'add_server.py'],
   mount: ['dayz-workdrive', 'mount.py'],
   build: ['dayz-build-pbo', 'build.py'],
   deploy: ['dayz-deploy-pbo', 'deploy.py'],
@@ -26,6 +30,12 @@ const SKILL = {
   health: ['dayz-health', 'health.py'],
   ask: ['dayz-ask', 'ask.py'],
 } as const
+
+// The map the "Add test server" button sets up; /dayz-add-server takes others.
+const DEFAULT_SERVER = 'chernarus'
+
+// "MyVest" or, for a first mod with no cached author, "MyVest by YourName".
+const NEW_MOD_INPUT = /^(\S+)(?:\s+by\s+(.+))?$/i
 
 // How far back the logs button reads, and how long it then watches. A button
 // must return, so it reads the recent session lines once instead of following.
@@ -207,6 +217,22 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
         return
       }
       argv.push(question.trim())
+    } else if (action === 'newmod') {
+      const match = question?.trim().match(NEW_MOD_INPUT)
+      if (!match) {
+        $.ui.toast('Type a mod name, such as MyVest (first mod: MyVest by YourName).')
+        return
+      }
+      argv.push(match[1])
+      if (match[2]) argv.push('--author', match[2].trim())
+    } else if (action === 'importmod') {
+      if (!question?.trim()) {
+        $.ui.toast('Type the mod folder path or a GitHub link first.')
+        return
+      }
+      argv.push('--source', question.trim())
+    } else if (action === 'addserver') {
+      argv.push(DEFAULT_SERVER)
     } else if (action === 'logwatch') {
       argv.push('--since', LOGWATCH_SINCE_MINUTES, '--duration', LOGWATCH_SECONDS)
       if (current.mod) argv.push('--mod', current.mod)
@@ -387,6 +413,33 @@ export const register: Register = on => {
           </Box>,
         )}
         {working && <Text color="warning">⟳ Running {working}...</Text>}
+        {card(
+          'Start a project',
+          rows([
+            row('Setup', [
+              btn('preflight', 'Check setup', 'e'),
+              btn('addserver', `Add test server (${DEFAULT_SERVER})`, 'v'),
+            ]),
+            Input && (
+              <Input
+                key="newmod"
+                label="New mod:"
+                placeholder="MyVest (first mod: MyVest by YourName)"
+                submitLabel="create"
+                onSubmit={(text: string) => runAction($, cwd, 'newmod', text)}
+              />
+            ),
+            Input && (
+              <Input
+                key="importmod"
+                label="Import mod:"
+                placeholder="folder path or GitHub link"
+                submitLabel="import"
+                onSubmit={(text: string) => runAction($, cwd, 'importmod', text)}
+              />
+            ),
+          ]),
+        )}
         {card(
           'Build and test',
           rows([
