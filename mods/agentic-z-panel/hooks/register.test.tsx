@@ -546,5 +546,13 @@ test('the button above the prompt opens the panel', async ($, on) => {
   const band = await $.ui.mount({ plugin: 'agentic-z-panel', component: 'AbovePrompt', surface: 'desktop', props: { hasSurvey: false } } as any)
   await band.press({ key: 'open-panel' })
   await band.unmount()
+  // Once at session start, once for the press.
+  expect(opened).toEqual(['agentic-z', 'agentic-z'])
+})
+
+test('a new session opens the panel without /dayz-panel', async ($, on) => {
+  const opened: string[] = []
+  engine(on, [], '0.4.0', opened)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
   expect(opened).toEqual(['agentic-z'])
 })
