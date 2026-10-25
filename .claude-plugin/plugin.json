@@ -1,7 +1,7 @@
 {
   "name": "agentic-z",
   "version": "2.0.1",
-  "description": "AI agent stack for DayZ modding. After install, run /dayz-init for a guided setup wizard that takes you from empty repo to mod-loaded-in-DayZ. Ships specialist subagents and DayZ slash skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexer), plus the dayz-rag MCP server for semantic search over vanilla DayZ source.",
+  "description": "AI agent stack for DayZ modding. After install, run /dayz-init for a guided setup wizard that takes you from empty repo to mod-loaded-in-DayZ. Ships a 30-agent mod team (orchestrator, router, team leads, specialists for every part of a mod including saving data, AI, vehicles, weapons, wearables, animation, audio and physics, and gatekeepers) and 40 DayZ skills covering the full mod pipeline (mod recipes, preflight, scaffold, lint, item balance against vanilla, conflict check against CF, COT and Expansion, build PBO, launch test, live log watch, script-only gates, health page per mod, request routing, types.xml, RAG indexer, cited answers about vanilla, p3d audit, particle effects, GUI imageset packing, layout preview, release texts and server kit, upgrade guard, status line), edit hooks that syntax-check config.cpp and .layout files and keep edits inside the /dayz-scope-mod scope, a paste-in hook that sends pasted crash logs to triage, types.xml chunks to a checked merge and Figma or GitHub links to their workflow, plus the dayz-rag MCP server for semantic search over vanilla DayZ source.",
   "author": {
     "name": "DayZ n' Chill",
     "url": "https://github.com/DayZ-n-Chill"
