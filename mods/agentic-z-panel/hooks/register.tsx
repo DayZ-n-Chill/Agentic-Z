@@ -312,6 +312,28 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // One click above the prompt opens the pane, so nobody has to type /dayz-panel.
+  // It steps aside while a survey uses the band.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (e.props.hasSurvey) return next(e)
+    const { Box, Button } = $.ui.resolve(e)
+    return (
+      <Box key="open-panel">
+        <Button
+          key="open-panel"
+          label="Agentic-Z panel"
+          plain
+          dimColor
+          hover={{ backgroundColor: 'subtle' }}
+          onPress={async () => {
+            await refreshQuietly($, cwd)
+            await $.ui.open({ id: PANE, title: 'Agentic-Z' })
+          }}
+        />
+      </Box>
+    )
+  })
+
   on('command.run', { command: 'dayz-panel' }, async $ => {
     const s = await refresh($, cwd)
     const run = await read($, lastRun)
