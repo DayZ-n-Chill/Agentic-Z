@@ -38,6 +38,8 @@ That symlinks the repo's `.claude/skills/` into the Codex and Gemini home direct
 
 Skills appear with the `agentic-z:` prefix (`/agentic-z:dayz-build-pbo`). The `dayz-rag` MCP server registers automatically.
 
+To update an existing install, run `/plugin marketplace update dayz-n-chill`, then `/plugin update agentic-z@dayz-n-chill`, then restart Claude Code. Claude Code does not auto-update third-party marketplaces unless you turn it on: open `/plugin`, go to the Marketplaces tab, select `dayz-n-chill` and turn on auto-update.
+
 To install a branch other than `main`, add the marketplace with the branch after a `#`: `/plugin marketplace add https://github.com/DayZ-n-Chill/Agentic-Z.git#develop`. Install from GitHub, not from a local clone folder. The installer copies a local folder whole, including the Windows links a test server (`.server/<instance>/`) or an imported mod creates, and without Windows Developer Mode that copy fails with `EPERM: operation not permitted, symlink`. A clone does not need the plugin anyway: it already has every agent and skill (Option A).
 
 Then, from your mod project in Claude Code:
