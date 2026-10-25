@@ -17,6 +17,6 @@ export type PanelRun = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'agentic-z-panel': { status: PanelStatus | null; lastRun: PanelRun; busy: string | null }
+    'agentic-z-panel': { status: PanelStatus | null; lastRun: PanelRun; busy: string | null; newVersion: string | null }
   }
 }

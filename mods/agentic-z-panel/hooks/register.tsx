@@ -10,6 +10,7 @@ const PANE = 'agentic-z'
 const status = atom({ plugin: 'agentic-z-panel', key: 'status' } as const, null)
 const lastRun = atom({ plugin: 'agentic-z-panel', key: 'lastRun' } as const, null)
 const busy = atom({ plugin: 'agentic-z-panel', key: 'busy' } as const, null)
+const newVersion = atom({ plugin: 'agentic-z-panel', key: 'newVersion' } as const, null)
 
 const SKILL = {
   mount: ['dayz-workdrive', 'mount.py'],
@@ -249,6 +250,27 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
   await refreshQuietly($, cwd)
 }
 
+// The marketplace's own list, so the panel can tell its users a newer version
+// is out; a plugin install does not update itself unless auto-update is on.
+const MARKETPLACE_URL = 'https://raw.githubusercontent.com/DayZ-n-Chill/Agentic-Z/main/.claude-plugin/marketplace.json'
+const UPDATE_COMMAND = 'claude plugin update agentic-z-panel@dayz-n-chill'
+
+// The newer version the marketplace lists, or null. Offline, a bad reply or a
+// local copy newer than main all mean no notice, never an error.
+async function checkForUpdate($: any) {
+  try {
+    const mine = JSON.parse(await $.fs.read(join(trimPath($.plugin.root), '.claude-plugin', 'plugin.json'))).version
+    const res = await $.http.fetch(MARKETPLACE_URL)
+    if (!res.ok) return
+    const latest = JSON.parse(res.text).plugins?.find((p: { name: string }) => p.name === 'agentic-z-panel')?.version
+    if (!latest || latest.localeCompare(mine, undefined, { numeric: true }) <= 0) return
+    await update($, newVersion, () => latest)
+    $.ui.toast(`Agentic-Z panel ${latest} is out: run ${UPDATE_COMMAND}`)
+  } catch {
+    // no notice
+  }
+}
+
 // A status refresh nobody waits on must not throw: a failed process call
 // would otherwise be an unhandled rejection.
 const refreshQuietly = ($: any, cwd: string) => refresh($, cwd).catch(() => null)
@@ -260,6 +282,7 @@ export const register: Register = on => {
     cwd = e.cwd
     await $.command.register({ name: 'dayz-panel', description: 'Open the Agentic-Z panel' })
     void refreshQuietly($, cwd)
+    void checkForUpdate($)
     return next(e)
   })
 
@@ -275,6 +298,8 @@ export const register: Register = on => {
       `  Agentic-Z     ${s.root ?? 'not found in this project or the plugin cache'}`,
     ]
     if (run) lines.push(`  Last run      ${run.action} ${run.outcome}`)
+    const latest = await read($, newVersion)
+    if (latest) lines.push(`  Update        ${latest} is out: run ${UPDATE_COMMAND}, then restart`)
     return { text: lines.join('\n') }
   })
 
@@ -283,6 +308,7 @@ export const register: Register = on => {
     const s = await read($, status)
     const run = await read($, lastRun)
     const working = await read($, busy)
+    const latest = await read($, newVersion)
     const press = (action: string) => () => runAction($, cwd, action)
 
     // A titled card; the terminal draws it as a rounded frame, the app as a panel.
@@ -335,6 +361,11 @@ export const register: Register = on => {
 
     return (
       <Box flexDirection="column" gap={1}>
+        {latest && (
+          <Text color="suggestion">
+            Panel {latest} is out: run {UPDATE_COMMAND}, then restart Claude Code.
+          </Text>
+        )}
         {card(
           'Status',
           <Box flexDirection="row" columnGap={2} alignItems="flex-start">

@@ -18,6 +18,16 @@ Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ te
 
 `/dayz-panel` also replies in the chat with the same state, where Agentic-Z was found, and the last run.
 
+## Updates
+
+At session start the panel reads the marketplace list on GitHub. When it lists a newer panel, a toast, a line at the top of the panel and the `/dayz-panel` reply say so, with the command to run:
+
+```text
+claude plugin update agentic-z-panel@dayz-n-chill
+```
+
+Then restart Claude Code. Offline, the check shows nothing.
+
 ## Buttons
 
 | Button | Key | Runs |

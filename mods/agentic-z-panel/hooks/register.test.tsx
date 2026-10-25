@@ -15,8 +15,9 @@ const PANE = {
 } as const
 
 // Stands in for the engine: a clone at C:\proj with an active mod, P: mounted,
-// DayZ not running. Every process call is recorded instead of run.
-function engine(on: any, runs: string[][]) {
+// DayZ not running, the installed panel 0.4.0 and the marketplace listing
+// `listed`. Every process call is recorded instead of run.
+function engine(on: any, runs: string[][], listed = '0.4.0') {
   const files: Record<string, string> = {
     'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
     'C:\\proj\\.claude\\local-memory\\dayz-init-state.json': '{"last_intent": {"mod_name": "MyVest"}}',
@@ -27,7 +28,10 @@ function engine(on: any, runs: string[][]) {
   on('ui.toast', () => ({ value: undefined }))
   on('session.start', (_: unknown, e: any) => ({ cwd: e.cwd }))
   on('fs.exists', (_: unknown, e: any) => ({ value: e.path in files }))
-  on('fs.read', (_: unknown, e: any) => ({ value: files[e.path] }))
+  on('fs.read', (_: unknown, e: any) => ({ value: e.path.endsWith('plugin.json') ? '{"version": "0.4.0"}' : files[e.path] }))
+  on('http.fetch', () => ({
+    value: { status: 200, ok: true, headers: {}, text: JSON.stringify({ plugins: [{ name: 'agentic-z-panel', version: listed }] }) },
+  }))
   on('clock.now', () => ({ value: 0 }))
   on('process.run', (_: unknown, e: any) => {
     runs.push(e.argv)
@@ -488,4 +492,23 @@ test('a status check that fails at session start is not an unhandled rejection',
   const runs: string[][] = []
   engineWith(on, runs, { clockFails: () => true })
   await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
+})
+
+async function startWithMarketplace($: any, on: any, listed: string) {
+  engine(on, [], listed)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'terminal', isInteractive: true })
+  return $.command.run({ command: 'dayz-panel', args: '' })
+}
+
+test('a newer panel in the marketplace shows how to update', async ($, on) => {
+  const reply = await startWithMarketplace($, on, '0.10.0')
+  expect(reply.text).toContain('0.10.0 is out: run claude plugin update agentic-z-panel@dayz-n-chill')
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /Panel 0\.10\.0 is out/ })).toBeTruthy()
+  await ui.unmount()
+})
+
+test('the same version in the marketplace shows no update notice', async ($, on) => {
+  const reply = await startWithMarketplace($, on, '0.4.0')
+  expect(reply.text).not.toContain('is out')
 })
