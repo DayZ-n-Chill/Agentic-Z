@@ -4,7 +4,8 @@ import type { Register } from 'claude-code'
 import type { PanelRun, PanelStatus } from '../types'
 
 // One pane with the DayZ state and buttons that run Agentic-Z's skill scripts
-// directly. Nothing here asks the model for anything, so these cost no tokens.
+// directly. The buttons cost no tokens; only the ask field calls the model, to
+// turn the cited vanilla code into a plain-English answer.
 const PANE = 'agentic-z'
 const status = atom({ plugin: 'agentic-z-panel', key: 'status' } as const, null)
 const lastRun = atom({ plugin: 'agentic-z-panel', key: 'lastRun' } as const, null)
@@ -128,7 +129,33 @@ async function runAction($: any, cwd: string, action: string, question?: string)
   }
 }
 
-const PYTHON_MISSING = 'Python 3 not found: install it from python.org or add python/py to PATH'
+const EXPLAIN_SYSTEM = `You explain how vanilla DayZ works to a mod author, using only the cited Enforce Script and config excerpts you are given.
+Answer in plain English first: what happens, when, and why, as a short overview and then the key steps or numbers.
+Name the classes, methods and constants that matter in backticks, and cite where each fact comes from as [n] (path:line) using the citation numbers given.
+If the excerpts do not cover part of the question, say so plainly instead of guessing.
+Use short markdown sections or bullets. Keep it under 300 words.`
+
+// The excerpts can be long; the model needs the evidence, not all of it.
+const EXPLAIN_EVIDENCE_CHARS = 40_000
+
+// Turns ask.py's citations into an answer, or null when the model gave none:
+// the citations still show, so a failed call loses nothing.
+async function explain($: any, question: string, evidence: string): Promise<{ answer?: string; why?: string }> {
+  try {
+    const result = await $.model.complete({
+      model: 'sonnet',
+      system: EXPLAIN_SYSTEM,
+      prompt: `Question: ${question}\n\nEvidence from /dayz-ask:\n${evidence.slice(0, EXPLAIN_EVIDENCE_CHARS)}`,
+      maxTokens: 1500,
+    })
+    if (result.isAnswered) return { answer: result.text.trim() }
+    return { why: [result.reason, result.status, result.error].filter(Boolean).join(' ') }
+  } catch (err) {
+    return { why: String(err) }
+  }
+}
+
+const PYTHON_MISSING ='Python 3 not found: install it from python.org or add python/py to PATH'
 
 // The interpreter the scripts\dayz wrappers use: python when it runs, else the py
 // launcher. Running it, not just finding it, skips the Microsoft Store alias,
@@ -209,6 +236,11 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
     const nothingFound = action === 'ask' && result.exitCode === 1
     const ok = result.exitCode === 0 || nothingFound
     run = { action, ok, outcome: nothingFound ? 'nothing found' : ok ? 'done' : 'failed', detail }
+    if (action === 'ask' && result.exitCode === 0) {
+      await update($, busy, () => 'ask (writing the answer)')
+      const { answer, why } = await explain($, question!.trim(), result.stdout)
+      run = answer ? { ...run, answer } : { ...run, detail: `(no explanation: ${why})\n${detail}` }
+    }
   } catch (err) {
     run = { action, ok: false, outcome: 'failed', detail: String(err) }
   }
@@ -232,56 +264,140 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'dayz-panel' }, async $ => {
-    await refresh($, cwd)
+    const s = await refresh($, cwd)
+    const run = await read($, lastRun)
     await $.ui.open({ id: PANE, title: 'Agentic-Z' })
-    return { text: 'Agentic-Z panel opened.' }
+    const lines = [
+      'Agentic-Z panel opened.',
+      `  P: drive      ${s.isPMounted ? 'mounted' : 'not mounted (press p in the panel)'}`,
+      `  Active mod    ${s.mod ?? 'none (run /dayz-init)'}`,
+      `  Test session  ${s.isDiagRunning ? 'running' : 'stopped'}`,
+      `  Agentic-Z     ${s.root ?? 'not found in this project or the plugin cache'}`,
+    ]
+    if (run) lines.push(`  Last run      ${run.action} ${run.outcome}`)
+    return { text: lines.join('\n') }
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Button, Input, Text } = $.ui.resolve(e)
+    const { Box, Button, Input, Markdown, Text } = $.ui.resolve(e)
     const s = await read($, status)
     const run = await read($, lastRun)
     const working = await read($, busy)
     const press = (action: string) => () => runAction($, cwd, action)
 
+    // A titled card; the terminal draws it as a rounded frame, the app as a panel.
+    const card = (title: string, children: any, borderColor = 'subtle') => (
+      <Box flexDirection="column" borderStyle="round" borderColor={borderColor} paddingX={1}>
+        <Text weight="bold" size="heading" color="claude">
+          {title}
+        </Text>
+        {children}
+      </Box>
+    )
+    // One status line with a colored dot: green when good, red when not.
+    const light = (isGood: boolean, text: string) => (
+      <Box flexDirection="row" gap={1}>
+        <Text color={isGood ? 'success' : 'error'}>●</Text>
+        <Text>{text}</Text>
+      </Box>
+    )
+    // Plain buttons have no filled chrome, so a row of them reads as separate
+    // controls instead of one gray block; each lights gray under the pointer
+    // (its own hover scope). Plain draws the hotkey itself: "b: Build PBO".
+    const btn = (action: string, label: string, hotkey: string, onPress = press(action)) => (
+      <Button
+        key={action}
+        label={label}
+        hotkey={hotkey}
+        plain
+        hover={{ scope: `btn-${action}`, backgroundColor: 'subtle' }}
+        onPress={onPress}
+      />
+    )
+    // A labelled row: the fixed-width label lines the rows of a card up, and
+    // the buttons wrap under each other on a narrow pane.
+    const row = (label: string, children: any) => (
+      <Box flexDirection="row" columnGap={1}>
+        <Box width={7} flexShrink={0}>
+          <Text dimColor>{label}</Text>
+        </Box>
+        <Box flexDirection="row" flexWrap="wrap" flexGrow={1} columnGap={2} rowGap={1}>
+          {children}
+        </Box>
+      </Box>
+    )
+    const rows = (children: any) => (
+      <Box flexDirection="column" rowGap={1} paddingTop={1}>
+        {children}
+      </Box>
+    )
+    const runColor = !run ? 'subtle' : run.ok ? 'success' : 'error'
+
     return (
       <Box flexDirection="column" gap={1}>
-        <Box flexDirection="column">
-          <Text>P: drive: {s?.isPMounted ? 'mounted' : 'not mounted'}</Text>
-          <Text>Active mod: {s?.mod ?? 'none (run /dayz-init)'}</Text>
-          <Text>Test session: {s?.isDiagRunning ? 'running' : 'stopped'}</Text>
-          {!s?.root && <Text dimColor>Agentic-Z not found here.</Text>}
-        </Box>
-        <Box flexDirection="column">
-          <Button key="mount" label="Mount P:" hotkey="p" onPress={press('mount')} />
-          <Button key="build" label="Build PBO" hotkey="b" onPress={press('build')} />
-          <Button key="gatebuild" label="Check build (PASS/FAIL)" hotkey="c" onPress={press('gatebuild')} />
-          <Button key="gateingame" label="Check in game (PASS/FAIL)" hotkey="g" onPress={press('gateingame')} />
-          <Button key="deploy" label="Deploy prebuilt PBOs" hotkey="d" onPress={press('deploy')} />
-          <Button key="launch" label="Launch test" hotkey="l" onPress={press('launch')} />
-          <Button key="stop" label="Stop test" hotkey="s" onPress={press('stop')} />
-          <Button key="workbench" label="Open Workbench" hotkey="w" onPress={press('workbench')} />
-          <Button key="objectbuilder" label="Open Object Builder" hotkey="o" onPress={press('objectbuilder')} />
-          <Button key="logwatch" label="Check test logs" hotkey="t" onPress={press('logwatch')} />
-          <Button key="health" label="Health page" hotkey="h" onPress={press('health')} />
-          <Button key="releasepack" label="Release pack" hotkey="k" onPress={press('releasepack')} />
-          <Button key="refresh" label="Refresh" hotkey="r" onPress={() => refreshQuietly($, cwd)} />
-        </Box>
-        {Input && (
-          <Input
-            key="ask"
-            label="Ask vanilla:"
-            placeholder="how does food spoil"
-            submitLabel="ask"
-            onSubmit={(question: string) => runAction($, cwd, 'ask', question)}
-          />
+        {card(
+          'Status',
+          <Box flexDirection="row" columnGap={2} alignItems="flex-start">
+            <Box flexDirection="column" flexGrow={1}>
+              {light(!!s?.isPMounted, `P: drive: ${s?.isPMounted ? 'mounted' : 'not mounted'}`)}
+              {light(!!s?.mod, `Active mod: ${s?.mod ?? 'none (run /dayz-init)'}`)}
+              {light(!!s?.isDiagRunning, `Test session: ${s?.isDiagRunning ? 'running' : 'stopped'}`)}
+              {!s?.root && <Text color="warning">Agentic-Z not found here.</Text>}
+            </Box>
+            {btn('refresh', 'Refresh', 'r', () => refreshQuietly($, cwd))}
+          </Box>,
         )}
-        {working && <Text dimColor>Running {working}...</Text>}
-        {run && (
-          <Text dimColor>
-            Last: {run.action} {run.outcome} {run.detail}
-          </Text>
+        {working && <Text color="warning">⟳ Running {working}...</Text>}
+        {card(
+          'Build and test',
+          rows([
+            row('Build', [
+              btn('build', 'Build PBO', 'b'),
+              btn('gatebuild', 'Check build', 'c'),
+              btn('deploy', 'Deploy prebuilt', 'd'),
+            ]),
+            row('Play', [
+              btn('launch', 'Launch', 'l'),
+              btn('gateingame', 'Check in game', 'g'),
+              btn('stop', 'Stop', 's'),
+              btn('logwatch', 'Logs', 't'),
+            ]),
+          ]),
         )}
+        {card(
+          'Tools',
+          rows([
+            row('Open', [
+              btn('mount', 'Mount P:', 'p'),
+              btn('workbench', 'Workbench', 'w'),
+              btn('objectbuilder', 'Object Builder', 'o'),
+            ]),
+            row('Ship', [btn('health', 'Health page', 'h'), btn('releasepack', 'Release pack', 'k')]),
+          ]),
+        )}
+        {Input &&
+          card(
+            'Ask vanilla DayZ',
+            <Input
+              key="ask"
+              label="Question:"
+              placeholder="how does food spoil"
+              submitLabel="ask"
+              onSubmit={(question: string) => runAction($, cwd, 'ask', question)}
+            />,
+          )}
+        {run &&
+          card(
+            run.ok ? `✓ ${run.action}: ${run.outcome}` : `✗ ${run.action}: ${run.outcome}`,
+            run.answer ? (
+              <Markdown key="answer" text={run.answer} />
+            ) : (
+              <Text dimColor>
+                Last: {run.action} {run.outcome} {run.detail}
+              </Text>
+            ),
+            runColor,
+          )}
       </Box>
     )
   })

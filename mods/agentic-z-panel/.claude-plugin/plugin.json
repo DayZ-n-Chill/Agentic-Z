@@ -1,6 +1,6 @@
 {
   "name": "agentic-z-panel",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A side panel for Agentic-Z: DayZ status at a glance and one-click buttons for mount P:, build, the build and in game checks, deploy, launch, stop, Workbench, Object Builder, test logs, the health page and the release pack, and a field that asks /dayz-ask a vanilla question. Runs the skill scripts directly, so these actions cost no model tokens. Windows only.",
   "author": { "name": "DayZ n' Chill", "url": "https://github.com/DayZ-n-Chill" },
   "types": "./types/index.d.ts"

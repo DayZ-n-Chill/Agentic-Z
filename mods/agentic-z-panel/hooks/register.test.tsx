@@ -35,6 +35,17 @@ function engine(on: any, runs: string[][]) {
   })
 }
 
+test('/dayz-panel replies with the state, not just that it opened', async ($, on) => {
+  engine(on, [])
+  await $.session.start({ cwd: 'C:\\proj', surface: 'terminal', isInteractive: true })
+  const reply = await $.command.run({ command: 'dayz-panel', args: '' })
+  expect(reply.text).toContain('Agentic-Z panel opened.')
+  expect(reply.text).toContain('P: drive      mounted')
+  expect(reply.text).toContain('Active mod    MyVest')
+  expect(reply.text).toContain('Test session  stopped')
+  expect(reply.text).toContain('Agentic-Z     C:\\proj')
+})
+
 test('the pane shows the state and runs the build for the active mod', async ($, on) => {
   const runs: string[][] = []
   engine(on, runs)
@@ -381,6 +392,43 @@ test('an ask ERROR keeps its reason line in the pane', async ($, on) => {
   const last = (await ui.find({ type: 'Text', text: /Last:/ }))?.text
   expect(last).toContain('Last: ask failed ERROR')
   expect(last).toContain('P:\\ is not mounted')
+  await ui.unmount()
+})
+
+test('an ask with evidence shows the model answer as markdown', async ($, on) => {
+  const runs: string[][] = []
+  const prompts: string[] = []
+  engineWith(on, runs, {
+    result: argv =>
+      argv.some(a => a.endsWith('ask.py'))
+        ? { exitCode: 0, stdout: 'EVIDENCE 1 citation(s) via rag\n[1] P:\\scripts\\bleed.c:1-3  verified\n', stderr: '' }
+        : undefined,
+  })
+  on('model.complete', (_: unknown, e: any) => {
+    prompts.push(e.prompt)
+    return { value: { isAnswered: true, text: 'Bleeding drains blood each tick [1].', usage: {} } }
+  })
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  expect(prompts[0]).toContain('how does bleeding work')
+  expect(prompts[0]).toContain('P:\\scripts\\bleed.c:1-3')
+  expect((await ui.find({ type: 'Markdown' }))?.text).toBe('Bleeding drains blood each tick [1].')
+  await ui.unmount()
+})
+
+test('an ask whose model call fails still shows the citations', async ($, on) => {
+  const runs: string[][] = []
+  engineWith(on, runs, {
+    result: argv =>
+      argv.some(a => a.endsWith('ask.py'))
+        ? { exitCode: 0, stdout: 'EVIDENCE 1 citation(s) via rag\n[1] P:\\scripts\\bleed.c:1-3  verified\n', stderr: '' }
+        : undefined,
+  })
+  on('model.complete', () => ({ value: { isAnswered: false, reason: 'empty-reply', usage: {} } }))
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  expect(await ui.find({ type: 'Markdown' })).toBeFalsy()
+  expect((await ui.find({ type: 'Text', text: /Last:/ }))?.text).toContain('[1] P:\\scripts\\bleed.c:1-3')
   await ui.unmount()
 })
 

@@ -14,7 +14,9 @@ Then run `/dayz-panel` to open the panel.
 
 ## What it shows
 
-Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ test session is running.
+Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ test session is running, each with a green or red dot. The buttons sit in framed cards (Build and check, Test session, Tools, Ask vanilla DayZ), and the last run shows in a card framed green or red by its outcome.
+
+`/dayz-panel` also replies in the chat with the same state, where Agentic-Z was found, and the last run.
 
 ## Buttons
 
@@ -22,14 +24,14 @@ Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ te
 |---|---|---|
 | Mount P: | `p` | `dayz-workdrive/mount.py` |
 | Build PBO | `b` | `dayz-build-pbo/build.py <active mod>` |
-| Check build (PASS/FAIL) | `c` | `dayz-gate/gate.py build <active mod>` |
-| Check in game (PASS/FAIL) | `g` | `dayz-gate/gate.py ingame <active mod>` |
-| Deploy prebuilt PBOs | `d` | `dayz-deploy-pbo/deploy.py <active mod>` |
-| Launch test | `l` | `dayz-launch-test/launch.py <active mod>` |
-| Stop test | `s` | `dayz-stop-test/stop_test.bat` |
-| Open Workbench | `w` | `dayz-launch-workbench/launch.py --mod <active mod>` |
-| Open Object Builder | `o` | `dayz-launch-objectbuilder/launch.py` |
-| Check test logs | `t` | `dayz-logwatch/logwatch.py --since 30 --duration 3 --mod <active mod>` |
+| Check build | `c` | `dayz-gate/gate.py build <active mod>` |
+| Check in game | `g` | `dayz-gate/gate.py ingame <active mod>` |
+| Deploy prebuilt | `d` | `dayz-deploy-pbo/deploy.py <active mod>` |
+| Launch | `l` | `dayz-launch-test/launch.py <active mod>` |
+| Stop | `s` | `dayz-stop-test/stop_test.bat` |
+| Workbench | `w` | `dayz-launch-workbench/launch.py --mod <active mod>` |
+| Object Builder | `o` | `dayz-launch-objectbuilder/launch.py` |
+| Logs | `t` | `dayz-logwatch/logwatch.py --since 30 --duration 3 --mod <active mod>` |
 | Health page | `h` | `dayz-health/health.py <active mod>` |
 | Release pack | `k` | `dayz-release-pack/release_pack.py <active mod>` |
 | Ask vanilla (a text field) | Enter | `dayz-ask/ask.py "<question>"` |
