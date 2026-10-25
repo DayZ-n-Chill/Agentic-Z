@@ -1,13 +1,12 @@
 Agentic-Z License
 Copyright (c) 2026 DayZ n' Chill
 
-This is a source-available, non-commercial license. It is not an open source
-license.
+This is a source-available license. It is not an open source license.
 
 Permission is granted, free of charge, to any person to use, modify, and run
-the Software for the non-commercial purpose of developing DayZ video game
-modifications and related content. No permission is granted for any
-commercial use of the Software.
+the Software to make DayZ video game modifications and any other content.
+What you make with the Software is yours, and you may sell it, as long as it
+does not contain the Software.
 
 "The Software" means the Agentic-Z project, including but not limited to:
   - Source code, scripts, helpers, and configuration files
@@ -25,17 +24,17 @@ Restrictions:
 2. You may not redistribute the Software as a paid product, paid template,
    paid service, or any offering where the Software is the primary value.
 
-3. You may not use the Software to make money in any way. This includes, but
-   is not limited to: selling or charging for any product, mod, template,
-   asset, or content made with the Software; offering any paid service
-   (including development, consulting, commissions, hosting, or support)
-   that uses the Software; and placing the Software or its output behind a
-   paywall, subscription, donation requirement, or other payment.
+3. You may not include the Software, in whole or in part, in anything you
+   sell or charge for, and you may not sell access to the Software.
 
 4. You may share the Software (original or modified) free of charge, provided
-   this license and the original copyright notice are preserved.
+   this license and the original copyright notice are preserved, and you
+   credit where it came from with a link to
+   https://github.com/DayZ-n-Chill/Agentic-Z.
 
-5. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+5. You may not present the Software, or any of its code, as your own.
+
+6. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
    FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL
    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR
