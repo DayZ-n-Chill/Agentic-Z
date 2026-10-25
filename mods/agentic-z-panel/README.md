@@ -10,7 +10,7 @@ A Claude Code panel for Agentic-Z. It shows the DayZ state beside the chat and h
 /plugin install agentic-z-panel@dayz-n-chill
 ```
 
-Then run `/dayz-panel` to open the panel.
+Then click **Agentic-Z panel** just above the prompt, or run `/dayz-panel`, to open the panel.
 
 ## What it shows
 

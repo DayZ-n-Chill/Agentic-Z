@@ -17,14 +17,17 @@ const PANE = {
 // Stands in for the engine: a clone at C:\proj with an active mod, P: mounted,
 // DayZ not running, the installed panel 0.4.0 and the marketplace listing
 // `listed`. Every process call is recorded instead of run.
-function engine(on: any, runs: string[][], listed = '0.4.0') {
+function engine(on: any, runs: string[][], listed = '0.4.0', opened: string[] = []) {
   const files: Record<string, string> = {
     'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
     'C:\\proj\\.claude\\local-memory\\dayz-init-state.json': '{"last_intent": {"mod_name": "MyVest"}}',
     'P:\\': '',
   }
   on('command.register', () => ({ value: { command: 'dayz-panel' } }))
-  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.open', (_: unknown, e: any) => {
+    opened.push(e.id)
+    return { value: { isPlaced: true } }
+  })
   on('ui.toast', () => ({ value: undefined }))
   on('session.start', (_: unknown, e: any) => ({ cwd: e.cwd }))
   on('fs.exists', (_: unknown, e: any) => ({ value: e.path in files }))
@@ -534,4 +537,14 @@ test('the start card checks setup, adds a server, and creates or imports a mod',
     'python C:\\proj\\.claude\\skills\\dayz-new-mod\\new_mod.py MyCrate --author Brian',
     'python C:\\proj\\.claude\\skills\\dayz-import-mod\\import_mod.py --source D:\\mods\\OldVest',
   ])
+})
+
+test('the button above the prompt opens the panel', async ($, on) => {
+  const opened: string[] = []
+  engine(on, [], '0.4.0', opened)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
+  const band = await $.ui.mount({ plugin: 'agentic-z-panel', component: 'AbovePrompt', surface: 'desktop', props: { hasSurvey: false } } as any)
+  await band.press({ key: 'open-panel' })
+  await band.unmount()
+  expect(opened).toEqual(['agentic-z'])
 })
