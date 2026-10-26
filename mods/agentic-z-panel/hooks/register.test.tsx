@@ -556,3 +556,42 @@ test('a new session opens the panel without /dayz-panel', async ($, on) => {
   await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
   expect(opened).toEqual(['agentic-z'])
 })
+
+test('a session folder that no longer exists runs the script from the Agentic-Z root', async ($, on) => {
+  const cwds: Record<string, string> = {}
+  engineWith(on, [], {
+    files: {
+      'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
+      'C:\\proj\\workspace\\MyVest': '',
+    },
+    seen: e => {
+      if (e.argv[0] === 'cmd') cwds[e.argv[2]] = e.init.cwd
+    },
+  })
+  await $.session.start({ cwd: 'C:\\proj\\workspace\\Gone', surface: 'desktop', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await ui.press({ key: 'stop' })
+  await ui.unmount()
+  expect(cwds['C:\\proj\\.claude\\skills\\dayz-stop-test\\stop_test.bat']).toBe('C:\\proj')
+
+  await $.session.start({ cwd: 'C:\\proj\\workspace\\MyVest', surface: 'desktop', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const again = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await again.press({ key: 'stop' })
+  await again.unmount()
+  expect(cwds['C:\\proj\\.claude\\skills\\dayz-stop-test\\stop_test.bat']).toBe('C:\\proj\\workspace\\MyVest')
+})
+
+test('Dismiss clears the last run card and the update notice', async ($, on) => {
+  engine(on, [], '9.9.9')
+  const ui = await openPane($)
+  await ui.press({ key: 'stop' })
+  expect(await ui.find({ type: 'Text', text: /Last:/ })).toBeTruthy()
+  await ui.press({ key: 'dismiss-run' })
+  expect(await ui.find({ type: 'Text', text: /Last:/ })).toBeFalsy()
+  expect(await ui.find({ type: 'Text', text: /9.9.9 is out/ })).toBeTruthy()
+  await ui.press({ key: 'dismiss-update' })
+  expect(await ui.find({ type: 'Text', text: /9.9.9 is out/ })).toBeFalsy()
+  await ui.unmount()
+})
