@@ -48,10 +48,12 @@ Then restart Claude Code. Offline, the check shows nothing.
 | Logs | `t` | `dayz-logwatch/logwatch.py --since 30 --duration 3 --mod <active mod>` |
 | Health page | `h` | `dayz-health/health.py <active mod>` |
 | Release pack | `k` | `dayz-release-pack/release_pack.py <active mod>` |
-| Ask vanilla (a text field) | Enter | `dayz-ask/ask.py --top-k 10 --excerpt-lines 60 "<question>"` |
+| Ask vanilla (a text field) | Enter | `dayz-ask/ask.py --top-k <Sources> --excerpt-lines <Excerpt> "<question>"` |
 | Deep dive (under an answer) | `v` | `dayz-ask/ask.py --top-k 25 --excerpt-lines 200 "<question>"`, then a longer answer |
 | Continue in chat (under an answer) | `m` | puts the question and answer in the prompt box for the main conversation |
 | Refresh | `r` | re-checks the state |
+
+Three pickers under the ask field set the next ask: **Sources** (5 to 25 citations, default 10), **Excerpt** (60 to 200 lines per citation, default 60) and **Answer** (Short, Normal or Long, default Normal). The lists are the limits, since more of each is slower and costs more tokens. The picks are kept for the next session. Deep dive always uses the top of each list.
 
 The Python scripts run with `python` when it works, otherwise the `py` launcher, the same as the `scripts\dayz` wrappers. With neither, the button runs nothing and shows a `Python 3 not found` message. Scripts run with UTF-8 output, so an answer that quotes a non-ASCII character cannot crash them.
 
