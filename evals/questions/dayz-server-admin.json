@@ -8,7 +8,7 @@
         "types.xml",
         "re:\\bmission\\b"
       ],
-      "verified": "No CfgSpawnablesTypes or CfgRandomPresence class exists in any config.cpp or script under P:/DZ or P:/scripts; the CEItemProfile getters (GetNominal, GetMin, GetLifetime, GetRestock, GetCost, P:/scripts/3_game/ce/centraleconomy.c:754-765) only read the values back and do not name their source; types.xml in the mission as the source is the repo rule in .claude/skills/_shared/conventions/server.md:11"
+      "verified": "No CfgSpawnablesTypes or CfgRandomPresence class exists in any config.cpp or script under P:/DZ or P:/scripts; the CEItemProfile getters (GetNominal, GetMin, GetLifetime, GetRestock, GetCost, P:/scripts/3_game/ce/centraleconomy.c:754-765) only read the values back and do not name their source; types.xml in the mission as the source is the repo rule in skills/_shared/conventions/server.md:11"
     },
     {
       "id": "objectspawner-json",

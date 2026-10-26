@@ -12,7 +12,7 @@
       "must_not_include": [
         "re:\\A\\W*PASS\\b"
       ],
-      "verified": ".claude/agents/dayz-mod-reviewer.md check 1 and Severity; P:/scripts/4_world/entities/manbase/playerbase.c:7623 (OnConnect exists)"
+      "verified": "agents/dayz-mod-reviewer.md check 1 and Severity; P:/scripts/4_world/entities/manbase/playerbase.c:7623 (OnConnect exists)"
     },
     {
       "id": "hidden-selection-mismatch",
@@ -25,7 +25,7 @@
       "must_not_include": [
         "re:\\A\\W*PASS\\b"
       ],
-      "verified": ".claude/agents/dayz-mod-reviewer.md check 4 (a retexture class that leaves a camo* selection untextured is CRITICAL) and Severity; P:/DZ/characters/tops/config.cpp:3 (DZ_Characters_Tops), :2479 (class Hoodie_ColorBase: Clothing) and :2506-2508 (camoGround, camoMale, camoFemale); the owner may be dayz-config-specialist or, for a wearable, dayz-wearables-specialist (reviewer Report: name a specialist when the finding is in its area)"
+      "verified": "agents/dayz-mod-reviewer.md check 4 (a retexture class that leaves a camo* selection untextured is CRITICAL) and Severity; P:/DZ/characters/tops/config.cpp:3 (DZ_Characters_Tops), :2479 (class Hoodie_ColorBase: Clothing) and :2506-2508 (camoGround, camoMale, camoFemale); the owner may be dayz-config-specialist or, for a wearable, dayz-wearables-specialist (reviewer Report: name a specialist when the finding is in its area)"
     },
     {
       "id": "texture-suffix-warn",
@@ -38,7 +38,7 @@
       "must_not_include": [
         "re:\\A\\W*FAIL\\b"
       ],
-      "verified": ".claude/agents/dayz-mod-reviewer.md check 6 (missing suffix is a WARN) and Severity (WARN never fails); P:/DZ/characters/vests/config.cpp:3 and :24"
+      "verified": "agents/dayz-mod-reviewer.md check 6 (missing suffix is a WARN) and Severity (WARN never fails); P:/DZ/characters/vests/config.cpp:3 and :24"
     },
     {
       "id": "procedural-texture-pass",
@@ -50,7 +50,7 @@
         "re:\\A\\W*FAIL\\b",
         "re:CRITICAL[^\\n]*#\\(argb"
       ],
-      "verified": ".claude/agents/dayz-mod-reviewer.md check 6 (skip procedural textures); vanilla uses the same form at P:/DZ/gear/camping/config.cpp:60"
+      "verified": "agents/dayz-mod-reviewer.md check 6 (skip procedural textures); vanilla uses the same form at P:/DZ/gear/camping/config.cpp:60"
     },
     {
       "id": "types-min-above-nominal",
@@ -59,7 +59,7 @@
         "dayz-server-admin",
         "re:min[^\\n]*nominal|nominal[^\\n]*min"
       ],
-      "verified": ".claude/agents/dayz-mod-reviewer.md check 7 (min is not above nominal) and the owner list"
+      "verified": "agents/dayz-mod-reviewer.md check 7 (min is not above nominal) and the owner list"
     },
     {
       "id": "workbench-plugin-not-critical",
@@ -71,7 +71,7 @@
         "re:\\A\\W*FAIL\\b",
         "re:CRITICAL[^\\n]*(scripts/editor|script-module-unlisted)"
       ],
-      "verified": ".claude/agents/dayz-mod-reviewer.md 'Run lint first' (scripts/editor/ exception) and check 2; .claude/skills/dayz-lint/lint.py:341-351 (warns on any scripts/ subfolder with .c files no module lists); vanilla plugin form at P:/scripts/editor/plugins/dayztools.c:1 (class DayZTool: WorkbenchPlugin), :46 (WorkbenchPluginAttribute with five positional arguments) and :55 (override void Run())"
+      "verified": "agents/dayz-mod-reviewer.md 'Run lint first' (scripts/editor/ exception) and check 2; skills/dayz-lint/lint.py:341-351 (warns on any scripts/ subfolder with .c files no module lists); vanilla plugin form at P:/scripts/editor/plugins/dayztools.c:1 (class DayZTool: WorkbenchPlugin), :46 (WorkbenchPluginAttribute with five positional arguments) and :55 (override void Run())"
     }
   ]
 }

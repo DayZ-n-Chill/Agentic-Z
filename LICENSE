@@ -10,8 +10,8 @@ does not contain the Software.
 
 "The Software" means the Agentic-Z project, including but not limited to:
   - Source code, scripts, helpers, and configuration files
-  - Agent definitions (.claude/agents/)
-  - Skill definitions and supporting code (.claude/skills/ and mirrors)
+  - Agent definitions (agents/)
+  - Skill definitions and supporting code (skills/, .claude/skills/ and mirrors)
   - Documentation, the Docusaurus wiki, and L1 rule files
   - Any derivative or modified version of the above
 

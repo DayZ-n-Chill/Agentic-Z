@@ -1,7 +1,7 @@
 """clean-repo: remove all template-managed artifacts before pushing changes.
 
 Orchestrator. Discovers every `<domain>-clean-workspace` skill under
-.claude/skills/, runs each one's clean.py with --include-server --dry-run to
+skills/, runs each one's clean.py with --include-server --dry-run to
 build a combined plan and its plan ID (a hash of every child's dry-run stdout
 and stderr, plus the path, size and mtime of every versioned file under the
 project's .server/), asks for confirmation, then runs each with
@@ -41,7 +41,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
+SKILLS_DIR = REPO_ROOT / "skills"
 
 OK = "[OK]   "
 WARN = "[WARN] "

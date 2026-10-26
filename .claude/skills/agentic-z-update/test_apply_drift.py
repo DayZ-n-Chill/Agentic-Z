@@ -188,7 +188,7 @@ def test_dirty_gate_ignores_untracked_and_keeps_non_ascii_verbatim(tmp_path, mon
     _git(tmp_path, "commit", "-q", "-m", "baseline")
     monkeypatch.chdir(tmp_path)
 
-    mine = tmp_path / ".claude" / "skills" / "my-skill"
+    mine = tmp_path / "skills" / "my-skill"
     mine.mkdir(parents=True)
     (mine / "SKILL.md").write_text("mine\n", encoding="utf-8")  # untracked
     assert update.working_tree_clean_for(update.TEMPLATE_PATHS) == (True, [])
@@ -744,8 +744,8 @@ def test_first_run_in_old_clone_offers_upstream_changes_since_clone(tmp_path, mo
     _git(clone, "remote", "add", "upstream", str(up))
 
     (up / "docs/a.md").write_text("v1\n", encoding="utf-8")
-    (up / ".claude/skills/new-skill").mkdir(parents=True)
-    (up / ".claude/skills/new-skill/SKILL.md").write_text("new\n", encoding="utf-8")
+    (up / "skills/new-skill").mkdir(parents=True)
+    (up / "skills/new-skill/SKILL.md").write_text("new\n", encoding="utf-8")
     _git(up, "add", ".")
     _git(up, "commit", "-q", "-m", "C1")
     _git(clone, "fetch", "-q", "upstream", "main")
@@ -772,7 +772,7 @@ def test_first_run_in_old_clone_offers_upstream_changes_since_clone(tmp_path, mo
     assert seen["baseline"] == c0
     assert seen["drift"] == {
         "docs/a.md": S.SAFE_OVERWRITE,
-        ".claude/skills/new-skill/SKILL.md": S.NEW,
+        "skills/new-skill/SKILL.md": S.NEW,
     }
 
 
@@ -943,3 +943,36 @@ def test_read_only_modes_ignore_merge_state(monkeypatch, flag):
     monkeypatch.setattr(update, "git_operation_in_progress", must_not_check)
     monkeypatch.setattr(update, "ensure_upstream", lambda: False)  # stop right after
     assert update.main() == 1
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
+def test_baseline_file_this_clone_never_tracked_is_new_not_locally_deleted(tmp_path, monkeypatch):
+    """An older updater can advance the baseline past files it never pulled (agents/, skills/).
+
+    Those are new to the clone and must be pulled; a file the clone once committed
+    and then deleted stays locally-deleted.
+    """
+    _git(tmp_path, "init", "-q")
+    for key, val in [("user.name", "t"), ("user.email", "t@example.com"),
+                     ("commit.gpgsign", "false"), ("core.hooksPath", ".no-hooks")]:
+        _git(tmp_path, "config", key, val)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs/gone.md").write_text("v1", encoding="utf-8")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "init")
+    clone_branch = _git(tmp_path, "rev-parse", "--abbrev-ref", "HEAD").strip()
+
+    _git(tmp_path, "checkout", "-q", "-b", "up")
+    (tmp_path / "agents").mkdir()
+    (tmp_path / "agents/lead.md").write_text("agent", encoding="utf-8")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "upstream moves agents")
+    upstream = _git(tmp_path, "rev-parse", "HEAD").strip()
+
+    _git(tmp_path, "checkout", "-q", clone_branch)
+    _git(tmp_path, "rm", "-q", "docs/gone.md")
+    _git(tmp_path, "commit", "-q", "-m", "user deletes a doc")
+
+    monkeypatch.chdir(tmp_path)
+    drift = update.compute_drift(upstream, upstream)
+    assert drift == {"agents/lead.md": S.NEW, "docs/gone.md": S.LOCALLY_DELETED}

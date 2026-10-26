@@ -5,14 +5,18 @@
         "source": "github",
         "repo": "obra/superpowers"
       }
+    },
+    "dayz-n-chill": {
+      "source": {
+        "source": "github",
+        "repo": "DayZ-n-Chill/Agentic-Z"
+      }
     }
   },
   "enabledPlugins": {
-    "superpowers@superpowers-dev": true
+    "superpowers@superpowers-dev": true,
+    "agentic-z@dayz-n-chill": true
   },
-  "enabledMcpjsonServers": [
-    "dayz-rag"
-  ],
   "permissions": {
     "allow": [
       "Bash(py --version)",
@@ -23,14 +27,18 @@
       "Bash(npm install)",
       "Bash(npm ci)",
       "Bash(python .claude/skills/*)",
+      "Bash(python skills/*)",
       "Bash(python .claude/mcp/*)",
       "Bash(python scripts/*)",
       "Bash(python scripts/**)",
       "Bash(node .claude/skills/*)",
+      "Bash(node skills/*)",
       "Bash(node scripts/*)",
       "Bash(node scripts/**)",
       "PowerShell(. .claude/skills/*)",
       "PowerShell(.claude/skills/*)",
+      "PowerShell(. skills/*)",
+      "PowerShell(skills/*)",
       "Bash(scripts/*.bat)",
       "Bash(scripts/*.bat *)",
       "Bash(scripts/**/*.bat)",

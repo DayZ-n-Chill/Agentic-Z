@@ -11,7 +11,7 @@
       "must_not_include": [
         "re:^\\s*(\\d+\\.\\s*)?`?/dayz-build-pbo\\s+MyVest"
       ],
-      "verified": ".claude/agents/dayz-build-checker.md step 2 (`tasklist | grep -i DayZDiag_x64.exe` lists one process per line with the PID in the second column; a session the agent did not start is never stopped unasked: report BLOCKED: step 2 and ask the caller); .claude/skills/dayz-gate/gate.py stop_session (a session the gate did not start is stopped only when rt.confirm agrees: --yes or a terminal yes)"
+      "verified": "agents/dayz-build-checker.md step 2 (`tasklist | grep -i DayZDiag_x64.exe` lists one process per line with the PID in the second column; a session the agent did not start is never stopped unasked: report BLOCKED: step 2 and ask the caller); skills/dayz-gate/gate.py stop_session (a session the gate did not start is stopped only when rt.confirm agrees: --yes or a terminal yes)"
     },
     {
       "id": "agreed-session-stops-first",
@@ -22,7 +22,7 @@
       "must_not_include": [
         "re:\\ABLOCKED"
       ],
-      "verified": ".claude/agents/dayz-build-checker.md step 2 (run /dayz-stop-test only when the brief or the caller says the user agreed), before step 3 (/dayz-build-pbo); same order as gate_build in .claude/skills/dayz-gate/gate.py (run_lint, then stop_session, then BUILD_PY)"
+      "verified": "agents/dayz-build-checker.md step 2 (run /dayz-stop-test only when the brief or the caller says the user agreed), before step 3 (/dayz-build-pbo); same order as gate_build in skills/dayz-gate/gate.py (run_lint, then stop_session, then BUILD_PY)"
     },
     {
       "id": "lint-error-fails-before-build",
@@ -34,7 +34,7 @@
       "must_not_include": [
         "re:\\A\\W*PASS\\b"
       ],
-      "verified": ".claude/agents/dayz-build-checker.md step 1 (any lint error is a FAIL: quote it and stop before stopping the session or building); gate_build in .claude/skills/dayz-gate/gate.py runs run_lint before stop_session and BUILD_PY"
+      "verified": "agents/dayz-build-checker.md step 1 (any lint error is a FAIL: quote it and stop before stopping the session or building); gate_build in skills/dayz-gate/gate.py runs run_lint before stop_session and BUILD_PY"
     },
     {
       "id": "payload-bundle-deploys",
@@ -47,7 +47,7 @@
       "must_not_include": [
         "re:^\\s*(\\d+\\.\\s*)?`?/dayz-build-pbo\\s+MyBundle"
       ],
-      "verified": ".claude/agents/dayz-build-checker.md bundle paragraph (no config.cpp and Addons/*.pbo: skip /dayz-build-pbo, run /dayz-deploy-pbo, quote every [FAIL] and every [WARN] about a missing .bisign); .claude/skills/_shared/conventions/config.md 'Bundle / umbrella mods'"
+      "verified": "agents/dayz-build-checker.md bundle paragraph (no config.cpp and Addons/*.pbo: skip /dayz-build-pbo, run /dayz-deploy-pbo, quote every [FAIL] and every [WARN] about a missing .bisign); skills/_shared/conventions/config.md 'Bundle / umbrella mods'"
     },
     {
       "id": "pbo-path",
@@ -56,7 +56,7 @@
         "re:P:\\\\+Mods\\\\+@MyVest\\\\+Addons\\\\+MyVest\\.pbo|P:/Mods/@MyVest/Addons/MyVest\\.pbo"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-build-checker.md step 3 (P:\\Mods\\@<ModName>\\Addons\\<ModName>.pbo); .claude/skills/dayz-build-pbo/build.py:1 and :373 (pbo_path = target_dir / f\"{args.modname}.pbo\" under P:\\Mods\\@<ModName>\\Addons)"
+      "verified": "agents/dayz-build-checker.md step 3 (P:\\Mods\\@<ModName>\\Addons\\<ModName>.pbo); skills/dayz-build-pbo/build.py:1 and :373 (pbo_path = target_dir / f\"{args.modname}.pbo\" under P:\\Mods\\@<ModName>\\Addons)"
     }
   ]
 }

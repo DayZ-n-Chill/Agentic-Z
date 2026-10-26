@@ -12,7 +12,7 @@
       "must_not_include": [
         "re:--map\\s+chernarus\\b"
       ],
-      "verified": ".claude/agents/dayz-build-engineer.md step 3 (an instance name that is not a map alias needs --map; with no map in the brief, stop and report it to the release lead); .claude/skills/dayz-add-server/SKILL.md --map row (aliases chernarus, livonia, sakhal, nasdara; any other name fails without --map)"
+      "verified": "agents/dayz-build-engineer.md step 3 (an instance name that is not a map alias needs --map; with no map in the brief, stop and report it to the release lead); skills/dayz-add-server/SKILL.md --map row (aliases chernarus, livonia, sakhal, nasdara; any other name fails without --map)"
     },
     {
       "id": "non-dz-addon-without-deps-stops",
@@ -23,7 +23,7 @@
         "re:dependenc"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-build-engineer.md step 4c (no dependency list: launch with none; /dayz-launch-test refuses on a requiredAddons entry without the DZ_ prefix that is not the mod's own CfgPatches class, and the agent stops and reports it); .claude/skills/dayz-launch-test/launch.py:146-179 (missing_dependencies); every vanilla CfgPatches class under P:/DZ starts with DZ_, and JM_CF_Scripts is the Community Framework addon used in .claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp:8"
+      "verified": "agents/dayz-build-engineer.md step 4c (no dependency list: launch with none; /dayz-launch-test refuses on a requiredAddons entry without the DZ_ prefix that is not the mod's own CfgPatches class, and the agent stops and reports it); skills/dayz-launch-test/launch.py:146-179 (missing_dependencies); every vanilla CfgPatches class under P:/DZ starts with DZ_, and JM_CF_Scripts is the Community Framework addon used in skills/dayz-release-pack/fixtures/MyVest/config.cpp:8"
     },
     {
       "id": "own-patch-requirement-launches",
@@ -36,7 +36,7 @@
         "re:BLOCKED:\\s*step\\s*4",
         "re:/dayz-launch-test\\s+\\S*MyVest_Data"
       ],
-      "verified": ".claude/agents/dayz-build-engineer.md step 4c (no dependency list and not a bundle: launch with no dependencies and let /dayz-launch-test run the requiredAddons check); .claude/skills/dayz-launch-test/launch.py:118-143 (workspace_patches reads every config.cpp, skipping .git, Addons and Keys) and :167-177 (the mod's own patches count as provided); vanilla patches start with DZ_, e.g. P:/DZ/AI/config.cpp:1-11"
+      "verified": "agents/dayz-build-engineer.md step 4c (no dependency list and not a bundle: launch with no dependencies and let /dayz-launch-test run the requiredAddons check); skills/dayz-launch-test/launch.py:118-143 (workspace_patches reads every config.cpp, skipping .git, Addons and Keys) and :167-177 (the mod's own patches count as provided); vanilla patches start with DZ_, e.g. P:/DZ/AI/config.cpp:1-11"
     },
     {
       "id": "server-only-dep-uses-flag",
@@ -48,7 +48,7 @@
       "must_not_include": [
         "re:/dayz-launch-test\\s+(@?CF\\s+)?@?MyVestServer\\b"
       ],
-      "verified": ".claude/agents/dayz-build-engineer.md step 4 (a dependency the brief marks as server only goes through --server-only, on -serverMod=); .claude/skills/dayz-launch-test/SKILL.md --server-only row (never added to either -mod= list)"
+      "verified": "agents/dayz-build-engineer.md step 4 (a dependency the brief marks as server only goes through --server-only, on -serverMod=); skills/dayz-launch-test/SKILL.md --server-only row (never added to either -mod= list)"
     },
     {
       "id": "payload-bundle-deploys",
@@ -59,7 +59,7 @@
       "must_not_include": [
         "re:^\\s*(\\d+\\.\\s*)?`?/dayz-build-pbo\\s+MyBundle"
       ],
-      "verified": ".claude/agents/dayz-build-engineer.md step 2b (a payload only bundle with no config.cpp skips /dayz-build-pbo and runs /dayz-deploy-pbo); .claude/skills/_shared/conventions/config.md 'Bundle / umbrella mods'"
+      "verified": "agents/dayz-build-engineer.md step 2b (a payload only bundle with no config.cpp skips /dayz-build-pbo and runs /dayz-deploy-pbo); skills/_shared/conventions/config.md 'Bundle / umbrella mods'"
     }
   ]
 }

@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-SKILLS = Path(__file__).resolve().parents[1] / ".claude" / "skills"
+SKILLS = Path(__file__).resolve().parents[1] / "skills"
 TRIAGE = SKILLS / "dayz-gate" / "triage.py"
 TYPES_EDIT = SKILLS / "dayz-edit-types" / "types_edit.py"
 

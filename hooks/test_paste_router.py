@@ -246,7 +246,7 @@ def test_subfolder_tree_link_context_names_the_imports_clone(tmp_path):
 
 
 def test_context_matches_import_mod_layout():
-    import_mod = (Path(__file__).resolve().parents[1] / ".claude" / "skills" / "dayz-import-mod"
+    import_mod = (Path(__file__).resolve().parents[1] / "skills" / "dayz-import-mod"
                   / "import_mod.py").read_text(encoding="utf-8")
     assert 'IMPORTS = PROJECT_DIR / ".imports"' in import_mod
     assert '"__".join(' in import_mod and "(owner, src.repo, *(src.branch" in import_mod
@@ -259,7 +259,7 @@ def test_hyphenated_repo_on_a_slash_branch_gets_the_repo_name(tmp_path):
 
 
 def test_mod_name_rule_matches_import_mod():
-    new_mod = Path(__file__).resolve().parents[1] / ".claude" / "skills" / "dayz-new-mod" / "new_mod.py"
+    new_mod = Path(__file__).resolve().parents[1] / "skills" / "dayz-new-mod" / "new_mod.py"
     assert pr.MOD_NAME_RE.pattern in new_mod.read_text(encoding="utf-8")
 
 

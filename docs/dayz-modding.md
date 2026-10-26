@@ -31,7 +31,7 @@ The wizard wraps the lower-level skills below, never replaces them. Use it for n
 
 For a repo-wide wipe across every domain (pre-push reset), use the general **`/clean-repo`** skill — it orchestrates each `<domain>-clean-workspace` cleanup in turn.
 
-Most skills gate on `/dayz-preflight` first per the L2 convention `.claude/skills/_shared/dayz-conventions.md`. Documented exceptions, each with its reason in that file (Environment section):
+Most skills gate on `/dayz-preflight` first per the L2 convention `skills/_shared/dayz-conventions.md`. Documented exceptions, each with its reason in that file (Environment section):
 
 - `/dayz-stop-test` (emergency stop that has to work when the environment is half-broken).
 - `/dayz-scope-mod` and `/dayz-record-correction` (they edit settings or rule files, not DayZ content).
@@ -61,7 +61,7 @@ You need a Windows machine with:
 | **DayZ** (the game) | Steam — buy it | The client (`DayZ_x64.exe`) you'll use to test mods. |
 | **DayZ Tools** | Steam → Library → Tools (free) | AddonBuilder, Binarize, P-drive mounting. |
 | **DayZ Diag** | Comes with DayZ — `DayZDiag_x64.exe` lives next to `DayZ_x64.exe` in your DayZ install dir | The diagnostic build that allows `-filePatching` to function. Used for **both** client and server in `/dayz-launch-test`. Retail binaries block past the loading screen with filePatching on. |
-| **`P:\` drive mounted** | Open DayZ Tools → mount the P drive, **OR** run `python .claude\skills\dayz-workdrive\mount.py` (auto-resolves the work drive from DayZ Tools' `settings.ini`) | DayZ Tools and the engine both read from `P:\`. Preflight hard-fails without it. P:\ does not auto-mount; mount it at the start of each session. |
+| **`P:\` drive mounted** | Open DayZ Tools → mount the P drive, **OR** run `python skills\dayz-workdrive\mount.py` (auto-resolves the work drive from DayZ Tools' `settings.ini`) | DayZ Tools and the engine both read from `P:\`. Preflight hard-fails without it. P:\ does not auto-mount; mount it at the start of each session. |
 | **`P:\Mods\` junction** | One-time: `cmd /c mklink /J P:\Mods "<DayZ install>\!Workshop"` | The DayZ engine and Launcher load mods from `<DayZ install>\!Workshop\`. The `P:\Mods\` junction lets builds deploy via `P:\Mods\@<ModName>\Addons\<ModName>.pbo` and actually land where the engine reads. Build-pbo hard-fails if this junction is missing or points at a regular folder. |
 | **Vanilla DayZ data on `P:\`** | DayZ Tools → "Extract Game Data" | Configs in your mod inherit from base classes (`ItemBase`, `Inventory_Base`, etc.) which only exist if vanilla PBOs are unpacked. |
 | **Python 3.10+** on `PATH` | python.org | The skills are Python scripts. |
@@ -80,29 +80,29 @@ python .claude\skills\sync-skills\sync.py
 
 :: Optional but recommended — pull the prebuilt vector index from GitHub
 :: releases instead of building it locally with /dayz-search-index:
-python .claude\skills\dayz-search-download\download.py
+python skills\dayz-search-download\download.py
 ```
 
 Then, every time you start a modding session:
 
 ```cmd
 :: 1. Verify environment (P:\ mounted, Tools installed, vanilla data extracted)
-python .claude\skills\dayz-preflight\preflight.py
+python skills\dayz-preflight\preflight.py
 
 :: 2. Scaffold a new mod (only the first time per mod)
-python .claude\skills\dayz-new-mod\new_mod.py MyMod --author "MyHandle"
+python skills\dayz-new-mod\new_mod.py MyMod --author "MyHandle"
 
 :: 3. Set up a test server instance (one-time per instance, copies mission template,
 ::    creates per-instance serverDZ.cfg + profile dirs)
-python .claude\skills\dayz-add-server\add_server.py chernarus
+python skills\dayz-add-server\add_server.py chernarus
 
 :: 4. Edit your mod under workspace\MyMod\ — see Mod project layout below
 
 :: 5. Build the PBO
-python .claude\skills\dayz-build-pbo\build.py MyMod
+python skills\dayz-build-pbo\build.py MyMod
 
 :: 6. Launch local server + client with your mod loaded on the chosen map
-python .claude\skills\dayz-launch-test\launch.py MyMod --server chernarus
+python skills\dayz-launch-test\launch.py MyMod --server chernarus
 ```
 
 Inside Claude Code, Codex, or Gemini CLI, the same commands are available as slash commands: `/dayz-preflight`, `/dayz-new-mod`, etc.
@@ -133,7 +133,7 @@ For full per-skill argument detail, see the skill's `SKILL.md` or pass `--help` 
 
 ### `/dayz-preflight`
 
-Verifies the modding environment before any other DayZ skill runs. **Every other DayZ skill that does work calls this first** and propagates non-zero exit, except the documented exceptions listed at the top of this page (with reasons in `.claude/skills/_shared/dayz-conventions.md`).
+Verifies the modding environment before any other DayZ skill runs. **Every other DayZ skill that does work calls this first** and propagates non-zero exit, except the documented exceptions listed at the top of this page (with reasons in `skills/_shared/dayz-conventions.md`).
 
 | Check | Severity |
 |---|---|
@@ -162,7 +162,7 @@ Helper functions `find_dayz_tools()` and `find_vanilla_data()` are exported from
 Scaffolds a new mod project under `workspace/<ModName>/` and creates the `P:\<ModName>\` junction so AddonBuilder and the engine can find it.
 
 ```cmd
-python .claude\skills\dayz-new-mod\new_mod.py <ModName> [--author "YourHandle"]
+python skills\dayz-new-mod\new_mod.py <ModName> [--author "YourHandle"]
 ```
 
 **Argument rules:**
@@ -211,7 +211,7 @@ P:\<ModName>\  ->  workspace/<ModName>/   (symlink, falls back to junction on Wi
 Packs the mod into a deployable `.pbo` via AddonBuilder.
 
 ```cmd
-python .claude\skills\dayz-build-pbo\build.py <ModName> [--clean]
+python skills\dayz-build-pbo\build.py <ModName> [--clean]
 ```
 
 **Steps performed:**
@@ -238,7 +238,7 @@ Default output is binarized. A `--no-binarize` flag is not exposed yet — easy 
 Spins up a local development environment to test one or more built mods. **Always launches the server first**, then the client connecting to it — DayZ has no offline / single-player mode for mod testing.
 
 ```cmd
-python .claude\skills\dayz-launch-test\launch.py <ModName> [<ModName2> ...] [--server-only <Mod> ...] [--server <instance>] [--port N] [--dry-run]
+python skills\dayz-launch-test\launch.py <ModName> [<ModName2> ...] [--server-only <Mod> ...] [--server <instance>] [--port N] [--dry-run]
 ```
 
 **Steps performed:**
@@ -349,7 +349,7 @@ Two locations hold per-clone, gitignored, user/machine-specific state:
 | `.server/<instance>/Profiles/` | Per-instance server `-profiles=` dir (RPT, script.log, BattlEye state). | `/dayz-add-server` (created empty); populated by `/dayz-launch-test` |
 | `.server/!ClientDiagLogs/` | Shared client `-profiles=` dir (RPT, BattlEye state, Users/, DataCache/). | `/dayz-add-server` (created empty); populated by `/dayz-launch-test` |
 
-Override the author handle: `python .claude\skills\dayz-new-mod\new_mod.py MyMod --author "NewHandle"` (overwrites the cache) or delete `.claude/local-memory/dayz-author.txt`.
+Override the author handle: `python skills\dayz-new-mod\new_mod.py MyMod --author "NewHandle"` (overwrites the cache) or delete `.claude/local-memory/dayz-author.txt`.
 
 `.server/` is gitignored as a whole: every machine's test server is its own, and `/dayz-add-server` recreates it. To keep your tuned `serverDZ.cfg` or mission edits in version control, add `!` exceptions to the `.gitignore` in your clone.
 
@@ -357,9 +357,9 @@ Override the author handle: `python .claude\skills\dayz-new-mod\new_mod.py MyMod
 
 ## L2 conventions (workflow rules)
 
-The core L2 rules live at `.claude/skills/_shared/dayz-conventions.md`; topic rules (config, assets, scripts, UI, server) live in `.claude/skills/_shared/conventions/`. The high-level rules:
+The core L2 rules live at `skills/_shared/dayz-conventions.md`; topic rules (config, assets, scripts, UI, server) live in `skills/_shared/conventions/`. The high-level rules:
 
-- **Every DayZ skill MUST gate on `/dayz-preflight`** at the start of execution and halt on non-zero exit, even offline scaffolding skills. The exceptions are the emergency stop (`/dayz-stop-test`), meta-skills that edit settings or rule files rather than DayZ content (`/dayz-scope-mod`, `/dayz-record-correction`), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (mounts `P:\`), the gate itself (`/dayz-preflight`), `/dayz-search-download`, `/dayz-ask`, `/dayz-gate` (gates through the skills it runs), the read-only and report skills (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route` and `/dayz-statusline`. The reason for each is in `.claude/skills/_shared/dayz-conventions.md`. The discipline of "preflight first" keeps the workflow uniform and catches a dismounted drive at the first action of a session.
+- **Every DayZ skill MUST gate on `/dayz-preflight`** at the start of execution and halt on non-zero exit, even offline scaffolding skills. The exceptions are the emergency stop (`/dayz-stop-test`), meta-skills that edit settings or rule files rather than DayZ content (`/dayz-scope-mod`, `/dayz-record-correction`), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (mounts `P:\`), the gate itself (`/dayz-preflight`), `/dayz-search-download`, `/dayz-ask`, `/dayz-gate` (gates through the skills it runs), the read-only and report skills (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route` and `/dayz-statusline`. The reason for each is in `skills/_shared/dayz-conventions.md`. The discipline of "preflight first" keeps the workflow uniform and catches a dismounted drive at the first action of a session.
 - **`P:\` must be mounted** by DayZ Tools before any DayZ work. Preflight enforces.
 - **DayZ cannot be tested standalone.** A local server MUST be loaded with the same mod set as the client. `/dayz-launch-test` enforces; never launch the client alone for mod testing.
 - **Mod source under `workspace/<ModName>/`**. Built `.pbo` deploys to `P:\Mods\@<ModName>\Addons\`. Scaffold owns the `P:\<ModName>\` junction; build/test skills only verify it.
@@ -400,7 +400,7 @@ When a Superpowers workflow (`/brainstorming`, `/writing-plans`, `/executing-pla
 
 How to apply: when a Superpowers skill says "dispatch a code reviewer" while you're working on DayZ files, call `Agent(subagent_type="dayz-mod-reviewer", ...)` instead of the default. Same idea for the other roles. For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generic agents are fine.
 
-When in doubt, check the touched paths: anything under `workspace/<ModName>/`, `.claude/skills/dayz-*/`, `P:\`, or DayZ-specific files (`.c`, `.layout`, `.p3d`, `.paa`, `.rvmat`, `config.cpp`, `types.xml`) → DayZ specialist.
+When in doubt, check the touched paths: anything under `workspace/<ModName>/`, `skills/dayz-*/`, `P:\`, or DayZ-specific files (`.c`, `.layout`, `.p3d`, `.paa`, `.rvmat`, `config.cpp`, `types.xml`) → DayZ specialist.
 
 ---
 
@@ -485,25 +485,25 @@ The mod folder is fine but the `P:\<ModName>\` link to it is gone. Run `/dayz-ad
 
 ```
 <repo>/
+├── skills/
+│   ├── dayz-preflight/
+│   │   ├── SKILL.md
+│   │   └── preflight.py            # exports find_dayz_tools, find_dayz_game,
+│   │                               # find_dayz_diag, find_dayz_server,
+│   │                               # find_vanilla_data
+│   ├── dayz-new-mod/
+│   │   ├── SKILL.md
+│   │   └── new_mod.py
+│   ├── dayz-build-pbo/
+│   │   ├── SKILL.md
+│   │   └── build.py
+│   ├── dayz-launch-test/
+│   │   ├── SKILL.md
+│   │   └── launch.py
+│   └── _shared/
+│       ├── dayz-conventions.md      # L2 core rules every DayZ skill follows
+│       └── conventions/             # L2 topic rules (config, assets, scripts, ui, server)
 ├── .claude/
-│   ├── skills/
-│   │   ├── dayz-preflight/
-│   │   │   ├── SKILL.md
-│   │   │   └── preflight.py        # exports find_dayz_tools, find_dayz_game,
-│   │   │                           # find_dayz_diag, find_dayz_server,
-│   │   │                           # find_vanilla_data
-│   │   ├── dayz-new-mod/
-│   │   │   ├── SKILL.md
-│   │   │   └── new_mod.py
-│   │   ├── dayz-build-pbo/
-│   │   │   ├── SKILL.md
-│   │   │   └── build.py
-│   │   ├── dayz-launch-test/
-│   │   │   ├── SKILL.md
-│   │   │   └── launch.py
-│   │   └── _shared/
-│   │       ├── dayz-conventions.md  # L2 core rules every DayZ skill follows
-│   │       └── conventions/         # L2 topic rules (config, assets, scripts, ui, server)
 │   └── local-memory/                # gitignored, per-clone
 │       ├── dayz-author.txt
 │       ├── dayz-current-project.txt

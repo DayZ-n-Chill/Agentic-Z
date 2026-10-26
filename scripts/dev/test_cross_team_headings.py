@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-AGENTS_DIR = REPO / ".claude" / "agents"
+AGENTS_DIR = REPO / "agents"
 HEADING = re.compile(r'"For the (\w+) lead"')
 
 
@@ -96,7 +96,7 @@ def test_agent_creator_validates_with_the_whole_dev_suite():
 
 
 def test_vehicle_specialist_listed_as_reader_of_config_and_scripts_topics():
-    conv = (REPO / ".claude" / "skills" / "_shared" / "dayz-conventions.md").read_text(encoding="utf-8")
+    conv = (REPO / "skills" / "_shared" / "dayz-conventions.md").read_text(encoding="utf-8")
     for topic in ("config", "scripts"):
         row = next(l for l in conv.splitlines() if l.startswith(f"| `conventions/{topic}.md` |"))
         assert "vehicle-specialist" in row.rsplit("|", 2)[1], f"conventions/{topic}.md Read by must list vehicle-specialist"

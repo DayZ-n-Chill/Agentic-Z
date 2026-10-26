@@ -17,4 +17,4 @@ set PYTHONIOENCODING=utf-8
 set "PY=python"
 call python -c "" >nul 2>nul || set "PY=py"
 if "%PY%"=="py" ((call ) & call py -c "" >nul 2>nul || (>&2 echo [FAIL] Python 3 not found: install it from python.org or add python/py to PATH& exit /b 9009))
-%PY% "%~dp0..\..\.claude\skills\dayz-launch-workbench\launch.py" %*
+%PY% "%~dp0..\..\skills\dayz-launch-workbench\launch.py" %*

@@ -12,15 +12,15 @@ Every agent works from three tiers. When two disagree, the more specific tier wi
 
 | Tier | What it holds | Where it lives | Loads |
 |---|---|---|---|
-| 1 · Repo rules (L1) | How every agent works here: communication, tooling, memory, routing, file locations. | This file (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) | Every agent, every task |
-| 2 · DayZ rules (L2) | Enforce Script style, config patterns, asset rules, environment, vanilla search. | `.claude/skills/_shared/dayz-conventions.md` (core) + `.claude/skills/_shared/conventions/*.md` (topics) | All DayZ work |
-| 3 · Agents and knowledge packs | The agents in `.claude/agents/`, the skills, and the packs under `.claude/skills/_shared/` (EnScript patterns, Figma-to-DayZ rules). | Their own files | Only what the task needs |
+| 1 · Repo rules (L1) | How every agent works here: communication, tooling, memory, routing, file locations. | This file (`.claude/CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) | Every agent, every task |
+| 2 · DayZ rules (L2) | Enforce Script style, config patterns, asset rules, environment, vanilla search. | `skills/_shared/dayz-conventions.md` (core) + `skills/_shared/conventions/*.md` (topics) | All DayZ work |
+| 3 · Agents and knowledge packs | The agents in `agents/`, the skills, and the packs under `skills/_shared/` (EnScript patterns, Figma-to-DayZ rules). | Their own files | Only what the task needs |
 
 Corrections from the user go into the right tier through `/dayz-record-correction`.
 
 ## Default rules (apply to every clone)
 
-These are the L1 (Tier 1) rules of the template. They apply to every clone of this repo, every agent, every skill. DayZ-specific rules live separately at `.claude/skills/_shared/dayz-conventions.md` and are referenced from the individual agent/skill files that need them.
+These are the L1 (Tier 1) rules of the template. They apply to every clone of this repo, every agent, every skill. DayZ-specific rules live separately at `skills/_shared/dayz-conventions.md` and are referenced from the individual agent/skill files that need them.
 
 **Skim summary:**
 
@@ -52,7 +52,7 @@ When asked for something an agent can't literally do (read a UI pane, see the sc
 
 ### Memory — `.claude/local-memory/` only, never for rules
 
-User/machine-specific notes go in `<repo>/.claude/local-memory/` (gitignored, per-clone). Never store rules or conventions there — those go in the repo so they travel with every clone. L1 rules live in this file; L2 DayZ rules live at `.claude/skills/_shared/dayz-conventions.md`.
+User/machine-specific notes go in `<repo>/.claude/local-memory/` (gitignored, per-clone). Never store rules or conventions there — those go in the repo so they travel with every clone. L1 rules live in this file; L2 DayZ rules live at `skills/_shared/dayz-conventions.md`.
 
 ### Subagent routing for DayZ work
 
@@ -60,18 +60,18 @@ User/machine-specific notes go in `<repo>/.claude/local-memory/` (gitignored, pe
 
 When a Superpowers workflow (`/brainstorming`, `/executing-plans`, `/requesting-code-review`, `/dispatching-parallel-agents`, etc.) needs to dispatch a subagent and the work touches DayZ, route to the matching `dayz-*` specialist via the Agent tool. Generic Superpowers agents (e.g. `superpowers:code-reviewer`) don't know Enforce Script conventions and will miss DayZ-specific traps like the `modded class` no-extends rule or engine classes that can't be modded.
 
-**Figma-to-DayZ work has its own pipeline.** When the input is a Figma URL, fileKey, or node ID and the target is a DayZ `.layout`, dispatch the three-stage pipeline in order: `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator` (gate mode). Do not author the `.layout` inline or via `dayz-ui-specialist` alone — the canonical translation rules live at `.claude/skills/_shared/figma-to-dayz-rules.md` and only the pipeline applies them. After the pipeline finishes, `dayz-ui-specialist` handles polish, widget scripts, and Workbench wiring. When `dayz-ui-specialist` is handed a Figma input it returns to its caller, and the caller (`dayz-lead` or the main session) runs the pipeline.
+**Figma-to-DayZ work has its own pipeline.** When the input is a Figma URL, fileKey, or node ID and the target is a DayZ `.layout`, dispatch the three-stage pipeline in order: `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator` (gate mode). Do not author the `.layout` inline or via `dayz-ui-specialist` alone — the canonical translation rules live at `skills/_shared/figma-to-dayz-rules.md` and only the pipeline applies them. After the pipeline finishes, `dayz-ui-specialist` handles polish, widget scripts, and Workbench wiring. When `dayz-ui-specialist` is handed a Figma input it returns to its caller, and the caller (`dayz-lead` or the main session) runs the pipeline.
 
-Heuristic: anything under `workspace/<ModName>/`, `.claude/skills/dayz-*/`, `P:\`, or DayZ file types (`.c`, `.layout`, `.p3d`, `.paa`, `.rvmat`, `config.cpp`, `types.xml`) is DayZ work. See the role-to-specialist table at `docs/dayz-modding.md` ("Superpowers ↔ DayZ specialist routing").
+Heuristic: anything under `workspace/<ModName>/`, `skills/dayz-*/`, `P:\`, or DayZ file types (`.c`, `.layout`, `.p3d`, `.paa`, `.rvmat`, `config.cpp`, `types.xml`) is DayZ work. See the role-to-specialist table at `docs/dayz-modding.md` ("Superpowers ↔ DayZ specialist routing").
 
 For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generic agents are fine.
 
 ## Repository Use
 
-- **Bootstrap**: After cloning, run `/sync-skills` (or `python .claude/skills/sync-skills/sync.py`). This links the repo's `.claude/skills/` into the Codex and Gemini home dirs so they discover the same slash commands Claude Code reads from the repo directly (`--agents claude` also links into Claude Code's home, making the skills global there). The agent list lives in `.claude/skills/sync-skills/agents.json` — adding a new agent CLI later is a one-entry edit.
-- Agent definitions live in `.claude/agents/`.
+- **Bootstrap**: After cloning, run `/sync-skills` (or `python .claude/skills/sync-skills/sync.py`). This links the repo's `skills/` and `.claude/skills/` into the Codex and Gemini home dirs so they discover the same slash commands Claude Code gets from the agentic-z plugin enabled in `.claude/settings.json` (which supplies `skills/` and `agents/`) plus the four repo-only skills it reads from `.claude/skills/` (`--agents claude` also links into Claude Code's home, making the skills global there). The agent list lives in `.claude/skills/sync-skills/agents.json` — adding a new agent CLI later is a one-entry edit.
+- Agent definitions live in `agents/`.
 - Agent memory lives in `.claude/agent-memory/` (per-user, gitignored; auto-created on first write).
-- Reusable skills live in `.claude/skills/`.
+- Reusable skills live in `skills/`; the four repo-only skills (`agentic-z-update`, `clean-repo`, `docs-sync`, `sync-skills`) live in `.claude/skills/`.
 - Local settings live in `.claude/settings.local.json` (per-user, gitignored). Project-wide settings go in `.claude/settings.json`.
 - Keep the repository root clean.
 - `output/` is the **default destination for one-shot deliverables** — documents, decks, generated files, and other artifacts the user takes elsewhere. Goes under `output/<descriptive-folder>/` unless the user names a different destination.
@@ -80,16 +80,16 @@ For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generi
 - `scripts/` is for **helper automation** — Python, PowerShell, batch, etc. that *produces* content elsewhere. Tools, not products.
 - Exceptions to the `output/` rule, none of which move:
   - Agent memory stays in `.claude/agent-memory/`.
-  - Skill-bundled helper scripts (e.g. `preflight.py` next to its `SKILL.md`) stay inside their skill folder under `.claude/skills/`.
+  - Skill-bundled helper scripts (e.g. `preflight.py` next to its `SKILL.md`) stay inside their skill folder under `skills/` or `.claude/skills/`.
   - **DayZ mods**: project workspaces live under `workspace/<ModName>/`, and built `.pbo`s deploy to `P:\Mods\@<ModName>\Addons\` (the symlinked Workshop folder on the P-drive). Nothing under `output/`. This is inherent to how DayZ Tools and the game expect mod content to be laid out — the P-drive is mounted by DayZ Tools and is the only place the engine looks for in-development mods. DayZ skills must preflight that `P:\` is mounted and halt with a clear message if not.
 
 ## Working Conventions
 
-- **Doc maintenance**: `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` hold the same content. Three filenames so each agent CLI auto-loads its own. Edit all three together when one changes. No SYNC markers, symlinks, or shared imports.
+- **Doc maintenance**: `.claude/CLAUDE.md`, `AGENTS.md`, `GEMINI.md` hold the same content. Three filenames so each agent CLI auto-loads its own. Edit all three together when one changes. No SYNC markers, symlinks, or shared imports.
 - Keep agent instructions self-contained so they can run without prior conversation context.
 - Keep skills self-contained so they can run without prior conversation context.
-- When modifying agent definitions in `.claude/agents/`, preserve the established structure and keep edits surgical.
-- When modifying reusable skills in `.claude/skills/`, keep them focused, explicit, and portable.
+- When modifying agent definitions in `agents/`, preserve the established structure and keep edits surgical.
+- When modifying reusable skills in `skills/` or `.claude/skills/`, keep them focused, explicit, and portable.
 - Use workspace tools and existing agents before adding new ad hoc logic.
 - Do not create new root-level helper scripts; use `scripts/` for ad hoc automation.
 - When an agent or skill creates a deliverable, write it under `output/<descriptive-folder>/` by default. Only deviate when the user names a specific destination, or when the destination is inherent to the task (e.g. deploying to a real server path, editing in-place inside an existing project).
@@ -98,5 +98,5 @@ For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generi
 ## Environment Notes
 
 - This is a Windows workspace.
-- There is no app source tree. Tests are pytest files placed next to the code they cover. Validate changes with `python -m pytest -q .claude scripts/dev hooks`, which is what CI runs in `.github/workflows/tests.yml`, and after agent or skill changes also run `python .claude/skills/docs-sync/sync.py --check`, which checks the React wiki under `wiki/` against the repo.
-- Slash skill discovery is agent-specific. Claude Code reads the repo's `.claude/skills/` plus `$CLAUDE_CONFIG_DIR/skills` or `$HOME/.claude/skills`. Codex reads the repo's `.agents/skills/` and `$HOME/.agents/skills`. Gemini reads the workspace's `.gemini/skills/` or `.agents/skills/` and `$HOME/.gemini/skills` or `$HOME/.agents/skills`. To make the repo's `.claude/skills/` appear in Codex and Gemini too, run `/sync-skills` (or `python .claude/skills/sync-skills/sync.py`). It symlinks each repo skill into each agent's skills directory (Claude Code's only with `--agents claude`; `--unlink` removes the links) without moving the source files; falls back to junctions on Windows when symlinks need elevation. Afterward, restart/reload the agent session; in Gemini CLI, run `/skills reload` before `/skills list`.
+- There is no app source tree. Tests are pytest files placed next to the code they cover. Validate changes with `python -m pytest -q .claude skills scripts/dev hooks`, which is what CI runs in `.github/workflows/tests.yml`, and after agent or skill changes also run `python .claude/skills/docs-sync/sync.py --check`, which checks the React wiki under `wiki/` against the repo.
+- Slash skill discovery is agent-specific. Claude Code reads the repo's `.claude/skills/` plus `$CLAUDE_CONFIG_DIR/skills` or `$HOME/.claude/skills`. Codex reads the repo's `.agents/skills/` and `$HOME/.agents/skills`. Gemini reads the workspace's `.gemini/skills/` or `.agents/skills/` and `$HOME/.gemini/skills` or `$HOME/.agents/skills`. To make the repo's `skills/` and `.claude/skills/` appear in Codex and Gemini too, run `/sync-skills` (or `python .claude/skills/sync-skills/sync.py`). It symlinks each repo skill into each agent's skills directory (Claude Code's only with `--agents claude`; `--unlink` removes the links) without moving the source files; falls back to junctions on Windows when symlinks need elevation. Afterward, restart/reload the agent session; in Gemini CLI, run `/skills reload` before `/skills list`.

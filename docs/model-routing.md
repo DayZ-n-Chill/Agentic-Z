@@ -59,4 +59,4 @@ When dispatching, **bound the report**: word limit, file:line citations required
 ## Reading more
 
 - This page is the source for search and subagent model routing.
-- `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` do not carry this rule; their only routing rule (line 50) covers new DayZ requests: run `/dayz-route` first, then the Haiku `dayz-router` agent.
+- `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` do not carry this rule; their only routing rule (line 50) covers new DayZ requests: run `/dayz-route` first, then the Haiku `dayz-router` agent.

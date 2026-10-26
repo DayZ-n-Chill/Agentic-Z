@@ -13,7 +13,7 @@
         "re:^\\s*tools:(?![^\\n]*\\b(no|not|never|without)\\b)[^\\n]*\\b(Write|Edit)\\b",
         "re:^\\s*memory:\\s*(project|user|local)\\s*$"
       ],
-      "verified": ".claude/agents/agent-creator.md 'What a good agent file looks like', Tools (gate agents get no Write, Edit or memory; READ_ONLY_GATES checks them); scripts/dev/test_repo_integrity.py READ_ONLY_GATES"
+      "verified": "agents/agent-creator.md 'What a good agent file looks like', Tools (gate agents get no Write, Edit or memory; READ_ONLY_GATES checks them); scripts/dev/test_repo_integrity.py READ_ONLY_GATES"
     },
     {
       "id": "model-is-omitted",
@@ -26,7 +26,7 @@
         "re:\\A\\W*yes\\b",
         "re:^\\s*model:\\s*(opus|sonnet|haiku)\\b(?![^\\n]*(cost|#))"
       ],
-      "verified": ".claude/agents/agent-creator.md:16 Model (omit model so the agent inherits the session model; pin only as a deliberate cost decision, with a comment saying so)"
+      "verified": "agents/agent-creator.md:16 Model (omit model so the agent inherits the session model; pin only as a deliberate cost decision, with a comment saying so)"
     },
     {
       "id": "no-memory-section-in-body",
@@ -39,17 +39,17 @@
         "re:\\A\\W*yes\\b",
         "re:\\b(should|can|may) (stay|remain|be kept)\\b|\\bkeep (it|the section|that section)\\b(?! (in|to) (the )?frontmatter)"
       ],
-      "verified": ".claude/agents/agent-creator.md Memory (memory: project in frontmatter is the complete setup; never write a memory section in the body; the harness injects paths and MEMORY.md)"
+      "verified": "agents/agent-creator.md Memory (memory: project in frontmatter is the complete setup; never write a memory section in the body; the harness injects paths and MEMORY.md)"
     },
     {
       "id": "new-worker-registration",
-      "question": "Answer only, do not edit any file. I'm adding a new worker agent, dayz-stringtable-specialist, that a lead will start. Besides writing .claude/agents/dayz-stringtable-specialist.md, which other files must change so a lead can start it and the integrity test passes?",
+      "question": "Answer only, do not edit any file. I'm adding a new worker agent, dayz-stringtable-specialist, that a lead will start. Besides writing agents/dayz-stringtable-specialist.md, which other files must change so a lead can start it and the integrity test passes?",
       "must_include": [
         "plugin.json",
         "dayz-lead.md",
         "re:docs/dayz-modding\\.md|dayz-modding\\.md"
       ],
-      "verified": ".claude/agents/agent-creator.md Workflow step 2, Create (follow every applicable line of docs/agent-registration.md); docs/agent-registration.md:5 (plugin.json agents list), :6 (Team table in dayz-lead.md), :8 (docs/dayz-modding.md routing table for every lead worker and gate); scripts/dev/test_repo_integrity.py test_every_agent_is_registered_in_the_plugin, test_every_dayz_worker_is_in_the_lead_table and test_every_lead_worker_and_gate_is_in_the_docs_routing_table"
+      "verified": "agents/agent-creator.md Workflow step 2, Create (follow every applicable line of docs/agent-registration.md); docs/agent-registration.md:5 (plugin.json agents list), :6 (Team table in dayz-lead.md), :8 (docs/dayz-modding.md routing table for every lead worker and gate); scripts/dev/test_repo_integrity.py test_every_agent_is_registered_in_the_plugin, test_every_dayz_worker_is_in_the_lead_table and test_every_lead_worker_and_gate_is_in_the_docs_routing_table"
     },
     {
       "id": "baseline-via-runner",
@@ -61,7 +61,7 @@
       "must_not_include": [
         "re:\"score\"\\s*:\\s*\\d"
       ],
-      "verified": ".claude/agents/agent-creator.md Workflow step 2, Create (follow docs/agent-registration.md); docs/agent-registration.md:15 (run `py scripts/dev/run_evals.py --agent <name> --update-baseline`; never edit that file by hand; the runner refuses to lower a score); docs/evals.md:12 names scripts\\dev\\evals.bat as the no-token wrapper for the runner; docs/evals.md 'Adding questions'"
+      "verified": "agents/agent-creator.md Workflow step 2, Create (follow docs/agent-registration.md); docs/agent-registration.md:15 (run `py scripts/dev/run_evals.py --agent <name> --update-baseline`; never edit that file by hand; the runner refuses to lower a score); docs/evals.md:12 names scripts\\dev\\evals.bat as the no-token wrapper for the runner; docs/evals.md 'Adding questions'"
     }
   ]
 }

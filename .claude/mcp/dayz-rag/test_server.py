@@ -459,7 +459,7 @@ def test_query_gives_up_after_last_attempt(monkeypatch, no_sleep):
 
 
 def test_valid_file_types_match_the_indexer():
-    index_py = Path(__file__).resolve().parents[2] / "skills" / "dayz-search-index" / "index.py"
+    index_py = Path(__file__).resolve().parents[3] / "skills" / "dayz-search-index" / "index.py"
     spec = importlib.util.spec_from_file_location("dayz_search_index_for_server_test", index_py)
     index = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(index)

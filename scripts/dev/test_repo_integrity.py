@@ -18,8 +18,9 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-AGENTS_DIR = REPO / ".claude" / "agents"
-SKILLS_DIR = REPO / ".claude" / "skills"
+AGENTS_DIR = REPO / "agents"
+SKILLS_DIR = REPO / "skills"
+REPO_SKILLS_DIR = REPO / ".claude" / "skills"
 PLUGIN = json.loads((REPO / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
 
 # Skills that maintain the template repo itself; plugin installs don't need them.
@@ -55,7 +56,7 @@ def test_every_agent_is_registered_in_the_plugin():
 
 def test_every_user_skill_is_registered_in_the_plugin():
     registered = {Path(p).name for p in PLUGIN["skills"]}
-    on_disk = {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
+    on_disk = {p.parent.name for d in (SKILLS_DIR, REPO_SKILLS_DIR) for p in d.glob("*/SKILL.md")}
     assert registered == on_disk - TEMPLATE_ONLY_SKILLS, (
         f"every user skill must be registered in .claude-plugin/plugin.json; missing: "
         f"{sorted(on_disk - TEMPLATE_ONLY_SKILLS - registered)}; registered but not on disk: "
@@ -117,8 +118,10 @@ def test_agents_have_no_machine_specific_paths(path):
 REF_FILES = sorted(
     set(AGENT_FILES)
     | set(SKILLS_DIR.glob("*/SKILL.md"))
+    | set(REPO_SKILLS_DIR.glob("*/SKILL.md"))
     | set((SKILLS_DIR / "_shared").rglob("*.md"))
     | set(SKILLS_DIR.glob("*/reference*/**/*.md"))
+    | set(REPO_SKILLS_DIR.glob("*/reference*/**/*.md"))
 )
 
 
@@ -129,7 +132,7 @@ def _ref_id(path: Path) -> str:
 @pytest.mark.parametrize("path", REF_FILES, ids=_ref_id)
 def test_referenced_repo_files_exist(path):
     text = path.read_text(encoding="utf-8")
-    for ref in re.findall(r"(?:\.claude/(?:skills|agents|mcp)|scripts)/[\w./-]+\.(?:md|py|bat)", text):
+    for ref in re.findall(r"(?:\.claude/(?:skills|mcp)|(?<![\w./])(?:skills|agents)|scripts)/[\w./-]+\.(?:md|py|bat)", text):
         assert (REPO / ref).exists(), f"{_ref_id(path)} points at missing {ref}"
 
 
@@ -146,7 +149,9 @@ def test_referenced_agents_exist(path):
 def test_referenced_slash_skills_exist(path):
     text = path.read_text(encoding="utf-8")
     for ref in re.findall(r"(?<![\w/.])/((?:dayz|agentic|docs|sync|clean)-[a-z0-9-]+)", text):
-        assert (SKILLS_DIR / ref / "SKILL.md").exists(), f"{_ref_id(path)} names unknown skill /{ref}"
+        assert (SKILLS_DIR / ref / "SKILL.md").exists() or (REPO_SKILLS_DIR / ref / "SKILL.md").exists(), (
+            f"{_ref_id(path)} names unknown skill /{ref}"
+        )
 
 
 def _lead_workers():
@@ -210,7 +215,7 @@ NOT_ROUTE_TARGETS = {"figma-to-dayz-layout"}  # stage 2 of the Figma pipeline, s
 def test_every_lead_worker_is_a_route_target():
     # /dayz-route and dayz-router send work only to the targets in rules.json.
     for name in sorted(_lead_workers() - NOT_ROUTE_TARGETS):
-        assert name in ROUTE["targets"], f"{name} is missing from the targets in .claude/skills/dayz-route/rules.json"
+        assert name in ROUTE["targets"], f"{name} is missing from the targets in skills/dayz-route/rules.json"
 
 
 # Lead workers that own no mod source file, so the debugger never names them as the Owner.
@@ -641,10 +646,10 @@ def test_readme_names_the_wrappers_that_call_paid_apis():
     readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
     intro = readme.split("## Daily DayZ work", 1)[0]
     for script, api in [
-        (".claude/skills/dayz-ask/ask.py", "voyage"),
+        ("skills/dayz-ask/ask.py", "voyage"),
         ("scripts/dayz/dayz-search.py", "voyage"),
-        (".claude/skills/dayz-search-index/index.py", "voyage"),
-        (".claude/skills/dayz-route/jev.py", "typesafe"),
+        ("skills/dayz-search-index/index.py", "voyage"),
+        ("skills/dayz-route/jev.py", "typesafe"),
     ]:
         assert api in (REPO / script).read_text(encoding="utf-8").lower(), f"{script} no longer calls {api}"
     for bat in ("ask.bat", "dayz-search.bat", "search-index.bat", "route.bat"):
@@ -689,7 +694,7 @@ def test_readme_clean_rows_say_deployed_copies_need_the_ownership_marker():
     # Both rows said the deployed P:\Mods\@<ModName>\ copy is deleted, but clean.py removes it
     # only when owns_deploy_dir finds the toolkit's ownership marker; any other copy stays.
     readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
-    code = (REPO / ".claude" / "skills" / "dayz-clean-workspace" / "clean.py").read_text(encoding="utf-8")
+    code = (REPO / "skills" / "dayz-clean-workspace" / "clean.py").read_text(encoding="utf-8")
     helpers = (SHARED_DIR / "skill_helpers.py").read_text(encoding="utf-8")
     assert "h.owns_deploy_dir(deployed, name)" in code
     marker = re.search(r'^SCAFFOLD_MARKER = "([^"]+)"', helpers, re.M).group(1)
@@ -702,11 +707,11 @@ def test_readme_sync_skills_row_matches_the_default_agent_list():
     # The row said `--agents claude` adds Claude Code, but --agents replaces the default list,
     # so that command links only Claude Code and drops Codex and Gemini.
     readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
-    cfg = json.loads((SKILLS_DIR / "sync-skills" / "agents.json").read_text(encoding="utf-8"))
+    cfg = json.loads((REPO_SKILLS_DIR / "sync-skills" / "agents.json").read_text(encoding="utf-8"))
     names = [a["name"] for a in cfg["agents"]]
     off_by_default = [a["name"] for a in cfg["agents"] if a.get("default", True) is False]
     assert off_by_default == ["claude"], f"agents.json defaults changed: {off_by_default}"
-    sync = (SKILLS_DIR / "sync-skills" / "sync.py").read_text(encoding="utf-8")
+    sync = (REPO_SKILLS_DIR / "sync-skills" / "sync.py").read_text(encoding="utf-8")
     assert 'a["name"] in args.agents if args.agents else a.get("default", True)' in sync
     row = next(r for r in readme.splitlines() if r.startswith("| `sync-skills.bat`"))
     assert f"`--agents {' '.join(names)}` links all three" in row
@@ -732,7 +737,7 @@ def test_readme_ask_note_names_the_free_grep_fallback():
     # The note said every ask.bat question goes to Voyage, but ask.py falls back to Grep on its
     # own when VOYAGE_API_KEY is unset or no index is installed.
     readme = (REPO / "scripts" / "README.md").read_text(encoding="utf-8")
-    code = (REPO / ".claude" / "skills" / "dayz-ask" / "ask.py").read_text(encoding="utf-8")
+    code = (REPO / "skills" / "dayz-ask" / "ask.py").read_text(encoding="utf-8")
     assert "VOYAGE_API_KEY not set" in code and "no search index" in code
     line = next(r for r in readme.splitlines() if r.startswith("- `ask.bat`"))
     assert "`VOYAGE_API_KEY` is not set" in line and "no search index" in line
@@ -747,7 +752,7 @@ def test_every_runnable_skill_has_a_bat_wrapper():
     wrapped = set()
     for bat in BAT_FILES:
         wrapped.update(re.findall(r"skills\\([a-z0-9-]+)\\", bat.read_text(encoding="utf-8", errors="replace")))
-    skills = {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
+    skills = {p.parent.name for d in (SKILLS_DIR, REPO_SKILLS_DIR) for p in d.glob("*/SKILL.md")}
     assert skills - wrapped - RUNNABLE_WITHOUT_BAT == set(), (
         f"every runnable skill needs a .bat wrapper under scripts/: {sorted(skills - wrapped - RUNNABLE_WITHOUT_BAT)}"
     )
@@ -958,7 +963,7 @@ def _vanilla_lines_of():
 # Checked by hand against P:\ (game storage version 144): each cites a value, a
 # statement or a member deep inside a class the line names (a config value, an
 # OnStoreSave override of the named class), or a built-in type such as `int` whose
-# name is a keyword. Keyed by citing file under .claude/skills/, or by the
+# name is a keyword. Keyed by citing file under skills/, or by the
 # evals/questions/ file whose verified note names a function the cited body sits in.
 CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     # object.c:1251-1255 is the loop branch inside PlaySoundSet, declared at :1247.
@@ -1169,7 +1174,7 @@ def _all_symbol_mismatches() -> dict[str, list[str]]:
     for path in REF_FILES + sorted(SKILLS_DIR.rglob("*.c")):
         bad = _symbol_mismatches(path.read_text(encoding="utf-8", errors="replace"), lines_of)
         if bad:
-            found[_ref_id(path).removeprefix(".claude/skills/")] = bad
+            found[_ref_id(path).removeprefix("skills/")] = bad
     for rel, text in _eval_question_texts():
         bad = _eval_symbol_mismatches(text, lines_of)
         if bad:
@@ -1310,8 +1315,8 @@ def test_preflight_exceptions_are_real_skills():
 
 
 def test_tier_one_files_match():
-    texts = {name: (REPO / name).read_text(encoding="utf-8") for name in ("CLAUDE.md", "AGENTS.md", "GEMINI.md")}
-    assert len(set(texts.values())) == 1, "CLAUDE.md, AGENTS.md and GEMINI.md must hold the same text"
+    texts = {name: (REPO / name).read_text(encoding="utf-8") for name in (".claude/CLAUDE.md", "AGENTS.md", "GEMINI.md")}
+    assert len(set(texts.values())) == 1, ".claude/CLAUDE.md, AGENTS.md and GEMINI.md must hold the same text"
 
 
 PANEL = REPO / "mods" / "agentic-z-panel" / "hooks" / "register.tsx"
@@ -1323,7 +1328,7 @@ def test_panel_buttons_name_existing_skill_scripts():
     block = text.split("const SKILL = {", 1)[1].split("} as const", 1)[0]
     pairs = re.findall(r"\w+:\s*\['([\w-]+)',\s*'([\w.]+)'\]", block)
     assert len(pairs) >= 10, "could not read the SKILL map in register.tsx"
-    pairs += re.findall(r"join\(current\.root, '\.claude', 'skills', '([\w-]+)', '([\w.]+)'\)", text)
+    pairs += re.findall(r"join\(current\.root, (?:'\.claude', )?'skills', '([\w-]+)', '([\w.]+)'\)", text)
     missing = [f"{skill}/{script}" for skill, script in pairs if not (SKILLS_DIR / skill / script).is_file()]
     assert not missing, f"panel buttons name missing scripts: {missing}"
 
@@ -1343,7 +1348,7 @@ def test_physics_specialist_listed_as_reader_of_assets_conventions():
     # list it so an edit to assets.md flags this agent as a reader.
     agent = (AGENTS_DIR / "dayz-physics-specialist.md").read_text(encoding="utf-8")
     assert "conventions/assets.md" in agent
-    core = (REPO / ".claude" / "skills" / "_shared" / "dayz-conventions.md").read_text(encoding="utf-8")
+    core = (REPO / "skills" / "_shared" / "dayz-conventions.md").read_text(encoding="utf-8")
     row = next(line for line in core.splitlines() if line.startswith("| `conventions/assets.md`"))
     assert "physics-specialist" in row.rsplit("|", 2)[1], "conventions/assets.md Read by must list physics-specialist"
 

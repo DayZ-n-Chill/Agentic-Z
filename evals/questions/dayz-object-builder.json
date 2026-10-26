@@ -8,7 +8,7 @@
         "re:6(\\.0)?e\\+?15",
         "re:7(\\.0)?e\\+?15"
       ],
-      "verified": "LOD list in the header of P:/DZ/gear/camping/wooden_case.p3d (6e+15 and 7e+15); Tier 2 table in .claude/skills/_shared/conventions/assets.md"
+      "verified": "LOD list in the header of P:/DZ/gear/camping/wooden_case.p3d (6e+15 and 7e+15); Tier 2 table in skills/_shared/conventions/assets.md"
     },
     {
       "id": "door-axis-memory-points",
@@ -17,7 +17,7 @@
         "re:door_1_axis",
         "re:two points|2 points|exactly two|pair of points"
       ],
-      "verified": "P:/DZ/structures/Residential/HouseBlocks/houseblock_3f_corner1.p3d stores bone doors5 with axis doors5_axis; audit_p3d.py check_visual_lod matches <name>_axis to <name>; .claude/skills/_shared/models/doors.md"
+      "verified": "P:/DZ/structures/Residential/HouseBlocks/houseblock_3f_corner1.p3d stores bone doors5 with axis doors5_axis; audit_p3d.py check_visual_lod matches <name>_axis to <name>; skills/_shared/models/doors.md"
     },
     {
       "id": "door-needs-view-geometry-component",
@@ -34,7 +34,7 @@
       "must_include": [
         "dayz-p3d-audit"
       ],
-      "verified": ".claude/agents/dayz-object-builder.md section 'After the user saves the model'"
+      "verified": "agents/dayz-object-builder.md section 'After the user saves the model'"
     },
     {
       "id": "proxy-selection-name",
@@ -42,7 +42,7 @@
       "must_include": [
         "re:proxy:[\\\\/]?dz[\\\\/]gear[\\\\/]camping[\\\\/]combination_lock3\\.\\d{3}"
       ],
-      "verified": "P:/DZ/gear/camping/fence.p3d stores proxy:\\dz\\gear\\camping\\combination_lock3.001; .claude/skills/_shared/models/proxies.md"
+      "verified": "P:/DZ/gear/camping/fence.p3d stores proxy:\\dz\\gear\\camping\\combination_lock3.001; skills/_shared/models/proxies.md"
     }
   ]
 }

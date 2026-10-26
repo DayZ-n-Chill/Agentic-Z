@@ -16,7 +16,7 @@
       "unchanged": [
         "evals/fixtures/figma-to-dayz-layout/trader_panel.json"
       ],
-      "verified": ".claude/agents/figma-to-dayz-layout.md Workflow step 2 (prefix decides the class, btn_close is a ButtonWidgetClass even as a frame); .claude/skills/_shared/figma-to-dayz-rules.md section 4 (btn_ to ButtonWidgetClass, bar_ to ProgressBarWidgetClass); vanilla ButtonWidgetClass at P:/gui/layouts/camera_tools/camera_tools.layout:298, ProgressBarWidgetClass at P:/gui/layouts/day_z_hud.layout:3814"
+      "verified": "agents/figma-to-dayz-layout.md Workflow step 2 (prefix decides the class, btn_close is a ButtonWidgetClass even as a frame); skills/_shared/figma-to-dayz-rules.md section 4 (btn_ to ButtonWidgetClass, bar_ to ProgressBarWidgetClass); vanilla ButtonWidgetClass at P:/gui/layouts/camera_tools/camera_tools.layout:298, ProgressBarWidgetClass at P:/gui/layouts/day_z_hud.layout:3814"
     },
     {
       "id": "fill-width-is-relative",
@@ -32,7 +32,7 @@
       "unchanged": [
         "evals/fixtures/figma-to-dayz-layout/trader_panel.json"
       ],
-      "verified": ".claude/agents/figma-to-dayz-layout.md Workflow step 3 (fill becomes 1 with toggle 0, hug and fixed become pixels with toggle 1); .claude/skills/_shared/figma-to-dayz-rules.md section 5 (Fill Container width emits hexactsize 0 with size 1 H); vanilla hexactsize 0 at P:/gui/layouts/camera_checkerboard.layout:6"
+      "verified": "agents/figma-to-dayz-layout.md Workflow step 3 (fill becomes 1 with toggle 0, hug and fixed become pixels with toggle 1); skills/_shared/figma-to-dayz-rules.md section 5 (Fill Container width emits hexactsize 0 with size 1 H); vanilla hexactsize 0 at P:/gui/layouts/camera_checkerboard.layout:6"
     },
     {
       "id": "format-four-toggles-one-space",
@@ -54,7 +54,7 @@
       "unchanged": [
         "evals/fixtures/figma-to-dayz-layout/trader_panel.json"
       ],
-      "verified": ".claude/agents/figma-to-dayz-layout.md Workflow step 3 (always emit all four toggles on each of the five widgets), step 5 (no <, no =, no semicolons) and Rules (one space per level); .claude/skills/_shared/figma-to-dayz-rules.md sections 1 and 9; one-space indentation at P:/gui/layouts/day_z_chat_item.layout:2-8"
+      "verified": "agents/figma-to-dayz-layout.md Workflow step 3 (always emit all four toggles on each of the five widgets), step 5 (no <, no =, no semicolons) and Rules (one space per level); skills/_shared/figma-to-dayz-rules.md sections 1 and 9; one-space indentation at P:/gui/layouts/day_z_chat_item.layout:2-8"
     },
     {
       "id": "hex-color-to-floats",
@@ -69,7 +69,7 @@
         "re:^\\s*opacity\\b",
         "re:rgba?\\("
       ],
-      "verified": ".claude/agents/figma-to-dayz-layout.md Workflow step 3 (colors per section 7); .claude/skills/_shared/figma-to-dayz-rules.md section 7 (#FF5050 is 1 0.314 0.314, alpha is the fourth float, never hex, rgba() or opacity)"
+      "verified": "agents/figma-to-dayz-layout.md Workflow step 3 (colors per section 7); skills/_shared/figma-to-dayz-rules.md section 7 (#FF5050 is 1 0.314 0.314, alpha is the fourth float, never hex, rgba() or opacity)"
     },
     {
       "id": "raw-figma-url-needs-normalizer",
@@ -80,7 +80,7 @@
       "must_not_include": [
         "re:WidgetClass\\s+\\w+\\s*\\{"
       ],
-      "verified": ".claude/agents/figma-to-dayz-layout.md Workflow step 1 (given a raw Figma URL or node, return to the caller and ask for figma-node-normalizer to run first)"
+      "verified": "agents/figma-to-dayz-layout.md Workflow step 1 (given a raw Figma URL or node, return to the caller and ask for figma-node-normalizer to run first)"
     }
   ]
 }

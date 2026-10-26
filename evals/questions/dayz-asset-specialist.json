@@ -12,7 +12,7 @@
       "must_not_include": [
         "re:\\bI (have |will |'ll )?renamed\\b"
       ],
-      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 1; .claude/skills/dayz-pack-texture/SKILL.md 'Do not' (never auto-rename inputs)"
+      "verified": "agents/dayz-asset-specialist.md workflow step 1; skills/dayz-pack-texture/SKILL.md 'Do not' (never auto-rename inputs)"
     },
     {
       "id": "cloth-rvmat-base",
@@ -23,7 +23,7 @@
       "must_not_include": [
         "re:\\bfrom scratch\\b"
       ],
-      "verified": ".claude/skills/_shared/textures/surface-recipes.md section Cloth; P:/DZ/characters/tops/data/hoodie.rvmat exists (specularPower=60 at :10)"
+      "verified": "skills/_shared/textures/surface-recipes.md section Cloth; P:/DZ/characters/tops/data/hoodie.rvmat exists (specularPower=60 at :10)"
     },
     {
       "id": "in-game-path-uses-pboprefix",
@@ -34,7 +34,7 @@
       "must_not_include": [
         "re:texture\\s*=\\s*\\\"(P:|\\.\\.?[\\\\/])"
       ],
-      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 4 (mod files start with $PBOPREFIX$, never P:\\ or relative); vanilla form texture=\"dz\\characters\\tops\\data\\hoodie_nohq.paa\" at P:/DZ/characters/tops/data/hoodie.rvmat:15"
+      "verified": "agents/dayz-asset-specialist.md workflow step 4 (mod files start with $PBOPREFIX$, never P:\\ or relative); vanilla form texture=\"dz\\characters\\tops\\data\\hoodie_nohq.paa\" at P:/DZ/characters/tops/data/hoodie.rvmat:15"
     },
     {
       "id": "glass-color-texture-is-ca",
@@ -45,7 +45,7 @@
       "must_not_include": [
         "re:\\buse _co\\b"
       ],
-      "verified": ".claude/skills/_shared/textures/surface-recipes.md section Glass; P:/DZ/vehicles/wheeled/data/hatchback_glass_ca.paa exists"
+      "verified": "skills/_shared/textures/surface-recipes.md section Glass; P:/DZ/vehicles/wheeled/data/hatchback_glass_ca.paa exists"
     },
     {
       "id": "power-of-two-sizes",
@@ -57,7 +57,7 @@
       "must_not_include": [
         "re:\\A\\W*yes\\b"
       ],
-      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 2; .claude/skills/_shared/textures/suffixes-and-sizes.md:29 (every side a power of two)"
+      "verified": "agents/dayz-asset-specialist.md workflow step 2; skills/_shared/textures/suffixes-and-sizes.md:29 (every side a power of two)"
     },
     {
       "id": "refused-size-reruns-the-rest",
@@ -70,7 +70,7 @@
       "must_not_include": [
         "re:\\bI (have |will |'ll )?resized\\b"
       ],
-      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 2 (drop each refused file and rerun with the rest, report it as blocked); .claude/skills/dayz-pack-texture/SKILL.md 'Nothing is converted until every input passes' and the power of two refusal"
+      "verified": "agents/dayz-asset-specialist.md workflow step 2 (drop each refused file and rerun with the rest, report it as blocked); skills/dayz-pack-texture/SKILL.md 'Nothing is converted until every input passes' and the power of two refusal"
     },
     {
       "id": "smdi-is-specular",
@@ -84,7 +84,7 @@
       "must_not_include": [
         "re:_smdi[^\\n]{0,40}/\\s*mask\\b"
       ],
-      "verified": ".claude/agents/dayz-asset-specialist.md workflow step 1 (_smdi is specular: green is highlight strength, blue is gloss); .claude/skills/_shared/textures/suffixes-and-sizes.md _smdi row"
+      "verified": "agents/dayz-asset-specialist.md workflow step 1 (_smdi is specular: green is highlight strength, blue is gloss); skills/_shared/textures/suffixes-and-sizes.md _smdi row"
     }
   ]
 }
