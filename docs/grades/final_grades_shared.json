@@ -133,7 +133,7 @@
   },
   {
     "batch": "shared",
-    "item": ".claude/skills/_shared/dayz-conventions.md (Tier 2 core)",
+    "item": "skills/_shared/dayz-conventions.md (Tier 2 core)",
     "grade": "A+",
     "reason": "The preflight exceptions match the skills, the RAG facts match server.py, the search rule is clear, and there are no stale wiki references."
   },
@@ -475,7 +475,7 @@
   },
   {
     "batch": "shared",
-    "item": ".claude/skills/_shared/README.md (pack index)",
+    "item": "skills/_shared/README.md (pack index)",
     "grade": "A+",
     "reason": "Every pack folder and file is listed, and the index test passes. The exemption list matches CITATION_EXEMPT exactly. Its statement of what the integrity test checks (citation presence only) is accurate, and the checked and vendored status of the examples matches enscript/README.md. Every named agent exists. Nothing concrete to fix."
   },
@@ -679,7 +679,7 @@
   },
   {
     "batch": "shared",
-    "item": ".claude/skills/_shared/dayz-conventions.md (Tier 2 core)",
+    "item": "skills/_shared/dayz-conventions.md (Tier 2 core)",
     "grade": "A+",
     "reason": "Integrity tests check its preflight exception list and topic table against the real skills and files. The cite-then-verify rule matches what the MCP server and the packs do."
   },
@@ -1009,7 +1009,7 @@
   },
   {
     "batch": "shared",
-    "item": ".claude/skills/_shared/README.md (pack index)",
+    "item": "skills/_shared/README.md (pack index)",
     "grade": "A+",
     "reason": "Integrity tests prove every pack is indexed and every listed path exists."
   },
@@ -1201,7 +1201,7 @@
   },
   {
     "batch": "shared",
-    "item": ".claude/skills/_shared/test_enscript_examples.py",
+    "item": "skills/_shared/test_enscript_examples.py",
     "grade": "B+",
     "reason": "Its checks are real and pass: duplicate classes, consts and enums across files; the stamina percentage dividing by the configured maximum; the EOnFrame client guard; the eat cooldown starting ready; the hover guard and the hotkey menu guard. They are text checks only. Nothing checks references across files or layers, so 10_modded_playerbase.c using MyMod_CustomCanteen from 01 with no note passed. Duplicate top-level functions such as MyMod_SendNotification are not checked, even though they break the same 'compiles together' promise the docstring makes."
   },
@@ -1227,7 +1227,7 @@
     "batch": "shared",
     "item": "evals/baseline.json",
     "grade": "B+",
-    "reason": "Structurally sound. It has an entry for each of the 30 question files and no extras. Every score equals the length of its passed list, every total equals the number of questions in the file, every passed id exists in its question file, and all entries carry recorded, model and claude_version. Each entry's score and passed list also match that agent's latest results file in output/evals. The 67 tests in scripts/dev/test_run_evals.py pass. Concrete defect: the 5/5 entry for dayz-workbench-specialist does not cover the agent as it is now. .claude/agents/dayz-workbench-specialist.md was modified at 06:46:18, after its last eval run (results-20261024-063743.json, run_at 06:37:43, written 06:40:35). The edit changes behavior: it now takes texture suffixes from conventions/assets.md, says dayz-mod-reviewer exempts scripts/editor/, and drops the release-lead exclude.lst note. So a user who runs `evals.bat --baseline` is comparing against a score the current prompt never earned. Second issue: baseline.json is modified but uncommitted, and three question files it scores are untracked (dayz-lead, dayz-mod-architect, dayz-orchestrator). A fresh clone gets the HEAD baseline, not these entries, even though docs/evals.md says to commit the baseline together with the change. Minor: the model is recorded as 'claude CLI default' rather than a model id, so a drop caused by a change in the default model only shows up if claude_version also changes."
+    "reason": "Structurally sound. It has an entry for each of the 30 question files and no extras. Every score equals the length of its passed list, every total equals the number of questions in the file, every passed id exists in its question file, and all entries carry recorded, model and claude_version. Each entry's score and passed list also match that agent's latest results file in output/evals. The 67 tests in scripts/dev/test_run_evals.py pass. Concrete defect: the 5/5 entry for dayz-workbench-specialist does not cover the agent as it is now. agents/dayz-workbench-specialist.md was modified at 06:46:18, after its last eval run (results-20261024-063743.json, run_at 06:37:43, written 06:40:35). The edit changes behavior: it now takes texture suffixes from conventions/assets.md, says dayz-mod-reviewer exempts scripts/editor/, and drops the release-lead exclude.lst note. So a user who runs `evals.bat --baseline` is comparing against a score the current prompt never earned. Second issue: baseline.json is modified but uncommitted, and three question files it scores are untracked (dayz-lead, dayz-mod-architect, dayz-orchestrator). A fresh clone gets the HEAD baseline, not these entries, even though docs/evals.md says to commit the baseline together with the change. Minor: the model is recorded as 'claude CLI default' rather than a model id, so a drop caused by a change in the default model only shows up if claude_version also changes."
   },
   {
     "batch": "shared",
@@ -1273,7 +1273,7 @@
   },
   {
     "batch": "shared",
-    "item": ".claude/skills/_shared/test_enscript_examples.py",
+    "item": "skills/_shared/test_enscript_examples.py",
     "grade": "A-",
     "reason": "All 18 tests pass in 0.16s, and the full suite (1417 tests) passes. Each scan has a test that feeds it a synthetic bad case, so the checks for modded-member clashes, cross-file names and layers, duplicate RPC handlers and unused fields are each shown to fail when they should. Every P: citation holds when opened: staminahandler.c:335-338 sets stamina from GetStaminaMax, cfggameplayhandler.c:217-220 is GetStaminaMax, playerbase.c:4607-4610 is the EOnFrame client and IsControlledPlayer guard, dayzgame.c:2848 and :2914-2917 forward OnKeyPress to the mission, and uimanager.c:59 is GetMenu. Three concrete defects remain. First, _method_body counts braces in the raw source without removing strings or comments, so a method that later gains a line such as Print(\"}\") or a comment ending in '}' is cut short. The hover, hotkey, stamina and EOnFrame tests then fail even though the code is correct, or pass without having looked at it. Second, _cross_file_problems searches code that still contains string literals, so a Print(\"MyMod_Item\") in another file counts as a use and wrongly demands a note naming the declaring file. Third, the _FUNC negative lookahead skips any line that starts with 'static', so two files that each declare the same file-scope static function would not be reported as a duplicate."
   },
@@ -1429,7 +1429,7 @@
   },
   {
     "batch": "shared",
-    "item": ".claude/skills/_shared/test_enscript_examples.py",
+    "item": "skills/_shared/test_enscript_examples.py",
     "grade": "A+",
     "reason": "All tests pass, and each scanner has its own unit test. The docstrings match the code. The vanilla citations in its comments hold on P:: staminahandler.c:335-338, cfggameplayhandler.c:217-220, playerbase.c:4607-4610, dayzgame.c:2848 and 2914-2917, and uimanager.c:59."
   },
