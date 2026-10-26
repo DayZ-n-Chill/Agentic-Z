@@ -659,19 +659,31 @@ test('the start card checks setup, adds a server, and creates or imports a mod',
   ])
 })
 
-test('the button above the prompt opens the panel', async ($, on) => {
+test('the button above the prompt closes the panel when it is open, and opens it when it is closed', async ($, on) => {
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
     return <Text>engine</Text>
   })
   const opened: string[] = []
+  const closed: string[] = []
   engine(on, [], '0.4.0', opened)
+  on('ui.close', (_: unknown, e: any) => {
+    closed.push(e.id)
+    return { value: undefined }
+  })
+  // The pane list the engine would answer: up while there have been more opens than closes.
+  on('ui.panes', () => ({
+    value: opened.length > closed.length ? [{ id: 'agentic-z', plugin: 'agentic-z-panel', title: 'Agentic-Z' }] : [],
+  }))
   await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
   const band = await $.ui.mount({ plugin: 'agentic-z-panel', component: 'AbovePrompt', surface: 'desktop', props: { hasSurvey: false } } as any)
+  // The session opened the pane: the first press closes it, the second opens it again.
+  await band.press({ key: 'open-panel' })
+  expect(closed).toEqual(['agentic-z'])
   await band.press({ key: 'open-panel' })
   await band.unmount()
-  // Once at session start, once for the press.
   expect(opened).toEqual(['agentic-z', 'agentic-z'])
+  expect(closed).toEqual(['agentic-z'])
 })
 
 test('the bands beneath the button still draw', async ($, on) => {
