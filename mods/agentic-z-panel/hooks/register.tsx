@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { PanelRun, PanelStatus } from '../types'
+import type { AskSettings, PanelRun, PanelStatus } from '../types'
 
 // One pane with the DayZ state and buttons that run Agentic-Z's skill scripts
 // directly. The buttons cost no tokens; only the ask field calls the model, to
@@ -11,6 +11,11 @@ const status = atom({ plugin: 'agentic-z-panel', key: 'status' } as const, null)
 const lastRun = atom({ plugin: 'agentic-z-panel', key: 'lastRun' } as const, null)
 const busy = atom({ plugin: 'agentic-z-panel', key: 'busy' } as const, null)
 const newVersion = atom({ plugin: 'agentic-z-panel', key: 'newVersion' } as const, null)
+const askSettings = atom({ plugin: 'agentic-z-panel', key: 'askSettings' } as const, {
+  topK: '10',
+  excerptLines: '60',
+  words: '400',
+})
 
 const SKILL = {
   preflight: ['dayz-preflight', 'preflight.py'],
@@ -32,14 +37,41 @@ const SKILL = {
   deepdive: ['dayz-ask', 'ask.py'],
 } as const
 
-// An ask reads ten citations of up to 60 lines. A deep dive reads the most
-// /dayz-ask allows, long enough to hold whole functions, and writes a longer
-// answer: slower and more tokens, so it is a button, not the default.
-const ASK = {
-  ask: { topK: '10', excerptLines: '60', words: 400, maxTokens: 2000, evidenceChars: 60_000 },
-  deepdive: { topK: '25', excerptLines: '200', words: 900, maxTokens: 4000, evidenceChars: 150_000 },
+// What a person may pick before an ask. The lists are the limits: more
+// sources, longer excerpts and longer answers are slower and cost more tokens,
+// so the top of each list is as far as an ask goes. Deep dive is that top.
+const ASK_CHOICES = {
+  topK: [
+    { value: '5', label: '5' },
+    { value: '10', label: '10' },
+    { value: '15', label: '15' },
+    { value: '20', label: '20' },
+    { value: '25', label: '25 (most)' },
+  ],
+  excerptLines: [
+    { value: '60', label: '60 lines' },
+    { value: '100', label: '100 lines' },
+    { value: '150', label: '150 lines' },
+    { value: '200', label: '200 lines (most)' },
+  ],
+  words: [
+    { value: '300', label: 'Short' },
+    { value: '400', label: 'Normal' },
+    { value: '900', label: 'Long' },
+  ],
 } as const
-const isAsk = (action: string): action is keyof typeof ASK => action in ASK
+const ASK_DEFAULTS: AskSettings = { topK: '10', excerptLines: '60', words: '400' }
+const DEEP_DIVE: AskSettings = { topK: '25', excerptLines: '200', words: '900' }
+const STORE_KEY = 'askSettings'
+const isAsk = (action: string) => action === 'ask' || action === 'deepdive'
+
+// A stored pick from an older version may no longer be on the list: each field
+// off the list goes back to its default.
+const allowed = (saved: any): AskSettings => {
+  const pick = (field: keyof AskSettings) =>
+    ASK_CHOICES[field].some(o => o.value === saved?.[field]) ? saved[field] : ASK_DEFAULTS[field]
+  return { topK: pick('topK'), excerptLines: pick('excerptLines'), words: pick('words') }
+}
 
 // The map the "Add test server" button sets up; /dayz-add-server takes others.
 const DEFAULT_SERVER = 'chernarus'
@@ -159,14 +191,15 @@ Use short markdown sections or bullets. Keep it under ${words} words.`
 // Turns ask.py's citations into an answer, or null when the model gave none:
 // the citations still show, so a failed call loses nothing. The excerpts can be
 // long; the model needs the evidence, not all of it.
-async function explain($: any, action: keyof typeof ASK, question: string, evidence: string): Promise<{ answer?: string; why?: string }> {
-  const { words, maxTokens, evidenceChars } = ASK[action]
+async function explain($: any, settings: AskSettings, question: string, evidence: string): Promise<{ answer?: string; why?: string }> {
+  const words = Number(settings.words)
+  const evidenceChars = Math.min(150_000, Number(settings.topK) * Number(settings.excerptLines) * 100)
   try {
     const result = await $.model.complete({
       model: 'sonnet',
       system: explainSystem(words),
       prompt: `Question: ${question}\n\nEvidence from /dayz-ask:\n${evidence.slice(0, evidenceChars)}`,
-      maxTokens,
+      maxTokens: words * 5,
     })
     if (result.isAnswered) return { answer: result.text.trim() }
     return { why: [result.reason, result.status, result.error].filter(Boolean).join(' ') }
@@ -206,6 +239,7 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
     return
   }
   let argv: string[]
+  let settings: AskSettings | undefined
   if (action === 'stop') {
     argv = ['cmd', '/c', join(current.root, '.claude', 'skills', 'dayz-stop-test', 'stop_test.bat')]
   } else {
@@ -225,7 +259,8 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
         $.ui.toast('Type a question about vanilla DayZ first.')
         return
       }
-      argv.push('--top-k', ASK[action].topK, '--excerpt-lines', ASK[action].excerptLines, question.trim())
+      settings = action === 'deepdive' ? DEEP_DIVE : await read($, askSettings)
+      argv.push('--top-k', settings.topK, '--excerpt-lines', settings.excerptLines, question.trim())
     } else if (action === 'newmod') {
       const match = question?.trim().match(NEW_MOD_INPUT)
       if (!match) {
@@ -277,7 +312,7 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
     if (isAsk(action)) run.question = question!.trim()
     if (isAsk(action) && result.exitCode === 0) {
       await update($, busy, () => `${action} (writing the answer)`)
-      const { answer, why } = await explain($, action, question!.trim(), result.stdout)
+      const { answer, why } = await explain($, settings!, question!.trim(), result.stdout)
       run = answer ? { ...run, answer } : { ...run, detail: `(no explanation: ${why})\n${detail}` }
     }
   } catch (err) {
@@ -334,6 +369,11 @@ export const register: Register = on => {
     await $.command.register({ name: 'dayz-panel', description: 'Open the Agentic-Z panel' })
     void refreshQuietly($, cwd)
     void checkForUpdate($)
+    // The last picks carry over to the next session.
+    void $.store
+      .get(STORE_KEY)
+      .then((saved: unknown) => update($, askSettings, () => allowed(saved)))
+      .catch(() => null)
     // Every session opens the panel itself: nobody should have to type
     // /dayz-panel to get it. A narrow terminal holds it until there is room.
     void $.ui.open({ id: PANE, title: 'Agentic-Z' }).catch(() => null)
@@ -380,9 +420,15 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Button, Input, Markdown, Text } = $.ui.resolve(e)
+    const { Box, Button, Input, Markdown, Select, Text } = $.ui.resolve(e)
     const s = await read($, status)
     const run = await read($, lastRun)
+    const picks = await read($, askSettings)
+    const choose = (field: keyof AskSettings) => async (value: string) => {
+      const next = allowed({ ...picks, [field]: value })
+      await update($, askSettings, () => next)
+      await $.store.set(STORE_KEY, next)
+    }
     const working = await read($, busy)
     const latest = await read($, newVersion)
     const press = (action: string) => () => runAction($, cwd, action)
@@ -523,13 +569,28 @@ export const register: Register = on => {
         {Input &&
           card(
             'Ask vanilla DayZ',
-            <Input
-              key="ask"
-              label="Question:"
-              placeholder="how does food spoil"
-              submitLabel="ask"
-              onSubmit={(question: string) => runAction($, cwd, 'ask', question)}
-            />,
+            <Box flexDirection="column" rowGap={1}>
+              <Input
+                key="ask"
+                label="Question:"
+                placeholder="how does food spoil"
+                submitLabel="ask"
+                onSubmit={(question: string) => runAction($, cwd, 'ask', question)}
+              />
+              {Select && (
+                <Box flexDirection="row" flexWrap="wrap" columnGap={2} rowGap={1}>
+                  <Select key="ask-topk" label="Sources:" options={ASK_CHOICES.topK} value={picks.topK} onSelect={choose('topK')} />
+                  <Select
+                    key="ask-lines"
+                    label="Excerpt:"
+                    options={ASK_CHOICES.excerptLines}
+                    value={picks.excerptLines}
+                    onSelect={choose('excerptLines')}
+                  />
+                  <Select key="ask-words" label="Answer:" options={ASK_CHOICES.words} value={picks.words} onSelect={choose('words')} />
+                </Box>
+              )}
+            </Box>,
           )}
         {run &&
           card(

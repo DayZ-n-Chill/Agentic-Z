@@ -17,8 +17,17 @@ export type PanelRun = {
   question?: string
 } | null
 
+// The ask card's picks: citations to read, lines per excerpt, words in the answer.
+export type AskSettings = { topK: string; excerptLines: string; words: string }
+
 declare module 'claude-code' {
   interface PluginState {
-    'agentic-z-panel': { status: PanelStatus | null; lastRun: PanelRun; busy: string | null; newVersion: string | null }
+    'agentic-z-panel': {
+      status: PanelStatus | null
+      lastRun: PanelRun
+      busy: string | null
+      newVersion: string | null
+      askSettings: AskSettings
+    }
   }
 }

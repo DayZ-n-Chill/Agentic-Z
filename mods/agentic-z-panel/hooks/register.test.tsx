@@ -455,6 +455,65 @@ test('Deep dive asks again with more and longer citations and a longer answer', 
   await ui.unmount()
 })
 
+// A store the test can seed and read back, as $.store keeps picks across sessions.
+function storeIn(on: any, store: Record<string, unknown>) {
+  on('store.get', (_: unknown, e: any) => ({ value: store[e.key] }))
+  on('store.set', (_: unknown, e: any) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+}
+
+const askEvidence = (argv: string[]) =>
+  argv.some(a => a.endsWith('ask.py'))
+    ? { exitCode: 0, stdout: 'EVIDENCE 1 citation(s) via rag\n[1] P:\\scripts\\bleed.c:1-3  verified\n', stderr: '' }
+    : undefined
+
+test('the ask pickers set sources, excerpt length and answer length, and are kept for the next session', async ($, on) => {
+  const runs: string[][] = []
+  const calls: any[] = []
+  const store: Record<string, unknown> = {}
+  engineWith(on, runs, { result: askEvidence })
+  storeIn(on, store)
+  on('model.complete', (_: unknown, e: any) => {
+    calls.push(e)
+    return { value: { isAnswered: true, text: 'Answer [1].', usage: {} } }
+  })
+  const ui = await openPane($)
+  await ui.select({ key: 'ask-topk', value: '20' })
+  await ui.select({ key: 'ask-lines', value: '150' })
+  await ui.select({ key: 'ask-words', value: '900' })
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  await ui.unmount()
+  const asked = runs.filter(argv => argv.some(a => a.endsWith('ask.py'))).map(argv => argv.slice(2).join(' '))
+  expect(asked).toEqual(['--top-k 20 --excerpt-lines 150 how does bleeding work'])
+  expect(calls[0].system).toContain('under 900 words')
+  expect(store.askSettings).toEqual({ topK: '20', excerptLines: '150', words: '900' })
+
+  // A new session starts from the stored picks.
+  const again = await openPane($)
+  await again.input({ key: 'ask', text: 'how does bleeding work' })
+  await again.unmount()
+  expect(runs.filter(argv => argv.some(a => a.endsWith('ask.py'))).map(argv => argv.slice(2, 6).join(' '))[1]).toBe(
+    '--top-k 20 --excerpt-lines 150',
+  )
+})
+
+test('a stored pick off the list goes back to its default, so the limits hold', async ($, on) => {
+  const runs: string[][] = []
+  engineWith(on, runs, { result: askEvidence })
+  storeIn(on, { askSettings: { topK: '500', excerptLines: '100', words: '99999' } })
+  on('model.complete', (_: unknown, e: any) => {
+    expect(e.system).toContain('under 400 words')
+    return { value: { isAnswered: true, text: 'Answer [1].', usage: {} } }
+  })
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  await ui.unmount()
+  const asked = runs.filter(argv => argv.some(a => a.endsWith('ask.py'))).map(argv => argv.slice(2).join(' '))
+  expect(asked).toEqual(['--top-k 10 --excerpt-lines 100 how does bleeding work'])
+})
+
 test('Continue in chat puts the question and answer in the prompt box without sending', async ($, on) => {
   const runs: string[][] = []
   const toasts: string[] = []
