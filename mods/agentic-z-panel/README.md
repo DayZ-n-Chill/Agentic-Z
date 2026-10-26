@@ -18,6 +18,22 @@ Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ te
 
 `/dayz-panel` also replies in the chat with the same state, where Agentic-Z was found, and the last run.
 
+## Tabs
+
+Three tabs sit at the top of the panel; click one or press `1`, `2` or `3`.
+
+- **Panel** (`1`): the status, the buttons, the ask field and the last run.
+- **Answer** (`2`): the last vanilla answer, with Deep dive, Continue in chat and Dismiss. An ask opens this tab when it finishes, and a build or other run afterwards does not replace the answer.
+- **Keys** (`3`): the API keys the Agentic-Z tools read, each with a field to paste a new key and Clear for one set here.
+
+| Key | Used by |
+|---|---|
+| `VOYAGE_API_KEY` | vanilla source search: the ask field, `/dayz-ask` and the `dayz-rag` tools |
+| `TYPESAFE_API_KEY` | Jev, the routing model `/dayz-route` asks |
+| `GITHUB_TOKEN` | a higher GitHub rate limit for `/dayz-search-download`; `git` and `gh` read it too |
+
+A key you save stays on your machine: in the panel's own store under your Claude Code folder, and in the session's environment, so the skill scripts, the agent's commands and MCP servers started afterwards read it. Every new session puts the saved keys back. The tab shows only where a key came from and its last four characters, never the key. An MCP server that was already running, such as `dayz-rag`, sees a new key after you restart Claude Code.
+
 ## Updates
 
 At session start the panel reads the marketplace list on GitHub. When it lists a newer panel, a toast, a line at the top of the panel and the `/dayz-panel` reply say so, with the command to run:

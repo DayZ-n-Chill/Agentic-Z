@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { AskSettings, PanelRun, PanelStatus } from '../types'
+import type { AskSettings, KeyStatus, PanelRun, PanelStatus, PanelTab } from '../types'
 
 // One pane with the DayZ state and buttons that run Agentic-Z's skill scripts
 // directly. The buttons cost no tokens; only the ask field calls the model, to
@@ -16,6 +16,64 @@ const askSettings = atom({ plugin: 'agentic-z-panel', key: 'askSettings' } as co
   excerptLines: '60',
   words: '400',
 })
+// An ask's answer has its own atom, so a build after it does not wipe it.
+const lastAnswer = atom({ plugin: 'agentic-z-panel', key: 'lastAnswer' } as const, null)
+const tab = atom({ plugin: 'agentic-z-panel', key: 'tab' } as const, 'panel' as PanelTab)
+const keys = atom({ plugin: 'agentic-z-panel', key: 'keys' } as const, {} as KeyStatus)
+
+// The keys the Keys tab sets. They stay on this machine: in the panel's own
+// store under the Claude Code config folder, and in this process's environment,
+// so the skill scripts, the agent's commands and MCP servers started after read them.
+const KEY_LIST = [
+  { name: 'VOYAGE_API_KEY', label: 'Voyage AI', what: 'vanilla source search: the Ask tab, /dayz-ask and the dayz-rag tools' },
+  { name: 'TYPESAFE_API_KEY', label: 'TypeSafe', what: 'Jev, the routing model /dayz-route asks' },
+  { name: 'GITHUB_TOKEN', label: 'GitHub token', what: 'a higher GitHub rate limit for /dayz-search-download; git and gh use it too' },
+] as const
+type KeyName = (typeof KEY_LIST)[number]['name']
+const KEYS_STORE = 'apiKeys'
+
+// $.env takes a variable name only as a string literal, so each name is spelled out.
+const envGet = ($: any, name: KeyName): Promise<string | undefined> => {
+  if (name === 'VOYAGE_API_KEY') return $.env.get('VOYAGE_API_KEY')
+  if (name === 'TYPESAFE_API_KEY') return $.env.get('TYPESAFE_API_KEY')
+  return $.env.get('GITHUB_TOKEN')
+}
+const envSet = ($: any, name: KeyName, value: string | undefined): Promise<{ deny?: string }> => {
+  if (name === 'VOYAGE_API_KEY') return $.env.set('VOYAGE_API_KEY', value)
+  if (name === 'TYPESAFE_API_KEY') return $.env.set('TYPESAFE_API_KEY', value)
+  return $.env.set('GITHUB_TOKEN', value)
+}
+
+const storedKeys = async ($: any): Promise<Partial<Record<KeyName, string>>> => {
+  const saved = await $.store.get(KEYS_STORE).catch(() => null)
+  return saved && typeof saved === 'object' ? saved : {}
+}
+
+// The tab shows where each key comes from and its last four characters, never the key.
+async function readKeys($: any) {
+  const saved = await storedKeys($)
+  const next: KeyStatus = {}
+  for (const { name } of KEY_LIST) {
+    const value = saved[name] ?? (await envGet($, name).catch(() => undefined))
+    next[name] = value ? { source: saved[name] ? 'panel' : 'environment', tail: value.slice(-4) } : null
+  }
+  await update($, keys, () => next)
+}
+
+// value undefined clears the key: from the store and from the environment.
+async function saveKey($: any, name: KeyName, value: string | undefined) {
+  const set = await envSet($, name, value)
+  if (set?.deny) {
+    $.ui.toast(`${name}: not set (${set.deny})`)
+    return
+  }
+  const saved = await storedKeys($)
+  if (value) saved[name] = value
+  else delete saved[name]
+  await $.store.set(KEYS_STORE, saved)
+  await readKeys($)
+  $.ui.toast(value ? `${name} saved on this machine.` : `${name} cleared.`)
+}
 
 const SKILL = {
   preflight: ['dayz-preflight', 'preflight.py'],
@@ -224,13 +282,23 @@ async function findPython($: any): Promise<string | null> {
   return null
 }
 
+// An ask's result goes to the Answer tab and shows it; every other run stays on the Panel tab.
+async function record($: any, run: NonNullable<PanelRun>) {
+  if (isAsk(run.action)) {
+    await update($, lastAnswer, () => run)
+    await update($, tab, () => 'answer')
+  } else {
+    await update($, lastRun, () => run)
+  }
+}
+
 async function runNow($: any, cwd: string, action: string, question?: string) {
   // Read the state afresh: /dayz-init may have run since the pane last refreshed.
   let current: PanelStatus
   try {
     current = await refresh($, cwd)
   } catch (err) {
-    await update($, lastRun, () => ({ action, ok: false, outcome: 'failed', detail: `status check failed: ${err}` }))
+    await record($, { action, ok: false, outcome: 'failed', detail: `status check failed: ${err}` })
     $.ui.toast(`${action}: failed (status check: ${err})`)
     return
   }
@@ -246,7 +314,7 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
     const [skill, script] = SKILL[action as keyof typeof SKILL]
     const python = await findPython($)
     if (!python) {
-      await update($, lastRun, () => ({ action, ok: false, outcome: 'failed', detail: PYTHON_MISSING }))
+      await record($, { action, ok: false, outcome: 'failed', detail: PYTHON_MISSING })
       $.ui.toast(`${action}: failed (${PYTHON_MISSING})`)
       return
     }
@@ -318,7 +386,7 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
   } catch (err) {
     run = { action, ok: false, outcome: 'failed', detail: String(err) }
   }
-  await update($, lastRun, () => run)
+  await record($, run)
   $.ui.toast(`${action}: ${run.outcome}`)
   await refreshQuietly($, cwd)
 }
@@ -374,6 +442,13 @@ export const register: Register = on => {
       .get(STORE_KEY)
       .then((saved: unknown) => update($, askSettings, () => allowed(saved)))
       .catch(() => null)
+    // Keys saved on the Keys tab go back into the environment before anything runs.
+    const saved = await storedKeys($)
+    for (const { name } of KEY_LIST) {
+      if (saved[name]) await envSet($, name, saved[name]).catch(() => null)
+    }
+    void readKeys($).catch(() => null)
+    await update($, tab, () => 'panel')
     // Every session opens the panel itself: nobody should have to type
     // /dayz-panel to get it. A narrow terminal holds it until there is room.
     void $.ui.open({ id: PANE, title: 'Agentic-Z' }).catch(() => null)
@@ -385,8 +460,10 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e.props.hasSurvey) return next(e)
     const { Box, Button } = $.ui.resolve(e)
+    // Other mods' bands (the status strip) draw beneath this button, so they must still run.
+    const below = await next(e)
     return (
-      <Box key="open-panel">
+      <Box key="open-panel-band" flexDirection="column">
         <Button
           key="open-panel"
           label="Agentic-Z panel"
@@ -398,6 +475,7 @@ export const register: Register = on => {
             await $.ui.open({ id: PANE, title: 'Agentic-Z' })
           }}
         />
+        {below}
       </Box>
     )
   })
@@ -460,7 +538,7 @@ export const register: Register = on => {
     // Plain buttons have no filled chrome, so a row of them reads as separate
     // controls instead of one gray block; each lights gray under the pointer
     // (its own hover scope). Plain draws the hotkey itself: "b: Build PBO".
-    const btn = (action: string, label: string, hotkey: string, onPress = press(action)) => (
+    const btn = (action: string, label: string, hotkey: string | undefined, onPress = press(action)) => (
       <Button
         key={action}
         label={label}
@@ -487,7 +565,205 @@ export const register: Register = on => {
         {children}
       </Box>
     )
-    const runColor = !run ? 'subtle' : run.ok ? 'success' : 'error'
+    // The last run's card: green or red frame, the answer as markdown when an ask
+    // gave one, else the run's detail line.
+    const runCard = (r: NonNullable<PanelRun>, clear: () => unknown) =>
+      card(
+        r.ok ? `✓ ${r.action}: ${r.outcome}` : `✗ ${r.action}: ${r.outcome}`,
+        <Box flexDirection="column" rowGap={1}>
+          {r.answer ? (
+            <Markdown key="answer" text={r.answer} />
+          ) : (
+            <Text dimColor>
+              Last: {r.action} {r.outcome} {r.detail}
+            </Text>
+          )}
+          <Box flexDirection="row" flexWrap="wrap" columnGap={2} rowGap={1}>
+            {r.answer && r.action === 'ask' &&
+              btn('deepdive', 'Deep dive', 'v', () => runAction($, cwd, 'deepdive', r.question))}
+            {r.answer && btn('continue', 'Continue in chat', 'm', () => continueInChat($, r))}
+            {btn('dismiss-run', 'Dismiss', 'x', clear)}
+          </Box>
+        </Box>,
+        r.ok ? 'success' : 'error',
+      )
+
+    const current = await read($, tab)
+    const answer = await read($, lastAnswer)
+    const keyStatus = await read($, keys)
+    const TABS: { id: PanelTab; label: string; hotkey: string }[] = [
+      { id: 'panel', label: 'Panel', hotkey: '1' },
+      { id: 'answer', label: 'Answer', hotkey: '2' },
+      { id: 'keys', label: 'Keys', hotkey: '3' },
+    ]
+    const tabBar = (
+      <Box key="tabs" flexDirection="row" columnGap={2}>
+        {TABS.map(t => (
+          <Button
+            key={`tab-${t.id}`}
+            label={current === t.id ? `▸ ${t.label}` : t.label}
+            hotkey={t.hotkey}
+            plain
+            dimColor={current !== t.id}
+            hover={{ scope: `tab-${t.id}`, backgroundColor: 'subtle' }}
+            onPress={() => update($, tab, () => t.id)}
+          />
+        ))}
+      </Box>
+    )
+
+    const panelTab = [
+      card(
+        'Status',
+        <Box flexDirection="row" columnGap={2} alignItems="flex-start">
+          <Box flexDirection="column" flexGrow={1}>
+            {light(!!s?.isPMounted, `P: drive: ${s?.isPMounted ? 'mounted' : 'not mounted'}`)}
+            {light(!!s?.mod, `Active mod: ${s?.mod ?? 'none (run /dayz-init)'}`)}
+            {light(!!s?.isDiagRunning, `Test session: ${s?.isDiagRunning ? 'running' : 'stopped'}`)}
+            {!s?.root && <Text color="warning">Agentic-Z not found here.</Text>}
+          </Box>
+          {btn('refresh', 'Refresh', 'r', () => refreshQuietly($, cwd))}
+        </Box>,
+      ),
+      card(
+        'Start a project',
+        rows([
+          row('Setup', [
+            btn('preflight', 'Check setup', 'e'),
+            btn('addserver', `Add test server (${DEFAULT_SERVER})`, 'v'),
+          ]),
+          Input && (
+            <Input
+              key="newmod"
+              label="New mod:"
+              placeholder="MyVest (first mod: MyVest by YourName)"
+              submitLabel="create"
+              onSubmit={(text: string) => runAction($, cwd, 'newmod', text)}
+            />
+          ),
+          Input && (
+            <Input
+              key="importmod"
+              label="Import mod:"
+              placeholder="folder path or GitHub link"
+              submitLabel="import"
+              onSubmit={(text: string) => runAction($, cwd, 'importmod', text)}
+            />
+          ),
+        ]),
+      ),
+      card(
+        'Build and test',
+        rows([
+          row('Build', [
+            btn('build', 'Build PBO', 'b'),
+            btn('gatebuild', 'Check build', 'c'),
+            btn('deploy', 'Deploy prebuilt', 'd'),
+          ]),
+          row('Play', [
+            btn('launch', 'Launch', 'l'),
+            btn('gateingame', 'Check in game', 'g'),
+            btn('stop', 'Stop', 's'),
+            btn('logwatch', 'Logs', 't'),
+          ]),
+        ]),
+      ),
+      card(
+        'Tools',
+        rows([
+          row('Open', [
+            btn('mount', 'Mount P:', 'p'),
+            btn('workbench', 'Workbench', 'w'),
+            btn('objectbuilder', 'Object Builder', 'o'),
+          ]),
+          row('Ship', [btn('health', 'Health page', 'h'), btn('releasepack', 'Release pack', 'k')]),
+        ]),
+      ),
+      Input &&
+        card(
+          'Ask vanilla DayZ',
+          <Box flexDirection="column" rowGap={1}>
+            <Input
+              key="ask"
+              label="Question:"
+              placeholder="how does food spoil"
+              submitLabel="ask"
+              onSubmit={(question: string) => runAction($, cwd, 'ask', question)}
+            />
+            {Select && (
+              <Box flexDirection="row" flexWrap="wrap" columnGap={2} rowGap={1}>
+                <Select key="ask-topk" label="Sources:" options={ASK_CHOICES.topK} value={picks.topK} onSelect={choose('topK')} />
+                <Select
+                  key="ask-lines"
+                  label="Excerpt:"
+                  options={ASK_CHOICES.excerptLines}
+                  value={picks.excerptLines}
+                  onSelect={choose('excerptLines')}
+                />
+                <Select key="ask-words" label="Answer:" options={ASK_CHOICES.words} value={picks.words} onSelect={choose('words')} />
+              </Box>
+            )}
+            <Text dimColor>The answer opens on the Answer tab.</Text>
+          </Box>,
+        ),
+      run && runCard(run, () => update($, lastRun, () => null)),
+    ]
+
+    const answerTab = answer ? (
+      <Box flexDirection="column" gap={1}>
+        {answer.question && <Text dimColor>Asked: {answer.question}</Text>}
+        {runCard(answer, () => update($, lastAnswer, () => null))}
+      </Box>
+    ) : (
+      <Text dimColor>No answer yet. Ask a question on the Panel tab.</Text>
+    )
+
+    // Each key: where it comes from and its last four characters, a field to
+    // set a new one (it is never drawn back), and Clear for one the panel set.
+    const keysTab = card(
+      'API keys',
+      <Box flexDirection="column" rowGap={1} paddingTop={1}>
+        <Text dimColor>
+          Your keys stay on this machine, in the panel's store in your Claude Code folder and in this session's
+          environment. Each is sent only to the service it is for.
+        </Text>
+        {KEY_LIST.map(k => {
+          const at = keyStatus[k.name]
+          return (
+            <Box key={`key-${k.name}-box`} flexDirection="column">
+              <Box flexDirection="row" columnGap={1}>
+                <Text color={at ? 'success' : 'error'}>●</Text>
+                <Text weight="bold">{k.label}</Text>
+                <Text dimColor>
+                  {k.name}: {!at ? 'not set' : at.source === 'panel' ? `set here (…${at.tail})` : `set in your environment (…${at.tail})`}
+                </Text>
+              </Box>
+              <Text dimColor>For {k.what}.</Text>
+              <Box flexDirection="row" flexWrap="wrap" columnGap={2}>
+                {Input && (
+                  <Input
+                    key={`key-${k.name}`}
+                    label="New key:"
+                    placeholder="paste it and press Enter"
+                    submitLabel="save"
+                    onSubmit={(text: string) => {
+                      const value = text.trim()
+                      if (!value) {
+                        $.ui.toast(`Paste a ${k.label} key first.`)
+                        return
+                      }
+                      return saveKey($, k.name, value)
+                    }}
+                  />
+                )}
+                {at?.source === 'panel' && btn(`clear-${k.name}`, 'Clear', undefined, () => saveKey($, k.name, undefined))}
+              </Box>
+            </Box>
+          )
+        })}
+        <Text dimColor>An MCP server that was already running, such as dayz-rag, picks up a new key after you restart Claude Code.</Text>
+      </Box>,
+    )
 
     return (
       <Box flexDirection="column" gap={1}>
@@ -499,119 +775,11 @@ export const register: Register = on => {
             {btn('dismiss-update', 'Dismiss', 'u', () => update($, newVersion, () => null))}
           </Box>
         )}
-        {card(
-          'Status',
-          <Box flexDirection="row" columnGap={2} alignItems="flex-start">
-            <Box flexDirection="column" flexGrow={1}>
-              {light(!!s?.isPMounted, `P: drive: ${s?.isPMounted ? 'mounted' : 'not mounted'}`)}
-              {light(!!s?.mod, `Active mod: ${s?.mod ?? 'none (run /dayz-init)'}`)}
-              {light(!!s?.isDiagRunning, `Test session: ${s?.isDiagRunning ? 'running' : 'stopped'}`)}
-              {!s?.root && <Text color="warning">Agentic-Z not found here.</Text>}
-            </Box>
-            {btn('refresh', 'Refresh', 'r', () => refreshQuietly($, cwd))}
-          </Box>,
-        )}
+        {tabBar}
         {working && <Text color="warning">⟳ Running {working}...</Text>}
-        {card(
-          'Start a project',
-          rows([
-            row('Setup', [
-              btn('preflight', 'Check setup', 'e'),
-              btn('addserver', `Add test server (${DEFAULT_SERVER})`, 'v'),
-            ]),
-            Input && (
-              <Input
-                key="newmod"
-                label="New mod:"
-                placeholder="MyVest (first mod: MyVest by YourName)"
-                submitLabel="create"
-                onSubmit={(text: string) => runAction($, cwd, 'newmod', text)}
-              />
-            ),
-            Input && (
-              <Input
-                key="importmod"
-                label="Import mod:"
-                placeholder="folder path or GitHub link"
-                submitLabel="import"
-                onSubmit={(text: string) => runAction($, cwd, 'importmod', text)}
-              />
-            ),
-          ]),
-        )}
-        {card(
-          'Build and test',
-          rows([
-            row('Build', [
-              btn('build', 'Build PBO', 'b'),
-              btn('gatebuild', 'Check build', 'c'),
-              btn('deploy', 'Deploy prebuilt', 'd'),
-            ]),
-            row('Play', [
-              btn('launch', 'Launch', 'l'),
-              btn('gateingame', 'Check in game', 'g'),
-              btn('stop', 'Stop', 's'),
-              btn('logwatch', 'Logs', 't'),
-            ]),
-          ]),
-        )}
-        {card(
-          'Tools',
-          rows([
-            row('Open', [
-              btn('mount', 'Mount P:', 'p'),
-              btn('workbench', 'Workbench', 'w'),
-              btn('objectbuilder', 'Object Builder', 'o'),
-            ]),
-            row('Ship', [btn('health', 'Health page', 'h'), btn('releasepack', 'Release pack', 'k')]),
-          ]),
-        )}
-        {Input &&
-          card(
-            'Ask vanilla DayZ',
-            <Box flexDirection="column" rowGap={1}>
-              <Input
-                key="ask"
-                label="Question:"
-                placeholder="how does food spoil"
-                submitLabel="ask"
-                onSubmit={(question: string) => runAction($, cwd, 'ask', question)}
-              />
-              {Select && (
-                <Box flexDirection="row" flexWrap="wrap" columnGap={2} rowGap={1}>
-                  <Select key="ask-topk" label="Sources:" options={ASK_CHOICES.topK} value={picks.topK} onSelect={choose('topK')} />
-                  <Select
-                    key="ask-lines"
-                    label="Excerpt:"
-                    options={ASK_CHOICES.excerptLines}
-                    value={picks.excerptLines}
-                    onSelect={choose('excerptLines')}
-                  />
-                  <Select key="ask-words" label="Answer:" options={ASK_CHOICES.words} value={picks.words} onSelect={choose('words')} />
-                </Box>
-              )}
-            </Box>,
-          )}
-        {run &&
-          card(
-            run.ok ? `✓ ${run.action}: ${run.outcome}` : `✗ ${run.action}: ${run.outcome}`,
-            <Box flexDirection="column" rowGap={1}>
-              {run.answer ? (
-                <Markdown key="answer" text={run.answer} />
-              ) : (
-                <Text dimColor>
-                  Last: {run.action} {run.outcome} {run.detail}
-                </Text>
-              )}
-              <Box flexDirection="row" flexWrap="wrap" columnGap={2} rowGap={1}>
-                {run.answer && run.action === 'ask' &&
-                  btn('deepdive', 'Deep dive', 'v', () => runAction($, cwd, 'deepdive', run.question))}
-                {run.answer && btn('continue', 'Continue in chat', 'm', () => continueInChat($, run))}
-                {btn('dismiss-run', 'Dismiss', 'x', () => update($, lastRun, () => null))}
-              </Box>
-            </Box>,
-            runColor,
-          )}
+        {current === 'panel' && panelTab}
+        {current === 'answer' && answerTab}
+        {current === 'keys' && keysTab}
       </Box>
     )
   })
