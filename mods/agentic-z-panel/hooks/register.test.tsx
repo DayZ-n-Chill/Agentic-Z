@@ -660,6 +660,10 @@ test('the start card checks setup, adds a server, and creates or imports a mod',
 })
 
 test('the button above the prompt opens the panel', async ($, on) => {
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>engine</Text>
+  })
   const opened: string[] = []
   engine(on, [], '0.4.0', opened)
   await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
@@ -668,6 +672,19 @@ test('the button above the prompt opens the panel', async ($, on) => {
   await band.unmount()
   // Once at session start, once for the press.
   expect(opened).toEqual(['agentic-z', 'agentic-z'])
+})
+
+test('the bands beneath the button still draw', async ($, on) => {
+  // Stands for another mod's band, such as the status strip.
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>status strip</Text>
+  })
+  engine(on, [], '0.4.0', [])
+  await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
+  const band = await $.ui.mount({ plugin: 'agentic-z-panel', component: 'AbovePrompt', surface: 'desktop', props: { hasSurvey: false } } as any)
+  expect((await band.find({ type: 'Text', text: /status strip/ }))?.text).toBe('status strip')
+  await band.unmount()
 })
 
 test('a new session opens the panel without /dayz-panel', async ($, on) => {
@@ -713,5 +730,63 @@ test('Dismiss clears the last run card and the update notice', async ($, on) => 
   expect(await ui.find({ type: 'Text', text: /9.9.9 is out/ })).toBeTruthy()
   await ui.press({ key: 'dismiss-update' })
   expect(await ui.find({ type: 'Text', text: /9.9.9 is out/ })).toBeFalsy()
+  await ui.unmount()
+})
+
+test('an answer opens on the Answer tab and a build afterwards does not wipe it', async ($, on) => {
+  engineWith(on, [], { result: askEvidence })
+  on('model.complete', () => ({ value: { isAnswered: true, text: 'Bleeding drains blood [1].', usage: {} } }))
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  expect((await ui.find({ type: 'Markdown' }))?.text).toBe('Bleeding drains blood [1].')
+  expect(await ui.find({ key: 'build' })).toBeFalsy()
+  await ui.press({ key: 'tab-panel' })
+  await ui.press({ key: 'build' })
+  expect((await ui.find({ type: 'Text', text: /Last:/ }))?.text).toContain('Last: build done')
+  await ui.press({ key: 'tab-answer' })
+  expect((await ui.find({ type: 'Markdown' }))?.text).toBe('Bleeding drains blood [1].')
+  await ui.unmount()
+})
+
+// An environment the test can read back, as $.env.set changes the process's own.
+function envIn(on: any, env: Record<string, string>) {
+  on('env.get', (_: unknown, e: any) => ({ value: env[e.name] }))
+  on('env.set', (_: unknown, e: any) => {
+    if (e.value === undefined) delete env[e.name]
+    else env[e.name] = e.value
+    return { value: {} }
+  })
+}
+
+test('the Keys tab saves a key to the store and environment, shows only its tail, and clears it', async ($, on) => {
+  const store: Record<string, unknown> = {}
+  const env: Record<string, string> = {}
+  engineWith(on, [])
+  storeIn(on, store)
+  envIn(on, env)
+  const ui = await openPane($)
+  await ui.press({ key: 'tab-keys' })
+  expect((await ui.find({ type: 'Text', text: /VOYAGE_API_KEY:/ }))?.text).toContain('not set')
+  await ui.input({ key: 'key-VOYAGE_API_KEY', text: '  pa-secret-1234  ' })
+  expect(store.apiKeys).toEqual({ VOYAGE_API_KEY: 'pa-secret-1234' })
+  expect(env.VOYAGE_API_KEY).toBe('pa-secret-1234')
+  const shown = (await ui.find({ type: 'Text', text: /VOYAGE_API_KEY:/ }))?.text
+  expect(shown).toContain('set here (…1234)')
+  expect(shown).not.toContain('pa-secret')
+  await ui.press({ key: 'clear-VOYAGE_API_KEY' })
+  expect(store.apiKeys).toEqual({})
+  expect(env.VOYAGE_API_KEY).toBeUndefined()
+  await ui.unmount()
+})
+
+test('a saved key goes back into the environment when a new session starts', async ($, on) => {
+  engineWith(on, [])
+  const env: Record<string, string> = {}
+  storeIn(on, { apiKeys: { TYPESAFE_API_KEY: 'ts-abcd' } })
+  envIn(on, env)
+  const ui = await openPane($)
+  expect(env.TYPESAFE_API_KEY).toBe('ts-abcd')
+  await ui.press({ key: 'tab-keys' })
+  expect((await ui.find({ type: 'Text', text: /TYPESAFE_API_KEY:/ }))?.text).toContain('set here (…abcd)')
   await ui.unmount()
 })
