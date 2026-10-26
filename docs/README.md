@@ -10,7 +10,7 @@ cd my-mod
 python .claude\skills\sync-skills\sync.py
 ```
 
-After that, all three supported agent CLIs (Claude Code, Codex, Gemini) discover the same slash commands: Claude Code from the repo directly, Codex and Gemini through the links. From inside Claude Code you can also run `/sync-skills` instead of the python command.
+After that, all three supported agent CLIs (Claude Code, Codex, Gemini) discover the same slash commands: Claude Code through the installed agentic-z plugin (plus the four repo-only skills in `.claude/skills/`), Codex and Gemini through the links. From inside Claude Code you can also run `/sync-skills` instead of the python command.
 
 Then walk through [`docs/dayz-modding.md`](dayz-modding.md) for prerequisites (DayZ Tools, P:\ drive setup, vanilla data extraction) and the end-to-end workflow.
 
@@ -19,10 +19,10 @@ Then walk through [`docs/dayz-modding.md`](dayz-modding.md) for prerequisites (D
 | Tier | Scope | Where it lives |
 |---|---|---|
 | **L1 — Default rules** | Apply to every clone, every agent, every skill. | `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (three filenames so each CLI finds its own; same content in each) |
-| **L2 — DayZ conventions** | Apply when working inside the DayZ domain. | `.claude/skills/_shared/dayz-conventions.md` (core, read by every DayZ agent) plus topic files in `.claude/skills/_shared/conventions/` (config, assets, scripts, ui, server) loaded per task |
-| **L3 — Agents and knowledge packs** | Loaded only when the task needs them. | `.claude/agents/<name>.md`, `.claude/skills/<name>/SKILL.md` plus its scripts, and the packs under `.claude/skills/_shared/` (EnScript patterns, Figma-to-DayZ rules) |
+| **L2 — DayZ conventions** | Apply when working inside the DayZ domain. | `skills/_shared/dayz-conventions.md` (core, read by every DayZ agent) plus topic files in `skills/_shared/conventions/` (config, assets, scripts, ui, server) loaded per task |
+| **L3 — Agents and knowledge packs** | Loaded only when the task needs them. | `agents/<name>.md`, `skills/<name>/SKILL.md` plus its scripts, and the packs under `skills/_shared/` (EnScript patterns, Figma-to-DayZ rules) |
 
-L3 files that do DayZ modding work include a one-line reference to L2: *"Follow `.claude/skills/_shared/dayz-conventions.md`."* Routing and utility files (for example `dayz-router`, `/dayz-route`, `/dayz-statusline`, `/sync-skills`) do not.
+L3 files that do DayZ modding work include a one-line reference to L2: *"Follow `skills/_shared/dayz-conventions.md`."* Routing and utility files (for example `dayz-router`, `/dayz-route`, `/dayz-statusline`, `/sync-skills`) do not.
 
 ## How agents and skills find their rules
 
@@ -30,26 +30,27 @@ When invoked on a task, an agent should:
 
 1. Read the L1 file for the CLI in use (`CLAUDE.md` / `AGENTS.md` / `GEMINI.md`).
 2. Read the specific agent or skill being run (L3).
-3. If L3 references the DayZ conventions file (L2), read the core file and any topic files under `.claude/skills/_shared/conventions/` that L3 names.
+3. If L3 references the DayZ conventions file (L2), read the core file and any topic files under `skills/_shared/conventions/` that L3 names.
 4. Obey all three tiers; the more specific tier wins ties.
 
 ## File structure
 
 ```
 <repo>/
+├── agents/                             # DayZ agent definitions (L3)
+├── skills/                             # skill definitions (L3) + L2 shared
+│   ├── _shared/
+│   │   ├── dayz-conventions.md         # L2 core rules for the DayZ domain
+│   │   └── conventions/                # L2 topic files (config, assets, scripts, ui, server)
+│   └── dayz-*/                         # one folder per DayZ skill
+│       ├── SKILL.md
+│       └── *.py                        # helper scripts, when the skill has any
 ├── .claude/
-│   ├── agents/                         # DayZ agent definitions (L3)
-│   ├── skills/                         # skill definitions (L3) + L2 shared
-│   │   ├── _shared/
-│   │   │   ├── dayz-conventions.md     # L2 core rules for the DayZ domain
-│   │   │   └── conventions/            # L2 topic files (config, assets, scripts, ui, server)
-│   │   ├── sync-skills/                # bootstrap skill
-│   │   │   ├── SKILL.md
-│   │   │   ├── sync.py
-│   │   │   └── agents.json             # list of agent CLIs to sync into
-│   │   └── dayz-*/                     # one folder per DayZ skill
+│   ├── skills/                         # repo-only skills
+│   │   └── sync-skills/                # bootstrap skill
 │   │       ├── SKILL.md
-│   │       └── *.py                    # helper scripts, when the skill has any
+│   │       ├── sync.py
+│   │       └── agents.json             # list of agent CLIs to sync into
 │   ├── agent-memory/                   # gitignored, per-agent memory written at runtime
 │   ├── local-memory/                   # gitignored, per-clone: user/machine notes and skill state
 │   └── settings.local.json             # gitignored, per-clone Claude Code settings
@@ -69,10 +70,10 @@ When invoked on a task, an agent should:
 
 ### Add a new skill
 
-1. Create `.claude/skills/my-skill/`.
+1. Create `skills/my-skill/`.
 2. Add `SKILL.md` with frontmatter (`name`, `description`) and a "How to run" section.
 3. Add the actual script (e.g. `my-skill.py`).
-4. Run `/sync-skills` to make it discoverable in all agent CLIs.
+4. Add it to the `skills` list in `.claude-plugin/plugin.json` so the plugin ships it, and run `/sync-skills` so Codex and Gemini discover it. To test it in Claude Code before it is published, run `/sync-skills --agents claude`.
 
 ### Add a new agent CLI
 
@@ -121,106 +122,106 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-init`](../.claude/skills/dayz-init/SKILL.md) | Setup wizard on first run; status hub for the active mod on every run after. Dispatches to the other skills, never replaces them. |
+| [`/dayz-init`](../skills/dayz-init/SKILL.md) | Setup wizard on first run; status hub for the active mod on every run after. Dispatches to the other skills, never replaces them. |
 
 ### Bootstrap (one-time per machine)
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-preflight`](../.claude/skills/dayz-preflight/SKILL.md) | Verify environment (P:\ mounted, Tools installed, vanilla data extracted) |
-| [`/dayz-workdrive`](../.claude/skills/dayz-workdrive/SKILL.md) | Mount `P:\` without opening DayZ Tools (auto-resolves work drive from `settings.ini`) |
-| [`/dayz-setup-objectbuilder`](../.claude/skills/dayz-setup-objectbuilder/SKILL.md) | One-time machine setup for Object Builder (registry config + sane defaults) |
+| [`/dayz-preflight`](../skills/dayz-preflight/SKILL.md) | Verify environment (P:\ mounted, Tools installed, vanilla data extracted) |
+| [`/dayz-workdrive`](../skills/dayz-workdrive/SKILL.md) | Mount `P:\` without opening DayZ Tools (auto-resolves work drive from `settings.ini`) |
+| [`/dayz-setup-objectbuilder`](../skills/dayz-setup-objectbuilder/SKILL.md) | One-time machine setup for Object Builder (registry config + sane defaults) |
 
 ### Mod scaffolding
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-new-mod`](../.claude/skills/dayz-new-mod/SKILL.md) | Scaffold `workspace/<ModName>/` + create `P:\<ModName>\` junction |
-| [`/dayz-import-mod`](../.claude/skills/dayz-import-mod/SKILL.md) | Symlink an existing mod folder into the workspace + create the junction |
-| [`/dayz-add-scaffold`](../.claude/skills/dayz-add-scaffold/SKILL.md) | Add missing scaffold pieces (config.cpp stub, gproj, etc.) to an existing mod folder; `--piece junction` repairs a missing `P:\<ModName>\` link |
-| [`/dayz-recipe`](../.claude/skills/dayz-recipe/SKILL.md) | Start a plan from a recipe (new weapon, new vest, new craftable): classes, vanilla parents checked on `P:\`, files, tasks per team and behavior checks, for `dayz-mod-architect` to finish |
-| [`/dayz-scope-mod`](../.claude/skills/dayz-scope-mod/SKILL.md) | Lock the agent to one mod via deny rules so it can't clobber siblings |
+| [`/dayz-new-mod`](../skills/dayz-new-mod/SKILL.md) | Scaffold `workspace/<ModName>/` + create `P:\<ModName>\` junction |
+| [`/dayz-import-mod`](../skills/dayz-import-mod/SKILL.md) | Symlink an existing mod folder into the workspace + create the junction |
+| [`/dayz-add-scaffold`](../skills/dayz-add-scaffold/SKILL.md) | Add missing scaffold pieces (config.cpp stub, gproj, etc.) to an existing mod folder; `--piece junction` repairs a missing `P:\<ModName>\` link |
+| [`/dayz-recipe`](../skills/dayz-recipe/SKILL.md) | Start a plan from a recipe (new weapon, new vest, new craftable): classes, vanilla parents checked on `P:\`, files, tasks per team and behavior checks, for `dayz-mod-architect` to finish |
+| [`/dayz-scope-mod`](../skills/dayz-scope-mod/SKILL.md) | Lock the agent to one mod via deny rules so it can't clobber siblings |
 
 ### Build
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-build-pbo`](../.claude/skills/dayz-build-pbo/SKILL.md) | Pack and deploy to `P:\Mods\@<ModName>\Addons\<ModName>.pbo` |
-| [`/dayz-deploy-pbo`](../.claude/skills/dayz-deploy-pbo/SKILL.md) | Copy prebuilt PBOs and keys from a workspace bundle to `P:\Mods\@<ModName>\` without AddonBuilder |
-| [`/dayz-pack-texture`](../.claude/skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates the suffix against the vanilla set (`_co`, `_ca`, `_nohq`, `_smdi`, `_as`, `_mc` and more) |
-| [`/dayz-build-imageset`](../.claude/skills/dayz-build-imageset/SKILL.md) | Pack `.gui-sources/<setname>/*.png` into a DayZ `.imageset` + `.paa` atlas with a 10px gutter; auto-splits into multiple parts when sprites won't fit in 4096x4096 |
-| [`/dayz-layout-preview`](../.claude/skills/dayz-layout-preview/SKILL.md) | Draw a `.layout` as PNGs at several screen sizes and flag widgets that fall off screen or have no area |
+| [`/dayz-build-pbo`](../skills/dayz-build-pbo/SKILL.md) | Pack and deploy to `P:\Mods\@<ModName>\Addons\<ModName>.pbo` |
+| [`/dayz-deploy-pbo`](../skills/dayz-deploy-pbo/SKILL.md) | Copy prebuilt PBOs and keys from a workspace bundle to `P:\Mods\@<ModName>\` without AddonBuilder |
+| [`/dayz-pack-texture`](../skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates the suffix against the vanilla set (`_co`, `_ca`, `_nohq`, `_smdi`, `_as`, `_mc` and more) |
+| [`/dayz-build-imageset`](../skills/dayz-build-imageset/SKILL.md) | Pack `.gui-sources/<setname>/*.png` into a DayZ `.imageset` + `.paa` atlas with a 10px gutter; auto-splits into multiple parts when sprites won't fit in 4096x4096 |
+| [`/dayz-layout-preview`](../skills/dayz-layout-preview/SKILL.md) | Draw a `.layout` as PNGs at several screen sizes and flag widgets that fall off screen or have no area |
 
 ### Test loop
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-add-server`](../.claude/skills/dayz-add-server/SKILL.md) | Set up a test server instance under `.server/<instance>/` |
-| [`/dayz-launch-test`](../.claude/skills/dayz-launch-test/SKILL.md) | Start local Diag server + client with the mod loaded |
-| [`/dayz-stop-test`](../.claude/skills/dayz-stop-test/SKILL.md) | Kill running DayZDiag_x64.exe processes (escape hatch, no preflight gate) |
-| [`/dayz-cot-bootstrap`](../.claude/skills/dayz-cot-bootstrap/SKILL.md) | Two-pass workflow to grant COT admin perms on a fresh test instance |
-| [`/dayz-logwatch`](../.claude/skills/dayz-logwatch/SKILL.md) | Watch a test session's server and client logs and triage each new error line as it appears: a known error prints its fix and owner, a new one goes to `dayz-mod-debugger` |
+| [`/dayz-add-server`](../skills/dayz-add-server/SKILL.md) | Set up a test server instance under `.server/<instance>/` |
+| [`/dayz-launch-test`](../skills/dayz-launch-test/SKILL.md) | Start local Diag server + client with the mod loaded |
+| [`/dayz-stop-test`](../skills/dayz-stop-test/SKILL.md) | Kill running DayZDiag_x64.exe processes (escape hatch, no preflight gate) |
+| [`/dayz-cot-bootstrap`](../skills/dayz-cot-bootstrap/SKILL.md) | Two-pass workflow to grant COT admin perms on a fresh test instance |
+| [`/dayz-logwatch`](../skills/dayz-logwatch/SKILL.md) | Watch a test session's server and client logs and triage each new error line as it appears: a known error prints its fix and owner, a new one goes to `dayz-mod-debugger` |
 
 ### Gates, routing and status
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-gate`](../.claude/skills/dayz-gate/SKILL.md) | Run the build, in-game, behavior and visual gates as scripts: build or deploy, launch, read the new log lines, run a test mission that spawns and uses each new item, compare screenshots with stored baselines, triage failures against known errors |
-| [`/dayz-lint`](../.claude/skills/dayz-lint/SKILL.md) | Find errors that would stop a mod loading, before packing, with `file:line` and an owner for each; runs first inside `/dayz-gate build` and `/dayz-build-pbo` |
-| [`/dayz-conflict-check`](../.claude/skills/dayz-conflict-check/SKILL.md) | Find `$PBOPREFIX$`, path and class name collisions with CF, COT and Expansion from their configs and PBO headers, without extracting them; `--ingame` then runs the in-game gate with them loaded |
-| [`/dayz-upgrade-guard`](../.claude/skills/dayz-upgrade-guard/SKILL.md) | Snapshot vanilla classes before a DayZ update, then list the mod classes whose vanilla parents changed and optionally rebuild the search index |
-| [`/dayz-balance`](../.claude/skills/dayz-balance/SKILL.md) | Compare item stats (weight, health, damage, protection, capacity, quantity) with similar vanilla items on `P:\DZ\` and flag outliers with `file:line` |
-| [`/dayz-route`](../.claude/skills/dayz-route/SKILL.md) | Pick the skill, agent or team for a request with keyword rules first; prints one JSON decision and says when the `dayz-router` agent is needed |
-| [`/dayz-statusline`](../.claude/skills/dayz-statusline/SKILL.md) | Install a status line showing `P:\` mount, active mod, running diag session and search-index age; `--remove` undoes it |
-| [`/dayz-health`](../.claude/skills/dayz-health/SKILL.md) | Write a mod's health page from the stored gate results: last build, last test, open findings and the history of every gate run |
+| [`/dayz-gate`](../skills/dayz-gate/SKILL.md) | Run the build, in-game, behavior and visual gates as scripts: build or deploy, launch, read the new log lines, run a test mission that spawns and uses each new item, compare screenshots with stored baselines, triage failures against known errors |
+| [`/dayz-lint`](../skills/dayz-lint/SKILL.md) | Find errors that would stop a mod loading, before packing, with `file:line` and an owner for each; runs first inside `/dayz-gate build` and `/dayz-build-pbo` |
+| [`/dayz-conflict-check`](../skills/dayz-conflict-check/SKILL.md) | Find `$PBOPREFIX$`, path and class name collisions with CF, COT and Expansion from their configs and PBO headers, without extracting them; `--ingame` then runs the in-game gate with them loaded |
+| [`/dayz-upgrade-guard`](../skills/dayz-upgrade-guard/SKILL.md) | Snapshot vanilla classes before a DayZ update, then list the mod classes whose vanilla parents changed and optionally rebuild the search index |
+| [`/dayz-balance`](../skills/dayz-balance/SKILL.md) | Compare item stats (weight, health, damage, protection, capacity, quantity) with similar vanilla items on `P:\DZ\` and flag outliers with `file:line` |
+| [`/dayz-route`](../skills/dayz-route/SKILL.md) | Pick the skill, agent or team for a request with keyword rules first; prints one JSON decision and says when the `dayz-router` agent is needed |
+| [`/dayz-statusline`](../skills/dayz-statusline/SKILL.md) | Install a status line showing `P:\` mount, active mod, running diag session and search-index age; `--remove` undoes it |
+| [`/dayz-health`](../skills/dayz-health/SKILL.md) | Write a mod's health page from the stored gate results: last build, last test, open findings and the history of every gate run |
 
 ### Editors
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-launch-workbench`](../.claude/skills/dayz-launch-workbench/SKILL.md) | Open Enfusion Workbench (script + UI editor) detached |
-| [`/dayz-launch-objectbuilder`](../.claude/skills/dayz-launch-objectbuilder/SKILL.md) | Open Object Builder (`.p3d` editor) detached |
+| [`/dayz-launch-workbench`](../skills/dayz-launch-workbench/SKILL.md) | Open Enfusion Workbench (script + UI editor) detached |
+| [`/dayz-launch-objectbuilder`](../skills/dayz-launch-objectbuilder/SKILL.md) | Open Object Builder (`.p3d` editor) detached |
 
 ### Loot economy (`types.xml`)
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-edit-types`](../.claude/skills/dayz-edit-types/SKILL.md) | Add, update or remove one `<type>` in `types.xml`, or check and merge a pasted chunk of entries (backs the file up first when it changes) |
-| [`/dayz-split-types`](../.claude/skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into per-category files and point `cfgeconomycore.xml` at them |
+| [`/dayz-edit-types`](../skills/dayz-edit-types/SKILL.md) | Add, update or remove one `<type>` in `types.xml`, or check and merge a pasted chunk of entries (backs the file up first when it changes) |
+| [`/dayz-split-types`](../skills/dayz-split-types/SKILL.md) | Split monolithic `types.xml` into per-category files and point `cfgeconomycore.xml` at them |
 
 ### Release
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-release-pack`](../.claude/skills/dayz-release-pack/SKILL.md) | Write the Workshop description, a changelog entry from the mod's history, the classname list and server owner install notes in one go |
-| [`/dayz-server-kit`](../.claude/skills/dayz-server-kit/SKILL.md) | Zip the `types.xml` entries, `cfgeconomycore.xml` lines, load order and the public `.bikey` for server owners; never packs a `.biprivatekey` |
+| [`/dayz-release-pack`](../skills/dayz-release-pack/SKILL.md) | Write the Workshop description, a changelog entry from the mod's history, the classname list and server owner install notes in one go |
+| [`/dayz-server-kit`](../skills/dayz-server-kit/SKILL.md) | Zip the `types.xml` entries, `cfgeconomycore.xml` lines, load order and the public `.bikey` for server owners; never packs a `.biprivatekey` |
 
 ### Specialist tools (deep)
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-p3d-audit`](../.claude/skills/dayz-p3d-audit/SKILL.md) | Audit `.p3d` models for collision, action targeting, physics, animation issues |
-| [`/dayz-particles`](../.claude/skills/dayz-particles/SKILL.md) | Particle effect creation (`.ptc` / `.emat`) without Workbench |
+| [`/dayz-p3d-audit`](../skills/dayz-p3d-audit/SKILL.md) | Audit `.p3d` models for collision, action targeting, physics, animation issues |
+| [`/dayz-particles`](../skills/dayz-particles/SKILL.md) | Particle effect creation (`.ptc` / `.emat`) without Workbench |
 
 ### Search / RAG
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-search-download`](../.claude/skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases (recommended fast path) |
-| [`/dayz-search-index`](../.claude/skills/dayz-search-index/SKILL.md) | Build the semantic-search index yourself (requires `VOYAGE_API_KEY`) |
-| [`/dayz-ask`](../.claude/skills/dayz-ask/SKILL.md) | Answer a plain English question about vanilla DayZ with `path:line` citations checked against `P:\`; falls back to a keyword search when there is no index or key |
+| [`/dayz-search-download`](../skills/dayz-search-download/SKILL.md) | Pull prebuilt vector index from GitHub releases (recommended fast path) |
+| [`/dayz-search-index`](../skills/dayz-search-index/SKILL.md) | Build the semantic-search index yourself (requires `VOYAGE_API_KEY`) |
+| [`/dayz-ask`](../skills/dayz-ask/SKILL.md) | Answer a plain English question about vanilla DayZ with `path:line` citations checked against `P:\`; falls back to a keyword search when there is no index or key |
 
 ### Team rules
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-record-correction`](../.claude/skills/dayz-record-correction/SKILL.md) | Turn your correction of the mod team into a written rule in the right tier |
+| [`/dayz-record-correction`](../skills/dayz-record-correction/SKILL.md) | Turn your correction of the mod team into a written rule in the right tier |
 
 ### Cleanup
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-clean-workspace`](../.claude/skills/dayz-clean-workspace/SKILL.md) | Remove DayZ scaffolds and their deployed artifacts |
+| [`/dayz-clean-workspace`](../skills/dayz-clean-workspace/SKILL.md) | Remove DayZ scaffolds and their deployed artifacts |
 
 ### Claude Code panel (separate plugin)
 
@@ -232,7 +233,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 
 | Command | Purpose |
 |---|---|
-| [`/sync-skills`](../.claude/skills/sync-skills/SKILL.md) | Link `.claude/skills/` into each agent CLI's home dir. Required after clone |
+| [`/sync-skills`](../.claude/skills/sync-skills/SKILL.md) | Link `skills/` and `.claude/skills/` into each agent CLI's home dir. Required after clone |
 | [`/agentic-z-update`](../.claude/skills/agentic-z-update/SKILL.md) | Pull upstream template improvements into your clone without touching `workspace/` |
 | [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the Docusaurus wiki; `--apply` writes mirrors |
 | [`/clean-repo`](../.claude/skills/clean-repo/SKILL.md) | Orchestrator — run every domain's cleanup skill |
@@ -246,13 +247,13 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 - **DayZ Server** (Steam appid 223350) — only for the initial mission bootstrap; can be uninstalled after
 - **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3`. The last full source build embedded about 66M tokens (52,048 chunks, before windowing); the current indexer produces about 62K chunks, and its local estimate of about 96M tokens runs high. Check Voyage's pricing first. Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
 
-L2 conventions: [`.claude/skills/_shared/dayz-conventions.md`](../.claude/skills/_shared/dayz-conventions.md) (core) and the topic files in [`.claude/skills/_shared/conventions/`](../.claude/skills/_shared/conventions/).
+L2 conventions: [`skills/_shared/dayz-conventions.md`](../skills/_shared/dayz-conventions.md) (core) and the topic files in [`skills/_shared/conventions/`](../skills/_shared/conventions/).
 
 **Full walkthrough — prerequisites, quick start, env vars, troubleshooting:** [`docs/dayz-modding.md`](dayz-modding.md).
 
 ## DayZ agents
 
-The 30 agents live under `.claude/agents/`. The mod team runs a whole mod; the specialists also take single tasks directly.
+The 30 agents live under `agents/`. The mod team runs a whole mod; the specialists also take single tasks directly.
 
 | Agent | Focus |
 |---|---|

@@ -11,7 +11,7 @@
         "blocked"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-lead.md 'Your workers' (wearables-specialist is on the Art row; a task whose specialist is on another team's row is marked blocked with 'Reassign: <task> belongs to <specialist> on the <team> team', and is not given to one of your own workers)"
+      "verified": "agents/dayz-lead.md 'Your workers' (wearables-specialist is on the Art row; a task whose specialist is on another team's row is marked blocked with 'Reassign: <task> belongs to <specialist> on the <team> team', and is not given to one of your own workers)"
     },
     {
       "id": "types-entries-go-under-server-heading",
@@ -21,7 +21,7 @@
         "types.xml"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-lead.md Report ('For the server lead': spawn setup, types.xml entries, a spawn parts list, copied after the table naming the task it came from)"
+      "verified": "agents/dayz-lead.md Report ('For the server lead': spawn setup, types.xml entries, a spawn parts list, copied after the table naming the task it came from)"
     },
     {
       "id": "normalizer-json-has-no-file-gate",
@@ -32,7 +32,7 @@
         "dayz-layout-validator"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-lead.md 'Your workers' (a task that changes no files, such as the normalizer's JSON, has no file gate and its output goes to figma-to-dayz-layout; dayz-layout-validator gates any task that changes a .layout; Figma steps run normalizer, figma-to-dayz-layout, layout validator in gate mode, then dayz-ui-specialist)"
+      "verified": "agents/dayz-lead.md 'Your workers' (a task that changes no files, such as the normalizer's JSON, has no file gate and its output goes to figma-to-dayz-layout; dayz-layout-validator gates any task that changes a .layout; Figma steps run normalizer, figma-to-dayz-layout, layout validator in gate mode, then dayz-ui-specialist)"
     },
     {
       "id": "lead-never-runs-build-gate",
@@ -42,7 +42,7 @@
         "orchestrator"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-lead.md 'Your workers' (the orchestrator runs the build and in-game gates after the whole wave reports, so never start /dayz-gate, dayz-build-checker, dayz-ingame-tester or /dayz-launch-test yourself)"
+      "verified": "agents/dayz-lead.md 'Your workers' (the orchestrator runs the build and in-game gates after the whole wave reports, so never start /dayz-gate, dayz-build-checker, dayz-ingame-tester or /dayz-launch-test yourself)"
     },
     {
       "id": "third-failed-round-stops",
@@ -52,7 +52,7 @@
         "re:\\bstop|no more|not (send|loop|try)|don't (send|loop|try)|instead of looping"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-lead.md 'How you run a task' step 4 (after three failed rounds, stop and report the problem instead of looping) and Report (Status is passed or blocked; each blocked task gets a line with the last gate failure and what was tried)"
+      "verified": "agents/dayz-lead.md 'How you run a task' step 4 (after three failed rounds, stop and report the problem instead of looping) and Report (Status is passed or blocked; each blocked task gets a line with the last gate failure and what was tried)"
     }
   ]
 }

@@ -8,7 +8,7 @@
         "re:Owner[^\\n]*dayz-script-specialist",
         "extends"
       ],
-      "verified": ".claude/agents/dayz-mod-debugger.md usual causes (an extends clause on modded class is a silent no-op) and Who fixes what; .claude/skills/dayz-gate/known-errors.json modded-class-extends (owner dayz-script-specialist); P:/scripts/4_world/entities/manbase/playerbase.c:49 (class PlayerBase)"
+      "verified": "agents/dayz-mod-debugger.md usual causes (an extends clause on modded class is a silent no-op) and Who fixes what; skills/dayz-gate/known-errors.json modded-class-extends (owner dayz-script-specialist); P:/scripts/4_world/entities/manbase/playerbase.c:49 (class PlayerBase)"
     },
     {
       "id": "cant-find-required-addons",
@@ -18,7 +18,7 @@
         "requiredAddons",
         "DZ_Characters_Tops"
       ],
-      "verified": ".claude/agents/dayz-mod-debugger.md usual causes (a missing CfgPatches requiredAddons entry) and Who fixes what (dayz-config-specialist for config.cpp); P:/DZ/characters/tops/config.cpp:3 (DZ_Characters_Tops) and :2479 (class Hoodie_ColorBase); the owner may be dayz-config-specialist or, for a clothing class, dayz-wearables-specialist (Who fixes what: name the specialist when the class is in its area)"
+      "verified": "agents/dayz-mod-debugger.md usual causes (a missing CfgPatches requiredAddons entry) and Who fixes what (dayz-config-specialist for config.cpp); P:/DZ/characters/tops/config.cpp:3 (DZ_Characters_Tops) and :2479 (class Hoodie_ColorBase); the owner may be dayz-config-specialist or, for a clothing class, dayz-wearables-specialist (Who fixes what: name the specialist when the class is in its area)"
     },
     {
       "id": "filepatching-0x00020005",
@@ -30,7 +30,7 @@
       "must_not_include": [
         "re:Owner[^\\n]*dayz-server-admin"
       ],
-      "verified": ".claude/agents/dayz-mod-debugger.md Who fixes what (environment faults go to dayz-orchestrator); .claude/skills/dayz-gate/known-errors.json filepatching-0x00020005 (owner dayz-orchestrator, fix: re-run /dayz-add-server so serverDZ.cfg has allowFilePatching = 1;)"
+      "verified": "agents/dayz-mod-debugger.md Who fixes what (environment faults go to dayz-orchestrator); skills/dayz-gate/known-errors.json filepatching-0x00020005 (owner dayz-orchestrator, fix: re-run /dayz-add-server so serverDZ.cfg has allowFilePatching = 1;)"
     },
     {
       "id": "onstoreload-read-failure",
@@ -39,7 +39,7 @@
         "re:Owner[^\\n]*dayz-persistence-specialist",
         "m_Locked"
       ],
-      "verified": ".claude/agents/dayz-mod-debugger.md Who fixes what (dayz-persistence-specialist for OnStoreSave and OnStoreLoad); P:/scripts/3_game/entities/entityai.c:2910 (OnStoreSave) and .claude/skills/_shared/enscript/patterns/persistence.md (OnStoreLoad returning false)"
+      "verified": "agents/dayz-mod-debugger.md Who fixes what (dayz-persistence-specialist for OnStoreSave and OnStoreLoad); P:/scripts/3_game/entities/entityai.c:2910 (OnStoreSave) and skills/_shared/enscript/patterns/persistence.md (OnStoreLoad returning false)"
     },
     {
       "id": "review-gate-no-log",
@@ -52,7 +52,7 @@
         "re:script[^\\n]*\\.log:\\d+",
         "re:\\.RPT:\\d+"
       ],
-      "verified": ".claude/agents/dayz-mod-debugger.md Where the logs are (review-gate failures have no engine logs) and Who fixes what; P:/scripts/4_world/entities/manbase/playerbase.c:49 (PlayerBase lives in 4_World)"
+      "verified": "agents/dayz-mod-debugger.md Where the logs are (review-gate failures have no engine logs) and Who fixes what; P:/scripts/4_world/entities/manbase/playerbase.c:49 (PlayerBase lives in 4_World)"
     }
   ]
 }

@@ -163,7 +163,7 @@ async function findUp($: any, cwd: string, rel: string, stop?: string): Promise<
 }
 
 // The clone that holds cwd: the nearest folder with Agentic-Z's skills.
-const findClone = ($: any, cwd: string) => findUp($, cwd, join('.claude', 'skills', 'dayz-preflight', 'preflight.py'))
+const findClone = ($: any, cwd: string) => findUp($, cwd, join('skills', 'dayz-preflight', 'preflight.py'))
 
 const homeDir = async ($: any): Promise<string> =>
   (await $.process.run(['cmd', '/c', 'echo %USERPROFILE%'])).stdout.trim()
@@ -309,7 +309,7 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
   let argv: string[]
   let settings: AskSettings | undefined
   if (action === 'stop') {
-    argv = ['cmd', '/c', join(current.root, '.claude', 'skills', 'dayz-stop-test', 'stop_test.bat')]
+    argv = ['cmd', '/c', join(current.root, 'skills', 'dayz-stop-test', 'stop_test.bat')]
   } else {
     const [skill, script] = SKILL[action as keyof typeof SKILL]
     const python = await findPython($)
@@ -318,7 +318,7 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
       $.ui.toast(`${action}: failed (${PYTHON_MISSING})`)
       return
     }
-    argv = [python, join(current.root, '.claude', 'skills', skill, script)]
+    argv = [python, join(current.root, 'skills', skill, script)]
     if (action === 'gatebuild') argv.push('build')
     if (action === 'gateingame') argv.push('ingame')
     const needsMod = ['build', 'deploy', 'gatebuild', 'gateingame', 'launch', 'releasepack', 'health'].includes(action)

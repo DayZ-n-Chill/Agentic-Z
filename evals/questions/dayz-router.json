@@ -11,7 +11,7 @@
       "must_not_include": [
         "dayz-workbench-specialist"
       ],
-      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-launch-workbench opens Workbench; dayz-workbench-specialist writes plugins and never opens it, .claude/agents/dayz-workbench-specialist.md, Rules: never open Workbench yourself)"
+      "verified": "agents/dayz-router.md Valid routes (dayz-launch-workbench opens Workbench; dayz-workbench-specialist writes plugins and never opens it, agents/dayz-workbench-specialist.md, Rules: never open Workbench yourself)"
     },
     {
       "id": "add-test-server-instance",
@@ -23,7 +23,7 @@
         "dayz-launch-test",
         "dayz-server-admin"
       ],
-      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-add-server sets up .server/<instance>/; .claude/skills/dayz-add-server/SKILL.md description)"
+      "verified": "agents/dayz-router.md Valid routes (dayz-add-server sets up .server/<instance>/; skills/dayz-add-server/SKILL.md description)"
     },
     {
       "id": "pack-texture-vs-wrong-texture",
@@ -35,7 +35,7 @@
         "dayz-asset-specialist",
         "dayz-build-pbo"
       ],
-      "verified": ".claude/agents/dayz-router.md Valid routes (only packing images to .paa is dayz-pack-texture; .claude/skills/dayz-pack-texture/SKILL.md description)"
+      "verified": "agents/dayz-router.md Valid routes (only packing images to .paa is dayz-pack-texture; skills/dayz-pack-texture/SKILL.md description)"
     },
     {
       "id": "stretched-texture-is-not-packing",
@@ -46,7 +46,7 @@
       "must_not_include": [
         "dayz-pack-texture"
       ],
-      "verified": ".claude/agents/dayz-router.md How to decide (a wrong, missing or stretched texture goes to dayz-asset-specialist)"
+      "verified": "agents/dayz-router.md How to decide (a wrong, missing or stretched texture goes to dayz-asset-specialist)"
     },
     {
       "id": "build-imageset-from-sprites",
@@ -57,7 +57,7 @@
       "must_not_include": [
         "dayz-ui-specialist"
       ],
-      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-build-imageset; .claude/skills/dayz-build-imageset/SKILL.md description)"
+      "verified": "agents/dayz-router.md Valid routes (dayz-build-imageset; skills/dayz-build-imageset/SKILL.md description)"
     },
     {
       "id": "cot-admin-bootstrap",
@@ -69,7 +69,7 @@
         "dayz-server-admin",
         "dayz-conflict-check"
       ],
-      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-cot-bootstrap; .claude/skills/dayz-cot-bootstrap/SKILL.md description)"
+      "verified": "agents/dayz-router.md Valid routes (dayz-cot-bootstrap; skills/dayz-cot-bootstrap/SKILL.md description)"
     },
     {
       "id": "status-hub-is-init",
@@ -81,7 +81,7 @@
         "dayz-preflight",
         "dayz-health"
       ],
-      "verified": ".claude/agents/dayz-router.md Valid routes (dayz-init is the status hub; .claude/skills/dayz-init/SKILL.md description)"
+      "verified": "agents/dayz-router.md Valid routes (dayz-init is the status hub; skills/dayz-init/SKILL.md description)"
     },
     {
       "id": "mod-changelog-file-is-docs-writer",
@@ -92,7 +92,7 @@
       "must_not_include": [
         "dayz-release-pack"
       ],
-      "verified": ".claude/agents/dayz-docs-writer.md (edits workspace/<ModName>/CHANGELOG.md); .claude/skills/dayz-release-pack/release_pack.py:6 (writes generated texts to output/<ModName>-release/)"
+      "verified": "agents/dayz-docs-writer.md (edits workspace/<ModName>/CHANGELOG.md); skills/dayz-release-pack/release_pack.py:6 (writes generated texts to output/<ModName>-release/)"
     }
   ]
 }

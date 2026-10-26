@@ -23,7 +23,7 @@ Most of what the mod team does between "the user asks" and "the user sees a resu
 
 ## 1. Script-only gates
 
-**What it is.** `/dayz-gate` (`.claude/skills/dayz-gate/gate.py`) runs the orchestrator's two DayZ gates as a script. It calls the existing skill scripts as subprocesses and applies the rules written in `dayz-build-checker` and `dayz-ingame-tester`:
+**What it is.** `/dayz-gate` (`skills/dayz-gate/gate.py`) runs the orchestrator's two DayZ gates as a script. It calls the existing skill scripts as subprocesses and applies the rules written in `dayz-build-checker` and `dayz-ingame-tester`:
 
 - `build` first runs `/dayz-lint` on the mod. Its errors are failures and its warnings are warnings, and when lint fails the gate stops there, without stopping a running session or building. When lint passes, it stops any running `DayZDiag_x64.exe` (with `/dayz-stop-test`), runs `/dayz-build-pbo`, and fails on a non-zero exit, a `[FAIL]` line, or an AddonBuilder error or warning about missing files, textures or unknown classes. A payload-only bundle (no `config.cpp`, PBOs in `Addons/`) skips the build and must pass `/dayz-deploy-pbo` with no `[FAIL]` and no missing `.bisign`; a bundle with a linker `config.cpp` gets both.
 - `ingame` stops any session, notes the size of every server and client log, runs `/dayz-launch-test`, and polls the new lines until the client script log shows `Creating Mission: mpmissions\__cur_mp.` (the vanilla print when the client joins) plus 30 s, or 5 minutes pass. It stops early on a script-module compile failure, a new crash log, or a server or client process exiting, and always stops the session. Then it judges only the new lines: compile errors, missing config entries, textures or models and crashes fail; `NULL pointer` and `Can't find` fail when they or their stack trace name the mod's folder, `$PBOPREFIX$` or classes. A line that names nothing of the mod is vanilla noise when it also appears in an older session without `@<ModName>`, and a warning when no such session exists.
@@ -31,8 +31,8 @@ Most of what the mod team does between "the user asks" and "the user sees a resu
 **How to use it.** The orchestrator runs it per wave:
 
 ```cmd
-python .claude\skills\dayz-gate\gate.py build MyVest --json
-python .claude\skills\dayz-gate\gate.py ingame MyVest --deps CF --server chernarus --json
+python skills\dayz-gate\gate.py build MyVest --json
+python skills\dayz-gate\gate.py ingame MyVest --deps CF --server chernarus --json
 ```
 
 The first output line is `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit 2). The JSON lists each failure with its log file, line, stack trace, the mod files it points to, and its triage (section 2). On exit 2 (bad arguments, no cached project, a lint error that stops `/dayz-lint` from running at all, the stop step failed, or the gate crashed) the orchestrator falls back to the `dayz-build-checker` or `dayz-ingame-tester` agent; an exit 2 that asks for `--deps` is fixed by passing them.
@@ -43,14 +43,14 @@ The first output line is `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit 2). T
 
 ## 2. Log triage
 
-**What it is.** `.claude/skills/dayz-gate/triage.py` fingerprints a log line (timestamps, absolute paths, hex addresses and numbers normalized, lowercased) and matches it against `known-errors.json`: entries `{id, pattern, meaning, fix, owner_agent, source}` seeded from the repo's documented errors (filePatching `0x00020005`, mission without `main()`, script module compile failures, unknown types, `Can't find`, undefined functions, `NULL pointer`, missing textures, models and config entries, and the build and launch refusals such as an unmounted `P:\`, a missing junction or a `$PBOPREFIX$` mismatch). Two entries check the mod's source instead of the log: a `modded class` with an extends clause, and a `config.cpp` without `CfgPatches`. Every gate failure comes back `known`, with the fix and the owning agent, or `new`.
+**What it is.** `skills/dayz-gate/triage.py` fingerprints a log line (timestamps, absolute paths, hex addresses and numbers normalized, lowercased) and matches it against `known-errors.json`: entries `{id, pattern, meaning, fix, owner_agent, source}` seeded from the repo's documented errors (filePatching `0x00020005`, mission without `main()`, script module compile failures, unknown types, `Can't find`, undefined functions, `NULL pointer`, missing textures, models and config entries, and the build and launch refusals such as an unmounted `P:\`, a missing junction or a `$PBOPREFIX$` mismatch). Two entries check the mod's source instead of the log: a `modded class` with an extends clause, and a `config.cpp` without `CfgPatches`. Every gate failure comes back `known`, with the fix and the owning agent, or `new`.
 
 **How to use it.** The gate runs it on every failure. The orchestrator sends `known` failures straight to the lead whose team has the owner (or runs the named skill itself, or tells the user when the owner is `user`), and only `new` ones to `dayz-mod-debugger`. On its own:
 
 ```cmd
-python .claude\skills\dayz-gate\triage.py .server\chernarus\Profiles\script_2026-10-20_12-00-02.log --mod MyVest --mod-dir workspace\MyVest
-python .claude\skills\dayz-gate\triage.py --learn null-pointer --fingerprint "<line or fingerprint>"
-python .claude\skills\dayz-gate\triage.py --learn my-new-id --fingerprint "<line>" --meaning "..." --fix "..." --owner dayz-script-specialist
+python skills\dayz-gate\triage.py .server\chernarus\Profiles\script_2026-10-20_12-00-02.log --mod MyVest --mod-dir workspace\MyVest
+python skills\dayz-gate\triage.py --learn null-pointer --fingerprint "<line or fingerprint>"
+python skills\dayz-gate\triage.py --learn my-new-id --fingerprint "<line>" --meaning "..." --fix "..." --owner dayz-script-specialist
 ```
 
 `--learn` writes to the project's `.claude/local-memory/dayz-gate-known-errors.json`, never to the shipped catalog.
@@ -63,21 +63,21 @@ python .claude\skills\dayz-gate\triage.py --learn my-new-id --fingerprint "<line
 
 **What it is.** `/dayz-route` decides who handles a new DayZ request (a skill, an agent, or the whole team) in up to three stages, cheapest first. Every stage returns the same JSON: `{"route", "kind": "skill|agent|team", "confidence": 0-1, "source": "rules|jev|router", "args"}`.
 
-1. **Keyword rules** (`.claude/skills/dayz-route/rules.json`, free). Regex patterns per route: "build MyVest" goes to `/dayz-build-pbo` with `args.mod`, "launch the test" to `/dayz-launch-test`, "stop" to `/dayz-stop-test`, types.xml or spawn questions to `dayz-server-admin`, config.cpp to `dayz-config-specialist`, pasted crash log lines to `/dayz-gate` triage (then only the new ones to `dayz-mod-debugger`), a pasted `<type>` chunk to `/dayz-edit-types` merge, a GitHub or Workshop link to `/dayz-import-mod`, and "build me a ... mod" to the orchestrator. A request that matches two different routes counts as multi-step and is not trusted.
+1. **Keyword rules** (`skills/dayz-route/rules.json`, free). Regex patterns per route: "build MyVest" goes to `/dayz-build-pbo` with `args.mod`, "launch the test" to `/dayz-launch-test`, "stop" to `/dayz-stop-test`, types.xml or spawn questions to `dayz-server-admin`, config.cpp to `dayz-config-specialist`, pasted crash log lines to `/dayz-gate` triage (then only the new ones to `dayz-mod-debugger`), a pasted `<type>` chunk to `/dayz-edit-types` merge, a GitHub or Workshop link to `/dayz-import-mod`, and "build me a ... mod" to the orchestrator. A request that matches two different routes counts as multi-step and is not trusted.
 2. **Jev** (`jev.py`), only when `TYPESAFE_API_KEY` is set. One TypeSafe Choice question over the same targets plus `other`, with a 5 second timeout. Any failure falls through quietly, with the reason in `note`.
 3. **`dayz-router` agent**, pinned to Haiku, with only `Read`. It returns the same JSON line.
 
 **How to use it.** The main session runs it first for a new DayZ request (the routing section of `CLAUDE.md` says so):
 
 ```cmd
-python .claude\skills\dayz-route\route.py "build MyVest" --json
+python skills\dayz-route\route.py "build MyVest" --json
 ```
 
 A result with a `route` is followed directly. `{"route": null, "next": "dayz-router"}` means: dispatch the `dayz-router` agent with the request.
 
 **What it saves.** Common requests (build, launch, stop, types.xml, config.cpp, crash logs, whole-mod builds) are routed by a script in milliseconds with no model tokens. The rest go to Jev or to a Haiku run instead of the top model.
 
-**Limits.** Rules are English keywords, so unusual phrasing falls through to the later stages. The 0.8 threshold is a starting value, not tuned on real traffic. With a key set, the request text is sent to `api.typesafe.ai`. To add a route, edit `rules.json` and the list in `.claude/agents/dayz-router.md`; a test fails if they differ or if a target has no skill or agent file.
+**Limits.** Rules are English keywords, so unusual phrasing falls through to the later stages. The 0.8 threshold is a starting value, not tuned on real traffic. With a key set, the request text is sent to `api.typesafe.ai`. To add a route, edit `rules.json` and the list in `agents/dayz-router.md`; a test fails if they differ or if a target has no skill or agent file.
 
 ## 4. Edit hooks
 
@@ -118,9 +118,9 @@ That is whether `P:\` is mounted, the active mod from `/dayz-init`, whether a `D
 Install, check and remove it from the project root:
 
 ```cmd
-python .claude/skills/dayz-statusline/install.py
-python .claude/skills/dayz-statusline/install.py --status
-python .claude/skills/dayz-statusline/install.py --remove
+python skills/dayz-statusline/install.py
+python skills/dayz-statusline/install.py --status
+python skills/dayz-statusline/install.py --remove
 ```
 
 Install writes `statusLine` into `.claude/settings.local.json` after backing the file up to `settings.local.json.bak`. It is safe to re-run, and `--remove` restores any status line it replaced. A plugin can't set the main status line itself (plugin settings accept only `agent` and `subagentStatusLine`), which is why this is a skill. Plugin users re-run the install after a plugin update, because the plugin folder moves.
@@ -145,7 +145,7 @@ Every other agent stays on the inherited session model because its output is jud
 
 ## 7. Smaller rules loading
 
-**What it is.** Tier 2 is split by topic. `.claude/skills/_shared/dayz-conventions.md` is now the short core every DayZ agent and skill reads: EnScript style pointer, environment and preflight gate, environment variables, the RAG index, project layout, testing basics, the search rule, and a topic index table. The topic sections moved verbatim into `.claude/skills/_shared/conventions/`:
+**What it is.** Tier 2 is split by topic. `skills/_shared/dayz-conventions.md` is now the short core every DayZ agent and skill reads: EnScript style pointer, environment and preflight gate, environment variables, the RAG index, project layout, testing basics, the search rule, and a topic index table. The topic sections moved verbatim into `skills/_shared/conventions/`:
 
 | Topic file | Sections | Lines |
 |---|---|---|
@@ -155,7 +155,7 @@ Every other agent stays on the inherited session model because its output is jud
 | `conventions/ui.md` | UI scripting realities, Reference packs for UI work | 24 |
 | `conventions/server.md` | Server / economy, Test server instances (`.server/`), Mission and DayZ Server install notes | 27 |
 
-**How to use it.** Each agent's Tier 2 line names the core file plus its topic files, for example `Follow Tier 2 (.claude/skills/_shared/dayz-conventions.md plus .claude/skills/_shared/conventions/scripts.md)`. Script, Workbench, AI and persistence specialists load `scripts.md`; config specialist, build checker, build engineer and wearables specialist `config.md`; the weapon specialist `config.md` (plus `scripts.md` for script it writes); asset, animation and physics specialists and object builder `assets.md`; UI specialist, Figma node normalizer, Figma-to-layout and layout validator `ui.md`; server admin, map specialist and in-game tester `server.md`; audio-FX and vehicle specialists `config.md` and `scripts.md`; the architect `scripts.md` and `assets.md`; the debugger `scripts.md` and `server.md`; the reviewer the topic files its change touches (usually config, assets and scripts). The orchestrator, lead and docs writer read the core only. A new rule goes in the core only when every DayZ agent needs it; otherwise in its topic file (`/dayz-record-correction` says so).
+**How to use it.** Each agent's Tier 2 line names the core file plus its topic files, for example `Follow Tier 2 (skills/_shared/dayz-conventions.md plus skills/_shared/conventions/scripts.md)`. Script, Workbench, AI and persistence specialists load `scripts.md`; config specialist, build checker, build engineer and wearables specialist `config.md`; the weapon specialist `config.md` (plus `scripts.md` for script it writes); asset, animation and physics specialists and object builder `assets.md`; UI specialist, Figma node normalizer, Figma-to-layout and layout validator `ui.md`; server admin, map specialist and in-game tester `server.md`; audio-FX and vehicle specialists `config.md` and `scripts.md`; the architect `scripts.md` and `assets.md`; the debugger `scripts.md` and `server.md`; the reviewer the topic files its change touches (usually config, assets and scripts). The orchestrator, lead and docs writer read the core only. A new rule goes in the core only when every DayZ agent needs it; otherwise in its topic file (`/dayz-record-correction` says so).
 
 **What it saves.** Measured in lines of Tier 2 text loaded per agent run:
 

@@ -53,7 +53,7 @@ It then records the upstream SHA in `.claude/.upstream-baseline`, but only when 
 | `unchanged` | Local file matches upstream | nothing |
 | `safe-overwrite` | Not edited locally, upstream changed it | apply upstream |
 | `new` | Upstream has it, the baseline and the clone do not | apply upstream |
-| `locally-deleted` | In the baseline, missing in the clone (you deleted it) | leave alone (`--per-file` take restores it) |
+| `locally-deleted` | In the baseline, missing in the clone, and once committed in the clone (you deleted it) | leave alone (`--per-file` take restores it) |
 | `local-only-edit` | Only the clone edited it (upstream unchanged) | leave alone |
 | `conflict` | Both the clone and upstream edited it | leave alone (use `--per-file` to resolve) |
 | `deleted-clean` | Upstream removed it, not customized locally | delete |
@@ -64,6 +64,8 @@ It then records the upstream SHA in `.claude/.upstream-baseline`, but only when 
 Template-managed paths only:
 
 ```
+agents/
+skills/
 .claude/agents/
 .claude/skills/
 .claude/mcp/

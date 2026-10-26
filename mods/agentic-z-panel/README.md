@@ -77,7 +77,7 @@ One action runs at a time; a second press while one runs only shows a toast. Eve
 
 ## Where it finds Agentic-Z
 
-The clone that holds the session folder (that folder or the nearest parent with `.claude\skills\dayz-preflight\preflight.py`), otherwise the newest version in the plugin cache under `%USERPROFILE%\.claude\plugins\cache\dayz-n-chill\agentic-z`.
+The clone that holds the session folder (that folder or the nearest parent with `skills\dayz-preflight\preflight.py`), otherwise the newest version in the plugin cache under `%USERPROFILE%\.claude\plugins\cache\dayz-n-chill\agentic-z`.
 
 The active mod comes from `.claude\local-memory\dayz-init-state.json` in that clone. With no clone (a plugin install), it comes from the nearest folder at or above the session folder that holds that file, stopping before the home folder (`%USERPROFILE%\.claude` is Claude Code's user config, and the skill scripts ignore a state file there too).
 

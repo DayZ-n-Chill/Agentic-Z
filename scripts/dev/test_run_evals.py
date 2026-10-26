@@ -150,7 +150,7 @@ def test_ask_builds_read_only_claude_command(monkeypatch):
     assert run_evals.ask("dayz-mod-reviewer", "Q?", timeout=5, model="opus") == "answer"
     cmd = seen["cmd"]
     assert cmd[cmd.index("--output-format") + 1] == "json"
-    assert cmd[:4] == ["claude", "-p", "--agent", "dayz-mod-reviewer"]
+    assert cmd[:6] == ["claude", "-p", "--plugin-dir", str(run_evals.REPO), "--agent", "agentic-z:dayz-mod-reviewer"]
     tools = cmd[cmd.index("--allowedTools") + 1]
     assert "Edit" not in tools.split(",") and "Write" not in tools.split(",")
     assert seen["input"] == "Q?"
@@ -418,7 +418,7 @@ def test_dry_run_asks_nothing(capsys):
     assert not problems
     assert run_evals.main(["--dry-run"]) == 0
     lines = capsys.readouterr().out.splitlines()
-    expected = [f"would ask: claude -p --agent {s['agent']}  [{q['id']}]" for s in suites for q in s["questions"]]
+    expected = [f"would ask: claude -p --agent agentic-z:{s['agent']}  [{q['id']}]" for s in suites for q in s["questions"]]
     assert expected
     assert [line for line in lines if line.startswith("would ask: ")] == expected
     total = sum(len(s["questions"]) for s in suites)

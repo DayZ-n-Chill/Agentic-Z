@@ -11,7 +11,7 @@ node_modules/
 .claude/agent-memory/
 
 # Vendored skill assets shipped from upstream tools as-is
-.claude/skills/dayz-split-types/vendor/
+skills/dayz-split-types/vendor/
 
 # Auto-generated content
 **/CHANGELOG.md

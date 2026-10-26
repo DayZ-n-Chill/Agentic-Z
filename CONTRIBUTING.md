@@ -10,7 +10,7 @@ cd Agentic-Z
 python .claude\skills\sync-skills\sync.py
 ```
 
-`sync-skills` symlinks (or junctions on Windows) the repo's `.claude/skills/` into the Codex and Gemini home dirs so they discover the same slash commands during local testing; Claude Code reads the repo's skills directly. Restart or reload your agent session after running it.
+`sync-skills` symlinks (or junctions on Windows) the repo's `skills/` and `.claude/skills/` into the Codex and Gemini home dirs so they discover the same slash commands during local testing. Claude Code reads only the four repo-only skills in `.claude/skills/` directly; it loads `skills/` and `agents/` through the installed agentic-z plugin, which comes from the GitHub marketplace, not your working tree. Restart or reload your agent session after running it.
 
 ## Branch rules
 
@@ -29,8 +29,8 @@ python .claude\skills\sync-skills\sync.py
 
 ## What belongs here
 
-- `.claude/skills/` — slash-command skills (Python + SKILL.md).
-- `.claude/agents/` — DayZ specialist agent definitions.
+- `skills/` — slash-command skills (Python + SKILL.md); the four repo-only skills stay in `.claude/skills/`.
+- `agents/` — DayZ specialist agent definitions.
 - `.claude/mcp/` — MCP server code (dayz-rag, etc.).
 - `docs/` — deep documentation.
 - `scripts/` — thin `.bat` wrappers around skills, grouped by audience:
@@ -47,9 +47,9 @@ python .claude\skills\sync-skills\sync.py
 
 ## Testing a new skill
 
-1. Place your skill folder at `.claude/skills/<my-skill>/` with `SKILL.md` and your script.
-2. Run `sync-skills` so the CLI picks it up.
-3. Run the script directly: `python .claude\skills\<my-skill>\<script>.py [args]`.
+1. Place your skill folder at `skills/<my-skill>/` with `SKILL.md` and your script.
+2. Add it to the `skills` list in `.claude-plugin/plugin.json`, then run `sync-skills` so Codex and Gemini pick it up. To test it in Claude Code before it is published, run `sync-skills --agents claude`, which links it into Claude Code's home too.
+3. Run the script directly: `python skills\<my-skill>\<script>.py [args]`.
 4. Fix issues, commit, open PR.
 
 ## Docs

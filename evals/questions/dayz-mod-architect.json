@@ -28,7 +28,7 @@
         "re:\"item\"\\s*:\\s*\"MyVest_Carrier\"",
         "re:\"with\"\\s*:\\s*\"MyVest_Pouch\""
       ],
-      "verified": ".claude/skills/dayz-gate/checks-file.md (attach: spawns item, then creates with as its attachment)"
+      "verified": "skills/dayz-gate/checks-file.md (attach: spawns item, then creates with as its attachment)"
     },
     {
       "id": "firing-needs-a-person",
@@ -40,7 +40,7 @@
       "must_not_include": [
         "re:\"action\"\\s*:\\s*\"(fire|shoot|firing)\""
       ],
-      "verified": ".claude/agents/dayz-mod-architect.md step 6 (no fire action; closest check plus a person tries it) and .claude/skills/dayz-gate/checks-file.md (actions spawn, hands, wear, attach, cargo)"
+      "verified": "agents/dayz-mod-architect.md step 6 (no fire action; closest check plus a person tries it) and skills/dayz-gate/checks-file.md (actions spawn, hands, wear, attach, cargo)"
     },
     {
       "id": "loot-numbers-in-types",
@@ -52,7 +52,7 @@
       "must_not_include": [
         "re:(set|put|add)s? (them |the loot numbers )?in (the )?config\\.cpp"
       ],
-      "verified": ".claude/skills/_shared/conventions/server.md:11 (loot numbers live only in the mission's types.xml; P:/scripts/3_game/ce/centraleconomy.c:754-765 only reads them back)"
+      "verified": "skills/_shared/conventions/server.md:11 (loot numbers live only in the mission's types.xml; P:/scripts/3_game/ce/centraleconomy.c:754-765 only reads them back)"
     }
   ]
 }

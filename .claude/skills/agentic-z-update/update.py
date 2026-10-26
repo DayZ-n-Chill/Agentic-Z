@@ -1,7 +1,7 @@
 """Pull Agentic-Z template updates from upstream into the current clone.
 
 What it touches (TEMPLATE_PATHS):
-    .claude/agents/, .claude/skills/, .claude/mcp/, .claude/settings.json
+    agents/, skills/, .claude/agents/, .claude/skills/, .claude/mcp/, .claude/settings.json
     .claude-plugin/, .mcp.json, hooks/, mods/, evals/
     docs/, scripts/
     CLAUDE.md, AGENTS.md, GEMINI.md, README.md, CONTRIBUTING.md, LICENSE
@@ -38,6 +38,8 @@ UPSTREAM_BRANCH = "main"
 # Paths (relative to repo root) that get pulled from upstream. Anything outside
 # this list is left alone.
 TEMPLATE_PATHS = [
+    "agents",
+    "skills",
     ".claude/agents",
     ".claude/skills",
     ".claude/mcp",
@@ -380,6 +382,21 @@ def compute_drift(baseline_sha: Optional[str], upstream_ref: str) -> dict[str, F
         )
         if status != FileStatus.UNCHANGED:
             result[path] = status
+    # A baseline file missing locally counts as deleted by the user only if this
+    # clone ever tracked it. An older updater (one without agents/ and skills/ in
+    # TEMPLATE_PATHS) can advance the baseline past files it never pulled; those
+    # are new to this clone, not deleted from it.
+    missing = [p for p, s in result.items() if s == FileStatus.LOCALLY_DELETED]
+    if missing:
+        r = subprocess.run(
+            ["git", "log", "--format=", "--name-only", "--no-renames", "-z", "HEAD", "--", *TEMPLATE_PATHS],
+            check=False, capture_output=True, text=True, encoding="utf-8",
+        )
+        if r.returncode == 0:
+            ever_tracked = set(r.stdout.replace("\n", "\0").split("\0"))
+            for path in missing:
+                if path not in ever_tracked:
+                    result[path] = FileStatus.NEW
     return result
 
 

@@ -12,4 +12,4 @@ REM setlocal keeps PY out of the terminal that ran this file.
 setlocal
 set "PY=python"
 call python -c "" >nul 2>nul || set "PY=py"
-%PY% "%~dp0..\..\.claude\skills\dayz-workdrive\mount.py" %*
+%PY% "%~dp0..\..\skills\dayz-workdrive\mount.py" %*

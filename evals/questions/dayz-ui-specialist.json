@@ -28,7 +28,7 @@
       "must_not_include": [
         "re:<FrameWidget"
       ],
-      "verified": "P:/gui/layouts/day_z_hud.layout:1 (FrameWidgetClass HudFrameWidget {); every vanilla layout under P:/gui/layouts/ opens with '<Type>WidgetClass <name> {'; .claude/skills/_shared/enscript/references/gui_layout.md 'File Format'"
+      "verified": "P:/gui/layouts/day_z_hud.layout:1 (FrameWidgetClass HudFrameWidget {); every vanilla layout under P:/gui/layouts/ opens with '<Type>WidgetClass <name> {'; skills/_shared/enscript/references/gui_layout.md 'File Format'"
     },
     {
       "id": "chat-open-check",

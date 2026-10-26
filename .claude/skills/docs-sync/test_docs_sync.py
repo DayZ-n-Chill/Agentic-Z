@@ -133,12 +133,12 @@ def build_repo(root: Path, with_scripts: bool = False) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8", newline="")
 
-    w(".claude/agents/alpha-agent.md", "---\nname: alpha-agent\nmemory: project\n"
+    w("agents/alpha-agent.md", "---\nname: alpha-agent\nmemory: project\n"
                                         "tools: Read, mcp__dayz-rag__search_dayz_source\n---\n")
-    w(".claude/agents/beta-agent.md", "---\nname: beta-agent\ntools: Read\n---\n"
+    w("agents/beta-agent.md", "---\nname: beta-agent\ntools: Read\n---\n"
                                        "memory: in the body is not frontmatter\ntools: mcp__dayz-rag__get_dayz_file\n")
     for name in ("foo", "bar"):
-        w(f".claude/skills/{name}/SKILL.md", f"---\nname: {name}\n---\n")
+        w(f"skills/{name}/SKILL.md", f"---\nname: {name}\n---\n")
     for name in ("a_hook", "b_hook", "c_hook", "test_a_hook"):
         w(f"{sync.HOOKS_DIR}/{name}.py", "")
     w("evals/questions/alpha-agent.json", "{}")
@@ -160,9 +160,9 @@ def build_repo(root: Path, with_scripts: bool = False) -> Path:
         dst.mkdir(parents=True)
         for name in ("sync.py", "apply.py"):
             shutil.copy(HERE / name, dst / name)
-        shared = root / ".claude" / "skills" / "_shared"
+        shared = root / "skills" / "_shared"
         shared.mkdir(parents=True, exist_ok=True)
-        shutil.copy(HERE.parent / "_shared" / "skill_helpers.py", shared / "skill_helpers.py")
+        shutil.copy(HERE.parents[2] / "skills" / "_shared" / "skill_helpers.py", shared / "skill_helpers.py")
     return root
 
 
@@ -242,7 +242,7 @@ def test_slugify_matches_content_js():
 # ---------------------------------------------------------------- names
 
 def test_missing_agent_is_reported_at_the_section(repo):
-    (repo / ".claude/agents/gamma-agent.md").write_text("x", encoding="utf-8")
+    (repo / "agents/gamma-agent.md").write_text("x", encoding="utf-8")
     out = problems()
     assert "wiki/src/content/guide.md:9: agent `gamma-agent` exists but is not listed in the \"## Agents\" tables" in out
 
@@ -260,8 +260,8 @@ def test_agent_listed_twice_is_reported(repo):
 
 
 def test_missing_and_unknown_skills_are_reported(repo):
-    (repo / ".claude/skills/baz").mkdir()
-    (repo / ".claude/skills/baz/SKILL.md").write_text("x", encoding="utf-8")
+    (repo / "skills/baz").mkdir()
+    (repo / "skills/baz/SKILL.md").write_text("x", encoding="utf-8")
     edit(repo, sync.SKILLS_TABLE, "| `/bar` | Bar. |", "| `/bar` | Bar. |\n| `/qux` | Gone. |")
     out = problems()
     assert "wiki/src/content/skills-table.md:1: skill `baz` exists but is not listed in the skills table" in out
@@ -269,9 +269,9 @@ def test_missing_and_unknown_skills_are_reported(repo):
 
 
 def test_shared_folder_and_folders_without_skill_md_are_not_skills(repo):
-    (repo / ".claude/skills/_shared/x").mkdir(parents=True)
-    (repo / ".claude/skills/_shared/SKILL.md").write_text("x", encoding="utf-8")
-    (repo / ".claude/skills/__pycache__").mkdir()
+    (repo / "skills/_shared/x").mkdir(parents=True)
+    (repo / "skills/_shared/SKILL.md").write_text("x", encoding="utf-8")
+    (repo / "skills/__pycache__").mkdir()
     assert problems() == []
 
 
@@ -411,7 +411,7 @@ def test_a_wrong_number_beside_a_claim_is_not_rewritten(repo):
 def test_number_words_are_read_and_rewritten_as_words(repo):
     edit(repo, sync.TEAM, "and two topic files of", "and Seven topic files of")
     assert problems() == [
-        "wiki/src/content/team.md:5: says Seven, expected 2 (topic files in .claude/skills/_shared/conventions/) [fixable]"]
+        "wiki/src/content/team.md:5: says Seven, expected 2 (topic files in skills/_shared/conventions/) [fixable]"]
     assert sync._spell(2, "Seven") == "Two" and sync._spell(2, "7") == "2" and sync._spell(30, "three") == "30"
     assert sync._number("Twenty") == 20 and sync._number("143") == 143
 
@@ -420,7 +420,7 @@ def test_hidden_sections_are_skipped(repo):
     # "Agentic-Z has 99 agents." sits under "## Status and next steps", which content.js hides.
     assert problems() == []
     edit(repo, sync.CONTENT_JS, "'status-and-next-steps', ", "")
-    assert problems() == ["wiki/src/content/guide.md:47: says 99, expected 2 (agent files in .claude/agents/) [fixable]"]
+    assert problems() == ["wiki/src/content/guide.md:47: says 99, expected 2 (agent files in agents/) [fixable]"]
 
 
 def test_a_claim_found_only_in_a_hidden_section_is_not_found(repo):
@@ -659,8 +659,8 @@ def test_quiet_turns_an_unexpected_error_into_a_skipped_check(repo, capsys, monk
 def remove_source(root: Path, what: str) -> str:
     """Break one count source in a fake repo; return the message the SourceError should carry."""
     if what == "agents":
-        shutil.rmtree(root / ".claude" / "agents")
-        return "cannot read .claude/agents/: folder is missing"
+        shutil.rmtree(root / "agents")
+        return "cannot read agents/: folder is missing"
     if what == "conventions":
         shutil.rmtree(root / sync.RULES_TOPICS)
         return f"cannot read {sync.RULES_TOPICS}/: folder is missing"
@@ -669,9 +669,9 @@ def remove_source(root: Path, what: str) -> str:
             p.unlink()
         return f"cannot read {sync.RULES_TOPICS}/: no *.md files"
     if what == "empty agents":
-        for p in (root / ".claude" / "agents").glob("*.md"):
+        for p in (root / "agents").glob("*.md"):
             p.unlink()
-        return "cannot read .claude/agents/: no *.md files"
+        return "cannot read agents/: no *.md files"
     if what == "evals":
         shutil.rmtree(root / "evals" / "questions")
         return "cannot read evals/questions/: folder is missing"
