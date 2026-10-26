@@ -1,7 +1,5 @@
 # Agentic-Z
 
-<a href="https://github.com/DayZ-n-Chill/Agentic-Z"><img src="docs/assets/hero.webp" alt="Agentic-Z: AI agents building DayZ models" width="100%"></a>
-
 **An AI Agent Stack for DayZ Modding** — clone it, and your repo comes pre-loaded with specialist agents, slash commands, and a local RAG index that turn Claude Code, Codex, or Gemini CLI into a competent DayZ modding co-author.
 
 ---
