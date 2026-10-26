@@ -13,6 +13,8 @@ export type PanelRun = {
   detail: string
   // The ask field's plain-English answer, in markdown; absent when the model gave none.
   answer?: string
+  // The question an ask or deep dive answered, for Deep dive and Continue in chat.
+  question?: string
 } | null
 
 declare module 'claude-code' {

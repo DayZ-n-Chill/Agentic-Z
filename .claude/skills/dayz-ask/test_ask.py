@@ -405,13 +405,23 @@ def test_cli_text(p_drive, capsys):
     assert "foodstage.c:1-7  verified" in out and "    | \tfloat m_SpoilTime;" in out
 
 
+def test_cli_excerpt_lines_sets_the_excerpt_length_for_that_run_only(p_drive, monkeypatch, capsys):
+    monkeypatch.setattr(ask, "EXCERPT_LINES", ask.DEFAULT_EXCERPT_LINES)
+    assert ask.main(["--grep", "--excerpt-lines", "2", "food spoilage"]) == 0
+    out = capsys.readouterr().out
+    assert "    | {" in out and "m_SpoilTime;" not in out
+    assert ask.main(["--grep", "food spoilage"]) == 0
+    assert "    | \tfloat m_SpoilTime;" in capsys.readouterr().out
+
+
 def test_cli_none_exits_1(p_drive, capsys):
     assert ask.main(["--grep", "zzqx"]) == 1
     assert capsys.readouterr().out.startswith("NONE")
 
 
 @pytest.mark.parametrize("argv", [["  "], ["--top-k", "0", "q"], ["--top-k", "99", "q"],
-                                  ["--file-type", "bogus", "q"], ["--top-k", "x", "q"], []])
+                                  ["--file-type", "bogus", "q"], ["--top-k", "x", "q"], [],
+                                  ["--excerpt-lines", "0", "q"], ["--excerpt-lines", "301", "q"]])
 def test_cli_bad_arguments(p_drive, argv, capsys):
     assert ask.main(argv) == 2
     assert capsys.readouterr().out.startswith("ERROR")

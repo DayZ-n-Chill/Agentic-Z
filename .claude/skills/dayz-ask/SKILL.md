@@ -1,7 +1,7 @@
 ---
 name: dayz-ask
 description: "Answers a plain English question about vanilla DayZ with checked path:line citations. Use when the user asks how vanilla does something, where it lives, or what a vanilla class or config value does."
-argument-hint: "\"<question>\" [--top-k N] [--file-type T] [--folder F] [--grep] [--json]"
+argument-hint: "\"<question>\" [--top-k N] [--excerpt-lines N] [--file-type T] [--folder F] [--grep] [--json]"
 ---
 
 <!-- skill-dir-note -->
@@ -16,7 +16,7 @@ Follow `.claude/skills/_shared/dayz-conventions.md`. Format the answer per `.cla
 ## How to run
 
 ```cmd
-python "<skill-dir>\ask.py" "<question>" [--top-k N] [--file-type T] [--folder F] [--grep] [--json]
+python "<skill-dir>\ask.py" "<question>" [--top-k N] [--excerpt-lines N] [--file-type T] [--folder F] [--grep] [--json]
 ```
 
 Narrow the search whenever the question allows it: `--file-type cpp` for a `config.cpp` value, `--file-type c` for script behaviour, `--folder gui` for a layout. For example:
@@ -29,6 +29,7 @@ python "<skill-dir>\ask.py" "what does the food config set for spoil time" --fil
 |---|---|
 | `"<question>"` | The user's question in their words. |
 | `--top-k N` | Search hits, or Grep files, to keep (1 to 25, default 5). |
+| `--excerpt-lines N` | Longest excerpt printed per citation (1 to 300, default 60). Raise it to see whole functions. |
 | `--file-type T` | Only one file type: `c`, `cpp`, `hpp`, `h`, `layout`, `cfg`, `rvmat`, `xml`, `json` or `csv`. Use `cpp` for `config.cpp` questions and `c` for script questions. |
 | `--folder F` | Vanilla folder for the Grep fallback: `scripts`, `dz`, `gui`, `core`, `graphics` or `languagecore`. Repeat it for more than one. The default is `scripts` and `dz`. |
 | `--grep` | Skip RAG and use the Grep fallback. |
