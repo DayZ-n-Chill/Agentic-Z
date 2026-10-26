@@ -250,7 +250,10 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
   try {
     // Captured output is a pipe, where Python on Windows writes cp1252: a vanilla
     // line with a character such as U+2192 would crash the script mid-answer.
-    const result = await $.process.run(argv, { cwd, timeoutMs: 600_000, env: { PYTHONIOENCODING: 'utf-8' } })
+    // A working folder that no longer exists (a removed worktree, say) makes the
+    // spawn fail with ENOENT naming the program, so fall back to the Agentic-Z root.
+    const runCwd = (await $.fs.exists(cwd)) ? cwd : current.root
+    const result = await $.process.run(argv, { cwd: runCwd, timeoutMs: 600_000, env: { PYTHONIOENCODING: 'utf-8' } })
     const lines = (result.stdout + '\n' + result.stderr).trim().split(/\r?\n/)
     const failLine = lines.find((l: string) => l.startsWith('[FAIL]'))
     // An answer is the verdict, its reason or notes (the lines indented two
@@ -421,9 +424,12 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column" gap={1}>
         {latest && (
-          <Text color="suggestion">
-            Panel {latest} is out: run {UPDATE_COMMAND}, then restart Claude Code.
-          </Text>
+          <Box flexDirection="row" columnGap={2}>
+            <Text color="suggestion">
+              Panel {latest} is out: run {UPDATE_COMMAND}, then restart Claude Code.
+            </Text>
+            {btn('dismiss-update', 'Dismiss', 'u', () => update($, newVersion, () => null))}
+          </Box>
         )}
         {card(
           'Status',
@@ -506,13 +512,16 @@ export const register: Register = on => {
         {run &&
           card(
             run.ok ? `✓ ${run.action}: ${run.outcome}` : `✗ ${run.action}: ${run.outcome}`,
-            run.answer ? (
-              <Markdown key="answer" text={run.answer} />
-            ) : (
-              <Text dimColor>
-                Last: {run.action} {run.outcome} {run.detail}
-              </Text>
-            ),
+            <Box flexDirection="column" rowGap={1}>
+              {run.answer ? (
+                <Markdown key="answer" text={run.answer} />
+              ) : (
+                <Text dimColor>
+                  Last: {run.action} {run.outcome} {run.detail}
+                </Text>
+              )}
+              {btn('dismiss-run', 'Dismiss', 'x', () => update($, lastRun, () => null))}
+            </Box>,
             runColor,
           )}
       </Box>
