@@ -15,25 +15,43 @@ const PANE = {
 } as const
 
 // Stands in for the engine: a clone at C:\proj with an active mod, P: mounted,
-// DayZ not running. Every process call is recorded instead of run.
-function engine(on: any, runs: string[][]) {
+// DayZ not running, the installed panel 0.4.0 and the marketplace listing
+// `listed`. Every process call is recorded instead of run.
+function engine(on: any, runs: string[][], listed = '0.4.0', opened: string[] = []) {
   const files: Record<string, string> = {
     'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
     'C:\\proj\\.claude\\local-memory\\dayz-init-state.json': '{"last_intent": {"mod_name": "MyVest"}}',
     'P:\\': '',
   }
   on('command.register', () => ({ value: { command: 'dayz-panel' } }))
-  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.open', (_: unknown, e: any) => {
+    opened.push(e.id)
+    return { value: { isPlaced: true } }
+  })
   on('ui.toast', () => ({ value: undefined }))
   on('session.start', (_: unknown, e: any) => ({ cwd: e.cwd }))
   on('fs.exists', (_: unknown, e: any) => ({ value: e.path in files }))
-  on('fs.read', (_: unknown, e: any) => ({ value: files[e.path] }))
+  on('fs.read', (_: unknown, e: any) => ({ value: e.path.endsWith('plugin.json') ? '{"version": "0.4.0"}' : files[e.path] }))
+  on('http.fetch', () => ({
+    value: { status: 200, ok: true, headers: {}, text: JSON.stringify({ plugins: [{ name: 'agentic-z-panel', version: listed }] }) },
+  }))
   on('clock.now', () => ({ value: 0 }))
   on('process.run', (_: unknown, e: any) => {
     runs.push(e.argv)
     return { value: { exitCode: 0, stdout: 'INFO: No tasks are running.', stderr: '' } }
   })
 }
+
+test('/dayz-panel replies with the state, not just that it opened', async ($, on) => {
+  engine(on, [])
+  await $.session.start({ cwd: 'C:\\proj', surface: 'terminal', isInteractive: true })
+  const reply = await $.command.run({ command: 'dayz-panel', args: '' })
+  expect(reply.text).toContain('Agentic-Z panel opened.')
+  expect(reply.text).toContain('P: drive      mounted')
+  expect(reply.text).toContain('Active mod    MyVest')
+  expect(reply.text).toContain('Test session  stopped')
+  expect(reply.text).toContain('Agentic-Z     C:\\proj')
+})
 
 test('the pane shows the state and runs the build for the active mod', async ($, on) => {
   const runs: string[][] = []
@@ -95,7 +113,9 @@ test('the ask field runs /dayz-ask with the question and skips an empty one', as
   expect(asked().length).toBe(0)
   await ui.input({ key: 'ask', text: 'how does food spoil' })
   await ui.unmount()
-  expect(asked().map(argv => argv.join(' '))).toEqual(['python C:\\proj\\.claude\\skills\\dayz-ask\\ask.py how does food spoil'])
+  expect(asked().map(argv => argv.join(' '))).toEqual([
+    'python C:\\proj\\.claude\\skills\\dayz-ask\\ask.py --top-k 10 --excerpt-lines 60 how does food spoil',
+  ])
 })
 
 // --- the rest of the buttons, the guards and the plugin-cache fallback ------------------
@@ -384,6 +404,161 @@ test('an ask ERROR keeps its reason line in the pane', async ($, on) => {
   await ui.unmount()
 })
 
+test('an ask with evidence shows the model answer as markdown', async ($, on) => {
+  const runs: string[][] = []
+  const prompts: string[] = []
+  engineWith(on, runs, {
+    result: argv =>
+      argv.some(a => a.endsWith('ask.py'))
+        ? { exitCode: 0, stdout: 'EVIDENCE 1 citation(s) via rag\n[1] P:\\scripts\\bleed.c:1-3  verified\n', stderr: '' }
+        : undefined,
+  })
+  on('model.complete', (_: unknown, e: any) => {
+    prompts.push(e.prompt)
+    return { value: { isAnswered: true, text: 'Bleeding drains blood each tick [1].', usage: {} } }
+  })
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  expect(prompts[0]).toContain('how does bleeding work')
+  expect(prompts[0]).toContain('P:\\scripts\\bleed.c:1-3')
+  expect((await ui.find({ type: 'Markdown' }))?.text).toBe('Bleeding drains blood each tick [1].')
+  await ui.unmount()
+})
+
+test('Deep dive asks again with more and longer citations and a longer answer', async ($, on) => {
+  const runs: string[][] = []
+  const calls: any[] = []
+  engineWith(on, runs, {
+    result: argv =>
+      argv.some(a => a.endsWith('ask.py'))
+        ? { exitCode: 0, stdout: 'EVIDENCE 1 citation(s) via rag\n[1] P:\\scripts\\bleed.c:1-3  verified\n', stderr: '' }
+        : undefined,
+  })
+  on('model.complete', (_: unknown, e: any) => {
+    calls.push(e)
+    return { value: { isAnswered: true, text: `Answer ${calls.length} [1].`, usage: {} } }
+  })
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  await ui.press({ key: 'deepdive' })
+  const asked = runs.filter(argv => argv.some(a => a.endsWith('ask.py'))).map(argv => argv.slice(2).join(' '))
+  expect(asked).toEqual([
+    '--top-k 10 --excerpt-lines 60 how does bleeding work',
+    '--top-k 25 --excerpt-lines 200 how does bleeding work',
+  ])
+  expect(calls[0].system).toContain('under 400 words')
+  expect(calls[1].system).toContain('under 900 words')
+  expect(calls[1].maxTokens).toBeGreaterThan(calls[0].maxTokens)
+  expect((await ui.find({ type: 'Markdown' }))?.text).toBe('Answer 2 [1].')
+  // A deep dive is already the long answer: no second Deep dive button.
+  expect(await ui.find({ key: 'deepdive' })).toBeFalsy()
+  await ui.unmount()
+})
+
+// A store the test can seed and read back, as $.store keeps picks across sessions.
+function storeIn(on: any, store: Record<string, unknown>) {
+  on('store.get', (_: unknown, e: any) => ({ value: store[e.key] }))
+  on('store.set', (_: unknown, e: any) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+}
+
+const askEvidence = (argv: string[]) =>
+  argv.some(a => a.endsWith('ask.py'))
+    ? { exitCode: 0, stdout: 'EVIDENCE 1 citation(s) via rag\n[1] P:\\scripts\\bleed.c:1-3  verified\n', stderr: '' }
+    : undefined
+
+test('the ask pickers set sources, excerpt length and answer length, and are kept for the next session', async ($, on) => {
+  const runs: string[][] = []
+  const calls: any[] = []
+  const store: Record<string, unknown> = {}
+  engineWith(on, runs, { result: askEvidence })
+  storeIn(on, store)
+  on('model.complete', (_: unknown, e: any) => {
+    calls.push(e)
+    return { value: { isAnswered: true, text: 'Answer [1].', usage: {} } }
+  })
+  const ui = await openPane($)
+  await ui.select({ key: 'ask-topk', value: '20' })
+  await ui.select({ key: 'ask-lines', value: '150' })
+  await ui.select({ key: 'ask-words', value: '900' })
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  await ui.unmount()
+  const asked = runs.filter(argv => argv.some(a => a.endsWith('ask.py'))).map(argv => argv.slice(2).join(' '))
+  expect(asked).toEqual(['--top-k 20 --excerpt-lines 150 how does bleeding work'])
+  expect(calls[0].system).toContain('under 900 words')
+  expect(store.askSettings).toEqual({ topK: '20', excerptLines: '150', words: '900' })
+
+  // A new session starts from the stored picks.
+  const again = await openPane($)
+  await again.input({ key: 'ask', text: 'how does bleeding work' })
+  await again.unmount()
+  expect(runs.filter(argv => argv.some(a => a.endsWith('ask.py'))).map(argv => argv.slice(2, 6).join(' '))[1]).toBe(
+    '--top-k 20 --excerpt-lines 150',
+  )
+})
+
+test('a stored pick off the list goes back to its default, so the limits hold', async ($, on) => {
+  const runs: string[][] = []
+  engineWith(on, runs, { result: askEvidence })
+  storeIn(on, { askSettings: { topK: '500', excerptLines: '100', words: '99999' } })
+  on('model.complete', (_: unknown, e: any) => {
+    expect(e.system).toContain('under 400 words')
+    return { value: { isAnswered: true, text: 'Answer [1].', usage: {} } }
+  })
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  await ui.unmount()
+  const asked = runs.filter(argv => argv.some(a => a.endsWith('ask.py'))).map(argv => argv.slice(2).join(' '))
+  expect(asked).toEqual(['--top-k 10 --excerpt-lines 100 how does bleeding work'])
+})
+
+test('Continue in chat puts the question and answer in the prompt box without sending', async ($, on) => {
+  const runs: string[][] = []
+  const toasts: string[] = []
+  const filled: string[] = []
+  engineWith(on, runs, {
+    toasts,
+    result: argv =>
+      argv.some(a => a.endsWith('ask.py'))
+        ? { exitCode: 0, stdout: 'EVIDENCE 1 citation(s) via rag\n[1] P:\\scripts\\bleed.c:1-3  verified\n', stderr: '' }
+        : undefined,
+  })
+  on('model.complete', () => ({ value: { isAnswered: true, text: 'Bleeding drains blood [1].', usage: {} } }))
+  on('prompt.fill', (_: unknown, e: any) => {
+    filled.push(e.text)
+    return { isFilled: true, text: e.text }
+  })
+  on('prompt.submit', () => {
+    throw new Error('Continue in chat must not send the prompt')
+  })
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  await ui.press({ key: 'continue' })
+  expect(filled.length).toBe(1)
+  expect(filled[0]).toContain('how does bleeding work')
+  expect(filled[0]).toContain('Bleeding drains blood [1].')
+  expect(toasts).toContain('Added to the prompt box: add your follow-up and press Enter.')
+  await ui.unmount()
+})
+
+test('an ask whose model call fails still shows the citations', async ($, on) => {
+  const runs: string[][] = []
+  engineWith(on, runs, {
+    result: argv =>
+      argv.some(a => a.endsWith('ask.py'))
+        ? { exitCode: 0, stdout: 'EVIDENCE 1 citation(s) via rag\n[1] P:\\scripts\\bleed.c:1-3  verified\n', stderr: '' }
+        : undefined,
+  })
+  on('model.complete', () => ({ value: { isAnswered: false, reason: 'empty-reply', usage: {} } }))
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  expect(await ui.find({ type: 'Markdown' })).toBeFalsy()
+  expect((await ui.find({ type: 'Text', text: /Last:/ }))?.text).toContain('[1] P:\\scripts\\bleed.c:1-3')
+  await ui.unmount()
+})
+
 test('an ask that finds nothing says so instead of failed', async ($, on) => {
   const runs: string[][] = []
   const toasts: string[] = []
@@ -440,4 +615,178 @@ test('a status check that fails at session start is not an unhandled rejection',
   const runs: string[][] = []
   engineWith(on, runs, { clockFails: () => true })
   await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
+})
+
+async function startWithMarketplace($: any, on: any, listed: string) {
+  engine(on, [], listed)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'terminal', isInteractive: true })
+  return $.command.run({ command: 'dayz-panel', args: '' })
+}
+
+test('a newer panel in the marketplace shows how to update', async ($, on) => {
+  const reply = await startWithMarketplace($, on, '0.10.0')
+  expect(reply.text).toContain('0.10.0 is out: run claude plugin update agentic-z-panel@dayz-n-chill')
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /Panel 0\.10\.0 is out/ })).toBeTruthy()
+  await ui.unmount()
+})
+
+test('the same version in the marketplace shows no update notice', async ($, on) => {
+  const reply = await startWithMarketplace($, on, '0.4.0')
+  expect(reply.text).not.toContain('is out')
+})
+
+test('the start card checks setup, adds a server, and creates or imports a mod', async ($, on) => {
+  const runs: string[][] = []
+  engine(on, runs)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'terminal', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await ui.press({ key: 'preflight' })
+  await ui.press({ key: 'addserver' })
+  await ui.input({ key: 'newmod', text: '   ' })
+  await ui.input({ key: 'newmod', text: 'MyVest' })
+  await ui.input({ key: 'newmod', text: 'MyCrate by Brian' })
+  await ui.input({ key: 'importmod', text: 'D:\\mods\\OldVest' })
+  await ui.unmount()
+  const lines = runs.map(argv => argv.join(' ')).filter(l => l.startsWith('python C:'))
+  expect(lines).toEqual([
+    'python C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py',
+    'python C:\\proj\\.claude\\skills\\dayz-add-server\\add_server.py chernarus',
+    'python C:\\proj\\.claude\\skills\\dayz-new-mod\\new_mod.py MyVest',
+    'python C:\\proj\\.claude\\skills\\dayz-new-mod\\new_mod.py MyCrate --author Brian',
+    'python C:\\proj\\.claude\\skills\\dayz-import-mod\\import_mod.py --source D:\\mods\\OldVest',
+  ])
+})
+
+test('the button above the prompt opens the panel', async ($, on) => {
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>engine</Text>
+  })
+  const opened: string[] = []
+  engine(on, [], '0.4.0', opened)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
+  const band = await $.ui.mount({ plugin: 'agentic-z-panel', component: 'AbovePrompt', surface: 'desktop', props: { hasSurvey: false } } as any)
+  await band.press({ key: 'open-panel' })
+  await band.unmount()
+  // Once at session start, once for the press.
+  expect(opened).toEqual(['agentic-z', 'agentic-z'])
+})
+
+test('the bands beneath the button still draw', async ($, on) => {
+  // Stands for another mod's band, such as the status strip.
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>status strip</Text>
+  })
+  engine(on, [], '0.4.0', [])
+  await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
+  const band = await $.ui.mount({ plugin: 'agentic-z-panel', component: 'AbovePrompt', surface: 'desktop', props: { hasSurvey: false } } as any)
+  expect((await band.find({ type: 'Text', text: /status strip/ }))?.text).toBe('status strip')
+  await band.unmount()
+})
+
+test('a new session opens the panel without /dayz-panel', async ($, on) => {
+  const opened: string[] = []
+  engine(on, [], '0.4.0', opened)
+  await $.session.start({ cwd: 'C:\\proj', surface: 'desktop', isInteractive: true })
+  expect(opened).toEqual(['agentic-z'])
+})
+
+test('a session folder that no longer exists runs the script from the Agentic-Z root', async ($, on) => {
+  const cwds: Record<string, string> = {}
+  engineWith(on, [], {
+    files: {
+      'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
+      'C:\\proj\\workspace\\MyVest': '',
+    },
+    seen: e => {
+      if (e.argv[0] === 'cmd') cwds[e.argv[2]] = e.init.cwd
+    },
+  })
+  await $.session.start({ cwd: 'C:\\proj\\workspace\\Gone', surface: 'desktop', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await ui.press({ key: 'stop' })
+  await ui.unmount()
+  expect(cwds['C:\\proj\\.claude\\skills\\dayz-stop-test\\stop_test.bat']).toBe('C:\\proj')
+
+  await $.session.start({ cwd: 'C:\\proj\\workspace\\MyVest', surface: 'desktop', isInteractive: true })
+  await $.command.run({ command: 'dayz-panel', args: '' })
+  const again = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await again.press({ key: 'stop' })
+  await again.unmount()
+  expect(cwds['C:\\proj\\.claude\\skills\\dayz-stop-test\\stop_test.bat']).toBe('C:\\proj\\workspace\\MyVest')
+})
+
+test('Dismiss clears the last run card and the update notice', async ($, on) => {
+  engine(on, [], '9.9.9')
+  const ui = await openPane($)
+  await ui.press({ key: 'stop' })
+  expect(await ui.find({ type: 'Text', text: /Last:/ })).toBeTruthy()
+  await ui.press({ key: 'dismiss-run' })
+  expect(await ui.find({ type: 'Text', text: /Last:/ })).toBeFalsy()
+  expect(await ui.find({ type: 'Text', text: /9.9.9 is out/ })).toBeTruthy()
+  await ui.press({ key: 'dismiss-update' })
+  expect(await ui.find({ type: 'Text', text: /9.9.9 is out/ })).toBeFalsy()
+  await ui.unmount()
+})
+
+test('an answer opens on the Answer tab and a build afterwards does not wipe it', async ($, on) => {
+  engineWith(on, [], { result: askEvidence })
+  on('model.complete', () => ({ value: { isAnswered: true, text: 'Bleeding drains blood [1].', usage: {} } }))
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  expect((await ui.find({ type: 'Markdown' }))?.text).toBe('Bleeding drains blood [1].')
+  expect(await ui.find({ key: 'build' })).toBeFalsy()
+  await ui.press({ key: 'tab-panel' })
+  await ui.press({ key: 'build' })
+  expect((await ui.find({ type: 'Text', text: /Last:/ }))?.text).toContain('Last: build done')
+  await ui.press({ key: 'tab-answer' })
+  expect((await ui.find({ type: 'Markdown' }))?.text).toBe('Bleeding drains blood [1].')
+  await ui.unmount()
+})
+
+// An environment the test can read back, as $.env.set changes the process's own.
+function envIn(on: any, env: Record<string, string>) {
+  on('env.get', (_: unknown, e: any) => ({ value: env[e.name] }))
+  on('env.set', (_: unknown, e: any) => {
+    if (e.value === undefined) delete env[e.name]
+    else env[e.name] = e.value
+    return { value: {} }
+  })
+}
+
+test('the Keys tab saves a key to the store and environment, shows only its tail, and clears it', async ($, on) => {
+  const store: Record<string, unknown> = {}
+  const env: Record<string, string> = {}
+  engineWith(on, [])
+  storeIn(on, store)
+  envIn(on, env)
+  const ui = await openPane($)
+  await ui.press({ key: 'tab-keys' })
+  expect((await ui.find({ type: 'Text', text: /VOYAGE_API_KEY:/ }))?.text).toContain('not set')
+  await ui.input({ key: 'key-VOYAGE_API_KEY', text: '  pa-secret-1234  ' })
+  expect(store.apiKeys).toEqual({ VOYAGE_API_KEY: 'pa-secret-1234' })
+  expect(env.VOYAGE_API_KEY).toBe('pa-secret-1234')
+  const shown = (await ui.find({ type: 'Text', text: /VOYAGE_API_KEY:/ }))?.text
+  expect(shown).toContain('set here (…1234)')
+  expect(shown).not.toContain('pa-secret')
+  await ui.press({ key: 'clear-VOYAGE_API_KEY' })
+  expect(store.apiKeys).toEqual({})
+  expect(env.VOYAGE_API_KEY).toBeUndefined()
+  await ui.unmount()
+})
+
+test('a saved key goes back into the environment when a new session starts', async ($, on) => {
+  engineWith(on, [])
+  const env: Record<string, string> = {}
+  storeIn(on, { apiKeys: { TYPESAFE_API_KEY: 'ts-abcd' } })
+  envIn(on, env)
+  const ui = await openPane($)
+  expect(env.TYPESAFE_API_KEY).toBe('ts-abcd')
+  await ui.press({ key: 'tab-keys' })
+  expect((await ui.find({ type: 'Text', text: /TYPESAFE_API_KEY:/ }))?.text).toContain('set here (…abcd)')
+  await ui.unmount()
 })

@@ -1,16 +1,85 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { PanelRun, PanelStatus } from '../types'
+import type { AskSettings, KeyStatus, PanelRun, PanelStatus, PanelTab } from '../types'
 
 // One pane with the DayZ state and buttons that run Agentic-Z's skill scripts
-// directly. Nothing here asks the model for anything, so these cost no tokens.
+// directly. The buttons cost no tokens; only the ask field calls the model, to
+// turn the cited vanilla code into a plain-English answer.
 const PANE = 'agentic-z'
 const status = atom({ plugin: 'agentic-z-panel', key: 'status' } as const, null)
 const lastRun = atom({ plugin: 'agentic-z-panel', key: 'lastRun' } as const, null)
 const busy = atom({ plugin: 'agentic-z-panel', key: 'busy' } as const, null)
+const newVersion = atom({ plugin: 'agentic-z-panel', key: 'newVersion' } as const, null)
+const askSettings = atom({ plugin: 'agentic-z-panel', key: 'askSettings' } as const, {
+  topK: '10',
+  excerptLines: '60',
+  words: '400',
+})
+// An ask's answer has its own atom, so a build after it does not wipe it.
+const lastAnswer = atom({ plugin: 'agentic-z-panel', key: 'lastAnswer' } as const, null)
+const tab = atom({ plugin: 'agentic-z-panel', key: 'tab' } as const, 'panel' as PanelTab)
+const keys = atom({ plugin: 'agentic-z-panel', key: 'keys' } as const, {} as KeyStatus)
+
+// The keys the Keys tab sets. They stay on this machine: in the panel's own
+// store under the Claude Code config folder, and in this process's environment,
+// so the skill scripts, the agent's commands and MCP servers started after read them.
+const KEY_LIST = [
+  { name: 'VOYAGE_API_KEY', label: 'Voyage AI', what: 'vanilla source search: the Ask tab, /dayz-ask and the dayz-rag tools' },
+  { name: 'TYPESAFE_API_KEY', label: 'TypeSafe', what: 'Jev, the routing model /dayz-route asks' },
+  { name: 'GITHUB_TOKEN', label: 'GitHub token', what: 'a higher GitHub rate limit for /dayz-search-download; git and gh use it too' },
+] as const
+type KeyName = (typeof KEY_LIST)[number]['name']
+const KEYS_STORE = 'apiKeys'
+
+// $.env takes a variable name only as a string literal, so each name is spelled out.
+const envGet = ($: any, name: KeyName): Promise<string | undefined> => {
+  if (name === 'VOYAGE_API_KEY') return $.env.get('VOYAGE_API_KEY')
+  if (name === 'TYPESAFE_API_KEY') return $.env.get('TYPESAFE_API_KEY')
+  return $.env.get('GITHUB_TOKEN')
+}
+const envSet = ($: any, name: KeyName, value: string | undefined): Promise<{ deny?: string }> => {
+  if (name === 'VOYAGE_API_KEY') return $.env.set('VOYAGE_API_KEY', value)
+  if (name === 'TYPESAFE_API_KEY') return $.env.set('TYPESAFE_API_KEY', value)
+  return $.env.set('GITHUB_TOKEN', value)
+}
+
+const storedKeys = async ($: any): Promise<Partial<Record<KeyName, string>>> => {
+  const saved = await $.store.get(KEYS_STORE).catch(() => null)
+  return saved && typeof saved === 'object' ? saved : {}
+}
+
+// The tab shows where each key comes from and its last four characters, never the key.
+async function readKeys($: any) {
+  const saved = await storedKeys($)
+  const next: KeyStatus = {}
+  for (const { name } of KEY_LIST) {
+    const value = saved[name] ?? (await envGet($, name).catch(() => undefined))
+    next[name] = value ? { source: saved[name] ? 'panel' : 'environment', tail: value.slice(-4) } : null
+  }
+  await update($, keys, () => next)
+}
+
+// value undefined clears the key: from the store and from the environment.
+async function saveKey($: any, name: KeyName, value: string | undefined) {
+  const set = await envSet($, name, value)
+  if (set?.deny) {
+    $.ui.toast(`${name}: not set (${set.deny})`)
+    return
+  }
+  const saved = await storedKeys($)
+  if (value) saved[name] = value
+  else delete saved[name]
+  await $.store.set(KEYS_STORE, saved)
+  await readKeys($)
+  $.ui.toast(value ? `${name} saved on this machine.` : `${name} cleared.`)
+}
 
 const SKILL = {
+  preflight: ['dayz-preflight', 'preflight.py'],
+  newmod: ['dayz-new-mod', 'new_mod.py'],
+  importmod: ['dayz-import-mod', 'import_mod.py'],
+  addserver: ['dayz-add-server', 'add_server.py'],
   mount: ['dayz-workdrive', 'mount.py'],
   build: ['dayz-build-pbo', 'build.py'],
   deploy: ['dayz-deploy-pbo', 'deploy.py'],
@@ -23,7 +92,50 @@ const SKILL = {
   releasepack: ['dayz-release-pack', 'release_pack.py'],
   health: ['dayz-health', 'health.py'],
   ask: ['dayz-ask', 'ask.py'],
+  deepdive: ['dayz-ask', 'ask.py'],
 } as const
+
+// What a person may pick before an ask. The lists are the limits: more
+// sources, longer excerpts and longer answers are slower and cost more tokens,
+// so the top of each list is as far as an ask goes. Deep dive is that top.
+const ASK_CHOICES = {
+  topK: [
+    { value: '5', label: '5' },
+    { value: '10', label: '10' },
+    { value: '15', label: '15' },
+    { value: '20', label: '20' },
+    { value: '25', label: '25 (most)' },
+  ],
+  excerptLines: [
+    { value: '60', label: '60 lines' },
+    { value: '100', label: '100 lines' },
+    { value: '150', label: '150 lines' },
+    { value: '200', label: '200 lines (most)' },
+  ],
+  words: [
+    { value: '300', label: 'Short' },
+    { value: '400', label: 'Normal' },
+    { value: '900', label: 'Long' },
+  ],
+} as const
+const ASK_DEFAULTS: AskSettings = { topK: '10', excerptLines: '60', words: '400' }
+const DEEP_DIVE: AskSettings = { topK: '25', excerptLines: '200', words: '900' }
+const STORE_KEY = 'askSettings'
+const isAsk = (action: string) => action === 'ask' || action === 'deepdive'
+
+// A stored pick from an older version may no longer be on the list: each field
+// off the list goes back to its default.
+const allowed = (saved: any): AskSettings => {
+  const pick = (field: keyof AskSettings) =>
+    ASK_CHOICES[field].some(o => o.value === saved?.[field]) ? saved[field] : ASK_DEFAULTS[field]
+  return { topK: pick('topK'), excerptLines: pick('excerptLines'), words: pick('words') }
+}
+
+// The map the "Add test server" button sets up; /dayz-add-server takes others.
+const DEFAULT_SERVER = 'chernarus'
+
+// "MyVest" or, for a first mod with no cached author, "MyVest by YourName".
+const NEW_MOD_INPUT = /^(\S+)(?:\s+by\s+(.+))?$/i
 
 // How far back the logs button reads, and how long it then watches. A button
 // must return, so it reads the recent session lines once instead of following.
@@ -128,7 +240,33 @@ async function runAction($: any, cwd: string, action: string, question?: string)
   }
 }
 
-const PYTHON_MISSING = 'Python 3 not found: install it from python.org or add python/py to PATH'
+const explainSystem = (words: number) => `You explain how vanilla DayZ works to a mod author, using only the cited Enforce Script and config excerpts you are given.
+Answer in plain English first: what happens, when, and why, as a short overview and then the key steps or numbers.
+Name the classes, methods and constants that matter in backticks, and cite where each fact comes from as [n] (path:line) using the citation numbers given.
+If the excerpts do not cover part of the question, say so plainly instead of guessing.
+Use short markdown sections or bullets. Keep it under ${words} words.`
+
+// Turns ask.py's citations into an answer, or null when the model gave none:
+// the citations still show, so a failed call loses nothing. The excerpts can be
+// long; the model needs the evidence, not all of it.
+async function explain($: any, settings: AskSettings, question: string, evidence: string): Promise<{ answer?: string; why?: string }> {
+  const words = Number(settings.words)
+  const evidenceChars = Math.min(150_000, Number(settings.topK) * Number(settings.excerptLines) * 100)
+  try {
+    const result = await $.model.complete({
+      model: 'sonnet',
+      system: explainSystem(words),
+      prompt: `Question: ${question}\n\nEvidence from /dayz-ask:\n${evidence.slice(0, evidenceChars)}`,
+      maxTokens: words * 5,
+    })
+    if (result.isAnswered) return { answer: result.text.trim() }
+    return { why: [result.reason, result.status, result.error].filter(Boolean).join(' ') }
+  } catch (err) {
+    return { why: String(err) }
+  }
+}
+
+const PYTHON_MISSING ='Python 3 not found: install it from python.org or add python/py to PATH'
 
 // The interpreter the scripts\dayz wrappers use: python when it runs, else the py
 // launcher. Running it, not just finding it, skips the Microsoft Store alias,
@@ -144,13 +282,23 @@ async function findPython($: any): Promise<string | null> {
   return null
 }
 
+// An ask's result goes to the Answer tab and shows it; every other run stays on the Panel tab.
+async function record($: any, run: NonNullable<PanelRun>) {
+  if (isAsk(run.action)) {
+    await update($, lastAnswer, () => run)
+    await update($, tab, () => 'answer')
+  } else {
+    await update($, lastRun, () => run)
+  }
+}
+
 async function runNow($: any, cwd: string, action: string, question?: string) {
   // Read the state afresh: /dayz-init may have run since the pane last refreshed.
   let current: PanelStatus
   try {
     current = await refresh($, cwd)
   } catch (err) {
-    await update($, lastRun, () => ({ action, ok: false, outcome: 'failed', detail: `status check failed: ${err}` }))
+    await record($, { action, ok: false, outcome: 'failed', detail: `status check failed: ${err}` })
     $.ui.toast(`${action}: failed (status check: ${err})`)
     return
   }
@@ -159,13 +307,14 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
     return
   }
   let argv: string[]
+  let settings: AskSettings | undefined
   if (action === 'stop') {
     argv = ['cmd', '/c', join(current.root, '.claude', 'skills', 'dayz-stop-test', 'stop_test.bat')]
   } else {
     const [skill, script] = SKILL[action as keyof typeof SKILL]
     const python = await findPython($)
     if (!python) {
-      await update($, lastRun, () => ({ action, ok: false, outcome: 'failed', detail: PYTHON_MISSING }))
+      await record($, { action, ok: false, outcome: 'failed', detail: PYTHON_MISSING })
       $.ui.toast(`${action}: failed (${PYTHON_MISSING})`)
       return
     }
@@ -173,12 +322,29 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
     if (action === 'gatebuild') argv.push('build')
     if (action === 'gateingame') argv.push('ingame')
     const needsMod = ['build', 'deploy', 'gatebuild', 'gateingame', 'launch', 'releasepack', 'health'].includes(action)
-    if (action === 'ask') {
+    if (isAsk(action)) {
       if (!question?.trim()) {
         $.ui.toast('Type a question about vanilla DayZ first.')
         return
       }
-      argv.push(question.trim())
+      settings = action === 'deepdive' ? DEEP_DIVE : await read($, askSettings)
+      argv.push('--top-k', settings.topK, '--excerpt-lines', settings.excerptLines, question.trim())
+    } else if (action === 'newmod') {
+      const match = question?.trim().match(NEW_MOD_INPUT)
+      if (!match) {
+        $.ui.toast('Type a mod name, such as MyVest (first mod: MyVest by YourName).')
+        return
+      }
+      argv.push(match[1])
+      if (match[2]) argv.push('--author', match[2].trim())
+    } else if (action === 'importmod') {
+      if (!question?.trim()) {
+        $.ui.toast('Type the mod folder path or a GitHub link first.')
+        return
+      }
+      argv.push('--source', question.trim())
+    } else if (action === 'addserver') {
+      argv.push(DEFAULT_SERVER)
     } else if (action === 'logwatch') {
       argv.push('--since', LOGWATCH_SINCE_MINUTES, '--duration', LOGWATCH_SECONDS)
       if (current.mod) argv.push('--mod', current.mod)
@@ -196,25 +362,67 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
   try {
     // Captured output is a pipe, where Python on Windows writes cp1252: a vanilla
     // line with a character such as U+2192 would crash the script mid-answer.
-    const result = await $.process.run(argv, { cwd, timeoutMs: 600_000, env: { PYTHONIOENCODING: 'utf-8' } })
+    // A working folder that no longer exists (a removed worktree, say) makes the
+    // spawn fail with ENOENT naming the program, so fall back to the Agentic-Z root.
+    const runCwd = (await $.fs.exists(cwd)) ? cwd : current.root
+    const result = await $.process.run(argv, { cwd: runCwd, timeoutMs: 600_000, env: { PYTHONIOENCODING: 'utf-8' } })
     const lines = (result.stdout + '\n' + result.stderr).trim().split(/\r?\n/)
     const failLine = lines.find((l: string) => l.startsWith('[FAIL]'))
     // An answer is the verdict, its reason or notes (the lines indented two
     // spaces under it) and the citation headers; everything else is one line.
-    const detail =
-      action === 'ask'
-        ? lines.filter((l: string) => /^(EVIDENCE|NONE|ERROR|\[\d+\]| {2}\S)/.test(l)).slice(0, 8).join('\n')
-        : (failLine ?? lines[lines.length - 1] ?? '')
+    const detail = isAsk(action)
+      ? lines.filter((l: string) => /^(EVIDENCE|NONE|ERROR|\[\d+\]| {2}\S)/.test(l)).slice(0, 8).join('\n')
+      : (failLine ?? lines[lines.length - 1] ?? '')
     // ask.py exits 1 for NONE: the search worked and found nothing.
-    const nothingFound = action === 'ask' && result.exitCode === 1
+    const nothingFound = isAsk(action) && result.exitCode === 1
     const ok = result.exitCode === 0 || nothingFound
     run = { action, ok, outcome: nothingFound ? 'nothing found' : ok ? 'done' : 'failed', detail }
+    if (isAsk(action)) run.question = question!.trim()
+    if (isAsk(action) && result.exitCode === 0) {
+      await update($, busy, () => `${action} (writing the answer)`)
+      const { answer, why } = await explain($, settings!, question!.trim(), result.stdout)
+      run = answer ? { ...run, answer } : { ...run, detail: `(no explanation: ${why})\n${detail}` }
+    }
   } catch (err) {
     run = { action, ok: false, outcome: 'failed', detail: String(err) }
   }
-  await update($, lastRun, () => run)
+  await record($, run)
   $.ui.toast(`${action}: ${run.outcome}`)
   await refreshQuietly($, cwd)
+}
+
+// Hands the answer to the main conversation, which can read whole files and
+// take follow-up questions. It fills the prompt box rather than sending, so the
+// person adds their own follow-up first.
+async function continueInChat($: any, run: NonNullable<PanelRun>) {
+  const text =
+    `Explain in more depth how vanilla DayZ handles this: ${run.question}\n\n` +
+    `The Agentic-Z panel's short answer, from /dayz-ask citations:\n\n${run.answer}\n\n` +
+    'Read the cited vanilla files in full, with /dayz-ask or the dayz-rag tools for anything more, ' +
+    'and fill in what the short answer could not cover.'
+  const filled = await $.prompt.fill({ text })
+  $.ui.toast(filled.isFilled ? 'Added to the prompt box: add your follow-up and press Enter.' : 'Could not fill the prompt box.')
+}
+
+// The marketplace's own list, so the panel can tell its users a newer version
+// is out; a plugin install does not update itself unless auto-update is on.
+const MARKETPLACE_URL = 'https://raw.githubusercontent.com/DayZ-n-Chill/Agentic-Z/main/.claude-plugin/marketplace.json'
+const UPDATE_COMMAND = 'claude plugin update agentic-z-panel@dayz-n-chill'
+
+// The newer version the marketplace lists, or null. Offline, a bad reply or a
+// local copy newer than main all mean no notice, never an error.
+async function checkForUpdate($: any) {
+  try {
+    const mine = JSON.parse(await $.fs.read(join(trimPath($.plugin.root), '.claude-plugin', 'plugin.json'))).version
+    const res = await $.http.fetch(MARKETPLACE_URL)
+    if (!res.ok) return
+    const latest = JSON.parse(res.text).plugins?.find((p: { name: string }) => p.name === 'agentic-z-panel')?.version
+    if (!latest || latest.localeCompare(mine, undefined, { numeric: true }) <= 0) return
+    await update($, newVersion, () => latest)
+    $.ui.toast(`Agentic-Z panel ${latest} is out: run ${UPDATE_COMMAND}`)
+  } catch {
+    // no notice
+  }
 }
 
 // A status refresh nobody waits on must not throw: a failed process call
@@ -228,60 +436,350 @@ export const register: Register = on => {
     cwd = e.cwd
     await $.command.register({ name: 'dayz-panel', description: 'Open the Agentic-Z panel' })
     void refreshQuietly($, cwd)
+    void checkForUpdate($)
+    // The last picks carry over to the next session.
+    void $.store
+      .get(STORE_KEY)
+      .then((saved: unknown) => update($, askSettings, () => allowed(saved)))
+      .catch(() => null)
+    // Keys saved on the Keys tab go back into the environment before anything runs.
+    const saved = await storedKeys($)
+    for (const { name } of KEY_LIST) {
+      if (saved[name]) await envSet($, name, saved[name]).catch(() => null)
+    }
+    void readKeys($).catch(() => null)
+    await update($, tab, () => 'panel')
+    // Every session opens the panel itself: nobody should have to type
+    // /dayz-panel to get it. A narrow terminal holds it until there is room.
+    void $.ui.open({ id: PANE, title: 'Agentic-Z' }).catch(() => null)
     return next(e)
   })
 
+  // One click above the prompt opens the pane, so nobody has to type /dayz-panel.
+  // It steps aside while a survey uses the band.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (e.props.hasSurvey) return next(e)
+    const { Box, Button } = $.ui.resolve(e)
+    // Other mods' bands (the status strip) draw beneath this button, so they must still run.
+    const below = await next(e)
+    return (
+      <Box key="open-panel-band" flexDirection="column">
+        <Button
+          key="open-panel"
+          label="Agentic-Z panel"
+          plain
+          dimColor
+          hover={{ backgroundColor: 'subtle' }}
+          onPress={async () => {
+            await refreshQuietly($, cwd)
+            await $.ui.open({ id: PANE, title: 'Agentic-Z' })
+          }}
+        />
+        {below}
+      </Box>
+    )
+  })
+
   on('command.run', { command: 'dayz-panel' }, async $ => {
-    await refresh($, cwd)
+    const s = await refresh($, cwd)
+    const run = await read($, lastRun)
     await $.ui.open({ id: PANE, title: 'Agentic-Z' })
-    return { text: 'Agentic-Z panel opened.' }
+    const lines = [
+      'Agentic-Z panel opened.',
+      `  P: drive      ${s.isPMounted ? 'mounted' : 'not mounted (press p in the panel)'}`,
+      `  Active mod    ${s.mod ?? 'none (run /dayz-init)'}`,
+      `  Test session  ${s.isDiagRunning ? 'running' : 'stopped'}`,
+      `  Agentic-Z     ${s.root ?? 'not found in this project or the plugin cache'}`,
+    ]
+    if (run) lines.push(`  Last run      ${run.action} ${run.outcome}`)
+    const latest = await read($, newVersion)
+    if (latest) lines.push(`  Update        ${latest} is out: run ${UPDATE_COMMAND}, then restart`)
+    return { text: lines.join('\n') }
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Button, Input, Text } = $.ui.resolve(e)
+    const { Box, Button, Input, Markdown, Select, Text } = $.ui.resolve(e)
     const s = await read($, status)
     const run = await read($, lastRun)
+    const picks = await read($, askSettings)
+    const choose = (field: keyof AskSettings) => async (value: string) => {
+      const next = allowed({ ...picks, [field]: value })
+      await update($, askSettings, () => next)
+      await $.store.set(STORE_KEY, next)
+    }
     const working = await read($, busy)
+    const latest = await read($, newVersion)
     const press = (action: string) => () => runAction($, cwd, action)
+
+    // A titled card; the terminal draws it as a rounded frame, the app as a panel.
+    // A plain card's frame is dimmed so it groups without competing with the
+    // buttons; the last run's green or red frame stays at full strength.
+    const card = (title: string, children: any, borderColor = 'subtle') => (
+      <Box
+        flexDirection="column"
+        borderStyle="round"
+        borderColor={borderColor}
+        borderDimColor={borderColor === 'subtle'}
+        paddingX={1}
+      >
+        <Text weight="bold" size="heading" color="claude">
+          {title}
+        </Text>
+        {children}
+      </Box>
+    )
+    // One status line with a colored dot: green when good, red when not.
+    const light = (isGood: boolean, text: string) => (
+      <Box flexDirection="row" gap={1}>
+        <Text color={isGood ? 'success' : 'error'}>●</Text>
+        <Text>{text}</Text>
+      </Box>
+    )
+    // Plain buttons have no filled chrome, so a row of them reads as separate
+    // controls instead of one gray block; each lights gray under the pointer
+    // (its own hover scope). Plain draws the hotkey itself: "b: Build PBO".
+    const btn = (action: string, label: string, hotkey: string | undefined, onPress = press(action)) => (
+      <Button
+        key={action}
+        label={label}
+        hotkey={hotkey}
+        plain
+        hover={{ scope: `btn-${action}`, backgroundColor: 'subtle' }}
+        onPress={onPress}
+      />
+    )
+    // A labelled row: the fixed-width label lines the rows of a card up, and
+    // the buttons wrap under each other on a narrow pane.
+    const row = (label: string, children: any) => (
+      <Box flexDirection="row" columnGap={1}>
+        <Box width={7} flexShrink={0}>
+          <Text dimColor>{label}</Text>
+        </Box>
+        <Box flexDirection="row" flexWrap="wrap" flexGrow={1} columnGap={2} rowGap={1}>
+          {children}
+        </Box>
+      </Box>
+    )
+    const rows = (children: any) => (
+      <Box flexDirection="column" rowGap={1} paddingTop={1}>
+        {children}
+      </Box>
+    )
+    // The last run's card: green or red frame, the answer as markdown when an ask
+    // gave one, else the run's detail line.
+    const runCard = (r: NonNullable<PanelRun>, clear: () => unknown) =>
+      card(
+        r.ok ? `✓ ${r.action}: ${r.outcome}` : `✗ ${r.action}: ${r.outcome}`,
+        <Box flexDirection="column" rowGap={1}>
+          {r.answer ? (
+            <Markdown key="answer" text={r.answer} />
+          ) : (
+            <Text dimColor>
+              Last: {r.action} {r.outcome} {r.detail}
+            </Text>
+          )}
+          <Box flexDirection="row" flexWrap="wrap" columnGap={2} rowGap={1}>
+            {r.answer && r.action === 'ask' &&
+              btn('deepdive', 'Deep dive', 'v', () => runAction($, cwd, 'deepdive', r.question))}
+            {r.answer && btn('continue', 'Continue in chat', 'm', () => continueInChat($, r))}
+            {btn('dismiss-run', 'Dismiss', 'x', clear)}
+          </Box>
+        </Box>,
+        r.ok ? 'success' : 'error',
+      )
+
+    const current = await read($, tab)
+    const answer = await read($, lastAnswer)
+    const keyStatus = await read($, keys)
+    const TABS: { id: PanelTab; label: string; hotkey: string }[] = [
+      { id: 'panel', label: 'Panel', hotkey: '1' },
+      { id: 'answer', label: 'Answer', hotkey: '2' },
+      { id: 'keys', label: 'Keys', hotkey: '3' },
+    ]
+    const tabBar = (
+      <Box key="tabs" flexDirection="row" columnGap={2}>
+        {TABS.map(t => (
+          <Button
+            key={`tab-${t.id}`}
+            label={current === t.id ? `▸ ${t.label}` : t.label}
+            hotkey={t.hotkey}
+            plain
+            dimColor={current !== t.id}
+            hover={{ scope: `tab-${t.id}`, backgroundColor: 'subtle' }}
+            onPress={() => update($, tab, () => t.id)}
+          />
+        ))}
+      </Box>
+    )
+
+    const panelTab = [
+      card(
+        'Status',
+        <Box flexDirection="row" columnGap={2} alignItems="flex-start">
+          <Box flexDirection="column" flexGrow={1}>
+            {light(!!s?.isPMounted, `P: drive: ${s?.isPMounted ? 'mounted' : 'not mounted'}`)}
+            {light(!!s?.mod, `Active mod: ${s?.mod ?? 'none (run /dayz-init)'}`)}
+            {light(!!s?.isDiagRunning, `Test session: ${s?.isDiagRunning ? 'running' : 'stopped'}`)}
+            {!s?.root && <Text color="warning">Agentic-Z not found here.</Text>}
+          </Box>
+          {btn('refresh', 'Refresh', 'r', () => refreshQuietly($, cwd))}
+        </Box>,
+      ),
+      card(
+        'Start a project',
+        rows([
+          row('Setup', [
+            btn('preflight', 'Check setup', 'e'),
+            btn('addserver', `Add test server (${DEFAULT_SERVER})`, 'v'),
+          ]),
+          Input && (
+            <Input
+              key="newmod"
+              label="New mod:"
+              placeholder="MyVest (first mod: MyVest by YourName)"
+              submitLabel="create"
+              onSubmit={(text: string) => runAction($, cwd, 'newmod', text)}
+            />
+          ),
+          Input && (
+            <Input
+              key="importmod"
+              label="Import mod:"
+              placeholder="folder path or GitHub link"
+              submitLabel="import"
+              onSubmit={(text: string) => runAction($, cwd, 'importmod', text)}
+            />
+          ),
+        ]),
+      ),
+      card(
+        'Build and test',
+        rows([
+          row('Build', [
+            btn('build', 'Build PBO', 'b'),
+            btn('gatebuild', 'Check build', 'c'),
+            btn('deploy', 'Deploy prebuilt', 'd'),
+          ]),
+          row('Play', [
+            btn('launch', 'Launch', 'l'),
+            btn('gateingame', 'Check in game', 'g'),
+            btn('stop', 'Stop', 's'),
+            btn('logwatch', 'Logs', 't'),
+          ]),
+        ]),
+      ),
+      card(
+        'Tools',
+        rows([
+          row('Open', [
+            btn('mount', 'Mount P:', 'p'),
+            btn('workbench', 'Workbench', 'w'),
+            btn('objectbuilder', 'Object Builder', 'o'),
+          ]),
+          row('Ship', [btn('health', 'Health page', 'h'), btn('releasepack', 'Release pack', 'k')]),
+        ]),
+      ),
+      Input &&
+        card(
+          'Ask vanilla DayZ',
+          <Box flexDirection="column" rowGap={1}>
+            <Input
+              key="ask"
+              label="Question:"
+              placeholder="how does food spoil"
+              submitLabel="ask"
+              onSubmit={(question: string) => runAction($, cwd, 'ask', question)}
+            />
+            {Select && (
+              <Box flexDirection="row" flexWrap="wrap" columnGap={2} rowGap={1}>
+                <Select key="ask-topk" label="Sources:" options={ASK_CHOICES.topK} value={picks.topK} onSelect={choose('topK')} />
+                <Select
+                  key="ask-lines"
+                  label="Excerpt:"
+                  options={ASK_CHOICES.excerptLines}
+                  value={picks.excerptLines}
+                  onSelect={choose('excerptLines')}
+                />
+                <Select key="ask-words" label="Answer:" options={ASK_CHOICES.words} value={picks.words} onSelect={choose('words')} />
+              </Box>
+            )}
+            <Text dimColor>The answer opens on the Answer tab.</Text>
+          </Box>,
+        ),
+      run && runCard(run, () => update($, lastRun, () => null)),
+    ]
+
+    const answerTab = answer ? (
+      <Box flexDirection="column" gap={1}>
+        {answer.question && <Text dimColor>Asked: {answer.question}</Text>}
+        {runCard(answer, () => update($, lastAnswer, () => null))}
+      </Box>
+    ) : (
+      <Text dimColor>No answer yet. Ask a question on the Panel tab.</Text>
+    )
+
+    // Each key: where it comes from and its last four characters, a field to
+    // set a new one (it is never drawn back), and Clear for one the panel set.
+    const keysTab = card(
+      'API keys',
+      <Box flexDirection="column" rowGap={1} paddingTop={1}>
+        <Text dimColor>
+          Your keys stay on this machine, in the panel's store in your Claude Code folder and in this session's
+          environment. Each is sent only to the service it is for.
+        </Text>
+        {KEY_LIST.map(k => {
+          const at = keyStatus[k.name]
+          return (
+            <Box key={`key-${k.name}-box`} flexDirection="column">
+              <Box flexDirection="row" columnGap={1}>
+                <Text color={at ? 'success' : 'error'}>●</Text>
+                <Text weight="bold">{k.label}</Text>
+                <Text dimColor>
+                  {k.name}: {!at ? 'not set' : at.source === 'panel' ? `set here (…${at.tail})` : `set in your environment (…${at.tail})`}
+                </Text>
+              </Box>
+              <Text dimColor>For {k.what}.</Text>
+              <Box flexDirection="row" flexWrap="wrap" columnGap={2}>
+                {Input && (
+                  <Input
+                    key={`key-${k.name}`}
+                    label="New key:"
+                    placeholder="paste it and press Enter"
+                    submitLabel="save"
+                    onSubmit={(text: string) => {
+                      const value = text.trim()
+                      if (!value) {
+                        $.ui.toast(`Paste a ${k.label} key first.`)
+                        return
+                      }
+                      return saveKey($, k.name, value)
+                    }}
+                  />
+                )}
+                {at?.source === 'panel' && btn(`clear-${k.name}`, 'Clear', undefined, () => saveKey($, k.name, undefined))}
+              </Box>
+            </Box>
+          )
+        })}
+        <Text dimColor>An MCP server that was already running, such as dayz-rag, picks up a new key after you restart Claude Code.</Text>
+      </Box>,
+    )
 
     return (
       <Box flexDirection="column" gap={1}>
-        <Box flexDirection="column">
-          <Text>P: drive: {s?.isPMounted ? 'mounted' : 'not mounted'}</Text>
-          <Text>Active mod: {s?.mod ?? 'none (run /dayz-init)'}</Text>
-          <Text>Test session: {s?.isDiagRunning ? 'running' : 'stopped'}</Text>
-          {!s?.root && <Text dimColor>Agentic-Z not found here.</Text>}
-        </Box>
-        <Box flexDirection="column">
-          <Button key="mount" label="Mount P:" hotkey="p" onPress={press('mount')} />
-          <Button key="build" label="Build PBO" hotkey="b" onPress={press('build')} />
-          <Button key="gatebuild" label="Check build (PASS/FAIL)" hotkey="c" onPress={press('gatebuild')} />
-          <Button key="gateingame" label="Check in game (PASS/FAIL)" hotkey="g" onPress={press('gateingame')} />
-          <Button key="deploy" label="Deploy prebuilt PBOs" hotkey="d" onPress={press('deploy')} />
-          <Button key="launch" label="Launch test" hotkey="l" onPress={press('launch')} />
-          <Button key="stop" label="Stop test" hotkey="s" onPress={press('stop')} />
-          <Button key="workbench" label="Open Workbench" hotkey="w" onPress={press('workbench')} />
-          <Button key="objectbuilder" label="Open Object Builder" hotkey="o" onPress={press('objectbuilder')} />
-          <Button key="logwatch" label="Check test logs" hotkey="t" onPress={press('logwatch')} />
-          <Button key="health" label="Health page" hotkey="h" onPress={press('health')} />
-          <Button key="releasepack" label="Release pack" hotkey="k" onPress={press('releasepack')} />
-          <Button key="refresh" label="Refresh" hotkey="r" onPress={() => refreshQuietly($, cwd)} />
-        </Box>
-        {Input && (
-          <Input
-            key="ask"
-            label="Ask vanilla:"
-            placeholder="how does food spoil"
-            submitLabel="ask"
-            onSubmit={(question: string) => runAction($, cwd, 'ask', question)}
-          />
+        {latest && (
+          <Box flexDirection="row" columnGap={2}>
+            <Text color="suggestion">
+              Panel {latest} is out: run {UPDATE_COMMAND}, then restart Claude Code.
+            </Text>
+            {btn('dismiss-update', 'Dismiss', 'u', () => update($, newVersion, () => null))}
+          </Box>
         )}
-        {working && <Text dimColor>Running {working}...</Text>}
-        {run && (
-          <Text dimColor>
-            Last: {run.action} {run.outcome} {run.detail}
-          </Text>
-        )}
+        {tabBar}
+        {working && <Text color="warning">⟳ Running {working}...</Text>}
+        {current === 'panel' && panelTab}
+        {current === 'answer' && answerTab}
+        {current === 'keys' && keysTab}
       </Box>
     )
   })

@@ -9,7 +9,7 @@
     {
       "name": "agentic-z",
       "description": "AI agent stack for DayZ modding. After install, run /dayz-init for a guided setup wizard that takes you from empty repo to mod-loaded-in-DayZ. Ships specialist subagents and DayZ slash skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexer), plus the dayz-rag MCP server for semantic search over vanilla DayZ source.",
-      "version": "2.0.1",
+      "version": "2.0.2",
       "source": "./",
       "author": {
         "name": "DayZ n' Chill",
@@ -30,7 +30,7 @@
     {
       "name": "agentic-z-panel",
       "description": "Side panel for Agentic-Z: DayZ status at a glance and one-click buttons for mount P:, build, the build and in game checks, deploy, launch, stop, Workbench, Object Builder, test logs, the health page and the release pack, and a field that asks /dayz-ask a vanilla question, with no model tokens spent.",
-      "version": "0.3.0",
+      "version": "0.8.0",
       "source": "./mods/agentic-z-panel",
       "author": {
         "name": "DayZ n' Chill",

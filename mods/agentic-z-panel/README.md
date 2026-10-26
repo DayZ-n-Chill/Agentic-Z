@@ -10,30 +10,66 @@ A Claude Code panel for Agentic-Z. It shows the DayZ state beside the chat and h
 /plugin install agentic-z-panel@dayz-n-chill
 ```
 
-Then run `/dayz-panel` to open the panel.
+The panel opens by itself when a session starts. After closing it, click **Agentic-Z panel** just above the prompt, or run `/dayz-panel`.
 
 ## What it shows
 
-Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ test session is running.
+Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ test session is running, each with a green or red dot. The buttons sit in framed cards (Build and check, Test session, Tools, Ask vanilla DayZ), and the last run shows in a card framed green or red by its outcome.
+
+`/dayz-panel` also replies in the chat with the same state, where Agentic-Z was found, and the last run.
+
+## Tabs
+
+Three tabs sit at the top of the panel; click one or press `1`, `2` or `3`.
+
+- **Panel** (`1`): the status, the buttons, the ask field and the last run.
+- **Answer** (`2`): the last vanilla answer, with Deep dive, Continue in chat and Dismiss. An ask opens this tab when it finishes, and a build or other run afterwards does not replace the answer.
+- **Keys** (`3`): the API keys the Agentic-Z tools read, each with a field to paste a new key and Clear for one set here.
+
+| Key | Used by |
+|---|---|
+| `VOYAGE_API_KEY` | vanilla source search: the ask field, `/dayz-ask` and the `dayz-rag` tools |
+| `TYPESAFE_API_KEY` | Jev, the routing model `/dayz-route` asks |
+| `GITHUB_TOKEN` | a higher GitHub rate limit for `/dayz-search-download`; `git` and `gh` read it too |
+
+A key you save stays on your machine: in the panel's own store under your Claude Code folder, and in the session's environment, so the skill scripts, the agent's commands and MCP servers started afterwards read it. Every new session puts the saved keys back. The tab shows only where a key came from and its last four characters, never the key. An MCP server that was already running, such as `dayz-rag`, sees a new key after you restart Claude Code.
+
+## Updates
+
+At session start the panel reads the marketplace list on GitHub. When it lists a newer panel, a toast, a line at the top of the panel and the `/dayz-panel` reply say so, with the command to run:
+
+```text
+claude plugin update agentic-z-panel@dayz-n-chill
+```
+
+Then restart Claude Code. Offline, the check shows nothing.
 
 ## Buttons
 
 | Button | Key | Runs |
 |---|---|---|
+| Check setup | `e` | `dayz-preflight/preflight.py` |
+| Add test server | `v` | `dayz-add-server/add_server.py chernarus` |
+| New mod (a text field) | Enter | `dayz-new-mod/new_mod.py <name>`; type `MyVest by YourName` for a first mod, to set the author |
+| Import mod (a text field) | Enter | `dayz-import-mod/import_mod.py --source <path or GitHub link>` |
 | Mount P: | `p` | `dayz-workdrive/mount.py` |
 | Build PBO | `b` | `dayz-build-pbo/build.py <active mod>` |
-| Check build (PASS/FAIL) | `c` | `dayz-gate/gate.py build <active mod>` |
-| Check in game (PASS/FAIL) | `g` | `dayz-gate/gate.py ingame <active mod>` |
-| Deploy prebuilt PBOs | `d` | `dayz-deploy-pbo/deploy.py <active mod>` |
-| Launch test | `l` | `dayz-launch-test/launch.py <active mod>` |
-| Stop test | `s` | `dayz-stop-test/stop_test.bat` |
-| Open Workbench | `w` | `dayz-launch-workbench/launch.py --mod <active mod>` |
-| Open Object Builder | `o` | `dayz-launch-objectbuilder/launch.py` |
-| Check test logs | `t` | `dayz-logwatch/logwatch.py --since 30 --duration 3 --mod <active mod>` |
+| Check build | `c` | `dayz-gate/gate.py build <active mod>` |
+| Check in game | `g` | `dayz-gate/gate.py ingame <active mod>` |
+| Deploy prebuilt | `d` | `dayz-deploy-pbo/deploy.py <active mod>` |
+| Launch | `l` | `dayz-launch-test/launch.py <active mod>` |
+| Stop | `s` | `dayz-stop-test/stop_test.bat` |
+| Workbench | `w` | `dayz-launch-workbench/launch.py --mod <active mod>` |
+| Object Builder | `o` | `dayz-launch-objectbuilder/launch.py` |
+| Logs | `t` | `dayz-logwatch/logwatch.py --since 30 --duration 3 --mod <active mod>` |
 | Health page | `h` | `dayz-health/health.py <active mod>` |
 | Release pack | `k` | `dayz-release-pack/release_pack.py <active mod>` |
-| Ask vanilla (a text field) | Enter | `dayz-ask/ask.py "<question>"` |
+| Ask vanilla (a text field) | Enter | `dayz-ask/ask.py --top-k <Sources> --excerpt-lines <Excerpt> "<question>"` |
+| Deep dive (under an answer) | `v` | `dayz-ask/ask.py --top-k 25 --excerpt-lines 200 "<question>"`, then a longer answer |
+| Continue in chat (under an answer) | `m` | puts the question and answer in the prompt box for the main conversation |
 | Refresh | `r` | re-checks the state |
+
+Three pickers under the ask field set the next ask: **Sources** (5 to 25 citations, default 10), **Excerpt** (60 to 200 lines per citation, default 60) and **Answer** (Short, Normal or Long, default Normal). The lists are the limits, since more of each is slower and costs more tokens. The picks are kept for the next session. Deep dive always uses the top of each list.
 
 The Python scripts run with `python` when it works, otherwise the `py` launcher, the same as the `scripts\dayz` wrappers. With neither, the button runs nothing and shows a `Python 3 not found` message. Scripts run with UTF-8 output, so an answer that quotes a non-ASCII character cannot crash them.
 

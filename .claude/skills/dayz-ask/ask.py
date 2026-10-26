@@ -54,7 +54,9 @@ else:
 P_DRIVE = Path("P:\\")
 DEFAULT_TOP_K = 5
 MAX_TOP_K = 25
-EXCERPT_LINES = 60  # longest excerpt printed per citation
+DEFAULT_EXCERPT_LINES = 60
+EXCERPT_LINES = DEFAULT_EXCERPT_LINES  # longest excerpt printed per citation; --excerpt-lines sets it
+MAX_EXCERPT_LINES = 300
 LINES_PER_FILE = 3  # matching lines kept per file in the Grep fallback
 CONTEXT = 2  # lines shown around a Grep match
 # Grep score multiplier for debug and GUI code (a folder named gui, or "debug" in any
@@ -532,6 +534,9 @@ def print_report(report: dict) -> None:
 
 
 def main(argv: Optional[list[str]] = None) -> int:
+    # A deep dive wants whole functions, not their first lines; the excerpt and
+    # re-cite helpers all read this one limit.
+    global EXCERPT_LINES
     p = argparse.ArgumentParser(prog="dayz-ask", description="Checked vanilla DayZ evidence for a question.")
     p.add_argument("question", nargs="+", help="plain English question about vanilla DayZ")
     p.add_argument("--top-k", type=int, default=DEFAULT_TOP_K, help=f"hits or files to keep (1-{MAX_TOP_K})")
@@ -539,6 +544,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     p.add_argument("--folder", action="append", choices=VANILLA_FOLDERS,
                    help="vanilla folder for the Grep fallback (repeatable; default scripts and dz)")
     p.add_argument("--grep", action="store_true", help="skip RAG and use the Grep fallback")
+    p.add_argument("--excerpt-lines", type=int, default=DEFAULT_EXCERPT_LINES,
+                   help=f"longest excerpt printed per citation (1-{MAX_EXCERPT_LINES})")
     p.add_argument("--json", action="store_true", help="print the report as JSON after the verdict line")
 
     def arg_error(message: str) -> None:
@@ -562,6 +569,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     if not 1 <= args.top_k <= MAX_TOP_K:
         print(f"ERROR\n  --top-k must be 1 to {MAX_TOP_K}")
         return 2
+    if not 1 <= args.excerpt_lines <= MAX_EXCERPT_LINES:
+        print(f"ERROR\n  --excerpt-lines must be 1 to {MAX_EXCERPT_LINES}")
+        return 2
+    EXCERPT_LINES = args.excerpt_lines
     if not search_terms(question):
         print("ERROR\n  no search terms left once common words are dropped; "
               "name a class, function or config value")
