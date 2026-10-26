@@ -2,7 +2,7 @@
 
 /dayz-scope-mod <Mod> records the active mod in
 <project>/.claude/local-memory/dayz-active-scope.json (written by
-.claude/skills/dayz-scope-mod/scope.py) and adds Edit deny rules for the
+skills/dayz-scope-mod/scope.py) and adds Edit deny rules for the
 sibling mods that existed at that moment. This hook backs those rules up with
 a reason Claude can act on, and also covers mod folders created after the
 scope was set. While a scope is active, every top-level folder under
@@ -68,7 +68,7 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 SCOPE_STATE = Path(".claude") / "local-memory" / "dayz-active-scope.json"
-PREFLIGHT = Path(__file__).resolve().parents[1] / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
+PREFLIGHT = Path(__file__).resolve().parents[1] / "skills" / "dayz-preflight" / "preflight.py"
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 

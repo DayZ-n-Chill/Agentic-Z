@@ -8,7 +8,7 @@
         "re:\\bgrams?\\b",
         "re:Geometry"
       ],
-      "verified": "P:/scripts/3_game/entities/entityaitype.c:49 (m_ConfigWeight = ConfigGetInt(\"weight\")), P:/scripts/5_mission/gui/inventorynew/vicinityitemmanager.c:13 (weight in grams), P:/scripts/4_world/classes/useractionscomponent/actions/continuous/actionpushobject.c:100 (push uses dBodyGetMass); Geometry LOD mass per .claude/agents/dayz-object-builder.md"
+      "verified": "P:/scripts/3_game/entities/entityaitype.c:49 (m_ConfigWeight = ConfigGetInt(\"weight\")), P:/scripts/5_mission/gui/inventorynew/vicinityitemmanager.c:13 (weight in grams), P:/scripts/4_world/classes/useractionscomponent/actions/continuous/actionpushobject.c:100 (push uses dBodyGetMass); Geometry LOD mass per agents/dayz-object-builder.md"
     },
     {
       "id": "heavy-crate-cannot-be-thrown",
@@ -42,7 +42,7 @@
         "re:Fire\\s?Geo",
         "re:7(\\.0+)?e\\+?15"
       ],
-      "verified": ".claude/skills/_shared/conventions/assets.md LOD table (FireGeometry 7.0e+15, Geometry 1.0e+13); .claude/skills/dayz-p3d-audit/scripts/audit_p3d.py check_required_lods (missing FireGeo note)"
+      "verified": "skills/_shared/conventions/assets.md LOD table (FireGeometry 7.0e+15, Geometry 1.0e+13); skills/dayz-p3d-audit/scripts/audit_p3d.py check_required_lods (missing FireGeo note)"
     }
   ]
 }

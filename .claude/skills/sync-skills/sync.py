@@ -1,4 +1,4 @@
-"""Sync repo-local .claude/skills/ into the per-agent skill directories.
+"""Sync repo-local skills/ and .claude/skills/ into the per-agent skill directories.
 
 Reads .claude/skills/sync-skills/agents.json for the list of agent targets,
 so adding a new agent CLI later is a config change, not a code change. An
@@ -33,8 +33,16 @@ def repo_root() -> Path:
     return script_dir().parents[2]
 
 
-def repo_skills_dir() -> Path:
-    return repo_root() / ".claude" / "skills"
+def repo_skills_dirs() -> list[Path]:
+    return [repo_root() / "skills", repo_root() / ".claude" / "skills"]
+
+
+def is_own(path: Path) -> bool:
+    return any(is_under(path, d.resolve()) for d in repo_skills_dirs())
+
+
+def skills_dirs_label() -> str:
+    return ", ".join(str(d) for d in repo_skills_dirs())
 
 
 def load_agents_config() -> list[dict]:
@@ -96,24 +104,29 @@ def home_for(agent_cfg: dict) -> Path:
 
 
 def list_repo_skills() -> list[Path]:
-    base = repo_skills_dir()
-    if not base.is_dir():
-        print(f"ERROR: repo skills folder not found: {base}", file=sys.stderr)
+    bases = [d for d in repo_skills_dirs() if d.is_dir()]
+    if not bases:
+        print(f"ERROR: repo skills folder not found: {skills_dirs_label()}", file=sys.stderr)
         sys.exit(2)
     out: list[Path] = []
-    for child in sorted(base.iterdir()):
-        if not child.is_dir():
+    seen: set[str] = set()
+    for child in sorted((c for b in bases for c in b.iterdir()), key=lambda c: c.name):
+        # skills/ is listed first and the sort is stable, so on a duplicate
+        # name skills/ wins over a stale folder an update left in .claude/skills/.
+        if not child.is_dir() or child.name in seen:
             continue
         if child.name == "_shared":
             # Not a skill (no SKILL.md, so agent CLIs ignore it), but agents
             # reference ~/.claude/skills/_shared/*.md cross-project, so it
             # must be linked alongside the skills.
             out.append(child)
+            seen.add(child.name)
             continue
         if child.name.startswith("_"):
             continue  # other underscore dirs are helpers, not skills
         if (child / "SKILL.md").is_file():
             out.append(child)
+            seen.add(child.name)
     return out
 
 
@@ -215,9 +228,8 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
                 counts["failed"] += 1
                 return counts
 
-    # Ownership is decided against this checkout's skills folder, not the repo
+    # Ownership is decided against this checkout's skills folders, not the repo
     # root: git worktrees under <repo>/.claude/worktrees/ are other checkouts.
-    own = repo_skills_dir().resolve()
     expected_names = {s.name for s in skills}
 
     # Pass 1: link/refresh each repo skill
@@ -237,7 +249,7 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
             # Link points at another clone of this template. Refusing to steal
             # it silently — that breaks the other clone's sessions. --force
             # makes the takeover explicit.
-            if not is_under(existing_resolved, own) and not force:
+            if not is_own(existing_resolved) and not force:
                 print(f"  [FOREIGN] {src.name}: points at {existing}; rerun with --force to take ownership")
                 counts["skipped"] += 1
                 continue
@@ -284,11 +296,11 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
             counts["failed"] += 1
             counts["link_failed"] += 1
 
-    # Pass 2: prune orphan links pointing into this checkout's skills folder
+    # Pass 2: prune orphan links pointing into this checkout's skills folders
     # at something that is no longer a skill. A deleted skill's folder often
     # survives a pull because git leaves the ignored __pycache__ behind, so
     # "no SKILL.md" is the test, not "folder gone". _shared is kept.
-    shared = own / "_shared"
+    shared = (repo_root() / "skills" / "_shared").resolve()
     if target_dir.exists():
         for child in target_dir.iterdir():
             if child.name in expected_names:
@@ -296,7 +308,7 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
             t_resolved = resolved_target(child)
             if t_resolved is None:
                 continue
-            if not is_under(t_resolved, own):
+            if not is_own(t_resolved):
                 continue  # not pointing back into our repo, leave it alone
             if is_under(t_resolved, shared) or (t_resolved / "SKILL.md").is_file():
                 continue  # still a skill (or the shared docs); not an orphan
@@ -318,7 +330,7 @@ def sync_one(agent_cfg: dict, skills: Iterable[Path], dry_run: bool, force: bool
 
 def unlink_one(agent_cfg: dict, dry_run: bool) -> dict[str, int]:
     """Remove every link in the agent's skills folder that points into this
-    checkout's .claude/skills/. Foreign links and real folders are left alone,
+    checkout's skills/ or .claude/skills/. Foreign links and real folders are left alone,
     and the repo's skill folders themselves are never touched."""
     name = agent_cfg["name"]
     target_dir = home_for(agent_cfg) / agent_cfg.get("skills_subdir", "skills")
@@ -328,10 +340,9 @@ def unlink_one(agent_cfg: dict, dry_run: bool) -> dict[str, int]:
     if not target_dir.is_dir():
         print("  nothing to unlink (folder does not exist)")
         return counts
-    own = repo_skills_dir().resolve()
     for child in sorted(target_dir.iterdir()):
         t_resolved = resolved_target(child)
-        if t_resolved is None or not is_under(t_resolved, own):
+        if t_resolved is None or not is_own(t_resolved):
             continue
         if dry_run:
             print(f"  DRY-RUN unlink {child.name} (-> {t_resolved})")
@@ -394,8 +405,8 @@ def main() -> int:
         return 0
 
     if args.unlink:
-        if not repo_skills_dir().is_dir():
-            print(f"ERROR: repo skills folder not found: {repo_skills_dir()}", file=sys.stderr)
+        if not any(d.is_dir() for d in repo_skills_dirs()):
+            print(f"ERROR: repo skills folder not found: {skills_dirs_label()}", file=sys.stderr)
             return 2
         unlinked = failed = 0
         for agent_cfg in agents:
@@ -410,10 +421,10 @@ def main() -> int:
 
     skills = list_repo_skills()
     if not skills:
-        print(f"WARNING: no skills with SKILL.md found under {repo_skills_dir()}")
+        print(f"WARNING: no skills with SKILL.md found under {skills_dirs_label()}")
         return 0
 
-    print(f"Repo skills: {len(skills)}  ({repo_skills_dir()})")
+    print(f"Repo skills: {len(skills)}  ({skills_dirs_label()})")
     for s in skills:
         print(f"  - {s.name}")
 

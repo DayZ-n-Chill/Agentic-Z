@@ -1,7 +1,7 @@
 """Answer tests (evals) for the Agentic-Z agents.
 
 Sends every question in evals/questions/<agent>.json to its agent with
-`claude -p --agent <name>`, scores each answer with plain string and regex
+`claude -p --plugin-dir <repo> --agent agentic-z:<name>`, scores each answer with plain string and regex
 checks, and writes a results file. With --baseline it compares the run
 against evals/baseline.json and exits 1 when any agent scored lower or lost a
 question it passed before. --update-baseline refuses a run where a question
@@ -38,7 +38,7 @@ from typing import Callable
 REPO = Path(__file__).resolve().parents[2]
 QUESTIONS_DIR = REPO / "evals" / "questions"
 BASELINE = REPO / "evals" / "baseline.json"
-AGENTS_DIR = REPO / ".claude" / "agents"
+AGENTS_DIR = REPO / "agents"
 RESULTS_DIR = REPO / "output" / "evals"
 
 # --allowedTools only grants these without a prompt; it does not take the other
@@ -114,7 +114,7 @@ def validate(path: Path) -> tuple[dict, list[str]]:
     if agent != path.stem:
         problems.append(f"{path.name}: agent must be {path.stem!r}, got {agent!r}")
     if not (AGENTS_DIR / f"{path.stem}.md").exists():
-        problems.append(f"{path.name}: no agent file .claude/agents/{path.stem}.md")
+        problems.append(f"{path.name}: no agent file agents/{path.stem}.md")
     questions = data.get("questions")
     if not isinstance(questions, list) or not questions:
         return data, problems + [f"{path.name}: needs a non-empty questions list"]
@@ -161,7 +161,9 @@ def load_suites(agents: list[str] | None) -> tuple[list[dict], list[str]]:
 
 def build_command(exe: str, agent: str, model: str | None = None) -> list[str]:
     """The claude command line for one question: read-only tools, editing and shell tools removed."""
-    cmd = [exe, "-p", "--agent", agent,
+    # The agents ship in agents/ as the agentic-z plugin, not as project agents, so the
+    # repo is loaded as a plugin directory: that tests this working tree, not the installed copy.
+    cmd = [exe, "-p", "--plugin-dir", str(REPO), "--agent", f"agentic-z:{agent}",
            "--allowedTools", ",".join(READ_ONLY_TOOLS),
            "--disallowedTools", ",".join(DENIED_TOOLS),
            "--output-format", "json"]
@@ -411,7 +413,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         for suite in suites:
             for q in suite["questions"]:
-                print(f"would ask: claude -p --agent {suite['agent']}  [{q['id']}]")
+                print(f"would ask: claude -p --agent agentic-z:{suite['agent']}  [{q['id']}]")
         total = sum(len(s["questions"]) for s in suites)
         print(f"{total} questions for {len(suites)} agents; question files are valid.")
         return 0

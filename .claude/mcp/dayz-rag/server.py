@@ -68,7 +68,7 @@ def _load_default_max_distance() -> Optional[float]:
 
 DEFAULT_MAX_DISTANCE = _load_default_max_distance()
 
-# Must match EXT_TYPE_MAP in .claude/skills/dayz-search-index/index.py (test_server.py checks).
+# Must match EXT_TYPE_MAP in skills/dayz-search-index/index.py (test_server.py checks).
 VALID_FILE_TYPES = {"c", "cpp", "hpp", "h", "layout", "cfg", "rvmat", "xml", "json", "csv"}
 
 
@@ -209,7 +209,7 @@ def _get_table():
         if not db_path.exists():
             raise RuntimeError(
                 f"No index at {INDEX_ROOT}. Download the prebuilt one with /dayz-search-download, "
-                "or build it with: python .claude/skills/dayz-search-index/index.py --full"
+                "or build it with: python skills/dayz-search-index/index.py --full"
             )
         import lancedb
 
@@ -469,7 +469,7 @@ def build_app():
         re-extracting P:\\ every hit reads stale until the index is rebuilt.
         Verify with get_dayz_file or Read before grounding claims on a hit
         (see cite-then-verify rule in
-        .claude/skills/_shared/dayz-conventions.md). A repeated search is
+        skills/_shared/dayz-conventions.md). A repeated search is
         answered from a cache until the index is rebuilt.
         """
         return await anyio.to_thread.run_sync(search_dayz_source_impl, query, top_k, file_type, max_distance)

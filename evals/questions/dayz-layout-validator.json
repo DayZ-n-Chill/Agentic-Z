@@ -15,7 +15,7 @@
       "unchanged": [
         "evals/fixtures/dayz-layout-validator/xml_style.layout"
       ],
-      "verified": ".claude/agents/dayz-layout-validator.md workflow steps 1 and 3 and Report (gate mode never edits); .claude/skills/_shared/figma-to-dayz-rules.md section 9 (XML syntax is a Hard NO); vanilla layouts are brace files, for example P:/gui/layouts/day_z_connection_lost.layout:1"
+      "verified": "agents/dayz-layout-validator.md workflow steps 1 and 3 and Report (gate mode never edits); skills/_shared/figma-to-dayz-rules.md section 9 (XML syntax is a Hard NO); vanilla layouts are brace files, for example P:/gui/layouts/day_z_connection_lost.layout:1"
     },
     {
       "id": "frame-btn-close-fails-on-line-1",
@@ -31,7 +31,7 @@
       "unchanged": [
         "evals/fixtures/dayz-layout-validator/frame_btn_close.layout"
       ],
-      "verified": ".claude/agents/dayz-layout-validator.md check 'Prefix is authoritative' (FrameWidgetClass btn_close is a FAIL); .claude/skills/_shared/figma-to-dayz-rules.md section 4 (btn_ maps to ButtonWidgetClass)"
+      "verified": "agents/dayz-layout-validator.md check 'Prefix is authoritative' (FrameWidgetClass btn_close is a FAIL); skills/_shared/figma-to-dayz-rules.md section 4 (btn_ maps to ButtonWidgetClass)"
     },
     {
       "id": "opacity-property-fails",
@@ -47,7 +47,7 @@
       "unchanged": [
         "evals/fixtures/dayz-layout-validator/panel_opacity.layout"
       ],
-      "verified": ".claude/skills/_shared/figma-to-dayz-rules.md section 9 (opacity as a separate property is a Hard NO; alpha is the fourth float of color, as in P:/gui/layouts/camera_tools/camera_tools.layout); .claude/agents/dayz-layout-validator.md Hard NO check"
+      "verified": "skills/_shared/figma-to-dayz-rules.md section 9 (opacity as a separate property is a Hard NO; alpha is the fourth float of color, as in P:/gui/layouts/camera_tools/camera_tools.layout); agents/dayz-layout-validator.md Hard NO check"
     },
     {
       "id": "equals-and-semicolons-fail",
@@ -63,7 +63,7 @@
       "unchanged": [
         "evals/fixtures/dayz-layout-validator/equals_semicolons.layout"
       ],
-      "verified": ".claude/skills/_shared/figma-to-dayz-rules.md section 9 ('=' between key and value and semicolons are Hard NO items); vanilla writes 'size 270 20' at P:/gui/layouts/day_z_connection_lost.layout:2"
+      "verified": "skills/_shared/figma-to-dayz-rules.md section 9 ('=' between key and value and semicolons are Hard NO items); vanilla writes 'size 270 20' at P:/gui/layouts/day_z_connection_lost.layout:2"
     },
     {
       "id": "clean-layout-passes",
@@ -77,7 +77,7 @@
       "unchanged": [
         "evals/fixtures/dayz-layout-validator/clean_frame.layout"
       ],
-      "verified": "Same widget classes and property keys as P:/gui/layouts/day_z_connection_lost.layout:1 to :26 (FrameWidgetClass root, TextWidgetClass child, exact toggles, \"exact text\"); text \"...\" as in P:/gui/layouts/camera_tools/camera_tools.layout; txt_ maps to TextWidgetClass in .claude/skills/_shared/figma-to-dayz-rules.md section 4"
+      "verified": "Same widget classes and property keys as P:/gui/layouts/day_z_connection_lost.layout:1 to :26 (FrameWidgetClass root, TextWidgetClass child, exact toggles, \"exact text\"); text \"...\" as in P:/gui/layouts/camera_tools/camera_tools.layout; txt_ maps to TextWidgetClass in skills/_shared/figma-to-dayz-rules.md section 4"
     },
     {
       "id": "quoted-shadow-opacity-passes",
@@ -91,7 +91,7 @@
       "unchanged": [
         "evals/fixtures/dayz-layout-validator/text_shadow_opacity.layout"
       ],
-      "verified": "Vanilla TextWidgetClass carries \"shadow opacity\" 0.5 at P:/gui/layouts/day_z_hud_watermark.layout:55 and :79; .claude/agents/dayz-layout-validator.md Hard NO check and .claude/skills/_shared/figma-to-dayz-rules.md section 9 ban only a bare opacity key"
+      "verified": "Vanilla TextWidgetClass carries \"shadow opacity\" 0.5 at P:/gui/layouts/day_z_hud_watermark.layout:55 and :79; agents/dayz-layout-validator.md Hard NO check and skills/_shared/figma-to-dayz-rules.md section 9 ban only a bare opacity key"
     },
     {
       "id": "syntax-script-runs-first",
@@ -101,7 +101,7 @@
         "re:XML|brace|root"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-layout-validator.md workflow step 3 (python hooks/edit_check.py --file <file.layout> first: XML, unbalanced braces, root widget count, children nesting); hooks/edit_check.py:17 (manual use --file <path>, exit 1 on a problem)"
+      "verified": "agents/dayz-layout-validator.md workflow step 3 (python hooks/edit_check.py --file <file.layout> first: XML, unbalanced braces, root widget count, children nesting); hooks/edit_check.py:17 (manual use --file <path>, exit 1 on a problem)"
     },
     {
       "id": "pasted-content-not-written",
@@ -112,7 +112,7 @@
       "must_not_include": [
         "re:\\bI (will |'ll )?(write|save|create) (it|the (content|text|layout)|a (temp|temporary))"
       ],
-      "verified": ".claude/agents/dayz-layout-validator.md workflow step 2 (pasted content: never write it anywhere, check it by reading, report both scripts as not run, ask the caller to save it under the mod and gate the file)"
+      "verified": "agents/dayz-layout-validator.md workflow step 2 (pasted content: never write it anywhere, check it by reading, report both scripts as not run, ask the caller to save it under the mod and gate the file)"
     }
   ]
 }

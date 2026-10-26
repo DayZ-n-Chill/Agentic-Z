@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 Remove everything the template's skills created, across all domains, so the repo is ready to push.
 
-This is a thin orchestrator. It finds every `.claude/skills/<domain>-clean-workspace/` skill and runs its `clean.py`. Each domain owns its own cleanup logic. Today that is only `/dayz-clean-workspace` (DayZ scaffolds, junctions, deploy dirs and server staging).
+This is a thin orchestrator. It finds every `skills/<domain>-clean-workspace/` skill and runs its `clean.py`. Each domain owns its own cleanup logic. Today that is only `/dayz-clean-workspace` (DayZ scaffolds, junctions, deploy dirs and server staging).
 
 ## How to run
 
@@ -63,7 +63,7 @@ It does not gate on `/dayz-preflight`, because it is domain-agnostic. Each child
 
 ## Discovery
 
-Any folder in `.claude/skills/` whose name ends in `-clean-workspace` and contains `clean.py` is picked up. Folders starting with `_` are skipped. A new domain plugs in by shipping a `<domain>-clean-workspace` skill that accepts `--include-server`, `--dry-run` and `--yes`, keeps server staging unless `--include-server` is passed, and prints the same dry-run output (stdout and stderr) for the same state (the plan ID hashes it).
+Any folder in `skills/` whose name ends in `-clean-workspace` and contains `clean.py` is picked up. Folders starting with `_` are skipped. A new domain plugs in by shipping a `<domain>-clean-workspace` skill that accepts `--include-server`, `--dry-run` and `--yes`, keeps server staging unless `--include-server` is passed, and prints the same dry-run output (stdout and stderr) for the same state (the plan ID hashes it).
 
 ## When to use this vs. a single domain cleanup
 

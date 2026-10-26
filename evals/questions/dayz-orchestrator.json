@@ -9,7 +9,7 @@
         "chernarus"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-orchestrator.md step 3 (pick the instance the user or plan names, otherwise chernarus; run /dayz-add-server <instance> when .server/<instance>/serverDZ.cfg is missing) and .claude/skills/dayz-gate/SKILL.md --server row (default chernarus)"
+      "verified": "agents/dayz-orchestrator.md step 3 (pick the instance the user or plan names, otherwise chernarus; run /dayz-add-server <instance> when .server/<instance>/serverDZ.cfg is missing) and skills/dayz-gate/SKILL.md --server row (default chernarus)"
     },
     {
       "id": "foreign-session-error-asks-before-yes",
@@ -20,7 +20,7 @@
         "re:agree|consent|permission|say(s)? yes|confirm|may stop|let the gate stop|allow"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-orchestrator.md step 5 ERROR (ask the user to close it or let the gate stop it; add --yes only when they agree, it may be their play session) and .claude/skills/dayz-gate/SKILL.md 'Do not' (don't pass --yes for the user)"
+      "verified": "agents/dayz-orchestrator.md step 5 ERROR (ask the user to close it or let the gate stop it; add --yes only when they agree, it may be their play session) and skills/dayz-gate/SKILL.md 'Do not' (don't pass --yes for the user)"
     },
     {
       "id": "known-failure-goes-to-owning-lead",
@@ -34,7 +34,7 @@
       "must_not_include": [
         "re:^\\W*(send|give) it (straight |directly )?to (`)?dayz-wearables-specialist"
       ],
-      "verified": ".claude/agents/dayz-orchestrator.md step 5 FAIL (a known entry with a worker owner goes with the fix, the quoted line and points_to to the lead whose team has that worker) and .claude/agents/dayz-lead.md 'Your workers' (wearables-specialist is on the Art row)"
+      "verified": "agents/dayz-orchestrator.md step 5 FAIL (a known entry with a worker owner goes with the fix, the quoted line and points_to to the lead whose team has that worker) and agents/dayz-lead.md 'Your workers' (wearables-specialist is on the Art row)"
     },
     {
       "id": "new-failure-goes-to-debugger",
@@ -44,7 +44,7 @@
         "--learn"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-orchestrator.md step 5 FAIL (new entries go to dayz-mod-debugger with the gate JSON, the diagnosis to the owning lead, a high-confidence diagnosis recorded with triage.py --learn) and .claude/skills/dayz-gate/SKILL.md Triage (--learn)"
+      "verified": "agents/dayz-orchestrator.md step 5 FAIL (new entries go to dayz-mod-debugger with the gate JSON, the diagnosis to the owning lead, a high-confidence diagnosis recorded with triage.py --learn) and skills/dayz-gate/SKILL.md Triage (--learn)"
     },
     {
       "id": "first-visual-shot-waits-for-user",
@@ -55,7 +55,7 @@
         "re:capture|diff"
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-orchestrator.md step 5 visual (show each shot's capture and diff; run --accept --shot <id> only when the user says the look is right; the first visual gate always waits for the user) and .claude/skills/dayz-gate/SKILL.md 'Do not' (don't --accept a capture nobody has looked at)"
+      "verified": "agents/dayz-orchestrator.md step 5 visual (show each shot's capture and diff; run --accept --shot <id> only when the user says the look is right; the first visual gate always waits for the user) and skills/dayz-gate/SKILL.md 'Do not' (don't --accept a capture nobody has looked at)"
     }
   ]
 }

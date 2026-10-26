@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-SKILL = Path(__file__).resolve().parents[2] / ".claude" / "skills" / "dayz-particles"
+SKILL = Path(__file__).resolve().parents[2] / "skills" / "dayz-particles"
 DOCS = [SKILL / "SKILL.md", *sorted((SKILL / "references").glob("*.md"))]
 REFERENCES = sorted((SKILL / "references").glob("*.md"))
 

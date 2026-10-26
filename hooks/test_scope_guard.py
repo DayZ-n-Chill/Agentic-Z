@@ -309,13 +309,13 @@ def test_short_name_paths(tmp_path, target, blocked):
 # ---- !Workshop without preflight.py or a game install ----------------------
 
 def _hook_copy(tmp_path: Path, preflight: str | None) -> Path:
-    """A copy of the hook in a tree whose .claude/skills/dayz-preflight/preflight.py is `preflight` (None: missing)."""
+    """A copy of the hook in a tree whose skills/dayz-preflight/preflight.py is `preflight` (None: missing)."""
     root = tmp_path / "plugin"
     (root / "hooks").mkdir(parents=True)
     copy = root / "hooks" / "scope_guard.py"
     copy.write_text(SCRIPT.read_text(encoding="utf-8"), encoding="utf-8")
     if preflight is not None:
-        pre = root / ".claude" / "skills" / "dayz-preflight" / "preflight.py"
+        pre = root / "skills" / "dayz-preflight" / "preflight.py"
         pre.parent.mkdir(parents=True)
         pre.write_text(preflight, encoding="utf-8")
     return copy

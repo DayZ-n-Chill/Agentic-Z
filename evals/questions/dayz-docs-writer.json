@@ -3,7 +3,7 @@
   "questions": [
     {
       "id": "classnames-only-scope-2",
-      "question": "Answer only, do not edit any file. Release team: update the MyVest docs. The mod's config is .claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp. Read it from disk. Which classes from CfgVehicles go under the README's ## Classnames section, and which do you leave out and why?",
+      "question": "Answer only, do not edit any file. Release team: update the MyVest docs. The mod's config is skills/dayz-release-pack/fixtures/MyVest/config.cpp. Read it from disk. Which classes from CfgVehicles go under the README's ## Classnames section, and which do you leave out and why?",
       "must_include": [
         "MyVest_Black",
         "MyVest_Green",
@@ -14,9 +14,9 @@
         "re:<type\\s+name=\"MyVest_Hidden\"|MyVest_Hidden[`*\\s|:\\-]{0,6}(scope\\s*=?\\s*2\\b|spawnable)"
       ],
       "unchanged": [
-        ".claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp"
+        "skills/dayz-release-pack/fixtures/MyVest/config.cpp"
       ],
-      "verified": ".claude/skills/dayz-release-pack/fixtures/MyVest/config.cpp (MyVest_Base scope = 0, MyVest_Black and MyVest_Green scope = 2, MyVest_Hidden sets no scope and inherits 0 from MyVest_Base, MyVest_Patch sets no scope and its parent Armband_ColorBase is outside the mod); .claude/skills/dayz-release-pack/release_pack.py:87 to :125 item_classes on the fixture gives MyVest_Hidden scope 0 and MyVest_Patch scope None, and :221 to :225 report it as scope-unknown; P:\\DZ\\characters\\tops\\config.cpp:817 (vanilla Armband_ColorBase sets no scope of its own, only children such as Armband_White at :948 set scope=2); .claude/agents/dayz-docs-writer.md 'For a release' (scope-unknown: report under Scope not set for dayz-config-specialist); /dayz-release-pack on that fixture lists MyVest_Black, MyVest_Green and MyVest_Pouch as spawnable; .claude/agents/dayz-docs-writer.md 'What you keep current' (only scope = 2 classes, skip scope 0 and 1)"
+      "verified": "skills/dayz-release-pack/fixtures/MyVest/config.cpp (MyVest_Base scope = 0, MyVest_Black and MyVest_Green scope = 2, MyVest_Hidden sets no scope and inherits 0 from MyVest_Base, MyVest_Patch sets no scope and its parent Armband_ColorBase is outside the mod); skills/dayz-release-pack/release_pack.py:87 to :125 item_classes on the fixture gives MyVest_Hidden scope 0 and MyVest_Patch scope None, and :221 to :225 report it as scope-unknown; P:\\DZ\\characters\\tops\\config.cpp:817 (vanilla Armband_ColorBase sets no scope of its own, only children such as Armband_White at :948 set scope=2); agents/dayz-docs-writer.md 'For a release' (scope-unknown: report under Scope not set for dayz-config-specialist); /dayz-release-pack on that fixture lists MyVest_Black, MyVest_Green and MyVest_Pouch as spawnable; agents/dayz-docs-writer.md 'What you keep current' (only scope = 2 classes, skip scope 0 and 1)"
     },
     {
       "id": "private-key-is-a-release-blocker",
@@ -28,7 +28,7 @@
       "must_not_include": [
         "re:\\A\\W*yes\\b"
       ],
-      "verified": ".claude/skills/dayz-release-pack/release_pack.py:230 (private-key-in-mod warning text); .claude/agents/dayz-docs-writer.md 'For a release' (private-key-in-mod: report it as a release blocker)"
+      "verified": "skills/dayz-release-pack/release_pack.py:230 (private-key-in-mod warning text); agents/dayz-docs-writer.md 'For a release' (private-key-in-mod: report it as a release blocker)"
     },
     {
       "id": "git-limited-to-mod-folder",
@@ -38,7 +38,7 @@
         "re:--\\s+\\."
       ],
       "must_not_include": [],
-      "verified": ".claude/agents/dayz-docs-writer.md 'Read what changed first' (git -C workspace/<ModName> status --short -- . and log --name-only <ref>..HEAD -- .; the -- . limits both to the mod folder); .claude/skills/dayz-release-pack/release_pack.py:257 to :281 (_git runs git -C on the mod folder)"
+      "verified": "agents/dayz-docs-writer.md 'Read what changed first' (git -C workspace/<ModName> status --short -- . and log --name-only <ref>..HEAD -- .; the -- . limits both to the mod folder); skills/dayz-release-pack/release_pack.py:257 to :281 (_git runs git -C on the mod folder)"
     },
     {
       "id": "summary-missing-goes-in-readme",
@@ -50,7 +50,7 @@
       "must_not_include": [
         "re:^(?!.*\\b(never|not|don't|do not|overwrit\\w*|regenerat\\w*|generated|rerun\\w*|re-run\\w*)\\b).*\\b(edit|write|change|replace)\\b[^.\\n]{0,60}workshop-description\\.txt"
       ],
-      "verified": ".claude/skills/dayz-release-pack/release_pack.py:210 to :217 (summary from mod.cpp overview or the README's first paragraph; summary-missing text); .claude/agents/dayz-docs-writer.md 'For a release' summary-missing bullet (write it into README.md and rerun; never edit workshop-description.txt)"
+      "verified": "skills/dayz-release-pack/release_pack.py:210 to :217 (summary from mod.cpp overview or the README's first paragraph; summary-missing text); agents/dayz-docs-writer.md 'For a release' summary-missing bullet (write it into README.md and rerun; never edit workshop-description.txt)"
     },
     {
       "id": "payload-only-bundle-skips-kit",
@@ -61,7 +61,7 @@
         "re:no (release pack or )?(server )?kit|(kit|release pack)[^\n]{0,80}(was|were|is) not built|not built"
       ],
       "must_not_include": [],
-      "verified": ".claude/skills/dayz-release-pack/release_pack.py:203 to :205 (mod_facts raises ReleaseError when config.cpp is missing); .claude/skills/dayz-server-kit/SKILL.md:56 (exit 2 with no config.cpp); .claude/agents/dayz-build-engineer.md step 2b and 4d (payload-only bundle, dependencies from the bundle's README or install notes); .claude/agents/dayz-docs-writer.md 'For a release' payload-only bundle bullet"
+      "verified": "skills/dayz-release-pack/release_pack.py:203 to :205 (mod_facts raises ReleaseError when config.cpp is missing); skills/dayz-server-kit/SKILL.md:56 (exit 2 with no config.cpp); agents/dayz-build-engineer.md step 2b and 4d (payload-only bundle, dependencies from the bundle's README or install notes); agents/dayz-docs-writer.md 'For a release' payload-only bundle bullet"
     }
   ]
 }

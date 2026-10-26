@@ -1,10 +1,10 @@
 # Prompt conventions
 
-Why agent and skill files in this repo look the way they do. Read this before writing or editing anything in `.claude/agents/` or `.claude/skills/`.
+Why agent and skill files in this repo look the way they do. Read this before writing or editing anything in `agents/`, `skills/` or `.claude/skills/`.
 
 ## TL;DR
 
-- **Agent file shape** follows the lean standard in `.claude/agents/agent-creator.md` ("What a good agent file looks like"): frontmatter, a role sentence, then only the sections the role needs, with plain sentence-case headings.
+- **Agent file shape** follows the lean standard in `agents/agent-creator.md` ("What a good agent file looks like"): frontmatter, a role sentence, then only the sections the role needs, with plain sentence-case headings.
 - **Inline caps directives** (`MUST`, `NEVER`, `ALWAYS`, `DO NOT`, `CRITICAL`) are behavioral — they can help a hard rule stand out, but only when used sparingly, and overuse makes recent models over-apply rules.
 - **Lowercase prose for everything else.** Caps are a finite signal; spending them on decoration burns the budget you need for real rules.
 
@@ -47,13 +47,13 @@ Examples that would *fail* the test (and should stay lowercase):
 
 ## Agent file shape
 
-The structure of an agent file is set by `agent-creator` (`.claude/agents/agent-creator.md`, section "What a good agent file looks like"). In short:
+The structure of an agent file is set by `agent-creator` (`agents/agent-creator.md`, section "What a good agent file looks like"). In short:
 
 - Frontmatter: `name` and a third-person `description` that works as the delegation contract, with 1 to 3 short `<example>` blocks. Descriptions load into every session, so keep them short.
 - Minimal `tools`. When the role needs memory, use `memory: project` and add no memory section in the body. Gate agents get no memory, and read-only roles get it only when they need it.
 - Body: a role sentence, then only load-bearing sections (workflow, domain rules, constraints, handoffs, report), usually 10 to 60 lines.
 - No `## NAME` heading and no PURPOSE / CAPABILITIES / INPUT / OUTPUT scaffolding. Use plain sentence-case headings such as `## Workflow` or `## Report`.
-- Point at shared docs (`.claude/skills/_shared/...`) instead of pasting their rules.
+- Point at shared docs (`skills/_shared/...`) instead of pasting their rules.
 
 Headings are for the reader, not the model; their case doesn't change behavior. The caps budget above applies to inline directives only.
 

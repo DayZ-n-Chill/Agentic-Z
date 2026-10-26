@@ -21,7 +21,7 @@ _spec.loader.exec_module(sync)
 @pytest.fixture
 def env(tmp_path, monkeypatch):
     repo = tmp_path / "repo"
-    skills = repo / ".claude" / "skills"
+    skills = repo / "skills"
     for name in ("alpha", "beta"):
         (skills / name).mkdir(parents=True)
         (skills / name / "SKILL.md").write_text(f"---\nname: {name}\n---\n", encoding="utf-8")
@@ -42,6 +42,18 @@ def _target(link: Path) -> Path:
 def test_list_repo_skills_includes_shared_and_skips_helpers(env):
     _, skills, _, _ = env
     assert [p.name for p in sync.list_repo_skills()] == ["_shared", "alpha", "beta"]
+
+
+def test_repo_only_skills_in_dot_claude_are_listed_and_owned(env):
+    repo, _, target_dir, cfg = env
+    repo_only = repo / ".claude" / "skills" / "delta"
+    repo_only.mkdir(parents=True)
+    (repo_only / "SKILL.md").write_text("---\nname: delta\n---\n", encoding="utf-8")
+    assert [p.name for p in sync.list_repo_skills()] == ["_shared", "alpha", "beta", "delta"]
+
+    sync.sync_one(cfg, sync.list_repo_skills(), dry_run=False, force=False)
+    assert _target(target_dir / "delta") == repo_only.resolve()
+    assert sync.unlink_one(cfg, dry_run=False) == {"unlinked": 4, "failed": 0}
 
 
 def test_first_run_links_everything_then_second_run_is_ok(env):
@@ -219,7 +231,7 @@ def test_foreign_link_is_left_alone_unless_forced(env, tmp_path):
 
 def test_link_into_a_worktree_of_this_repo_is_foreign(env, capsys):
     repo, skills, target_dir, cfg = env
-    worktree_skill = repo / ".claude" / "worktrees" / "x" / ".claude" / "skills" / "alpha"
+    worktree_skill = repo / ".claude" / "worktrees" / "x" / "skills" / "alpha"
     worktree_skill.mkdir(parents=True)
     target_dir.mkdir(parents=True)
     sync.make_link(worktree_skill, target_dir / "alpha")
@@ -452,7 +464,7 @@ def test_minimal_valid_entry_is_accepted(tmp_path, monkeypatch):
 def test_shipped_agents_json_is_valid():
     agents = sync.load_agents_config()
     assert [a["name"] for a in agents] == ["claude", "codex", "gemini"]
-    # Claude Code reads the repo's .claude/skills/ itself; linking into
+    # Claude Code loads the repo's skills/ and .claude/skills/ itself; linking into
     # ~/.claude/skills would make every skill global and duplicate the plugin's.
     assert [a.get("default", True) for a in agents] == [False, True, True]
     # Codex reads user skills from $HOME/.agents/skills, not ~/.codex/skills.

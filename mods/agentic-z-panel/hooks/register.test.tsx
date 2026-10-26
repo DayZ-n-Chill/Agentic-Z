@@ -19,7 +19,7 @@ const PANE = {
 // `listed`. Every process call is recorded instead of run.
 function engine(on: any, runs: string[][], listed = '0.4.0', opened: string[] = []) {
   const files: Record<string, string> = {
-    'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
+    'C:\\proj\\skills\\dayz-preflight\\preflight.py': '',
     'C:\\proj\\.claude\\local-memory\\dayz-init-state.json': '{"last_intent": {"mod_name": "MyVest"}}',
     'P:\\': '',
   }
@@ -69,7 +69,7 @@ test('the pane shows the state and runs the build for the active mod', async ($,
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await ui.press({ key: 'build' })
   await ui.unmount()
-  expect(runs.some(argv => argv.join(' ') === 'python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest')).toBe(true)
+  expect(runs.some(argv => argv.join(' ') === 'python C:\\proj\\skills\\dayz-build-pbo\\build.py MyVest')).toBe(true)
 })
 
 test('the gate buttons run /dayz-gate build and ingame for the active mod', async ($, on) => {
@@ -82,8 +82,8 @@ test('the gate buttons run /dayz-gate build and ingame for the active mod', asyn
   await ui.press({ key: 'gateingame' })
   await ui.unmount()
   const lines = runs.map(argv => argv.join(' '))
-  expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-gate\\gate.py build MyVest')
-  expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-gate\\gate.py ingame MyVest')
+  expect(lines).toContain('python C:\\proj\\skills\\dayz-gate\\gate.py build MyVest')
+  expect(lines).toContain('python C:\\proj\\skills\\dayz-gate\\gate.py ingame MyVest')
 })
 
 test('the workflow buttons run logwatch, the health page and the release pack for the active mod', async ($, on) => {
@@ -97,9 +97,9 @@ test('the workflow buttons run logwatch, the health page and the release pack fo
   await ui.press({ key: 'releasepack' })
   await ui.unmount()
   const lines = runs.map(argv => argv.join(' '))
-  expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-logwatch\\logwatch.py --since 30 --duration 3 --mod MyVest')
-  expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-health\\health.py MyVest')
-  expect(lines).toContain('python C:\\proj\\.claude\\skills\\dayz-release-pack\\release_pack.py MyVest')
+  expect(lines).toContain('python C:\\proj\\skills\\dayz-logwatch\\logwatch.py --since 30 --duration 3 --mod MyVest')
+  expect(lines).toContain('python C:\\proj\\skills\\dayz-health\\health.py MyVest')
+  expect(lines).toContain('python C:\\proj\\skills\\dayz-release-pack\\release_pack.py MyVest')
 })
 
 test('the ask field runs /dayz-ask with the question and skips an empty one', async ($, on) => {
@@ -114,7 +114,7 @@ test('the ask field runs /dayz-ask with the question and skips an empty one', as
   await ui.input({ key: 'ask', text: 'how does food spoil' })
   await ui.unmount()
   expect(asked().map(argv => argv.join(' '))).toEqual([
-    'python C:\\proj\\.claude\\skills\\dayz-ask\\ask.py --top-k 10 --excerpt-lines 60 how does food spoil',
+    'python C:\\proj\\skills\\dayz-ask\\ask.py --top-k 10 --excerpt-lines 60 how does food spoil',
   ])
 })
 
@@ -133,7 +133,7 @@ function engineWith(on: any, runs: string[][], opts: {
   seen?: (e: any) => void
 } = {}) {
   const files: Record<string, string> = opts.files ?? {
-    'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
+    'C:\\proj\\skills\\dayz-preflight\\preflight.py': '',
     'C:\\proj\\.claude\\local-memory\\dayz-init-state.json': '{"last_intent": {"mod_name": "MyVest"}}',
     'P:\\': '',
   }
@@ -187,7 +187,7 @@ test('with only the py launcher, buttons run their script with py', async ($, on
   const ui = await openPane($)
   await ui.press({ key: 'deploy' })
   await ui.unmount()
-  expect(scriptRuns(runs)).toEqual(['py C:\\proj\\.claude\\skills\\dayz-deploy-pbo\\deploy.py MyVest'])
+  expect(scriptRuns(runs)).toEqual(['py C:\\proj\\skills\\dayz-deploy-pbo\\deploy.py MyVest'])
 })
 
 test('with no Python at all, a button runs nothing and says how to fix it', async ($, on) => {
@@ -223,24 +223,24 @@ test('stop, mount, deploy, launch, workbench and object builder run their script
   for (const key of ['stop', 'mount', 'deploy', 'launch', 'workbench', 'objectbuilder']) await ui.press({ key })
   await ui.unmount()
   expect(scriptRuns(runs)).toEqual([
-    'cmd /c C:\\proj\\.claude\\skills\\dayz-stop-test\\stop_test.bat',
-    'python C:\\proj\\.claude\\skills\\dayz-workdrive\\mount.py',
-    'python C:\\proj\\.claude\\skills\\dayz-deploy-pbo\\deploy.py MyVest',
-    'python C:\\proj\\.claude\\skills\\dayz-launch-test\\launch.py MyVest',
-    'python C:\\proj\\.claude\\skills\\dayz-launch-workbench\\launch.py --mod MyVest',
-    'python C:\\proj\\.claude\\skills\\dayz-launch-objectbuilder\\launch.py',
+    'cmd /c C:\\proj\\skills\\dayz-stop-test\\stop_test.bat',
+    'python C:\\proj\\skills\\dayz-workdrive\\mount.py',
+    'python C:\\proj\\skills\\dayz-deploy-pbo\\deploy.py MyVest',
+    'python C:\\proj\\skills\\dayz-launch-test\\launch.py MyVest',
+    'python C:\\proj\\skills\\dayz-launch-workbench\\launch.py --mod MyVest',
+    'python C:\\proj\\skills\\dayz-launch-objectbuilder\\launch.py',
   ])
 })
 
 test('with no active mod, workbench opens bare and the mod buttons only toast', async ($, on) => {
   const runs: string[][] = []
   const toasts: string[] = []
-  engineWith(on, runs, { toasts, files: { 'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '' } })
+  engineWith(on, runs, { toasts, files: { 'C:\\proj\\skills\\dayz-preflight\\preflight.py': '' } })
   const ui = await openPane($)
   await ui.press({ key: 'workbench' })
   await ui.press({ key: 'build' })
   await ui.unmount()
-  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-launch-workbench\\launch.py'])
+  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\skills\\dayz-launch-workbench\\launch.py'])
   expect(toasts).toContain('No active mod yet. Run /dayz-init first.')
 })
 
@@ -263,7 +263,7 @@ test('a second press while an action runs starts nothing', async ($, on) => {
   await ui.press({ key: 'build' })
   await ui.unmount()
   expect(toastsDuringBuild).toEqual(['build is still running'])
-  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest'])
+  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\skills\\dayz-build-pbo\\build.py MyVest'])
   expect(toasts).toEqual(['build is still running', 'build: done'])
 })
 
@@ -280,7 +280,7 @@ test('without a clone, the panel uses the newest plugin cache version by number'
   await ui.press({ key: 'build' })
   await ui.unmount()
   expect(scriptRuns(runs)).toEqual([
-    'python C:\\Users\\me\\.claude\\plugins\\cache\\dayz-n-chill\\agentic-z\\1.10.0\\.claude\\skills\\dayz-build-pbo\\build.py MyVest',
+    'python C:\\Users\\me\\.claude\\plugins\\cache\\dayz-n-chill\\agentic-z\\1.10.0\\skills\\dayz-build-pbo\\build.py MyVest',
   ])
 })
 
@@ -293,14 +293,14 @@ test('a session started in a subfolder of the clone finds the clone and its acti
   expect((await ui.find({ type: 'Text', text: /Active mod: MyVest/ }))?.text).toBe('Active mod: MyVest')
   await ui.press({ key: 'build' })
   await ui.unmount()
-  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest'])
+  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\skills\\dayz-build-pbo\\build.py MyVest'])
 })
 
 test('a press reads the active mod afresh, so /dayz-init after the pane opened needs no Refresh', async ($, on) => {
   const runs: string[][] = []
   const toasts: string[] = []
   const files: Record<string, string> = {
-    'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
+    'C:\\proj\\skills\\dayz-preflight\\preflight.py': '',
     'P:\\': '',
   }
   engineWith(on, runs, { toasts, files })
@@ -310,7 +310,7 @@ test('a press reads the active mod afresh, so /dayz-init after the pane opened n
   await ui.press({ key: 'build' })
   await ui.unmount()
   expect(toasts).not.toContain('No active mod yet. Run /dayz-init first.')
-  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest'])
+  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\skills\\dayz-build-pbo\\build.py MyVest'])
 })
 
 test('without a clone, a session in a subfolder finds the project state file above it', async ($, on) => {
@@ -329,7 +329,7 @@ test('without a clone, a session in a subfolder finds the project state file abo
   await ui.press({ key: 'build' })
   await ui.unmount()
   expect(scriptRuns(runs)).toEqual([
-    'python C:\\Users\\me\\.claude\\plugins\\cache\\dayz-n-chill\\agentic-z\\1.10.0\\.claude\\skills\\dayz-build-pbo\\build.py MyVest',
+    'python C:\\Users\\me\\.claude\\plugins\\cache\\dayz-n-chill\\agentic-z\\1.10.0\\skills\\dayz-build-pbo\\build.py MyVest',
   ])
 })
 
@@ -590,7 +590,7 @@ test('a failing tasklist call does not stop a press', async ($, on) => {
   await ui.press({ key: 'build' })
   await ui.unmount()
   expect(toasts).toEqual(['build: done'])
-  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest'])
+  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\skills\\dayz-build-pbo\\build.py MyVest'])
 })
 
 test('a failing status check toasts, runs nothing and frees the lock', async ($, on) => {
@@ -607,7 +607,7 @@ test('a failing status check toasts, runs nothing and frees the lock', async ($,
   broken = false
   await ui.press({ key: 'build' })
   await ui.unmount()
-  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\.claude\\skills\\dayz-build-pbo\\build.py MyVest'])
+  expect(scriptRuns(runs)).toEqual(['python C:\\proj\\skills\\dayz-build-pbo\\build.py MyVest'])
   expect(toasts[1]).toBe('build: done')
 })
 
@@ -651,11 +651,11 @@ test('the start card checks setup, adds a server, and creates or imports a mod',
   await ui.unmount()
   const lines = runs.map(argv => argv.join(' ')).filter(l => l.startsWith('python C:'))
   expect(lines).toEqual([
-    'python C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py',
-    'python C:\\proj\\.claude\\skills\\dayz-add-server\\add_server.py chernarus',
-    'python C:\\proj\\.claude\\skills\\dayz-new-mod\\new_mod.py MyVest',
-    'python C:\\proj\\.claude\\skills\\dayz-new-mod\\new_mod.py MyCrate --author Brian',
-    'python C:\\proj\\.claude\\skills\\dayz-import-mod\\import_mod.py --source D:\\mods\\OldVest',
+    'python C:\\proj\\skills\\dayz-preflight\\preflight.py',
+    'python C:\\proj\\skills\\dayz-add-server\\add_server.py chernarus',
+    'python C:\\proj\\skills\\dayz-new-mod\\new_mod.py MyVest',
+    'python C:\\proj\\skills\\dayz-new-mod\\new_mod.py MyCrate --author Brian',
+    'python C:\\proj\\skills\\dayz-import-mod\\import_mod.py --source D:\\mods\\OldVest',
   ])
 })
 
@@ -698,7 +698,7 @@ test('a session folder that no longer exists runs the script from the Agentic-Z 
   const cwds: Record<string, string> = {}
   engineWith(on, [], {
     files: {
-      'C:\\proj\\.claude\\skills\\dayz-preflight\\preflight.py': '',
+      'C:\\proj\\skills\\dayz-preflight\\preflight.py': '',
       'C:\\proj\\workspace\\MyVest': '',
     },
     seen: e => {
@@ -710,14 +710,14 @@ test('a session folder that no longer exists runs the script from the Agentic-Z 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await ui.press({ key: 'stop' })
   await ui.unmount()
-  expect(cwds['C:\\proj\\.claude\\skills\\dayz-stop-test\\stop_test.bat']).toBe('C:\\proj')
+  expect(cwds['C:\\proj\\skills\\dayz-stop-test\\stop_test.bat']).toBe('C:\\proj')
 
   await $.session.start({ cwd: 'C:\\proj\\workspace\\MyVest', surface: 'desktop', isInteractive: true })
   await $.command.run({ command: 'dayz-panel', args: '' })
   const again = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await again.press({ key: 'stop' })
   await again.unmount()
-  expect(cwds['C:\\proj\\.claude\\skills\\dayz-stop-test\\stop_test.bat']).toBe('C:\\proj\\workspace\\MyVest')
+  expect(cwds['C:\\proj\\skills\\dayz-stop-test\\stop_test.bat']).toBe('C:\\proj\\workspace\\MyVest')
 })
 
 test('Dismiss clears the last run card and the update notice', async ($, on) => {

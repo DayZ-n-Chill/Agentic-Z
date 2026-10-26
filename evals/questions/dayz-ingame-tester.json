@@ -11,7 +11,7 @@
         "re:\\A\\W*FAIL\\b",
         "re:\\byes\\b[^.\\n]*\\bfail"
       ],
-      "verified": ".claude/agents/dayz-ingame-tester.md step 1 (the mod's PBO, or for a bundle at least one .pbo, under P:\\Mods\\@<ModName>\\Addons\\); .claude/skills/dayz-gate/gate.py bundle_layout (any Addons/*.pbo is a payload) and ingame_session (no PBO name check); .claude/skills/_shared/conventions/config.md 'Bundle / umbrella mods' (payload PBOs keep their own names)"
+      "verified": "agents/dayz-ingame-tester.md step 1 (the mod's PBO, or for a bundle at least one .pbo, under P:\\Mods\\@<ModName>\\Addons\\); skills/dayz-gate/gate.py bundle_layout (any Addons/*.pbo is a payload) and ingame_session (no PBO name check); skills/_shared/conventions/config.md 'Bundle / umbrella mods' (payload PBOs keep their own names)"
     },
     {
       "id": "bundle-exempt-from-deps",
@@ -22,7 +22,7 @@
       "must_not_include": [
         "re:/dayz-launch-test\\s+@?MyBundle_(Core|Gear)\\b"
       ],
-      "verified": ".claude/agents/dayz-ingame-tester.md step 2 (a bundle with no named dependencies and .pbo files in workspace/<ModName>/Addons/ is launched alone); .claude/skills/dayz-gate/gate.py ingame_session (the missing --deps error is skipped when bundle_layout finds a payload)"
+      "verified": "agents/dayz-ingame-tester.md step 2 (a bundle with no named dependencies and .pbo files in workspace/<ModName>/Addons/ is launched alone); skills/dayz-gate/gate.py ingame_session (the missing --deps error is skipped when bundle_layout finds a payload)"
     },
     {
       "id": "non-bundle-unmapped-dep-stops",
@@ -34,7 +34,7 @@
       "must_not_include": [
         "re:^\\s*`?/dayz-launch-test\\s+@?MyVest\\s+--server"
       ],
-      "verified": ".claude/agents/dayz-ingame-tester.md step 2 (a dependency that can't be mapped to an @mod: stop and report instead of launching); .claude/skills/dayz-gate/gate.py non_vanilla_addons (any requiredAddons entry without the DZ_ prefix) and ingame_session (GateError when no --deps and no bundle payload)"
+      "verified": "agents/dayz-ingame-tester.md step 2 (a dependency that can't be mapped to an @mod: stop and report instead of launching); skills/dayz-gate/gate.py non_vanilla_addons (any requiredAddons entry without the DZ_ prefix) and ingame_session (GateError when no --deps and no bundle payload)"
     },
     {
       "id": "ready-line-and-settle",
@@ -46,7 +46,7 @@
         "re:\\b30\\b"
       ],
       "must_not_include": [],
-      "verified": "P:\\scripts\\5_mission\\somemission.c:3 (Print(\"Creating Mission: \"+ path)); .claude/skills/dayz-gate/gate.py DEFAULT_READY_RE and DEFAULT_SETTLE_S = 30; .claude/agents/dayz-ingame-tester.md step 3 (client script log under .server/!ClientDiagLogs/, 30 more seconds)"
+      "verified": "P:\\scripts\\5_mission\\somemission.c:3 (Print(\"Creating Mission: \"+ path)); skills/dayz-gate/gate.py DEFAULT_READY_RE and DEFAULT_SETTLE_S = 30; agents/dayz-ingame-tester.md step 3 (client script log under .server/!ClientDiagLogs/, 30 more seconds)"
     },
     {
       "id": "unqualified-null-pointer-is-warning",
@@ -58,7 +58,7 @@
         "re:\\A\\W*FAIL\\b",
         "re:\\byes\\b[^.\\n]*\\bfail"
       ],
-      "verified": ".claude/agents/dayz-ingame-tester.md 'What fails the gate' (a NULL pointer or Can't find line that names nothing of the mod is never a failure; with no vanilla-only run, report it as a warning); .claude/skills/dayz-gate/gate.py MOD_QUALIFIED and judge_entries"
+      "verified": "agents/dayz-ingame-tester.md 'What fails the gate' (a NULL pointer or Can't find line that names nothing of the mod is never a failure; with no vanilla-only run, report it as a warning); skills/dayz-gate/gate.py MOD_QUALIFIED and judge_entries"
     }
   ]
 }

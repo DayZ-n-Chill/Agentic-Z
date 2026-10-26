@@ -12,10 +12,10 @@ Keep the wiki in line with the repository. The wiki lives in its own private rep
 
 ## When to run it
 
-- After adding, renaming or removing a file in `.claude/agents/` (or changing an agent's `memory:` line or its `mcp__dayz-rag__` tools), a skill folder in `.claude/skills/` or a hook script in `hooks/`.
+- After adding, renaming or removing a file in `agents/` (or changing an agent's `memory:` line or its `mcp__dayz-rag__` tools), a skill folder in `skills/` or `.claude/skills/` or a hook script in `hooks/`.
 - After adding or removing a question file in `evals/questions/`.
 - After a grading round changes `docs/grades/final_grades.json` or `docs/grades/final_grades_shared.json`.
-- After editing `.claude/skills/_shared/dayz-conventions.md` or a topic file in `.claude/skills/_shared/conventions/`.
+- After editing `skills/_shared/dayz-conventions.md` or a topic file in `skills/_shared/conventions/`.
 - After rewording or adding a wiki sentence that states a count (then update the claims table in `sync.py`).
 - When the Stop hook reports wiki problems at the end of a session.
 
@@ -65,7 +65,7 @@ python "<skill-dir>\sync.py" --map
 
 | Check | Wiki | Compared with |
 |---|---|---|
-| Names | The tables under `## Agents` in `guide.md`, and `skills-table.md` | `.claude/agents/*.md` and every `.claude/skills/<name>/SKILL.md` (folders whose name starts with an underscore, such as `_shared`, are skipped). Every one must be listed once, and nothing else. |
+| Names | The tables under `## Agents` in `guide.md`, and `skills-table.md` | `agents/*.md` and every `skills/<name>/SKILL.md` and `.claude/skills/<name>/SKILL.md` (folders whose name starts with an underscore, such as `_shared`, are skipped). Every one must be listed once, and nothing else. |
 | Claims | Each entry in the `CLAIMS` table in `sync.py` | The repository fact named for each number in the claim (see below). |
 | Grades | The "Quality by version" tables in `guide.md` and `team.md` | `docs/grades/final_grades.json` and `final_grades_shared.json`: every graded item has exactly one row, and the last column holds its latest grade. Row labels match after dropping backticks, a `Pack:` prefix and a trailing `(...)`; two grade items that match the same label are reported, so neither drops out of the check. |
 
@@ -73,7 +73,7 @@ python "<skill-dir>\sync.py" --map
 
 The counts the wiki states are listed one by one in the `CLAIMS` table at the top of `sync.py`. Each entry gives the wiki file, the exact text of the claim with `{N}` where each number sits, and the fact each number must equal. Only the numbers inside these claims are read or rewritten; a number anywhere else in the wiki is never checked, so a sentence such as "the lead dispatches 3 agents in parallel" is left alone. A `{N}` matches digits or a number word from "zero" to "twenty" ("three hooks", "five topic files"); `--apply` writes a word back as a word.
 
-To see every claim, run `--map`: it prints the full table from `CLAIMS`, with each claim's file, text and the current value of every fact. This file does not copy the list, so it cannot go out of date. The counts come from these sources: agent files are `.claude/agents/*.md`; skill folders are those with a `SKILL.md` (not starting with `_`); hook scripts are `hooks/*.py` other than `test_*.py`; the rules core is `.claude/skills/_shared/dayz-conventions.md` and the topic files are `.claude/skills/_shared/conventions/*.md`, counted as `wc -l` does.
+To see every claim, run `--map`: it prints the full table from `CLAIMS`, with each claim's file, text and the current value of every fact. This file does not copy the list, so it cannot go out of date. The counts come from these sources: agent files are `agents/*.md`; skill folders are those in `skills/` and `.claude/skills/` with a `SKILL.md` (not starting with `_`); hook scripts are `hooks/*.py` other than `test_*.py`; the rules core is `skills/_shared/dayz-conventions.md` and the topic files are `skills/_shared/conventions/*.md`, counted as `wc -l` does.
 
 A claim must be found in a section that `wiki/src/content.js` does not hide (its `HIDDEN` set); `App.jsx` has no sections and is read whole. If a claim's text is no longer found, for example because the sentence was reworded or deleted, the check reports `<file>: claim not found: "<text>"; update the CLAIMS table in sync.py`. That problem needs a hand edit: change the claim's text in `CLAIMS` to the new wording, or remove the entry if the wiki no longer makes the claim. When you add a count to the wiki, add its claim to `CLAIMS` as well, or it is not checked. A test in `test_docs_sync.py` scans the visible parts of `guide.md` and `team.md` for a number next to "agents", "skills", "hooks" or "items" and fails when one is outside every claim, unless its `NOT_FACTS` list names it as a count no fact computes (such as "five gate agents"). A count in a hidden section, such as the "Status and next steps" table in `team.md`, is not on the site and is not checked. If `content.js` has no `const HIDDEN = new Set([...])`, the run stops with an error instead of checking hidden sections. The names and grades checks read their tables wherever they sit, hidden or not.
 
@@ -98,7 +98,7 @@ Exit code 1 means one of these:
 - A grade file is missing, not UTF-8 or not parsable, or has a grade entry whose batch name does not start with `agents`, `skills` or `shared` (the counts would leave it out).
 - A `content.js` has no `HIDDEN` set.
 - A rules core or topic file is missing or cannot be read.
-- A `.claude/agents/`, `evals/questions/`, `hooks/` or `conventions/` folder is missing, or has none of the files it is counted from: `*.md` agents, `*.json` question files, `*.py` hook scripts other than `test_*.py`, `*.md` topic files.
+- An `agents/`, `evals/questions/`, `hooks/` or `conventions/` folder is missing, or has none of the files it is counted from: `*.md` agents, `*.json` question files, `*.py` hook scripts other than `test_*.py`, `*.md` topic files.
 
 A missing or empty source is never counted as 0, so `--apply` writes nothing.
 

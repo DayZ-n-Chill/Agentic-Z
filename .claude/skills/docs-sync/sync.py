@@ -8,8 +8,8 @@ Stop hook stays silent. Problems still name wiki files as wiki/src/..., meaning
 src/... in the wiki repository.
 
 Pure-Python, deterministic checks; no model calls. Three checks:
-  names   Every agent (.claude/agents/*.md) is named in the guide's "## Agents"
-          tables and every skill (.claude/skills/*/SKILL.md) in skills-table.md,
+  names   Every agent (agents/*.md) is named in the guide's "## Agents"
+          tables and every skill (skills/*/SKILL.md and .claude/skills/*/SKILL.md) in skills-table.md,
           and those tables name nothing that does not exist.
   claims  Each count claim in the CLAIMS table below (an exact piece of text in
           one wiki file, with the place of each number marked) is found in its
@@ -45,7 +45,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "skills" / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -85,9 +85,9 @@ TEAM = "wiki/src/content/team.md"
 SKILLS_TABLE = "wiki/src/content/skills-table.md"
 CONTENT_JS = "wiki/src/content.js"
 APP_JSX = "wiki/src/App.jsx"
-RULES_CORE = ".claude/skills/_shared/dayz-conventions.md"
-RULES_TOPICS = ".claude/skills/_shared/conventions"
-AGENTS_DIR = ".claude/agents"
+RULES_CORE = "skills/_shared/dayz-conventions.md"
+RULES_TOPICS = "skills/_shared/conventions"
+AGENTS_DIR = "agents"
 EVAL_QUESTIONS = "evals/questions"
 HOOKS_DIR = "hooks"
 
@@ -282,8 +282,8 @@ def gather_facts() -> Facts:
     hooks = [p for p in source_files(HOOKS_DIR, "*.py") if not p.name.startswith("test_")]
     if not hooks:
         raise SourceError(f"cannot read {HOOKS_DIR}/: no hook scripts (only test_*.py files)")
-    skills = sorted(p.parent.name for p in (REPO_ROOT / ".claude" / "skills").glob("*/SKILL.md")
-                    if not p.parent.name.startswith("_"))
+    skills = sorted(p.parent.name for d in (REPO_ROOT / "skills", REPO_ROOT / ".claude" / "skills")
+                    for p in d.glob("*/SKILL.md") if not p.parent.name.startswith("_"))
     eval_agents = sorted(p.stem for p in source_files(EVAL_QUESTIONS, "*.json") if p.stem in agents)
     grades, source = load_grades()
     core = REPO_ROOT / RULES_CORE
@@ -302,8 +302,8 @@ def gather_facts() -> Facts:
     g = f"{GRADES_DIR}/{GRADE_FILES[0]}"
     gs = f"{GRADES_DIR}/{GRADE_FILES[1]}"
     facts.counts = {
-        "agents": (len(agents), "agent files in .claude/agents/"),
-        "skills": (len(skills), "skill folders with a SKILL.md in .claude/skills/"),
+        "agents": (len(agents), "agent files in agents/"),
+        "skills": (len(skills), "skill folders with a SKILL.md in skills/ and .claude/skills/"),
         "hooks": (len(hooks), f"hook scripts in {HOOKS_DIR}/ (not test_*.py)"),
         "eval_agents": (len(eval_agents), "agents with a question file in evals/questions/"),
         "memory_agents": (len(memory_agents), "agents with a memory: line in their frontmatter"),
@@ -535,9 +535,9 @@ def report(problems: list[Problem], quiet: bool) -> int:
 
 def print_map(facts: Facts) -> int:
     c = facts.counts
-    print("names   guide.md \"## Agents\" tables  <->  .claude/agents/*.md "
+    print("names   guide.md \"## Agents\" tables  <->  agents/*.md "
           f"({c['agents'][0]}); none missing, none unknown, none twice")
-    print(f"names   skills-table.md rows         <->  .claude/skills/*/SKILL.md ({c['skills'][0]})")
+    print(f"names   skills-table.md rows         <->  skills/*/SKILL.md + .claude/skills/*/SKILL.md ({c['skills'][0]})")
     print(f"claims  each found in a section {CONTENT_JS} does not hide; N is digits or a word up to twenty:")
     for claim in CLAIMS:
         values = ", ".join(f"{name}={c[name][0]}" for name in claim.facts)

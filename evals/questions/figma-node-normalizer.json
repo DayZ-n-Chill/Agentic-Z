@@ -12,7 +12,7 @@
         "button-close",
         "re:\"name\"\\s*:\\s*\"Btn Close\""
       ],
-      "verified": ".claude/agents/figma-node-normalizer.md Classify (a name with a rules-doc prefix takes the prefix's type) and Name (Btn Close becomes btn_close); .claude/skills/_shared/figma-to-dayz-rules.md section 4"
+      "verified": "agents/figma-node-normalizer.md Classify (a name with a rules-doc prefix takes the prefix's type) and Name (Btn Close becomes btn_close); skills/_shared/figma-to-dayz-rules.md section 4"
     },
     {
       "id": "sizing-on-every-node",
@@ -21,7 +21,7 @@
         "re:(?s)(\"sizing\".*){3}",
         "re:(?s)\"txt_title\".*?\"sizing\"\\s*:\\s*\\{\\s*\"width\"\\s*:\\s*\"fill\""
       ],
-      "verified": ".claude/agents/figma-node-normalizer.md JSON shape (sizing is required on every node) and .claude/skills/_shared/figma-to-dayz-rules.md section 10 (every node carries sizing)"
+      "verified": "agents/figma-node-normalizer.md JSON shape (sizing is required on every node) and skills/_shared/figma-to-dayz-rules.md section 10 (every node carries sizing)"
     },
     {
       "id": "children-source-order",
@@ -29,7 +29,7 @@
       "must_include": [
         "re:(?s)\"txt_price\".*\"txt_name\".*\"txt_weight\""
       ],
-      "verified": ".claude/agents/figma-node-normalizer.md Rules (children in source order)"
+      "verified": "agents/figma-node-normalizer.md Rules (children in source order)"
     },
     {
       "id": "removal-in-summary",
@@ -41,7 +41,7 @@
       "must_not_include": [
         "re:\"name\"\\s*:\\s*\"guide_overlay\""
       ],
-      "verified": ".claude/agents/figma-node-normalizer.md Strip (drop hidden nodes and designer-only frames) and Rules (every removal appears in the summary)"
+      "verified": "agents/figma-node-normalizer.md Strip (drop hidden nodes and designer-only frames) and Rules (every removal appears in the summary)"
     },
     {
       "id": "no-figma-tool",
@@ -52,7 +52,7 @@
       "must_not_include": [
         "re:\"name\"\\s*:\\s*\""
       ],
-      "verified": ".claude/agents/figma-node-normalizer.md Rules (with no Figma tool available and no pasted tree, stop and say a Figma MCP server must be installed and signed in; never build the JSON from the URL or from memory)"
+      "verified": "agents/figma-node-normalizer.md Rules (with no Figma tool available and no pasted tree, stop and say a Figma MCP server must be installed and signed in; never build the JSON from the URL or from memory)"
     },
     {
       "id": "position-in-free-frame",
@@ -61,7 +61,7 @@
         "re:(?s)\"img_icon\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*200\\s*,\\s*\"y\"\\s*:\\s*10\\s*\\}",
         "re:(?s)\"txt_title\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*12\\s*,\\s*\"y\"\\s*:\\s*8\\s*\\}"
       ],
-      "verified": ".claude/agents/figma-node-normalizer.md JSON shape (position is required on every child of a layout: none parent, x and y relative to the parent) and .claude/skills/_shared/figma-to-dayz-rules.md section 10 (free-placed icon example)"
+      "verified": "agents/figma-node-normalizer.md JSON shape (position is required on every child of a layout: none parent, x and y relative to the parent) and skills/_shared/figma-to-dayz-rules.md section 10 (free-placed icon example)"
     },
     {
       "id": "position-under-centered-alignment",
@@ -70,7 +70,7 @@
         "re:(?s)\"txt_title\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*100\\s*,\\s*\"y\"\\s*:\\s*8\\s*\\}",
         "re:(?s)\"btn_ok\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*110\\s*,\\s*\"y\"\\s*:\\s*40\\s*\\}"
       ],
-      "verified": ".claude/agents/figma-node-normalizer.md JSON shape (position is required on every child of an auto-layout parent whose primary or counter-axis alignment is not start) and .claude/agents/figma-to-dayz-layout.md step 3 (a node's position replaces the flow position)"
+      "verified": "agents/figma-node-normalizer.md JSON shape (position is required on every child of an auto-layout parent whose primary or counter-axis alignment is not start) and agents/figma-to-dayz-layout.md step 3 (a node's position replaces the flow position)"
     },
     {
       "id": "dedup-skips-existing-suffix",
@@ -81,7 +81,7 @@
       "must_not_include": [
         "re:(?s)\"name\"\\s*:\\s*\"label_2\".*\"name\"\\s*:\\s*\"label_2\""
       ],
-      "verified": ".claude/agents/figma-node-normalizer.md De-duplicate names (each later duplicate takes the lowest suffix from _2 up that no node in the tree already has)"
+      "verified": "agents/figma-node-normalizer.md De-duplicate names (each later duplicate takes the lowest suffix from _2 up that no node in the tree already has)"
     }
   ]
 }

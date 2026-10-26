@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-LEAD = (REPO / ".claude" / "agents" / "dayz-lead.md").read_text(encoding="utf-8")
+LEAD = (REPO / "agents" / "dayz-lead.md").read_text(encoding="utf-8")
 
 
 def _gates() -> str:
