@@ -469,7 +469,7 @@ export const register: Register = on => {
           label="Agentic-Z panel"
           plain
           dimColor
-          hover={{ backgroundColor: 'subtle' }}
+          hover={{ color: 'claude' }}
           onPress={async () => {
             const isUp = (await $.ui.panes()).some(pane => pane.id === PANE)
             if (isUp) {
