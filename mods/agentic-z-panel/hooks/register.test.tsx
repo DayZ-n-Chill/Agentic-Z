@@ -113,7 +113,9 @@ test('the ask field runs /dayz-ask with the question and skips an empty one', as
   expect(asked().length).toBe(0)
   await ui.input({ key: 'ask', text: 'how does food spoil' })
   await ui.unmount()
-  expect(asked().map(argv => argv.join(' '))).toEqual(['python C:\\proj\\.claude\\skills\\dayz-ask\\ask.py how does food spoil'])
+  expect(asked().map(argv => argv.join(' '))).toEqual([
+    'python C:\\proj\\.claude\\skills\\dayz-ask\\ask.py --top-k 10 --excerpt-lines 60 how does food spoil',
+  ])
 })
 
 // --- the rest of the buttons, the guards and the plugin-cache fallback ------------------
@@ -420,6 +422,65 @@ test('an ask with evidence shows the model answer as markdown', async ($, on) =>
   expect(prompts[0]).toContain('how does bleeding work')
   expect(prompts[0]).toContain('P:\\scripts\\bleed.c:1-3')
   expect((await ui.find({ type: 'Markdown' }))?.text).toBe('Bleeding drains blood each tick [1].')
+  await ui.unmount()
+})
+
+test('Deep dive asks again with more and longer citations and a longer answer', async ($, on) => {
+  const runs: string[][] = []
+  const calls: any[] = []
+  engineWith(on, runs, {
+    result: argv =>
+      argv.some(a => a.endsWith('ask.py'))
+        ? { exitCode: 0, stdout: 'EVIDENCE 1 citation(s) via rag\n[1] P:\\scripts\\bleed.c:1-3  verified\n', stderr: '' }
+        : undefined,
+  })
+  on('model.complete', (_: unknown, e: any) => {
+    calls.push(e)
+    return { value: { isAnswered: true, text: `Answer ${calls.length} [1].`, usage: {} } }
+  })
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  await ui.press({ key: 'deepdive' })
+  const asked = runs.filter(argv => argv.some(a => a.endsWith('ask.py'))).map(argv => argv.slice(2).join(' '))
+  expect(asked).toEqual([
+    '--top-k 10 --excerpt-lines 60 how does bleeding work',
+    '--top-k 25 --excerpt-lines 200 how does bleeding work',
+  ])
+  expect(calls[0].system).toContain('under 400 words')
+  expect(calls[1].system).toContain('under 900 words')
+  expect(calls[1].maxTokens).toBeGreaterThan(calls[0].maxTokens)
+  expect((await ui.find({ type: 'Markdown' }))?.text).toBe('Answer 2 [1].')
+  // A deep dive is already the long answer: no second Deep dive button.
+  expect(await ui.find({ key: 'deepdive' })).toBeFalsy()
+  await ui.unmount()
+})
+
+test('Continue in chat puts the question and answer in the prompt box without sending', async ($, on) => {
+  const runs: string[][] = []
+  const toasts: string[] = []
+  const filled: string[] = []
+  engineWith(on, runs, {
+    toasts,
+    result: argv =>
+      argv.some(a => a.endsWith('ask.py'))
+        ? { exitCode: 0, stdout: 'EVIDENCE 1 citation(s) via rag\n[1] P:\\scripts\\bleed.c:1-3  verified\n', stderr: '' }
+        : undefined,
+  })
+  on('model.complete', () => ({ value: { isAnswered: true, text: 'Bleeding drains blood [1].', usage: {} } }))
+  on('prompt.fill', (_: unknown, e: any) => {
+    filled.push(e.text)
+    return { isFilled: true, text: e.text }
+  })
+  on('prompt.submit', () => {
+    throw new Error('Continue in chat must not send the prompt')
+  })
+  const ui = await openPane($)
+  await ui.input({ key: 'ask', text: 'how does bleeding work' })
+  await ui.press({ key: 'continue' })
+  expect(filled.length).toBe(1)
+  expect(filled[0]).toContain('how does bleeding work')
+  expect(filled[0]).toContain('Bleeding drains blood [1].')
+  expect(toasts).toContain('Added to the prompt box: add your follow-up and press Enter.')
   await ui.unmount()
 })
 

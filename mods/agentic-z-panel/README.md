@@ -48,7 +48,9 @@ Then restart Claude Code. Offline, the check shows nothing.
 | Logs | `t` | `dayz-logwatch/logwatch.py --since 30 --duration 3 --mod <active mod>` |
 | Health page | `h` | `dayz-health/health.py <active mod>` |
 | Release pack | `k` | `dayz-release-pack/release_pack.py <active mod>` |
-| Ask vanilla (a text field) | Enter | `dayz-ask/ask.py "<question>"` |
+| Ask vanilla (a text field) | Enter | `dayz-ask/ask.py --top-k 10 --excerpt-lines 60 "<question>"` |
+| Deep dive (under an answer) | `v` | `dayz-ask/ask.py --top-k 25 --excerpt-lines 200 "<question>"`, then a longer answer |
+| Continue in chat (under an answer) | `m` | puts the question and answer in the prompt box for the main conversation |
 | Refresh | `r` | re-checks the state |
 
 The Python scripts run with `python` when it works, otherwise the `py` launcher, the same as the `scripts\dayz` wrappers. With neither, the button runs nothing and shows a `Python 3 not found` message. Scripts run with UTF-8 output, so an answer that quotes a non-ASCII character cannot crash them.

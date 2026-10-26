@@ -29,7 +29,17 @@ const SKILL = {
   releasepack: ['dayz-release-pack', 'release_pack.py'],
   health: ['dayz-health', 'health.py'],
   ask: ['dayz-ask', 'ask.py'],
+  deepdive: ['dayz-ask', 'ask.py'],
 } as const
+
+// An ask reads ten citations of up to 60 lines. A deep dive reads the most
+// /dayz-ask allows, long enough to hold whole functions, and writes a longer
+// answer: slower and more tokens, so it is a button, not the default.
+const ASK = {
+  ask: { topK: '10', excerptLines: '60', words: 400, maxTokens: 2000, evidenceChars: 60_000 },
+  deepdive: { topK: '25', excerptLines: '200', words: 900, maxTokens: 4000, evidenceChars: 150_000 },
+} as const
+const isAsk = (action: string): action is keyof typeof ASK => action in ASK
 
 // The map the "Add test server" button sets up; /dayz-add-server takes others.
 const DEFAULT_SERVER = 'chernarus'
@@ -140,24 +150,23 @@ async function runAction($: any, cwd: string, action: string, question?: string)
   }
 }
 
-const EXPLAIN_SYSTEM = `You explain how vanilla DayZ works to a mod author, using only the cited Enforce Script and config excerpts you are given.
+const explainSystem = (words: number) => `You explain how vanilla DayZ works to a mod author, using only the cited Enforce Script and config excerpts you are given.
 Answer in plain English first: what happens, when, and why, as a short overview and then the key steps or numbers.
 Name the classes, methods and constants that matter in backticks, and cite where each fact comes from as [n] (path:line) using the citation numbers given.
 If the excerpts do not cover part of the question, say so plainly instead of guessing.
-Use short markdown sections or bullets. Keep it under 300 words.`
-
-// The excerpts can be long; the model needs the evidence, not all of it.
-const EXPLAIN_EVIDENCE_CHARS = 40_000
+Use short markdown sections or bullets. Keep it under ${words} words.`
 
 // Turns ask.py's citations into an answer, or null when the model gave none:
-// the citations still show, so a failed call loses nothing.
-async function explain($: any, question: string, evidence: string): Promise<{ answer?: string; why?: string }> {
+// the citations still show, so a failed call loses nothing. The excerpts can be
+// long; the model needs the evidence, not all of it.
+async function explain($: any, action: keyof typeof ASK, question: string, evidence: string): Promise<{ answer?: string; why?: string }> {
+  const { words, maxTokens, evidenceChars } = ASK[action]
   try {
     const result = await $.model.complete({
       model: 'sonnet',
-      system: EXPLAIN_SYSTEM,
-      prompt: `Question: ${question}\n\nEvidence from /dayz-ask:\n${evidence.slice(0, EXPLAIN_EVIDENCE_CHARS)}`,
-      maxTokens: 1500,
+      system: explainSystem(words),
+      prompt: `Question: ${question}\n\nEvidence from /dayz-ask:\n${evidence.slice(0, evidenceChars)}`,
+      maxTokens,
     })
     if (result.isAnswered) return { answer: result.text.trim() }
     return { why: [result.reason, result.status, result.error].filter(Boolean).join(' ') }
@@ -211,12 +220,12 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
     if (action === 'gatebuild') argv.push('build')
     if (action === 'gateingame') argv.push('ingame')
     const needsMod = ['build', 'deploy', 'gatebuild', 'gateingame', 'launch', 'releasepack', 'health'].includes(action)
-    if (action === 'ask') {
+    if (isAsk(action)) {
       if (!question?.trim()) {
         $.ui.toast('Type a question about vanilla DayZ first.')
         return
       }
-      argv.push(question.trim())
+      argv.push('--top-k', ASK[action].topK, '--excerpt-lines', ASK[action].excerptLines, question.trim())
     } else if (action === 'newmod') {
       const match = question?.trim().match(NEW_MOD_INPUT)
       if (!match) {
@@ -258,17 +267,17 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
     const failLine = lines.find((l: string) => l.startsWith('[FAIL]'))
     // An answer is the verdict, its reason or notes (the lines indented two
     // spaces under it) and the citation headers; everything else is one line.
-    const detail =
-      action === 'ask'
-        ? lines.filter((l: string) => /^(EVIDENCE|NONE|ERROR|\[\d+\]| {2}\S)/.test(l)).slice(0, 8).join('\n')
-        : (failLine ?? lines[lines.length - 1] ?? '')
+    const detail = isAsk(action)
+      ? lines.filter((l: string) => /^(EVIDENCE|NONE|ERROR|\[\d+\]| {2}\S)/.test(l)).slice(0, 8).join('\n')
+      : (failLine ?? lines[lines.length - 1] ?? '')
     // ask.py exits 1 for NONE: the search worked and found nothing.
-    const nothingFound = action === 'ask' && result.exitCode === 1
+    const nothingFound = isAsk(action) && result.exitCode === 1
     const ok = result.exitCode === 0 || nothingFound
     run = { action, ok, outcome: nothingFound ? 'nothing found' : ok ? 'done' : 'failed', detail }
-    if (action === 'ask' && result.exitCode === 0) {
-      await update($, busy, () => 'ask (writing the answer)')
-      const { answer, why } = await explain($, question!.trim(), result.stdout)
+    if (isAsk(action)) run.question = question!.trim()
+    if (isAsk(action) && result.exitCode === 0) {
+      await update($, busy, () => `${action} (writing the answer)`)
+      const { answer, why } = await explain($, action, question!.trim(), result.stdout)
       run = answer ? { ...run, answer } : { ...run, detail: `(no explanation: ${why})\n${detail}` }
     }
   } catch (err) {
@@ -277,6 +286,19 @@ async function runNow($: any, cwd: string, action: string, question?: string) {
   await update($, lastRun, () => run)
   $.ui.toast(`${action}: ${run.outcome}`)
   await refreshQuietly($, cwd)
+}
+
+// Hands the answer to the main conversation, which can read whole files and
+// take follow-up questions. It fills the prompt box rather than sending, so the
+// person adds their own follow-up first.
+async function continueInChat($: any, run: NonNullable<PanelRun>) {
+  const text =
+    `Explain in more depth how vanilla DayZ handles this: ${run.question}\n\n` +
+    `The Agentic-Z panel's short answer, from /dayz-ask citations:\n\n${run.answer}\n\n` +
+    'Read the cited vanilla files in full, with /dayz-ask or the dayz-rag tools for anything more, ' +
+    'and fill in what the short answer could not cover.'
+  const filled = await $.prompt.fill({ text })
+  $.ui.toast(filled.isFilled ? 'Added to the prompt box: add your follow-up and press Enter.' : 'Could not fill the prompt box.')
 }
 
 // The marketplace's own list, so the panel can tell its users a newer version
@@ -520,7 +542,12 @@ export const register: Register = on => {
                   Last: {run.action} {run.outcome} {run.detail}
                 </Text>
               )}
-              {btn('dismiss-run', 'Dismiss', 'x', () => update($, lastRun, () => null))}
+              <Box flexDirection="row" flexWrap="wrap" columnGap={2} rowGap={1}>
+                {run.answer && run.action === 'ask' &&
+                  btn('deepdive', 'Deep dive', 'v', () => runAction($, cwd, 'deepdive', run.question))}
+                {run.answer && btn('continue', 'Continue in chat', 'm', () => continueInChat($, run))}
+                {btn('dismiss-run', 'Dismiss', 'x', () => update($, lastRun, () => null))}
+              </Box>
             </Box>,
             runColor,
           )}
