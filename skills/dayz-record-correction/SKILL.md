@@ -24,7 +24,7 @@ python "<skill-dir>\check.py" root "<skill-dir>"
 It follows symlinks and junctions and prints JSON with `kind` (`clone`, `plugin` or `unknown`), the resolved path, the repo `root` and any `missing` required files. Exit 0 means a usable clone or a plugin install; exit 2 means stop and ask the user where their Agentic-Z repo is, and write nothing until they answer. What it checks:
 
 - Under `~/.claude/plugins/cache/` (for example `C:\Users\<you>\.claude\plugins\cache\...`): a plugin install.
-- Ending in `\skills\dayz-record-correction`: a clone. The repo root is two levels up (the folder that holds `skills\`), and it must hold both `skills\_shared\dayz-conventions.md` and `CLAUDE.md`. If either is missing, the command lists it under `missing` and exits 2. A copy (not a link) in `~/.claude/skills/`, where two levels up is `~/.claude`, is reported as `unknown` and also exits 2.
+- Ending in `\skills\dayz-record-correction`: a clone. The repo root is two levels up (the folder that holds `skills\`), and it must hold both `skills\_shared\dayz-conventions.md` and `.claude\CLAUDE.md`. If either is missing, the command lists it under `missing` and exits 2. A copy (not a link) in `~/.claude/skills/`, where two levels up is `~/.claude`, is reported as `unknown` and also exits 2.
 
 Then draft:
 
@@ -38,11 +38,11 @@ Tier: 1 | 2 | 3 (<file>)
 
 Pick the tier by scope:
 
-- **Tier 1**: how any agent works in this repo, DayZ or not (reporting, tooling, file locations). Goes in `CLAUDE.md`, `AGENTS.md` and `GEMINI.md`, all three with the same text.
+- **Tier 1**: how any agent works in this repo, DayZ or not (reporting, tooling, file locations). Goes in `.claude/CLAUDE.md`, `AGENTS.md` and `GEMINI.md`, all three with the same text.
 - **Tier 2**: true for all DayZ work (Enforce Script style, config patterns, asset rules). Goes in `skills/_shared/dayz-conventions.md` if every DayZ agent needs it, otherwise in the matching topic file under `skills/_shared/conventions/` (config, assets, scripts, ui, server).
 - **Tier 3**: about one kind of work. Goes in that agent's file under `agents/` or the matching knowledge pack under `skills/_shared/`.
 
-Once you have picked a tier, search all three tiers for a rule that overlaps: Grep the key words across `CLAUDE.md`, `skills/_shared/dayz-conventions.md`, `skills/_shared/conventions/*.md`, `agents/*.md` and `skills/_shared/**/*.md` (the knowledge packs live in subfolders such as `_shared/enscript/`), all under the `root` the command above printed. In a plugin install, Grep the plugin's own copies of those files and also the `## Agentic-Z rules` section of the current project's `CLAUDE.md`, `AGENTS.md` and `GEMINI.md`, because step 3 writes plugin rules there. An earlier correction on the same topic lives there, and it counts as an overlapping rule like any other:
+Once you have picked a tier, search all three tiers for a rule that overlaps: Grep the key words across `.claude/CLAUDE.md`, `skills/_shared/dayz-conventions.md`, `skills/_shared/conventions/*.md`, `agents/*.md` and `skills/_shared/**/*.md` (the knowledge packs live in subfolders such as `_shared/enscript/`), all under the `root` the command above printed. In a plugin install, Grep the plugin's own copies of those files and also the `## Agentic-Z rules` section of the current project's `CLAUDE.md`, `AGENTS.md` and `GEMINI.md`, because step 3 writes plugin rules there. An earlier correction on the same topic lives there, and it counts as an overlapping rule like any other:
 
 - An overlapping rule in the right tier: propose an edit to that rule instead of a new one.
 - An overlapping rule in the wrong tier (for example a DayZ-wide rule sitting in one agent's file): propose moving it to the right tier and merging the correction into it, so the rule lives in one place.

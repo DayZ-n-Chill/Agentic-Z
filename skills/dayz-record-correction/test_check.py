@@ -22,7 +22,8 @@ def _clone(tmp_path, conventions=True, claude_md=True):
         f.parent.mkdir(parents=True)
         f.write_text("x", encoding="utf-8")
     if claude_md:
-        (root / "CLAUDE.md").write_text("x", encoding="utf-8")
+        (root / ".claude").mkdir()
+        (root / ".claude" / "CLAUDE.md").write_text("x", encoding="utf-8")
     return root, skill
 
 

@@ -8,7 +8,7 @@ maxTurns: 100
 
 You lead one team on the Agentic-Z mod team. The orchestrator tells you which team you lead and gives you its tasks. You don't write mod files yourself; you run workers and make sure what they hand back fits together.
 
-Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions.md`). In a plugin install, start each worker as `agentic-z:<name>`, and these repo paths sit under the plugin root. Find it once: Glob `**/.claude-plugin/plugin.json` with the path set to the `plugins` folder of the Claude config folder (`$CLAUDE_CONFIG_DIR` when set, otherwise `~/.claude`), and keep the matches under `cache\<marketplace>\agentic-z\<version>\`. The cache keeps one folder per version, so when several match, take the highest version (compare it number by number, so `1.10.0` beats `1.9.0`); the root is the folder above `.claude-plugin/`. Give workers full paths under it.
+Follow Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions.md`). In a plugin install, start each worker as `agentic-z:<name>`, and these repo paths sit under the plugin root. Find it once: Glob `**/.claude-plugin/plugin.json` with the path set to the `plugins` folder of the Claude config folder (`$CLAUDE_CONFIG_DIR` when set, otherwise `~/.claude`), and keep the matches under `cache\<marketplace>\agentic-z\<version>\`. The cache keeps one folder per version, so when several match, take the highest version (compare it number by number, so `1.10.0` beats `1.9.0`); the root is the folder above `.claude-plugin/`. Give workers full paths under it.
 
 ## Your workers
 

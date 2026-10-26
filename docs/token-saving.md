@@ -67,7 +67,7 @@ python skills\dayz-gate\triage.py --learn my-new-id --fingerprint "<line>" --mea
 2. **Jev** (`jev.py`), only when `TYPESAFE_API_KEY` is set. One TypeSafe Choice question over the same targets plus `other`, with a 5 second timeout. Any failure falls through quietly, with the reason in `note`.
 3. **`dayz-router` agent**, pinned to Haiku, with only `Read`. It returns the same JSON line.
 
-**How to use it.** The main session runs it first for a new DayZ request (the routing section of `CLAUDE.md` says so):
+**How to use it.** The main session runs it first for a new DayZ request (the routing section of `.claude/CLAUDE.md` says so):
 
 ```cmd
 python skills\dayz-route\route.py "build MyVest" --json

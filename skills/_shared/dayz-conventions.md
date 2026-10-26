@@ -5,7 +5,7 @@ description: Layered conventions and full workflow for every DayZ-related agent 
 
 # DayZ Modding Conventions (L2)
 
-These are the Tier 2 (L2) rules. They apply to every DayZ-related agent and skill in this repo. They sit below the L1 default rules in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` and above any individual agent or skill. When a DayZ agent or skill is invoked, it reads this core file in addition to L1, plus the topic files under `conventions/` that its work touches (index at the end). Tier 3 packs for narrower work live next to this file in `skills/_shared/` and in skills' `references/` folders; `skills/_shared/README.md` indexes every pack and sets the pack layout.
+These are the Tier 2 (L2) rules. They apply to every DayZ-related agent and skill in this repo. They sit below the L1 default rules in `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` and above any individual agent or skill. When a DayZ agent or skill is invoked, it reads this core file in addition to L1, plus the topic files under `conventions/` that its work touches (index at the end). Tier 3 packs for narrower work live next to this file in `skills/_shared/` and in skills' `references/` folders; `skills/_shared/README.md` indexes every pack and sets the pack layout.
 
 ## EnScript code style
 

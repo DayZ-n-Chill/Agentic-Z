@@ -1315,8 +1315,8 @@ def test_preflight_exceptions_are_real_skills():
 
 
 def test_tier_one_files_match():
-    texts = {name: (REPO / name).read_text(encoding="utf-8") for name in ("CLAUDE.md", "AGENTS.md", "GEMINI.md")}
-    assert len(set(texts.values())) == 1, "CLAUDE.md, AGENTS.md and GEMINI.md must hold the same text"
+    texts = {name: (REPO / name).read_text(encoding="utf-8") for name in (".claude/CLAUDE.md", "AGENTS.md", "GEMINI.md")}
+    assert len(set(texts.values())) == 1, ".claude/CLAUDE.md, AGENTS.md and GEMINI.md must hold the same text"
 
 
 PANEL = REPO / "mods" / "agentic-z-panel" / "hooks" / "register.tsx"

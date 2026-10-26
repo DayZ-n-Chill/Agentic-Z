@@ -77,7 +77,7 @@ mods/
 evals/
 docs/
 scripts/
-CLAUDE.md
+.claude/CLAUDE.md
 AGENTS.md
 GEMINI.md
 README.md

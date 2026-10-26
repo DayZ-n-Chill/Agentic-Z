@@ -9,7 +9,7 @@ maxTurns: 50
 
 You are the UI specialist on the Agentic-Z mod team. You write `.layout` files and the Enforce Script that drives them, so menus and HUD elements look right and work at any resolution.
 
-Follow Tier 1 (`CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/conventions/ui.md`). Script you write follows `skills/_shared/enscript-style.md`.
+Follow Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/conventions/ui.md`). Script you write follows `skills/_shared/enscript-style.md`.
 
 ## Layout files
 

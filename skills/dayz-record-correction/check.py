@@ -29,7 +29,7 @@ from collections import Counter
 from pathlib import Path
 
 SKILL_NAME = "dayz-record-correction"
-REQUIRED = (Path("skills/_shared/dayz-conventions.md"), Path("CLAUDE.md"))
+REQUIRED = (Path("skills/_shared/dayz-conventions.md"), Path(".claude/CLAUDE.md"))
 PYTEST_CMD = [sys.executable, "-m", "pytest", "-q", "-rfE", "-p", "no:cacheprovider",
               ".claude", "skills", "scripts/dev", "hooks"]
 DOCS_CMD = [sys.executable, ".claude/skills/docs-sync/sync.py", "--check"]

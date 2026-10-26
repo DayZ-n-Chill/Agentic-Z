@@ -37,7 +37,7 @@ python .claude\skills\sync-skills\sync.py
   - `scripts/setup/` — pre-Claude bootstrap (workdrive, sync-skills, agentic-z-update, preflight, setup-objectbuilder)
   - `scripts/dayz/` — daily DayZ workflow (build, launch, scaffold, types, search, etc.)
   - `scripts/dev/` — template-author tools (clean-repo, docs-sync, wiki-cleaning + WCAG audit Python helpers)
-- `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` — L1 rules (edit all three together; same content in each).
+- `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` — L1 rules (edit all three together; same content in each).
 
 ## What does NOT belong here
 

@@ -72,7 +72,7 @@ Search (optional) embeds through Voyage AI's hosted API (`voyage-code-3`, code-t
 
 | Tier | Scope | Where it lives |
 |---|---|---|
-| **L1 — Default rules** | Every clone, every agent, every skill. | `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (same content; one filename per CLI) |
+| **L1 — Default rules** | Every clone, every agent, every skill. | `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (same content; one filename per CLI) |
 | **L2 — DayZ conventions** | When working inside the DayZ domain. | `skills/_shared/dayz-conventions.md` (core, read by every DayZ agent) plus topic files in `skills/_shared/conventions/` (config, assets, scripts, ui, server) loaded per task |
 | **L3 — Specific agent / skill** | The unit of work. | `agents/<name>.md` or `skills/<name>/SKILL.md` |
 
@@ -95,7 +95,7 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 │   ├── agent-memory/       # gitignored, per-agent memory written at runtime
 │   ├── local-memory/       # gitignored, per-clone: user/machine notes and /dayz-init state
 │   └── settings.local.json # gitignored, per-clone Claude Code settings
-├── CLAUDE.md / AGENTS.md / GEMINI.md   # L1 rules (one per CLI, same content)
+├── AGENTS.md / GEMINI.md              # L1 rules for Codex and Gemini (same text as .claude/CLAUDE.md)
 ├── docs/                   # deep docs (DayZ workflow, model routing)
 ├── mods/agentic-z-panel/   # Claude Code panel plugin (one-click DayZ buttons)
 ├── workspace/              # in-progress mods (workspace/<ModName>/)
@@ -280,11 +280,11 @@ Plus [`agent-creator`](agents/agent-creator.md) for scaffolding new agent defini
 
 ## Default rules (L1) at a glance
 
-The full text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
+The full text lives in `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
 
 - **Communication — answer first, caveat after.** Deliver the underlying answer via available tools; mention any limitation as a one-liner *after*, never as the lead.
 - **Tooling — pick the fastest tool for the job.** Default Python; `cmd`/`.bat` for trivial Windows wrappers; PowerShell only when explicitly asked or genuinely faster; prefer dedicated `Read` / `Edit` / `Write` / `Grep` / `Glob`.
-- **Doc maintenance — plain copies.** Edit `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` together.
+- **Doc maintenance — plain copies.** Edit `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` together.
 - **Bootstrap — `/sync-skills` after cloning.** Required so Codex and Gemini see the slash commands.
 - **Memory — `local-memory/` only, never for rules.** User/machine-specific notes only; rules go in the repo.
 - **Subagent routing for DayZ work — route cheaply first.** Run `/dayz-route` on a new DayZ request, and ask the `dayz-router` agent when it returns `"next": "dayz-router"`. Dispatch the matching `dayz-*` specialist instead of a generic Superpowers agent. The Figma-to-DayZ pipeline is `figma-node-normalizer`, then `figma-to-dayz-layout`, then `dayz-layout-validator`. Role-to-specialist table in [`docs/dayz-modding.md`](docs/dayz-modding.md).

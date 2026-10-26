@@ -18,7 +18,7 @@ Then walk through [`docs/dayz-modding.md`](dayz-modding.md) for prerequisites (D
 
 | Tier | Scope | Where it lives |
 |---|---|---|
-| **L1 — Default rules** | Apply to every clone, every agent, every skill. | `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (three filenames so each CLI finds its own; same content in each) |
+| **L1 — Default rules** | Apply to every clone, every agent, every skill. | `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (three filenames so each CLI finds its own; same content in each) |
 | **L2 — DayZ conventions** | Apply when working inside the DayZ domain. | `skills/_shared/dayz-conventions.md` (core, read by every DayZ agent) plus topic files in `skills/_shared/conventions/` (config, assets, scripts, ui, server) loaded per task |
 | **L3 — Agents and knowledge packs** | Loaded only when the task needs them. | `agents/<name>.md`, `skills/<name>/SKILL.md` plus its scripts, and the packs under `skills/_shared/` (EnScript patterns, Figma-to-DayZ rules) |
 
@@ -28,7 +28,7 @@ L3 files that do DayZ modding work include a one-line reference to L2: *"Follow 
 
 When invoked on a task, an agent should:
 
-1. Read the L1 file for the CLI in use (`CLAUDE.md` / `AGENTS.md` / `GEMINI.md`).
+1. Read the L1 file for the CLI in use (`.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md`).
 2. Read the specific agent or skill being run (L3).
 3. If L3 references the DayZ conventions file (L2), read the core file and any topic files under `skills/_shared/conventions/` that L3 names.
 4. Obey all three tiers; the more specific tier wins ties.
@@ -54,7 +54,7 @@ When invoked on a task, an agent should:
 │   ├── agent-memory/                   # gitignored, per-agent memory written at runtime
 │   ├── local-memory/                   # gitignored, per-clone: user/machine notes and skill state
 │   └── settings.local.json             # gitignored, per-clone Claude Code settings
-├── CLAUDE.md                           # L1 rules (Claude Code reads this)
+├── .claude/CLAUDE.md                   # L1 rules (Claude Code reads this)
 ├── AGENTS.md                           # L1 rules (Codex reads this)
 ├── GEMINI.md                           # L1 rules (Gemini reads this)
 ├── docs/                               # this folder
@@ -102,11 +102,11 @@ Run `/sync-skills` — the new agent's home gets links for every existing skill.
 
 ## Default rules in this template (L1)
 
-The exact text lives in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`. Summary:
+The exact text lives in `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md`. Summary:
 
 - **Communication — answer first, caveat after.** When asked for something an agent can't literally do, deliver the underlying answer via available tools and mention the limitation as a one-liner *after*, never as the lead.
 - **Tooling — pick the fastest tool for the job.** Default to Python; cmd `.bat` for trivial wrappers; PowerShell only when explicitly asked or genuinely faster; Bash for trivial one-liners only; prefer dedicated `Read` / `Edit` / `Write` / `Grep` / `Glob` over shelling out.
-- **Doc maintenance — plain copies.** `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` hold the same content. Edit all three together.
+- **Doc maintenance — plain copies.** `.claude/CLAUDE.md`, `AGENTS.md`, `GEMINI.md` hold the same content. Edit all three together.
 - **Bootstrap — run `/sync-skills` after cloning.** Required to make Codex and Gemini see the slash commands.
 - **Memory — local-memory only, never for rules.** User/machine notes only; rules go in the repo.
 - **Scope — finish what was asked, then stop.** Keep going until the job is done properly, then stop instead of inventing new work. Graders and fixers fix only real mistakes: wrong facts, failing tests, docs that don't match the code, or bugs. "Would be nice" ideas go in [`docs/wishlist.md`](wishlist.md) and are never built during the job. Nothing the user didn't ask for is added without asking first.

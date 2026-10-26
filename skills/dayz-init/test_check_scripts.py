@@ -74,10 +74,10 @@ def test_env_hard_then_auto_lines(monkeypatch, capsys):
         EnvIssue(name="p_drive", severity=Severity.AUTOFIX, message="P: is not mounted"),
         EnvIssue(name="dayz_tools", severity=Severity.HARD_STOP, message="DayZ Tools missing",
                  fix_link="steam://install/830640"),
-        EnvIssue(name="mods_junction", severity=Severity.HARD_STOP, message="P:\Mods is a file"),
+        EnvIssue(name="mods_junction", severity=Severity.HARD_STOP, message="P:\\Mods is a file"),
     ]
     assert _env_output(monkeypatch, capsys, issues) == [
         "HARD dayz_tools DayZ Tools missing steam://install/830640",
-        "HARD mods_junction P:\Mods is a file",
+        "HARD mods_junction P:\\Mods is a file",
         "AUTO p_drive P: is not mounted",
     ]

@@ -12,7 +12,7 @@ Every agent works from three tiers. When two disagree, the more specific tier wi
 
 | Tier | What it holds | Where it lives | Loads |
 |---|---|---|---|
-| 1 · Repo rules (L1) | How every agent works here: communication, tooling, memory, routing, file locations. | This file (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) | Every agent, every task |
+| 1 · Repo rules (L1) | How every agent works here: communication, tooling, memory, routing, file locations. | This file (`.claude/CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) | Every agent, every task |
 | 2 · DayZ rules (L2) | Enforce Script style, config patterns, asset rules, environment, vanilla search. | `skills/_shared/dayz-conventions.md` (core) + `skills/_shared/conventions/*.md` (topics) | All DayZ work |
 | 3 · Agents and knowledge packs | The agents in `agents/`, the skills, and the packs under `skills/_shared/` (EnScript patterns, Figma-to-DayZ rules). | Their own files | Only what the task needs |
 
@@ -85,7 +85,7 @@ For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generi
 
 ## Working Conventions
 
-- **Doc maintenance**: `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` hold the same content. Three filenames so each agent CLI auto-loads its own. Edit all three together when one changes. No SYNC markers, symlinks, or shared imports.
+- **Doc maintenance**: `.claude/CLAUDE.md`, `AGENTS.md`, `GEMINI.md` hold the same content. Three filenames so each agent CLI auto-loads its own. Edit all three together when one changes. No SYNC markers, symlinks, or shared imports.
 - Keep agent instructions self-contained so they can run without prior conversation context.
 - Keep skills self-contained so they can run without prior conversation context.
 - When modifying agent definitions in `agents/`, preserve the established structure and keep edits surgical.
