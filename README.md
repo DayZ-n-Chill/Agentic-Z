@@ -340,6 +340,17 @@ If you fork the repo to publish a downstream variant, run `git diff main -- .cla
 
 ---
 
+## Privacy
+
+Agentic-Z collects no personal data, sends no telemetry, and keeps nothing on any server of its own. Your mods, logs and settings stay on your machine. Two optional features call outside services, and only when you add their API key to `.env`:
+
+- **Voyage AI** (`VOYAGE_API_KEY`): vanilla-source search sends each search question to Voyage AI to turn it into a vector, and `/dayz-search-index` sends vanilla DayZ source text when you build your own index. See [Voyage AI's privacy policy](https://www.voyageai.com/privacy).
+- **TypeSafe** (`TYPESAFE_API_KEY`): `/dayz-route` sends the text of your DayZ request and the names and descriptions of the skills it can pick from, to choose a route. See [TypeSafe](https://typesafe.ai) for its terms.
+
+`/dayz-search-download` downloads the public prebuilt index from this repo's GitHub releases and sends nothing about you.
+
+---
+
 ## License
 
 See [`LICENSE`](LICENSE). Copyright (c) 2026 DayZ n' Chill. Source available for non-commercial use only. You may use it free of charge to develop DayZ mods, but you may not sell it, sell services that use it, or make money from anything made with it.
