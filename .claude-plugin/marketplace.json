@@ -30,7 +30,7 @@
     {
       "name": "agentic-z-panel",
       "description": "Side panel for Agentic-Z: DayZ status at a glance and one-click buttons for mount P:, build, the build and in game checks, deploy, launch, stop, Workbench, Object Builder, test logs, the health page and the release pack, and a field that asks /dayz-ask a vanilla question, with no model tokens spent.",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "source": "./mods/agentic-z-panel",
       "author": {
         "name": "DayZ n' Chill",

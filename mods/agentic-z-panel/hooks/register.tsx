@@ -455,15 +455,15 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // One click above the prompt opens the pane, so nobody has to type /dayz-panel.
-  // It steps aside while a survey uses the band.
+  // One click above the prompt opens the pane, so nobody has to type /dayz-panel;
+  // a second click closes it again. It steps aside while a survey uses the band.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e.props.hasSurvey) return next(e)
     const { Box, Button } = $.ui.resolve(e)
     // Other mods' bands (the status strip) draw beneath this button, so they must still run.
     const below = await next(e)
     return (
-      <Box key="open-panel-band" flexDirection="column">
+      <Box key="open-panel-band" flexDirection="column" rowGap={1}>
         <Button
           key="open-panel"
           label="Agentic-Z panel"
@@ -471,6 +471,11 @@ export const register: Register = on => {
           dimColor
           hover={{ backgroundColor: 'subtle' }}
           onPress={async () => {
+            const isUp = (await $.ui.panes()).some(pane => pane.id === PANE)
+            if (isUp) {
+              await $.ui.close({ id: PANE })
+              return
+            }
             await refreshQuietly($, cwd)
             await $.ui.open({ id: PANE, title: 'Agentic-Z' })
           }}
