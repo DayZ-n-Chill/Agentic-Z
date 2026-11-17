@@ -1,6 +1,6 @@
 # Blender handoff notes
 
-What to tell the user when a moving part is modelled in Blender, so the bones and selections line up when the model reaches Object Builder. These are notes for the user to follow in their own tools. Agentic-Z ships no Blender tooling, and this specialist never runs Blender.
+What to tell the user when a moving part is modelled in Blender, so the bones and selections line up when the model reaches Object Builder. These are notes for the user to follow in their own tools; for a moving part this specialist never runs Blender. Blender scripts exist only for skeletal work, in the skills named in the last section.
 
 ## What the user gets from you
 
@@ -27,3 +27,22 @@ A short list, one line per moving part:
 ## After the import
 
 Ask `dayz-object-builder`, through the art lead, to check the selections and memory points in Object Builder and to run `/dayz-p3d-audit` on the mod's model. Then write or update `model.cfg` to match the names it reports.
+
+## When the Blender job is a rig or a clip
+
+These notes come from the source knowledge pack's animation skill; apart from the cited lines they are tool behaviour and measured results, not checked on `P:\`.
+
+- **Bone names are exact.** A clip bone whose name is not in the target skeleton logs `Bone X doesn't exist in skeleton` in the RPT and does not move. Survivors bind the `player_testing.xob` list (`P:\DZ\anims\cfg\skeletons.anim.xml:110`), named by `skeletonName` on `SurvivorBase` (`P:\DZ\characters\data\config.cpp:158`).
+- **Every limb joint has a twist bone.** The chain is arm, arm roll, forearm, forearm roll, hand, and the same in the leg. A rig or a script that skips a roll bone leaks its rotation into the next joint. The XML has no parent attribute; the measured parent table is in `skills/dayz-animation-pipeline/references/player-skeleton.md`.
+- **Blender and the game differ in handedness as well as in the up axis.** Blender is right handed with Z up, the game left handed with Y up. Geometry maps `(x, y, z)` to `(x, z, y)`. A map that only swaps the up axis mirrors the result, and a mirrored clip raises no error: it plays with left and right swapped. Test a new export route by raising one arm only and checking in game that it is the arm opposite the held item.
+- **Creature FBX export:** custom properties on, leaf bones off, no camera or lamp in the file, animation baked. Name bones without spaces. `EntityPosition` sits at the root with forward on +Y and up on +Z in Blender; `LookAt` is a child of the head.
+- **Frame rate.** Set it in the scene and give the converter the same value. Vanilla player clips are reported to be 30 frames per second; no text file on `P:\` declares it.
+- **Which plugin, which Blender.** The original DayZ animation plugin needs Blender 3.6.8 to 4.0; its maintained fork needs 4.4 or later and declares a meaningless version. Both install by copying a folder, not from a zip.
+- **Export only what the clip owns.** A grip pose is exported with the plugin's survivor IK type and no bones selected; a reload, fire or weapon states clip as Additive with only its bones selected. Exporting every bone on a reload distorts the whole character in game. Never key bone scale: the game ignores it.
+- **The hand IK helpers exist in the game's skeleton but not in the plugin's base rig.** `RightHandOrigin`, `LeftHandOrigin`, `LeftHandIKTarget` and the forearm direction bones are in the survivor's list (`P:\DZ\anims\cfg\skeletons.anim.xml:149` to `:157`); the plugin adds them to its rig with a tool that must be run before a grip pose is imported, and they must stay unkeyed in every other clip.
+- **Bohemia's rig FBX holds its mesh and its armature in two different spaces,** and 17 of its helper empties report a world matrix at the origin. A script that reads it has to align the two and compose each helper through its parent chain (measured with Blender 5.1.1).
+- **Workbench drops keys that are nearly equal** when it compiles `.txa` to `.anm`. The source pack measured up to 0.017 per quaternion component, about 2 degrees, on one clip. Hold poses can collapse; author keys with real differences.
+
+The complete weapon route is `skills/dayz-animation-pipeline/references/weapon-anim-blender-complete.md`; the rig traps are in `skills/dayz-animation-pipeline/references/weapon-anim-authoring-viewer.md`.
+
+Which skill does what: blender-animation authors `.txa` keyframes in Blender, mixamo-retarget puts FBX motion capture on a rig, and `/dayz-animation-pipeline` covers the headless route to SEAnim and RTM (`skills/dayz-animation-pipeline/references/blender-authoring.md`).

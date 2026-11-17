@@ -30,6 +30,26 @@ The class name is the source name: the `model.cfg` animation uses it as `source`
 
 Sources can inherit to share settings: fence declares `class AnimRotate` once and every gate part inherits it (`P:\DZ\gear\camping\config.cpp:4432` to `:4452`).
 
+`animPeriod` is one value for both directions. A part that must go out and come back at different speeds cannot do it through `animPeriod` alone.
+
+A hide source that should start hidden uses `initPhase = 1`: the flag declares `folded` with `initPhase=0` and `unfolded` with `initPhase=1` (`P:\DZ\gear\camping\config.cpp:13052` to `:13066`), and its script swaps the two when it is attached (see `items-in-hands.md`).
+
+## Vehicles: which sources are declared and which the engine supplies
+
+A car declares its doors, seats and suspension as `user` sources and nothing else:
+
+| Declared in `AnimationSources` | Where | Driven by |
+|---|---|---|
+| `DoorsDriver`, `DoorsCoDriver`, `DoorsHood`, `DoorsTrunk` | `P:\DZ\vehicles\wheeled\config.cpp:353` to `:365` | Script. |
+| `SeatDriver`, `SeatCoDriver` | `P:\DZ\vehicles\wheeled\config.cpp:1509`, `:1515` | Script. |
+| `damper_1_1` and the other dampers | `P:\DZ\vehicles\wheeled\config.cpp:1521`; the wheel names its damper with `animDamper="damper_1_1"` (`:1456`) | The simulation, through that key. |
+
+The sources for steering (`steeringwheel`), wheel spin (`wheelfrontleft` and its siblings), steered hubs (`turnfrontleft`, `turnfrontright`) and gauges (`speed`, `rpm`, `fuel`, `coolant`) are used by the hatchback's model (`P:\DZ\vehicles\wheeled\offroadhatchback\offroadhatchback.p3d`) and declared nowhere in that config. The engine supplies them, so a mod vehicle only names them in `model.cfg`. Older Bohemia documentation lists many more engine sources (aircraft, turrets, clocks); before using one, find it in a shipped DayZ model.
+
+## Checking that a source exists
+
+A phase read with `GetAnimationPhase` does not prove the object has that source. List the object's `user` sources with `GetNumUserAnimationSourceNames()` and `GetUserAnimationSourceName(int index)` (`P:\scripts\3_game\entities\entity.c:17`, `:19`) before blaming the phase, and keep the probe read only: setting a phase to test for a source changes live state.
+
 ## Buildings: `class Doors`
 
 A building opens its doors with no mod script. The class inherits from a house base such as `HouseNoDestruct` (`P:\DZ\data\config.cpp:3119`), lists each door in `class Doors`, and the player's built in `ActionOpenDoors` does the rest (`P:\scripts\4_world\entities\manbase\playerbase.c:1697`).

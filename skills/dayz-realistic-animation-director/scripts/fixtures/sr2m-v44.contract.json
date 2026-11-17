@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "contract_mode": "diagnostic",
+  "diagnostic_note": "The capsule radii are conservative proxy bounds used to reproduce the visually reported v44 defects. They have no production provenance and therefore cannot confer OFFLINE_PASS.",
+  "sample_ranges": [{"start": 52, "end": 228, "step": 1}],
+  "action_bindings": [
+    {"object": "_DayZ_Character", "action": "unjam_v44_straight_fingers_reverse_bolt"},
+    {"object": "sr2m_handle_preview", "action": "unjam_v44_full_bolt_jammed_reverse_snap"}
+  ],
+  "landmarks": {
+    "handle_marker": {"type": "object_origin", "object": "sr2m_bolt_handle_marker"},
+    "thumb1_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandThumb1"},
+    "thumb1_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandThumb1"},
+    "thumb2_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandThumb2"},
+    "thumb2_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandThumb2"},
+    "thumb3_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandThumb3"},
+    "thumb3_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandThumb3"},
+    "index1_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandIndex1"},
+    "index1_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandIndex1"},
+    "index2_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandIndex2"},
+    "index2_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandIndex2"},
+    "index3_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandIndex3"},
+    "index3_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandIndex3"},
+    "middle1_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandMiddle1"},
+    "middle1_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandMiddle1"},
+    "middle2_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandMiddle2"},
+    "middle2_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandMiddle2"},
+    "middle3_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandMiddle3"},
+    "middle3_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandMiddle3"},
+    "ring1_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandRing1"},
+    "ring1_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandRing1"},
+    "ring2_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandRing2"},
+    "ring2_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandRing2"},
+    "ring3_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandRing3"},
+    "ring3_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandRing3"},
+    "pinky1_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandPinky1"},
+    "pinky1_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandPinky1"},
+    "pinky2_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandPinky2"},
+    "pinky2_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandPinky2"},
+    "pinky3_h": {"type": "bone_head", "object": "_DayZ_Character", "bone": "LeftHandPinky3"},
+    "pinky3_t": {"type": "bone_tail", "object": "_DayZ_Character", "bone": "LeftHandPinky3"},
+    "fist_contact_center": {"type": "average", "sources": ["ring1_h", "pinky1_h"]}
+  },
+  "transforms": {
+    "left_hand": {"type": "pose_bone_world", "object": "_DayZ_Character", "bone": "LeftHand"},
+    "handle": {"type": "object_world", "object": "sr2m_handle_preview"}
+  },
+  "segments": {
+    "thumb1": {"point_a": "thumb1_h", "point_b": "thumb1_t", "radius_m": 0.0055},
+    "thumb2": {"point_a": "thumb2_h", "point_b": "thumb2_t", "radius_m": 0.0055},
+    "thumb3": {"point_a": "thumb3_h", "point_b": "thumb3_t", "radius_m": 0.005},
+    "index1": {"point_a": "index1_h", "point_b": "index1_t", "radius_m": 0.006},
+    "index2": {"point_a": "index2_h", "point_b": "index2_t", "radius_m": 0.006},
+    "index3": {"point_a": "index3_h", "point_b": "index3_t", "radius_m": 0.0055},
+    "middle1": {"point_a": "middle1_h", "point_b": "middle1_t", "radius_m": 0.0065},
+    "middle2": {"point_a": "middle2_h", "point_b": "middle2_t", "radius_m": 0.0065},
+    "middle3": {"point_a": "middle3_h", "point_b": "middle3_t", "radius_m": 0.006},
+    "ring1": {"point_a": "ring1_h", "point_b": "ring1_t", "radius_m": 0.006},
+    "ring2": {"point_a": "ring2_h", "point_b": "ring2_t", "radius_m": 0.006},
+    "ring3": {"point_a": "ring3_h", "point_b": "ring3_t", "radius_m": 0.0055},
+    "pinky1": {"point_a": "pinky1_h", "point_b": "pinky1_t", "radius_m": 0.0055},
+    "pinky2": {"point_a": "pinky2_h", "point_b": "pinky2_t", "radius_m": 0.0055},
+    "pinky3": {"point_a": "pinky3_h", "point_b": "pinky3_t", "radius_m": 0.005}
+  },
+  "checks": [
+    {
+      "id": "timeline",
+      "type": "timeline",
+      "fps": 30.0,
+      "frame_start": 0,
+      "frame_end": 290,
+      "frame_count": 291,
+      "require_action_range": true
+    },
+    {
+      "id": "left_fingers_no_overlap",
+      "type": "segment_clearance",
+      "frame_range": {"start": 52, "end": 228, "step": 1},
+      "segment_pairs": [
+        ["thumb1", "index1"], ["thumb1", "index2"], ["thumb2", "index1"], ["thumb2", "index2"], ["thumb2", "index3"], ["thumb3", "index2"], ["thumb3", "index3"],
+        ["index1", "middle1"], ["index1", "middle2"], ["index2", "middle1"], ["index2", "middle2"], ["index2", "middle3"], ["index3", "middle2"], ["index3", "middle3"],
+        ["middle1", "ring1"], ["middle1", "ring2"], ["middle2", "ring1"], ["middle2", "ring2"], ["middle2", "ring3"], ["middle3", "ring2"], ["middle3", "ring3"],
+        ["ring1", "pinky1"], ["ring1", "pinky2"], ["ring2", "pinky1"], ["ring2", "pinky2"], ["ring2", "pinky3"], ["ring3", "pinky2"], ["ring3", "pinky3"]
+      ],
+      "minimum_surface_gap_m": 0.0
+    },
+    {
+      "id": "left_fingers_ordered_all_joints",
+      "type": "ordered_projection",
+      "required": false,
+      "frame_range": {"start": 52, "end": 228, "step": 1},
+      "axis_from_points": ["index1_h", "pinky1_h"],
+      "point_groups": [
+        ["index1_h", "middle1_h", "ring1_h", "pinky1_h"],
+        ["index1_t", "middle1_t", "ring1_t", "pinky1_t"],
+        ["index2_t", "middle2_t", "ring2_t", "pinky2_t"],
+        ["index3_t", "middle3_t", "ring3_t", "pinky3_t"]
+      ],
+      "minimum_gap_m": 0.0
+    },
+    {
+      "id": "fist_contacts_handle",
+      "type": "point_distance_band",
+      "frames": [52],
+      "point_a": "fist_contact_center",
+      "point_b": "handle_marker",
+      "radius_a_m": 0.015,
+      "radius_b_m": 0.0,
+      "min_m": 0.0,
+      "max_m": 0.003
+    },
+    {
+      "id": "hand_tracks_handle",
+      "type": "relative_transform_lock",
+      "frame_range": {"start": 52, "end": 228, "step": 1},
+      "actor": "left_hand",
+      "target": "handle",
+      "max_translation_drift_m": 0.003,
+      "max_rotation_drift_deg": 3.0
+    }
+  ]
+}

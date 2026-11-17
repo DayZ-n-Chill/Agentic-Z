@@ -13,6 +13,10 @@ Every fact cites the vanilla file on `P:\` it came from. Line numbers are from t
 | How warm is it, how wet does it get, how much does it protect, how is it repaired? | `references/protection-and-insulation.md` |
 | How do I make one model carry several colors? | `references/color-variants.md` |
 | Which models does a wearable need, how do proxies work, what goes to Object Builder? | `references/models-and-proxies.md` |
-| How do I add a new survivor character? | `references/characters.md` |
+| How do I add a new survivor character, and what does every survivor inherit from `SurvivorBase` (animation and ragdoll binding, skinning, surrender)? | `references/characters.md` |
+| What must the worn models look like (skeleton name, frame, weights), and why does my worn item float, explode or stay rigid? | `references/worn-models.md` |
+| What did DayZ 1.30 change for clothing and gear, and how do I move a 1.29 mod over? | `references/changes-in-1-30.md` |
+
+Building or repairing the worn models themselves is the job of the skill at `skills/dayz-clothing/SKILL.md`; a custom body or infected is `skills/dayz-characters/SKILL.md`.
 
 Related packs: `_shared/container-base.md` for an item with cargo that is not clothing (a vest pouch is one), and `_shared/enscript/references/item_api.md` for `ItemBase` script calls.

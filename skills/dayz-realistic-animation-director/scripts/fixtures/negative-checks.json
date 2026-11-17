@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "description": "One-fault-per-case fixtures used by run_regression_tests.py",
+  "cases": [
+    {
+      "id": "contact_gap",
+      "expected_failed_checks": ["contact"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 30.0, "frame_start": 0, "frame_end": 0},
+        "frames": {"0": {"points": {"a": [0.0, 0.0, 0.0], "b": [0.02, 0.0, 0.0]}, "segments": {}, "transforms": {}}}
+      },
+      "contract": {
+        "schema_version": 1,
+        "contract_mode": "diagnostic",
+        "checks": [{"id": "contact", "type": "point_distance_band", "frames": [0], "point_a": "a", "point_b": "b", "max_m": 0.003}]
+      }
+    },
+    {
+      "id": "target_moves_alone",
+      "expected_failed_checks": ["lock"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 30.0, "frame_start": 0, "frame_end": 1},
+        "frames": {
+          "0": {"points": {}, "segments": {}, "transforms": {"actor": {"p": [0.0, 0.0, 0.0], "q": [0.0, 0.0, 0.0, 1.0]}, "target": {"p": [0.0, 0.0, 0.0], "q": [0.0, 0.0, 0.0, 1.0]}}},
+          "1": {"points": {}, "segments": {}, "transforms": {"actor": {"p": [0.0, 0.0, 0.0], "q": [0.0, 0.0, 0.0, 1.0]}, "target": {"p": [0.01, 0.0, 0.0], "q": [0.0, 0.0, 0.0, 1.0]}}}
+        }
+      },
+      "contract": {
+        "schema_version": 1,
+        "contract_mode": "diagnostic",
+        "checks": [{"id": "lock", "type": "relative_transform_lock", "frames": [0, 1], "actor": "actor", "target": "target", "max_translation_drift_m": 0.003, "max_rotation_drift_deg": 3.0}]
+      }
+    },
+    {
+      "id": "segment_penetration",
+      "expected_failed_checks": ["clear"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 30.0, "frame_start": 0, "frame_end": 0},
+        "frames": {"0": {"points": {}, "segments": {
+          "a": {"a": [0.0, 0.0, 0.0], "b": [1.0, 0.0, 0.0], "radius_m": 0.1},
+          "b": {"a": [0.5, -1.0, 0.0], "b": [0.5, 1.0, 0.0], "radius_m": 0.1}
+        }, "transforms": {}}}
+      },
+      "contract": {"schema_version": 1, "contract_mode": "diagnostic", "checks": [{
+        "id": "clear", "type": "segment_clearance", "frames": [0],
+        "segment_pairs": [["a", "b"]], "minimum_surface_gap_m": 0.0
+      }]}
+    },
+    {
+      "id": "ordered_inversion",
+      "expected_failed_checks": ["order"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 30.0, "frame_start": 0, "frame_end": 0},
+        "frames": {"0": {"points": {"a": [0.0, 0.0, 0.0], "b": [0.0, -1.0, 0.0]}, "segments": {}, "transforms": {}}}
+      },
+      "contract": {"schema_version": 1, "contract_mode": "diagnostic", "checks": [{
+        "id": "order", "type": "ordered_projection", "frames": [0],
+        "point_groups": [["a", "b"]], "axis": [0.0, 1.0, 0.0], "minimum_gap_m": 0.0
+      }]}
+    },
+    {
+      "id": "relative_rotation_drift",
+      "expected_failed_checks": ["lock_rotation"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 30.0, "frame_start": 0, "frame_end": 1},
+        "frames": {
+          "0": {"points": {}, "segments": {}, "transforms": {"actor": {"p": [0.0, 0.0, 0.0], "q": [0.0, 0.0, 0.0, 1.0]}, "target": {"p": [0.0, 0.0, 0.0], "q": [0.0, 0.0, 0.0, 1.0]}}},
+          "1": {"points": {}, "segments": {}, "transforms": {"actor": {"p": [0.0, 0.0, 0.0], "q": [0.0, 0.0, 0.0, 1.0]}, "target": {"p": [0.0, 0.0, 0.0], "q": [0.0, 0.0, 0.7071067812, 0.7071067812]}}}
+        }
+      },
+      "contract": {"schema_version": 1, "contract_mode": "diagnostic", "checks": [{
+        "id": "lock_rotation", "type": "relative_transform_lock", "frames": [0, 1],
+        "actor": "actor", "target": "target", "max_translation_drift_m": 0.001, "max_rotation_drift_deg": 10.0
+      }]}
+    },
+    {
+      "id": "joint_range",
+      "expected_failed_checks": ["joint"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 30.0, "frame_start": 0, "frame_end": 0},
+        "frames": {"0": {"points": {}, "segments": {}, "transforms": {"joint": {"p": [0.0, 0.0, 0.0], "q": [0.5, 0.0, 0.0, 0.8660254038]}}}}
+      },
+      "contract": {"schema_version": 1, "contract_mode": "diagnostic", "checks": [{
+        "id": "joint", "type": "joint_swing_twist_range", "frames": [0], "transform": "joint",
+        "reference_q": [0.0, 0.0, 0.0, 1.0], "twist_axis": [1.0, 0.0, 0.0],
+        "min_twist_deg": -30.0, "max_twist_deg": 30.0, "max_swing_deg": 45.0
+      }]}
+    },
+    {
+      "id": "continuity_translation",
+      "expected_failed_checks": ["linear_stutter"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 1.0, "frame_start": 0, "frame_end": 2},
+        "frames": {
+          "0": {"points": {"joint": [0.0, 0.0, 0.0]}, "segments": {}, "transforms": {}},
+          "1": {"points": {"joint": [0.0, 0.0, 0.0]}, "segments": {}, "transforms": {}},
+          "2": {"points": {"joint": [1.0, 0.0, 0.0]}, "segments": {}, "transforms": {}}
+        }
+      },
+      "contract": {"schema_version": 1, "contract_mode": "diagnostic", "checks": [{
+        "id": "linear_stutter", "type": "continuity_limit", "frames": [0, 1, 2],
+        "point": "joint", "fps": 1.0, "max_acceleration_m_s2": 0.1
+      }]}
+    },
+    {
+      "id": "continuity_rotation",
+      "expected_failed_checks": ["rotation_stutter"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 1.0, "frame_start": 0, "frame_end": 2},
+        "frames": {
+          "0": {"points": {}, "segments": {}, "transforms": {"joint": {"p": [0.0, 0.0, 0.0], "q": [0.0, 0.0, 0.0, 1.0]}}},
+          "1": {"points": {}, "segments": {}, "transforms": {"joint": {"p": [0.0, 0.0, 0.0], "q": [0.0, 0.0, 0.0, 1.0]}}},
+          "2": {"points": {}, "segments": {}, "transforms": {"joint": {"p": [0.0, 0.0, 0.0], "q": [0.0, 0.0, 0.7071067812, 0.7071067812]}}}
+        }
+      },
+      "contract": {"schema_version": 1, "contract_mode": "diagnostic", "checks": [{
+        "id": "rotation_stutter", "type": "rotation_continuity_limit", "frames": [0, 1, 2],
+        "transform": "joint", "fps": 1.0, "max_angular_acceleration_deg_s2": 10.0
+      }]}
+    },
+    {
+      "id": "endpoint_mismatch",
+      "expected_failed_checks": ["endpoint"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 30.0, "frame_start": 0, "frame_end": 1},
+        "frames": {
+          "0": {"points": {"root": [0.0, 0.0, 0.0]}, "segments": {}, "transforms": {}},
+          "1": {"points": {"root": [0.1, 0.0, 0.0]}, "segments": {}, "transforms": {}}
+        }
+      },
+      "contract": {"schema_version": 1, "contract_mode": "diagnostic", "checks": [{
+        "id": "endpoint", "type": "endpoint_match", "frame_a": 0, "frame_b": 1,
+        "points": ["root"], "max_translation_delta_m": 0.001
+      }]}
+    },
+    {
+      "id": "timeline_mismatch",
+      "expected_failed_checks": ["timeline"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 30.0, "frame_start": 0, "frame_end": 1},
+        "frames": {"0": {"points": {}, "segments": {}, "transforms": {}}, "1": {"points": {}, "segments": {}, "transforms": {}}}
+      },
+      "contract": {"schema_version": 1, "contract_mode": "diagnostic", "checks": [{
+        "id": "timeline", "type": "timeline", "fps": 30.0, "frame_start": 0, "frame_end": 2
+      }]}
+    },
+    {
+      "id": "seam_derivative_mismatch",
+      "expected_failed_checks": ["seam"],
+      "report": {
+        "schema_version": 1,
+        "metadata": {"fps": 1.0, "frame_start": 0, "frame_end": 10},
+        "frames": {
+          "0": {"points": {"root": [0.0, 0.0, 0.0]}, "segments": {}, "transforms": {}},
+          "1": {"points": {"root": [1.0, 0.0, 0.0]}, "segments": {}, "transforms": {}},
+          "9": {"points": {"root": [1.0, 0.0, 0.0]}, "segments": {}, "transforms": {}},
+          "10": {"points": {"root": [0.0, 0.0, 0.0]}, "segments": {}, "transforms": {}}
+        }
+      },
+      "contract": {"schema_version": 1, "contract_mode": "diagnostic", "checks": [{
+        "id": "seam", "type": "seam_derivative_match", "frame_start": 0, "frame_start_next": 1,
+        "frame_end_prev": 9, "frame_end": 10, "point": "root", "fps": 1.0,
+        "max_linear_velocity_delta_m_s": 0.1
+      }]}
+    }
+  ]
+}

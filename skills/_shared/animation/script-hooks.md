@@ -17,6 +17,16 @@ All on `Entity`, so every item, building and vehicle has them (`P:\scripts\3_gam
 
 `animation` is the source name from `class AnimationSources` (see `animation-sources.md`), and `phase` is a value inside the `model.cfg` animation's `minValue` to `maxValue`.
 
+Related calls on other classes:
+
+| Call | Where | Use |
+|---|---|---|
+| `GetSelectionPositionLS(string name)`, `GetSelectionPositionMS`, `GetSelectionPositionWS` | `Object`, `P:\scripts\3_game\entities\object.c:863` to `:865` | Where a selection is now, with animations applied, in local, model or world space. |
+| `GetSelectionBasePositionLS(string name)` | `Object`, `P:\scripts\3_game\entities\object.c:871` | Where it was modelled, with no animation applied. The difference from the call above is how far the part has moved. |
+| `HideSelection(string selection_name)`, `ShowSelection` | `EntityAI`, `P:\scripts\3_game\entities\entityai.c:3355`, `:3364` | Shortcuts for a hide source named after the selection: phase 1 hides, 0 shows (`:3359`). |
+
+A phase that reads back as expected does not prove the part moved or that the source exists on that object; list the sources first (`animation-sources.md`, "Checking that a source exists").
+
 ## Buildings: the door API, no mod script needed
 
 `Building` has the door calls, indexed by door number (`P:\scripts\3_game\entities\building.c`): `GetDoorIndex(int componentIndex)` :28, `GetDoorCount()` :31, `IsDoorOpen(int index)` :34, `OpenDoor(int index)` :61, `CloseDoor(int index)` :64, `LockDoor(int index, bool force = false)` :67, `UnlockDoor(int index, bool animate = true)` :70. `Building` also has override hooks such as `OnDoorOpenStart` :102 and `OnDoorCloseFinish` :127. Mod buildings script against `BuildingBase` (`P:\scripts\4_world\entities\game\super\building.c:8`), which the door action casts to.
@@ -42,7 +52,26 @@ Use this when a moving part shows a state that clients must see and saves must k
 - Change state on the server. The user action runs `OnExecuteServer` or `OnStartServer`.
 - Clients must end with the same phase. Pattern 1 does that by calling the same method in `OnVariablesSynchronized`.
 - Sounds tied to the move play on clients only (`fence.c:516`, `if (!g_Game.IsHeadlessOrDedicatedServer())`).
+- Two writers of one source, the owning client locally and the server through sync, only coexist when they write the same target. For a part that follows a long action, let the server write the start and the end and the owning client the states between (measured by the source knowledge pack on 1.30; method in `skills/dayz-animation-pipeline/references/item-ik-and-hide.md`).
+- A steering part is not a script job at all: use the engine's `steeringwheel` source in `model.cfg`. The source knowledge pack reports that a steering visual set from the client through a `user` source snapped back to 0 in multiplayer.
 
 ## The player's own animation
 
 An action also plays a player animation through `m_CommandUID`, for example `DayZPlayerConstants.CMD_ACTIONMOD_OPENDOORFW` for doors (`actionopendoors.c:7`) and `CMD_ACTIONMOD_INTERACTONCE` for the barrel (`actionopenbarrel.c:5`). Pick an existing command; new player animations are out of scope (see `rtm-and-character-animation.md`).
+
+The command constants are in `DayZPlayerConstants` (`P:\scripts\3_game\dayzplayer.c`): the `CMD_ACTIONMOD_` group plays over the player's movement and the `CMD_ACTIONFB_` group takes the full body. 1.30 added, among others, `CMD_ACTIONMOD_COMBINATIONLOCK` (:766), `CMD_ACTIONFB_BRICKSTACK` (:892), `CMD_ACTIONFB_MIX_MORTAR` (:894) and `CMD_ACTIONFB_SHARPEN` (:896); the full list of additions is in `skills/dayz-animation-pipeline/references/anim-graph.md`.
+
+Since 1.30 script can also switch the player's whole animation instance without an item in the hands, with `SetAnimationInstanceByName` (`P:\scripts\3_game\human.c:1384`); see `items-in-hands.md`.
+
+## Reading a pose back from script
+
+For a test that has to measure what the game really shows, not what was sent:
+
+| Call | Where | Use |
+|---|---|---|
+| `GetBoneIndexByName(string pBoneName)` | `Human`, `P:\scripts\3_game\human.c:1417` | A skeleton bone's id. Vanilla uses it for `RightHand_Dummy` (`P:\scripts\4_world\entities\dayzplayerimplement.c:628`). The source pack measured on 1.30 that valid ids can be negative (`RightHand` among them); only −1 means the bone is missing. |
+| `GetBonePositionMS(int pivot)`, `GetBoneRotationMS(int pivot, out float quaternion[4])` | `Object`, `P:\scripts\3_game\entities\object.c:237`, `:242` | A bone's position and rotation in model space, which does not depend on where the entity stands or faces. |
+| `GetBonePivotsForAnimationSource(int level, string animationSource, out TIntArray pivots)` | `Object`, `P:\scripts\3_game\entities\object.c:233` | The bones a `model.cfg` animation source moves, so the part's real angle can be read with `GetBoneRotationMS`. Vanilla uses it for the motorbike's sounds (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:292`). |
+| `OverrideRaise(HumanInputControllerOverrideType overrideType, bool value)` | `HumanInputController`, `P:\scripts\3_game\human.c:268` | Holds the weapon raised for a capture. `ENABLED` stays until `DISABLED` is passed (`P:\scripts\3_game\human.c:10`). |
+
+Two results from the source pack's in-game tests on 1.30: a raise forced only on the server does not change the pose the owning client renders, so force it on the client; and a dedicated server placed a rider's hand 0.35 m from where the client did while pelvis and head agreed, so measure hand placement on the client. Methods: `skills/dayz-animation-pipeline/references/weapon-in-hands.md` and `skills/dayz-animation-pipeline/references/vehicle-rider-ik-pose.md`.

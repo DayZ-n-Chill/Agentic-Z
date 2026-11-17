@@ -53,6 +53,8 @@ class CfgModels
 
 `skeletonBones[]` is a flat list of pairs: each bone, then its parent bone or `""`. A child bone moves with its parent, so a handle that turns on a door goes under the door bone.
 
+The key is `isDiscrete`, not `discrete` as some video tutorials say: 1 for mechanical parts, 0 for organic movement such as a creature. `skeletonInherit` names a parent skeleton whose bones this one adds to, or `""`.
+
 ### Animation types
 
 | `type` | What it does | Extra keys |
@@ -63,6 +65,17 @@ class CfgModels
 | `translationX`, `translationY`, `translationZ` | Slides along a model axis. | `offset0`, `offset1` |
 | `hide` | Hides the bone once the phase reaches `hideValue`. | `hideValue` |
 
+Optional keys of an entry, from the same format documentation:
+
+| Key | Meaning |
+|---|---|
+| `begin`, `end` | Two named points instead of `axis`, giving an oriented axis. |
+| `memory` | Whether the axis is in the Memory LOD. Default 1. |
+| `minPhase`, `maxPhase` | The reverse mapping: the phase at the source's minimum and maximum. |
+| `sourceAddress` | `"clamp"` (default), `"loop"` or `"mirror"`: what happens outside the range. A spinning wheel uses `"loop"`. |
+
+The types `translationModelX`, `translationModelY`, `translationModelZ` and `direct` appear in some community guides. No vanilla model checked here uses them; do not write them.
+
 ## What vanilla models store
 
 Read from the shipped models on `P:\DZ\`. Each row is one animation as the game loads it.
@@ -72,10 +85,16 @@ Read from the shipped models on `P:\DZ\`. Each row is one animation as the game 
 | `P:\DZ\gear\camping\fence.p3d` | `Wall_Gate_Rotate` | `user` | 0 to 100 | rotation, 0 to 1.7453 rad (100 degrees) | skeleton `fence_skeleton`, bones `wall_gate`, `wall_interact`, axis `rotate_axis` |
 | `P:\DZ\structures\Residential\HouseBlocks\houseblock_3f_corner1.p3d` | `Doors5` | `doors5` | 0 to 1 | rotation, 0 to minus 1.5708 rad (90 degrees the other way) | bone `doors5`, axis `doors5_axis`, sound point `doors5_action` |
 | `P:\DZ\gear\containers\55galDrum.p3d` | `Lid`, `Lid2` | `lid`, `lid2` | 0 to 1 | hide at 0.6 | skeleton `55galDrum_skeleton`, bones `lid`, `lid2` |
+| `P:\DZ\vehicles\wheeled\offroadhatchback\offroadhatchback.p3d` | `DrivingWheel` | `steeringwheel` | minus 1 to 1 | rotation, 3.64 rad each way | the steering wheel |
+| same | `SeatDriver`, then `SeatDriverRot` | `seatdriver` for both | 0 to 0.5, then 0.5 to 1 | two moves played one after the other | the driver seat |
+| same | `wheel_1_1` | `wheelfrontleft` | 0 to 6.283 | one full turn | a wheel |
+| `P:\DZ\vehicles\singletrack\motorbike_01\motorbike_01.p3d` | `TurnFront` | `turnfront` | minus 1.571 to 1.571 | rotation by the value itself | the front fork and handlebar |
 
 What this shows:
 
-- **Angles are radians.** `angle1 = 90` turns the part 90 radians, which spins it many times. Write `1.5708` or `"rad 90"`.
+- **Angles are radians.** `angle1 = 90` turns the part 90 radians, which spins it many times. Write `1.5708` or `"rad 90"`. The number after `rad` is degrees: `"rad 0.39"` is 0.39 degrees, too small to see.
+- **Several entries can share one source.** The seat's two animations split the source's range into 0 to 0.5 and 0.5 to 1, so one source plays a slide and then a turn, and plays them back in reverse when it returns.
+- **Engine sources need no config class.** `steeringwheel`, `wheelfrontleft` and `turnfront` are not declared in any vehicle `AnimationSources`; the engine supplies them (see `animation-sources.md`). `DrivingWheel` is the animation's name, not a source.
 - **The value range is yours to choose.** Fence runs 0 to 100 so script can pass degrees: `fence.c:12` sets `GATE_ROTATION_ANGLE_DEG = 100` and `fence.c:498` calls `SetAnimationPhase("Wall_Gate_Rotate", 100)`. A phase is only meaningful inside `minValue` to `maxValue`.
 - **A negative angle opens the other way.** Mirror a door by changing the sign, not the bone.
 - **Hide works on a threshold.** The barrel lids hide at 0.6, so phase 1 hides and phase 0 shows; `Lid2` starts at phase 1 (hidden) in `P:\DZ\gear\containers\config.cpp:110`.
@@ -92,3 +111,14 @@ What this shows:
 5. One moving part, one bone. A part that moves with another part is a child bone of it.
 
 Items 1, 2, 4 and 5 are Binarize rules, not something a vanilla file on `P:\` shows; the vanilla models above follow them (bone `doors5` with axis `doors5_axis`).
+
+## Limits and measured behaviour
+
+Reported by the source knowledge pack from its own projects; not checked on `P:\`.
+
+- **Which way a positive angle turns.** Right handed around the axis from its first memory point to its second, the points taken in index order (measured in game on DayZDiag 1.29.163709). With the axis toward +Z, +X moves toward +Y.
+- **A child rotation composes with its parent's.** A part that folds on another folding part works when it is a child bone of it.
+- **A sub-piece of a proxy cannot be animated in place.** Animations move whole selections and whole proxies. Split the moving piece into its own proxy or selection.
+- **A mod that derives from another mod's model** needs its own `.p3d`, its own `model.cfg` and its own `model=` entry to add animations; inheriting the config class alone binds no new skeleton.
+
+More keys, engine sources and diagnostics: `skills/dayz-animation-pipeline/references/config-driven-animation.md`. Steering parts: `skills/dayz-animation-pipeline/references/handlebar-and-steering-config.md`.
