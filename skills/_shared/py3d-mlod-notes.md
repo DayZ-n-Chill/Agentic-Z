@@ -76,8 +76,8 @@ library version and fails with `'str' object has no attribute 'name'` or
 
 ### Two libraries share the name
 
-`/dayz-p3d-audit` can install KoffeinFlummi's `py3d`. The repo also keeps a DayZ fork
-of it under `scripts/tools/py3d/`, which adds `P3D.validate()`, proxy helpers and
+KoffeinFlummi's `py3d` is the upstream library. The repo keeps a DayZ fork of it under
+`scripts/tools/py3d/`, the copy `/dayz-p3d-audit` and the other skills load, which adds `P3D.validate()`, proxy helpers and
 guards against writing a corrupt file, and sets `py3d.IS_DAYZ_FORK = True`. The
 package called `py3d` on PyPI is neither: it is an unrelated point cloud library, so
 never `pip install py3d`.

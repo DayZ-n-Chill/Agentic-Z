@@ -243,6 +243,8 @@ It reports silhouette IoU, scale and aspect deltas of the bounding box, SSIM, ed
 
 These numbers are a change filter, never a correctness verdict (LL-153). Correctness is decided by eyes on the renders and on crops at native resolution. Use it on same-camera pairs only: scoring a render against a reference photo is not calibrated here, because framing and background mismatch break every signal. That comparison stays with the named landmarks of checklist C.
 
+Outside an agent session, `scripts\dayz\render-delta.bat` runs `vr_delta.py` with the same arguments.
+
 ## Free local second opinion (shadow mode)
 
 A local vision model served by Ollama can answer checklist questions about renders at no credit cost, so the agent's budget goes to gates and final judgment instead of every glance inside the loop.

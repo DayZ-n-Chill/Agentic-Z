@@ -61,5 +61,5 @@ The knowledge pack this skill came from ran the whole loop from one PowerShell o
 | Path | What it is |
 |---|---|
 | `assets/autotest-mod/` | AutoTest, a small mod whose test cases run on server and client and print their results to the logs, so a run reports on itself. Source under `src/AutoTest/` (`config.cpp`, `scripts/3_Game/AutoTestRpc.c`, `scripts/4_World/AutoTestCases.c`, `scripts/4_World/AutoTestRunner.c`, `scripts/5_Mission/AutoTestMission.c`). How to build, load and read it: `references/linux-headless-client.md`, section 3. Keep it out of a release. |
-| `templates/dayz-test.ps1` | The knowledge pack's PowerShell orchestrator (build, deploy, launch modes, stop), kept for reference. `/dayz-build-pbo`, `/dayz-launch-test` and `/dayz-stop-test` are the supported route in this repo. |
+| `templates/dayz-test.ps1` | The knowledge pack's PowerShell orchestrator (build, deploy, launch modes, stop), kept for reference. `/dayz-build-pbo`, `/dayz-launch-test` and `/dayz-stop-test` are the supported route in this repo. The script needs `P:\`, DayZ Tools and the game and does not go through `/dayz-preflight` (it carries its own `Invoke-Preflight` check), so run `/dayz-preflight` first when you use it. |
 | `templates/server.bat`, `templates/client.bat`, `templates/offline.bat` | Double-click wrappers around that orchestrator, one per launch mode. |

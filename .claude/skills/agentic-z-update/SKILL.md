@@ -89,6 +89,8 @@ package-lock.json
 .github/
 CONTRIBUTING.md
 LICENSE
+THIRD_PARTY_NOTICES.md
+.gitattributes
 .markdownlint.json
 .markdownlint-cli2.jsonc
 .markdownlintignore

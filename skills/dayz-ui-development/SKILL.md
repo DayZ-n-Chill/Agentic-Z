@@ -127,6 +127,8 @@ The 18 numbered rules, each traced to a real crash or visual failure, are in `re
 | `templates/*.rects.1280.json`, `templates/*.rects.1920.json` | The predicted rect of every template widget at 1280x720 and 1920x1080, to compare with a live tree. |
 | `templates/stringtable.csv` | The seven `#STR_` keys the templates use, with the seven column header the engine needs. |
 
+Outside an agent session, `scripts\dayz\ui-gen-panel.bat` runs `gen_panel_layout.py` with the same arguments.
+
 ## On Linux
 
 Everything above is the Windows workflow. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in `skills/_shared/linux-proton.md`; only this changes for UI work:

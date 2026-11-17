@@ -113,6 +113,10 @@ The second stage runs every rule of the script validator on the mod folder and r
 
 `scripts/tools/dayz-script-validator/README.md` describes the rules, the evidence behind each and what each one leaves unjudged.
 
+Run on its own, the validator (`scripts/tools/dayz-script-validator/scripts/script_validator.py`) answers in its own shape: a JSON report whose root keys are `status`, `errors` and `warnings`, and exit code 0 for PASS, 1 for FAIL and 2 for warnings only. A script that calls it directly gates on the error count, not on a non-zero exit. `/dayz-lint` already does that and turns the result into its own verdict above.
+
+To tell whether a change brought in an error, lint the mod before the change and again after it and compare the findings: a finding only in the second run belongs to the change. This catches a reference left dangling by a deleted or renamed file, which a grep for the symbol misses.
+
 Three rules (`ES-UNDEFINED-CLASS-REF`, `ES-VARIABLE-NAMED-AS-TYPE`, `ES-UNDEFINED-BUILTIN-METHOD`) need the vanilla scripts on `P:\scripts\`, and their verdicts hold for the game build those scripts come from. `ES-UNDEFINED-CLASS-REF` also needs every non-vanilla mod in `requiredAddons[]` passed with `--external-scripts`. Without them the rule is listed as `not checked`.
 
 ## Inside the build check

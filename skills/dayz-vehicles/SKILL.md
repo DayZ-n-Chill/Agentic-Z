@@ -104,6 +104,8 @@ Exit codes:
 - **0**: the report was printed.
 - **2**: no `--texture`, a missing or unreadable file, a `--lod` the model does not have, or no parser backend (an `INPUT_ERROR:` line).
 
+Outside an agent session, `scripts\dayz\vehicle-getin-wheels.bat`, `scripts\dayz\vehicle-odol-sections.bat` and `scripts\dayz\vehicle-odol-bones.bat` run `audit_getin_wheels.py`, `gate_odol_sections.py` and `check_odol_bone_refs.py` with the same arguments.
+
 ## References
 
 All files are in `skills/_shared/vehicles/`. Open only the one the current step needs.

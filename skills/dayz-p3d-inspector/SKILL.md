@@ -64,6 +64,8 @@ In the viewer the user drags points, then presses **Export Recipe**, selects all
 
 Write the outputs under `output/<descriptive-folder>/` unless the model belongs to a mod in `workspace/<ModName>/`.
 
+Outside an agent session, `scripts\dayz\p3d-inspector-extract.bat`, `scripts\dayz\p3d-inspector-viewer.bat` and `scripts\dayz\p3d-inspector-build.bat` run the three scripts with the same arguments.
+
 ## Rules that keep a rebuild safe
 
 1. **Never build over the only copy of a model.** Build to a new file name and keep the original.

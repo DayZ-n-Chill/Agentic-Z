@@ -146,6 +146,8 @@ Validator exit codes:
 - `1`: valid input, one or more required checks fail;
 - `2`: invalid contract, sample or execution; no quality verdict. The reason is on stderr as `MOTION_CONTRACT_ERROR=...`.
 
+Outside an agent session, `scripts\dayz\motion-contract.bat` and `scripts\dayz\motion-regression.bat` run `validate_motion_contract.py` and `run_regression_tests.py` with the same arguments.
+
 ## Output states
 
 - `FAIL`: at least one mandatory gate fails.

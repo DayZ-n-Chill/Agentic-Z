@@ -313,7 +313,7 @@ These 41 skills came in with the DayZ Modding Knowledge Pack. Most are reference
 |---|---|
 | [`/sync-skills`](../.claude/skills/sync-skills/SKILL.md) | Link `skills/` and `.claude/skills/` into each agent CLI's home dir. Required after clone |
 | [`/agentic-z-update`](../.claude/skills/agentic-z-update/SKILL.md) | Pull upstream template improvements into your clone without touching `workspace/` |
-| [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the Docusaurus wiki; `--apply` writes mirrors |
+| [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the React wiki; `--apply` writes mirrors |
 | [`/clean-repo`](../.claude/skills/clean-repo/SKILL.md) | Orchestrator — run every domain's cleanup skill |
 
 **MCP server:** [`dayz-rag`](../.claude/mcp/dayz-rag/README.md) — exposes `search_dayz_source`, `get_dayz_file` and `list_indexed_sources` to the DayZ agents. Reads the LanceDB index under `~/.claude/dayz-search-index/`, built with `/dayz-search-index` or installed with `/dayz-search-download`.

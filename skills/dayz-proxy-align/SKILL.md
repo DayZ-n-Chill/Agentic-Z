@@ -91,6 +91,8 @@ Open the HTML in a browser, align each proxy, click "Export edits", save the tex
 
 `--verify` reads the result back and prints the selection count, the proxy count and each proxy's first point. Compare them with the first `proxy_extract.py` output before trusting the file, or run `proxy_extract.py` on the result and check that every proxy now says `ok`.
 
+Outside an agent session, `scripts\dayz\proxy-extract.bat`, `scripts\dayz\proxy-canon.bat`, `scripts\dayz\proxy-worn-overlay.bat`, `scripts\dayz\proxy-viewer.bat` and `scripts\dayz\proxy-apply.bat` run the five scripts with the same arguments.
+
 ## Using the editor
 
 Click a proxy in the list or its sphere in the view to attach the gizmo. **W** moves and **E** rotates; drag the arrows or the rings. Two overlays help when the recipe holds worn meshes:

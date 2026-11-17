@@ -1,3 +1,7 @@
 # Model fixtures are pinned by SHA-256 in tests (skills/dayz-characters/winding_fixtures),
 # so git must never convert line endings inside them.
 *.p3d binary
+
+# The generated copy under scripts/tools/dayz-3d-viewer is sealed with a SHA-256 over the raw
+# bytes of this file, so it must be LF on every checkout (python scripts/tools/sync_generated.py check).
+skills/_shared/viewer_core.py text eol=lf

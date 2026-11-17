@@ -136,6 +136,8 @@ CLAIMS = [
     Claim(GUIDE, "The {N} agents, one .md file each", ("agents",)),
     Claim(GUIDE, "The {N} skills, one folder each with its SKILL.md", ("skills",)),
     Claim(GUIDE, "The {N} DayZ rules topic files", ("topic_files",)),
+    Claim(GUIDE, "the search server and the {N} repo-only skills", ("repo_skills",)),
+    Claim(GUIDE, "The {N} repo-only skills: agentic-z-update", ("repo_skills",)),
     Claim(GUIDE, "The {N} hooks: edit check", ("hooks",)),
     Claim(GUIDE, "The {N} agents that use RAG search also send text off the machine", ("rag_agents",)),
     Claim(TEAM, "the {N} agents and {N} skills that work together", ("agents", "skills")),
@@ -304,6 +306,8 @@ def gather_facts() -> Facts:
     facts.counts = {
         "agents": (len(agents), "agent files in agents/"),
         "skills": (len(skills), "skill folders with a SKILL.md in skills/ and .claude/skills/"),
+        "repo_skills": (len(list((REPO_ROOT / ".claude" / "skills").glob("*/SKILL.md"))),
+                        "skill folders with a SKILL.md in .claude/skills/"),
         "hooks": (len(hooks), f"hook scripts in {HOOKS_DIR}/ (not test_*.py)"),
         "eval_agents": (len(eval_agents), "agents with a question file in evals/questions/"),
         "memory_agents": (len(memory_agents), "agents with a memory: line in their frontmatter"),

@@ -128,6 +128,8 @@ The `.p3d` scripts need the DayZ fork of py3d (`scripts/tools/py3d/`, version 1.
 python -c "import py3d; assert getattr(py3d, 'IS_DAYZ_FORK', False), py3d.__file__"
 ```
 
+Outside an agent session, `scripts\dayz\anim-model-cfg.bat` runs `gen_model_cfg.py` with the same arguments.
+
 ## Names tutorials get wrong
 
 Correct these whenever the user repeats the tutorial spelling. Each is checked in `references/anim-graph.md` or `references/player-skeleton.md`.

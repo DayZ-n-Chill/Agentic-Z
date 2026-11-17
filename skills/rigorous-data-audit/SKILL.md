@@ -182,11 +182,12 @@ If this agent finds nothing, that is the signal that the audit is converging. If
 > a re-grep confirms the pattern is gone everywhere; no fix exceeds the
 > minimum verified change.
 
-Standard editing flow, with four specifics:
+Standard editing flow, with five specifics:
 
 - For every fix, write down which mechanical check or which agent angle caught it. If a fix has no source, it is a hunch, re-verify before shipping.
 - After each fix, re-grep to confirm the bug pattern is gone everywhere (not just at the cited line). VULN-003-class bugs often have siblings.
 - **Minimum verifiable patch.** Apply only what step 3 verified. When the verified instruction is "add bands X before the else", add bands X, do not also add Y, Z, W because a sibling (unverified) finding suggested them. "While I'm here" is exactly how a patch gets bloated with confabulation-derived changes.
+- **Close the audit with a fix tracker.** When the audit produced findings to act on, keep a tracker file next to the findings file: one row per closeable item with its ID, severity, `file:line`, the issue, the proposed fix, the owner and a status (`open`, `in-progress`, `closed (commit, date)` or `wont-fix (reason)`). Keep the file after the last item closes. Do not create tasks in a tracker tool without asking the user.
 - **Do not ship artifacts from an un-reverified audit.** Packaging a `.skill`, cutting a release, or handing the user a patch file based on findings that did not pass step 3 is how false confidence propagates. Applying a patch costs minutes; the bad release it enables costs hours.
 
 ### Step 6: Re-audit subset

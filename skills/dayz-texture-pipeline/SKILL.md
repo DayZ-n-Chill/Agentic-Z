@@ -52,6 +52,8 @@ Exit code 0 prints a candidate, `DirectX` or `OpenGL`. Exit code 2 is `INCONCLUS
 
 Each script also takes `--help`, and the two `.rvmat` scripts take `--self-test`.
 
+Outside an agent session, `scripts\dayz\rvmat-lint.bat`, `scripts\dayz\rvmat-template.bat` and `scripts\dayz\normal-convention.bat` run `rvmat_lint.py`, `rvmat_template.py` and `normal_convention.py` with the same arguments.
+
 ## Rules
 
 1. **Check before you write.** Read every path, config key and material pattern in the mod or in the unpacked vanilla data on `P:\` before it goes into an answer or a file. Never edit a file on `P:\`.

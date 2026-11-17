@@ -2,7 +2,7 @@
 
 Which LODs a DayZ model carries, the order they sit in, how the visual LODs are numbered, and the rules for the three collision LODs.
 
-A LOD's resolution value is its type. The values for Visual, Geometry, Memory, LandContact, View Geometry and Fire Geometry are in the Tier 2 table in `_shared/conventions/assets.md`. Use those numbers, never the Arma 3 ones.
+A LOD's resolution value is its type. The values for Visual, Geometry, GeoPhys, Memory, LandContact, Roadway, Paths, HitPoints, View Geometry and Fire Geometry are in the Tier 2 table in `_shared/conventions/assets.md`. Use those numbers, never the Arma 3 ones.
 
 ## What vanilla carries
 

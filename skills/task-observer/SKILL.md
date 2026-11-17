@@ -91,7 +91,7 @@ The method below is written for any environment. In this repo, Tier 1
   (author block, licence statement) is for a skill published outside this
   repo.
 - **After a staged update is installed.** Run the checks Tier 1 names:
-  `python -m pytest -q .claude skills scripts/dev hooks`, then `/docs-sync`.
+  `python -m pytest -q .claude skills scripts/dev hooks scripts/tools`, then `/docs-sync`.
 - **Activation.** The activation block in `references/environments.md` is
   a Tier 1 rule here: it goes into `.claude/CLAUDE.md`, `AGENTS.md` and
   `GEMINI.md` with the same text, and only with the user's yes.

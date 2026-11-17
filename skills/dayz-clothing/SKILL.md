@@ -111,6 +111,8 @@ python "<skill-dir>\apply_alignment_json.py" --adjust path\to\adjust.json path\t
 
 Exit codes: 0 done; 1 the sample cross-check failed or an input could not be used (a LOD index out of range, a binarized reference with no reader); 2 py3d or the viewer core is missing or the wrong version.
 
+Outside an agent session, `scripts\dayz\clothing-viewer-extract.bat`, `scripts\dayz\clothing-viewer-build.bat` and `scripts\dayz\clothing-viewer-apply.bat` run the three scripts with the same arguments.
+
 ## Artist handoff
 
 When a person does the fitting, which is usually the best route, send them an FBX.

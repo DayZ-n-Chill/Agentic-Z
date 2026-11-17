@@ -32,6 +32,8 @@ python "<skill-dir>\check_dayz_winding.py" path\to\model.p3d --py3d path\to\py3d
 
 The gate needs the py3d DayZ fork, which lives at `scripts/tools/py3d/` in this repo. A PASS cannot see a mirrored export; check that on an asymmetric feature in game. Details, limits and the measured results: `references/winding-gate.md`.
 
+Outside an agent session, `scripts\dayz\check-winding.bat` runs `check_dayz_winding.py` with the same arguments.
+
 ## Who owns each stage
 
 | Stage | Owner | Notes |

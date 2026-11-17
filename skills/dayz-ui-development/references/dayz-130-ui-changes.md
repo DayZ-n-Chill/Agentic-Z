@@ -54,14 +54,14 @@ When `!action.CanBeStarted()`, the button icons (`<name>_btn_icon` and `<name>_b
 
 | What breaks | Severity | Cause | Migration |
 |---|---|---|---|
-| `ImageWidget.Cast(m_Root.FindAnyWidget("interact"))` returns null | Critical | The prompt rows are `PanelWidgetClass` (`P:\gui\layouts\day_z_hud.layout:2294`, `:2477` and the others above) | Change the fields and casts to `PanelWidget.Cast(...)` or plain `Widget`. For a custom background, tint the row with `SetColor`, or change the look through the `ActionWidget` style or a layout variant (`layout-variants-130.md`). The source suggests `w.SetStyle(...)`; no `SetStyle` is declared or called anywhere under `P:\scripts`, so do not rely on it |
+| `ImageWidget.Cast(m_Root.FindAnyWidget("interact"))` returns null | Critical | The prompt rows are `PanelWidgetClass` (`P:\gui\layouts\day_z_hud.layout:2294`, `:2477` and the others above) | Change the fields to plain `Widget` and drop the cast: vanilla scripts declare no `PanelWidget` class (a grep of `P:\scripts\` for `class PanelWidget` finds none), so `PanelWidget.Cast(...)` names a type they do not have. For a custom background, tint the row with `SetColor`, or change the look through the `ActionWidget` style or a layout variant (`layout-variants-130.md`). The source suggests `w.SetStyle(...)`; no `SetStyle` is declared or called anywhere under `P:\scripts`, so do not rely on it |
 | Compile warnings from the obsolete Xbox setters | Medium | `SetInteractXboxIcon` and the others are `[Obsolete]` (`P:\scripts\5_mission\gui\actiontargetscursor.c:1368`) | Use `SetControllerIcon(widgetName, inputName)` (`:146`) |
 | Changes to slots do not reach the new cursor and HUD icons | Medium | `SlotsIcon` is no longer the single base class; `SlotsIconBase` was split out and `GenericIconBase` added | Mod or extend `SlotsIconBase` for slot logic, or `GenericIconBase` for generic icons |
 | Code assumes `WorldToScreen` on previews | Low | The ticket was not exposed to script (`P:\scripts\3_game\gameplay.c:276-314`) | Do not call `WorldToScreen` or `ScreenToWorld` on `ItemPreviewWidget` or `PlayerPreviewWidget` |
 
 ## Migration checklist
 
-- [ ] Search the whole mod for `FindAnyWidget("interact")`, `"item"`, `"continuous_interact"`, `"single"`, `"continuous"` and `"ia_interact"`, and replace `ImageWidget` with `PanelWidget`.
+- [ ] Search the whole mod for `FindAnyWidget("interact")`, `"item"`, `"continuous_interact"`, `"single"`, `"continuous"` and `"ia_interact"`, and replace `ImageWidget` with plain `Widget`.
 - [ ] Remove calls to the `Set*XboxIcon` methods in scripts that extend or mod `ActionTargetsCursor`; use `SetControllerIcon`.
 - [ ] A mod that decorated inventory slots: check that its extensions target `SlotsIconBase` and still call `super.InitIconWidgets` and `super.InitIcon` (`P:\scripts\5_mission\gui\inventorynew\containeditems\slotsiconbase.c:61` and `:95`).
 - [ ] For a new panel on the cursor, read the panel architecture in `hud-action-info-panels.md`.

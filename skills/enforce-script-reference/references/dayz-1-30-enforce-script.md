@@ -1,6 +1,6 @@
 # DayZ 1.30 — Enforce Script contract
 
-Consultation reference for `enforce-script-reference`. Facts re-opened under `exp\` (digests E / F / O as a map). Since 2026-11-09 the line numbers are those of stable 1.30.164289; the `exp\` paths stay (`_shared/dayz-conventions.md` §Vanilla line numbers: which build). `[EXACT]` copied from those files. `[DESIGN]` = migration advice.
+Consultation reference for `enforce-script-reference`. The facts were re-opened in the knowledge pack author's extraction of the 1.30 scripts. Since 2026-11-09 the line numbers are those of stable 1.30.164289, which can be newer than the build on `P:\`; how to read which build a citation is from is in `skills/_shared/knowledge/dayz-1-30-build-history.md` ("Which line a citation gives"). `[EXACT]` copied from those files. `[DESIGN]` = migration advice.
 
 Until 1.29: CE tick `OnCEUpdate()`, inventory hooked `ProcessInputData`, fill-bottle `ActionFillBottleBase`, 3rd-person `World.Is3rdPersonDisabled()`, storage `142`. Since 1.30: replacements below.
 

@@ -62,6 +62,8 @@ It reads each PBO's header with `dayz-build-pbo\pbo_entries.py` and never extrac
 
 Warnings: an empty config entry, compressed entries (prove the extractor decoded them, `references/pitfalls.md`), GUID-like or unsafe entry names (path traversal, a drive letter, a Windows device name, a control character: signs of obfuscation or of a PBO that should not be extracted over existing files), and a missing checksum trailer. Exit code 1 when a file is not a readable PBO or none was found, otherwise 0.
 
+Outside an agent session, `scripts\dayz\pbo-inventory.bat` runs `inventory.py` with the same arguments.
+
 ## The workflow
 
 ### Step 0: setup
