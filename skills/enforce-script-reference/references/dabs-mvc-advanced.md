@@ -1,5 +1,7 @@
 # Dabs Framework MVC — Advanced Patterns & Gotchas
 
+Patterns and traps for the third-party Dabs Framework's MVC classes, as met in the knowledge pack's own mods. They describe that framework and those mods and are not yet checked on `P:\` or against the Dabs source. What was read in the Dabs source is in `skills/_shared/enscript/integrations/dabs_framework.md`; the full UI material is in the `dayz-ui-development` skill.
+
 ## Architecture Overview
 
 Dabs MVC provides data-binding UI for DayZ:
@@ -13,7 +15,7 @@ Dabs MVC provides data-binding UI for DayZ:
 
 ---
 
-## critical GOTCHAS — Battle-Tested in Production
+## Critical gotchas, met in production
 
 ### 1. NotifyPropertyChanged Requires String Variable
 
@@ -27,6 +29,8 @@ ctrl.NotifyPropertyChanged(propName);
 ```
 
 This is Enforce Script's "no string literals as function params" rule applied to the MVC framework. Every single `NotifyPropertyChanged` call must use a local string variable.
+
+This gotcha disagrees with the rest of the material and is kept as a report only. Syntax rule 5 in `hard-rules.md` says string literals as function arguments work, vanilla passes them everywhere (`RegisterNetSyncVariableBool("m_EM.m_IsSwichedOn")`, `P:\scripts\3_game\entities\entityai.c:218`), and the Dabs integration file named above calls `NotifyPropertyChanged("FieldName")` with a literal. Use the local variable only if a literal fails in your own build.
 
 ### 2. ScriptView Constructor Calls CreateWidgets
 

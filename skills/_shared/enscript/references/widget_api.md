@@ -180,6 +180,8 @@ Open a menu by ID through the `UIManager` (`P:\scripts\3_game\tools\uimanager.c`
 - `ShowScriptedMenu(menu, parent)` shows a menu object you made yourself. `GetMenu()` returns the open menu. `CloseMenu(id)`, `Back()` and `CloseAll()` close menus.
 - Pick a menu ID far above vanilla's `MENU_*` constants so it does not clash with another mod. `../examples/08_gui_menu.c` is a complete menu.
 
+The game focus is a counter, not a switch. `Input.ChangeGameFocus(int add, int input_device = -1)` adds its first argument to the focus number (`P:\scripts\3_game\tools\input.c:18`) and `ResetGameFocus()` sets the number to 0 (`P:\scripts\3_game\tools\input.c:27`). `LockControls()` calls `ChangeGameFocus(1, ...)` for each device the menu uses and `UnlockControls()` calls `ChangeGameFocus(-1, ...)` (`P:\scripts\3_game\tools\uiscriptedmenu.c:89`, `:113`). A panel that manages focus itself must give back exactly what it took, also in its destructor; `ChangeGameFocus(0)` changes nothing and leaves the player locked. The `Input` class has no `SetDisabled`: that method is on `HumanInputController` (`P:\scripts\3_game\human.c:22`).
+
 HUD elements that must not take the mouse are not menus. Create their layout under the HUD root once and update it, as `../examples/11_hud_plain_text.layout` and its script do.
 
 ---

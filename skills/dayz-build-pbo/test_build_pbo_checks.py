@@ -400,3 +400,21 @@ def test_main_does_not_run_addonbuilder_on_a_temp_dir_it_cannot_empty(p_drive, t
         build.main()
     assert "Could not empty the temp dir of an earlier build" in str(exc.value.code)
     assert ran == []
+
+
+def test_skill_reference_table_lists_every_reference_file():
+    # The references hold the checks build.py does not run; a file missing from SKILL.md's
+    # table is never opened, and a row without a file is a dead end.
+    import re
+
+    listed = set(re.findall(r"`references/([\w.-]+\.md)`", (HERE / "SKILL.md").read_text(encoding="utf-8")))
+    on_disk = {p.name for p in (HERE / "references").glob("*.md")}
+    assert on_disk, "skills/dayz-build-pbo/references holds no .md file"
+    assert listed == on_disk
+
+
+def test_skill_steps_name_the_checks_build_py_runs():
+    # SKILL.md's numbered steps are the contract; each check added around AddonBuilder must be in it.
+    text = (HERE / "SKILL.md").read_text(encoding="utf-8")
+    for needle in ("**Stale temp**", "**Result code**", "**Content check**", "[ResultCode]", "pbo_entries.py"):
+        assert needle in text, f"SKILL.md does not describe {needle}"

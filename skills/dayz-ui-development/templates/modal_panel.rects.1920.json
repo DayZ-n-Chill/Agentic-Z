@@ -1,0 +1,93 @@
+{
+  "layout": "skills/dayz-ui-development/templates/modal_panel.layout",
+  "screen": [
+    1920.0,
+    1080.0
+  ],
+  "nodes": [
+    {
+      "name": "ModalRoot",
+      "type": "FrameWidget",
+      "parent": "",
+      "depth": 0,
+      "visible": 1,
+      "ignore_pointer": 1,
+      "clickable": false,
+      "source": "layout",
+      "screen_x": 0.0,
+      "screen_y": 0.0,
+      "screen_w": 1920.0,
+      "screen_h": 1080.0
+    },
+    {
+      "name": "ModalPanel",
+      "type": "PanelWidget",
+      "parent": "ModalRoot",
+      "depth": 1,
+      "visible": 1,
+      "ignore_pointer": 0,
+      "clickable": false,
+      "source": "layout",
+      "screen_x": 595.2,
+      "screen_y": 162.0,
+      "screen_w": 729.6,
+      "screen_h": 756.0
+    },
+    {
+      "name": "Title",
+      "type": "MultilineTextWidget",
+      "parent": "ModalPanel",
+      "depth": 2,
+      "visible": 1,
+      "ignore_pointer": 1,
+      "clickable": false,
+      "source": "layout",
+      "screen_x": 624.384,
+      "screen_y": 180.9,
+      "screen_w": 671.232,
+      "screen_h": 52.92
+    },
+    {
+      "name": "Message",
+      "type": "MultilineTextWidget",
+      "parent": "ModalPanel",
+      "depth": 2,
+      "visible": 1,
+      "ignore_pointer": 1,
+      "clickable": false,
+      "source": "layout",
+      "screen_x": 624.384,
+      "screen_y": 252.72,
+      "screen_w": 671.232,
+      "screen_h": 438.48
+    },
+    {
+      "name": "BtnYes",
+      "type": "ButtonWidget",
+      "parent": "ModalPanel",
+      "depth": 2,
+      "visible": 1,
+      "ignore_pointer": 0,
+      "clickable": true,
+      "source": "layout",
+      "screen_x": 653.568,
+      "screen_y": 812.16,
+      "screen_w": 277.248,
+      "screen_h": 60.48
+    },
+    {
+      "name": "BtnNo",
+      "type": "ButtonWidget",
+      "parent": "ModalPanel",
+      "depth": 2,
+      "visible": 1,
+      "ignore_pointer": 0,
+      "clickable": true,
+      "source": "layout",
+      "screen_x": 989.184,
+      "screen_y": 812.16,
+      "screen_w": 277.248,
+      "screen_h": 60.48
+    }
+  ]
+}

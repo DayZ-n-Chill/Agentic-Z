@@ -271,7 +271,7 @@ class ActionFillBottleBase: ActionContinuousBase
 				bool fromPlayerHead = vector.DistanceSq(cursorHitPos, MiscGameplayFunctions.GetPlayerHeadPosition(player)) <= m_MaximalActionDistanceSq;
 ```
 
-`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctcursor.c:35-36` also uses `GetPlayerHeadPosition`. Stance height, not Head bone (`P:\scripts\4_world\static\miscgameplayfunctions.c:776-786`).
+`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctcursor.c:28-33` also uses `GetPlayerHeadPosition`. Stance height, not Head bone (`P:\scripts\4_world\static\miscgameplayfunctions.c:776-786`).
 
 ### 7.6 New inputs in `exp\bin\bin\constants.xml`
 

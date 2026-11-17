@@ -131,6 +131,31 @@ class YourMod_BountyModule : CF_ModuleWorld
 
 - **Input actions.** Expansion names its keybinds `UAExpansion<Action>`, for example `UAExpansionAutoRunToggle` (`P:\Mods\@DayZ-Expansion\Addons\scripts.pbo`, `5_Mission\DayZExpansion\Mission\MissionGameplay.c:40`; Expansion Core has none). Name yours `UAYourMod<Action>` in your own `inputs.xml`, so the two sets never clash in the controls menu.
 - **Tracing and errors.** Expansion has its own helpers, `EXTrace` for traces and `EXError` for errors (`core_scripts.pbo`, `3_Game\DayZExpansion_Core\ExpansionTracing.c:30` and `3_Game\DayZExpansion_Core\ExpansionStatic.c:139`). Code written inside Expansion's classes may use them when the mod requires Expansion. A mod that also runs without Expansion uses the vanilla `Print` (`P:\scripts\1_core\proto\endebug.c:96`) and `ErrorEx` (`P:\scripts\1_core\proto\endebug.c:83`) calls from the vanilla guide, so it does not depend on Expansion for logging. Do not use `Debug.Log` for messages you must see: it writes only when `LogManager.IsLogsEnable()` is true (`P:\scripts\3_game\tools\debug.c:595`; see `_shared/enscript/references/api_game.md`).
+- **Call shapes from the style guide.** The upstream style guide and the knowledge pack's copy of it show these Expansion calls. They are quoted as written there and are not yet checked against the Expansion PBOs line by line, so open the class named above before you copy one:
+
+```c
+// Trace: the guide's preferred form. It reports that this costs almost nothing while tracing is off,
+// so it needs no #ifdef outside performance-critical code.
+auto trace = EXTrace.Start(EXTrace.GENERAL, this, "MethodName");
+
+// Older trace form, behind the define (which is commented out by default, see debugging-and-errors.md)
+#ifdef EXPANSIONTRACE
+    auto trace = CF_Trace_0(ExpansionTracing.SETTINGS, this, "MethodName");
+#endif
+
+// Logging
+EXError.Error(this, "Invalid looting behaviour " + lootingBehavior, {});
+EXTrace.Print(EXTrace.AI, this, "Debug message");
+
+// Module lookup into a member, and a settings-changed invoker
+CF_Modules<ExpansionMarkerModule>.Get(m_MarkerModule);
+ExpansionSettings.SI_Garage.Invoke();
+
+// Input read and a hook on Expansion's own per-frame method in MissionGameplay
+if (input.LocalPress("UAExpansionMapToggle", false) && !viewMenu)
+    ToggleMapMenu(player);
+override void Expansion_OnUpdate(float timeslice, PlayerBase player)
+```
 
 ## Where this differs from the vanilla guide
 

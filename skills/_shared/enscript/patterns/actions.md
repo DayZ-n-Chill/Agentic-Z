@@ -33,6 +33,13 @@ Action ActionMyMod_DrinkContaminate dosn't exist!
 
 (`dosn't` is vanilla's spelling, `itembase.c:261`.)
 
+Two more registration facts, from the knowledge pack and checked on `P:\`:
+
+- To change what an existing action does, write a `modded class` of that action. A new class that `extends` it changes nothing, because the game still creates the vanilla class that `RegisterActions` inserted.
+- Since 1.30 the bottle fill action that is registered is `ActionObtainLiquidBase` (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:156`). `ActionFillBottleBase` is marked `[Obsolete]` and is no longer inserted, so `AddAction(ActionFillBottleBase)` from a 1.29 mod adds nothing. The other 1.30 action changes are in `skills/enforce-script-reference/references/dayz-1-30-enforce-script.md`.
+
+To test from outside whether an action is available, call the public `Can(PlayerBase player, ActionTarget target, ItemBase item)` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:968`). `ActionCondition` is `protected`, and calling it from another class stops the module compiling.
+
 ---
 
 ## ⚠️ `CCINonRuined` vs `CCINone` for tool-in-hand actions
@@ -118,3 +125,10 @@ Symptom of a condition that differs between client and server: the action render
 | Interactive | `ActionInteractBase` | Target-driven actions (interact with another entity) | `actions\actioninteractbase.c:38` |
 
 All three are under `P:\scripts\4_world\classes\useractionscomponent\`. Drinking is continuous, not single-use (`actions\continuous\actiondrink.c:9`, `ActionDrink: ActionConsume`). Pick the base that matches your interaction model: wrong base = wrong UI affordance.
+
+A continuous action also needs a callback class that sets its progress component. Vanilla's shortest case is `ActionActivateTrapCB`, which overrides `CreateActionComponent()` with `m_ActionData.m_ActionComponent = new CAContinuousTime(...)` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionactivatetrap.c:1-34`); the action's constructor then sets `m_CallbackClass` to it, replacing the base default `ActionContinuousBaseCB` (`P:\scripts\4_world\classes\useractionscomponent\actions\actioncontinuousbase.c:126`). `../examples/03_continuous_action.c` is a complete one.
+
+Two facts about what the player sees on the cursor:
+
+- **An action can be shown and still not start.** Vanilla shows actions whose `CanBeStarted()` returns false, as information panels (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionpartinfo.c:18-21`), and the client manager starts an action only after `CanBeStarted()` passes (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:336-337`). "Visible on the cursor" does not mean the key will run it.
+- **Since 1.30 the cursor distance is also measured from the head.** `CCTCursor` passes when the target is in range of the player's root or of `distanceHead`, taken from `MiscGameplayFunctions.GetPlayerHeadPosition` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctcursor.c:35-36`; the helper is at `P:\scripts\4_world\static\miscgameplayfunctions.c:776` and uses stance height, not the head bone). `CCTObject` still measures to the target's `GetPosition()` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctobject.c:19`). The 1.30 `CCTLiquid` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctliquid.c:37`) replaces `CCTWaterSurfaceEx` in vanilla's fill, drink and wash actions. An action that never appears on a model with no View Geometry LOD is a model problem, not a script one.

@@ -1,15 +1,12 @@
 # Llama Mod Extraction Patterns
 
-Extracted from `enforce-script-reference/SKILL.md` on 2026-07-07 (F3 sectioning).
-
-Enforce/DayZ patterns extracted from LM_Planes (workshop 3730564764). Pass 1 (CfgMods, custom inputs, CfgSoundSets parameters reference, buildings, performance) + Pass 2 (custom RPC enums, server-authoritative input, broadcast, cleanup hooks, vanilla helpers, vehicle anim instance, parent/child mod architecture). See `dayz-aviation` for aviation-specific applications.
+Enforce Script and config patterns read out of the third-party LM_Planes mod (Steam Workshop item 3730564764, by Llama and Itspete-Here). Pass 1 covers `CfgMods`, custom inputs, the `CfgSoundSets` parameters, buildings and performance. Pass 2 covers custom RPC enums, server-authoritative input, broadcast, cleanup hooks, vanilla helpers, the vehicle anim instance and the parent and child mod architecture. These are that mod's patterns, not yet checked on `P:\` unless a line cites a vanilla file. The aviation uses are in the `dayz-aviation` skill.
 
 ---
 
-<!-- [merged 2026-06-05 from <claude-home>\skills user copy during plugin-canonical migration] -->
 ## Llama Mod Extraction Patterns
 
-Patterns extracted from LM_Planes (workshop 3730564764, Llama + Itspete-Here). General Enforce/DayZ patterns that apply beyond aviation. See [[dayz-aviation]] for aviation-specific applications.
+General Enforce Script and DayZ patterns from LM_Planes that apply beyond aviation.
 
 ### CfgMods config patterns
 
@@ -291,12 +288,9 @@ override void OnInput(float dt)
 
 `GetInputByName` does a string-keyed lookup. Doing it every input frame is wasteful. Cache once, reuse refs. Pattern applies to any hot path that does string-keyed lookups.
 
-<!-- llama-mod-extraction: findings f_005, f_014, f_044, f_045, f_050, f_051, f_071, f_080, f_081, f_084, f_086 | pbo: LM_Planes | pass: 1 | date: 2026-05-23 | source: workshop 3730564764 -->
-
-<!-- [merged 2026-06-05 from <claude-home>\skills user copy during plugin-canonical migration] -->
 ## Llama Mod Extraction Patterns — Pass 2
 
-Additional patterns from per-aircraft script deep dive. See [[dayz-aviation]] for aviation-specific applications.
+More patterns, from a second read of the scripts of each aircraft in LM_Planes.
 
 ### Custom RPC enum with magic constants
 
@@ -445,7 +439,7 @@ GetGame().SurfaceGetSeaLevel()     // absolute Y of sea level
 float heightAboveSea = position[1] - GetGame().SurfaceGetSeaLevel();
 ```
 
-Useful for amphibious vehicles, submarines, swimming behavior, weather effects over water. (Cost caveat: see the water-detection entry in ADDITIONAL PITFALLS above — `SurfaceIsSea`/`SurfaceIsPond` are slow proto natives; prefer `GetGame().GetWaterDepth(pos)` in hot paths.)
+Useful for amphibious vehicles, submarines, swimming behavior, weather effects over water. (Cost caveat: see the water-detection entry in `pitfalls-advanced.md` — `SurfaceIsSea`/`SurfaceIsPond` are slow proto natives; prefer `GetGame().GetWaterDepth(pos)` in hot paths.)
 
 **Damage zone resolution** (defensive helper for `ProcessDirectDamage`):
 
@@ -560,7 +554,3 @@ class CfgMods {
 If your model has visual-only details (seats players don't sit on, doors players don't open via script, decorative engine parts), use proxy .p3d files **without** corresponding `pos_*` memory points or `seat_*` selections. Engine renders the proxy at the LOD distance without requiring script support.
 
 Doors that should detach as inventory attachments use vanilla DayZ's `CarDoor` base + `class DamageZones.Doors` + `attachments[]` — engine handles visibility on attach/detach. No script logic needed for the door itself.
-
-<!-- llama-mod-extraction: findings f_092, f_093, f_094, f_095, f_109, f_117, f_118, f_119, f_127, f_129 | pbo: LM_Planes | pass: 2 | date: 2026-05-23 | source: workshop 3730564764 per-aircraft scripts -->
-
-<!-- [corrected 2026-06-06: removed 10 dangling references-table rows whose target .md files never existed in any root (admin-patterns, answeroverflow-2026-05-17, entity-physics-camera, expansion-framework-patterns, expansion-server-performance, lbgroups-patterns, lbmaster-server-patterns, reflection-api, textures-materials, vehicle-virtualization). They were aspirational citations; content not recoverable. The 7 real refs remain. NB: a lbgroups-patterns.md exists under dayz-ui-development but is UI-domain (layouts/widgets), not the scripting-domain content this row described, so it was not imported. -->

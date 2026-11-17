@@ -72,14 +72,21 @@ Log lines these mistakes produce are triaged by `/dayz-gate` and `/dayz-logwatch
 | E26 | "Preserves the original behaviour" treated as an audit pass when the original has bugs | It is not a goal. Each "preserved" behaviour is a hypothesis to check. `checklists.md`, "Refactor: state coherence". | LF_VStorage layer 6 v3 to v3.1 |
 | E27 | A sketchy pattern labelled "pre-existing" and silently carried along | Stop, get an explicit decision from the user (fix now or flag for later), and grep the sibling files for the same pattern. | LF_VStorage layer 6 v3 to v3.1 |
 
+## Keeping the catalog
+
+- When a session hits a mistake that is already listed, do not add it again; name the existing id in the handoff.
+- When a session hits a new mistake for the second time, add a row with the next free id, with the correct form and its `P:\` citation or the project it was measured on.
+- When a row goes out of date (the engine changed, an official patch), strike it through with the date and the replacement. Do not delete it; the history is the point.
+- A mistake that leaves a log line also gets an entry in `skills/dayz-gate/known-errors.json`, so `/dayz-gate` and `/dayz-logwatch` name the fix. E28, E30 and E35 have one.
+
 ## The three `.rvmat` rows (E04, E05, E10)
 
-The knowledge pack recorded three exact values as "the correct one". Counted over the 34,899 text `.rvmat` files under `P:\DZ\`, vanilla ships both forms of each, and the form the knowledge pack called the mistake is the more common one:
+The knowledge pack recorded three exact values as "the correct one". Counted over the 34,899 text `.rvmat` files under `P:\DZ\` (ignoring letter case and white space), vanilla ships both forms of each, and the form the knowledge pack called the mistake is the more common one:
 
 | Value | Form in the Agentic-Z texture pack | Vanilla files | Form the knowledge pack required | Vanilla files |
 |---|---|---|---|---|
-| `Stage2` detail placeholder | `color(0.5,0.5,0.5,1,DT)` (for example `P:\DZ\animals\canis_lupus\data\fur_alpha.rvmat:27`) | 3,835 | `color(0.5,0.5,0.5,0.5,DT)` (for example `P:\DZ\animals\bos_taurus\data\bull_brown.rvmat:23`) | 1,299 |
-| `Stage4` ambient shadow placeholder | `color(1,1,1,1,AS)` (for example `P:\DZ\animals\canis_lupus\data\fur_alpha.rvmat:51`) | 4,017 | `color(0,1,1,1)` with no suffix (for example `P:\DZ\gear\camping\data\sea_chest_e.rvmat:119`) | 73 |
+| `Stage2` detail placeholder | `color(0.5,0.5,0.5,1,DT)` (for example `P:\DZ\animals\canis_lupus\data\fur_alpha.rvmat:27`) | 3,844 | `color(0.5,0.5,0.5,0.5,DT)` (for example `P:\DZ\animals\bos_taurus\data\bull_brown.rvmat:23`) | 1,299 |
+| `Stage4` ambient shadow placeholder | `color(1,1,1,1,AS)` (for example `P:\DZ\animals\canis_lupus\data\fur_alpha.rvmat:51`) | 4,405 | `color(0,1,1,1)` with no suffix (for example `P:\DZ\gear\camping\data\sea_chest_e.rvmat:119`) | 73 |
 | `forcedDiffuse[]` | `{0,0,0,0}` (for example `P:\DZ\animals\bos_taurus\data\bull_brown.rvmat:3`) | 16,612 | `{0,0,0,1}` (for example `P:\DZ\characters\backpacks\data\drybag.rvmat:7`) | 1,059 |
 
 So neither value is an error by itself. The rule that holds is E06's: start from a working vanilla `.rvmat` of the same shader and the same kind of surface and change only what you must. The defaults and the recipes are in `skills/_shared/textures/rvmat-stages.md` and `skills/_shared/textures/surface-recipes.md`. The knowledge pack's values came from one project (ArmorAddition) where the copied material used those forms.

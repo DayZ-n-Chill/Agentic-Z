@@ -28,10 +28,10 @@ Marks used here: a fact with a `P:\` citation was read in that vanilla file. "Me
 |---|---|---|
 | 1. Scope | A non-trivial feature first gets a spec: success criteria and a forward contract. The plan and task list come from `dayz-mod-architect`. | `dayz-feature-spec` |
 | 2. Write | Read the domain skill (router below) and `dayz-mod-workflow`; look up every API before using it (next section). A new mod starts with `/dayz-new-mod`. | domain skill, `dayz-mod-workflow` |
-| 3. Build | Validate, pack, sign. | `/dayz-lint`, `/dayz-build-pbo`; depth in `dayz-pbo-build` |
+| 3. Build | Validate, pack, sign. | `/dayz-lint`, `/dayz-build-pbo`; depth in `skills/dayz-build-pbo/references/` |
 | 4. Boot it | A PBO that builds is not a tested mod. Boot it on a local server, compare the script module counts with a vanilla boot, read `script_*.log`. | `/dayz-launch-test`, `/dayz-gate ingame`, `/dayz-logwatch`; depth in `dayz-test-ingame` |
 | 5. Verify in game | When the change is visible or driven by the player. | `/dayz-gate behavior`, `/dayz-gate visual`; `dayz-test-ingame`, `dayz-mcp-verify` |
-| 6. Publish | Only when the user says so. | `/dayz-release-pack`, `/dayz-server-kit`; `dayz-pbo-build` (`references/workshop-publish.md` on Windows, `references/dayzmake-linux.md` on Linux) |
+| 6. Publish | Only when the user says so. | `/dayz-release-pack`, `/dayz-server-kit`; `skills/dayz-build-pbo/references/workshop-publish.md` on Windows, `skills/dayz-build-pbo/references/dayzmake-linux.md` on Linux |
 
 ## Rules for every task
 
@@ -83,7 +83,7 @@ Match the request and read that skill first; read more than one when the request
 | Spec, acceptance criteria, "ready to code?" | `dayz-feature-spec` |
 | `OnStoreSave`, `OnStoreLoad`, CF ModStorage, storage versions, `types.xml`, `events.xml`, Central Economy files | `dayz-persistence` (`references/central-economy-files.md`); audits: `rigorous-data-audit` |
 | `serverDZ.cfg`, `cfggameplay.json`, mission files, starting a local server, the mod does not load | `/dayz-add-server`, `/dayz-launch-test`; `dayz-test-ingame` (`references/server-and-mission-config.md`) |
-| PBO, prefix, signing, keys, Workshop | `/dayz-build-pbo`, `/dayz-release-pack`; `dayz-pbo-build` |
+| PBO, prefix, signing, keys, Workshop | `/dayz-build-pbo` (and its `references/`), `/dayz-release-pack` |
 | Environment check: `P:`, DayZ Tools, Workshop folder | `/dayz-preflight` |
 | Mod setup errors before packing | `/dayz-lint` |
 | UI, `.layout`, widgets, HUD, Dabs | `dayz-ui-development` |
@@ -129,4 +129,4 @@ Third-party facts; the mods named are the source.
 
 ## Building, signing, publishing
 
-Windows: `/dayz-build-pbo` (AddonBuilder), `/dayz-release-pack` and `/dayz-server-kit` for the release texts and the server owner's files; DsUtils signing and the Publisher or SteamCMD upload are in `dayz-pbo-build` (`references/workshop-publish.md`). Linux: the `dayz-mod-pack.sh` helper in `skills/_shared/scripts/` (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`) over dayzmake, and the `workshop` uploader (`references/dayzmake-linux.md` in the same skill). Keep the private key out of git and out of the upload folder; one key per mod family; sign after the final build.
+Windows: `/dayz-build-pbo` (AddonBuilder), `/dayz-release-pack` and `/dayz-server-kit` for the release texts and the server owner's files; DsUtils signing and the Publisher or SteamCMD upload are in `skills/dayz-build-pbo/references/workshop-publish.md`. Linux: the `dayz-mod-pack.sh` helper in `skills/_shared/scripts/` (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`) over dayzmake, and the `workshop` uploader (`skills/dayz-build-pbo/references/dayzmake-linux.md`). Keep the private key out of git and out of the upload folder; one key per mod family; sign after the final build.

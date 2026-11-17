@@ -1,0 +1,8 @@
+*.biprivatekey
+secrets/
+*.psd
+*.xcf
+*.kra
+*.blend
+*.blend1
+.git*

@@ -17,7 +17,7 @@ Run `dayz-api.py class X` before relying on a method.
 """
 import argparse, glob, lzma, os, re, sys
 
-# The indexes hold Bohemia's (and mod authors') declarations, so this Pack does not ship them: build them with
+# The indexes hold Bohemia's (and mod authors') declarations, so this repo does not ship them: build them with
 # extract-dayz-sources.sh and build-api-index.py into $DAYZ_API_DIR (default ~/.cache/dayz-api).
 API = os.environ.get('DAYZ_API_DIR') or os.path.join(os.path.expanduser('~'), '.cache', 'dayz-api')
 LAYER = {'1': '1_Core', '2': '2_GameLib', '3': '3_Game', '4': '4_World', '5': '5_Mission'}

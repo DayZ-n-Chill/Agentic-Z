@@ -1,0 +1,4 @@
+secrets/
+*.biprivatekey
+build/
+keys/

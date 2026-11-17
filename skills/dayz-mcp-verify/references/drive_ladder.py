@@ -1,0 +1,396 @@
+#!/usr/bin/env python3
+"""drive_ladder.py - acceptance ladder orchestrator (skill dayz-mcp-verify,
+references/acceptance-ladder.md).
+
+Drives rungs R1..R6 against the ALREADY-RUNNING dayz-mcp daemon (:8765) via raw /enqueue + /await
+- the same verified pattern as the gate drivers tramoA_verbs_gate.py and tramoB_getin_gate.py in the
+dayz-mcp checkout's tools/ folder, which each gated PASS in-game. stdlib only; no MCP SDK, no game launch.
+
+Scope: the ladder runs the OBJECTIVE (telemetry/raycast) rungs that go through the bridge. The VISUAL
+rungs (R2 render look, R6 turn confirmation) need capture_screenshot, which is a host-side MCP tool
+(window grab), NOT a bridge /enqueue command - so they stay with the agent (call capture_screenshot +
+eyeball the PNG). This script flags them, it does not capture. The script's result is `objective_PASS`,
+NOT acceptance: acceptance also needs the agent's visual rungs (R2_visual, R6 calibration).
+
+On a FAIL it maps the symptom to a SUB_BRZ taxonomy fix (skill dayz-vehicles, references/) and writes
+verdict.json. It does NOT apply fixes or rebuild - that is the agent/human loop (guardrail 1: a failure
+outside the known taxonomy STOPS and escalates; no blind rebuild).
+
+Hardening applied after R21 (Codex review 2026-06-28, DL-001..011): R3 gates on the DRIVER seat
+(crew_index 0), not any seat; R4 is fail-closed on seated+is_owner+fixture_ready; a preflight aborts if
+the player is already in a vehicle (re-run would measure the old car); R5 requires engine_on+is_owner and
+emits needs_clear_ground_retest instead of a one-shot obstacle/drivetrain guess; every verb is checked for
+timeout/ok (a harness error is NOT a model fix); R6 is reported uncalibrated.
+
+Usage:
+  python drive_ladder.py --vehicle SUB_BRZ --keyfile <dayz-mcp>\\tools\\.dayz_mcp.key --journal output\\ladder\\SUB_BRZ\\run_1
+
+The key file comes from --keyfile or the DAYZ_MCP_KEYFILE environment variable; there is no default path.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import os
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+DEF_KEYFILE = os.environ.get("DAYZ_MCP_KEYFILE", "")
+
+# first_block (MCPBridge.c:589-708) -> SUB_BRZ taxonomy fix anchor (skill dayz-vehicles, references/).
+FIRST_BLOCK_FIX = {
+    "": "available",
+    "componentNN": "componentNN dual-tag - vehicle-structural-parity.md 'componentNN DUAL-TAG' + rip-import.md:385-388 (the DRIVER seat is not enumerated as a collision component)",
+    "crew_can_get_through": "bare 'class X: CarScript' inherits Transport.CrewCanGetThrough()=false - fix: extends CarScript override CrewCanGetThrough+GetSeatAnimationType+GetAnimInstance + worldScriptModule (rip-import.md:430-451)",
+    "area_blocked": "IsAreaAtDoorFree false -> door-area obstruction / door selection",
+    "unreachable": "CanReachSeatFromDoors false -> seat<->door geometry, OR car too far from player (move adjacent before concluding a model fix)",
+    "occupied": "seat taken -> respawn fresh (harness state, not a model bug)",
+    "item_heavy": "drop the heavy item in hands (harness state)",
+    "already_in_vehicle": "exit the vehicle first (harness state)",
+    "no_component": "you passed component=-1: take a real component from a scene_raycast (partial, never PASS)",
+}
+
+
+def _truthy(v) -> bool:
+    """Wire bools may arrive as JSON true OR int 1 (bridge GATE4B-001). Treat both as true."""
+    return v is True or v == 1
+
+
+def _bad(res: dict) -> bool:
+    """A verb result that did NOT run cleanly: timed out, or ok is explicitly false/0.
+    Absent `ok` is treated as ok (the gate drivers read business fields, not `ok`)."""
+    return bool(res.get("_timeout")) or res.get("ok", 1) in (False, 0)
+
+
+class Daemon:
+    """Raw /enqueue + /await against the broker daemon. Mirrors tramoA_gate_driver.Daemon."""
+
+    def __init__(self, port: int, key: str):
+        self.base = f"http://127.0.0.1:{port}"
+        self.key = key
+
+    def _req(self, method: str, path: str, query: dict, body: dict | None):
+        q = dict(query or {})
+        q["key"] = self.key
+        url = self.base + path + "?" + urllib.parse.urlencode(q)
+        data = None
+        headers = {}
+        if body is not None:
+            data = json.dumps(body, separators=(",", ":")).encode("utf-8")
+            headers["Content-Type"] = "application/json"
+        req = urllib.request.Request(url, data=data, headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return resp.status, json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            try:
+                return exc.code, json.loads(exc.read().decode("utf-8"))
+            except Exception:
+                return exc.code, {}
+
+    def enqueue(self, cmd: str, args: dict) -> int:
+        status, payload = self._req("POST", "/enqueue", {}, {"cmd": cmd, "args": args})
+        if status != 200 or "id" not in payload:
+            raise RuntimeError(f"enqueue {cmd} -> {status} {payload}")
+        return payload["id"]
+
+    def await_result(self, cmd_id: int, timeout: float) -> dict:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            status, payload = self._req("GET", "/await", {"id": cmd_id, "remove": "1"}, None)
+            if status == 200 and payload.get("status") == "done":
+                return payload.get("result", {})
+            time.sleep(0.4)
+        return {"_timeout": True}
+
+    def run(self, cmd: str, args: dict, timeout: float = 30.0) -> dict:
+        res = self.await_result(self.enqueue(cmd, args), timeout)
+        print(f"  [{cmd}] -> {json.dumps(res, default=str)[:300]}", flush=True)
+        return res
+
+
+def extract_pos(res: dict):
+    for key in ("pos_real", "pos"):
+        v = res.get(key)
+        if isinstance(v, list) and len(v) == 3:
+            return [float(v[0]), float(v[1]), float(v[2])]
+    st = res.get("state")
+    if isinstance(st, dict) and isinstance(st.get("pos"), list) and len(st["pos"]) == 3:
+        return [float(x) for x in st["pos"]]
+    return None
+
+
+def wait_ready(d: Daemon, timeout: float = 180.0):
+    print("[ladder] waiting for server peer + player...", flush=True)
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            res = d.run("query_player_state", {}, timeout=8)
+        except RuntimeError as e:
+            print(f"  enqueue err {e}", flush=True)
+            time.sleep(2.0)
+            continue
+        if not res.get("_timeout") and res.get("ok", True) and extract_pos(res):
+            print(f"[ladder] player ready @ {extract_pos(res)}", flush=True)
+            return extract_pos(res)
+        time.sleep(2.5)
+    raise RuntimeError("player never became ready")
+
+
+def ring_components(d: Daemon, car, heights=(0.6, 1.0, 1.3)) -> dict:
+    """Raycast a ring at the car center; collect hit components (mirrors tramoB_getin_gate)."""
+    cx, cy, cz = car
+    comps = {}
+    for h in heights:
+        for deg in range(0, 360, 30):
+            a = math.radians(deg)
+            frm = [cx + 3.0 * math.cos(a), cy + h, cz + 3.0 * math.sin(a)]
+            rc = d.run("scene_raycast", {"from": frm, "to": [cx, cy + h, cz]}, timeout=15)
+            hit = rc.get("raycast") or {}
+            if hit.get("hit") and isinstance(hit.get("component"), int):
+                comps.setdefault(hit["component"], hit)
+    return comps
+
+
+def run_ladder(d, args) -> dict:
+    """Drive R1..R6 against daemon `d`. Returns the report dict (does not write it).
+    `d` is anything with .run(cmd, args, timeout) -> dict, so a FakeDaemon can drive offline fixtures."""
+    R = {"vehicle": args.vehicle, "rungs": {}, "fixes": [], "stop": None}
+
+    def fail(rung: str, symptom: str, fix: str, hard: bool):
+        R["rungs"].setdefault(rung, {})["PASS"] = False
+        R["rungs"][rung].update({"symptom": symptom, "fix": fix})
+        R["fixes"].append({"rung": rung, "symptom": symptom, "fix": fix})
+        print(f"[{rung}] FAIL: {symptom}\n        -> FIX: {fix}", flush=True)
+        return hard
+
+    ppos = wait_ready(d)
+
+    # ---- Preflight (DL-003): abort if the player is ALREADY in a vehicle from a prior pass ----
+    # vehicle_telemetry resolves the owned car; not-seated -> error="not_seated". A valid pos here =
+    # the player is still in some car, so R4 would seat in IT and R5 would measure the WRONG car.
+    pre = d.run("vehicle_telemetry", {}, timeout=15)
+    if not pre.get("_timeout") and pre.get("error") != "not_seated" and extract_pos(pre) is not None:
+        fail("preflight", f"player already seated in a vehicle (prior pass not cleaned up): {json.dumps(pre)[:160]}",
+             "restart the client OR respawn fresh before re-running; a get-out verb is out of scope (runbook). Without this, R5 measures the OLD car while verdict.json names the new spawn.", hard=True)
+        R["stop"] = "preflight"
+        return R
+
+    # ---- R1 spawns (hard) ----
+    print(f"[R1] world_spawn {args.vehicle} @ player {ppos} rot={args.rotation}", flush=True)
+    spawn = d.run("world_spawn", {"type": args.vehicle, "pos": ppos, "rotation": args.rotation}, timeout=30)
+    car = extract_pos(spawn) or ppos
+    # DL-010: `found` is fail-closed (absent -> R1 fails; the success path always posts found=true).
+    if spawn.get("_timeout") or not _truthy(spawn.get("ok")) or not _truthy(spawn.get("found")):
+        fail("R1", f"world_spawn returned {json.dumps(spawn)[:160]}",
+             "unknown_type/spawn_failed -> mod not mounted / CfgPatches; OR spawned-but-invisible -> componentNN dual-tag (vehicle-structural-parity.md)", hard=True)
+        R["stop"] = "R1"
+        return R
+    R["rungs"]["R1"] = {"PASS": True, "car_pos": car}
+    print(f"[R1] PASS car @ {car}", flush=True)
+
+    # ---- R2 collision: raycast presence (objective). Winding/coverage/orient = AGENT visual. ----
+    # DL-007: solid>=6/12 is a COARSE "collision geometry responds at all" check (catches invisible /
+    # no-ViewGeo). It does NOT verify winding or coverage - a half-missing car can still hit ~6. The
+    # winding/orient/scale verdict is R2_visual (agent capture), which the script cannot close.
+    cx, cy, cz = car
+    solid = 0
+    for h in (0.4, 0.8, 1.2):
+        for ang in (0, 90, 180, 270):
+            a = math.radians(ang)
+            frm = [cx + 3.5 * math.cos(a), cy + h, cz + 3.5 * math.sin(a)]
+            rc = d.run("scene_raycast", {"from": frm, "to": [cx, cy + h, cz]}, timeout=15)
+            if (rc.get("raycast") or {}).get("hit"):
+                solid += 1
+    R["rungs"]["R2_collision"] = {"PASS": solid >= 6, "solid_hits": solid, "of": 12}
+    R["rungs"]["R2_visual"] = {"PASS": None, "note": "AGENT (not scriptable): camera_set(cam_mode='lookat') + capture_screenshot, N angles; judge winding/orient/scale by eye. Required to close acceptance."}
+    if solid < 6:
+        fail("R2_collision", f"only {solid}/12 raycasts hit the car (no/sparse collision geometry)",
+             "missing ViewGeo/FireGeo (vehicle-structural-parity.md) OR winding per-piece (rip-import.md:487-575); confirm winding with the visual rung", hard=False)
+    else:
+        print(f"[R2] collision PASS {solid}/12 (winding/coverage = agent visual)", flush=True)
+
+    # ---- R3 get-in diagnostic for the DRIVER seat (soft; does NOT block R4) ----
+    # DL-001: PASS only if the DRIVER seat (crew_index 0) is available. A car where only a PASSENGER
+    # seat is reachable but the driver is unreachable is NOT drivable by a human (the SUB_BRZ tramoB case).
+    nc = d.run("query_get_in_condition", {"pos": car, "component": -1}, timeout=20).get("get_in") or {}
+    partial_ok = bool(nc.get("partial")) and int(nc.get("crew_size", 0) or 0) > 0
+    comps = ring_components(d, car)
+    print(f"[R3] hit components: {sorted(comps)}", flush=True)
+    crew_seats, driver_seat = [], None
+    for comp in sorted(comps):
+        g = d.run("query_get_in_condition", {"pos": car, "component": comp}, timeout=20).get("get_in") or {}
+        cci = g.get("component_crew_index")
+        if isinstance(cci, int) and cci >= 0:
+            entry = {"component": comp, "crew_index": cci, "available": _truthy(g.get("available")),
+                     "first_block": g.get("first_block")}
+            crew_seats.append(entry)
+            if cci == 0:
+                driver_seat = entry
+    r3_pass = partial_ok and driver_seat is not None and driver_seat["available"]
+    R["rungs"]["R3"] = {"PASS": r3_pass, "partial_ok": partial_ok, "crew_seats": crew_seats, "driver_seat": driver_seat}
+    if not r3_pass:
+        if driver_seat is not None:
+            blk = driver_seat["first_block"] or "unknown"
+            symptom = f"DRIVER seat (crew_index 0) not available (first_block={blk!r})"
+        else:
+            blk = "componentNN"
+            symptom = "DRIVER seat (crew_index 0) not found among raycast components (seat island / not mapped)"
+        if blk not in FIRST_BLOCK_FIX:
+            fail("R3", f"driver first_block={blk!r} NOT in known taxonomy", "ESCALATE (guardrail 1)", hard=True)
+            R["stop"] = "R3"
+            return R
+        fail("R3", symptom, FIRST_BLOCK_FIX[blk], hard=False)
+    else:
+        print("[R3] PASS (driver seat is available)", flush=True)
+
+    # ---- R4 seated through MCP (hard for R5/R6) ----
+    # DL-002: fail-closed on the full contract: not timeout, ok, seated, is_owner, vehicle_fixture_ready.
+    gi = d.run("vehicle_get_in_client", {"pos": car}, timeout=40)
+    r4_pass = (not gi.get("_timeout") and not _bad(gi)
+               and _truthy(gi.get("seated")) and _truthy(gi.get("is_owner"))
+               and _truthy(gi.get("vehicle_fixture_ready")))
+    R["rungs"]["R4"] = {"PASS": r4_pass, "seated": gi.get("seated"), "is_owner": gi.get("is_owner"),
+                        "fixture_ready": gi.get("vehicle_fixture_ready"), "error": gi.get("error")}
+    if not r4_pass:
+        fail("R4", f"vehicle_get_in_client did not satisfy seated+is_owner+fixture_ready -> {json.dumps(gi)[:200]}",
+             "not seated -> reachability / crew bone-selection / seat anim; not is_owner -> ownership not transferred (StartCommand_Vehicle client-side); not fixture_ready -> OnDebugSpawn conditioning. See vehicle-config-and-modelcfg.md", hard=True)
+        R["stop"] = "R4"
+        return R
+    print(f"[R4] PASS seated+owner+fixture", flush=True)
+
+    # ---- R5 drives ----
+    eng = d.run("engine_set", {"mode": "start"}, timeout=20)
+    t0 = d.run("vehicle_telemetry", {}, timeout=20)
+    pos0 = extract_pos(t0)
+    ctrl = d.run("vehicle_control",
+                 {"throttle": 1.0, "steer": 0.0, "brake": 0.0, "handbrake": 0.0, "hold_ttl_s": args.hold_ttl},
+                 timeout=20)
+    print(f"[R5] held-drive {args.drive_s}s (no re-call)...", flush=True)
+    time.sleep(args.drive_s)
+    t1 = d.run("vehicle_telemetry", {}, timeout=20)
+    pos1 = extract_pos(t1)
+
+    # DL-006: a verb that timed out / returned ok:false is a HARNESS/bridge issue, NOT a model defect.
+    if _bad(eng) or _bad(ctrl) or _bad(t0) or _bad(t1):
+        R["rungs"]["R5"] = {"PASS": False, "inconclusive": True}
+        fail("R5", "a drive verb timed out or returned ok:false (harness/bridge, NOT a model defect)",
+             "reconcile bridge_status + retry; do NOT map to a drivetrain/model fix on an inconclusive run", hard=False)
+        d.run("vehicle_release", {}, timeout=20)
+        return _finish(R, d, args)
+
+    # DL-003 defense: the seated car must BE the one we spawned (pos0 near car_pos), else we'd measure
+    # the wrong car despite the preflight.
+    if pos0 is not None and math.dist(pos0, car) > 8.0:
+        R["rungs"]["R5"] = {"PASS": False, "inconclusive": True, "seated_pos": pos0, "spawn_pos": car}
+        fail("R5", f"seated car @ {pos0} is far from the spawn @ {car} (>8 m) -> measuring the WRONG car",
+             "the player is in a different vehicle than the one R1 spawned; restart/cleanup before re-run", hard=False)
+        d.run("vehicle_release", {}, timeout=20)
+        return _finish(R, d, args)
+
+    speedo = float(t1.get("speedo_max", 0.0) or 0.0)
+    gear = t1.get("gear")
+    engine_on = _truthy(t1.get("engine_on_server"))
+    is_owner = _truthy(t1.get("is_owner"))
+    pos_delta = math.dist(pos0, pos1) if (pos0 and pos1) else None
+    # DL-004: require engine_on + is_owner so gravity/inertia on a dead drivetrain cannot PASS.
+    r5_pass = (pos_delta is not None and pos_delta > 1.0 and speedo > 0.0 and engine_on and is_owner)
+    R["rungs"]["R5"] = {"PASS": r5_pass, "pos_delta": pos_delta, "speedo_max": speedo, "gear": gear,
+                        "engine_on_server": engine_on, "is_owner": is_owner}
+    if not r5_pass:
+        if not (engine_on and is_owner):
+            fail("R5", f"precondition broke: engine_on={engine_on} is_owner={is_owner} (pos_delta={pos_delta}, speedo={speedo})",
+                 "not a drivetrain defect: engine never started or ownership lost -> re-check R4/engine_set, not the model", hard=False)
+        else:
+            # DL-005: engine on + owner but no motion is AMBIGUOUS (obstacle vs drivetrain). Do NOT emit a
+            # one-shot drivetrain fix; require the clear-ground retest as ground-truth.
+            R["rungs"]["R5"]["verdict"] = "needs_clear_ground_retest"
+            hint = f"speedo={speedo} gear={gear}"
+            fail("R5", f"engine_on+owner but pos_delta={pos_delta}, speedo={speedo} -> AMBIGUOUS (obstacle vs drivetrain); {hint}",
+                 "MANDATORY before any fix: re-run on CLEAR ground (relocate / --rotation into open space). If it then moves -> was an obstacle (false FAIL). If still ~0 with the engine revving -> wheel sim (FireGeo) rip-import.md:250-251 / drivetrain config. Do NOT apply a model fix on this single reading.", hard=False)
+    else:
+        print(f"[R5] PASS pos_delta={pos_delta:.1f}m speedo={speedo} engine_on owner", flush=True)
+
+    # ---- R6 wheel direction (INFO, UNCALIBRATED: DayZ steer sign not verified vs a vanilla ref) ----
+    if r5_pass:
+        pa = extract_pos(d.run("vehicle_telemetry", {}, timeout=20))
+        c1 = d.run("vehicle_control", {"throttle": 0.6, "steer": 0.0, "hold_ttl_s": args.hold_ttl}, timeout=20)
+        time.sleep(1.5)
+        pb = extract_pos(d.run("vehicle_telemetry", {}, timeout=20))
+        c2 = d.run("vehicle_control", {"throttle": 0.6, "steer": args.steer_left_sign, "hold_ttl_s": args.hold_ttl}, timeout=20)
+        time.sleep(2.0)
+        pc = extract_pos(d.run("vehicle_telemetry", {}, timeout=20))
+        cross = None
+        if pa and pb and pc and not (_bad(c1) or _bad(c2)):
+            hx, hz = pb[0] - pa[0], pb[2] - pa[2]
+            dx, dz = pc[0] - pb[0], pc[2] - pb[2]
+            cross = hx * dz - hz * dx  # signed turn in the XZ plane; sign->left/right is UNCALIBRATED
+        R["rungs"]["R6"] = {"PASS": None, "steer_cmd": args.steer_left_sign, "signed_cross": cross,
+                            "calibrated": False,
+                            "note": "UNCALIBRATED: the sign->left/right mapping is NOT verified against a vanilla ref. Report signed_cross; do NOT map to a model.cfg wheel `angle`/naming fix (rip-import.md:195) on this alone."}
+        print(f"[R6] INFO steer={args.steer_left_sign} signed_cross={cross} (UNCALIBRATED; visual=agent)", flush=True)
+
+    d.run("vehicle_release", {}, timeout=20)
+    return _finish(R, d, args)
+
+
+def _finish(R: dict, d, args) -> dict:
+    return R
+
+
+def write_verdict(R: dict, args) -> int:
+    stop = R.get("stop")
+    # DL-007: objective_PASS = the scriptable rungs only. Acceptance ALSO needs the agent visual rungs
+    # (R2_visual, R6 calibration), which this script cannot close -> acceptance_PASS stays None.
+    objective = [v.get("PASS") for v in R["rungs"].values() if v.get("PASS") is not None]
+    R["objective_PASS"] = bool(objective) and all(objective)
+    R["acceptance_PASS"] = None
+    R["acceptance_note"] = "acceptance requires the agent's visual rungs (R2_visual winding/orient/scale, R6 steer calibration); not closeable by this script"
+    jdir = Path(args.journal) if args.journal else (Path.cwd() / "_ladder" / args.vehicle)
+    jdir.mkdir(parents=True, exist_ok=True)
+    out = jdir / "verdict.json"
+    out.write_text(json.dumps(R, indent=2, default=str), encoding="utf-8")
+    print(f"\n[ladder] verdict: {out.resolve()}  objective_PASS={R['objective_PASS']}  stop={stop}", flush=True)
+    if R["fixes"]:
+        print("[ladder] batched fixes to apply (one rebuild, R5):", flush=True)
+        for f in R["fixes"]:
+            print(f"  - {f['rung']}: {f['fix']}", flush=True)
+    return 0 if R["objective_PASS"] else 2
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--keyfile", default=DEF_KEYFILE)
+    ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument("--vehicle", required=True, help="classname of the rip-under-test")
+    ap.add_argument("--rotation", type=int, default=0, help="spawn yaw; point into open space for R5")
+    ap.add_argument("--journal", default="", help="dir for verdict.json (default: ./_ladder/<vehicle>)")
+    ap.add_argument("--drive-s", type=float, default=5.0)
+    ap.add_argument("--hold-ttl", type=float, default=12.0)
+    ap.add_argument("--steer-left-sign", type=float, default=-1.0,
+                    help="steer value tried for the LEFT turn (DayZ convention UNVERIFIED; R6 is uncalibrated INFO)")
+    return ap
+
+
+def main() -> int:
+    args = build_arg_parser().parse_args()
+    # DL-009: the held-state deadman must outlast the measured window, else the car stops mid-measure.
+    min_ttl = args.drive_s + 4.0
+    if args.hold_ttl < min_ttl:
+        print(f"[warn] hold_ttl {args.hold_ttl} < drive_s+margin {min_ttl}; raising hold_ttl to {min_ttl}", flush=True)
+        args.hold_ttl = min_ttl
+    if not args.keyfile:
+        print("[FAIL] no key file: pass --keyfile or set DAYZ_MCP_KEYFILE (the .dayz_mcp.key of your dayz-mcp checkout)", flush=True)
+        return 2
+    key = Path(args.keyfile).read_text(encoding="utf-8").strip()
+    d = Daemon(args.port, key)
+    R = run_ladder(d, args)
+    return write_verdict(R, args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

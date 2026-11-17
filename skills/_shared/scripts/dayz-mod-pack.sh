@@ -23,7 +23,7 @@
 #                           --v2      sign with the older v2 signature instead of v3
 #                           --binarize-models  convert .p3d/.rtm (MLOD -> ODOL) via dayzmake --proton-binarize
 #                                    (BI's binarize.exe from DayZ Tools under Proton; Linux only,
-#                                    see skills/dayz-pbo-build/references/dayzmake-linux.md). Sources stay untouched.
+#                                    see skills/dayz-build-pbo/references/dayzmake-linux.md). Sources stay untouched.
 #   check                   verify nothing secret is tracked or staged, and the signatures verify
 #   publish-hint            print the `workshop create` / `workshop update` commands
 #

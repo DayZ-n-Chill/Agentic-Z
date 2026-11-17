@@ -29,7 +29,7 @@ marker are labelled "not claimed".
 |---|---|---|
 | Pack / sign a PBO (AddonBuilder, DSSignFile) | `dayzmake build` / `keygen` / `sign` (dayzmake >= 1.0.0, https://github.com/bzed/dayzmake; install below) | native; no external wrapper required |
 | Binarize models (`.p3d` MLOD → ODOL) | `dayzmake build --proton-binarize` (invokes BI binarize.exe under Proton) | recorded textured-cube comparison at fork commit `7dcb3cf`, which `v1.0.0` contains (section 4) |
-| Publish to the Workshop (Publisher) | `workshop` uploader (https://github.com/nozwock/steam-workshop-uploader) | native route; `skills/_shared/scripts/dayz-mod-pack.sh publish-hint` prints the commands (the dayz-pbo-build material, `references/dayzmake-linux.md`) |
+| Publish to the Workshop (Publisher) | `workshop` uploader (https://github.com/nozwock/steam-workshop-uploader) | native route; `skills/_shared/scripts/dayz-mod-pack.sh publish-hint` prints the commands (`skills/dayz-build-pbo/references/dayzmake-linux.md`) |
 | Cross-check dayzmake against BI's own tools | `skills/_shared/scripts/dayz-proton.sh tool AddonBuilder P:\<Mod> <out> -prefix=<Mod>`; `tool DSCreateKey` / `DSSignFile` / `DSCheckSignatures`; `dayz-proton.sh binarize <P-root> <addon> <out> [files]` | works (section 4); for comparisons, not the build |
 | `config.cpp` → `config.bin` (CfgConvert) | `dayzmake rapify`, or `dayz-proton.sh tool CfgConvert -bin -dst <bin> <cpp>` | both work |
 | PNG/TGA → PAA (ImageToPAA) | `dayzmake img2paa`, or `dayz-proton.sh tool ImageToPAA <in> <out.paa>` | both work |
@@ -37,8 +37,8 @@ marker are labelled "not claimed".
 | Object Builder | `dayz-proton.sh gui ObjectBuilder [model.p3d]` | starts, loads a model; editing not exercised |
 | Workbench | `dayz-proton.sh gui Workbench` | starts and compiles the bundled scripts; game config needs `P:\dz` (section 3) |
 | Terrain Builder, DSUtils GUI, ImageToPAA GUI | `dayz-proton.sh gui <Tool>` | **not verified** |
-| Dedicated server (`DayZServer_x64.exe`) | native `DayZServer` (Steam app 223350) from a private tree: `skills/_shared/scripts/find-dayzserver.sh`, `make-server-tree.sh`, `free-ports.sh` | native, preferred; the dayz-test-ingame material, `references/linux-native-server.md` |
-| Client (`DayZ_x64.exe`) | retail client under Proton, paired with the native server: `skills/_shared/scripts/dayz-client-headless.sh`, `dayz-client-test.sh` | works; the dayz-test-ingame material, `references/linux-headless-client.md` |
+| Dedicated server (`DayZServer_x64.exe`) | native `DayZServer` (Steam app 223350) from a private tree: `skills/_shared/scripts/find-dayzserver.sh`, `make-server-tree.sh`, `free-ports.sh` | native, preferred; `skills/dayz-test-ingame/references/linux-native-server.md` |
+| Client (`DayZ_x64.exe`) | retail client under Proton, paired with the native server: `skills/_shared/scripts/dayz-client-headless.sh`, `dayz-client-test.sh` | works; `skills/dayz-test-ingame/references/linux-headless-client.md` |
 | `DayZDiag_x64.exe` (client or `-server`) | `dayz-proton.sh headless start <state> DayZDiag <args>`, or managed through dayz-mcp `main` (Linux port merged in https://github.com/willy92wins/dayz-mcp/pull/411 on 2026-11-14; last row) | both roles run; a diag client joins a diag server and reaches the world (section 5, pairing) |
 | `P:` drive (WorkDrive, `subst`) | a plain directory, mapped by `dayz-proton.sh init <dir>` | works (section 3) |
 | PowerShell scripts (`*.ps1`) | rewrite the steps in sh; `pwsh` exists on Linux but the scripts call Windows programs, the registry and `subst` | translate, do not run |
@@ -134,7 +134,7 @@ mapping (`P:\MyMod\config.cpp`), and `tool`/`gui` rewrite absolute Linux paths i
 inside the root and `Z:\…` elsewhere.
 
 Keep the `P:` root small. Binarize scans the folder above the addon it converts (`-addon=` is the
-parent of the source folder; the dayz-pbo-build material documents this); from `P:\MyMod` that is the `P:` root.
+parent of the source folder; `skills/dayz-build-pbo/references/addonbuilder-rules.md` documents this); from `P:\MyMod` that is the `P:` root.
 From a `Z:` path it is a Linux directory, possibly your home, and binarize then burns CPU for minutes
 (the author recorded scans of `~/.cargo` and a network mount).
 
@@ -196,7 +196,7 @@ repeated with the `v1.0.0` binary. This is a record of the comparison, not a new
   modal `CONNECTING FAILED (0x00020017): Client is using Diag exe while the server is not`, after the client
   has loaded; the log shows no error, only the screen does, and the server never sees a player. Pair them: both
   `DayZDiag` (`-server` under Proton, with `allowFilePatching = 1` in `serverDZ.cfg`), or the retail `DayZ_x64.exe`
-  with the native server (the dayz-test-ingame material, `references/linux-headless-client.md`). Measured 2026-11-06, 1.30.164289.70: the diag pair joined,
+  with the native server (`skills/dayz-test-ingame/references/linux-headless-client.md`). Measured 2026-11-06, 1.30.164289.70: the diag pair joined,
   `Player "Dev" … is connected` in the server RPT and the player in the world, from one prefix with each role
   in its own headless sway (`PROTON_ENABLE_WAYLAND=1`).
 - **An absolute `-mission` on the native server boots without a mission.** `DayZServer` 1.30 with
@@ -207,8 +207,8 @@ repeated with the `v1.0.0` binary. This is a record of the comparison, not a new
 - **Absolute `-mod=` / `-servermod=` paths mount nothing on the native server.** The engine probes the folder,
   loads no PBO from it and prints no error; the server starts and the mod is simply absent. Give mod paths relative
   to the server tree (symlinks or `../` work). This is the reverse of the Windows rule in the dayz-test-ingame material
-  ("MOD PATHS MUST BE ABSOLUTE"); evidence: its `references/linux-native-server.md`, section 3.
-  `-config` and `-profiles` take absolute paths; `DayZDiag` under Proton loads an absolute `-mod=Z:\…` (same material).
+  ("MOD PATHS MUST BE ABSOLUTE"); evidence: `skills/dayz-test-ingame/references/linux-native-server.md`, section 3.
+  `-config` and `-profiles` take absolute paths; `DayZDiag` under Proton loads an absolute `-mod=Z:\…` (same file).
 - **Which PID is Steam**: `~/.steam/steam.pid`, the file `steam.sh` itself checks. `SteamPID` in
   `~/.steam/registry.vdf` can name a start-up process that is already gone (measured 2026-11-06: `SteamPID`
   20624, no such process, `steam.pid` 20622, the live `ubuntu12_32/steam`).
