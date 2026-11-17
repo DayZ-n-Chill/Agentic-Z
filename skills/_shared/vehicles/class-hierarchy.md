@@ -12,7 +12,7 @@ Every vehicle exists twice: once as a config class in `CfgVehicles` and once as 
 | Boat | `BoatScript: Boat` (`P:\DZ\vehicles\water\config.cpp:17`) | `"boat"` (`P:\bin\config.cpp:1455`) | `Transport`, `Boat` (`P:\scripts\3_game\vehicles\boat.c:28`), `BoatScript` (`P:\scripts\4_world\entities\vehicles\boatscript.c:41`) |
 | Helicopter | `Helicopter: Air` (`P:\bin\config.cpp:1563`) | `"helicopter"` (`P:\bin\config.cpp:1568`) | `Transport`, `Helicopter` (`P:\scripts\3_game\vehicles\helicopter.c:9`), `HelicopterAuto` (`:14`), `HelicopterScript` (`P:\scripts\4_world\entities\vehicles\helicopterscript.c:4`) |
 
-`Transport` itself is `class Transport: All` with `simulation="transport"` (`P:\bin\config.cpp:1404`). Motorbikes also branch from `Transport` (`P:\bin\config.cpp:1481`, `P:\scripts\3_game\vehicles\motorbike.c`) but are outside this pack.
+`Transport` itself is `class Transport: All` with `simulation="transport"` (`P:\bin\config.cpp:1404`). Motorbikes also branch from `Transport` (`P:\bin\config.cpp:1481`, `P:\scripts\3_game\vehicles\motorbike.c`); they have their own files in this pack (`motorbikes.md`).
 
 ## Vanilla cars to inherit from
 
@@ -93,3 +93,39 @@ class CfgVehicles
 ```
 
 Only the changed key is written; the simulation, crew and damage zones come from `Offroad_02`.
+
+## Siblings, not parent and child
+
+`Car`, `Boat` and `Motorbike` are siblings directly under `Transport` (`P:\scripts\3_game\vehicles\car.c:87`, `P:\scripts\3_game\vehicles\boat.c:28`, `P:\scripts\3_game\vehicles\motorbike.c:30`). `Transport` owns crew, get-in, flip and fuel; `Car` owns wheels, brakes and `CarFluid`; `Boat` owns the propeller, buoyancy and `BoatFluid`. A truck is a plain `CarScript` config with three axles and double wheels, not a new class (`Truck_01_Base` above). `MotorbikeScript` extends `Motorbike`, not `CarScript` (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:53`). Boats, truck double wheels and ATV slots are in `vehicle-types-boat-truck.md`.
+
+## A config parent is not a script parent
+
+When the config says `class X: OffroadHatchback` but the script says `class X extends MyBase` with `MyBase extends CarScript`, none of the script overrides of `OffroadHatchback` reach `X`: they live in `inheritedcars\offroadhatchback.c`, which `X` never inherits. Every hostile default listed under "Overrides a new vehicle must implement" then applies again, plus `IsVitalGlowPlug` (see `fluids-and-engine.md`). Diff your class method by method against the parent car's script file and repeat every override. Field notes: invariant 20 in `invariants-get-in-and-seats.md`.
+
+## What DayZ 1.30 changed in the tree and in `CarScript`
+
+Opened on this repo's `P:\`, which is a 1.30 build. The port blockers in detail, lights, horn, fluids, boats and the line drift between 1.29 and 1.30 are in `dayz-1-30-vehicles.md`.
+
+- A third sibling exists: `class Motorbike: Transport` with `simulation="motorbike"` (`P:\bin\config.cpp:1481-1486`), scripted by `MotorbikeScript`. Two-wheel work goes to the motorbike files of this pack.
+- `CarScript` is built around three components: `VehicleLightsComponent`, `VehicleHornComponent` and `VehicleVFXComponent` (`P:\scripts\4_world\entities\vehicles\carscript.c:187-189`).
+- These old overrides are marked `[Obsolete]`. A 1.29 mod that overrides one still compiles, but the override is no longer called, so check each against the 1.30 file before shipping:
+
+| Obsolete member | Line in `carscript.c` | Use instead |
+|---|---|---|
+| `CreateRearLight`, `CreateFrontLight` | `:2938`, `:2945` | `VehicleLightsComponent` |
+| `IsVitalCarBattery`, `IsVitalTruckBattery` | `:2812`, `:2818` | `Transport.NeedElectricitySourceDevice` (`P:\scripts\3_game\vehicles\transport.c:821`) |
+| `CarPartsHealthCheck` | `:2977` | `PartsHealthCheck` (`P:\scripts\3_game\vehicles\transport.c:437`; `CarScript` override at `P:\scripts\4_world\entities\vehicles\carscript.c:2121`) |
+| `ForceUpdateLightsStart`, `ForceUpdateLightsEnd` | `:2806`, `:2809` | Nothing; the attribute says "no replacement". |
+
+- `ToggleHeadlights` is gone from `P:\scripts\4_world\entities\vehicles\carscript.c` with no `[Obsolete]` stub, so a mod class that still declares `override void ToggleHeadlights()` stops the `4_World` compile.
+- A car reports `NO_BATTERY` with a battery attached unless it overrides the electricity source methods: `CheckOperationalRequirements` asks `NeedElectricitySourceDevice` and then `GetBattery` (`P:\scripts\4_world\entities\vehicles\carscript.c:1768-1773`), and the `Transport` defaults are `true` for `NeedElectricitySourceDevice` and `null` for `GetElectricitySourceDevice` (`P:\scripts\3_game\vehicles\transport.c:821-829`). `CivilianSedan` overrides `GetElectricitySourceDevice` to return the `CarBattery` attachment (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:64-68`).
+- Every wheel class needs a `<class>_Ruined` twin in config: without one the wheel type raises `No config class entry for wheel entity` when its first wheel is created (`P:\scripts\4_world\entities\core\inherited\inventoryitemtype.c:34-36`, where `m_RuinedType` is looked up).
+- The horn actions are `ActionVehicleHornShort` and `ActionVehicleHornLong` (`P:\scripts\4_world\entities\vehicles\carscript.c:2319-2320`).
+- Contact data is `VehicleContactData` with `m_Impulse` (`P:\scripts\3_game\vehicles\transport.c:1144-1148`), read in `CheckContactCache` as `data[0].m_Impulse` (`P:\scripts\4_world\entities\vehicles\carscript.c:1291`).
+- Wheel classes carry `tyreRoughness`, `tyreLongitudinalFriction` and `tyreLateralFriction` (`P:\DZ\vehicles\wheeled\config.cpp:878-880`).
+- `GetWeightCoef` is `1.0` in `Transport` (`P:\scripts\3_game\vehicles\transport.c:475-477`), `2.0` on `Truck_01_Base` (`P:\scripts\4_world\entities\vehicles\inheritedcars\truck_01_base.c:120-122`) and `1.5` on `Offroad_02` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:133-135`). `MotorbikeScript` only passes `GetWeightCoef()` to its dust effect (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:646`); it does not define a value.
+- `HasGangedTailAndBrakeLights` is `false` in `CarScript` (`P:\scripts\4_world\entities\vehicles\carscript.c:468-470`) and `true` on `Offroad_02` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:68-70`), so switching the reverse light does not switch its brake selection off (`P:\scripts\4_world\entities\vehicles\carscript.c:2061`).
+- The vehicle light key is `UAToggleVehicleLights`, set in `ToggleVehicleLightsActionInput` (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:849-855`); `UAToggleHeadlight` is the head torch (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:782`).
+- Get-in calls `CanGetIn`, then `CrewCanGetThrough` with `IsAreaAtDoorFreeDiag`, and does call `CanReachSeatFromDoors` from script with a distance of `1.0` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:36`, `:54`, `:64`).
+
+Reported on a 1.30 port of a third-party quad (LFQuad, 1.30.164200) and not reproduced here: a script module path written with backslashes in `CfgMods` loaded none of the mod's scripts, with no error.

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DZ Classify Viewer — sub_wrxsti_04</title>
+<style>
+  html, body { margin:0; height:100%; background:#14161a; color:#d7dbe0; font:13px/1.4 system-ui, sans-serif; }
+  #app { display:flex; height:100%; }
+  #side { width:320px; min-width:320px; background:#1b1e24; border-right:1px solid #2a2e36; display:flex; flex-direction:column; }
+  #side header { padding:10px 12px; border-bottom:1px solid #2a2e36; }
+  #side h1 { font-size:14px; margin:0 0 6px; color:#fff; }
+  #search { width:100%; box-sizing:border-box; padding:5px 8px; background:#12141a; color:#d7dbe0; border:1px solid #333a45; border-radius:4px; }
+  #list { flex:1; overflow-y:auto; padding:4px 0; }
+  .sect { padding:6px 12px 2px; font-weight:600; color:#8b93a1; text-transform:uppercase; font-size:11px; letter-spacing:.05em; }
+  .item { padding:3px 12px 3px 18px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .item:hover { background:#242935; }
+  .item.sel { background:#2d3a55; color:#fff; }
+  .item .star { color:#e8b84a; margin-left:4px; }
+  .item .grp { color:#6f7889; font-size:11px; margin-left:4px; }
+  .cInc { border-left:3px solid #9aa3ad; }
+  .cMov { border-left:3px solid #4a90d9; }
+  .cExc { border-left:3px solid #d94a4a; opacity:.75; }
+  #deltas { border-top:1px solid #2a2e36; max-height:30%; overflow-y:auto; padding:8px 12px; }
+  #deltas h2 { font-size:12px; margin:0 0 4px; color:#e8b84a; }
+  #deltas .d { font-size:12px; padding:2px 0; }
+  #deltas button { margin-top:6px; }
+  #view { flex:1; position:relative; }
+  canvas { display:block; }
+  #topbar { position:absolute; top:0; left:0; right:0; display:flex; gap:14px; align-items:center; padding:8px 14px; background:rgba(20,22,26,.82); font-size:12px; }
+  #panel { position:absolute; right:14px; top:44px; width:270px; background:rgba(27,30,36,.95); border:1px solid #333a45; border-radius:8px; padding:12px; display:none; }
+  #panel h3 { margin:0 0 4px; font-size:13px; color:#fff; word-break:break-all; }
+  #panel .meta { color:#8b93a1; font-size:12px; margin-bottom:8px; }
+  #panel .btns { display:flex; gap:6px; margin-bottom:8px; }
+  button { background:#2b3140; color:#d7dbe0; border:1px solid #3a4152; border-radius:5px; padding:5px 9px; cursor:pointer; font-size:12px; }
+  button:hover { background:#39415a; }
+  button.on { background:#4a90d9; color:#fff; border-color:#4a90d9; }
+  button.exc.on { background:#d94a4a; border-color:#d94a4a; }
+  #reasonBox { display:none; }
+  #reason { width:100%; box-sizing:border-box; padding:5px 8px; background:#12141a; color:#d7dbe0; border:1px solid #333a45; border-radius:4px; }
+  #status { position:absolute; bottom:10px; left:14px; background:rgba(20,22,26,.8); padding:5px 10px; border-radius:5px; font-size:12px; }
+  #copyBox { display:none; padding:8px 12px; border-top:1px solid #2a2e36; }
+  #copyTxt { width:100%; height:70px; background:#12141a; color:#d7dbe0; border:1px solid #333a45; font-size:11px; }
+  label { user-select:none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <header>
+      <h1>sub_wrxsti_04 — session A</h1>
+      <input id="search" placeholder="search part...">
+    </header>
+    <div id="list"></div>
+    <div id="deltas"><h2>Pending changes: <span id="dCount">0</span></h2><div id="dList"></div>
+      <button id="copyBtn">Copy changes (JSON)</button>
+    </div>
+    <div id="copyBox"><textarea id="copyTxt" readonly></textarea></div>
+  </div>
+  <div id="view">
+    <div id="topbar">
+      <label><input type="checkbox" id="showExc"> show DZ_EXCLUDE</label>
+      <span id="counts"></span>
+      <span style="color:#6f7889">click = select &middot; wheel/drag = orbit</span>
+    </div>
+    <div id="panel">
+      <h3 id="pName"></h3>
+      <div class="meta" id="pMeta"></div>
+      <div class="btns">
+        <button id="bInc">INCLUDE</button>
+        <button id="bMov">MOVABLE</button>
+        <button id="bExc" class="exc">EXCLUDE</button>
+      </div>
+      <div id="reasonBox">
+        <input id="reason" placeholder="dz_exclude_reason (required)">
+      </div>
+    </div>
+    <div id="status">loading car.glb ...</div>
+  </div>
+</div>
+<script src="lib/three.min.js"></script>
+<script src="lib/GLTFLoader.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script>
+"use strict";
+const COLORS = { DZ_INCLUDE: 0x9aa3ad, DZ_MOVABLE: 0x4a90d9, DZ_EXCLUDE: 0xd94a4a };
+const view = document.getElementById("view");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+view.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x14161a);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 500);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x30343c, 1.05));
+const dl = new THREE.DirectionalLight(0xffffff, 0.9);
+dl.position.set(4, 8, 6);
+scene.add(dl);
+
+// piece registry: stem -> {stem, orig, coll, review, group, reason, objects[], meshes[], mats[]}
+const pieces = {};
+const meshOwner = new Map();
+let selected = null;
+const deltas = {};            // stem -> {from, to, reason}
+window.DZ_STATE = pieces;
+window.DZ_DELTAS = deltas;
+
+function stemOf(sid) { return String(sid).split("__obj")[0]; }
+
+function registerNode(node) {
+  const sid = node.userData ? node.userData.source_id : undefined;
+  if (sid === undefined) return;
+  const stem = stemOf(sid);
+  let p = pieces[stem];
+  if (!p) {
+    p = pieces[stem] = { stem: stem, orig: node.userData.dz_coll || "", coll: node.userData.dz_coll || "",
+      review: !!node.userData.dz_review, group: node.userData.dz_movable_group || "",
+      reason: node.userData.dz_reason || "", objects: [], meshes: [], mats: [] };
+  }
+  if (node.userData.dz_review) p.review = true;
+  if (node.userData.dz_movable_group) p.group = node.userData.dz_movable_group;
+  if (node.userData.dz_reason && !p.reason) p.reason = node.userData.dz_reason;
+  p.objects.push(node);
+  node.traverse(function (ch) {
+    if (ch.isMesh) { p.meshes.push(ch); meshOwner.set(ch, stem); }
+  });
+}
+
+function applyLook(p) {
+  const hidden = p.coll === "DZ_EXCLUDE" && !document.getElementById("showExc").checked;
+  const isSel = selected === p.stem;
+  p.mats.forEach(function (m) {
+    m.color.setHex(COLORS[p.coll] || 0x777777);
+    m.transparent = p.coll === "DZ_EXCLUDE";
+    m.opacity = p.coll === "DZ_EXCLUDE" ? 0.45 : 1.0;
+    m.emissive.setHex(isSel ? 0x2f6f2f : 0x000000);
+  });
+  p.meshes.forEach(function (mesh) { mesh.visible = !hidden; });
+}
+
+function refreshAll() {
+  Object.values(pieces).forEach(applyLook);
+  renderList();
+  renderDeltas();
+  const c = { DZ_INCLUDE: 0, DZ_MOVABLE: 0, DZ_EXCLUDE: 0 };
+  Object.values(pieces).forEach(function (p) { if (c[p.coll] !== undefined) c[p.coll]++; });
+  document.getElementById("counts").textContent =
+    "INC " + c.DZ_INCLUDE + " · MOV " + c.DZ_MOVABLE + " · EXC " + c.DZ_EXCLUDE;
+}
+
+function setColl(stem, to, reason) {
+  const p = pieces[stem];
+  if (!p) return;
+  p.coll = to;
+  if (to === "DZ_EXCLUDE") p.reason = reason || p.reason || "";
+  if (to === p.orig) { delete deltas[stem]; }
+  else { deltas[stem] = { from: p.orig, to: to, reason: to === "DZ_EXCLUDE" ? (p.reason || "") : "" }; }
+  refreshAll();
+  showPanel(stem);
+}
+
+function renderDeltas() {
+  const el = document.getElementById("dList");
+  const keys = Object.keys(deltas).sort();
+  document.getElementById("dCount").textContent = keys.length;
+  el.innerHTML = keys.map(function (k) {
+    const d = deltas[k];
+    return '<div class="d">' + k + ": " + d.from.replace("DZ_", "") + " → " + d.to.replace("DZ_", "") +
+      (d.reason ? ' <span style="color:#8b93a1">(' + d.reason + ")</span>" : "") + "</div>";
+  }).join("");
+}
+
+function renderList() {
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  const groups = { DZ_MOVABLE: [], DZ_INCLUDE: [], DZ_EXCLUDE: [] };
+  Object.values(pieces).sort(function (a, b) { return a.stem.localeCompare(b.stem); })
+    .forEach(function (p) { if (!q || p.stem.toLowerCase().includes(q)) (groups[p.coll] || groups.DZ_INCLUDE).push(p); });
+  const cls = { DZ_INCLUDE: "cInc", DZ_MOVABLE: "cMov", DZ_EXCLUDE: "cExc" };
+  let html = "";
+  ["DZ_MOVABLE", "DZ_INCLUDE", "DZ_EXCLUDE"].forEach(function (cn) {
+    html += '<div class="sect">' + cn + " (" + groups[cn].length + ")</div>";
+    groups[cn].forEach(function (p) {
+      html += '<div class="item ' + cls[cn] + (selected === p.stem ? " sel" : "") + '" data-stem="' + p.stem + '">' +
+        p.stem + (p.review ? '<span class="star">★</span>' : "") +
+        (p.group ? '<span class="grp">[' + p.group + "]</span>" : "") +
+        (p.meshes.length === 0 ? '<span class="grp">(no geometry)</span>' : "") + "</div>";
+    });
+  });
+  document.getElementById("list").innerHTML = html;
+}
+
+function showPanel(stem) {
+  selected = stem;
+  const p = pieces[stem];
+  const panel = document.getElementById("panel");
+  if (!p) { panel.style.display = "none"; refreshAll(); return; }
+  panel.style.display = "block";
+  document.getElementById("pName").textContent = p.stem + (p.review ? " ★" : "");
+  document.getElementById("pMeta").textContent =
+    (p.group ? "group " + p.group + " · " : "") + p.meshes.length + " sub-meshes · original " + p.orig.replace("DZ_", "");
+  ["bInc", "bMov", "bExc"].forEach(function (id) { document.getElementById(id).classList.remove("on"); });
+  ({ DZ_INCLUDE: "bInc", DZ_MOVABLE: "bMov", DZ_EXCLUDE: "bExc" })[p.coll] &&
+    document.getElementById(({ DZ_INCLUDE: "bInc", DZ_MOVABLE: "bMov", DZ_EXCLUDE: "bExc" })[p.coll]).classList.add("on");
+  const rb = document.getElementById("reasonBox");
+  rb.style.display = p.coll === "DZ_EXCLUDE" ? "block" : "none";
+  document.getElementById("reason").value = p.reason || "";
+  Object.values(pieces).forEach(applyLook);
+  renderList();
+}
+
+function focusPiece(stem) {
+  const p = pieces[stem];
+  if (!p || !p.meshes.length) return;
+  const box = new THREE.Box3();
+  p.meshes.forEach(function (m) { box.expandByObject(m); });
+  const center = box.getCenter(new THREE.Vector3());
+  const size = Math.max(box.getSize(new THREE.Vector3()).length(), 0.4);
+  controls.target.copy(center);
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  camera.position.copy(center.clone().add(dir.multiplyScalar(size * 1.8)));
+}
+
+// events
+document.getElementById("list").addEventListener("click", function (e) {
+  const it = e.target.closest(".item");
+  if (it) { showPanel(it.dataset.stem); focusPiece(it.dataset.stem); }
+});
+document.getElementById("search").addEventListener("input", renderList);
+document.getElementById("showExc").addEventListener("change", refreshAll);
+document.getElementById("bInc").onclick = function () { if (selected) setColl(selected, "DZ_INCLUDE"); };
+document.getElementById("bMov").onclick = function () { if (selected) setColl(selected, "DZ_MOVABLE"); };
+document.getElementById("bExc").onclick = function () {
+  if (!selected) return;
+  const r = document.getElementById("reason").value.trim() || pieces[selected].reason || "";
+  setColl(selected, "DZ_EXCLUDE", r);
+};
+document.getElementById("reason").addEventListener("change", function () {
+  if (selected && pieces[selected].coll === "DZ_EXCLUDE") setColl(selected, "DZ_EXCLUDE", this.value.trim());
+});
+document.getElementById("copyBtn").onclick = function () {
+  const txt = JSON.stringify(deltas, null, 1);
+  const box = document.getElementById("copyBox");
+  box.style.display = "block";
+  const ta = document.getElementById("copyTxt");
+  ta.value = txt;
+  ta.select();
+  if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(function () {});
+};
+
+// picking (ignore drags)
+let downAt = null;
+renderer.domElement.addEventListener("pointerdown", function (e) { downAt = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener("pointerup", function (e) {
+  if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  const ndc = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1,
+    -((e.clientY - rect.top) / rect.height) * 2 + 1);
+  const ray = new THREE.Raycaster();
+  ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(scene.children, true).filter(function (h) { return h.object.visible && meshOwner.has(h.object); });
+  if (hits.length) { const stem = meshOwner.get(hits[0].object); showPanel(stem); }
+  else { showPanel(null); }
+});
+
+function resize() {
+  const w = view.clientWidth, h = view.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener("resize", resize);
+
+const loader = new THREE.GLTFLoader();
+loader.load("car.glb", function (gltf) {
+  scene.add(gltf.scene);
+  gltf.scene.traverse(registerNode);
+  // per-piece material instances (shared base look, individually tintable)
+  Object.values(pieces).forEach(function (p) {
+    p.meshes.forEach(function (mesh) {
+      const m = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.05, roughness: 0.85 });
+      mesh.material = m;
+      p.mats.push(m);
+    });
+  });
+  // fit camera to INCLUDE+MOVABLE
+  const box = new THREE.Box3();
+  Object.values(pieces).forEach(function (p) {
+    if (p.coll !== "DZ_EXCLUDE") p.meshes.forEach(function (m) { box.expandByObject(m); });
+  });
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3()).length();
+  controls.target.copy(center);
+  camera.position.copy(center.clone().add(new THREE.Vector3(size * 0.55, size * 0.35, size * 0.6)));
+  camera.near = size / 500; camera.far = size * 20; camera.updateProjectionMatrix();
+  refreshAll();
+  document.getElementById("status").textContent =
+    Object.keys(pieces).length + " parts · click to classify · the agent collects the changes";
+}, function (ev) {
+  if (ev.total) document.getElementById("status").textContent =
+    "loading car.glb ... " + Math.round(100 * ev.loaded / ev.total) + "%";
+}, function (err) {
+  document.getElementById("status").textContent = "ERROR loading car.glb: " + err;
+});
+
+resize();
+(function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+</script>
+</body>
+</html>

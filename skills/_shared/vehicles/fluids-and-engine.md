@@ -77,3 +77,12 @@ Boats check only ruin, fuel and the spark plug; there is no battery (`EBoatOpera
 - Damages the engine when coolant is below half and `IsVitalRadiator()` is true.
 
 Every vanilla car overrides `EOnPostSimulate` for its engine heat source without calling `super` (`civiliansedan.c:98`, `offroad_02.c:112`). Read your parent's version before overriding it, and test fuel use and leaks in game after any change.
+
+## Test kits and spawn fuel
+
+- **`FillUpCarFluids` does not fill brake fluid.** It fills `CarFluid.FUEL`, `CarFluid.COOLANT` and `CarFluid.OIL` (`P:\scripts\4_world\entities\vehicles\carscript.c:2561-2566`). A test kit or an `OnDebugSpawn` that stops there leaves the brake reservoir empty; add `Fill(CarFluid.BRAKE, GetFluidCapacity(CarFluid.BRAKE))`.
+- **A debug spawn does not attach the parts.** `SpawnUniversalParts` creates bulbs, the battery and radiators with `CreateInInventory` (`P:\scripts\4_world\entities\vehicles\carscript.c:2500-2514`), which may put them in cargo. A drive-ready kit attaches the radiator, the plug the car needs and the bulbs with `CreateAttachment`.
+- **Give the test car and the vanilla control the same kit.** A hand-written partial kit on one of them adds a difference that is not the car.
+- **Spawn fuel belongs in `EEOnCECreate`.** `CarScript.EEOnCECreate` is where vanilla fills its random 0 to 35 percent (`P:\scripts\4_world\entities\vehicles\carscript.c:2412-2418`); it runs for an entity created as new, while a stored one goes through `AfterStoreLoad` (`P:\scripts\3_game\entities\entityai.c:1414`, `P:\scripts\3_game\entities\entityai.c:1419`), so a fill there cannot repeat on every restart as one in `EEInit` would. `Fill` adds to what is in the tank, so top up by the missing fraction. Reported from a third-party mod's test and not reproduced here: neither a plain script spawn nor the debug spawner reached `EEOnCECreate`; only a Central Economy spawn did.
+
+Field notes behind these, with the measurements: invariants 8, 9, 15h and 16 in `invariants-engine-fluids-and-handling.md`.

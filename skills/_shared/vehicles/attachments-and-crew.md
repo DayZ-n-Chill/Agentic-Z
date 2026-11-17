@@ -66,6 +66,8 @@ Cargo space is `class Cargo` with `itemsCargoSize[]`, `allowOwnedCargoManipulati
 
 A four seat car adds `class Cargo1` and `class Cargo2` with `seat_cargo1`, `crewCargo1`, `pos_cargo1` and `pos_cargo1_dir` (`Offroad_02`, `:20990`). The seat index script sees follows this order: driver `0`, co driver `1`, then cargo seats, which is how `GetSeatAnimationType` maps them (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:138`).
 
+How the engine picks the seat from the collision component the cursor hits, why each seat needs its own component in the View Geometry LOD, and how the crew proxy triangle sets the seated pose are in `vehicle-config-and-modelcfg.md`, section 17, and in the crew addenda of `vehicle-structural-parity.md`.
+
 ## Doors and seats in script
 
 | Method | Where | What a new car returns |
@@ -94,3 +96,16 @@ Hand this list to the art lead. Each name comes from a vanilla config key or scr
 - Proxies: `crewDriver`, `crewCoDriver`, `crewCargo1` and so on.
 - Memory points: `pos_driver`, `pos_driver_dir` and one pair per seat; `wheel_1_1_damper_land` and the other hubs; `seat_con_1_1` and the other door condition points; `refill` for the fuel cap (`P:\scripts\3_game\vehicles\transport.c:112`).
 - Animations: one per door source, the wheel turn, rotation and damper animations named in `simulation.md`.
+
+## When a seat or door action does not appear
+
+The usual causes, each checked on `P:\`; the field notes behind them are in `invariants-get-in-and-seats.md`.
+
+- **No script class.** `CrewCanGetThrough` returns `false` in `Transport` (`P:\scripts\3_game\vehicles\transport.c:724`), so a config class with no script class of the same name can never be entered.
+- **The base door table is left-hand drive.** `GetDoorConditionPointFromSelection` pairs `seat_driver` with `seat_con_1_1` and `seat_codriver` with `seat_con_2_1` (`P:\scripts\4_world\entities\vehicles\carscript.c:2141-2156`). On a right-hand-drive model whose points are named by physical side, override it and cross the sides, as vanilla does for its own layouts (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:364`, `P:\scripts\4_world\entities\vehicles\inheritedcars\van_01.c:269`).
+- **The door action reads the door item, not the car.** `ActionCarDoorsOutside` casts its target to `CarDoor` and takes the selection names from that item with `GetActionComponentNameList` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoorsoutside.c:34-37`), so the door's own model must carry the `doors_*` selection that `GetAnimSourceFromSelection` maps.
+- **Compare against `DOORS_CLOSED`.** `CivilianSedan` refuses a seat only when its door is `DOORS_CLOSED` (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:226-232`). Writing the test as "not `DOORS_OPEN`" makes a car with a missing door unenterable.
+- **Rear seats share one crew model.** Vanilla ships only `crew_driver.p3d` and `crew_cargo.p3d` (`P:\DZ\vehicles\wheeled\proxies\crew_cargo.p3d`); the seat comes from the proxy's instance index. `CivilianSedan` names its rear seats `crewCargo1` and `crewCargo2` in `class Crew` (`P:\DZ\vehicles\wheeled\config.cpp:5221-5234`).
+- **Donor choice.** `Sedan_02` is rear-engined: its battery and spark plug sit behind `Sedan_02_Trunk` and its radiator behind `Sedan_02_Hood` (`P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:142`, `P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:156`). For a front-engined four-seater copy `CivilianSedan`.
+
+To check the model side offline, run `/dayz-vehicles` on the source `.p3d`: it lists the get-in memory points, the seat selections per LOD and the wheel axes.
