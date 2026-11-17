@@ -1,0 +1,23 @@
+--- a/dayz-model-pipeline/SKILL.md
++++ b/dayz-model-pipeline/SKILL.md
+@@ -63,17 +63,17 @@ Install: `apt-get install -y blender && pip install opensimplex --break-system-p
+ 
+ > **CRITICAL: py3d installation** — Do NOT use `pip install py3d` (different
+ > point-cloud library) and do NOT install upstream from GitHub anymore. Use the
+-> **py3d DayZ fork >= 1.2.0** (codec KoffeinFlummi + guards anti-corrupcion,
++> **py3d DayZ fork >= 1.4.0** (codec KoffeinFlummi + guards anti-corrupcion,
+ > constantes LOD DayZ, `validate()`, proxies, recipe y CLI `python -m py3d`),
+ > vendorizado como wheel en `wheels/` de esta skill (D2=B):
+ >
+ > ```bash
+ > SKILL_DIR=<dir de esta skill>
+-> # py3d DayZ fork >= 1.2.0 (wheel vendorizada en esta skill - D2=B).
++> # py3d DayZ fork >= 1.4.0 (wheel vendorizada en esta skill - D2=B).
+ > # NUNCA `pip install py3d` (PyPI = point-cloud lib) NI git+upstream (sin guards).
+ > pip install --break-system-packages "$SKILL_DIR"/wheels/py3d-*-py3-none-any.whl 2>/dev/null \
+ >   || pip install --break-system-packages $(ls /sessions/*/mnt/*/_tools/py3d/dist/py3d-*-py3-none-any.whl 2>/dev/null | sort -V | tail -1)
+-> python3 -c "import py3d; assert getattr(py3d,'IS_DAYZ_FORK',False) and tuple(map(int,py3d.__version__.split('.')))>=(1,2,0), (py3d.__version__, py3d.__file__)"
++> python3 -c "import py3d; assert getattr(py3d,'IS_DAYZ_FORK',False) and tuple(map(int,py3d.__version__.split('.')))>=(1,4,0), (py3d.__version__, py3d.__file__)"
+ > ```
+ 
+ **Step 1: Define the Object**

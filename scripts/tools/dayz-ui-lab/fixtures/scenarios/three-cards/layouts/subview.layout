@@ -1,0 +1,27 @@
+FrameWidgetClass BoardSubview {
+    position 0 0
+    size 1 1
+    hexactpos 0
+    vexactpos 0
+    hexactsize 0
+    vexactsize 0
+    {
+        FrameWidgetClass CardsMount {
+            position 0.02 0.1
+            size 0.96 0.75
+            hexactpos 0
+            vexactpos 0
+            hexactsize 0
+            vexactsize 0
+        }
+        TextWidgetClass BoardStatus {
+            position 0.02 0.88
+            size 0.96 0.08
+            hexactpos 0
+            vexactpos 0
+            hexactsize 0
+            vexactsize 0
+            text "Ready"
+        }
+    }
+}

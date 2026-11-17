@@ -1,0 +1,116 @@
+{
+  "$id": "https://example.invalid/dayz-model-preflight/dayz-model-preflight-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bones": {
+      "additionalProperties": false,
+      "properties": {
+        "requirements": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "lod_index": {"minimum": 0, "type": "integer"},
+              "selections": {
+                "items": {"minLength": 1, "type": "string"},
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "required": ["lod_index", "selections"],
+            "type": "object"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": ["requirements"],
+      "type": "object"
+    },
+    "scale": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_dimensions_m": {
+          "items": {"exclusiveMinimum": 0, "type": "number"},
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "lod_index": {"minimum": 0, "type": "integer"},
+        "tolerance_m": {
+          "oneOf": [
+            {"exclusiveMinimum": 0, "type": "number"},
+            {
+              "items": {"exclusiveMinimum": 0, "type": "number"},
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "required": [
+        "expected_dimensions_m",
+        "lod_index",
+        "tolerance_m"
+      ],
+      "type": "object"
+    },
+    "schema_version": {"const": "dayz-model-preflight-v1"},
+    "winding": {
+      "additionalProperties": false,
+      "properties": {
+        "faces": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "source": {"$ref": "#/$defs/faceAddress"},
+              "target": {"$ref": "#/$defs/faceAddress"}
+            },
+            "required": ["source", "target"],
+            "type": "object"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "position_tolerance_m": {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "source_model": {"minLength": 1, "type": "string"},
+        "transform": {
+          "items": {
+            "items": {"type": "number"},
+            "maxItems": 4,
+            "minItems": 4,
+            "type": "array"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        }
+      },
+      "required": [
+        "faces",
+        "position_tolerance_m",
+        "source_model",
+        "transform"
+      ],
+      "type": "object"
+    }
+  },
+  "required": ["bones", "scale", "schema_version", "winding"],
+  "type": "object",
+  "$defs": {
+    "faceAddress": {
+      "additionalProperties": false,
+      "properties": {
+        "face_index": {"minimum": 0, "type": "integer"},
+        "lod_index": {"minimum": 0, "type": "integer"}
+      },
+      "required": ["face_index", "lod_index"],
+      "type": "object"
+    }
+  }
+}

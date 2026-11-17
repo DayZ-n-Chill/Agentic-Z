@@ -1,0 +1,58 @@
+--- a/dayz-animation-pipeline/SKILL.md
++++ b/dayz-animation-pipeline/SKILL.md
+@@ -12,8 +12,9 @@
+ This matters more than any config detail. Claude runs in a Linux sandbox with no `P:\`, no DayZ Tools, no Workbench, no Object Builder. Be honest about the boundary in every plan — promising work Claude cannot run is the worst outcome.
+ 
+ - **Layer 1 — Claude produces directly (sandbox, text + Python):** `model.cfg` (CfgSkeletons, CfgModels, class Animations), `config.cpp` AnimationSources, the script wiring (SetAnimationPhase / GetAnimationPhase), item carry-IK registration, hide-on-attach. Fully deliverable here.
+-- **Layer 2 — Claude assists via open formats (sandbox Python + Blender headless):** generate or edit intermediate open formats — **SEAnim** (open spec, bridges to `.anm` via DayZATool) and keyframe authoring in Blender headless. An RTM reader is feasible; a verified RTM writer is not yet built (treat as roadmap).
++- **Layer 2 — Claude assists via interchange formats (sandbox Python + Blender headless):** generate or edit strict **SEAnim v1** (bridges to `.anm` via DayZATool) and unbinarized **RTM_0101/RTM_MDAT** with the Knowledge Pack's dependency-free `dayz-animation-formats` tool, plus keyframe authoring in Blender headless. `.anm`/BMTR remain unsupported here.
+ - **Layer 3 — user or computer-use only (Windows GUI):** Workbench compile (`.txa` to `.anm`), `FBXToRTMGui.exe`, Arma3ObjectBuilder export from interactive Blender, PBO signing, in-game test. Claude can drive these via computer-use when granted, or hand the user precise steps — but never claim to run them in-sandbox.
++  A strict interchange round-trip is not evidence that DayZ accepts the converted animation; keep the DayZATool/Object Builder/DayZDiag gate.
+ 
+ Additional layer-specific notes from the LFQuad rider-pipeline sprint (2026-05-28):
+ 
+@@ -48,6 +49,7 @@
+ | An attached item to appear/disappear, or a carried item held with the right hand pose | Item IK + hide (Layer 1) | `references/item-ik-and-hide.md` |
+ | A character/infected/animal body animation, or a weapon animation | Skeletal — Enfusion `.anm` | `references/skeletal-anm-enfusion.md` |
+ | A legacy prop/man RTM animation, or to use FBXToRTM / Arma3ObjectBuilder | Skeletal — RTM | `references/skeletal-rtm.md` |
++| Strict SEAnim v1 or unbinarized RTM read/write/inspect, bounded parsing or deterministic JSON | Interchange tooling | Knowledge Pack `tools/dayz-animation-formats/README.md` |
+ | To author keyframes from scratch or retarget in Blender | Authoring | `references/blender-authoring.md` |
+ | To apply Mixamo (or any FBX) mocap onto a rig — auto bone mapping, retarget, NLA — as a keyframe SOURCE for Layer 2 | Sibling skill | invoke `mixamo-retarget` (runs via Blender MCP); output feeds the SEAnim path below. Mixamo FBX download is manual (no API) |
+ | To know which tool does what, the walls, and signing | Tooling | `references/tooling-and-walls.md` |
+@@ -78,15 +80,33 @@
+ 
+ ## Layer 2 workflow (programmatic intermediate authoring)
+ 
+-Note: `scripts/seanim_writer.py` ships a working SEAnim **reader** (`read_seanim`) and writer; and `references/weapon-anim-authoring-viewer.md` is the interactive viewer route for weapon authoring (IK handles + timeline + offline preview + SEAnim export). The viewer reads `bone.quaternion` directly, so the `positions_to_local_rotations` stub is not on its path.
++`scripts/seanim_writer.py` remains a legacy project helper.
++For new format work, prefer the Knowledge Pack's strict
++`tools/dayz-animation-formats/` package. Its verified public API is:
++`read_seanim[_bytes]`, `write_seanim[_bytes]`, `read_rtm[_bytes]` and
++`write_rtm[_bytes]`; the CLI is
++`python -m dayz_animation_formats inspect FILE`.
++
++The strict tool supports complete SEAnim v1 channels, modifiers, notes and
++float32/float64 precision, plus one unbinarized `RTM_0101` block optionally
++preceded by `RTM_MDAT`. It rejects unknown flags/blocks, malformed counts,
++truncation, invalid UTF-8/NUL fields, non-finite values, wrong RTM bone order
++and trailing bytes. It does not read or write `.anm`/BMTR.
++
++`references/weapon-anim-authoring-viewer.md` is the interactive viewer route
++for weapon authoring (IK handles + timeline + offline preview + SEAnim
++export). The viewer reads `bone.quaternion` directly, so the
++`positions_to_local_rotations` stub is not on its path.
+ 
+ For skeletal work Claude can take you partway. Read `references/skeletal-anm-enfusion.md` and `references/blender-authoring.md`, then:
+ 
+-1. Author or edit keyframes — either Blender headless (`bpy`) against the DayZ skeleton, or by writing a **SEAnim** file directly with `scripts/seanim_writer.py` (SEAnim is an open format). A third source: retarget Mixamo/FBX mocap onto the DayZ skeleton with the `mixamo-retarget` skill, then treat the baked action as the keyframe input here (mind its rest-pose caveat).
++1. Author or edit keyframes — either Blender headless (`bpy`) against the DayZ skeleton, or by writing strict **SEAnim v1** / unbinarized **RTM_0101** through `dayz-animation-formats`. A third source: retarget Mixamo/FBX mocap onto the DayZ skeleton with the `mixamo-retarget` skill, then treat the baked action as the keyframe input here (mind its rest-pose caveat).
+ 2. Hand the intermediate to the closed converter the user runs: SEAnim → `.anm` via **DayZATool** (`--generate-anim`), or FBX → `.rtm` via **FBXToRTMGui.exe**, or `.txa` → `.anm` via **Workbench**.
+ 3. Bone names MUST match `OFP2_ManSkeleton` exactly or the RPT logs `Bone X doesn't exist`. Verify the target skeleton's bone list before authoring.
+ 
+-Treat the RTM writer as not-yet-built: read RTM is feasible, write RTM in pure Python is unverified — route RTM authoring through Blender (Arma3ObjectBuilder) or FBXToRTM instead.
++The pure-Python RTM writer was cross-read by external Arma3ObjectBuilder 2.5.1
++with first-party motion, phases, metadata and transforms preserved. A3OB is a
++GPL external oracle only; no A3OB source is imported or redistributed.
+ 
+ ## Animating a sub-piece of a proxy requires separating it (added 2026-05-23)
+ 

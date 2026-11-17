@@ -1,0 +1,66 @@
+--- a/dayz-proxy-align/SKILL.md
++++ b/dayz-proxy-align/SKILL.md
+@@ -45,11 +45,11 @@ Symptoms: equipped clothing shows at the floor, floats, clips, or is rotated.
+ ## Dependencies
+ 
+ ```bash
+-# py3d DayZ fork >= 1.2.0 (wheel vendorizada en esta skill - D2=B).
++# py3d DayZ fork >= 1.4.0 (wheel vendorizada en esta skill - D2=B).
+ # NUNCA `pip install py3d` (PyPI = point-cloud lib) NI git+upstream (sin guards).
+ pip install --break-system-packages "$SKILL_DIR"/wheels/py3d-*-py3-none-any.whl 2>/dev/null \
+   || pip install --break-system-packages $(ls /sessions/*/mnt/*/_tools/py3d/dist/py3d-*-py3-none-any.whl 2>/dev/null | sort -V | tail -1)
+-python3 -c "import py3d; assert getattr(py3d,'IS_DAYZ_FORK',False) and tuple(map(int,py3d.__version__.split('.')))>=(1,2,0), (py3d.__version__, py3d.__file__)"
++python3 -c "import py3d; assert getattr(py3d,'IS_DAYZ_FORK',False) and tuple(map(int,py3d.__version__.split('.')))>=(1,4,0), (py3d.__version__, py3d.__file__)"
+ pip install numpy --break-system-packages
+ ```
+ 
+@@ -58,6 +58,49 @@ Worn-mesh preview of vanilla clothing also needs the **external-odol-backend** sk
+ or set `DAYZ_ODOL_BACKEND_ROOT`. The host model itself must be **MLOD** (binarized hosts:
+ run external-odol-backend first).
+ 
++## py3d 1.4.0 lifecycle (batch / non-visual)
++
++For deterministic automation, the vendored fork now owns the complete
++add/inspect/align/remove lifecycle:
++
++```python
++import py3d
++
++with open("host.p3d", "rb") as handle:
++    model = py3d.P3D(handle)
++lod = model.lods[0]
++
++name = lod.add_proxy(
++    r"\dz\characters\proxies\vests", 1,
++    origin=(0.0, 1.1, 0.0),
++    rotation=((1, 0, 0), (0, 1, 0), (0, 0, 1)),
++    space="engine",
++)
++descriptor = {
++    item["name"]: item for item in lod.get_proxies(strict=True)
++}[name]
++lod.align_proxy(
++    name,
++    origin=(0.0, 1.15, 0.02),
++    rotation=descriptor["engine_frame"],
++    space="engine",
++)
++# lod.remove_proxy(name)
++model.save("host_aligned.p3d")
++```
++
++The legacy default remains `space="raw"`. In 1.4.0 the explicit conversion is
++`engine_frame = P' × raw_frame`, with
++`P' = ((-1,0,0),(0,0,1),(0,1,0))`; the same involutive matrix converts back.
++Use `space="engine"` when the matrix describes the pose expected in DayZ.
++
++All mutators are fail-closed: path, index, anchor, rotation, scale, canonical
++proxy anatomy and exclusive ownership are validated before mutation.
++`get_proxies(strict=True)` rejects malformed proxy selections. `align_proxy`
++preserves point/face/selection identities; `remove_proxy` deletes exactly its
++selection, face and three points, remaps surviving point indices and sharp
++edges, and intentionally leaves the normal pool unchanged.
++
+ ## Scripts
+ 
+ | Script | Purpose |

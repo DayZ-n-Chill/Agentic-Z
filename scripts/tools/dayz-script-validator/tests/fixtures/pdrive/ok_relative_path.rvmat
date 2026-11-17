@@ -1,0 +1,4 @@
+class Stage0
+{
+    texture="dz\gear\camping\data\flag_generic_co.paa";
+};

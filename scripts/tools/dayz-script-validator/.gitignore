@@ -1,0 +1,3 @@
+# Derived from Bohemia's vanilla scripts tree. Generate locally with
+#   python scripts/build_vanilla_index.py --vanilla-root P:\scripts
+scripts/shared/vanilla_index.json

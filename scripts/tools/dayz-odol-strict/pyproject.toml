@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dayz-odol-strict"
+version = "0.1.0"
+description = "Strict read-only ODOL v53-v55 adapter"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "DayZ Modding Knowledge Pack contributors"}]
+dependencies = []
+
+[project.scripts]
+dayz-odol-strict = "dayz_odol_strict.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["dayz_odol_strict*"]

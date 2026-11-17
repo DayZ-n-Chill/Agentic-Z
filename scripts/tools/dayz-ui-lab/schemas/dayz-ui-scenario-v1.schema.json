@@ -1,0 +1,434 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "collections": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "bindings": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "property": {
+                        "pattern": "^[A-Za-z_][A-Za-z0-9_ ]*$",
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "widget": {
+                        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "widget",
+                      "property",
+                      "value"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "key": {
+                  "pattern": "^[a-z][a-z0-9-]*$",
+                  "type": "string"
+                },
+                "layout": {
+                  "pattern": "^.+[.]layout$",
+                  "type": "string"
+                },
+                "position": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "height": {
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "width": {
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y",
+                    "width",
+                    "height"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "key",
+                "layout",
+                "position",
+                "bindings"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "mount": {
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "mount",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "default_state": {
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "type": "string"
+    },
+    "entrypoint": {
+      "additionalProperties": false,
+      "properties": {
+        "layout": {
+          "pattern": "^.+[.]layout$",
+          "type": "string"
+        },
+        "subviews": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "layout",
+        "subviews"
+      ],
+      "type": "object"
+    },
+    "scenario_id": {
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "type": "string"
+    },
+    "schema_version": {
+      "enum": [
+        "dayz-ui-scenario-v1"
+      ],
+      "type": "string"
+    },
+    "states": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "bindings": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "property": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_ ]*$",
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "widget": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "widget",
+                "property",
+                "value"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "collections": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "collection": {
+                  "pattern": "^[a-z][a-z0-9-]*$",
+                  "type": "string"
+                },
+                "items": {
+                  "items": {
+                    "pattern": "^[a-z][a-z0-9-]*$",
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "collection",
+                "items"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "colors": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "alpha": {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "color": {
+                  "items": {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "widget": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "widget",
+                "color",
+                "alpha"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "controls": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "widget": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "widget",
+                "enabled"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "modal": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "visible": {
+                  "type": "boolean"
+                },
+                "widget": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "widget",
+                "visible"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "name": {
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "type": "string"
+          },
+          "pointer": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "state": {
+                  "enum": [
+                    "none",
+                    "hover",
+                    "pressed",
+                    "focused"
+                  ],
+                  "type": "string"
+                },
+                "widget": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "widget",
+                "state"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "positions": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "height": {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "widget": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                  "type": "string"
+                },
+                "width": {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "widget",
+                "x",
+                "y",
+                "width",
+                "height"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "tabs": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "active": {
+                  "type": "boolean"
+                },
+                "widget": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "widget",
+                "active"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "visibility": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "visible": {
+                  "type": "boolean"
+                },
+                "widget": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "widget",
+                "visible"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "subviews": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "type": "string"
+          },
+          "layout": {
+            "pattern": "^.+[.]layout$",
+            "type": "string"
+          },
+          "mount": {
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "type": "string"
+          },
+          "subviews": {
+            "items": {
+              "pattern": "^[a-z][a-z0-9-]*$",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "layout",
+          "mount",
+          "subviews"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "viewport": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "width": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "viewport",
+    "entrypoint",
+    "subviews",
+    "collections",
+    "states",
+    "default_state"
+  ],
+  "type": "object"
+}

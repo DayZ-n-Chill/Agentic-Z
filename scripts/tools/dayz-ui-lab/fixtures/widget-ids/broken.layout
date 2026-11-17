@@ -1,0 +1,5 @@
+FrameWidgetClass Root {
+ {
+  TextWidgetClass label {
+   text "unclosed"
+  }

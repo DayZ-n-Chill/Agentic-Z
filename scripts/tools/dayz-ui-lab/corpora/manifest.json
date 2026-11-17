@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "note": "Identity and provenance only. No third-party layout, script, font, atlas or screenshot is redistributed by this pack; the operator supplies the originals and points local-roots.json at them.",
+  "corpora": [
+    {
+      "corpus_id": "vpp-admin-tools",
+      "name": "VPP Admin Tools",
+      "role": "positive-external",
+      "local_root_id": "ui_corpus_vpp",
+      "source_url": "https://github.com/VanillaPlusPlus/VPP-Admin-Tools",
+      "pin": {
+        "kind": "git-commit",
+        "value": "dc22e420df3b54e821055f9764da1e48f4a31e71",
+        "ref": "master",
+        "dated": "2026-07-15"
+      },
+      "expected_layout_count": 69,
+      "expected_parse_ok": 69,
+      "license": {
+        "name": "SARL v1.0",
+        "spdx": null,
+        "redistribution": "prohibited",
+        "note": "Permits study as a reference and prohibits copying any portion, snippets and assets included."
+      },
+      "redistributed_in_pack": false
+    },
+    {
+      "corpus_id": "dayz-expansion",
+      "name": "DayZ Expansion Scripts",
+      "role": "positive-external",
+      "local_root_id": "ui_corpus_expansion",
+      "source_url": "https://github.com/salutesh/DayZ-Expansion-Scripts",
+      "pin": {
+        "kind": "git-commit",
+        "value": "8d3a453b2b6786a0bef728dbdfdc9a1ef0383a9b",
+        "ref": "release",
+        "dated": "2026-07-21"
+      },
+      "expected_layout_count": 234,
+      "expected_parse_ok": 234,
+      "license": {
+        "name": null,
+        "spdx": null,
+        "redistribution": "prohibited",
+        "note": "No root licence is exposed in the pinned snapshot. Absence of a licence grants no copying permission."
+      },
+      "redistributed_in_pack": false
+    },
+    {
+      "corpus_id": "traderplus-v1",
+      "name": "TraderPlus V1",
+      "role": "positive-external-historical",
+      "local_root_id": "ui_corpus_traderplus",
+      "source_url": "https://github.com/TheDmitri/TraderPlusV1",
+      "pin": {
+        "kind": "git-commit",
+        "value": "d0cd39f105fba57104bf93798129626228a263e6",
+        "ref": "main",
+        "dated": "2025-06-19"
+      },
+      "expected_layout_count": 16,
+      "expected_parse_ok": 16,
+      "license": {
+        "name": null,
+        "spdx": null,
+        "redistribution": "prohibited",
+        "note": "No standard licence file. The README prohibits using the code in other mods without explicit permission."
+      },
+      "redistributed_in_pack": false
+    },
+    {
+      "corpus_id": "traderx",
+      "name": "TraderX",
+      "role": "positive-external",
+      "local_root_id": "ui_corpus_traderx_layouts",
+      "identity_root_id": "ui_corpus_traderx_pbo",
+      "source_url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3560310973",
+      "pin": {
+        "kind": "workshop-manifest",
+        "value": "3069958660046119589",
+        "workshop_item": "3560310973",
+        "dated": "2026-02-07"
+      },
+      "identity_files": [
+        {
+          "name": "TraderPlusMoney.pbo",
+          "bytes": 65800598,
+          "sha256": "0e79f1e0a9b2b2ffbcefa74954113f8dd52dbdd49e8333c310536a38ea995b50"
+        },
+        {
+          "name": "TraderX.pbo",
+          "bytes": 9732657,
+          "sha256": "fde640fb92938ae35c80b96af79d04c42d75eaf1b5dfb695d0f3dd8d6889a970"
+        },
+        {
+          "name": "TraderX_GUI.pbo",
+          "bytes": 257717,
+          "sha256": "20ce8041b4eb1f12555f659abbc5615d9be185eeaafee8e915171eded16ee490"
+        }
+      ],
+      "extraction": {
+        "tool": "Mikero ExtractPbo",
+        "reason": "The layouts are Cprs-compressed PBO entries. PboViewer reports success and writes the compressed bytes without decompressing them, so its output parses as garbage.",
+        "command": "ExtractPbo.exe -P -F=\"*.layout\" <pbo> <destination>"
+      },
+      "expected_layout_count": 46,
+      "expected_parse_ok": 46,
+      "license": {
+        "name": null,
+        "spdx": null,
+        "redistribution": "prohibited",
+        "note": "The local package carries no standard licence authorising redistribution. Local access permits audit and private fixtures only."
+      },
+      "redistributed_in_pack": false
+    },
+    {
+      "corpus_id": "lfpowergrid",
+      "name": "LFPowerGrid",
+      "role": "first-party-regression",
+      "local_root_id": "lfpowergrid_source",
+      "source_url": null,
+      "pin": {
+        "kind": "operator-local",
+        "value": null,
+        "note": "First-party mod owned by the operator; pinned by whatever working copy local-roots.json points at."
+      },
+      "expected_layout_count": 11,
+      "expected_parse_ok": 11,
+      "license": {
+        "name": "operator-owned",
+        "spdx": null,
+        "redistribution": "not-applicable",
+        "note": "First-party. Its Sorter V4 TEST layouts are the C5 negative fixture and are expected to parse; being a negative fixture is about diff findings, not syntax."
+      },
+      "redistributed_in_pack": false
+    }
+  ]
+}

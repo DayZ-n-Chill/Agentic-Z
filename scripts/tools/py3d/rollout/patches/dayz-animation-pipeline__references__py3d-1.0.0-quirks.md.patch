@@ -1,0 +1,19 @@
+--- a/dayz-animation-pipeline/references/py3d-1.0.0-quirks.md
++++ b/dayz-animation-pipeline/references/py3d-1.0.0-quirks.md
+@@ -1,4 +1,4 @@
+-# py3d 1.0.0 quirks — HISTORICO (superado por el fork DayZ >= 1.2.0)
++# py3d 1.0.0 quirks — HISTORICO (superado por el fork DayZ >= 1.4.0)
+ 
+ > **Estado 2026-06-06 (rollout py3d-fork S2):** este documento queda como
+ > HISTORICO. La verificacion R22 (plan py3d-fork, R22-P1-01) demostro que
+@@ -196,8 +196,8 @@ JSON against either frame produces mirrored output for one of them.
+ 
+ After any py3d-based `.p3d` write:
+ 
+-1. Re-open the output with `py3d.read_p3d` (or `dayz-p3d-inspector`'s
+-   `extract_recipe`).
++1. Re-open the output with `py3d.P3D(open(output, "rb"))` (or
++   `dayz-p3d-inspector`'s `extract_recipe`). `py3d.read_p3d` does not exist.
+ 2. For each selection you wrote: assert `len(sel.faces) > 0` AND the count
+    matches the JSON source ±N (small drift from refiner steps is OK, zero
+    drift is not — that means the write didn't take).

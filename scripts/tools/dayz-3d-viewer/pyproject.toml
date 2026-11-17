@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dayz-3d-viewer"
+version = "0.1.0"
+description = "Convert DayZ MLOD .p3d, PAA and RVMAT assets to glTF and Three.js HTML"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "DayZ Modding Knowledge Pack contributors"}]
+dependencies = []
+
+[project.optional-dependencies]
+paa = ["Pillow>=10"]
+lzo = ["lzokay"]
+all = ["Pillow>=10", "lzokay"]
+
+[project.scripts]
+dayz-3d-viewer = "dayz_3d_viewer.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["dayz_3d_viewer*"]

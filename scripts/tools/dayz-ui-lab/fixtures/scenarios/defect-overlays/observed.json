@@ -1,0 +1,715 @@
+{
+  "canonical": {
+    "raster": false,
+    "semantic": true
+  },
+  "entrypoint": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout",
+  "normalization": {
+    "float_decimal_places": 6,
+    "path_format": "repo-relative-posix",
+    "widget_order": "depth-first-preorder"
+  },
+  "scenario": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/scenario.json",
+  "scenario_id": "defect-overlays",
+  "schema_version": "dayz-ui-render-v1",
+  "state": "defective",
+  "stats": {
+    "widget_count": 7
+  },
+  "viewport": {
+    "height": 1000,
+    "width": 1000
+  },
+  "widgets": [
+    {
+      "attributes": [
+        {
+          "name": "hexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "hexactsize",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "position",
+          "values": [
+            0,
+            0
+          ]
+        },
+        {
+          "name": "size",
+          "values": [
+            1,
+            1
+          ]
+        },
+        {
+          "name": "vexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "vexactsize",
+          "values": [
+            0
+          ]
+        }
+      ],
+      "children": [
+        "widget-b5ff9ac4333d8e896a5b46740164c8ffd7b9ca9fa516e5bebd9e5c2fce25fc39",
+        "widget-cb6cf24031435576fffd1c4ff56866cbb5bb20b17a991a7e99542ca0d272ceda",
+        "widget-aa30d34ed6d11f99912351f40e4449ff167dea66e69d831a5a6343c07bcc613b",
+        "widget-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      ],
+      "geometry": {
+        "anchor": {
+          "horizontal": "left_ref",
+          "vertical": "top_ref"
+        },
+        "clip_children": false,
+        "flags": {
+          "hexactpos": 0,
+          "hexactsize": 0,
+          "vexactpos": 0,
+          "vexactsize": 0
+        },
+        "ignore_pointer": false,
+        "notes": [],
+        "offset": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "position": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "raw": {
+          "position": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "size": {
+            "height": 1.0,
+            "width": 1.0
+          }
+        },
+        "size": {
+          "height": 1000.0,
+          "width": 1000.0
+        },
+        "status": "resolved",
+        "visible": true
+      },
+      "id": "widget-6ebf29ba94cc77a14b3aacd4ad7d737af1883b600237367c681c3d1d2b8d57f3",
+      "name": "DefectRoot",
+      "sibling_index": 0,
+      "source": {
+        "column": 1,
+        "line": 1,
+        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+      },
+      "state": [],
+      "type": "FrameWidgetClass"
+    },
+    {
+      "attributes": [
+        {
+          "name": "clipchildren",
+          "values": [
+            1
+          ]
+        },
+        {
+          "name": "hexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "hexactsize",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "position",
+          "values": [
+            0.05,
+            0.05
+          ]
+        },
+        {
+          "name": "size",
+          "values": [
+            0.25,
+            0.25
+          ]
+        },
+        {
+          "name": "vexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "vexactsize",
+          "values": [
+            0
+          ]
+        }
+      ],
+      "children": [
+        "widget-479bcc2f266ed313a1b115d8aa36c429cf4c904481a22fa5ce7f0ce9100749c9"
+      ],
+      "geometry": {
+        "anchor": {
+          "horizontal": "left_ref",
+          "vertical": "top_ref"
+        },
+        "clip_children": true,
+        "flags": {
+          "hexactpos": 0,
+          "hexactsize": 0,
+          "vexactpos": 0,
+          "vexactsize": 0
+        },
+        "ignore_pointer": false,
+        "notes": [],
+        "offset": {
+          "x": 50.0,
+          "y": 50.0
+        },
+        "position": {
+          "x": 50.0,
+          "y": 50.0
+        },
+        "raw": {
+          "position": {
+            "x": 0.05,
+            "y": 0.05
+          },
+          "size": {
+            "height": 0.25,
+            "width": 0.25
+          }
+        },
+        "size": {
+          "height": 250.0,
+          "width": 250.0
+        },
+        "status": "resolved",
+        "visible": true
+      },
+      "id": "widget-b5ff9ac4333d8e896a5b46740164c8ffd7b9ca9fa516e5bebd9e5c2fce25fc39",
+      "name": "ClippingParent",
+      "parent_id": "widget-6ebf29ba94cc77a14b3aacd4ad7d737af1883b600237367c681c3d1d2b8d57f3",
+      "sibling_index": 0,
+      "source": {
+        "column": 9,
+        "line": 9,
+        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+      },
+      "state": [],
+      "type": "FrameWidgetClass"
+    },
+    {
+      "attributes": [
+        {
+          "name": "hexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "hexactsize",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "position",
+          "values": [
+            0.75,
+            0.2
+          ]
+        },
+        {
+          "name": "size",
+          "values": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "name": "text",
+          "values": [
+            "Clipped"
+          ]
+        },
+        {
+          "name": "vexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "vexactsize",
+          "values": [
+            0
+          ]
+        }
+      ],
+      "children": [],
+      "geometry": {
+        "anchor": {
+          "horizontal": "left_ref",
+          "vertical": "top_ref"
+        },
+        "clip_children": false,
+        "flags": {
+          "hexactpos": 0,
+          "hexactsize": 0,
+          "vexactpos": 0,
+          "vexactsize": 0
+        },
+        "ignore_pointer": false,
+        "notes": [],
+        "offset": {
+          "x": 187.5,
+          "y": 50.0
+        },
+        "position": {
+          "x": 187.5,
+          "y": 50.0
+        },
+        "raw": {
+          "position": {
+            "x": 0.75,
+            "y": 0.2
+          },
+          "size": {
+            "height": 0.5,
+            "width": 0.5
+          }
+        },
+        "size": {
+          "height": 125.0,
+          "width": 125.0
+        },
+        "status": "resolved",
+        "visible": true
+      },
+      "id": "widget-479bcc2f266ed313a1b115d8aa36c429cf4c904481a22fa5ce7f0ce9100749c9",
+      "name": "ClippedChild",
+      "parent_id": "widget-b5ff9ac4333d8e896a5b46740164c8ffd7b9ca9fa516e5bebd9e5c2fce25fc39",
+      "sibling_index": 0,
+      "source": {
+        "column": 17,
+        "line": 18,
+        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+      },
+      "state": [],
+      "type": "TextWidgetClass"
+    },
+    {
+      "attributes": [
+        {
+          "name": "hexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "hexactsize",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "position",
+          "values": [
+            0.4,
+            0.05
+          ]
+        },
+        {
+          "name": "size",
+          "values": [
+            0.4,
+            0.3
+          ]
+        },
+        {
+          "name": "vexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "vexactsize",
+          "values": [
+            0
+          ]
+        }
+      ],
+      "children": [
+        "widget-3a0bcec9238f8542481dff6634dec3f339ed6b1906c69f8c52170d6478e1a9cb",
+        "widget-3956f826f18d8171ccc32d306bfd288e7d8e52d868f8cccd8d8e5a5791004e02"
+      ],
+      "geometry": {
+        "anchor": {
+          "horizontal": "left_ref",
+          "vertical": "top_ref"
+        },
+        "clip_children": false,
+        "flags": {
+          "hexactpos": 0,
+          "hexactsize": 0,
+          "vexactpos": 0,
+          "vexactsize": 0
+        },
+        "ignore_pointer": false,
+        "notes": [],
+        "offset": {
+          "x": 400.0,
+          "y": 50.0
+        },
+        "position": {
+          "x": 400.0,
+          "y": 50.0
+        },
+        "raw": {
+          "position": {
+            "x": 0.4,
+            "y": 0.05
+          },
+          "size": {
+            "height": 0.3,
+            "width": 0.4
+          }
+        },
+        "size": {
+          "height": 300.0,
+          "width": 400.0
+        },
+        "status": "resolved",
+        "visible": true
+      },
+      "id": "widget-cb6cf24031435576fffd1c4ff56866cbb5bb20b17a991a7e99542ca0d272ceda",
+      "name": "OverlapParent",
+      "parent_id": "widget-6ebf29ba94cc77a14b3aacd4ad7d737af1883b600237367c681c3d1d2b8d57f3",
+      "sibling_index": 1,
+      "source": {
+        "column": 9,
+        "line": 29,
+        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+      },
+      "state": [],
+      "type": "FrameWidgetClass"
+    },
+    {
+      "attributes": [
+        {
+          "name": "hexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "hexactsize",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "position",
+          "values": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "name": "size",
+          "values": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "name": "text",
+          "values": [
+            "First"
+          ]
+        },
+        {
+          "name": "vexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "vexactsize",
+          "values": [
+            0
+          ]
+        }
+      ],
+      "children": [],
+      "geometry": {
+        "anchor": {
+          "horizontal": "left_ref",
+          "vertical": "top_ref"
+        },
+        "clip_children": false,
+        "flags": {
+          "hexactpos": 0,
+          "hexactsize": 0,
+          "vexactpos": 0,
+          "vexactsize": 0
+        },
+        "ignore_pointer": false,
+        "notes": [],
+        "offset": {
+          "x": 20.0,
+          "y": 30.0
+        },
+        "position": {
+          "x": 20.0,
+          "y": 30.0
+        },
+        "raw": {
+          "position": {
+            "x": 0.05,
+            "y": 0.1
+          },
+          "size": {
+            "height": 0.5,
+            "width": 0.5
+          }
+        },
+        "size": {
+          "height": 150.0,
+          "width": 200.0
+        },
+        "status": "resolved",
+        "visible": true
+      },
+      "id": "widget-3a0bcec9238f8542481dff6634dec3f339ed6b1906c69f8c52170d6478e1a9cb",
+      "name": "OverlapFirst",
+      "parent_id": "widget-cb6cf24031435576fffd1c4ff56866cbb5bb20b17a991a7e99542ca0d272ceda",
+      "sibling_index": 0,
+      "source": {
+        "column": 17,
+        "line": 37,
+        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+      },
+      "state": [],
+      "type": "TextWidgetClass"
+    },
+    {
+      "attributes": [
+        {
+          "name": "hexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "hexactsize",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "position",
+          "values": [
+            0.4,
+            0.3
+          ]
+        },
+        {
+          "name": "size",
+          "values": [
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "name": "text",
+          "values": [
+            "Second"
+          ]
+        },
+        {
+          "name": "vexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "vexactsize",
+          "values": [
+            0
+          ]
+        }
+      ],
+      "children": [],
+      "geometry": {
+        "anchor": {
+          "horizontal": "left_ref",
+          "vertical": "top_ref"
+        },
+        "clip_children": false,
+        "flags": {
+          "hexactpos": 0,
+          "hexactsize": 0,
+          "vexactpos": 0,
+          "vexactsize": 0
+        },
+        "ignore_pointer": false,
+        "notes": [],
+        "offset": {
+          "x": 160.0,
+          "y": 90.0
+        },
+        "position": {
+          "x": 160.0,
+          "y": 90.0
+        },
+        "raw": {
+          "position": {
+            "x": 0.4,
+            "y": 0.3
+          },
+          "size": {
+            "height": 0.5,
+            "width": 0.5
+          }
+        },
+        "size": {
+          "height": 150.0,
+          "width": 200.0
+        },
+        "status": "resolved",
+        "visible": true
+      },
+      "id": "widget-3956f826f18d8171ccc32d306bfd288e7d8e52d868f8cccd8d8e5a5791004e02",
+      "name": "OverlapSecond",
+      "parent_id": "widget-cb6cf24031435576fffd1c4ff56866cbb5bb20b17a991a7e99542ca0d272ceda",
+      "sibling_index": 1,
+      "source": {
+        "column": 17,
+        "line": 46,
+        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+      },
+      "state": [],
+      "type": "TextWidgetClass"
+    },
+    {
+      "attributes": [
+        {
+          "name": "hexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "hexactsize",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "position",
+          "values": [
+            0.05,
+            0.6
+          ]
+        },
+        {
+          "name": "size",
+          "values": [
+            0.2,
+            0.1
+          ]
+        },
+        {
+          "name": "text",
+          "values": [
+            "State"
+          ]
+        },
+        {
+          "name": "vexactpos",
+          "values": [
+            0
+          ]
+        },
+        {
+          "name": "vexactsize",
+          "values": [
+            0
+          ]
+        }
+      ],
+      "children": [],
+      "geometry": {
+        "anchor": {
+          "horizontal": "left_ref",
+          "vertical": "top_ref"
+        },
+        "clip_children": false,
+        "flags": {
+          "hexactpos": 0,
+          "hexactsize": 0,
+          "vexactpos": 0,
+          "vexactsize": 0
+        },
+        "ignore_pointer": false,
+        "notes": [],
+        "offset": {
+          "x": 50.0,
+          "y": 600.0
+        },
+        "position": {
+          "x": 50.0,
+          "y": 600.0
+        },
+        "raw": {
+          "position": {
+            "x": 0.05,
+            "y": 0.6
+          },
+          "size": {
+            "height": 0.1,
+            "width": 0.2
+          }
+        },
+        "size": {
+          "height": 100.0,
+          "width": 200.0
+        },
+        "status": "resolved",
+        "visible": true
+      },
+      "id": "widget-aa30d34ed6d11f99912351f40e4449ff167dea66e69d831a5a6343c07bcc613b",
+      "name": "StateTarget",
+      "parent_id": "widget-6ebf29ba94cc77a14b3aacd4ad7d737af1883b600237367c681c3d1d2b8d57f3",
+      "sibling_index": 2,
+      "source": {
+        "column": 9,
+        "line": 57,
+        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+      },
+      "state": [],
+      "type": "ButtonWidgetClass"
+    }
+  ]
+}

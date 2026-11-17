@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dayz-script-validator"
+version = "0.1.0"
+description = "Offline Enforce Script, layout and config linter for DayZ mods"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "DayZ Modding Knowledge Pack contributors"}]
+dependencies = []
+
+[project.scripts]
+dayz-script-validator = "dayz_script_validator.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["dayz_script_validator*"]

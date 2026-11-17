@@ -1,0 +1,42 @@
+{
+  "schema_version": "py3d-rollout-preimage-v1",
+  "snapshot_id": "live-snapshot-2026-09-02",
+  "entries": [
+    {
+      "relative_path": "dayz-model-pipeline/references/py3d-direct-generation.md",
+      "preimage_sha256": "15e6fa97f56b7f6838de6d85b0344051d1fe9697442298daa3b1070b7166fe7c",
+      "status": "not_applicable",
+      "reason": "La proyección no contiene delta nuevo de py3d 1.4.0 y eliminaría reglas vivas de geometría."
+    },
+    {
+      "relative_path": "dayz-3d-viewer/SKILL.md",
+      "preimage_sha256": "f4a671e9aab43de02bbb421ef48697618480414cecff8ba54c08b401b9c2f465",
+      "status": "not_applicable",
+      "reason": "La proyección no contiene API nueva de py3d 1.4.0; solo diverge del conocimiento vivo."
+    },
+    {
+      "relative_path": "dayz-p3d-inspector/SKILL.md",
+      "preimage_sha256": "bbad2180600feae1ff9974be35566cc9a0989bd4232ce58b367060b01874982b",
+      "status": "not_applicable",
+      "reason": "La proyección no contiene delta atribuible a py3d 1.4.0 y perdería SP-028."
+    },
+    {
+      "relative_path": "dayz-p3d-audit/SKILL.md",
+      "preimage_sha256": "9b2a05133a4207835924b62f174942db9b1a6b8cfd45a8fc49fcb9803eb30e9c",
+      "status": "not_applicable",
+      "reason": "La proyección no aporta py3d 1.4.0 y perdería SP-017, SP-051 y el conteo de 13 Silent Killers."
+    },
+    {
+      "relative_path": "dayz-p3d-audit/scripts/audit_p3d.py",
+      "preimage_sha256": "f284d27347dbd620246f4f529ce3e872a424a7d6699f4ef488122154ed92795d",
+      "status": "not_applicable",
+      "reason": "La proyección no aporta py3d 1.4.0 y es un subconjunto estricto: 7 de 15 funciones vivas."
+    },
+    {
+      "relative_path": "dayz-pbo-build/references/validation-scripts.md",
+      "preimage_sha256": "8e75a84bc29c914fcba3f9e82bc21259be4dcf4c2217e155422d4c614f4fb032",
+      "status": "not_applicable",
+      "reason": "La proyección no contiene delta de py3d 1.4.0; sus cambios pertenecen a otro alcance."
+    }
+  ]
+}
