@@ -4,7 +4,7 @@ import re
 ES_CONFIG_NESTED_OVERRIDE_RULE_ID = "ES-CONFIG-NESTED-OVERRIDE-NO-FORWARDREF"
 
 
-# kt_roadkill_armed_dev bug-003. Overriding a nested vehicle class with explicit
+# Overriding a nested vehicle class with explicit
 # inheritance (`class SimulationModule: SimulationModule`) without forward-
 # declaring the base (`class SimulationModule;`) in the config's own
 # CfgVehicles root -> CfgConvert aborts with `Undefined base class 'X'`. Each

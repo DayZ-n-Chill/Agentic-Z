@@ -348,7 +348,7 @@ unverifiable no matter how rigorous each worker is — every subagent can
 return a provably clean batch and the merged artefact still be wrong.
 Assume that everything the workers could not see is exactly where the
 defects are. So after the returns are in, and before anything is marked
-actioned or delivered, re-verify globally over the combined result. Three
+actioned or delivered, re-verify globally over the combined result. Four
 checks, at minimum:
 
 1. **Cross-slice duplicates and collisions** — two subagents handed the
@@ -365,7 +365,6 @@ checks, at minimum:
    routed, every skill in the plan staged, counts matching, no
    multi-skill observation applied to only some of its listed skills
    (Step 3, Family propagation).
-
 4. **Characterisations, not just values** — the verification pass reads
    naturally as a rule about values (counts, fields, totals), and holds
    least where outputs are stated as judgements: a reported conflict,
@@ -467,10 +466,8 @@ delivery above 1024 characters, with a soft warning above ~900 —
 measure every skill in the set, not just the one that failed; (4) `name`
 is kebab-case, matches the directory, and the frontmatter parses; (5) the
 bundle's member paths use `/`, checked on raw bytes (Windows packers write
-`\`, and normalising readers hide it). The upstream helper
-`validate-skill-bundle.py` asserts all five and packs a well-formed
-bundle; it is not bundled with this skill, so check the five items by hand
-unless the user has it. Sweep build artefacts (`__pycache__/`, `*.pyc`, `.DS_Store`,
+`\`, and normalising readers hide it). This skill ships no script for the
+gate, so check the five items by hand. Sweep build artefacts (`__pycache__/`, `*.pyc`, `.DS_Store`,
 `.~lock.*`) before zipping and read the archive listing back after, for
 leaked artefacts and for path separators. When seeding staged
 copies from the read-only mount, `chmod -R u+w` the staged path first —

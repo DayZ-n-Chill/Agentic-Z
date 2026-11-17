@@ -1,8 +1,6 @@
 # Local vision model as a pre-filter
 
-How to use a free local vision model (served by Ollama) on renders with `vr_score.py` and `vr_calibrate.py`: the shadow-mode rule, which checklist questions may be delegated and which may not, how each was calibrated, and the contract for the faceting report that replaces one question. Everything here is tool behaviour and results measured by the source author on the dates given; nothing is a statement about the game.
-
-The labels `SP-NNN` and `LL-NNN` are the author's own ticket and lesson numbers; the files they point to are not in this repo.
+How to use a free local vision model (served by Ollama) on renders with `vr_score.py` and `vr_calibrate.py`: the shadow-mode rule, which checklist questions may be delegated and which may not, how each was calibrated, and the contract for the faceting report that replaces one question. Everything here is tool behaviour and results measured on the dates given; nothing is a statement about the game.
 
 ## Shadow mode (added 2026-07-30)
 
@@ -23,16 +21,16 @@ Options of `vr_score.py`: `--model` (default `qwen3.5:27b`), `--host` (default `
 
 The cause of that 9x gap was refuted on 2026-08-16: it was not the model, it was the factory `num_ctx`, which pushed 37% of qwen onto the CPU. With `think:false` and `num_ctx=8192` the times are 8.3 s and 17.2 s, a 2x gap, and qwen becomes usable again as a second opinion from another model family. `vr_score.py` sends both settings.
 
-Both models correctly flagged a faceted circle, and both answered "unsure" instead of guessing when the view could not decide. They gave opposite bevel verdicts on the same renders, so bevel and chamfer questions stay with the agent. Judge fine surface questions on a crop at native resolution, never on a full-frame render (LL-153).
+Both models correctly flagged a faceted circle, and both answered "unsure" instead of guessing when the view could not decide. They gave opposite bevel verdicts on the same renders, so bevel and chamfer questions stay with the agent. Judge fine surface questions on a crop at native resolution, never on a full-frame render.
 
 ### Setup notes
 
 - Models live wherever `OLLAMA_MODELS` points. A 17 GB model fills a 24 GB card, so models load one at a time and compete with Blender for VRAM. Unload before a heavy render.
 - Always address the server as `127.0.0.1`, never `localhost`: on Windows that resolves to IPv6 first, and a stray `ollama serve` bound to IPv6 will answer from a different model library.
-- With thinking on, current models put the whole reply in `message.thinking` and return an empty `message.content`, so every call ends in a JSON parse error; `vr_score.py` sends `think: false` for that reason (measured 2026-08-16, SP-260).
+- With thinking on, current models put the whole reply in `message.thinking` and return an empty `message.content`, so every call ends in a JSON parse error; `vr_score.py` sends `think: false` for that reason (measured 2026-08-16).
 - A checklist saved by PowerShell 5.1 carries a BOM; `vr_score.py` reads it with `utf-8-sig`.
 
-## The checklist: five active questions, three excluded (added 2026-08-16, SP-277; calibration data in SP-270)
+## The checklist: five active questions, three excluded (calibrated 2026-08-16)
 
 The shadow rule above governs any question not in this table. The JSON keeps eight entries: five reach the model and three carry `skip`. Only the pre-filter rows change the loop.
 
@@ -40,7 +38,7 @@ The shadow rule above governs any question not in this table. The JSON keeps eig
 
 ### What is calibrated and what is not
 
-Measured on the `mk47_mutant` model with a broken and a fixed render of the same object, three models, and the real grouping `vr_score.py` builds. The whole checklist reaches 77.8%, against a floor of 58.3% for a constant answer.
+Measured on one rifle model with a broken and a fixed render of the same object, three models, and the real grouping `vr_score.py` builds. The whole checklist reaches 77.8%, against a floor of 58.3% for a constant answer.
 
 | Question | Accuracy | In the loop |
 |---|---|---|
@@ -52,7 +50,7 @@ Measured on the `mk47_mutant` model with a broken and a fixed render of the same
 | Bevels, chamfered edges | 6/12 | Do not delegate. It sits at the constant-answer floor, which confirms the 2026-07-30 warning that the two models gave opposite bevel verdicts |
 | Faceted cylinders | At chance across 8 framings | Do not delegate, and do not rewrite it. Four phrasings were tested (2026-08-17) and the existing one is the best: 6/6 in framings where the round piece fills the frame, 1 or 2 of 3 in a framing of the whole object. Framing outweighs phrasing. The underlying failure is that the test object cannot answer it; see "Faceting question: closed" |
 
-Two notes on the shipped JSON against this table. The bevel question has no `skip`, so it is still sent to the model, but its answer is not delegated. The eighth entry, ground contact, is active and has no row in the source's table.
+Two notes on the shipped JSON against this table. The bevel question has no `skip`, so it is still sent to the model, but its answer is not delegated. The eighth entry, ground contact, is active and has no row in the table because it was not calibrated.
 
 ### Before believing a high score from this table (2026-08-22)
 
@@ -103,7 +101,7 @@ python "<skill-dir>\vr_calibrate.py" report --shadow cal.jsonl --verdicts verdic
 
 ### Scope
 
-All of the above comes from a single object. The day before, the author had recorded that these models "do not detect geometric defects", and it was false: it measured the harness, not the models, and closed a line of work that was working. Before writing that a model cannot do something, vary the phrasing, the framing and the batch, and state which of the three was varied (LL-289).
+All of the above comes from a single object. An earlier conclusion that these models "do not detect geometric defects" was false: it measured the harness, not the models, and closed a line of work that was working. Before writing that a model cannot do something, vary the phrasing, the framing and the batch, and state which of the three was varied.
 
 ## What the local judges hold up on (2026-08-21)
 
@@ -117,7 +115,7 @@ The whole shipped checklist, over a pair of renders differing only in facet coun
 
 The incumbent is the cleanest of the three, and a bigger or newer model did not beat it. Scope: one object, one pair, one framing where the round part fills the frame, which is the condition where the faceting question is already known to work. It screens models; it does not rank them.
 
-## Faceting question: closed (SP-282, added 2026-08-31)
+## Faceting question: closed
 
 Do not rewrite the faceting question and do not delegate it. The current phrasing is the best of four measured, but that does not make it a gate. Asked alone it got 6/6; inside the batch of eight that `vr_score.py` builds it fell to 3/6. On the real object it produced 8 false alarms out of 12: the visible octagonal piece is intentional, and the real smoothed cylinders have a sagitta under one pixel in those framings. Therefore:
 
@@ -128,7 +126,7 @@ Do not rewrite the faceting question and do not delegate it. The current phrasin
 
 `facet_report.py` is not shipped in this skill. This section sets its contract and its limits; it does not claim the program exists.
 
-## Contract for the faceting report (SP-284, added 2026-08-31)
+## Contract for the faceting report
 
 If `facet_report.py` is added, the calibrated candidate rule is `sides < 12` and `radius >= 6 mm`, never the provisional 4 mm threshold. It also requires a nearly square cross-section: a ratio between the sides of the transverse bounding box of at most 1.30. That limit admits pentagons and hexagons and rejects the planar shapes that the 20% outer filter mistakes for a cylinder. An allowlist silences deliberate prismatic profiles.
 

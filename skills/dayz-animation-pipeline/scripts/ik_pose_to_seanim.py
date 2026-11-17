@@ -50,8 +50,6 @@ anchors.json schema (minimum):
             }
         }
     }
-
-Reference case: the LFQuad project (a Yamaha Banshee quad), May 2026.
 """
 
 import argparse

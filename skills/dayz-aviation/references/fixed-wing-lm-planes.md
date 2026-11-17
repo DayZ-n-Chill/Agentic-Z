@@ -2,9 +2,9 @@
 
 How the LM_Planes mod builds eight planes and one amphibious car on one base class: the config skeleton, `requiredAddons`, the `class defs` wrapper for sub-mods, the data driven base script class, custom Pawn replication, ground and air modes, `driverless` braking, the memory points and bones the model needs, the dashboard material toggle, sub-mod layout, cosmetic proxies, shared wheels and the mistakes seen in the mod.
 
-Third-party material: patterns read from the LM_Planes mod (Workshop `3730564764`, by Llama and Itspete-Here), whose files are not in this repo. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
+Third-party mod behaviour (LM_Planes, Workshop `3730564764`), not vanilla. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
 
-LM_Planes is the only deployable fixed-wing mod the notes' author found: 8 aircraft plus 1 amphibious car (Patty_Wagon) sharing one base class, `LlamaPlaneScript`. It inherits `CarScript`, overrides the physics in script and uses `class Buoyancy` for seaplanes. `CarScript` gives wheels, seats, sound integration and the damage system for free, which `EntityAI` or `Inventory_Base` would not. The vanilla contracts this leans on, and the traps, are in `skills/_shared/vehicles/aviation-carscript-base.md`.
+LM_Planes is the fixed-wing reference: 8 aircraft plus 1 amphibious car (Patty_Wagon) sharing one base class, `LlamaPlaneScript`. It inherits `CarScript`, overrides the physics in script and uses `class Buoyancy` for seaplanes. `CarScript` gives wheels, seats, sound integration and the damage system for free, which `EntityAI` or `Inventory_Base` would not. The vanilla contracts this leans on, and the traps, are in `skills/_shared/vehicles/aviation-carscript-base.md`.
 
 ## Architecture
 
@@ -178,7 +178,7 @@ class SimulationModule {
 };
 ```
 
-Llama splits: `0.1` for Cessna180, Spitfire, StuntPlane (sport feel). `1.0` for Catalina, DC-3, Patty_Wagon, Tigermoth, Z37_Bumblebee (utility/heavy feel). Pick based on aircraft character. Vanilla cars use `driverless=0.1` (`P:\DZ\vehicles\wheeled\config.cpp:460`).
+LM_Planes splits them: `0.1` for Cessna180, Spitfire, StuntPlane (sport feel). `1.0` for Catalina, DC-3, Patty_Wagon, Tigermoth, Z37_Bumblebee (utility/heavy feel). Pick based on aircraft character. Vanilla cars use `driverless=0.1` (`P:\DZ\vehicles\wheeled\config.cpp:460`).
 
 ## Memory points (for the model artist)
 

@@ -1,6 +1,6 @@
 # Biomechanics and contact
 
-Anatomy, positive contact, relative lock, sliding and collision rules for hands, arms and the things they hold. Vanilla facts cite `P:\`. Lines marked "1.30 changelog" come from the 1.30 experimental modding changelog and are not yet checked on `P:\`.
+Anatomy, positive contact, relative lock, sliding and collision rules for hands, arms and the things they hold. Vanilla facts cite `P:\`. Lines marked "1.30 changelog" state 1.30 engine changes that are not yet checked on `P:\`.
 
 ## Whole-chain rule
 
@@ -8,7 +8,7 @@ A believable endpoint can hide an impossible chain. Sample every load-bearing jo
 
 Treat joint-limit tables as calibration aids, not universal truths. Rig rest axes, species, stylisation and retargeting change the numerical representation. A hard limit needs a reference or a measured rig convention.
 
-Bone indices are not a stable reference either. Up to 1.29 `skeletons.anim.xml` set fixed bone indices and the engine had a 250-bone limit; the 1.30 changelog says the limit is removed and the engine works out the global index at run time from a hash of the bone name. On `P:\` the skeletons added in 1.30 carry an `index` only on `EntityPosition` (`P:\DZ\anims\cfg\skeletons.anim.xml:988`). Address bones by name.
+Bone indices are not a stable reference either. Up to 1.29 `skeletons.anim.xml` set fixed bone indices and the engine had a 250-bone limit. 1.30 changelog: the limit is removed and the engine works out the global index at run time from a hash of the bone name. On `P:\` the skeletons added in 1.30 carry an `index` only on `EntityPosition` (`P:\DZ\anims\cfg\skeletons.anim.xml:988`). Address bones by name.
 
 ## Fingers
 

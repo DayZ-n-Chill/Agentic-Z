@@ -2,7 +2,7 @@
 
 Covers what `check_dayz_winding.py` reads in a source `.p3d`, how to read its verdict and fixes, what it cannot see, the fixtures that pin its behaviour, and how it came to its current form.
 
-How to read the marks: the gate reads the mod's own MLOD file, so nothing here is a vanilla fact that `P:\` could confirm, apart from the two textures the fixtures name. "In game" results were measured by the source project on the date given (DayZDiag 1.29.163709).
+How to read the marks: the gate reads the mod's own MLOD file, so nothing here is a vanilla fact that `P:\` could confirm, apart from the two textures the fixtures name. "In game" results were measured on the date given (DayZDiag 1.29.163709); "giant infected build" marks the custom giant infected test build they were measured on.
 
 ## Why it exists
 
@@ -13,7 +13,7 @@ python "<skill-dir>\check_dayz_winding.py" path\to\model.p3d
 python "<skill-dir>\check_dayz_winding.py" path\to\model.p3d --py3d path\to\py3d
 ```
 
-It needs the py3d DayZ fork (1.6.0 or newer), which it looks for at `--py3d`, then at `scripts/tools/py3d/` in this repo, then among the installed packages. An upstream py3d installed on the machine is not the fork (`/dayz-p3d-audit` uses the same `scripts/tools/py3d/` copy); the gate says so and exits 2.
+It needs the py3d DayZ fork (1.6.0 or newer), which it looks for at `--py3d`, then at `scripts/tools/py3d/` in this repo, then among the installed packages. A stock py3d installed on the machine is not the fork (`/dayz-p3d-audit` uses the same `scripts/tools/py3d/` copy); the gate says so and exits 2.
 
 ## The convention it checks
 
@@ -66,17 +66,17 @@ The fixes come in a fixed order: the winding first with the normals untouched, t
 
 `test_check_dayz_winding.py` next to the script holds the expected verdict lines for these and for about thirty variants built from them (one inverted box, an incoherent shell, open sheets, welded twins, proxies, a non-convex quad, zero normals, ODOL and truncated input).
 
-Measured offline on 2026-10-02 on three builds of the LFInfectedBig character:
+Measured offline on 2026-10-02 on three builds of the giant infected character:
 
 - The Rule 12 build passes: 48 closed shells negative; 99.8 % of its 131,278 corner normals with a clear sign agree, 99.5 % in the body, its lowest shell, with 219 against their face and 200 within 5 degrees of it. The open ribcage tubes, 63.5 % of the faces, are not scored.
 - The two builds with outward normals fail on their normals: 0.2 % of their corners agree, every shell below 10 %.
-- In game the same day: the Rule 12 build is solid and lit like vanilla. The builds with normals stored outward, which the gate passed before its rewrite, are lit inverted (base shading on a client without textures), and the shipped one is also mirrored. (claim id CLAIM-CHAR-NORMALS-INWARD-SKILL)
+- In game the same day: the Rule 12 build is solid and lit like vanilla. The builds with normals stored outward, which the gate passed before its rewrite, are lit inverted (base shading on a client without textures), and the shipped one is also mirrored.
 - The absolute check of dayz-p3d-audit agrees: the Rule 12 build 99.3 % and -0.109 on the body, the others 0.7 to 0.8 %. On the static fixture both gates pass the two solid variants and fail the inside-out one.
 
 ## History
 
-- **2026-06-25.** First version, written after the first LFInfectedBig build rendered inside-out. It encoded that build's determinant +1 recipe: normals stored outward and `cross . normal < 0`.
-- **2026-08-17 (review item SP-290).** Measured: exit 0 was not "safe to ship". The gate failed only on relative winding. It measured global inversion (it printed `normals_outward[info]=0.00` and a note that the normals look inward) but did not fail for it. Three fixtures made from one nine-LOD crate model showed it: intact, exit 0; winding inverted on 784 faces, exit 1; winding and stored normals both inverted (784 faces, 488 normals), exit 0 `PASS`. That third state is coherent inside and inside-out as a whole, the silent Blender Z-up to Y-up export (seen on a wall lamp and a wooden crate model). The third fixture inverted the stored normals to reach that state; it did not reproduce byte for byte an exporter that also mirrors coordinates. The review asked for three things: fail on that state; three exit codes instead of two, because an ODOL file raised a bare `AssertionError` and exited 1 like a defect; and fixtures kept next to the check.
+- **2026-06-25.** First version, written after the first giant infected build rendered inside-out. It encoded that build's determinant +1 recipe: normals stored outward and `cross . normal < 0`.
+- **2026-08-17.** Measured in a review of the gate: exit 0 was not "safe to ship". The gate failed only on relative winding. It measured global inversion (it printed `normals_outward[info]=0.00` and a note that the normals look inward) but did not fail for it. Three fixtures made from one nine-LOD crate model showed it: intact, exit 0; winding inverted on 784 faces, exit 1; winding and stored normals both inverted (784 faces, 488 normals), exit 0 `PASS`. That third state is coherent inside and inside-out as a whole, the silent Blender Z-up to Y-up export (seen on a wall lamp and a wooden crate model). The third fixture inverted the stored normals to reach that state; it did not reproduce byte for byte an exporter that also mirrors coordinates. The review asked for three things: fail on that state; three exit codes instead of two, because an ODOL file raised a bare `AssertionError` and exited 1 like a defect; and fixtures kept next to the check.
 - **2026-10-01.** A first fix failed any model whose normals did not point outward (`NORMALS_OUTWARD_MIN = 0.35`). It contradicted the MLOD convention measured since (shading normals stored inward: the engine verdict of 2026-09-07 behind the absolute check, and Rule 12 in game on 2026-10-01), and it failed every correct Rule 12 export. The gate exited 1 on all three MLODs of the Rule 12 in-game probe, including the one that renders solid and reads correctly (`cross.normal_positive=1.00`, `normals_outward=0.00`), with fix hints that would turn it inside-out.
 - **2026-10-02.** Rewritten to the form above: direction from the signed volume of each closed shell, stored normals failed when they disagree with the winding, exit 2 for invalid input and ODOL. The both-inverted state now fails on its volume wherever its shells are closed (`mirror_c.p3d`: +0.1086). The fixtures next to the check are the Rule 12 probe's; the crate fixtures of the review were not carried over.
 - **2026-10-03.** The fix for mixed shells changed. It used to read "negate the normal of each corner that points against its face"; a flat tetrahedron wound right, with one area-weighted normal per point, has 6 of its 12 corners against their faces, so the fix now reads shell by shell.

@@ -10,13 +10,10 @@ from shared.vanilla_patches import VANILLA_PATCHES
 ES_UNDEFINED_CLASS_REF_RULE_ID = "ES-UNDEFINED-CLASS-REF"
 
 
-# claim: CLAIM-ENFORCE-UNDEFINED-TYPE-REF
-# Observed on 2026-09-19 auditing netcopdev/TransferZ PR #12 (head 11da911): the
-# PR deletes Scripts/4_World/TransferZ/TransferZ_ExternalStagingSortPlanner.c
-# (class TransferZExternalStagingSortPlanner) while
-# Scripts/5_Mission/TransferZ/TransferZ_MaintenanceClient.c:59 still calls
+# Observed on 2026-09-19 on a mod: a change deletes a 4_World file (class
+# FX_ExternalStagingSortPlanner) while a 5_Mission file still calls
 #
-#   int sortResult = TransferZExternalStagingSortPlanner.Sort(player, source);
+#   int sortResult = FX_ExternalStagingSortPlanner.Sort(player, source);
 #
 # The type exists in no module of the addon, of vanilla or of its one
 # dependency (CF), so the Mission module cannot compile. The linter returned
@@ -89,10 +86,10 @@ _MACRO_DEFINE_RE = re.compile(r"^[ \t]*#[ \t]*define[ \t]+(?P<name>\w+)", re.M)
 # Symptoms_secondary` (4_world/classes/playersymptoms/statemanager.c:896),
 # and a lazy one could still run on to any later `>` of the statement, so
 # every place a declaration can start read to its end: time quadratic in the
-# length of a long statement (inbox fb-20261017-175254-e6d6). Vanilla closes
+# length of a long statement. Vanilla closes
 # some with one `>` too many (`map<string, int>> name;`, 3_game/global/
 # ammotypes.c:80 and :100 on 1.30, :47 and :60 on 1.29), so a run of `>`
-# closes one (Codex review of e6d6, E4).
+# closes one.
 _TEMPLATE = r"<[^<>;{}()\n]*>+"
 _DECLARED_NAME_RE = re.compile(
     r"\b[A-Za-z_]\w*(?:[ \t]*" + _TEMPLATE + r")?(?:[ \t]*\[[^\]\n]*\])?"
@@ -245,7 +242,7 @@ def _closed_template_openers(stripped):
     str pattern is one for which str.isalnum() holds, or `_`, the same test
     _template_end makes). Without this pass a `<` that opened no template
     was read up to the end of its statement, and a chain of shifts with no
-    comma grew with the square of its length (Codex review of #115, N1).
+    comma grew with the square of its length.
     """
     closed = set()
     index = stripped.find("<")
@@ -272,12 +269,12 @@ def _template_spans(stripped, spaced=False):
     `<` opens template arguments only as _template_end reads them, so the
     comparison in `bool first = a < b, Debug = false;` hides no declarator.
     With `spaced`, spaces are allowed before it: `new Param3 <int, Object,
-    int>(...)` (second Codex review of #113, J1).
+    int>(...)`.
 
     Template arguments never hold a `;`, `{` or `}`, so one pass over the
     file finds the ones a pass from the start of each statement finds.
     Reading from the start of the statement at each comma grew with the
-    square of the names of one declaration (Codex review of #114, M2).
+    square of the names of one declaration.
     """
     closed = _closed_template_openers(stripped)
     spans = []
@@ -315,7 +312,7 @@ def declarator_commas(text, starts, spans=()):
     declaration runs at its level. Reading each declaration from its own
     start read a statement once for each start it held: time quadratic in
     the length of `void F(int a0, int a1, ...)`, or of template arguments
-    that a newline keeps from being blanked (Codex review of e6d6, E5).
+    that a newline keeps from being blanked.
     """
     ends = dict(spans)
     running = [False]
@@ -355,7 +352,7 @@ def blank_template_arguments(text):
 
     A `<...>` is a `<` closed by its own `>` with no `;`, `{`, `}`, `(`, `)`
     or newline between them, nested to any depth: what _TEMPLATE read, up to
-    four deep, before it read blanked text (Codex review of e6d6, E1). No
+    four deep, before it read blanked text. No
     declaration is left to find among template arguments either: each `ref
     X,` of `new Param<ref X, ref X, ...>(1)` read like another declaration,
     and each was read to the end of the statement (E2). Each run of text
@@ -393,7 +390,7 @@ def declared_variables(text):
     # The patterns read the blanked text, the declarators the text itself:
     # template arguments are told from comparisons there by _template_end,
     # over lines too and after spaces or tabs (`new map <`), and no name is
-    # declared among them (Codex review of e6d6, E5 and E8). The commas of
+    # declared among them. The commas of
     # template arguments (`new Param3<int, X, int>(...)`) separate types, not
     # declarators.
     blanked = blank_template_arguments(text)
@@ -806,7 +803,7 @@ def check_es_undefined_class_ref(
         )
     elif not direct and not addon_is_vanilla:
         # Observed on 2026-09-19 across 161 addon roots under P:\: three mods
-        # (six trees) with `requiredAddons[]={};` use CF, Expansion or LBmaster
+        # (six trees) with `requiredAddons[]={};` use CF, Expansion or another mod's
         # classes outside any #ifdef. They can only compile next to those mods,
         # and the empty list does not say which. Empty is "not declared", not
         # "vanilla only" (vanilla's own scripts/config.cpp is empty too, hence

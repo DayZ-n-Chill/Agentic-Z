@@ -2,12 +2,12 @@
 
 Counts of widget classes and attributes over real `.layout` files, a path and branch correction for Dabs Framework, the coverage of a static HTML renderer, and calibration numbers for layout checks.
 
-Added 2026-05-13 by the source author from a count over the 459 `.layout` files on his `P:\` at the time (vanilla plus the third-party mods unpacked there), with a second sweep of 819 files on 2026-08-19. The counts are his measurements and are not repeated here; they include third-party layouts, so they do not match a vanilla-only count. Where a line names an engine fact, it cites the vanilla file on `P:\`, re-read on 1.30.
+The counts were taken on 2026-05-13 over 459 `.layout` files on a `P:\` holding vanilla plus third-party mods unpacked there, with a second sweep of 819 files on 2026-08-19. They have not been re-counted since, and they include third-party layouts, so they do not match a vanilla-only count. Where a line names an engine fact, it cites the vanilla file on `P:\`, re-read on 1.30.
 
 This file complements `layout-format.md`, `widget-api.md` and `dabs-framework.md`; it does not replace them. Use it when you need:
 
 - "What's actually used in production layouts?" → see section 1 + section 2.
-- Path/branch corrections vs the older clone snapshot → see section 3.
+- The Dabs Framework source path and branch → see section 3.
 - The static HTML renderer for previewing layouts outside DayZ → see section 4.
 - Second-sweep calibrations (819 files, 2026-08-19) → see section 6.
 
@@ -122,16 +122,16 @@ This file complements `layout-format.md`, `widget-api.md` and `dabs-framework.md
 exact unit is 1/1080 of the screen height on both axes, a pixel only on a 1080-pixel-tall screen:
 `rules-and-checklist.md` rule 3. The counts are unchanged.)*
 
-Checked on `P:\` (1.30, vanilla `gui\layouts` only): `mode` takes a keyword, `blend` 1,721 times, `additive` 144 and `opaque` 4 (`P:\gui\layouts\day_z_ingamemenu.layout:74` and `:551`), never a number. `fixaspect` takes a keyword too: `fixwidth` 488, `inside` 67, `outside` 29, `none` 15 (`P:\gui\layouts\day_z_ingamemenu.layout:72`, `:563`). The source's "values 0/1/2" and `fixaspect 1` readings below are corrected to match.
+Checked on `P:\` (1.30, vanilla `gui\layouts` only): `mode` takes a keyword, `blend` 1,721 times, `additive` 144 and `opaque` 4 (`P:\gui\layouts\day_z_ingamemenu.layout:74` and `:551`), never a number. `fixaspect` takes a keyword too: `fixwidth` 488, `inside` 67, `outside` 29, `none` 15 (`P:\gui\layouts\day_z_ingamemenu.layout:72`, `:563`). The earlier "values 0/1/2" and `fixaspect 1` readings below are corrected to match.
 
-### Newly documented attributes (semantics inferred from corpus + community wiki)
+### Newly documented attributes (semantics inferred from the corpus)
 
 | Attribute | Semantics | Confidence |
 |---|---|---|
 | `style <name>` | Reference to a widget style defined in a `.styles` file (vanilla: `P:\gui\looknfeel\dayzwidgets.styles`), written unquoted; the full system is in `styles-format.md`. Common values: `Bold`, `DayZNormal`, `DayZInventoryButtonAll`, `Default`, `Empty`, `Colorable`, `Editor`. | Verified empirically. Engine-side semantics inferred. |
-| `mode blend\|additive\|opaque` | Image blend mode. The source guessed numeric values (0=normal, 1=additive, 2=multiply); vanilla layouts write the keywords. | Keywords checked on `P:\` (note above). What each mode draws is not measured. |
+| `mode blend\|additive\|opaque` | Image blend mode. Vanilla layouts write the keywords, never numeric values (an earlier 0=normal, 1=additive, 2=multiply reading was wrong). | Keywords checked on `P:\` (note above). What each mode draws is not measured. |
 | `priority N` | Z-order hint within parent. Higher = on top. | Inferred. The script side is `SetSort`, which sets the value outright (`P:\scripts\1_core\proto\enwidgets.c:130`); the "adds" comment in that file belongs to `SetFlags` (`:128`). |
-| `image0` ... `image7` | Image slot 0–7 (engine supports 8 textures per widget via `LoadImageFile(int num, ...)`). `image0` is default; switched with `SetImage(int)`. | `LoadImageFile(int num, string name, bool noCache = false)` is at `P:\scripts\1_core\proto\enwidgets.c:257`; the count of 8 slots is the source's reading. |
+| `image0` ... `image7` | Image slot 0–7 (engine supports 8 textures per widget via `LoadImageFile(int num, ...)`). `image0` is default; switched with `SetImage(int)`. | `LoadImageFile(int num, string name, bool noCache = false)` is at `P:\scripts\1_core\proto\enwidgets.c:257`; the count of 8 slots is not checked on `P:\`. |
 | `inheritalpha 1` | If 1, widget's alpha is multiplied with parent's. | Common in HUDs; verified empirically. |
 | `scaled 1` | Resolution scaling enabled. | Inferred. `SetResolutionScale` exists only on `RenderTargetWidget` (`P:\scripts\1_core\proto\enwidgets.c:240`), so it is not what this attribute calls on an ordinary widget. |
 | `fixaspect fixwidth\|inside\|outside\|none` | Lock image aspect ratio (don't stretch). | Keyword values checked on `P:\` (note above); what each one does is inferred from naming. |
@@ -145,11 +145,11 @@ Checked on `P:\` (1.30, vanilla `gui\layouts` only): `mode` takes a keyword, `bl
 
 Dabs Framework is a third-party mod; nothing in this section is checked on `P:\`. The full reference is `dabs-framework.md`.
 
-**What older notes said** (from a clone of 2026-03-23):
+**Wrong (an older reading, 2026-03-23):**
 - Path: `DabsFramework/scripts/3_Game/MVC/`
 - Branch: `master` assumed
 
-**Read from the public repository at `production` HEAD on 2026-05-13:**
+**Right, as of the `production` branch on 2026-05-13:**
 - **Path:** `DabsFramework/Scripts/3_Game/DabsFramework/MVC/` (note capitalized `Scripts`, and the extra `DabsFramework/` segment)
 - **Branch:** `production`
 
@@ -182,17 +182,12 @@ file first called it unverified. The later line by line pass (2026-07-05) found 
 base class, `ScriptedViewBase` (`MVC\ScriptedViewBase.c:8`), not on `ViewBinding`. It exists and can be set
 from a layout; see `dabs-framework.md`.
 
-**URL pattern** (production branch):
-```
-https://raw.githubusercontent.com/InclementDab/DayZ-Dabs-Framework/production/DabsFramework/Scripts/3_Game/DabsFramework/MVC/<FileName>.c
-```
-
 ---
 
 ## 4. Static HTML renderer (preview without DayZ)
 
-The source author's first renderer, `dayz_layout_render.py` (called v1 below), converted a `.layout` file to a
-static HTML and CSS preview. It is not part of this repo. Its successor ships here as
+The first static renderer (called v1 below) converted a `.layout` file to a static HTML and CSS
+preview. It is not in this repo. The renderer that is in this repo is
 `scripts/tools/dayz-layout-viewer/build_viewer.py`:
 
 ```
@@ -229,9 +224,9 @@ record what a static preview of a `.layout` can and cannot show.
 ### Test cases (rendered successfully on 2026-05-13)
 
 ```
-LFPG_Sorter.layout              (2470 lines, 196 widgets) yes
-LFPG_SorterPreviewRow.layout    (109 lines, 10 widgets)   yes
-LFPG_SorterTag.layout           (76 lines, 6 widgets)     yes
+a sorter menu layout            (2470 lines, 196 widgets) yes
+its preview-row layout          (109 lines, 10 widgets)   yes
+its tag layout                  (76 lines, 6 widgets)     yes
 BaseBuildingPlus/Book.layout    (3rd-party)                yes
 CodeLock/enterComboCode.layout  (3rd-party)                yes
 A6_Gunplay/ItemStatsDisplay     (3rd-party)                yes
@@ -275,14 +270,14 @@ Trigger expansion when:
 For each expansion, follow the same discipline:
 1. Add empirical corpus check for new attribute usage.
 2. Verify against engine API doc (`widget-api.md` is engine-protos derived).
-3. Test on at least 1 LFPG layout + 1 third-party layout.
+3. Test on at least one layout of your own mod and one third-party layout.
 
 ---
 
 ## 6. Second sweep: 819 `.layout` files (2026-08-19)
 
-Re-measured with a token parser over every `.layout` in the source author's projects folder
-(vanilla, third-party and his own mods), not only `P:\`. Purpose was
+Re-measured with a token parser over every `.layout` in one projects folder
+(vanilla, third-party and in-house mods), not only `P:\`. Purpose was
 calibrating a geometry gate, so the numbers below are about what is normal in
 shipped layouts — which is what decides whether a rule is a detector or a
 false-positive generator.
@@ -313,11 +308,10 @@ false-positive generator.
 - **Class identifier vs the `name` attribute: 0 mismatches in 819 files.** The
   corpus keeps them equal without exception.
 
-The source author wired these calibrations into four rules of his own tooling:
-`LAYOUT-DUPLICATE-CLICKABLE-NAME`, `LAYOUT-CLICKABLE-ZERO-SIZE`, `LAYOUT-DUPLICATE-WIDGET-NAME` and
-`LAYOUT-NAME-ATTR-MISMATCH`, in a detector named `layout_addressability.py` over a shared parser
-`layout_ast.py`. Neither file is in the validator this repo received
-(`scripts/tools/dayz-script-validator/scripts/detectors/` holds `layout_leaf_missing_braces.py`,
+These calibrations support four layout rules: `LAYOUT-DUPLICATE-CLICKABLE-NAME`,
+`LAYOUT-CLICKABLE-ZERO-SIZE`, `LAYOUT-DUPLICATE-WIDGET-NAME` and `LAYOUT-NAME-ATTR-MISMATCH`. The validator
+in this repo does not have them yet (its layout detectors in
+`scripts/tools/dayz-script-validator/scripts/detectors/` are `layout_leaf_missing_braces.py`,
 `layout_xml_format.py`, `es_layout_file_missing.py` and `es_layout_path_pboprefix.py`), so treat the four
 names as rules to write, not rules that run. The rules that did not survive calibration (overlap,
 overflow, `ignorepointer` on a clickable) were deliberately not implemented.

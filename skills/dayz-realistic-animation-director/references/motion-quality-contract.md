@@ -55,7 +55,7 @@ Transform types:
 
 Missing objects, bones, vertices, frames, Actions, radii or non-finite values are invalid input. Frames outside the scene timeline are invalid. They produce exit `2`, never an omitted channel.
 
-Bone names in `transforms` and `landmarks` must match the exported skeleton character for character. The 1.30 experimental modding changelog (not yet checked on `P:\`) says the 250-bone limit is gone and the engine resolves bone indices from a hash of the bone name, so the name is the only key; on `P:\` the skeletons added in 1.30 carry an `index` only on `EntityPosition` (`P:\DZ\anims\cfg\skeletons.anim.xml:988`).
+Bone names in `transforms` and `landmarks` must match the exported skeleton character for character. In 1.30 (not yet checked on `P:\`) the 250-bone limit is gone and the engine resolves bone indices from a hash of the bone name, so the name is the only key; on `P:\` the skeletons added in 1.30 carry an `index` only on `EntityPosition` (`P:\DZ\anims\cfg\skeletons.anim.xml:988`).
 
 ## Check catalog
 

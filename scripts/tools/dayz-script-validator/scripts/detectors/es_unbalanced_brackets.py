@@ -6,12 +6,10 @@ from shared.dead_branches import dead_lines
 ES_UNBALANCED_BRACKETS_RULE_ID = "ES-UNBALANCED-BRACKETS"
 
 
-# claim: CLAIM-ENFORCE-UNBALANCED-BRACKETS
 # A `(`, `[` or `{` that is never closed, or a closer that meets another
-# kind of opener, stops the script module from compiling. Pipeline inbox
-# fb-20261004-040148-403a (SimpleGroup): `m_Objects.Clear();` sabotaged to
-# `m_Objects.Clear(;` got PASS from this validator (the ticket files that
-# PASS; no engine log of the file is cited). This rule is no parser:
+# kind of opener, stops the script module from compiling. `m_Objects.Clear();`
+# sabotaged to `m_Objects.Clear(;` got PASS from this validator (no engine
+# log of the file is on record). This rule is no parser:
 # it counts brackets on the text the stripper leaves (comments and strings
 # are blanks), so a file it passes can still fail to compile, and only the
 # engine compile settles the syntax.

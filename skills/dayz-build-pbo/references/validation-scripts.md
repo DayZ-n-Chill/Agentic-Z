@@ -3,7 +3,7 @@
 Four reference validators as code blocks (config.cpp, texture paths, stringtable, `.p3d` LODs), with their JSON
 output, exit codes and CI use. They are shapes to adapt, not bundled scripts.
 
-Not yet checked on `P:\`: this is reference code from the knowledge pack, not a statement about vanilla data.
+Not yet checked on `P:\`: this is reference code, not a statement about vanilla data.
 
 | Validator | Status | Use in this repo |
 |---|---|---|
@@ -16,7 +16,7 @@ Each script outputs JSON and returns exit code 0 (PASS), 1 (FAIL) or 2 (WARN).
 
 **Prerequisites:**
 - Python 3.7+
-- py3d (optional, for .p3d validation): fork DayZ >= 1.6.0 via `pip install -e scripts/tools/py3d` (NEVER `pip install py3d` — PyPI = point-cloud lib)
+- py3d (optional, for .p3d validation): this repo's DayZ py3d, 1.6.0 or later, via `pip install -e scripts/tools/py3d` (never `pip install py3d`: on PyPI that name is an unrelated point-cloud library)
 - Standard library only for other validators
 
 ---
@@ -28,8 +28,6 @@ Parses config.cpp files and validates syntax, structure, and class hierarchy.
 **Usage:**
 ```bash
 python config_cpp_validator.py path/to/config.cpp
-python config_cpp_validator.py path/to/config.cpp --strict
-python config_cpp_validator.py path/to/addon/root  # auto-finds config.cpp
 ```
 
 **Output:** JSON with errors, warnings, and parsed structure.
@@ -308,7 +306,6 @@ Verifies all texture and material references exist relative to addon root.
 **Usage:**
 ```bash
 python texture_path_checker.py path/to/addon/root
-python texture_path_checker.py path/to/addon/root --strict
 ```
 
 **Output:** JSON with missing files, format warnings, and path validation.
@@ -513,10 +510,10 @@ if __name__ == '__main__':
 
 ## 3. stringtable_validator.py
 
-> **BROKEN FOR DAYZ — do not run as-is (flagged 2026-08-21).** The script below parses
-> `stringtable.xml`, which is the Arma 3 form. DayZ uses `stringtable.csv`: measured across
-> this workspace there are **zero** XML stringtables and 38 CSV ones, and the deployed PBOs
-> checked (`LFPowerGrid`, `LFGungame`) carry `stringtable.csv` and no XML. Run against a
+> **BROKEN FOR DAYZ — do not run as-is.** The script below parses
+> `stringtable.xml`, which is the Arma 3 form. DayZ uses `stringtable.csv`: measured on a DayZ
+> mod project tree there are **zero** XML stringtables and 38 CSV ones, and the two deployed PBOs
+> checked carry `stringtable.csv` and no XML. Run against a
 > DayZ addon it reports "stringtable not found" for every mod that has a perfectly good one.
 > It is kept here as the shape to port, not as a tool: the rewrite reads the CSV, takes
 > column 1 minus the leading `#` as the key set, and checks `.layout` files for `#STR_`
@@ -528,7 +525,6 @@ Validates stringtable completeness and checks all #STR_ references are covered.
 **Usage:**
 ```bash
 python stringtable_validator.py path/to/addon/root
-python stringtable_validator.py path/to/addon/root --strict
 ```
 
 **Output:** JSON with missing keys, orphaned entries, and language coverage.
@@ -704,7 +700,7 @@ Validates .p3d LOD structure using py3d (optional). Requires py3d library.
 **Usage:**
 ```bash
 python p3d_lod_checker.py path/to/addon/root
-pip install -e scripts/tools/py3d  # pack DayZ fork >= 1.6.0 (if not installed)
+pip install -e scripts/tools/py3d  # this repo's DayZ py3d, 1.6.0 or later (if not installed)
 ```
 
 **Output:** JSON with LOD types, vertex counts, named selections, memory points.
@@ -715,7 +711,7 @@ pip install -e scripts/tools/py3d  # pack DayZ fork >= 1.6.0 (if not installed)
 DayZ .p3d LOD structure validator
 Checks: LOD types (Resolution, Geometry, Memory), vertex budgets, named selections,
 memory points, geometry mass
-Requires: py3d DayZ fork >= 1.6.0 (`pip install -e scripts/tools/py3d`; NEVER pip install py3d from PyPI)
+Requires: the repo's DayZ py3d >= 1.6.0 (`pip install -e scripts/tools/py3d`; never pip install py3d from PyPI)
 """
 import json
 import sys
@@ -737,7 +733,7 @@ class P3dLodChecker:
             raise FileNotFoundError(f"{addon_root} not found")
 
         if not HAS_PY3D:
-            raise ImportError("py3d (DayZ fork) not installed. Install it with: pip install -e scripts/tools/py3d")
+            raise ImportError("DayZ py3d not installed. Install it with: pip install -e scripts/tools/py3d")
 
         self.errors: List[Dict] = []
         self.warnings: List[Dict] = []
@@ -917,7 +913,7 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python p3d_lod_checker.py <path/to/addon/root>")
         print()
-        print("Note: Requires the py3d DayZ fork (>= 1.6.0). Install with:")
+        print("Note: Requires the repo's DayZ py3d (>= 1.6.0). Install with:")
         print("  pip install -e scripts/tools/py3d")
         sys.exit(1)
 
@@ -937,7 +933,7 @@ def main():
     except ImportError as e:
         print(json.dumps({
             'error': str(e),
-            'hint': 'Install the DayZ py3d fork with pip install -e scripts/tools/py3d (NEVER pip install py3d from PyPI)'
+            'hint': 'Install the DayZ py3d with pip install -e scripts/tools/py3d (never pip install py3d from PyPI)'
         }, indent=2))
         sys.exit(1)
     except Exception as e:
@@ -1115,10 +1111,13 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 echo Validation passed, packing...
-AddonBuilder.exe P:\MyMod P:\Mods\@MyMod\Addons -prefix=MyMod -temp=P:\temp\MyMod -clear
+AddonBuilder.exe P:\MyMod P:\Mods\@MyMod\Addons -prefix=MyMod -temp=P:\temp\MyMod -include=include.lst -clear
 ```
 
-The reference validators return exit code 0 on PASS, 1 on FAIL, 2 on WARN (configurable).
+`include.lst` is the include list beside this skill's `build.py`; without `-include`, the binarizing pass drops
+`.c` and `.csv` files (`post-build-gates.md`).
+
+The reference validators return exit code 0 on PASS, 1 on FAIL, 2 on WARN.
 
 ---
 
@@ -1138,12 +1137,10 @@ GitHub Actions step:
 ```yaml
 - name: Validate DayZ addon
   run: |
-    python config_cpp_validator.py . || exit 1
+    python config_cpp_validator.py config.cpp || exit 1
     python texture_path_checker.py . || exit 1
     echo "Validation passed, ready for build"
 ```
-
-Sizes in the source: `config_cpp_validator.py` about 520 lines, `texture_path_checker.py` 400, `stringtable_validator.py` 350, `p3d_lod_checker.py` 400 (as the source index counted them).
 
 - `config_cpp_validator.py` – Parse and check config.cpp syntax
 - `texture_path_checker.py` – Verify texture existence

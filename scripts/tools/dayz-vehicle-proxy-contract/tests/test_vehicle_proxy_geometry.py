@@ -5,7 +5,10 @@ import sys
 import tempfile
 import unittest
 
-import numpy as np
+import pytest
+
+np = pytest.importorskip("numpy")
+pytest.importorskip("scipy")
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]

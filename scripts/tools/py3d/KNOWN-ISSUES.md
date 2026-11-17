@@ -120,10 +120,10 @@ original, so a proxy selection goes from one face to two and
 
 ## Compatibility
 
-- **`Selection(list(lod.points), list(lod.faces))` now raises** where upstream
-  accepted it and wrote byte-identical output. The guard tests list *identity*
-  when the bug it targets is one of *length*. This is the fork's one true
-  behavioural regression against upstream.
+- **`Selection(list(lod.points), list(lod.faces))` now raises** where the bare
+  codec accepts it and writes byte-identical output. The guard tests list
+  *identity* when the bug it targets is one of *length*. This is the library's
+  one true behavioural regression against the bare codec.
 - **`py3d.BLENDER_TO_DAYZ` is deprecated (1.8.0).** It keeps its value, the
   det=+1 rotation now also published as `ROT_X_NEG90`, and every read of it
   raises a `FutureWarning`. Because the warning comes from a module
@@ -287,8 +287,8 @@ noise reads as signal.
   on read. See *What `#Selected#` is worth* for what that fidelity buys.
 - **Infinite hang on an unterminated string.** `_read_asciiz` looped forever
   when a file reached EOF without a NUL byte — the process hung with no
-  traceback, which no caller could catch. Inherited from upstream; a truncated
-  `.p3d` is the normal way to hit it. Now raises, naming the offset.
+  traceback, which no caller could catch. The bare codec has this loop; a
+  truncated `.p3d` is the normal way to hit it. Now raises, naming the offset.
 - **The validator recommended a fix that corrupts quads.** `ERR_WINDING_INVERTED`
   advised swapping `vertices[1]` and `vertices[2]`, which inverts a triangle but
   turns a quad `[0,1,2,3]` into `[0,2,1,3]` — a crossed face. It now recommends

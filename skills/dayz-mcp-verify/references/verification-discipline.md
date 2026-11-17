@@ -2,13 +2,13 @@
 
 Rules for reading and writing verdicts from an MCP-driven run: which mod the run loaded, what the PBO really holds, where a hang is, how many samples a negative has, and how to review the bridge itself without signing off on a layer you did not open.
 
-These are lessons from game sessions with the third-party dayz-mcp tool, each with the session that paid for it. None is a vanilla fact and none is checked on `P:\`. Labels such as LL-181 or SP-350 are the knowledge pack author's own lesson numbers, kept so a lesson can be traced. `<dayz-mcp>` is the folder of your dayz-mcp checkout.
+These are lessons from game sessions with the third-party dayz-mcp tool, each with the session that paid for it. None is a vanilla fact and none is checked on `P:\`. `<dayz-mcp>` is the folder of your dayz-mcp checkout.
 
 ## Before blaming the mod
 
-- **LL-181.** Before blaming the mod for an automated FAIL, check the source of the actuator or bridge and confirm the stimulus reached the subject. Run an equivalent control with one difference, or a manual test, to tell a harness defect from a mod defect.
-- **LL-187.** If several defences catch the same failure, design one repro per layer that reaches that layer's protection point. Ask for each layer's own signal; an aggregate PASS of "it does not fail" does not prove that all of them work.
-- **LL-202.** At the first odd error of a client-side verb, check the client's process id, the tail of its RPT and `bridge_status` before continuing. If the peer died, collect the minidump and the evidence and record a degraded shutdown; do not diagnose the errors that follow as harness state.
+- **Check the stimulus first.** Before blaming the mod for an automated FAIL, check the source of the actuator or bridge and confirm the stimulus reached the subject. Run an equivalent control with one difference, or a manual test, to tell a harness defect from a mod defect.
+- **One repro per defence layer.** If several defences catch the same failure, design one repro per layer that reaches that layer's protection point. Ask for each layer's own signal; an aggregate PASS of "it does not fail" does not prove that all of them work.
+- **A dead peer explains the errors after it.** At the first odd error of a client-side verb, check the client's process id, the tail of its RPT and `bridge_status` before continuing. If the peer died, collect the minidump and the evidence and record a degraded shutdown; do not diagnose the errors that follow as harness state.
 - **Read the client log before recording a FAIL** (`verb-gotchas.md`, "Six traps", trap 6).
 
 ## Check which mod a run loaded before reading its verdict (added 2026-10-03)
@@ -27,7 +27,7 @@ The build can pack untracked scratch files, so assuming the PBO holds exactly th
 
 Limit: the index audit establishes what is packed, never why a compile failed.
 
-Origin: a session that spent two days on a mod's compile failures; the listing claim was corrected against a measurement on real PBOs.
+Measured in a session that spent two days on a mod's compile failures; the listing behaviour of `grep -a` was measured on real PBOs.
 
 ## A server hang is bounded by log tails first (added 2026-10-04)
 
@@ -37,11 +37,11 @@ A boot that never finishes (1 of N driver snapshots, the RPT frozen, the process
 2. **Verify the candidate region's loop structure in source before suspecting it** (a descending loop with every branch decrementing; resolution capped per tick; helper functions free of loops). That removes the cheap suspects and moves the suspicion to the remaining ones (world-scan helpers, recursion or re-entry on the engine side), without ever naming them as the cause.
 3. **Evidence of a regression needs a controlled comparison between revisions; a bisect inside one revision only localizes.** For a code path that never ran in the engine under any revision (the instrument compiled for the first time the same day), the attribution to the newest change stays unproven: the hang may be a regression, an old bug surfacing for the first time, or an artefact of the instrument, and the path never having run before does not clear the newest change either. A scenario bisect within one revision (one sub-path toggled: crossing the delete threshold against marking strikes only) yields a candidate sub-path where the hang triggers, never evidence of a regression: the base revision may carry the same defect. Evidence of a regression comes only from the same scenario with one variable changed (the revision, or only the newest change reverted). The merge stays on hold until that comparison closes.
 
-Origin: a seed-and-prune strike scenario that hung the server between init and the first prune snapshot. The text was corrected in review: the log observation scoped to its run, the interval between markers made a candidate until the source and the run's logs confirm it, and localization within one revision separated from attribution to a revision.
+The case behind this section: a seed-and-prune strike scenario that hung the server between init and the first prune snapshot.
 
 `/dayz-logwatch` reads both logs with triage; the `systematic-debugging` skill has the general method.
 
-## A negative of one sample is not a negative (LL-398, added 2026-09-01)
+## A negative of one sample is not a negative (added 2026-09-01)
 
 While closing a gate, a material override was written again on a worn garment and the garment did not change. The garment was at health level 4. It was written up as a scoped finding ("at health level 4, a new override never gets rendered"), with the mechanism declared as not established and with two captures taken minutes apart. It looked prudent. It was false.
 
@@ -57,12 +57,12 @@ Before writing a negative into a handoff from this kind of test:
 
 The bridge measures and tells subjects apart; a green is valid only if the command got a response and the protocol keeps the identity it means to isolate.
 
-1. **Every negative criterion needs liveness per command (LL-267).** Before resolving "X did not occur", require a response attributable to that command, for example `answered(tag)`, not an earlier response of the run. Without it the case is `INCONCLUSIVE`, never `PASS`. Publish the global response count and, if it is zero, abort early instead of printing a set of verdicts. A denial case passes only after showing that the subject could receive and execute the request.
-2. **Take a census of keys before closing the wire format (LL-315).** Search for each new top-level key in the serialized flat object and across all of its consumers. Obvious names such as `state`, `status`, `error` or `type` are usually taken; if they collide, nest the payload under an object named for the feature (the measured case ended as `{ok, dialog:{state,...}}`) instead of overloading the field. The gate reads the real shared contract; the producer's own test suite does not prove forward compatibility.
-3. **A handshake change is global, and authentication is not identity (LL-317, LL-319).** Before changing a version constant, or deploying the PBO or daemon that carries it, inspect the processes and sessions that load that mod right now. If someone else's game is present, do not publish: coordinate or revert; holding your lease does not prove that no one else consumes the protocol. Keep two fields with different contracts: the instance identity stays stable for the life of the process and is not hot-reloaded; the key only authenticates and can rotate. Knowing the instance grants no authority, and a shared profile token does not identify a process. Never reuse the secret as the identity.
-4. **A cache must preserve the discriminator (LL-320).** Before caching fencing, authorization, rate limits or session resolution, write down which property distinguishes the result and show that the cache key preserves it. Caching by instance let two processes share a process id: the intruder received 100 of 100 mutations and the binding never switched to AMBIGUOUS. Caching the table for 50 ms hid the second polling peer: 40 of 40 ticks without a single command. Measure hits and cost under the real pattern and under load: in the measured case the useful rate was 0.0 and the cost at rest did not represent the loaded regime. A cache that saves no measured work, or merges distinct actors, is removed.
+1. **Every negative criterion needs liveness per command.** Before resolving "X did not occur", require a response attributable to that command, for example `answered(tag)`, not an earlier response of the run. Without it the case is `INCONCLUSIVE`, never `PASS`. Publish the global response count and, if it is zero, abort early instead of printing a set of verdicts. A denial case passes only after showing that the subject could receive and execute the request.
+2. **Take a census of keys before closing the wire format.** Search for each new top-level key in the serialized flat object and across all of its consumers. Obvious names such as `state`, `status`, `error` or `type` are usually taken; if they collide, nest the payload under an object named for the feature (the measured case ended as `{ok, dialog:{state,...}}`) instead of overloading the field. The gate reads the real shared contract; the producer's own test suite does not prove forward compatibility.
+3. **A handshake change is global, and authentication is not identity.** Before changing a version constant, or deploying the PBO or daemon that carries it, inspect the processes and sessions that load that mod right now. If someone else's game is present, do not publish: coordinate or revert; holding your lease does not prove that no one else consumes the protocol. Keep two fields with different contracts: the instance identity stays stable for the life of the process and is not hot-reloaded; the key only authenticates and can rotate. Knowing the instance grants no authority, and a shared profile token does not identify a process. Never reuse the secret as the identity.
+4. **A cache must preserve the discriminator.** Before caching fencing, authorization, rate limits or session resolution, write down which property distinguishes the result and show that the cache key preserves it. Caching by instance let two processes share a process id: the intruder received 100 of 100 mutations and the binding never switched to AMBIGUOUS. Caching the table for 50 ms hid the second polling peer: 40 of 40 ticks without a single command. Measure hits and cost under the real pattern and under load: in the measured case the useful rate was 0.0 and the cost at rest did not represent the loaded regime. A cache that saves no measured work, or merges distinct actors, is removed.
 
-## Three layers that do not name each other (SP-350, added 2026-08-29)
+## Three layers that do not name each other (added 2026-08-29)
 
 Do not declare that a verb does not do something after reading only the Python side. The MCP server has three layers, and none names the others in its own text:
 
@@ -97,4 +97,4 @@ Two defects, measured in one aborted attempt to gate an external pull request by
 1. **A programmatic swap of Windows paths inside TOML edits TOML escapes, not path bytes.** In a basic (double-quoted) string every backslash is escaped (`\\`). Writing single backslashes turns `\U` into an invalid unicode escape, and the parser stops with `TOMLDecodeError: Invalid hex value` before anything is evaluated: the run died in preflight. A hash that matches the planned bytes does not prove the TOML parses. Load the result with `tomllib` in a fresh process and compare the decoded path with the intended one before handing it over: a single backslash before `t` or `n` parses fine, into a tab or a newline. Literal (single-quoted) strings take backslashes as they are.
 2. **Check the deployed PBO against the sealed baseline before planning the gate.** The executor validated the deployed PBO against a sealed baseline hash. When they differ, the gate needs the owner's baseline, PBO and source aligned first; no repointing or rebuild resolves it. The abort path: preflight rejects, restore the TOML and the PBO byte for byte, freeze the evidence, escalate.
 
-Origin: one gate run aborted in preflight; the clean abort preserved the owner's PBO.
+Measured in one gate run that aborted in preflight; the clean abort preserved the owner's PBO.

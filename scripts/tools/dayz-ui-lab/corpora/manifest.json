@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "note": "Identity and provenance only. No third-party layout, script, font, atlas or screenshot is redistributed by this pack; the operator supplies the originals and points local-roots.json at them.",
+  "note": "Identity only. No third-party layout, script, font, atlas or screenshot is kept in this repository; the operator supplies the originals and points local-roots.json at them.",
   "corpora": [
     {
       "corpus_id": "vpp-admin-tools",
       "name": "VPP Admin Tools",
       "role": "positive-external",
       "local_root_id": "ui_corpus_vpp",
-      "source_url": "https://github.com/VanillaPlusPlus/VPP-Admin-Tools",
+      "source_url": null,
       "pin": {
         "kind": "git-commit",
         "value": "dc22e420df3b54e821055f9764da1e48f4a31e71",
@@ -29,7 +29,7 @@
       "name": "DayZ Expansion Scripts",
       "role": "positive-external",
       "local_root_id": "ui_corpus_expansion",
-      "source_url": "https://github.com/salutesh/DayZ-Expansion-Scripts",
+      "source_url": null,
       "pin": {
         "kind": "git-commit",
         "value": "8d3a453b2b6786a0bef728dbdfdc9a1ef0383a9b",
@@ -51,7 +51,7 @@
       "name": "TraderPlus V1",
       "role": "positive-external-historical",
       "local_root_id": "ui_corpus_traderplus",
-      "source_url": "https://github.com/TheDmitri/TraderPlusV1",
+      "source_url": null,
       "pin": {
         "kind": "git-commit",
         "value": "d0cd39f105fba57104bf93798129626228a263e6",
@@ -130,7 +130,7 @@
         "name": "operator-owned",
         "spdx": null,
         "redistribution": "not-applicable",
-        "note": "First-party. Its Sorter V4 TEST layouts are the C5 negative fixture and are expected to parse; being a negative fixture is about diff findings, not syntax."
+        "note": "First-party. Its Sorter V4 TEST layouts are the negative fixture for the diff detectors and are expected to parse; being a negative fixture is about diff findings, not syntax."
       },
       "redistributed_in_pack": false
     }

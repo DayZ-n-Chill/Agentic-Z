@@ -112,7 +112,7 @@ were not measured again.
   name is a class, enum or typedef declared in the addon, the vanilla tree or
   an `--external-scripts` root. `bool Debug;` in a 4_World settings class
   made DayZDiag 1.29 refuse the module with `Variable name 'Debug' already
-  used as type name` (inbox fb-20260928-025254-35c1); a local `Widget map`
+  used as type name`; a local `Widget map`
   failed the same way (`skills/enforce-script-reference/`,
   `pitfalls-advanced.md`, SP-317). Only a member and a local are on record; a
   parameter, an enum and
@@ -137,7 +137,7 @@ were not measured again.
   declared type of `y` derives from the other. `Mission mission =
   GetGame().GetMission(); hud = IngameHud.Cast(mission);` made DayZDiag 1.29
   refuse the Mission module with `Types 'IngameHud' and 'Mission' are not
-  related` (inbox fb-20261009-122148-c852). Judged only when everything is
+  related`. Judged only when everything is
   known: `y` is a plain name declared once, with a plain type, as a local
   still open at the cast or a parameter of the same function, or else as a
   member of the enclosing class itself (an inherited member is not looked
@@ -154,7 +154,7 @@ were not measured again.
   lane deleted `ANIM_SWAP_ENABLED` and its sibling consts from its own class
   `LFSK_Constants` while seven call sites still read
   `LFSK_Constants.ANIM_SWAP_ENABLED`, and DayZ refused the World module on
-  the first boot (inbox fb-20261006-002741-28fa). Judged only for a class
+  the first boot. Judged only for a class
   the addon owns end to end: declared in the addon, not modded and not a
   template there, declared nowhere (modded or not) in the vanilla tree or an
   `--external-scripts` root, with every ancestor the same through
@@ -226,7 +226,7 @@ were not measured again.
   tree's class of a built-in type does not declare. `vector gU =
   gF.Cross(gR);`, with `gF` and `gR` vector locals, made a DayZ 1.30.164200
   server refuse the World module with `Undefined function 'vector.Cross'`
-  (inbox fb-20261103-150432-9f93): the 1.30.164014 Exp scripts declare
+: the 1.30.164014 Exp scripts declare
   `vector.Cross` (`1_Core/proto/EnConvert.c:239-246`), the 1.30.164200 ones
   do not, and the validator had passed the call against either tree. The
   built-in types are `bool`, `int`, `float`, `vector`, `string`, `typename`,
@@ -284,7 +284,7 @@ were not measured again.
 The rules that read the vanilla tree judge the addon against that tree, not
 against the game. A gate that read the 1.30.164014 Exp extract while the
 game was 1.30.164200 passed `vector.Cross`, which only the extract declares
-(inbox fb-20261103-150432-9f93). `--game-root`, or `DAYZ_GAME_ROOT`, names
+. `--game-root`, or `DAYZ_GAME_ROOT`, names
 the DayZ install folder (or its `dta\scripts.pbo` itself), and the vanilla
 tree is compared with that PBO, `.c` file by `.c` file, by content, with
 names compared without case:
@@ -345,7 +345,7 @@ log, or from a broken file the validator passed:
   variable is not seen: only the literal case is caught.
 - `ES-FORMULA-TOO-COMPLEX` (WARN): one statement that holds a string
   literal and joins 18 or more terms with binary `+`. On DayZDiag
-  1.30.164289 (inbox 7b9e/7ce1) a statement on one line alternating
+  1.30.164289 a statement on one line alternating
   string literals with an `int` and a float's `ToString()`
   (`string s = "a" + i0 + " b" + f0.ToString() + ...`) compiled with 14
   and 17 terms and failed with 18 and 20: `Formula too complex` on its
@@ -360,7 +360,7 @@ log, or from a broken file the validator passed:
 - `ES-UNBALANCED-BRACKETS` (FAIL): the first `(`, `[` or `{` never closed,
   or closed by another kind of bracket, and the first closer with nothing
   to close. `m_Objects.Clear();` sabotaged to `m_Objects.Clear(;` got PASS
-  (inbox fb-20261004-040148-403a). Brackets are counted on the text without
+. Brackets are counted on the text without
   comments and strings; this is no parser, so a file it passes can still
   fail to compile. Each branch of an `#ifdef`/`#ifndef`/`#if` block starts
   from the brackets open before it, so a header written once per branch
@@ -370,15 +370,14 @@ log, or from a broken file the validator passed:
   is not judged either: the stripper's warning is the finding there.
 - `ES-MODDED-ENGINE-CLASS` (FAIL): `modded class Transport`. DayZDiag
   1.29.163709 refused it with `Engine class 'Transport' cannot be modded.`
-  and `Can't compile "Game" script module!` (inbox
-  fb-20261005-233046-89d1). Transport is the only class listed: another
+  and `Can't compile "Game" script module!`. Transport is the only class listed: another
   engine class goes in only after a compile refuses it. Mod the script
   bases in 4_World instead, `CarScript` or `BoatScript`.
 - `ES-MULTILINE-CONDITION-OPERATOR` (FAIL): a line inside the parentheses
   of an `if (` or `while (` that ends in `&&` or `||`, once per header.
   DayZ 1.30.164014 server refused `if ((t >= A && t < B) ||` followed by
   `(t >= C && t < D))` with `Invalid statement ')'` and `Syntax error` at the
-  continuation (inbox fb-20261006-030019-e074). One measurement; FAIL since
+  continuation. One measurement; FAIL since
   the vanilla control found nothing for it on 1.29.0.163451 and on
   1.30.164078 stable. The operator leading the next line is
   the same parser rule (`skills/enforce-script-reference/SKILL.md`, SP-386) and is not

@@ -1,13 +1,12 @@
-# PlayOnObject with the client check: a community pattern checked against vanilla
+# PlayOnObject with the client check: a custom wreck checked against vanilla
 
-The usual way to attach a looping particle to a placed object, as posted in a community thread, compared with the vanilla wrecks it copies. The thread is from the DayZ Modders Discord, read through AnswerOverflow on 2026-05-17 (https://www.answeroverflow.com/m/1504612151212511303). The class in it, `Land_Wreck_C130J`, is the poster's own and is not on `P:\`.
+The usual way to attach a looping particle to a placed object, shown on a custom wreck and compared with the vanilla wrecks it follows. The class in the example, `Land_Wreck_C130J`, is a mod's own class and is not on `P:\`.
 
 ## Contents
 
 - [The pattern](#the-pattern)
 - [What vanilla does](#what-vanilla-does)
 - [Key points](#key-points)
-- [How much the thread adds](#how-much-the-thread-adds)
 
 ---
 
@@ -32,11 +31,11 @@ class Land_Wreck_C130J extends CrashBase
 }
 ```
 
-The thread's snippet tested `!g_Game.IsDedicatedServer()`. That was the vanilla check up to 1.29 (1.29, not yet checked on `P:\`). The code above uses the 1.30 check, which is what the vanilla wrecks on `P:\` use now. Keep the old form in mind only when reading 1.29 code.
+Older mod code tests `!g_Game.IsDedicatedServer()` here. That was the vanilla check up to 1.29 (1.29, not yet checked on `P:\`). The code above uses the 1.30 check, which is what the vanilla wrecks on `P:\` use now. Keep the old form in mind only when reading 1.29 code.
 
 ## What vanilla does
 
-The thread's pattern is the vanilla one. `ParticleManager.GetInstance().PlayOnObject` is called this way in 23 vanilla script files, among them:
+The pattern is the vanilla one. `ParticleManager.GetInstance().PlayOnObject` is called this way in 23 vanilla script files, among them:
 
 - The crashed Mi-8, with `Vector(2, 0, -5)` as the offset (`P:\scripts\4_world\entities\building\wrecks\wreck_mi8.c:8`).
 - The UH-1Y wreck, with `Vector(-0.5, 0, -1.0)` (`P:\scripts\4_world\entities\building\wrecks\wreck_uh1y.c:7`).
@@ -47,15 +46,12 @@ The 1.30 client check sits in front of each of them:
 - `IsHeadlessOrDedicatedServer` in the Mi-8 constructor (`P:\scripts\4_world\entities\building\wrecks\wreck_mi8.c:6`).
 - `IsHeadlessOrDedicatedServer` in the UH-1Y constructor (`P:\scripts\4_world\entities\building\wrecks\wreck_uh1y.c:5`).
 - `IsHeadlessOrDedicatedServer` in the `PlayParticle` helper of the fireplace (`P:\scripts\4_world\entities\itembase\fireplacebase.c:1112`).
-- `IsHeadlessOrDedicatedServer` in the boat's effect code (`P:\scripts\4_world\entities\vehicles\boatscript.c:382`). An older note cited `boatscript.c:38` for this; that line is not the check.
+- `IsHeadlessOrDedicatedServer` in the boat's effect code (`P:\scripts\4_world\entities\vehicles\boatscript.c:382`).
 
 ## Key points
 
 - Particles are client only. The server must never call `PlayOnObject`: it draws nothing there, and on a headless client it would still take objects from the particle pool. Do not use `IsClient()` for this check; it is not valid during load, while the dedicated server checks are (`skills/_shared/conventions/scripts.md`, "Client and server ownership").
-- Use the named constants of `ParticleList`, never a bare number. `SMOKING_HELI_WRECK` is registered at `P:\scripts\3_game\particles\particlelist.c:288`. The thread also named `ParticleList.FIRE_SMALL_CAMP`, which does not exist; the campfire constant is `CAMP_SMALL_FIRE` (`P:\scripts\3_game\particles\particlelist.c:29`).
+- Use the named constants of `ParticleList`, never a bare number. `SMOKING_HELI_WRECK` is registered at `P:\scripts\3_game\particles\particlelist.c:288`. There is no `ParticleList.FIRE_SMALL_CAMP`; the campfire constant is `CAMP_SMALL_FIRE` (`P:\scripts\3_game\particles\particlelist.c:29`).
 - The offset vector is in the parent object's local space.
 - Keep what `PlayOnObject` returns. `CrashBase` stops it in `EEDelete` with `m_ParticleEfx.Stop()`, behind the same client check (`P:\scripts\4_world\entities\building\crashbase.c:51`). A class that does not extend `CrashBase` needs its own member and its own stop.
-
-## How much the thread adds
-
-The Discord search found four particle threads, most of them repeating vanilla patterns. This one confirms what `script-api-reference.md` and `integration-patterns.md` already say; its value is a full, working example from outside vanilla.
+- `script-api-reference.md` has the signatures used here, and `integration-patterns.md` has the same lifecycle for a powered device.

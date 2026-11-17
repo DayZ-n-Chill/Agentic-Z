@@ -1,7 +1,7 @@
-# CANDIDATE-43 ES-NONEXISTENT-METHOD (curated table). Calling a method that is
+# ES-NONEXISTENT-METHOD (curated table). Calling a method that is
 # verified ABSENT from the entire vanilla script tree compile-fails with
 # `Undefined function`. Same class as ES-PROCESSDIRECTDAMAGE-DT-ALIAS
-# (CANDIDATE-12) and the SetObjectTextureGlobal case (CANDIDATE-31): named
+# and the SetObjectTextureGlobal case: named
 # symbol, empirically verified absent.
 # Suppression: a mod that DECLARES the method itself (method definition with a
 # body, recognized by find_method_regions) compiles fine -- the symbol is

@@ -54,7 +54,7 @@
   },
   "tree": {
     "dayz_build": "1.30.0.164289",
-    "dayz_build_note": "Build of the measured tree: DayZ 1.30.164289 stable (DayZDiag_x64.exe file version 1.30.164.289, product version 1.30.164289.70), tree digest fd826b4016910c5ca99046158d6e07aea79b4e52722b5ad20b36ffed8e527a1e. sources/source-map.json declares the build the pack is anchored on, which can be older. Identity of the control tree is the digest; set this deliberately when re-baselining after a patch.",
+    "dayz_build_note": "Build of the measured tree: DayZ 1.30.164289 stable (DayZDiag_x64.exe file version 1.30.164.289, product version 1.30.164289.70), tree digest fd826b4016910c5ca99046158d6e07aea79b4e52722b5ad20b36ffed8e527a1e. Identity of the control tree is the digest; set this deliberately when re-baselining after a patch.",
     "digest": "fd826b4016910c5ca99046158d6e07aea79b4e52722b5ad20b36ffed8e527a1e",
     "digest_scope": "sha256 over (posix relpath, sha256 of contents) of every file the validator discovers under the vanilla root, in walk order. Not comparable to the vanilla_index digest, which covers .c only.",
     "file_count": 3057,

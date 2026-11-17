@@ -10,7 +10,7 @@ measurement it reports - the volume sign and the agreement - so a test cannot pa
 sign turned.
 
 The gate and most tests need the py3d DayZ fork (IS_DAYZ_FORK), which lives at scripts/tools/py3d in this
-repo. Without it, or with only the upstream py3d installed, those tests skip; the three that never read an
+repo. Without it, or with only a py3d that lacks IS_DAYZ_FORK installed, those tests skip; the three that never read an
 MLOD through py3d still run.
 """
 import hashlib
@@ -32,7 +32,7 @@ PY3D_ARGS = ["--py3d", str(REPO_PY3D)] if (REPO_PY3D / "py3d" / "__init__.py").i
 
 def _load_fork():
     """The py3d DayZ fork, or None. The repo copy is loaded under a private module name, so it neither takes
-    nor is replaced by a py3d another test file imported in the same pytest run (the upstream package)."""
+    nor is replaced by a py3d another test file imported in the same pytest run (an installed package without IS_DAYZ_FORK)."""
     try:
         if PY3D_ARGS:
             spec = importlib.util.spec_from_file_location("_dayz_characters_py3d_fork",
@@ -258,7 +258,7 @@ def test_the_gate_prints_the_count_py3d_reads(tmp_path):
 
 
 def test_after_a_reversal_the_count_is_the_one_the_reversed_model_reads(tmp_path):
-    """Review r1 F2: c with every face's first corner pointing inward and its other corners outward. Reversing
+    """c with every face's first corner pointing inward and its other corners outward. Reversing
     the faces makes another corner first, so the reading after fix 1 is not the complement of the reading
     before; the gate reads the order the reversal leaves, and its count matches py3d on the reversed model."""
     m = _import_py3d()
@@ -283,7 +283,7 @@ def test_after_a_reversal_the_count_is_the_one_the_reversed_model_reads(tmp_path
 
 
 def test_a_right_part_among_outward_normals_is_not_negated_with_the_pool(tmp_path):
-    """Review r1 F1: b_normals_out with one quad's normals put back inward reads 4.2 % at the first corner. The
+    """b_normals_out with one quad's normals put back inward reads 4.2 % at the first corner. The
     pool fix would turn that quad outward; the gate lists the shells instead, and the pool fix applied anyway
     still fails."""
     m = _import_py3d()
@@ -306,7 +306,7 @@ def test_a_right_part_among_outward_normals_is_not_negated_with_the_pool(tmp_pat
 
 
 def test_normals_wrong_only_at_corners_py3d_does_not_read(tmp_path):
-    """Review r1, negative question: every face's second and third corners outward, first corners inward. py3d
+    """Every face's second and third corners outward, first corners inward. py3d
     reads 100 %; the gate reads every corner."""
     m = _import_py3d()
     p3d = load(m, "mirror_b.p3d")
@@ -325,7 +325,7 @@ def test_normals_wrong_only_at_corners_py3d_does_not_read(tmp_path):
 
 
 def test_a_shell_without_first_corner_normals_is_still_read(tmp_path):
-    """Review r1 F3: the stem's first corners have a zero normal and its other corners point outward."""
+    """The stem's first corners have a zero normal and its other corners point outward."""
     m = _import_py3d()
     p3d = load(m, "mirror_b.p3d")
     lod = p3d.lods[0]
@@ -343,7 +343,7 @@ def test_a_shell_without_first_corner_normals_is_still_read(tmp_path):
 
 
 def test_a_shell_with_no_normal_at_all_is_not_measurable(tmp_path):
-    """Review r1 F3, the whole shell: every normal of the stem is zero, so none of its corners has a sign. The
+    """Every normal of the stem is zero, so none of its corners has a sign. The
     other shells agree; the stem cannot pass on their votes."""
     m = _import_py3d()
     p3d = load(m, "mirror_b.p3d")
@@ -366,7 +366,7 @@ def own_normal(lod, vertex, normal):
 
 
 def test_the_pool_fix_says_what_else_it_turns(tmp_path):
-    """Review r2 R2-1: one corner of b_normals_out put back inward by hand. Every shell stays below 10 %, so
+    """One corner of b_normals_out put back inward by hand. Every shell stays below 10 %, so
     the gate gives the pool fix, and says it also turns that corner; applied anyway, the corner ends against
     its face and the model passes: the 90 % per shell is a tolerance, which the healthy smooth-shaded
     LFInfectedBig build needs (219 corners against their face)."""
@@ -469,7 +469,7 @@ def dart_prism(m, start):
 
 
 def test_a_non_convex_quad_is_read_by_its_vector_area(tmp_path):
-    """Review r2 R2-2: in a dart quad the first three corners can point against the face. The prism is right
+    """In a dart quad the first three corners can point against the face. The prism is right
     in every rotation of its caps; with the reflex corner at index 1 of a cap, py3d's first-corner count
     reads that cap as disagreeing, and the gate does not."""
     m = _import_py3d()
@@ -494,7 +494,7 @@ def test_a_non_convex_quad_is_read_by_its_vector_area(tmp_path):
 
 
 def test_a_corner_normal_in_its_face_plane_has_no_sign(tmp_path):
-    """Review r2 R2-3: a corner normal lying in its face's plane, tipped by +-1e-8, is read the same both ways:
+    """A corner normal lying in its face's plane, tipped by +-1e-8, is read the same both ways:
     no clear sign, not a vote, so it neither fails the model nor gets flipped."""
     m = _import_py3d()
     for tip in (-1e-8, 0.0, 1e-8):
@@ -511,7 +511,7 @@ def test_a_corner_normal_in_its_face_plane_has_no_sign(tmp_path):
 
 
 def test_the_printed_py3d_count_covers_every_face(tmp_path):
-    """Review r2 R2-4: the py3d count the gate prints is py3d's over the whole LOD, proxies and incoherent
+    """The py3d count the gate prints is py3d's over the whole LOD, proxies and incoherent
     shells included, even though the gate's own reading leaves them out."""
     m = _import_py3d()
     p3d = load(m, "mirror_b.p3d")
@@ -555,7 +555,7 @@ def add_box(m, lod, lo, hi):
 
 
 def test_a_thin_closed_part_is_read_not_called_flat(tmp_path):
-    """Review r1 premise: a closed part of 1 x 0.05 x 30 mm, inside-out, was called flat at a 0.1 mm cut-off and
+    """A closed part of 1 x 0.05 x 30 mm, inside-out, was called flat at a 0.1 mm cut-off and
     passed. Twins welded at 5 decimals stay under 2e-5 m; this part is not flat, and it fails."""
     m = _import_py3d()
     p3d = load(m, "mirror_b.p3d")
@@ -567,7 +567,7 @@ def test_a_thin_closed_part_is_read_not_called_flat(tmp_path):
 
 
 def test_a_py3d_that_is_not_the_fork_is_an_environment_error(tmp_path):
-    """Review r1 F5: no IS_DAYZ_FORK, or an unreadable __version__, exits 2 instead of raising."""
+    """No IS_DAYZ_FORK, or an unreadable __version__, exits 2 instead of raising."""
     for body in ("", "IS_DAYZ_FORK = True\n__version__ = 'not-a-version'\n"):
         root = tmp_path / ("fake%d" % len(body))
         (root / "py3d").mkdir(parents=True)

@@ -1,12 +1,12 @@
 # DayZ 1.30 — Enforce Script contract
 
-Consultation reference for `enforce-script-reference`. The facts were re-opened in the knowledge pack author's extraction of the 1.30 scripts. Since 2026-11-09 the line numbers are those of stable 1.30.164289, which can be newer than the build on `P:\`; how to read which build a citation is from is in `skills/_shared/knowledge/dayz-1-30-build-history.md` ("Which line a citation gives"). `[EXACT]` copied from those files. `[DESIGN]` = migration advice.
+Consultation reference for `enforce-script-reference`. The line numbers are those of stable 1.30.164289, which can be newer than the build on `P:\`; how to read which build a citation is from is in `skills/_shared/knowledge/dayz-1-30-build-history.md` ("Which line a citation gives"). `[EXACT]` marks text copied from the cited file. `[DESIGN]` marks migration advice.
 
 Until 1.29: CE tick `OnCEUpdate()`, inventory hooked `ProcessInputData`, fill-bottle `ActionFillBottleBase`, 3rd-person `World.Is3rdPersonDisabled()`, storage `142`. Since 1.30: replacements below.
 
 ## 1. Central Economy tick: `OnCEUpdate` → `OnCEIterate`
 
-Until 1.29: `EntityAI.OnCEUpdate()` had no time args (`stable-1.29\scripts\scripts\3_Game\Entities\EntityAI.c:3860`). Since 1.30 it is empty `[Obsolete]`; the live tick is `OnCEIterate(float currentTime, float elapsedTime)`.
+Until 1.29: `EntityAI.OnCEUpdate()` had no time args (1.29 `entityai.c:3860`). Since 1.30 it is empty `[Obsolete]`; the live tick is `OnCEIterate(float currentTime, float elapsedTime)`.
 
 ```c
 // [EXACT] P:\scripts\3_game\entities\entityai.c:3904
@@ -30,7 +30,7 @@ Until 1.29: `EntityAI.OnCEUpdate()` had no time args (`stable-1.29\scripts\scrip
 
 ## 2. `GAME_STORAGE_VERSION = 144`
 
-Until 1.29: `static int GAME_STORAGE_VERSION = 142;` (`stable-1.29\scripts\scripts\3_Game\Global\Game.c:5`). Since 1.30:
+Until 1.29: `static int GAME_STORAGE_VERSION = 142;` (1.29 `game.c:5`). Since 1.30:
 
 ```c
 // [EXACT] P:\scripts\3_game\global\game.c:5
@@ -96,9 +96,9 @@ Mismatch → `InventoryInputUserData.SendServerInventoryCheck` (`:5052`), DIAG-g
 
 ### 3.2 Hooking inventory moves from a mod (measured on 1.30.164200)
 
-[EXACT][CLAIM-ENFORCE-130-INVENTORY-NOT-MODDABLE] The table above is the vanilla path, not a hook point: on DayZDiag 1.30.164200 `modded class DayZPlayerInventory` (scripts/4_World) does not compile. The server script log reads `Engine class 'DayZPlayerInventory' cannot be modded.` and `Can't compile "World" script module!`, and the server process died before the managed launcher saw it ready. `modded class Magazine` fails the same way (`Engine class 'Magazine' cannot be modded.`); `modded class Ammunition_Base` (`P:\scripts\4_world\entities\itembase\magazine\ammunitionpiles.c:2`) compiled in the same build. The validator rule `ES-MODDED-ENGINE-CLASS` lists the classes whose refusal is on record.
+[EXACT] The table above is the vanilla path, not a hook point: on DayZDiag 1.30.164200 `modded class DayZPlayerInventory` (scripts/4_World) does not compile. The server script log reads `Engine class 'DayZPlayerInventory' cannot be modded.` and `Can't compile "World" script module!`, and the server process died before the managed launcher saw it ready. `modded class Magazine` fails the same way (`Engine class 'Magazine' cannot be modded.`); `modded class Ammunition_Base` (`P:\scripts\4_world\entities\itembase\magazine\ammunitionpiles.c:2`) compiled in the same build. The validator rule `ES-MODDED-ENGINE-CLASS` lists the classes whose refusal is on record.
 
-[EXACT][CLAIM-ENFORCE-130-ITEM-LOCATION-AUDIT] Measured in game on the same build (StorageLogger test runs, 2026-10-24, one server and one client on one machine): a `modded class ItemBase` overriding `EEItemLocationChanged(notnull InventoryLocation oldLoc, notnull InventoryLocation newLoc)` (`P:\scripts\3_game\entities\entityai.c:976`, ItemBase override `P:\scripts\4_world\entities\itembase.c:987`) printed one line per tested transfer, for each of these, driven by the client's own inventory calls (`PredictiveTakeEntityToHands`, `PredictiveTakeEntityToTargetCargo`, `PredictiveTakeEntityToTargetAttachment`) or by an action:
+[EXACT] Measured in game on the same build with a logging test mod (2026-10-24, one server and one client on one machine): a `modded class ItemBase` overriding `EEItemLocationChanged(notnull InventoryLocation oldLoc, notnull InventoryLocation newLoc)` (`P:\scripts\3_game\entities\entityai.c:976`, ItemBase override `P:\scripts\4_world\entities\itembase.c:987`) printed one line per tested transfer, for each of these, driven by the client's own inventory calls (`PredictiveTakeEntityToHands`, `PredictiveTakeEntityToTargetCargo`, `PredictiveTakeEntityToTargetAttachment`) or by an action:
 
 | Move | oldLoc → newLoc |
 |---|---|
@@ -112,7 +112,7 @@ Mismatch → `InventoryInputUserData.SendServerInventoryCheck` (`:5052`), DIAG-g
 - Items the server created in a container (`CreateInInventory`, `CreateAttachmentEx`) printed no line. For an item that is not itself a container, the logger prints nothing when `oldLoc` has no parent, the expected shape of a creation; a container picked up from the ground also has a parentless `oldLoc` and is printed as a pick-up. `oldLoc` itself was not printed.
 - The player of a world-to-world move is not in either location. `g_Game.HasInventoryJuncture(Man player, EntityAI item)` (`P:\scripts\3_game\global\game.c:758`), called from inside `EEItemLocationChanged`, returned true for the player who made the crate-to-crate move (1 move measured). A move made without a juncture (server scripts) and two players near the crate were not measured.
 
-[EXACT][CLAIM-ENFORCE-130-STACK-NOT-A-MOVE] Stacking moves quantity, not an item, and a split creates a new item, so neither is a move from one parent to another (read in the source; in the two combines below the logger printed no move line):
+[EXACT] Stacking moves quantity, not an item, and a split creates a new item, so neither is a move from one parent to another (read in the source; in the two combines below the logger printed no move line):
 - The quantity of a combine moves in `ItemBase.CombineItems` (`P:\scripts\4_world\entities\itembase.c:2247-2270`). `Magazine.CombineItems` (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:317`) overrides it without calling super, so ammo piles take another path.
 - A split creates the new stack at its destination (read in the source, not measured for every path). The `ItemBase` split functions (`P:\scripts\4_world\entities\itembase.c:1584-1953`) mark the new item with `SetResultOfSplit(true)` (ten calls, `:1604` to `:1937`; definition `:2209`), except `SplitItem` (`:1953`): it creates the copy through `PlayerBase.CreateCopyOfItemInInventoryOrGroundEx` (`P:\scripts\4_world\entities\manbase\playerbase.c:6888-6899`), which marks it only when the copy lands on the ground, not when the player's cargo takes it (`CreateCopyOfItemInInventory`, `:6856`). `Magazine`'s own `SplitItemToInventoryLocation` and `SplitItem` (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:231`, `:256`) do not call `SetResultOfSplit`. The server's item-manipulation handler calls them from `PlayerBase` (`P:\scripts\4_world\entities\manbase\playerbase.c:6640-6725`).
 - Measured with a `modded class ItemBase` that wraps `CombineItems`, a `modded class Ammunition_Base` that wraps `CombineItems` (`Magazine` itself cannot be modded) and both reading the receiver's quantity before and after super: 10 rounds of `Ammo_762x39` stacked from the hands onto a pile in a crate, and 5 `WoodenPlank` stacked from the hands onto the plank in the `RB_LvL1_Plank` slot of a `Land_House_1M1`, each gave one line with the moved quantity. The server read the hands after each (`weapon_state`): the remaining rounds after the first, empty after the second.
@@ -123,7 +123,7 @@ Mismatch → `InventoryInputUserData.SendServerInventoryCheck` (`:5052`), DIAG-g
 
 ## 4. `[Obsolete]` takes → Target* variants
 
-Until 1.29: `TakeEntityToCargo` / `ToCargoEx` / `AsAttachment` / `AsAttachmentEx`. Since 1.30 they are `[Obsolete]` wrappers (digest E said `:1388-1430`; real block is `:1345-1386`).
+Until 1.29: `TakeEntityToCargo` / `ToCargoEx` / `AsAttachment` / `AsAttachmentEx`. Since 1.30 they are `[Obsolete]` wrappers (the block is `:1345-1386`).
 
 ```c
 // [EXACT] P:\scripts\3_game\systems\inventory\inventory.c:1345
@@ -133,13 +133,13 @@ Until 1.29: `TakeEntityToCargo` / `ToCargoEx` / `AsAttachment` / `AsAttachmentEx
 
 Same file: `TakeEntityToCargoEx` `[Obsolete]` `:1357`; `TakeEntityAsAttachmentEx` `[Obsolete]` `:1374` (attribute line is extra-indented in vanilla); `TakeEntityAsAttachment` `[Obsolete]` `:1382`.
 
-Replacements: `TakeEntityToTargetCargo(mode, target, item)` `:1077`; `TakeEntityToTargetCargoEx(mode, cargo, item, row, col)` `:1084`; `TakeEntityAsTargetAttachmentEx(mode, target, item, slot)` `:1100`; `TakeEntityAsTargetAttachment(mode, target, item)` `:1142`. SP-184 identity-gate (`FindAttachment(slot) == item`) still applies.
+Replacements: `TakeEntityToTargetCargo(mode, target, item)` `:1077`; `TakeEntityToTargetCargoEx(mode, cargo, item, row, col)` `:1084`; `TakeEntityAsTargetAttachmentEx(mode, target, item, slot)` `:1100`; `TakeEntityAsTargetAttachment(mode, target, item)` `:1142`. The identity test (`FindAttachment(slot) == item`, see "Scripted attach on a live player" in `api-patterns.md`) still applies.
 
 ---
 
 ## 5. Hand FSM guards
 
-Until 1.29: `HandGuardCanMove` / `CanSwap` / `CanForceSwap` auto-passed `e.m_IsJuncture || e.m_IsRemote` (`stable-1.29\scripts\scripts\3_Game\Systems\Inventory\Hand_Guards.c:299,325,351`). Since 1.30 only `e.m_IsRemote`; else `LocationCanMoveEntity` / `CanSwapEntitiesEx` / `CanForceSwapEntitiesEx`.
+Until 1.29: `HandGuardCanMove` / `CanSwap` / `CanForceSwap` auto-passed `e.m_IsJuncture || e.m_IsRemote` (1.29 `hand_guards.c:299`, `:325`, `:351`). Since 1.30 only `e.m_IsRemote`; else `LocationCanMoveEntity` / `CanSwapEntitiesEx` / `CanForceSwapEntitiesEx`.
 
 ```c
 // [EXACT] P:\scripts\3_game\systems\inventory\hand_guards.c:299
@@ -201,7 +201,7 @@ Category reach is a 1.5 m dome, vertical leeway `-range/5` (`P:\scripts\5_missio
 
 ### 7.2 Line drift: `PerformAction` / `Can()` / `UA_AM_*`
 
-Until 1.29: SKILL.md cited `PerformAction` `:756` inside `#ifdef BOT` `:754-760`, `PerformActionStart` `:762`, `ActionBase.Can` `:912`. Since 1.30:
+Until 1.29: `PerformAction` was `:756` inside `#ifdef BOT` `:754-760`, `PerformActionStart` `:762`, `ActionBase.Can` `:912`. Since 1.30:
 
 ```c
 // [EXACT] P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:796
@@ -216,7 +216,7 @@ Until 1.29: SKILL.md cited `PerformAction` `:756` inside `#ifdef BOT` `:754-760`
 	void PerformActionStart(ActionBase action, ActionTarget target, ItemBase item, Param extra_data = NULL)
 ```
 
-SP `PerformActionStart` no-ops if pending/current (`:806-814`). `GetActionState()` returns `UA_AM_INIT` while pending (`:822-825`). `Can(PlayerBase, ActionTarget, ItemBase)` is at `P:\scripts\4_world\classes\useractionscomponent\actionbase.c:968`. Using public `Can` not protected `ActionCondition` is still the rule.
+In single player `PerformActionStart` does nothing while an action is pending or current (`:806-814`). `GetActionState()` returns `UA_AM_INIT` while pending (`:822-825`). `Can(PlayerBase, ActionTarget, ItemBase)` is at `P:\scripts\4_world\classes\useractionscomponent\actionbase.c:968`. Using public `Can` not protected `ActionCondition` is still the rule.
 
 ```c
 // [EXACT] P:\scripts\3_game\constants.c:508
@@ -273,7 +273,7 @@ class ActionFillBottleBase: ActionContinuousBase
 
 `P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctcursor.c:28-33` also uses `GetPlayerHeadPosition`. Stance height, not Head bone (`P:\scripts\4_world\static\miscgameplayfunctions.c:776-786`).
 
-### 7.6 New inputs in `exp\bin\bin\constants.xml`
+### 7.6 New inputs in `P:\bin\constants.xml`
 
 ```xml
 // [EXACT] P:\bin\constants.xml:90
@@ -292,11 +292,11 @@ Until 1.29, `m_ResultReplacesIngredient` + `TransferItemProperties` could overwr
 						MiscGameplayFunctions.TransferItemProperties(ingr, res, true, true, false, false);
 ```
 
-`GetRecipeClassName(int recipe_id)` is `P:\scripts\4_world\plugins\pluginbase\pluginrecipesmanager.c:84` (digest E said `:54`, a line inside the constructor at `:52`).
+`GetRecipeClassName(int recipe_id)` is `P:\scripts\4_world\plugins\pluginbase\pluginrecipesmanager.c:84`.
 
 ### 7.8 `ActionTargetsCursor.Update(bool fullUpdate = true)`
 
-Until 1.29 the vanilla method is `Update()`. Since 1.30 it is `Update(bool fullUpdate = true)`. A 1.29 override does not compile on 1.30: `Overloaded function 'Update' not compatible` (DayZ-MCP PBO 12, `mcp_actioncursor.c(60)`, DayZDiag 1.30 Exp, 2026-10-09). Gate the override on the version define (see dayz-mod-workflow `dayz-1-30-mod-workflow.md`):
+Until 1.29 the vanilla method is `Update()`. Since 1.30 it is `Update(bool fullUpdate = true)`. A 1.29 override does not compile on 1.30: `Overloaded function 'Update' not compatible` (measured in game, DayZDiag 1.30 Exp). Gate the override on the version define (see `references/dayz-1-30-mod-workflow.md` in the `dayz-mod-workflow` skill):
 
 ```c
 #ifdef DAYZ_1_29
@@ -318,7 +318,7 @@ Until 1.29 the vanilla method is `Update()`. Since 1.30 it is `Update(bool fullU
 
 ### 8.1 Third person
 
-Digest O cited `P:\scripts\3_game\global\world.c:49-50` (`GetMoonIntensity` / `GetSunOrMoon`). Real API:
+The third-person API is on `World`:
 
 ```c
 // [EXACT] P:\scripts\3_game\global\world.c:177
@@ -344,7 +344,7 @@ enum ThirdPersonMode
 
 ### 8.2 Weather noise — not deleted
 
-Digest O claimed `GetNoiseReductionByWeather` was removed. Both methods exist. No-Ex is `[Obsolete]` → Ex; Ex is `[Obsolete]` "Kept for HUD and old mods" because AI damping is native AIParams. Vanilla still calls Ex (`P:\scripts\4_world\static\sensesaievaluate.c:23`, class `NoiseAIEvaluate`).
+`GetNoiseReductionByWeather` was not removed: both methods exist. No-Ex is `[Obsolete]` → Ex; Ex is `[Obsolete]` "Kept for HUD and old mods" because AI damping is native AIParams. Vanilla still calls Ex (`P:\scripts\4_world\static\sensesaievaluate.c:23`, class `NoiseAIEvaluate`).
 
 ```c
 // [EXACT] P:\scripts\3_game\weather.c:407
@@ -360,7 +360,6 @@ Digest O claimed `GetNoiseReductionByWeather` was removed. Both methods exist. N
 
 ### 8.3 `vector.Cross`, `array.Slice`, `EnumFlagsToString`
 
-Digest O cited `P:\scripts\1_core\proto\enconvert.c:29-36` (`int.MAX`/`MIN`) and `P:\scripts\1_core\proto\enscript.c:33-40` (`ClassName` docs). Real bodies:
 
 **1.30.164200 stable removed `vector.Cross`.** The method below is in 1.30.164014 Exp and 1.30.164078 (`P:\scripts\1_core\proto\enconvert.c:239-246`), and in no script file of 1.30.164200 (1.29 did not have it either). On 1.30.164200 a mod that calls `v.Cross(w)` has nothing to call: write the three lines of the body inline.
 

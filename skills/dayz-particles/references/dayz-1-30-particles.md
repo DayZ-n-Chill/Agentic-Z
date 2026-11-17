@@ -1,6 +1,6 @@
 # DayZ 1.30 particles: dust, vehicle effects, sandstorm
 
-What DayZ 1.30 changed for particles: the client check, effects spawned by the server, surface particle IDs, runtime overrides for vehicle effects, how effect areas tick and place particles, the sandstorm, oil pits and the new `ParticleList` constants. Line numbers are from the 1.30 scripts on `P:\`. Statements about 1.29 come from the notes this file was built from; `P:\` holds 1.30, so they are not yet checked on `P:\`.
+What DayZ 1.30 changed for particles: the client check, effects spawned by the server, surface particle IDs, runtime overrides for vehicle effects, how effect areas tick and place particles, the sandstorm, oil pits and the new `ParticleList` constants. Line numbers are from the 1.30 scripts on `P:\`. Statements about 1.29 are not yet checked on `P:\`, which holds 1.30.
 
 ## Contents
 
@@ -130,7 +130,7 @@ The comment above them says a config entry that is not set gives `ParticleList.N
 
 ## Runtime overrides: ParticleParamsOverrideData and vehicle effects
 
-New in 1.30 (the source notes say 1.29 scripts do not have it; not yet checked on `P:\`). `EffectParticle` declares three hooks:
+New in 1.30 (1.29 scripts do not have it; 1.29, not yet checked on `P:\`). `EffectParticle` declares three hooks:
 
 ```
 // P:\scripts\3_game\effects\effectparticle.c:611
@@ -217,7 +217,7 @@ The weather class `Sandstorm` names three sound sets and one particle path, `par
 
 Do not name either file on the `Material` line of a `.ptc`.
 
-The particle the weather config names is an ordinary `.ptc` with one emitter, `sand`: a `Box` shape with `MaxNum 200`, `BirthRate 20`, `LifeTime 5` and `Repeat 1`, using the material `sandstorm/dust_fluid_02.emat` (`P:\graphics\particles\sandstorm\sandstorm.ptc:4` to `:51`). The source notes could not read this file and marked its emitter count as unverified; the file is on `P:\` and the values above were read from it. It is not a `ParticleList` constant; the engine loads it from the weather config.
+The particle the weather config names is an ordinary `.ptc` with one emitter, `sand`: a `Box` shape with `MaxNum 200`, `BirthRate 20`, `LifeTime 5` and `Repeat 1`, using the material `sandstorm/dust_fluid_02.emat` (`P:\graphics\particles\sandstorm\sandstorm.ptc:4` to `:51`). It is not a `ParticleList` constant; the engine loads it from the weather config.
 
 ## Oil pits
 
@@ -236,7 +236,7 @@ Design note: a custom `CfgSurfaces` class that should raise kickup dust, wheel d
 
 ## New ParticleList constants
 
-All of these are in the catalog (`vanilla-particle-catalog.md`). This list says which ones 1.30 added, per the source notes; line numbers are in `P:\scripts\3_game\particles\particlelist.c`. `STEP_DESERT` and `STEP_SOIL` (`:374`, `:375`) were already in 1.29 according to the same notes.
+All of these are in the catalog (`vanilla-particle-catalog.md`). This list says which ones 1.30 added; line numbers are in `P:\scripts\3_game\particles\particlelist.c`. `STEP_DESERT` and `STEP_SOIL` (`:374`, `:375`) were already in 1.29. What 1.29 had is not yet checked on `P:\`.
 
 | Constant | `.ptc` | Line |
 |---|---|---|

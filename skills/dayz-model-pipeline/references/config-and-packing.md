@@ -1,6 +1,6 @@
 # config.cpp and addon structure
 
-The config side of a generated model: folder layout, `$PBOPREFIX$`, the `CfgVehicles` class, proxy attachment classes, a material file, and packing. The classes themselves are config work (`dayz-config-specialist`); this file says what the model needs from them. Lines that cite `P:\` were opened and confirmed; the examples with `my_addon` and `LFPG_` names are the source mod's own and not checked on `P:\`.
+The config side of a generated model: folder layout, `$PBOPREFIX$`, the `CfgVehicles` class, proxy attachment classes, a material file, and packing. The classes themselves are config work (`dayz-config-specialist`); this file says what the model needs from them. Lines that cite `P:\` were opened and confirmed; the examples with `my_addon` and `LFPG_` names (LF_PowerGrid) are mod examples, not checked on `P:\`.
 
 ## Addon folder structure
 
@@ -129,10 +129,10 @@ class CfgVehicles
 
 Checked against vanilla:
 
-- `component` names the door's component in the View Geometry LOD: the engine finds a door from the view geometry component index (`GetDoorIndex`, `P:\scripts\3_game\entities\building.c:27` to `:28`). The source wrote "Fire Geometry component name" here; `_shared/animation/animation-sources.md` has the full `class Doors` table.
+- `component` names the door's component in the View Geometry LOD: the engine finds a door from the view geometry component index (`GetDoorIndex`, `P:\scripts\3_game\entities\building.c:27` to `:28`). It is not a Fire Geometry component name. `_shared/animation/animation-sources.md` has the full `class Doors` table.
 - `componentNames[]` in a damage zone lists Fire Geometry selections, as written (`_shared/models/lods.md`, Fire Geometry).
 - Vanilla door sounds are plain sound names such as `soundOpen="doorWoodTwinOpen"` (`P:\DZ\structures\residential\config.cpp:7367`). The `DoorWoodThinOpen_SoundSet` names in the example are not vanilla; reuse a vanilla name until the mod has its own sounds.
-- `bounding` is a real config key, but vanilla gear sets it to `"BSphere"` (`P:\DZ\gear\camping\config.cpp:44`). A memory selection name as its value, and the wiki's "opened volume so raycasts follow the open door", are not shown by any vanilla file read here.
+- `bounding` is a real config key, but vanilla gear sets it to `"BSphere"` (`P:\DZ\gear\camping\config.cpp:44`). A memory selection name as its value, and an opened volume that makes raycasts follow the open door, are not shown by any vanilla file read here.
 
 Since 1.30 (official changelog) house based classes may set `disableSimulation = 1;` so the building does not tick. The script side is `DisableSimulation` and `GetIsSimulationDisabled` on `Entity` (`P:\scripts\3_game\entities\entity.c:3` to `:6`). The config key itself was not found in any vanilla 1.30 config (unverified). See `dayz-1-30-model-pipeline.md`.
 
@@ -205,12 +205,12 @@ class CfgNonAIVehicles
 ```
 
 **Key rules:**
-- `class ProxyAttachment;` forward declaration is MANDATORY — without it AddonBuilder fails
+- `class ProxyAttachment;` forward declaration is required: without it AddonBuilder fails
 - `inventorySlot[]` must match the slot names used in `attachments[]` of the parent CfgVehicles class
 - `model` path must point to the proxy .p3d file that exists in the addon
 - Class name must be `Proxy` followed by the basename of `model`, compared case-insensitively
   (`MySlot.p3d` -> `ProxyMySlot`). A class named otherwise draws nothing and logs nothing, also
-  for an inventory slot: measured in game on the LFQuad3 mod, whose three inventory slots drew
+  for an inventory slot: measured in game on a quad mod (third-party mod behaviour), whose three inventory slots drew
   nothing until its proxy classes were renamed (the `rip-vehicle-import` skill's invisible
   attachment cookbook, rule (d)). Check it in `config.cpp` before measuring any proxy frame
 - Class name (`ProxyMySlot`) must be unique across all loaded addons, so the proxy basename must be too
@@ -232,7 +232,7 @@ class CfgNonAIVehicles
 ```
 
 **On an item, a slot added to the vanilla `ProxyBattery_Car` drew nothing** (measured in game
-2026-10-04 on one LFPowerGrid item, slot and battery; a third-party measurement, not repeatable from `P:\`). On an
+2026-10-04 on one LF_PowerGrid item, slot and battery; third-party mod behaviour, not repeatable from `P:\`). On an
 `ItemBase`-derived flag whose slot `LFPG_FlagBattery` held a `CarBattery`, the slot was added with
 `inventorySlot[] +=` to `ProxyBattery_Car`, the class of the vanilla proxy
 `\dz\vehicles\parts\battery_car.001`. That class derives from `ProxyPart`, a vehicle part class
@@ -248,13 +248,13 @@ mechanism of the vanilla flag's `ProxyDZ_Flag: ProxyAttachment` (`P:\DZ\gear\cam
 both proxies 0.35 m apart, the battery appeared at the item's own. For an item, write a
 `ProxyAttachment` class of your own, as above, rather than adding the slot to a vanilla vehicle
 part's. Not measured: whether a `ProxyAttachment` proxy orients the item as a vehicle part's
-`reversed = 1` does (claim: CLAIM-ITEM-PROXY-OWN-ATTACHMENT-CLASS).
+`reversed = 1` does.
 
 ## Texture & Material Configuration
 
 ### .rvmat (material) file format
 
-A Super shader material has seven stages in a fixed order. The source showed three stages with the specular map in `Stage3`; vanilla puts the macro map there and the specular map in `Stage5` (`P:\DZ\gear\camping\data\wooden_case.rvmat`, the layout below), so a three stage file in the source's order feeds the wrong map to the shader. The stage by stage reference is `_shared/textures/rvmat-stages.md`.
+A Super shader material has seven stages in a fixed order. Vanilla puts the macro map in `Stage3` and the specular map in `Stage5` (`P:\DZ\gear\camping\data\wooden_case.rvmat:35` and `:59`, the layout below), so a three stage file with the specular map in `Stage3` feeds the wrong map to the shader. The stage by stage reference is `_shared/textures/rvmat-stages.md`.
 
 ```cpp
 ambient[] = {1.0, 1.0, 1.0, 1.0};
@@ -370,7 +370,7 @@ in config.cpp to swap materials at runtime (e.g., LED on vs LED off).
 
 ## Packing into PBO
 
-### Before binarizing: measure each collision LOD (SP-458, added 2026-10-03)
+### Before binarizing: measure each collision LOD (added 2026-10-03)
 
 A collision LOD with many pieces can make `binarize` write no ODOL and print no capacity line, so
 a three-state bench reads `OTHER_FAIL` (`skills/_shared/vehicles/binarize-vertex-budget.md`,
@@ -390,7 +390,7 @@ In Agentic-Z run `/dayz-build-pbo <ModName>`: it drives DayZ Tools Addon Builder
 4. Check "Binarize" to binarize .p3d and .wrp files
 5. Build
 
-### Using Mikero's tools (community)
+### Using pboProject (third-party)
 
 Not used by Agentic-Z skills; listed because many mods are built this way.
 

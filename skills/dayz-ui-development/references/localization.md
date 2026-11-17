@@ -2,7 +2,7 @@
 
 How UI text is translated: the two stringtable formats, how layouts and script refer to a key, a naming convention, the measured rule that decides whether a `stringtable.csv` is registered at all, and the generator for preview panels that need no stringtable.
 
-**How facts are marked here.** A `P:\` path with a line was checked on `P:\` (DayZ 1.30). The CSV results were measured in game by the source author on 2026-08-21 (DayZ 1.29) and are not yet checked here.
+**How facts are marked here.** A `P:\` path with a line was checked on `P:\` (DayZ 1.30). The CSV results were measured in game on 2026-08-21 (DayZ 1.29) and are not yet repeated on 1.30.
 
 ---
 
@@ -33,12 +33,12 @@ Put `stringtable.xml` at the addon root, beside `config.cpp`:
 - `<Original>` is the fallback when the player's language has no entry.
 - Leave out languages you do not support. English plus one or two others is enough for a mod.
 
-## Naming convention (the LFPG example)
+## Naming convention
 
 ```
-STR_LFPG_[DEVICE]_[ELEMENT]
-STR_LFPG_BTC_BTN_BUY_BTC     (the Buy Bitcoin button on the Bitcoin device)
-STR_LFPG_PHONE_TITLE_MAIN    (the main title on the phone)
+STR_MYMOD_[DEVICE]_[ELEMENT]
+STR_MYMOD_BTC_BTN_BUY_BTC     (the Buy Bitcoin button on the Bitcoin device)
+STR_MYMOD_PHONE_TITLE_MAIN    (the main title on the phone)
 ```
 
 Keep one prefix for the whole mod. It makes keys easy to search for and keeps them apart from other mods' keys.

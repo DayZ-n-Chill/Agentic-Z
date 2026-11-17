@@ -5,12 +5,12 @@ import re
 ES_INPUTS_XML_NOT_REGISTERED_RULE_ID = "CONFIG-INPUTS-XML-NOT-REGISTERED"
 
 
-# kt_roadkill_armed bug-008/009. If an addon ships an inputs.xml (root
+# If an addon ships an inputs.xml (root
 # <modded_inputs>), its `class CfgMods/<mod>` MUST declare
 # `inputs = "<dir>\\inputs.xml";`. Without it the engine never loads the custom
 # inputs and every UAxxx action of the mod is dead at runtime (latent: compiles
-# and loads fine). Verified pattern: SimpleGroup/config.cpp:338,
-# LBGroups_GPS/config.cpp:51.
+# and loads fine). Verified in the config.cpp
+# of two shipped mods.
 _CFGMODS_RE = re.compile(r"^\s*class\s+CfgMods\b", re.MULTILINE)
 _INPUTS_PROP_RE = re.compile(r"\binputs\s*=")
 

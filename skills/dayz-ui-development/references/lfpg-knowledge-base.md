@@ -1,25 +1,22 @@
-# LFPG UI knowledge base: 83 facts from engine protos, Dabs source and production
+# UI fact ledger: engine protos, Dabs Framework, rich text markup and production corrections
 
-A fact ledger built while writing the UI of the LFPowerGrid mod (sorter window, phone, PC terminal): what the engine protos say, what the Dabs Framework source says, what the Arma Reforger wiki says about rich text, which early assumptions turned out wrong, and what is still untested. Dated 2026-03-23, with later retractions marked in place.
+A fact ledger for UI work on windows, phones and terminals: what the engine protos say, what the Dabs Framework source says, how rich text markup behaves, which early assumptions turned out wrong, and what is still untested. Later retractions are marked in place with their date.
 
-**Where these facts come from.**
+**How facts are marked here.**
 
-- The `enwidgets.c` rows were checked on `P:\` (DayZ 1.30) and carry the current lines. The source wrote some of them from an older build; those were corrected here (P14, P15, P17, P18, P21).
-- The Dabs rows name files inside Dabs Framework (third party). The lines spot checked against the Workshop copy of the mod (its `Scripts.pbo`, files under `3_Game\DabsFramework\MVC\`) still match: `ViewController.c:63`, `:84-117`, `:316-357`, `ScriptView.c:46-124`, `:238-266`, `:293-296` and `ViewBinding.c:206-231`. The rest are not yet checked.
-- The wiki rows are from the Arma Reforger wiki, which describes a newer engine. They are not checked on `P:\`.
-- "LFPG production" means behaviour seen in the LFPowerGrid mod, the source author's own project. It is measured there, not checked here.
+- The `enwidgets.c` rows were checked on `P:\` (DayZ 1.30) and carry the 1.30 lines.
+- The Dabs rows name files inside Dabs Framework (third-party mod behaviour, not vanilla). The lines spot checked against the Workshop copy of the mod (its `Scripts.pbo`, files under `3_Game\DabsFramework\MVC\`) match: `ViewController.c:63`, `:84-117`, `:316-357`, `ScriptView.c:46-124`, `:238-266`, `:293-296` and `ViewBinding.c:206-231`. The rest are not yet checked.
+- The rich text rows describe the documented markup of the newer Enfusion engine (Arma Reforger). They are not checked on `P:\`.
+- "Production" means behaviour seen in a shipped mod's UI. It is not yet checked on `P:\` or in game here.
 
 ---
 
-## Summary of changes against v1 (the first fact mining pass)
+## Corrections to earlier claims
 
-- 34 verified facts became **83 verified facts**
-- 13 assumptions became **2 pending** (both visual)
-- 40+ proposed tests became **2 runtime tests** (E7 color, E12 multi resolution)
-- 6 custom techniques to build became **0** (Dabs already has `WidgetAnimator` and `LinearColor`)
-- **V20 reverted**: `map<Widget, T>` does work (Dabs uses it in production)
-- **V7 clarified**: `NotifyPropertyChanged` does not corrupt refs; the bug was `FindAnyWidget`
-- **A1 discarded**: keeping override methods contiguous is not a requirement
+- **`map<Widget, T>` works.** Dabs uses it in production. An earlier claim that it crashes was wrong; the crash it was built on probably had another cause.
+- **`NotifyPropertyChanged` does not corrupt references.** The bug blamed on it was `FindAnyWidget` returning wrong references for widgets inside a `ButtonWidget`.
+- **Override methods do not have to be contiguous.** A production window that does not keep them together works.
+- **No custom tween or color code is needed with Dabs.** It already has `WidgetAnimator` and `LinearColor`.
 
 ---
 
@@ -39,7 +36,7 @@ A fact ledger built while writing the UI of the LFPowerGrid mod (sorter window, 
 | P8 | RichTextWidget supports: GetContentHeight, SetContentOffset, ElideText, GetNumLines, SetLinesVisibility, GetLineWidth | `P:\scripts\1_core\proto\enwidgets.c:224-234` |
 | P9 | MultilineEditBoxWidget has: GetLinesCount, GetCarriageLine, GetCarriagePos, SetLine, GetLine | `P:\scripts\1_core\proto\enwidgets.c:313-321` |
 | P10 | ImageWidget has alpha mask system: LoadMaskTexture, SetMaskProgress, SetMaskTransitionWidth | `P:\scripts\1_core\proto\enwidgets.c:282-310` |
-| P11 | SpacerWidget has SetContentAlignmentH/V with WA_LEFT/RIGHT/CENTER/TOP/BOTTOM | `P:\scripts\1_core\proto\enwidgets.c:465-471` |
+| P11 | SpacerWidget has SetContentAlignmentH/V with WA_LEFT/RIGHT/CENTER/TOP/BOTTOM | `P:\scripts\1_core\proto\enwidgets.c:465-471`; the `WidgetAlignment` enum at `P:\scripts\1_core\proto\enwidgets.c:88-94` |
 | P12 | TextWidget has SetBold, SetItalic, SetShadow, SetOutline, GetTextSize, SetTextExactSize | `P:\scripts\1_core\proto\enwidgets.c:189-217` |
 | P13 | CanvasWidget has DrawLine(x1,y1,x2,y2,width,color) and Clear() | `P:\scripts\1_core\proto\enwidgets.c:341-345` |
 | P14 | VideoWidget complete: Load, Play, Pause, Stop, SetTime, GetTime, GetTotalTime, SetCallback | `P:\scripts\1_core\proto\enwidgets.c:543-632` |
@@ -88,21 +85,22 @@ A fact ledger built while writing the UI of the LFPowerGrid mod (sorter window, 
 | D27 | GetFocus() == EditBox works to know which widget has focus | OptionSelectorSliderView.c:41 |
 | D28 | ScrollWidget+WrapSpacer+ObservableCollection works in production | options_tab.layout |
 
-### From the Bohemia wiki (5 facts)
+### Rich text markup (5 facts, not checked on `P:\`)
 
-| # | Fact | Source |
-|---|---|---|
-| W1 | RichTextWidget tags: `<b>`, `<i>`, `<color rgba/hex/name>`, `<image set name scale>`, `<outline>`, `<shadow>`, `<font>` | Arma Reforger wiki |
-| W2 | Tags cannot overlap — parser needs clean hierarchy | Arma Reforger wiki |
-| W3 | Wrap + re-layout is expensive with long texts | Arma Reforger wiki |
-| W4 | Bold/italic require SDF fonts | Arma Reforger wiki |
-| W5 | `<image set="..." name="..." scale="1" />` — default scale 1.0 = line height | Arma Reforger wiki |
+Documented for the newer Enfusion engine (Arma Reforger); confirm each in game before relying on it in DayZ.
 
-### From LFPG production (34 facts, V1 to V34 from the first pass, unchanged)
+| # | Fact |
+|---|---|
+| W1 | RichTextWidget tags: `<b>`, `<i>`, `<color rgba/hex/name>`, `<image set name scale>`, `<outline>`, `<shadow>`, `<font>` |
+| W2 | Tags cannot overlap — parser needs clean hierarchy |
+| W3 | Wrap + re-layout is expensive with long texts |
+| W4 | Bold/italic require SDF fonts |
+| W5 | `<image set="..." name="..." scale="1" />` — default scale 1.0 = line height |
 
-All V1-V34 are retained except:
-- **V7 clarified**: the corruption came from `FindAnyWidget` on widgets inside a `ButtonWidget`, not from `NotifyPropertyChanged`
-- **V20 reverted**: `map<Widget, T>` does work. Dabs uses it. The original crash was probably something else
+### From production (not checked here)
+
+- `FindAnyWidget` returned wrong references for widgets inside a `ButtonWidget`. The corruption first blamed on `NotifyPropertyChanged` came from this (rule 8 in `rules-and-checklist.md`).
+- `map<Widget, T>` works. Dabs uses it. The crash once blamed on it was probably something else.
 
 ---
 
@@ -110,7 +108,7 @@ All V1-V34 are retained except:
 
 | # | Original claim | Final verdict | Evidence |
 |---|---|---|---|
-| A1 | Contiguous override methods mandatory | **False**: the sorter does not comply and works | Production |
+| A1 | Contiguous override methods mandatory | **False**: a production window does not comply and works | Production |
 | A2 | SetHandler(this) mandatory | **True in vanilla, not needed with Dabs** | ViewController.c:63 |
 | A3 | GetScreenSize returns 0 in constructor | **False**: Dabs TooltipView uses it right after the constructor | TooltipView.c:51 |
 | A4 | Widget.Unlink() destroys widget | **Confirmed**: the engine comment and the ScriptView destructor | `P:\scripts\1_core\proto\enwidgets.c:173` |
@@ -136,13 +134,13 @@ Dabs has complete animation: position, size, rotation, color, alpha, text size.
 ### 3. ScriptViewMenu as an alternative for input management
 It handles ChangeGameFocus, the cursor and the menu hierarchy on open. Trade off: it uses the UIManager menu stack. It does not close on ESC and does not release game focus on close (`dabs-framework.md`).
 
-### 4. map<Widget, T> works (V20 reverted)
+### 4. map<Widget, T> works
 Dabs `ViewBindingHashMap = map<Widget, ViewBinding>` used throughout the MVC architecture.
-Hundreds of mods use it. Opens the door to the Widget Factory with map<string, ImageWidget>.
+Hundreds of mods use it. Opens the door to a widget factory with map<string, ImageWidget>.
 
-### 5. NotifyPropertyChanged is safe (V7 clarified)
+### 5. NotifyPropertyChanged is safe
 Only touches bindings for the specific name. Does not scan or overwrite other fields.
-The sorter bug was FindAnyWidget returning incorrect refs inside ButtonWidget.
+The bug once blamed on it was FindAnyWidget returning incorrect refs inside ButtonWidget.
 
 ### 6. Widget.SetLV(0), retracted 2026-08-22: do not call it from a mod
 > **Retraction.** The measurement below is correct; the recipe deduced from it is not.
@@ -152,8 +150,8 @@ The sorter bug was FindAnyWidget returning incorrect refs inside ButtonWidget.
 > in `OnInitialize()` (`P:\scripts\3_game\dayzgame.c:2109-2114`).
 > Calling them in a mod's init **overrides the user's preference** across the entire HUD, including
 > vanilla. And what the test measured was not an engine constant: it was the
-> `HUD_BRIGHTNESS` of that machine. The LFHeli HUD removed both calls and the UI gates
-> gave the same result.
+> `HUD_BRIGHTNESS` of that machine. A helicopter HUD that removed both calls passed the same UI
+> checks afterwards.
 
 Tested in-engine 2026-03-24. With the HUD brightness of that machine, pure
 saturated colors (red, green, blue) were barely affected, and grays and pastels
@@ -161,14 +159,14 @@ saturated colors (red, green, blue) were barely affected, and grays and pastels
 That remains true — and it is the player's setting doing its job.
 
 ### 7. ScrollWidget.VScrollToWidget(child) exists
-Auto-scroll to a specific child. Perfect for Phone SMS (scroll to latest).
+Auto-scroll to a specific child. Perfect for a phone SMS view (scroll to latest).
 
 ### 8. ImageWidget has alpha mask system
 LoadMaskTexture + SetMaskProgress + SetMaskTransitionWidth = "reveal"-type transitions
 with gradient. Free for UI animations without extra code.
 
 ### 9. MultilineEditBoxWidget has cursor position
-GetCarriageLine() + GetCarriagePos() — key for PC Terminal.
+GetCarriageLine() + GetCarriagePos() — key for a PC terminal.
 
 ### 10. Function-as-command simplifies Relay_Command
 `Relay_Command "OnSaveExecute"` + `bool OnSaveExecute(ButtonCommandArgs args)` in the
@@ -185,17 +183,4 @@ One is still pending (E7 was closed on 2026-03-24, then its conclusion retracted
 | **E7** | ~~Darkening factor + SetLV~~ | Closed, then retracted: `SetLV(0)` did brighten the colors on the test machine, because it overwrote that machine's HUD brightness setting (finding 6). Do not use it as a fix | ~~Theme system~~ |
 | **E12** | Multi-resolution | Open panel at 720p/1080p/1440p. Screenshots. | Multi-res |
 
-The mini mod `LF_ColorTest` (`color-test-harness.md`) was prepared for E7. E12 is done by opening the existing sorter.
-
----
-
-## Part 5: statistics
-
-| Metric | FactMining v1 | Knowledge Base v3 |
-|---|---|---|
-| Verified facts | 34 | **84** |
-| Pending assumptions | 13 | **1** (visual: multi-res) |
-| Proposed tests | 40+ | **1** (E12 multi-res) |
-| Custom techniques to build | 6 | **0** |
-| Dead references in skill | 11 | **0** |
-| Incorrect rules in skill | 3 (V7, V20, A1) | **0** at the time; A6 and E7 were retracted later |
+The color test mini mod in `color-test-harness.md` was prepared for E7. E12 is done by opening any existing panel at each resolution.

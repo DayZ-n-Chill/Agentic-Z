@@ -1,6 +1,6 @@
 # Timers, performance and EnProfiler
 
-The timing mechanisms, the `EnProfiler` API and the common optimizations. A line cited as `P:\...:N` was opened on `P:\`; the long-uptime reports and the measured results come from mods and tickets named beside them and were not re-run here. The pack's own files on this are `skills/_shared/enscript/references/api_scheduling.md` and `skills/_shared/enscript/patterns/scheduler.md`.
+The timing mechanisms, the `EnProfiler` API and the common optimizations. A line cited as `P:\...:N` was opened on `P:\`; the long-uptime behaviour and the measured results cannot be checked on `P:\`, are marked as such, and were not re-run here. The shared Enforce Script files on this are `skills/_shared/enscript/references/api_scheduling.md` and `skills/_shared/enscript/patterns/scheduler.md`.
 
 ## Timer Mechanisms in DayZ
 
@@ -26,14 +26,14 @@ GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).Remove(MyCallback);
 
 **CallQueue categories** (the constants and their own comments are at `P:\scripts\3_game\tools\tools.c:8-10`):
 - `CALL_CATEGORY_SYSTEM`: system-level, "runs always", so also during loading
-- `CALL_CATEGORY_GAMEPLAY`: standard gameplay. The vanilla comment is "runs unless ingame menu is opened"; `api_scheduling.md` in the pack traces it to "only while a mission runs and is not paused", which also covers the knowledge pack's wording "paused during loading"
+- `CALL_CATEGORY_GAMEPLAY`: standard gameplay. The vanilla comment is "runs unless ingame menu is opened"; in practice it ticks only while a mission runs and is not paused, so it is also paused during loading (traced in `skills/_shared/enscript/references/api_scheduling.md`)
 - `CALL_CATEGORY_GUI`: UI updates, "runs always (on client)"; it never ticks on a dedicated server
 
-**Rule 21b. `CallLater` re-queued from within its own callback never fired again on client diag 1.29** (chain pattern: `fn` re-enqueues itself) — zero RPT errors, chain dies silently after the first step; the same `CallLater` fired from OUTSIDE the queue works normally. Remedy: `Timer(CALL_CATEGORY_GAMEPLAY).Run(s, this, "fn", null, true)` + `Stop()` on completion. Measured 2026-08-19 (SUB_BRZ_NavSpike s71 CallLater dies after S1 vs s74 Timer S1–S5 complete, client diag 1.29). Not reproduced on the retail DayZServer 1.30.164289 (2026-11-10): two chains that re-queue themselves from their own callback with `CallLater(fn, 500, false, …)`, one on `CALL_CATEGORY_SYSTEM` and one on `CALL_CATEGORY_GAMEPLAY`, both ran all six steps; the first queued step fired 14.3 s after `OnMissionStart` in both categories, the rest about 0.5 s apart. [EXACT][CLAIM-ENF-CALLLATER-REQUEUE-130]
+**Rule 21b. `CallLater` re-queued from within its own callback never fired again on client diag 1.29** (chain pattern: `fn` re-enqueues itself) — zero RPT errors, chain dies silently after the first step; the same `CallLater` fired from OUTSIDE the queue works normally. Remedy: `Timer(CALL_CATEGORY_GAMEPLAY).Run(s, this, "fn", null, true)` + `Stop()` on completion. Measured on client diag 1.29 (2026-08-19): the `CallLater` chain died after its first step, and the same chain on a `Timer` completed all five steps. Not reproduced on the retail DayZServer 1.30.164289 (2026-11-10): two chains that re-queue themselves from their own callback with `CallLater(fn, 500, false, …)`, one on `CALL_CATEGORY_SYSTEM` and one on `CALL_CATEGORY_GAMEPLAY`, both ran all six steps; the first queued step fired 14.3 s after `OnMissionStart` in both categories, the rest about 0.5 s apart.
 
 #### THE CALLLATER BUG — 4.5 Hour Precision Loss
 
-**Reported engine bug** (BI tracker T156746, reported unfixed as of DayZ 1.28+). It cannot be checked on `P:\`, because `CallLater` is a `proto` with no script body (rule 21 in `hard-rules.md`; the pack treats it as unverified in `scheduler.md`):
+**Reported engine bug** (reported as still present in DayZ 1.28 and later). It cannot be checked on `P:\`, because `CallLater` is a `proto` with no script body (rule 21 in `hard-rules.md`; `skills/_shared/enscript/patterns/scheduler.md` treats it as unverified):
 
 After ~4.5 hours of server runtime, `CallLater` intervals become increasingly
 inaccurate. Root cause: internal time is stored as 32-bit float. After 16,200
@@ -84,9 +84,9 @@ class MyManager
 For a few timers this is fine. For 100+ devices each with their own Timer,
 use the centralized tick pattern instead.
 
-### Centralized tick pattern (the LFPowerGrid mod's standard)
+### Centralized tick pattern
 
-**The architecture that mod uses for all periodic device ticks** (rule 23 in `hard-rules.md`):
+**One manager runs every periodic device tick** (rule 23 in `hard-rules.md`):
 
 ```
 class MyNetworkManager
@@ -144,7 +144,7 @@ class MyNetworkManager
 **Why not per-device CallLater:**
 - Each `CallLater(repeat=true)` allocates internal queue entries
 - 100 devices × repeating callbacks = heap fragmentation
-- After hours: an "Illegal write" crash (reported from production in the LFPowerGrid mod, rule 22)
+- After hours: an "Illegal write" crash (seen on a production server, not reproduced here; rule 22 in `hard-rules.md`)
 - Single Timer + array iteration = zero fragmentation, reliable indefinitely
 
 **Exception**: `ScriptRPC` calls that create `new ScriptRPC()` are fine because

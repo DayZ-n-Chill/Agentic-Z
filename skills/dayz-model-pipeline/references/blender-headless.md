@@ -1,6 +1,6 @@
 # Blender headless reference
 
-The Blender Python API (bpy) calls this skill uses to build geometry without the Blender window: primitives, modifiers, UVs, an AO bake, LODs and the OBJ export that py3d assembles into a `.p3d`. This is tool knowledge about Blender, not vanilla game data, so it carries no `P:\` citations. The snippets target Blender 3.0 and later; the notes marked as measured name the Blender version they were measured in. Example output paths are relative (`out/...`); write real output under the mod's folder in `workspace/<ModName>/`.
+The Blender Python API (bpy) calls this skill uses to build geometry without the Blender window: primitives, modifiers, UVs, an AO bake, LODs and the OBJ export that py3d assembles into a `.p3d`. This is tool knowledge about Blender, not vanilla game data, so it carries no `P:\` citations. The snippets target Blender 3.2 and later; the notes marked as measured name the Blender version they were measured in. Example output paths are relative (`out/...`); write real output under the mod's folder in `workspace/<ModName>/`.
 
 ---
 
@@ -16,7 +16,7 @@ blender --background --python script.py -- arg1 arg2 arg3
 **Key Flags:**
 - `--background`: No GUI, non-blocking render
 - `--python script.py`: Execute script after startup
-- `--`: Pass remaining args to script (access via `sys.argv[4:]`)
+- `--`: Pass remaining args to script (read them with `sys.argv[sys.argv.index('--') + 1:]`)
 
 ### Initial Scene Cleanup
 
@@ -190,11 +190,13 @@ subsurf.type = 'CATMULL_CLARK'        # Smooth type
 
 ```python
 # Create two objects first
-bpy.ops.mesh.primitive_cube_add(size=2, location=(0, 0, 0), name='Base')
+bpy.ops.mesh.primitive_cube_add(size=2, location=(0, 0, 0))
 base = bpy.context.active_object
+base.name = 'Base'
 
-bpy.ops.mesh.primitive_cube_add(size=1, location=(0.75, 0, 0), name='Cutter')
+bpy.ops.mesh.primitive_cube_add(size=1, location=(0.75, 0, 0))
 cutter = bpy.context.active_object
+cutter.name = 'Cutter'
 
 # Select base, add boolean
 base.select_set(True)
@@ -218,7 +220,6 @@ obj = bpy.context.active_object
 
 decimator = obj.modifiers.new(name='Decimate', type='DECIMATE')
 decimator.ratio = 0.5                 # 50% of original faces (0.0 to 1.0)
-decimator.use_collapse_edge_weight = False
 
 # For aggressive LODs
 decimator.ratio = 0.25                # 25%
@@ -239,7 +240,7 @@ solidify.use_even_offset = True
 ### Apply Modifiers
 
 ```python
-# CRITICAL: Must apply modifiers before export
+# Apply modifiers before export
 
 # Set context to object
 with bpy.context.temp_override(object=obj):
@@ -249,7 +250,7 @@ with bpy.context.temp_override(object=obj):
     # Order: subsurf, bevel, boolean, decimate, solidify, etc.
 ```
 
-Or simpler (3.2+):
+`temp_override` needs Blender 3.2 or later. Without it:
 
 ```python
 def apply_modifiers(obj):
@@ -269,7 +270,7 @@ def apply_modifiers(obj):
 
 ### Smart UV Project (Auto Layout)
 
-**CRITICAL:** Must be in EDIT mode.
+Smart UV Project runs in Edit mode.
 
 ```python
 obj = bpy.context.active_object
@@ -436,6 +437,7 @@ def bake_ao(obj, output_path, resolution=1024):
     # Add image texture node
     img_node = mat.node_tree.nodes.new(type='ShaderNodeTexImage')
     img_node.image = img
+    mat.node_tree.nodes.active = img_node  # the bake writes to the active image node
 
     # Add BSDF for bake reference
     bsdf = mat.node_tree.nodes.new(type='ShaderNodeBsdfPrincipled')
@@ -462,8 +464,7 @@ def bake_ao(obj, output_path, resolution=1024):
     bpy.ops.object.bake(
         type='AO',
         margin=4,
-        use_clear=True,
-        cage_object=None
+        use_clear=True
     )
 
     # 8. Save image
@@ -484,7 +485,7 @@ bake_ao(cube, "out/ao_bake.png", resolution=2048)
 
 ### Core OBJ Export (Blender coordinates; py3d converts)
 
-**CRITICAL:** DayZ is Y-up and Blender Z-up, and the two also differ in handedness. Export the OBJ in
+DayZ is Y-up and Blender Z-up, and the two also differ in handedness. Export the OBJ in
 Blender's own coordinates and convert once, in py3d, with the Rule 12 map (`critical-rules.md` Rule 12). Measured
 2026-10-02 in Blender 5.1.1 (`wm.obj_export`, one vertex at `(1, 2, 3)`): `forward_axis='Y', up_axis='Z'`
 writes `(1, 2, 3)`; the default `'NEGATIVE_Z'`/`'Y'` writes `(1, 3, -2)`, the det=+1 rotation `(x, z, -y)`
@@ -593,7 +594,6 @@ def generate_lods(source_obj, output_dir, lod_ratios=(1.0, 0.5, 0.25, 0.12)):
         if ratio < 1.0:
             decim = lod_obj.modifiers.new(name='Decimate', type='DECIMATE')
             decim.ratio = ratio
-            decim.use_collapse_edge_weight = False
 
             # Apply decimator
             bpy.ops.object.modifier_apply(modifier='Decimate')
@@ -623,7 +623,7 @@ These are visual LODs: get the user's approval for the ratios before running the
 
 ## 9. Common Mistakes & Fixes
 
-- **SP-226 (Blender 5.2.0 LTS, origin 2026-08-13):** headless `.py` execution and invented bpy APIs.
+- **Headless `.py` execution and invented bpy APIs (measured in Blender 5.2.0 LTS, 2026-08-13).**
   - `blender --background --python X.py` still exits 0 when `X.py` raises an uncaught exception (an `AttributeError` mid-script still prints "Blender quit"). Do not treat `returncode` as PASS. Scan stdout+stderr for `Traceback (most recent call last)` and also require the expected output (e.g. a per-object summary) as positive proof the script reached the end.
   - `bmesh.ops.create_torus` does not exist — in 5.2 `bmesh.ops` offers only `create_circle`, `create_cone`, `create_cube`, `create_grid`, `create_icosphere`, `create_monkey`, `create_uvsphere` and `create_vert`. `bpy.ops.mesh.primitive_torus_add` is the operator; a parametric ring via `from_pydata` avoids both. Same class of failure as `BevelModifier.offset` (the field is `.width`): plausible-but-invented bpy APIs.
   - `Material.use_nodes` is marked for removal in Blender 6.0.
@@ -792,7 +792,8 @@ led_mat = bpy.data.materials.new(name='Material_LED')
 led_mat.use_nodes = True
 bsdf = led_mat.node_tree.nodes['Principled BSDF']
 bsdf.inputs['Base Color'].default_value = (1.0, 0.0, 0.0, 1.0)  # Red
-bsdf.inputs['Emission'].default_value = (1.0, 0.0, 0.0, 1.0)
+emission = bsdf.inputs.get('Emission Color') or bsdf.inputs.get('Emission')  # renamed in Blender 4.0
+emission.default_value = (1.0, 0.0, 0.0, 1.0)
 bsdf.inputs['Emission Strength'].default_value = 2.0
 
 led.data.materials.append(led_mat)
@@ -948,16 +949,14 @@ blender --background --python generate_electrical_box.py
 
 ## Reference: Blender 3.x+ API Versions
 
-This guide targets **Blender 3.0+** (Ubuntu apt packages, May 2024 LTS).
+This guide targets **Blender 3.2+**.
 
-**Deprecated (3.0+):**
+**Replaced:**
 - `bpy.ops.export_scene.obj()` → use `bpy.ops.wm.obj_export()`
-- `obj.modifiers.new()` with string type → use proper type name
-- `bpy.context.scene.render.engine = 'CYCLES'` → use `bpy.context.scene.render.engine`
+- The Principled BSDF input `Emission` → `Emission Color` from Blender 4.0
 
 **Current (3.2+):**
 - `bpy.context.temp_override()` for context-safe ops
-- Proper type hints in modifier creation
 - Image bake with `bpy.ops.object.bake()`
 
 ---

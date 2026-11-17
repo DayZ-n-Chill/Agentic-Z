@@ -14,7 +14,7 @@ Bone-frame convention (2026-10-02):
           the calibrated map offline; in game (2026-10-02) one LeftArm pose
           played as authored through it and wrong through the jd map.
   A root bone (no parent) is relative to the viewer world, which neither map
-  covers. In game (A6_SR2M, 2026-06-30) the jd map played a full-body action
+  covers. In game (a custom weapon, 2026-06-30) the jd map played a full-body action
   wrong (head and body needed Route A). In-game playback is the gate.
 --rest-pose takes a DayZATool-extracted vanilla SEAnim of the same slot and
 emits only the bones it contains (that mask fixed the flop in game). Its
@@ -40,7 +40,7 @@ UNIT_CM = 100.0  # rig meters -> SEAnim cm (verified vs aks74u_reference finger 
 
 # Viewer bone-local frame -> DayZATool .seanim bone-local frame. Each map is a change of
 # basis with det -1: rest offsets p -> M p, quaternion vector parts v -> -M v, w kept.
-#  jd:  CALIBRATED 2026-06-29 against a DayZATool-extracted reference (JD_SVD_Fire .txa via
+#  jd:  CALIBRATED 2026-06-29 against a DayZATool-extracted reference (one fire clip: its .txa via
 #       plugin vs .anm extract): EXACT to 0.00deg over 73 bone/frame pairs.
 #       rot (x,y,z,w) -> (-y,-z,x,w); pos (x,y,z) -> (y,z,-x).
 #  fbx: the FBX rig's bone frames are the JD frames turned 90deg about Z, q_fbx = (y,-x,z,w)_jd

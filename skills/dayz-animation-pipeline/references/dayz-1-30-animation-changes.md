@@ -14,7 +14,7 @@ Formats, examples and the field by field port from 1.29: `anim-graph.md`.
 ## Bones
 
 - **No limit of 250 bones** across all skeletons, and the engine takes a bone's global index from its name (changelog).
-- **`skeletons.anim.xml` mostly lost its `index` attributes**: only `EntityPosition` keeps one in 19 of its 20 skeleton blocks, while the first survivor block still has them (`player-skeleton.md`, "What 1.30 changed for skeletons"). The file's remaining job is each bone's `lod` and the bones the `.xob` lacks.
+- **`skeletons.anim.xml` mostly lost its `index` attributes**: only `EntityPosition` keeps one in 19 of its 20 skeleton blocks, while the first block, the one the infected bind, still has them (`player-skeleton.md`, "What 1.30 changed for skeletons"). The file's remaining job is each bone's `lod` and the bones the `.xob` lacks.
 - **The player ragdoll is a text file**, `P:\DZ\characters\bodies\human.ragdoll`: 11 bodies, 73.9 kg (table in `player-skeleton.md`).
 
 ## Script calls added in 1.30
@@ -33,7 +33,7 @@ Formats, examples and the field by field port from 1.29: `anim-graph.md`.
 | `IsFirstRenderFrame()` | `DayZPlayer`, `P:\scripts\3_game\dayzplayer.c:1189` | True on the first tick of a render frame, so work with no visible effect can be skipped on the other ticks. |
 | `HasDirectionalInOutAction()`, `GetSeatAnimationTypeDirectional(int posIdx, int directionIndex)` | `Transport`, `P:\scripts\3_game\vehicles\transport.c:677`, `:690` | Left and right boarding for single track vehicles (`dual-entry-action-pattern.md`). |
 
-The ragdoll calls are on `Human` only (`class Human : Man`, `P:\scripts\3_game\human.c:1359`). In a contributor's in-game test (2026-10-16, 1.30.164078) an infected graph did not get a ragdoll death: a `ragdoll` entry in its `enfanimsys` plus player death clips that carry the `Ragdoll` event still played the full clip and froze. Other setups, such as a custom `.ragdoll` for the infected skeleton, are not tested. The physics side is in the dayz-physics-engine skill.
+The ragdoll calls are on `Human` only (`class Human : Man`, `P:\scripts\3_game\human.c:1359`). In an in-game test (2026-10-16, 1.30.164078) an infected graph did not get a ragdoll death: a `ragdoll` entry in its `enfanimsys` plus player death clips that carry the `Ragdoll` event still played the full clip and froze. Other setups, such as a custom `.ragdoll` for the infected skeleton, are not tested. The physics side is in the dayz-physics-engine skill.
 
 New action command constants (`CMD_ACTIONFB_` and `CMD_ACTIONMOD_`): table in `anim-graph.md`.
 
@@ -45,7 +45,7 @@ New action command constants (`CMD_ACTIONFB_` and `CMD_ACTIONMOD_`): table in `a
 
 Per the changelog: the animation editor is the 2021 Enfusion editor, with live editing against a running game, a "Show In Explorer" action, native event table support and a ragdoll editor. The workspace file names its event table directly (`EventTable`, `P:\DZ\anims\workspaces\player\player_main\player_main.aw:15`).
 
-The source pack's migration list recommends the Workbench launch parameter `-resolveFilePatchingUsingEnfusion=1` when iterating on loose `.anm` and `.asi` files. That parameter is not checked here.
+The Workbench launch parameter `-resolveFilePatchingUsingEnfusion=1` is said to help when iterating on loose `.anm` and `.asi` files. It is not checked here.
 
 ## Vehicles
 
@@ -56,7 +56,7 @@ The source pack's migration list recommends the Workbench launch parameter `-res
 ## Migration checklist, 1.29 to 1.30
 
 - [ ] **Skeleton XML.** Do not rely on `index` values in a custom skeleton block; the engine indexes bones by name. Keep `lod`, and keep `EntityPosition` as vanilla writes it.
-- [ ] **Custom graphs.** Port to the new format: master `.agr`, sub-graphs as `.agf`, template and instance in the new syntax, every template group named. Whether 1.30 still loads a 1.29 format graph is not tested. Use the mapping in `anim-graph.md` ("Porting a 1.29 `$AnimGraph 7` graph to 1.30"); it does not cover every node type vanilla uses, and the contributor's port made with it has not been loaded in game.
+- [ ] **Custom graphs.** Port to the new format: master `.agr`, sub-graphs as `.agf`, template and instance in the new syntax, every template group named. Whether 1.30 still loads a 1.29 format graph is not tested. Use the mapping in `anim-graph.md` ("Porting a 1.29 `$AnimGraph 7` graph to 1.30"); it does not cover every node type vanilla uses, and the one port made with it has not been loaded in game.
 - [ ] **Buffer nodes.** Replace them with variables or state machine transitions.
 - [ ] **Grip and stance tricks that swapped items in the hands.** Move them to `SetAnimationInstanceByName` and `OnItemInHandsChanged`.
 - [ ] **Vehicles boarded from both sides.** Implement `HasDirectionalInOutAction()` and `GetSeatAnimationTypeDirectional()` instead of a scripted snap.

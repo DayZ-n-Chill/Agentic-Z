@@ -1,14 +1,14 @@
 # LF_PowerGrid recipes: object specifications to adapt
 
-Seven object specifications from the LF_PowerGrid mod (a third-party electrical power mod), with its design language, vertex budgets and naming habits. Use them as starting points for a new device. They describe that mod's own models, so nothing here is a vanilla fact and none of it was checked on `P:\`; where the source wrote something that cannot work in DayZ, the text says so and gives the DayZ form.
+Seven object specifications for devices of the LF_PowerGrid mod (a third-party electrical power mod), with its design language, vertex budgets and naming habits. Use them as starting points for a new device. They describe that mod's own models, so nothing here is a vanilla fact and none of it was checked on `P:\`; where an Arma habit does not work in DayZ, the text says so and gives the DayZ form.
 
 ## Overview
 
 **LF_PowerGrid (LFPG)** is a DayZ electrical power system mod adding generators, batteries, switches, cable networks, and control devices. Each object follows strict design and mechanical specifications to ensure mod compatibility and visual cohesion.
 
-This file documents **proven recipes**: geometric, animation, and material specifications extracted from production LFPG objects, tested in that mod and ready to adapt.
+This file documents **proven recipes**: geometric, animation, and material specifications of production LFPG objects, tested in that mod and ready to adapt.
 
-How to read the numbers: coordinates in the memory point lists are millimetres in the modelling frame the source used, with Z up. A DayZ model is in metres with Y up, so convert both the unit and the axes when building the `.p3d` (`critical-rules.md` Rule 12). Animation blocks are shorthand specifications, not `model.cfg` syntax; `animations.md` has the real syntax.
+How to read the numbers: coordinates in the memory point lists are millimetres in a modelling frame with Z up. A DayZ model is in metres with Y up, so convert both the unit and the axes when building the `.p3d` (`critical-rules.md` Rule 12). Animation blocks are shorthand specifications, not `model.cfg` syntax; `animations.md` has the real syntax.
 
 ---
 
@@ -99,7 +99,7 @@ Loop: False (one-shot, triggered by script)
 | 1 | led_red | Red | Fault detected, power interrupted |
 | 2 | led_off | Dark/Off | No power, standby |
 
-Script sets the state by swapping the texture or material of the LED's hidden selection: `SetObjectTexture(0, "\path\to\texture")` on the button object, where 0 is the index in `hiddenSelections[]` (`P:\scripts\3_game\entities\entityai.c:2881`; `SetObjectMaterial` at `:2884` swaps the `.rvmat`). The source wrote this call in Arma SQF form, `setObjectTexture [buttonObj, 0, ...]`, which DayZ does not have.
+Script sets the state by swapping the texture or material of the LED's hidden selection: `SetObjectTexture(0, "\path\to\texture")` on the button object, where 0 is the index in `hiddenSelections[]` (`P:\scripts\3_game\entities\entityai.c:2881`; `SetObjectMaterial` at `:2884` swaps the `.rvmat`). The Arma SQF form, `setObjectTexture [buttonObj, 0, ...]`, does not exist in DayZ.
 
 ### Texture Maps (12 Total: 4 Surfaces × 3 Maps Each)
 
@@ -131,11 +131,11 @@ class lfpg_push_button: Inventory_Base
 };
 ```
 
-Three corrections to the source's version of this block, which was written the Arma way:
+Three points where this block differs from the Arma way of writing it:
 
-- It had no parent class. `Inventory_Base` is the usual parent of a placeable item (`config-and-packing.md`); use the parent the device really needs.
-- It had `mass = 0.2;`. A DayZ item's inventory weight is `weight` in grams, and its physics mass is the point mass on the Geometry LOD (`_shared/physics/mass-and-weight.md`).
-- It had a `class EventHandlers` with SQF strings (`init = "this call LFPG_fnc_button_init";`, `hit = "this call LFPG_fnc_button_press";`). DayZ has no SQF: the init and press logic live in the object's Enforce Script class (for example its constructor and a user action), which is script work.
+- It has a parent class. `Inventory_Base` is the usual parent of a placeable item (`config-and-packing.md`); use the parent the device really needs.
+- It uses `weight`, not `mass = 0.2;`. A DayZ item's inventory weight is `weight` in grams, and its physics mass is the point mass on the Geometry LOD (`_shared/physics/mass-and-weight.md`).
+- It has no `class EventHandlers` with SQF strings (`init = "this call LFPG_fnc_button_init";`, `hit = "this call LFPG_fnc_button_press";`). DayZ has no SQF: the init and press logic live in the object's Enforce Script class (for example its constructor and a user action), which is script work.
 
 ---
 
@@ -249,7 +249,7 @@ All state shown via LED positions and panel graphics (rendered to texture at run
 |--------|---------------|-------|----------------|
 | 0–5 | led_strip segments | Green when active | Script toggles per logic |
 
-Via script: one method on the sorter sets the LED of one output, taking the output index and the color state, and swaps that segment's texture or material with `SetObjectTexture` or `SetObjectMaterial`. The source wrote it as an Arma SQF call (`[sorterObj, outputIndex, colorState] call LFPG_fnc_set_sorter_led`); in DayZ it is an Enforce Script method.
+Via script: one method on the sorter sets the LED of one output, taking the output index and the color state, and swaps that segment's texture or material with `SetObjectTexture` or `SetObjectMaterial`. An Arma SQF call (`[sorterObj, outputIndex, colorState] call LFPG_fnc_set_sorter_led`) does not exist in DayZ; write it as an Enforce Script method.
 
 ### Texture Maps (12 Total: 4 Surfaces × 3 Maps)
 
@@ -283,7 +283,7 @@ Via script: one method on the sorter sets the LED of one output, taking the outp
 ```
 Memory Points:
   - switch_axis_x: [0, 0, 0]      (pivot X, lower point)
-  - switch_axis_x: [0, 0, 0]      (pivot X, upper point; as written in the source. Two
+  - switch_axis_x: [0, 0, 0]      (pivot X, upper point, at the same position. Two
                                    identical points make a zero length axis, which cannot
                                    turn anything: spread them along X, the hinge line)
   - actionPos: [0, 0, 7]          (lever center, interact point)
@@ -492,7 +492,7 @@ Named Selections:
 
 Use this checklist for any new LFPG device:
 
-```markdown
+````markdown
 ## Recipe: [Device Name]
 
 **Status**: [Alpha/Beta/Production], [file size] p3d
@@ -529,7 +529,7 @@ class lfpg_[device_name]
 - [Mounting constraints]
 - [Electrical connection rules]
 - [Script integration points]
-```
+````
 
 ---
 
@@ -600,9 +600,9 @@ Examples:
 
 | Problem | Root Cause | Fix |
 |---------|-----------|-----|
-| Object clips through terrain | Collision box too large, not convex | Use 8–12 vertex box, then look at the Geometry LOD in Object Builder or probe it from script (`_shared/physics/collision-lods.md`). The source's `#show collisions` is not a DayZ command |
+| Object clips through terrain | Collision box too large, not convex | Use 8–12 vertex box, then look at the Geometry LOD in Object Builder or probe it from script (`_shared/physics/collision-lods.md`). `#show collisions` is not a DayZ command |
 | LEDs not visible at distance | Emissive map resolution too low, not on viewport | Use 1024×1024 for LED texture, embed in diffuse OR use separate surface |
-| Animation stutter/jumpy | Keyframe timing not frame-aligned (base 60Hz; the source mod's rule of thumb, not measured) | Use durations: 0.05s, 0.1s, 0.15s, 0.2s, 0.3s, 0.5s, 0.6s |
+| Animation stutter/jumpy | Keyframe timing not frame-aligned (base 60Hz; the mod's rule of thumb, not measured) | Use durations: 0.05s, 0.1s, 0.15s, 0.2s, 0.3s, 0.5s, 0.6s |
 | Cable doesn't connect visually | Port positions not symmetrical (A vs B) | Verify port_a=[0,0,0], port_b=[L,0,0] for cables; match socket depth |
 | Textures seam/repeat poorly | UV layout assumes 512×512, applied to 1024×1024 | Adjust UV scale: 1024 res = 1.0; 2048 res = 2.0 multiplier |
 | Memory points offset in-game | Coordinates in editor ≠ exported p3d origin | Re-export with model origin at [0,0,0]; verify in p3d inspector |
@@ -629,7 +629,7 @@ For each new LFPG object before production release:
 
 ---
 
-## References & Standards
+## Standards and tools
 
 - **DIN 43700**: Industrial rack/cabinet mounting (59mm pitch, 84.1mm centers)
 - **DIN 43305**: Cable gland threads (M16×1.5, M20×1.5 standard)
@@ -640,4 +640,4 @@ For each new LFPG object before production release:
 
 ---
 
-These recipes are version 1.0 of the mod's specification, last updated 2026-03-28, for LFPG v2.8 and later.
+These recipes apply to LFPG v2.8 and later.

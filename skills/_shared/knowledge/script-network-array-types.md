@@ -2,11 +2,9 @@
 
 Covers what was measured when `array<int>`, `array<string>` and nested arrays were sent over `ScriptRPC` and `ScriptInputUserData`. Earlier, smaller runs are in `script-network-arrays.md`; string payloads are in `script-network-limits.md`.
 
-Status: measured results from the author's `NetProbe` test mod. Not yet checked on `P:\`: these are runtime measurements on one executable, not source facts, and the probe source and logs are not in this repo. Both channels are vanilla classes: `ScriptRPC` at `P:\scripts\3_game\gameplay.c:104` and `ScriptInputUserData` at `P:\scripts\3_game\gameplay.c:120`. The source map of the input channel is `script-input-user-data.md`. The `[EXACT][CLAIM-...]` tags are claim IDs in `scripts/dev/knowledge-pack/sources/claims.json`.
+Status: measured in game on `DayZDiag_x64.exe` 1.30.164289.70 with a small test mod (the probe), on 2026-11-13. Not yet checked on `P:\`: these are runtime measurements on one executable, not source facts, and the probe and its logs are not in this repo. Both channels are vanilla classes: `ScriptRPC` at `P:\scripts\3_game\gameplay.c:104` and `ScriptInputUserData` at `P:\scripts\3_game\gameplay.c:120`. The source map of the input channel is `script-input-user-data.md`.
 
-Local runtime probe of `array<int>`, `array<string>` and nested arrays over `ScriptRPC` and `ScriptInputUserData`, on `DayZDiag_x64.exe` 1.30.164289.70 (client RPT `DayZDiag_x64_2026-11-13_14-06-36.RPT:2,7`; server RPT `DayZDiag_x64_2026-11-13_14-06-18.RPT:2,7`, both in the probe's own profile folders). The installed DayZ Server appmanifest buildid was `26220720`; the DayZ client appmanifest buildid was `26403755`. The probe ran a diag client and server on loopback on one machine. It measured what the receiver read and whether the client saw an ACK; it did not measure wire size, fragmentation, packet loss or Internet latency.
-
-The probe source is the author's `NetProbe` mod; the author's probe note `dayz-script-network-array-types-probe.md` (the "vault note" below) records the raw log line numbers. The final PBO was built with `AddonBuilder` (`Build Successful`) and has SHA-256 `6660d5be63325f8b51594bbeda234f06bc833e55b5601e324aecd9b41b6023fb`. Run: `33141e55-0737-4c29-8ced-05b4c20178d5`.
+The probe ran a diag client and a diag server on loopback on one machine. The installed DayZ Server appmanifest buildid was `26220720`; the DayZ client appmanifest buildid was `26403755`. The probe measured what the receiver read and whether the client saw an ACK; it did not measure wire size, fragmentation, packet loss or Internet latency.
 
 ## `array<int>` over `ScriptRPC`
 
@@ -18,8 +16,6 @@ The client wrote sequence, count and an `array<int>`; the server read them and r
 | 1024 | true | true | 1024 | 523776 |
 | 2048 | true | true | 2048 | 2096128 |
 | 4096 | true | true | 4096 | not logged |
-
-Evidence: vault note `:12-23`; client log `script_2026-11-13_14-06-36.log:344-351`; server log `script_2026-11-13_14-06-18.log:108-117`. [EXACT][CLAIM-NET-ARRAY-TYPES-RPC]
 
 ## `array<int>` over `ScriptInputUserData`
 
@@ -39,8 +35,6 @@ The client wrote message type, sequence, count and an `array<int>`; the server r
 | 255 | true | false | no message | — |
 | 256 | true | false | no message | — |
 
-Evidence: vault note `:25-43`; client log `script_2026-11-13_14-06-36.log:354-381`; server log `script_2026-11-13_14-06-18.log:120-132`. [EXACT][CLAIM-NET-ARRAY-TYPES-INPUT]
-
 ## `array<string>`
 
 `ScriptRPC` read arrays of 1, 16 and 64 strings of 16 ASCII `"S"` characters with `read_ok=true` and matching checksums (`-252021808`, `262618368`, `1050473472`). `ScriptInputUserData` read arrays of 1, 8 and 16 strings of 8 characters with matching checksums; 32 strings of 8 characters (256 bytes) failed `Write` although `CanStoreInputUserData()` was true. The 128-byte case passed and the 256-byte case failed; this pass did not isolate the exact byte boundary.
@@ -55,11 +49,9 @@ Evidence: vault note `:25-43`; client log `script_2026-11-13_14-06-36.log:354-38
 | `ScriptInputUserData` | 16 | 8 | read, checksum matched |
 | `ScriptInputUserData` | 32 | 8 | `Write=false`, no message |
 
-Evidence: vault note `:45-59`; client log `script_2026-11-13_14-06-36.log:382-400`; server log `script_2026-11-13_14-06-18.log:134-139`. [EXACT][CLAIM-NET-STRING-ARRAY-RPC] [EXACT][CLAIM-NET-STRING-ARRAY-INPUT]
-
 ## Nested arrays
 
-A manually built `array<array<int>>` logged `inner=4` for each row during construction, but reading the rows back threw a VM exception: `NULL pointer to instance. Variable '#return' during call 'array<int>.Count'` (`RunNested`). The client therefore recorded `inner=0`; the server received `outer=4`, `inner=0`, `checksum=0` and `read_ok=true`. Passing the array through an `out` parameter did not change the result. Changing the declaration to `array<ref array<int>>` preserved the four inner elements. [EXACT][CLAIM-NET-NESTED-DECL]
+A manually built `array<array<int>>` logged `inner=4` for each row during construction, but reading the rows back threw a VM exception: `NULL pointer to instance. Variable '#return' during call 'array<int>.Count'`. The client therefore recorded `inner=0`; the server received `outer=4`, `inner=0`, `checksum=0` and `read_ok=true`. Passing the array through an `out` parameter did not change the result. Changing the declaration to `array<ref array<int>>` preserved the four inner elements.
 
 With `array<ref array<int>>`, a 4×4 matrix built as `row * 4 + col` was read over both channels with `outer=4`, `inner=4` and checksum `120`. Practical rule: declare manually built nested payloads as `array<ref array<int>>` and check that each row exists before calling `inner.Count()` on receipt; do not assume `array<array<int>>` preserves the inner elements when read through `Get`.
 
@@ -70,16 +62,10 @@ With `array<ref array<int>>`, a 4×4 matrix built as `row * 4 + col` was read ov
 | `ScriptRPC` | `array<ref array<int>>` | 4 / 4 / 120 | 4 / 4 / 120 | true |
 | `ScriptInputUserData` | `array<ref array<int>>` | 4 / 4 / 120 | 4 / 4 / 120 | true |
 
-Evidence: vault note `:61-74`; failure client log `script_2026-11-13_14-00-14.log:403-431`; failure server log `script_2026-11-13_13-59-55.log:140-141`; success client log `script_2026-11-13_14-06-36.log:401-415`; success server log `script_2026-11-13_14-06-18.log:140-141`. [EXACT][CLAIM-NET-NESTED-ARRAY]
-
 ## ACK and checksum
 
 The server sent its ACK after reading sequence and count; the ACK carried sequence and count, not a content hash. The checksums above were logged server-side, not inside the ACK. The client's `read_ok=true` on the ACK proves only that the ACK fields were read; payload read success is the server log's `read_ok`, and checksum equality is the integrity check. An ACK does not prove that every value is correct.
 
-Evidence: vault note `:76-78`; client log `script_2026-11-13_14-06-36.log:344-415`; server log `script_2026-11-13_14-06-18.log:108-141`. [EXACT][CLAIM-NET-ARRAY-TYPES-ACK]
-
 ## Scope
 
 These are local loopback observations on `DayZDiag_x64.exe` 1.30.164289.70, not universal limits. They cover `array<int>` over `ScriptRPC` through 4096 elements (no upper bound observed), `array<int>` over `ScriptInputUserData` through 128 accepted and 140 rejected, `array<string>` at the sizes above, and a 4×4 `array<ref array<int>>`. They do not cover `array<float>`, `array<bool>`, maps, `ScriptRPC` arrays above 4096 integers, the exact input byte boundary, wire size, fragmentation, packet loss or Internet latency.
-
-[EXACT][CLAIM-NET-ARRAY-TYPES-SCOPE]

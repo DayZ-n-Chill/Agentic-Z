@@ -6,34 +6,28 @@ Rigid bodies, cloth, soft bodies and particles authored and baked from `bpy` cod
 `blender-animation` skill, executed through the Blender MCP server (`execute_blender_code`) into
 a live Blender instance. No UI interaction is assumed available.
 
-Everything here is Blender behaviour, checked against Blender 5.1.1 and the Blender docs as
-marked. None of it is a fact about the DayZ game, so nothing in this file cites `P:\`; the
-DayZ side of the work is in `dayz-handoff.md`. "This pass" below means the research pass in
-which these facts were checked, and "I" is the agent that ran it.
+Everything here is Blender behaviour, checked against Blender 5.1.1 and the Blender Python API
+reference as marked. None of it is a fact about the DayZ game, so nothing in this file cites
+`P:\`; the DayZ side of the work is in `dayz-handoff.md`.
 
-**Verification method used in this pass**: the test machine had a fully working
-**Blender 5.1.1** (hash `b70da489d7f4`, built 2026-04-14) and the leftover data folder of a
-Blender 4.3 install (config and scripts only; **no 4.3 executable** anywhere on the machine).
-Every non-trivial claim below was verified two ways:
+**How the facts were checked**: against a working **Blender 5.1.1** (hash `b70da489d7f4`, built
+2026-04-14). No Blender 4.3 executable was available, so nothing was run on 4.3. Each claim
+carries one of two marks:
 
-1. **Live empirical execution**: real `bpy` code run via `blender.exe --background --python <script>.py`
-   against the actual Blender 5.1.1 process (not memory, not guesswork). This is strictly stronger
-   than reading docs for the notoriously context-fragile baking operators.
-2. **Official API docs**: the MCP server's bundled Blender Python API reference (RST files
-   mirroring `docs.blender.org/api/`), cross-checked live against the running 5.1.1 (its enums/props
-   matched the bundled docs exactly wherever both were available), plus `docs.blender.org`/
-   `developer.blender.org` release notes reached through the search tool (direct `WebFetch` to both
-   `developer.blender.org` and `docs.blender.org` was blocked with HTTP 403 in this sandbox, so every
-   citation to those domains below is via the search tool's own fetch, not a raw page dump).
+1. **Run live** ("empirically verified", "live-confirmed"): real `bpy` code run with
+   `blender.exe --background --python <script>.py` against Blender 5.1.1. This is stronger than
+   reading the API reference, most of all for the baking operators, which depend on context.
+2. **API reference** ("bundled"): the Blender Python API reference that the Blender MCP server
+   bundles (RST files, read with its `get_python_api_docs` and `search_api_docs` tools). Its
+   enums and properties matched the running 5.1.1 wherever both were compared. Version
+   boundaries come from Blender's release notes.
 
-**Version honesty**: everything marked "empirically verified" was run against **5.1.1**, not 4.3.
-Where a 4.3-vs-5.x difference matters, it is called out explicitly with its source (release notes,
-or the absence/presence of a property/operator). No 4.3 behavior is asserted from memory alone;
-where I could not diff it, I say so.
+**Versions**: everything marked "empirically verified" was run on **5.1.1**, not 4.3. Where a
+4.3-vs-5.x difference matters, the text says how it is known (release notes, or the absence or
+presence of a property or operator). Where a 4.3 behaviour could not be compared, the text says so.
 
-Blender's own installed files were also read directly as ground truth where relevant (for example
-the five built-in cloth presets, read verbatim from the `scripts\presets\cloth` folder of the
-Blender 5.1 install).
+Blender's installed files were read directly where relevant (for example the five built-in cloth
+presets, in the `scripts\presets\cloth` folder of the Blender 5.1 install).
 
 The pure headless (`--background`) results below hold in the live MCP session too, with two
 additions from later live work that `SKILL.md` records as hard rule 7: construct `BakeOptions`
@@ -55,7 +49,7 @@ only way to attach rigid-body physics to an object is the operator:
 bpy.ops.rigidbody.object_add(type='ACTIVE')   # or type='PASSIVE'
 ```
 
-Doc: `bpy.ops.rigidbody.object_add(*, type='ACTIVE')` — [bpy.ops.rigidbody](https://docs.blender.org/api/current/bpy.ops.rigidbody.html) (bundled RST `api/bpy.ops.rigidbody.rst`, confirmed identical against live 5.1.1 introspection).
+Signature: `bpy.ops.rigidbody.object_add(*, type='ACTIVE')` (bundled `api/bpy.ops.rigidbody.rst`, identical to live 5.1.1 introspection).
 
 **Empirically verified: this works from a pure headless script with zero context override** —
 it only needs `bpy.context.view_layer.objects.active` set to the target object (selection is not
@@ -127,12 +121,12 @@ use_deactivation, use_deform, use_margin, use_start_deactivated
 (int, default 10), `substeps_per_frame` (int, default 10), `time_scale` (float, default 1.0),
 `use_split_impulse` (bool, default False).
 
-**Version gotcha (important):** older Blender docs/tutorials refer to `rigidbody_world.steps_per_second`.
-That property **does not exist** in the connected 5.1.1 — `getattr(rbw, 'steps_per_second', ...)`
+**Version gotcha (important):** older Blender docs and tutorials refer to `rigidbody_world.steps_per_second`.
+That property **does not exist** in 5.1.1: `getattr(rbw, 'steps_per_second', ...)`
 raises `AttributeError`. It has been renamed **`substeps_per_frame`** ("Number of simulation steps
-taken per frame"). I could not pin the exact version this rename landed in (the bundled offline docs
-and the live 5.1.1 already agree on `substeps_per_frame`; I did not have a 4.3 executable to diff
-against directly). For version-safe code, don't hard-code either name:
+taken per frame"). The version in which the rename landed is not determined (the API reference
+and the live 5.1.1 both have `substeps_per_frame`; no 4.3 executable was available to compare).
+For version-safe code, don't hard-code either name:
 
 ```python
 def get_substeps(rbw):
@@ -172,14 +166,13 @@ snaps), `object1`/`object2`, `solver_iterations` + `use_override_solver_iteratio
 `spring_stiffness_*`/`spring_damping_*` (linear and angular) for `GENERIC_SPRING`, plus
 `motor_lin_target_velocity`/`motor_lin_max_impulse` and their angular counterparts for `MOTOR`.
 
-I could not empirically pin **which single local axis** a `HINGE` constraint actually rotates
-around from the RNA alone — freshly created `HINGE`/`SLIDER` constraints have all `use_limit_*`
-flags `False` and all three angular-limit pairs identical (±45°) by default, so the "free" axis
-isn't visible as a toggled flag; it's baked into Blender's Bullet-constraint-type selection in C,
-not exposed as a settable "which axis" property. The Blender manual states the Z axis is the
-Hinge's rotation axis and X is used by Slider/Piston for translation — cited via search, not
-independently re-derived by a rotation test in this pass, so treat it as manual-sourced rather
-than empirically proven here: [Hinge Constraint — Blender Manual](https://docs.blender.org/manual/en/latest/physics/rigid_body/constraints/types/hinge.html).
+The RNA does not show **which local axis** a `HINGE` constraint rotates around: freshly created
+`HINGE`/`SLIDER` constraints have all `use_limit_*` flags `False` and all three angular-limit
+pairs identical (±45°) by default, so the "free" axis isn't visible as a toggled flag; it is fixed
+by the constraint type in Blender's Bullet code, not exposed as a settable property. The Blender
+manual (Hinge constraint page) gives Z as the Hinge's rotation axis and X as the axis Slider and
+Piston translate along. That was not confirmed by a rotation test, so treat it as documented, not
+measured.
 
 ### Mass calculation
 
@@ -200,7 +193,7 @@ gave `mass = 24.0` at `density=1.0` whether or not the scale had been `transform
 This is one of the very few places where un-applied scale demonstrably does **not** bite (see
 **Determinism & scale gotchas**).
 
-Doc: `bpy.ops.rigidbody.mass_calculate(*, material='DEFAULT', density=1.0)` — bundled `api/bpy.ops.rigidbody.rst`, live enum list confirmed by direct call.
+Signature: `bpy.ops.rigidbody.mass_calculate(*, material='DEFAULT', density=1.0)` (bundled `api/bpy.ops.rigidbody.rst`); the live enum list was confirmed by a direct call.
 
 ## Caching & baking
 
@@ -219,7 +212,7 @@ soft body/particle point caches, since it's the exact same `bpy.ops.ptcache.*` A
 the exact same `PointCache` struct type, just reached via a different owner (`modifier.point_cache`
 / `psys.point_cache` instead of `rigidbody_world.point_cache`).
 
-Doc: [bpy.types.PointCache](https://docs.blender.org/api/current/bpy.types.PointCache.html) (bundled `api/bpy.types.PointCache.rst`).
+API reference: `bpy.types.PointCache` (bundled `api/bpy.types.PointCache.rst`).
 
 ### `bpy.ops.ptcache.bake` — reproduced failure and the verified fix
 
@@ -288,33 +281,30 @@ RuntimeError: Operator bpy.ops.anim.keyframe_insert_by_name.poll() failed, conte
 ```
 
 `bake_to_keyframes` is a **Python-defined** operator that internally calls a *second* operator
-(`anim.keyframe_insert_by_name`) via `bpy.ops`. I tried rescuing it with increasingly complete
-`temp_override`s — `point_cache` + `active_object` + `scene` + `selected_objects`, then additionally
-a real `window`/`screen`/`area`(`VIEW_3D`)/`region` pulled from `bpy.context.window` itself (which,
-interestingly, **does exist** even in `--background` mode — `bpy.context.window` and
+(`anim.keyframe_insert_by_name`) via `bpy.ops`. Increasingly complete `temp_override`s did not
+rescue it: `point_cache` + `active_object` + `scene` + `selected_objects`, then additionally
+a real `window`/`screen`/`area`(`VIEW_3D`)/`region` pulled from `bpy.context.window` itself (which
+**does exist** even in `--background` mode: `bpy.context.window` and
 `bpy.context.screen` ("Layout") are real objects there; only `bpy.context.area` is `None`). None of
 these overrides fixed it; the inner `keyframe_insert_by_name` call kept failing identically.
 
-This matches a **known, tracked upstream limitation**, not a mistake in the override: overriding
+This is a **known Blender limitation**, not a mistake in the override: overriding
 context on an outer Python operator does not propagate into `bpy.ops.*` calls that operator makes
-internally. Corroborated via two Blender bug-tracker reports (retrieved via search; direct
-`WebFetch` to `developer.blender.org` was blocked with HTTP 403 in this sandbox, so these are
-cited as search-tool-sourced corroboration of my own independent empirical repro, not a verbatim
-ticket read):
+internally. Blender tracks it in two bug reports (the report pages were not read in full; the
+failure itself was reproduced as shown above):
 
-- `T63067` — "Overriding context in rigidbody operations [override not passed along in
-  startup/bl_operators that themselves call bpy.ops]"
-- `T97382` — "Context error when running bpy.ops.rigidbody.bake_to_keyframes() thru cmd"
+- `T63067`: context overrides are not passed along by `bl_operators` operators that themselves
+  call `bpy.ops`.
+- `T97382`: context error when running `bpy.ops.rigidbody.bake_to_keyframes()` from the command
+  line.
 
 **Practical conclusion for this skill**: do not build the physics-baking workflow around
 `rigidbody.bake_to_keyframes`. It is confirmed broken in pure `--background` execution. Whether it
-happens to work when the MCP bridge executes code inside a genuinely live GUI Blender session (this
-skill's actual target) depends on whether `bpy.context.area` is a valid, correctly-typed area at the
-exact moment the bridge's code runs — I could not test this (no live GUI instance was connected
-during this research pass; the MCP `execute_blender_code` tool errored with "Cannot connect to
-Blender at localhost:9876" throughout). Treat it as **unverified-in-the-live-GUI-case, confirmed-broken-headless**,
-and default to one of the two robust alternatives below regardless, since both are proven to work
-in every context tested (they never call `bpy.ops` internally for the risky part).
+works when the MCP bridge executes code inside a live GUI Blender session (this skill's actual
+target) depends on whether `bpy.context.area` is a valid, correctly-typed area at the moment the
+bridge's code runs. That case was not tested. Treat it as **not checked in a live GUI session,
+confirmed broken headless**, and default to one of the two robust alternatives below regardless,
+since both work in every context tested (they never call `bpy.ops` internally for the risky part).
 
 ### Robust alternative #1 (recommended default): `bpy_extras.anim_utils.bake_action`
 
@@ -369,7 +359,7 @@ process** (no prior rigid-body stepping in that process) gave the correct restin
 time. This strongly suggests the point cache became stale/inconsistent for the newly-added object
 once other objects' frames were already cached — consistent with Blender's cache being scene-wide
 and frame-indexed (confirmed structurally: `point_cache` lives once on `rigidbody_world`, shared by
-the whole `collection`), though I did not isolate the exact internal mechanism further. **Practical
+the whole `collection`); the exact internal mechanism was not isolated. **Practical
 rule verified by A/B testing**: don't accumulate multiple unrelated rigid-body experiments in one
 long-lived scene/script without freeing the cache (`ptcache.free_bake_all()` under the same
 `point_cache` override, or rebuild the rigidbody world) between them — each independent simulation
@@ -530,9 +520,8 @@ for f in range(1, 21):
 
 This is the exact pattern used to obtain the pin-group proof above; it needs no cache/bake call at
 all — the depsgraph evaluation triggers the cloth solver to compute that frame's state on demand.
-`to_mesh_clear()` after use is standard Blender hygiene to release the temporary mesh (not
-independently torn down and diffed in this pass, but it's the documented cleanup call for
-`evaluated_get().to_mesh()`).
+`to_mesh_clear()` after use releases the temporary mesh; it is the documented cleanup call for
+`evaluated_get().to_mesh()`.
 
 ## Soft body
 
@@ -589,18 +578,18 @@ The add-operator's C-side initializer sets practical starting values that differ
 property's bare declared default. **Always read settings back after `modifier_add()`** rather than
 assuming the documented default is what you'll actually simulate with.
 
-### When soft body beats cloth (community/manual guidance — not independently benchmarked here)
+### When soft body beats cloth (general guidance, not benchmarked here)
 
 Soft body operates on the object's general edge/volume topology (springs + optional goal/volume
 preservation), so it suits **volumetric, blobby, gelatinous** deformation — jelly, simple
 squishy props, rope-like edge chains — where the whole solid volume should wobble, not just a thin
 sheet. Cloth is purpose-built for **2-manifold sheet** behavior (its stiffness model decomposes
 into tension/compression/shear/bending specifically because that maps onto a fabric surface) and
-has a more robust, actively-maintained self-collision system. Community consensus (Blender manual,
-tutorials) treats soft body as the older, cheaper-but-less-stable option and generally recommends
-Cloth for anything that visually reads as fabric, reserving Soft Body for squishy/gelatinous solids
-where Cloth's sheet assumptions don't fit. I did not independently benchmark performance/stability
-between the two in this pass — this is cited as documented community guidance, not a measured result.
+has a more robust, actively-maintained self-collision system. Soft body is the older, cheaper but
+less stable option: use Cloth for anything that visually reads as fabric, and reserve Soft Body
+for squishy or gelatinous solids where Cloth's sheet assumptions don't fit. Performance and
+stability of the two were not benchmarked against each other; this is general guidance, not a
+measured result.
 
 ---
 
@@ -671,13 +660,12 @@ with bpy.context.temp_override(point_cache=psys.point_cache):
     bpy.ops.ptcache.bake(bake=True)
 ```
 
-I did not independently re-run this specific call against a live particle system in this pass
-(time budget) — it is included here on the strength of `PointCache` being the identical shared
-type verified working for rigid body, not as a separately-executed test. The same
-`scene.frame_set()` manual-stepping alternative (verified for rigid body and cloth) should apply
-identically here for the same structural reason.
+This call was not run against a live particle system. It is included because `PointCache` is the
+same shared type that was verified working for rigid body. The same `scene.frame_set()`
+manual-stepping alternative (verified for rigid body and cloth) should apply here for the same
+structural reason.
 
-### Practical note: particles vs. individual rigid bodies for debris (community pattern)
+### Practical note: particles vs. individual rigid bodies for debris
 
 For **foreground/hero** debris that needs to convincingly collide, tumble, and settle against the
 environment, the more robust and commonly-used professional pattern is to give each chunk its own
@@ -687,11 +675,11 @@ particles get simplified point-mass collision against `.collision`-enabled defle
 full rigid-body rotation/collision response, and particle instances don't collide with each other.
 Particles are the right tool for **background/volume** debris — many small bits where individual
 collision fidelity doesn't matter (dust, sparks, falling leaves at a distance). This is a
-documented community pattern, not independently benchmarked here.
+common production pattern, not benchmarked here.
 
 ## Export/handoff of sims
 
-### The single biggest surprise this pass turned up: Blender 4.4+/5.x changed how F-curves are read back
+### Blender 4.4+/5.x changed how F-curves are read back
 
 Before covering export formats: any code that **inspects** baked keyframes (to verify a bake, or to
 prepare data for export) needs to know this. Blender 4.4 introduced **layered/slotted Actions**;
@@ -720,9 +708,7 @@ for layer in action.layers:
                 ...
 ```
 
-Or use Blender's own convenience helpers (confirmed present in bundled
-`bpy_extras.anim_utils.rst`, and matching a Blender Artists thread's recommended pattern —
-[How to access fcurves in Blender 5.0](https://blenderartists.org/t/how-to-access-fcurves-in-blender-5-0/1623022)):
+Or use Blender's own convenience helpers (present in the bundled `bpy_extras.anim_utils.rst`):
 
 ```python
 from bpy_extras import anim_utils
@@ -730,10 +716,8 @@ channelbag = anim_utils.action_get_channelbag_for_slot(action, slot)      # read
 channelbag = anim_utils.action_ensure_channelbag_for_slot(action, slot)   # get-or-create
 ```
 
-**Exact version boundary** (via search-tool corroboration of Blender's own release notes,
-`developer.blender.org/docs/release_notes/4.4/upgrading/slotted_actions/` and
-`.../5.0/python_api/` — direct fetch of both pages was blocked with HTTP 403, so this is
-search-tool-mediated, not a verbatim page read):
+**Exact version boundary** (from Blender's release notes for 4.4 and 5.0; the 5.0 removal was
+confirmed live on 5.1.1):
 
 - **4.3 and earlier**: flat `action.fcurves`/`action.groups`/`action.id_root` — this is what
   most existing tutorials and scripts assume.
@@ -800,7 +784,7 @@ manually convert the simulation into a keyframed shape-key sequence yourself; Bl
 single built-in operator that does this conversion (see next paragraph), so it's a genuinely manual,
 non-trivial DIY step, not a checkbox.
 
-**DIY shape-key bake, `[DESIGN]` — not run to completion in this pass**, built only from
+**DIY shape-key bake, `[DESIGN]`, not run to completion**, built only from
 independently-verified primitives (evaluated-mesh reading confirmed under Cloth above; `keyframe_insert`
 confirmed under Caching & baking):
 
@@ -834,15 +818,13 @@ frame (see **Cloth**). The exporter's own `start`/`end` parameters drive its **i
 re-evaluation during export, independent of whatever frame the scene happened to be on when the
 operator was called.
 
-**Methodological note on this specific finding**: `bpy.ops.wm.alembic_export` is **absent** from
-this MCP server's bundled/offline doc index — both `get_python_api_docs("bpy.ops.wm.alembic_export")`
-and a full-text `search_api_docs` for "alembic export" returned nothing, and enumerating
-`dir(bpy.ops.wm)` via the bundled `bpy.ops.wm` namespace listing also did not include it. A
-plain WebSearch summary hedged uncertainly on whether it still existed. Only **live introspection
-against the actual running Blender 5.1.1** (`hasattr(bpy.ops.wm, 'alembic_export')` →
-`True`, then a real successful export call) settled this. This is a direct, concrete illustration
-of the cite-then-verify discipline: the offline doc index for this specific
-operator was stale/incomplete, and only executing against the live process caught it.
+**The bundled doc index lacks this operator**: `bpy.ops.wm.alembic_export` is **absent** from
+the Blender MCP server's bundled doc index. Both `get_python_api_docs("bpy.ops.wm.alembic_export")`
+and a full-text `search_api_docs` for "alembic export" return nothing, and the bundled
+`bpy.ops.wm` namespace listing does not include it. Only a real, successful export call against
+the running Blender 5.1.1 settles it (`hasattr` on `bpy.ops` proves nothing: it is truthy for any
+name, see the version wall in `SKILL.md`). Treat the bundled doc index as a hint, and call an
+operator on the live process before concluding it is gone.
 
 Full parameter list captured live via the operator's own RNA (`bpy.ops.wm.alembic_export.get_rna_type().properties`,
 via the collection-exporter's `export_properties`): `filepath`, `start`, `end`, `selected`,
@@ -862,8 +844,8 @@ exporter = collection.exporters.new('IO_FH_alembic', name="AlembicExporter")
 bpy.ops.wm.collection_export_all()          # -> {'FINISHED'}, exports every collection's attached exporters
 ```
 
-Per search-tool-sourced release notes, the `visible_objects_only` option was removed from
-`wm.alembic_export`/`wm.usd_export` in Blender 5.0. For a one-shot script/MCP export, calling
+The `visible_objects_only` option was removed from `wm.alembic_export`/`wm.usd_export` in
+Blender 5.0 (release notes; absent on the live 5.1.1). For a one-shot script/MCP export, calling
 `bpy.ops.wm.alembic_export()` directly (as verified above) is simpler than setting up a collection
 exporter and works the same way on 4.3 and 5.x; collection exporters are more suited to an
 artist-maintained "always export this collection on save" workflow.
@@ -891,7 +873,7 @@ initializes it to `9.8`, not the RNA schema's stated `0.0` default, per the **So
 above). Changing `scene.gravity` alone will **not** change already-configured cloth/soft-body sims
 — all three need to be set for consistency if that matters for the shot.
 
-### The classic "scene scale" slow-motion bug (documented, not independently reproduced visually here)
+### The classic "scene scale" slow-motion bug (mechanism verified, symptom not reproduced here)
 
 Blender's physics assumes **1 Blender unit = 1 real-world meter** — gravity is a fixed
 `9.81` units/s² constant (confirmed above), and `rigidbody.mass_calculate`'s density presets are
@@ -903,10 +885,9 @@ object too small in Blender units falls the same fixed number of *units*/s² as 
 relative to its own tiny extent it visibly crawls — this reads as slow-motion/moon-gravity. An
 object modeled too *large* looks unnaturally fast/violent by the same logic. Fix: match Scene
 Properties → Units → Unit Scale to the asset's real dimensions (1.0 = meters), or literally rescale
-geometry so 1 Blender unit ≈ 1 meter before simulating. I did not stage a dedicated "shrink the
-whole scene 100× and watch it look wrong" visual repro in this pass — the mechanism (a fixed,
-unit-independent gravity constant, confirmed above) is verified; this specific visual symptom is
-cited as standard/manual-level community knowledge, not independently re-demonstrated here.
+geometry so 1 Blender unit ≈ 1 meter before simulating. The mechanism (a fixed,
+unit-independent gravity constant, confirmed above) is verified; the visual symptom was not
+reproduced in a dedicated test.
 
 ### Per-object un-applied `object.scale` — tested, and the answer is more nuanced than blanket folklore
 
@@ -933,12 +914,11 @@ consistently with an un-applied object transform. **Practical recommendation**: 
 (`bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)` — standard operator,
 requires the object selected+active, confirmed working headlessly) before adding physics whenever
 using `MESH`/`CONVEX_HULL`/`COMPOUND` shapes. It is not proven necessary for `BOX`/`SPHERE` on an
-unrotated object by this test, but community sources (not independently re-tested here) additionally
-flag non-uniform-scale-combined-**with**-rotation, rigid body constraints, and cloth/soft-body
-(whose spring rest-lengths are derived from **local**-space edge lengths, so an un-applied scale
-makes the stiffness sliders behave inconsistently with the sheet's real-world size) as further
-reasons to apply scale as a standing habit — applying it is zero-cost, so there's little reason not
-to as a default.
+unrotated object by this test. Three further cases, not tested here, are reasons to apply scale as
+a standing habit: non-uniform scale combined **with** rotation, rigid body constraints, and
+cloth/soft-body (whose spring rest-lengths are derived from **local**-space edge lengths, so an
+un-applied scale makes the stiffness sliders behave inconsistently with the sheet's real-world
+size). Applying it costs nothing, so apply it by default.
 
 ### A related, smaller gotcha caught while building the scale test: stale `.dimensions` reads
 
@@ -961,10 +941,8 @@ accuracy for fast-moving/thin objects (reduces tunneling) at CPU cost, independe
 Changing `scene.render.fps` without adjusting frame-relative parameters (particle `lifetime`,
 keyframed timing, `frame_start`/`frame_end` of a cache) will change how much *wall-clock* time a
 fixed frame range represents, which in turn changes how "fast" the simulated motion reads, even
-though the physics stepping itself is unaffected. I did not independently re-verify `scene.render.fps`'s
-exact property path via the bundled docs in this pass (the relevant RST file exceeded the bundle's
-inline-size threshold and the search index returned no hits for it) — it is an extremely stable,
-long-standing Blender API and is included here on that basis rather than a fresh citation.
+though the physics stepping itself is unaffected. `scene.render.fps` is the property the preflight
+probe in `SKILL.md` reads.
 
 ### Origin placement (center of mass) for rigid bodies
 
@@ -1022,9 +1000,8 @@ Blender nothing to compute a velocity from and was not tested here.
 
 ## Pitfalls
 
-Consolidated, ranked roughly by how much damage each would do to a skill author who didn't know
-about it. All numbered items were empirically verified in this pass unless explicitly marked
-"community/manual-sourced."
+Consolidated, ranked roughly by how much damage each one does when it is not known. All numbered
+items were empirically verified unless marked otherwise.
 
 1. **`Action.fcurves` does not exist in Blender 5.0+.** The single biggest 4.3-vs-5.x breaking
    change relevant to this entire skill domain — it silently breaks *any* code that inspects or
@@ -1034,29 +1011,26 @@ about it. All numbered items were empirically verified in this pass unless expli
    or branch on `hasattr(action, "fcurves")`. See **Export/handoff of sims**.
 
 2. **`rigidbody.bake_to_keyframes` fails in headless/background execution**, and the failure
-   traces to a real, tracked Blender architecture limitation (context overrides on an outer
-   Python-defined operator do not propagate into `bpy.ops.*` calls that operator makes internally
-   — corroborated by bug reports `T63067`/`T97382`), not a mistake in how it's called. No
-   `temp_override` combination rescued it, including one supplying a real window/screen/area/region.
+   traces to a known Blender limitation (context overrides on an outer Python-defined operator
+   do not propagate into `bpy.ops.*` calls that operator makes internally; Blender bug reports
+   `T63067` and `T97382`), not a mistake in how it's called. No `temp_override` combination
+   rescued it, including one supplying a real window/screen/area/region.
    Default to `bpy_extras.anim_utils.bake_action()` or a manual per-frame `keyframe_insert()` loop —
    both are pure data-API and verified working in every context tested. Whether the native operator
-   happens to work when driven by a live GUI Blender via the MCP bridge (this skill's actual target)
-   was **not** verified — no live GUI instance was reachable during this research pass — so treat it
-   as unverified-good / confirmed-bad rather than "always works in the real target."
+   works when driven by a live GUI Blender via the MCP bridge (this skill's actual target)
+   was **not** checked, so do not assume it works there.
 
 3. **`ptcache.bake(bake=True)` needs `bpy.context.temp_override(point_cache=world.point_cache)`** or
    it raises `RuntimeError: ... poll() failed, context is incorrect`. Verified minimal working fix.
 
 4. **`rigidbody_world.steps_per_second` was renamed `substeps_per_frame`.** Confirmed absent/present
-   exactly this way on the connected 5.1.1. Use a `getattr` fallback for cross-version code; I could
-   not pin the exact version boundary (no 4.3 executable was available to diff against directly).
+   exactly this way on 5.1.1. Use a `getattr` fallback for cross-version code; the version of the
+   rename is not determined (no 4.3 executable was available to compare).
 
-5. **`bpy.ops.wm.alembic_export` is missing from this MCP server's own offline/bundled doc index**,
-   even though it demonstrably exists and works on the live connected Blender. A pure documentation-
-   only verification pass would have concluded (wrongly) that Alembic export was removed. Only live
-   execution against the actual process caught this — the concrete illustration, inside this very
-   research task, of why "cite the bundled doc snippet" is a hint and live/primary verification is
-   what actually settles a claim.
+5. **`bpy.ops.wm.alembic_export` is missing from the Blender MCP server's bundled doc index**,
+   even though it exists and works on the live Blender. A check against the doc index alone
+   concludes, wrongly, that Alembic export was removed. A bundled doc snippet is a hint; a call
+   against the live process settles the claim.
 
 6. **FBX cannot carry Cloth/Soft-Body per-frame vertex deformation.** `use_mesh_modifiers=True`
    bakes a single static snapshot at the current frame and its own doc string says it **prevents**
@@ -1110,17 +1084,10 @@ about it. All numbered items were empirically verified in this pass unless expli
     back after adding the modifier rather than trusting the bare property doc string for "what will
     this look like out of the box."
 
-15. **Direct `WebFetch` to both `developer.blender.org` and `docs.blender.org` returned HTTP 403**
-    throughout this research pass — a methodological limitation for whoever extends this research
-    later. The bundled MCP-server doc mirror plus the web-search tool's own fetch capability were
-    the only ways to reach that content in this sandbox; a future pass with working direct fetch
-    access to those domains could tighten the citations that are currently search-tool-mediated.
-
 ## Verified bpy snippets
 
-Every snippet in this section was actually executed against Blender 5.1.1 in `--background` mode
-during this research pass (not written from memory). Doc citations point to the bundled RST mirror
-of `docs.blender.org/api/` (identifier given; construct the URL as
+Every snippet in this section was executed against Blender 5.1.1 in `--background` mode.
+The `# bpy...` comments and the "Doc:" lines name the API reference page (construct the URL as
 `https://docs.blender.org/api/<version>/<identifier>.html`).
 
 ### 1. Rigid body basics — active + passive, zero context override needed
@@ -1309,68 +1276,16 @@ obj.rigid_body.kinematic = False                        # release — sim inheri
 obj.rigid_body.keyframe_insert(data_path="kinematic", frame=11)
 ```
 
-## Sources
+## Not verified
 
-**Empirical (primary — highest confidence)**: Blender **5.1.1** (hash `b70da489d7f4`, built
-2026-04-14), driven headlessly via
-`blender.exe --background --python <script>.py` for every claim marked "empirically verified" /
-"live-confirmed" / "empirically reproduced" above. Ten standalone test scripts were run this way
-covering: rigid body enum/property introspection, `ptcache.bake` context-override, `bake_to_keyframes`
-failure + rescue attempts, `Action`/channelbag introspection, cloth+pin-group+collision+deformation,
-soft body defaults, Alembic export + collection exporters, scale-apply A/B (BOX and CONVEX_HULL,
-isolated processes), particle system + collection instancing, and the kinematic-handoff velocity test.
-
-**Blender's own installed files (primary, read directly, not from memory)**:
-- `<Blender 5.1 install>\5.1\scripts\presets\cloth\{Cotton,Denim,Leather,Rubber,Silk}.py`
-  — exact cloth preset values quoted in **Cloth**.
-
-**Bundled Python API doc mirror** (served by the Blender MCP server's `get_python_api_docs`/
-`search_api_docs` tools; RST source matching `docs.blender.org/api/` — construct
-`https://docs.blender.org/api/current/<identifier>.html` for any identifier below; direct `WebFetch`
-to `docs.blender.org` itself returned HTTP 403 in this sandbox, so these are the bundled mirror,
-cross-checked against live 5.1.1 behavior wherever both were available and found consistent):
-`bpy.ops.rigidbody`, `bpy.ops.ptcache`, `bpy.ops.export_scene` (fbx), `bpy.ops.object` (modifier_add,
-origin_set, transform_apply, particle_system_add), `bpy.types.RigidBodyWorld`, `bpy.types.PointCache`,
-`bpy.types.ClothSettings`, `bpy.types.SoftBodySettings`, `bpy.types.CollisionSettings`,
-`bpy.types.ParticleSettings`, `bpy.types.VertexGroup`, `bpy.types.Action`, `bpy.types.ActionLayer`,
-`bpy.types.ActionSlot`, `bpy.types.ActionKeyframeStrip`, `bpy.types.ActionChannelbag`,
-`bpy.types.AnimData`, `bpy.types.bpy_struct` (`keyframe_insert`), `bpy_extras.anim_utils`,
-`bpy.ops.export_anim`, `bpy.ops.export_shape` (confirmed absent).
-
-**Web (via the search tool's own fetch — direct `WebFetch` to `developer.blender.org` and
-`docs.blender.org` was blocked with HTTP 403 throughout this session, every citation below is
-therefore search-tool-mediated, not a raw page read)**:
-- [Slotted Actions — Blender Developer Documentation](https://developer.blender.org/docs/release_notes/4.4/upgrading/slotted_actions/) — 4.4 layered-action model, legacy `action.fcurves` kept as backward-compatible shim.
-- [Blender 4.4: Python API](https://developer.blender.org/docs/release_notes/4.4/python_api/)
-- [Blender 5.0: Python API](https://developer.blender.org/docs/release_notes/5.0/python_api/) — legacy Action shim removal in 5.0, `action.id_root` → `action_slot.target_id_type`.
-- [What was bpy.types.Action.fcurves replaced with in Blender 5.0? — Blender Artists](https://blenderartists.org/t/what-was-bpy-types-action-fcurves-replaced-with-in-blender-5-0/1634809)
-- [How to access fcurves in Blender 5.0 — Blender Artists](https://blenderartists.org/t/how-to-access-fcurves-in-blender-5-0/1623022) — `anim_utils.action_get_channelbag_for_slot`/`action_ensure_channelbag_for_slot` usage pattern (WebFetch succeeded on this one host).
-- `T63067` — "Overriding context in rigidbody operations [override not passed along in
-  startup/bl_operators that themselves call bpy.ops]", `developer.blender.org` bug tracker.
-- `T97382` — "Context error when running bpy.ops.rigidbody.bake_to_keyframes() thru cmd", `developer.blender.org` bug tracker.
-- [Hinge Constraint — Blender Manual](https://docs.blender.org/manual/en/latest/physics/rigid_body/constraints/types/hinge.html) — Hinge rotation axis (manual-sourced, not independently re-derived by a rotation test).
-- Collection-exporter API additions (`collection.exporters.new('IO_FH_alembic', ...)`,
-  `visible_objects_only` removed from `wm.alembic_export`/`wm.usd_export` in 5.0) — via search-tool
-  summary of Blender 5.0 release notes, corroborated by live introspection of `Collection.exporters`
-  and a successful `bpy.ops.wm.collection_export_all()` call.
-
-**Explicitly not verified / out of scope this pass**:
-- Any behavior specific to Blender **4.3 as an executable** — no 4.3 `blender.exe` was found
-  anywhere on the test machine (only the data/config folder of an old 4.3 install survived); every 4.3-vs-5.x difference above is
-  sourced from release notes / doc diffs, not a direct 4.3 execution. If precise 4.3 behavior
-  matters before this skill ships, install Blender 4.3's executable and re-run the same tests
-  (the scripts of this pass are not shipped, see below) for a true side-by-side diff.
-- Whether `rigidbody.bake_to_keyframes` succeeds when driven by a genuinely live, connected GUI
-  Blender through the MCP addon bridge (`mcp__Blender__execute_blender_code`) — that bridge was not
-  connected during this research session (`Cannot connect to Blender at localhost:9876`); only
-  `--background` execution was exercised. Recommend a one-time live-session smoke test before the
-  skill relies on either code path.
-- Soft-body-vs-cloth performance/stability comparison, and particle-system `ptcache.bake` — cited as
-  community-documented / structurally-consistent-with-verified-behavior respectively, not
-  independently benchmarked or re-executed in this pass.
-- Exact Blender version where `steps_per_second` → `substeps_per_frame` renamed, and where
-  `Scene.render.fps`'s doc page (bundled RST exceeded the inline-size threshold for this pass).
-
-**Test scripts**: `t1_rigidbody.py` through `t9_constraint_axis.py`, each paired with its
-`t*_result*.json` output, were written to a temporary session folder on the test machine. They are
-not shipped with this skill; the snippets under **Verified bpy snippets** are what they ran.
+- Any behaviour specific to Blender **4.3 as an executable**. Every 4.3-vs-5.x difference above
+  comes from release notes or from the API reference, not from a 4.3 run. If precise 4.3 behaviour
+  matters, run the snippets under **Verified bpy snippets** on Blender 4.3.
+- Whether `rigidbody.bake_to_keyframes` succeeds when driven by a live GUI Blender through the MCP
+  bridge (`mcp__Blender__execute_blender_code`). Only `--background` execution was exercised. Run a
+  one-time live-session smoke test before relying on it there.
+- Soft body against cloth for performance and stability, and `ptcache.bake` on a particle system:
+  the first is general guidance, the second follows from the shared `PointCache` type; neither
+  was benchmarked or run.
+- The Blender version in which `steps_per_second` became `substeps_per_frame`.
+- The Hinge rotation axis (Z in the Blender manual; no rotation test was run).

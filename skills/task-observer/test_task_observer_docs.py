@@ -64,8 +64,8 @@ def test_each_reference_file_opens_with_a_title_and_what_it_covers():
 
 
 def test_scripts_the_bundle_does_not_ship_are_not_called_by_path():
-    # migrate-log.py and validate-skill-bundle.py are named as upstream helpers; nothing may tell the
-    # agent to run them from a scripts/ folder this skill does not have.
+    # The skill ships no scripts; nothing may tell the agent to run one from a scripts/ folder this
+    # skill does not have.
     for path in [SKILL_DIR / "SKILL.md", *REFERENCES]:
         text = path.read_text(encoding="utf-8")
         assert not re.search(r"scripts/[\w-]+\.py", text), f"{path.name} calls a script that is not bundled"

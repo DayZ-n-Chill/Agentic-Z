@@ -5,7 +5,7 @@ Offloads high-frequency visual checks from the expensive agent to a FREE local
 vision model served by Ollama, so agent credits are spent on gates and final
 judgment, not on every inner-loop glance.
 
-UNCALIBRATED — SHADOW MODE FIRST (LL-153): until this scorer's outputs are
+UNCALIBRATED — SHADOW MODE FIRST: until this scorer's outputs are
 shown to correlate with the agent's own verdicts on real judged iterations
 (>= 15 samples), its scores are logged evidence, NEVER a gate and NEVER a
 substitute for the agent's eyes. Promotion path: shadow -> pre-filter
@@ -14,7 +14,7 @@ substitute for the agent's eyes. Promotion path: shadow -> pre-filter
 Modes:
   score  one render (or render vs reference) -> {"score": 0..1, "defects": [...]}
          Anchored rubric in the prompt keeps scores comparable across calls.
-  ask    CADCodeVerify-style: a JSON checklist of concrete yes/no questions is
+  ask    A JSON checklist of concrete yes/no questions is
          answered from the render(s). Focused questions are measurably easier
          for small VLMs than open judgment — prefer this mode.
 
@@ -22,9 +22,8 @@ Both modes append a JSONL shadow-log entry with inputs, raw output and timing
 (--shadow, default vr_shadow.jsonl next to the first image), which IS the
 calibration dataset — no extra credit cost to build it.
 
-Reference convergence constants from RFingAdam/mcp-blender's loop design
-(score >= 0.85 accept, |delta| < 0.02 plateau) are exported for the future
-pre-filter stage; they are NOT enforced here.
+The convergence constants (score >= 0.85 accept, |delta| < 0.02 plateau) are
+exported for the future pre-filter stage; they are NOT enforced here.
 
 Requires: Ollama running (http://127.0.0.1:11434) with a vision model pulled,
 e.g. gemma4:26b, qwen3.8:27b or qwen3.5:27b. Pure stdlib, Python 3.10+.
@@ -59,12 +58,12 @@ from typing import Any
 # IPv6-bound ollama serve will answer with a DIFFERENT (default-path) model library.
 DEFAULT_HOST = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "qwen3.5:27b"
-ACCEPT_SCORE = 0.85     # RFingAdam reference constants — for the future pre-filter, not enforced
+ACCEPT_SCORE = 0.85     # for the future pre-filter, not enforced
 PLATEAU_DELTA = 0.02
 REQUEST_TIMEOUT_S = 300  # first call loads the model into VRAM; can take minutes
 DEFAULT_NUM_CTX = 8192   # the factory default (262144) reserves KV cache for a context
                          # this tool never uses and pushes the model off the GPU: measured
-                         # 2.3x slower on gemma4:26b, 12x on qwen3.5:27b (SP-260)
+                         # 2.3x slower on gemma4:26b, 12x on qwen3.5:27b
 # Two images of IDENTICAL pixel dimensions COLLAPSE into one on qwen3.x VL models served by
 # Ollama: prompt_eval_count bills a single image and the model describes only one of the two.
 # Which one survives is not fixed -- it follows the prompt cache -- so a --reference call can
@@ -176,7 +175,7 @@ def ollama_chat(host: str, model: str, prompt: str, images: list[Path],
     think=False is not cosmetic: with thinking on, current models put the entire reply
     in message.thinking and return message.content EMPTY, so every call ends in a JSON
     parse error and the tool produces no verdict at all (measured 2026-08-16 on both
-    judge models, SP-260).
+    judge models).
     """
     payload = {
         "model": model,
@@ -236,7 +235,7 @@ def load_checklist(path: Path) -> list[dict[str, Any]]:
     utf-8-sig, not utf-8: PowerShell's Out-File / Set-Content -Encoding utf8
     emits a BOM on 5.1, and a checklist authored that way raised
     "Unexpected UTF-8 BOM" and killed the run. utf-8-sig reads both
-    (measured 2026-08-16, SP-260).
+    (measured 2026-08-16).
     """
     data = json.loads(path.read_text(encoding="utf-8-sig"))
     if not isinstance(data, list):
@@ -383,7 +382,7 @@ def run_score(args: argparse.Namespace) -> dict[str, Any]:
         "defects": [str(d) for d in parsed.get("defects", []) if str(d).strip()][:12],
         "modelConfidence": clamp01(parsed.get("confidence")),
         "elapsedS": round(elapsed, 1),
-        "note": "SHADOW/uncalibrated (LL-153): evidence for calibration, not a gate. "
+        "note": "SHADOW/uncalibrated: evidence for calibration, not a gate. "
                 "Agent eyes remain the judge.",
     }
 
@@ -437,7 +436,7 @@ def run_ask(args: argparse.Namespace) -> dict[str, Any]:
         "answers": answers,
         "counts": counts,
         "elapsedS": round(total_elapsed, 1),
-        "note": "SHADOW/uncalibrated (LL-153): 'no' answers are attention pointers for the agent, "
+        "note": "SHADOW/uncalibrated: 'no' answers are attention pointers for the agent, "
                 "not automatic failures.",
     }
 

@@ -1,12 +1,12 @@
 # Getting in from either side of a seat
 
-How to keep a player from spinning more than half a turn when they board a vehicle from the "wrong" side: the native directional get in that 1.30 added, and the scripted snap the LFQuad project used before it. Both are script, with no clip and no Workbench.
+How to keep a player from spinning more than half a turn when they board a vehicle from the "wrong" side: the native directional get in that 1.30 added, and the scripted snap used before it. Both are script, with no clip and no Workbench.
 
-**Choose in this order.** On 1.30 use the native directional hooks first. The source pack's own later rule, from the same project, is to not add a scripted snap or extra `pos_*_L` and `pos_*_R` points for a vehicle boarded from both sides, and instead to copy the vanilla structure (crew proxies, and seat selections and components that exist in the View Geometry and Fire Geometry) and keep the vanilla action. Keep the scripted snap below as a fallback for a case the native route cannot cover; it is that project's measured workaround, not checked on `P:\`.
+**Choose in this order.** On 1.30 use the native directional hooks first. The rule for a vehicle boarded from both sides is to not add a scripted snap or extra `pos_*_L` and `pos_*_R` points, and instead to copy the vanilla structure (crew proxies, and seat selections and components that exist in the View Geometry and Fire Geometry) and keep the vanilla action. Keep the scripted snap below as a fallback for a case the native route cannot cover; it is a workaround measured on one quad mod, not checked on `P:\`.
 
 ## What goes wrong
 
-A vanilla crew seat names one get in position and one direction: `getInPos = "pos_driver"` and `getInDir = "pos_driver_dir"` (`P:\DZ\vehicles\wheeled\config.cpp:271`, `:272`). The LFQuad project observed that the player's heading is forced along that one direction when the get in starts, so a player coming from the opposite side is turned through more than 180 degrees just before the climb on animation. Cars hide this by putting the points on the side the door is on; a quad or bike is boarded from both sides.
+A vanilla crew seat names one get in position and one direction: `getInPos = "pos_driver"` and `getInDir = "pos_driver_dir"` (`P:\DZ\vehicles\wheeled\config.cpp:271`, `:272`). Observed in game on a quad mod: the player's heading is forced along that one direction when the get in starts, so a player coming from the opposite side is turned through more than 180 degrees just before the climb on animation. Cars hide this by putting the points on the side the door is on; a quad or bike is boarded from both sides.
 
 ## Native directional get in (1.30)
 
@@ -39,11 +39,11 @@ else
 
 The two hooks are on `Transport` and do nothing by default: `HasDirectionalInOutAction()` returns false (`P:\scripts\3_game\vehicles\transport.c:677`) and `GetSeatAnimationTypeDirectional(int posIdx, int directionIndex)` raises "not implemented" (`:690`). The vanilla motorbike overrides both: it returns true, and for the driver seat returns 0 for direction 0 and 1 for direction 1 (`P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:53`, `:58`). The graph then picks the left or right clip from that number: `GetIn_L` starts on `GetCommandI(CMD_Vehicle_GetIn) == 0` and `GetIn_R` on `== 1` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1618`, `:1598`).
 
-For a mod vehicle, override both hooks the same way. Not tested by the source pack: whether that alone removes the need for the snap on a vehicle that is not a `Motorbike`.
+For a mod vehicle, override both hooks the same way. Not tested: whether that alone removes the need for the snap on a vehicle that is not a `Motorbike`.
 
 Single track vehicles also get their own third person camera, `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c:20`, registered at `:63`).
 
-## The scripted snap (LFQuad project, pre 1.30)
+## The scripted snap (pre 1.30)
 
 ### Four memory points per seat
 
@@ -52,7 +52,7 @@ pos_driver_L      pos_driver_dir_L
 pos_driver_R      pos_driver_dir_R
 ```
 
-and the same for the passenger seat with its role name. The `_L` and `_R` points mirror each other across the vehicle's X axis, so the seat does not move; only the snap point and the facing change. The project's layout:
+and the same for the passenger seat with its role name. The `_L` and `_R` points mirror each other across the vehicle's X axis, so the seat does not move; only the snap point and the facing change. An example layout:
 
 ```
 pos_driver_L      = (+0.65, 0.05, -0.58)
@@ -73,17 +73,17 @@ modded class ActionGetInTransport
     override void OnStartServer(ActionData action_data)
     {
         super.OnStartServer(action_data);
-        TryRealignForLFQuad(action_data);
+        TryRealignForMyQuad(action_data);
     }
 
     override void OnStartClient(ActionData action_data)
     {
         super.OnStartClient(action_data);
-        TryRealignForLFQuad(action_data);
+        TryRealignForMyQuad(action_data);
     }
 
     // Returns early for every vehicle that is not ours, so vanilla vehicles are untouched.
-    protected void TryRealignForLFQuad(ActionData action_data)
+    protected void TryRealignForMyQuad(ActionData action_data)
     {
         if (!action_data || !action_data.m_Player)
             return;
@@ -96,7 +96,7 @@ modded class ActionGetInTransport
         if (!target)
             return;
 
-        LFQuad_base quad;
+        MyQuad_base quad;
         if (!Class.CastTo(quad, target))
             return;
 
@@ -147,7 +147,7 @@ modded class ActionGetInTransport
 }
 ```
 
-The source pack wrote steps 2 with the ternary operator; Enforce Script has none, so it is written out here.
+Enforce Script has no ternary operator, so step 2 is written out with `if`.
 
 ### Why `super` runs first
 

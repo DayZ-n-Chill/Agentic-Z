@@ -4,7 +4,7 @@ How to use the offline script validator before packing, what its result does and
 check that shows a deployed mod's script modules really compile.
 
 Not yet checked on `P:\` except where a vanilla file is cited: the validator figures and the project cases
-below are the knowledge pack author's measurements.
+below are measurements on mod projects, not vanilla data.
 
 `/dayz-lint` is the gate `/dayz-build-pbo` runs; it checks the mod's setup. The script validator in
 `scripts/tools/dayz-script-validator/` checks the code itself. The notes below apply whenever the validator
@@ -29,10 +29,11 @@ checkout, or the command dies with `No such file or directory` and reads as "not
 - **Compare against a base** (the base commit in a worktree): the delta is what attributes a new
   error to your change; an absolute number does not.
 - **It is not a compiler.** Enforce only compiles upon loading the world. It does catch dangling
-  references after a deletion, which is what a symbol grep misses. Measured 2026-09-08 on LFPowerGrid:
-  271 files in ~60 s; removing 8 left them at 263, with 0 errors on both sides.
+  references after a deletion, which is what a symbol grep misses. Measured 2026-09-08 on a mod of
+  271 files: about 60 s; removing 8 left them at 263, with 0 errors on both sides.
 - ⚠ **And it has a blind spot that costs a startup: it does not see an undeclared variable.** Detail,
-  measured case, and the sweep that does catch it, in `dayz-test-ingame` §Step 0.
+  measured case, and the sweep that does catch it, in
+  `dayz-test-ingame/references/windows-launch-cycle.md`, Step 0.
 
 The heuristic checks in `pre-build-checks.md` (check 7) are the fallback when the validator is not
 available, and a useful second pass when it is.
@@ -40,9 +41,9 @@ available, and a useful second pass when it is.
 ## Advanced: Scripting Validation
 
 Enforce Script supports `++`/`--` and `foreach (Type t : collection)`: vanilla uses them (`foreach` at `P:\scripts\3_game\tools\cameratools.c:14`, `last_index++` at `P:\scripts\3_game\tools\tools.c:200`),
-so a validator must NOT flag them. Ternary (`x ? a : b`) is different: the source skill listed it as supported,
-but no vanilla script on `P:\scripts` uses it and `skills/_shared/enscript/patterns/language_workarounds.md`
-records that it does not compile, so write `if`/`else`. The array caveat:
+so a validator must NOT flag them. Ternary (`x ? a : b`) is different:
+no vanilla script on `P:\scripts` uses it and it does not compile
+(`skills/_shared/enscript/patterns/language_workarounds.md`, "No Ternary Operator"), so write `if`/`else`. The array caveat:
 
 ```enforce_script
 // Arrays: no '+=' concatenation operator. Add elements with Insert()/InsertAll():
@@ -66,16 +67,16 @@ For the authoritative Enforce Script rule set, see the `enforce-script-reference
 python scripts/tools/dayz-script-validator/scripts/script_validator.py <addon_root>
 ```
 
-Exit `0` PASS / `1` FAIL / `2` WARN. **Do not build a PBO on exit 1**: the errors it catches (`Unknown type`, local redeclaration, override of an absent method, `delete`, item declared under the wrong `CfgXxx`) only surface when the script module compiles at boot, so packing first turns a one-second check into a full in-game cycle. Add `ui_reconcile.py <addon_root>` when the mod ships UI.
+Exit `0` PASS / `1` FAIL / `2` WARN. **Do not build a PBO on exit 1**: the errors it catches (`Unknown type`, local redeclaration, override of an absent method, `delete`, item declared under the wrong `CfgXxx`) only surface when the script module compiles at boot, so packing first turns a one-second check into a full in-game cycle. Add `python scripts/tools/dayz-script-validator/scripts/ui_reconcile.py <addon_root>` when the mod ships UI.
 
-Green here means the module should COMPILE and the asset should LOAD. It says nothing about engine behaviour — see `dayz-mod-workflow` §"Gates offline" for the full contract and the known coverage limits.
+Green here means the module should COMPILE and the asset should LOAD. It says nothing about engine behaviour — see `dayz-mod-workflow`, section 8 "Offline gates: structure is not behaviour", for the full contract and the known coverage limits.
 
 ### The linter scans the WHOLE addon_root and blames the mod for all of it
 
 It walks `<addon_root>` recursively and every finding is reported as the mod's,
 whatever subtree it came from. If anything that is not your shippable source
 lives under that root — a read-only copy of vanilla for reference, a `_source_*`
-rip, a `_recovered` tree, a vendored dependency, an isolated build scratch — its
+rip, a `_recovered` tree, a copy of a dependency, an isolated build scratch — its
 findings land in your numbers.
 
 Measured: mounting five vanilla files under an addon root for a delegate to read
@@ -116,7 +117,7 @@ Two more traps around the same instrument:
 
 ### A deployed PBO with the right version does not prove it compiles
 
-Offline-green plus a correct deploy is still not a compile. Measured 2026-08-29: `@DayZ_MCP`
+Offline-green plus a correct deploy is still not a compile. Measured 2026-08-29: a mod
 was rebuilt and deployed with the source bumped v9 to v10, the deployed PBO byte-scanned
 clean (version string present, all new verbs present, negative control against the previous
 build), and the server still died with `Can't compile "Mission" script module!`.

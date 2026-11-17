@@ -1,6 +1,6 @@
 # Layered effects, modulation curves and the old cloudlet format
 
-How a large effect (explosion, impact, fireball) is built from several emitters, how the `Mast` curves shape it over time, how script turns single emitters on and off, and how the old class based `CfgCloudlets` particles map onto `.ptc`. The multi emitter examples come from a third-party mod, LM_Planes (Steam Workshop item 3730564764, three `.ptc` files: `PLANES_EX`, `PLANES_IMPACT`, `PLANES_BOOM`). Facts about that mod are not checked on `P:\`; every fact about vanilla cites its file.
+How a large effect (explosion, impact, fireball) is built from several emitters, how the `Mast` curves shape it over time, how script turns single emitters on and off, and how the old class based `CfgCloudlets` particles map onto `.ptc`. The multi emitter examples are three effects of a plane mod (`PLANES_EX`, `PLANES_IMPACT`, `PLANES_BOOM`). They are mod effects, not vanilla, and facts about them are not checked on `P:\`; every fact about vanilla cites its file.
 
 The property tables for `.ptc` and `.emat` are in `ptc-format-reference.md` and `emat-format-reference.md`; this file only adds what they do not cover.
 
@@ -35,7 +35,7 @@ Layout rules of a `.ptc`:
 - There are no commas in a list: `ShapeSize 0.5 0 0.5` is three numbers.
 - Every `EmitorDef` sits inside `EffectDef { Emitors { ... } }`, never directly under `EffectDef`.
 
-The order LM_Planes writes the properties of an emitter in:
+The order the example effects write the properties of an emitter in:
 
 ```
 EffectDef {
@@ -101,7 +101,7 @@ A `Material` line is a GUID in braces followed by the path of the `.emat`:
 Material "{00BEA27443975BEB}Graphics/Particles/materials/smoke/smoke_anim_02.emat"
 ```
 
-You rarely need your own `.emat`. These vanilla materials cover most explosion, impact and smoke work. Each one exists under `P:\graphics\particles\materials\`, and the GUID is the one vanilla `.ptc` files write most often for it. The use column says how LM_Planes uses the material.
+You rarely need your own `.emat`. These vanilla materials cover most explosion, impact and smoke work. Each one exists under `P:\graphics\particles\materials\`, and the GUID is the one vanilla `.ptc` files write most often for it. The use column says how the example effects use the material.
 
 | GUID | Path under `Graphics/Particles/materials/` | Use |
 |---|---|---|
@@ -122,11 +122,11 @@ You rarely need your own `.emat`. These vanilla materials cover most explosion, 
 | `{D17539339C9F6B0B}` | `weapons/weapon_shot_fnx_02.emat` | Pistol muzzle flash, used as the first fire of an impact |
 | `{257D7EAB9142037F}` | `weapons/weapon_shot_fnx_03.emat` | Pistol muzzle flash, second look |
 
-Copy a GUID from a vanilla `.ptc` under `P:\graphics\particles\` that uses the material. The GUID is not what makes the reference resolve: vanilla writes `smoke_anim_02.emat` with two different GUIDs, `{00BEA27443975BEB}` in the bonfire (`P:\graphics\particles\fire_bonfire.ptc:217`) and `{0BEA27443975BE0B}` in the failing hatchback engine (`P:\graphics\particles\hatchback_engine_failing.ptc:11`), and both effects play. The path is what must be right. The source notes for this file listed only the second GUID.
+Copy a GUID from a vanilla `.ptc` under `P:\graphics\particles\` that uses the material. The GUID is not what makes the reference resolve: vanilla writes `smoke_anim_02.emat` with two different GUIDs, `{00BEA27443975BEB}` in the bonfire (`P:\graphics\particles\fire_bonfire.ptc:217`) and `{0BEA27443975BE0B}` in the failing hatchback engine (`P:\graphics\particles\hatchback_engine_failing.ptc:11`), and both effects play. The path is what must be right.
 
 ## Emitter properties worth knowing
 
-Every property is in `ptc-format-reference.md`. These notes add how the properties are used when layering an effect. The notes marked LM_Planes are observations from that mod.
+Every property is in `ptc-format-reference.md`. These notes add how the properties are used when layering an effect. Notes that name the example effects are observations from those effects, not checked on `P:\`.
 
 ### Spawn volume
 
@@ -134,11 +134,11 @@ Every property is in `ptc-format-reference.md`. These notes add how the properti
 - `ShapeSize <x> <y> <z>`: the size of that volume.
 - `ConeAngle <a> <b> <c>`: the opening angles of the emission cone.
 - `Offset <x> <y> <z>`: moves the spawn point away from the owner's position. A negative Y lowers it.
-- `CenterX` and `CenterY`: the pivot of the sprite, from 0 to 1 in the LM_Planes notes.
+- `CenterX` and `CenterY`: the pivot of the sprite, from 0 to 1 in the example effects.
 
 ### How many particles
 
-- `MaxNum`: the most particles alive at once. LM_Planes note: do not let an emitter reach it, or it stops emitting.
+- `MaxNum`: the most particles alive at once. Seen in the example effects: do not let an emitter reach it, or it stops emitting.
 - `BirthRate`: particles per second. `BirthRateRND` adds a random spread.
 - `BirthRateVel`: ties the birth rate to the owner's speed, which gives a smoke trail behind a moving object. It is a number, not a switch: vanilla blood uses `BirthRateVel 100` (`P:\graphics\particles\blood_bleeding_01.ptc:8`).
 
@@ -150,7 +150,7 @@ Every property is in `ptc-format-reference.md`. These notes add how the properti
 
 ### Sprite animation
 
-- `AnimFPS`: the playback speed of the sprite sheet. For a material with one frame, LM_Planes writes `AnimFPS 999` with `AnimOnce 1`; vanilla does the same in the oil fire (`P:\graphics\particles\fire_oil1.ptc:131`).
+- `AnimFPS`: the playback speed of the sprite sheet. For a material with one frame, the example effects write `AnimFPS 999` with `AnimOnce 1`; vanilla does the same in the oil fire (`P:\graphics\particles\fire_oil1.ptc:131`).
 - `AnimOnce`: 1 plays the sheet once, 0 loops it while the particle lives.
 - `RandomFrame`: 1 starts each particle on a random frame, so particles of one emitter do not look the same.
 
@@ -163,12 +163,12 @@ Every property is in `ptc-format-reference.md`. These notes add how the properti
 ### Forces
 
 - `Wind`: whether wind moves the particle.
-- `AirResistance` and `AirResistanceRND`: drag. LM_Planes uses about `0.05`.
-- `GravityMultiply`: how strongly gravity pulls. A negative value makes the particle rise, which is how smoke climbs. LM_Planes uses `-0.05`; vanilla birds use `GravityMultiply -0.1` (`P:\graphics\particles\birds_01.ptc:25`).
+- `AirResistance` and `AirResistanceRND`: drag. The example effects use about `0.05`.
+- `GravityMultiply`: how strongly gravity pulls. A negative value makes the particle rise, which is how smoke climbs. The example effects use `-0.05`; vanilla birds use `GravityMultiply -0.1` (`P:\graphics\particles\birds_01.ptc:25`).
 
 ### Draw order
 
-- `Sort`: the render order. LM_Planes note: a higher number draws later, on top.
+- `Sort`: the render order. In the example effects a higher number draws later, on top.
 
 ## Curves over a particle's life
 
@@ -212,11 +212,11 @@ A curve whose name ends in `Mast` is laid over the base curve and runs over the 
 - `VelocityMast` changes speed.
 - `AirResistanceMast` changes drag.
 
-The base curve sets the normal behaviour and the `Mast` curve adds the envelope. Uses seen in LM_Planes: smoke that pulses (`AlphaMast`), an explosion whose spawn rate ramps up and then down (`BRateMast`), debris that starts fast and slows (`VelocityMast`).
+The base curve sets the normal behaviour and the `Mast` curve adds the envelope. Uses seen in the example effects: smoke that pulses (`AlphaMast`), an explosion whose spawn rate ramps up and then down (`BRateMast`), debris that starts fast and slows (`VelocityMast`).
 
 ## Layering emitters
 
-A real effect stacks emitters with different timing, size and material. The three LM_Planes effects:
+A real effect stacks emitters with different timing, size and material. The three example effects:
 
 ### PLANES_EX, a bomb explosion with 4 emitters
 
@@ -250,26 +250,26 @@ The rule behind all three: keep each emitter small and give it one job (first fl
 
 ## Registering the effects
 
-The mod registers its three files in a modded `ParticleList`, in the `3_Game` script module:
+The plane mod registers its three files in a modded `ParticleList`, in the `3_Game` script module:
 
 ```
-// LM_Planes, scripts/3_Game/ParticleList.c
+// MyMod/scripts/3_Game/ParticleList.c
 modded class ParticleList
 {
-    static const int PLANES_EX = RegisterParticle("LM_Planes/graphics/", "PLANES_EX");
-    static const int PLANES_IMPACT = RegisterParticle("LM_Planes/graphics/", "PLANES_IMPACT");
-    static const int PLANES_BOOM = RegisterParticle("LM_Planes/graphics/", "PLANES_BOOM");
+    static const int PLANES_EX = RegisterParticle("MyMod/graphics/", "PLANES_EX");
+    static const int PLANES_IMPACT = RegisterParticle("MyMod/graphics/", "PLANES_IMPACT");
+    static const int PLANES_BOOM = RegisterParticle("MyMod/graphics/", "PLANES_BOOM");
 }
 ```
 
 - The first argument is the mod folder that holds the file, with a slash at the end.
 - The second is the file name without `.ptc`.
 - Each call returns the ID to store in a `static const int`.
-- `RegisterParticle(string root_path, string file_name)` lowercases both arguments (`P:\scripts\3_game\particles\particlelist.c:452`), so the upper case names this mod uses work, but lower case names with the mod prefix are the convention in this skill (`SKILL.md`, "Registering custom particles").
+- `RegisterParticle(string root_path, string file_name)` lowercases both arguments (`P:\scripts\3_game\particles\particlelist.c:452`), so the upper case names used here work, but lower case names with the mod prefix are the convention in this skill (`SKILL.md`, "Registering custom particles").
 
 ## Playing them from script
 
-One shot at a world position, as LM_Planes does when a plane hits the ground. `EOnContact` is the vanilla contact event (`P:\scripts\1_core\proto\enentity.c:213`) and `Particle.PlayInWorld` the vanilla factory (`P:\scripts\3_game\particles\particle.c:174`). `m_PlaneMode` and `PlaneMode` belong to the mod.
+One shot at a world position, played when a plane hits the ground. `EOnContact` is the vanilla contact event (`P:\scripts\1_core\proto\enentity.c:213`) and `Particle.PlayInWorld` the vanilla factory (`P:\scripts\3_game\particles\particle.c:174`). `m_PlaneMode` and `PlaneMode` belong to the mod.
 
 ```
 override void EOnContact(IEntity other, Contact extra)
@@ -290,17 +290,17 @@ eff.SetAutodestroy(true);
 SEffectManager.PlayInWorld(eff, GetPosition());
 ```
 
-- The ID setter is `SetParticleID(int id)` (`P:\scripts\3_game\effects\effectparticle.c:327`). The source notes wrote `SetParticle(ParticleList.PLANES_BOOM)`, but vanilla `SetParticle` takes a `Particle` object, not an ID (`P:\scripts\3_game\effects\effectparticle.c:138`).
+- The ID setter is `SetParticleID(int id)` (`P:\scripts\3_game\effects\effectparticle.c:327`). Do not write `SetParticle(ParticleList.PLANES_BOOM)`: vanilla `SetParticle` takes a `Particle` object, not an ID (`P:\scripts\3_game\effects\effectparticle.c:138`).
 - `SetAutodestroy` is declared on `Effect` (`P:\scripts\3_game\effect.c:242`).
 - `SEffectManager.PlayInWorld` takes the effect and a position (`P:\scripts\3_game\effectmanager.c:47`).
-- The source notes opened the snippet with `import "EffectParticle";`. Enforce Script has no such statement; leave it out.
+- Enforce Script has no `import` statement; do not open the snippet with `import "EffectParticle";`.
 
 ## Turning single emitters on and off
 
-An effect can react to the game by switching emitters. The mod's seaplane water effect copies the vanilla boat wake:
+An effect can react to the game by switching emitters. A seaplane water effect that copies the vanilla boat wake:
 
 ```
-// LM_Planes pattern. GetPlaneSpeed() is the mod's own method.
+// Seaplane example. GetPlaneSpeed() and PLANES_SEAPLANE_FRONT are the mod's own.
 class EffectSeaplaneWaterFront : EffectBoatWaterBase
 {
     void EffectSeaplaneWaterFront()
@@ -328,21 +328,21 @@ class EffectSeaplaneWaterFront : EffectBoatWaterBase
 
 What vanilla provides for this:
 
-- `EnableEmitor(Particle ptc, int id, bool enable)` is a protected method of `EffectBoatWaterBase`, not of `EffectParticle` (`P:\scripts\4_world\entities\effects\boatwatereffects.c:306`). It sets `BIRTH_RATE` and `BIRTH_RATE_RND` of one emitter to zero, or back to the values of the `.ptc`. Extend `EffectBoatWaterBase` as above, or copy the method into your own `EffectParticle` subclass. The source notes extended `EffectParticle` directly, which has no such method.
-- The current particle of an effect is `GetParticle()` (`P:\scripts\3_game\effects\effectparticle.c:166`). The source notes called `GetCurrentParticle()`, which vanilla does not have.
+- `EnableEmitor(Particle ptc, int id, bool enable)` is a protected method of `EffectBoatWaterBase`, not of `EffectParticle` (`P:\scripts\4_world\entities\effects\boatwatereffects.c:306`). It sets `BIRTH_RATE` and `BIRTH_RATE_RND` of one emitter to zero, or back to the values of the `.ptc`. Extend `EffectBoatWaterBase` as above, or copy the method into your own `EffectParticle` subclass. A class that extends `EffectParticle` directly has no such method.
+- The current particle of an effect is `GetParticle()` (`P:\scripts\3_game\effects\effectparticle.c:166`). Vanilla has no `GetCurrentParticle()`.
 - `UpdateSpeedState(Particle ptc, float speed)` is the hook the vanilla front wake overrides (`P:\scripts\4_world\entities\effects\boatwatereffects.c:24`).
-- `Update(float timeSlice = 0)` is declared on `EffectBoatWaterBase` too (`P:\scripts\4_world\entities\effects\boatwatereffects.c:325`). `EffectParticle` has no `Update` to override, so the source notes' `override void Update` on an `EffectParticle` subclass does not compile. Nothing calls it for you: the vanilla boat calls `Update` on each water effect every frame (`P:\scripts\4_world\entities\vehicles\boatscript.c:815`), and a plane has to do the same.
+- `Update(float timeSlice = 0)` is declared on `EffectBoatWaterBase` too (`P:\scripts\4_world\entities\effects\boatwatereffects.c:325`). `EffectParticle` has no `Update` to override, so `override void Update` on a direct `EffectParticle` subclass does not compile. Nothing calls it for you: the vanilla boat calls `Update` on each water effect every frame (`P:\scripts\4_world\entities\vehicles\boatscript.c:815`), and a plane has to do the same.
 
 ## Mistakes to avoid
 
-1. Do not write your own `.emat` unless you must. Vanilla materials with their GUIDs cover most effects. (The source notes add that a custom `.emat` needs Workbench to create a GUID; `SKILL.md`, "GUID references", shows that a mod's own material resolves by path alone.)
+1. Do not write your own `.emat` unless you must. Vanilla materials with their GUIDs cover most effects. (A custom `.emat` does not need Workbench to create a GUID: `SKILL.md`, "GUID references", shows that a mod's own material resolves by path alone.)
 2. Do not give a single frame material a low `AnimFPS`. Use `AnimFPS 999` with `AnimOnce 1`.
 3. Do not forget `RandomFrame` on a group of similar particles. Without it they all show the same frame at the same time and look artificial.
 4. Do not put an `EmitorDef` at the wrong level. It belongs inside `EffectDef { Emitors { ... } }`.
 
 ## Converting from CfgCloudlets
 
-Vanilla still defines class based particles in `CfgCloudlets`, with keys such as `interval`, `cloudletDuration` and `cloudletShape` (`P:\DZ\data\data\particleeffects\config.cpp:47`). The mapping below is from the source notes and is not yet checked on `P:\`:
+Vanilla still defines class based particles in `CfgCloudlets`, with keys such as `interval`, `cloudletDuration` and `cloudletShape` (`P:\DZ\data\data\particleeffects\config.cpp:47`). The mapping below is not yet checked on `P:\`:
 
 | Old (`CfgCloudlets`) | New (`.ptc`) |
 |---|---|

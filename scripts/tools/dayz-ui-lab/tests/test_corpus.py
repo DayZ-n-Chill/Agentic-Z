@@ -62,7 +62,7 @@ class ManifestTests(unittest.TestCase):
                 self.assertIn("redistribution", entry["license"])
 
     def test_no_corpus_is_marked_as_redistributed(self) -> None:
-        # C5: the pack ships identity, never payload.
+        # The repository ships identity, never payload.
         for entry in self.manifest["corpora"]:
             with self.subTest(corpus=entry["corpus_id"]):
                 self.assertFalse(entry["redistributed_in_pack"])

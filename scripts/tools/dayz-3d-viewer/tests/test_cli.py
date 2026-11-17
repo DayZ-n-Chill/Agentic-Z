@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from dayz_3d_viewer import MissingDependencyError
 from dayz_3d_viewer.deps import require_pillow
 from dayz_3d_viewer.__main__ import main
@@ -71,6 +73,7 @@ def test_cli_p3d_info_and_build_viewer(tmp_path):
 
 
 def test_cli_paa_and_rvmat(tmp_path):
+    pytest.importorskip("PIL", reason="Pillow is needed to decode PAA pixels")
     pixels = [(255, 0, 0, 255)] * 16
     paa = write_rgba8888_paa(tmp_path / "red.paa", pixels, 4, 4)
     png = tmp_path / "red.png"

@@ -1,8 +1,8 @@
 # The mod cycle, once: what to install, which order, which skill
 
-Tier 3 pack: a map of one pass through making a DayZ mod (understand, write, lint, pack, deploy, test, debug) and a route table from "I want X" to the skill or tool. It came in with the DayZ Modding Knowledge Pack import. It is an index, not a tutorial: the procedures live in the skills it names.
+Tier 3 pack: a map of one pass through making a DayZ mod (understand, write, lint, pack, deploy, test, debug) and a route table from "I want X" to the skill or tool. It is an index, not a tutorial: the procedures live in the skills it names.
 
-Skill names written plain (dayz-vehicles, enforce-script-reference) are the skills imported from the Knowledge Pack; each is a folder under `skills/` in this repo with that name (`skills/dayz-vehicles/`, `skills/enforce-script-reference/`). A name with a leading slash is a skill Agentic-Z already had. Where the import merged a Knowledge Pack skill into an existing Agentic-Z skill, use ours: `/dayz-preflight` for the environment check, `/dayz-lint` and `/dayz-gate` for the offline checks, `/dayz-build-pbo` for packing, `/dayz-launch-test` and `/dayz-stop-test` for the local server and client, `/dayz-logwatch` for the logs. Tool behaviour and exit codes below are the Knowledge Pack's own statements about its tools, not yet checked on `P:\`.
+Skill names written plain (dayz-vehicles, enforce-script-reference) are reference skills; each is a folder under `skills/` in this repo with that name (`skills/dayz-vehicles/`, `skills/enforce-script-reference/`). A name with a leading slash is a skill that runs a step: `/dayz-preflight` for the environment check, `/dayz-lint` and `/dayz-gate` for the offline checks, `/dayz-build-pbo` for packing, `/dayz-launch-test` and `/dayz-stop-test` for the local server and client, `/dayz-logwatch` for the logs. Tool behaviour and exit codes below describe the tools under `scripts/tools/`; they are not vanilla facts and are not yet checked on `P:\`.
 
 ## What has to be on the machine
 
@@ -26,9 +26,9 @@ pip install -e scripts/tools/py3d
 python -c "import py3d; assert py3d.IS_DAYZ_FORK; print(py3d.__version__)"
 ```
 
-The fork version the Knowledge Pack pinned is 1.10.1 (distribution name `py3d-dayz`, import name `py3d`). Six of the model skills once shipped a py3d 1.4.0 wheel; that wheel is gone and the editable install replaces it.
+The fork version is 1.10.1 (distribution name `py3d-dayz`, import name `py3d`). No skill ships a py3d wheel; the editable install above is the way to get it.
 
-Environment check: a missing `P:\` is a hard fail. Missing Tools, vanilla data, the workshop junction or DayZDiag are warnings in the Knowledge Pack's preflight, and the user decides whether to continue. `DAYZ_TOOLS_PATH` and `DAYZ_VANILLA_DATA_PATH` override the search when the layout is not the Steam default.
+Environment check: a missing `P:\` is a hard fail. Missing Tools, vanilla data, the workshop junction or DayZDiag are warnings in `/dayz-preflight`, and the user decides whether to continue. `DAYZ_TOOLS_PATH` and `DAYZ_VANILLA_DATA_PATH` override the search when the layout is not the Steam default.
 
 ## The cycle
 
@@ -56,8 +56,8 @@ python scripts/tools/dayz-script-validator/scripts/script_validator.py <addon_ro
 
 - Exit `0` PASS, `1` FAIL, `2` WARN. Exit 1 blocks packing. `--terse` prints the verdict on line one.
 - If the addon has UI, also run `python scripts/tools/dayz-script-validator/scripts/ui_reconcile.py <addon_root>`. It checks `FindAnyWidget` literals against the widgets a `.layout` declares and `#STR_` keys against the stringtable.
-- `/dayz-build-pbo` (the Knowledge Pack's dayz-pbo-build was merged into it; see its `references/pre-build-checks.md`) walks seven further checks by hand: folder layout, `config.cpp`, `model.cfg`, textures, LODs, stringtable, scripts. They are a checklist, not a bundled command.
-- Do not run `scripts/tools/dayz-script-validator/scripts/vanilla_control.py` as part of making a mod. It is a gate for people changing the linter, walks Bohemia's tree and takes two to four minutes on DayZ 1.30.
+- `/dayz-build-pbo` (see its `references/pre-build-checks.md`) walks seven further checks by hand: folder layout, `config.cpp`, `model.cfg`, textures, LODs, stringtable, scripts. They are a checklist, not a bundled command.
+- Do not run `scripts/tools/dayz-script-validator/scripts/vanilla_control.py` as part of making a mod. It is a gate for people changing the linter, walks the whole vanilla script tree and takes two to four minutes on DayZ 1.30.
 
 When the work is a model, a layout or an animation, reach for the matching tool before a build (`docs/knowledge-pack-tools.md`). The `python -m dayz_*` forms do not resolve until that tool is installed (`python -m pip install -e scripts/tools/<name>`) or its package is on `PYTHONPATH`. Two forms run straight from the tree:
 
@@ -93,7 +93,7 @@ There is no separate deploy step. AddonBuilder's destination is the deploy (`P:\
 
 ### 6. Test in game
 
-- The Knowledge Pack's dayz-test-ingame does not ship a launcher to run from the repo root. It ships a PowerShell template (`skills/dayz-test-ingame/templates/dayz-test.ps1`) and three `.bat` wrappers that are copied into `<Mod>_dev\tools\` with `__MODNAME__` replaced. The template assumes a `P:\` work-drive layout and has to be re-pointed for any other.
+- dayz-test-ingame does not ship a launcher to run from the repo root. It ships a PowerShell template (`skills/dayz-test-ingame/templates/dayz-test.ps1`) and three `.bat` wrappers that are copied into `<Mod>_dev\tools\` with `__MODNAME__` replaced. The template assumes a `P:\` work-drive layout and has to be re-pointed for any other.
 - `-Mod` is required (the CfgPatches name, no dashes). `-Mode all` starts the server and then the client on DayZDiag. `-Build` drives AddonBuilder first. `-Preflight` only checks.
 - Offline (single exe) mode is marked `[DESIGN]` in that skill: validate it in game before trusting it.
 - File patching: script and config edits are the general case for hot reload; `.p3d`, `.paa` and `.rvmat` need a rebuild. On some installs the PBO wins even for scripts, and the skill documents a `srcprobe` test to tell which is loaded.
@@ -173,4 +173,4 @@ Throughout: verify every class and field against vanilla (`P:\scripts\`), respec
 
 ## What this map does not cover
 
-A DayZ install guide, Workshop signing and production server operation are outside the imported material.
+A DayZ install guide, Workshop signing and production server operation are not covered here.

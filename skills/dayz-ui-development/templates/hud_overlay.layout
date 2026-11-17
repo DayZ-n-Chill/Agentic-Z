@@ -1,6 +1,5 @@
 // HUD badge pinned to the top-right, no mouse capture.
-// Pass-through from LFPG cable_hud.layout / LFPG_TankHUD.layout (not in
-// this repo; ignorepointer 1 on the whole tree) and vanilla
+// Pass-through (ignorepointer 1 on the whole tree) as in vanilla
 // gui/layouts/new_ui/hud/hud_player_tag.layout:11 /
 // gui/layouts/day_z_hud.layout:446 (line on P:\ for DayZ 1.30).
 // Stays proportional so the same fractions land at 1920x1080 and 1280x720.
@@ -13,8 +12,7 @@
 // "hexactpos 1 + 252 px is what breaks 1280x720").
 FrameWidgetClass HudOverlayRoot {
 	name "HudOverlayRoot"
-	// HUD overlays must not steal aim/look. cable_hud.layout:3 and
-	// LFPG_TankHUD.layout:9 (neither is in this repo).
+	// HUD overlays must not steal aim/look.
 	ignorepointer 1
 	position 0 0
 	size 1 1
@@ -22,37 +20,36 @@ FrameWidgetClass HudOverlayRoot {
 	vexactpos 0
 	hexactsize 0
 	vexactsize 0
-	// Menus sit at 1000 (gui/layouts/dialog.layout:15) / 2000 (mcp_dialog.layout:11,
-	// not distributed). Stay under them.
+	// Menus sit at 1000 (gui/layouts/dialog.layout:15) / 2000
+	// (modal_panel.layout in this folder). Stay under them.
 	priority 100
 	{
 		PanelWidgetClass HudBadge {
 			name "HudBadge"
 			ignorepointer 1
-			// LFPG_TankHUD.layout BarBg (not distributed): color 0.12 0.12 0.12 0.90
-			// + rover_sim_colorable.
+			// Dark bar background: color 0.12 0.12 0.12 0.90 + rover_sim_colorable.
 			color 0.12 0.12 0.12 0.90
 			// Top-right as a fraction: x = 1 - width - margin = 0.76.
 			// Equivalent corner to vanilla BadgesPanel (gui/layouts/day_z_hud.layout:514-524 on P:\ for DayZ 1.30,
 			// right_ref + 252 exact units inward) without copying the exact offset.
 			position 0.76 0.04
 			size 0.22 0.10
-			// Vanilla writes `halign left` (38x) and `valign top` (34x), never
-			// left_ref/top_ref (0x in 214 files). gui/layouts/day_z_assignments.layout:83-84.
+			// Vanilla writes `halign left` (41x) and `valign top` (36x), never
+			// left_ref/top_ref (0x). gui/layouts/day_z_assignments.layout:83-84.
 			halign left
 			valign top
 			hexactpos 0
 			vexactpos 0
 			hexactsize 0
 			vexactsize 0
-			// Same Panel paint rule as modal_panel.layout. 577x rover_sim_colorable.
+			// Same Panel paint rule as modal_panel.layout. 641x rover_sim_colorable.
 			// ColorablePanel Center="" — do not use it. styles-format.md.
 			style rover_sim_colorable
 			{
 				ImageWidgetClass HudIcon {
 					name "HudIcon"
-					// Vanilla HUD badge icon: gui/layouts/day_z_hud.layout:534-552
-					// (Wetness, image0 set:dayz_gui). Most-used vanilla class (1638x).
+					// Vanilla HUD badge icon: gui/layouts/day_z_hud.layout:534-551
+					// (Wetness, image0 set:dayz_gui). Most-used vanilla class (1913x).
 					// Vanilla sizes this icon in exact square units (size 35 35,
 					// hexactsize/vexactsize 1, fixaspect fixwidth). This box is
 					// proportional by design, so it predicts 67.58x60.48 at 1920 --
@@ -85,8 +82,8 @@ FrameWidgetClass HudOverlayRoot {
 					text "#STR_UI_HUD_LABEL"
 					font "gui/fonts/sdf_MetronBook24"
 					// Short HUD caption: TextWidget, no wrap. wrap belongs on
-					// MultilineText (329/331). text_proportion sizes by height;
-					// 116x on TextWidget in the 214 vanilla files (276x on Button).
+					// MultilineText (337/339). text_proportion sizes by height;
+					// 110x on TextWidget in the vanilla layouts (271x on Button).
 					text_proportion 0.70
 					"text color" 1 1 1 1
 					"text halign" left

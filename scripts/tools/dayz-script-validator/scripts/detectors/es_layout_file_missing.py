@@ -1,13 +1,12 @@
-# CANDIDATE-36 ES-LAYOUT-FILE-MISSING.
+# ES-LAYOUT-FILE-MISSING.
 # A `.layout` string literal referenced from Enforce (CreateWidgets / a
 # GetLayoutFile override) whose file does not exist in the addon crashes
 # INSIDE the native CreateWidgets call (the `if(!root)` guard never runs).
-# Source: origin: production mod bug ledger (BUG-004, crash). Distinct from
-# ES-LAYOUT-PATH-PBOPREFIX-MISMATCH (CANDIDATE-10), which checks the prefix:
+# Distinct from ES-LAYOUT-PATH-PBOPREFIX-MISMATCH, which checks the prefix:
 # this checks the target file EXISTS. Only correctly-prefixed paths are
-# checked here, so the two rules do not overlap (a wrong prefix is CAND-10).
+# checked here, so the two rules do not overlap (a wrong prefix is that rule's).
 #
-# Phase 1 supported: string literals only (reuses CANDIDATE-10's extractor).
+# Phase 1 supported: string literals only (reuses that rule's extractor).
 # NOT supported: paths built by concatenation/variables (known false negative).
 
 import pathlib
@@ -81,7 +80,7 @@ def check_es_layout_file_missing(source, rel_path, prefix, addon_root):
             f"[FAIL] {rel_path} line {line_number}: layout '{literal}' is "
             f"referenced but the file does not exist under the addon root "
             f"(resolved '{relative}'). CreateWidgets on a missing .layout "
-            f"crashes inside the native call (origin: production mod bug ledger). "
+            f"crashes inside the native call. "
             f"Create the file or fix the path."
         )
         errors.append(

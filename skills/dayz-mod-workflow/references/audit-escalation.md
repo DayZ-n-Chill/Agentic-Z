@@ -2,11 +2,11 @@
 
 How to label the severity of an audit finding on a DayZ mod, how to label the severity of something that is missing, and how to keep parallel auditors independent. `dayz-mod-workflow` points here. To run a data-critical audit use `rigorous-data-audit` (its seven steps and parallel auditors) and `skills/_shared/persistence/data-audit.md`; this file is only the note on labels and independence.
 
-The cases come from the knowledge pack author's projects (LFPowerGrid, LF_VStorage, LFQuad). The vanilla facts are cited on `P:\`.
+The cases were measured on mod projects (a power-grid mod, a virtual-storage mod, a quad vehicle mod). The vanilla facts are cited on `P:\`.
 
 ## 1. Severity inflation in audit reports
 
-The pattern, seen in LFPowerGrid audits: findings labelled "P1, crash" that were really "P2, recoverable VM exception, the server keeps running". The cause: going from a log message (`String CORRUPTED`) to a behaviour (the process dies) without checking.
+The pattern, seen in audits of a power-grid mod: findings labelled "P1, crash" that were really "P2, recoverable VM exception, the server keeps running". The cause: going from a log message (`String CORRUPTED`) to a behaviour (the process dies) without checking.
 
 Before writing audit findings:
 
@@ -28,20 +28,20 @@ Measured case: in a review of audit findings, "Server boots: NO" in a before-and
 
 Section 1 grades a bug that was observed. This section grades something that is missing. "The feature is incomplete" is not the same as "its absence crashes".
 
-**Rule (lesson LL-076).** In any gap audit, label each finding by the severity of its absence: does lacking it crash or stop loading, or does it only leave a feature incomplete? An engine minimum deferred as a "high-level feature" can be a hidden P1 crash. Measured on LFQuad: `DamageSystem` was filed as a deferred "damage feature", and its absence gives `[Object::GetMaxHealth] No DamageSystemData` (a crash) as soon as health is touched (admin tools, damage, collision, sync).
+**Rule.** In any gap audit, label each finding by the severity of its absence: does lacking it crash or stop loading, or does it only leave a feature incomplete? An engine minimum deferred as a "high-level feature" can be a hidden P1 crash. Measured on a quad vehicle mod: `DamageSystem` was filed as a deferred "damage feature", and its absence gives `[Object::GetMaxHealth] No DamageSystemData` (a crash) as soon as health is touched (admin tools, damage, collision, sync).
 
 **Engine minimums (anti-crash). Validate them early, apart from the feature tiers:**
 
-- **Vehicle (`CarScript`).** `class DamageSystem { class GlobalHealth { class Health { hitpoints; healthLevels[]; }; }; }`. Without it any `GetMaxHealth` or `SetHealth` crashes (measured on LFQuad). Full `DamageZones` are a feature; `GlobalHealth` is the anti-crash baseline. Vanilla `OffroadHatchback` declares `class DamageSystem` with `class GlobalHealth` first and `class DamageZones` after it (`P:\DZ\vehicles\wheeled\config.cpp:1540-1577`). Check the part classes (wheels) too if their health is touched. Pack file: `skills/_shared/vehicles/damage.md`.
+- **Vehicle (`CarScript`).** `class DamageSystem { class GlobalHealth { class Health { hitpoints; healthLevels[]; }; }; }`. Without it any `GetMaxHealth` or `SetHealth` crashes (measured in game). Full `DamageZones` are a feature; `GlobalHealth` is the anti-crash baseline. Vanilla `OffroadHatchback` declares `class DamageSystem` with `class GlobalHealth` first and `class DamageZones` after it (`P:\DZ\vehicles\wheeled\config.cpp:1540-1577`). Check the part classes (wheels) too if their health is touched. Pack file: `skills/_shared/vehicles/damage.md`.
 - **Vehicle.** A constructor that sets the engine sound strings (`m_EngineStart*`); left empty they give broken audio and possibly an exception from an empty sound set name.
-- **Model `.p3d`.** A Geometry LOD with convex components and mass (without it the object does not simulate), and the action selections (`seat_*`, `refill`, doors) in the LOD the cursor resolves (View Geometry for actions, measured on LFQuad). Pack files: `skills/_shared/models/lods.md` and `skills/_shared/physics/collision-lods.md`; `/dayz-p3d-audit` checks the model.
+- **Model `.p3d`.** A Geometry LOD with convex components and mass (without it the object does not simulate), and the action selections (`seat_*`, `refill`, doors) in the LOD the cursor resolves (View Geometry for actions, measured in game). Pack files: `skills/_shared/models/lods.md` and `skills/_shared/physics/collision-lods.md`; `/dayz-p3d-audit` checks the model.
 - **Generic.** When an engine baseline is "deferred", put it in the plan as a **P1 anti-crash** item apart from the full feature, not in the late-phase bucket.
 
 Process: a parity audit includes a pass over "engine baselines per subsystem" on top of the feature checklist, so crashes are not discovered one at a time in game.
 
 ## 3. Multi-agent audits: context isolation is mandatory
 
-From a post-mortem on LF_VStorage: four auditor agents "converged" on confabulated findings because they had read the same conventions document and inherited the same bias. The convergence was read as rigour; it was coupling.
+From a post-mortem on a virtual-storage mod: four auditor agents "converged" on confabulated findings because they had read the same conventions document and inherited the same bias. The convergence was read as rigour; it was coupling.
 
 Rules for a multi-agent audit of DayZ code:
 

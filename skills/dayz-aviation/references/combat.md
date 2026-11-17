@@ -2,7 +2,7 @@
 
 Optional weapons on an aircraft: a tracer projectile with no engine physics, hitscan damage with a visual tracer, the full Spitfire fire pipeline (RPC, ammo, damage zone resolution), and camera shake.
 
-Third-party material: patterns read from the LM_Planes mod (Workshop `3730564764`, by Llama and Itspete-Here), whose files are not in this repo. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
+Third-party mod behaviour (LM_Planes, Workshop `3730564764`), not vanilla. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
 
 ## Combat Aviation (optional)
 
@@ -66,7 +66,7 @@ Hitscan (1500m raycast) does damage, visual tracer is the projectile spawn — c
 
 ### Combat aviation: Spitfire shooting pattern (full)
 
-Heavy combat pattern. Only Spitfire among Llama's aircraft has full firing implementation. Catalina has visible Browning M2 .50 cal rvmats but no firing logic — gun mounts are cosmetic.
+Heavy combat pattern. Only the Spitfire among the LM_Planes aircraft has a full firing implementation. Catalina has visible Browning M2 .50 cal rvmats but no firing logic — gun mounts are cosmetic.
 
 **Custom RPC enum convention** (avoid vanilla DayZ RPC collisions):
 
@@ -75,7 +75,7 @@ enum SPIT_RPCserver { RPC_SHOT_FIRED  = 937081 };
 enum SPIT_RPCclient { RPC_SYNC_SHOT_FX = 937091 };
 ```
 
-Magic constants in 937xxx range to avoid colliding with vanilla DayZ + other mods. Pick your own unique range (~10 digits) for your mod's RPCs.
+Magic constants in 937xxx range to avoid colliding with vanilla DayZ + other mods. Pick a unique range for the mod's own RPCs.
 
 **Constants and config**:
 
@@ -96,7 +96,7 @@ class LM_Spitfire extends LlamaPlaneScript
     static const string SPIT_SHOT_SOUNDSET    = "LM_Spitfire_Shot_SoundSet";
     static const string SPIT_IMPACT_SOUNDSET  = "Grenade_explosion_SoundSet";
     static const int SPIT_IMPACT_PARTICLE     = ParticleList.PLANES_IMPACT;
-    static const int SPIT_MUZZLE_PARTICLE     = ParticleList.GUN_IZH18;   // reuse vanilla shotgun muzzle flash
+    static const int SPIT_MUZZLE_PARTICLE     = ParticleList.GUN_IZH18;   // reuse the vanilla IZH-18 muzzle flash
     
     static ref array<string> SPIT_ALLOWED_AMMO = {
         "Ammo_308Win",
@@ -106,7 +106,7 @@ class LM_Spitfire extends LlamaPlaneScript
     void LM_Spitfire() { m_canShoot = true; m_NextMuzzle = 0; }
 ```
 
-**Damage Type hack** — uses rifle ammo as inventory source but applies grenade damage profile (gets explosive damage from rifle bullets without creating new damage types). Reuses vanilla `ParticleList.GUN_IZH18` (shotgun muzzle flash) and `Grenade_explosion_SoundSet` for impact. Zero new assets created for combat.
+**Damage Type hack** — uses rifle ammo as inventory source but applies grenade damage profile (gets explosive damage from rifle bullets without creating new damage types). Reuses vanilla `ParticleList.GUN_IZH18` (the IZH-18 muzzle flash, particle `weapon_shot_izh18_01`) and `Grenade_explosion_SoundSet` for impact. Zero new assets created for combat.
 
 **IsLocalPilot** check (gate weapons to pilot seat only):
 

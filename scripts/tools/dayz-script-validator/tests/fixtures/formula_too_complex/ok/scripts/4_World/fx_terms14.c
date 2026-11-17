@@ -1,4 +1,4 @@
-// Inbox 7b9e, 14 terms, the control: it compiled on DayZDiag 1.30.164289.
+// 14 terms, the control: it compiled on DayZDiag 1.30.164289.
 class FX_Terms14
 {
     static string Run(int i0, float f0)

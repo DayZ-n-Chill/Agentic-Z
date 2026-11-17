@@ -1,7 +1,7 @@
 # QUARANTINED — not imported or called by script_validator.py.
-# Rule LAYOUT-LEAF-MISSING-BRACES is false (BUG-029): a leaf .layout widget
-# without a child { } block is valid Enfusion syntax. The 28 LFPowerGrid
-# hits were false positives (confirmed against VPP/Expansion/TraderPlus/TraderX).
+# Rule LAYOUT-LEAF-MISSING-BRACES is false: a leaf .layout widget
+# without a child { } block is valid Enfusion syntax. Its 28 hits on
+# one mod were false positives (confirmed against the layouts of four other mods).
 # The file remains as a record of the rejected rule. Do not re-wire it.
 
 import re

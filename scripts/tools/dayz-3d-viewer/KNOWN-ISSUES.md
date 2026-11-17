@@ -1,9 +1,8 @@
 # Known issues
 
-Gaps measured against the converter that ships in this directory. They
-were first recorded as LL-124 and re-checked in the current sources
-(grep, not assumption). They are **not** fixed here; that is a later
-task. A clean conversion is not evidence that any of them is gone.
+Gaps in the converter that ships in this directory, each checked against
+the current sources. They are **not** fixed here; that is a later task.
+A clean conversion is not evidence that any of them is gone.
 
 ## Present
 
@@ -32,14 +31,12 @@ match the in-game mesh.*
 
 `classify_lod` (`p3d_to_gltf.py`) returns `"shadow"` for every
 resolution in `[10, 15000)`, which includes ViewPilot at 1100. It
-does **not** currently label 1100 as a visual LOD:
-`find_best_visual_lod` only accepts types that start with `"visual"`,
-so a 1100 LOD is not chosen as the mesh. The pack py3d fork
-(`classify_lod_resolution`) returns `None` for 1100.
+does not label 1100 as a visual LOD: `find_best_visual_lod` only
+accepts types that start with `"visual"`, so a 1100 LOD is not chosen
+as the mesh. `classify_lod_resolution` in `scripts/tools/py3d`
+returns `None` for 1100.
 
-The original LL-124 wording was "classified as a visual LOD". That
-specific label is no longer what the function returns. The
-misclassification itself is still present: 1100 is `shadow`, not a
+The misclassification is that 1100 is reported as `shadow`, not as a
 ViewPilot kind.
 
 *Present as a wrong kind. Not treated as the visual mesh.*

@@ -1,6 +1,6 @@
 # Checklist format
 
-The JSON format of a question checklist for `vr_score.py`, how `--view` routes each question to one image, what `vr_calibrate.py` relies on, and how the view of each question in `checks_hardsurface.json` was chosen. It describes this skill's own files and results measured by the source author; nothing is a statement about the game.
+The JSON format of a question checklist for `vr_score.py`, how `--view` routes each question to one image, what `vr_calibrate.py` relies on, and how the view of each question in `checks_hardsurface.json` was chosen. It describes this skill's own files and measured results; nothing is a statement about the game.
 
 ## An entry
 
@@ -19,7 +19,7 @@ An entry is `{"q": "<question>", "view": "<framing>"}` and may declare `"skip": 
 
 The `view` token is subject plus view (`assembled__iso`, `zoom_muzzle__front_iso`): the first two segments of the file name `<subject>__<view>__<subject>__<version>.png`. It is not the view alone (`iso`, `profile`). The reason: `profile` exists as a view of `zoom_mag` (`zoom_mag__profile__zoom_mag__v1.png`), and the side views of the assembly are `profile_L` and `profile_R`. A bare `profile` or `iso` token cannot tell `assembled__profile_L` from `zoom_mag__profile` (or `assembled__iso` from `body__iso` or `hg__iso`) and brings back the original bug: the question would be evaluated against the wrong framing.
 
-The tokens in `checks_hardsurface.json` are all taken from a real render inventory, none invented. The source lists these four; `assembled__profile_R`, used by a skipped entry, follows the same pattern:
+The tokens in `checks_hardsurface.json` are all taken from a real render inventory, none invented. The table lists four; `assembled__profile_R`, used by a skipped entry, follows the same pattern:
 
 | View | File |
 |---|---|
@@ -44,13 +44,13 @@ How views resolve:
 - **With `--view`**: the name is required. A missing `zoom_muzzle__front_iso` is an error, not a silent fallback. The token `render` is an alias of the positional PNG, for mixed checklists.
 - Each framing is one Ollama call with one image. The views are never sent together in the same message.
 
-`--reference` is unchanged: it stays the comparison photo or render, and is not one more framing. Its guard did change (SP-266): it no longer checks the model name but the pixel dimensions of both images. Two images of the same pixel size collapse into one on `qwen3.x`, and which one survives is unpredictable (it follows the prompt cache), so the call is refused; a difference of a single pixel is enough to avoid it. The old guard by model name blocked `qwen3.5`, which works when the sizes differ, and let `qwen3.8` through, which has the same collision.
+`--reference` is unchanged: it stays the comparison photo or render, and is not one more framing. Its guard did change: it no longer checks the model name but the pixel dimensions of both images. Two images of the same pixel size collapse into one on `qwen3.x`, and which one survives is unpredictable (it follows the prompt cache), so the call is refused; a difference of a single pixel is enough to avoid it. The old guard by model name blocked `qwen3.5`, which works when the sizes differ, and let `qwen3.8` through, which has the same collision.
 
 ## The simple alternatives that were rejected
 
 The simplest option was not touching the command line: a single PNG (the usual three-panel sheet) with the framing written into the prompt ("answer looking at the foreground").
 
-That does not cover the measured case. In the author's evidence notes, questions 1 and 3 have different answers depending on the panel of the same sheet, and that is exactly where the three models disagree. The diagnosis is that the unit of work is (question, image), not (question, instruction about a region). A hint in the prompt still sends all three panels together.
+That does not cover the measured case. In the measured runs, questions 1 and 3 have different answers depending on the panel of the same sheet, and that is exactly where the three models disagree. The diagnosis is that the unit of work is (question, image), not (question, instruction about a region). A hint in the prompt still sends all three panels together.
 
 The other simple option does change the unit of work: `ask img0.png img1.png img2.png` with `"view": 2`. It covers a three-file capture in a fixed order and breaks when a file is left out or reordered: index 2 stops being the muzzle zoom and the bevel question is evaluated against another view. It is the same failure (a question against the wrong framing), moved into the argument list. `--view zoom_muzzle__front_iso zoom_muzzle__front_iso__zoom_muzzle__v1.png` fails loudly if that PNG is missing.
 
@@ -73,14 +73,14 @@ The calibrator does not index by question text. It indexes by:
 
 `checklist_labels` hands the reading to `load_checklist`, which keeps `encoding="utf-8-sig"`: PowerShell 5.1 writes a BOM, and plain `utf-8` kills the report.
 
-## Where each question's view comes from (calibrated 2026-08-16, SP-270)
+## Where each question's view comes from (calibrated 2026-08-16)
 
 The `view` field is not an opinion. It was measured with a broken and a fixed render of the same object, which needs no gold answer. The same question is asked about both versions and two things are checked:
 
 - **Accuracy** against the object's gold answer, across both states.
 - **Separation.** Does the answer change between broken and fixed, on the questions whose answer must change? A framing can score well by always answering the same.
 
-Measured on the `mk47_mutant` model (8 framings, 3 models), with the real grouping `vr_score.py` builds: the checklist reaches 77.8% against a floor of 58.3% for a constant answer, and the connectivity question scores 12/12.
+Measured on one rifle model (8 framings, 3 models), with the real grouping `vr_score.py` builds: the checklist reaches 77.8% against a floor of 58.3% for a constant answer, and the connectivity question scores 12/12.
 
 Three traps cost a whole run and must be avoided when calibrating again:
 
@@ -92,7 +92,7 @@ Three traps cost a whole run and must be avoided when calibrating again:
 
 "Are cylinders smooth and round?" is at chance across the eight framings (50% at most), because its phrasing allows the polygonal handguard, which is flat by design, to be read as a faceted cylinder.
 
-This section once closed with "it is fixed by rewriting it, not by moving it". That was retracted on 2026-08-22, after it was tested and came out the opposite (192 cells on `mk47_mutant` plus a synthetic probe whose truth is set by construction, 2026-08-17):
+This section once closed with "it is fixed by rewriting it, not by moving it". That was retracted on 2026-08-22, after it was tested and came out the opposite (192 cells on the same rifle model plus a synthetic probe whose truth is set by construction, 2026-08-17):
 
 - **Four phrasings were measured and the existing one wins** (6/6 and 6/6 in framings where the round piece fills the frame). A numeric threshold got 5/6, an exclusion clause 5/6, an angular silhouette 2/6. On a framing of the whole object all four drop to 1 or 2 of 3: framing outweighs phrasing.
 - **A threshold inside the question is not applied as a count.** Asked about "roughly six or fewer sides", all three models said "yes" to the 12-sided variant.

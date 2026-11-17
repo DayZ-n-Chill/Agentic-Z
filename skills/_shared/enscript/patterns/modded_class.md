@@ -76,7 +76,7 @@ Multiple mods can each `modded class PlayerBase`. Each mod's layer sits on top o
 
 > **Warning: Never skip `super.*`** unless you deliberately intend to suppress all lower-layer behaviour. This is the most common source of mod incompatibility.
 
-Reported by the knowledge pack, not checked on `P:\` (load order is native): the order of the layers follows the `requiredAddons` compile order, not the order of the `-mod=` or `-servermod=` launch string (measured on a 1.30 server). Do not assume your layer is the outermost one. To undo what another mod's layer did, act in an event that runs after it, such as `EEInit()` after the constructor chain.
+Reported, not checked on `P:\` (load order is native): the order of the layers follows the `requiredAddons` compile order, not the order of the `-mod=` or `-servermod=` launch string (measured on a 1.30 server). Do not assume your layer is the outermost one. To undo what another mod's layer did, act in an event that runs after it, such as `EEInit()` after the constructor chain.
 
 A `modded class` in the wrong module fails in one of two ways:
 
@@ -128,7 +128,7 @@ modded class ActionX
 #endif
 ```
 
-When the caller sits inside an `#ifdef` for another mod, only clients that have that mod see the error, so the fault can stay hidden for months. Reported from the LF_VStorage mod (2026-05-11), where two methods existed only in the server file; this is mod behaviour and no vanilla file shows it.
+When the caller sits inside an `#ifdef` for another mod, only clients that have that mod see the error, so the fault can stay hidden for months. This happened in a storage mod where two methods existed only in the server file; it is third-party mod behaviour and no vanilla file shows it.
 
 **Fix.** Add an empty stub to the base class in the same commit as the server method, with the same parameter list and the same parameter names as the server version:
 
@@ -165,7 +165,7 @@ modded class ItemBase
 
 ### Reported: many added fields on entity classes
 
-Reported by the knowledge pack, not checked on `P:\` (it is about engine behaviour, and no vanilla file shows it):
+Reported, not checked on `P:\` (it is about engine behaviour, and no vanilla file shows it):
 
 - Member fields added to `modded class DayZGame` are safe: it is one script-side object with a stable lifetime.
 - Member fields added to `modded class PlayerBase` or `modded class ItemBase` are safe in almost every mod. The report is that some entity classes can go wrong on the engine side when many mods add fields and their order shifts, and that the sign is a strange crash at player connect or item spawn that goes away when one added field is removed.

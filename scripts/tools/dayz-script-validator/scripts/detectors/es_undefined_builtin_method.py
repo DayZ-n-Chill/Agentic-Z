@@ -26,11 +26,9 @@ from stripper import strip_enforce_comments_and_strings
 ES_UNDEFINED_BUILTIN_METHOD_RULE_ID = "ES-UNDEFINED-BUILTIN-METHOD"
 
 
-# claim: CLAIM-ENFORCE-UNDEFINED-BUILTIN-METHOD
 # A call to a method that the game's own declaration of a built-in type does
-# not have stops the whole script module from compiling. Pipeline inbox
-# fb-20261103-150432-9f93 (LFSkateboard), DayZDiag 1.30.164200 server,
-# 2026-11-03:
+# not have stops the whole script module from compiling. On a DayZDiag
+# 1.30.164200 server, 2026-11-03:
 #
 #   vector gU = gF.Cross(gR);
 #   gR = gU.Cross(gF);
@@ -76,8 +74,8 @@ ES_UNDEFINED_BUILTIN_METHOD_RULE_ID = "ES-UNDEFINED-BUILTIN-METHOD"
 # DAYZ_<major>_<minor>, that of the running build (1_Core/defines.c:11-14 in
 # 1.30.164200; DAYZ_1_30 in the defines of that server's script log), and the
 # vanilla tree does not say which build it is. Mods test an older one around
-# the code of every later build (`#ifndef DAYZ_1_29`, LFSkateboard and
-# DayZ-MCP): those lines are judged. A line under `#ifdef DAYZ_1_29`, or under
+# the code of every later build (`#ifndef DAYZ_1_29`, as the DayZ-MCP
+# addon does): those lines are judged. A line under `#ifdef DAYZ_1_29`, or under
 # the #else of `#ifndef DAYZ_1_29`, compiles on that one build, which may not
 # be the tree's.
 
@@ -237,8 +235,8 @@ class _Builtins:
         A class's names are those at the top level of its body, and every name
         written before a `(` from its header to the next class header. Counting
         brackets alone loses each name after a `(` that only one branch of an
-        #ifdef closes, as in a declaration split across the branches (Grok
-        review, 2026-11-03: `Length` and `Normalize` reported on vector).
+        #ifdef closes, as in a declaration split across the branches (`Length`
+        and `Normalize` were reported on vector that way).
         """
         headers = [match.start() for match in _CLASS_RE.finditer(text)]
         for match, span in class_bodies(text):

@@ -1,6 +1,6 @@
 # Vanilla deep dive: recipes, energy, actions, damage, player sync
 
-Quick facts on five vanilla systems: recipes and crafting (`PluginRecipesManager`), `ComponentEnergyManager`, the action system, the damage pipeline, and player internals and sync. The knowledge pack first checked them against vanilla 1.24 and production mods (2026-06-06) and re-checked them on 1.30; every line cited as `P:\...:N` below was opened again on `P:\` (game storage version 144).
+Quick facts on five vanilla systems: recipes and crafting (`PluginRecipesManager`), `ComponentEnergyManager`, the action system, the damage pipeline, and player internals and sync. Every line cited as `P:\...:N` below was opened on `P:\` (1.30, game storage version 144).
 
 ### Recipes / crafting (PluginRecipesManager)
 - `MAX_NUMBER_OF_INGREDIENTS = 2` (`P:\scripts\4_world\classes\recipes\recipebase.c:1`): recipes are physically limited to 2
@@ -20,7 +20,7 @@ Quick facts on five vanilla systems: recipes and crafting (`PluginRecipesManager
 - `energyStorageMax` is optional: if you only define `energyAtSpawn`, that value acts as maximum (`P:\scripts\3_game\tools\component\componentenergymanager.c:228-229`).
 - The energy chain is recursive: `ConsumeEnergy()`/`CanWork()` traverse sources upwards
   (safety limit: `cycle_limit = 500`, `P:\scripts\3_game\tools\component\componentenergymanager.c:800`).
-- `OnSwitchOn/Off` fires on BOTH sides; `OnWorkStart/OnWork/OnWorkStop` server/SP only, so real
+- `OnSwitchOn/Off` fires on both sides; `OnWorkStart/OnWork/OnWorkStop` server/SP only, so real
   synchronization goes through `SetSynchDirty`. The empty hooks to override are on `EntityAI`: `OnWorkStart` at `P:\scripts\3_game\entities\entityai.c:3428`, `OnWork` `:3431`, `OnWorkStop` `:3434`, `OnSwitchOn` `:3437`.
 - `compatiblePlugTypes` absent in config => the socket accepts all plugs (`P:\scripts\3_game\tools\component\componentenergymanager.c:994`).
 
@@ -39,7 +39,7 @@ Quick facts on five vanilla systems: recipes and crafting (`PluginRecipesManager
   `P:\scripts\3_game\entities\entityai.c:4134-4153`).
 - `EEHitBy` is server-only; `EEHitByRemote` runs on the client that hit (`P:\scripts\3_game\entities\entityai.c:1143`, `:1153`). `DecreaseHealth` bypasses
   the pipeline (no EEHitBy/animation/bleeding).
-- `ProcessIndirectDamage` DOES NOT exist in script; radius damage =
+- `ProcessIndirectDamage` does not exist in script (no hit under `P:\scripts\`); radius damage =
   `DamageSystem.ExplosionDamage(source, null, ammo, pos, DamageType.EXPLOSION)` (`P:\scripts\3_game\damagesystem.c:25`).
 - `GetProtectionLevel` (`P:\scripts\4_world\entities\itembase.c:4073`) covers only `DEF_BIOLOGICAL` and `DEF_CHEMICAL` (hazmat; the constants are at `P:\scripts\3_game\constants.c:547-548`). Ballistic absorption of
   clothing is C++/config, with no script API.
@@ -49,11 +49,11 @@ Quick facts on five vanilla systems: recipes and crafting (`PluginRecipesManager
 ### Player internals — sync (quick facts)
 - Stamina syncs via **SyncJuncture** (`SJ_STAMINA`), not via `SetSynchDirty`
   (`SyncStamina`, `P:\scripts\4_world\classes\staminahandler.c:831-839`). `EStaminaModifiers.PUSH_CAR` (`P:\scripts\3_game\enums\estaminamodifiers.c:13`) and `EStaminaConsumers.PUSH` (`P:\scripts\3_game\enums\estaminaconsumers.c:12`) already exist; use `DepleteStaminaEx` (`P:\scripts\4_world\classes\staminahandler.c:1144`) for custom costs.
-- `eModifierSyncIDs`: on `P:\` nine bits are used, `0x1` to `0x100` (`MODIFIER_SYNC_PARTICLE_EYES` is `0x80`, `MODIFIER_SYNC_HEAT_STROKE` is `0x100`), so `0x200..0x80000000` are free for custom synchronized modifiers (enum `eModifierSyncIDs`, `P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c:2-12`; at most 32 synced modifiers). The knowledge pack's text said only 7 bits were used and `0x80` up was free, which was true of an older game version: do not take `0x80` or `0x100`.
-- `PlayerStatsPCO` uses POSITIONAL indices: a custom stat via `modded PlayerStatsPCO_current`
+- `eModifierSyncIDs`: on `P:\` nine bits are used, `0x1` to `0x100` (`MODIFIER_SYNC_PARTICLE_EYES` is `0x80`, `MODIFIER_SYNC_HEAT_STROKE` is `0x100`), so `0x200..0x80000000` are free for custom synchronized modifiers (enum `eModifierSyncIDs`, `P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c:2-12`; at most 32 synced modifiers). An older game version used only seven bits, so older mods took `0x80` or `0x100`: both are taken now, do not use them.
+- `PlayerStatsPCO` uses positional indices: a custom stat via `modded PlayerStatsPCO_current`
   needs index > 11 or it corrupts serialization: 1.30 added `THERMAL_BIAS` = 11 to `EPlayerStats_v130`
   (enum `EPlayerStats_v130`, `P:\scripts\4_world\classes\playerstats\playerstatspco.c:312-326`, `EPlayerStats_current` at `:356`), so a stat at 11, valid on 1.29
   (where the last index was 10), collides with it.
 - Custom modifiers: `ModifiersManager` `Init()` hardcodes the list (`P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c:90`), so the pattern is
-  `modded class ModifiersManager`. `CfgAgents` DOES NOT exist (no hit under `P:\scripts\`): agents are script classes registered
+  `modded class ModifiersManager`. `CfgAgents` does not exist (no hit under `P:\scripts\`): agents are script classes registered
   in `PluginTransmissionAgents` with `RegisterAgent` (`P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:22`).

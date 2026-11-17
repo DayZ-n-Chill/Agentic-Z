@@ -5,11 +5,12 @@ Takes a Recipe JSON (as produced by p3d_inspector_extract.py) and assembles
 a fresh MLOD .p3d file via py3d.
 
 Supported LOD types: visual_0..3, geometry, fire_geometry, view_geometry,
-shadow, memory. Handles material_groups -> Face, wireframe -> collision Face,
-memory points -> Selection per name, axes, properties.
+landcontact, roadway, paths, hitpoints, shadow, memory. Handles material_groups ->
+Face, wireframe -> collision Face, memory points -> one Selection per name, and
+properties. Each LOD is written at the resolution the Recipe records for it.
 
 Mass policy:
-  - Geometry/Fire LODs get pt.mass assigned based on bbox volume * material density
+  - The Geometry LOD gets pt.mass assigned based on bbox volume * material density
   - Density looked up by keyword match on referenced materials/textures
     (metal/steel/iron=7800, wood=600, plastic=1200, default=2000 kg/m^3)
   - Override via recipe.meta.point_mass_default or lod.properties["_point_mass"]
@@ -115,8 +116,8 @@ def guess_density(recipe: dict) -> float:
 
 
 # ── LOD Resolution mapping ────────────────────────────────────────
-# BIS MLOD resolution constants (Arma/DayZ). Special LOD types live in the
-# 1e15 family, NOT 1e13/2e13/3e13.
+# Bohemia MLOD resolution values as DayZ uses them. The special LOD types live in
+# the 1e15 family, not 1e13/2e13/3e13. Used when a Recipe LOD records no resolution.
 LOD_RESOLUTION = {
     "visual_0":       0.0,
     "visual_1":       1.0,
@@ -141,15 +142,20 @@ WIREFRAME_LOD_TYPES = (
     "landcontact", "roadway", "paths", "hitpoints",
     "shadow",
 )
-# Subset that gets per-point mass (only Geometry & FireGeometry use mass).
-MASSED_LOD_TYPES = ("geometry", "fire_geometry")
+# Only the Geometry LOD carries per-point mass. Mass on the Fire Geometry LOD is a
+# fault the audit reports (ERR_MASS_ONLY_GEOMETRY).
+MASSED_LOD_TYPES = ("geometry",)
 
 
-def lod_resolution_for_type(lod_type: str, fallback_res: float) -> float:
-    """Return canonical resolution for a LOD type, or fallback if unknown."""
-    if lod_type in LOD_RESOLUTION:
-        return LOD_RESOLUTION[lod_type]
-    return fallback_res
+def lod_resolution_for_type(lod_type: str, recorded) -> float:
+    """The resolution the Recipe records for the LOD, else the usual one for its type.
+
+    Keeping the recorded value keeps two visual levels (2 and 3, say) or two shadow
+    volumes apart; writing every LOD at its type's usual value would merge them.
+    """
+    if recorded is not None:
+        return float(recorded)
+    return LOD_RESOLUTION.get(lod_type, 0.0)
 
 
 # ── Normal dedup ──────────────────────────────────────────────────
@@ -192,7 +198,7 @@ def volume_from_bbox(lo, hi):
 def build_visual_lod(lod_dict, py3d):
     """Build a visual LOD from Recipe geometry (positions + normals + uvs + material_groups)."""
     lod = py3d.LOD()
-    lod.resolution = lod_resolution_for_type(lod_dict["type"], lod_dict.get("resolution", 0.0))
+    lod.resolution = lod_resolution_for_type(lod_dict["type"], lod_dict.get("resolution"))
 
     geo = lod_dict.get("geometry", {})
     positions = geo.get("positions", [])
@@ -212,7 +218,10 @@ def build_visual_lod(lod_dict, py3d):
     lod.facenormals = pool
 
     # Build faces from material_groups (each group is a triangulated index list)
+    face_of_triangle = geo.get("face_of_triangle")
+    built_face_sources = []  # the source LOD face each built face came from
     for key, indices in material_groups.items():
+        sources = face_of_triangle.get(key, []) if face_of_triangle is not None else []
         if "|" in key:
             tex, mat = key.split("|", 1)
         else:
@@ -240,9 +249,20 @@ def build_visual_lod(lod_dict, py3d):
                 face.vertices.append(vx)
 
             lod.faces.append(face)
+            built_face_sources.append(sources[i // 3] if i // 3 < len(sources) else None)
 
-    # Build selections
-    build_lod_selections(lod, lod_dict.get("selections", {}), py3d)
+    # Build selections. An extracted Recipe indexes them by the source LOD's points
+    # and faces, which are not the entries and triangles built above.
+    point_map = face_map = None
+    if geo.get("point_of_vertex") is not None:
+        point_map = {}
+        for built, source in enumerate(geo["point_of_vertex"]):
+            point_map.setdefault(source, []).append(built)
+    if face_of_triangle is not None:
+        face_map = {}
+        for built, source in enumerate(built_face_sources):
+            face_map.setdefault(source, []).append(built)
+    build_lod_selections(lod, lod_dict.get("selections", {}), py3d, point_map, face_map)
 
     # Properties
     for k, v in lod_dict.get("properties", {}).items():
@@ -255,9 +275,9 @@ def build_visual_lod(lod_dict, py3d):
 # ── Collision / Shadow LOD builder ────────────────────────────────
 
 def build_wireframe_lod(lod_dict, lod_type, recipe, py3d):
-    """Build geometry/fire_geometry/view_geometry/shadow LOD from wireframe data."""
+    """Build a collision, contact, path, hit point or shadow LOD from wireframe data."""
     lod = py3d.LOD()
-    lod.resolution = lod_resolution_for_type(lod_type, lod_dict.get("resolution", 0.0))
+    lod.resolution = lod_resolution_for_type(lod_type, lod_dict.get("resolution"))
 
     wf = lod_dict.get("wireframe", {})
     positions = wf.get("positions", [])
@@ -300,8 +320,8 @@ def build_wireframe_lod(lod_dict, lod_type, recipe, py3d):
         lod.faces.append(face)
         norm_idx += 1
 
-    # Mass only on Geometry and FireGeometry LODs.
-    # ViewGeo, Shadow, LandContact, Roadway, Paths, HitPoints: no mass.
+    # Mass only on the Geometry LOD.
+    # FireGeo, ViewGeo, Shadow, LandContact, Roadway, Paths, HitPoints: no mass.
     if lod_type in MASSED_LOD_TYPES:
         _assign_mass(lod, lod_dict, recipe)
 
@@ -434,16 +454,24 @@ def build_memory_lod(recipe, py3d):
 
 # ── Generic selection builder ─────────────────────────────────────
 
-def build_lod_selections(lod, selections_dict, py3d):
-    """Attach selections to a LOD based on vertex_indices / face_indices in Recipe."""
+def build_lod_selections(lod, selections_dict, py3d, point_map=None, face_map=None):
+    """Attach the Recipe's selections to a LOD.
+
+    The Recipe's vertices and faces index the LOD's own points and faces. point_map
+    and face_map, when given, translate an index of the source LOD into the built
+    points and faces that came from it (a visual LOD is rebuilt with split points
+    and triangulated faces).
+    """
     for sel_name, sel_data in selections_dict.items():
         sel = py3d.Selection(lod.points, lod.faces)
         for vi in sel_data.get("vertices", []):
-            if 0 <= vi < len(lod.points):
-                sel.points[lod.points[vi]] = 1
+            for built in ([vi] if point_map is None else point_map.get(vi, [])):
+                if 0 <= built < len(lod.points):
+                    sel.points[lod.points[built]] = 1
         for fi in sel_data.get("faces", []):
-            if 0 <= fi < len(lod.faces):
-                sel.faces[lod.faces[fi]] = 1
+            for built in ([fi] if face_map is None else face_map.get(fi, [])):
+                if 0 <= built < len(lod.faces):
+                    sel.faces[lod.faces[built]] = 1
         lod.selections[sel_name] = sel
 
 
@@ -451,9 +479,9 @@ def build_lod_selections(lod, selections_dict, py3d):
 
 def classify_lod_res(res):
     """Internal helper for verbose output. Mirrors the extractor's classifier."""
-    if res < 10:
+    if res < 1.0e3:
         return "visual"
-    elif 9000 < res < 1.5e4:
+    elif 1.0e4 <= res < 2.0e4:
         return "shadow"
     elif abs(res - 1.0e13) < 1.0e11:
         return "geometry"

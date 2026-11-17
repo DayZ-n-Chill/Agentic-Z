@@ -1,4 +1,4 @@
-// Inbox fb-20261006-030019-e074, DayZ 1.30.164014 server, on the source this
+// DayZ 1.30.164014 server, on the source this
 // one stands for: "Invalid statement ')'" and "Syntax error" at the
 // continuation. The trailing operators sit on lines 10 and 18.
 class FX_Window

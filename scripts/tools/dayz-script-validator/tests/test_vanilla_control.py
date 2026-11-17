@@ -219,7 +219,7 @@ class TestCliSkipAndUpdate(_WithoutLocalIndex):
 
 
 class TestLocalIndex(_WithoutLocalIndex):
-    # Inbox 4c83: a local 1.29 index turned the control red on 1.30 while
+    # A local 1.29 index turned the control red on 1.30 while
     # the committed validator was clean there.
     def setUp(self):
         super().setUp()

@@ -60,7 +60,7 @@ def _albedo(h: "np.ndarray") -> "Image.Image":
 
 def _ribs(size: int = 128):
     """Ribs whose amplitude grows down the image: across a hollow the surface curves one way
-    along x and the other way along y (the counter-example of R21 round 1, analytic slopes)."""
+    along x and the other way along y (a counter-example to the albedo reading, analytic slopes)."""
     rows, cols = np.mgrid[0:size, 0:size].astype(np.float64)
     omega = 2.0 * np.pi * 3 / size
     beta = 4.0 / (size - 1)
@@ -154,7 +154,7 @@ def test_weak_albedo_correlations_are_inconclusive(maps):
 
 
 def test_flat_albedo_is_inconclusive_not_directx(maps):
-    # no hollow signal: both correlations are undefined. The contributed script read NaN as DirectX.
+    # no hollow signal: both correlations are undefined. NaN must not be read as DirectX.
     result = nc.detect(maps["OpenGL"], maps["flat_albedo"])
     assert result["verdict"] == "INCONCLUSIVE", result
     assert not math.isfinite(result["corr_green"])
@@ -213,7 +213,7 @@ def test_the_curl_floor_compares_the_residual_difference(maps, convention):
     assert raised["verdict"] == "INCONCLUSIVE", raised
     lowered = nc.detect(maps[convention], maps["albedo"], curl_floor=d - 1e-9)
     assert lowered["curl_verdict"] == convention, lowered
-    # a difference exactly equal to the floor is noise too (receptor addition: kills <= -> <)
+    # a difference exactly equal to the floor is noise too (fails if the <= comparison becomes <)
     at = nc.detect(maps[convention], maps["albedo"], curl_floor=d)
     assert at["curl_verdict"] == "INCONCLUSIVE", at
 
@@ -300,7 +300,7 @@ def test_stable_needs_one_agreeing_block_and_bounds_the_opposed_share():
 
 
 def test_every_block_gets_the_thresholds_of_the_whole_map(maps):
-    # receptor addition: min_corr, the curl ratio and the curl floor reach each block's reading.
+    # min_corr, the curl ratio and the curl floor reach each block's reading.
     # A threshold no block can clear silences that reading in every block.
     nrm = np.asarray(maps["DirectX"]).astype(np.float64) / 255.0 * 2.0 - 1.0
     nx, ny, nz = nrm[:, :, 0], nrm[:, :, 1], nrm[:, :, 2]
@@ -409,7 +409,7 @@ def _invert_green(img):
 
 @pytest.mark.parametrize("case", ["pits", "split_curl", "split_albedo"])
 def test_inverting_green_is_exactly_antisymmetric(maps, case):
-    # review v3 round 1: with a decoding that only negates up to a few ulps, a tie in the ratio test could
+    # With a decoding that only negates up to a few ulps, a tie in the ratio test could
     # give a candidate in one copy only. (2c - 255) / 255 negates exactly, so every number flips exactly.
     if case == "pits":
         n, a = maps["DirectX"], maps["albedo"]
@@ -430,7 +430,7 @@ def test_inverting_green_is_exactly_antisymmetric(maps, case):
 
 
 def test_blocks_partition_the_map_and_reuse_the_whole_map_fields(maps, monkeypatch):
-    # review v3 round 1: windows that drop a row or a column, or blocks read with other masks, passed the
+    # Windows that drop a row or a column, or blocks read with other masks, would pass the
     # count-based tests. Record every reading: the first is the whole map, then one per block.
     calls = {"albedo": [], "curl": []}
     real_albedo, real_curl = nc._albedo_reading, nc._curl_reading
@@ -478,7 +478,7 @@ def _faint_half(base):
 
 @pytest.mark.parametrize("base", ["DirectX", "OpenGL"])
 def test_relief_outside_the_masks_does_not_vote(base):
-    # review v3 round 2 (R3, P3): a reader that ignores its mask, in the blocks or on the whole map, passed the
+    # A reader that ignores its mask, in the blocks or on the whole map, would pass the other
     # tests. Here the right half carries the other convention below DETAIL_MIN: only masked pixels may count.
     n, a = _faint_half(base)
     nrm = np.asarray(n).astype(np.int64)

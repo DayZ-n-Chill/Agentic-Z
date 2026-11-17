@@ -70,7 +70,6 @@ the ground and moved for 0.5 s fell to it. On these boxes the outward winding hi
 the LOD raycasts and from nothing measured in the physics world. A walk does not diagnose the
 winding either way: these outward boxes stopped the player, and a 0.49 m `item_small` kit let
 the player through with either winding (`winding-absolute-check.md`, rule 6).
-(claim: CLAIM-P3D-WINDING-PHYSICS-INGAME)
 
 **Root cause**: the collision LOD and the Visual LOD reached the MLOD by different paths.
 Rule 12's map treats every LOD alike; the mismatch comes from a LOD that did not go through it
@@ -199,7 +198,7 @@ stopped the player at the same 0.36 m; `WoodenCrate` (`item_small`, inherited fr
 `Inventory_Base`) took every ray and did not stop the player. The crate is also low, so the run
 does not tell whether its layer or its height let the player pass; either way, a walk-through
 alone does not show that the collision geometry is missing. A free walk covered the 7.5 m in
-about 5 s; a blocked one held for the full 10 s. (claim: CLAIM-P3D-COMPONENT-CASE-INGAME)
+about 5 s; a blocked one held for the full 10 s.
 
 **Binarize removes the difference anyway**: from the `Component01` and the `component01` MLOD it
 writes the same ODOL, byte for byte, with the name stored as `component01`.
@@ -234,16 +233,16 @@ component is `component01`, taking 21 of 21 rays.)*
 
 ## 3. Missing `autocenter=0` LOD Property
 
-The rule and the audit's behaviour are in `p3d-killers.md` section 3. Two points the vendored source adds:
+The rule and the audit's behaviour are in `p3d-killers.md` section 3. Two more points:
 
-- **Which LODs carry it.** The vendored source asks for the property on every collision LOD (Geometry, LandContact, View Geometry, Fire Geometry, plus Roadway and Hit points when present). Vanilla does not do that: the binarized `P:\DZ\gear\camping\wooden_case.p3d`, `sea_chest.p3d`, `watchtower.p3d`, `territory_flag.p3d` and `P:\DZ\gear\containers\55galdrum.p3d` each hold the `autocenter` property exactly once in the whole file, while `P:\DZ\gear\camping\fence.p3d` holds it seven times. So the Geometry LOD is where it is needed, and more LODs may carry it. The audit checks the Geometry LOD only.
+- **Which LODs carry it.** The property does not have to sit on every collision LOD (Geometry, LandContact, View Geometry, Fire Geometry, plus Roadway and Hit points when present). Vanilla does not do that: the binarized `P:\DZ\gear\camping\wooden_case.p3d`, `sea_chest.p3d`, `watchtower.p3d`, `territory_flag.p3d` and `P:\DZ\gear\containers\55galdrum.p3d` each hold the `autocenter` property exactly once in the whole file, while `P:\DZ\gear\camping\fence.p3d` holds it seven times. So the Geometry LOD is where it is needed, and more LODs may carry it. The audit checks the Geometry LOD only.
 - In py3d: `lod.properties['autocenter'] = '0'`.
 
 ## 4. Missing Memory LOD or Geometry LOD
 
-Same as `p3d-killers.md` section 4. The vendored source also recommends a LandContact LOD (`2e15`, ground placement contact points) for objects that rest on the ground; 980 vanilla models carry one (`_shared/models/lods.md`).
+Same as `p3d-killers.md` section 4. A LandContact LOD (`2e15`, ground placement contact points) is also recommended for objects that rest on the ground; 980 vanilla models carry one (`_shared/models/lods.md`).
 
-The vendored source says the `2e13` and `3e13` resolutions are Arma 3 values the DayZ engine ignores. That is right for View and Fire Geometry, which are `6e15` and `7e15` in DayZ, but not as a blanket rule: `P:\DZ\vehicles\water\boat_01\boat_01.p3d` carries a `2e13` LOD in its header (its buoyancy geometry), and eight vanilla models carry a `4e13` GeoPhys LOD (`_shared/conventions/assets.md`).
+The `2e13` and `3e13` resolutions are the Arma 3 values for View and Fire Geometry, which are `6e15` and `7e15` in DayZ. That does not make every `e13` resolution foreign to DayZ: `P:\DZ\vehicles\water\boat_01\boat_01.p3d` carries a `2e13` LOD in its header (its buoyancy geometry), and eight vanilla models carry a `4e13` GeoPhys LOD (`_shared/conventions/assets.md`).
 
 ## 5. Missing `pos center` Memory Point
 
@@ -259,7 +258,7 @@ A rig may bind an axis and a selection under different names. A cloned vanilla-s
 class wheel_1_1 { source="wheelfrontleft"; selection="wheelfrontleft"; axis="wheel_1_1_axis"; };
 ```
 
-A check that assumes `wheel_1_1_axis` needs a visual selection named `wheel_1_1` reports the selection as missing when it exists under another name. On one custom quad body that guess produced 12 CRITICAL findings, all false (LL-027). So:
+A check that assumes `wheel_1_1_axis` needs a visual selection named `wheel_1_1` reports the selection as missing when it exists under another name. On one custom quad body that guess produced 12 CRITICAL findings, all false. So:
 
 - `audit_p3d.py` with `--model-cfg` reads each animation's own `selection=` and `axis=` and checks those names (`check_animations`).
 - The DayZ fork of py3d still makes the name guess in `validate()` (`ERR_AXIS_SELECTION_MISSING`, `WARN_AXIS_SELECTION_EMPTY`). The audit drops those two findings when it checked a `model.cfg`, and prints them only as WARNING, with a note to pass `--model-cfg`, when it did not.
@@ -337,7 +336,6 @@ is not convex (an octagonal knob and a bar): only the knob answered (3/3) and th
 components (the lever, a component in View only, was hit in View only). No RPT or script-log line
 named any of these models. Not measured: a part left out only in part, weapon fire, the action
 cursor, vehicles, DayZ 1.30 Exp.
-(claim: CLAIM-P3D-UNCOVERED-FACES-INGAME)
 
 Up to 1.8.0, the wheel pinned until 2026-10-02, the check compared `Component01` alone with the
 whole Geometry LOD, so it fired on a healthy multi-component LOD: `gate_and.p3d`'s Geometry LOD
@@ -377,9 +375,9 @@ Same as `p3d-killers.md` section 9. A closed component is also a prerequisite of
 
 ## 10. Missing Surface/Material Assignment on Collision LODs
 
-Same as `p3d-killers.md` section 10, with one difference in the vendored source: it lists View Geometry among the LODs whose faces must carry a penetration material. `p3d-killers.md` keeps a material-less View Geometry face as a WARNING, for the reason given there (the vanilla files show that a model carries a penetration material, not which LOD uses it). The penetration materials named in that section's table were confirmed as strings in `P:\DZ\gear\camping\wooden_case.p3d`, `sea_chest.p3d` (`wood_desk.rvmat`) and `P:\DZ\gear\containers\55galdrum.p3d` (`metalplate.rvmat`).
+Same as `p3d-killers.md` section 10. View Geometry is not among the LODs whose faces must carry a penetration material: `p3d-killers.md` keeps a material-less View Geometry face as a WARNING, for the reason given there (the vanilla files show that a model carries a penetration material, not which LOD uses it). The penetration materials named in that section's table were confirmed as strings in `P:\DZ\gear\camping\wooden_case.p3d`, `sea_chest.p3d` (`wood_desk.rvmat`) and `P:\DZ\gear\containers\55galdrum.p3d` (`metalplate.rvmat`).
 
-The vendored `audit_p3d.py` checked collision materials only on vehicle models (a wheel or damper selection) and only as a WARNING. This repo's script checks every model and fails the run on Geometry, GeoPhys and Fire Geometry, so the narrower check was not added.
+`audit_p3d.py` checks collision materials on every model, not only on vehicle models (a wheel or damper selection), and fails the run on Geometry, GeoPhys and Fire Geometry.
 
 ## Needle triangles in a collision component
 
@@ -391,7 +389,7 @@ A needle is a triangle that is almost a line: tiny in area, or tiny against its 
 
 **Fix**: build that hull again without the point the finding names, the corner opposite the needle's longest edge. The procedure for generated hulls is in the py3d generation reference of `dayz-model-pipeline`, under "Needle triangles".
 
-## Source meshes for collision: zero-area faces, orphan points, inexact hulls (SP-453)
+## Source meshes for collision: zero-area faces, orphan points, inexact hulls
 
 Measured offline on a building generated from Blender whose collision is hundreds of convex pieces (a rock with a helicopter interior, 2026-10-01; the collision recipe is in the LODs and geometry reference of `dayz-model-pipeline`, under "Collision of a large building with an interior").
 

@@ -1,6 +1,6 @@
 # Re-unwrapping a model that already ships, with a LOD chain
 
-What changes when the only thing you may move is UV: how to prove the change is UV only, why a LOD transfer fails, the shared-sheet layout that replaces it, and how to align and judge the bake. Measured end to end on 2026-09-01 and 02 on the body model of LFQuad (the source author's quad-bike mod): two visual LODs of 38,831 and 15,422 faces, 16 materials, 4 wheel proxies and 29 selections per LOD. Nothing here was checked on `P:\`; it is measured on that mod.
+What changes when the only thing you may move is UV: how to prove the change is UV only, why a LOD transfer fails, the shared-sheet layout that replaces it, and how to align and judge the bake. Measured end to end on 2026-09-01 and 02 on the body model of a quad-bike vehicle mod: two visual LODs of 38,831 and 15,422 faces, 16 materials, 4 wheel proxies and 29 selections per LOD. Nothing here was checked on `P:\`; it is measured on that mod.
 
 This is a different job from the one `SKILL.md` describes. There the input is a mesh you are free to treat as raw material. Here the model **already ships**: its selections carry memory points, damage zones and proxy mounts, its material assignment is wired into `config.cpp`, and the only thing you are allowed to move is UV. Everything below is what that constraint costs and how to pay it.
 
@@ -151,7 +151,7 @@ Keep the residual honest rather than hiding it. The leftover neutral is the face
 
 ## 7. Calibrate density against what already ships
 
-An earlier audit quoted about 292 px/m as the healthy reference measured on the LFQuad wheels. Re-measured on 2026-09-01 by decoding the shipped `.paa`: the wheel `_co` is **1024 x 1024**, with UV density 0.1307 to 0.1438, so the shipped figure is **134 to 147 px/m**. The 292 is that density read against a 2048 texture the asset does not use.
+An earlier audit quoted about 292 px/m as the healthy reference measured on the same mod's wheels. Re-measured on 2026-09-01 by decoding the shipped `.paa`: the wheel `_co` is **1024 x 1024**, with UV density 0.1307 to 0.1438, so the shipped figure is **134 to 147 px/m**. The 292 is that density read against a 2048 texture the asset does not use.
 
 The general form matters more than the number: **derive the floor from shipped and accepted work, and measure both halves** (the UV density from the model and the texture side from the file) so nothing is carried in as a constant.
 

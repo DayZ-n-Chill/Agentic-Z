@@ -90,8 +90,8 @@ class _Signatures:
     """collect_method_signature at any line of one text, read once.
 
     From a "(" that never closes, each collection ran to the end of the file:
-    method headers split by #ifdef branches took 21 s for 135 KB (second Codex
-    review of #113, J2). The end index comes from the parenthesis depth before
+    method headers split by #ifdef branches took 21 s for 135 KB. The end
+    index comes from the parenthesis depth before
     each line, and the signature stops with the line that holds the first
     character after its first ")" that is not a space: what follows changes no
     group of METHOD_SIGNATURE_RE.

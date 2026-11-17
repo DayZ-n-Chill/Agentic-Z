@@ -6,36 +6,21 @@ Scope: authoring object/camera/material/driver animation entirely through `bpy` 
 over the MCP bridge (`execute_blender_code`), no UI interaction available. Blender 4.3 is the
 baseline; breaking changes in 4.4/4.5/5.0/5.1 are flagged explicitly wherever found.
 
-Everything here is Blender behaviour, checked against Blender 5.1.1 and the Blender docs as
-marked. None of it is a fact about the DayZ game, so nothing in this file cites `P:\`; the
-DayZ side of the work is in `dayz-handoff.md`. "This session" below means the research
-session of 2026-07-09 in which these facts were checked.
+Everything here is Blender behaviour. None of it is a fact about the DayZ game, so nothing in
+this file cites `P:\`; the DayZ side of the work is in `dayz-handoff.md`.
 
-## Doc versions checked
+## Status tags
 
-- **Static docs**: scraped directly from `docs.blender.org/api/4.3/...` (baseline),
-  `docs.blender.org/api/current/...` (resolves to a 5.x/dev snapshot), and the
-  `developer.blender.org/docs/release_notes/{4.4,4.5,5.0,5.1}/...` migration pages, for every
-  class/enum cited below. `docs.blender.org` and `developer.blender.org` returned **HTTP 403 to
-  the WebFetch tool** for every URL tried this session (site-wide bot block); the working
-  substitute was `curl` with a browser User-Agent (returns 200) piped through a small
-  custom HTML→text script, run via the Bash tool. `WebSearch` also worked directly and was used
-  for cross-checks and for content WebFetch couldn't reach at all (e.g. `blenderartists.org`,
-  `developer.blender.org/T*` old tracker — that legacy tracker path stayed 403 even for curl).
-- **Live instance (this session): Blender 5.1.1**, confirmed via `bpy.app.version_string` through
-  `mcp__Blender__execute_blender_code`. Every fact below tagged **[LIVE]** was executed against
-  this real, running instance and is not a documentation claim. All live tests created
-  new, uniquely-named (`RSRCH_*`) data-blocks, linked them only to the active scene when strictly
-  required (motion paths / constraint operators need scene+context), and removed them in the same
-  script with a follow-up `bpy.data`/`bpy.context` existence check printed in the result — every
-  cleanup check came back clean. No pre-existing user scene data was read or modified.
-- Facts tagged **[4.3]** come only from the static 4.3 doc scrape (not re-verified live).
-  Facts with no tag are stable across the whole 4.3→5.1 range (verified at both ends).
+- **[LIVE]** marks a fact that was run in Blender 5.1.1 through `execute_blender_code`; the
+  result shown is what Blender returned.
+- **[4.3]** marks a fact that matches the Blender 4.3 Python API reference and was not re-run
+  in a 4.3 build.
+- Facts with no tag are the same across the whole 4.3→5.1 range.
 - **The single biggest cross-version change is Action Slots** (introduced 4.4, legacy
   `Action.fcurves`/`.groups`/`.id_root` proxy removed entirely in 5.0). Covered in full under
-  F-curve object model. **[LIVE]** confirmed on 5.1.1: `hasattr(action, "fcurves")` is `False`.
-- Three **non-obvious version-specific facts turned up only through live `bl_rna` introspection
-  and diffing against the 4.3 scrape** (a plain doc read would have missed all three):
+  F-curve object model. **[LIVE]** on 5.1.1: `hasattr(action, "fcurves")` is `False`.
+- Three **version-specific facts that the 4.3 API reference does not show** (found through
+  `bl_rna` introspection on 5.1.1):
   1. F-Curve **Noise modifier was reworked in Blender 4.4** — new `lacunarity`/`roughness`
      properties, old algorithm preserved via `use_legacy_noise` (defaults `True` on old files,
      `False` on new modifiers).
@@ -81,7 +66,7 @@ with `index=-1` (default) creates **three separate `FCurve` objects**, all with
 Keying `index=1` alone creates/updates only the Y-channel FCurve. This is why
 `action.fcurves.find("location", index=1)` (4.3) takes both a path and an index — the pair is the
 real key, not the path alone.
-[`bpy.types.FCurve`](https://docs.blender.org/api/4.3/bpy.types.FCurve.html) [4.3, cross-checked
+`bpy.types.FCurve` [4.3, cross-checked
 current — identical]:
 
 > `array_index` — Index to the specific property affected by F-Curve if applicable (int, default 0)
@@ -96,13 +81,13 @@ in chronological order and handles are set correctly" (call after any manual `.c
 `range() -> Vector` (min/max time extents), `convert_to_samples(start, end)`,
 `convert_to_keyframes(start, end)`, `bake(start, end, *, step=1.0, remove='NONE'|'IN_RANGE'|'OUT_RANGE'|'ALL')`.
 
-**AnimData** — [`bpy.types.AnimData`](https://docs.blender.org/api/4.3/bpy.types.AnimData.html) [4.3]:
+**AnimData** — `bpy.types.AnimData` [4.3]:
 `action` (Action), `action_blend_type`/`action_extrapolation`/`action_influence` (NLA blending of
 the active action), `drivers` (`AnimDataDrivers` of `FCurve` — **verified this is a completely
 separate collection from anything inside Action; Action Slots do not affect drivers at all**),
 `nla_tracks`. 4.4+ adds `action_slot` / `action_suitable_slots` / `last_slot_identifier` (see below).
 
-**Creating/clearing AnimData** — [`bpy.types.ID`](https://docs.blender.org/api/4.3/bpy.types.ID.html)
+**Creating/clearing AnimData** — `bpy.types.ID`
 [4.3]: `animation_data_create() -> AnimData` ("note that not all ID types support this"),
 `animation_data_clear()`. `keyframe_insert`/`driver_add` auto-call the equivalent of
 `animation_data_create()` internally — you rarely need to call it yourself except when building
@@ -110,10 +95,7 @@ an Action from scratch before any property has been keyed.
 
 ### Action Slots (introduced 4.4) — the load-bearing cross-version fact
 
-Source: [Blender 4.4 "Slotted Actions: Upgrading" migration
-guide](https://developer.blender.org/docs/release_notes/4.4/upgrading/slotted_actions/) and
-[Blender 5.0 Python API release notes](https://developer.blender.org/docs/release_notes/5.0/python_api/),
-both **[LIVE]**-cross-checked end-to-end on 5.1.1.
+Introduced in Blender 4.4; the legacy API was removed in 5.0. **[LIVE]** run end to end on 5.1.1.
 
 **What changed and why it matters**: an Action can now animate more than one data-block
 ("multi-user" actions, e.g. one walk-cycle Action shared by several character rigs), so F-Curves
@@ -146,7 +128,7 @@ action, add a bare FCurve without keying a real property, or organize channels i
 obj.keyframe_insert("location", frame=1)          # auto-creates everything
 action = obj.animation_data.action
 slot   = obj.animation_data.action_slot
-slot.identifier       # -> "OBRSRCH_TempObj"  (2-char ID-type prefix + name)
+slot.identifier       # -> "OBTempObj"  (2-char ID-type prefix + name)
 slot.target_id_type   # -> "OBJECT"
 hasattr(action, "fcurves")  # -> False  (confirms legacy API gone on 5.1.1)
 strip = action.layers[0].strips[0]
@@ -157,8 +139,8 @@ fc = action.fcurve_ensure_for_datablock(obj, "location", index=0)  # works, retu
 ```
 
 Creating a slot/layer/strip manually from scratch (needed only for advanced cases — sharing one
-Action across several objects, or building an Action before anything is keyed), [4.4 migration
-guide], API unchanged through 5.1.1:
+Action across several objects, or building an Action before anything is keyed). The API was
+introduced in 4.4 and is unchanged through 5.1.1:
 
 ```python
 action = bpy.data.actions.new("SuzanneAction")
@@ -173,14 +155,14 @@ anim_data.action = action
 anim_data.action_slot = anim_data.action_suitable_slots[0]  # only needed if auto-assignment picked the wrong/no slot
 ```
 
-**Breaking behavior change specific to 4.4** (from the 4.4 Python API release notes, still true
+**Breaking behavior change specific to 4.4** (still true
 on 5.1.1): `datablock.animation_data.action = some_action` may, depending on heuristics, **not**
 auto-assign a slot, silently leaving the data-block un-animated even though the assignment
 "succeeded". Force it: `anim_data.action_slot = anim_data.action_suitable_slots[0]` (only valid
 *after* `.action` is assigned). NLA-strip and Action-constraint assignment (`strip.action = ...`,
 `constraint.action = ...`) auto-assign a compatible slot more eagerly and don't have this gotcha.
 
-`ActionSlot` properties [`current` docs, `docs.blender.org/api/current/bpy.types.ActionSlot.html`]:
+`ActionSlot` properties (4.4+):
 `identifier` (str, e.g. `"OBSuzanne"` — display name prefixed by 2 chars from the ID type),
 `name_display` (str, the part after the prefix), `target_id_type` (settable only once while
 `'UNSPECIFIED'`, read-only after), `handle` (int, internal numeric id used to look up the
@@ -195,7 +177,7 @@ channelbag), `active`/`select`/`show_expanded`.
 All four are defined once on `bpy_struct` (the base of nearly every RNA type), which is why they
 can be called on an `Object`, a `PoseBone`, a `NodeSocket`, a `ShapeKey`, etc. — anything with an
 animatable property, not just ID data-blocks.
-[`bpy.types.bpy_struct`](https://docs.blender.org/api/4.3/bpy.types.bpy_struct.html) [4.3]:
+`bpy.types.bpy_struct` [4.3]:
 
 ```
 keyframe_insert(data_path, index=-1, frame=bpy.context.scene.frame_current, group='', options=set(), keytype='KEYFRAME') -> bool
@@ -221,7 +203,7 @@ driver_remove(path, index=-1) -> bool
   Keyframe object — to get the actual `Keyframe`, either use `fcurve.keyframe_points.insert(...)`
   directly (returns `Keyframe`) or look it up afterward.
 
-**Cross-version signature nuance (verify-honestly, not a confirmed break)**: the 4.3 doc renders
+**Cross-version signature nuance (not a confirmed break)**: the 4.3 doc renders
 `keyframe_insert(data_path, index=-1, frame=..., ...)` (index positional-or-keyword), while the
 `current` doc renders `keyframe_insert(data_path, *, index=-1, frame=..., ...)` (index
 keyword-only), and `driver_add(path, index=-1)` (4.3) vs `driver_add(path, index=-1, /)` (current,
@@ -233,22 +215,22 @@ fully confirmed without a live 4.3 instance, **always call `index=` and `frame=`
 
 **Nested-property gotcha, verified both ways**:
 - For a **custom, Python-registered `PropertyGroup`** nested under a non-ID struct (e.g. a
-  `PointerProperty` you added to `bpy.types.Bone`), the [4.3 `keyframe_insert` doc
-  example](https://docs.blender.org/api/4.3/bpy.types.bpy_struct.html) is explicit: *"Note that
+  `PointerProperty` you added to `bpy.types.Bone`), the Blender 4.3 API reference
+  is explicit: *"Note that
   when keying data paths which contain nested properties this must be done from the ID subclass...
   rather than the bone"* — call `keyframe_insert` on the owning ID (e.g. the Armature data-block)
   with the **full path relative to that ID**: `arm.keyframe_insert(data_path='bones["Bone"].my_prop.nested', frame=1)`.
 - For **built-in** nested structs that Blender itself defines (PoseBone, NodeSocket, ShapeKey),
   calling `keyframe_insert` **directly on the nested struct** works fine and is the normal idiom —
-  e.g. `object.pose.bones["Arm_L"].keyframe_insert("rotation_euler", 1)` (from the same official
-  4.4 migration doc) or `node.inputs["Base Color"].keyframe_insert("default_value", frame=1)`
+  e.g. `object.pose.bones["Arm_L"].keyframe_insert("rotation_euler", 1)`
+  or `node.inputs["Base Color"].keyframe_insert("default_value", frame=1)`
   (**[LIVE]**, verified below in Materials). The restriction is specifically about ad-hoc custom
   PropertyGroups, not built-in RNA structs.
 
 ### The `Keyframe` object and interpolation/easing
 
 Model: `FCurve.keyframe_points` is an `FCurveKeyframePoints` collection of `Keyframe` — a Bézier
-point with two handles. [`bpy.types.Keyframe`](https://docs.blender.org/api/4.3/bpy.types.Keyframe.html) [4.3, identical live on 5.1.1]:
+point with two handles. `bpy.types.Keyframe` [4.3, identical live on 5.1.1]:
 
 - `co` / `co_ui` (Vector 2: `(frame, value)`; `co_ui` also updates handles like the Graph Editor's
   transform operator does — prefer `co_ui` when nudging a key interactively-equivalently, use raw
@@ -283,7 +265,7 @@ an unsorted state that produces wrong evaluation.
 
 ### `FCurveKeyframePoints` — insert / add / remove / clear / sort
 
-[`bpy.types.FCurveKeyframePoints`](https://docs.blender.org/api/4.3/bpy.types.FCurveKeyframePoints.html) [4.3]:
+`bpy.types.FCurveKeyframePoints` [4.3]:
 
 ```python
 fcurve.keyframe_points.insert(frame, value, options={'REPLACE'|'NEEDED'|'FAST'}, keyframe_type='KEYFRAME') -> Keyframe
@@ -311,13 +293,13 @@ frame) directly then call `fcurve.update()` to move a key in time.
 
 ## F-curve modifiers
 
-Base class [`bpy.types.FModifier`](https://docs.blender.org/api/4.3/bpy.types.FModifier.html) [4.3,
+Base class `bpy.types.FModifier` [4.3,
 identical live]: `active`, `blend_in`/`blend_out` (frames to fade influence in/out),
 `frame_start`/`frame_end` (only used if `use_restricted_range=True`), `influence` (0-1, only used
 if `use_influence=True`), `mute`, `name`, `show_expanded`, `type` (readonly), `is_valid` (readonly).
 
 **Adding a modifier**: `fcurve.modifiers.new(type=...) -> FModifier`; `fcurve.modifiers.remove(modifier)`.
-[`bpy.types.FCurveModifiers`](https://docs.blender.org/api/4.3/bpy.types.FCurveModifiers.html) [4.3]
+`bpy.types.FCurveModifiers` [4.3]
 — note the official doc's one-line description for `.new()` literally reads *"Add a **constraint**
 to this object"* / *"Constraint type to add"*, a copy-paste artifact from `ObjectConstraints.new()`
 carried over in Blender's auto-generated docs; trust the verified `Return type: FModifier`, not
@@ -329,7 +311,7 @@ that sentence.
 
 ### NOISE — camera shake / idle wobble
 
-[`bpy.types.FModifierNoise`](https://docs.blender.org/api/4.3/bpy.types.FModifierNoise.html) [4.3
+`bpy.types.FModifierNoise` [4.3
 base fields] **[LIVE-diffed against 5.1.1 — reworked in Blender 4.4, see next paragraph]**:
 
 - `blend_type`: enum `REPLACE | ADD | SUBTRACT | MULTIPLY` (default `REPLACE`)
@@ -339,8 +321,7 @@ base fields] **[LIVE-diffed against 5.1.1 — reworked in Blender 4.4, see next 
 - `offset` (float) — time offset
 - `depth` (int, 0-32767) — "fine level detail" — number of fractal octaves
 
-**Version-specific rework, confirmed both from the [Blender 4.4 Animation & Rigging release
-notes](https://developer.blender.org/docs/release_notes/4.4/animation_rigging/) and live**: *"The
+**Reworked in Blender 4.4** (Blender's own release wording): *"The
 algorithm for generating the values of the F-Curve Noise Modifier has been updated ... Now the
 values don't exceed the -0.5/0.5 range anymore. Doing so added two new properties ... Lacunarity
 and Roughness. The default values are chosen to closely resemble the previous behavior. There is a
@@ -362,7 +343,7 @@ don't wobble in lockstep.
 
 ### CYCLES — perfect loops
 
-[`bpy.types.FModifierCycles`](https://docs.blender.org/api/4.3/bpy.types.FModifierCycles.html)
+`bpy.types.FModifierCycles`
 [4.3, identical live]: `mode_before`/`mode_after` — enum **[LIVE-verified]**
 `NONE | REPEAT | REPEAT_OFFSET | MIRROR` (default `NONE`); `cycles_before`/`cycles_after` (int,
 `0` = infinite). `REPEAT` repeats the curve identically (true perfect loop, needs the curve's
@@ -370,30 +351,29 @@ start/end value and tangent to already match); `REPEAT_OFFSET` repeats but offse
 vertically so the first keyframe of the repeat matches the last value of the previous cycle (the
 right choice for something that keeps moving forward each cycle, e.g. a continuously advancing
 walk cycle or a conveyor); `MIRROR` alternates forward/backward playback each cycle (good for an
-idle breathing/bob loop with no hard reset). Per the [current F-Curve Modifiers
-manual](https://docs.blender.org/manual/en/latest/editors/graph_editor/fcurves/modifiers.html):
+idle breathing/bob loop with no hard reset).
 **"Trivially Cyclic Curves"** — when both ends are `REPEAT` or `REPEAT_OFFSET` and no other option
 is changed, Blender's automatic Bézier handle placement becomes cycle-aware (smooths the seam), and
 the `INSERTKEY_CYCLE_AWARE` keying option (see above) starts taking the cycle into account when you
 insert new keys.
 
-**Hard mutual-exclusivity constraint** (manual, both sections, cross-checked): *"The Cycles
+**Hard mutual-exclusivity constraint**: *"The Cycles
 Modifier has to be the first modifier in the list... This means this modifier is not compatible
-with the Smooth (Gaussian) Modifier"* — and the Smooth section repeats the same sentence in
-reverse. Both modifiers need to read the *original* keyframe positions, so whichever is applied
+with the Smooth (Gaussian) Modifier"* — and the Smooth modifier has the same
+requirement. Both modifiers need to read the *original* keyframe positions, so whichever is applied
 first blocks the other from ever being first — **you cannot use CYCLES and SMOOTH together on the
 same F-Curve.**
 
 ### GENERATOR — deterministic polynomial curves
 
-[`bpy.types.FModifierGenerator`](https://docs.blender.org/api/4.3/bpy.types.FModifierGenerator.html)
+`bpy.types.FModifierGenerator`
 [4.3, identical live]: `mode` enum `POLYNOMIAL | POLYNOMIAL_FACTORISED` (default `POLYNOMIAL`),
 `poly_order` (int 1-100, "highest power of x"), `coefficients` (float array of 32, starting from
 x^0), `use_additive` (bool — apply on top of existing curve values instead of replacing them).
 
 ### SMOOTH (Gaussian) — new in Blender 5.1, does not exist in 4.3
 
-[Blender 5.1 Animation & Rigging release notes](https://developer.blender.org/docs/release_notes/5.1/animation_rigging/):
+Added in Blender 5.1:
 *"A new F-Curve modifier was added called 'Gaussian Smooth'. This allows to non-destructively
 smooth F-Curves. For technical reasons, the modifier has to be in the first position of the
 modifier stack to work."* **[LIVE, 5.1.1]** class is `bpy.types.FModifierSmooth`, description
@@ -406,13 +386,13 @@ gate any use of this on `bpy.app.version >= (5, 1, 0)`.
 
 ### LIMITS / STEPPED / ENVELOPE — brief
 
-- [`FModifierLimits`](https://docs.blender.org/api/4.3/bpy.types.FModifierLimits.html) [4.3]:
+- `FModifierLimits` [4.3]:
   `min_x`/`max_x`/`min_y`/`max_y` + matching `use_min_x`/`use_max_x`/`use_min_y`/`use_max_y` bools
   — clamps value range and/or truncates the time range (replaced by constant extrapolation outside it).
-- [`FModifierStepped`](https://docs.blender.org/api/4.3/bpy.types.FModifierStepped.html) [4.3]:
+- `FModifierStepped` [4.3]:
   `frame_step` (hold each value for N frames — the "stop-motion"/on-twos effect),
   `frame_offset`, `frame_start`/`frame_end` + `use_frame_start`/`use_frame_end`.
-- [`FModifierEnvelope`](https://docs.blender.org/api/4.3/bpy.types.FModifierEnvelope.html) [4.3]:
+- `FModifierEnvelope` [4.3]:
   `reference_value`, `default_min`/`default_max` (distance from reference for 1:1 default
   influence), `control_points` (collection of `FModifierEnvelopeControlPoint`, each with `frame`
   and `min`/`max` — lets you author a time-varying gain envelope on top of the curve).
@@ -426,8 +406,8 @@ gate any use of this on `bpy.app.version >= (5, 1, 0)`.
 The `Camera` datablock (`object.data`, an `ID` with its own `animation_data`) holds all optical
 properties — **a common mistake is calling `keyframe_insert` on the camera `Object` for these**;
 it must be the camera *data* block.
-[`bpy.types.Camera`](https://docs.blender.org/api/4.3/bpy.types.Camera.html) /
-[`bpy.types.CameraDOFSettings`](https://docs.blender.org/api/4.3/bpy.types.CameraDOFSettings.html) [4.3]:
+`bpy.types.Camera` /
+`bpy.types.CameraDOFSettings` [4.3]:
 
 ```python
 cam_data = camera_object.data                      # bpy.types.Camera
@@ -445,8 +425,8 @@ bokeh shape), `aperture_rotation`, `aperture_ratio` (anamorphic bokeh squeeze).
 ### Track To vs. Damped Track
 
 Both aim a chosen local axis of the camera at a target; the difference is in *up*-vector control.
-[`bpy.types.TrackToConstraint`](https://docs.blender.org/api/4.3/bpy.types.TrackToConstraint.html) /
-[`bpy.types.DampedTrackConstraint`](https://docs.blender.org/api/4.3/bpy.types.DampedTrackConstraint.html) [4.3, enums **[LIVE-verified identical 5.1.1]**]:
+`bpy.types.TrackToConstraint` /
+`bpy.types.DampedTrackConstraint` [4.3, enums **[LIVE-verified identical 5.1.1]**]:
 
 | | Track To | Damped Track |
 |---|---|---|
@@ -455,14 +435,13 @@ Both aim a chosen local axis of the camera at a target; the difference is in *up
 | `use_target_z` | yes | n/a |
 | roll behavior | "Up" axis stays aligned to world (or target) Z as much as possible — controllable, no flip surprises | takes the *shortest rotation path* to aim — no up-reference at all, so it can roll unpredictably as the target moves overhead, but never gimbal-locks |
 
-The [manual](https://docs.blender.org/manual/en/4.3/animation/constraints/tracking/track_to.html)
+Blender's manual
 calls Track To *"the preferred tracking constraint, as it has a more easily controlled constraining
 mechanism"* specifically because of the explicit `up_axis`.
 
 **Camera convention, RNA defaults are wrong for a camera**: a default `TrackToConstraint` is
-`track_axis='TRACK_X'`, `up_axis='UP_Y'` — but a Blender camera looks down its **local -Z** with
-+Y up. Widely corroborated (search cross-check across independent sources; not a single official
-one-line doc statement) — you must explicitly set:
+`track_axis='TRACK_X'`, `up_axis='UP_X'` — but a Blender camera looks down its **local -Z** with
++Y up. Set these explicitly:
 ```python
 con = cam_obj.constraints.new(type='TRACK_TO')
 con.target = target_obj
@@ -473,7 +452,7 @@ Leaving the defaults gives a camera that points sideways at the target instead o
 
 ### Follow Path — two different position-control mechanisms
 
-[`bpy.types.FollowPathConstraint`](https://docs.blender.org/api/4.3/bpy.types.FollowPathConstraint.html)
+`bpy.types.FollowPathConstraint`
 [4.3, **[LIVE-verified defaults + numeric behavior on 5.1.1]**]: `target` (must be a Curve object),
 `forward_axis` (enum `FORWARD_X|Y|Z|TRACK_NEGATIVE_X|Y|Z`, **[LIVE]** default `'FORWARD_Y'` —
 note the odd mixed naming, verified exactly as documented), `up_axis` (`UP_X|Y|Z`, **[LIVE]**
@@ -493,7 +472,7 @@ Two genuinely independent ways to control where the object sits along the path �
    coordination needed.
 2. **`use_fixed_location=False` (default) — time-driven**: position comes from the *scene's
    current frame* mapped through the target curve's own `Curve.path_duration` (frames for one
-   full traversal, [`bpy.types.Curve`](https://docs.blender.org/api/4.3/bpy.types.Curve.html)
+   full traversal, `bpy.types.Curve`
    [4.3]: int, default 100, "defining the maximum value for the Evaluation Time setting") plus
    `constraint.offset` (a frame shift). For non-linear speed / ease-in-out along the path, or to
    have **multiple objects share one master timeline** (each with a different `offset`), animate
@@ -521,7 +500,7 @@ instead of one tangled camera transform.
 ```python
 bpy.ops.object.empty_add(type='PLAIN_AXES', radius=1.0, location=(0, 0, 1))
 ```
-[`bpy.ops.object.empty_add`](https://docs.blender.org/api/4.3/bpy.ops.object.html)
+`bpy.ops.object.empty_add`
 [4.3, `type` enum **[LIVE-verified identical 5.1.1]**]: `type` — 8 values, exactly
 `PLAIN_AXES, ARROWS, SINGLE_ARROW, CIRCLE, CUBE, SPHERE, CONE, IMAGE`. Note: the documented
 operator signature shows `scale=(0.0, 0.0, 0.0)` as its literal default — this is a redo-panel
@@ -547,7 +526,7 @@ the new parent's space.
 
 ### Motion paths — reading computed arcs back into Python (no viewport needed)
 
-[`bpy.ops.object.paths_calculate`](https://docs.blender.org/api/4.3/bpy.ops.object.html)
+`bpy.ops.object.paths_calculate`
 [4.3, **[LIVE end-to-end round trip on 5.1.1]**]:
 ```python
 bpy.ops.object.paths_calculate(display_type='RANGE', range='SCENE')  # operates on selected objects
@@ -572,14 +551,14 @@ the list of `.co` vectors in Python.
 
 `ObjectConstraints.new(type=) -> Constraint`; `.remove(constraint)`; `.clear()`;
 `.move(from_index, to_index)`; `.copy(constraint)` (copy from another object's constraint).
-[`bpy.types.ObjectConstraints`](https://docs.blender.org/api/4.3/bpy.types.ObjectConstraints.html) [4.3].
+`bpy.types.ObjectConstraints` [4.3].
 Verified `type` string identifiers actually used above: `TRACK_TO`, `DAMPED_TRACK`, `LOCKED_TRACK`,
 `FOLLOW_PATH`, `CHILD_OF`, `CLAMP_TO` (from the `Constraint Type Items` enum page — a much longer
 full list exists for every constraint category; these are the relationship/animation-relevant ones
 covered in this document).
 
 **Base `Constraint`** fields common to every constraint type
-[`bpy.types.Constraint`](https://docs.blender.org/api/4.3/bpy.types.Constraint.html) [4.3]:
+`bpy.types.Constraint` [4.3]:
 `name`, `type` (readonly), `enabled` (bool), `mute` (bool), **`influence`** (float 0-1, default
 0 at RNA level but Blender's `.new()` sets it to 1 in practice — **this is the standard,
 keyframable "blend a constraint in/out" channel**, e.g. fading a Track-To off over a few frames
@@ -591,14 +570,13 @@ script without rendering anything).
 
 ### Child Of — inverse matrix, verified live with a real surprise
 
-[`bpy.types.ChildOfConstraint`](https://docs.blender.org/api/4.3/bpy.types.ChildOfConstraint.html)
+`bpy.types.ChildOfConstraint`
 [4.3]: `target`, `subtarget`, `use_location_x/y/z`, `use_rotation_x/y/z`, `use_scale_x/y/z` (which
 parent channels apply), `inverse_matrix` (Matrix 4×4 — the correction that cancels out the jump
 when the constraint is added), `set_inverse_pending` (bool flag).
 
-**[LIVE, 5.1.1] — this needs an honest, hedged writeup, not folklore**: many community threads
-describe Child Of requiring an explicit "Set Inverse" step or the object visibly snaps the moment
-the constraint/target is set. Testing this directly on the connected 5.1.1 instance:
+**[LIVE, 5.1.1]**: Child Of is commonly expected to need an explicit "Set Inverse" step, or the
+object visibly snaps the moment the constraint/target is set. On 5.1.1:
 ```python
 con = child.constraints.new(type='CHILD_OF')
 con.inverse_matrix   # -> identity, immediately after .new() (NOT the all-zero value the static
@@ -609,8 +587,7 @@ con.inverse_matrix   # -> automatically changed to target.matrix_world.inverted(
                       #    .target was assigned -- child.matrix_world did NOT jump in this test
 ```
 So on this 5.1.1 build, a **fresh** Child Of constraint auto-solves its inverse the instant
-`.target` is assigned. This may be newer/changed behavior vs. what the (undated, mixed-version)
-community threads describe, and was not cross-checked on a live 4.3 instance — **do not rely on
+`.target` is assigned. This was not checked on a 4.3 build — **do not rely on
 this auto-solve as guaranteed** across versions or once the target has already moved since some
 earlier assignment. The version-safe, explicit fix — confirmed to also work
 **[LIVE]** — is the same operator the "Set Inverse" button calls:
@@ -620,7 +597,7 @@ child.select_set(True)
 bpy.ops.constraint.childof_set_inverse(constraint=con.name, owner='OBJECT')  # owner: 'OBJECT'|'BONE'
 # bpy.ops.constraint.childof_clear_inverse(constraint=con.name, owner='OBJECT')  -- companion
 ```
-[`bpy.ops.constraint`](https://docs.blender.org/api/4.3/bpy.ops.constraint.html) [4.3]. Calling
+`bpy.ops.constraint` [4.3]. Calling
 this right after every target assignment is cheap and removes the ambiguity entirely, regardless
 of whether the auto-solve already fired.
 
@@ -637,8 +614,8 @@ directly instead of an operator.
 A `Material` is an `ID` (has its own `animation_data`), but its shader graph lives in
 `material.node_tree`, which is **itself a separate `ID`** (`NodeTree(ID)`) **with its own,
 independent `animation_data`**.
-[`bpy.types.Material`](https://docs.blender.org/api/4.3/bpy.types.Material.html) /
-[`bpy.types.NodeTree`](https://docs.blender.org/api/4.3/bpy.types.NodeTree.html) [4.3, both
+`bpy.types.Material` /
+`bpy.types.NodeTree` [4.3, both
 confirm `animation_data: AnimData, (readonly)` independently] — **[LIVE, 5.1.1]** confirmed
 concretely: after keyframing a Principled BSDF socket, `material.animation_data is None` (True —
 nothing ever keyed a material-level property) while `material.node_tree.animation_data` holds the
@@ -659,13 +636,11 @@ principled.inputs["Base Color"].keyframe_insert("default_value", frame=1)       
 principled.inputs["Emission Strength"].default_value = 2.0
 principled.inputs["Emission Strength"].keyframe_insert("default_value", frame=1)  # [LIVE] -> True
 ```
-Calling `keyframe_insert` on the wrong target raises a clear error (independently corroborated,
-real bug report on a Compositor Gamma node — identical API, same underlying `NodeSocket` type as
-Shader nodes): `TypeError: bpy_struct.keyframe_insert() property "inputs" not animatable` when you
-try to key `node.inputs` itself instead of a specific socket
-([blenderartists.org/t/compositing-nodes-insert-keyframe](https://blenderartists.org/t/compositing-nodes-insert-keyframe/1197135)).
+Calling `keyframe_insert` on the wrong target raises a clear error (the same on Compositor nodes,
+which share the `NodeSocket` type with Shader nodes; not re-run in 5.1.1): `TypeError: bpy_struct.keyframe_insert() property "inputs" not animatable` when you
+try to key `node.inputs` itself instead of a specific socket.
 `NodeSocketFloat.default_value` and its color/vector siblings are plain, non-readonly RNA
-properties [`bpy.types.NodeSocketFloat`](https://docs.blender.org/api/4.3/bpy.types.NodeSocketFloat.html)
+properties `bpy.types.NodeSocketFloat`
 [4.3] — that's why direct keying "just works" with no special-casing.
 
 ### Principled BSDF — full, ground-truth input socket list (do not hardcode from memory)
@@ -688,8 +663,7 @@ Note the OpenPBR-era naming: what used to be "Clearcoat" is now **"Coat Weight"/
 Roughness"/etc.**, and "Transmission" is **"Transmission Weight"** — these are qualified names
 specifically so multiple `Weight` inputs (Subsurface/Transmission/Coat/Sheen) don't collide by
 name. Emission is split into **"Emission Color"** + **"Emission Strength"** (added Blender 2.91,
-still current); independently corroborated against real third-party source using the identical
-names ([blendify materials/bsdf.py](https://virtualhumans.mpi-inf.mpg.de/blendify/_modules/blendify/materials/bsdf.html)).
+still current).
 **Recommendation: always confirm the exact socket set with
 `[s.name for s in node.inputs]` at runtime before keying** — Blender has renamed Principled BSDF
 sockets across major versions before and will likely again.
@@ -702,7 +676,7 @@ sockets across major versions before and will likely again.
 `TypeError: enum "ROTATION" not found in ('FLOAT', 'VECTOR', 'RGBA')` — rotation mixing exists on
 the same underlying "Mix" node type only for Geometry Nodes trees), `blend_type` (Ramp-Blend enum,
 e.g. `MIX`/`ADD`/`MULTIPLY`...), `factor_mode` (`UNIFORM | NON_UNIFORM`), `clamp_factor`,
-`clamp_result`. [`bpy.types.ShaderNodeMix`](https://docs.blender.org/api/4.3/bpy.types.ShaderNodeMix.html) [4.3].
+`clamp_result`. `bpy.types.ShaderNodeMix` [4.3].
 
 **[LIVE, 5.1.1]** the node actually carries **all four data-types' sockets simultaneously** in
 `.inputs`, only enabling the ones matching the current `data_type`:
@@ -718,12 +692,11 @@ Despite the duplicate display `.name` values, **[LIVE-verified]** name-based loo
 `mix.inputs["A"]` correctly resolves to the *currently enabled* one matching the live
 `data_type` (e.g. after `mix.data_type = 'RGBA'`, `mix.inputs["A"].identifier == "A_Color"`, not
 the first-in-list `"A_Float"`) — **provided you set `data_type` before reading `.inputs[...]` by
-name**. This is genuinely easy to get wrong by reasoning alone (a naive assumption would be
-"first match by name," which is wrong here); it was verified empirically, not found documented
-anywhere. Its Factor input's actual socket name is `"Factor"` — search-corroborated for the exact
-literal string, not found on the static RNA page (dynamic node data again).
+name**. This is easy to get wrong (a naive assumption would be "first match by name," which is wrong
+here), and the Blender API reference does not describe it. Its Factor input's actual socket name
+is `"Factor"` — not listed on the static RNA page (dynamic node data again).
 
-The legacy [`bpy.types.ShaderNodeMixRGB`](https://docs.blender.org/api/4.3/bpy.types.ShaderNodeMixRGB.html)
+The legacy `bpy.types.ShaderNodeMixRGB`
 [4.3] still exists (for old files/scripts): `blend_type`, `use_alpha`, `use_clamp`; its factor
 socket is named `"Fac"`.
 
@@ -744,15 +717,15 @@ plain legacy `action.fcurves.find(...)` on 4.3/4.4.
 defined on `bpy_struct` (same as `keyframe_insert`). **Drivers live in
 `id.animation_data.drivers`** (`AnimDataDrivers`, a collection of `FCurve`) — **verified this is
 completely separate from Actions/Action-Slots**; the driver f-curve's own `.driver` property
-(populated only on driver-curves) holds the `Driver` object. [`bpy.types.Driver`](https://docs.blender.org/api/4.3/bpy.types.Driver.html) [4.3, enum **[LIVE-verified identical 5.1.1]**]:
+(populated only on driver-curves) holds the `Driver` object. `bpy.types.Driver` [4.3, enum **[LIVE-verified identical 5.1.1]**]:
 `type` — `AVERAGE | SUM | SCRIPTED | MIN | MAX` (default `AVERAGE`), `expression` (str, used when
 `type='SCRIPTED'`), `use_self` (adds a `self` variable referencing the driven data itself —
-*"Note that dependencies for properties accessed via self may not be fully tracked"* per the
-manual), `variables` (`ChannelDriverVariables`), `is_valid`, `is_simple_expression` (readonly).
+*"Note that dependencies for properties accessed via self may not be fully tracked"*),
+`variables` (`ChannelDriverVariables`), `is_valid`, `is_simple_expression` (readonly).
 
 **Variables and targets**
-[`bpy.types.DriverVariable`](https://docs.blender.org/api/4.3/bpy.types.DriverVariable.html) /
-[`bpy.types.DriverTarget`](https://docs.blender.org/api/4.3/bpy.types.DriverTarget.html)
+`bpy.types.DriverVariable` /
+`bpy.types.DriverTarget`
 [4.3, enums **[LIVE-verified identical 5.1.1]**]:
 ```python
 var = driver.variables.new()          # -> DriverVariable, no args -- must set name/type after
@@ -768,12 +741,10 @@ target.use_fallback_value = True      # + target.fallback_value -- value used if
 ```
 `driver.variables.remove(var)`. Rotation-mode Swing/Twist decomposition
 (`SWING_TWIST_X/Y/Z`) is the standard rig trick for driving corrective shape keys / secondary
-bones off a joint's swing-vs-twist components separately — per the manual, typically produced
-upstream by a Damped-Track-then-Copy-Transforms helper-bone pair.
+bones off a joint's swing-vs-twist components separately — typically produced
+by a Damped-Track-then-Copy-Transforms helper-bone pair.
 
-**Scripted-expression namespace and a real portability gotcha** — from the [Drivers Panel
-manual](https://docs.blender.org/manual/en/4.3/animation/drivers/drivers_panel.html), confirmed
-unchanged on the `latest` snapshot: a fixed subset of expressions ("Simple Expressions") is
+**Scripted-expression namespace and a real portability gotcha** (4.3, unchanged in 5.1): a fixed subset of expressions ("Simple Expressions") is
 evaluated **without** the full Python interpreter — ASCII variable names, float/int literals, the
 global `frame`, constants `pi`/`True`/`False`, operators `+ - * / == != < <= > >= and or not` plus
 ternary-if, and the functions `min max radians degrees abs fabs floor ceil trunc round int sin cos
@@ -809,7 +780,7 @@ rotation would immediately desync, while the driver stays correct automatically.
 
 `Key` (`mesh.shape_keys`, or `curve.shape_keys`/`lattice.shape_keys`) is **itself a separate `ID`
 with its own `animation_data`** — same hidden-AnimData pattern as `NodeTree` above.
-[`bpy.types.Key`](https://docs.blender.org/api/4.3/bpy.types.Key.html) [4.3] — **[LIVE, 5.1.1]**
+`bpy.types.Key` [4.3] — **[LIVE, 5.1.1]**
 confirmed: `mesh.animation_data is None` while `mesh.shape_keys.animation_data` holds the real
 Action (auto-named `"<MeshName>Action"`).
 
@@ -821,7 +792,7 @@ sk.keyframe_insert(data_path="value", frame=1)      # [LIVE] called directly on 
 sk.value = 1.0
 sk.keyframe_insert(data_path="value", frame=20)
 ```
-[`bpy.types.ShapeKey`](https://docs.blender.org/api/4.3/bpy.types.ShapeKey.html) [4.3]: `value`
+`bpy.types.ShapeKey` [4.3]: `value`
 (float, default range 0-1 via `slider_min`/`slider_max`, each independently rangeable to -10..10 for
 overshoot poses), `mute`, `vertex_group` (paints where the key blends in), `relative_key` (which
 other `ShapeKey` this one is measured relative to — default the `Basis`), `interpolation` (enum
@@ -883,7 +854,7 @@ vs. absolute/sequence mode using `Key.eval_time` (float) exactly like `Curve.eva
 15. On `ShaderNodeMix`, `.inputs["A"]`/`["B"]`/`["Factor"]` name-lookup **does** resolve to the
     currently-enabled socket for the live `data_type` (**[LIVE-verified]**, not the naive
     first-in-list match) — but only if you set `data_type` *before* looking the socket up by name.
-16. Per the Blender 4.4 release notes: **removing a modifier, constraint, or shape key now also
+16. Since Blender 4.4, **removing a modifier, constraint, or shape key now also
     removes any driver targeting it** — a driver you added earlier can silently disappear as a
     side effect of an unrelated cleanup step.
 
@@ -891,9 +862,8 @@ vs. absolute/sequence mode using `Key.eval_time` (float) exactly like `Curve.eva
 
 ## Verified bpy snippets
 
-Every snippet below was either directly quoted from an official doc/release-note page (cited) or
-executed against the connected Blender 5.1.1 instance this session (marked **[LIVE]**) with
-cleanup verified.
+Snippets marked **[LIVE]** were run in Blender 5.1.1. The others follow the Blender Python API
+reference for the version named in the comment.
 
 ```python
 # --- Basic transform keyframe --- [4.3 bpy_struct.keyframe_insert doc]
@@ -927,7 +897,7 @@ noise.phase = 0.0      # vary per axis so X/Y/Z don't wobble in lockstep
 # --- Perfect idle loop via Cycles modifier --- [4.3 FModifierCycles]
 fcurve.modifiers.new(type='CYCLES').mode_after = 'REPEAT_OFFSET'  # keeps moving forward each cycle
 
-# --- Camera aim + orbit rig --- [manual track_to.html + LIVE-verified empty_add/parenting]
+# --- Camera aim + orbit rig --- [LIVE-verified empty_add/parenting]
 bpy.ops.object.empty_add(type='PLAIN_AXES', radius=0.2, location=(0, 0, 1))
 pivot = bpy.context.active_object
 cam_obj.parent = pivot
@@ -989,77 +959,3 @@ for kp in fc.keyframe_points:
     kp.interpolation = 'CONSTANT'
 ```
 
----
-
-## Sources
-
-**Official Blender Python API reference** (fetched via `curl` + custom HTML→text due to
-site-wide 403 on the WebFetch tool; version stated in each URL, `current` cross-checked live
-against 5.1.1 where noted above):
-- [bpy.types.bpy_struct](https://docs.blender.org/api/4.3/bpy.types.bpy_struct.html) — 4.3, and `current`
-- [bpy.types.ID](https://docs.blender.org/api/4.3/bpy.types.ID.html) — 4.3
-- [bpy.types.FCurve](https://docs.blender.org/api/4.3/bpy.types.FCurve.html) — 4.3
-- [bpy.types.FCurveKeyframePoints](https://docs.blender.org/api/4.3/bpy.types.FCurveKeyframePoints.html) — 4.3
-- [bpy.types.Keyframe](https://docs.blender.org/api/4.3/bpy.types.Keyframe.html) — 4.3
-- [bpy_types_enum_items/beztriple_interpolation_mode_items](https://docs.blender.org/api/4.3/bpy_types_enum_items/beztriple_interpolation_mode_items.html) — 4.3
-- [bpy_types_enum_items/beztriple_interpolation_easing_items](https://docs.blender.org/api/4.3/bpy_types_enum_items/beztriple_interpolation_easing_items.html) — 4.3
-- [bpy_types_enum_items/keyframe_handle_type_items](https://docs.blender.org/api/4.3/bpy_types_enum_items/keyframe_handle_type_items.html) — 4.3
-- [bpy_types_enum_items/beztriple_keyframe_type_items](https://docs.blender.org/api/4.3/bpy_types_enum_items/beztriple_keyframe_type_items.html) — 4.3
-- [bpy_types_enum_items/fcurve_auto_smoothing_items](https://docs.blender.org/api/4.3/bpy_types_enum_items/fcurve_auto_smoothing_items.html) — 4.3
-- [bpy_types_enum_items/fmodifier_type_items](https://docs.blender.org/api/4.3/bpy_types_enum_items/fmodifier_type_items.html) — 4.3 (8 values; 9th `SMOOTH` value found only live on 5.1.1)
-- [bpy_types_enum_items/driver_target_rotation_mode_items](https://docs.blender.org/api/4.3/bpy_types_enum_items/driver_target_rotation_mode_items.html) — 4.3
-- [bpy_types_enum_items/object_rotation_mode_items](https://docs.blender.org/api/4.3/bpy_types_enum_items/object_rotation_mode_items.html) — 4.3
-- [bpy_types_enum_items/object_empty_drawtype_items](https://docs.blender.org/api/4.3/bpy_types_enum_items/object_empty_drawtype_items.html) — 4.3
-- [bpy_types_enum_items/constraint_type_items](https://docs.blender.org/api/4.3/bpy_types_enum_items/constraint_type_items.html) — 4.3
-- [bpy.types.AnimData](https://docs.blender.org/api/4.3/bpy.types.AnimData.html) — 4.3, and `current`
-- [bpy.types.Action](https://docs.blender.org/api/4.3/bpy.types.Action.html) — 4.3, and `current` (no `fcurves`/`groups`/`id_root`)
-- [bpy.types.ActionGroup](https://docs.blender.org/api/4.3/bpy.types.ActionGroup.html) — 4.3
-- [bpy.types.ActionSlot](https://docs.blender.org/api/current/bpy.types.ActionSlot.html) — `current`
-- [bpy.types.ActionSlots / ActionChannelbag / ActionLayer / ActionKeyframeStrip](https://docs.blender.org/api/current/bpy.types.ActionChannelbag.html) — `current`
-- [bpy.types.FModifier](https://docs.blender.org/api/4.3/bpy.types.FModifier.html) / [FCurveModifiers](https://docs.blender.org/api/4.3/bpy.types.FCurveModifiers.html) — 4.3
-- [bpy.types.FModifierNoise](https://docs.blender.org/api/4.3/bpy.types.FModifierNoise.html) — 4.3 baseline; reworked properties confirmed live + via bundled RST (`get_python_api_docs`) on 5.1.1
-- [bpy.types.FModifierCycles](https://docs.blender.org/api/4.3/bpy.types.FModifierCycles.html) — 4.3
-- [bpy.types.FModifierGenerator](https://docs.blender.org/api/4.3/bpy.types.FModifierGenerator.html) — 4.3
-- [bpy.types.FModifierLimits](https://docs.blender.org/api/4.3/bpy.types.FModifierLimits.html) / [FModifierStepped](https://docs.blender.org/api/4.3/bpy.types.FModifierStepped.html) / [FModifierEnvelope](https://docs.blender.org/api/4.3/bpy.types.FModifierEnvelope.html) — 4.3
-- `bpy.types.FModifierSmooth` — 5.1-only, no 4.3 page exists; documented via bundled `get_python_api_docs` RST + live `bl_rna` on 5.1.1
-- [bpy.types.Camera](https://docs.blender.org/api/4.3/bpy.types.Camera.html) / [CameraDOFSettings](https://docs.blender.org/api/4.3/bpy.types.CameraDOFSettings.html) — 4.3
-- [bpy.types.TrackToConstraint](https://docs.blender.org/api/4.3/bpy.types.TrackToConstraint.html) / [DampedTrackConstraint](https://docs.blender.org/api/4.3/bpy.types.DampedTrackConstraint.html) / [FollowPathConstraint](https://docs.blender.org/api/4.3/bpy.types.FollowPathConstraint.html) / [ChildOfConstraint](https://docs.blender.org/api/4.3/bpy.types.ChildOfConstraint.html) / [Constraint](https://docs.blender.org/api/4.3/bpy.types.Constraint.html) / [ObjectConstraints](https://docs.blender.org/api/4.3/bpy.types.ObjectConstraints.html) — 4.3
-- [bpy.types.Curve](https://docs.blender.org/api/4.3/bpy.types.Curve.html) — 4.3 (`eval_time`, `path_duration`, `use_path`, `use_path_follow`)
-- [bpy.ops.constraint](https://docs.blender.org/api/4.3/bpy.ops.constraint.html) — 4.3 (`childof_set_inverse`, `childof_clear_inverse`)
-- [bpy.ops.object](https://docs.blender.org/api/4.3/bpy.ops.object.html) — 4.3 (`empty_add`, `paths_calculate`, `paths_clear`, `paths_update`)
-- [bpy.ops.pose](https://docs.blender.org/api/4.3/bpy.ops.pose.html) — 4.3 (`paths_calculate`)
-- [bpy.types.MotionPath](https://docs.blender.org/api/4.3/bpy.types.MotionPath.html) / [MotionPathVert](https://docs.blender.org/api/4.3/bpy.types.MotionPathVert.html) — 4.3
-- [bpy.types.Material](https://docs.blender.org/api/4.3/bpy.types.Material.html) / [NodeTree](https://docs.blender.org/api/4.3/bpy.types.NodeTree.html) / [NodeSocket](https://docs.blender.org/api/4.3/bpy.types.NodeSocket.html) / [NodeSocketFloat](https://docs.blender.org/api/4.3/bpy.types.NodeSocketFloat.html) — 4.3
-- [bpy.types.ShaderNodeBsdfPrincipled](https://docs.blender.org/api/4.3/bpy.types.ShaderNodeBsdfPrincipled.html) / [ShaderNodeMix](https://docs.blender.org/api/4.3/bpy.types.ShaderNodeMix.html) / [ShaderNodeMixRGB](https://docs.blender.org/api/4.3/bpy.types.ShaderNodeMixRGB.html) — 4.3
-- [bpy.types.Driver](https://docs.blender.org/api/4.3/bpy.types.Driver.html) / [DriverVariable](https://docs.blender.org/api/4.3/bpy.types.DriverVariable.html) / [DriverTarget](https://docs.blender.org/api/4.3/bpy.types.DriverTarget.html) / [ChannelDriverVariables](https://docs.blender.org/api/4.3/bpy.types.ChannelDriverVariables.html) — 4.3
-- [bpy.types.ShapeKey](https://docs.blender.org/api/4.3/bpy.types.ShapeKey.html) / [Key](https://docs.blender.org/api/4.3/bpy.types.Key.html) — 4.3
-- [bpy.types.Object](https://docs.blender.org/api/4.3/bpy.types.Object.html) — 4.3 (`hide_viewport`/`hide_render`/`hide_get`/`hide_set`, `matrix_parent_inverse`, `rotation_mode`, `motion_path`)
-
-**Blender Developer / release notes** (same fetch method):
-- [Blender 4.4 — Slotted Actions: Upgrading](https://developer.blender.org/docs/release_notes/4.4/upgrading/slotted_actions/)
-- [Blender 4.4 — Python API](https://developer.blender.org/docs/release_notes/4.4/python_api/)
-- [Blender 4.4 — Animation & Rigging](https://developer.blender.org/docs/release_notes/4.4/animation_rigging/) (Noise modifier rework; driver-removal-on-cleanup)
-- [Blender 5.0 — Python API](https://developer.blender.org/docs/release_notes/5.0/python_api/) (legacy Action API removal, `fcurve_ensure_for_datablock`, `anim_utils` helpers)
-- [Blender 5.1 — Animation & Rigging](https://developer.blender.org/docs/release_notes/5.1/animation_rigging/) (Gaussian Smooth F-Curve modifier)
-- [Blender 4.5 — Python API](https://developer.blender.org/docs/release_notes/4.5/python_api/) (checked, no relevant changes found)
-- [Blender 5.1 — Python API](https://developer.blender.org/docs/release_notes/5.1/python_api/) (checked, no relevant changes found beyond UI-only items)
-
-**Blender user manual** (same fetch method, version noted):
-- [Follow Path Constraint](https://docs.blender.org/manual/en/4.3/animation/constraints/relationship/follow_path.html) — 4.3
-- [Track To Constraint](https://docs.blender.org/manual/en/4.3/animation/constraints/tracking/track_to.html) — 4.3
-- [Drivers — Introduction](https://docs.blender.org/manual/en/4.3/animation/drivers/introduction.html) — 4.3
-- [Drivers Panel](https://docs.blender.org/manual/en/4.3/animation/drivers/drivers_panel.html) — 4.3 (Simple Expressions subset, `self`, rotation-mode swing/twist)
-- [Principled BSDF](https://docs.blender.org/manual/en/4.3/render/shader_nodes/shader/principled.html) — 4.3
-- [F-Curve Modifiers](https://docs.blender.org/manual/en/latest/editors/graph_editor/fcurves/modifiers.html) — `latest`/5.1 (Cycles/Smooth mutual exclusivity, Noise Lacunarity/Roughness, Gaussian Smooth)
-
-**Third-party, used for cross-checks / literal-string corroboration only** (WebSearch, worked
-directly despite the docs.blender.org block):
-- [blenderartists.org — compositing node keyframe_insert error/fix](https://blenderartists.org/t/compositing-nodes-insert-keyframe/1197135) (exact `TypeError` text + working fix)
-- [blendify materials/bsdf.py source](https://virtualhumans.mpi-inf.mpg.de/blendify/_modules/blendify/materials/bsdf.html) (independent confirmation of Principled BSDF input name strings)
-- [surf-visualization.github.io — Parenting course page](https://surf-visualization.github.io/blender-course/api/parenting/) (parent-inverse-matrix jump description, cross-checked against the live numeric test above)
-
-**Live instance** (primary source for every claim tagged **[LIVE]**): Blender **5.1.1**, driven via
-`mcp__Blender__execute_blender_code` this session — `bl_rna.properties[...].enum_items`
-introspection, and full round-trip scripts for Action Slots, node-socket keyframing, drivers,
-motion paths, parenting, Child Of, shape keys, and Follow Path, each with created scratch
-data-blocks (`RSRCH_*` prefix) removed and the removal verified in the same script.

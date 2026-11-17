@@ -430,7 +430,8 @@ def test_model_cfg_template_declares_the_clothing_skeleton():
     assert len(set(bones)) == 159
     assert all(parent == "" or parent in bones[:i] for i, (_, parent) in enumerate(pairs)), "a parent must come before its child"
     assert text.count('skeletonName="DayzTemporarySkeleton"') == 2   # the _m and _f classes; the ground model has none
-    assert "armorhneck" not in text.lower()
+    classes = re.findall(r"^\tclass (\w+)", text.split("class CfgModels", 1)[1], re.M)
+    assert classes == ["Default", "mygarment_m", "mygarment_f", "mygarment_g"]   # placeholder names only
 
 
 VANILLA_WORN = Path("P:/DZ/characters/tops/chainmail_m.p3d")

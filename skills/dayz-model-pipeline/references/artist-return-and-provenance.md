@@ -1,10 +1,10 @@
 # Artist returns, external binaries and handoff identity
 
-What to check when a `.p3d`, `.paa` or `.rvmat` comes from outside the repo: a file an artist sends back, a provider delivery, or a corrected binary handed on. Every rule here was learned on a named third-party mod and is a process rule about files, not a fact about the vanilla game, so nothing here is checked on `P:\`. The measurements are the source author's and are quoted as recorded.
+What to check when a `.p3d`, `.paa` or `.rvmat` comes from outside the repo: a file an artist sends back, a provider delivery, or a corrected binary handed on. Every rule here is a process rule about files, measured on third-party mod models, not a fact about the vanilla game, so nothing here is checked on `P:\`.
 
 The checks are all offline and read the `.p3d` with py3d (`scripts/tools/py3d`); `py3d-direct-generation.md` has the API.
 
-## Phase 0: provenance of an external binary (lesson LL-230)
+## Phase 0: provenance of an external binary
 
 Before editing any `.p3d`, `.paa`, `.rvmat` or other binary received from outside the repository, take an inventory of the live asset and of the latest known external delivery. Compare SHA-256, byte size, modification date and the relevant structural count (for a mesh, the face count). A newer `_artist_drop/`, `_from_provider/` or `scratch/` tree is a provenance gate, not background context.
 
@@ -16,20 +16,20 @@ Resolve every divergence in Phase 0, one of three ways:
 
 "Separate surgery" without an owner and a date does not close the gate.
 
-**Licensing is part of provenance (lesson LL-372).** A packaged README or LICENSE dates from the day of packaging, not from today. Date the publisher's current announcement; if the inside of the artifact and the current source disagree, the current source rules.
+**Licensing is part of provenance.** A packaged README or LICENSE dates from the day of packaging, not from today. Date the publisher's current announcement; if the inside of the artifact and the current source disagree, the current source rules.
 
-## Artist return preflight (SP-246)
+## Artist return preflight
 
 Before deploying any `.p3d` that came back from an artist, run this offline py3d preflight against the file that was sent. An artist's exporter keeps what is visible and drops the rest. An untouched LOD is suspicious, not safe: the envelope may have moved while View Geometry, Fire Geometry, `boundingbox_min`/`boundingbox_max` and the `*_axis` points came back intact and now lie.
 
-Origin: the GunRacks mod, T2 rack, 2026-08-15 (`rack_t2_editado_final.p3d`). The visual improvements were real: modelled hinges replaced a 1792 face wire mesh, and the cabinet depth went from 0.268 m to 0.436 m. The return had no Geometry LOD, 7 proxy triangles deleted from the visual LOD, `hideproxy` declared but empty (0 points, 0 faces), and `Component01` and the proxy paths in lower case. View Geometry, Fire Geometry, `boundingbox_min`/`boundingbox_max` and `doors1_axis` were intact, so the front stuck out 0.168 m beyond the Fire Geometry and the door axis sat 198.8 mm behind its own leaf.
+Measured case: a gun rack that came back from an artist on 2026-08-15. The visual improvements were real: modelled hinges replaced a 1792 face wire mesh, and the cabinet depth went from 0.268 m to 0.436 m. The return had no Geometry LOD, 7 proxy triangles deleted from the visual LOD, `hideproxy` declared but empty (0 points, 0 faces), and `Component01` and the proxy paths in lower case. View Geometry, Fire Geometry, `boundingbox_min`/`boundingbox_max` and `doors1_axis` were intact, so the front stuck out 0.168 m beyond the Fire Geometry and the door axis sat 198.8 mm behind its own leaf.
 
 **Preflight (cheap, all offline with py3d, before deploying anything):**
 
 1. Count LODs with `classify_lod_resolution` against the file that was sent. Geometry is the first to vanish.
 2. Proxy selections present in the visual LOD and in View Geometry and Fire Geometry, all of them inside the bone. Compare their coordinates against the sent model: if they change, the alignment in game is lost.
 3. Visual LOD bounding box against the collision boxes and against `boundingbox_min`/`boundingbox_max`. If they diverge, rebuild the boxes, not the visual.
-4. Animation axes (`*_axis`) against the piece they turn: the distance from axis to piece. On T2 that number was 198.8 mm and stood out by itself.
+4. Animation axes (`*_axis`) against the piece they turn: the distance from axis to piece. On that rack the number was 198.8 mm and stood out by itself.
 5. The casing of `Component01` and of the mod's own paths against the validated artifact.
 6. Orphan points and leftovers of replaced geometry. Here: 3 points (one 0.57 m outside the model, which poisons any bounding box computed from `lod.points`) and 16 stray faces.
 
@@ -38,13 +38,13 @@ Origin: the GunRacks mod, T2 rack, 2026-08-15 (`rack_t2_editado_final.p3d`). The
 - `#SharpEdges#` entries are point indices. Any filtering that reindexes points leaves them pointing at foreign points without failing: remap them by hand. Measured here: maximum index 2466 of 2505 points, 781 pairs, 0 lost after the remap.
 - A py3d round trip of a file from a third-party exporter is not byte identical (here 892 bytes longer: it regenerates `#UVSet#` and drops an empty `#SharpEdges#`), but it keeps points, faces, selections, properties and hard edges. Checking the round trip before editing is the gate that authorizes touching the file with py3d. A `.p3d` generated by py3d does come back identical.
 
-**More than one artist round (same day: T1 `gunrackt1_nuevo.p3d` and T2 `rack_t2_puerta`):**
+**More than one artist round (two racks returned the same day):**
 
 - The artist starts from an old copy, so every correction later than the one they hold comes back undone. Both returns reapplied the 180° proxy rotation that had been removed the same day: exactly `R_orig·Ry(180)` with the anchor fixed, on all 10 proxies. The legs of a proxy triangle are 1 to 2 mm long, so 180° moves the vertices about 4 mm and no view shows it. The list of corrections after an artist return is a script that can be run again, not a finished job: run it whole on every round trip, and compare against the deployed file, not against the previous delivery.
 - Do not write the patch as a delta on whatever the delivery brought. The memory point `doors1` computed as `delivered_value + dz` would have been silently wrong on the second delivery (memory origin 8.11 mm lower in Y, different Z). Always anchor to geometry in the file itself (`Z = leaf_midplane + offset`), and check that the new formula reproduces the value already deployed before trusting it.
 - An artist change that reduces an earlier improvement is not a regression by default. Here it gave back 43 mm of depth because the door went inside the body (it had hung in front of the sides). What decides is the functional magnitude, not the direction of the delta: the useful gap became 0.284 to 0.303 m, against 0.168 to 0.187 m on the model that clipped. Measure it; do not judge it by eye.
 
-## Amendment per delivery (SP-297, added 2026-08-31)
+## Amendment per delivery (added 2026-08-31)
 
 This narrows the "script that can be run again" rule above.
 
@@ -52,7 +52,7 @@ This narrows the "script that can be run again" rule above.
 - **A return can keep the complete non visual contract.** In that case a surgical reconstruction must fail closed instead of adding a second contract. Normalize the casing of selections and material paths from a canonical map read from the deployed artifact; do not invent canonical names. In particular, restore `Component01` exactly when the reference requires it.
 - **Reimport gates express invariants; they do not freeze one delivery's topology.** For symmetric parts, require both halves to match each other in component count, face count and material distribution, plus minimum floors that reject an incomplete half. Treat optional structures as warnings. After changing the gate, run it again on the previous delivery and require the previous production output to stay byte identical.
 
-## Three point identity for a binary handoff (SP-172, added 2026-08-31)
+## Three point identity for a binary handoff (added 2026-08-31)
 
 Every corrected binary handoff records the SHA-256 of three points: the deployed artifact, the repair input, and the repair output.
 
@@ -60,9 +60,9 @@ Every corrected binary handoff records the SHA-256 of three points: the deployed
 - Compare the size change of each model's PBO with untouched controls, and stop when the size change does not fit the declared edit.
 - Select backups by a stamped name or by hash, not by modification time, because file copies can preserve the source timestamp.
 
-## Identify a derived artifact's source by fingerprint, not filename (lesson LL-405, added 2026-09-01)
+## Identify a derived artifact's source by fingerprint, not filename (added 2026-09-01)
 
-To decide whether a UV unwrap had reached the game, the question was which mesh feeds `LFQuad_body.p3d`. `obj\body_lod0.obj` was opened because it is named lod0. It did not match (82,266 vertices against the 22,004 of the p3d's LOD0), and the conclusion drawn was that the source was stale and the work had to be done again. Both halves were false.
+To decide whether a UV unwrap had reached the game, the question was which mesh feeds a quad's body `.p3d`. `obj\body_lod0.obj` was opened because it is named lod0. It did not match (82,266 vertices against the 22,004 of the p3d's LOD0), and the conclusion drawn was that the source was stale and the work had to be done again. Both halves were false.
 
 The LOD numbering was offset by two: resolution 0 comes from `body_lod2.obj` (22,105 vertices and 38,960 faces, against 22,004 and 38,832) and resolution 1 from `body_lod3.obj`; `lod0` and `lod1` are higher detail versions that never ship. And the file called stale was the newer of the two.
 

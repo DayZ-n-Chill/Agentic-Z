@@ -12,7 +12,7 @@ description: "Renders a Blender model from several angles through the Blender MC
 
 This skill is the other half of the loop: render the model, look at the images, diagnose what you see, fix one thing, and render the same angles again to confirm. Run the numeric checks in `blender-assembly` and the visual checks here.
 
-It needs a Blender MCP server connected to the session (`execute_blender_code` and `get_screenshot_of_area_as_image`); this repo configures none. The scripts next to this file are plain Python 3.10 or later with no packages to install, and none of them needs `P:\`, DayZ Tools or the game. This is a review method, not a statement about the game: where a DayZ fact appears it says who measured it.
+It needs a Blender MCP server connected to the session (`execute_blender_code` and `get_screenshot_of_area_as_image`); this repo configures none. The scripts next to this file are plain Python 3.10 or later with no packages to install, and none of them needs `P:\`, DayZ Tools or the game. This is a review method, not a statement about the game: where a DayZ fact appears it says whether it was measured in game or is not checked on `P:\`.
 
 ## What to read
 
@@ -42,7 +42,7 @@ It needs a Blender MCP server connected to the session (`execute_blender_code` a
 
 ## Bounded loop: typed outcomes and a stop policy
 
-Step 4 says to fix one diagnosis at a time; this section bounds how many times. Visual iteration with no bound is a documented failure (a racing-game rip went N rounds on a red visual before anyone escalated to a person; the cap on in-game test rounds exists for the same reason). Every review iteration ends by choosing exactly one action:
+Step 4 says to fix one diagnosis at a time; this section bounds how many times. Visual iteration with no bound does not converge by itself: a model can go round after round on the same red visual before anyone escalates to a person. The cap on in-game test rounds exists for the same reason. Every review iteration ends by choosing exactly one action:
 
 - `continue`: this aspect is good; move to the next check or part.
 - `refine-spec`: the plan was wrong or shallow (a missing detail row, a wrong connection-map entry, the wrong route). Go back to `blender-assembly` Phase 1 or 1.5, fix the plan and rebuild from it. Patching geometry around a wrong plan burns iterations without converging.
@@ -56,7 +56,7 @@ Keep an iteration history per model, stored next to the renders as `_review\hist
 python "<skill-dir>\correction_loop.py" --history _review\history.json --json
 ```
 
-Always pass `--json`: the plain output contains a `Δ` that crashes a cp1252 console. Options: `--target` (default 0.85), `--max-iter` (default 6), `--min-delta` (default 0.02). Exit code 0 means keep iterating, 1 means stop (the JSON says with which action), 2 means the history could not be read.
+`--json` prints the decision as a JSON object; without it the script prints one `stop=... action=... reason=...` line. Options: `--target` (default 0.85), `--max-iter` (default 6), `--min-delta` (default 0.02). Exit code 0 means keep iterating, 1 means stop (the JSON says with which action), 2 means the history could not be read.
 
 | Condition (in priority order) | Verdict |
 |---|---|
@@ -70,7 +70,7 @@ The script is the cycle counter nobody keeps under pressure. NEVER argue past it
 
 ### Per-feature gates
 
-A global "looks right" cannot rescue a failed critical feature. The detail list from `blender-assembly` Phase 1.5 is this review's contract. Its identity-defining rows, the ones that make the object this object (a grille shape, a stock profile, a hinge), each get their own pass or fail during step 3, judged on a crop at native resolution (LL-153). A render that reads well overall with one wrong critical feature fails the iteration; record that feature's tag in `defectTags`.
+A global "looks right" cannot rescue a failed critical feature. The detail list from `blender-assembly` Phase 1.5 is this review's contract. Its identity-defining rows, the ones that make the object this object (a grille shape, a stock profile, a hinge), each get their own pass or fail during step 3, judged on a crop at native resolution. A render that reads well overall with one wrong critical feature fails the iteration; record that feature's tag in `defectTags`.
 
 ### Report honestly: "improved" is not "done"
 
@@ -115,7 +115,7 @@ for area in bpy.context.screen.areas:
 
 Workbench needs no scene lights (it has its own studio light), which avoids the classic render that came out black because the scene has no lamp. Use Workbench for diagnosis; switch to EEVEE or Cycles only when you are judging materials.
 
-**Render paths in `blender -b` are absolute** (SP-451, measured 2026-10-01). A relative `render.filepath` without the `//` prefix saved the renders in a folder at the root of the drive, not in the working folder. Pass absolute paths.
+**Render paths in `blender -b` are absolute** (measured 2026-10-01). A relative `render.filepath` without the `//` prefix saved the renders in a folder at the root of the drive, not in the working folder. Pass absolute paths.
 
 ## Multi-angle capture
 
@@ -184,7 +184,7 @@ result = vr_capture("YOUR_OBJECT")   # set the object name; optional: tag=, out_
 
 ## Diagnostic checklist
 
-Walk every category: the point of a checklist is to catch the defect you were not already worried about. Each item is a concrete signal you can check, tied to a number or a specific visual cue. An invariant written as loose prose gets nodded at and skipped (LL-062).
+Walk every category: the point of a checklist is to catch the defect you were not already worried about. Each item is a concrete signal you can check, tied to a number or a specific visual cue. An invariant written as loose prose gets nodded at and skipped.
 
 ### A. General 3D correctness (every model)
 
@@ -202,14 +202,14 @@ Walk every category: the point of a checklist is to catch the defect you were no
 Import a known-good vanilla model into the same scene at 1:1 and compare side by side (the import path is in `dayz-model-pipeline`). Anchor each check to the reference, not to taste:
 
 - **Orientation and scale.** The same forward axis and roughly the same footprint as the vanilla equivalent.
-- **Ride height (measurable).** For a ground item, the lowest vertex (`result["lowest_z"]`) sits at about the ground plane (z ≈ 0). For a vehicle, the wheel contact is at about ground level and the chassis belly clears it well: the source author measured a belly clearance of about 0.43 m on a vanilla sedan (a measurement on the binarized model, not checked on `P:\` here), and a wheel that is too small sinks the body. Measure it; do not eyeball "looks grounded" (LL-062). The vehicle structural parity notes are in the vehicles pack (`skills/_shared/vehicles/`).
+- **Ride height (measurable).** For a ground item, the lowest vertex (`result["lowest_z"]`) sits at about the ground plane (z ≈ 0). For a vehicle, the wheel contact is at about ground level and the chassis belly clears it well: the belly clearance of a vanilla sedan measured about 0.43 m on the binarized model (not yet checked on `P:\`), and a wheel that is too small sinks the body. Measure it; do not eyeball "looks grounded". The vehicle structural parity notes are in the vehicles pack (`skills/_shared/vehicles/`).
 - **Proxies and slots present.** Wheels, the FireGeo bulk and lights are visibly where the vanilla model has them.
 
 ### C. Comparison against a reference image
 
 When matching a photo or a concept: load the reference as a camera background image (`cam_data.show_background_images = True`, then `cam_data.background_images.new().image = bpy.data.images.load(path)`), match the camera to the reference's angle, render, and compare named landmarks (roofline, wheel arch, handle position), not the overall impression. Report silhouette deviation, missing or extra masses and proportion drift by pointing at specific points.
 
-### D. Scoring resemblance to a photo: calibrate the camera first (added 2026-09-25, SP-427)
+### D. Scoring resemblance to a photo: calibrate the camera first
 
 - **One Blender camera per reference photo, calibrated by silhouette IoU.** Maximize the IoU between the Workbench alpha silhouette and the photo mask (Nelder-Mead over location, yaw, pitch, roll and focal length, started from a feature of known size such as the tyres from the spec sheet). Judge only photo and render crops taken with that same camera. With a "similar" camera set by eye, proportion errors (a wing out of place, a dome floating 5 cm) stay invisible.
 - **Poor or partial views.** Low resolution or off-angle photos converge to a false camera (IoU 0.81 on a brochure front view). Solve PnP on 6 to 8 points triangulated across other photos instead, and reject any refinement that lowers the silhouette IoU (a bundle with 2 anchors moved the camera 38 cm along the view rays and dropped the IoU from 0.936 to 0.923).
@@ -218,11 +218,11 @@ When matching a photo or a concept: load the reference as a camera background im
 
 ## Hard guardrail: a Blender render cannot judge DayZ winding
 
-Blender, like any Three.js viewer, renders right-handed; DayZ culls left-handed. A model that looks perfectly solid in Blender can render inside out in game. This is a logged error of the source author, not a hypothetical: a render was used to declare "normals not inverted", and the exterior turned out transparent in game. Why a right-handed check misleads is in `skills/dayz-p3d-audit/references/winding-methodology.md`.
+Blender, like any Three.js viewer, renders right-handed; DayZ culls left-handed. A model that looks perfectly solid in Blender can render inside out in game. This has happened, it is not a hypothetical: a render was used to declare "normals not inverted", and the exterior turned out transparent in game. Why a right-handed check misleads is in `skills/dayz-p3d-audit/references/winding-methodology.md`.
 
 - **NEVER conclude that DayZ face winding or normal direction is correct from a Blender render or screenshot.** The render cannot tell you. Absolute winding is decided by `/dayz-p3d-audit` (its edge-pair topology check) and in game, not by eye.
 - The only valid visual signal for winding is relative: the model winds the same way as a vanilla reference imported beside it. "Same as vanilla" means something; "looks fine to me" does not.
-- The Blender to DayZ map is the det = -1 reflection `(x,y,z) -> (x,z,y)` with negated normals (`dayz-model-pipeline` Rule 12, measured in game by the source author on 2026-10-01; not checked on `P:\`, where vanilla models are binarized). A render cannot judge the result: the older det = +1 recipe renders solid in Blender and in DayZ and is still mirrored. Check chirality in game on text or on a one-sided part.
+- The Blender to DayZ map is the det = -1 reflection `(x,y,z) -> (x,z,y)` with negated normals (`dayz-model-pipeline` Rule 12, measured in game on 2026-10-01; not checked on `P:\`, where vanilla models are binarized). A render cannot judge the result: the older det = +1 recipe renders solid in Blender and in DayZ and is still mirrored. Check chirality in game on text or on a one-sided part.
 
 Everything else here (orientation, proportion, scale, exploded parts, ride height, match to a reference) the render judges well. Winding is the one thing it cannot; hand that to `/dayz-p3d-audit`.
 
@@ -241,7 +241,7 @@ It reports silhouette IoU, scale and aspect deltas of the bounding box, SSIM, ed
 - **Prove the fix landed.** An intended edit must move at least one signal. `identicalImages: true` after an edit means the old scene was rendered again, a failure that has been reproduced: the stale render depsgraph described in `blender-assembly` (`references/mcp-render-pitfalls.md`).
 - **Catch collateral drift.** Signals moving that the edit should not touch: a tonal shift after a pure geometry fix, a silhouette change after a material tweak.
 
-These numbers are a change filter, never a correctness verdict (LL-153). Correctness is decided by eyes on the renders and on crops at native resolution. Use it on same-camera pairs only: scoring a render against a reference photo is not calibrated here, because framing and background mismatch break every signal. That comparison stays with the named landmarks of checklist C.
+These numbers are a change filter, never a correctness verdict. Correctness is decided by eyes on the renders and on crops at native resolution. Use it on same-camera pairs only: scoring a render against a reference photo is not calibrated here, because framing and background mismatch break every signal. That comparison stays with the named landmarks of checklist C.
 
 Outside an agent session, `scripts\dayz\render-delta.bat` runs `vr_delta.py` with the same arguments.
 
@@ -262,8 +262,6 @@ The local model's answers are evidence logged beside your own. They are never a 
 
 Render into a folder you can also read. The helper defaults to a `_review\` folder next to the `.blend`, or the OS temp folder when the file is unsaved; for a `.blend` kept inside `workspace\<ModName>\`, pass `out_dir` under `output\<model>-review\` so the renders stay out of the mod folder. Name files `<model>__<angle>__<iter>.png`. Keep the before and after pair for any angle you changed, so the diagnosis can be audited and you can prove the fix landed.
 
-## Rules from the author's lessons log (added 2026-07-27)
+## Judge on crops at native resolution
 
-Each rule keeps the `LL-NNN` number of the lesson it came from. The lessons log itself (symptom, origin, evidence) is the author's private file and is not in this repo.
-
-- **LL-153.** Judge every critical visual zone on a crop at native resolution. Use RMS and scores only as a change filter, never as a correctness verdict, and keep the full-resolution crop as evidence.
+Judge every critical visual zone on a crop at native resolution. Use RMS and scores only as a change filter, never as a correctness verdict, and keep the full-resolution crop as evidence.

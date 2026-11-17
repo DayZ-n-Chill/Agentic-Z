@@ -51,7 +51,7 @@ Health calls take a zone name and a health type. `""` for both means the global 
 | `AddHealth(zoneName, healthType, value)` | `:1027` |
 | `DecreaseHealth(zoneName, healthType, value, auto_delete)` | `:1049` (the three argument form is `:1034`) |
 | `SetHealthMax(zoneName = "", healthType = "")` | `:1105` |
-| `GetHealthLevel(zone = "")` returns an `int` health level, `GameConstants.STATE_PRISTINE` (0) to `STATE_RUINED` (4) (`P:\scripts\3_game\constants.c:909`, `:913`) | `:1171` |
+| `GetHealthLevel(zone = "")` returns an `int` health level, `GameConstants.STATE_PRISTINE` (0) to `STATE_RUINED` (4) (`P:\scripts\3_game\constants.c:913`, `:909`) | `P:\scripts\3_game\entities\object.c:1171` |
 | `IsRuined()`, `IsDamageDestroyed()` | `:1219`, `:981` |
 
 ```c
@@ -188,4 +188,4 @@ void SetQuantityOrAmmo(EntityAI ent, int value)
 - The signature is `SetObjectTexture(int index, string texture_name)` (`P:\scripts\3_game\entities\entityai.c:2881`); `SetObjectMaterial(int index, string mat_name)` is next to it (`:2884`). The index is the position in the config's `hiddenSelections[]`, starting at 0, not the selection name.
 - `GetHiddenSelectionsTextures()` reads the config's `hiddenSelectionsTextures[]` (`P:\scripts\3_game\entities\object.c:132`). Vanilla has no `GetObjectTextures` and no `SetObjectTextureGlobal`; calling a method that does not exist stops the whole script module compiling.
 - Reported, not checked on `P:\`: a selection name that differs in case from the named selection in the `.p3d` is ignored without a log line.
-- Reported by the knowledge pack, not checked on `P:\`: a texture path read back from the engine has lost the leading backslash of the config path (`\dz\gear\camping\data\crate_co.paa` in `config.cpp` comes back as `dz\gear\camping\data\crate_co.paa`). The pack reads it with a `GetObjectTextures()` call, which no vanilla script declares (see above), so check the readback call exists on your build before you use it. When you save a texture path and restore it later, compare the two without the leading backslash and without regard to case.
+- Reported, not checked on `P:\`: a texture path read back from the engine has lost the leading backslash of the config path (`\dz\gear\camping\data\crate_co.paa` in `config.cpp` comes back as `dz\gear\camping\data\crate_co.paa`). No vanilla script declares a `GetObjectTextures()` readback (see above), so check the readback call you use exists on your build before you rely on it. When you save a texture path and restore it later, compare the two without the leading backslash and without regard to case.

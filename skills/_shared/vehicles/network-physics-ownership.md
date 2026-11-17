@@ -2,7 +2,7 @@
 
 Who simulates a vehicle (the owner client, with server reconciliation), why a forced seat is not ownership, why writing the pose fights the owner, how to derive angular velocity, and the rules of a custom `PawnMove` and `PawnOwnerState` pair.
 
-> Status: field notes measured on third-party mods (the DayZ-MCP bridge, LFHeli), each named in its entry, and facts about DayZ Expansion that name its files; those were not repeated or opened here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. Every vanilla number in this file that was opened (`transport.c:11-66`, `car.c:78-191`, `carscript.c:57-94`, `:552`, `:577`, `:845`, `:1041`, `:1202`, `:2568-2601`, `pawn.c:5-8`, `:138-148`, `:194-218`, `:238-311`, `enphysics.c:146`, `:163`, `enmath3d.c:125-131`, `enentity.c:288`, `object.c:819`, `defines.c:64`, `actiongetintransport.c:71`) matches this repo's `P:\` (a 1.30 build); the notes measured the default move strategy on DayZ 1.29. Tags such as SP-205 or LL-464 are the notes' own lesson numbers, and `[EXACT]`, `[DESIGN]` and `[CLAIM-...]` are the notes' own evidence labels. Paths such as `<vehicle-import>\...` point into those mods' work folders, which are not part of this repo. "Invariant N", "preflight #N" and "#N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. Per-tick events and what a passenger's client sees are in `runtime-state-and-sync.md`; driving a car from an automated harness is in `test-stand-and-mcp.md`.
+> Status: the vanilla facts cite the script they were read in. A citation written with its full `P:\` path, and a bare `file.c:N` (the vanilla script of that name under `P:\scripts\`), were both opened on the vanilla data on `P:\` (a 1.30 build). The in-game results were measured on mod vehicles (a car driven through an automation bridge, and a helicopter built on `CarScript`), not on vanilla ones; the default move strategy was measured on DayZ 1.29. Statements about DayZ Expansion are third-party mod behaviour, not vanilla, and its files were not opened here. `[IN-GAME VERIFIED]`, `[CODE-VERIFIED]` and `[DESIGN REVIEWED]` say how far an entry was tested. Per-tick events and what a passenger's client sees are in `runtime-state-and-sync.md`; driving a car from an automated harness is in `test-stand-and-mcp.md`.
 
 Related file in this pack: `aviation-networking.md` (the same Pawn owner-prediction classes applied to an aircraft on `CarScript`).
 
@@ -21,73 +21,67 @@ Related file in this pack: `aviation-networking.md` (the same Pawn owner-predict
 - `dBodyApplyForce` is declared at `P:\scripts\1_core\proto\enphysics.c:146`.
 - `GetOwnerStateType` is overridden by `CarScript`: `P:\scripts\4_world\entities\vehicles\carscript.c:2568`.
 
-## How these lessons are ordered
-
-These lessons were split out of the source skill body on 2026-08-15. The reference
-tables of `skills/dayz-vehicles/SKILL.md` say when to read this file.
-Nothing in this file is repealed: these are active lessons, ordered by topic
-instead of date.
+The sections below are ordered by topic. The reference tables of `skills/dayz-vehicles/SKILL.md` say when to read this file.
 
 ---
 
-## (added 2026-06-28) Network ownership: server-side forced seat != client ownership; PHYSICS is driven by owner
+## Network ownership: a server-side forced seat is not client ownership, and the owner drives the physics
 
-Verified invariant (source + in-game, DayZ-MCP Phase 5 S0). PREFLIGHT before any attempt to
-drive/automate a car from a client peer or reason about "who drives":
+Check this before any attempt to drive or automate a car from a client peer, or to reason about "who drives". Read in the vanilla source and confirmed in game.
 
 - The car is a **Pawn** (`Transport extends Pawn` under `FEATURE_NETWORK_RECONCILIATION`,
-  transport.c:66 -> Car car.c:87 -> CarScript carscript.c:94). The `IsOwner()` of `IsServerOrOwner()`
-  (carscript.c:2592-2601) is the **car's network OWNERSHIP**, not the player's (glossary pawn.c:5-8:
-  Owner = client controlling the pawn).
-- **`IsServerOrOwner()` DOES NOT gate throttle.** Its only consumers are teardown/fluids
-  (carscript.c:552/577/845). Throttle->physics is **proto native** (`SetThrottle` car.c:191, "future
-  throttle value") and is applied by **body simulator = the OWNER**. The only script `SetThrottle`
-  (carscript.c:1202) is dead in production (`#ifdef DIAG_DEVELOPER`).
-- A car **without client-owner = `IsAuthorityOwner`** (authority without owner, pawn.c:199-200) -> simulated
-  by server -> a server-side `SetThrottle` **DOES move it**. This is a **single-box/SP
-  artifact**, NOT proof that server drives cars owned by a client. (DayZ-MCP S0 F2:
-  server moved a PHYSICS car pos_delta=2.29 because no client owned it.)
-- A server-side **`StartCommand_Vehicle`** (e.g. MCP's `vehicle_enter`) seats the player ONLY
-  server-side: the client **never gets `GetGame().GetPlayer().GetCommand_Vehicle()` nor car
-  ownership** (measured in-game x6, yields `not_seated` on client peer). Real get-in
-  (`ActionGetInTransport.Start()`, shared client+server method, actiongetintransport.c:71-111) runs
-  `StartCommand_Vehicle` on the **CLIENT'S** Human + reserves seat via juncture
-  (`AddInventoryJunctureEx`/`SetVehicle`, :138-158). Ownership transfer is proto-native (no
+  transport.c:66 -> Car car.c:87 -> CarScript carscript.c:94). The `IsOwner()` inside `IsServerOrOwner()`
+  (carscript.c:2592-2601) is the **car's network ownership**, not the player's (glossary pawn.c:5-8:
+  Owner = the client controlling the pawn).
+- **`IsServerOrOwner()` does not gate throttle.** Its only consumers are teardown and fluids
+  (carscript.c:552, :577, :845). Throttle to physics is **proto native** (`SetThrottle` car.c:191, "future
+  throttle value") and is applied by whoever simulates the body, which is the **owner**. The only script
+  `SetThrottle` (carscript.c:1202) is dead in production (`#ifdef DIAG_DEVELOPER`).
+- A car **with no client owner is `IsAuthorityOwner`** (authority without owner, pawn.c:199-200): the server
+  simulates it, so a server-side `SetThrottle` **does move it**. That is an artifact of a single machine
+  running server and client, not proof that the server drives cars owned by a client. (Measured: the
+  server moved a car under the PHYSICS strategy by 2.29 m because no client owned it.)
+- A server-side **`StartCommand_Vehicle`** (for example the `vehicle_enter` tool of the dayz-mcp bridge) seats
+  the player on the server only: the client **never gets `GetGame().GetPlayer().GetCommand_Vehicle()` nor
+  ownership of the car** (measured in game six times; the client peer reports `not_seated`). A real get-in
+  (`ActionGetInTransport.Start()`, a method shared by client and server, actiongetintransport.c:71-111) runs
+  `StartCommand_Vehicle` on the **client's** Human and reserves the seat through a juncture
+  (`AddInventoryJunctureEx` and `SetVehicle`, :138-158). The ownership transfer is native (no
   `SetNetworkOwner` exists in script).
-- **Practical consequence:** to drive/measure **owner-side** from a client, client must
-  **take ownership itself** (client-side get-in), not rely on server-side forced seat. And an
-  owner-authority test in **single-box** is **confounded** (client never truly owns) ->
-  clean discriminator is a 2-machine dedicated setup with remote client performing get-in.
+- **Practical consequence:** to drive or measure on the owner side from a client, the client must
+  **take ownership itself** (a client-side get-in), not rely on a server-side forced seat. An
+  owner-authority test on a single machine is **confounded** (the client never truly owns); the clean
+  discriminator is a dedicated server with a remote client that performs the get-in.
 - Diagnostic readings: `IsOwner()` (pawn.c:194), `IsAuthorityOwner()` (pawn.c:199-200),
-  `GetOwnerIdentity()` (pawn.c:209), `GetNetworkID()` (object.c:819). Extends get-in/radial case
-  (LL-164) to network dimension. Origin: DayZ-MCP S0 (2026-06-28).
-- **Driving owner-side from script (the actuator — verified in-game 0→39 km/h):** `Car.SetThrottle/SetSteering/
-  SetBrake` called from MISSION (`OnUpdate` / a job) DO NOT move owner-sim PHYSICS — **`super` of
-  `CarScript.OnInput(dt)` (`carscript.c:1041`) OVERWRITES them every frame** with local driver input=0. Fix: apply
-  throttle INSIDE a `modded class CarScript.OnInput`, **AFTER `super.OnInput(dt)`** (where vanilla debug autopilot
-  `carscript.c:1202` does it). NO injection via `HumanInputController` (vehicle input is native,
-  no override API). Symptom: "car belongs to owner but `SetThrottle` does not move it". Origin: DayZ-MCP Phase 5 (SP-032).
+  `GetOwnerIdentity()` (pawn.c:209), `GetNetworkID()` (object.c:819).
+- **Driving the owner side from script (measured in game, 0 to 39 km/h):** `Car.SetThrottle`, `SetSteering`
+  and `SetBrake` called from the mission (`OnUpdate` or a job) do not move a car simulated by its owner:
+  the `super` of `CarScript.OnInput(dt)` (`carscript.c:1041`) overwrites them every frame with the local
+  driver's input, which is 0. Fix: apply the throttle inside a `modded class CarScript` `OnInput`, **after
+  `super.OnInput(dt)`** (where the vanilla debug autopilot does it, `carscript.c:1202`). There is no
+  injection through `HumanInputController` (vehicle input is native, with no override API). Symptom: "the
+  car belongs to its owner but `SetThrottle` does not move it".
 
-## Angular velocity is NOT yaw/pitch/roll; derive omega from the pose delta (SP-170, origin LFHeli 2026-08-05)
+## Angular velocity is not yaw, pitch and roll; derive omega from the pose delta
 
 `dBodySetAngularVelocity` takes angular velocity as rotation around x, y and z, **not
-yaw/pitch/roll** — vanilla spells it at `enphysics.c:163`: *"Angular velocity,
+yaw/pitch/roll**. Vanilla spells it at `enphysics.c:163`: *"Angular velocity,
 rotation around x, y and z axis (not yaw/pitch/roll)"*. The Enfusion axis map is
-yaw → Y, pitch → Z, roll → X (right-hand rule). Cross-checked on two independent
-vanilla sources: `YawPitchRollMatrix("70 15 45", mat)` at `enmath3d.c:125-131`
+yaw → Y, pitch → Z, roll → X (right-hand rule). Two vanilla sources agree:
+`YawPitchRollMatrix("70 15 45", mat)` at `enmath3d.c:125-131`
 matches the COLUMNS of `Rz(pitch) . Ry(yaw) . Rx(roll)` to 4e-7;
 `dayzplayercameravehicles.c:132-134` reads `dBodyGetAngularVelocity(vehicle)` and
 routes Y to yaw, Z to pitch, X to roll for camera lag. Corollary: `mat[i]` from
 `GetTransform` (`enentity.c:288`) and from `YawPitchRollMatrix` are world-space
-BASIS VECTORS (columns), not rows — mixing them up flips the sign of any rotation
+BASIS VECTORS (columns), not rows; mixing them up flips the sign of any rotation
 derived from those matrices.
 
-The trap that bites: if the solver keeps rate accumulators in deg/s (`m_PitchRate` /
-`m_RollRate` / `m_YawRate`), those rates are NOT the derivative of the orientation
+The trap: if the solver keeps rate accumulators in deg/s (`m_PitchRate`,
+`m_RollRate`, `m_YawRate`), those rates are NOT the derivative of the orientation
 that gets written once a later step moves the pose without touching them (a
 levelling stabilizer, a cosmetic pendulum adding a roll delta, a takeoff
 level-assist). Feeding them as omega commands a rotation that the next
-`SetOrientation` contradicts — that is the "body fighting the pose" judder.
+`SetOrientation` contradicts. That is the "body fighting the pose" judder.
 
 Recipe: derive omega from the REAL pose delta, never from the accumulators.
 
@@ -99,96 +93,97 @@ Recipe: derive omega from the REAL pose delta, never from the accumulators.
 
 Exact to O(theta^3) (the per-tick delta does not reach 6 deg), immune to the
 pendulum or stabilizer moving the pose on their own, and automatically ZERO at
-call-sites that command the sampled pose (transition holds, ground clamp) with no
+call sites that command the sampled pose (transition holds, ground clamp) with no
 extra branch. Benign failure: if `SetOrientation` does not refresh the transform
 on the same tick, `after == before`, omega = 0, behaviour identical to before.
 
-## PHYSICS = owner prediction with reconciliation: writing pose fights it (SP-180, added 2026-08-06, LFHeli F-01)
+## The PHYSICS strategy is owner prediction with reconciliation: writing the pose fights it
 
-Extends the ownership section above. Verified invariant (runtime + file, LFHeli 2026-08-06).
-PREFLIGHT upon ANY symptom of "input lag" / "rubberbanding" / "client reverts transforms" in a
-server-authoritative CarScript:
+Extends the ownership section above. Read in the vanilla source and measured at runtime on a helicopter built on `CarScript`.
+Check this on ANY symptom of "input lag", "rubberbanding" or "the client reverts transforms" in a
+server-authoritative `CarScript`:
 
-- **Measure the strategy BEFORE theorizing** (1 line, either side): `Print(GetNetworkMoveStrategy().ToString())`
-  — NONE=0, LATEST=1, PHYSICS=2 (`pawn.c:138-148`; getter proto native `pawn.c:218` — YES it is exposed to script;
-  a previous note stating the opposite cost a 3-week diversion in LFHeli). In DayZ 1.29 CarScript runs
-  **PHYSICS by default** (measured `str=2 own=true` on the pilot client); no config flag exists to select it
-  (verified vanilla + Expansion): the engine sets it by native class. `FEATURE_NETWORK_RECONCILIATION` is
-  unconditional (`defines.c:64`).
-- **Under PHYSICS the owner ALREADY simulates predictively** (full Pawn contract in vanilla: `pawn.c:256-329`
-  ObtainMove/ConsumeMove/ReplayMove/RewindState; `CarScriptMove/OwnerState` `carscript.c:2568-2588`;
-  `IsServerOrOwner()` `carscript.c:2592-2601`). Consequences:
-  1. A server that writes pose/velocity per tick (`SetOrientation`/`SetVelocity`) DOES NOT cooperate: it causes
-     continuous owner<-authority correction = **structural round-trip lag + snap-backs**. The symptom is
-     felt even on loopback (RTT is not the only latency: server tick + replication + rewind).
-  2. Writing TRANSFORM from the owner client REVERTS in ~0.3 s (measured LFHeli D1). It is not a bug to
-     debug: it is reconciliation working. Do not waste cycles there.
-  3. The compatible path is that of Expansion 1.28+: **symmetric owner/server forces** (`dBodyApplyForce`
-     `enphysics.c:146`, world space; commit gated by `dBodyIsActive && dBodyIsDynamic`,
-     `ExpansionPhysicsState.c:209-218`) + input inside native `PawnMove` (its legacy RPC is TURNED OFF under
-     PHYSICS, `DayZExpansion CarScript.c:1014-1051`) + custom Move/OwnerState contract with `super` first
-     (`ExpansionHelicopterScript.c:164-213`). The engine integrates; nobody writes pose.
-- **Cheap spike before committing to that architecture** (ForceSpike E pattern, LFHeli
-  `plans/2026-08-06-forcespike-e.md`): default-off tuning flag + 1.5 s window in which both sides
-  apply the SAME force (anti-gravity + lateral pulse on an axis untouched by anything in the model) and the server
-  suspends its kinematic actuator; per-tick traces on both sides; offline parser decrees YES/NO/INCONCLUSIVE
-  (`LFHeli_dev/tools/spike_verdict.py`). Harness traps already paid for: the abort must be SYMMETRIC
-  (engine/seat/flight state exit), hijacked key suppression goes UPSTREAM of all
-  channel consumers, and any exit from flight state clears the window.
-- Evidence status: ALL MEASURED. Verdict flight 2026-08-06: **YES** — 3 clean pulses on the
-  owner (local slope ~1.6 m/s2 vs 1.5 theoretical, retained gain, transient reversal <=30% due to
-  owner->server offset); snap-back upon window EXPIRING is the kinematic actuator reabsorbing
-  (the reason for removing pose writing in the full path); an owner-only pulse near the ground
-  (unarmed server by AGL) reverted 91% = the live F4 limitation. Pilot perception: null
-  (0.15 g lateral during a climb at 7-11 m/s) — the gate is telemetric, not feel-based.
+- **Measure the strategy before theorizing** (one line, either side): `Print(GetNetworkMoveStrategy().ToString())`.
+  NONE=0, LATEST=1, PHYSICS=2 (`pawn.c:138-148`; the getter is proto native at `pawn.c:218`, so it is
+  exposed to script). In DayZ 1.29 `CarScript` runs **PHYSICS by default** (measured `str=2 own=true` on the
+  pilot's client); no config flag selects it, in vanilla or in DayZ Expansion: the engine sets it by native
+  class. `FEATURE_NETWORK_RECONCILIATION` is unconditional (`defines.c:64`).
+- **Under PHYSICS the owner already simulates predictively** (the full Pawn contract is in vanilla: `pawn.c:256-329`
+  ObtainMove, ConsumeMove, ReplayMove, RewindState; `CarScriptMove` and `CarScriptOwnerState` hooks at
+  `carscript.c:2568-2588`; `IsServerOrOwner()` at `carscript.c:2592-2601`). Consequences:
+  1. A server that writes pose or velocity per tick (`SetOrientation`, `SetVelocity`) does not cooperate: it causes
+     a continuous correction of the owner by the authority, which is **structural round-trip lag plus
+     snap-backs**. The symptom shows even on loopback (the round-trip time is not the only latency: server
+     tick, replication and rewind add to it).
+  2. A transform written from the owner client reverts in about 0.3 s (measured). It is not a bug to
+     debug: it is reconciliation working.
+  3. The compatible path is the one DayZ Expansion uses from 1.28 on (third-party mod behaviour, not
+     vanilla): **the same forces applied on owner and server** (`dBodyApplyForce`, `enphysics.c:146`, world
+     space; the commit gated by `dBodyIsActive && dBodyIsDynamic` in its `ExpansionPhysicsState.c`), input
+     carried inside the native `PawnMove` (its legacy RPC is turned off under PHYSICS, in its `CarScript.c`),
+     and a custom Move and OwnerState contract that calls `super` first (its `ExpansionHelicopterScript.c`).
+     The engine integrates; nobody writes the pose.
+- **A cheap spike before committing to that architecture**: a tuning flag that is off by default, and a
+  1.5 s window in which both sides apply the SAME force (anti-gravity plus a lateral pulse on an axis
+  nothing else in the model touches) while the server suspends its kinematic actuator; per-tick traces on
+  both sides; an offline parser that returns YES, NO or INCONCLUSIVE. Harness traps: the abort must be
+  SYMMETRIC (engine, seat and flight state exits), suppression of the hijacked key goes UPSTREAM of every
+  consumer of that channel, and any exit from the flight state clears the window.
+- Evidence status: all measured. Verdict of the spike flight: **YES**. Three clean pulses on the
+  owner (local slope about 1.6 m/s2 against 1.5 theoretical, the gain retained, a transient reversal of at
+  most 30% from the owner to server offset); the snap-back when the window EXPIRES is the kinematic actuator
+  reabsorbing (the reason to remove pose writing in the full path); an owner-only pulse near the ground
+  (the server not armed, by height above ground) reverted 91%. The pilot felt nothing
+  (0.15 g lateral during a climb at 7 to 11 m/s): the gate is telemetric, not feel-based.
 
-## Custom Pawn framework (Move/OwnerState): the type ladder and its hard rules (SP-188, added 2026-08-06, LFHeli D3-1)
+## A custom Pawn framework (Move and OwnerState): the type ladder and its hard rules
 
-Continuation of SP-180: when the approach is "forces + owner prediction", the FIRST step of
-construction is an INERT Pawn framework (custom types + log-only hooks, flight intact) — validates engine
-wiring before migrating any solver (lowest-risk ordering verified against the
-Expansion corpus). Recipe verified by vanilla source + compile gate (LFHeli 2026-08-06):
+Continues the section above. When the approach is "forces plus owner prediction", the FIRST step of
+construction is an INERT Pawn framework (custom types and log-only hooks, flight untouched): it validates
+the engine wiring before any solver is migrated. Recipe read in the vanilla source and proven by a compile
+and a flight on a helicopter built on `CarScript`:
 
-- **Type ladder** (derive from the last rung, not from Pawn*): `PawnMove -> TransportMove ->
+- **Type ladder** (derive from the last rung, not from the Pawn classes): `PawnMove -> TransportMove ->
   CarMove -> CarScriptMove` and `PawnOwnerState -> TransportOwnerState -> CarOwnerState ->
   CarScriptOwnerState` (`transport.c:11-50`, `car.c:78-82`, `carscript.c:57-74`).
-  `TransportOwnerState/TransportMove` carry NATIVE transform + linear + angular velocity
-  (`transport.c:13-23,:35-42`): **DO NOT duplicate them in custom state**.
-- **Hooks** (`pawn.c:238-311`, all `protected event`): `GetMoveType`/`GetOwnerStateType` (the
-  engine instantiates the types AT CONSTRUCTION, `pawn.c:235,:244` — overrides must exist on the
-  class, not activate late), `ObtainMove`, `ConsumeMove`, `ReplayMove` (bool: honor super's
+  `TransportOwnerState` and `TransportMove` carry the NATIVE transform plus linear and angular velocity
+  (`transport.c:13-23`, `:35-42`): **do not duplicate them in custom state**.
+- **Hooks** (`pawn.c:238-311`, all `protected event`): `GetMoveType` and `GetOwnerStateType` (the
+  engine instantiates the types AT CONSTRUCTION, `pawn.c:235`, `:244`, so the overrides must exist on the
+  class and cannot activate late), `ObtainMove`, `ConsumeMove`, `ReplayMove` (bool: honour super's
   rejection before processing), `ObtainState`, `RewindState(state, move, inout NetworkRewindType)`.
-  CarScript already implements Get*Type/ObtainState/RewindState (`carscript.c:2568-2588`) — super
-  ALWAYS and exactly once (super's ObtainState/RewindState carry `m_fTime`).
-- **Serialization**: `Write/Read` with super FIRST; NEVER serialize `vector` (expand to
-  floats); `EstimateMaximumSize()` = super + 4 bytes per scalar (bool counts as 4, conservative).
-  The Move carries RAW axes pre-authority-scale (attenuation/FSM are recomputed per solve
-  tick; baking them breaks replay determinism). Solver latch/stateful memory goes
-  in OwnerState (server -> owner), not in Move.
-- **`ReadRawLocal` INSIDE `ObtainMove`** (R22 that cost a round: the native order
-  ObtainMove<->EOnSimulate is NOT exposed to script; relying on tick's last read can
-  serialize zeroes/stale and your round-trip gates validate EMPTY wiring). Require also that the
-  payload gate rejects the run if all samples are neutral.
-- **Inert framework instrumentation**: match owner<->authority by EXACT `GetMoveId()`
-  (deterministic sampling `id % 64 == 0` on BOTH sides), never by clock; `rewind` is always
-  logged (rare), `replay` only sampled (a rewind storm re-runs all pending moves and
-  floods client log, truncated to ~255 chars/line); counters aggregated at 1 Hz.
-- **"Inert" applies to FLIGHT, not to NETWORK**: custom types add payload per
-  move/correction and a Write/Read asymmetry desyncs the owner — the payload gate exists
+  `CarScript` already implements the type getters, `ObtainState` and `RewindState` (`carscript.c:2568-2588`):
+  call super ALWAYS and exactly once (super's `ObtainState` and `RewindState` carry `m_fTime`).
+- **Serialization**: `Write` and `Read` with super FIRST; NEVER serialize a `vector` (expand it to
+  floats); `EstimateMaximumSize()` = super + 4 bytes per scalar (a bool counts as 4, conservative).
+  The Move carries the RAW axes before any authority scaling (attenuation and state machines are
+  recomputed per solve tick; baking them in breaks replay determinism). Latched or stateful solver memory
+  goes in the OwnerState (server to owner), not in the Move.
+- **Read the raw local input INSIDE `ObtainMove`.** The native order of `ObtainMove` and `EOnSimulate` is
+  not exposed to script; relying on the tick's last read can serialize zeroes or stale values, and the
+  round-trip gates then validate EMPTY wiring. Also make the payload gate reject a run in which every
+  sample is neutral.
+- **Instrumenting the inert framework**: match owner and authority by EXACT `GetMoveId()`
+  (deterministic sampling, `id % 64 == 0`, on BOTH sides), never by clock; a `rewind` is always
+  logged (rare), a `replay` only sampled (a rewind storm re-runs every pending move and
+  floods the client log, which truncates at about 255 characters per line); counters aggregated at 1 Hz.
+- **"Inert" applies to FLIGHT, not to the NETWORK**: custom types add payload per
+  move and per correction, and a `Write`/`Read` asymmetry desyncs the owner. The payload gate exists
   for that.
-- Evidence status: ALL CONFIRMED IN RUNTIME (LFHeli flight D3-1, 2026-08-06): engine
-  instantiates custom types and transports them (G1), 94 sampled moves with exact 5 axes on
-  both sides and 48 with non-zero payload (G2), 477 rewinds + 47 replays visible on owner (G3).
-  Receiver trap: DayZ script log wraps each Print in single quotes — a log
+- Evidence status: all confirmed at runtime in one flight. The engine
+  instantiates the custom types and transports them, 94 sampled moves carried the exact 5 axes on
+  both sides and 48 a non-zero payload, and 477 rewinds plus 47 replays were visible on the owner.
+  Log parser trap: the DayZ script log wraps each `Print` in single quotes, so a log
   parser must strip the quote attached to the LAST token on the line or the payload gate
   gives a false FAIL on that field.
-- CAVEAT measured on the same flight: CONTACT script chain received NOT A SINGLE callback from
-  skid-ground seating (0 OnContact across entire flight, with real touchdown via AGL) — overriding
-  Car.OnContact DOES NOT guarantee gentle settling contacts. Before building logic on
-  vehicle contacts, first measure that the callback fires for YOUR case (a one-shot print);
-  candidate robust path is EntityEvent.CONTACT + EOnContact, pending validation.
+- CAVEAT measured on the same flight: the script contact chain received NOT ONE callback from
+  the skids settling on the ground (0 `OnContact` across the whole flight, with a real touchdown by
+  height above ground). Overriding `Car.OnContact` does not guarantee a callback for gentle settling
+  contacts. Before building logic on vehicle contacts, first measure that the callback fires for the
+  case at hand (a one-shot print); `EntityEvent.CONTACT` with `EOnContact` is the candidate robust
+  path, not yet validated.
 
-## Attack/release state must read raw input (SP-201, added 2026-08-31)
+## Attack and release state must read the raw input
 
 **[CODE-VERIFIED; in-game A/B pending]** A first-order command filter such as
 `cmd += (raw - cmd) * k` decays asymptotically and does not reach exact zero. A
@@ -199,16 +194,16 @@ filtered command separate, and derive activity only from the raw field on every
 simulation side. Owner and server must use the same source; mixing raw owner
 state with filtered server state creates a second disagreement.
 
-## Forced sleep needs registration warm-up and a settled-state gate (SP-153, added 2026-08-31)
+## Forced sleep needs a registration warm-up and a settled-state gate
 
 - **[IN-GAME VERIFIED]** Do not call `dBodyActive(this,
   ActiveState.INACTIVE)` in the `EEInit` tick. The collider may not finish
   registration, leaving visual and physical position split. Keep the body active
   for a measured warm-up (about 3 s in the verified case) before the first sleep.
 - **[DESIGN REVIEWED; partial in-game gate]** Sleep only when speed is near zero
-  and AGL is at the local surface. Do not impose a lower AGL bound: a settled
-  pivot measured `-0.02 m`. Explicitly request `ACTIVE` while the body is not
+  and the height above ground is at the local surface. Do not impose a lower bound on that
+  height: a settled pivot measured `-0.02 m`. Explicitly request `ACTIVE` while the body is not
   settled; merely stopping the repeated `INACTIVE` call does not wake a body.
-- `ClampMinValue(name, value, minimum, fallback)` does not impose an upper cap;
-  the fourth argument handles non-finite input. Apply a safety maximum at the
-  consumer with `Math.Min(tuned, cap)`.
+- A tuning helper that clamps a warm-up or threshold value only to a minimum
+  (no such helper exists in vanilla; a mod writes its own) imposes no upper cap.
+  Apply a safety maximum at the consumer with `Math.Min(tuned, cap)`.

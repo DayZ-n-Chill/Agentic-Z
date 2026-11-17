@@ -146,7 +146,7 @@ def _load_viewer_core():
             break
         d = parent
     raise ImportError(
-        "viewer_core.py not found within pack/workspace root walking parents of %s"
+        "viewer_core.py not found within the repo/workspace root walking parents of %s"
         % os.path.abspath(__file__)
     )
 
@@ -155,9 +155,9 @@ vc = _load_viewer_core()
 
 MEMORY_LO, MEMORY_HI = 9e14, 2e15
 
-# Vanilla rifle memory-point pattern. Counts measured by the source project on
-# a debinarized dz\weapons\firearms\akm\akm.p3d (memory LOD); not checked on
-# P:\ here. What 'weapon back' is for is not documented; having it matches
+# Vanilla rifle memory-point pattern. Counts measured on a debinarized
+# dz\weapons\firearms\akm\akm.p3d (memory LOD); not checked on P:\, where the
+# model is binarized. What 'weapon back' is for is not documented; having it matches
 # vanilla.
 REQUIRED = [
     ("eye", 1), ("usti hlavne", 1), ("konec hlavne", 1),

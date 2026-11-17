@@ -37,11 +37,11 @@ Get-Item '<!Workshop>\<@Mod>' -Force | Select-Object LinkType
 
 `Junction` means the relative name did not work. Measured 2026-08-02 with `preflight=true` (a pure dry check: `dayz_test_worker.py:533-534` returns before building or launching anything): no mods passed, `@DayZ_MCP` passed, the mod under test passed, `@CF` failed, `base_mods=["@CF"]` failed.
 
-[EXACT][CLAIM-MCPV-JUNCTION-EXTRA-MODS-130] Corrected 2026-10-26 (stable branch, DayZDiag 1.30.164200): a Steam junction did pass in `extra_mods`. `@SurvivorAnims`, a mount-point junction in `!Workshop` (Workshop item 2918418331), passed `preflight=true` with project `DayZ_MCP` and then loaded in two runs, on server and client (`-mod=P:\Mods\@DayZ_MCP;P:\Mods\@SurvivorAnims;...` in the RPT header, the `World` module at 2349 files with its scripts). The rejection above was measured on 2026-08-02 with `@CF`. Run the preflight on the junction you need before going through `request-policy.json`.
+Corrected 2026-10-26 (stable branch, DayZDiag 1.30.164200): a Steam junction did pass in `extra_mods`. `@SurvivorAnims`, a mount-point junction in `!Workshop` (Workshop item 2918418331), passed `preflight=true` with project `DayZ_MCP` and then loaded in two runs, on server and client (`-mod=P:\Mods\@DayZ_MCP;P:\Mods\@SurvivorAnims;...` in the RPT header, the `World` module at 2349 files with its scripts). The rejection above was measured on 2026-08-02 with `@CF`. Run the preflight on the junction you need before going through `request-policy.json`.
 
 ### When the mod under test does not compile, test a probe copy of it
 
-[EXACT][CLAIM-MCPV-PROBE-COPY] Added 2026-10-03, measured 2026-10-02 (dayz-mcp run 606a5dbb), for example when the mod's build packed another session's untracked test scripts:
+Added 2026-10-03, measured 2026-10-02 (dayz-mcp run 606a5dbb), for example when the mod's build packed another session's untracked test scripts:
 
 - Copy the deployed PBO entry by entry without those entries (every other entry byte-identical, the same header properties, the SHA-1 trailer recomputed) into a probe folder of its own under `P:\Mods`.
 - Host it in another approved project whose `default_base_mods` carry what the mod needs (CF and Dabs in that run). An absolute Workshop path in `base_mods` fails with `bad_mod`, because each entry must be a folder name or an absolute path inside the project's `mod_roots` (`dayz_test_tool.py:399`, `dayz_test_request.py:222-233`).
@@ -53,7 +53,7 @@ In that run the copy (641 of the 645 entries) compiled the mission module, and i
 
 Before blaming the bridge for `version_blocked` or `last_poll_age_s=null`, check that the `key` in the project profiles' `dayz_mcp.json` is the same as `<dayz-mcp>\tools\.dayz_mcp.key`. A stale key gives 401 and the bridge never polls, with the same symptom as "the mod is not loaded". Key rotations leave behind every project that was not run since (2026-08-02: two projects still had the old key, three had the current one).
 
-The symptom is not always `version_blocked` or `last_poll_age_s=null` (measured 2026-08-17 in LFPowerGrid, with the paragraph above already written and overlooked). With a stale key the peer can read `version_state: ok` with a `last_poll_age_s` of 1.485 s (the figure as the source session recorded it): that is the last good poll, which may belong to a run that is already dead. A dead bridge reads like a healthy one this way. The signature is in the game's script log: `[MCP-POC] poll error=5` on the server, `[MCP-CLIENT] client poll error=5` on the client. That 5 is `EREST_ERROR_CLIENTERROR`, which the vanilla enum comments as equal to `EREST_ERROR` (`P:\scripts\3_game\http\restapi.c:16-17`), meaning the daemon returned 401. The number 401 appears nowhere on the game side.
+The symptom is not always `version_blocked` or `last_poll_age_s=null` (measured 2026-08-17 in LFPowerGrid, with the paragraph above already written and overlooked). With a stale key the peer can read `version_state: ok` with a `last_poll_age_s` of 1.485 s: that is the last good poll, which may belong to a run that is already dead. A dead bridge reads like a healthy one this way. The signature is in the game's script log: `[MCP-POC] poll error=5` on the server, `[MCP-CLIENT] client poll error=5` on the client. That 5 is `EREST_ERROR_CLIENTERROR`, which the vanilla enum comments as equal to `EREST_ERROR` (`P:\scripts\3_game\http\restapi.c:16-17`), meaning the daemon returned 401. The number 401 appears nowhere on the game side.
 
 A two-command gate before blaming anything:
 
@@ -69,20 +69,20 @@ Fixing it does not need a server restart: `ReloadKeyAfterFailure` (`MCPBridge.c:
 | `claude mcp list` prints `Failed to connect` | `claude mcp list` is not reliable: it prints a false failure while the server works. Contention on port 8765 (an exclusive HTTP server lock, fail-closed) was the failure mode before the broker existed | Check first with a tool search: if the `mcp__dayz-mcp__*` tools are available, ignore the failure line. Broker registration with `--client` (since 2026-06-24) removes the port contention: several sessions share the server, and an orphan guard releases orphans. If the tools really are missing, register in broker mode (`--client`) and open a new session (tools load at session start) |
 | The tools do not appear in the session | The server was registered after the session opened | Open a new session |
 | `bridge_status.server_peer.last_poll_age_s = null` | The server bridge does not poll | Check `dayz_mcp.json` in the server profiles and its key; confirm `@DayZ_MCP` is mounted (absolute mod paths) |
-| `client_peer` null while the server peer is fine | The client did not connect, or `dayz_mcp.json` is missing from the client profiles | Client autoconnect is flaky (BUG-009): use a longer server wait or retry; seed the client config |
+| `client_peer` null while the server peer is fine | The client did not connect, or `dayz_mcp.json` is missing from the client profiles | Client autoconnect is flaky: use a longer server wait or retry; seed the client config |
 | `version_state = legacy_blocked` | `--require-version` is on against a bridge that sends no `ver=` | Deploy the bridge PBO that sends `ver=4~...`, or register the server without `--require-version` for that run. Right after launch it is usually an incomplete init, see below |
 | Byte-identical captures between camera poses | The grab caught a stale desktop frame, not the render | See `captures.md`, "How the window grab behaves" |
-| A tool times out and "zombie" commands run on reconnect | BUG-024: a timeout leaves the command queued and the bridge runs it when it returns | After a timeout, reconcile with `bridge_status` before continuing |
+| A tool times out and "zombie" commands run on reconnect | A timeout leaves the command queued and the bridge runs it when it returns | After a timeout, reconcile with `bridge_status` before continuing |
 
 ### `legacy_blocked` right after launch is usually an incomplete init (added 2026-06-28)
 
-With the current bridge PBO deployed, `bridge_status` can read `legacy_blocked` ("poll did not include ver=") with `last_poll_age_s=null` right after the server starts, because the bridge has not finished its handshake. It moves to `ok` with `ver=4~...` when the server mission has loaded completely (1 to 2 minutes). Do not redeploy or re-register for that: wait and check again. It is a real version mismatch only if it stays `legacy_blocked` with the mission loaded (client connected, world rendered). Origin: a vehicle project's phase 5, 2026-06-28.
+With the current bridge PBO deployed, `bridge_status` can read `legacy_blocked` ("poll did not include ver=") with `last_poll_age_s=null` right after the server starts, because the bridge has not finished its handshake. It moves to `ok` with `ver=4~...` when the server mission has loaded completely (1 to 2 minutes). Do not redeploy or re-register for that: wait and check again. It is a real version mismatch only if it stays `legacy_blocked` with the mission loaded (client connected, world rendered). Seen on a vehicle project, 2026-06-28.
 
 ### During the Central Economy load the bridge looks stale
 
-A stock mission runs the Central Economy start for 1 to 3 minutes. During that time `bridge_status` reads stale (`last_poll_age_s` grows although `version_state=ok`). Do not spawn then. Wait for `connected to server` in the server's `script*.log` and for `bridge_status` to be fresh again (under 1 s). Poll the log directly on the host with PowerShell; a shell that reads it through a file-system bridge can serve a cached copy (LL-142).
+A stock mission runs the Central Economy start for 1 to 3 minutes. During that time `bridge_status` reads stale (`last_poll_age_s` grows although `version_state=ok`). Do not spawn then. Wait for `connected to server` in the server's `script*.log` and for `bridge_status` to be fresh again (under 1 s). Poll the log directly on the host with PowerShell; a shell that reads it through a file-system bridge can serve a cached copy.
 
-## The daemon serves the code it loaded at startup (LL-223, added 2026-07-29)
+## The daemon serves the code it loaded at startup (added 2026-07-29)
 
 If you add a verb to the bridge (`SERVER_COMMANDS` or `CLIENT_COMMANDS` in `loopback.py`) and the tool answers `not_whitelisted`, do not look for the bug in your diff: the daemon loaded that module when it started and has not read it again. `loopback.py` and `server.py` are not sealed in `app.pyz`, so editing them takes effect without rebuilding the bundle, but nothing restarts on its own.
 
@@ -98,16 +98,16 @@ $pid_ = (Get-NetTCPConnection -LocalPort 8765 -State Listen).OwningProcess
 
 Source newer than process means that is the cause; stop reading code. Measured 2026-07-29: `loopback.py` at 15:57:54 against a daemon started at 14:18:42.
 
-To restart: `Stop-Process` on the listener of port 8765. The client starts it again lazily on the next call and `daemon_generation` changes, which confirms it is another process. Restarting the daemon is declared safe (BUG-062b). Warn first: it disarms the MCP tools of other live sessions for a moment, so check `session_status` (owner and queue) before.
+To restart: `Stop-Process` on the listener of port 8765. The client starts it again lazily on the next call and `daemon_generation` changes, which confirms it is another process. Restarting the daemon is safe. Warn first: it disarms the MCP tools of other live sessions for a moment, so check `session_status` (owner and queue) before.
 
 After the restart there is a handshake window: the first calls can return `version_blocked` or `peer_reconnect_flush`. They are transients; retry, do not diagnose again. Confirm with `bridge_status` that both peers have `version_state: ok` and a low `last_poll_age_s`.
 
-This is a sibling of the sealed bundle trap but not the same: there `app.pyz` seals copies of the test lifecycle modules (`dayz_test_worker.py` and others) and needs a rebuild; here nothing is sealed, the process is just old. Origin: the in-game gate of `query_all_players` (2026-07-29).
+This is a sibling of the sealed bundle trap but not the same: there `app.pyz` seals copies of the test lifecycle modules (`dayz_test_worker.py` and others) and needs a rebuild; here nothing is sealed, the process is just old. Seen on the in-game gate of `query_all_players` (2026-07-29).
 
 ## `unapproved_debug_image` on a host with a non-English culture (added 2026-10-03)
 
 On a host with a Spanish (`es`) culture, `dayz_test_run(build=true)` on a project whose build runs AddonBuilder failed with `native_debug_gate_rejected:unapproved_debug_image` on 2026-10-03: the .NET helper loads localized resource satellites (`%WINDIR%\Microsoft.NET\assembly\GAC_MSIL\*.resources\v4.0_*_es_*`; seen: `mscorlib.resources.dll`). The MCP server's debug gate admits structurally valid `GAC_MSIL` resource satellites since a fix of 2026-10-01, so the rejection depends on the code the running server was started from. The reply on the wire carries no detail (kind, pid, image): read the rejected image in the MCP server's stderr log (search for `unapproved_debug_image`), and restart the server on current code before treating the rejection as a defect of the gate. It is never a defect of the mod under test.
 
-## Widen a closed allowlist in the readers before the writers (LL-494, 2026-09-10)
+## Widen a closed allowlist in the readers before the writers (2026-09-10)
 
 When a config is validated against a closed set of options and long-lived readers validate it again on every request, the order is: (1) add the new token to the allowlist in code, (2) ship that code to every reader, (3) restart those readers, (4) only then write the value. Writing first makes the whole file invalid for old readers (`daemon_provenance_conflict`, fail-closed). Not every resident process is a reader: measure which ones read the file and when. A cheap check is to run the validator in a fresh process right after the write and revert on failure.

@@ -237,7 +237,7 @@ if bad:
         bisect_chart(c)
     apply_seams_and_unwrap()
 
-# --- 4. boundary straightening + pinned re-solve (with SAT rollback valve) ---
+# --- UV snapshot helpers (used by the straightening rollback) ---
 def snapshot_uvs():
     layer = me.uv_layers.active
     buf = [0.0] * (len(layer.uv) * 2)
@@ -249,11 +249,10 @@ def restore_uvs(buf):
     layer.uv.foreach_set("vector", buf)
     me.update()
 
-# (straightening runs AFTER the SAT finisher: the pinned re-solve re-packs the
-# unpinned islands over the pinned ones, which is phantom cross-island overlap
-# that the shelf pack removes anyway — judge only the FINAL packed SAT)
+# (straightening runs AFTER the SAT finisher; overlap between islands before
+# the shelf pack is not a verdict, so judge only the FINAL packed SAT)
 
-# --- 5. SAT finisher ---
+# --- 4. SAT finisher ---
 def sat_offenders():
     bm2 = bmesh.new()
     bm2.from_mesh(me)
@@ -317,9 +316,9 @@ def sat_offenders():
     return pairs, faces
 
 def sat_finish(label):
-    """Isolate exact-overlap offender faces as speck islands and re-solve.
-    Offender faces get their pins cleared so they can relocate; every other pin
-    (the straightened boundaries) is respected by the re-unwrap."""
+    """Isolate exact-overlap offender faces as speck islands and unwrap again.
+    Offender faces get their pins cleared so they can relocate. Skipped when
+    more than 1% of the faces offend."""
     pairs, offender_faces = sat_offenders()
     print(f"SAT_{label}: pairs={len(pairs)} faces={len(offender_faces)}")
     if len(offender_faces) > 0.01 * nfaces:
@@ -339,8 +338,8 @@ def sat_finish(label):
     bm2.to_mesh(me)
     bm2.free()
     me.update()
-    # plain SLIM flags, as validated in v7: no_flip=True here makes wrapped charts
-    # spiral-overlap instead of flipping (measured on the rip: 133 residual pairs)
+    # plain SLIM flags: no_flip=True here makes wrapped charts spiral-overlap
+    # instead of flipping (measured on a raw decimated mesh: 133 residual pairs)
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.uv.unwrap(method='MINIMUM_STRETCH', fill_holes=True, correct_aspect=True, margin=0.001)
@@ -348,13 +347,13 @@ def sat_finish(label):
 
 sat_finish("PRE_FINISH")
 
-# --- 5b. boundary straightening (panels only, local diffusion — no solver) ---
+# --- 5. boundary straightening (panels only, local diffusion — no solver) ---
 snap = snapshot_uvs()
 n_loops, n_corners = uv_straighten.straighten_boundaries(me, iters=10, lam=0.5, rings=5)
 print(f"STRAIGHTEN: loops={n_loops} corners={n_corners}")
 did_straighten = n_loops > 0
 
-# --- 5c. excise residual offenders (solver-free): rewrite each offender face's
+# --- 5b. excise residual offenders (solver-free): rewrite each offender face's
 # UVs as a detached micro-triangle; the shelf pack files them with the specks.
 def excise_faces(faces):
     bm2 = bmesh.new()
@@ -374,7 +373,7 @@ def excise_faces(faces):
 pairs3, faces3 = sat_offenders()
 EXCISE_CAP = max(40, int(0.001 * nfaces))
 # a large offender set means straightening hurt this mesh: rolling back beats
-# butchering hundreds of faces into specks (measured on the rip: 179 excisions)
+# butchering hundreds of faces into specks (measured on a raw decimated mesh: 179 excisions)
 if did_straighten and len(faces3) > EXCISE_CAP:
     print(f"STRAIGHTEN_ROLLBACK_EARLY: {len(faces3)} offenders > cap {EXCISE_CAP}")
     restore_uvs(snap)

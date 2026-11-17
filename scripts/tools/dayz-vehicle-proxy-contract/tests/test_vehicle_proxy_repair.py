@@ -9,7 +9,9 @@ import tempfile
 import unittest
 from unittest import mock
 
-import numpy as np
+import pytest
+
+np = pytest.importorskip("numpy")
 import py3d
 
 

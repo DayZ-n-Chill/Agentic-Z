@@ -2,9 +2,9 @@
 
 What Dabs Framework adds for UI and registration: attribute classes, the MVC layer (`ScriptView`, `ViewController`, `ViewBinding`, `RelayCommand`, observable collections) and `ScriptViewMenu`.
 
-Dabs Framework is a third party mod by InclementDab, not part of the game. Everything below is a **framework** fact, not a vanilla fact. Use it only when the mod already depends on Dabs Framework or the user asks for it; plain vanilla UI is in `../references/widget_api.md`.
+Dabs Framework is a third party mod, not part of the game. Everything below is a **framework** fact, not a vanilla fact. Use it only when the mod already depends on Dabs Framework or the user asks for it; plain vanilla UI is in `../references/widget_api.md`.
 
-**Where these facts come from.** The Steam Workshop copy of the mod (for example linked as `P:\Mods\@Dabs Framework\` by `/dayz-workdrive`); its `addons\Scripts.pbo` holds plain script, and file paths below are paths inside that PBO (for example `3_Game\DabsFramework\MVC\ScriptView.c`). Usage examples were checked against the DayZ Editor mod (`P:\Mods\@DayZ-Editor\`), which is built on Dabs. The framework changes between releases, so open the named file again when something here does not match. In the public repository (`InclementDab/DayZ-Dabs-Framework`) the same MVC files sit at `DabsFramework/Scripts/3_Game/DabsFramework/MVC/` on the `production` branch, not at `DabsFramework/scripts/3_Game/MVC/` on `master` as older notes say (the knowledge pack's reading of 2026-05-13, not checked on `P:\`).
+**Where to check these facts.** The Steam Workshop copy of the mod (for example linked as `P:\Mods\@Dabs Framework\` by `/dayz-workdrive`); its `addons\Scripts.pbo` holds plain script, and file paths below are paths inside that PBO (for example `3_Game\DabsFramework\MVC\ScriptView.c`). Usage examples were checked against the DayZ Editor mod (`P:\Mods\@DayZ-Editor\`), which is built on Dabs. The framework changes between releases, so open the named file again when something here does not match. In the framework's public source tree the same MVC files sit at `DabsFramework/Scripts/3_Game/DabsFramework/MVC/` on the `production` branch, not at `DabsFramework/scripts/3_Game/MVC/` on `master` (read on 2026-05-13, not checked on `P:\`).
 
 ---
 
@@ -130,7 +130,7 @@ ButtonWidgetClass BtnRefresh {
 }
 ```
 
-When the bound widget also has child widgets, the `ScriptParamsClass` goes in a second block of its own, after the block that holds the children; it is never mixed in with them. In the knowledge pack's count over shipped layouts, all 157 `ScriptParamsClass` blocks sat alone like this, and the block holds its fields directly, with no inner braces (a count over third party layouts, not checked on `P:\`; the layout side is in `skills/dayz-ui-development/references/layout-format.md`).
+When the bound widget also has child widgets, the `ScriptParamsClass` goes in a second block of its own, after the block that holds the children; it is never mixed in with them. In a count over the layouts of shipped third party mods, all 157 `ScriptParamsClass` blocks sat alone like this, and the block holds its fields directly, with no inner braces (a count over third party layouts, not checked on `P:\`; the layout side is in `skills/dayz-ui-development/references/layout-format.md`).
 
 `ViewBinding` fields you can set there:
 
@@ -165,7 +165,7 @@ When a bound `ButtonWidget` is clicked or a bound `CheckBoxWidget` changes, the 
 One click can run a command twice, in two ways. The symptom is the same for both: a toggle cancels itself and seems to do nothing.
 
 1. **The handler does not return `true`** (read from the Dabs source). "Handled" is the method's return value. `ViewBinding.InvokeCommand` (`3_Game\DabsFramework\MVC\ViewBinding.c`) calls the method through `g_Script.CallFunction` and, when the result is not true, calls the same method name on each parent in turn. A handler declared `void`, or one that returns false, can therefore run again on a parent that has a method of that name. Declare handlers `bool` and return `true` when the click was handled: `bool OnRefreshExecute(ButtonCommandArgs args)`.
-2. **The view overrides `OnClick` and calls `super.OnClick()` while the widget also has a `Relay_Command`** (reported by the knowledge pack from its own mods, not checked against the Dabs source; code in `skills/enforce-script-reference/references/dabs-mvc-advanced.md`). The override and the command both run. Use the command or the override, not both.
+2. **The view overrides `OnClick` and calls `super.OnClick()` while the widget also has a `Relay_Command`** (third party mod behaviour, not checked against the Dabs source; code in `skills/enforce-script-reference/references/dabs-mvc-advanced.md`). The override and the command both run. Use the command or the override, not both.
 
 ### Which widgets bind
 
@@ -220,14 +220,14 @@ class MyMod_Menu: ScriptViewMenuTemplate<MyMod_StatusController>
 - **Do not mix with a vanilla `ActionConstructor` mod for the same action.** Registering one action type both ways adds it twice.
 - **Hot reload exists only in diag builds.** `ScriptView.ReloadAll()` is compiled only under `DIAG_DEVELOPER`.
 - **A controller named as `scriptclass` on the layout root does not get its widget fields filled.** `LoadWidgetsAsVariables` runs on the controller only in the branch where `ScriptView` creates it from `GetControllerType()`. Use bindings, or look the widgets up yourself.
-- **A collection item that holds a `ref` back to its controller leaks.** `ObservableCollection` stores `ref array<ref TValue>`, and nothing breaks the cycle. Set the back reference to null in the item's destructor. Reported by the knowledge pack from its own mods, not checked against the Dabs source: `Clear()` on the collection does not break the cycle either, so null the back reference in each row view before clearing, and do not walk the parent chain from a row; pass the controller in.
+- **A collection item that holds a `ref` back to its controller leaks.** `ObservableCollection` stores `ref array<ref TValue>`, and nothing breaks the cycle. Set the back reference to null in the item's destructor. Third party mod behaviour, not checked against the Dabs source: `Clear()` on the collection does not break the cycle either, so null the back reference in each row view before clearing, and do not walk the parent chain from a row; pass the controller in.
 - **Do not use `ObservableSet`.** It raises `NotifyCollectionChangedAction.Add` and `.Set`, which the enum (`MVC\Types\NotifyCollectionChangedAction.c`) does not have.
 - **`WidgetAnimator` times are milliseconds, but the `TimeSpan` helpers count seconds.** `TimeSpan` is `typedef int` (`1_Core\DabsFramework\TimeSpan.c`), so `TimeSpan.FromMinutes(1)` is 60 and animates for 60 ms. Pass plain millisecond ints: `WidgetAnimator.Animate(widget, WidgetAnimatorProperty.COLOR_A, 1.0, 300);`.
 - **Detect the framework from script with `#ifdef DABSFRAMEWORK_1_51`**, defined at the top of `MVC\ScriptedViewBase.c`. The mod has no release tags.
 
 More depth (the full `WidgetAnimator` and `LinearColor` calls, the complete `ObservableCollection` operations, click dispatch and the shipped prefab layouts) is in `skills/dayz-ui-development/references/dabs-framework.md`.
 
-Reported by the knowledge pack from its own mods (LFPowerGrid and others), not checked against the Dabs source; the code for each is in `skills/enforce-script-reference/references/dabs-mvc-advanced.md`:
+Third party mod behaviour, not checked against the Dabs source; the code for each is in `skills/enforce-script-reference/references/dabs-mvc-advanced.md`:
 
 - **Do not create a `ScriptView` from an RPC handler or during early init.** The constructor creates widgets and needs a workspace. Queue the creation on `CALL_CATEGORY_GUI` instead.
 - **Widgets inside a `ButtonWidget` can bind to the wrong widget.** Auto binding and `FindAnyWidget` returned wrong, non null references for children of a button. Fetch those children yourself from the button after the view is created.

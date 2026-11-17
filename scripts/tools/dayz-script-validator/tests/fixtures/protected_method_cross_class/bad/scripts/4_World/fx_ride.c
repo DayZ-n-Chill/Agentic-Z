@@ -1,4 +1,4 @@
-// Inbox fb-20261006-002741-28fa (LFSkateboard): a protected method of the
+// A protected method of the
 // ride command, called from PlayerBase.OnRPC in the same module. The call
 // sits on line 22.
 class FX_RideCommand : HumanCommandScript

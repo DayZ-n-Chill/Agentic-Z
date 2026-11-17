@@ -2,7 +2,7 @@
 
 How to iterate on a UI without repacking: which paths the running game re-reads, the reload loop, its four traps, and what a preview can and cannot show.
 
-Measured by the source author on 2026-08-19 on DayZ 1.29 (runs `3b63168d`, `4320d1d6`, `08343f0c`, `fdf07db7`), with later additions dated in place. Every number below came from the engine, not from reading source. The runs are not repeated here; the engine declarations cited on `P:\` were re-read. The loop uses the DayZ-MCP bridge where it says so; section 3 also gives the plain script form.
+Measured in game on 2026-08-19 on DayZ 1.29, with later additions dated in place. Every number below came from the engine, not from reading source. The measurements have not been repeated since; the engine declarations cited on `P:\` were re-read. The loop uses the DayZ-MCP bridge where it says so; section 3 also gives the plain script form.
 
 The short version: **a `.layout` under `$profile:` is re-read from disk on every load, so a
 UI can be iterated in seconds instead of one repack-and-boot per change.** Everything else
@@ -25,7 +25,7 @@ Three separate measurements collapse into that one sentence:
 
 The third row is the one that closes it, and it carries its own positive control: in the
 same probe, `FileExist` returned **1** for a file that exists *only inside the PBO*. So the
-0 on the loose path is a real absence, not a blind guard (run `4320d1d6`).
+0 on the loose path is a real absence, not a blind guard.
 
 **The corollary people usually want next:** adding assets to a mod "hot" — dropping a
 texture or a model into the mod folder of a running game — is closed by the same mechanism.
@@ -39,7 +39,7 @@ reads it on demand. That is the whole loop.
 
 ## 2. What actually got measured
 
-Run `08343f0c`, client 1920×1080:
+Client at 1920×1080:
 
 | Question | Answer |
 |---|---|
@@ -53,7 +53,7 @@ The re-read row is the one that separates a design loop from a one-shot. Test it
 **two files that predict different geometry**, never with the same file twice — otherwise a
 cached parse passes the test.
 
-Run `fdf07db7` added textures: a `.paa` copied into `$profile:` draws identically to the
+A later run added textures: a `.paa` copied into `$profile:` draws identically to the
 same file served by a PBO — means within 1/255, standard deviations within 0.8, with both a
 positive and a negative control in the same frame. **So hot UI can carry its own imagery**,
 not just boxes and text.
@@ -149,7 +149,7 @@ One frame, four widgets, three sources — the positive control is the whole poi
 
 | Widget | Text set in the layout | On screen |
 |---|---|---|
-| Title | `#STR_LFPG_ACTION_ADD_WAYPOINT` (another **mod**'s key) | **Add waypoint** |
+| Title | a key defined by another loaded **mod**'s stringtable | **Add waypoint** |
 | Message | literal, no key | renders, and **wraps across two lines** |
 | BtnNo | `#STR_CfgWheel0` (**vanilla**) | **Rueda** |
 | BtnYes | a key defined by no stringtable | `STR_UI_YES`, verbatim |
@@ -218,7 +218,7 @@ not the number.
 Two candidates that look like they should matter and do not:
 
 - **`"exact text" 0` is not a prerequisite.** It was the obvious suspect: across the 821
-  `.layout` files in the source author's workspace, `"exact text"` sits in the *same widget block* as
+  `.layout` files of one corpus (vanilla plus third-party mods), `"exact text"` sits in the *same widget block* as
   `text_proportion` in 82.6% of cases against a 3.1% base rate — a 27x enrichment. The
   frame refuted it. The cell with the flag and the cell without both measured 16 px.
   Convention in a corpus is evidence of how people write, not of what the engine reads.
@@ -296,7 +296,7 @@ own.
 A stringtable is addon-level: read from the PBO at load, so unlike a `$profile:` layout it
 does not hot-reload. Two traps when building one: AddonBuilder's binarizing pass applies a
 file whitelist and **drops `.csv` from the PBO** (pack with `-packonly`, or add the
-extension to an include list), and in the source author's workspace a `config.bin` produced by that same
+extension to an include list), and in one workspace a `config.bin` produced by that same
 pass has been measured not to register at all, with the mod mounting silently broken.
 
 ## Mod layouts: vanilla GUID textures can render white (added 2026-08-31)

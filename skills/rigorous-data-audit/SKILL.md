@@ -17,7 +17,7 @@ A second failure refined it further: a loose application of this skill's "parall
 
 The full retrospective of the first case is in `references/why-this-skill-exists.md`.
 
-Labels such as `VULN-003`, `LL-270` and `SP-369` are entry numbers from the source pack's case study, lessons log and skill patch ledger. They are kept only so a finding can be traced; the case study is in `references/why-this-skill-exists.md`.
+Labels such as `VULN-003` are the finding numbers of that case study; the table of all twelve is in `references/why-this-skill-exists.md`.
 
 ## Which file answers which question
 
@@ -79,7 +79,7 @@ Seven steps in two phases.
 - **Phase A (steps 1 to 6)** is the audit. It runs entirely from the codebase and ends with a verified findings list and fixes applied.
 - **Phase B (step 7)** is in-game validation. A clean audit is necessary but not sufficient for "release-safe".
 
-Skipping early steps makes later ones less effective, do not skip. Each step below carries two annotations in a quote block: **Model** (the model tier the step's work should run on) and **Done when** (the explicit exit criterion, do not advance until it holds).
+Skipping early steps makes later ones less effective, do not skip. Each step below carries two annotations in a quote block: **Assignment** (who runs the step's work and under which budget) and **Done when** (the explicit exit criterion, do not advance until it holds).
 
 ## Phase A: audit (steps 1 to 6)
 
@@ -144,9 +144,9 @@ Full prompts are in `references/audit-prompts.md`. The implementer-grade prompt 
 
 This is the step that turns "agents reported it" into "it is real". It exists because skipping it once produced a ~55%-confabulated audit (`references/fact-audit-postmortem.md`). Three sub-steps, in order:
 
-**3a, Verify every cited snippet against the real file.** Open the file at the cited range and confirm it says what the agent's pasted snippet claims. Reasoning agents drift on line numbers, copy citations from sibling files, and occasionally invent plausible ranges wholesale. A finding whose snippet does not match the file is not a finding, re-derive it or drop it. Every cause in durable memory brings file+pattern+number of matches with n>0 (LL-414); without the trio it is a hypothesis, and adjudication between rival mechanisms requires a prediction that only the new mechanism compels.
+**3a, Verify every cited snippet against the real file.** Open the file at the cited range and confirm it says what the agent's pasted snippet claims. Reasoning agents drift on line numbers, copy citations from sibling files, and occasionally invent plausible ranges wholesale. A finding whose snippet does not match the file is not a finding, re-derive it or drop it. Every cause in durable memory brings file+pattern+number of matches with n>0; without the trio it is a hypothesis, and adjudication between rival mechanisms requires a prediction that only the new mechanism compels.
 
-**3b, Independent verifier pass.** When an independent pass is assigned, use a reviewer from another family with a **fresh context that has not seen the angle reports**. If it is unavailable, declare that limitation; do not silently claim independence. Hand it only the bare list of claims (claim + location, no reasoning, no severity). Its task: for each claim, open the cited file and return TWO separate verdicts, "does the file actually say this" (`snippet_matches_file`) and "does the conclusion follow from that code" (`inference_holds`, judged without seeing the auditor's reasoning), pasting the relevant lines (LL-270). A claim the independent verifier cannot confirm on either verdict is NOT actionable until the orchestrator re-reads it, dropping it silently is how a real finding disappears. And a refutation rate of 0% is a reason to distrust the verifier, not to trust the batch: the run that produced this rule refuted 0 of 67 claims, and TERR-2 arrived `CONFIRMED` on a false inheritance premise. This is adversarial on purpose, convergence between agents that *shared* context (the same spec, the same conventions doc) is contagion, not confirmation. The verifier must not share that context.
+**3b, Independent verifier pass.** When an independent pass is assigned, use a reviewer from another family with a **fresh context that has not seen the angle reports**. If it is unavailable, declare that limitation; do not silently claim independence. Hand it only the bare list of claims (claim + location, no reasoning, no severity). Its task: for each claim, open the cited file and return TWO separate verdicts, "does the file actually say this" (`snippet_matches_file`) and "does the conclusion follow from that code" (`inference_holds`, judged without seeing the auditor's reasoning), pasting the relevant lines. A claim the independent verifier cannot confirm on either verdict is NOT actionable until the orchestrator re-reads it, dropping it silently is how a real finding disappears. And a refutation rate of 0% is a reason to distrust the verifier, not to trust the batch: the run that produced this rule refuted 0 of 67 claims, and one claim arrived `CONFIRMED` on a false inheritance premise. This is adversarial on purpose, convergence between agents that *shared* context (the same spec, the same conventions doc) is contagion, not confirmation. The verifier must not share that context.
 
 **3c, 20% self-sample gate.** Before trusting the consolidated table, pick 20% of the findings at random and verify them yourself by opening the files. If more than 10% of the sample is confabulated, the audit is not trustworthy, re-run step 2 with stricter prompts, or discard it. Do not act on an audit that fails this gate.
 
@@ -198,13 +198,13 @@ Standard editing flow, with five specifics:
 > clean. A new finding loops back to step 5 **once**; a second reappearance stops
 > the loop (hand the backlog back to the orchestrator).
 
-Re-run mechanical pre-checks (cheap) plus the two angles whose code changed most. If a new finding appears, loop back to step 5 once. If a finding of the same family reappears, the defect is design, not patching: stop, file the remainder as numbered backlog and escalate. Stop rule: the product gate closes the loop, a finding blocks only with an executable repro, and the budget is two rounds (this replaced "until zero critical or major"). For each value crossing N layers, a test executes the two layers of each joint WITHOUT test doubles (LL-473); the mutation to test deletes the COUPLING, and the fix is only accepted when the RECEIVER repeats the exact mutation and sees the control die.
+Re-run mechanical pre-checks (cheap) plus the two angles whose code changed most. If a new finding appears, loop back to step 5 once. If a finding of the same family reappears, the defect is design, not patching: stop, file the remainder as numbered backlog and escalate. Stop rule: the product gate closes the loop, a finding blocks only with an executable repro, and the budget is two rounds (this replaced "until zero critical or major"). For each value crossing N layers, a test executes the two layers of each joint WITHOUT test doubles; the mutation to test deletes the COUPLING, and the fix is only accepted when the RECEIVER repeats the exact mutation and sees the control die.
 
 ## Phase B: in-game validation (step 7)
 
 ### Step 7: In-game test gate
 
-> **Model:** n/a. The user runs these; the skill cannot.
+> **Assignment:** the user runs these; the skill cannot.
 > **Done when:** all four scenarios below pass in-game. Only then is
 > "release-safe" earned.
 
@@ -231,7 +231,7 @@ Watching for these saves rounds:
 - **Re-running the same audit after fixes.** Step 6 changes the cheap checks plus the two layers most edited, full 8-angle re-runs waste budget.
 - **Serializing independent work after parallel delegation was authorized.** If multiple lanes are assigned, dispatch them together so they run concurrently.
 - **Shipping a `.skill` / release / patch file from un-reverified findings.** Cheap to apply, expensive to walk back.
-- **Reading a short-circuit finding as green (LL-481).** A gate skipped on PRECONDITION (dirty tree, unreadable config) wears the same face as a pass: verify the gate evaluated what changed, and count exit codes, not findings. Verification on a dirty tree is not verification.
+- **Reading a short-circuit finding as green.** A gate skipped on PRECONDITION (dirty tree, unreadable config) wears the same face as a pass: verify the gate evaluated what changed, and count exit codes, not findings. Verification on a dirty tree is not verification.
 
 ## On Linux
 

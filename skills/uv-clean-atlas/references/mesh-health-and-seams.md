@@ -1,6 +1,6 @@
 # Mesh health before unwrapping, and where to cut
 
-The checks a mesh must pass before any UV work, the Blender API traps that corrupt UV layers in headless runs, and the seam methods that were measured: which fragment an atlas and which keep it to a few islands. Measured in July 2026 on the body and wheels of LFQuad (the source author's quad-bike mod, a 1987 Yamaha Banshee model). The DayZ side of UV mapping (formats, materials, symptoms in game) is in `_shared/models/uv-mapping.md`.
+The checks a mesh must pass before any UV work, the Blender API traps that corrupt UV layers in headless runs, and the seam methods that were measured: which fragment an atlas and which keep it to a few islands. Measured in July 2026 on the body and wheels of a quad-bike vehicle mod (a 1987 Yamaha Banshee model, the quad bike below). The DayZ side of UV mapping (formats, materials, symptoms in game) is in `_shared/models/uv-mapping.md`.
 
 ## Contents
 
@@ -15,13 +15,13 @@ The checks a mesh must pass before any UV work, the Blender API traps that corru
 
 UV work rests on mesh health. Unwrapping or baking on a broken mesh produces false diagnoses, for example a "double wall" that was really mirrored mapping on a single wall. What an artist reports, and what it measures as:
 
-| What the artist says | What to measure | The LFQuad body, measured |
+| What the artist says | What to measure | The quad-bike body, measured |
 |---|---|---|
 | "Open, unwelded vertices" | Vertices that would merge at under 0.5 mm (KD-tree), plus coincident duplicate faces | 190 to 715 vertices per part in the mechanical groups; about 1.9k duplicate faces in 2 parts |
 | "Convexity issue", "it does not close" | Boundary edges (edges with 1 face), shells that are not watertight | 65 to 3,674 open edges per part; most are single-wall design, not breakage |
 | "Weird normals" | Edges with inconsistent winding; non-manifold edges (more than 2 faces) | 28 winding edges and 264 non-manifold edges on the grille, a stacked-strip design |
 
-The recipe (the source project ran it with its own `mesh_health.py` and `mesh_sanitize.py`, which are not shipped here; any bmesh script that measures the same things will do):
+The recipe (no script for it is shipped here; any bmesh script that measures the same things will do):
 
 1. Audit first: boundary edges, non-manifold edges, duplicate vertices, duplicate faces, zero-area faces and winding, per part.
 2. Weld **adaptively**. This is the central pitfall: a blind weld at 0.5 mm merges parts that legitimately touch and *creates* non-manifold edges (one seat part went from 0 to 168). Use a ladder of 0.5, 0.2, 0.1, 0.05 and 0.01 mm: for each mesh, take the largest distance whose result does not increase the non-manifold count and preserves the UVs. Both conditions are checked automatically. The weld preserves loop UVs (verified 100% on 15 meshes).
@@ -53,7 +53,7 @@ The user's reference was a whole object (a wheel) as **4 or 5 islands**, not hun
 
 **Fragmentation does not come from the geometry. It comes from the algorithm cutting at every sharp edge.**
 
-Measure the shells first (the edge-connected components). The LFQuad wheel has 15 shells and the bodywork 13. The **island floor is the shell count**, because an unwrapper cannot merge disconnected shells. With 13 shells the target is about 13 to 30 islands, not 500 to 2,000.
+Measure the shells first (the edge-connected components). The quad-bike wheel has 15 shells and the bodywork 13. The **island floor is the shell count**, because an unwrapper cannot merge disconnected shells. With 13 shells the target is about 13 to 30 islands, not 500 to 2,000.
 
 Methods that fragment, measured on the tire (7,056 faces, 1 shell):
 
@@ -75,7 +75,7 @@ Measured result: **wheel 29 islands (3,261 px/m at 2048), bodywork 22 islands (8
 
 The honest residual: closed **curved** shells (a tire carcass, domed caps) keep minor self-overlap after LSCM. Re-projecting them onto a plane folds them worse, because they are not developable, and more cuts fragment them. An artist relaxes them or adds one seam per shell in seconds. Automatic, perfect zero overlap on a closed curved surface is a hard problem that even RizomUV's automatic seams only half solve.
 
-The script that implemented this cut in the source project (`uv_topological_unwrap.py`) is not shipped; `sat_gate.py` was ported from its exact overlap check. Two later measurements limit the method (see "Known traps" in `SKILL.md`): with seams this sparse, SLIM can collapse most triangles to zero UV area without a warning, and the view-chart method in `uv_view_charts.py` replaced it as the default for vehicle panels.
+No script for this cut is shipped; `sat_gate.py` is the exact overlap check it relies on. Two later measurements limit the method (see "Known traps" in `SKILL.md`): with seams this sparse, SLIM can collapse most triangles to zero UV area without a warning, and the view-chart method in `uv_view_charts.py` replaced it as the default for vehicle panels.
 
 ## Repairing an existing layout
 
@@ -97,5 +97,5 @@ Local folds between **adjacent** faces are not fixed by translating them, becaus
 Measured 2026-07-06:
 
 1. **It does not normalize the selection into the 0 to 1 tile.** It leaves the content near its current scale and tile (`CLOSEST_UDIM`). Any remap after packing must measure the real bounding box. A blind remap crushed some groups about 40 times.
-2. **Packing by zones costs about 30 to 36% of the global density.** In a global pack the dust (tiny islands) fills the gaps between large islands. Reserving a band for it leaves those gaps empty (LFQuad: 703 px/m against 449 px/m). Visual order in an atlas has a measurable price; let the artist who uses it decide whether to pay.
+2. **Packing by zones costs about 30 to 36% of the global density.** In a global pack the dust (tiny islands) fills the gaps between large islands. Reserving a band for it leaves those gaps empty (the quad bike: 703 px/m against 449 px/m). Visual order in an atlas has a measurable price; let the artist who uses it decide whether to pay.
 3. It optimizes area, not legibility, and it shuffles rotations. That is why the skill's final pack for a paint atlas is the shelf packer, not `pack_islands`.

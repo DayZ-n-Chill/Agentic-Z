@@ -4,7 +4,7 @@ How to give one mesh region two to four tiling detail textures with the `Multi` 
 
 The same shader from the material side (when Multi is worth it, painting the mask, the checks before accepting a Multi material) is in `skills/dayz-texture-pipeline/references/multi-rvmat-section-texturing.md`. Read that file for the `.rvmat` work and this one for the model side and the annotated template.
 
-What is checked and what is not: the stage layout, the texGen numbers and the `uvTransform` forms were compared with the 1,960 vanilla `Multi` materials under `P:\DZ\`, and the lines that cite `P:\` were opened; the counts are in `_shared/models/multi-rvmat-texturing.md`. The workflow, the costs, the UV advice and the pitfalls come from a DayZ Modders Discord thread on multi material rvmats (2026-06), a community template `multimat_template.rvmat` and [Mondkalb's MultiMaterial Tutorial](https://community.bistudio.com/wiki/Mondkalb%27s_MultiMaterial_Tutorial) on the Bohemia wiki; they are community and tool knowledge, not checked on `P:\`.
+What is checked and what is not: the stage layout, the texGen numbers and the `uvTransform` forms were compared with the 1,960 vanilla `Multi` materials under `P:\DZ\`, and the lines that cite `P:\` were opened; the counts are in `_shared/models/multi-rvmat-texturing.md`. The workflow, the costs, the UV advice and the pitfalls are tool knowledge, not checked on `P:\`.
 
 ## When to use which technique
 
@@ -33,7 +33,7 @@ A low resolution **mask of red, green, blue and black** (painted on the model's 
 Vanilla follows this table: `P:\DZ\structures\residential\houseblocks\data\a1-1_multi1.rvmat` has exactly these fifteen stages with these texGen numbers, including `Stage8` on texGen 3.
 
 - `PixelShaderID = "Multi"; VertexShaderID = "Multi";`
-- `Stage4`, the mask, is the red, green, blue and black texture painted on UV set 1. Vanilla names it `_mask.paa`; the source names it `_co.paa`.
+- `Stage4`, the mask, is the red, green, blue and black texture painted on UV set 1. Vanilla names it `_mask.paa`; the file name is free.
 - `Stage9`, the macro map, is a color tint over the whole model ("the real texture"; the details overlay it).
 - `Stage10` is the `_as.paa` or `_ads.paa` ambient shadow.
 - The specular stage of a section can be procedural: `#(argb,8,8,3)color(0.5,G,B,1,DTSMDI)`, where G is the specular intensity and B the glossiness. Tune it per material type instead of sharing one. Vanilla does this in most `Multi` materials (`a1-1_multi1.rvmat` has `#(argb,8,8,3)color(0.5,0,1,1,DTSMDI)` on `Stage8`), and where it uses a file there it is usually a detail specular map, `_dtsmdi.paa`, not an `_smdi.paa`.
@@ -45,7 +45,7 @@ Two UV sets are required:
 - **UV set 1** (`uvSource="tex1"`): the original unwrap. It places the mask, the macro map and the ambient shadow (texGen 4). **Never touch it.**
 - **UV set 0** (`uvSource="tex"`): a copy of UV set 1, then scaled up heavily. It drives the tiling of the detail textures (texGen 0 to 3). Bigger UVs mean more tiling and more texel density.
 
-The canonical (Mondkalb) assignment is texGen 0 to 3 on `tex` and texGen 4 on `tex1`. Community templates sometimes give single sections their own UV set (`tex2` and so on) for independent control of tiling; the source reports that as valid, with the engine supporting `tex`, `tex1` and `tex2`. Vanilla uses `tex` and `tex1` only (`_shared/models/multi-rvmat-texturing.md`).
+The canonical assignment is texGen 0 to 3 on `tex` and texGen 4 on `tex1`. A single section can be given its own UV set (`tex2` and so on) for independent control of tiling; that is not checked on `P:\`, where vanilla uses `tex` and `tex1` only (`_shared/models/multi-rvmat-texturing.md`).
 
 **Export pitfall:** the `.p3d` must actually contain both UV sets. In Blender keep two UV layers and verify after export (with py3d, check the UV set count of each LOD). If UV set 1 is missing, the mask smears across the tiled UVs.
 
@@ -64,9 +64,9 @@ class uvTransform
 - A scale **below 1 scales the UVs down, so the texture appears bigger** (0.5 makes it twice as large).
 - A scale above 1 means more tiling (this skill already uses `{10,0,0}` for detail maps). Vanilla example: `TexGen2` of `a1-1_multi1.rvmat` has `aside[]={2,0,0}` and `up[]={0,2,0}`.
 - To nudge a texture into place, start with `pos[]` offsets before rescaling.
-- The Bohemia wiki tutorial shows `dir[]={0,0,0}; pos[]={0,0,1};`. The source calls that a transcription quirk of the wiki and uses the form above, which matches the working community template. Both forms exist in vanilla `Multi` materials: `dir[]={0,0,1}` with `pos[]={0,0,0}` on 12,401 texGen classes and the wiki's form on 1,514 (`a1-1_multi1.rvmat` has both in one file). Use the form above; the wiki's form is not an error.
+- A second form, `dir[]={0,0,0}; pos[]={0,0,1};`, is also in use. Both forms exist in vanilla `Multi` materials: `dir[]={0,0,1}` with `pos[]={0,0,0}` on 12,401 texGen classes and the second form on 1,514 (`a1-1_multi1.rvmat` has both in one file). Use the form above; the second form is not an error.
 
-## Template (annotated, from the working community template)
+## Template (annotated)
 
 ```cpp
 ambient[]  = {0.5,0.75,0.5,1};
@@ -102,14 +102,14 @@ class Stage9  { texture="MyMod\data\mymodel_mc.paa";   texGen="4"; };
 class Stage10 { texture="MyMod\data\mymodel_as.paa";   texGen="4"; };
 ```
 
-The template leaves the green section out. Almost every vanilla `Multi` material keeps all fifteen stages and fills an unused section with procedural placeholders (1,955 of 1,960), so when in doubt keep the green stages (`Stage2`, `Stage7`, `Stage13`, with `TexGen2` and `TexGen7`) and give them placeholders, as `_shared/models/multi-rvmat-texturing.md` shows. The vanilla texture paths in the template are the community template's and were not opened on `P:\`; before using one, check that the file exists.
+The template leaves the green section out. Almost every vanilla `Multi` material keeps all fifteen stages and fills an unused section with procedural placeholders (1,955 of 1,960), so when in doubt keep the green stages (`Stage2`, `Stage7`, `Stage13`, with `TexGen2` and `TexGen7`) and give them placeholders, as `_shared/models/multi-rvmat-texturing.md` shows. The three vanilla textures the template names exist under `P:\DZ\structures\`; before using another vanilla texture, check that the file exists.
 
 To apply it in Object Builder or py3d: select the faces, **remove the texture** (the faces get a material only, the texture field stays empty) and assign this rvmat.
 
 ## Pitfalls
 
 - A mask painted with gradients or anti-aliasing makes the sections blend; keep hard edges of pure color unless blending is intended.
-- A mismatch between stage and texGen is silent: the color and normal stages of a section must share the section's texGen; the specular stage uses its own texGen (5 to 8 in the source's wording; 5, 6, 7 and then 3 for the blue section in the table above) so that its tiling can differ.
+- A mismatch between stage and texGen is silent: the color and normal stages of a section must share the section's texGen; the specular stage uses its own texGen (5, 6 and 7, and 3 for the blue section, as in the table above) so that its tiling can differ.
 - Faces that still carry a texture together with a Multi rvmat give wrong output; the texture must be removed.
 - At most 4 sections (black, red, green, blue). For more, split the mesh into several Multi materials or fall back to one rvmat per selection.
 - Specular per section: do not ship one gray `specular[]` for everything. The specular stage of each section is where metal, paint and rubber are told apart.

@@ -113,7 +113,7 @@ def test_tuning_values_skill_md_quotes_are_still_in_the_code(script, needle):
     assert needle in _source(script), f"{script} no longer holds {needle!r}; update SKILL.md"
 
 
-def test_no_machine_or_project_paths_in_the_pipeline_scripts():
+def test_no_machine_paths_in_the_pipeline_scripts():
     for name in ["sat_gate.py", PIPELINE, *[f"{m}.py" for m in STAGE_MODULES]]:
         text = _source(name)
-        assert not re.search(r"[A-Za-z]:\\|LFQuad_dev|/home/", text), name
+        assert not re.search(r"[A-Za-z]:\\|/home/", text), name

@@ -2,11 +2,11 @@
 
 What a session that uses `dayz-mod-workflow` does when the skill files may be rewritten or promoted by another session while it runs, or when it must survive a later promote to the live copy. Load this reference only in that situation.
 
-It is the consumer's procedure. Authoring governed skills, validating and gating them, checking a promote before applying it, receipts and byte checks, and rolling back are the business of the knowledge pack's maintenance tool (`packctl`, which the knowledge workstream brings under `scripts/dev/knowledge-pack/`); none of that is restated here. Nothing in this file is a game fact, so it cites no vanilla file.
+It is the consumer's procedure. Authoring governed skills, validating and gating them, checking a promote before applying it, receipts and byte checks, and rolling back are the business of the skill maintenance tool `packctl` (under `scripts/dev/`); none of that is restated here. Nothing in this file is a game fact, so it cites no vanilla file.
 
 ## What a session pin is
 
-At session start, copy the **whole** skill tree (`SKILL.md` and every file under `references/`) from an **immutable** snapshot of the commit in use. Take it from a detached worktree added at that verified commit (`git worktree add --detach <path> <commit-ish>`) and copy the whole `skills/dayz-mod-workflow/` tree from it. The knowledge pack's own setup prefers a per-commit snapshot folder written by its promote step when one exists. Hash each copied file (SHA-256) and read those copies for the rest of the session.
+At session start, copy the **whole** skill tree (`SKILL.md` and every file under `references/`) from an **immutable** snapshot of the commit in use. Take it from a detached worktree added at that verified commit (`git worktree add --detach <path> <commit-ish>`) and copy the whole `skills/dayz-mod-workflow/` tree from it. When the maintenance tool's promote step has written a per-commit snapshot folder, prefer that folder. Hash each copied file (SHA-256) and read those copies for the rest of the session.
 
 If a later step needs a reference that was not opened at the start, take it from **that same snapshot**. Do not read the live copy after a later promote.
 

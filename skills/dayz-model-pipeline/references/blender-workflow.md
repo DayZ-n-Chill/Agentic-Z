@@ -16,7 +16,7 @@ Before importing an FBX into Blender 5.x read `blender-import-preflight.md`: cus
 
 **This path is NOT for:**
 - Procedurally generated models (use Path A or B)
-- Models created directly in Blender for DayZ (also use Path B workflows)
+- Models created directly in Blender for DayZ (use Path A)
 
 ---
 
@@ -282,7 +282,7 @@ DayZ uses Level-of-Detail (LOD) models to optimize performance. Create 2-4 LOD v
 1. **LOD 0 (detailed)**: Full polygon count, used at close distance
 2. **LOD 1 (medium)**: ~50% of LOD0 polygons
 3. **LOD 2 (simple)**: ~25% of LOD0 polygons
-4. **LOD 3 (distance)**: ~10% of LOD0 polygons (for very large objects)
+4. **LOD 3 (distance)**: ~12% of LOD0 polygons (for very large objects)
 
 ### Generate LODs
 
@@ -290,7 +290,7 @@ DayZ uses Level-of-Detail (LOD) models to optimize performance. Create 2-4 LOD v
 # Duplicate LOD0 for each LOD level
 original = bpy.context.active_object
 
-for lod_level, ratio in [(1, 0.5), (2, 0.25), (3, 0.1)]:
+for lod_level, ratio in [(1, 0.5), (2, 0.25), (3, 0.12)]:
     # Duplicate
     bpy.ops.object.duplicate()
     lod_obj = bpy.context.active_object
@@ -385,7 +385,7 @@ If your model came with textures, extract and rename them per DayZ conventions:
 
 1. In Blender, bake textures to image files if needed
 2. Use Substance Painter, Textura, or similar for channel repacking
-3. Verify the normal map convention (DirectX against OpenGL). DayZ `_nohq` maps use the DirectX one (green pointing down); Blender bakes OpenGL by default, so invert the green channel of a Blender bake. This is tool knowledge from the texture pipeline material, not something a file on `P:\` states
+3. Verify the normal map convention (DirectX against OpenGL). DayZ `_nohq` maps use the DirectX one (green pointing down); Blender bakes OpenGL by default, so invert the green channel of a Blender bake. This is tool knowledge, not something a file on `P:\` states
 4. Save final textures to your mod's `data/model/` directory
 5. Convert each `.png` to `.paa` with `/dayz-pack-texture`
 

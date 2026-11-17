@@ -60,7 +60,7 @@ python "<skill-dir>\scripts\p3d_inspector_build.py" recipe_edited.json path\to\m
 | `p3d_inspector_viewer.py` | `<recipe.json> [output.html]`, or `--demo [output.html]` | Writes the viewer HTML. `--demo` needs no model at all. |
 | `p3d_inspector_build.py` | `<recipe.json> [output.p3d] [-v] [--no-autofix]` | Writes an MLOD `.p3d` from a Recipe. |
 
-In the viewer the user drags points, then presses **Export Recipe**, selects all and copies the JSON from the box (the clipboard API is blocked for a page opened from disk). Save that text as the edited Recipe and build from it.
+In the viewer the user drags points, then presses **Export Recipe**, selects all and copies the JSON from the box (the clipboard API is blocked for a page opened from disk). The export holds only `meta`, `memory_points`, `axes` and `bbox`, not the LODs. Copy its `memory_points` and `axes` over the same two keys of the extracted Recipe, save that as the edited Recipe and build from it. Building from the export alone writes a model with nothing but a Memory LOD.
 
 Write the outputs under `output/<descriptive-folder>/` unless the model belongs to a mod in `workspace/<ModName>/`.
 
@@ -89,5 +89,5 @@ Facts about memory points and selections themselves are in `_shared/models/memor
 - Source (MLOD) models only.
 - The viewer has no textures and no axis lock: a point moves in the plane facing the camera.
 - The extractor does not record per-point mass; the builder estimates it (`references/recipe-format.md`).
-- The builder writes no proxies and no sharp edges.
+- The builder writes no proxies and no sharp edges, and it drops any LOD the extractor could not name (`references/recipe-format.md`, "LOD types").
 - On Linux the scripts run natively; opening the result in Object Builder goes through Proton as the shared Linux notes describe (`_shared/linux-proton.md`).

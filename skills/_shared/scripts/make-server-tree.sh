@@ -1,5 +1,4 @@
 #!/bin/sh
-# Source: bzed/dayz-dev-plugin 6112ac5, contributed to this Pack under its MIT licence by its author.
 # Build (or refresh) a private DayZ Server directory tree that symlinks into the Steam install.
 #
 # The Steam install is never written to. Everything the server or you write lands in the tree:

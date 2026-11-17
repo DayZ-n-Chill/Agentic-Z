@@ -38,7 +38,7 @@ Use deterministic sibling names: `<dest>.tmp`, `<dest>.bak`, and `<dest>.sha256`
 7. Write the verified destination digest to `<dest>.sha256`. If this fails, keep the destination, temporary file, and backup as evidence; do not claim a clean save.
 8. Delete `<dest>.tmp` only after destination verification and sidecar creation succeed. A completed candidate is never deleted on a verification failure.
 
-The production sequence is temp -> verify -> backup -> delete -> copy -> verify -> hash sidecar -> delete temp (from the LF_VStorage mod, `LFV_FileStorage.c:28-45`; third-party source, not on `P:\`). Post-copy verification exists because `CopyFile` can produce an incomplete destination; compare the copied bytes before removing the temporary source (LF_VStorage, `LFV_FileStorage.c:998-1009,1281-1282`).
+The production sequence is temp -> verify -> backup -> delete -> copy -> verify -> hash sidecar -> delete temp. Post-copy verification exists because `CopyFile` can produce an incomplete destination (engine behaviour, not checkable on `P:\`); compare the copied bytes before removing the temporary source.
 
 An incomplete fragment from a failed temp write is discardable. That is distinct from a completed `.tmp` that reached verification: once complete, it is retained until the post-copy verify and digest sidecar succeed.
 

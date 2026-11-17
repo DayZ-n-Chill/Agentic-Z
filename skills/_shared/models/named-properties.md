@@ -65,11 +65,11 @@ The rule above comes from mod debugging. What the vanilla files show, so a revie
 
 So the named property on the Geometry LOD is common in vanilla, handheld items included. The float on drop recorded in `p3d-killers.md` was seen on a kit whose config class set `autocenter = 0`, a key no vanilla item class sets. One measured case where the property on every LOD plus the config line made a placed item float at knee height is in `skills/_shared/vehicles/placement-and-autocenter.md`; that note also covers where `autocenter=0` sits on a vehicle.
 
-### On every collision LOD (reported)
+### On every collision LOD (not checked on `P:\`)
 
-Reported from LF_PowerGrid models, not checked on `P:\`: with `autocenter` = `0` on the Geometry LOD only, the Fire Geometry and View Geometry meshes of a placed object were recentered on their own bounding boxes, about 20 to 25 cm away from the visual mesh. Bullets passed through, a hologram stacked on the object fell to the ground, and the action cursor did not find it. Setting the property on every collision LOD the model has (Geometry, Fire Geometry, View Geometry, and Roadway, Hit points and LandContact when present) fixed all three. Vanilla does both, as the counts above show, so treat this as the safe choice for a placed object built from scratch (`dayz-model-pipeline/references/critical-rules.md`, rule 16).
+Measured on a mod's placed objects, not on vanilla: with `autocenter` = `0` on the Geometry LOD only, the Fire Geometry and View Geometry meshes of a placed object were recentered on their own bounding boxes, about 20 to 25 cm away from the visual mesh. Bullets passed through, a hologram stacked on the object fell to the ground, and the action cursor did not find it. Setting the property on every collision LOD the model has (Geometry, Fire Geometry, View Geometry, and Roadway, Hit points and LandContact when present) fixed all three. Vanilla does both, as the counts above show, so treat this as the safe choice for a placed object built from scratch (`dayz-model-pipeline/references/critical-rules.md`, rule 16).
 
-Also reported, from a third-party storage mod and not checked on `P:\`: an invisible entity whose visual LOD holds only proxy triangles, used to carry and draw attachments, needed `autocenter = 0` in its config class. Without it the engine recentered the model and its memory points shifted (`dayz-model-pipeline/references/memory-and-selections.md`, SP-LFS-6).
+Also measured on a third-party storage mod, not checked on `P:\`: an invisible entity whose visual LOD holds only proxy triangles, used to carry and draw attachments, needed `autocenter = 0` in its config class. Without it the engine recentered the model and its memory points shifted (`dayz-model-pipeline/references/memory-and-selections.md`).
 
 ## Reading and writing them with py3d
 

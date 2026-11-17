@@ -2,7 +2,7 @@
 
 For a wheel, door, part or rack item that is attached and simulates but does not render: the proxy frame contract, the class name rule to check first, which proxy base class a slot needs, and why one rack cannot align rifles and tools.
 
-Vanilla facts cite the file on `P:\`. The measurements on SUB_BRZ, LFQuad3 and the GunRacks mod come from the author's projects and from that third-party mod; they are not yet checked on `P:\`. A binary `.p3d` has no lines to cite, so facts measured on the vanilla sedan model name the file only.
+Vanilla facts cite the file on `P:\`. The measurements on SUB_BRZ, LFQuad3 and the GunRacks mod (a third-party mod, not vanilla) are not yet checked on `P:\`. A binary `.p3d` has no lines to cite, so facts measured on the vanilla sedan model name the file only.
 
 ## Check first: the `Proxy` class name against the file name
 
@@ -42,9 +42,9 @@ Mechanical gate: `derive_proxy_frame` of every visual attachment proxy equals th
 
 Added 2026-08-22.
 
-The constant in point 2 (for x greater than 0 `((1,0,0),(0,0,-1),(0,1,0))`, mirrored for x less than 0) is not universal. It was measured on `civiliansedan_mlod` and holds for geometry derived from that control. The rip import history of the vehicles pack says the same: copy the vanilla frame, not the frame of the "kt" mod, whose mirror differs because its wheel geometry differs. The structural parity topic gives the general rule: the frame depends on e1 and e2 and on the orientation of the base model. (`skills/_shared/vehicles/rip-import.md` and `skills/_shared/vehicles/vehicle-structural-parity.md`.)
+The constant in point 2 (for x greater than 0 `((1,0,0),(0,0,-1),(0,1,0))`, mirrored for x less than 0) is not universal. It was measured on `civiliansedan_mlod` and holds for geometry derived from that control. The rip import history of the vehicles pack says the same: copy the vanilla frame, not the frame of a third-party wheel mod, whose mirror differs because its wheel geometry differs. The structural parity topic gives the general rule: the frame depends on e1 and e2 and on the orientation of the base model. (`skills/_shared/vehicles/rip-import.md` and `skills/_shared/vehicles/vehicle-structural-parity.md`.)
 
-The practical consequence, and where time is lost: measuring these literals against a control from another family yields "inverted" with nothing broken. It happened. A note in the ledger (SP-156) recorded the constant as measured backwards after comparing it against a Landrover. Before believing the constant is wrong:
+The practical consequence, and where time is lost: measuring these literals against a control from another family yields "inverted" with nothing broken. It happened. A note in the ledger recorded the constant as measured backwards after comparing it against a Landrover. Before believing the constant is wrong:
 
 1. Measure the frame of your own control, the one that renders, with `derive_proxy_frame`.
 2. Compare against that, not against these literals.

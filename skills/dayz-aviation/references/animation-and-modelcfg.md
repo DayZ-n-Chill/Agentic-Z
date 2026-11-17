@@ -2,7 +2,7 @@
 
 `AnimationSources` for control surfaces, dials and dampers, the `model.cfg` animation classes behind them (dial source scheme, `sourceAddress`, the propeller spin hack, surface angles), aircraft damage zones, and which vanilla seat animation set each aircraft reuses.
 
-Third-party material: patterns read from the LM_Planes mod (Workshop `3730564764`, by Llama and Itspete-Here), whose files are not in this repo. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code. The general `model.cfg` and `AnimationSources` rules are in `skills/_shared/animation/model-cfg-animations.md` and `skills/_shared/animation/animation-sources.md`.
+Third-party mod behaviour (LM_Planes, Workshop `3730564764`), not vanilla. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code. The general `model.cfg` and `AnimationSources` rules are in `skills/_shared/animation/model-cfg-animations.md` and `skills/_shared/animation/animation-sources.md`.
 
 ## AnimationSources (in CfgVehicles.<Aircraft>)
 

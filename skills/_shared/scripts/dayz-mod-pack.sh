@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Source: bzed/dayz-dev-plugin 6112ac5, contributed to this Pack under its MIT licence by its author.
 # Prepare a DayZ mod for the Steam Workshop with dayzmake: keys, PBOs, signatures, upload folder.
 #
 # Project layout (created by `init`, filled by `keygen` and `build`):
@@ -27,7 +26,7 @@
 #   check                   verify nothing secret is tracked or staged, and the signatures verify
 #   publish-hint            print the `workshop create` / `workshop update` commands
 #
-# Environment: DAYZMAKE (binary, default: dayzmake from PATH, else bzed's older armake2 fork; upstream armake2 is rejected),
+# Environment: DAYZMAKE (binary, default: dayzmake from PATH, else a dayzmake build from before its rename, called armake2; upstream armake2 is rejected),
 #              KEY_NAME (default: ModName),
 #              WORKSHOP_APP_ID (default 221100, the DayZ client app),
 #              STEAM_ROOT, DAYZ_TOOLS, PROTON: passed through to dayzmake for --binarize-models.
@@ -121,14 +120,14 @@ scan_static() {
     [ -z "$_hit" ] || die "a .biprivatekey is inside static/; refusing before any copy: $_hit"
 }
 
-# Use the dayzmake found in PATH first (or $DAYZMAKE). bzed's fork (https://github.com/bzed/dayzmake) is detected by its --proton-binarize option:
+# Use the dayzmake found in PATH first (or $DAYZMAKE). dayzmake is told from upstream armake2 by its --proton-binarize option:
 #   dayzmake -h 2>&1 | grep -- --proton-binarize
 need_dayzmake() {
-    command -v "$DAYZMAKE" >/dev/null 2>&1 || die "dayzmake not found in PATH. Install dayzmake >= 1.0.0: the release binary from https://github.com/bzed/dayzmake/releases/tag/v1.0.0, or cargo install --git https://github.com/bzed/dayzmake --tag v1.0.0; or set DAYZMAKE=/path/to/dayzmake"
+    command -v "$DAYZMAKE" >/dev/null 2>&1 || die "dayzmake not found in PATH. Install dayzmake >= 1.0.0 (see skills/dayz-build-pbo/references/dayzmake-linux.md), or set DAYZMAKE=/path/to/dayzmake"
     local help; help=$("$DAYZMAKE" --help 2>&1 || true)
     # Upstream armake2 leaves *.c files out of the PBO signature hash, so signed script mods fail the server's check.
-    case "$help" in *--proton-binarize*) ;; *) die "$(command -v "$DAYZMAKE") is not bzed's fork (no --proton-binarize in -h); upstream armake2 signs wrongly. Install dayzmake >= 1.0.0: cargo install --git https://github.com/bzed/dayzmake --tag v1.0.0" ;; esac
-    # bzed's fork built before the rename (binary called armake2, version v0.3.0) still works, but may carry bugs fixed since.
+    case "$help" in *--proton-binarize*) ;; *) die "$(command -v "$DAYZMAKE") is not dayzmake (no --proton-binarize in -h); upstream armake2 signs wrongly. Install dayzmake >= 1.0.0 (see skills/dayz-build-pbo/references/dayzmake-linux.md)" ;; esac
+    # A dayzmake build from before the rename (binary called armake2, version v0.3.0) still works, but may carry bugs fixed since.
     local ver
     ver=$("$DAYZMAKE" --version 2>/dev/null || true)
     ver=${ver%%$'\n'*}
@@ -181,7 +180,7 @@ cmd_keygen() {
 }
 
 # meta.cpp is what the official DayZ Publisher adds to the upload (protocol, publishedid, name, timestamp).
-# The `workshop` uploader (nozwock/steam-workshop-uploader) rewrites publishedid and timestamp on every DayZ upload.
+# The `workshop` uploader (steam-workshop-uploader) rewrites publishedid and timestamp on every DayZ upload.
 # We still write it, so the folder is complete for local tests: publishedid is 0
 # until workshop.toml holds an item_id, which is what the Windows tools upload on a first publish; 0 breaks client mods.
 # timestamp = .NET DateTime.ToBinary() of the UTC time: (unix + 62135596800) * 1e7 + 2^62 (checked against CF's meta.cpp).
@@ -371,7 +370,7 @@ It is a deliberate manual step; review the content folder first:  $q_content
 The app id ($q_app) is NOT part of mod.cpp: it is passed here and stored in workshop.toml.
 EOF
     local wbin; wbin=$(command -v workshop 2>/dev/null || true)
-    if [ -z "$wbin" ]; then echo "WARNING: 'workshop' not found in PATH. Install it: https://github.com/nozwock/steam-workshop-uploader"
+    if [ -z "$wbin" ]; then echo "WARNING: 'workshop' not found in PATH. Install the steam-workshop-uploader tool (see skills/dayz-build-pbo/references/dayzmake-linux.md)"
     fi
     cat <<EOF
 

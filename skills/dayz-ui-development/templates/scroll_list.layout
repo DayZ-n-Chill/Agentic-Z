@@ -1,6 +1,6 @@
 // Scroll host + its spacer. A ScrollWidget with no spacer child does not scroll
-// (references/rules-and-checklist.md, troubleshooting table). Vanilla first-child of ScrollWidget (51 hosts):
-// GridSpacer 23, WrapSpacer 10, Panel 9, Frame 4. This file uses the 23.
+// (references/rules-and-checklist.md, troubleshooting table). Vanilla first-child of ScrollWidget (54 hosts):
+// GridSpacer 25, WrapSpacer 12, Panel 8, Frame 4. This file uses the 25.
 FrameWidgetClass ScrollListRoot {
 	name "ScrollListRoot"
 	ignorepointer 1
@@ -22,7 +22,7 @@ FrameWidgetClass ScrollListRoot {
 			vexactpos 0
 			hexactsize 0
 			vexactsize 0
-			// Same Panel paint rule as modal_panel.layout. 577x rover_sim_colorable.
+			// Same Panel paint rule as modal_panel.layout. 641x rover_sim_colorable.
 			style rover_sim_colorable
 			{
 				ScrollWidgetClass ScrollList {
@@ -39,7 +39,7 @@ FrameWidgetClass ScrollListRoot {
 					hexactsize 0
 					vexactsize 0
 					// ScrollWidget/blank: dayzwidgets.styles:3966. Normal Center="".
-					// Paints nothing; it is the most-used Scroll style (19x). The
+					// Paints nothing; it is the most-used Scroll style (22x). The
 					// bar comes from "Scrollbar V", not from this skin.
 					style blank
 					// gui/layouts/new_ui/credits/credits_menu.layout:23,

@@ -985,11 +985,11 @@ do_init() {
     fi
 }
 
-# check_dayzmake: the native packer is bzed's armake2 fork, renamed dayzmake at v1.0.0. Upstream
+# check_dayzmake: the native packer is dayzmake, an armake2 fork that took this name at v1.0.0. Upstream
 # armake2 is built for Arma (its V3 file hash omits *.c, and dayzmake adds DayZ-only functions);
 # a fork build from before the rename is called armake2.
 check_dayzmake() {
-    url="https://github.com/bzed/dayzmake (v2.0.0 or later)"
+    url="dayzmake v2.0.0 or later (skills/dayz-build-pbo/references/dayzmake-linux.md)"
     b=
     for c in dayzmake armake2; do command -v $c >/dev/null && { b=$c; break; }; done
     if [ -z "$b" ]; then echo "dayzmake:    missing (native PBO build/sign; $url)"; return 0; fi

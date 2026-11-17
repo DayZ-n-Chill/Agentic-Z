@@ -2,11 +2,11 @@
 
 Audit rules for a long-running evidence campaign, a generated final index, or a release that publishes into more than one physical root (client, server, profiles, persistence, config). Open this in step 1 when the audited work writes an authoritative index or installs a bundle across several folders.
 
-These are audit invariants; they do not by themselves prove that a particular runtime has passed them. They concern tooling around a mod (test harnesses, installers, promotion scripts), not Enforce Script, so nothing here can be checked on `P:\`. The `CLAIM-...` ids are the source pack's claim labels, kept only for tracing.
+These are audit invariants; they do not by themselves prove that a particular runtime has passed them. They concern tooling around a mod (test harnesses, installers, promotion scripts), not Enforce Script, so nothing here can be checked on `P:\`.
 
 ## Authoritative evidence index
 
-Rule `CLAIM-R21-RDA-CRASH-EVIDENCE`: a crash-sensitive runtime MUST NOT append directly to its authoritative final index.
+Rule: a crash-sensitive runtime MUST NOT append directly to its authoritative final index.
 
 Audit for this sequence:
 
@@ -20,7 +20,7 @@ An append-only final file without a verifiable event set can be truncated, dupli
 
 ## Publication across physical roots
 
-Rule `CLAIM-R21-RDA-MULTIROOT-PUBLISH`: a bundle spanning client, server, profiles, persistence or config roots is not one atomic filesystem update.
+Rule: a bundle spanning client, server, profiles, persistence or config roots is not one atomic filesystem update.
 
 Require:
 
@@ -36,7 +36,7 @@ If the product contract fixes canonical launch paths, generation directories are
 
 ## Crash-recovery audit refinements
 
-Rule `CLAIM-R21-RDA-PROMOTION-RECOVERY-REFINEMENTS`: for a recoverable multi-root publisher, also audit these less obvious boundaries:
+Rule: for a recoverable multi-root publisher, also audit these less obvious boundaries:
 
 1. Publish the transaction root only after its sealed plan and first durable `PENDING` event exist. A visible directory without authoritative evidence is not a recoverable transaction.
 2. Define digest identity per artifact kind. A standalone file digest must represent its bytes, not a source basename that can legitimately change at the destination.
@@ -56,9 +56,6 @@ These checks need fixtures for successive generations, retry after `ABORT`, fail
 
 ## Evidence
 
-Verification level: the mechanism was cross-checked against its source contract and exercised by offline termination and recovery tests, 2026-07-24.
+Verification level: the mechanism was cross-checked against its design contract and exercised by offline termination and recovery tests, 2026-07-24.
 
-The anchors were:
-
-- two plans of the source author's private Utopia PC Suite project (the phase 0a foundation plan and the phase 0b dedicated persistence plan, both dated 2026-07-22), which are not part of this repo;
-- the source pack's own promotion tool, `packctl` (its `common` and `promotion` modules and its promotion tests). That tool is in this repo under `scripts/dev/knowledge-pack/packctl/`; the rules above are the audit invariants its recovery code was written against.
+The rules above are the audit invariants the recovery code of the `packctl` promotion tool (its `common` and `promotion` modules and its promotion tests) was written against.

@@ -2,13 +2,13 @@
 
 What to verify in each kind of file before a DayZ mod file counts as written. `dayz-mod-workflow` runs the matching checklist after every file (its "Per-file protocol"). This file says what to check; the skill says when.
 
-The lists merge the knowledge pack's workflow skill and its implementation checklist note. A `P:\` citation means the item was read in that vanilla file. Where an item only restates a rule the Agentic-Z packs already hold, the pack file is named and wins on detail. Items that rest on a project's own measurement say so. The recurring mistakes behind many items are in `error-catalog.md` (the `E` numbers).
+A `P:\` citation means the item was read in that vanilla file. Where an item only restates a rule the Agentic-Z packs already hold, the pack file is named and wins on detail. Items that rest on a project's own measurement say so. The recurring mistakes behind many items are in `error-catalog.md` (the `E` numbers).
 
 ## 1. `config.cpp`
 
 ### Script compile order and load order
 
-The order in which mods' scripts and configs load follows the `requiredAddons[]` graph of each PBO's `CfgPatches`, not the order of the `-mod=` list alone. The engine compiles every mod's scripts for one layer (in that graph's order) before it starts the next layer. Measured by bzed on the native Linux 1.30 server: a `-servermod` whose `requiredAddons` names `DayZExpansion_Vehicles_Scripts` compiled right after that addon, wherever it stood in the `-servermod` string, so a `-servermod` does not come after every `-mod`. The same ordering rule is described in the StarDZ DayZ Modding Wiki (community source, `en/02-mod-structure/01-five-layers.md`; claim `CLAIM-STARDZ-REQUIREDADDONS-ORDER`). Neither is checked on `P:\`: load order is engine behaviour.
+The order in which mods' scripts and configs load follows the `requiredAddons[]` graph of each PBO's `CfgPatches`, not the order of the `-mod=` list alone. The engine compiles every mod's scripts for one layer (in that graph's order) before it starts the next layer. Measured on the native Linux 1.30 server: a `-servermod` whose `requiredAddons` names `DayZExpansion_Vehicles_Scripts` compiled right after that addon, wherever it stood in the `-servermod` string, so a `-servermod` does not come after every `-mod`. Not yet checked on `P:\`: load order is engine behaviour.
 
 Never build a fix on a position in the `modded class` chain ("I am outermost"). Counteract another mod's behaviour from an event that provably runs after it (`EEInit()` runs after the whole constructor chain, so re-enabling damage there beats a constructor-time `SetAllowDamage(false)` from any position), and pick targets by data (a class-name prefix, config flags). Details and the other measured 1.30 facts: `dayz-1-30-server-measured.md`.
 
@@ -17,7 +17,7 @@ Never build a fix on a position in the `modded class` chain ("I am outermost"). 
 
 ### Layer split for a script mod
 
-A pattern from the StarDZ wiki's professional template (community source, `en/08-tutorials/09-professional-template.md`); patterns only, none of its file bodies are copied here:
+The usual split:
 
 - **3_Game:** constants, the config data class, RPC id enums
 - **4_World:** the manager singleton, player and event handlers, entity logic
@@ -27,18 +27,18 @@ A pattern from the StarDZ wiki's professional template (community source, `en/08
 
 ### Items
 
-- [ ] One name for the addon: the knowledge pack names the `CfgPatches` class after the addon folder. That is a habit, not an engine rule (vanilla's `DZ_data_aiconfigs` sits in a folder named `aiconfigs`, `P:\DZ\data\aiconfigs\config.cpp:3`). What this repo requires is that `$PBOPREFIX$` holds exactly the mod name (`/dayz-lint`, `pboprefix-mismatch`).
+- [ ] One name for the addon: naming the `CfgPatches` class after the addon folder is a habit, not an engine rule (vanilla's `DZ_data_aiconfigs` sits in a folder named `aiconfigs`, `P:\DZ\data\aiconfigs\config.cpp:3`). What this repo requires is that `$PBOPREFIX$` holds exactly the mod name (`/dayz-lint`, `pboprefix-mismatch`).
 - [ ] `requiredAddons` uses `CfgPatches` class names:
   - Community Framework: `"JM_CF_Scripts"` (not `"CommunityFramework"`). Third-party fact (CF).
   - Dabs Framework: `"DF_Scripts"` or `"DF_GUI"` (not `"DabsFramework"`). Third-party fact (Dabs).
-  - Expansion: `"DayZExpansion_Core"` for Core; a module's scripts patch is `"DayZExpansion_<Module>_Scripts"` (`_Market_Scripts`, `_AI_Scripts`, `_Quests_Scripts`, `_Vehicles_Scripts`, `_BaseBuilding_Scripts`), not `"DayZExpansion_<Module>"`. Third-party fact, read in `salutesh/DayZ-Expansion-Scripts@14fd692` (`DayZExpansion/Core/Stub/config.cpp:3`, `DayZExpansion/Market/Scripts/config.cpp:3`).
+  - Expansion: `"DayZExpansion_Core"` for Core; a module's scripts patch is `"DayZExpansion_<Module>_Scripts"` (`_Market_Scripts`, `_AI_Scripts`, `_Quests_Scripts`, `_Vehicles_Scripts`, `_BaseBuilding_Scripts`), not `"DayZExpansion_<Module>"`. Third-party fact (DayZ Expansion: its `DayZExpansion/Core/Stub/config.cpp:3` and `DayZExpansion/Market/Scripts/config.cpp:3`).
   - Vanilla: `"DZ_Data"`, `"DZ_Scripts"`.
 - [ ] The `hiddenSelections[]` count matches the `hiddenSelectionsTextures[]` count.
 - [ ] `scope = 2` exposes the class in public lists and tools that filter on scope 2; `scope = 1` is protected, and script can still create it (vanilla `LargeTentClutterCutter` has `scope=1`, `P:\DZ\gear\camping\config.cpp:1454-1456`); `scope = 0` is abstract.
 - [ ] Inheritance: the parent exists, or its addon is in `requiredAddons`.
-- [ ] A vehicle nested-class override (`class SimulationModule: SimulationModule`, `class Axles: Axles`, `class Front: Front`, `class Rear: Rear`, `class DamageZones: DamageZones`): the base named after the colon is forward-declared as `class X;` at the root of this `CfgVehicles`. Each `config.cpp` is parsed with its own scope; a child mod does not inherit forward declarations from the parent PBO's config. Without them CfgConvert stops with `Undefined base class 'X'`. Nested classes with no `: parent` merge implicitly and need none. See E28 and E33 (measured on the knowledge pack author's kt_roadkill_armed project).
+- [ ] A vehicle nested-class override (`class SimulationModule: SimulationModule`, `class Axles: Axles`, `class Front: Front`, `class Rear: Rear`, `class DamageZones: DamageZones`): the base named after the colon is forward-declared as `class X;` at the root of this `CfgVehicles`. Each `config.cpp` is parsed with its own scope; a child mod does not inherit forward declarations from the parent PBO's config. Without them CfgConvert stops with `Undefined base class 'X'`. Nested classes with no `: parent` merge implicitly and need none. See E28 and E33 (measured on a vehicle child mod).
 - [ ] `attachments[]` on a class whose parent is in another PBO is written out in full with `=`, never appended with `+=` (E32).
-- [ ] `inventorySlot` is a string for one slot and `inventorySlot[]` an array for several; mixing the forms silently breaks the attachment (Bohemia tracker T148506). The rule and the vanilla examples are in `skills/_shared/conventions/config.md`.
+- [ ] `inventorySlot` is a string for one slot and `inventorySlot[]` an array for several; mixing the forms silently breaks the attachment. The rule and the vanilla examples are in `skills/_shared/conventions/config.md`.
 - [ ] `ghostIcon` is `"set:setname image:imagename"`, and the imageset exists (`/dayz-build-imageset` builds one).
 - [ ] `imageSets` sits inside `CfgMods > <Mod> > defs > imageSets`, not at the root and not in `CfgSlots` (E02).
 - [ ] A vehicle or custom wheel class declares `DamageSystem` with `GlobalHealth` (E35), and the other engine minimums in `audit-escalation.md`, "Severity of absence".
@@ -49,8 +49,8 @@ The full rules are in `skills/_shared/enscript-style.md` (the style guide, which
 
 - [ ] No ternary operator (`? :` does not compile). Workarounds: `skills/_shared/enscript/patterns/language_workarounds.md`.
 - [ ] `ref` on owning member fields; never on parameters, return types or typedefs, and never `new ref` (on a local it is valid and redundant, so leave it out). Detail: `skills/_shared/enscript-style/memory.md`.
-- [ ] Never `delete` an entity; call `Delete()` or `DeleteSafe()`. The knowledge pack says never to use the `delete` keyword at all (a segfault if references still exist). Vanilla does use it on its own script objects (`delete GetBleedingManagerServer();`, `P:\scripts\4_world\entities\manbase\playerbase.c:1224`), so the rule in this repo is the style guide's: allowed on your own script object only when nothing else still holds it.
-- [ ] `foreach` works, but never loop directly over a getter's return value: assign it to a local first, then iterate. The knowledge pack reports a null pointer on the second item; the style guide marks the mechanism unverified. The habit is right either way.
+- [ ] Never `delete` an entity; call `Delete()` or `DeleteSafe()`. The `delete` keyword can segfault if references still exist (not yet checked on `P:\`). Vanilla does use it on its own script objects (`delete GetBleedingManagerServer();`, `P:\scripts\4_world\entities\manbase\playerbase.c:1224`), so the rule in this repo is the style guide's: allowed on your own script object only when nothing else still holds it.
+- [ ] `foreach` works, but never loop directly over a getter's return value: assign it to a local first, then iterate. The reported failure is a null pointer on the second item; the mechanism is not yet checked on `P:\`. The habit is right either way.
 - [ ] `m_` prefix on every member field.
 - [ ] No `new` inside a periodic tick: keep a member and call `.Clear()`.
 - [ ] A complex expression inside an array assignment can segfault: put it in a local first.
@@ -62,7 +62,7 @@ The full rules are in `skills/_shared/enscript-style.md` (the style guide, which
 
 Pattern file: `skills/_shared/enscript/patterns/netsync.md`. Who owns what: `skills/_shared/conventions/scripts.md`.
 
-- [ ] `RegisterNetSyncVariable*` is called while the entity is built: in the constructor, or in an `InitItemVariables()` override. `ItemBase` has no `Init()` to override; `PlayerBase` does, and registers there (`netsync.md`, "Registration"). The knowledge pack's shorter form is "in the constructor, not in Init".
+- [ ] `RegisterNetSyncVariable*` is called while the entity is built: in the constructor, or in an `InitItemVariables()` override. `ItemBase` has no `Init()` to override; `PlayerBase` does, and registers there (`netsync.md`, "Registration").
 - [ ] Types: `Bool`, `BoolSignal`, `Int`, `Float`, `Object` (`RegisterNetSyncVariableBool` to `RegisterNetSyncVariableObject`, `P:\scripts\3_game\entities\entityai.c:2832-2869`). There is no string variant.
 - [ ] The same variables in the same order on client and server (E17).
 - [ ] `OnVariablesSynchronized` (`P:\scripts\3_game\entities\entityai.c:3069`) is overridden and reacts to every registered variable, and calls `super`.
@@ -113,7 +113,7 @@ The server runs the same `Can` before it accepts a client's action (`pickedActio
 Pack files: `skills/_shared/textures/rvmat-stages.md` and `skills/_shared/textures/surface-recipes.md`. They win on values.
 
 - [ ] Start from a working vanilla `.rvmat` of the same shader and compare every stage against it.
-- [ ] `Stage2` (detail), `Stage4` (ambient shadow) and `forcedDiffuse[]`: keep what the vanilla material you copied uses. The knowledge pack lists `color(0.5,0.5,0.5,0.5,DT)`, `color(0,1,1,1)` with no `AS` suffix, and `forcedDiffuse` alpha 1 as the only correct values; vanilla ships those and the pack defaults both (`error-catalog.md`, "The three `.rvmat` rows").
+- [ ] `Stage2` (detail), `Stage4` (ambient shadow) and `forcedDiffuse[]`: keep what the vanilla material you copied uses. `color(0.5,0.5,0.5,0.5,DT)`, `color(0,1,1,1)` with no `AS` suffix, and `forcedDiffuse` alpha 1 are not the only correct values; vanilla ships those and the pack defaults both (`error-catalog.md`, "The three `.rvmat` rows").
 - [ ] `Stage6` fresnel: copied from a vanilla reference of the same shader type (E06).
 - [ ] Damage and destruct materials use the vanilla macro textures `generic_damage_mc.paa` and `generic_destruct_mc.paa` (E07).
 
@@ -121,7 +121,7 @@ Pack files: `skills/_shared/textures/rvmat-stages.md` and `skills/_shared/textur
 
 Pack files: `skills/_shared/enscript/patterns/persistence.md` and `skills/_shared/persistence/save-load-contract.md`. They win on detail.
 
-- [ ] The `version` parameter of `OnStoreLoad(ParamsReadContext ctx, int version)` (`P:\scripts\3_game\entities\entityai.c:2978`) is the game's storage version, passed in by the engine. Do not write or read that value yourself (E19). For your own fields write your own version header first; the knowledge pack's shorter rule, "the version is managed by the engine", covers only the first half.
+- [ ] The `version` parameter of `OnStoreLoad(ParamsReadContext ctx, int version)` (`P:\scripts\3_game\entities\entityai.c:2978`) is the game's storage version, passed in by the engine. Do not write or read that value yourself (E19). For your own fields write your own version header first.
 - [ ] Save and load in exactly the same order (a raw sequential binary stream).
 - [ ] Every `ctx.Write()` has its `ctx.Read()` at the same position.
 - [ ] Call `super.OnStoreSave(ctx)` and `super.OnStoreLoad(ctx, version)` first.
@@ -153,7 +153,7 @@ For every `return` or early exit in the refactored function, list:
 
 If the second answer is no, the guard is in the wrong place. Move it before the irreversible call.
 
-Orphan patterns measured on the knowledge pack author's LF_VStorage project:
+Orphan patterns measured on a virtual-storage mod:
 
 - **ORPHAN-1: a rate limit or validation after `super.OnStartServer` of an open or toggle action.** The `super` call already flipped `IsOpen()`; rejecting the follow-up restore leaves the container physically open with its cargo still virtualized in the project's storage file. Symptoms: an empty open container in game, the storage file not consumed. Fix: rate-limit before `super`, gated on the inferred intent (the state before was CLOSED for a toggle; asserted CLOSED for a split open hook).
 - **ORPHAN-2: a sync variable written between unrelated `SetSynchDirty()` calls**, out of step with the constructor's registration order. The client's values look stale but correctly typed. Fix: register and write in one fixed order; one `SetSynchDirty()` after a coherent batch of writes.
@@ -163,4 +163,4 @@ Process rules:
 
 - **"Preserves the original behaviour" is not a goal** when the original is buggy. Treat each preserved behaviour as a hypothesis to check, not a fact to defend. For every "preserved" line in your audit, ask whether it should be preserved (E26).
 - **"Pre-existing, not introduced by the refactor" is not an exemption.** If the audit notes a sketchy pattern with that label, stop and get an explicit decision from the user (fix now, or flag for later). Quietly continuing is the worst option (E27).
-- **When an auditor or the user catches one orphan-state bug, grep the sibling files for the same pattern at once.** It rarely lives in one place. Measured on LF_VStorage: after the auditor caught ORPHAN-1 in one toggle hook, the sibling grep found two more open actions with the same pattern, which should have been fixed in the same pass.
+- **When an auditor or the user catches one orphan-state bug, grep the sibling files for the same pattern at once.** It rarely lives in one place. Measured: after the auditor caught ORPHAN-1 in one toggle hook, the sibling grep found two more open actions with the same pattern, which should have been fixed in the same pass.

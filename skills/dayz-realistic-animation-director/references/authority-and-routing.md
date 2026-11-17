@@ -1,6 +1,6 @@
 # Authority and routing
 
-Which skill owns which decision when an animation is authored for DayZ, how a request is routed, and what each side hands the other. Vanilla facts cite `P:\`. Lines marked "1.30 changelog" come from the 1.30 experimental modding changelog and are not yet checked on `P:\`.
+Which skill owns which decision when an animation is authored for DayZ, how a request is routed, and what each side hands the other. Vanilla facts cite `P:\`. Lines marked "1.30 changelog" state 1.30 engine changes that are not yet checked on `P:\`.
 
 ## Precedence
 
@@ -25,7 +25,7 @@ If two authorities disagree, record both claims with their sources and stop the 
 | Vehicle occupant or contact choreography | Add `dayz-vehicles` (1.30: motorbikes on `MOTO1` and `MOTO2`, two-bone handlebar IK, rider lean) |
 | Creature locomotion, combat or terrain alignment | Add `dayz-characters` (1.30: `.agf` subgraphs, `AnimSrcNodeProcTransform` terrain rotation, skeletons without fixed bone indices) |
 | P3D hierarchy, selection, proxy or mechanical axis | Add the relevant P3D or model skill (`/dayz-p3d-audit`, and the `dayz-object-builder` agent) |
-| In-game verification | Add the current DayZ test skill (`/dayz-launch-test`, `/dayz-gate`, `/dayz-logwatch`; the imported in-game test and MCP verify skills when present) and follow its lease and lifecycle rules |
+| In-game verification | Add the current DayZ test skill (`/dayz-launch-test`, `/dayz-gate`, `/dayz-logwatch`; `/dayz-test-ingame` and `/dayz-mcp-verify`) and follow its lease and lifecycle rules |
 
 ## Non-duplication rules
 

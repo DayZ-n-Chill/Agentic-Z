@@ -917,8 +917,9 @@ VIS_GRID = 128
 
 
 # ---------------------------------------------------------------------------
-# Metrics copied from uv_metrics_run_REFERENCE.py (module-level; not imported).
-# "tris" is len(bm.faces), not triangle count. Keep formulas byte-compatible.
+# Mesh and UV metrics (module-level, self-contained; nothing is imported).
+# "tris" is len(bm.faces), not triangle count. Do not change the formulas:
+# earlier atlas_metrics.json files are compared against these numbers.
 # ---------------------------------------------------------------------------
 def shells(bm):
     """Connected components over the mesh (not the UV) = floor on island count."""
@@ -6187,9 +6188,8 @@ def labels_and_grid_order_gate(blocks, islands):
 
 # ---------------------------------------------------------------------------
 # Exterior visibility: first-hit against the COMPLETE-mesh BVH.
-# Copied method from grok_g1_shellmeasure/measure_grok.py (64 Fibonacci
-# orthographic 128x128 grids, no backface cull). Attribution is per island
-# instead of per shell.
+# Method: 64 Fibonacci orthographic 128x128 grids, no backface cull.
+# Attribution is per island, not per shell.
 # ---------------------------------------------------------------------------
 def fibonacci_sphere(n):
     pts = []
@@ -6338,8 +6338,8 @@ def measure_island_visibility(bm, v_world, islands, n_dir, grid):
         "method": (
             "Share of first-hit pixels over %d Fibonacci orthographic "
             "directions at %dx%d, no backface cull, global BVH of the "
-            "complete mesh. Same method as grok_g1_shellmeasure, attributed "
-            "to the island that owns the hit face." % (n_dir, grid, grid)
+            "complete mesh. Each hit is attributed to the island that owns "
+            "the hit face." % (n_dir, grid, grid)
         ),
     }
 
@@ -7574,12 +7574,9 @@ Variant B gives **{linear_gain:.3f}%** more useful linear resolution than A; the
 [EXACT]
 
 ```powershell
-python -m py_compile .\project_atlas.py .\test_project_atlas_g9.py .\test_project_atlas_g10.py .\verify_g10.py
-blender -b '.\retopo_final.blend' --python '.\test_project_atlas_g9.py'
-blender -b '.\retopo_final.blend' --python '.\test_project_atlas_g10.py'
+python -m py_compile .\project_atlas.py
 blender -b '.\retopo_final.blend' --python '.\project_atlas.py' -- '.\out_g9\assignment_REAL.json' '.\out_g10'
 & '.\draw_atlas_fallback.ps1' -OutDir '.\out_g10'
-python .\verify_g10.py
 Get-FileHash -Algorithm SHA256 '.\retopo_final.blend'
 ```
 
@@ -8389,7 +8386,7 @@ def main():
             "blend_sha256": sha,
             "SMOKE": True,
             "NOT_the_real_paint_mechanical_split": True,
-            "note_tris_key": "copied from uv_metrics_run_REFERENCE.py; 'tris' is len(faces), not triangles",
+            "note_tris_key": "'tris' is len(faces), not triangles",
             "defaults": {
                 "split_lr": DEFAULT_SPLIT_LR,
                 "split_by_normal_sign": DEFAULT_SPLIT_BY_NORMAL_SIGN,
@@ -9551,7 +9548,7 @@ def main():
         "blend_sha256": sha,
         "SMOKE": False,
         "NOT_the_real_paint_mechanical_split": False,
-        "note_tris_key": "copied from uv_metrics_run_REFERENCE.py; 'tris' is len(faces), not triangles",
+        "note_tris_key": "'tris' is len(faces), not triangles",
         "pack_method": pack_method_text,
         "padding": fixed_padding_config(),
         "island_vis_threshold": ISLAND_VIS_THRESHOLD,

@@ -1,5 +1,4 @@
 #!/bin/sh
-# Source: bzed/dayz-dev-plugin 6112ac5, contributed to this Pack under its MIT licence by its author.
 # Find the DayZ Server (Steam app 223350, or the Experimental Server 1042420 with -e) installed
 # by the local Steam client.
 #

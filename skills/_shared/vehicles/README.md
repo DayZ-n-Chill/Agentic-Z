@@ -2,7 +2,7 @@
 
 Reference for building cars, boats and helicopters: the class tree, simulation config, attachment slots, crew seats, fluids and damage. Every fact cites the vanilla file on `P:\` it came from. Line numbers match the vanilla data at the time of writing; when a line has moved, Grep for the class or key name.
 
-The pack also covers motorbikes and aircraft built on `CarScript`, and it holds field notes measured on real vehicle builds (imports, rips, gauges, lights, build and test gates). Each field-note file opens with a status note that says what was opened on `P:\` and what is the note's own measurement on a named third-party mod. The numbered invariants those notes cite ("invariant N", "preflight #N") are indexed in `skills/dayz-vehicles/SKILL.md`.
+The pack also covers motorbikes and aircraft built on `CarScript`, and it holds field notes measured on real vehicle builds (imports, rips, gauges, lights, build and test gates). Each field-note file opens with a status note that says what was opened on `P:\` and what was measured in game on a mod test vehicle, which is mod behaviour and not vanilla. The numbered invariants those notes cite ("invariant N", "preflight #N") are indexed in `skills/dayz-vehicles/SKILL.md`.
 
 Open only the file the current step needs.
 
@@ -97,7 +97,7 @@ The deeper aircraft and motorbike references are skill packs: `skills/dayz-aviat
 | Question | File |
 |---|---|
 | The iteration budget, calibrating a gate before trusting it, what a PASS covers, the habits that stop re-deriving known causes | `method-and-gate-calibration.md` |
-| Negative fixtures for import gates, rules promoted from the lessons corpus, a config gate is not a visual gate | `process-gates.md` |
+| Negative fixtures for import gates, rules drawn from field lessons, a config gate is not a visual gate | `process-gates.md` |
 | The superseded diagnostic order, kept for vehicles already in flight. History only | `history/legacy-gate-ladder.md`, `history/pre-change-0-gate-ladder.md` |
 | The exact text of rules that were later corrected. History only | `history/superseded-family-b-rules.md` |
 

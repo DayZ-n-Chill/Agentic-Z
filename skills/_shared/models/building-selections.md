@@ -2,7 +2,7 @@
 
 The names a building or ladder model carries beyond the general ones in `selections.md`: door leaves and their points, the two ladder schemes, the points of the Paths LOD, loot and rain sound points, and the `liquid_source` selection of a well.
 
-Every name below was read from the plain text a binarized vanilla model stores, in the models named. What a name is for is stated only where a vanilla script or config shows it; the rest is marked as wiki knowledge or as unknown. Use Object Builder to author these; an ODOL to MLOD converter can lose which points a selection holds while keeping its name (`selections.md`, "Membership lost by tools").
+Every name below was read from the plain text a binarized vanilla model stores, in the models named. What a name is for is stated only where a vanilla script or config shows it; the rest is marked as format knowledge that no vanilla file shows, or as unknown. Use Object Builder to author these; an ODOL to MLOD converter can lose which points a selection holds while keeping its name (`selections.md`, "Membership lost by tools").
 
 ## Doors
 
@@ -21,7 +21,7 @@ What the vanilla models show:
 - **Not every door has an `_axis` point.** `barn_wood1.p3d` stores `doors1_axis`, `doors5_axis` and `doors6_axis` only, while all six doors have a `doorsN_action`. Do not assume one axis per door when reading a vanilla model.
 - **The names are stored in lower case**, while the animation classes inside the model keep their capitals (`Doors1`).
 
-The wiki adds two things no vanilla file read here confirms: a `bounding` selection for the opened volume, and a standard door size of 120 by 220 cm. Treat both as hints.
+Two more things are format knowledge that no vanilla file read here confirms: a `bounding` selection for the opened volume, and a standard door size of 120 by 220 cm. Treat both as hints.
 
 The rest of the door, including the config class and who writes it, is in `doors.md` and `_shared/animation/animation-sources.md`.
 
@@ -32,11 +32,11 @@ Vanilla uses two schemes, depending on whether the ladder is its own model or pa
 | Kind | Names | Vanilla example |
 |---|---|---|
 | Climbable ladder prop | Memory points `start1` and `end1`, or `start` and `end`; Geometry with `component01` and `class` = `house`; a Roadway LOD | `start1`, `end1` in `P:\DZ\structures\residential\misc\ladder.p3d` and `ladder_half.p3d`; `start`, `end` in `P:\DZ\structures\residential\offices\proxy\ladderlong.p3d` |
-| Ladder built into a building | A selection `ladderN` (in View Geometry, by the source's reading of the converted model), and the points `ladderN_bottom_front`, `ladderN_top_front`, `ladderN_dir`, `ladderN_con`, `ladderN_con_dir` | `ladder1` and its five points in `P:\DZ\structures\industrial\harbour\lighthouse.p3d` and `P:\DZ\structures\military\improvised\mil_fortified_nest_watchtower.p3d` |
+| Ladder built into a building | A selection `ladderN` (in View Geometry, read from the model converted back to MLOD), and the points `ladderN_bottom_front`, `ladderN_top_front`, `ladderN_dir`, `ladderN_con`, `ladderN_con_dir` | `ladder1` and its five points in `P:\DZ\structures\industrial\harbour\lighthouse.p3d` and `P:\DZ\structures\military\improvised\mil_fortified_nest_watchtower.p3d` |
 | The same, with a side entry on a middle floor | Adds `ladderN_middle_right` and `ladderN_middle_right_align` | `P:\DZ\structures\industrial\cementworks\cementworks_silobig1a.p3d` |
 | Ladder piece used as a proxy inside a building | A selection named after the piece (`long`, `top`); a Geometry LOD with `autocenter` = `0` and no components | `P:\DZ\structures\Proxy_BuildingParts\ladders\ladder_long_proxy.p3d`, `ladder_top_proxy.p3d` |
 
-- `N` starts at 1. `_bottom_front` is the entry at the foot and `_top_front` the exit at the top; that reading and the meaning of the `_con` and `_dir` points come from the wiki and the names, not from a script.
+- `N` starts at 1. `_bottom_front` is the entry at the foot and `_top_front` the exit at the top; that reading and the meaning of the `_con` and `_dir` points are taken from the names, not from a script, and are not checked on `P:\`.
 - All six models above that carry climb points also carry a Roadway LOD (`3.0e+15`). The furniture ladder `P:\DZ\structures\furniture\various\ladder_a_wood.p3d` has neither: only visual LODs, Geometry and View Geometry.
 
 ## Paths LOD
@@ -49,11 +49,11 @@ The names stored by the two vanilla buildings read here that have a Paths LOD (`
 | `in1`, `in2`, ... | `garage_small.p3d` (two); `cementworks_silobig1a.p3d` (`in1`) |
 | `actionbegin1`, `actionend1` | `garage_small.p3d` |
 
-Wiki knowledge, not shown by a vanilla script: `posN` are the points AI can stand at inside the building, `inN` are its entry points, and `actionbeginN` with `actionendN` bound an AI action. Copy the layout from the closest vanilla building.
+Format knowledge, not shown by a vanilla script: `posN` are the points AI can stand at inside the building, `inN` are its entry points, and `actionbeginN` with `actionendN` bound an AI action. Copy the layout from the closest vanilla building.
 
 ## Loot and rain sound points
 
-Names that no script under `P:\scripts\3_game\` or `P:\scripts\4_world\` reads (searched for `lootcenter`, `lootaround` and `sound_rain`), so what uses them is not visible from script. The source of these notes reads them as loot spawn positions and ambient sound positions.
+Names that no script under `P:\scripts\3_game\` or `P:\scripts\4_world\` reads (searched for `lootcenter`, `lootaround` and `sound_rain`), so what uses them is not visible from script. By their names they are loot spawn positions and ambient sound positions; that is not checked on `P:\`.
 
 | Name | Vanilla example |
 |---|---|
@@ -62,7 +62,7 @@ Names that no script under `P:\scripts\3_game\` or `P:\scripts\4_world\` reads (
 | Room names such as `lootfloor1stroom`, `lootroof`, `lootall` | `cementworks_silobig1a.p3d` |
 | `sound_rainobjectinner<N><material>_<index>` | `sound_rainobjectinner3metal2_1` in `garage_small.p3d`; `sound_rainobjectinner4tile_1` to `_5` in `farm_cowsheda.p3d` |
 
-The loot names differ from building to building, so they are labels for whoever maps the building's loot, not fixed keywords. The rain sound names end in a surface (`metal2`, `tile`, `wood1`) and a running index. A mod building that needs either should copy the names of a vanilla building of the same kind and material.
+The loot names differ from building to building, so they are labels for whoever maps the building's loot, not fixed keywords. The rain sound names end in a surface (`metal2`, `tile`, `metal1`) and a running index. A mod building that needs either should copy the names of a vanilla building of the same kind and material.
 
 ## `liquid_source` on a well
 
@@ -77,4 +77,4 @@ Add `liquid_source` to the View Geometry components of the spout when only that 
 
 ## How the names were read
 
-Each model's file was searched for the text of its selection and point names, and the LOD list was read from the file header (`lods.md`, "Reading the LOD list of a vanilla model"). This gives names, not membership: it shows that `doors1_axis` exists, not which two points it holds. The source of these notes also converted nine of the models to MLOD and read them with py3d, which gave the same names.
+Each model's file was searched for the text of its selection and point names, and the LOD list was read from the file header (`lods.md`, "Reading the LOD list of a vanilla model"). This gives names, not membership: it shows that `doors1_axis` exists, not which two points it holds. Nine of the models were also converted to MLOD and read with py3d, which gave the same names.

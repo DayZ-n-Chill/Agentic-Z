@@ -1,8 +1,8 @@
-# Retracted claims ledger: what the Knowledge Pack once taught and later corrected
+# Retracted claims ledger: DayZ modding beliefs once written as fact and later corrected
 
-Tier 3 pack: a list of DayZ modding beliefs that were written down as fact, then measured or re-read and found wrong. Load it when a note, an old forum post, another agent or an older pack file states one of them, before acting on it. Each row gives the old claim, what holds now, and the evidence. The depth for each row lives in the skill named in the last column.
+Tier 3 pack: a list of DayZ modding beliefs that were written down as fact, then measured or re-read and found wrong. Load it when a note, another agent or an older file states one of them, before acting on it. Each row gives the old claim, what holds now, and the evidence. The depth for each row lives in the skill named in the last column.
 
-How to read the evidence column: a `P:\` path was opened for this file. "Measured" means an in-game or offline measurement by the Knowledge Pack's author on the build named; it is **not yet checked on `P:\`** and cannot be, because it is engine or tool behaviour. Third-party rows name the mod.
+How to read the evidence column: a `P:\` path was opened for this file. "Measured" means an in-game or offline measurement on the build named; it is **not yet checked on `P:\`** and cannot be, because it is engine or tool behaviour. Third-party rows name the product and are that product's behaviour, not vanilla.
 
 ## Enforce Script and engine API
 
@@ -18,7 +18,7 @@ How to read the evidence column: a `P:\` path was opened for this file. "Measure
 | The in-water check is `g_Game.GetWaterDepth(pos) <= 0`. | That holds where there is no water. In water the test is `> 0`. | `GetWaterDepth` at `P:\scripts\3_game\global\game.c:1198` | `enforce-script-reference` |
 | `EnProfilerFlags` has `FUNCTION_TIMES`, `FUNCTION_COUNT`, `CLASS_TIMES` and `CLASS_COUNT`. | The flags are `NONE`, `RESET`, `RECURSIVE` and `ALL`. | `EnProfilerFlags` at `P:\scripts\1_core\proto\enprofiler.c:8-18` | `enforce-script-reference` |
 | Damage type constants are spelled `DT_*`. | The enum is `DamageType`: `CLOSE_COMBAT`, `FIRE_ARM`, `EXPLOSION`, `STUN`, `CUSTOM`. | `DamageType` at `P:\scripts\3_game\damagesystem.c:10-17` | `enforce-script-reference` |
-| A class that holds a `static ref` to itself stops its script module from compiling. | Retracted by its author as measured on the wrong mod. Vanilla does exactly that and compiles. | `s_Instance` at `P:\scripts\5_mission\gui\inventorynew\vicinityitemmanager.c:20` | none: this file |
+| A class that holds a `static ref` to itself stops its script module from compiling. | Retracted: it was measured on the wrong mod. Vanilla does exactly that and compiles. | `s_Instance` at `P:\scripts\5_mission\gui\inventorynew\vicinityitemmanager.c:20` | none: this file |
 | A recipe's `CanDo` should call `super.CanDo` first. | Copy `ingredients[0]` and `[1]` to locals and do not call `super`. With `super` first, the server's `CanDo` returned false while every part of its condition read true. The mechanism is not established. Vanilla calls `super.CanDo` in 1 of 206 overrides. | Measured on DayZDiag 1.29. The one vanilla call: `super.CanDo` at `P:\scripts\4_world\classes\recipes\recipes\craftlongtorch.c:61` | `enforce-script-reference` |
 | `Fence.OpenFence()` checks the combination lock. | It does not. It only sets animation phases; the lock is checked by the callers through `IsLocked`. | `OpenFence` at `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:488`, `IsLocked` at `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:127` | `dayz-basebuilding` |
 | A `CallLater` re-queued from its own callback never fires again. | True only where it was measured, the client diag build of 1.29. On the retail DayZServer 1.30.164289 a `CALL_CATEGORY_SYSTEM` chain and a `CALL_CATEGORY_GAMEPLAY` chain both ran all six steps. | Measured | `enforce-script-reference` |
@@ -28,7 +28,7 @@ How to read the evidence column: a `P:\` path was opened for this file. "Measure
 | 1.30 added the `CanReachSeatFromDoors` call to the get-in condition. | 1.29 already called it. 1.30 adds `CanGetIn()` and a DiagMenu wrapper. | Read in both script trees; not yet checked on `P:\` | `dayz-vehicles` |
 | To make a 1.30 battery car work, return `true` from `NeedElectricitySourceDevice()`. | `true` is already the default. The three electricity-source getters are what a custom battery car must override. | Read in the 1.30.164200 scripts; not yet checked on `P:\` | `dayz-vehicles` |
 | Long log messages are cut around 255 characters. | Only by the 1.29 retail logger. Neither DayZDiag 1.30 nor the 1.30 retail server cuts. | Measured | `dayz-mod-workflow` |
-| `ExpansionVehicleBase` is the base of Expansion vehicles. | Third-party, DayZ Expansion: `ExpansionVehicleBase` is an obsolete stub on `Transport`; current Expansion vehicles derive from `CarScript`. | Read in Expansion-Scripts `14fd692` | `dayz-mod-dev` |
+| `ExpansionVehicleBase` is the base of Expansion vehicles. | Third-party, DayZ Expansion: `ExpansionVehicleBase` is an obsolete stub on `Transport`; current Expansion vehicles derive from `CarScript`. | Third-party mod behaviour, not vanilla: read in the DayZ Expansion scripts (commit `14fd692`) | `dayz-mod-dev` |
 
 ## Models, winding and collision
 
@@ -44,8 +44,8 @@ How to read the evidence column: a `P:\` path was opened for this file. "Measure
 | The MLOD face flag `0x20000` makes a face render two-sided. | Setting `0x20000` did nothing in game; double-siding the geometry works. Whether another "both sides" bit works (the Bohemia wiki names `0x00000020`) was never tested. | Measured in game | `dayz-vehicles` |
 | A translation's `offset0`/`offset1` in `model.cfg` are metres, and the axis only gives direction. | That is true for rotations. For a translation the offsets count lengths of the axis: movement is offset times axis length. On a 1 m axis the offset reads in metres. | Read in binarized models; the engine behaviour is inferred, not measured | `dayz-model-pipeline` |
 | A `CfgNonAIVehicles` proxy class can have any name. | A proxy class that is not `Proxy` plus the basename of its `model` draws nothing. Also, a slot added to a vanilla proxy class (`ProxyBattery_Car`) never drew the attachment; a `ProxyAttachment` class of the item's own, with its own proxy model, did. | Measured in game, one item | `dayz-model-pipeline` |
-| In a staged build, "Material not loaded" messages are tolerable. | Binarize embeds a face material it cannot find **empty** in the ODOL (no shader, no stage texture, no surface) while the build says "Build Successful". Stage every cited file under the folder passed as `-addon`. | Measured over 11 builds | `dayz-build-pbo` (the pack's dayz-pbo-build, merged into it) |
-| The binarize `-temp` folder must stay under `P:\`. | A habit, not a measured requirement: nine binarized builds with a local `-temp` worked. | Measured | `dayz-build-pbo` (the pack's dayz-pbo-build, merged into it) |
+| In a staged build, "Material not loaded" messages are tolerable. | Binarize embeds a face material it cannot find **empty** in the ODOL (no shader, no stage texture, no surface) while the build says "Build Successful". Stage every cited file under the folder passed as `-addon`. | Measured over 11 builds | `dayz-build-pbo` |
+| The binarize `-temp` folder must stay under `P:\`. | A habit, not a measured requirement: nine binarized builds with a local `-temp` worked. | Measured | `dayz-build-pbo` |
 | The eleven masses of the vanilla `human.ragdoll` add up to 73.8 kg. | 73.9 kg. | Re-added from the file; not yet checked on `P:\` | `dayz-physics-engine` |
 
 ## UI
@@ -74,7 +74,7 @@ How to read the evidence column: a `P:\` path was opened for this file. "Measure
 | `globals.xml` lives in the mission root. | It lives in the mission's `db/` folder. | Server mission files; not yet checked on `P:\` | `dayz-persistence` |
 | The retail DayZServer never finishes loading the mission on a developer machine. | Not reproduced on 1.30.164289. | Measured | `dayz-test-ingame` |
 | A `DSCheckSignatures` negative control made by flipping one byte of the PBO always fails. | It can pass. Change hashed content and recompute the trailer. Another build's PBO works as a control only when the two builds differ in an entry the signature covers; for a change that touches only models or textures, the `.c`-byte control is the one that can fail. | Measured | `dayz-test-ingame` |
-| AddonBuilder's exit code tells you whether the build worked. | AddonBuilder exits 0 on a failed build (`[ResultCode]=1` in its log), and prints "Build Successful" for a PBO that lost every model. Accept a binarized build only when the PBO has one ODOL per `.p3d`. | Measured | `dayz-build-pbo` (the pack's dayz-pbo-build, merged into it) |
+| AddonBuilder's exit code tells you whether the build worked. | AddonBuilder exits 0 on a failed build (`[ResultCode]=1` in its log), and prints "Build Successful" for a PBO that lost every model. Accept a binarized build only when the PBO has one ODOL per `.p3d`. | Measured | `dayz-build-pbo` |
 | `PrintWindow(PW_RENDERFULLCONTENT)` returns a black frame for the game window. | With the Windows session unlocked and the display on, it captures the scene. A locked session fails outright (`capture_backend_failed`). | Measured, more than 20 captures | `dayz-mcp-verify` |
 | Restart Steam to fix a stale `ActiveProcess` pid. | Copy the live pid, from a shell outside any sandboxed app. A shell inside a sandboxed app sees a private registry copy. | Measured | `dayz-test-ingame` |
 | The script API mirror `dayz-scripts.yadz.app` is a usable reference. | It now redirects to `diff.yadz.app`, and its Doxygen pages return 404. | Checked 2026-11 | `dayz-ui-development` |
@@ -82,7 +82,7 @@ How to read the evidence column: a `P:\` path was opened for this file. "Measure
 
 ## How these got in, and the rule that keeps them out
 
-Every row above was once written with confidence. The common causes, in the Knowledge Pack's own words:
+Every row above was once written with confidence. The common causes:
 
 - **A rule corrected at its source but not at its call sites.** The winding rule was fixed in one file and stayed wrong in six others. When a fact changes, grep every file that states it.
 - **A symptom read as its cause.** "The player walks through" was assumed from missing raycasts; a walk test later showed physics still stopped the player.

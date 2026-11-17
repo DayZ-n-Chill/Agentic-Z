@@ -41,12 +41,12 @@ In a plain door both chains use one name. They split when a door is opened from 
 
 In vanilla the `class Doors` subclass name, its `component` and the animation source are always one name: all 1,373 `class Doors` entries in the configs under `P:\DZ` have a class name equal to their `component` apart from letter case (`class Doors5` with `component="Doors5"`, `P:\DZ\structures\residential\config.cpp:7385`). Vanilla therefore cannot show whether the engine ties the animation source to the subclass name or to `component`. Keep all three the same in a mod door.
 
-Worked patterns for a door with a handle, a door with a button, and a door with a handle and a lever, with the pitfalls of each, are in `skills/dayz-doors/references/worked-examples.md`. They come from a third party tutorial, not from vanilla.
+Worked patterns for a door with a handle, a door with a button, and a door with a handle and a lever, with the pitfalls of each, are in `skills/dayz-doors/references/worked-examples.md`. They are third-party mod patterns, not vanilla.
 
 ## Model rules for a door
 
 1. One bone per door leaf, named the same in every visual LOD. Put the same selection in the Geometry, Fire Geometry and View Geometry LODs on the parts that should move with the door, so the collision swings open too (naming checklist item 1 in `_shared/animation/model-cfg-animations.md`).
-2. Name the axis `<bone>_axis`, with exactly two points on the hinge line. `/dayz-p3d-audit` reports CRITICAL when a `<name>_axis` has no `<name>` selection in the visual LOD (`check_visual_lod` in `skills/dayz-p3d-audit/scripts/audit_p3d.py`).
+2. Name the axis `<bone>_axis`, with exactly two points on the hinge line. `/dayz-p3d-audit`, run with `--model-cfg`, reports CRITICAL when the selection or the axis an animation names is missing, or when the axis does not hold exactly two points (`check_animations` in `skills/dayz-p3d-audit/scripts/audit_p3d.py`).
 3. Build the door (or the pair of leaves) as its own closed convex part in the View Geometry LOD, keep its ComponentNN name, and add a second named selection named after the door (for example `Doors5`) that holds that part. The door action finds the door from the View Geometry component the player aims at (`GetDoorIndex`, `P:\scripts\3_game\entities\building.c:27` to `:28`).
 4. Add one action point per door in the Memory LOD, named `<door>_action`, at the handle.
 5. Keep door collision in the Geometry LOD thick enough to stop a player (`lods.md`, "Geometry").
@@ -85,7 +85,7 @@ No `config.cpp` under `P:\DZ\` uses `relatedInventorySlots[]`, so there is no va
 - `initPhase` is the animation phase the door has when it spawns (0 is closed), not a delay.
 - `initOpened` is the chance that the door spawns open: 0 never, 0.5 about half the time. The house above uses 0.7 (`initOpened=0.69999999`, `P:\DZ\structures\residential\config.cpp:7392`).
 
-Both meanings come from the Bohemia wiki page on doors on buildings; vanilla script does not show them.
+Both meanings are Bohemia format knowledge; vanilla script does not show them.
 
 ## Furniture inside houses
 

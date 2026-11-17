@@ -2,21 +2,21 @@
 
 The rip import path in detail: what a per-car rip folder holds, which parts to include, how to derive dimensions and the transform from the locators, the structural LOD recipe, the first in-game spawn results and their root causes, textures, materials, wheels, glass, interior and doors.
 
-> Status: field notes from one worked example, the SUB_BRZ build (2026-06 to 2026-10), with MercedesAMGLF, kt_roadkill, FC (Frontera Cars), LFQuad and a Tyson89 Landrover as controls. Those measurements and in-game results are the author's and were not repeated here. Sections are dated and later ones correct earlier ones; a block marked SUPERSEDED, RETRACTED or RESOLVED says which. The vanilla script line numbers in this file were opened on this repo's `P:\` (a 1.30 build) and corrected where they had moved; a number that follows a mod's own file (`unknown_40493.c:1017`, `rip_p2_group.py:110`) is the note's own. Tags such as SP-096 or LL-172 are the notes' own lesson numbers, and `CLAIM-...` tags are the notes' own claim register. Paths such as `<vehicle-import>\...`, `SUB_BRZ_dev\...`, `LFHeli_dev\...` or `AI/20_Knowledge/...` point into those mods' work folders and the author's notes, which are not part of this repo. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-pipeline, dayz-test-ingame, dayz-texture-pipeline, dayz-mcp-verify, enforce-script-reference).
+> Status: one worked example, the SUB_BRZ build (2026-06 to 2026-10), with the MercedesAMGLF and LFQuad builds, a working Landrover build and two shipped third-party car mods as controls. The measurements and in-game results are not yet checked on `P:\`. Sections are dated and later ones correct earlier ones; a block marked SUPERSEDED, RETRACTED or RESOLVED says which. The vanilla script line numbers in this file were opened on `P:\` (a 1.30 build). Script names such as `rip_p3_structural.py` and paths such as `<vehicle-import>\...` are the tooling and work folders of the worked example, which this repo does not ship. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-pipeline, dayz-test-ingame, dayz-texture-pipeline, dayz-mcp-verify, enforce-script-reference).
 
 ## Vanilla anchors checked on `P:\`
 
 - Get-in has two gates: `CrewPositionIndex` at `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:46` and `CrewCanGetThrough` at `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:54`.
-- The base `CrewCanGetThrough` returns false unless `CFGMODS_DEFINE_TEST` is defined (`P:\scripts\3_game\vehicles\transport.c:724`); the note was written with `:727-734`.
+- The base `CrewCanGetThrough` returns false unless `CFGMODS_DEFINE_TEST` is defined (`P:\scripts\3_game\vehicles\transport.c:724`).
 - `GetSeatAnimationType` raises "not implemented" in the base class (`P:\scripts\3_game\vehicles\transport.c:682`), and so does `GetAnimInstance` (`P:\scripts\3_game\vehicles\transport.c:662`).
 - The sedan's `GetCarDoorsState` returns `DOORS_MISSING` when no door is attached (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:185`), and its `CrewCanGetThrough` override is at `P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:226`.
 - The first-person vehicle camera `DayZPlayerCamera1stPersonVehicle` extends `DayZPlayerCamera1stPerson` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:4`).
 - `maxSteeringAngle` is 30 or 35 on the vanilla cars: 30 at `P:\DZ\vehicles\wheeled\config.cpp:1375`, 35 at `P:\DZ\vehicles\wheeled\config.cpp:5240`.
 - `P:\DZ\vehicles\wheeled\civiliansedan\data\glass.rvmat` is as the texture section describes it: ambient and diffuse alpha 0.75, `renderFlags[]` holding `"noZwrite"`, the Super shader, and `gazglass_nohq.paa` in `Stage1`.
-- The vanilla proxy models the notes reuse exist under `P:\DZ\vehicles\wheeled\civiliansedan\proxy\`: `sedanwheel.p3d`, `sedanwheel_destroyed.p3d`, the four `sedandoors_*.p3d` and `prox_int.p3d`.
+- The vanilla proxy models the import reuses exist under `P:\DZ\vehicles\wheeled\civiliansedan\proxy\`: `sedanwheel.p3d`, `sedanwheel_destroyed.p3d`, the four `sedandoors_*.p3d` and `prox_int.p3d`.
 - The proxy class and the model file name are tied as the s37 section says: `ProxySedanWheel_destroyed` (`P:\DZ\vehicles\wheeled\config.cpp:23981`) names `sedanWheel_destroyed.p3d` two lines down.
-- `CivSedanWheel` (`P:\DZ\vehicles\wheeled\config.cpp:4762`) has `radius=0.34` in config. The 0.3587 and 0.359 the notes quote as "vanilla sedanwheel radius" is the author's measurement of the wheel mesh on a debinarized copy, a different quantity that was not measured again here.
-- `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` is a binarized ODOL, so the axis convention, proxy frames, LOD counts and face counts quoted for the vanilla sedan come from the author's debinarized copy.
+- `CivSedanWheel` (`P:\DZ\vehicles\wheeled\config.cpp:4762`) has `radius=0.34` in config. The 0.3587 and 0.359 quoted below as "vanilla sedanwheel radius" is the radius of the wheel mesh measured on a debinarized copy, a different quantity that is not yet checked on `P:\`.
+- `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` is a binarized ODOL, so the axis convention, proxy frames, LOD counts and face counts quoted for the vanilla sedan were read from a debinarized copy and are not yet checked on `P:\`.
 
 Read with `gta-rip-intake.md` (the other rip family), `rip-geometry-and-winding.md`, `vehicle-structural-parity.md`, and `skills/rip-vehicle-import/SKILL.md`, the skill that runs a new rip import step by step.
 
@@ -25,8 +25,8 @@ Read with `gta-rip-intake.md` (the other rip family), `rip-geometry-and-winding.
 How to turn a car ripped from a racing game (the Grub container:
 `.modelbin` meshes, `.swatchbin` textures, `.carbin` car definition) into a drivable DayZ `CarScript`
 vehicle. Companion to `vehicle-structural-parity.md` (parity-first method) and `external-obj-import.md`
-(generic OBJ import). Derived from the SUB_BRZ build (Subaru BRZ FE '22 widebody, 2026-06-23) — the first
-concrete case; treat SUB_BRZ paths as the worked example.
+(generic OBJ import). The worked example is the SUB_BRZ build (Subaru BRZ FE '22 widebody, 2026-06-23);
+treat SUB_BRZ paths as that example.
 
 ## RENDER-CRASH GOTCHAS — read FIRST (each cost a full session, SUB_BRZ s14 2026-06-29)
 Two defects make the DayZ CLIENT crash ~9-22s **while rendering the car** (fault offset constant, e.g.
@@ -39,7 +39,7 @@ Neither is caught by any offline gate, by G3, or by a Blender render — only th
    jumps (a cylindrical `atan2` UV with ×N tiling can still crash at the ±π seam). Check `uniqUV` per LOD vs
    a vanilla control (vanilla sedanwheel LOD0 = 1203, not 1).
 2. **Raw rip body weight tumbles the client.** A full rip body is ~400k+ visual faces; >~315k crashes
-   the render (vanilla Mercedes loads at 315k; SUB_BRZ at 417k did not). User-reported symptom = "lag at
+   the render (the MercedesAMGLF build loads at 315k; SUB_BRZ at 417k did not). User-reported symptom = "lag at
    spawn" then crash. **Decimate before shipping** — see DECIMATION below.
 Diagnosis order when the client crashes ON the car (not the spawn-blocker): rule out weight, then geometry
 corruption (NaN/overflow/UV-NaN health check), then a degraded environment (wipe `storage_1` — a corrupt CE
@@ -126,13 +126,13 @@ The per-car rip usually does NOT include the GameDB; `physicsdefinition.bin` has
 
 So drivetrain (e.g. RWD) and curb mass are **real-world facts** marked `[UNVERIFIED vs rip — GameDB absent]`,
 NOT decoded from the rip. Do NOT guess-parse the binary for a float "mass" — a value from guessed offsets is
-worse than an honest `[UNVERIFIED]` + real-world target (anti-tautology, R22). DayZ mass is not a config field
+worse than an honest `[UNVERIFIED]` + real-world target (anti-tautology). DayZ mass is not a config field
 anyway: it is baked from Geometry-LOD `#Mass#` vertex weights, so the real-world curb mass is only the
 authoring target.
 
 **s22 (2026-07-02) — verified on the FM2023 BRZ rip, sharpens the above:**
-- `physicsdefinition.bin` DOES parse: `physicsdefinition.bin.bt` (010 template) ships in the
-  source-game-extraction-tools repo. But even parsed it carries only the **collision hull** — for the BRZ:
+- `physicsdefinition.bin` DOES parse: `physicsdefinition.bin.bt` (010 template) ships with the
+  Grub-format extraction tools. But even parsed it carries only the **collision hull** — for the BRZ:
   `DefinitionType=Vehicle`, `Mass=0.0`, inertia tensors zero/NaN, then a PointCloud. Exhaustive float32
   scan of all 404 slots = no value in curb-weight range. Mass is absent from the per-car file **by design**
   (delegated to the GameDB), not merely "unparseable". Do not mine it.
@@ -145,28 +145,27 @@ authoring target.
   namespace — the namespace is shared across the generation.
 - **`gamedbRC.slt` is whole-file encrypted** (entropy ~7.95 bits/byte, no SQLite/zlib/zstd magic; source-game
   pattern = Arxan TransformIT + CRC-32). Two community tools exist; neither is a clean fit for a dev/RC rip:
-  - `the local community GameDB crypto CLI (FH5-era)` — CLI, fully **local**, but supports only up to **FH5 v1.614.70.0**
-    (keys from the XeNTaX thread). Does NOT cover FH6/FM2023.
+  - `the local community GameDB crypto CLI (FH5-era)` — CLI, fully **local**, but supports only up to **FH5 v1.614.70.0**.
+    Does NOT cover FH6/FM2023.
   - `the server-side GameDB crypto client (2026-title)` — targets **FH6** and does GameDB→editable-SQLite, but the GameDB decrypt is
     **server-side**: closed-source .NET client that ships **no keys**, needs a reachable backend + a gated
-    **application key**, and **uploads the file to the author's backend** to decrypt (verified from its
-    README/release notes: *"All decrypt/encrypt runs server-side; the app ships no keys"*).
+    **application key**, and **uploads the file to the tool's backend** to decrypt (its README states that all
+    decrypt/encrypt runs server-side and that the app ships no keys).
   - **Verdict for these internal dev/RC rips: do NOT use the server-side tool.** The GameDB is a non-public
     build ("restricted access" in the build report) — uploading it to a third-party modding backend is a
     privacy/security problem, and the backend may not even hold keys for a non-retail RC build. Get the data
     from the RIP SOURCE (who has the internal build): a decrypted `.slt`, or a CSV of the `model`+`gamecars`
     tables. Do not burn a session decrypting.
-- **Exact columns to request** (schema = `cardb.bt` in the repo): table `model` → `DrivetrainTypeID`
+- **Exact columns to request** (schema = `cardb.bt`, shipped with the extraction tools): table `model` → `DrivetrainTypeID`
   (→ `drivetraintype` = RWD/AWD/FWD), `EnginePlacementID`, `Name`, `Year`; table `gamecars` → `CurbWeight`
   (mass), `WeightDistribution` (front %), `SimPeakPower`, `SimPeakTorque`, `NumGears`, `RideHeight`,
   `Front/RearTireWidth`+`Ratio`+`WheelDiameter` (cross-checks DayZ wheel radius). Keyed by `carid`. Ask for
   the decrypted `.slt` (whole fleet at once) or a CSV of those two tables. Units of power/torque and the
   `WeightDistribution` convention need calibrating against one known car's real spec on first decrypt.
 - **Plan B when the GameDB is unavailable — public FH6 stat sites, no decrypt needed.** In-game curb weight /
-  drivetrain / power / front-weight-% are published per car by community sites and cross-check cleanly.
-  Verified for the 2022 BRZ (FH6): RWD, 2,835 lb = **1286 kg**, 228 hp, **53% front** (`game8` archives/600793
-  and `calculators.games FH6 car pages (2022 Subaru BRZ)` agree; `kudosprime.com/fh6/carlist.php`
-  gives weight already in **kg**, 614 models by make, but no weight-distribution). These are RETAIL FH6 values,
+  drivetrain / power / front-weight-% are published per car by public stat sites and cross-check cleanly.
+  Verified for the 2022 BRZ (FH6): RWD, 2,835 lb = **1286 kg**, 228 hp, **53% front** (two independent stat sites agree;
+  some list weight already in **kg** but no weight distribution). These are RETAIL FH6 values,
   not read from the encrypted RC GameDB — but mass/drivetrain don't change between builds, so they're a
   reliable authoring source for the whole fleet. Try these BEFORE chasing the encrypted GameDB; the GameDB
   only wins if you need the exact RC-build numbers or a bulk export.
@@ -223,7 +222,7 @@ BLOCK), not optional steps — skippable verification is how the offline false-g
 - `fit_transform.py` — rule-fits the rip→DayZ transform from source/output pairs (added 2026-06-25):
   recovers `(-Fx, Fy+Y0, -Fz)` + Y0 from data and confirms it is a pure sign-flip+offset (unit scale, no
   hidden rotation/permutation). The BRZ pair is SELF-CONSISTENT (output built by this L2D → residual 0.000 by
-  construction, R22 tell) → rescued by a **discrimination self-test**: 4 wrong transforms (sign flip, Y0±0.1,
+  construction, the tautology tell) → rescued by a **discrimination self-test**: 4 wrong transforms (sign flip, Y0±0.1,
   1.05× scale, axis swap) blow the residual far past tol, so the 0.000 on the correct one is meaningful. (An
   independent Mercedes pair is DEFERRED — no clean source↔output anchor correspondence on disk; data-driven to
   ingest one when a future car keeps both Locators and an independent author.)
@@ -290,11 +289,11 @@ From `civsedanwheel_X_Y` positions: **first index = side (1 = +x, 2 = −x), sec
 rear. FRONT (steered) wheels are `_X_1`. This is what `verify_<mod>.py` `FRONT_WHEELS=["1_1","2_1"]` and the
 config `Axles`/`model.cfg` steering must agree with.
 
-### 3.2 Proxy path format — vanilla & kt use NO `.p3d` suffix (latent-bug class)
+### 3.2 Proxy path format — vanilla and shipped mods use NO `.p3d` suffix (latent-bug class)
 
 MLOD proxy selections are `proxy:<path>.<NNN>` where `<path>` has **NO `.p3d` extension** — verified against
-BOTH vanilla CivilianSedan (`proxy:\dz\vehicles\wheeled\civiliansedan\proxy\sedanwheel.001`) and the shipped
-kt_roadkill mod (`proxy:kt_roadkill_scum\proxy\..._wheel.001`). The engine appends `.p3d` at resolve time.
+BOTH vanilla CivilianSedan (`proxy:\dz\vehicles\wheeled\civiliansedan\proxy\sedanwheel.001`) and a shipped
+third-party car mod (`proxy:<mod>\proxy\..._wheel.001`). The engine appends `.p3d` at resolve time.
 A `.p3d`-suffixed path (`...sedanwheel.p3d.001`) resolves to `...sedanwheel.p3d.p3d` → **proxy not found →
 that geometry is missing in-game** (silent: spawns fine in editor checks). SUB_BRZ Phase 2 had this bug on
 its chunk proxies; Phase 3 normalized all of them. ALWAYS write proxy paths without the extension. (`verify_*`
@@ -368,7 +367,7 @@ single mesh with no separate needles → needle isolation needs face segmentatio
 
 The sibling MERCEDES_AMGLF (same proxy approach) hit a P1: the engine renders **large body-proxy geometry
 displaced ~2.5 m** in-game (proxy frame was confirmed identity = not the cause). Mitigations in play:
-keep each proxy chunk < 65535 resolved verts and keep a REAL body shell in LOD0 (kt pattern, not all-proxy).
+keep each proxy chunk < 65535 resolved verts and keep a REAL body shell in LOD0 (the shell-plus-proxies pattern, not all-proxy).
 If chunks spawn displaced, this is that bug — resolve the proxy-placement convention before iterating.
 
 
@@ -384,10 +383,10 @@ SUB_BRZ 2026-06-24 (two decimation attempts rendered as a crumpled wreck). The b
 decimated LOD0, and NOT an all-proxy LOD0 with no base either (all-proxy breaks hiddenSelections paint).
 Replicate the shipped vanilla/community pattern:
 
-Reference (debinarize one and LOOK before choosing an approach — cite-then-verify, R2.1):
+Reference (debinarize one and LOOK before choosing an approach — cite-then-verify):
 - CivilianSedan LOD0 = real body shell ~14.6k faces carrying the paint selection `camo_exteriorcolor` +
   lights + dmgzones, PLUS proxy refs for doors/hood/trunk/engine/wheels/crew.
-- kt_roadkill_scum_armed LOD0 = real shell ~13.4k faces (light/paint selections) + proxy refs (wheels,
+- A shipped third-party car mod: LOD0 = real shell ~13.4k faces (light/paint selections) + proxy refs (wheels,
   crew, doors, gun, motor, body/body2). Structural LODs only; **1 visual LOD** (no decimated ladder).
 
 Architecture:
@@ -410,9 +409,9 @@ shell, NOT full replacements -- INCLUDE `body_a` (it is the central roof/cabin s
 the roof). "Same LOD count" is not proof of replacement. (SUB_BRZ G1 excluded body_a by mistake; the visible
 "hole" was the missing roof.)
 
-Proxy path form (Phase 3 finding 2026-06-24): NO `.p3d` suffix. Vanilla/kt proxy selections are
+Proxy path form (Phase 3 finding 2026-06-24): NO `.p3d` suffix. Vanilla and shipped-mod proxy selections are
 `proxy:\path\name.NNN` (no extension); py3d `add_proxy` that writes `...name.p3d.NNN` is a latent bug
-(likely won't resolve in-engine) -- write the proxy ref WITHOUT `.p3d`, matching vanilla/kt. The
+(likely won't resolve in-engine) -- write the proxy ref WITHOUT `.p3d`, matching vanilla. The
 `verify_<mod>.py` `_proxy_file` helper must accept both forms.
 
 Builder: `rip_p2_shellproxy.py` (real shell LOD + per-chunk proxy build + add_proxy); structural LODs by
@@ -428,8 +427,8 @@ the chunks); assert each proxy chunk < 65535. Run `--mod-root <projects-root>` W
 ## (added 2026-06-24, s2) FIRST IN-GAME SPAWN RESULT — structural gates pass, car does NOT spawn [VERIFIED in-game]
 
 > Closes the loop on §3.7's "watch at the first in-game spawn". SUB_BRZ reached its first in-game spawn
-> (DayZDiag server+client, VPP Object Spawner). It does NOT spawn drivable. Root cause **OPEN** — under
-> research (handoff: `SUB_BRZ_dev\reviews\2026-06-24-spawn-blocker-research-handoff.md`).
+> (DayZDiag server+client, VPP Object Spawner). It does NOT spawn drivable. Root cause **OPEN** at that date
+> (resolved in the s7 section below).
 
 **The failure (server RPT, at `Load entity type 'SUB_BRZ'`):**
 ```
@@ -457,19 +456,19 @@ do NOT trust the offline verifier as proof of drivability.**
   resolved unique vertices (pt+normal+uv) = 22143, under 65535. The body loads and renders.
 
 **OPEN [HYPOTHESIS, NOT verified]:** root cause unknown. NOTE the body is the §"BASIC SHELL + FULL-DETAIL
-PROXIES" kt-pattern (a REAL low-poly shell in LOD0 + proxy chunks), **NOT all-proxy** — so "the proxy body
+PROXIES" pattern (a REAL low-poly shell in LOD0 + proxy chunks), **NOT all-proxy** — so "the proxy body
 breaks simulation" is unproven and probably wrong (the crew/wheel selections are direct geometry in the
 structural LODs, exactly like vanilla). Candidate deltas vs vanilla still UNTESTED as cause: vanilla hub =
 16 pt / 15 face shape vs SUB_BRZ 8 pt / 12 face box; SUB_BRZ has `seat_driver`/`seat_codriver` boxes in the
 **Geometry** LOD (vanilla has seats only in ViewGeo). Next session must research a WORKING community
-custom-body car (kt_roadkill) + the engine's exact requirement behind those two messages before editing
+custom-body car + the engine's exact requirement behind those two messages before editing
 geometry.
 
 **Side-symptom (NOT the blocker):** the LOD0 shell's light selections are inflated
 (`light_left`/`light_right`/`tail` ≈ 6594 faces each — should be small lenses) → likely the spawn lag and a
 lights-paint bug.
 
-> Origin: SUB_BRZ Phase 4 in-game test 2026-06-24 (config.cpp written by an agent + first VPP spawn). Cross-ref §3.7
+> Measured on: SUB_BRZ Phase 4 in-game test 2026-06-24 (config.cpp written by an agent + first VPP spawn). Cross-ref §3.7
 > (proxy-placement P1, MERCEDES_AMGLF) and `vehicle-structural-parity.md` (Crew check + wheel "no proper
 > selection"). Sister project MERCEDES_AMGLF (same architecture) also has in-game smoke PENDING — neither
 > ripped racing-game car is confirmed drivable yet.
@@ -499,7 +498,7 @@ order:
 
 3. **WINDING** (normals inverted: checkerboard/texture on the INTERIOR face, exterior see-through): the
    `force_outward` in `rip_p2_shellproxy.py` (centroid-based "make outward") + the det=-1 transform render
-   inverted in-game. force_outward IS the tautological "make outward" the REGEN section warns about; memory's s3
+   inverted in-game. force_outward IS the tautological "make outward" the REGEN section warns about; the s3
    "force-outward 95-97% NOT decisive" was WRONG — it WAS decisive. Fix = keep glTF vertex order (do NOT
    force_outward); for already-built geometry, a global vertex-order flip of the body faces (shell + chunks),
    KEEP the stored normals (they point exterior → consistent with the now-exterior-rendered surface). In-game is
@@ -515,13 +514,13 @@ order:
   placeholder. BUT the user reports parts still look missing — this is NOT confirmed all-glass; re-check per-part
   (or after texturing) before closing it.
 
-> Origin: SUB_BRZ Phase 4 in-game 2026-06-24 s7 (single Cowork session, VPP spawn). Builders fixed so car #2
+> Measured on: SUB_BRZ Phase 4 in-game 2026-06-24 s7 (single Cowork session, VPP spawn). Builders fixed so car #2
 > inherits: `rip_p2_shellproxy.py` (proxy frame + winding), `rip_p3_structural.py` (componentNN dual-tag).
 > Box-exclusive gotcha confirmed: SUB_BRZ + MERCEDES_AMGLF Cowork sessions `-Kill` each other's DayZDiag — only
 > ONE session tests in-game at a time. Pending (non-blocking): textures (Phase 5), 417k-face lag, PBO `.bak`
 > bloat cleanup.
 
-## (added 2026-06-25, s8) GET-IN ROOT CAUSE #2 — a ripped racing-game car needs an Enforce Script CLASS, not just geometry [VERIFIED in-game + vs FC/vanilla source]
+## (added 2026-06-25, s8) GET-IN ROOT CAUSE #2 — a ripped racing-game car needs an Enforce Script CLASS, not just geometry [VERIFIED in-game + vs vanilla source]
 
 s7 fixed spawn+render. s8 confirmed the s7 bone-selection fix AND found why get-in / crew actions still never appear.
 
@@ -541,21 +540,20 @@ get-in's **gate-1** (`CrewPositionIndex(componentIndex) >= 0`). It is necessary 
 → gate-2 false → **get-in action NEVER appears**, no matter how perfect the crew bone is. Same trap for
 `GetSeatAnimationType` (transport.c:682-687 → `Error("not implemented")`) and `GetAnimInstance` (transport.c:662, used in Start()).
 
-**THE FIX = ship a thin `<MOD>_Base.c` script class (PIPELINE requirement — add to Phase 4).** Modeled on FC
-("Frontera Cars", a shipped community car mod): `FC_Uaz_Pickup_Rest_Base extends CarScript`
-(FC_Uaz_Pickup_Rest/Scripts/unknown_40493.c:1) overrides `CrewCanGetThrough` (:1017), `GetSeatAnimationType` (:539),
-`GetAnimInstance` (:524), `GetCarDoorsState` (:977), `GetDoorSelectionNameFromSeatPos` (:1058),
-`GetDoorInvSlotNameFromSeatPos` (:1079), `GetDoorConditionPointFromSelection` (:1165),
-`CanReachSeatFromSeat`/`CanReachDoorsFromSeat`. FC cars extend `CarScript` DIRECTLY (config
-`class FC_Vaz_2101: CarScript`, FC_Options/data/Vehicles/FC_Vaz_2101/config.cpp:514) — they do NOT re-parent to a
+**THE FIX = ship a thin `<MOD>_Base.c` script class (PIPELINE requirement — add to Phase 4).** A shipped
+third-party car mod does exactly this (third-party mod behaviour, not vanilla): its base class
+`extends CarScript` and overrides `CrewCanGetThrough`, `GetSeatAnimationType`,
+`GetAnimInstance`, `GetCarDoorsState`, `GetDoorSelectionNameFromSeatPos`,
+`GetDoorInvSlotNameFromSeatPos`, `GetDoorConditionPointFromSelection`,
+`CanReachSeatFromSeat`/`CanReachDoorsFromSeat`. Its cars extend `CarScript` DIRECTLY in config — they do NOT re-parent to a
 vanilla car. The mod needs a `CfgMods` script module (worldScriptModule files[]) to compile the `.c`.
 
 **Doors are NOT required for get-in.** `GetCarDoorsState` returns `DOORS_MISSING` when no CarDoor attachment exists
-(civiliansedan.c:185-192, FC unknown_40493.c:982-985), and `DOORS_MISSING != DOORS_CLOSED` → `CrewCanGetThrough`
+(civiliansedan.c:185-192), and `DOORS_MISSING != DOORS_CLOSED` → `CrewCanGetThrough`
 returns true → passable. So a script class with NO door attachments gives WORKING get-in (baked doors stay static).
 Openable doors = a separate FEATURE (CarDoor classes + door proxies + door `.p3d` + AnimationSources DoorsX +
-model.cfg door bones), exactly as FC ships (FC_Vaz_2101 `class FC_Vaz_2101_Door_Driver: CarDoor` config.cpp:326,
-`AnimationSources class DoorsDriver` :843).
+model.cfg door bones), as that third-party mod ships them (a `CarDoor` subclass per door and
+`AnimationSources class DoorsDriver`).
 
 **Task-3 see-through chunks = s7's GLOBAL winding flip inverted the chunks that were correct-before.** User reports
 see-through "gaps" at the engine bay + above each rear fender (symmetric). RPT clean of proxy-not-found (all 9
@@ -565,9 +563,9 @@ winding = the glTF winding UNCHANGED. Fix = re-derive per-chunk winding from the
 global flip), or surgically flip back ONLY the chunks the global flip broke (identify by comparison vs glTF normals —
 non-tautological because s7 flipped blindly, not to match). Do NOT global-flip again; do NOT iterate in-game.
 
-> Origin: SUB_BRZ s8 2026-06-25 (dayz-mcp broker repaired — kill `--require-version` daemons, run one without it;
-> in-game RPT grep + telemetry + user's full-res eye). Cross-ref FC (Frontera Cars) reverse-engineered cars in the
-> project root (`FC_Uaz_Pickup_Rest`, `FC_Options`), vehicle-structural-parity.md "componentNN DUAL-TAG" +
+> Measured on: SUB_BRZ s8 2026-06-25 (dayz-mcp broker repaired — kill `--require-version` daemons, run one without it;
+> in-game RPT grep + telemetry + user's full-res eye). Cross-ref
+> vehicle-structural-parity.md "componentNN DUAL-TAG" +
 > "ATTACHMENT proxy BONE-NAME selection" (now CONFIRMED in-game).
 
 ## (added 2026-06-25, s8) WINDING + BUILD lessons from the s7/s8 see-through debug [VERIFIED]
@@ -583,7 +581,7 @@ A per-chunk "winding vs glTF" agreement metric (compare each face's vertex order
 NOT per-chunk correctness — it **cannot discriminate a solid chunk from a see-through one**. Proof it was vacuous:
 the known-SOLID main body and the known-SEE-THROUGH engine bay BOTH read "disagree". The anti-vacuity gate ("the
 method must flag the known-bad anchors") passed TRIVIALLY because flagging EVERYTHING includes the bad anchors —
-a tautology (R22, error-exactly-0/complementary tell). RULE: validate a winding metric against a **known-SOLID
+a tautology (the error-exactly-0/complementary tell). RULE: validate a winding metric against a **known-SOLID
 reference reading SOLID** (not only a known-bad reading bad); if it cannot separate solid from see-through it is a
 global-flip detector, not a winding checker. The real gate is the **DayZ render** (a face that backface-culls is
 inverted); the offline metric is a hint, not acceptance (false-green twice — same lesson as the proxy-frame GATE).
@@ -621,7 +619,7 @@ raycast** hitting a closed hull corroborates solidity — but note it probes the
 (a Visual-LOD winding inversion can still render see-through while the Geometry raycast reads solid), so it is
 corroboration, not proof. The definitive gate remains the in-game render after texturing.
 
-> Origin: SUB_BRZ s7/s8 see-through debug 2026-06-24/25 (builders `rip_p2_shellproxy.py`, `tools\patch_winding.py`;
+> Measured on: SUB_BRZ s7/s8 see-through debug 2026-06-24/25 (builders `rip_p2_shellproxy.py`, `tools\patch_winding.py`;
 > in-game render + RPT). Cross-ref §"s7" (global winding flip), §"s8 ... Task-3 see-through chunks" (det +1 ⇒ glTF
 > winding unchanged), and `vehicle-structural-parity.md` proxy-frame GATE (offline false-green class).
 
@@ -678,7 +676,6 @@ inversion was this pass, not the rip). THE RULE: keep the raw glTF winding VERBA
 rip→DayZ `(-Fx, Fy+Y0, -Fz)`, det=+1); stored normals = smooth(+cross) of the FINAL winding; de-dup
 first, then repair only the ~0.5% source-inconsistent FACES by MAJORITY flood-fill per connected component.
 The backface-cull render is a HINT (it shows the +cross side; the engine renders the ANTI-cross side).
-Plan + numbers: `SUB_BRZ_dev\reviews\2026-07-02-s20-plan-reimport-unico-v2.md`.
 
 ### DEPLOY — transplant, never overwrite the structural shell
 The Phase-2 rebuild of `sub_brz.p3d` has ONLY the visual LOD; the DEPLOYED shell carries the verified
@@ -711,9 +708,9 @@ proxies is necessary but needs (1) the right FRAME and (2) COMPANION selections.
    → the engine renders the wheel rotated ~90° (invisible). Vanilla uses a **mirrored-by-side** frame, measured
    on `civiliansedan_mlod` VISUAL LODs: anchor **x<0** → `((-1,0,0),(0,0,1),(0,1,0))`, **x>0** →
    `((1,0,0),(0,0,-1),(0,1,0))`. SUB_BRZ reuses the vanilla `sedanwheel` geometry, so copy the **VANILLA** frame
-   (NOT kt's — its mirror differs because its wheel geometry differs). Reframe in place by anchor-x sign:
+   (NOT another mod's — a different wheel geometry needs a different mirror). Reframe in place by anchor-x sign:
    `canonical_proxy_triangle(p0=current_anchor, rotation=frame_by_side, scale=0.1)` overwriting the 3 triangle pts.
-2. **Companions.** Vanilla + kt carry `wheel_X_Y` companion selections in the VISUAL LOD too (not only View/Fire);
+2. **Companions.** Vanilla and the third-party control carry `wheel_X_Y` companion selections in the VISUAL LOD too (not only View/Fire);
    the import had ZERO there → the attached wheel has no bone binding (and no spin anim target). Add them with the
    `fix_wheel_binding.py` pattern (`lod.new_selection(wn); ns.points=dict(proxy.points); ns.faces=dict(proxy.faces)`),
    mapping proxy→`wheel_X_Y` by the SAME centroid rule used for View/Fire (so model.cfg spin stays consistent).
@@ -760,7 +757,7 @@ oracle: keep the raw glTF winding VERBATIM for all pieces (net `(-Fx, Fy+Y0, -Fz
 the ~0.5% source-inconsistent faces by per-connected-component MAJORITY flood-fill. What REMAINS true: the
 `geometric-winding vs stored-vertex-normal` check is tautological (normals follow winding by construction) —
 use vanilla-anchored absolute stats instead (stored·cross>0 ≈ 96-99%; roof cross-outward ≈ 1.6%). See
-visual-gates-and-winding.md #10(j) + `SUB_BRZ_dev\reviews\2026-07-02-s20-plan-reimport-unico-v2.md`; the reimport's
+visual-gates-and-winding.md #10(j); the reimport's
 in-game gate is PENDING.
 
 ### Suspensions + axles: do NOT exclude them — the wheels visually ride on them
@@ -807,7 +804,7 @@ PLASTIC→matte black, INTERIOR→leather/fabric, RUBBER→matte black, LIGHT→
 `carpaint` on a **paintable selection** (Body/Hood/Mirror/Wing, listed in `ManufacturerColors.bin`) gets the
 body color (default = entry[0]). This removes the per-car eye-tuning and fixes, at the root: blue-on-metal,
 white-interior-seen-through-glass (interiorLOD1 / interior winding), and black-bits-on-glass (glass_edge /
-blackframe = opaque trim, not the see-through window). Origin: SUB_BRZ s12b — user directive "no trial and error".
+blackframe = opaque trim, not the see-through window). Measured on: SUB_BRZ s12b — user directive "no trial and error".
 
 ### Material map — IMPLEMENTED + corrected (SUB_BRZ s13; method offline-verified, in-game gate PENDING)
 The s12b plan was built. Four corrections/invariants the next ripped racing-game car needs UP FRONT:
@@ -953,8 +950,8 @@ cabin census was ambiguous (17k/30k faces captured by the footprint, no discrimi
 non-problems: (a) the pre-cut rip pieces + known transform (`dp=(x, z+Y0, y)`, Y0 per car) make
 fused-face identification a tri_signature/centroid MATCHING job against the rip piece (the exact
 pattern of `s34_chunk_03_census.py` for calipers); (b) a parallel lane (s33) had ALREADY built
-`sub_brz_doors_{driver,codriver}.p3d` from the authored LODs (`work\s33_f2_doors\
-C2b_checkpoint.md`: 9 LODs each, collision preserved, LOD0 floor set by the doorcard's authored
+`sub_brz_doors_{driver,codriver}.p3d` from the authored LODs
+(9 LODs each, collision preserved, LOD0 floor set by the doorcard's authored
 bitmask 0x0003 — no sub-LOD exists, accept the overage) and the HANDOFF never registered it, so
 two later sessions budgeted work that was DONE. Lessons: read the Manifest for `doors\`/movable
 parts BEFORE planning any body-cut surgery; register built artifacts (path + checkpoint) in the
@@ -982,10 +979,10 @@ Method lesson: the cheap discriminator was measuring the visual proxies' FRAMES 
 control BEFORE touching the item's LODs — s36 spent its cycle on the item asset instead.
 Promoted (2026-07-18): invariant 21 in `invariants-get-in-and-seats.md` and the family B cookbook `cookbook-attachment-invisible.md` of the rip-vehicle-import skill.
 
-**Changing the TRACK means moving the WHOLE corner, and the limit is the hub, not the arch (SP-416, added 2026-10-01, SUB_BRZ s97).** [EXACT] On that car the four wheel proxies carried the SAME frame in every LOD (no per-side rotation), unlike the vanilla controls above, whose wheel frames are mirrored per side (it is the door proxies that share one frame); so shifting the wheel mesh inside the wheel `.p3d` moved the left wheels inboard and the right ones outboard at the same time. Read the four frames first: it is one call. To change the track, move per side: the proxy triangle in every LOD that carries it, the `wheel_<side>_<axle>_*` memory points (axle, damper, damper_axis, damper_land, steering, steering_axis), the `..._damper_land` Geometry box, and the brake/hub chunk plus its merged copies in the far LODs - on SUB_BRZ s97 that was 748 shell points and 1,570 chunk points in total for 10 cm of track (5 cm per side). The travel limit is the brake/hub box reaching the rim's inner face, not the wheel arch; profile the rim sweep (local x, radius) against the brake points before spending a cycle.
+**Changing the TRACK means moving the WHOLE corner, and the limit is the hub, not the arch (added 2026-10-01, SUB_BRZ s97).** [EXACT] On that car the four wheel proxies carried the SAME frame in every LOD (no per-side rotation), unlike the vanilla controls above, whose wheel frames are mirrored per side (it is the door proxies that share one frame); so shifting the wheel mesh inside the wheel `.p3d` moved the left wheels inboard and the right ones outboard at the same time. Read the four frames first: it is one call. To change the track, move per side: the proxy triangle in every LOD that carries it, the `wheel_<side>_<axle>_*` memory points (axle, damper, damper_axis, damper_land, steering, steering_axis), the `..._damper_land` Geometry box, and the brake/hub chunk plus its merged copies in the far LODs - on SUB_BRZ s97 that was 748 shell points and 1,570 chunk points in total for 10 cm of track (5 cm per side). The travel limit is the brake/hub box reaching the rim's inner face, not the wheel arch; profile the rim sweep (local x, radius) against the brake points before spending a cycle.
 
 
-## Wheel proxy frames are a `(frame, referenced model)` pair (SP-156, added 2026-08-31)
+## Wheel proxy frames are a `(frame, referenced model)` pair (added 2026-08-31)
 
 Do not promote an anchor-X frame literal across wheel models. The sedanwheel
 literal above is calibrated only for that referenced geometry. A working
@@ -996,7 +993,7 @@ then require the candidate to match. A negative fixture that swaps the two sides
 must fail.
 
 
-## Prove workspace identity before importing or auditing (SP-330, added 2026-08-31)
+## Prove workspace identity before importing or auditing (added 2026-08-31)
 
 A rip media tree may contain several vehicles. Before packaging a workspace,
 select 3-5 names from the intended `manifest`/`include.txt` and require them in
@@ -1004,7 +1001,7 @@ the `Manifest.xml` under that exact vehicle directory. A work-folder name is not
 identity evidence. Missing names block the handoff instead of being explained as
 an incomplete export after the audit.
 
-## Route primitives by functional owner, never by material alone (SP-158, added 2026-08-31)
+## Route primitives by functional owner, never by material alone (added 2026-08-31)
 
 Freeze import routing per source primitive with a stable key that includes the
 source node instance/breadcrumb and primitive index, or an adapter-defined equivalent;
@@ -1015,7 +1012,7 @@ it shares `INT_DECALS` with the dashboard; door fasteners and decals must follow
 door. Add negative fixtures for movable-part primitives so a material-only router
 must fail.
 
-## Wheel items are local; body proxy chunks are model-space (SP-159, added 2026-08-31)
+## Wheel items are local; body proxy chunks are model-space (added 2026-08-31)
 
 A glTF/FBX intermediate commonly holds wheel vertices in car world-space. Before
 emitting a separate wheel `.p3d`, derive its source hub deterministically, subtract
@@ -1025,7 +1022,7 @@ translation and proxy anchor are both applied. This bbox-centre gate is wheel-on
 hinge-local doors, hoods and trunks are intentionally not centred. Pure body proxy
 chunks retain the model-space convention in `vehicle-structural-parity.md`.
 
-## Named selections can carry primitive identity through packonly (SP-162, added 2026-08-31)
+## Named selections can carry primitive identity through packonly (added 2026-08-31)
 
 **[MEASURED OFFLINE ON ONE RAW PACKONLY TOOLCHAIN]** An MLOD with 170 selections,
 mixed case and names through 63 characters survived `AddonBuilder -packonly -> PBO ->
@@ -1035,7 +1032,7 @@ to choose that build mode. Re-run generation, packing, extraction, SHA-256 and s
 name/order/membership comparison when the environment changes. This does not cover
 binarized ODOL; a binarized route needs its own preservation spike.
 
-## Label, decal and tiled-pattern UVs are semantic exceptions (SP-335, added 2026-08-31)
+## Label, decal and tiled-pattern UVs are semantic exceptions (added 2026-08-31)
 
 The `TEXCOORD2` swatch rule above does not apply to every face. Measured bezel
 labels, decals and shifter graphics sample their atlas from `TEXCOORD0` without a
@@ -1044,7 +1041,7 @@ Do not substitute the pipeline unwrap: DayZ materials do not add the missing UV
 transform by default, so tiling must be baked into face UVs with sampler wrapping.
 Require an UV-over-atlas overlay before accepting either route.
 
-## Locate the build source through the build script, then prove it by data (SP-343, added 2026-08-31)
+## Locate the build source through the build script, then prove it by data (added 2026-08-31)
 
 Before basing a fix or audit on a mod tree, inspect `build_*.ps1` for its `$source`
 root and compare a content hash from that root with the corresponding blob in the

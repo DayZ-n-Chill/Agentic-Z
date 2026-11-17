@@ -2,9 +2,8 @@
 
 Reads Bohemia Interactive .paa/.pac texture files and converts to PNG.
 Supports: DXT1, DXT5, DXT3, RGBA4444, RGBA5551, RGBA8888, LuminanceAlpha.
-Based on the BI Community Wiki PAA File Format specification.
 
-LZSS decompression follows the BI variant documented on that wiki
+LZSS decompression uses the BI variant
 (ring buffer 4096, init 0x20, match-length offset +2).
 """
 
@@ -57,8 +56,7 @@ def lzss_decode(data_in: bytes, expected_out_size: int) -> bytes:
     """LZSS decompression as used by BI for non-DXT PAA mipmaps.
 
     BI variant: ring buffer size 4096 (0x1000), init with 0x20 (space),
-    match length offset +2. Documented on the BI Community Wiki; the
-    algorithm is a standard LZSS variant and is reimplemented here.
+    match length offset +2. The algorithm is a standard LZSS variant.
     """
     buf = bytearray(b"\x20" * 0x100F)
     out = bytearray()

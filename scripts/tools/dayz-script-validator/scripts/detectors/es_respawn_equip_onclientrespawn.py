@@ -1,13 +1,12 @@
-# CANDIDATE-41 ES-RESPAWN-EQUIP-IN-ONCLIENTRESPAWNEVENT (heuristic).
+# ES-RESPAWN-EQUIP-IN-ONCLIENTRESPAWNEVENT (heuristic).
 # `OnClientRespawnEvent(PlayerIdentity identity, PlayerBase player)` delivers
 # the PRE-respawn character: vanilla only uses it to kill the unconscious or
 # restrained player (missionserver.c:598-609, SetHealth("","",0.0) at :608).
 # The NEW character is created later in OnClientNewEvent -> CreateCharacter
 # (missionserver.c:536/:560/:576). Equipment/loadout logic wired here mutates
 # the dying character: silent no-op or corruption, no error, no log.
-# Source: origin: production mod bug ledger (GG-01, corruption Alta; LL-131 --
-# eight auditors verified the event SIGNATURE, none verified the parameter
-# SEMANTICS). Correct prior art: HM_Starter_Kit equips in OnClientNewEvent.
+# The event SIGNATURE is easy to verify; the trap is the parameter SEMANTICS.
+# The correct place to equip is OnClientNewEvent.
 # Heuristic scope: only item-CREATION calls inside the method body are
 # flagged (curated set below). Killing/logging the old character is the
 # legitimate vanilla pattern and does not match.
@@ -32,7 +31,7 @@ ES_RESPAWN_EQUIP_MESSAGE = (
     "this event delivers the PRE-respawn character (vanilla only kills the "
     "unconscious there, missionserver.c:598-609); the NEW character is "
     "created in `OnClientNewEvent` (missionserver.c:536). Equipment created "
-    "here lands on the dying character: silent no-op/corruption (origin: production mod bug ledger). Move loadout logic to OnClientNewEvent."
+    "here lands on the dying character: silent no-op/corruption. Move loadout logic to OnClientNewEvent."
 )
 
 

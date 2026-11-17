@@ -46,7 +46,7 @@ Detail: `references/anim-graph.md` ("Which changes collide").
 Half of this domain is reverse engineered. The RTM and `.anm` formats are not documented by Bohemia, and community guides disagree. So every statement in this skill is one of three kinds, and output written from it keeps the kind:
 
 - A **vanilla fact** cites the file on `P:\` as path and line. Open the line before repeating it in a deliverable.
-- A **measured result** names the project and game build it was measured on. It is evidence for that setup, not a rule.
+- A **measured result** names the setup and game build it was measured on. It is evidence for that setup, not a rule.
 - Anything else is marked **not checked** or **not tested**. Never turn it into a fact to make a list look complete, and never invent a config key.
 
 ## Pick the route
@@ -98,11 +98,11 @@ Write `.cpp` and `.c` files into the mod's folder under `workspace\<ModName>\`. 
    python -m dayz_animation_formats inspect <file.seanim or file.rtm>
    ```
 
-   It handles full SEAnim v1 (channels, modifiers, notes, float32 and float64) and one unbinarized `RTM_0101` block with an optional `RTM_MDAT` before it. It refuses unknown flags and blocks, bad counts, truncated files, invalid names, non-finite values, wrong RTM bone order and trailing bytes. `seanim_writer.py` in this skill is the older project helper the viewer export still uses. The viewer route reads each bone's quaternion directly, so the unfinished positions to rotations helper in `ik_pose_to_seanim.py` is not on its path.
+   It handles full SEAnim v1 (channels, modifiers, notes, float32 and float64) and one unbinarized `RTM_0101` block with an optional `RTM_MDAT` before it. It refuses unknown flags and blocks, bad counts, truncated files, invalid names, non-finite values, wrong RTM bone order and trailing bytes. `seanim_writer.py` in this skill is the older helper the viewer export still uses. The viewer route reads each bone's quaternion directly, so the unfinished positions to rotations helper in `ik_pose_to_seanim.py` is not on its path.
 3. **Hand it to the converter the user runs:** SEAnim to `.anm` with DayZATool (`--generate-anim`), FBX to `.rtm` with `FBXToRTMGui.exe`, or `.txa` to `.anm` in Workbench.
 4. **Bone names match the target skeleton exactly**, or the RPT logs `Bone X doesn't exist` and that bone does not move. Take the names from `references/player-skeleton.md`, never from a tutorial.
 
-The RTM writer was cross read by Arma 3 Object Builder 2.5.1 with motion, phases, metadata and transforms preserved (reported by the source pack; not checked on `P:\`).
+The RTM writer was cross read by Arma 3 Object Builder 2.5.1 with motion, phases, metadata and transforms preserved (not checked on `P:\`).
 
 ## Scripts
 

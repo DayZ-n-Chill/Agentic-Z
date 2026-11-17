@@ -49,7 +49,7 @@ The `.p3d` side, adding the selection or the two axis points, is script work on 
 
 ### Rotation sign and chained segments
 
-Measured in game by the source pack (DayZDiag 1.29.163709), not checked on `P:\`:
+Measured in game (DayZDiag 1.29.163709), not checked on `P:\`:
 
 - A positive angle turns right handed around the axis from the first memory point to the second, the points taken in index order in model coordinates. With the axis toward +Z, +X moves toward +Y.
 - Several entries with different `minValue` to `maxValue` segments over one clamped source play as one sequence, and play back in reverse when the source returns.
@@ -156,4 +156,4 @@ On `Entity` (`P:\scripts\3_game\entities\entity.c`): `SetAnimationPhase(string a
 
 Keep the probe read only. Do not call `SetAnimationPhase(door, 0)` to see whether a source exists: it changes live state. If the door was open, a cached open state in the mod's own script may not restore it, leaving it shown closed while the logic says open until the next toggle. Test writing through the real open and close action with logging added.
 
-The second point and the cache trap were reported by the source pack from one of its vehicle projects; they are not checked on `P:\`.
+The second point and the cache trap were seen in game on one vehicle mod; they are not checked on `P:\`.

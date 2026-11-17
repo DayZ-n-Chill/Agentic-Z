@@ -1,13 +1,12 @@
 // Modal: centred panel, wrapping title + message, two buttons.
-// Geometry copied from mcp_dialog.layout (not in this repo;
-// production, on-screen 2026-08-19). Chrome/button spell copied from
-// gui/layouts/dialog.layout + that same mcp_dialog.layout.
+// Geometry seen on screen in game on 2026-08-19. Chrome/button spell copied
+// from gui/layouts/dialog.layout.
 // Hot-reload this file from $profile: (references/hot-iteration.md).
 FrameWidgetClass ModalRoot {
 	name "ModalRoot"
 	// Fullscreen host. ignorepointer 1 so the dim-less margin does not eat clicks
-	// around the panel. Same as mcp_dialog.layout:4 (not distributed) and
-	// gui/layouts/dialog_input_text.layout:3. Buttons below do NOT inherit this;
+	// around the panel. Same as gui/layouts/dialog_input_text.layout:3.
+	// Buttons below do NOT inherit this;
 	// they omit the flag.
 	ignorepointer 1
 	position 0 0
@@ -15,20 +14,18 @@ FrameWidgetClass ModalRoot {
 	// All four flags 0: fraction of the screen. hexact* 1 would be units of
 	// 1/1080 of the screen height, measured in game (references/rules-and-checklist.md rule 3, corrected
 	// 2026-10-03; this comment called them physical pixels that break 1280x720).
-	// Vanilla 214 files (parse.py, 8724 nodes): hexactsize 0 is 5851x vs 2727x.
+	// Vanilla (227 layouts, 9575 widgets): hexactsize 0 is 6167x vs 3265x for 1.
 	hexactpos 0
 	vexactpos 0
 	hexactsize 0
 	vexactsize 0
-	// Above vanilla gui/layouts/dialog.layout:15 (priority 1000). Copied from
-	// mcp_dialog.layout:11 (not distributed).
+	// Above vanilla gui/layouts/dialog.layout:15 (priority 1000).
 	priority 2000
 	{
 		PanelWidgetClass ModalPanel {
 			name "ModalPanel"
-			// RGB from gui/layouts/dialog.layout:5; alpha from mcp_dialog.layout:15
-			// (not distributed; 0.9608, the on-screen panel). rover_sim_colorable
-			// tints WhitePixel with this.
+			// RGB from gui/layouts/dialog.layout:5; alpha 0.9608 seen on screen in
+			// game on 2026-08-19. rover_sim_colorable tints WhitePixel with this.
 			color 0.1176 0.1176 0.1176 0.9608
 			// center_ref + position 0 0: the offline lint ignores position under
 			// center_ref; the engine ADDS it (references/layout-format.md, Zeroing +0.06).
@@ -43,7 +40,7 @@ FrameWidgetClass ModalRoot {
 			vexactsize 0
 			// PanelWidget paints ONLY through a style whose Normal Center is non-empty.
 			// rover_sim_colorable: gui/looknfeel/dayzwidgets.styles:3284
-			//   Normal Center=WhitePixel, Color=4294967295. Vanilla 577x (top Panel style).
+			//   Normal Center=WhitePixel, Color=4294967295. Vanilla 641x (top Panel style).
 			// Colorable is a WindowWidget style (gui/layouts/dialog.layout:16). On
 			// PanelWidget it does not bind: no ImageSet, color never paints
 			// (references/styles-format.md, 2026-08-19).
@@ -52,10 +49,10 @@ FrameWidgetClass ModalRoot {
 			{
 				MultilineTextWidgetClass Title {
 					name "Title"
-					// wrap 1 on MultilineText: 329/331 vanilla. A TextWidget with
+					// wrap 1 on MultilineText: 337/339 vanilla. A TextWidget with
 					// "text halign" center and no wrap clips BOTH sides on overflow
-					// (mcp_dialog Title, measured 2026-08-19; not distributed).
-					// wrap on TextWidget is 0x in the 214 vanilla files, and the
+					// (measured in game 2026-08-19).
+					// wrap on TextWidget is 0x in the vanilla layouts, and the
 					// attribute is INERT there (measured in-game 2026-08-22:
 						// wrap 1 and wrap 0 render the same clipped single line).
 						// On a Multiline it works, which is why Title is one.
@@ -100,14 +97,13 @@ FrameWidgetClass ModalRoot {
 					"text color" 1 1 1 1
 					"text halign" center
 					"text valign" top
-					// Same wrap 1 as Title. Geometry from mcp_dialog.layout Message
-					// (not distributed; 0.04/0.10/0.92) grown to 0.58 so two buttons
-					// sit under a long body.
+					// Same wrap 1 as Title. The box is 0.58 tall so two buttons sit
+					// under a long body.
 					wrap 1
 				}
 				ButtonWidgetClass BtnYes {
 					name "BtnYes"
-					// Left of a two-button pair. Vanilla dialog.layout bYes is left
+					// Left of a two-button pair. Vanilla dialog.layout:146 bYes is left
 					// (position 15, valign bottom_ref, exact). Proportional stand-in
 					// so 1920 and 1280 keep the same fraction. Does not overlap BtnNo.
 					position 0.08 0.86
@@ -117,8 +113,8 @@ FrameWidgetClass ModalRoot {
 					hexactsize 0
 					vexactsize 0
 					// BODY color, not the label. EmptyHighlight Focus Center=WhitePixel
-					// (dayzwidgets.styles:2236-2245); this red tints that pixel.
-					// dialog.layout:34 and mcp_dialog.layout:315 (not distributed).
+					// (dayzwidgets.styles:2236-2246); this red tints that pixel.
+					// dialog.layout:34.
 					// Without it, Focus is white and the default white label is unreadable.
 					color 1 0 0 1
 					// Stops the parent panel alpha (0.9608) multiplying the Focus fill.
@@ -126,9 +122,9 @@ FrameWidgetClass ModalRoot {
 					inheritalpha 0
 					// ButtonWidget/EmptyHighlight: Normal Center="" (no chrome),
 					// Highlight Center="", Focus Center=WhitePixel, Pushed Center=BottonPushed.
-					// Vanilla dialog chrome: dialog.layout:42, 28x in 214 layouts.
-					// ButtonWidget/Colorable is more common (174x) and tints in every
-					// state; dialogs use EmptyHighlight. Copy the dialog, not the 174.
+					// Vanilla dialog chrome: dialog.layout:42, 28x in the vanilla layouts.
+					// ButtonWidget/Colorable is more common (176x) and tints in every
+					// state; dialogs use EmptyHighlight. Copy the dialog, not the 176.
 					style EmptyHighlight
 					text "#STR_UI_YES"
 					// Vanilla dialog buttons: dialog.layout:44 (0.5) / :193 (0.45).

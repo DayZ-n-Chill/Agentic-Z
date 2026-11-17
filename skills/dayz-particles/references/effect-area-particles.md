@@ -57,7 +57,7 @@ Worked check: `Radius=500`, `OuterOffset=20`, `InnerPartDist=70` and `VerticalLa
 
 Raising `InnerPartDist` lowers the number of rings `N`. It does not thin out the emitters on a ring that already exists.
 
-An older, rougher form of the budget, `emitters ~= 6.283 * N^2 * (VerticalLayers + 1)`, is in the notes this file was built from. The source corrected it to the formula above, because an estimate that under-counts cannot approve a radius. Use the formula above.
+A rougher form of the budget, `emitters ~= 6.283 * N^2 * (VerticalLayers + 1)`, under-counts (616 against 692 in the worked check), and an estimate that under-counts cannot approve a radius. Use the formula above.
 
 ## What the pool error means
 
@@ -91,7 +91,7 @@ After any change of radius, measure every safe position against every area. A re
 
 `JsonDataAreaData` is the authority for the keys of one area: `Pos`, `Radius`, `PosHeight`, `NegHeight`, `InnerRingCount`, `InnerPartDist`, `OuterRingToggle`, `OuterPartDist`, `OuterOffset`, `VerticalLayers`, `VerticalOffset`, `ParticleName`, `EffectInterval`, `EffectDuration` and `EffectModifier` (`P:\scripts\4_world\classes\contaminatedarea\jsondatacontaminatedarea.c:17` to `:34`).
 
-Keys named `InnerRingRatio` and `OuterRingRatio` appear in community files. They are not in that class and no vanilla script reads them.
+Keys named `InnerRingRatio` and `OuterRingRatio` appear in some `cfgeffectarea.json` files. They are not in that class and no vanilla script reads them.
 
 Height values for a large radius stay unconfirmed until the real terrain and any underground depth have been measured in game.
 

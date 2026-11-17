@@ -1,4 +1,4 @@
-class LFTest_OnMouseLeaveOk extends ScriptedWidgetEventHandler
+class FX_OnMouseLeaveOk extends ScriptedWidgetEventHandler
 {
     override bool OnMouseLeave(Widget w, Widget enterW, int x, int y)
     {

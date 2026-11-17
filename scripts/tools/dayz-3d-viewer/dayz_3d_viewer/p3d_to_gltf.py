@@ -1,6 +1,6 @@
 """P3D to glTF/GLB converter.
 
-Reads MLOD .p3d files via the pack's py3d fork and writes a deterministic
+Reads MLOD .p3d files with the DayZ py3d fork and writes a deterministic
 binary glTF (.glb) or JSON .gltf. Geometry buffers are packed little-endian
 with the stdlib; there is no numpy or pygltflib dependency.
 """
@@ -33,7 +33,7 @@ TARGET_ELEMENT = 34963
 def classify_lod(resolution: float) -> str:
     """Classify a LOD by its resolution value.
 
-    Known gaps (see KNOWN-ISSUES.md): resolutions in (10, 15000) — including
+    Known gaps (see KNOWN-ISSUES.md): resolutions in [10, 15000) — including
     ViewPilot at 1100 — are labelled ``shadow``. Proxy triangles are not
     filtered here.
     """

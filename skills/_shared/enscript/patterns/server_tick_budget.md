@@ -1,6 +1,6 @@
 # Pattern: keeping periodic server work inside the tick
 
-How to stop many entities from doing the same expensive work on the same server tick: a work budget, staggering, backoff, events in place of polling, and compile-time side gates. The techniques are measured in third-party mods (Expansion's AI and the LFPowerGrid mod), so they are marked as reported; the vanilla calls they are built from were opened on `P:\`. The full write-up with the quoted Expansion code is `skills/enforce-script-reference/references/server-performance.md`.
+How to stop many entities from doing the same expensive work on the same server tick: a work budget, staggering, backoff, events in place of polling, and compile-time side gates. The techniques are measured in third-party mods (Expansion's AI and a power grid mod), so they are marked as reported; the vanilla calls they are built from were opened on `P:\`. The full write-up with the quoted Expansion code is `skills/enforce-script-reference/references/server-performance.md`.
 
 See also: `scheduler.md` (timers and per tick allocation) and `../references/api_scheduling.md` (call categories and queues).
 
@@ -8,7 +8,7 @@ See also: `scheduler.md` (timers and per tick allocation) and `../references/api
 
 ## The problem
 
-A dedicated server advances the world on one simulation thread, so every entity that wants periodic work shares the same tick. Two shapes of work cause most of the trouble (reported from the LFPowerGrid mod's audit):
+A dedicated server advances the world on one simulation thread, so every entity that wants periodic work shares the same tick. Two shapes of work cause most of the trouble (reported from an audit of the power grid mod):
 
 - **Work that grows with the square of the population and fires often.** That mod's self-heal walked its whole device list five times per run, each walk scanning the list again. The fix was structural: fetch the list once and pass it to the helpers, and replace `outArr.Find(ent)` de-duplication with a `map` of seen items.
 - **Log strings built whether or not they are printed.** A string that is concatenated on every tick costs its time even when the log level drops it. Put the level test around the concatenation, not only around the `Print`.
@@ -90,7 +90,7 @@ The same idea scales an interval with load: keep a running average of the frame 
 
 ## Events before polling
 
-The cheapest scan is the one that never runs. Where changes are rare compared with ticks (a device moved, a wire cut, a player joined), let the producer tell the consumers: `ScriptInvoker` (`P:\scripts\2_gamelib\tools.c:115`) has `Insert` (`P:\scripts\2_gamelib\tools.c:120`), `Remove` (`P:\scripts\2_gamelib\tools.c:122`) and `Invoke` (`P:\scripts\2_gamelib\tools.c:118`). Add a debounce (the LFPowerGrid mod waits 500 ms after the last change) when one change tends to be followed by more.
+The cheapest scan is the one that never runs. Where changes are rare compared with ticks (a device moved, a wire cut, a player joined), let the producer tell the consumers: `ScriptInvoker` (`P:\scripts\2_gamelib\tools.c:115`) has `Insert` (`P:\scripts\2_gamelib\tools.c:120`), `Remove` (`P:\scripts\2_gamelib\tools.c:122`) and `Invoke` (`P:\scripts\2_gamelib\tools.c:118`). Add a debounce (the power grid mod waits 500 ms after the last change) when one change tends to be followed by more.
 
 Every `Insert` needs a matching `Remove` in the consumer's destructor, with a null check on the invoker (`singleton.md`, "`ScriptInvoker` shutdown null-guard"). When the value changes on every tick anyway, read it directly; an invoker fired every tick only adds the fan-out.
 
@@ -100,13 +100,13 @@ Every `Insert` needs a matching `Remove` in the consumer's destructor, with a nu
 
 - `#ifdef SERVER` removes the code from the client build, so it costs the client nothing. Use it for whole subsystems that only a dedicated server runs. `SERVER` is not defined in single player (`../references/language_compile.md`).
 - `IsServer()` and `IsDedicatedServer()` (`P:\scripts\3_game\global\game.c:1120`, `:1125`) are runtime branches for code that runs on both sides. Do not wrap a per tick hot path in a runtime check when a compile-time gate around the subsystem would remove the branch.
-- `#ifndef SERVER` around a class removes the type from the dedicated server. Reported from LFPowerGrid 1.2.2: another mod that named the hidden class then failed on the server with `Unknown type`, and the server did not start. If another mod or a server handler can name the type, leave an empty stub in the server build (`modded_class.md`, "Server-only overrides need a stub in the base class"), and compile both the dedicated server view and the client view before a release.
+- `#ifndef SERVER` around a class removes the type from the dedicated server. Reported from the power grid mod: another mod that named the hidden class then failed on the server with `Unknown type`, and the server did not start. If another mod or a server handler can name the type, leave an empty stub in the server build (`modded_class.md`, "Server-only overrides need a stub in the base class"), and compile both the dedicated server view and the client view before a release.
 
 ---
 
 ## What lowers server script memory
 
-Measured in the LFPowerGrid mod on a dedicated server (static script memory of the World module, in kB; not re-run here):
+Measured in the power grid mod on a dedicated server (static script memory of the World module, in kB; not re-run here):
 
 | Lever | Result |
 |---|---|

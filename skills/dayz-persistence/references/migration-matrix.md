@@ -103,5 +103,3 @@ The vanilla bodies are copied in `dayz-1-30-persistence.md`.
 A persistence-compatibility audit is incomplete if it only compares `OnStoreSave`/`OnStoreLoad` streams or script fields. Compare the declarative identity that decides whether the entity can still exist: classname, declared parent, `scope`, and membership in `CfgPatches.units[]`. A byte-identical stream cannot preserve an entity the engine no longer instantiates.
 
 Diff the authoritative deployed configuration against both the prior release and the current source. If `config.bin` and `P:\DZ\gear\camping\config.cpp` coexist, derapify and audit the `config.bin` from the PBO the engine consumes; resolve any date or content divergence before release. Several script-only audits are not independent confirmation when they share this same blind spot.
-
-(Lesson LL-268 of the source pack's lessons log.)

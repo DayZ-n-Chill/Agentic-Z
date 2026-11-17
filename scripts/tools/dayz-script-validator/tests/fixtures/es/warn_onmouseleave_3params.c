@@ -1,4 +1,4 @@
-class LFTest_OnMouseLeaveBad extends ScriptedWidgetEventHandler
+class FX_OnMouseLeaveBad extends ScriptedWidgetEventHandler
 {
     bool OnMouseLeave(Widget w, int x, int y)
     {

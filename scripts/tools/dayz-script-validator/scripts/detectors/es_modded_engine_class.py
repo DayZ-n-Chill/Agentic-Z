@@ -6,10 +6,9 @@ from shared.dead_branches import dead_lines
 ES_MODDED_ENGINE_CLASS_RULE_ID = "ES-MODDED-ENGINE-CLASS"
 
 
-# claim: CLAIM-ENFORCE-MODDED-ENGINE-CLASS
 # Some classes are declared by the engine and refuse `modded class`, and the
-# whole script module stops compiling. Pipeline inbox fb-20261005-233046-89d1
-# (SimpleGroup): `modded class Transport` in scripts/3_Game, DayZDiag
+# whole script module stops compiling. Measured:
+# `modded class Transport` in scripts/3_Game, DayZDiag
 # 1.29.163709:
 #
 #   Can't compile "Game" script module!

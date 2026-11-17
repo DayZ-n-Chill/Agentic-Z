@@ -4,16 +4,16 @@ Checks to run on a built or deployed PBO: its scripts and models are really insi
 source, two builds are compared the right way, the mod's script modules load, and the gate you rely on can
 fail.
 
-Not yet checked on `P:\`: unless a line cites a vanilla file, what follows is measured tool and build
-behaviour (AddonBuilder, binarize, the game's loader) and project findings from the mods named in the text,
-kept as the knowledge pack's author recorded them. This repo has not repeated those measurements.
+Not checkable on `P:\`: unless a line cites a vanilla file, what follows is measured behaviour of AddonBuilder,
+binarize and the game's loader, with the tool version named where it was recorded. Vanilla files on `P:\`
+cannot confirm it.
 
 ## What `build.py` checks after every build
 
 | Gate below | In `build.py` |
 |---|---|
 | Scripts and models are in the PBO | `check_pbo_contents`: every staged `.c` and `.p3d` that `include.lst` lets through must be an entry, or the build fails. Other missing files are a warning. |
-| Derived manifest and extras check (SP-171) | Same function: the expected entries come from the staged source, never a hand-kept list; entries with no source file are a warning; `texHeaders.bin`, the prefix file and `config.bin` are allowed. |
+| Derived manifest and extras check | Same function: the expected entries come from the staged source, never a hand-kept list; entries with no source file are a warning; `texHeaders.bin`, the prefix file and `config.bin` are allowed. |
 | Header prefix | The PBO's `prefix` property must equal `<ModName>`. |
 | 21-byte checksum trailer | `pbo_entries.py` checks it; a PBO without it gets a warning. |
 | Fresh PBO, real result | The PBO must be newer than the build start, and `[ResultCode]` in AddonBuilder's log must be 0. |
@@ -33,7 +33,7 @@ binarize/copy include-list. A scripts-heavy or scripts-only addon built with a p
 `AddonBuilder src dst -clear` can pack to a **config-only PBO** (`config.bin` + the CfgMods
 path strings, nothing else) while still printing `Build Successful`. In-game the mod *mounts*
 (its CfgPatches name appears in the server `script.log` `defines:` list) but **no script runs**:
-no modded class merges, no hook fires. Verified 2026-06-03 — a scripts mod packed to 662 bytes
+no modded class merges, no hook fires. Measured: a scripts mod packed to 662 bytes
 under binarize; `-packonly` produced the correct 124 KB PBO with all its `.c`.
 
 Pack mode by addon type:
@@ -41,7 +41,7 @@ Pack mode by addon type:
   `config.cpp` stays text, which DayZ loads fine).
 
 `.c` is not the only casualty of the include-list: **`.csv` is dropped too**. Measured
-2026-08-20 on a two-file addon — the binarizing pass produced a PBO with `config.bin` and
+on a two-file addon: the binarizing pass produced a PBO with `config.bin` and
 **no `stringtable.csv`**, while `-packonly` on the same source kept it. An addon whose only
 job is to carry a stringtable therefore packs to something that mounts and translates
 nothing. Same silent shape as the scripts case: `Build Successful`, mod mounts, feature
@@ -50,13 +50,14 @@ absent.
   `-packonly` is wrong. Confirm AddonBuilder's include-list copies `*.c`/`*.h`, or the scripts
   vanish silently — a CarScript vehicle would then load but never simulate.
 
-### `-include` is not the final PBO manifest (SP-177)
+### `-include` is not the final PBO manifest
 
 AddonBuilder has two input paths. Its native binarization/discovery path handles `config.cpp`,
 `.p3d`, and face-referenced `.rvmat`; these can enter the PBO even when their suffix is absent
 from `-include`. The ordinary sync path carries `.c`, `.paa`, `.ogg`, `.layout`, and `.csv`;
-with a fresh temp, an omitted suffix is silently dropped. This scopes LL-213's "exclusive
-filter" rule to the ordinary sync pass, not the final PBO contents.
+with a fresh temp, an omitted suffix is silently dropped. So the rule "treat `-include` as an
+exclusive filter" ("Further build rules" below) holds for the ordinary sync pass, not for the
+final PBO contents.
 
 Measured case: an `.rvmat` omitted from `include.lst` still entered and was binarized because
 three `.p3d` files referenced it. This does not override the config-only-rvmat rule above:
@@ -80,9 +81,9 @@ known class string **before** chasing the script logic, the mission class, or se
 
 ### Post-build check — deployed-artifact reconciliation and exception-safe gates
 
-- **A portable return is a deployment boundary (LL-293).** A source pack does not bring Steam `!Workshop` or `_server\profiles`. Before the first in-game test, inventory those external dependencies and profiles, extract a census of the deployed PBO entries, and compare each expected entry with the current compilable tree by content hash. Whole-PBO byte equality is not a substitute for per-entry comparison; rebuild and deploy on any unresolved divergence. Run source-sync steps only in a mode that cannot overwrite restored sources with stale assembly output (`oh1-build-deploy.ps1` without `-SkipSourceSync` overwrites MLOD with stale `assemble_out`; `powershell -File x.ps1 -Array a,b` passes one string — gate FAIL without deploy, use `&`).
+- **Moving a project to another machine is a deployment boundary.** A copy of the sources does not bring Steam `!Workshop` or the server profiles. Before the first in-game test, inventory those external dependencies and profiles, extract a census of the deployed PBO entries, and compare each expected entry with the current compilable tree by content hash. Whole-PBO byte equality is not a substitute for per-entry comparison; rebuild and deploy on any unresolved divergence. Run source-sync steps only in a mode that cannot overwrite restored sources with stale assembly output. In PowerShell, `powershell -File x.ps1 -Array a,b` passes one string, so a gate fed that way fails without deploying; call the script with `&`.
 
-### Content gate: derived manifest, extras check, and negative control (SP-171)
+### Content gate: derived manifest, extras check, and negative control
 
 A content gate built on a hand-maintained closed file list goes stale in both directions
 simultaneously: it names files that have since been deleted (killing the build at
@@ -111,31 +112,29 @@ PBO as well, the anchor is stale — there is no regression. Only an anchor pres
 deployed PBO but missing from your new build is a true regression.
 
 
-### AddonBuilder non-determinism: byte identity is valid within a build, invalid between builds (SP-194)
+### AddonBuilder non-determinism: byte identity is valid within a build, invalid between builds
 
-Measured 2026-08-07 (SUB_BRZ s48, LFPowerGrid F4-S3): with the same source MLOD and the same
+Measured on two mods: with the same source MLOD and the same
 `-include`, two AddonBuilder runs produce different `.p3d` bytes. The payload (vertices, normals,
 UVs, named selections, textures, material set) hashes identically; only the ORDER of `faces`,
 `sections`, and the material array changes. Of 10 byte-different entries in the first measurement,
 8 were pure reordering and 2 were the real change.
 
 **Within a build**, byte identity is valid and must be enforced: the binarized temp output must be
-byte-exact against the PBO entry (both come from the same run). This is the gate already used by
-`forza_build_identity.py` (stage↔PBO) and GATE A of `pbo_verify_s48.py`; SP-194 does not
-invalidate it.
+byte-exact against the PBO entry (both come from the same run). The non-determinism does not
+invalidate that gate.
 
 **Between builds**, comparing bytes or sizes gives false positives. A "only X should have changed"
 gate against the deployed PBO will flag ~8 of 11 untouched entries. The correct between-builds gate
 is an **unordered multiset** per LOD keyed on `(material, texture, vertex-index, lit_bit)`,
 constructed by walking `sections` and mapping each face to its material. Vertex indices are
-comparable because vertex order IS stable (its hash matches across runs). Reference implementation:
-`pbo_verify_s48.py` GATE C (`canonical()`); diagnostic triple: `s48_diag_delta.py` /
-`_content.py` / `_canonical.py` (counts → payload → canonical).
+comparable because vertex order is stable (its hash matches across runs). Diagnose in three
+steps: counts, then payload, then the canonical multiset.
 
 **Mandatory self-check:** if the sections do not cover ALL faces of the LOD, the multiset is
 incomplete and the gate must declare itself **VOID** rather than pass.
 
-**Addendum (LFPowerGrid F4-S3):** the non-determinism is in the ODOL binarization of `.p3d` only.
+**Scripts are stable:** the non-determinism is in the ODOL binarization of `.p3d` only.
 `.c` script entries are byte-stable between builds (measured: 1 of 147 `.c` entries changed size,
 and it was exactly the file that was edited; all 50 `.p3d` sources were byte-identical between the
 two trees). Therefore **comparing script entries between two PBOs IS a valid change detector** —
@@ -147,7 +146,7 @@ discards the cheapest gate available.
 In a project with release or audit anchored to a hash, "do not rebuild the PBO" is a hard
 invariant: the file is a unique artifact and must be backed up by hash.
 
-- **Every expected difference needs a pinned base (LL-326).** Audit gate code for `continue`, `pass`, `ok += 1` and allowlists. A file known to differ because a delta/merge is not yet promoted cannot receive an unconditional OK: store the `SHA-256` of the exact source base at derivation time in an `enforce-base.json`, mark the artifact `STALE` if that base moved, and force the merge to be rebuilt. Separately, a proximity check for words such as "retired" or "obsolete" answers an adjacent question; require the live identifier beside each retired reference.
+- **Every expected difference needs a pinned base.** Audit gate code for `continue`, `pass`, `ok += 1` and allowlists. A file known to differ because a delta/merge is not yet promoted cannot receive an unconditional OK: store the `SHA-256` of the exact source base at derivation time in an `enforce-base.json`, mark the artifact `STALE` if that base moved, and force the merge to be rebuilt. Separately, a proximity check for words such as "retired" or "obsolete" answers an adjacent question; require the live identifier beside each retired reference.
 
 ### Compare the entries of two builds
 
@@ -158,13 +157,13 @@ python scripts/tools/dayz-pbo-diff/pbo_diff.py --old <old.pbo> --new <new.pbo> -
 ```
 
 It compares the SHA-256 of every entry's payload and the header properties; `differing` lists every
-entry that changed or is on one side only. Read it with SP-194 above: between two builds a
+entry that changed or is on one side only. Read it with the non-determinism rule above: between two builds a
 different `.p3d` entry proves nothing by itself, while a different script, config, material or
 texture entry does (§"Binarize is not byte-deterministic" below). `--ignore-prefix <prefix>` drops
 a prefix from `differing_not_ignored`, never from `differing`. A compressed entry is refused
 (exit 1); see `scripts/tools/dayz-pbo-diff/README.md`.
 
-### Two silent no-load causes to check BEFORE blaming the engine (SP-347)
+### Two silent no-load causes to check before blaming the engine
 
 Both produce the same symptom as the binarize/`.c` case above — the mod mounts, nothing
 runs, the log is empty — and both are decidable offline in seconds. Check them before
@@ -175,10 +174,10 @@ work" from a log line that was never going to exist.
 `CfgMods.<Mod>.defs` must map each source folder to its own stage: `3_Game` ->
 `gameScriptModule`, `4_World` -> `worldScriptModule`, `5_Mission` -> `missionScriptModule`.
 Declaring `4_World` files under `gameScriptModule` is accepted by the packer and produces no
-warning, but the code never reaches the stage where its base classes exist. Measured
-2026-08-24: a bench mod declared `files[]={"<Mod>/scripts/4_world"}` under `gameScriptModule`
-and emitted nothing at all; two mods that load on the same machine (`DayZ_MCP/config.cpp`,
-`A6_MK47/config.cpp`) both use `worldScriptModule` for `4_World`. `/dayz-lint` reports the
+warning, but the code never reaches the stage where its base classes exist. Measured:
+a bench mod declared `files[]={"<Mod>/scripts/4_world"}` under `gameScriptModule`
+and emitted nothing at all; two mods that load on the same machine
+both use `worldScriptModule` for `4_World`. `/dayz-lint` reports the
 mismatch as `script-module-layer`. The failure mode in game is silence rather than an error.
 
 Match the **case** of the folder too, on disk and in `config.cpp`. Working mods ship
@@ -201,7 +200,7 @@ is one `0x00` separator followed by the SHA-1 of everything before it:
 trailer == b"\x00" + sha1(data[:-21]).digest()
 ```
 
-Measured 2026-08-24 on 6 vanilla PBOs (`ai`, `ai_bliss`, `animals`, `animals_bliss`,
+Measured on 6 vanilla PBOs (`ai`, `ai_bliss`, `animals`, `animals_bliss`,
 `anims_anm_infected`, `anims_anm_player`), 6/6 match, 10 KB to 350 MB. AddonBuilder writes it (`pbo_entries.py` checks it on every `/dayz-build-pbo` build);
 a custom Python/Node packer usually does not, because a PBO without it still parses correctly
 with any reader you write yourself — the omission is invisible to a round-trip test, which
@@ -221,41 +220,41 @@ if not (len(data) > 21 and data[-21] == 0
 **Gate ordering.** A build step that reports success without checking `$LASTEXITCODE` after
 each AddonBuilder invocation, and a deploy step that accepts a PBO on `Test-Path` alone, will
 both hand you a stale artifact and call it fresh. Check the return code after *every*
-invocation — and for AddonBuilder, whose exit code is 0 even when the build fails (SP-155
-rule 1), read the rpt's `[ResultCode]` and check that the PBO exists and was rebuilt — and
+invocation — and for AddonBuilder, whose exit code is 0 even when the build fails
+(`addonbuilder-rules.md`, binarized-build rule 1), read the rpt's `[ResultCode]` and check that the PBO exists and was rebuilt — and
 print a `SHA-256` build-id at pack time that a boot sentinel inside the mod
 can be checked against — otherwise an old PBO is indistinguishable from a new one that does
 nothing.
 
 ---
 
-## Build appendices (session findings, 2026-06-11 and later)
+## Build appendices
 
-## Mandatory post-build PBO verification (added 2026-06-11)
+## Mandatory post-build PBO verification
 
-Origin: LFSlidingFloor session 2026-06-10 — AddonBuilder reported "Build Successful" with a 613-byte PBO (its internal sync to temp copied 0 files, probably collision with OneDrive); additionally the measured PBO was RESIDUE from a previous build (cf. LL-135) because AddonBuilder names PBO according to source FOLDER, not according to -prefix.
+The case behind this checklist: AddonBuilder reported "Build Successful" with a 613-byte PBO (its internal sync to temp copied 0 files, probably a collision with OneDrive); additionally the measured PBO was residue from a previous build, because AddonBuilder names the PBO after the source folder, not after `-prefix`.
 
 Checklist after EACH build (exit 0 and "Build Successful" are NOT enough):
-1. PBO size larger than a reasonable threshold (a script mod is around 15-30 KB; ~600 B = packed empty folder; cf. memory "2 KB PBO = model fell off").
+1. PBO size larger than a reasonable threshold (a script mod is around 15-30 KB; ~600 B = packed empty folder; a 2 KB PBO of a model mod means the model fell out).
 2. Content: binary grep of expected strings (names of .c files, a RECENT code literal to detect residue): PowerShell `[Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($pbo)) -match "my_marker"`.
 3. Name: PBO outputs as `<SourceFolderName>.pbo` — if you build from staging, the folder MUST be named exactly like the mod (e.g. `%TEMP%\<Mod>\`), or you will deploy and measure the wrong file.
 4. Local staging (outside OneDrive) for build source: AddonBuilder sync against OneDrive paths can copy 0 files without reporting error.
-5. PROPERTIES gate after `ExtractPbo` — SHA is not enough: a hash manifest compares the same file on both sides, so gives green even if packed `.p3d` were built BEFORE property entered generators. Measured case (LFHeli HH-60G, 2026-07-29): `autocenter=0` was added to visual LOD of hull in both generators at 01:52/02:07, PBO was packed at 02:15 from previous `.p3d`, and manifest gave green; upon measuring the 48 extracted `.p3d`, the 8 sub-models had it and **the 40 hulls did not**. The gate must read the specific property **per LOD**, with expectations declared in table (property, expected value, reason, explicit exclusions — e.g. Memory LODs, having no geometry to recenter, are excluded). A gate only comparing hashes cannot turn red from this cause.
-6. Model-count gate from the PBO ENTRY TABLE — size alone passes a model-less PBO: measured 2026-09-13 (SUB_BRZ s91), a build with exit 0 and "Build Successful" packed an 8.0 MB PBO with 132 entries and ZERO of ten `.p3d`, because the stage path carried the addon folder name higher up (`...\s91_stage0\stage\SUB_BRZ`); renaming only the stage's parent folder produced full PBOs again (21.5 MB, 140/140 entries, 10/10 ODOL). The `<4096 B` size gate misses it, and the SP-069 "`-temp` must stay under the work drive" explanation did not reproduce in four later builds with `-temp` outside the work drive (work drive mounted): re-measure before trusting either explanation of a tiny or model-less PBO. Count the `.p3d`/ODOL entries of the built PBO against the stage before trusting any build. [EXACT] (measured, SP-394]
+5. PROPERTIES gate after `ExtractPbo` — SHA is not enough: a hash manifest compares the same file on both sides, so gives green even if packed `.p3d` were built BEFORE property entered generators. Measured case (a helicopter mod): `autocenter=0` was added to visual LOD of hull in both generators at 01:52/02:07, PBO was packed at 02:15 from previous `.p3d`, and manifest gave green; upon measuring the 48 extracted `.p3d`, the 8 sub-models had it and **the 40 hulls did not**. The gate must read the specific property **per LOD**, with expectations declared in table (property, expected value, reason, explicit exclusions — e.g. Memory LODs, having no geometry to recenter, are excluded). A gate only comparing hashes cannot turn red from this cause.
+6. Model-count gate from the PBO ENTRY TABLE — size alone passes a model-less PBO: in a measured case, a build with exit 0 and "Build Successful" packed an 8.0 MB PBO with 132 entries and zero of ten `.p3d`, because the stage path carried the addon folder name higher up (`...\<Mod>_stage0\stage\<Mod>`); renaming only the stage's parent folder produced full PBOs again (21.5 MB, 140/140 entries, 10/10 ODOL). The `<4096 B` size gate misses it, and the "`-temp` must stay under the work drive" explanation (`addonbuilder-rules.md`, command-line rule 1) did not reproduce in four later builds with `-temp` outside the work drive (work drive mounted): re-measure before trusting either explanation of a tiny or model-less PBO. Count the `.p3d`/ODOL entries of the built PBO against the stage before trusting any build.
 
-### Property-gate controls (SP-133)
+### Property-gate controls
 
 The expectation table must also name controls that are expected not to change, such as the
 control arm of an A/B build or a byte-frozen copy. A blanket "all LODs" requirement rejects
 healthy controls and gets disabled; declare the expected value and reason for each control
 instead.
 
-## (added 2026-06-11) Model-path resolution gate — validate what the engine will RESOLVE
+## Model-path resolution gate — validate what the engine will resolve
 
-Origin: A6_MK47 2026-06-11 — `model=` pointed at the PBO root while the
+The case behind it (a weapon mod): `model=` pointed at the PBO root while the
 binarized p3d lived in `data\`; dirty-temp builds smuggled a raw MLOD into the
 PBO root and the engine loaded that file for 11 versions, so every offline gate
-validated a p3d the runtime never resolved (LL-145).
+validated a p3d the runtime never resolved.
 
 Before declaring any build/deploy good:
 
@@ -272,18 +271,16 @@ Before declaring any build/deploy good:
 
 ---
 
-## Rules promoted from the lessons corpus (added 2026-07-27)
+## Further build rules
 
-Each rule keeps the `LL-NNN` id it has in the knowledge pack author's lessons list.
+- **A compile error in a vanilla file may be a cascade.** Facing `quoted string not closed`, EOF or a line pointed out in vanilla, treat the file and line as a possible module cascade and inspect a BOM or a truncated file earlier in the module first. Diagnose and correct at byte level on the machine that holds the real files, not on a stale mount.
+- **`-include` is an exclusive filter.** Treat it as one and always validate from an empty temp. Separate the `.p3d` sync from the step that binarizes them to ODOL; fail if entries are missing or the size shows an MLOD copied as-is.
+- **A pin by sha256 or size breaks on its own going through git.** With `core.autocrlf=true` (default on Windows) `git add` normalizes to LF and `git checkout` rewrites with CRLF, so blob and working tree cease to match pinned values (measured: a text file of 1577 B pinned against 1548 B in the blob, and 8 failures on a Windows clone). Run the gate on a **freshly checked-out clone**, not on a copy exported with robocopy: the copy preserves the original bytes and passes on a tree that no one receives. Put a `.gitattributes` with `* text=auto eol=lf` in from the first commit, plus `-text` on whatever is compared byte by byte. It is the same axis as the AddonBuilder byte identity section above: before comparing hashes, make sure you compare the tree that gets published.
+- **Trace a release to its whole source tree.** A release artifact is traced to its commit by the hash of its entire source tree, not of the touched files. Pre-release gate: commit or canonical source ↔ full build tree ↔ PBO. An incremental "verified" sync only verifies its own delta.
 
-- **LL-084** — Facing `quoted string not closed`, EOF or a line pointed out in vanilla, treat file and line as possible module cascade and inspect BOM/upstream truncation first. Perform diagnosis and byte-level correction from authoritative host, not from stale mount.
-- **LL-213** — Treat `-include` as exclusive filter and always validate from an empty temp. Separate `.p3d` sync from step binarizing them to ODOL; fail if entries are missing or size indicates MLOD copied as-is.
-- **LL-290** — A pin by sha256 or size breaks on its own going through git: with `core.autocrlf=true` (default on Windows) `git add` normalizes to LF and `git checkout` rewrites with CRLF, so blob and working tree cease to match pinned values (measured: LICENSE 1577 B pinned vs 1548 B in blob, and 8 reds on a Windows clone). Run gate on **freshly checked-out clone**, not on a copy exported with robocopy: copy preserves original bytes and gives green on a tree that no one receives. And put `.gitattributes` with `* text=auto eol=lf` from first commit, plus `-text` on whatever is compared byte-by-byte. It is the same axis as AddonBuilder byte identity section above: before comparing hashes, ensure you compare the tree that gets published.
-- **LL-367** — A release artifact is traced to commit by hash of its ENTIRE source tree, not touched files. Pre-release provenance gate: commit/canonical source ↔ full build tree ↔ PBO. An incremental "verified" sync only verifies its own delta.
+## A mod can have two PBOs, and the one your gate validates may not be the one the game loads
 
-## A mod can have TWO PBOs, and the one your gate validates may not be the one the game loads (added 2026-09-02)
-
-Measured on LFQuad on 2026-09-01, investigating why a freshness gate gave a reading
+Measured on a vehicle mod, investigating why a freshness gate gave a reading
 that did not add up:
 
 | path | size | date | model inside |
@@ -312,11 +309,11 @@ Two instrumentation details that came out of the same place:
   copies, so counting it as source leaves the gate red forever for a reason that
   has nothing to do with package being stale.
 
-## "Build Successful" does not say it packaged YOUR sources: the `-temp` tree can survive (added 2026-09-06)
+## "Build Successful" does not say it packaged your sources: the `-temp` tree can survive
 
-Sister to previous section. That one says you may be validating the wrong
+Sister to the previous section. That one says you may be validating the wrong
 PBO; this one, that you may be building the **correct PBO from the
-wrong sources**. Measured on LFPowerGrid on 2026-09-06, after a week of
+wrong sources**. Measured on a large mod, after a week of
 in-game measurements taken on a ghost package.
 
 **The mechanism.** AddonBuilder receives `-temp=<dir>` and works there. It is common for the
@@ -334,7 +331,7 @@ packs the `gui/`, `scripts/` and `data/` that were already there, and reports
 | `config.bin`, `texHeaders.bin` | from one minute ago |
 | `gui/`, `scripts/`, `data/` | from days or weeks ago |
 
-In the measured case, deployed package carried sources from 2026-08-29 while repo
+In the measured case, the deployed package carried week-old sources while the source tree
 was a week ahead: 14 different files, an entire missing `.layout`, ~8,500 B
 less in a single view, and `config.cpp` not copied (replaced by regenerated
 `config.bin`). Each "rebuild" moved the `.pbo` mtime and did not move its content.
@@ -344,7 +341,7 @@ less in a single view, and `config.cpp` not copied (replaced by regenerated
 - **Counting loose version mentions does not discriminate.** The old package gave 80
   occurrences of `"1.2.3"` and 1 of `"1.2.4"`, but those numbers mix comments,
   changelogs, and legacy migrations. What decides is the **exact literal** of the
-  constant: `grep -c -a -F 'LFPG_VERSION_STR = "1.2.4"'`. One against zero, without noise.
+  constant: `grep -c -a -F 'MYMOD_VERSION_STR = "1.2.4"'`. One against zero, without noise.
 - **Larger is not more complete.** The correct package came out **8.4 MB smaller**
   than the ghost (99.6 MB against 108.0 MB), because the never-cleaned `-temp` tree
   had been accumulating debris from previous builds that got packed with everything else.
@@ -375,40 +372,32 @@ flag swallows it), guard aborts with `RC=4` without ever invoking AddonBuilder, 
 wrapper's `finally` block continues running — important if, as here, it puts configs
 from other projects in quarantine while the build lasts.
 
-### Cross-link: load order + thin lower layers (historical)
+### Cross-link: load order and thin lower layers
 
-`requiredAddons[]` dependency graph orders cross-mod compile within each script module layer (see dayz-mod-workflow). Prefer not inventing 1_Core/2_GameLib content unless you truly need that surface — default shared data to 3_Game.
+The `requiredAddons[]` dependency graph orders cross-mod compile within each script module layer (see `/dayz-mod-workflow`). Prefer not inventing 1_Core/2_GameLib content unless you truly need that surface; default shared data to 3_Game.
 
-From the StarDZ DayZ Modding Wiki: https://github.com/StarDZ-Team/DayZ-Modding-Wiki/blob/main/en/02-mod-structure/01-five-layers.md
+## Binarize is not byte-deterministic
 
-## Binarize is not byte-deterministic (added 2026-09-08)
-
-Measured 2026-09-07 on LFSecure with AddonBuilder 1.29 (`build_pbo.py`, staging outside `P:\`, `-temp` under `P:\`): two consecutive builds of the SAME assembled tree (MLOD `lfs_door.p3d` and `lfs_room.p3d` byte-identical by sha256) produced different ODOL entries — door 339,554 vs 339,551 B, room 2,597,078 vs 2,598,395 B — while every script, config, rvmat, paa and csv entry hashed the same. Consequences for a release or A/B gate:
+Measured with AddonBuilder for DayZ 1.29 (staging outside `P:\`, `-temp` under `P:\`): two consecutive builds of the same assembled tree (a door and a room MLOD `.p3d`, byte-identical by sha256) produced different ODOL entries — door 339,554 vs 339,551 B, room 2,597,078 vs 2,598,395 B — while every script, config, rvmat, paa and csv entry hashed the same. Consequences for a release or A/B gate:
 
 - **Per-entry PBO hashes are an identity gate for scripts, config, materials and textures only.** A changed `.p3d` entry between two builds proves nothing by itself.
 - **A binarized model is accredited by the hash of its MLOD input plus the engine check** (render + raycast), never by ODOL bytes. Keep the MLOD hashes next to the PBO hash in the evidence.
 - **Do not chase a byte diff in a `.p3d` entry** when the MLOD did not change; rebuild twice and compare before opening a debinarizer.
-- When the doubt is already open (a test PBO whose ten `.p3d` all hash differently and whose body is ~33 KB smaller, SUB_BRZ s96, 2026-09-18), close it by CONTENT: extract the ODOL from inside each PBO and compare what matters — baked animations, bones, face counts, dimensions — against the stage (measured identical there, `pbo_diff.py`: 127 entries equal, the 10 `.p3d` different). Size and hash differences between builds of the same stage are expected binarize noise, not evidence of a geometry change. [EXACT] (measured, SP-410]
+- When the doubt is already open (a test PBO whose ten `.p3d` all hash differently and whose body is ~33 KB smaller), close it by CONTENT: extract the ODOL from inside each PBO and compare what matters — baked animations, bones, face counts, dimensions — against the stage (measured identical there, `pbo_diff.py`: 127 entries equal, the 10 `.p3d` different). Size and hash differences between builds of the same stage are expected binarize noise, not evidence of a geometry change.
 
-## A content gate string that BASE also contains cannot turn red (SP-390, added 2026-09-10)
+## A content gate string that the base build also contains cannot turn red
 
-`core-build-deploy.ps1 -RequireString <string>` checks that text is inside packaged
-and deployed PBO, and is a good gate: catches build that packaged an
-old version of tree. Fails silently when chosen string **is not exclusive
-to the change**.
+A gate that checks a required string is inside the packaged and deployed PBO is a good
+gate: it catches a build that packaged an old version of the tree. It fails silently when
+the chosen string **is not exclusive to the change**.
 
-Measured on 2026-09-10 on LFHeliCore. To test a variant that enabled client
-smoothing only with `ClientPresentMode == 1`, the gate was closed with:
-
-```
-core-build-deploy.ps1 -RequireString "ClientPresentMode == 1"
-```
-
-and passed. But BASE already contained that substring, in a function that has nothing to
-do with the variant:
+Measured case: to test a variant that enabled client
+smoothing only with `ClientPresentMode == 1`, the gate required the string
+`ClientPresentMode == 1` and passed. But the base build already contained that substring,
+in a function that has nothing to do with the variant:
 
 ```c
-// LFHeliOwnerWakeEnabled(), present since before the change
+// present since before the change
 return m_Tuning.ClientPresentMode == 0 || m_Tuning.ClientPresentMode == 1;
 ```
 
@@ -418,7 +407,7 @@ verified that change traveled to PBO, and only verified that file was still ther
 
 **How the string is chosen.** Let it be unique to the change, not to change area. A
 new constant name (`REST_PROBE_ARM_MPS`) or a new log tag
-(`[LFHELI-REST]`) are good: they do not exist before. An expression fragment on an
+(`[MYMOD-REST]`) are good: they do not exist before. An expression fragment on an
 already-used field, no.
 
 **And the check that closes it, taking one minute**: before trusting the gate,

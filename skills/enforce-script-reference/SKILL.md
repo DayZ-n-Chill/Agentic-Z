@@ -17,7 +17,7 @@ Follow `skills/_shared/dayz-conventions.md`. This skill is reference only: it ru
 - The short, checked facts are in the Enforce Script pack, `skills/_shared/enscript/README.md`, and the style guide, `skills/_shared/enscript-style.md`. Read those first for a signature or a pattern.
 - This skill holds the depth: failures met in real mods, with the build they were measured on, the error text and the fix. Read the file the table below names for your question; do not read them all.
 
-How to read the evidence in the reference files: a line cited as `P:\...:N` was opened on `P:\` and holds what the text says. "Measured in game" names the mod and the game build; those results were not run again here. A fact about a third-party mod (Community Framework, Expansion, Dabs, LBmaster's mods) names that mod. `SP-`, `LL-` and `CLAIM-` labels are entry names the files use to point at each other.
+How to read the evidence in the reference files: a line cited as `P:\...:N` was opened on `P:\` and holds what the text says. "Measured in game" gives the game build; those results were not run again here. A fact about a third-party mod (Community Framework, Expansion, Dabs Framework) names that mod.
 
 ## The rules broken most often
 
@@ -40,7 +40,7 @@ Offline checks prove form, not compilation. A script module is known to compile 
 
 | Question | Read |
 |---|---|
-| Which rules apply to all Enforce Script (syntax, memory, networking, timers, overrides, actions, layout paths, inputs and keybinds)? What do the old `ENF-R` rule numbers mean? | `references/hard-rules.md` |
+| Which rules apply to all Enforce Script (syntax, memory, networking, timers, overrides, actions, layout paths, inputs and keybinds)? | `references/hard-rules.md` |
 | Why does the compiler give a misleading error, or none until boot (method scope, split statements, keywords as names, commented out classes, methods under an inactive define)? | `references/compiler-traps.md` |
 | It compiles and then crashes or does nothing: client preload, no `Math.Exp`, where `$profile:` points, a scheduled callback that never fires, a path that lost its backslashes | `references/runtime-traps.md` |
 | What goes in `3_Game`, `4_World` and `5_Mission`? Why does my `modded class MissionServer` never run? | `references/script-layers.md` |
@@ -59,7 +59,7 @@ Offline checks prove form, not compilation. A script module is known to compile 
 | Fire modes on a derived weapon (single, burst, full auto) and the `Mode_*` forward declaration trap | `references/weapon-firemodes.md` |
 | Dabs MVC traps: `ObservableCollection`, auto binding, `Relay_Command`, floating windows, hover, scaling | `references/dabs-mvc-advanced.md` |
 | UI state, hover caching, view binding, animation and event handler patterns from shipped mods | `references/production-patterns.md` |
-| Patterns from the LM_Planes mod: `CfgMods`, custom inputs, `CfgSoundSets` parameters, building doors, RPC enums, server-authoritative input, parent and child mods | `references/llama-extraction-patterns.md` |
+| Mod structure patterns: `CfgMods`, custom inputs, `CfgSoundSets` parameters, building doors, RPC enums, server-authoritative input, parent and child mods | `references/llama-extraction-patterns.md` |
 
 Full UI, layout, widget and Dabs work is in the `dayz-ui-development` skill; this skill keeps only the layout path and menu guard rules and the `CfgMods` `inputs` entry.
 
@@ -92,7 +92,7 @@ The bodies and the full migration list are in `references/dayz-1-30-enforce-scri
 Everything above is the Windows workflow. On Linux, the Proton setup, the measured tool matrix and the traps are in `skills/_shared/linux-proton.md`. What changes for this skill:
 
 - **Vanilla scripts.** Unpack the installed script PBOs with `dayzmake unpack`, keeping their prefix paths, and cite the extracted file and the game build. Use dayzmake `v2.0.0` (commit `f31056ae`) or later: its unpacker skips unsafe entry names (`safe_relative_path` and `crosses_symlink` in `src/pbo.rs`), which `v1.0.0` does not, so with an older version inspect every entry name first, as the `dayz-pbo-reverse-engineering` skill describes. `skills/_shared/scripts/extract-dayz-sources.sh <install> <dir>` extracts every script and unpacked config (about 90 s for the vanilla install).
-- **Does this symbol exist.** `skills/_shared/scripts/build-api-index.py <dir>/scripts ~/.cache/dayz-api` builds an index of declarations, and `skills/_shared/scripts/dayz-api.py` queries it with `class`, `find`, `chain`, `sub`, `enum` or `src` and a name. The index holds Bohemia's declarations, so build it locally and never ship it. Online, `https://diff.yadz.app/api/classes/<Name>.json` gives one class of the latest build as JSON (`base`, `bases` with the define a base depends on, `methods`, `members`, file and line); `api/enums/<Name>.json` and `api/globals.json` cover the rest, and `api.json` is only a name index. This was checked by a third party against site build 1.30.164078, not here.
+- **Does this symbol exist.** `skills/_shared/scripts/build-api-index.py <dir>/scripts ~/.cache/dayz-api` builds an index of declarations, and `skills/_shared/scripts/dayz-api.py` queries it with `class`, `find`, `chain`, `sub`, `enum` or `src` and a name. The index holds Bohemia's declarations, so build it locally and never ship it. Online, `https://diff.yadz.app/api/classes/<Name>.json` gives one class of the latest build as JSON (`base`, `bases` with the define a base depends on, `methods`, `members`, file and line); `api/enums/<Name>.json` and `api/globals.json` cover the rest, and `api.json` is only a name index. Not checked here; the site served build 1.30.164078 when this was written.
 - **Script logs.** The native server writes to its `-profiles` folder. The Proton client writes to `<prefix>/pfx/drive_c/users/steamuser/AppData/Local/DayZ`, or to its `-profiles=` folder.
 - **Defines.** The native Linux server defines `PLATFORM_LINUX` and also `SERVER_FOR_WINDOWS` (observed). DayZDiag and the client under Proton define `PLATFORM_WINDOWS`. Do not use either define to mean "the host runs Windows".
 

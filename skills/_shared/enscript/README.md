@@ -12,10 +12,12 @@ This folder fills the gap between those: the recurring patterns themselves (nets
 
 ## What is checked on `P:\`
 
-Most of this folder started as a vendored mirror (see Attribution). Files are now in one of two states:
+Files in this folder are in one of two states:
 
 - **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md` (which marks its two native compiler reports as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md`, `scheduler.md` (which marks its one unverified report as such) and `server_tick_budget.md` (which cites the vanilla calls and marks the third-party techniques as reported); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `01` to `10`, the three layouts and `layouts.md`.
 - **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`) and `integrations/dabs_framework.md` (the Dabs scripts PBO).
+
+When you add or change a fact in a checked file, check it on `P:\` (or in the framework's PBO) and cite the line. Never overwrite a checked file with content that was not checked.
 
 ## Layout
 
@@ -41,7 +43,7 @@ enscript/
 | `physics_items.md` | `ThrowPhysically` vs manual `CreateDynamicPhysics`, `SetDynamicPhysicsLifeTime` mandatory call |
 | `json_config_migration.md` | `SCHEMA_VERSION` + forward-migration, `LoadFile` parse-failure handling for admin-edited JSON |
 | `language_workarounds.md` | No ternary, `auto` inference, no lambdas, no exceptions; overloading and `foreach` with an index do work |
-| `server_tick_budget.md` | Keeping periodic server work inside the tick: one manager with a work budget, staggering, backoff, events in place of polling, compile-time side gates, what lowers server script memory. The techniques are reported from third-party mods (Expansion AI, LFPowerGrid); the vanilla calls they use are cited |
+| `server_tick_budget.md` | Keeping periodic server work inside the tick: one manager with a work budget, staggering, backoff, events in place of polling, compile-time side gates, what lowers server script memory. The techniques are third-party mod behaviour (Expansion AI and a power grid mod), marked as reported; the vanilla calls they use are cited |
 
 ### integrations/
 
@@ -140,31 +142,3 @@ When debugging, jump to the file that owns the symptom.
 | `Debug.Log` prints nothing | `references/api_game.md` (silent unless logs are enabled) |
 | `set.Contains` or `string.StartsWith` does not compile | `references/language_types.md` (methods that do not exist) |
 | Attachment slot silently rejects modded item | `../conventions/config.md` (T148506: `+=` on a parent whose `inventorySlot` is a string drops the slot) |
-
-## Our additions
-
-The vendored content was modified to add Agentic-Z gotchas and, for the files listed under "What is checked on `P:\`", rewritten against vanilla:
-
-- **`patterns/language_workarounds.md`**: `auto` corrected; vanilla uses it for type inference
-- **`patterns/modded_class.md`**: `NEVER use extends` callout, engine-backed classes, `#ifndef NO_GUI` guard rule, extend-script-class-not-config-parent
-- **`patterns/rpc.md`** — ID-collision symptom + high-base recommendation
-- **`patterns/singleton.md`** — `ScriptInvoker` shutdown null-guard
-- **`patterns/actions.md`** *(new)* — full action-system pitfalls
-- **`patterns/scheduler.md`** *(new)*: the unverified `CallLater` drift report, the `Timer` alternative and per tick allocation
-- **`patterns/physics_items.md`** *(new)* — `ThrowPhysically` pattern
-- **`patterns/json_config_migration.md`** *(new)* — forward-compatible JSON schema migration
-- **`integrations/input_bindings.md`**: rewritten to the `<modded_inputs>` format and the vanilla `UAInput` API; silent-fail keybind trap
-- **`integrations/central_economy.md`, `integrations/vanilla_plugins.md`, `integrations/community_framework.md`, `references/erpc_defines.md`, `references/file_paths.md`**: rewritten; each named API was checked on `P:\` or in the framework's PBO
-- **`integrations/dabs_framework.md`**: rewritten against the Dabs Framework scripts; wrong layout path trap
-- **`references/widget_api.md`** *(new)*: widget script API checked against vanilla
-- **`references/item_api.md`** — `Magazine.ServerSetAmmoCount`, `SetObjectTexture` case-sensitivity
-- **`references/language_*.md` and `references/api_*.md`** *(new)*: the language and core API reference, every fact checked on `P:\scripts\` with the line cited
-- **`references/types_collections.md`**: corrected against vanilla (no `set.Contains`, no `StartsWith`, `Sort(true)` is descending, `Copy` direction, `Cross` is an instance method); also `string.ToLower/ToUpper` mutation, `Math`/`string` API existence table, `int.MIN` quirk
-
-When SWARM updates upstream, compare the changes by hand, port only what still holds, and check each ported fact on `P:\` before marking the file checked. Never re-import over a checked file.
-
-## Attribution
-
-Source: [`SWARMDayZ/dayz-enfusion-skills`](https://github.com/SWARMDayZ/dayz-enfusion-skills). Vendored with verbal permission from the author (granted via YouTube video accompanying the repo). No license file is published upstream; treat this content as "use for whatever" per the author's public grant.
-
-Original layout and prose by SWARM; modifications and integration into Agentic-Z by DayZ n' Chill.

@@ -2,7 +2,7 @@
 
 Tier 3 pack: which DayZ build a fact or a line number belongs to, and what moved between the 1.30 builds. Load it when porting a 1.29 mod to 1.30, when a vanilla citation lands on the wrong line, or when a mod that worked on one 1.30 build breaks on the next. Tier 1 and Tier 2 still apply on top.
 
-Each row is a one-line statement of the change with the skill that holds the depth. The dates, counts and "changed in build X" statements come from the DayZ Modding Knowledge Pack's own re-checks of the vanilla scripts (2026-10-28 on 1.30.164200, 2026-11-09 on 1.30.164289).
+Each row is a one-line statement of the change with the skill that holds the depth. The dates, counts and "changed in build X" statements come from comparing the vanilla script trees of those builds (2026-10-28 on 1.30.164200, 2026-11-09 on 1.30.164289).
 
 **What `P:\` shows.** The lines below marked "on `P:\`" were opened for this file. The extraction they were checked on is a 1.30 build older than 1.30.164200: it still declares `vector.Cross` (`P:\scripts\1_core\proto\enconvert.c:239`) and has no `1_core\workbenchapi\` folder. So `P:\` confirms the "before" side of the 1.30.164200 and 1.30.164289 rows, and the "after" side is **not yet checked on `P:\`**. Run the check again after the vanilla data is re-extracted from a newer build.
 
@@ -10,7 +10,7 @@ Each row is a one-line statement of the change with the skill that holds the dep
 
 | Build | What it is | Date |
 |---|---|---|
-| 1.29.0.163451 | Vanilla script tree the Knowledge Pack was first anchored on. | stable until 2026-10-15 |
+| 1.29.0.163451 | The 1.29 vanilla script tree. A citation labelled `1.29` gives its lines. | stable until 2026-10-15 |
 | 1.29.163709 | DayZDiag build of the 1.29 in-game measurements (collision boxes, winding, moving platforms). | 2026-10-01 to 2026-10-03 |
 | 1.30.164014 | 1.30 Experimental, the first 1.30 extraction. Measurements labelled "1.30 Exp" were made here. | 2026-10-01 onward |
 | 1.30.164078 | 1.30 reaches stable. | 2026-10-15 |
@@ -23,7 +23,7 @@ DayZ Tools: since the DayZ Tools update of 2026-10-15 (Steam build 25460346, `bi
 
 ## Which line a citation gives
 
-A vanilla line number is only right for one build. The Knowledge Pack's citations were moved to 1.30.164289 lines on 2026-11-09. A citation labelled `1.29` gives the 1.29 line; a measurement keeps the build it was made on. When a cited line does not match on `P:\`, find the symbol by name before deciding the fact is wrong: the 27 files that 1.30.164289 changed include base building, the code lock, the diag menu, heat stroke, `game.c`, `playerconstants.c` and `miscgameplayfunctions.c`.
+A vanilla line number is only right for one build. The skills named in the Depth columns cite 1.30.164289 lines (as of 2026-11-09). A citation labelled `1.29` gives the 1.29 line; a measurement keeps the build it was made on. When a cited line does not match on `P:\`, find the symbol by name before deciding the fact is wrong: the 27 files that 1.30.164289 changed include base building, the code lock, the diag menu, heat stroke, `game.c`, `playerconstants.c` and `miscgameplayfunctions.c`.
 
 ## 1.29 to 1.30 (any 1.30 build)
 

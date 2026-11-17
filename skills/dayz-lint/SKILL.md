@@ -81,7 +81,7 @@ A finding is an error only when it stops the mod packing or loading. Everything 
 | `config-syntax` | error | Unbalanced braces, a missing `;` or `};`, an array without `[]`, `;` between array elements. Same grammar as the edit hook (`hooks/edit_check.py`). The structure rules below wait until the syntax is fixed. |
 | `cfgpatches-missing`, `cfgpatches-empty` | error | No `class CfgPatches`, or one with no patch class inside. |
 | `cfgpatches-field` | error | `units`, `weapons` or `requiredAddons` written without `[]`, so it is not an array. |
-| `cfgpatches-field-missing` | warning | A patch class without `units[]` or `weapons[]`. The engine tolerates it: vanilla `DZ_data_aiconfigs` in `P:\DZ\data\aiconfigs\config.cpp` has an empty body. |
+| `cfgpatches-field-missing` | warning | A patch class without `units[]` or `weapons[]`. The engine tolerates it: vanilla `DZ_data_aiconfigs` in `P:\DZ\data\aiconfigs\config.cpp:3` has an empty body. |
 | `required-addons-missing` | error | A patch class without `requiredAddons[]`, so its config can load before the vanilla classes it changes. |
 | `required-addon-name` | error | An entry that is not a class name (a path, a `.pbo`, an `@mod` folder, a space), the mod's own patch class, or a `DZ_` name that no vanilla config on `P:\DZ\` or `P:\scripts\` declares. |
 | `required-addon-duplicate` | warning | The same entry twice. |

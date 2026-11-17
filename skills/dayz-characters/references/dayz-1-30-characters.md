@@ -59,7 +59,7 @@ Two heavy running attacks ship as binary clips: `P:\DZ\anims\anm\infected\attack
 
 ## Human skinning: no `Lard`
 
-Up to 1.29 (changelog, and the source project's 1.29 extract), the `Skinning` class of `SurvivorBase` included a `Lard` entry. In 1.30 `class Skinning` (`P:\DZ\characters\data\config.cpp:167`) holds only `Steaks`, `Guts`, `Bones` and `BloodInfectionSettings` (`:169` to `:187`). A recipe or mod that expects `Lard` from a human body no longer gets it.
+Up to 1.29 (changelog), the `Skinning` class of `SurvivorBase` included a `Lard` entry. In 1.30 `class Skinning` (`P:\DZ\characters\data\config.cpp:167`) holds only `Steaks`, `Guts`, `Bones` and `BloodInfectionSettings` (`:169` to `:187`). A recipe or mod that expects `Lard` from a human body no longer gets it.
 
 ## Surrender (no dummy item)
 

@@ -61,4 +61,4 @@ Everything in this file describes the import project and its measured cars. None
 1. A missing required key is a FAIL that names the key. There are no silent defaults.
 2. Calibrations and `exceptions` carry an evidence note (`*_note`) and stay scoped to the profile: they are the history of one car, not pipeline doctrine.
 3. A schema change updates this file in the same commit; it is the contract car number N reads.
-4. `material_type_overrides` does not replace the global classification by folder. It keeps `source_type`, records `override=source.material_type_overrides` and is admitted only with the exact identity `part + mat_name + mat_path`. (Exact claim `CLAIM-R21-RIP-MATERIAL-OVERRIDE-SCHEMA` in the import project's records.)
+4. `material_type_overrides` does not replace the global classification by folder. It keeps `source_type`, records `override=source.material_type_overrides` and is admitted only with the exact identity `part + mat_name + mat_path`.

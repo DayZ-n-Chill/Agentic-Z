@@ -10,7 +10,7 @@ description: "Reference for designing, writing, debugging and auditing DayZ pers
 
 Reference only: this skill has no script. It is the deep material behind the persistence pack (`skills/_shared/persistence/`), written for `dayz-persistence-specialist`; any worker that designs saved data may open the one file it needs.
 
-Follow `skills/_shared/dayz-conventions.md`. Line numbers are from the vanilla scripts on `P:\` (game storage version 144, `GAME_STORAGE_VERSION` at `P:\scripts\3_game\global\game.c:5`). Three kinds of evidence appear in the references and are labelled where they occur: vanilla code read on `P:\`; measurements made in game by the source pack's mods, which cannot be checked on `P:\`; and Community Framework or other mod source, which is third-party. A `CLAIM-...` label is the entry's id in the source pack's claims register.
+Follow `skills/_shared/dayz-conventions.md`. Line numbers are from the vanilla scripts on `P:\` (game storage version 144, `GAME_STORAGE_VERSION` at `P:\scripts\3_game\global\game.c:5`). Three kinds of evidence appear in the references and are labelled where they occur: vanilla code read on `P:\`; measurements made in game with test mods, which cannot be checked on `P:\`; and Community Framework source, which is third-party and not unpacked on `P:\`.
 
 ## Which file answers which question
 

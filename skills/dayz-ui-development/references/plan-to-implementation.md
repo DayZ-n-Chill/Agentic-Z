@@ -4,10 +4,10 @@ Added 2026-07-03. This file exists because of one recurring failure: **the UI ne
 like it was planned.** It answers *why* that happens in DayZ/Enfusion specifically, and gives a
 concrete author → preview → build → verify loop plus a plan/spec artifact and a parity gate.
 
-Evidence: every non-obvious claim carries a citation that can be checked again — a
-`path:line` in the vanilla data on `P:\` (re-read on a `P:\` holding 1.30) or an AnswerOverflow URL
-(a community report, not checked here). In-game measurements and the test harnesses are the source
-author's. If a citation is missing, treat the line as a hint.
+Evidence: a `path:line` citation points into the vanilla data on `P:\` (read on a `P:\` holding 1.30).
+A line marked "not checked on `P:\`" is a behaviour reported from practice that was not confirmed
+against the vanilla files. In-game measurements say what was measured and when. If a line has
+neither, treat it as a hint.
 
 ---
 
@@ -19,7 +19,7 @@ author's. If a citation is missing, treat the line as a hint.
    said «**Author in proportional units (flags = 0) by default**, exact pixels (= 1) only for
    things that must be pixel-true. All-exact layouts look right at 1080p and wrong everywhere
    else».
-   SimpleGroup's all-exact panel measured right at 1920x1080, 1280x720 and 2560x1080.)*
+   A shipped all-exact panel measured right at 1920x1080, 1280x720 and 2560x1080.)*
 2. **If you use the Workbench Layout Editor, register your imagesets/styles twice** — in
    `dayz.gproj` (so the editor previews them) and in `config.cpp class defs` (so the game loads
    them). Missing either side is a direct mockup-vs-game divergence (section 3).
@@ -50,14 +50,14 @@ changes.
   The frame decides: a 400-unit panel drew 400 px wide at 1920x1080 and at 2560x1080, and
   267 px at 1280x720.
 - `0` = **fraction of parent (0.0–1.0)**. Vanilla predominantly uses proportional: over
-  `gui/layouts`, `hexactsize 0` appears 5851× vs `hexactsize 1` 2727× (the source's count; a
-  recount over `P:\gui\layouts` on 1.30 gives 6167 vs 3265, the same two to one).
+  the 227 layouts under `P:\gui\layouts` on 1.30, `hexactsize 0` appears 6167× vs `hexactsize 1`
+  3265×, about two to one.
 - The divergence that does come with exact units is script-made: a script that rescales exact
   widgets by height/1080 scales them twice (`text-sizing-and-rendering.md`, "Text sizing laws").
 - *(corrected 2026-10-03)* This section was titled «Exact flags mean physical pixels», said a
   layout authored at 1920×1080 «occupies a different fraction of the screen at 2560×1440,
-  ultrawide, or console», quoted a community post («It will only work on 1 resolution and 1
-  aspect ratio», https://www.answeroverflow.com/m/535469900702154753) and called it «the single
+  ultrawide, or console», said an exact layout «will only work on 1 resolution and 1
+  aspect ratio» and called it «the single
   most common cause of "looked right in my mockup, wrong in-game."» The in-game measurements
   above contradict the pixel reading: at 16:9 the fraction stayed the same at every height
   measured, and at 2560x1080 only the horizontal fraction changed. 2560×1440 itself was not
@@ -100,9 +100,9 @@ and not the other and the mockup and the build disagree by construction. Full me
 When the "plan" is a freeform HTML/CSS mockup (Google-Fonts web font, radial-gradient, scanlines,
 border-radius), none of those map to a widget attribute, so the implementation *cannot* match by
 definition and the gap is judged by eye between two hand-made artifacts.
-- Evidence (the source author's LFGungame project): its design mockup, `lfgg-mockup.html`, used a CDN
-  font and gradients; the mockup later rebuilt from the real files, `lfgg-impl-mockup.html`, is labelled
-  "positions and colors taken from the real `.layout` files … Not the exact pixel of the engine".
+- Seen in practice: a design mockup that used a CDN font and gradients could not be matched, and the
+  mockup later rebuilt from the real `.layout` files had to be labelled "positions and colors taken
+  from the real `.layout` files … Not the exact pixel of the engine".
 - **Rule:** the design mockup must stay inside the widget model — every visual element maps to a
   widget class + a verified attribute, or it doesn't go in the plan.
 

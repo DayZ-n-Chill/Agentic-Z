@@ -32,7 +32,7 @@ If the request is strictly technical (choosing an `AnimationSource`, registering
 | Weapon, reload, unjam or P3D mechanism | `dayz-weapons` when the entity contract changes, plus the relevant P3D or model skill (in 1.30: per-weapon bone remaps and dedicated `.asi` profiles). |
 | Occupant, entry or vehicle controls | `dayz-vehicles` (in 1.30: motorbikes on the `MOTO1` and `MOTO2` instances, with two-bone IK on the handlebar). |
 | Mocap or external donor | The retargeting skill that applies (`mixamo-retarget`); never without a source-to-target bone map. |
-| Runtime test | `/dayz-launch-test`, `/dayz-gate` and `/dayz-logwatch`, or the imported in-game test and MCP verify skills when present, with their lease and lifecycle rules (in 1.30: Workbench Live Editing). |
+| Runtime test | `/dayz-launch-test`, `/dayz-gate` and `/dayz-logwatch`, or `/dayz-test-ingame` and `/dayz-mcp-verify`, with their lease and lifecycle rules (in 1.30: Workbench Live Editing). |
 
 `blender-animation` and `dayz-animation-pipeline` stay mandatory for authoring and integration; the skills in the table do not replace them.
 
@@ -202,4 +202,4 @@ Stop and ask for the missing decision or evidence when:
 
 ## Building, testing and publishing the mod
 
-When this work has to end in a mod that builds, loads and ships (`config.cpp` and `CfgMods`, `requiredAddons`, the PBO, a boot on a local server, the release pack), use `/dayz-lint`, `/dayz-build-pbo`, `/dayz-gate` and `/dayz-release-pack`, and the mod development skill from the import (dayz-mod-dev) when present.
+When this work has to end in a mod that builds, loads and ships (`config.cpp` and `CfgMods`, `requiredAddons`, the PBO, a boot on a local server, the release pack), use `/dayz-lint`, `/dayz-build-pbo`, `/dayz-gate` and `/dayz-release-pack`, and `/dayz-mod-dev` for the mod's structure.

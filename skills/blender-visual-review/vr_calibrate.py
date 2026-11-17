@@ -3,7 +3,7 @@
 
 Decides — with data, not vibes — whether a local model's visual judgments track
 the agent's own, and which of several models tracks them best. Until a model
-passes here it stays SHADOW-only (LL-153).
+passes here it stays SHADOW-only.
 
 Two steps:
 

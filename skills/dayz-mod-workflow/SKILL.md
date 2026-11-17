@@ -14,7 +14,7 @@ It is a process skill. The domain knowledge lives in the packs under `skills/_sh
 
 Until 1.29 the six-layer debug order, the sync variable rules and errors E01 to E20 were the whole contract. Since 1.30 the client also checks `CanBeStarted()` before it starts an action, vanilla water actions use `CCTLiquid`, the Central Economy has `MotorbikeScript` and `HouseDestructible` root classes, and `cfggameplay.json` has lock and sandstorm keys: `references/dayz-1-30-mod-workflow.md`.
 
-Marks used in this skill and its references: a fact with a `P:\` citation was read in that vanilla file. "Measured" facts come from a project of the knowledge pack's author or from a named third party and are not yet checked on `P:\`, because a source file cannot show them. Lesson ids (`LL-nnn`) and rule ids (`SP-nnn`) are the knowledge pack author's own log numbers, kept so a rule can be traced.
+Marks used in this skill and its references: a fact with a `P:\` citation was read in that vanilla file. "Measured" facts were observed on a running game or in a mod project and are not yet checked on `P:\`, because a source file cannot show them.
 
 ## References
 
@@ -110,7 +110,7 @@ Fill in this table:
 Hard rules:
 
 - **Sync variable types** are `Bool`, `BoolSignal`, `Int`, `Float` and `Object` only (`RegisterNetSyncVariableBool` starts the list at `P:\scripts\3_game\entities\entityai.c:2832`). There is no `RegisterNetSyncVariableString`. Pattern file: `skills/_shared/enscript/patterns/netsync.md`.
-- **Bitstream alignment.** Client and server register the same variables in the same order. A mismatch corrupts all synced data with no error (E17; a third-party report, the stream layout is native).
+- **Bitstream alignment.** Client and server register the same variables in the same order. A mismatch corrupts all synced data with no error (E17; not yet checked on `P:\`, the stream layout is native).
 - **`ActionCondition()` runs on both sides:** on the client to list the action, and on the server as the start gate. The server calls `pickedAction.Can(...)` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerserver.c:168`), and `Can` calls `ActionCondition(player, target, item)` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:954`). So `ActionCondition` may read only data both sides have; a client-only cache passes the menu and the server then rejects the start silently. The server does not blindly trust the client's choice.
 - Until 1.29 a listed action was assumed startable once `Can()` passed. Since 1.30 the widget can still show an action whose `CanBeStarted()` is false, and the client then never calls `ActionStart` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:336`). Info actions return false on purpose (`references/dayz-1-30-mod-workflow.md`).
 - `OnStart`, `OnFinish` and `OnUpdate` with the `Server` suffix run on the server. Use server-only data there.
@@ -187,7 +187,7 @@ Mistakes made more than once. Check them actively while writing. The full table 
 - **E34** `CreateAttachment` or `CreateInInventory` called with a slot name instead of the item's class name
 - **E35** a vehicle or custom wheel class with no `DamageSystem` `GlobalHealth`
 
-Error lines in the logs are a different list: `/dayz-gate` and `/dayz-logwatch` match them against `skills/dayz-gate/known-errors.json`, which already names the fix and the owner. For "mod won't load", "works offline but not on a dedicated server" and "UI broken" symptoms, start with `docs/dayz-modding.md`, "Troubleshooting", and this catalog; the StarDZ DayZ Modding Wiki has community flowcharts for the same symptoms (`https://github.com/StarDZ-Team/DayZ-Modding-Wiki/blob/main/en/troubleshooting.md`, a third-party source).
+Error lines in the logs are a different list: `/dayz-gate` and `/dayz-logwatch` match them against `skills/dayz-gate/known-errors.json`, which already names the fix and the owner. For "mod won't load", "works offline but not on a dedicated server" and "UI broken" symptoms, start with `docs/dayz-modding.md`, "Troubleshooting", and this catalog.
 
 ## 6. Debug and fix
 
@@ -195,10 +195,10 @@ When something "doesn't work" after it was implemented, diagnose top down: confi
 
 The layers, the rules for probes (both sides from the first cycle, a time stamp on every line, proving a probe can be reached before adding fields to it, attributing an engine-channel error to whoever emitted it) and Layer 7, component bisection, are in `references/debug-protocol.md`. What the aligned numbers mean is in `references/measurement-discipline.md`. For the general method (root cause before fix) use `systematic-debugging`; for a log that already names the error use `/dayz-gate`, and hand a new error line to `dayz-mod-debugger`.
 
-Two rules from the knowledge pack author's lesson log that apply before a debug cycle starts:
+Two rules apply before a debug cycle starts:
 
-- **Isolate structural changes (lesson LL-013).** Keep physics, inheritance and `SimulationModule` changes apart from feature changes, and validate each structural block on its own. Do not approve a `modded` or derived class until it has passed CfgConvert, a real compile and the in-game gate.
-- **Close one bake before the next (lesson LL-061).** Before another bake of the same `.p3d` or `.pbo`, close the pending gate of the previous bake, or declare it blocked with the cause. Do not pile up changes that make the next verdict ambiguous.
+- **Isolate structural changes.** Keep physics, inheritance and `SimulationModule` changes apart from feature changes, and validate each structural block on its own. Do not approve a `modded` or derived class until it has passed CfgConvert, a real compile and the in-game gate.
+- **Close one bake before the next.** Before another bake of the same `.p3d` or `.pbo`, close the pending gate of the previous bake, or declare it blocked with the cause. Do not pile up changes that make the next verdict ambiguous.
 
 ## 7. Testing in game
 
@@ -239,7 +239,7 @@ Known coverage: the validator's tables in `scripts/tools/dayz-script-validator/s
 
 **The rule.** Before iterating on an offline metric, ask: does it correlate with the behavioural criterion, or is it a proxy the engine can ignore? For a proxy with no shown correlation, run one behavioural test before polishing it further; if it does not correlate, stop polishing it.
 
-**Measured cases** (the knowledge pack author's projects, one week in 2026-06):
+**Measured cases** (two mod projects, 2026-06):
 
 - Character deformation. A deform test in Blender cut edge stretch from 34 times to between 6 and 9 times over about 12 offline iterations, with no improvement in game: the engine skins against the real `OFP2_ManSkeleton` from `model.cfg`, not against the FBX armature. The gate was false.
 - Vehicle proxy. A derived proxy frame of identity gave an offline green twice; the engine applied another convention and the body proxy came out rotated about 90 degrees.
@@ -254,7 +254,7 @@ Where a `modded class` declaration must live is a language rule (`skills/_shared
 
 ### Script module capacity is calibrated by family
 
-Measured by the knowledge pack's author, not yet checked on `P:\`: the log line `SCRIPT : Module: World; ... used X/33554 kB` reports one shared arena of about 32 MiB for vanilla and every loaded mod. Source lines, file bytes and file count are not a model of that capacity. Comments can be free, while declarations, generic instantiations and compiled method bodies cost structure and bytecode.
+Measured in game, not yet checked on `P:\`: the log line `SCRIPT : Module: World; ... used X/33554 kB` reports one shared arena of about 32 MiB for vanilla and every loaded mod. Source lines, file bytes and file count are not a model of that capacity. Comments can be free, while declarations, generic instantiations and compiled method bodies cost structure and bytecode.
 
 Do not use one global "kB per class" number. Measured: generic specializations formed one family at 5.6 to 6.6 kB each, small shell classes measured 0 to 1 kB, and two heavy source classes measured 139 kB. Size a reduction with before and after engine readings of the same family. Count class declarations case-sensitively, so a variable written `Class x` is not taken for a `class X` declaration.
 
@@ -268,11 +268,11 @@ When a mod has two parallel trees (the one that is built and a working copy besi
 2. Read the config from the compilable tree, not from the working copy.
 3. If the two differ, report the difference as a finding (the working copy may need a rebase). Never quietly pick one as the truth.
 
-In this repo there is one tree per mod, `workspace/<ModName>/`, reached by the engine through the `P:\<ModName>\` junction, so the question arises only for an imported project that brings its own second tree. (The knowledge pack author's rule SP-020, lessons LL-073 and LL-025.)
+In this repo there is one tree per mod, `workspace/<ModName>/`, reached by the engine through the `P:\<ModName>\` junction, so the question arises only for an imported project that brings its own second tree.
 
 ## 10. Changing a scheduler interval: update the harness counts
 
-Measured on the knowledge pack author's LFPowerGrid project: a write-behind flush constant went from 30 s to 5 s. A verification gate of 16 checks then failed on its schedule map, because the harness had the expected call counts hard-coded for the old value (2 calls in a 60,000 ms window, now 12; 10 in 300,000 ms, now 60). The only difference was that one callback; the fix was to update the harness's two expected maps, not the mod.
+Measured on a power-grid mod: a write-behind flush constant went from 30 s to 5 s. A verification gate of 16 checks then failed on its schedule map, because the harness had the expected call counts hard-coded for the old value (2 calls in a 60,000 ms window, now 12; 10 in 300,000 ms, now 60). The only difference was that one callback; the fix was to update the harness's two expected maps, not the mod.
 
 When a code change touches a `*_MS` or `*_S` constant that feeds a periodic scheduler or timer, before calling the build or verify gate a pass:
 
@@ -285,9 +285,9 @@ Scheduling patterns for the mod itself are in `skills/_shared/enscript/patterns/
 
 ## 11. Live bug ledger
 
-Every new symptom a player can see gets a row in the mod's bug ledger (the knowledge pack keeps `bugs.md` in the mod's working tree; in this repo keep it with the plan in `output/<ModName>-plan/`) before the next debug cycle. Search the ledger's alias fields first. A regression of a known symptom updates the existing row; it is never filed as a new bug.
+Every new symptom a player can see gets a row in the mod's bug ledger (`bugs.md`, kept with the plan in `output/<ModName>-plan/`) before the next debug cycle. Search the ledger's alias fields first. A regression of a known symptom updates the existing row; it is never filed as a new bug.
 
-A deployed fix records `F@<hash>`, but that token does **not** mean fixed. Close the row only with a named gate result or the user's verdict on that exact hash. Silence settles a reported symptom only when the regime that showed it was exercised and the observation window is recorded. That keeps build identity, exercised behaviour and closing evidence in one live ledger. (Rule SP-236.)
+A deployed fix records `F@<hash>`, but that token does **not** mean fixed. Close the row only with a named gate result or the user's verdict on that exact hash. Silence settles a reported symptom only when the regime that showed it was exercised and the observation window is recorded. That keeps build identity, exercised behaviour and closing evidence in one live ledger.
 
 ## 12. Audits
 

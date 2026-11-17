@@ -61,16 +61,16 @@ Where this file and `winding-methodology.md` once disagreed (what the two unifor
 
 4. **Direct in-game test.** Rebuild PBO → test server → inspect visual + collision + actions + ballistic. It is the final filter and the only 100% definitive one. When all previous checks say "OK", test in-game anyway.
 
-5. **In-game spawn is non-negotiable (SP-216).** Offline `.p3d` gates (py3d reload, per-LOD digest, normal budget, resolved vs 65,535, winding parity, indices, degenerate faces, Geometry byte-identical to a p3d that does spawn) **do not authorize spawn**. Never declare a p3d "ready for spawn" by those checks; in-game spawn is mandatory gate. Complements point 4: offline "OK" is not "spawns".
+5. **In-game spawn is non-negotiable.** Offline `.p3d` gates (py3d reload, per-LOD digest, normal budget, resolved vs 65,535, winding parity, indices, degenerate faces, Geometry byte-identical to a p3d that does spawn) **do not authorize spawn**. Never declare a p3d "ready for spawn" by those checks; in-game spawn is mandatory gate. Complements point 4: offline "OK" is not "spawns".
    - **Case (LFHeli HH-60G V8, verified 2026-07-20):** passed those gates — normals 24,404<32,768, resolved 46,905<65,535, winding 100%, Geometry LOD byte-identical to a p3d that DOES spawn — and yet `Won't simulate, it has no geometry`. The "normal budget" theory (root-cause of a previous R21) was REFUTED: with normals reduced to 5,506 it still failed. V8 is a negative capacity control, not a refutation of `binarize`.
-   - **Measured cause (SP-122, 2026-07-29, same model):** that message is same defect as `Too many vertices` — engine aborts when loading MLOD, before constructing physics; a valid Geometry LOD does not exonerate. HH-60G cliff: **46,133 resolved triples** (46,133 loads, 46,134 does not; 25 in-game verdicts, zero false ones) recorded in the binarize vertex budget reference of the dayz-vehicles skill (its invariants 24 and 27). The 46,905 of V8 are above that cliff; `RESOLVED_LIMIT = 65535` is a false friend. **Run `binarize` before touching geometry** (three-state verdict: PASS / CAPACITY_FAIL / OTHER_FAIL). CAPACITY_FAIL → do not go in-game to "fix" Geometry; OTHER_FAIL → do not touch geometry. Visual LOD serialization hypothesis (corner order / TAGG / normal pool, "open RCA" on 2026-07-20) was closed as capacity nine days later; do not reopen as primary suspicion or treat count as irrelevant. If `binarize` yields PASS and game still reports no-geometry, other axes remain and in-game spawn is judge.
-   - **Reusable bisection:** N test-classnames in 1 PBO, each with a p3d-variant (LODs swapped via py3d). filePatching does NOT reload `.p3d` binaries; one restart tests N variants. Each classname needs its CfgModels entry inheriting skeleton+crew-bones from actual model. 2026-07-20 origin: without that entry, a config with Crew `proxyPos` bones caused `CreateObjectEx` to crash server (minidump in MCPBridge DispatchWorldSpawn) instead of returning spawn_failed. Orthogonal to SP-070/SP-071 (winding/render). Cross-ref: the dayz-vehicles skill (get-in/spawn), `dayz-model-pipeline` (`.p3d` export).
+   - **Measured cause (2026-07-29, same model):** that message is same defect as `Too many vertices` — engine aborts when loading MLOD, before constructing physics; a valid Geometry LOD does not exonerate. HH-60G cliff: **46,133 resolved triples** (46,133 loads, 46,134 does not; 25 in-game verdicts, zero false ones) recorded in the binarize vertex budget reference of the dayz-vehicles skill (its invariants 24 and 27). The 46,905 of V8 are above that cliff; `RESOLVED_LIMIT = 65535` is a false friend. **Run `binarize` before touching geometry** (three-state verdict: PASS / CAPACITY_FAIL / OTHER_FAIL). CAPACITY_FAIL → do not go in-game to "fix" Geometry; OTHER_FAIL → do not touch geometry. Visual LOD serialization hypothesis (corner order / TAGG / normal pool, "open RCA" on 2026-07-20) was closed as capacity nine days later; do not reopen as primary suspicion or treat count as irrelevant. If `binarize` yields PASS and game still reports no-geometry, other axes remain and in-game spawn is judge.
+   - **Reusable bisection:** N test-classnames in 1 PBO, each with a p3d-variant (LODs swapped via py3d). filePatching does NOT reload `.p3d` binaries; one restart tests N variants. Each classname needs its CfgModels entry inheriting skeleton+crew-bones from actual model. 2026-07-20 origin: without that entry, a config with Crew `proxyPos` bones caused `CreateObjectEx` to crash server (minidump in the spawn call) instead of returning spawn_failed. Orthogonal to the render sign question ("Render-sign A/B" below). Cross-ref: the dayz-vehicles skill (get-in/spawn), `dayz-model-pipeline` (`.p3d` export).
 
 ## Known traps (lessons learned)
 
-- **A whole-model winding flip applied twice** returns the model to its original state. The project's flip script (`flip_winding.py`, not shipped here) wrote a backup such as `.p3d.bak_v4_pre_winding_flip`; if that backup exists, the flip was applied at least once.
-- **Negating the whole `lod.facenormals` pool to "renegate" normals** (the project's `renegate_normals.py`, not shipped here) was based on a misunderstanding of the pool and is deprecated. If it was applied, the pool normals are wrongly negated; revert by negating them again.
-- **Crate_Wooden has mixed winding in Visual LOD** (38.6% bad edges in Check B, 2026-04-25) but **DayZ tolerates it in render** (verified in-game: visual / bullets / cursor / collision OK). Collision LODs (Geometry/LandContact/ViewGeo/FireGeo) are internally consistent. **The skill marks this as CRITICAL in Check B**, which is good as a preventive signal, even if the engine tolerates it in this particular case. Do not re-flip this model unless a concrete in-game symptom appears.
+- **A whole-model winding flip applied twice** returns the model to its original state. Write a backup before a flip (for example `.p3d.bak_pre_winding_flip`); if that backup exists, the flip was applied at least once. No flip script ships with this skill: the operation is `face.vertices.reverse()` on every face through py3d.
+- **Negating the whole `lod.facenormals` pool to "renegate" normals** was based on a misunderstanding of the pool and is deprecated. If it was applied, the pool normals are wrongly negated; revert by negating them again.
+- **Crate_Wooden has mixed winding in Visual LOD** (38.6% bad edges in Check B, 2026-04-25) but **DayZ tolerates it in render** (verified in-game: visual / bullets / cursor / collision OK). Collision LODs (Geometry/LandContact/ViewGeo/FireGeo) are internally consistent. Treat a Check B reading like this as a preventive signal, even though the engine tolerated it in this case; where py3d's `validate()` reports edges traversed the same way, the audit prints `WARN_WINDING_EDGE_INCOHERENT` as a WARNING. Do not re-flip this model unless a concrete in-game symptom appears.
 - **Measured:** setting `face.flags |= 0x20000` did not produce two-sided rendering; the faces
   remained see-through in-game. The route confirmed to work is double-sided geometry. The reason is
   now pinned: `binarize.exe` discards the MLOD per-face `flags` field entirely. Three MLODs differing
@@ -81,7 +81,7 @@ Where this file and `winding-methodology.md` once disagreed (what the two unifor
 ## From Check B to fix: isolate minority group and flip it ENTIRELY (winding; stored normals as Check A reads them)
 
 Verified method (GunRacks T1/T2/T3 2026-08-28: 156 inverted faces across 11 parts of three
-external artist models, player report "plank normals are inverted"):
+delivered models, seen in game as planks with inverted normals):
 
 1. **Isolate**: weld points by position (5 decimals), split visual LOD into connected
    components (excluding faces from `proxy:*` selections), and within each component run
@@ -142,7 +142,7 @@ external artist models, player report "plank normals are inverted"):
    face read −1.000 with winding and normals reversed and +1.000 with the winding alone; the
    branches as written left 90 of 90 corners against the undamaged normals both times, while
    bringing the part to Rule 12 first, or reading it against its kept convention, restored 30
-   of 30 (to the part converted, or as it was). On a flat Rule 12 box (the project's `verify_step3.py` fixture, not shipped here) with
+   of 30 (to the part converted, or as it was). On a flat Rule 12 box with
    one face reversed and every normal turned, the other five faces read UNIFORM_FLIPPED with
    their cross product toward the box's centre (the third row): that face read against them
    was reversed only and left 24 of 24 corners against the undamaged normals, with Check B
@@ -157,7 +157,7 @@ external artist models, player report "plank normals are inverted"):
      case: there each minority group had its winding AND its stored normals reversed against
      its neighbours', and the fixers of T1/T2 and of the second pass refused to save unless 0
      flipped faces had summed stored normals against the new winding (2026-08-28).
-     A fixer that only inverts vertices (e.g. GunRacks `fix_winding.py`) is correct ONLY
+     A fixer that only inverts vertices (as the first GunRacks fixer did) is correct ONLY
      because its pipeline recalculated normals afterwards; copying that mechanic to a pipeline
      without recalculation leaves face visible but shaded inside out (second lost cycle).
    - **Normals disagree with the inverted winding** (reading ≤ −0.5: only the winding was
@@ -242,7 +242,7 @@ external artist models, player report "plank normals are inverted"):
    none new.
 
 
-## Render-sign A/B and source-profile limits (SP-070/SP-071, added 2026-08-31)
+## Render-sign A/B and source-profile limits
 
 Edge-pair coherence and cross-product-versus-stored-normal ratios test internal consistency;
 they do not by themselves predict which side the engine will render. Normals and winding can

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Source: bzed/dayz-dev-plugin 6112ac5, contributed to this Pack under its MIT licence by its author.
 # Extract the code files (scripts, configs) of the installed vanilla game PBOs with dayzmake.
 #
 # usage: extract-dayz-sources.sh [--force] <DayZ-install-dir | mod-dir> <out-dir>
@@ -14,14 +13,14 @@
 # e.g. prefix "scripts" -> <out>/scripts/3_Game/..., prefix "DZ\AI" -> <out>/DZ/AI/config.cpp.
 # <out>/pbo-map.tsv lists "<prefix>\t<pbo path relative to the install dir>" for every PBO that yielded files
 # (build-api-index.py, next to this script, reads it to tell `dayz-api.py src` which PBO holds a file).
-# Needs dayzmake on PATH (>= 1.0.0 recommended). bzed's older armake2 fork (pre-rename, may have bugs) is accepted,
+# Needs dayzmake on PATH (>= 1.0.0 recommended). A dayzmake build from before its rename (binary armake2, may have bugs) is accepted,
 # upstream armake2 is not. Write <out-dir> below /var/tmp (/tmp can be a tmpfs and take up RAM), not below $HOME.
 # Extraction goes to a staging directory next to <out-dir> and is promoted only on complete success,
 # so a re-extraction after a game update drops removed files and never duplicates pbo-map.tsv rows.
 set -eu
 force=0
 if [ "${1:-}" = "--force" ]; then force=1; shift; fi
-[ $# -eq 2 ] || { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+[ $# -eq 2 ] || { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 install=$1 out=$2
 while [ "${#install}" -gt 1 ] && [ "${install%/}" != "$install" ]; do install=${install%/}; done
 while [ "${#out}" -gt 1 ] && [ "${out%/}" != "$out" ]; do out=${out%/}; done
@@ -35,7 +34,7 @@ if [ -z "$DZPBO" ]; then
     fi
   done
 fi
-[ -n "$DZPBO" ] || { echo "dayzmake not found on PATH (upstream armake2 will not do: bzed's fork has --proton-binarize)" >&2; exit 1; }
+[ -n "$DZPBO" ] || { echo "dayzmake not found on PATH (upstream armake2 will not do: dayzmake has --proton-binarize)" >&2; exit 1; }
 [ "$DZPBO" = dayzmake ] || echo "note: using $DZPBO; dayzmake >= 1.0.0 is recommended (the pre-rename armake2 binary may have bugs)" >&2
 if [ ! -d "$install" ] || [ ! -r "$install" ] || [ ! -x "$install" ]; then
   echo "error: $install is not a readable directory" >&2

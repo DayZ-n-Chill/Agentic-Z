@@ -2,7 +2,7 @@
 
 How much memory the Enforce Script compiler charges a script module (the module's "arena"), what does and does not shrink it, and how to measure it without fooling yourself. For a large mod whose World module is close to the limit the server allows.
 
-The script declarations cited here were checked on `P:\` (DayZ 1.30). The measurements were made by the author of the source notes on DayZ 1.29.163451, in a production mod with about 1.2 MB of World module scripts, and cannot be checked on `P:\`. The concrete numbers belong to that mod; the rules and the method belong to the engine. Keep engine fact, inference and product constraint apart: do not turn one observed slope into a universal constant.
+The script declarations cited here were checked on `P:\` (DayZ 1.30). The measurements were made on DayZ 1.29.163451, in a production mod with about 1.2 MB of World module scripts, and cannot be checked on `P:\`. The concrete numbers belong to that mod; the rules and the method belong to the engine. Keep engine fact, inference and product constraint apart: do not turn one observed slope into a universal constant.
 
 ## The only capacity verdict
 
@@ -49,7 +49,7 @@ The compiler charges structure, bytecode and materialized generics, not the text
 | 7 | A PBO is not an arena | The `files[]` of the script module classes in `CfgMods` decide where a script compiles. Several PBOs that declare `worldScriptModule` all feed World: splitting the packaging within one module saves 0 kB. |
 | 8 | Only five script module keys exist | Engine, GameLib, Game, World and Mission. A scan of 1,238 `config.cpp` files and 1,098 `class *ScriptModule` declarations found no custom key. |
 
-For rule 7, a vanilla example of the config: `class worldScriptModule` with `files[]` in the Sakhal data addon (`P:\DZ\data_sakhal\config.cpp:21` to `:27`). Bohemia's pages: [Modding Structure](https://community.bistudio.com/wiki/DayZ:Modding_Structure) and [Modding Basics](https://community.bistudio.com/wiki/DayZ:Modding_Basics). The script layers themselves are in `language_compile.md`.
+For rule 7, a vanilla example of the config: `class worldScriptModule` with `files[]` in the Sakhal data addon (`P:\DZ\data_sakhal\config.cpp:21` to `:27`). The script layers themselves are in `language_compile.md`.
 
 ## The lever that works: a World base with its bodies in Mission
 

@@ -9,9 +9,8 @@
 # the project invariant: partial coverage may cost false negatives, never false
 # positives.
 #
-# The claim came from a third-party tool's guide (ZeripeDaniel/Lake-Dayz-MCP,
-# GPLv3 - knowledge only, no code or text adopted) and was adopted here without
-# being checked against the vanilla tree. Do NOT re-wire it. `Math.Floor` returns
+# The premise was taken up without being checked against the vanilla tree.
+# Do NOT re-wire it. `Math.Floor` returns
 # float (enmath.c:427) and `.ToInt()` is string->int (enstring.c:20); neither is
 # "the" conversion idiom, and the cast is not an error.
 # Fixtures tests/fixtures/es/*c_style_cast* are kept as the record of what this

@@ -212,7 +212,7 @@ def binarize_setup(tmp_path: Path) -> dict[str, object]:
     return {"proot": proot, "dzhome": dzhome, "env": env, "calls": calls, "bats": bats}
 
 
-# --- F1: binarize batch serialization ----------------------------------------
+# --- binarize batch serialization --------------------------------------------
 # These prove how the .bat is serialized, not how cmd.exe / binarize.exe
 # parse it.
 
@@ -378,7 +378,7 @@ def test_run_tool_refuses_bad_arguments_before_any_side_effect(tmp_path: Path, b
     assert list(tmpdir.iterdir()) == []
 
 
-# --- F3: headless identity and wineserver stops ------------------------------
+# --- headless identity and wineserver stops ----------------------------------
 
 def _fake_pause_binary(path: Path) -> None:
     """A tiny x86_64 ELF that pauses forever, ignoring argv; its comm is

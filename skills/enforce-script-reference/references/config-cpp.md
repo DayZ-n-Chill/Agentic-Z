@@ -7,9 +7,9 @@ Every DayZ mod needs a `config.cpp` defining its classes and dependencies.
 ```
 class CfgPatches
 {
-    class LFPowerGrid
+    class MyMod
     {
-        units[] = { "LF_MyDevice", "LF_MyDevice_Kit" };
+        units[] = { "MyMod_Device", "MyMod_Device_Kit" };
         weapons[] = {};
         requiredVersion = 0.1;
         requiredAddons[] = { "DZ_Data", "DZ_Scripts" };
@@ -18,7 +18,7 @@ class CfgPatches
 
 class CfgMods
 {
-    class LFPowerGrid
+    class MyMod
     {
         type = "mod";
         dependencies[] = { "World", "Mission" };
@@ -28,17 +28,17 @@ class CfgMods
             class worldScriptModule
             {
                 value = "";
-                files[] = { "LFPowerGrid/scripts/4_World" };
+                files[] = { "MyMod/scripts/4_World" };
             };
             class missionScriptModule
             {
                 value = "";
-                files[] = { "LFPowerGrid/scripts/5_Mission" };
+                files[] = { "MyMod/scripts/5_Mission" };
             };
             class gameScriptModule
             {
                 value = "";
-                files[] = { "LFPowerGrid/scripts/3_Game" };
+                files[] = { "MyMod/scripts/3_Game" };
             };
         };
     };
@@ -54,19 +54,19 @@ class CfgVehicles
 {
     class Inventory_Base;
 
-    class LF_MyDevice: Inventory_Base
+    class MyMod_Device: Inventory_Base
     {
         scope = 2;                    // 2 = visible in-game, 0 = hidden
-        displayName = "$STR_LF_MYDEVICE";
-        descriptionShort = "$STR_LF_MYDEVICE_DESC";
-        model = "\LFPowerGrid\data\mydevice\lf_mydevice.p3d";
+        displayName = "$STR_MYMOD_DEVICE";
+        descriptionShort = "$STR_MYMOD_DEVICE_DESC";
+        model = "\MyMod\data\mydevice\mydevice.p3d";
         weight = 500;                 // grams
         itemSize[] = { 3, 3 };        // inventory slots (width, height)
         rotationFlags = 17;           // rotation in inventory
         storageCategory = 1;          // enables persistence
         hiddenSelections[] = { "camo", "light_led" };
-        hiddenSelectionsTextures[] = { "\LFPowerGrid\data\mydevice\texture.paa" };
-        hiddenSelectionsMaterials[] = { "\LFPowerGrid\data\mydevice\material.rvmat" };
+        hiddenSelectionsTextures[] = { "\MyMod\data\mydevice\texture.paa" };
+        hiddenSelectionsMaterials[] = { "\MyMod\data\mydevice\material.rvmat" };
 
         class AnimationSources
         {
@@ -92,12 +92,12 @@ class CfgVehicles
     // Using DeployableContainer_Base breaks kits (item doesn't appear).
     // Tested twice — both times the item was invisible in-game.
     // Use DeployableContainer_Base ONLY in script class inheritance.
-    class LF_MyDevice_Kit: Inventory_Base
+    class MyMod_Device_Kit: Inventory_Base
     {
         scope = 2;
-        displayName = "$STR_LF_MYDEVICE_KIT";
-        descriptionShort = "$STR_LF_MYDEVICE_KIT_DESC";
-        model = "\LFPowerGrid\data\kits\lf_kit_box.p3d";
+        displayName = "$STR_MYMOD_DEVICE_KIT";
+        descriptionShort = "$STR_MYMOD_DEVICE_KIT_DESC";
+        model = "\MyMod\data\kits\kit_box.p3d";
         weight = 800;
         itemSize[] = { 2, 2 };
         rotationFlags = 17;
@@ -106,21 +106,21 @@ class CfgVehicles
         class Placement
         {
             // If kit and deployed model are different:
-            deployableModel = "\LFPowerGrid\data\mydevice\lf_mydevice.p3d";
+            deployableModel = "\MyMod\data\mydevice\mydevice.p3d";
             // If same model (camera/door controller pattern): omit deployableModel
         };
 
         // hiddenSelections for kit appearance
         hiddenSelections[] = { "camo" };
-        hiddenSelectionsTextures[] = { "\LFPowerGrid\data\kits\kitboxtexture.paa" };
-        hiddenSelectionsMaterials[] = { "\LFPowerGrid\data\kits\lf_kit_box.rvmat" };
+        hiddenSelectionsTextures[] = { "\MyMod\data\kits\kitboxtexture.paa" };
+        hiddenSelectionsMaterials[] = { "\MyMod\data\kits\kit_box.rvmat" };
     };
 };
 ```
 
 ### Important config.cpp Rules
 
-1. **`scope`** — Creation by script works with `scope = 1`: [EXACT][CLAIM-SCOPE1-SCRIPT-CREATE] vanilla gives `LargeTentClutterCutter` `scope = 1` (`P:\dz\gear\camping\config.cpp:1454-1456`) and creates it from script with `CreateObjectEx` (`P:\scripts\4_world\entities\itembase\tentbase\largetent.c:140`). Exposure in public lists/tools that filter by scope 2 needs `scope = 2`. `scope = 0` hides them.
+1. **`scope`** — Creation by script works with `scope = 1`: [EXACT] vanilla gives `LargeTentClutterCutter` `scope = 1` (`P:\dz\gear\camping\config.cpp:1454-1456`) and creates it from script with `CreateObjectEx` (`P:\scripts\4_world\entities\itembase\tentbase\largetent.c:140`). Exposure in public lists/tools that filter by scope 2 needs `scope = 2`. `scope = 0` hides them.
 2. **`units[]`** — List all your classes here. Missing = not loaded.
 3. **`requiredAddons[]`** — Must include addons your classes inherit from.
 4. **Forward declare parent classes** — `class Inventory_Base;` before using as parent.
@@ -141,25 +141,25 @@ hiddenSelections allow runtime texture/material swaps:
 // In config.cpp — declare selections
 hiddenSelections[] = { "camo", "light_led", "screen" };
 hiddenSelectionsTextures[] = {
-    "\LFPowerGrid\data\mydevice\texture.paa",   // [0] camo
+    "\MyMod\data\mydevice\texture.paa",   // [0] camo
     "",                                           // [1] light_led (set by script)
-    "\LFPowerGrid\data\mydevice\screen.paa"      // [2] screen
+    "\MyMod\data\mydevice\screen.paa"      // [2] screen
 };
 hiddenSelectionsMaterials[] = {
-    "\LFPowerGrid\data\mydevice\material.rvmat",
-    "\LFPowerGrid\data\mydevice\led_off.rvmat",
-    "\LFPowerGrid\data\mydevice\screen.rvmat"
+    "\MyMod\data\mydevice\material.rvmat",
+    "\MyMod\data\mydevice\led_off.rvmat",
+    "\MyMod\data\mydevice\screen.rvmat"
 };
 ```
 
 ```
 // In script — swap material at runtime
-string rvmatOn = "\LFPowerGrid\data\mydevice\led_on.rvmat";
+string rvmatOn = "\MyMod\data\mydevice\led_on.rvmat";
 int selIndex = 1;  // light_led
 SetObjectMaterial(selIndex, rvmatOn);
 
 // Swap texture at runtime
-string texAlt = "\LFPowerGrid\data\mydevice\texture_alt.paa";
+string texAlt = "\MyMod\data\mydevice\texture_alt.paa";
 int texIndex = 0;  // camo
 SetObjectTexture(texIndex, texAlt);
 ```
@@ -171,7 +171,7 @@ SetObjectTexture(texIndex, texAlt);
 ```
 class CfgModels
 {
-    class LF_MyDevice
+    class MyMod_Device
     {
         sectionsInherit = "";
         sections[] = { "camo", "light_led", "screen" };
@@ -202,15 +202,15 @@ Required at mod root for DayZ to resolve baked p3d paths to correct PBO namespac
 ```
 // File: $PBOPREFIX$
 // Content (single line, no trailing newline):
-LFPowerGrid
+MyMod
 ```
 
-Without this file, all model/texture/material paths that reference `\LFPowerGrid\...` will fail to resolve at runtime.
+Without this file, all model/texture/material paths that reference `\MyMod\...` will fail to resolve at runtime.
 
 ## Script Module Organization
 
 ```
-LFPowerGrid/
+MyMod/
 ├── config.cpp
 ├── $PBOPREFIX$
 ├── scripts/

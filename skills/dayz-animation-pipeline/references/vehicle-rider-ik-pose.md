@@ -2,7 +2,7 @@
 
 Two things are in this file. The first is a way to get the seated pose of a driver or passenger by solving it from a few fixed points on the vehicle model instead of keying the body bone by bone. The second is how such a pose reaches the game for one vehicle class without replacing the player graph, with everything that was measured on the way.
 
-Vanilla facts cite `P:\` (DayZ 1.30). Measured results name the project: LFQuad (a quad, May 2026, where the solver comes from) and LFRider (a motorbike on DayZDiag 1.30.164014, September and October 2026). Measured results are evidence for that setup, not rules.
+Vanilla facts cite `P:\` (DayZ 1.30). Measured results come from two setups: a quad (May 2026, where the solver was worked out) and a motorbike on DayZDiag 1.30.164014 (September and October 2026). Measured results are evidence for that setup, not rules.
 
 ## When this route fits
 
@@ -18,7 +18,7 @@ Vanilla facts cite `P:\` (DayZ 1.30). Measured results name the project: LFQuad 
 
 ## The anchors
 
-Memory points in the vehicle's Memory LOD. The names are the LFQuad project's; any names work as long as the solver's input uses the same points.
+Memory points in the vehicle's Memory LOD. Any names work as long as the solver's input uses the same points.
 
 | Memory point | Drives | Notes |
 |---|---|---|
@@ -44,7 +44,7 @@ It does not write the hand IK helpers (`LeftHandIK`, `RightHandIK`, `LeftHandIKT
 
 ## The solver: two bone IK per limb and a straight spine
 
-Found by the LFQuad project: FABRIK and CCD are not needed. An analytic two bone solve for each arm and leg, plus a straight spine with one `lean` number, gave a hand to grip error of 0.0000 in its cases. That zero is true by construction of the solver; it is not evidence of contact in game (see "Measure the grip hole first").
+FABRIK and CCD are not needed. An analytic two bone solve for each arm and leg, plus a straight spine with one `lean` number, gave a hand to grip error of 0.0000 in the quad's cases. That zero is true by construction of the solver; it is not evidence of contact in game (see "Measure the grip hole first").
 
 ```
 ARM (per side)
@@ -88,14 +88,14 @@ One caution about the "relative to rest" rule: it holds for DayZATool extracts o
 
 ## Which frame the anchors are in
 
-If a project has two coordinate frames for one model (an authoring or viewer frame and the frame of the shipped `.p3d`), every anchor coordinate must be in the frame of the `.p3d` it is baked into. LFQuad had a front along +Z authoring frame and a front along −Z production frame; baking anchors from one into the other meant negating Z first.
+If a project has two coordinate frames for one model (an authoring or viewer frame and the frame of the shipped `.p3d`), every anchor coordinate must be in the frame of the `.p3d` it is baked into. The quad had a front along +Z authoring frame and a front along −Z production frame; baking anchors from one into the other meant negating Z first.
 
 The side test of the get in action (`dual-entry-action-pattern.md`) is safe from this, because it asks the model for local coordinates in whatever frame the `.p3d` uses. The anchors themselves are not: after placing them, open the `.p3d` in a viewer aligned to the production frame and check that `crewdriver` sits where the pelvis should.
 
 ## Pipeline, start to finish
 
 1. **Place the anchors** in the Memory LOD.
-2. **Check the pose by eye** (optional, worth it for the first vehicle). LFQuad used a small three.js page with sliders for `lean`, `steerMax` and each anchor, running the same solver and exporting the pose as JSON. Building one takes about a day. If the project already has a baked viewer of the model, reuse its embedded data block instead of parsing the `.p3d` again (`selection-painter-for-actions.md` uses the same trick).
+2. **Check the pose by eye** (optional, worth it for the first vehicle). The quad used a small three.js page with sliders for `lean`, `steerMax` and each anchor, running the same solver and exporting the pose as JSON. Building one takes about a day. If the project already has a baked viewer of the model, reuse its embedded data block instead of parsing the `.p3d` again (`selection-painter-for-actions.md` uses the same trick).
 3. **Solve the variants** with `ik_pose_to_seanim.py` and finish the rotations (see above): idle, steer left, steer right, passenger idle.
 4. **The user runs DayZATool** (`--generate-anim file.seanim 100`) to get each `.anm`.
 5. **Bind the clips.** Either replace the graph, which hits the wall, or use a child `.asi` for the one vehicle class (next section). The vehicle sub-graph is `P:\DZ\anims\workspaces\player\player_main\vehicles.agf`; the motorbike machine `MotorBikeSTM` runs from `:1582`, and the vanilla rider sets are the template columns `Jawa_05` and `Jawa_Bitrak` (`P:\DZ\anims\workspaces\player\player_main\player_main.ast:1119`, `:1120`) with lines in the base instance (`Vehicle.Jawa_05.AccelerationSpine` at `P:\DZ\anims\workspaces\player\player_main\player_main.asi:5088`). Editing an `.agf` by hand and having the engine accept it has not been tried; the Workbench animation editor remains the known way to edit a graph. However it is edited, the graph sits at vanilla paths, so shipping it makes the mod a graph replacement.
@@ -124,7 +124,7 @@ Vanilla 1.30 already swaps the player's animation instance at run time, for the 
 
 ### Measured while the vehicle stands
 
-LFRider, DayZDiag 1.30.164014, dedicated server and the owning client, one player, 2026-09-28. A child `.asi` of `player_main.asi` that overrides only the column the vehicle rides on, registered through `RegisterCustom` and swapped in while the player rode one vehicle class, changed that player's pose on that class only. `vehicles.agf`, `player_main.ast` and `player_main.agr` were untouched. Like the weapon route, it does not meet the graph wall; it can still collide with any other mod that swaps the player's instance.
+Motorbike test, DayZDiag 1.30.164014, dedicated server and the owning client, one player, 2026-09-28. A child `.asi` of `player_main.asi` that overrides only the column the vehicle rides on, registered through `RegisterCustom` and swapped in while the player rode one vehicle class, changed that player's pose on that class only. `vehicles.agf`, `player_main.ast` and `player_main.agr` were untouched. Like the weapon route, it does not meet the graph wall; it can still collide with any other mod that swaps the player's instance.
 
 What was run:
 
@@ -157,13 +157,13 @@ The motorbike graph already splits standing from riding:
 
 By its clip name, `DriverSteeringExtreme` is the stopped pose: for the `Jawa_Bitrak` column it is `p_motorbike_02_driver_idle_steering_pose.anm` (`P:\DZ\anims\workspaces\player\player_main\player_main.asi:5175` to `:5177`).
 
-A design for a sport bike, from LFRider: stopped, the feet are down and the rider leans further to the low bars; `IdleToDrive` lifts the feet onto the pegs and tucks; riding is the full tuck; `DriveToIdle` puts the feet down. The comparison with Survivor Animations' own motorcycle type is in the dayz-motorbikes skill.
+A design for a sport bike: stopped, the feet are down and the rider leans further to the low bars; `IdleToDrive` lifts the feet onto the pegs and tucks; riding is the full tuck; `DriveToIdle` puts the feet down. The comparison with Survivor Animations' own motorcycle type is in the dayz-motorbikes skill.
 
 ### Own clips on the rider, measured end to end
 
-The same child `.asi` route with generated clips, riding included. LFRider on a Kawasaki H2R model, DayZDiag 1.30.164014, dedicated server and the owning client, one player, four runs on 2026-09-28. The shared mod kept a config table (one class per pose, each with a vehicle class and an `.asi`), registered every `.asi` in `RegisterCustom`, switched in `OnCommandVehicleStart`, `CommandHandler` and a client poll every frame, and latched off from the start of the get out.
+The same child `.asi` route with generated clips, riding included. Measured on a Kawasaki H2R model, DayZDiag 1.30.164014, dedicated server and the owning client, one player, four runs on 2026-09-28. The test mod kept a config table (one class per pose, each with a vehicle class and an `.asi`), registered every `.asi` in `RegisterCustom`, switched in `OnCommandVehicleStart`, `CommandHandler` and a client poll every frame, and latched off from the start of the get out.
 
-**A generated clip plays.** A clip made with `DayZATool --generate-anim <file>.seanim 100` plays. DayZATool writes `ANIMSET5`, and 1.30 ships player clips in three versions (counted by the source pack in the player clip PBO: 10 `ANIMSET4`, 2,398 `ANIMSET5`, 4,980 `ANIMSET6`). A vanilla steering pose with `Spine1` bent 20 degrees put the stopped rider's head 0.4 mm (median of 129 client samples) from the clip's forward kinematics and 19 cm from the vanilla one. Later first person probe runs saw the stopped head move by several centimetres between runs and looks (see the last bullet of this section). The `Resource` line of the `.asi` loaded both as a bare path and with an invented `{GUID}` in front; vanilla ships no `.meta` for its clips.
+**A generated clip plays.** A clip made with `DayZATool --generate-anim <file>.seanim 100` plays. DayZATool writes `ANIMSET5`, and 1.30 ships player clips in three versions (counted in the player clip PBO: 10 `ANIMSET4`, 2,398 `ANIMSET5`, 4,980 `ANIMSET6`). A vanilla steering pose with `Spine1` bent 20 degrees put the stopped rider's head 0.4 mm (median of 129 client samples) from the clip's forward kinematics and 19 cm from the vanilla one. Later first person probe runs saw the stopped head move by several centimetres between runs and looks (see the last bullet of this section). The `Resource` line of the `.asi` loaded both as a bare path and with an invented `{GUID}` in front; vanilla ships no `.meta` for its clips.
 
 **The steering clip always spans 45 degrees each way.** The motorbike steering poses are read at `Time "clamp((VehicleSteering + 0.785) * 0.63694..., 0.0, 1.0)"` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:50` for `DriverSteeringMain`, and the same `Time` expression at `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1466` for `DriverSteeringExtreme`). `VehicleSteering` is the wheel angle in radians, so the clip always covers −45 to +45 degrees of wheel angle, whatever the bike's lock. Author frame `i` of `N` at `(2i/(N−1) − 1) × 45` degrees, clamped to the lock. The node reads normalized time, so the frame count is free: 37 frames put a 20 degree lock exactly on a frame.
 
@@ -186,7 +186,7 @@ Measured on the skinned body mesh, DayZ 1.30.164014. Vanilla vehicle clip hands 
 - Before reusing vanilla clip hands on another vehicle, measure the clip's fist hole against the new grip or wheel radius.
 - Vehicle memory points such as the `accelerator` and `clutchlever` axes are not fist centres.
 - A "hands at 0 mm" reading that the solver satisfies by construction is not evidence of contact. Measure the wrap in degrees and the penetration on the mesh.
-- Wrap by rotating each finger and thumb phalanx tangent to the grip. The project reached 330 to 360 degrees covered, with 5 to 6 mm of overlap at every piece, through the whole steering range.
+- Wrap by rotating each finger and thumb phalanx tangent to the grip. The test reached 330 to 360 degrees covered, with 5 to 6 mm of overlap at every piece, through the whole steering range.
 
 ## Single track vehicles: boarding side and ejection
 
@@ -202,11 +202,11 @@ The rider side in more detail, the clip list (`Jawa_05` is `Motorbike_01`, `Jawa
 
 If the steering part turns by `model.cfg` (`handlebar-and-steering-config.md`) and the rider's hands follow its grips, the two ranges must agree, or the hands leave the grips at full lock, which shows at once in game.
 
-- On a graph of the project's own (LFQuad): the `model.cfg` throw and the solver's `steerMax` describe the same angle. `steerMax` is in radians. For the unit and form of `angle0` and `angle1`, follow `handlebar-and-steering-config.md` ("One angle for the part and for the rider's hands"). The source pack's older example paired `angle1 = "rad 0.39"` with `steerMax = 0.39`; that file explains why it is wrong: `"rad 0.39"` is 0.39 degrees, a throw too small to see, while `steerMax` stays in the solver's radians.
+- On a mod's own graph (the quad): the `model.cfg` throw and the solver's `steerMax` describe the same angle. `steerMax` is in radians. For the unit and form of `angle0` and `angle1`, follow `handlebar-and-steering-config.md` ("One angle for the part and for the rider's hands"). Do not pair `angle1 = "rad 0.39"` with `steerMax = 0.39`; that file explains why it is wrong: `"rad 0.39"` is 0.39 degrees, a throw too small to see, while `steerMax` stays in the solver's radians.
 - On the vanilla 1.30 motorbike graph the contract is a different one: the clip's frames are read over 45 degrees of wheel angle each way whatever the `model.cfg` throw, so the solver maps frames to 45 degrees and clamps at the lock, and the model's `TurnFront` animation must follow the physics angle one to one (the H2R's does) for the bars and the hands to agree.
 
 Write the shared constant down in the project so a later edit to one side updates the other.
 
 ## Reference case
 
-The anchor names, joint list, solver shape and viewer pattern come from the LFQuad project (a Yamaha Banshee quad, handoff of 2026-05-28). If a second vehicle with different proportions confirms the same pattern, it is worth a case study file of its own.
+The anchor names, joint list, solver shape and viewer pattern were worked out on one quad (a Yamaha Banshee model, May 2026). If a second vehicle with different proportions confirms the same pattern, it is worth a case study file of its own.

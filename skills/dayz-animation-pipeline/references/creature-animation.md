@@ -2,7 +2,7 @@
 
 The path from a rigged animal, infected or predator in Blender to a creature that moves in game: skeleton, export, `model.cfg`, a first graph, and AI wiring. The graph format itself is in `anim-graph.md`; the script side of creatures (commands, handlers, mind states) is in `skills/_shared/ai/creatures.md`.
 
-Two kinds of statement are mixed here. Vanilla facts cite `P:\`. Workflow advice comes from the creature animation workshop videos by the modder hunterz688 and a basic tutorial by Tree, as summarised by the source pack; it is credible practice, not checked on `P:\`, and those videos get several names wrong (table in `SKILL.md`).
+Two kinds of statement are mixed here. Vanilla facts cite `P:\`. Workflow advice is common creature modding practice, not checked on `P:\`; tutorials on the subject get several names wrong (table in `SKILL.md`).
 
 ## The layers
 
@@ -18,16 +18,16 @@ Blender (rig, skeleton, clips)
   -> in game, on a vanilla AI template (hen, herbivore or predator)
 ```
 
-Start with the smallest graph that can run, one state with one clip, and see it in game before adding states, variables or events. Building the whole graph offline and finding the fault on the first spawn is the mistake the workshop warns about most.
+Start with the smallest graph that can run, one state with one clip, and see it in game before adding states, variables or events. Building the whole graph offline and finding the fault on the first spawn is the most common mistake.
 
 ## Two bones the engine understands
 
 | Bone | Vanilla | Note |
 |---|---|---|
 | `EntityPosition` | `<bone name="EntityPosition" index = "0" movement = "true" lod = "0" />` (`P:\DZ\anims\cfg\skeletons.anim.xml:5`; the same line opens every animal block, the wolf's at `:899`) | The bone the engine moves the entity with. Graphs name it: the wolf's attack source predicts on it (`AnimSrcNodePrediction PredictionTurn` with `Bone "EntityPosition"`, `P:\DZ\animals\animations\!graph_files\wolf\wolf_maingraph.agf:52`, `:53`). |
-| `LookAt` | `P:\DZ\anims\cfg\skeletons.anim.xml:17` in the block the infected bind (`hermit_newbindpose.xob`), `:444` in `z_hermit.xob` | The look target. There is no `Pin` bone; the videos' "Pin Look At" is this. |
+| `LookAt` | `P:\DZ\anims\cfg\skeletons.anim.xml:17` in the block the infected bind (`hermit_newbindpose.xob`), `:444` in `z_hermit.xob` | The look target. There is no `Pin` bone; the "Pin Look At" of some tutorials is this. |
 
-From the workshop:
+Practice, not checked on `P:\`:
 
 - **Orientation of `EntityPosition`:** forward is +Y (green in Blender) and up is +Z (blue). A wrong orientation makes the animal walk sideways or sink into the ground.
 - **Bone names without spaces from the start.** Workbench turns spaces into underscores; Object Builder may not. Use `EntityPosition` style or lower case with underscores.
@@ -39,10 +39,10 @@ From the workshop:
 
 - The file is `skeletons.anim.xml`, with both dots. Its root is `<skeletons version="1.0">` (`P:\DZ\anims\cfg\skeletons.anim.xml:1`), with one `<skeleton name="....xob">` per skeleton listing `<bone name="..." lod="N" />` entries.
 - The engine finds it by its path inside the PBO, not through a config key. The vanilla addon's `config.cpp` holds only its `CfgPatches` class `DZ_Anims_Cfg` (`P:\DZ\anims\cfg\config.cpp:3`); there is no key pointing at the XML.
-- For a mod, as the source pack reads it (not tested here): pack an XML for the new skeleton at the same kind of path, `<mod>\anims\cfg\<name>.anim.xml`, and list `DZ_Anims_Cfg` in the mod's `requiredAddons[]`.
-- The videos blame a missing XML for a crash on first spawn. The source pack's reading is that the real cause is the `.xob` skeleton or its bones not being reachable by the graph; the XML only lists them. Check that both the XML and the `.xob` it names are in the PBO.
+- For a mod (not tested here): pack an XML for the new skeleton at the same kind of path, `<mod>\anims\cfg\<name>.anim.xml`, and list `DZ_Anims_Cfg` in the mod's `requiredAddons[]`.
+- Tutorials blame a missing XML for a crash on first spawn. The more likely cause is the `.xob` skeleton or its bones not being reachable by the graph, since the XML only lists them (not tested). Check that both the XML and the `.xob` it names are in the PBO.
 
-## FBX export from Blender (workshop checklist)
+## FBX export from Blender (checklist)
 
 - Custom properties: export them.
 - Leaf bones: off.
@@ -71,7 +71,7 @@ Vanilla names for commands and variables, with lines, are in `anim-graph.md`. Th
 
 The creature's config names the graph, its default instance and its start node in `class enfanimsys`, as the infected do (`graphname`, `defaultinstance`, `startnode`, `P:\DZ\characters\zombies\config.cpp:74` to `:77`).
 
-### Build it in this order (workshop)
+### Build it in this order
 
 1. One graph, one state machine, one idle state, one clip.
 2. The model in game with a minimal `model.cfg`: geometry, mass, a basic fire geometry. Check the model with `/dayz-p3d-audit`.
@@ -114,12 +114,12 @@ For a harmless ambient animal, such as a gull, that should cost little:
 - Give it a minimal inventory, a skinning setup and hit components.
 - For a predator, copy the wolf or bear and adjust the attack range.
 
-The workshop's method throughout: clone the nearest vanilla creature, change as little as possible, test, repeat. Much of this area is thinly documented by Bohemia.
+The method throughout: clone the nearest vanilla creature, change as little as possible, test, repeat. Much of this area is thinly documented by Bohemia.
 
-## Limits the workshop reported (as of March 2024)
+## Known limits (as of March 2024)
 
 Not solved then, and not rechecked: holding two weapons at once, the full bow mechanic, and custom additive locomotion (changing the additive walk and run layer easily breaks the character). A plan that touches any of these is high risk from the first day.
 
 ## Blender version
 
-The workshop recommends Blender 3.6.8, the version its sample files were made in, and reports that Blender 4.1 broke the DayZ animation plugin for one user. Not confirmed independently. Start on 3.6.8 and try one short clip on a newer version before committing to it.
+Blender 3.6.8 is the version known to work with the DayZ animation plugin; Blender 4.1 has broken the plugin in at least one setup. Neither is checked here. Start on 3.6.8 and try one short clip on a newer version before committing to it.

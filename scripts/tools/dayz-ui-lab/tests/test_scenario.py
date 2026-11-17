@@ -52,7 +52,7 @@ def run_cli(fixture: str) -> tuple[int, dict[str, object]]:
 
 
 class ScenarioSchemaTests(unittest.TestCase):
-    def test_schema_is_versioned_and_declares_every_task3_capability(self) -> None:
+    def test_schema_is_versioned_and_declares_every_state_capability(self) -> None:
         document = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
         self.assertEqual(document["$schema"], "https://json-schema.org/draft/2020-12/schema")
         self.assertEqual(

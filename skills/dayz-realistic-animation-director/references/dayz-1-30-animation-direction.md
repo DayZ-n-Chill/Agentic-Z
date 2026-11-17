@@ -2,12 +2,12 @@
 
 What DayZ 1.30 changed for anyone directing character, creature, weapon or vehicle animation, what breaks in work made for 1.29, and a migration checklist.
 
-Each fact cites the vanilla file on `P:\` (a 1.30 unpack). Lines marked "1.30 changelog" come from the 1.30 experimental modding changelog and are not yet checked on `P:\`. Statements about 1.29 are the source notes' and cannot be checked on a 1.30 `P:\`. The detail per animation domain is in `domain-gates.md`; the engine-side detail and the graph port belong to `dayz-animation-pipeline`, which wins where the two differ.
+Each fact cites the vanilla file on `P:\` (a 1.30 unpack). Lines marked "1.30 changelog" state 1.30 engine changes that are not yet checked on `P:\`. Statements about 1.29 cannot be checked on a 1.30 `P:\`. The detail per animation domain is in `domain-gates.md`; the engine-side detail and the graph port belong to `dayz-animation-pipeline`, which wins where the two differ.
 
 ## What changes
 
 1. **Motorbike riders.**
-   - Two animation instances: `MOTO1 = 10` and `MOTO2 = 11` (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:13-14`), used by `Motorbike_01_ColorBase` and `Motorbike_02_ColorBase`. The source notes call them the Jawa 50 cc and the three-wheeled Jawa Bitrak.
+   - Two animation instances: `MOTO1 = 10` and `MOTO2 = 11` (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:13-14`), used by `Motorbike_01_ColorBase` and `Motorbike_02_ColorBase`. They model a Jawa 50 cc and the three-wheeled Jawa Bitrak (model names not checked on `P:\`).
    - A third-person vehicle camera with spring lag: `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE = 32` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c:20`).
    - The handlebar grip uses continuous two-bone IK nodes, `AnimSrcNodeIK2` and `AnimSrcNodeIK2Target`, in the vehicle subgraph (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:17` and `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:31`), driven by the lean and roll variables `VehicleSteering`, `VehicleThrottle` and `VehicleSuspension` (declared from `P:\DZ\anims\workspaces\player\player_main\player_main.agr:113`).
    - One transition query: `IsTransitioning` on `HumanCommandVehicle` (`P:\scripts\3_game\human.c:735-738`).
@@ -20,7 +20,7 @@ Each fact cites the vanilla file on `P:\` (a 1.30 unpack). Lines marked "1.30 ch
 6. **Skeleton indices and creature motion.**
    - 1.30 changelog: the 250-bone limit is removed and global bone indices are resolved at run time from a hash of the bone name. On `P:\` the skeletons added in 1.30 keep `index = "0" movement = "true" lod = "0"` only on `EntityPosition` (`P:\DZ\anims\cfg\skeletons.anim.xml:988`); the survivor skeleton `hermit_newbindpose.xob` still lists `index` values on its core bones (`Pelvis` at `P:\DZ\anims\cfg\skeletons.anim.xml:8`).
    - Quadrupeds are rotated to the terrain procedurally: `AnimSrcNodeProcTransform AlignToTerrain_Rot` with the expression `SlopeAngleX  * 0.01745329251994329576923690768489` (`P:\DZ\animals\animations\!graph_files\wolf\wolf_maingraph.agf:5-18`).
-   - Infected have the mind state `MINDSTATE_COWER` (`P:\scripts\3_game\entities\dayzinfected.c:18`), new in 1.30 according to the source notes.
+   - Infected have the mind state `MINDSTATE_COWER` (`P:\scripts\3_game\entities\dayzinfected.c:18`), new in 1.30 (not checkable on a 1.30 `P:\`).
 7. **Workbench tools and physics.**
    - 1.30 changelog: the Workbench Animation Editor moved to Enfusion 2021 and can Live Edit graphs on a running client.
    - 1.30 changelog: a Workbench Ragdoll Editor edits `.ragdoll` files; vanilla ships `P:\DZ\characters\bodies\human.ragdoll`.
@@ -31,7 +31,7 @@ Each fact cites the vanilla file on `P:\` (a 1.30 unpack). Lines marked "1.30 ch
 | Broken element | Cause in 1.30 | Required action |
 |---|---|---|
 | Graphs kept only in the older `.agr` graph syntax (`$AnimGraph`) | Graphs are now `.agf` text files in Enfusion config syntax (`Locomotion.agf`, `Vehicles.agf` and the rest), listed by the `AnimSrcGraph` index under `GraphFilesResourceNames` (`P:\DZ\anims\workspaces\player\player_main\player_main.agr:1587`) | Re-export the workspace from the 1.30 Workbench Animation Editor, or rebuild the changes as text in the matching `.agf` files. |
-| `.ast` templates with anonymous groups | 1.30 changelog: `$groupType { #ngroupnames 0 ... }` is no longer supported | Give each group an explicit `Name` (the changelog's examples are `Name "Default"` and `Name ".unnamed"`; vanilla has `Name "ActionContinuous"` at `P:\DZ\anims\workspaces\player\player_main\player_main.ast:4`). |
+| `.ast` templates with anonymous groups | 1.30 changelog: `$groupType { #ngroupnames 0 ... }` is no longer supported | Give each group an explicit `Name` (for example `Name "Default"` or `Name ".unnamed"`; vanilla has `Name "ActionContinuous"` at `P:\DZ\anims\workspaces\player\player_main\player_main.ast:4`). |
 | `.asi` files in `$animsetinstance` syntax | Instances are the `AnimSetInstanceSource` class (`P:\DZ\anims\workspaces\player\player_main\player_main.asi:1`) | Convert the `#template`, `#parent` and `$animations` directives to the Enfusion config structure. |
 | `Buffer Save` and `Buffer Use` nodes | 1.30 changelog: removed from the animation engine | Replace buffer logic with control variables in the graph's control template (`AnimSrcGCT`) or with direct state machine connections. |
 | Anything that depends on `SurrenderDummyItem` | The dummy is no longer put in the hands; the class is `Obsolete` (`P:\scripts\4_world\entities\itembase\surrenderdummyitem.c:1`) | Replace item-in-hands checks with `SetSurrenderState` and `IsSurrendered`. |

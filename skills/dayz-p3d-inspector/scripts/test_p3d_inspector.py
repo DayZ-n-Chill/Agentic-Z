@@ -49,6 +49,8 @@ def _round_trip(tmp_path, recipe, **kwargs):
     (1.0, "visual_1"),
     (4.0, "visual_2"),
     (8.0, "visual_3"),
+    (16.0, "visual_3"),
+    (999.0, "visual_3"),
     (1.0e4, "shadow"),
     (1.1e4, "shadow"),
     (1.0e13, "geometry"),
@@ -72,6 +74,12 @@ def test_classify_lod_does_not_fold_the_1e15_family_into_memory():
 
 def test_classify_lod_reports_geophys_and_arma_values_as_unknown():
     for resolution in (2.0e13, 3.0e13, 4.0e13):
+        assert extract.classify_lod(resolution).startswith("unknown_")
+
+
+def test_classify_lod_does_not_call_the_values_between_visual_and_shadow_a_shadow():
+    # Visual is 0 to 999 and a shadow volume 10000 to 19999 (_shared/models/lods.md).
+    for resolution in (1000.0, 1100.0, 9999.0, 2.0e4):
         assert extract.classify_lod(resolution).startswith("unknown_")
 
 
@@ -171,8 +179,85 @@ def test_round_trip_keeps_memory_point_membership(tmp_path):
     assert axis["length"] == pytest.approx(0.015)
 
 
+def test_round_trip_keeps_every_lod_at_its_own_resolution(tmp_path):
+    # Fails if the builder writes each LOD at its type's usual resolution: levels 2,
+    # 3 and 5 would all become 4, and both shadow volumes 10000.
+    demo = extract.generate_demo_recipe()
+    visual = demo["lods"][0]
+    for resolution in (2.0, 3.0, 5.0, 16.0):
+        demo["lods"].append(dict(visual, resolution=resolution, type=extract.classify_lod(resolution)))
+    for resolution in (1.0e4, 1.1e4):
+        demo["lods"].append(dict(demo["lods"][1], resolution=resolution, type="shadow"))
+    _, back = _round_trip(tmp_path, demo, auto_fix_enabled=False)
+    assert [(lod["type"], lod["resolution"]) for lod in back["lods"] if lod["resolution"] < 1.0e12] == [
+        ("visual_0", 0.0), ("visual_2", 2.0), ("visual_2", 3.0), ("visual_2", 5.0),
+        ("visual_3", 16.0), ("shadow", 1.0e4), ("shadow", 1.1e4),
+    ]
+
+
+def test_builder_uses_the_usual_resolution_when_the_recipe_records_none(tmp_path):
+    demo = extract.generate_demo_recipe()
+    for lod in demo["lods"]:
+        del lod["resolution"]
+    _, back = _round_trip(tmp_path, demo, auto_fix_enabled=False)
+    assert [lod["type"] for lod in back["lods"]] == ["visual_0", "geometry", "memory"]
+
+
+def test_round_trip_keeps_visual_selections_on_the_same_geometry(tmp_path):
+    # A real visual LOD has quads and points used with more than one UV, so the
+    # Recipe's entries and triangles are not the LOD's points and faces. Fails if a
+    # selection's point and face indices are applied to the rebuilt arrays as they are.
+    py3d = _py3d_or_skip()
+    lod = py3d.LOD()
+    lod.resolution = 0.0
+    for coords in ((0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0), (2, 0, 0), (2, 1, 0)):
+        point = py3d.Point()
+        point.coords = coords
+        point.flags = 0
+        lod.points.append(point)
+    lod.facenormals = [(0, 0, 1)]
+
+    def add_face(point_indices, uvs):
+        face = py3d.Face(lod.points, lod.facenormals)
+        face.flags = 0
+        face.texture = "a.paa"
+        face.material = ""
+        for point_index, uv in zip(point_indices, uvs):
+            vertex = py3d.Vertex(lod.points, lod.facenormals)
+            vertex.point_index = point_index
+            vertex.normal_index = 0
+            vertex.uv = uv
+            face.vertices.append(vertex)
+        lod.faces.append(face)
+
+    add_face([0, 1, 2, 3], [(0, 0), (1, 0), (1, 1), (0, 1)])  # a quad
+    add_face([1, 4, 5], [(0, 0), (0.5, 0), (0.5, 1)])         # point 1 again, other UV
+    add_face([1, 5, 2], [(0, 0), (0.5, 1), (0, 1)])
+    right = py3d.Selection(lod.points, lod.faces)
+    right.points[lod.points[4]] = 1
+    right.points[lod.points[5]] = 1
+    right.faces[lod.faces[1]] = 1
+    lod.selections["right"] = right
+    model = py3d.P3D()
+    model.lods.append(lod)
+    source = tmp_path / "source.p3d"
+    with open(source, "wb") as f:
+        model.write(f)
+
+    rebuilt = tmp_path / "rebuilt.p3d"
+    build.build_p3d(extract.extract_recipe(str(source)), str(rebuilt), auto_fix_enabled=False)
+    with open(rebuilt, "rb") as f:
+        back = py3d.P3D(f).lods[0]
+    selection = back.selections["right"]
+    assert {tuple(point.coords) for point in selection.points} == {(2.0, 0.0, 0.0), (2.0, 1.0, 0.0)}
+    assert [
+        [tuple(back.points[vertex.point_index].coords) for vertex in face.vertices]
+        for face in selection.faces
+    ] == [[(1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (2.0, 1.0, 0.0)]]
+
+
 def test_builder_ignores_the_selections_of_a_memory_lod_entry(tmp_path):
-    # Known limit (SP-002): membership that is only in lods[memory].selections is lost.
+    # Known limit: membership that is only in lods[memory].selections is lost.
     demo = extract.generate_demo_recipe()
     demo["lods"][2]["selections"] = {"only_here": {"vertices": [0, 1], "faces": []}}
     _, back = _round_trip(tmp_path, demo, auto_fix_enabled=False)
@@ -190,6 +275,20 @@ def test_builder_writes_mass_on_geometry_points_and_honours_the_override(tmp_pat
     by_type = {extract.classify_lod(lod.resolution): lod for lod in model.lods}
     assert {point.mass for point in by_type["geometry"].points} == {2.5}
     assert {point.mass for point in by_type["visual_0"].points} == {None}
+
+
+def test_builder_writes_no_mass_on_the_fire_geometry_lod(tmp_path):
+    # Mass belongs to the Geometry LOD alone; on Fire Geometry the audit reports it.
+    py3d = _py3d_or_skip()
+    demo = extract.generate_demo_recipe()
+    demo["lods"].append(dict(demo["lods"][1], type="fire_geometry", resolution=7.0e15))
+    out = tmp_path / "model.p3d"
+    build.build_p3d(demo, str(out), auto_fix_enabled=False)
+    with open(out, "rb") as f:
+        model = py3d.P3D(f)
+    by_type = {extract.classify_lod(lod.resolution): lod for lod in model.lods}
+    assert {point.mass for point in by_type["fire_geometry"].points} == {None}
+    assert None not in {point.mass for point in by_type["geometry"].points}
 
 
 def test_builder_skips_an_unknown_lod_type_with_a_warning(tmp_path):

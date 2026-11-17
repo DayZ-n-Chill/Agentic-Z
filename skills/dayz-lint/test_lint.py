@@ -428,7 +428,7 @@ def test_empty_script_folder_needs_no_module(mod, p_drive):
 
 
 def test_patch_class_without_units_or_weapons_passes_with_warnings(mod, p_drive):
-    # Vanilla P:\DZ\data\aiconfigs\config.cpp: class DZ_data_aiconfigs {}; loads with no arrays at all.
+    # Vanilla P:\DZ\data\aiconfigs\config.cpp:3: class DZ_data_aiconfigs {}; loads with no arrays at all.
     edit(mod / "config.cpp", '        units[] = {"MyMod_Vest"};\n        weapons[] = {};\n', "")
     report = run(mod, p_drive)
     assert report["verdict"] == "PASS" and report["errors"] == 0

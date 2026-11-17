@@ -52,7 +52,7 @@ protected void CreateActionInfoPanel(typename panelType, int actionCategory)
 {
 	TargetActionInfoPanelBase tInfoPanel = TargetActionInfoPanelBase.Cast(panelType.Spawn());
 	tInfoPanel.SetParentWidget(m_Root);
-	m_Root.AddChild(tInfoPanel.GetMainWidget(),false); //ce n'est pas un LayoutHolder, bypassing inheritance (the vanilla comment, in French: "it is not a LayoutHolder")
+	m_Root.AddChild(tInfoPanel.GetMainWidget(),false); //ce n'est pas un LayoutHolder, bypassing inheritance
 	tInfoPanel.Init();
 
 	if (!m_TargetActionInfoPanelMap.Get(actionCategory))
@@ -63,6 +63,8 @@ protected void CreateActionInfoPanel(typename panelType, int actionCategory)
 	m_TargetActionInfoPanelMap.Set(actionCategory, tmp);
 }
 ```
+
+The French comment on the `AddChild` line is vanilla's ("it is not a LayoutHolder"). The two category keys are constants of the cursor class: `ACTION_ORDER_INTERACT_CONTINUOUS = 1` and `ACTION_ORDER_CONTINUOUS = 3` (`P:\scripts\5_mission\gui\actiontargetscursor.c:56`, `:58`).
 
 ### 2.2. Per-Frame Target Info Update
 
@@ -99,7 +101,7 @@ When an action is active, `ActionTargetsCursor.UpdateAdditionalActionInfo` (`P:\
 
 ### 2.3. Visual Dimming for Non-Startable Actions
 
-In `P:\scripts\5_mission\gui\actiontargetscursor.c:1118-1127`, if an action cannot currently be started (`!action.CanBeStarted()`), button prompt icons are dimmed to alpha `0.149` (normal is `1.0`):
+In `P:\scripts\5_mission\gui\actiontargetscursor.c:1118-1122`, if an action cannot currently be started (`!action.CanBeStarted()`), button prompt icons are dimmed to alpha `0.149` (normal is `1.0`):
 
 ```c
 // [EXACT] P:\scripts\5_mission\gui\actiontargetscursor.c:1118
@@ -150,28 +152,38 @@ Hierarchy:
 ```
 WrapSpacerWidgetClass MainWrap (size 350 51, Size To Content V 1)
  └── GridSpacerWidgetClass MainGrid (Columns 100, Rows 100)
-      ├── GridSpacerWidgetClass SecondaryGrid0 (size 51 51)  <-- Tools grid
-      │    └── WrapSpacerWidgetClass IconMarginCard_Wrap0..N (size 55 55)
-      ├── ImageWidgetClass Separator (size 2 28, dayz_gui:line_vertical)
-      └── GridSpacerWidgetClass SecondaryGrid1 (size 51 51)  <-- Materials grid
-           └── WrapSpacerWidgetClass IconMarginCard_Wrap0..N (size 55 55)
+      ├── GridSpacerWidgetClass SecondaryGrid0 (size 51 51, Rows 100)  <-- Tools grid
+      │    └── WrapSpacerWidgetClass IconMarginCard_Wrap4..6 (size 55 55)
+      │         └── ImageWidgetClass IconBg_Image4..6 (size 51 51)
+      ├── PanelWidgetClass Separator (size 14 55)
+      │    └── ImageWidgetClass Spacer_Image (size 3 15, image0 "")
+      └── GridSpacerWidgetClass SecondaryGrid1 (size 51 51, Columns 5, Rows 100)  <-- Materials grid
+           └── WrapSpacerWidgetClass IconMarginCard_Wrap1..3 (size 55 55)
+                └── ImageWidgetClass IconBg_Image1..3 (size 51 51)
 ```
+
+The third image under `SecondaryGrid0` is spelled `IconBg_Imag6` in the vanilla file (line 117).
 
 ### 3.2. `SimpleIconTemplate.layout`
 
 Path: `P:\gui\layouts\new_ui\hud\simpleicontemplate.layout:1`
 
-Hierarchy used by `GenericIconBase`:
+Hierarchy used by `GenericIconBase` (the widgets its script looks up; the file holds a few more):
 ```
 FrameWidgetClass Icon (size 59 59)
  ├── ImageWidgetClass ImageBackdrop (color 0 0 0 0.231)
  ├── PanelWidgetClass EmptySelected (style Outline)
- ├── ImageWidgetClass GhostSlot (dayz_inventory:missing, alpha 0.4)
- ├── GridSpacerWidgetClass PanelWidget (contains Col indicator)
- ├── ItemPreviewWidgetClass Render
- ├── RichTextWidgetClass Quantity
- ├── ProgressBarWidgetClass QuantityBar
- └── PanelWidgetClass QuantityStackPanel
+ ├── ImageWidgetClass GhostSlot (set:dayz_inventory image:missing, color 1 1 1 0.4)
+ ├── PanelWidgetClass Col (style rover_sim_colorable)
+ └── PanelWidgetClass PanelWidget (style blank)
+      ├── ItemPreviewWidgetClass Render
+      │    └── OutOfReach, Mounted, AmmoIcon, Cursor, TemperaturePanel
+      └── PanelWidgetClass QuantityPanel
+           ├── ProgressBarWidgetClass QuantityBar
+           ├── GridSpacerWidgetClass QuantityStackPanel
+           │    └── RichTextWidgetClass Quantity
+           └── GridSpacerWidgetClass QuantityStackPanel0
+                └── TextWidgetClass Quantity0
 ```
 
 ---
@@ -229,9 +241,9 @@ class ConstructionActionInfoPanel: TargetActionInfoPanelBase
 
 Located in `P:\scripts\5_mission\gui\inventorynew\containeditems\actioninfogrids.c:1-290`:
 
-- **`ActionInfoGridBase: LayoutHolder`**: Manages an array of `GenericIconBase` instances, dynamically allocates new icon wrappers via `CreateNewIcon(int idx = -1)`, and handles hide/show logic.
-- **`ConstructionActionInfoToolsGrid`**: Inspects the player's hands tool and matches its bitmask (`toolCfgPath = "cfgVehicles " + tool.GetType() + " build_action_type"`) against `part.GetBuildIndicationTypeMask()` and `part.GetBuildTypeMask()`. Populates `ConstructionToolInfoIcon`.
-- **`ConstructionActionInfoMaterialsGrid`**: Inspects the required materials for the current target construction phase (`part.GetMaterialsSlotName(i)`, `part.GetMaterialSlotQuantity(i)`). Populates `ConstructionMaterialInfoIcon`.
+- **`ActionInfoGridBase: LayoutHolder`** (`:1`): Manages an array of `GenericIconBase` instances, dynamically allocates new icon wrappers via `CreateNewIcon(int idx = -1)` (`:40`), and handles hide/show logic. Both construction grids extend `ConstructionActionInfoGrid: ActionInfoGridBase` (`:86`).
+- **`ConstructionActionInfoToolsGrid`** (`:103`): Reads the tool in the player's hands, takes its bitmask from config (`toolCfgPath = "cfgVehicles" + " " + tool.GetType() + " " + "build_action_type"`, `:140`; `TOOL_HANDS` with no tool) and matches it against `part.GetBuildIndicationTypeMask()` (`:134`). Populates one `ConstructionToolInfoIcon` per `EConstructionTools` bit.
+- **`ConstructionActionInfoMaterialsGrid`** (`:236`): Creates five `ConstructionMaterialInfoIcon`s (`DEFAULT_MATERIAL_ICON_COUNT`, `:238`) and hands each the current `ConstructionPart` and the target entity. Each icon reads its own material from `m_Part.GetMaterialsData()` (slot name `m_MaterialSlotName`, required amount `m_MaterialQuantity`; `P:\scripts\5_mission\gui\inventorynew\containeditems\constructioninfoicons.c:223`, `:390`).
 
 ### 4.3. `GenericIconBase` & `ConstructionInfoIcons`
 
@@ -241,23 +253,27 @@ Located in `P:\scripts\5_mission\gui\inventorynew\containeditems\actioninfogrids
   `m_QuantityItem = RichTextWidget.Cast(m_MainWidget.FindAnyWidget("Quantity"));` (`P:\scripts\5_mission\gui\inventorynew\containeditems\genericicon.c:37`)
 
 - **`ConstructionToolInfoIcon: ConstructionInfoIcon`** (`P:\scripts\5_mission\gui\inventorynew\containeditems\constructioninfoicons.c:52`):
-  Maps tool requirements to inventory imageset icons:
+  Maps `EConstructionTools` values to icons of the `dayz_inventory` imageset (`InitGhostIcon`, `:64-105`; the default is `image:missing`):
   - `TOOL_MOUNT_WIRE` -> `"image:plierstools"`
-  - `TOOL_HAMMER` / `TOOL_WOODHAMMER` -> `"image:hammertools"`
-  - `TOOL_SHOVEL` -> `"image:shoveltools"`
+  - `TOOL_NAIL` / `TOOL_MOUNT_LOG` -> `"image:hammertools"`
+  - `TOOL_DIG_BASE` -> `"image:shoveltools"`
+  - `TOOL_HEAVY` -> `"image:sladgehammertools"` (vanilla's spelling)
+  - `TOOL_EXCAVATION` -> `"image:pickaxetools"`
   - `TOOL_HANDS` -> `"image:hands"`
-  - `TOOL_TROWEL` -> `"image:bricklayingtools"`
+  - `TOOL_BRICKLAYING` -> `"image:bricklayingtools"`
 
 - **`ConstructionMaterialInfoIcon: ConstructionInfoIcon`** (`P:\scripts\5_mission\gui\inventorynew\containeditems\constructioninfoicons.c:161`):
   Formats material amounts dynamically with RichText color formatting:
-  `m_QuantityItem.SetText(string.Format("<color hex=\"%1\">%2</color><color hex=\"%3\">/%4</color>", ...))`
+  `RichTextWidget.Cast(m_QuantityItem).SetText(string.Format("<color hex=\"%1\">%2</color><color hex=\"%3\">/%4</color>", ...))` (`:347`, `:377`)
 
 ---
 
 ## 5. Extension & Modding Patterns
 
 To attach a custom information panel to the cursor in a mod:
-1. Subclass `TargetActionInfoPanelBase` (or `ActionInfoPanelBase`).
+1. Subclass `TargetActionInfoPanelBase`. `CreateActionInfoPanel` casts the spawned panel to that class and calls its `Init()`, so a bare `ActionInfoPanelBase` subclass does not work there.
 2. Override `SetLayoutName()` to point to your custom spacer/grid layout.
-3. In a `modded class ActionTargetsCursor`, override `InitActionInfoPanels()` and register your panel via `CreateActionInfoPanel(MyCustomInfoPanel, ACTION_ORDER_CONTINUOUS)`.
-4. In your custom action (`ActionBase`), implement `override bool IsTargetInfoAction() { return true; }` and return your payload in `override ActionInfoDataBase GetClientActionInfo()`.
+3. In a `modded class ActionTargetsCursor`, override `InitActionInfoPanels()`, call `super.InitActionInfoPanels()` first, and register your panel via `CreateActionInfoPanel(MyCustomInfoPanel, ACTION_ORDER_CONTINUOUS)`.
+4. In your custom action (`ActionBase`), implement `override bool IsTargetInfoAction() { return true; }` and return your payload in `override ActionInfoDataBase GetClientActionInfo()` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:277`, `:282`).
+
+This recipe is read from the vanilla code above; it has not been run in game.

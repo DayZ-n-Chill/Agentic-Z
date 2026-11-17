@@ -1,11 +1,11 @@
 # LBGroups UI patterns: what a large production mod does
 
-UI patterns read out of LBmaster_Groups, one of DayZ's most advanced mods: groups, chat, map markers,
+The UI patterns of LBmaster_Groups, one of DayZ's most advanced mods: groups, chat, map markers,
 compass, GPS minimap, player list, admin menu, and color and position managers. Use it to copy a pattern
 for a map, HUD, chat or settings UI, or when a mod depends on LBmaster_Core and should reuse its helpers.
 
-Everything about `LB*` classes here is a fact about LBmaster_Groups and LBmaster_Core, third-party mods; it is
-the source author's reading of their code and is not checked on `P:\`. The code samples keep that mod's own
+Everything about `LB*` classes here is third-party mod behaviour (LBmaster_Groups and LBmaster_Core), not
+vanilla, and is not checked on `P:\`. The code samples keep that mod's own
 brace style. The vanilla engine calls the patterns rest on were checked on `P:\`:
 
 | Vanilla API | Declared at |
@@ -20,8 +20,8 @@ brace style. The vanilla engine calls the patterns rest on were checked on `P:\`
 | `ChatInputMenu.m_BackInputWrapper` (section 14) | `P:\scripts\5_mission\gui\chat\chatinputmenu.c:5`, `:15` |
 | `string.Format` (section 21) | `P:\scripts\1_core\proto\enstring.c:526` |
 
-LFPG, named in several notes below, is the source author's own mod family (LF PowerGrid and related mods); those
-notes say where he applies each pattern.
+The "device mod" notes below say where each pattern fits in a mod with interactive devices (a phone, an
+ATM, a terminal).
 
 ---
 
@@ -440,7 +440,7 @@ static void InvokeOnChanged() {
 **Events used by LBGroups**: OnColorChange, OnPositionChange, OnLayoutChanged,
 OnScreenSizeChanged, StreamerModeChanged, GPSChanged, OnConfigReceived.
 
-**Pattern for LFPG**: fits device state broadcasts, UI theme changes and a
+**In a device mod**: fits device state broadcasts, UI theme changes and a
 phone notification system.
 
 ---
@@ -573,7 +573,7 @@ class LBColorManager_ : LBConfigBase {
 **Position manager** uses `Param3<string, vector, int>` (name, position, alignment).
 Same get-or-create pattern. Loaded from JSON, saved on settings close.
 
-**Key insight for LFPG ATM/Phone**: This is how to persist user preferences
+**In a device mod (ATM, phone)**: This is how to persist user preferences
 (theme colors, widget positions, notification settings) per server.
 
 ---
@@ -697,8 +697,8 @@ SendChatMessage(text);
 ## 21. Float to string formatting
 
 Enforce Script has `string.Format` (`P:\scripts\1_core\proto\enstring.c:526`), but its `%1` to `%9`
-placeholders take no precision, so there is no printf-style way to fix the number of decimals. (The source
-of this file said the language "lacks printf/format"; only the precision part holds.) Manual decimal formatting:
+placeholders take no precision, so there is no printf-style way to fix the number of decimals. (The claim
+that the language "lacks printf/format" is wrong; only the precision part holds.) Manual decimal formatting:
 
 ```
 string FloatToString(float f, bool addPoint) {
@@ -737,7 +737,7 @@ string FloatToString(float f, bool addPoint) {
 #endif
 ```
 
-**For LFPG**: Use this pattern for optional subsystems (CCTV, Battery, Phone).
+**In a device mod**: Use this pattern for optional subsystems (CCTV, battery, phone).
 Servers can disable features they don't want without script errors.
 
 ---
@@ -802,9 +802,9 @@ void OnSizeChange() {
 
 ---
 
-## Where the source author applies these patterns (LFPG)
+## Where these patterns fit in a device mod
 
-| LBGroups Pattern | LFPG Application |
+| LBGroups pattern | Device mod application |
 |---|---|
 | Layout Manager registry | Phone/ATM layout swapping per device skin |
 | ConnectClassWidgetVariables | Reduce boilerplate in all UI classes |
@@ -818,7 +818,7 @@ void OnSizeChange() {
 | Page/tab system | Phone app pages, ATM menu screens |
 | Dirty-check hash | Efficient device list refresh |
 | Tactical ping raycast | Quick-place markers from phone app |
-| Feature flags | Optional LFPG subsystems per server config |
+| Feature flags | Optional subsystems per server config |
 
 ---
 
@@ -934,8 +934,8 @@ if (pos > max)
 
 ## 31. LBColorPicker reuse: ownership, lifetime, and the redraw it does not trigger
 
-Measured 2026-09-03 adding a configurable route colour to LBGroups_GPS. Three traps, each found
-only after the code was written; one of them by an independent review pass, not by the author.
+Measured 2026-09-03 while adding a configurable route colour to a GPS route overlay built on
+LBmaster_Core. Three traps, each found only after the code was written.
 
 **Do not build a colour dialog when the mod already depends on LBmaster_Core.** `LBColorPicker`
 is finished: A/R/G/B sliders each paired with an EditBox, a hex field and a live swatch, layout

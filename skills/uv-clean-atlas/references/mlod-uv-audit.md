@@ -2,7 +2,7 @@
 
 What to measure on a `.p3d` that is already assembled (LODs, selections, proxies, materials), the traps in measuring it, and one fully measured case. Use it when the question is "are this model's UVs good enough for a detailed texture?" rather than "unwrap this mesh". The Blender-side audit of a single mesh is `sat_gate.py` and `uv_metrics.py` (see `SKILL.md`).
 
-The source project measured all of this with its own py3d script, `uv_audit.py`, which is not shipped in this repo. The list below is what that script computed, so the same numbers can be reproduced with py3d (`_shared/py3d-mlod-notes.md` covers reading an MLOD). The measurements are from LFQuad (the source author's quad-bike mod) and were not checked on `P:\`.
+No script here computes these metrics. The list below is what to compute with py3d (`_shared/py3d-mlod-notes.md` covers reading an MLOD). The measurements are from a quad-bike vehicle mod (the quad bike below) and were not checked on `P:\`.
 
 ## What to measure
 
@@ -26,10 +26,10 @@ Per visual LOD and per group of faces sharing a texture and material:
 - **Leave proxy faces out.** Faces in a `proxy:...` selection carry degenerate UVs by design.
 - **Leave "full-frame" triangles out of the overlap between groups.** A single face mapped to the whole 0 to 1 square (a headlight lens, for example) overlaps everything and reports a false 100%. The threshold used was a UV area above 0.2.
 - Numbers that are exactly 100% or exactly 0.000 are a sign of a tool artifact, not of the model.
-- **A mirrored share that is neither 0 nor 100 may be collapse, not mixed handedness.** The source script left degenerate triangles out of the mirrored count but kept them in the total, so a uniformly mirrored mesh with 31% of its faces collapsed reported 69% mirrored. Before calling it a chirality defect, check whether the non-degenerate count and the mirrored count are the same integer. On three LFQuad groups they matched exactly.
+- **A mirrored share that is neither 0 nor 100 may be collapse, not mixed handedness.** A script that leaves degenerate triangles out of the mirrored count but keeps them in the total reports a uniformly mirrored mesh with 31% of its faces collapsed as 69% mirrored. Before calling it a chirality defect, check whether the non-degenerate count and the mirrored count are the same integer. On three quad-bike groups they matched exactly.
 - Read density against the size of the texture the asset really uses. Decode the shipped `.paa` and take its side; do not assume 2048 (see the wheel figures below).
 
-## The measured case: LFQuad, July 2026
+## The measured case: the quad bike, July 2026
 
 Measured 2026-07-05 on the deployed `.p3d` files.
 

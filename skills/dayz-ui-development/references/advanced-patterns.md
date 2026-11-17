@@ -2,15 +2,15 @@
 
 Worked layout and script sketches for interactive UI: keeping widgets from overlapping when visibility changes, a sliding toggle, a clickability checklist, cards, tabs, a draggable window, a fading status bar, hover effects and validated input fields.
 
-**Read this first: the code here is pseudocode until you check it.** The file came with no source citations, and an audit of it against the vanilla scripts found calls that do not exist. Three are confirmed broken and are left in the sketches so the correction stays visible:
+**Read this first: the code here is pseudocode until you check it.** Most of the sketches carry no vanilla citation, and a check of them against the vanilla scripts found calls that do not exist. Three are confirmed broken and are left in the sketches so the correction stays visible:
 
-1. **`OnMouseMove(Widget w, int x, int y, int oldx, int oldy)`** (section 6, the draggable window). `ScriptedWidgetEventHandler` has no `OnMouseMove` event: its full list is `OnClick` to `OnEvent` at `P:\scripts\1_core\proto\enwidgets.c:656-686`. The override is never called, so dragging silently does nothing. Reported by the source for DayZ 1.29 and not checked here (only 1.30 is on `P:\`): the one `OnMouseMove` in the 1.29 scripts was a Workbench plugin hook (`workbenchapi.c:91`), not a widget event. **Fix:** drive the drag from `OnMouseButtonDown` plus a per frame `Update()` that polls `GetMousePos()` (the approach `admin-ui-patterns.md` section 1 uses), or use the native `DRAGGABLE` flag with the `OnDrag`, `OnDragging` and `OnDrop` events.
+1. **`OnMouseMove(Widget w, int x, int y, int oldx, int oldy)`** (section 6, the draggable window). `ScriptedWidgetEventHandler` has no `OnMouseMove` event: its full list is `OnClick` to `OnEvent` at `P:\scripts\1_core\proto\enwidgets.c:656-686`. The override is never called, so dragging silently does nothing. The only match for `OnMouseMove` anywhere under `P:\scripts` is the Workbench plugin hook `OnMouseMoveEvent(float x, float y)` (`P:\scripts\1_core\workbenchapi.c:91`), not a widget event. **Fix:** drive the drag from `OnMouseButtonDown` plus a per frame `Update()` that polls `GetMousePos()` (the approach `admin-ui-patterns.md` section 1 uses), or use the native `DRAGGABLE` flag with the `OnDrag`, `OnDragging` and `OnDrop` events.
 2. **`Dabs_WidgetAnimator.Create(w).AnimateProperty(...)` and `.AnimateColor(...)`** (sections 2, 7 and 8). No such class or factory exists in Dabs Framework. The real calls are static methods on `WidgetAnimator`: `WidgetAnimator.Animate(w, WidgetAnimatorProperty.POSITION_Y, end, ms)`, `AnimateEx` and `AnimateColor` (see `dabs-framework.md`, "WidgetAnimator"). There is no `Dabs_` prefix and no `Create()`.
 3. **`SetSort(SortOrderEnum.LOWER)` and `GetUApi().GetInputManager().AddActionListener(this)`** (sections 2 and 3). `SortOrderEnum` does not exist: `SetSort` takes a plain `int`, declared at `P:\scripts\1_core\proto\enwidgets.c:130`, and a higher value draws on top. `UAInputAPI` has no `GetInputManager()`. To read an input every frame use `GetUApi().GetInputByName("UAxxx").LocalPress()` (`GetInputByName` is declared at `P:\scripts\3_game\inputapi\uainput.c:218`). The action must be declared in `inputs.xml` and that file named in `config.cpp`, or `GetInputByName` returns null and the call crashes; see `skills/_shared/enscript/integrations/input_bindings.md`.
 
 Also wrong in the sketches: several `ScriptView` examples use `m_root` (Dabs exposes `m_LayoutRoot` and `GetLayoutRoot()`) and override `OnShow()` on a class that `extends ScriptView` (Dabs `ScriptView` has no `OnShow`; that hook belongs to `UIScriptedMenu` and to Expansion's `ExpansionScriptViewMenu`). Rebuild the sketch on the vanilla `ScriptedWidgetEventHandler` and `UIScriptedMenu` calls before copying it.
 
-Everything else in this file is vendored, not yet checked on `P:\`. Rule numbers ("rule 3") point at `rules-and-checklist.md` in this folder.
+Everything else in this file is not yet checked on `P:\`. Rule numbers ("rule 3") point at `rules-and-checklist.md` in this folder.
 
 ---
 
@@ -34,7 +34,7 @@ These are patterns for complex interactive UI elements. They target the most com
 
 **Key constraints:**
 - Outside spacer widgets, layout positioning is absolute (there is no flexbox). `WrapSpacerWidgetClass` and `GridSpacerWidgetClass` place their own children, as section 1 shows
-- Enforce Script has **no ternary operator** (the only confirmed restriction). `++`, `+=` and `foreach` all work (seen in LBmaster and LBGroups production code)
+- Enforce Script has **no ternary operator** (the only confirmed restriction). `++`, `+=` and `foreach` all work
 - All widgets render in tree order (later siblings on top)
 - Mouse events propagate through `ignorepointer` flag
 
@@ -545,7 +545,7 @@ class TabController extends ScriptView
 
 ## 6. Floating draggable window pattern
 
-For movable windows (LFPG Sorter container, modal dialogs):
+For movable windows (a sorter container, modal dialogs):
 
 ### Layout: Window Frame with Header
 
@@ -638,7 +638,7 @@ class DraggableWindowController extends ScriptView
             float newY = y + m_DragOffsetY;
 
             // Clamp to screen bounds
-            float screenW, screenH;
+            int screenW, screenH;
             GetScreenSize(screenW, screenH);
             if (newX < 0) newX = 0;
             if (newY < 0) newY = 0;
@@ -759,7 +759,7 @@ class StatusNotifier extends ScriptView
 
 ## 8. Button with hover effect
 
-Reported by the source: a `ButtonWidget` shows no hover state unless its style defines one, so hover feedback is done in event handlers (the vanilla pause menu tints a child panel from script the same way, see `text-sizing-and-rendering.md`):
+Not yet checked on `P:\`: a `ButtonWidget` shows no hover state unless its style defines one, so hover feedback is done in event handlers (the vanilla pause menu tints a child panel from script the same way, see `text-sizing-and-rendering.md`):
 
 ### Script: Hover Animation
 

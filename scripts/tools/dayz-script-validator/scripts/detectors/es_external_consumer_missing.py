@@ -4,20 +4,19 @@ import re
 ES_EXTERNAL_CONSUMER_MISSING_RULE_ID = "ES-EXTERNAL-CONSUMER-MISSING"
 
 
-# claim: CLAIM-ENFORCE-EXTERNAL-CONSUMER-SURFACE
 # A script that lives OUTSIDE the addon tree -- a mission `init.c`, another
 # mod -- can call methods on the addon's classes. Deleting such a method is a
 # breaking change that no in-addon check sees, because every in-addon reference
 # is gone by construction.
 #
-# Observed on 2026-09-17 in LFPowerGrid (claim ENFORCE-EXTERNAL-CONSUMER-SURFACE):
+# Observed on 2026-09-17 in a mod:
 # a refactor removed 62 facade methods from 4_World after proving that no file
 # under the addon's own `scripts/` called them. The offline linter was green, the
 # implementer's gates were green and an independent review was green. The server
 # then refused to compile the mission:
 #
-#   init.c:812,1367 Undefined function 'LFPG_ElecGraph.GetOutgoing'
-#   init.c:1128     Undefined function 'LFPG_ElecGraph.GetLastEdgesVisited'
+#   init.c:812,1367 Undefined function 'FX_ElecGraph.GetOutgoing'
+#   init.c:1128     Undefined function 'FX_ElecGraph.GetLastEdgesVisited'
 #   Can't compile mission init script!
 #
 # Nine of the 62 had a consumer in the mission, with 69 call sites. The mission
@@ -103,7 +102,7 @@ def _reachable_members(cls, parent_of, members_of):
 def _chain_is_closed(cls, parent_of, members_of, modded):
     """True when every ancestor of `cls` is declared inside the addon.
 
-    When the chain leaves for a vanilla base -- `LFPG_BTCAtmBase : Inventory_Base`
+    When the chain leaves for a vanilla base -- `FX_AtmBase : Inventory_Base`
     -- the called method may come from there, and offline there is no way to
     know. Without this cut, `GetPosition` produced 13 false positives on a tree
     that compiles clean, only because the addon overrides it in two of its own

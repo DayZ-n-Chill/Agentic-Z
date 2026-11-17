@@ -12,7 +12,7 @@ The hulls are closed and convex, wound outward as Qhull's simplices come (the ch
 winding; the written models reverse them to the MLOD's inward winding): a box 0.5 m wide and
 0.25 m high, 1 m long unless a test says otherwise; the box with a point just outside the
 middle of its top front edge, whose top face is triangulated with a needle (the shape a
-Qhull hull produced in the measured project); and the box with one corner cut by a 1 mm face.
+Qhull hull produced in the measured model); and the box with one corner cut by a 1 mm face.
 """
 import contextlib
 import importlib.util

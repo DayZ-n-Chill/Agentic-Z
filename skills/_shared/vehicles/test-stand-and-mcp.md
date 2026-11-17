@@ -1,8 +1,8 @@
 # Automated vehicle test stand
 
-Measured limits of driving, seating and unseating a vehicle from an automated test harness (the DayZ MCP bridge the notes were measured with), and which actions the server still validates.
+Measured limits of driving, seating and unseating a vehicle from an automated test harness (the dayz-mcp bridge), and which actions the server still validates.
 
-> Status: field notes measured on third-party mods, each named in its entry (SUB_BRZ, SUB_WRXSTI, MercedesAMGLF, LFQuad, LFQuad2, LFQuad3, Arma2Quad, LFHeli). Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. Where they were opened, the `carscript.c` numbers matched this repo's `P:\` (a 1.30 build), the `transport.c` numbers sat 3 to 9 lines lower than written, and the `DZ\vehicles\wheeled\config.cpp` numbers differed. Tags such as SP-205 or LL-244 are the notes' own lesson numbers. Paths such as `<vehicle-import>\...` or `SUB_BRZ_dev\...` point into those mods' work folders, which are not part of this repo. Paths that begin `30_Sessions/` or `AI/` name the author's own session notes, which are not part of this repo either. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: measured in game through dayz-mcp, a third-party MCP server that this repo does not ship, on DayZDiag 1.29 and 1.30 with `CivilianSedan` and the LFHeli build; not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data (a 1.30 build); a bare `file.c:N` is a 1.30 line number that repeats or extends a full citation in the anchors list below, and a number given for 1.29 cannot be checked on `P:\`. `MCPBridge.c` is dayz-mcp's own script. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -11,9 +11,9 @@ Measured limits of driving, seating and unseating a vehicle from an automated te
 - A door reads as closed at or below phase 0.5 in `TranslateAnimationPhaseToCarDoorState` (`P:\scripts\4_world\entities\vehicles\carscript.c:2248-2250`), and the door action moves it with `SetAnimationPhase` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoors.c:91`).
 - The debug spawner creates objects with `ECE_PLACE_ON_SURFACE` among its flags (`P:\scripts\4_world\plugins\pluginbase\plugindeveloper.c:454`).
 
-## Scripted pilot: UAInput has no injection API (SP-276b)
+## Scripted pilot: UAInput has no injection API
 
-**Scripted-pilot limitation — `UAInput` has no injection API (SP-276b, added 2026-08-17, LFHeli LF-001):** the dayz-mcp bridge cannot pilot a vehicle whose mod neutralizes the CarController (`SetSteering(0)` every tick) and reads its own UA axes, because `UAInput` does not admit value injection. The working path is a DIAG script in the OWNER that substitutes the UA reading before `WriteToMove`: with the Pawn pattern of active forces the server consumes the axes from the Move (`ConsumeMove → ReadFromMove`), so the script needs no sync and no RPC. Plan v0: `LFHeli_dev/plans/2026-08-17-piloto-scriptado-diag-v0.md`. Status: pending — conditioned on the scripted pilot actually flying (LL-218: do not promote a mechanic without in-game adjudication); SP-276 patch (a) was adjudicated in-game 17-Aug.
+**Scripted-pilot limitation — `UAInput` has no injection API (added 2026-08-17, LFHeli):** the dayz-mcp bridge cannot pilot a vehicle whose mod neutralizes the CarController (`SetSteering(0)` every tick) and reads its own UA axes, because `UAInput` does not admit value injection. The working path is a DIAG script in the OWNER that substitutes the UA reading before `WriteToMove`: with the Pawn pattern of active forces the server consumes the axes from the Move (`ConsumeMove → ReadFromMove`), so the script needs no sync and no RPC. Status: pending — conditioned on the scripted pilot actually flying (do not promote a mechanic without in-game adjudication); the get-out re-registration of `runtime-state-and-sync.md` was adjudicated in-game 17-Aug.
 
 ## Invariant 15e: a client-side get-in is not enough for an action the server validates
 
@@ -61,17 +61,15 @@ then measure a vanilla control in the same session" impossible without a relaunc
 ## Automated vehicle stand: measured invariants (added 2026-08-24)
 
 Measured on dayz-mcp stand (DayZDiag 1.29.163709, CivilianSedan), ABBA G0 session
-(origin: real frictions that aborted 3 attempts; evidence in
-`AI/10_Projects/DayZ_MCP/reviews/2026-08-24-g0-veredicto-nocturno.md`):
+(the frictions below aborted 3 attempts):
 
 - **Get-out**: `ActionGetOutTransport.ActionCondition` = `!IsTransitioning() && crewIndex >= 0 && CrewCanGetThrough && IsAreaAtDoorFreeDiag` (actiongetouttransport.c:70-79; 1.29 had no transition check and `IsAreaAtDoorFree`, 1.29 actiongetouttransport.c:68-77; `CCTNone` — target does not participate). A car stopped AGAINST statics leaves door blocked and action in `condition_failed`; stand control surface has no reverse gear (throttle 0..1) — site becomes unrecoverable. Design site with >=150 m clear IN DRIVING DIRECTION and graceful cleanup: deleting fixture with player inside cleanly ejects (4/4 measured).
 - **Spawn heading**: 4th parameter of `CreateObjectEx` is `RF_*` flags, NOT yaw; vehicle inherits ground orientation at point (~11.6 degrees between two points 40 m apart). No orientation setter via tools: if experiment demands comparable headings, sites are selected empirically (trace samples give actual driven heading).
-- **Positional drivability**: a vehicle can end up FROZEN (2s delta ~0.12 m at throttle 1.0) due to SITE — same binary/config drove 91 m at one point and 0.12 m at another 40 m away. Before blaming config/ownership/code: ABBA of sites (LL-359).
+- **Positional drivability**: a vehicle can end up FROZEN (2s delta ~0.12 m at throttle 1.0) due to SITE — same binary/config drove 91 m at one point and 0.12 m at another 40 m away. Before blaming config/ownership/code: ABBA of sites.
 
 ## Stand get-out: the real chain and the sanctioned teardown (added 2026-08-24)
 
-Triangulated across 13 rounds on NWAF (evidence: session 2026-08-24c + ledger entry
-fb-20260824-133301-ecf5). ActionGetOutTransport `condition_failed` on stand fixtures
+Triangulated across 13 rounds on NWAF (2026-08-24). ActionGetOutTransport `condition_failed` on stand fixtures
 DOES NOT depend on site (identical across 9 sites, 7 pristine):
 
 - Driver door spawns CLOSED and `CrewCanGetThrough` requires it non-closed

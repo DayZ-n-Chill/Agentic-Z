@@ -12,7 +12,7 @@ Takes a wearable from "the worn model does not sit on the player" to a working i
 
 Follow `skills/_shared/dayz-conventions.md`. The four scripts here work offline on the files you name and do not run `/dayz-preflight`; packing and testing go through `/dayz-build-pbo` and `/dayz-launch-test`, which do.
 
-Everything marked **Measured** was found while building the ArmorHneck body armor (a third-party armor delivered as worn models) on DayZ 1.29 diag: about six in-game test cycles to separate three independent failures that leave no log error. The worn model contract is the same on 1.30.
+Everything marked **Measured** was found while building a plate body armor (a mod delivered as worn models) on DayZ 1.29 diag: about six in-game test cycles to separate three independent failures that leave no log error. The worn model contract is the same on 1.30.
 
 ## What to read
 
@@ -75,7 +75,7 @@ Build with `/dayz-build-pbo <ModName>`, then test with `/dayz-launch-test`. The 
 4. **Check the PBO**: the class name is in the config, the worn models start with `ODOL`, and every `.paa` and `.rvmat` (the damage ones too) is there.
 5. **The gate is in game**: spawn it (does it register?), equip it (does the worn model render on the body?), move (does it follow the animations?). A worn item cannot be validated offline only.
 
-**Measured, for a build by hand:** the mod was staged to a temp folder outside `P:\`; one full AddonBuilder pass binarized the models; then a pack tree of `config.cpp` as text, `model.cfg`, the binarized models and all `.paa` and `.rvmat` files (damage and destruct ones included) was packed with AddonBuilder `-packonly`, using a separate `-temp` folder. The PBO was then checked (class name present, no `config.bin`, models starting with `ODOL`) and deployed only when its hash differed from the deployed one. The staging rules behind this are rule SP-155 of `/dayz-build-pbo` (`skills/dayz-build-pbo/references/addonbuilder-rules.md`).
+**Measured, for a build by hand:** the mod was staged to a temp folder outside `P:\`; one full AddonBuilder pass binarized the models; then a pack tree of `config.cpp` as text, `model.cfg`, the binarized models and all `.paa` and `.rvmat` files (damage and destruct ones included) was packed with AddonBuilder `-packonly`, using a separate `-temp` folder. The PBO was then checked (class name present, no `config.bin`, models starting with `ODOL`) and deployed only when its hash differed from the deployed one. The staging rules behind this are the binarized-build preflight rules of `/dayz-build-pbo` (`skills/dayz-build-pbo/references/addonbuilder-rules.md`).
 
 ## Diagnosis
 
@@ -144,9 +144,9 @@ The three failures, the canonical frame, `DayzTemporarySkeleton` and the build a
 
 ## On Linux
 
-Everything above is the Windows workflow. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the Linux and Proton notes (`skills/_shared/linux-proton.md`). What changes for this skill, all of it **Measured** by the notes' author and not checked here:
+Everything above is the Windows workflow. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the Linux and Proton notes (`skills/_shared/linux-proton.md`). What changes for this skill, all of it **Measured** on Linux and not checked on `P:\`:
 
-- Pack, sign and binarize with dayzmake 1.0.0 or newer, a DayZ fork of armake2 (https://github.com/bzed/dayzmake), pinned to `v1.0.0`: the release binary `dayzmake-v1.0.0-debian-trixie-x86_64.tar.gz` from the `v1.0.0` release page of that repository, or `cargo install --git https://github.com/bzed/dayzmake --tag v1.0.0`. Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Upstream armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake `v1.0.0` includes them), and it lacks the DayZ-only functions dayzmake keeps adding. The helper script `skills/_shared/scripts/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`); its notes are in `skills/dayz-build-pbo/references/dayzmake-linux.md`. A textured-cube comparison of 2026-11-03 against Bohemia's binarize from a `P:` root matched byte for byte (fork commit `7dcb3cf`, when the fork was still named armake2; `v1.0.0` contains it); that is not an in-game check of a binarized model.
+- Pack, sign and binarize with dayzmake 1.0.0 or newer, the DayZ build of armake2: `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Where to get it and which version to pin are in `skills/dayz-build-pbo/references/dayzmake-linux.md`. Plain armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake `v1.0.0` includes them), and it lacks the DayZ-only functions of dayzmake. The helper script `skills/_shared/scripts/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`); its notes are in `skills/dayz-build-pbo/references/dayzmake-linux.md`. A textured-cube comparison of 2026-11-03 against Bohemia's binarize from a `P:` root matched byte for byte; that is not an in-game check of a binarized model.
 - `P:\` is a plain directory mapped by `dayz-proton.sh init <dir>` (the script is `skills/_shared/scripts/dayz-proton.sh`); a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
 - Object Builder and TexView run under Proton (`dayz-proton.sh gui ObjectBuilder <p3d>`, `gui TexView <paa>`). Object Builder opened and displayed a model; editing in it was not exercised. The Python checks and the scripts of this skill run natively.
 - In-game checks on Linux: the Linux notes of the `dayz-test-ingame` skill (`skills/dayz-test-ingame/references/linux.md`).

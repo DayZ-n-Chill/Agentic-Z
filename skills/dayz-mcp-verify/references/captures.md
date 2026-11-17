@@ -6,20 +6,20 @@ The verbs are dayz-mcp's; their behaviour and the measurements here are third-pa
 
 ## Where the picture comes from
 
-Control and data are engine-native and server-authoritative (spawn, raycast, telemetry, camera). The one piece that is not native is the picture: a grab of the rendered client window. The vanilla `MakeScreenshot` (`P:\scripts\1_core\proto\proto.c:142`) does not work in the diag build (Bohemia feedback tracker T165276), which `/dayz-gate visual` found independently: it made the `ScreenShots` folder and never wrote a file. Both tools therefore grab the window from outside the game.
+Control and data are engine-native and server-authoritative (spawn, raycast, telemetry, camera). The one piece that is not native is the picture: a grab of the rendered client window. The vanilla `MakeScreenshot` (`P:\scripts\1_core\proto\proto.c:142`) does not work in the diag build: in live runs it made the `ScreenShots` folder and never wrote a file. dayz-mcp and `/dayz-gate visual` therefore both grab the window from outside the game.
 
 ## How the window grab behaves
 
-- [EXACT] `PrintWindow(hwnd, hdc, PW_RENDERFULLCONTENT=2)` on the client's main window does capture the D3D game area: the full scene in more than 20 captures, even with another window covering it and without taking focus, as long as the Windows session is unlocked and the display is on (measured in game, DayZDiag 1.29, 2026-09-28). A black game area means the display is off or the session is locked, not that the route cannot read D3D.
+- `PrintWindow(hwnd, hdc, PW_RENDERFULLCONTENT=2)` on the client's main window does capture the D3D game area: the full scene in more than 20 captures, even with another window covering it and without taking focus, as long as the Windows session is unlocked and the display is on (measured in game, DayZDiag 1.29, 2026-09-28). A black game area means the display is off or the session is locked, not that the route cannot read D3D.
 - `CopyFromScreen` only works with the window in front.
 - A covered DayZDiag window also drops to about 20 FPS, so anything timed on the client depends on who holds the foreground.
-- Byte-identical captures between camera poses mean the grab caught a stale frame, not the render. Validate on a crop of the game area, not on the variance of the whole frame (this corrects an older lesson, LL-247, of 2026-08-12).
+- Byte-identical captures between camera poses mean the grab caught a stale frame, not the render. Validate on a crop of the game area, not on the variance of the whole frame (this corrects an older rule of 2026-08-12).
 - Each capture costs about 25,000 tokens of context at 240 to 320 pixels; batch them (`playbooks.md`, "The report").
 
 ## Black frames
 
-- **Display asleep** (SP-060, verified live 2026-07-11): capturing with the display asleep gives a black frame although the client runs. On that date a locked session also gave black frames. The fix used then was to bring the client window to the foreground and send an input wiggle (mouse, or the F15 key) before every `capture_screenshot`. The misleading symptom: it looks like "the mod's render is broken" and it is the compositor.
-- **Locked Windows session** [EXACT] (added 2026-09-14, measured in game on DayZ 1.30.164014 Experimental): with `LogonUI` alive, `capture_screenshot` does not return a black frame, it fails outright with `capture_backend_failed` on every attempt while the game client stays alive and polling. Before budgeting captures in an unattended run, run `Get-Process LogonUI`: with a locked session there is no host capture at all, for the MCP capture and for any window-grab script.
+- **Display asleep** (verified live 2026-07-11): capturing with the display asleep gives a black frame although the client runs. On that date a locked session also gave black frames. The fix used then was to bring the client window to the foreground and send an input wiggle (mouse, or the F15 key) before every `capture_screenshot`. The misleading symptom: it looks like "the mod's render is broken" and it is the compositor.
+- **Locked Windows session** (added 2026-09-14, measured in game on DayZ 1.30.164014 Experimental): with `LogonUI` alive, `capture_screenshot` does not return a black frame, it fails outright with `capture_backend_failed` on every attempt while the game client stays alive and polling. Before budgeting captures in an unattended run, run `Get-Process LogonUI`: with a locked session there is no host capture at all, for the MCP capture and for any window-grab script.
 
 ## Frames that say nothing about the model
 
@@ -27,7 +27,7 @@ Control and data are engine-native and server-authoritative (spawn, raycast, tel
 - **Everything flat, vanilla terrain and sky included.** That is not a flaky grab of the model: withhold the texture verdict, check that the client window has focus and capture again after settling, since textured runs have opened with 4 to 11 s of flat frames. If the scene stays flat, its visual evidence is `SETUP_FAIL` and the run is relaunched. The measurements are in the `dayz-test-ingame` skill's session findings (an import project of 2026-10).
 - **A useful top-down pose** that shows proxy alignment or misalignment on a car clearly: `cam_pos=[carX+3, 16, carZ+1]`, `look_at=[carX, ground+0.1, carZ]`.
 
-## The bubble follows the player, not the camera (SP-082, added 2026-08-31)
+## The bubble follows the player, not the camera (added 2026-08-31)
 
 - Before the spawn, read `query_player_state.pos` and place the object next to the player. A free camera more than 1 km away does not force streaming: it can photograph bare terrain even while the server confirms the object by raycast.
 - After several `camera_set` calls, treat any series of identical frames from different positions as an orphan camera. There is no `camera_release`; restart or reconnect the client before diagnosing the asset.
@@ -36,9 +36,9 @@ Control and data are engine-native and server-authoritative (spawn, raycast, tel
 
 `camera_set` always suppresses player control (`SuppressGameplay()` in the bridge, which calls the mission's `PlayerControlDisable`, vanilla `P:\scripts\5_mission\mission\missiongameplay.c:886`), and no MCP tool fires `RestoreGameplay()`. Only the internal gate `drive_probe_client` does, and it is not exposed as a verb. After an MCP smoke test that used `camera_set` (free camera or a static look-at camera), the user cannot take control of the player to test by hand: their input stays suppressed.
 
-Rule: when the work passes from an MCP smoke test to a manual test by the user (driving, judging feel or looks), relaunch the game without `@DayZ_MCP`, or at least with a client that never received `camera_set` in that session. A clean client has normal control. If the client was already affected, reconnecting (Escape, Disconnect, Reconnect) recreates the player with a clean camera and control; there is no tool shortcut. Origin: a car project session where time was lost looking for a restore tool that does not exist, and the user had to close the game and ask for a normal relaunch.
+Rule: when the work passes from an MCP smoke test to a manual test by the user (driving, judging feel or looks), relaunch the game without `@DayZ_MCP`, or at least with a client that never received `camera_set` in that session. A clean client has normal control. If the client was already affected, reconnecting (Escape, Disconnect, Reconnect) recreates the player with a clean camera and control; there is no tool shortcut. Seen in a car project session where time was lost looking for a restore tool that does not exist, and the user had to close the game and ask for a normal relaunch.
 
-## A HUD gated on the first-person vehicle camera cannot be photographed with `camera_set` (SP-327, added 2026-08-31)
+## A HUD gated on the first-person vehicle camera cannot be photographed with `camera_set` (added 2026-08-31)
 
 `camera_set` installs a scripted camera. A HUD that shows only when `DayZPlayerCamera1stPersonVehicle.Cast(player.GetCurrentCamera())` succeeds (the class is at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:4`) hides under that camera. That is correct HUD behaviour, not a bug of the HUD or of the bridge. Capture it through the user's manual free look or through a headless mode the mod provides. The internal `RestoreGameplay()` restores the player camera, but there is no public `camera_release`: if the flow does not expose that restore, reconnect or relaunch as in the section above.
 
@@ -46,7 +46,7 @@ Rule: when the work passes from an MCP smoke test to a manual test by the user (
 
 Verified on a rifle project's grip gate. There is no player input tool, so the weapon raise is forced inside a mod, on the client. The captured character is the client's local player, so an override in the server's `init.c` does not change the pose the client renders. The exact symptom of doing it server-side only: the server log says `raised=1` and the capture shows the weapon lowered.
 
-Put a `modded class MissionGameplay` in a small gate mod (its `CfgMods` class declares a `missionScriptModule` with `files[]={"Mod/Scripts/5_Mission"}`). The `.c` file must be in the PBO: `/dayz-build-pbo` packs scripts through its include list, and the source's own launcher needed its pack-only switch for the same reason.
+Put a `modded class MissionGameplay` in a small gate mod (its `CfgMods` class declares a `missionScriptModule` with `files[]={"Mod/Scripts/5_Mission"}`). The `.c` file must be in the PBO: `/dayz-build-pbo` packs scripts through its include list, and a direct AddonBuilder build needs `-packonly` for the same reason (the `dayz-test-ingame` skill's `references/troubleshooting.md`).
 
 ```c
 modded class MissionGameplay

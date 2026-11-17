@@ -6,12 +6,10 @@ from shared.dead_branches import dead_lines
 ES_MULTILINE_CONDITION_OPERATOR_RULE_ID = "ES-MULTILINE-CONDITION-OPERATOR"
 
 
-# claim: CLAIM-ENFORCE-MULTILINE-CONDITION-OPERATOR
 # FAIL on one measurement: the rule was WARN until the vanilla control ran
-# with it and found nothing, on DayZ 1.29.0.163451 in the review of #113 and
-# on 1.30.164078 stable, where the control was measured on 2026-10-17 (#117).
-# Pipeline inbox fb-20261006-030019-e074, DayZ 1.30.164014 server: the
-# condition
+# with it and found nothing, on DayZ 1.29.0.163451 and
+# on 1.30.164078 stable, where the control was measured on 2026-10-17.
+# On a DayZ 1.30.164014 server the condition
 #
 #   if ((t >= A && t < B) ||
 #       (t >= C && t < D))
@@ -19,11 +17,11 @@ ES_MULTILINE_CONDITION_OPERATOR_RULE_ID = "ES-MULTILINE-CONDITION-OPERATOR"
 #
 # was refused with `Invalid statement ')'` and `Syntax error` at the
 # continuation line. The same parser rule, with the operator leading the next
-# line instead, is SP-386 (enforce-script-reference SKILL.md, "A newline
-# terminates the statement ALSO in a condition": `Expected ')'` on
-# LFHeli_Base.c); that form is not reported here. No `if` or `while` header
+# line instead, is in enforce-script-reference SKILL.md ("A newline
+# terminates the statement ALSO in a condition": `Expected ')'`);
+# that form is not reported here. No `if` or `while` header
 # ending in `&&` or `||` was found in the DayZ-MCP addon (compiles on 1.29
-# and 1.30) or in any .c file of this pack.
+# and 1.30) or in any .c file of this repo.
 #
 # Reported: a line inside the parentheses of an `if (` or `while (` that ends
 # in `&&` or `||` once comments are dropped, once per header. A header whose

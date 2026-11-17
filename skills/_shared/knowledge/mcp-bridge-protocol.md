@@ -1,14 +1,14 @@
 # The DayZ-MCP bridge: protocol and design notes
 
-Status: design record of a third-party tool (the DayZ-MCP MCP server). The vanilla script citations under "Engine facts" were opened and confirmed on `P:\` on 2026-11-17. The tool surface, the invariants and the measured behaviour describe DayZ-MCP itself and are not yet checked on `P:\`.
+Covers the DayZ-MCP bridge, an MCP server that exposes a running **DayZDiag** session as typed tools, so an agent can spawn an object, drive a car, raycast a surface, read telemetry and take a screenshot without touching a keyboard, an OCR pass or a macro: its tool surface, the design rules that keep it safe, and the engine facts it depends on.
 
-An MCP server that exposes a running **DayZDiag** session as typed tools, so an agent can spawn an object, drive a car, raycast a surface, read telemetry and take a screenshot without touching a keyboard, an OCR pass or a macro.
+Status: design record of a third-party tool (the DayZ-MCP MCP server), not vanilla. The vanilla script citations under "Engine facts" were opened and confirmed on `P:\` on 2026-11-17. The tool surface, the invariants and the measured behaviour describe DayZ-MCP itself and are not yet checked on `P:\`.
 
 This note is the transferable part: the surface, the invariants that make it safe, and the engine facts it cost sessions to learn. The knowledge here holds whether or not you run this particular server.
 
-## Why a pack about offline verification carries this
+## Why offline verification needs this
 
-The pack's argument is that **green does not accredit**. Every offline tool here — the preflight gate (`scripts/tools/dayz-model-preflight/`), the ODOL diff (`scripts/tools/dayz-odol-strict/`), the UI lab (`scripts/tools/dayz-ui-lab/`) — narrows the gap between "it compiles" and "it works", and none of them close it. Something has to run the engine and report what actually happened.
+**Green does not accredit.** Every offline tool here — the preflight gate (`scripts/tools/dayz-model-preflight/`), the ODOL diff (`scripts/tools/dayz-odol-strict/`), the UI lab (`scripts/tools/dayz-ui-lab/`) — narrows the gap between "it compiles" and "it works", and none of them close it. Something has to run the engine and report what actually happened.
 
 That is what the bridge is for. It turns *"the config looks right"* into *"the car reached 40 km/h over 36 m on one sustained throttle command"*, which is a different kind of sentence. The `dayz-mcp-verify` skill is the procedure built on top of it; this note is the contract underneath.
 
@@ -59,7 +59,7 @@ These were each paid for with in-game cycles. All citations are vanilla DayZ scr
 
 **`Print()` goes to `script_*.log`, not the RPT.** Measured, repeatedly, by people grepping the wrong file.
 
-**A native setter without a getter must not become a DTO field.** Vanilla exposes `proto native void SetTimeMultiplier(float timeMultiplier);` (`P:\scripts\3_game\global\world.c:14`, DayZ 1.30.164014 Exp) and has no `GetTimeMultiplier` anywhere in the scripts — a producer that calls the setter can only re-read the five `GetDate` ints. Adding `float time_multiplier` to the applied-verb DTO would make JSON emit the serializer default `0.0`, and the consumer would read a false echo. The honest closure is `null` plus an `unconfirmed` flag, never a default. [EXACT][CLAIM-ENFORCE-NO-GET-TIMEMULTIPLIER] Vanilla declares `SetTimeMultiplier` with no `GetTimeMultiplier` counterpart (`P:\scripts\3_game\global\world.c:14`), so the applied value cannot be read back (measured live: `world_time_set(..., time_multiplier=4)` answers `multiplier_applied=null`).
+**A native setter without a getter must not become a DTO field.** Vanilla exposes `proto native void SetTimeMultiplier(float timeMultiplier);` (`P:\scripts\3_game\global\world.c:14`, DayZ 1.30.164014 Exp) and has no `GetTimeMultiplier` anywhere in the scripts — a producer that calls the setter can only re-read the five `GetDate` ints. Adding `float time_multiplier` to the applied-verb DTO would make JSON emit the serializer default `0.0`, and the consumer would read a false echo. The honest closure is `null` plus an `unconfirmed` flag, never a default. Measured live: `world_time_set(..., time_multiplier=4)` answers `multiplier_applied=null`.
 
 ## Limits
 
@@ -70,6 +70,4 @@ These were each paid for with in-game cycles. All citations are vanilla DayZ scr
 
 ## Availability
 
-The bridge is published as its own repository, separate from this repo because it is a running service with its own lifecycle rather than redistributable content: **[https://github.com/willy92wins/dayz-mcp](https://github.com/willy92wins/dayz-mcp)**. Its README covers install, the three run modes, the security model and how a clone generates the machine-local pieces (launcher policy, built launcher, registry). This note remains the design record: the surface and the invariants are what the implementation is held to, and the engine facts above apply to any bridge of this shape.
-
-The source pack's root `.mcp.example.json` is the client wiring that `install-mcp.ps1 -Register` writes for it; its content is reproduced in `docs/dayz-mcp.md`.
+DayZ-MCP is a separate install, not part of this repo: it is a running service with its own lifecycle. `docs/dayz-mcp.md` covers the install and the client wiring that `install-mcp.ps1 -Register` writes. The bridge's own README covers the three run modes, the security model and how a clone generates the machine-local pieces (launcher policy, built launcher, registry). This note remains the design record: the surface and the invariants are what the implementation is held to, and the engine facts above apply to any bridge of this shape.

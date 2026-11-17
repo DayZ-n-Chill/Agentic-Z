@@ -19,7 +19,7 @@ import re
 ES_DT_ALIAS_RULE_ID = "ES-PROCESSDIRECTDAMAGE-DT-ALIAS"
 
 
-# kt_roadkill_armed_dev bug-002. The `DT_*` identifiers are NOT vanilla symbols
+# The `DT_*` identifiers are NOT vanilla symbols
 # in current DayZ (they appear only in a comment in object.c:1126). The real
 # argument is the `DamageType` enum (damagesystem.c:10-17), e.g.
 # `DamageType.FIRE_ARM`. Using `DT_FIRE_ARM` etc. compile-fails with `Undefined`.

@@ -25,10 +25,9 @@ from shared.dead_branches import dead_lines, line_branches
 ES_PROTO_ARGUMENT_DOWNCAST_RULE_ID = "ES-PROTO-ARGUMENT-DOWNCAST"
 
 
-# claim: CLAIM-ENFORCE-PROTO-ARGUMENT-DOWNCAST
 # A name passed to a parameter of a `proto` method, when the parameter's
-# class derives from the class the name is declared as. Pipeline inbox
-# fb-20261006-030019-e074, DayZ 1.30.164014 server:
+# class derives from the class the name is declared as. On a DayZ
+# 1.30.164014 server:
 #
 #   DayZPhysics.RaycastRV(from, to, pos, dir, comp, hits, hitEntity,
 #       m_Human, true, false, ObjIntersectGeom)
@@ -38,7 +37,7 @@ ES_PROTO_ARGUMENT_DOWNCAST_RULE_ID = "ES-PROTO-ARGUMENT-DOWNCAST"
 # 'Object.Cast'", "Types 'IEntity' and 'Object' are unrelated" and "Cannot
 # convert 'IEntity' to 'Object' for argument '6' to method 'RaycastRV'", and
 # the World module did not compile. The compiler counts arguments from 0.
-# DayZDiag 1.30.164289 (2026-11-09, pipeline inbox e074, a mod's 4_World
+# DayZDiag 1.30.164289 (2026-11-09, a mod's 4_World
 # script) refused that call again, and refused an Object passed to the
 # EntityAI parameter 0 of ItemPreviewWidget.SetItem, the shape this rule
 # had found in a mod:
@@ -231,7 +230,7 @@ def _method(head):
     """
     lines = head.split("\n")
     # By index: dropping each line from the front of the list cost the
-    # square of their number (Codex review of #125, N5).
+    # square of their number.
     first = 0
     while first < len(lines) and (
         not lines[first].strip() or lines[first].lstrip().startswith("#")
@@ -351,7 +350,7 @@ class ClassBodies:
                     if lines.blocks(at) is None:
                         continue  # its `(` never compiles
                     # A word before the `(` may not compile, as `proto` under
-                    # #if 0 (Codex review of #125, N2).
+                    # #if 0.
                     if not lines.plain(start, at):
                         return None
                     found.append((proto, parameters))
@@ -404,12 +403,12 @@ class ClassBodies:
         cls, as a call in `text`, a file of module `rank`, sees it from a
         line under `blocks` (line_branches()).
 
-        A body in a later module than the call's is not seen (Codex review
-        of #125, N3). None when no body seen declares it; "" when it is not
+        A body in a later module than the call's is not seen. None when no
+        body seen declares it; "" when it is not
         one plain type or may not be: a body cannot be read, a body of
         another file or the call is of no known module, or a declaration is
         under a block that is not around the call (in another file, under
-        any block: Codex review of #125, N1).
+        any block).
         """
         found = set()
         for body_rank, lines, declarations in self._declarations(cls, name):
@@ -435,7 +434,7 @@ def _vanilla_index(vanilla_key):
     """The Hierarchy and ClassBodies of the vanilla tree, strings blanked.
 
     Built once per tree: the 3042 files of 1.30 took about 2.8 s to read on
-    every call (Codex review of #125, D9). Callers copy what they extend.
+    every call. Callers copy what they extend.
     """
     hierarchy = Hierarchy()
     bodies = ClassBodies()
@@ -492,7 +491,7 @@ def _arguments(stripped, open_at, closes, marks):
 
     closes and marks: the _brackets() of stripped. An argument that holds a
     bracket is "": it is no plain name, and copying it out made a call of
-    nested calls cost the square of its depth (Codex review of #125, D8).
+    nested calls cost the square of its depth.
     None when the arguments hold `<` or `>` (template arguments and
     comparisons put commas the split cannot tell apart) or a directive, or
     never close.

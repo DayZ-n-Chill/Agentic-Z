@@ -120,7 +120,7 @@ RULES = (
 )
 
 # CfgMods > <mod> > defs > <module class> and the scripts/ layer each one compiles.
-# Vanilla: P:\DZ\data_sakhal\config.cpp lists worldScriptModule -> DZ/data_sakhal/scripts/4_World.
+# Vanilla: P:\DZ\data_sakhal\config.cpp:21 lists worldScriptModule -> DZ/data_sakhal/scripts/4_World.
 MODULE_LAYERS = {
     "enginescriptmodule": "1_Core",
     "gamelibscriptmodule": "2_GameLib",
@@ -362,7 +362,7 @@ class Lint:
                     self.add("required-addons-missing", ERROR, cfg, patch.line,
                              f"CfgPatches class {patch.name} has no requiredAddons[] array, so its load order is not guaranteed.")
                 elif prop is None:
-                    # Vanilla loads patch classes without units[] or weapons[] (P:\DZ\data\aiconfigs\config.cpp,
+                    # Vanilla loads patch classes without units[] or weapons[] (P:\DZ\data\aiconfigs\config.cpp:3,
                     # class DZ_data_aiconfigs has an empty body), so a missing one is only a warning.
                     self.add("cfgpatches-field-missing", WARNING, cfg, patch.line, f"CfgPatches class {patch.name} has no {field}[] array.")
                 elif not prop[2]:

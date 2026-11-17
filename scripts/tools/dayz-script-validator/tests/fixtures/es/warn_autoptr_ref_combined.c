@@ -1,4 +1,4 @@
-class LFTest_AutoptrRefBad
+class FX_AutoptrRefBad
 {
     autoptr ref ItemBase m_Item;
 }

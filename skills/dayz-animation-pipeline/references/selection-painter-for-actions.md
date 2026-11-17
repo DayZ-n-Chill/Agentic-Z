@@ -1,6 +1,6 @@
 # Painting selections for action raycasts
 
-A tooling pattern for named selections whose surface must be exact enough for the game's action raycasts: a seat that can be aimed at from both sides of a vehicle (`dual-entry-action-pattern.md`), a handlebar grip, a door handle, a hood latch, a tank cap. It comes from the LFQuad project of the source pack; the numbers are that project's and nothing here is a vanilla fact.
+A tooling pattern for named selections whose surface must be exact enough for the game's action raycasts: a seat that can be aimed at from both sides of a vehicle (`dual-entry-action-pattern.md`), a handlebar grip, a door handle, a hood latch, a tank cap. The numbers were measured on one quad model and nothing here is a vanilla fact.
 
 ## When a bounds filter is not enough
 
@@ -23,7 +23,7 @@ Build a Three.js page that:
 5. Removes a face with Shift and click; switches brush with right click, so the user does not move the mouse away.
 6. Exports JSON: one array per brush of `{material_index, face_index}`, or plain face indices for a single material model.
 
-What the LFQuad project learned building it:
+What building one showed:
 
 - **Seed each brush with a rough guess**, so the user refines instead of painting from nothing.
 - **Draw painted faces with `MeshBasicMaterial`**, not `MeshStandardMaterial`. Lighting and an environment map dim an overlay until a yellow brush on chrome is invisible.
@@ -55,11 +55,11 @@ output: the grown face set per brush
 - **The cap is measured from the seeds, not from the growing edge.** Measuring from the edge lets a brush leak across a thin neck, such as the joint between seat and frame.
 - **Filters are per brush.** A handlebar brush needs "above the steering column"; a seat brush needs none. One global filter would either let the handlebar leak down or block the seat.
 
-The project's numbers: handlebar, 1 step, cap 6 cm, height above 0.83 m and within 0.40 m of the pivot, 2383 faces; driver seat, 2 steps, cap 10 cm, no filter, 170 faces; passenger seat, the same settings, 36 faces.
+The quad's numbers: handlebar, 1 step, cap 6 cm, height above 0.83 m and within 0.40 m of the pivot, 2383 faces; driver seat, 2 steps, cap 10 cm, no filter, 170 faces; passenger seat, the same settings, 36 faces.
 
 ## Reuse a baked viewer
 
-Parsing a `.p3d` of 10 MB or more with py3d took about 30 seconds in the project's environment, enough to hit a command time limit. An HTML viewer already built for the same model (by the dayz-3d-viewer or dayz-p3d-inspector skills) holds the geometry base64 encoded in a `const DATA = "..."` literal. Read that literal, decode it (about a second) and build the painter on it: the geometry is already in the right frame with materials separated. Parse the `.p3d` again only when no viewer exists or the geometry changed. Say this to a user who asks for a new viewer of a model that already has one.
+Parsing a `.p3d` of 10 MB or more with py3d took about 30 seconds when measured, enough to hit a command time limit. An HTML viewer already built for the same model (by the dayz-3d-viewer or dayz-p3d-inspector skills) holds the geometry base64 encoded in a `const DATA = "..."` literal. Read that literal, decode it (about a second) and build the painter on it: the geometry is already in the right frame with materials separated. Parse the `.p3d` again only when no viewer exists or the geometry changed. Say this to a user who asks for a new viewer of a model that already has one.
 
 ## Overlays in any lit viewer
 

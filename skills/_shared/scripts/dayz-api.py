@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Source: bzed/dayz-dev-plugin 6112ac5, contributed to this Pack under its MIT licence by its author.
 """Look up the DayZ script API from compressed indexes (dayz-api.txt.xz, mod-*.txt.xz) you built locally.
 
   dayz-api.py class NAME [--inherited]   members of a class (--inherited: also every base class)

@@ -11,7 +11,6 @@ from shared.dead_branches import dead_lines
 ES_RESERVED_WORD_IDENTIFIER_RULE_ID = "ES-RESERVED-WORD-IDENTIFIER"
 
 
-# claim: CLAIM-ENFORCE-RESERVED-WORD-NAME
 # A variable, member or parameter named with an Enforce keyword stops the
 # whole script module from compiling, and the error rarely names the word.
 # Only words whose use as a name failed in a real compile are listed:
@@ -23,7 +22,7 @@ ES_RESERVED_WORD_IDENTIFIER_RULE_ID = "ES-RESERVED-WORD-IDENTIFIER"
 #           `Broken expression (missing ';'?)`, then
 #           `Can't compile "Mission" script module!`
 #   owned   local `EntityAI owned;`, 2026-07-20: `Broken expression (missing
-#           ';'?)` (enforce-script-reference SKILL.md, SP-073)
+#           ';'?)` (enforce-script-reference SKILL.md)
 #   out     a local named `out`: `Broken expression (missing ';'?)`
 #           (enforce-script-reference SKILL.md, "Three ways to break the
 #           compiler that do not produce a readable error")
@@ -119,7 +118,7 @@ def check_es_reserved_word_identifier(stripped_source, rel_path):
     dead = None
     # Offsets come in order, so lines are counted on from the last one:
     # counting from the start for each word grew with the square of the
-    # words (Codex review of e6d6, E9).
+    # words.
     line, counted = 1, 0
     for offset, name in sorted(_declared_words(stripped_source)):
         line += stripped_source.count("\n", counted, offset)

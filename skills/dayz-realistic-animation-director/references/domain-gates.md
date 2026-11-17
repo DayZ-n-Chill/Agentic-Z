@@ -2,7 +2,7 @@
 
 Extra checks for each kind of animation: player actions, hands with a weapon or object, locomotion, creatures, vehicle occupants, mechanical props and physics simulation. Use only the sections the task needs, on top of the common contract and the current `dayz-animation-pipeline` route.
 
-Vanilla facts cite `P:\`. Lines marked "1.30 changelog" come from the 1.30 experimental modding changelog and are not yet checked on `P:\`. Comparisons with 1.29 are the source notes' and cannot be checked on a 1.30 `P:\`.
+Vanilla facts cite `P:\`. Lines marked "1.30 changelog" state 1.30 engine changes that are not yet checked on `P:\`. Comparisons with 1.29 cannot be checked on a 1.30 `P:\`.
 
 ## Player or humanoid action
 
@@ -61,7 +61,7 @@ Vanilla facts cite `P:\`. Lines marked "1.30 changelog" come from the 1.30 exper
   | `LeeEnfield_Base` | `weapons/player_main_leeEnfield.asi`, with `LeeEnfieldBoneRemap` at `:1605` | `:446` |
   | `SCARH_Base` and `SCARL_Base` | `weapons/player_main_SCARH.asi` for both | `:444`, `:445` |
 
-  The source notes say that on 1.29 only `SCARH_Base` had a dedicated file among these. Audit hand poses against the exact weapon or prop `.asi` profile rather than assuming generic `player_main_1h.asi` or `player_main_2h.asi`.
+  On 1.29 only `SCARH_Base` had a dedicated file among these (not checkable on a 1.30 `P:\`). Audit hand poses against the exact weapon or prop `.asi` profile rather than assuming generic `player_main_1h.asi` or `player_main_2h.asi`.
 
 ## Locomotion
 
@@ -75,8 +75,8 @@ Vanilla facts cite `P:\`. Lines marked "1.30 changelog" come from the 1.30 exper
 ## Creature
 
 - Obtain the actual skeleton, rest pose and gait reference for that species and rig.
-- **Bone indices (1.30).** Up to 1.29 `skeletons.anim.xml` set fixed indices and the system was limited to 250 bones. The 1.30 changelog says the limit is removed, indices are worked out at run time from a hash of the bone name, and manual indices are ignored except on `EntityPosition`. On `P:\` the survivor skeleton `hermit_newbindpose.xob` still lists `index` 10 to 36 on its core bones (`P:\DZ\anims\cfg\skeletons.anim.xml:8` for `Pelvis`), while the animal skeletons the source notes list as new in 1.30 carry it only on `EntityPosition` (`P:\DZ\anims\cfg\skeletons.anim.xml:988`). Those four are `ovis_gmelini_skeleton.xob` (mouflon, `P:\DZ\anims\cfg\skeletons.anim.xml:986`), `canis_familiaris_dobermann_skeleton.xob` (`P:\DZ\anims\cfg\skeletons.anim.xml:1047`), `canis_familiaris_german_shepherd_skeleton.xob` (`P:\DZ\anims\cfg\skeletons.anim.xml:1121`) and `varanus_griseus_skeleton.xob` (`P:\DZ\anims\cfg\skeletons.anim.xml:1194`).
-- **Graph files.** Creature graphs are `.agf` files in Enfusion config syntax, listed by an `AnimSrcGraph` index: the wolf index names `Wolf_MainGraph.agf` under `GraphFilesResourceNames` (`P:\DZ\animals\animations\!graph_files\wolf\wolf_graph.agr:157`). The source notes add that the 1.29 wolf graph was already two text files in the older `$AnimGraph 7 {` syntax, not one binary file.
+- **Bone indices (1.30).** Up to 1.29 `skeletons.anim.xml` set fixed indices and the system was limited to 250 bones. 1.30 changelog: the limit is removed, indices are worked out at run time from a hash of the bone name, and manual indices are ignored except on `EntityPosition`. On `P:\` the survivor skeleton `hermit_newbindpose.xob` still lists `index` 10 to 36 on its core bones (`P:\DZ\anims\cfg\skeletons.anim.xml:8` for `Pelvis`), while the four animal skeletons new in 1.30 carry it only on `EntityPosition` (`P:\DZ\anims\cfg\skeletons.anim.xml:988`). Those four are `ovis_gmelini_skeleton.xob` (mouflon, `P:\DZ\anims\cfg\skeletons.anim.xml:986`), `canis_familiaris_dobermann_skeleton.xob` (`P:\DZ\anims\cfg\skeletons.anim.xml:1047`), `canis_familiaris_german_shepherd_skeleton.xob` (`P:\DZ\anims\cfg\skeletons.anim.xml:1121`) and `varanus_griseus_skeleton.xob` (`P:\DZ\anims\cfg\skeletons.anim.xml:1194`).
+- **Graph files.** Creature graphs are `.agf` files in Enfusion config syntax, listed by an `AnimSrcGraph` index: the wolf index names `Wolf_MainGraph.agf` under `GraphFilesResourceNames` (`P:\DZ\animals\animations\!graph_files\wolf\wolf_graph.agr:157`). The 1.29 wolf graph was already two text files in the older `$AnimGraph 7 {` syntax, not one binary file.
 - **Procedural terrain alignment.** Quadrupeds rotate bones from the terrain slope with `AnimSrcNodeProcTransform`. The wolf's `AlignToTerrain_Rot` node (`P:\DZ\animals\animations\!graph_files\wolf\wolf_maingraph.agf:5`) starts:
 
   ```
@@ -96,7 +96,7 @@ Vanilla facts cite `P:\`. Lines marked "1.30 changelog" come from the 1.30 exper
 
   The next item in the same list is `lflegcollarbone`. Validate that the root and collarbone rotation follow the slope angle `SlopeAngleX`, so the feet do not sink into slopes.
 - **Prediction and look poses.** The wolf graph uses `AnimSrcNodePrediction` on `EntityPosition` with `PercentTime 0.3` for translation and rotation (`P:\DZ\animals\animations\!graph_files\wolf\wolf_maingraph.agf:52`), and `AnimSrcNodePose2` nodes for looking, for example `StandNervousLookAt_ANIM` (`P:\DZ\animals\animations\!graph_files\wolf\wolf_maingraph.agf:2024`).
-- **Infected mind states.** `MINDSTATE_COWER` is the last infected mind state (`P:\scripts\3_game\entities\dayzinfected.c:18`); the source notes say it is new in 1.30. The infected look pose is an `AnimSrcNodePose2` driven by `LookDirX` (`P:\DZ\anims\workspaces\infected\infected_main\locomotion.agf:8`), blended in by `AggroLookBlendT`, an `AnimSrcNodeBlendT` with the condition `Look` (`P:\DZ\anims\workspaces\infected\infected_main\locomotion.agf:19`).
+- **Infected mind states.** `MINDSTATE_COWER` is the last infected mind state (`P:\scripts\3_game\entities\dayzinfected.c:18`); it is new in 1.30. The infected look pose is an `AnimSrcNodePose2` driven by `LookDirX` (`P:\DZ\anims\workspaces\infected\infected_main\locomotion.agf:8`), blended in by `AggroLookBlendT`, an `AnimSrcNodeBlendT` with the condition `Look` (`P:\DZ\anims\workspaces\infected\infected_main\locomotion.agf:19`).
 
 ## Vehicle occupant
 
@@ -106,7 +106,7 @@ Vanilla facts cite `P:\`. Lines marked "1.30 changelog" come from the 1.30 exper
 - Validate get-in and get-out approach side and clearance separately from the seated loop.
 - Delegate anchor extraction and vehicle runtime behaviour to their domain skills.
 - **Motorbikes (1.30).**
-  - Animation instances: `MOTO1 = 10` and `MOTO2 = 11` (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:13-14`), returned by `Motorbike_01_ColorBase` (`VehicleAnimInstances.MOTO1` at `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:50`) and `Motorbike_02_ColorBase` (`VehicleAnimInstances.MOTO2` at `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:51`). The source notes call them the Jawa 50 cc and the three-wheeled Jawa Bitrak.
+  - Animation instances: `MOTO1 = 10` and `MOTO2 = 11` (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:13-14`), returned by `Motorbike_01_ColorBase` (`VehicleAnimInstances.MOTO1` at `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:50`) and `Motorbike_02_ColorBase` (`VehicleAnimInstances.MOTO2` at `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:51`). They model a Jawa 50 cc and the three-wheeled Jawa Bitrak (model names not checked on `P:\`).
   - Camera: the third-person motorbike camera is `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE = 32` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c:20`). Its class `DayZPlayerCamera3rdPersonVehicleMotorbike` follows with spring lag (`CONST_SPRING_SMOOTHTIME_YAW` at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:258`).
   - Handlebar IK: the grip uses continuous two-bone IK nodes, `AnimSrcNodeIK2` and `AnimSrcNodeIK2Target`, in the vehicle subgraph, including the motorbike pair `MotoEngineIKTarget` and `MotoEngineVehicleIK` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1436` and `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1446`).
   - Rider dynamics: torso, spine and head lean are driven by the graph variables `VehicleSteering`, `VehicleThrottle` and `VehicleSuspension`, declared in the index (`P:\DZ\anims\workspaces\player\player_main\player_main.agr:113`) and used in the subgraph (`VehicleSuspension` at `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1544`).
@@ -121,7 +121,7 @@ Vanilla facts cite `P:\`. Lines marked "1.30 changelog" come from the 1.30 exper
 - Confirm whether DayZ drives it through `model.cfg`, script, weapon bones or skeletal animation; this decision belongs to `dayz-animation-pipeline`.
 - **Graph and template constraints (1.30).**
   - No buffer nodes (1.30 changelog): `Buffer Save` and `Buffer Use` nodes are removed from animation graphs. Keep state in control variables (`AnimSrcGCTVar*`, for example `AnimSrcGCTVarFloat VehicleSteering` at `P:\DZ\anims\workspaces\player\player_main\player_main.agr:113`).
-  - Named template groups (1.30 changelog): anonymous animation groups (`$groupType { #ngroupnames 0 ... }`) are no longer supported in `.ast` templates. Every group declares a `Name`, as vanilla does (`Name "ActionContinuous"` at `P:\DZ\anims\workspaces\player\player_main\player_main.ast:4`); the changelog gives `Name "Default"` and `Name ".unnamed"` as examples.
+  - Named template groups (1.30 changelog): anonymous animation groups (`$groupType { #ngroupnames 0 ... }`) are no longer supported in `.ast` templates. Every group declares a `Name`, as vanilla does (`Name "ActionContinuous"` at `P:\DZ\anims\workspaces\player\player_main\player_main.ast:4`); `Name "Default"` and `Name ".unnamed"` are other valid forms.
   - Instance files use the `AnimSetInstanceSource` class (`P:\DZ\anims\workspaces\player\player_main\player_main.asi:1`) instead of the older `$animsetinstance` syntax.
 
 ## Physics simulation

@@ -2,7 +2,7 @@
 
 Why a car's lights do not switch: material paths, hidden selection ownership and order, bulbs, driver exit, and how to test the setter against a vanilla car.
 
-> Status: field notes measured on third-party mods, each named in its entry (SUB_BRZ, SUB_WRXSTI, MercedesAMGLF, LFQuad, LFQuad2, LFQuad3, Arma2Quad, LFHeli). Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. Where they were opened, the `carscript.c` numbers matched this repo's `P:\` (a 1.30 build), the `transport.c` numbers sat 3 to 9 lines lower than written, and the `DZ\vehicles\wheeled\config.cpp` numbers differed. Tags such as SP-205 or LL-244 are the notes' own lesson numbers. Paths such as `<vehicle-import>\...` or `SUB_BRZ_dev\...` point into those mods' work folders, which are not part of this repo. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
 
 Related file in this pack: `emissive-leds-and-dynamic-lights.md` (an LED or indicator built from a hidden selection, one `.rvmat` per state and an optional scripted point light).
 
@@ -19,11 +19,11 @@ Related file in this pack: `emissive-leds-and-dynamic-lights.md` (an LED or indi
 - Vanilla material paths have no leading backslash: the `hiddenSelectionsMaterials[]` of `CivilianSedan` start at `dz\` (`P:\DZ\vehicles\wheeled\config.cpp:5180`).
 - The vehicle light key is `UAToggleVehicleLights` (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:855`); `UAToggleHeadlight` is the head torch (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:782`).
 
-## Five failures that look like a broken material and are not (added 2026-08-17; SUB_BRZ B2-B6, all measured in game)
+## Five failures that look like a broken material and are not (added 2026-08-17; all measured in game on SUB_BRZ)
 
-- **Light-selection preflight (LL-237).** Before reassigning a rear lamp, print every light hidden selection's face count and bbox. A lateral selection whose bbox crosses `x=0` owns centre geometry (e.g. `x=-0.12` to `0.65` = the tailgate bar); dozens of faces compressed into ~1 cm (here 44 faces in 0.01 m) are degenerate and draw nothing. Brake and tail must own disjoint faces; if they overlap the later `SetObjectMaterial` wins and the result is indeterminate.
+- **Light-selection preflight.** Before reassigning a rear lamp, print every light hidden selection's face count and bbox. A lateral selection whose bbox crosses `x=0` owns centre geometry (e.g. `x=-0.12` to `0.65` = the tailgate bar); dozens of faces compressed into ~1 cm (here 44 faces in 0.01 m) are degenerate and draw nothing. Brake and tail must own disjoint faces; if they overlap the later `SetObjectMaterial` wins and the result is indeterminate.
 
-- **The `CarScript` light-selection ABI is positional (SP-178, added 2026-08-31).**
+- **The `CarScript` light-selection ABI is positional (added 2026-08-31).**
   `carscript.c:174-182` fixes indices 0/1 front, 2/3 brake, 4/5 reverse, 6/7 rear
   position and 8 dashboard. Names are free; list order is not. Indices `>=9` have
   no native `CarScript` light meaning and require the mod's own driver. Indices 2/3
@@ -102,9 +102,8 @@ To make the parked beam appear promptly, copy vanilla's own line rather than inv
 `ForceUpdateLightsStart(); g_Game.GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(ForceUpdateLightsEnd, 100, false);`
 (1.29 `carscript.c:535-536`; the pair is defined at 1.29 `:2981` and `:2990`).
 
-Reference implementation: the LFQuad mod, `LFQuad\scripts\4_world\entities\vehicles\inherited\LFQuad.c`.
 
-**On 1.30 there is nothing to fix.** Measured on 1.30.164200, `LightIsOn()` stays true on the server and on the client when the driver gets out with the lights on, so the pattern above finds nothing to do; its step 3 no longer compiles (`ToggleHeadlights` was deleted), and `ForceUpdateLightsStart`/`End` are empty `[Obsolete]` declarations (`carscript.c:2805-2809`). See `dayz-1-30-vehicles.md` (`CLAIM-VEH-LIGHTS-EXIT-130`).
+**On 1.30 there is nothing to fix.** Measured on 1.30.164200, `LightIsOn()` stays true on the server and on the client when the driver gets out with the lights on, so the pattern above finds nothing to do; its step 3 no longer compiles (`ToggleHeadlights` was deleted), and `ForceUpdateLightsStart`/`End` are empty `[Obsolete]` declarations (`carscript.c:2805-2809`). See `dayz-1-30-vehicles.md`.
 
 ### 4. No bulbs mounted = brake and tail never light, and it reads as a failed fix
 

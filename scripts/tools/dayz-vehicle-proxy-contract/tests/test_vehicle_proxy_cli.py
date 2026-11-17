@@ -10,6 +10,13 @@ import tempfile
 import unittest
 from unittest import mock
 
+import pytest
+
+# The CLI under test imports these; skip the module when one is not installed.
+pytest.importorskip("numpy")
+pytest.importorskip("scipy")
+pytest.importorskip("matplotlib")
+
 import py3d
 
 

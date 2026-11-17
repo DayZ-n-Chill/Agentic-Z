@@ -37,7 +37,7 @@ The model belongs to `dayz-object-builder`. The classes in `config.cpp` are writ
 
 ## Setup
 
-- **py3d, the DayZ fork in this repo**, version 1.6.0 or later: `python -m pip install -e scripts\tools\py3d`. Never `pip install py3d` (an unrelated library on PyPI). `references/py3d-assembly-rules.md` has the check that the right one is active.
+- **py3d, the DayZ `.p3d` library in this repo**, version 1.6.0 or later: `python -m pip install -e scripts\tools\py3d`. Never `pip install py3d` (an unrelated library on PyPI). `references/py3d-assembly-rules.md` has the check that the right one is active.
 - **Blender** on the path, for Path A (`blender --version`).
 - **Python packages** for the textures: `python -m pip install opensimplex pillow`.
 
@@ -103,14 +103,14 @@ The full list of 21 rules, with the measurements behind them, is `references/cri
 | An artist sent a `.p3d` back, or a binary came from outside: what do I check before using it? | `references/artist-return-and-provenance.md` |
 | Is there a worked object specification I can adapt (button, switch, generator, cable, junction box)? | `references/lfpg-recipes.md` |
 | Cookware, a cable segment, or a weapon held in the hands: what was measured? | `references/domain-recipes.md` |
-| Has the community reported this binarize or proxy fault? | `references/community-findings.md` |
+| Is this binarize or proxy fault a known open one that is not yet confirmed? | `references/community-findings.md` |
 | What changes on Linux? | `references/linux.md` |
 
 Facts about what vanilla models carry are in the model pack, checked on `P:\`: `skills/_shared/models/README.md` (LODs, memory points, named properties, proxies, selections, doors).
 
 ## Reading the evidence labels
 
-The reference files mark where each statement comes from: `[EXACT]` measured or read from a file, `[OFFLINE MEASURED]` measured without the game, `[CHANGELOG]` stated by an official changelog only, `[DESIGN]` a rule derived from those, `[UNVERIFIED]` not confirmed. Codes such as SP-246 and LL-504 are the source author's ticket and lesson numbers; they are kept so that the files can refer to each other and to the other imported skills. Most measurements were made on the author's own mods (LF_PowerGrid, LFQuad, LFDucati, the A6 weapons); a line that cites `P:\` was checked against vanilla here.
+The reference files mark how each statement was established: `[EXACT]` measured or read from a file, `[OFFLINE MEASURED]` measured without the game, `[CHANGELOG]` stated by an official changelog only, `[DESIGN]` a rule derived from those, `[UNVERIFIED]` not confirmed. Most measurements were made on mod models (LF_PowerGrid devices, a quad, a motorcycle, imported weapons), which is third-party mod behaviour, not vanilla; a line that cites `P:\` was checked against vanilla.
 
 ## Acceptance
 

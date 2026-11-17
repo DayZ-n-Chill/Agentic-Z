@@ -4,11 +4,11 @@ How to review and change the session A classification of a ripped car without op
 
 The viewer is `classify-viewer\index.html` in this skill's folder, a Three.js (r128 UMD) page over the GLB export of a session A scene. It is advisory and it captures deltas. Authority stays with the `.blend`, then `blender_export_asset_contract.py`, then the ledger entry. The deltas are applied to the `.blend` by a headless script (the `fix_roofvent` pattern of the import project), never by hand.
 
-Nothing here is a fact about the vanilla game. The script runs inside Blender and the page runs in a browser; neither needs `P:\` or DayZ Tools. The viewer's behaviour was measured by the author and is not yet checked on `P:\`.
+Nothing here is a fact about the vanilla game. The script runs inside Blender and the page runs in a browser; neither needs `P:\` or DayZ Tools. The viewer's behaviour was measured on one car (see the last section); nothing in it can be checked on `P:\`.
 
 ## Three.js is not shipped
 
-The page loads three files from a `lib\` subfolder next to `index.html`: `three.min.js`, `GLTFLoader.js` and `OrbitControls.js`, all from Three.js r128 (UMD build, MIT licence, about 726 KB). They are not in this repo. Download them from <https://github.com/mrdoob/three.js/tree/r128/build> (`three.min.js`) and from `examples/js/loaders/GLTFLoader.js` and `examples/js/controls/OrbitControls.js` of the same tag.
+The page loads three files from a `lib\` subfolder next to `index.html`: `three.min.js`, `GLTFLoader.js` and `OrbitControls.js`, all from Three.js r128 (UMD build, about 726 KB). They are not in this repo. Take them from the Three.js r128 release, which is version 0.128.0 of the `three` npm package: `build/three.min.js`, `examples/js/loaders/GLTFLoader.js` and `examples/js/controls/OrbitControls.js`.
 
 Use the r128 UMD files, not the ESM ones. `index.html` loads them with `<script src=...>`, and the `importmap` that ESM builds need fails from `file://` in many Chrome versions.
 

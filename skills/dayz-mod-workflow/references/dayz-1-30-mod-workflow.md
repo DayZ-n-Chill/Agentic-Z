@@ -2,7 +2,7 @@
 
 What 1.30 changed in the contracts `dayz-mod-workflow` checks: the action start gate, Central Economy root classes, `cfggameplay.json`, the underground trigger editor, night-vision type switches and the headless guards. The six-layer debug order, the offline gates and the sync variable rules still hold.
 
-Every excerpt below was read in the vanilla files on `P:\`. The data on `P:\` when this was checked is a 1.30 build from before 1.30.164200 (game storage version 144); where the knowledge pack cites 1.30.164200 or later and `P:\` shows something else, the line says so and is marked not yet checked on `P:\`.
+Every excerpt below was read in the vanilla files on `P:\`. The data on `P:\` when this was checked is a 1.30 build from before 1.30.164200 (game storage version 144); where a line is about 1.30.164200 or later and `P:\` shows something else, the line says so and is marked not yet checked on `P:\`.
 
 Marks: `[EXACT]` copied from the cited vanilla file; `[DESIGN]` a recommendation.
 
@@ -172,13 +172,13 @@ enum NVTypes
 	NV_GOGGLES_UNDERGROUND_SANDSTORM,
 ```
 
-Not yet checked on `P:\` (the data here predates it): the knowledge pack reads the 1.30.164200 stable file as having two more values in the middle of the list, `NV_OPTICS_UNDERGROUND_DAY` right after `NV_OPTICS_UNDERGROUND` and `NV_OPTICS_UNDERGROUND_SANDSTORM_DAY` right after `NV_OPTICS_UNDERGROUND_SANDSTORM`, so every value after `NV_OPTICS_UNDERGROUND` has a different number than on the earlier 1.30 builds. The two listings agree on the rule: never store or compare an `NVTypes` value as an `int`.
+Not yet checked on `P:\` (the data here predates it): the 1.30.164200 stable file is reported to have two more values in the middle of the list, `NV_OPTICS_UNDERGROUND_DAY` right after `NV_OPTICS_UNDERGROUND` and `NV_OPTICS_UNDERGROUND_SANDSTORM_DAY` right after `NV_OPTICS_UNDERGROUND_SANDSTORM`, so every value after `NV_OPTICS_UNDERGROUND` has a different number than on the earlier 1.30 builds. The two listings agree on the rule: never store or compare an `NVTypes` value as an `int`.
 
 [DESIGN] Custom night-vision cameras: handle the new values, or call vanilla `ResolveNVType` (used at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameraironsights.c:272`) instead of applying the raw type directly. Camera detail is in `enforce-script-reference`.
 
 ## Headless and dedicated guards
 
-Since 1.30, `CGame` has `IsHeadless()` and `IsHeadlessOrDedicatedServer()`. The knowledge pack reports that the 1.29 `Game.c` has neither (1.29 is not on `P:\`, so that half is not yet checked on `P:\`).
+Since 1.30, `CGame` has `IsHeadless()` and `IsHeadlessOrDedicatedServer()`. The 1.29 `Game.c` is reported to have neither (1.29 is not on `P:\`, so that half is not yet checked on `P:\`).
 
 ```c
 // [EXACT] P:\scripts\3_game\global\game.c:1125-1136
@@ -198,7 +198,7 @@ Since 1.30, `CGame` has `IsHeadless()` and `IsHeadlessOrDedicatedServer()`. The 
 
 Until 1.29, code that skipped particles or sounds on a server tested `IsDedicatedServer()` or `IsServer()`. Since 1.30 vanilla skips client effects with `!g_Game.IsHeadlessOrDedicatedServer()`, so headless roboclients are treated like servers. For "skip the effect", prefer the combined helper so headless roboclients do not run particles. Which call to use as the side guard for authority work is a separate rule: `skills/_shared/conventions/scripts.md`, "Which code runs where".
 
-Counted on `P:\`: vanilla calls `IsHeadlessOrDedicatedServer()` 97 times and `IsHeadless()` on its own never (the knowledge pack measured the same numbers on 1.30.164014). Measured there too: the script log lists `DAYZ_1_30` among the defines, where 1.29 logged `DAYZ_1_29`. A mod that must compile on both can gate the new helper on the version define, which names only the current version (`DAYZ_X_XX`, `P:\scripts\1_core\defines.c:12-14`). The knowledge pack reports that 1.29 vanilla gates the same way in its `DynamicMusicPlayerRegistry.c` (not on `P:\`).
+Counted on `P:\`: vanilla calls `IsHeadlessOrDedicatedServer()` 97 times and `IsHeadless()` on its own never (the same numbers were counted on 1.30.164014). Measured on that build: the script log lists `DAYZ_1_30` among the defines, where 1.29 logged `DAYZ_1_29`. A mod that must compile on both can gate the new helper on the version define, which names only the current version (`DAYZ_X_XX`, `P:\scripts\1_core\defines.c:12-14`). 1.29 vanilla is reported to gate the same way in its `DynamicMusicPlayerRegistry.c` (not on `P:\`).
 
 ```c
 // [DESIGN] not compiled; 1.29 has no IsHeadlessOrDedicatedServer
@@ -212,7 +212,7 @@ static bool MyMod_IsHeadlessOrDedicated()
 }
 ```
 
-By their documented meaning (the `game.c` excerpt above) both guards agree on a rendered client and on a dedicated server and differ only on a headless client; that is inferred, not measured. Measured by the knowledge pack on the public DayZDiag 1.30.164014, client and server: `ROBOCLIENT` and `INPUT_OVERRIDE` are defined, so code under `#ifdef ROBOCLIENT` (vanilla has such blocks, `P:\scripts\3_game\dayzgame.c:972`) compiles for everyone on that exe and every `PlayerBase` carries an idle `m_Bot`. Details: `dayz-mcp-verify`, `references/dayz-1-30-mcp-verify.md`.
+By their documented meaning (the `game.c` excerpt above) both guards agree on a rendered client and on a dedicated server and differ only on a headless client; that is inferred, not measured. Measured on the public DayZDiag 1.30.164014, client and server: `ROBOCLIENT` and `INPUT_OVERRIDE` are defined, so code under `#ifdef ROBOCLIENT` (vanilla has such blocks, `P:\scripts\3_game\dayzgame.c:972`) compiles for everyone on that exe and every `PlayerBase` carries an idle `m_Bot`. Details: `dayz-mcp-verify`, `references/dayz-1-30-mcp-verify.md`.
 
 ## Migration checklist
 

@@ -13,18 +13,17 @@ from detectors.es_undeclared_static_member import AddonClasses
 ES_PROTECTED_METHOD_CROSS_CLASS_RULE_ID = "ES-PROTECTED-METHOD-CROSS-CLASS"
 
 
-# claim: CLAIM-ENFORCE-PROTECTED-METHOD-CROSS-CLASS
 # WARN, not FAIL: the refusal is measured for fields only. Enforce
 # `protected` reaches only the declaring class and its descendants, and a
 # protected FIELD read from an unrelated class stops the module
 # (`Variable 'm_DeviceId' is protected`, enforce-script-reference SKILL.md,
 # "Moving a body between modules", and ES-PROTECTED-CROSS-MODULE). No
-# compile log in this pack shows the same for a METHOD. Pipeline inbox
-# fb-20261006-002741-28fa (LFSkateboard) has the shape: `protected void
-# LFSK_OnServerState(...)` declared in LFSK_RideCommand, and
+# compile log on record shows the same for a METHOD. The shape comes from
+# a mod: `protected void
+# FX_OnServerState(...)` declared in FX_RideCommand, and
 # `PlayerBase.OnRPC` (same module, 4_World, unrelated class) calling
-# `cmd.LFSK_OnServerState(...)` on a local `LFSK_RideCommand cmd`; the
-# ticket does not isolate a compile line for that call.
+# `cmd.FX_OnServerState(...)` on a local `FX_RideCommand cmd`; no
+# compile line is isolated for that call.
 #
 # Judged only when everything is known:
 #   - the receiver is a plain name with one plain declared type, as a local
@@ -41,7 +40,7 @@ ES_PROTECTED_METHOD_CROSS_CLASS_RULE_ID = "ES-PROTECTED-METHOD-CROSS-CLASS"
 #     outside any class counts as unrelated. The caller's parents are read
 #     from the non-modded declarations of the addon and the external roots;
 #     a class declared in neither (vanilla) cannot derive from an addon
-#     class, which is what makes the ticket's `modded class PlayerBase`
+#     class, which is what makes that `modded class PlayerBase`
 #     unrelated. Two parents for one class, a cycle, or a header that a
 #     directive splits (its parent is not read) in the caller or an
 #     ancestor, skip the call.

@@ -1,10 +1,10 @@
 # Compiler traps
 
-Ways to break the Enforce compiler that give a misleading error, or none until the script module compiles at boot: method scope, dead vanilla symbols, names that collide with keywords or classes, statements split over lines, and offline checks that look green while nothing compiled. A line cited as `P:\...:N` was opened on `P:\`; the measured results name the mod that measured them and were not re-run here.
+Ways to break the Enforce compiler that give a misleading error, or none until the script module compiles at boot: method scope, dead vanilla symbols, names that collide with keywords or classes, statements split over lines, and offline checks that look green while nothing compiled. A line cited as `P:\...:N` was opened on `P:\`; the measured results were not re-run here.
 
-## Locals have method scope, not block scope: the same local in two `case` blocks is a fatal compile error (SP-066)
+## Locals have method scope, not block scope: the same local in two `case` blocks is a fatal compile error
 
-Enforce gives local variables method scope, not block scope (like `var` in old JavaScript). Declaring the same variable in two `case` blocks, or any two blocks, of the same method gives `SCRIPT (E): Multiple declaration of variable 'X'`, then `Can't compile "World" script module!`, and the server does not start. The DayZDiag compiler rejects it; retail may let it pass, so it stays hidden when only retail is tested (the same split between diag and retail as SP-047, `ref` on a parameter). Fix: use a different name per block (for example `cgVel` and `cgVelRec`) or declare it once at the top of the method. Origin: the LFHeli mod, 2026-07-14, where `vector cgVel` was declared in both the `FLIGHT` and the `EMERGENCY_RECOVERY` branch of one state machine step; the compile on the diag server caught it (`Multiple declaration of variable 'cgVel'`).
+Enforce gives local variables method scope, not block scope (like `var` in old JavaScript). Declaring the same variable in two `case` blocks, or any two blocks, of the same method gives `SCRIPT (E): Multiple declaration of variable 'X'`, then `Can't compile "World" script module!`, and the server does not start. The DayZDiag compiler rejects it; retail may let it pass, so it stays hidden when only retail is tested (the same split between diag and retail as `ref` on a parameter, memory rule 12 in `hard-rules.md`). Fix: use a different name per block (for example `cgVel` and `cgVelRec`) or declare it once at the top of the method. Example: `vector cgVel` declared in both the `FLIGHT` and the `EMERGENCY_RECOVERY` branch of one state machine step; the compile on the diag server caught it (`Multiple declaration of variable 'cgVel'`).
 
 ## Failures that only show when the module compiles at boot
 
@@ -57,9 +57,9 @@ Which tool for which job:
 
 How far it reaches: `modded` on a `*Base` class applies to every descendant at once. That is the right tool when a blanket change is the goal, and the wrong one when the goal is a single new item.
 
-### Two rules from another tool's guide, both disproved by the vanilla tree
+### Two common beliefs, both disproved by the vanilla tree
 
-Both came from the guide of a third-party tool (`ZeripeDaniel/Lake-Dayz-MCP`); only the two claims were looked at, no code or text was taken. They were first carried as unverified, and a sweep of the whole vanilla tree disproved both. The tree ships and compiles, so one live counterexample settles it.
+Two beliefs circulate: that Enforce has no C style casts, and that `string + bool` does not compile. A sweep of the whole vanilla tree disproved both. The tree ships and compiles, so one live counterexample settles it.
 
 **C style casts exist and vanilla uses them.**
 
@@ -108,11 +108,11 @@ desc = desc + " wet=" + top.GetWet().ToString();
 
 The rule to take from this: the only check that validates Enforce is booting a module. A green `CfgConvert -test`, a custom linter or a text search for an anchor prove form, not compilation.
 
-## A newline also ends the statement inside a condition (SP-386)
+## A newline also ends the statement inside a condition
 
 This extends item 1 above, which shows the compiler ending the statement at a newline only for string concatenation. The rule belongs to the parser, not to the `+` operator, and someone who searches for the symptom under `if` would not look there.
 
-Measured on 2026-09-10 in the LFHeli mod: a condition split over two lines
+Measured in game: a condition split over two lines
 
 ```c
 if (m_RestProbeArmed && startVel.Length() < REST_PROBE_SPEED_MPS
@@ -138,8 +138,8 @@ The first three were green and the module did not compile. That cost the whole b
 
 What follows in practice: when the test machine is a queued resource, server startup is not only the check, it is the cheapest check there is, because it fails in about 20 s. Spending 20 s on a boot before queueing a 30 minute batch is arithmetic, not caution. In this repo that boot is `/dayz-gate`.
 
-## Moving a method body between modules: field visibility moves with it (LL-521)
+## Moving a method body between modules: field visibility moves with it
 
-[EXACT] Enforce `protected` reaches only the declaring class and its descendants. A body moved into `5_Mission` (a facade and implementation split) reaches device state through parameters (`dev.m_Field`), and that compiles only if the field is public, because the implementation class is not a descendant of the class that owns the state. Measured: a tree with 48 linter warnings and 0 errors and a passing isolated binarize still killed the first server boot with `Variable 'm_DeviceId' is protected`, then `Can't compile "Mission" script module!`. The fields were public on the branch where the bodies were written, and that visibility change did not travel with the bodies (measured in game, LFPowerGrid mod, DayZDiag).
+[EXACT] Enforce `protected` reaches only the declaring class and its descendants. A body moved into `5_Mission` (a facade and implementation split) reaches device state through parameters (`dev.m_Field`), and that compiles only if the field is public, because the implementation class is not a descendant of the class that owns the state. Measured: a tree with 48 linter warnings and 0 errors and a passing isolated binarize still killed the first server boot with `Variable 'm_DeviceId' is protected`, then `Can't compile "Mission" script module!`. The fields were public on the branch where the bodies were written, and that visibility change did not travel with the bodies (measured in game, DayZDiag).
 
 [DESIGN] When a body moves across modules, the move list includes the visibility of every field the body touches, not only the helpers it calls: resolve the type of every variable and require public before calling the tree good. The check is the engine, not the linter: on 2026-09-26 the offline linter in that project gave the identical verdict on the broken and the fixed tree, and review missed it because it read the branch where the field was public. The script validator has a check for this pattern over the whole tree, `ES-PROTECTED-CROSS-MODULE` (see the README under `scripts\tools\dayz-script-validator\`); run it, and still boot the server before calling such a move good. Whether that check catches a receiver reached through a parameter, as here, was not measured.

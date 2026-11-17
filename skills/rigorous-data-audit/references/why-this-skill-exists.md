@@ -2,7 +2,7 @@
 
 The case study behind the audit procedure: six reasoning agents signed off a virtual storage mod as release-safe, and an outside auditor then found 12 vulnerabilities they had missed. Open this to see what each `VULN-nnn` label in the other files refers to and why each step of the procedure is there.
 
-LF_VStorage is the source author's own mod (third-party). Everything below describes that mod's code and its audit; none of it is a fact about vanilla DayZ and none of it can be checked on `P:\`.
+LF_VStorage is a third-party virtual storage mod. Everything below describes that mod's code and its audit; none of it is a fact about vanilla DayZ and none of it can be checked on `P:\`.
 
 ## What happened
 

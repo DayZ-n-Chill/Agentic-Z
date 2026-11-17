@@ -1,4 +1,4 @@
-# Test suite — rules CANDIDATE-1..7 implemented in top-5; CANDIDATE-8/9/10 added 2026-05-19.
+# Test suite for script_validator.py and its detectors.
 import json
 import os
 import pathlib
@@ -409,7 +409,7 @@ class TestEsEmptyIfdef(unittest.TestCase):
         self.assertEqual([], result["errors"])
         self.assertEqual([], result["warnings"])
 
-    # Pipeline inbox dada: on DayZDiag 1.30.164289 a block holding only a
+    # On DayZDiag 1.30.164289 a block holding only a
     # comment compiled and ran on server and client, so no crash is on record
     # and the rule warns.
     EMPTY_IFDEF_MEASURED = (
@@ -934,7 +934,7 @@ class TestEsSyncvarContract(unittest.TestCase):
         )
 
     def test_syncvar_own_register_construction_override_fails_on_1_30(self):
-        # Inbox fb-20261017-210745-6b76: on 1.30 the override passed, though
+        # On 1.30 the override passed, though
         # SyncVarOwnHookFixture does not derive from EntityAI.
         expected_message = (
             "[FAIL] bad_syncvar_register_construction_own_hook.c line 19: "
@@ -951,7 +951,7 @@ class TestEsSyncvarContract(unittest.TestCase):
         )
 
     def test_syncvar_construction_hook_with_an_external_foreign_base_fails_on_1_30(self):
-        # Codex review of #121 (Y1): the base class is only in an
+        # The base class is only in an
         # --external-scripts root, and does not derive from EntityAI.
         expected_message = (
             "[FAIL] bad_syncvar_register_construction_external_base.c line 7: "
@@ -1253,8 +1253,8 @@ class TestEsLayoutPathPboprefix(unittest.TestCase):
         self.assertEqual("FAIL", error["severity"])
         self.assertEqual("dialog.c", error["file"])
         self.assertEqual(5, error["line"])
-        self.assertIn("SimpleGroup", error["message"])
-        self.assertIn("LFPG_Territory", error["message"])
+        self.assertIn("FxGroupMod", error["message"])
+        self.assertIn("FxTerritory", error["message"])
         self.assertIn("rule 34", error["message"])
         assert_standard_findings(self, result)
 
@@ -1273,8 +1273,8 @@ class TestEsLayoutPathPboprefix(unittest.TestCase):
         self.assertEqual(1, result["info"]["files_scanned"])
 
     def test_message_that_names_a_layout_is_not_a_path(self):
-        # A Print after a failed CreateWidgets names the layout in a message
-        # (inbox 22f2). The message is not judged, the path beside it is.
+        # A Print after a failed CreateWidgets names the layout in a message.
+        # The message is not judged, the path beside it is.
         from detectors.es_layout_path_pboprefix import check_es_layout_path_pboprefix
 
         addon_root = FIXTURES / "layout_pboprefix" / "ok_message_names_layout"
@@ -1290,7 +1290,7 @@ class TestEsLayoutPathPboprefix(unittest.TestCase):
         self.assertEqual([9], [error["line"] for error in errors])
 
 class TestLayoutLeafMissingBraces(unittest.TestCase):
-    # LAYOUT-LEAF-MISSING-BRACES is quarantined (BUG-029): a leaf widget
+    # LAYOUT-LEAF-MISSING-BRACES is quarantined: a leaf widget
     # without a child { } block is valid Enfusion layout syntax. The detector
     # file remains on disk but is not imported or called. These tests assert
     # the run loop no longer emits that rule, including on the former
@@ -2115,7 +2115,7 @@ class TestProtectedCrossModule(unittest.TestCase):
     """ES-PROTECTED-CROSS-MODULE — verified at runtime 2026-09-17.
 
     A disposable probe was built into a PBO and booted on a dedicated server:
-    World compiled, Mission did not, with "Variable 'm_LFPG_ProbeValue' is
+    World compiled, Mission did not, with "Variable 'm_FX_ProbeValue' is
     protected" / "Can't compile \"Mission\" script module!".
     """
 
@@ -2289,7 +2289,7 @@ class TestReservedWordIdentifier(unittest.TestCase):
         # A parameter split over two lines, a later declarator, a foreach
         # variable and the second variable of a for header; not the use of
         # `out` among the arguments of line 11. Later declarators end with
-        # `=`, `;`, `,` and `[` (review round 2, R2-06).
+        # `=`, `;`, `,` and `[`.
         self.assertEqual(1, exit_code)
         self.assertEqual(
             [(8, "sealed"), (10, "out"), (12, "local"), (15, "owned"),
@@ -2299,7 +2299,7 @@ class TestReservedWordIdentifier(unittest.TestCase):
         )
 
     def test_template_arguments_end_at_their_own_bracket(self):
-        # Inbox fb-20261017-175254-e6d6: the type's template arguments could
+        # The type's template arguments could
         # run on to any later `>` of the statement, so each place a
         # declaration can start read to its end. These 8 000 template
         # arguments in 96 KB took 9 s, and take 0.02 s.
@@ -2320,7 +2320,7 @@ class TestReservedWordIdentifier(unittest.TestCase):
         self.assertEqual([], errors)
 
     def test_a_type_with_templates_five_deep_is_read(self):
-        # Codex review of e6d6, E1: four levels were read, and a mod's fifth
+        # Four levels were read, and a mod's fifth
         # hid the name.
         from detectors.es_reserved_word_identifier import (
             check_es_reserved_word_identifier,
@@ -2353,7 +2353,7 @@ class TestReservedWordIdentifier(unittest.TestCase):
         self.assertEqual([5], [e["line"] for e in errors])
 
     def test_vanilla_closers_and_one_line_ifs_hide_no_word(self):
-        # Codex review of e6d6: E4, vanilla closes a template with one `>` too
+        # Vanilla closes a template with one `>` too
         # many (`map<string, int>> name;`, 3_game/global/ammotypes.c:80 on
         # 1.30); E7, in `if (a < b) ... if (c > d)` no template runs from the
         # `<` to the `>`.
@@ -2373,7 +2373,7 @@ class TestReservedWordIdentifier(unittest.TestCase):
         self.assertEqual([3, 6], [e["line"] for e in errors])
 
     def test_each_declaration_is_read_once(self):
-        # Codex review of e6d6, E5: each parameter on a line of its own read on
+        # Each parameter on a line of its own read on
         # to the `)`. These 2 400 took 6.6 s, and take 0.01 s.
         from detectors.es_reserved_word_identifier import (
             check_es_reserved_word_identifier,
@@ -2392,7 +2392,7 @@ class TestReservedWordIdentifier(unittest.TestCase):
         self.assertEqual([], errors)
 
     def test_lines_are_counted_once_per_file(self):
-        # Codex review of e6d6, E9: each word found counted the lines from the
+        # Each word found counted the lines from the
         # start of the file again. These 64 000 members took 12 s, and take
         # 0.4 s.
         from detectors.es_reserved_word_identifier import (
@@ -2409,7 +2409,7 @@ class TestReservedWordIdentifier(unittest.TestCase):
         self.assertEqual(64002, errors[-1]["line"])
 
     def test_a_word_that_starts_its_line_is_on_that_line(self):
-        # Codex review of e6d6, E10: the members above all follow a space, so
+        # The members above all follow a space, so
         # counting the lines up to one character before each word passed them.
         from detectors.es_reserved_word_identifier import (
             check_es_reserved_word_identifier,
@@ -2437,8 +2437,8 @@ class TestModuloFloatContext(unittest.TestCase):
 
     `((g % 5) - 2) * 7.0` failed on DayZDiag 1.29 (2026-09-28) and
     `float ox = (n % 4) * 0.7 - 1.05;` on DayZ 1.30 Exp (2026-09-24), both
-    with "Unknown operator '%'". On DayZDiag 1.30.164289 (2026-11-09,
-    pipeline inbox d35a) two more failed with it, each at its own line, and
+    with "Unknown operator '%'". On DayZDiag 1.30.164289 (2026-11-09)
+    two more failed with it, each at its own line, and
     the third shape, with the '%' in an int local first, compiled.
     """
 
@@ -2543,8 +2543,7 @@ class TestModuloFloatContext(unittest.TestCase):
             stripped, _warnings = strip_enforce_comments_and_strings(source, "x.c")
             return bool(check_es_modulo_float_context(source, stripped, "x.c"))
 
-        # Every block around the `%` counts, not only the innermost one
-        # (review round 2, R2-05).
+        # Every block around the `%` counts, not only the innermost one.
         self.assertFalse(flagged(
             "        return n\n"
             "#ifdef FX_OUTER\n#ifdef FX_INNER\n            % 4\n"
@@ -2553,7 +2552,7 @@ class TestModuloFloatContext(unittest.TestCase):
         ))
 
         # A float in a branch that never compiles is no part of the
-        # expression (review round 1, R01).
+        # expression.
         self.assertFalse(flagged(
             "#define FX_INTEGER\n"
             "        return (n % 4)\n"
@@ -2577,8 +2576,8 @@ class TestModuloFloatContext(unittest.TestCase):
         from detectors.es_modulo_float_context import check_es_modulo_float_context
         from stripper import strip_enforce_comments_and_strings
 
-        # Deeper than the interpreter's recursion limit (review round 2,
-        # R2-01: 1100 pairs raised RecursionError).
+        # Deeper than the interpreter's recursion limit
+        # (1100 pairs raised RecursionError).
         depth = sys.getrecursionlimit() + 200
         statement = (
             "return (n % 4) * " + "(" * depth + "0.7" + ")" * depth + " - 1.05;"
@@ -2595,8 +2594,8 @@ class TestModuloFloatContext(unittest.TestCase):
         from stripper import strip_enforce_comments_and_strings
 
         # The index is skipped and the expression reads on to the float after
-        # it, at the top level and inside a group (review round 3, R3-01:
-        # ending the expression at an index kept every other test green).
+        # it, at the top level and inside a group
+        # (ending the expression at an index kept every other test green).
         source = (
             "class C\n{\n    int m_Values[2];\n    float F(int n, int i)\n    {\n"
             "        float a = (n % 4) + m_Values[i] * 0.5;\n"
@@ -2648,7 +2647,7 @@ def _formula_chain(terms):
 class TestFormulaTooComplex(unittest.TestCase):
     """ES-FORMULA-TOO-COMPLEX: 18 or more terms joined by '+' with a string.
 
-    DayZDiag 1.30.164289 (2026-11-09, pipeline inbox 7b9e/7ce1): one line
+    DayZDiag 1.30.164289 (2026-11-09): one line
     alternating string literals with an int and a float's ToString()
     compiled with 14 and 17 terms and failed with "Formula too complex" with
     18 and 20.
@@ -2797,10 +2796,10 @@ def _rule_skips(result):
 
 
 class TestUndefinedClassRef(unittest.TestCase):
-    """ES-UNDEFINED-CLASS-REF — observed 2026-09-19 on TransferZ PR #12.
+    """ES-UNDEFINED-CLASS-REF — observed 2026-09-19 on a mod.
 
-    The PR deleted class TransferZExternalStagingSortPlanner from 4_World while
-    5_Mission still called TransferZExternalStagingSortPlanner.Sort(...). The
+    A change deleted a class from 4_World while 5_Mission still called its
+    static Sort(...). The
     type existed in no module, so Mission could not compile; the linter said
     WARN with 0 errors. `bad_mission_ref` is that shape with fixture names.
     """
@@ -3034,7 +3033,7 @@ class TestUndefinedClassRef(unittest.TestCase):
         self.assertIn("FX_GonePlanner", lines[1])
 
     def test_template_arguments_end_at_their_own_bracket(self):
-        # Inbox fb-20261017-175254-e6d6: in declared_variables, the same
+        # In declared_variables, the same
         # statement as in TestReservedWordIdentifier took 15 s, and takes
         # 0.02 s.
         from detectors.es_undefined_class_ref import declared_variables
@@ -3052,7 +3051,7 @@ class TestUndefinedClassRef(unittest.TestCase):
         self.assertEqual(set(), names)
 
     def test_template_arguments_declare_no_variable(self):
-        # Codex review of e6d6, E2: each `ref AuditEntry,` read like a
+        # Each `ref AuditEntry,` read like a
         # declaration of AuditEntry, and each was read to the end of the
         # statement. These 2 400 took 7.8 s, and take 0.01 s.
         from detectors.es_undefined_class_ref import declared_variables
@@ -3070,7 +3069,7 @@ class TestUndefinedClassRef(unittest.TestCase):
         self.assertEqual(set(), names)
 
     def test_a_variable_with_nested_templates_is_no_class(self):
-        # Codex review of e6d6, E1 and E3: a variable is collected however
+        # A variable is collected however
         # deep its type nests, and a later declarator after two comparisons
         # too, so a call on it is no static call on an undefined class.
         from detectors.es_undefined_class_ref import (
@@ -3111,7 +3110,7 @@ class TestUndefinedClassRef(unittest.TestCase):
         self.assertEqual(([], []), result)
 
     def test_vanilla_closers_and_one_line_ifs_hide_no_variable(self):
-        # Codex review of e6d6: E4, vanilla closes a template with one `>` too
+        # Vanilla closes a template with one `>` too
         # many (`map<string, int>> name;`, 3_game/global/ammotypes.c:80 on
         # 1.30); E7, in `if (a < b) ... if (c > d)` no template runs from the
         # `<` to the `>`. A call on either variable is no static call on an
@@ -3149,7 +3148,7 @@ class TestUndefinedClassRef(unittest.TestCase):
         self.assertEqual(([], []), result)
 
     def test_template_arguments_over_lines_declare_no_variable(self):
-        # Codex review of e6d6, E5: with a newline after `Param<` the
+        # With a newline after `Param<` the
         # arguments were not blanked, so `ref AuditEntry,` declared AuditEntry,
         # and so did the declarator after its comma, read on to the end of the
         # statement. These 4 800 took 15 s, and take 0.01 s.
@@ -3168,7 +3167,7 @@ class TestUndefinedClassRef(unittest.TestCase):
         self.assertEqual(set(), names)
 
     def test_template_arguments_after_a_space_declare_no_variable(self):
-        # Codex review of e6d6, E8: with a space or a tab before the `<`, the
+        # With a space or a tab before the `<`, the
         # template arguments over lines were read as code, so `ref AuditEntry,`
         # declared AuditEntry and the static call on that undefined class went
         # unreported. On one line, so did the type after a comma.
@@ -3209,7 +3208,7 @@ class TestUndefinedClassRef(unittest.TestCase):
                 )
 
     def test_a_declaration_among_template_arguments_begins_nothing_after_them(self):
-        # Codex review of e6d6, E5: `ref AuditEntry,` among template arguments
+        # `ref AuditEntry,` among template arguments
         # over lines starts no declaration, so the comma after the template
         # separates the arguments of the call, and AuditTarget is no variable.
         from detectors.es_undefined_class_ref import declared_variables
@@ -3223,7 +3222,7 @@ class TestUndefinedClassRef(unittest.TestCase):
         self.assertEqual(set(), declared_variables(source))
 
     def test_a_declaration_ends_at_a_bracket_it_did_not_open(self):
-        # Codex review of e6d6, E5: like the walks from each start that it
+        # Like the walks from each start that it
         # replaced, the pass ends a declaration at a bracket that closes
         # around it, even one this text never opened: `, C` is no declarator.
         from detectors.es_undefined_class_ref import declarator_commas
@@ -3231,7 +3230,7 @@ class TestUndefinedClassRef(unittest.TestCase):
         self.assertEqual([5], declarator_commas("int a, B), C;", [5]))
 
     def test_each_declaration_is_read_once(self):
-        # Codex review of e6d6, E5 and E6: each parameter on a line of its own
+        # Each parameter on a line of its own
         # read on to the `)`, and each `1<` of a chain of shifts on to the `;`.
         # These 2 400 parameters took 9 s and these 8 000 shifts 4.7 s; each
         # takes 0.01 s.
@@ -3274,7 +3273,7 @@ def _bracket_errors(source):
 class TestUnbalancedBrackets(unittest.TestCase):
     """ES-UNBALANCED-BRACKETS: a bracket never closed, or closed by another kind.
 
-    Inbox fb-20261004-040148-403a: `m_Objects.Clear(;` got PASS.
+    `m_Objects.Clear(;` got PASS.
     """
 
     def test_ticket_repro_fails_on_the_open_parenthesis(self):
@@ -3341,7 +3340,7 @@ ENGINE_RULE = "ES-MODDED-ENGINE-CLASS"
 class TestModdedEngineClass(unittest.TestCase):
     """ES-MODDED-ENGINE-CLASS: `modded class` of a class the engine refuses.
 
-    Inbox fb-20261005-233046-89d1, DayZDiag 1.29.163709: "Engine class
+    DayZDiag 1.29.163709: "Engine class
     'Transport' cannot be modded."
     """
 
@@ -3421,7 +3420,7 @@ def _named_skips(result):
 class TestVariableNamedAsType(unittest.TestCase):
     """ES-VARIABLE-NAMED-AS-TYPE: a variable, member or parameter named as a type.
 
-    Inbox fb-20260928-025254-35c1 (corrected by 7ce1), DayZDiag 1.29:
+    DayZDiag 1.29:
     `bool Debug;` in a 4_World settings class, "Variable name 'Debug' already
     used as type name".
     """
@@ -3517,8 +3516,8 @@ class TestVariableNamedAsType(unittest.TestCase):
         )
 
     def test_a_file_outside_any_module_is_judged_against_1_core_only(self):
-        # Mods pass of #113, 2026-10-17: a member `Attachments` in a mod
-        # recovered without its module folders was reported against the
+        # Measured on 2026-10-17: a member `Attachments` in a mod
+        # laid out without its module folders was reported against the
         # 5_Mission class Attachments; the classes that use it are 4_World.
         source = (
             "class C\n{\n    int FX_MissionOnly;\n    int Debug;\n"
@@ -3537,10 +3536,10 @@ class TestVariableNamedAsType(unittest.TestCase):
         # Vanilla control 2026-10-13: commas between template arguments and a
         # typedef's own name were read as declarators (104 findings on 1.29,
         # 109 on 1.30), e.g. `Param3<bool, vector, int> x` and
-        # `typedef map<string,ref array<string>> DamageZoneMap;`. Second Codex
-        # review of #113 (J1): again with a space or a tab before the `<`.
+        # `typedef map<string,ref array<string>> DamageZoneMap;`. Again with a
+        # space or a tab before the `<`.
         # A nested template is stepped over whole, so the arguments after it
-        # are still inside the outer one (Codex review of #114, M2).
+        # are still inside the outer one.
         source = (
             "typedef map<string, ref array<Debug>> FX_OwnMap;\n"
             "class C\n{\n"
@@ -3564,7 +3563,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         )
 
     def test_a_type_that_never_compiles_with_the_name_is_no_type(self):
-        # Codex review of #113 (H1): a type declared where it never compiles,
+        # A type declared where it never compiles,
         # or only in the other branch of the name's block, failed valid code.
         cases = [
             "#if 0\nclass FX_Gone\n{\n}\n#endif\n"
@@ -3602,7 +3601,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         )
 
     def test_opposite_tests_of_one_macro_never_compile_together(self):
-        # Second Codex review of #113 (H1, partial): the type under
+        # The type under
         # `#ifdef FX_ON` and the name under a later `#ifndef FX_ON`, or under
         # an `#ifndef FX_ON` inside the type's block, failed valid code. An
         # `#if 0` block inside the type's block does not end it.
@@ -3643,7 +3642,7 @@ class TestVariableNamedAsType(unittest.TestCase):
             )
 
     def test_a_comparison_hides_no_later_declarator(self):
-        # Codex review of #113 (H4): the `<` of a comparison was read as
+        # The `<` of a comparison was read as
         # opening template arguments, so the later declarator went unseen.
         source = (
             "class C\n{\n    void F(int a, int b)\n    {\n"
@@ -3659,7 +3658,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         )
 
     def test_line_tests_cost_grows_with_the_lines(self):
-        # Fourth Codex review of #113 (L1): line_tests ran its #define/#undef
+        # line_tests ran its #define/#undef
         # pattern over the whole text, and its \s* ran on across blank lines.
         # On two machines these 64 000 lines took 30 s and 31 s, and take 0.1 s.
         # Wall time: on the owner's PC process_time() reads a fraction of the
@@ -3672,7 +3671,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         self.assertLess(time.perf_counter() - start, 2)
 
     def test_lines_are_counted_once_per_file(self):
-        # Fourth Codex review of #113 (L2): the rule counted lines from the
+        # The rule counted lines from the
         # start of the file for each name that is a type. On two machines
         # these 64 000 members took 42 s and 62 s, and take 1.5 s.
         source = (
@@ -3688,7 +3687,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         self.assertEqual([], errors)
 
     def test_template_arguments_are_read_once_per_file(self):
-        # Codex review of #114 (M2): at each comma of a declaration the rule
+        # At each comma of a declaration the rule
         # read the statement again from its start, looking for template
         # arguments. These 16 000 names in 117 KB took 46 s and 48 s on two
         # machines, and take 0.05 s.
@@ -3705,7 +3704,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         self.assertEqual([], errors)
 
     def test_shift_chains_are_read_once_per_file(self):
-        # Codex review of #115 (N1): a `<` that opened no template was read up
+        # A `<` that opened no template was read up
         # to the end of its statement, so a chain of shifts with no comma grew
         # with the square of its length. These 16 000 shifts in 80 KB took 37 s.
         source = (
@@ -3721,7 +3720,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         self.assertEqual([], errors)
 
     def test_template_arguments_end_at_their_own_bracket(self):
-        # Inbox fb-20261017-175254-e6d6: the same statement as in
+        # The same statement as in
         # TestReservedWordIdentifier took 9 s, and takes 0.04 s.
         source = (
             "class A\n{\n    void F()\n    {\n        auto x = new Param<"
@@ -3736,7 +3735,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         self.assertEqual([], errors)
 
     def test_a_type_with_templates_five_deep_is_read(self):
-        # Codex review of e6d6, E1 and E3, with a later declarator after two
+        # With a later declarator after two
         # comparisons: the walk reads the source, not the blanked text.
         source = (
             "class C\n{\n"
@@ -3755,7 +3754,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         self.assertEqual([], skipped)
 
     def test_vanilla_closers_and_one_line_ifs_hide_no_name(self):
-        # Codex review of e6d6: E4, vanilla closes a template with one `>` too
+        # Vanilla closes a template with one `>` too
         # many (`map<string, int>> name;`, 3_game/global/ammotypes.c:80 on
         # 1.30); E7, in `if (a < b) ... if (c > d)` no template runs from the
         # `<` to the `>`.
@@ -3775,7 +3774,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         self.assertEqual([], skipped)
 
     def test_each_declaration_is_read_once(self):
-        # Codex review of e6d6, E5: each parameter on a line of its own read on
+        # Each parameter on a line of its own read on
         # to the `)`. These 2 400 took 7.6 s, and take 0.02 s.
         source = (
             "class A\n{\n    void F(\n"
@@ -3820,7 +3819,7 @@ def _cast_errors(source, external=(), vanilla=CAST / "vanilla"):
 class TestCastUnrelatedTypes(unittest.TestCase):
     """ES-CAST-UNRELATED-TYPES: `X.Cast(y)` between classes on separate branches.
 
-    Inbox fb-20261009-122148-c852, DayZDiag 1.29: `IngameHud.Cast(mission)`
+    DayZDiag 1.29: `IngameHud.Cast(mission)`
     with `Mission mission`, "Types 'IngameHud' and 'Mission' are not related".
     """
 
@@ -3849,7 +3848,7 @@ class TestCastUnrelatedTypes(unittest.TestCase):
 
         # Down- and up-casts, the HUD from GetHud(), a call's result, an
         # undeclared name, a typedef, Class, a parameter of a related type,
-        # and the ticket's cast in a comment, a string and #if 0.
+        # and the failing cast in a comment, a string and #if 0.
         self.assertEqual([], _errors_of(result, CAST_RULE))
 
     def test_a_parameter_and_a_member_are_resolved(self):
@@ -3875,7 +3874,7 @@ class TestCastUnrelatedTypes(unittest.TestCase):
         self.assertEqual([13], [e["line"] for e in _cast_errors(source)])
 
     def test_a_local_after_a_case_label_is_resolved(self):
-        # Codex review of #125, F1: on the line of its label the local was
+        # On the line of its label the local was
         # passed over for the member of that name.
         source = (
             "class C\n{\n    Hud m_X;\n\n    void F(int n)\n    {\n"
@@ -3921,8 +3920,7 @@ class TestCastUnrelatedTypes(unittest.TestCase):
             # a parent cycle
             "class FX_C1 : FX_C2\n{\n}\nclass FX_C2 : FX_C1\n{\n}\n"
             "void F(Mission m)\n{\n    FX_C1.Cast(m);\n}\n",
-            # a parent behind a directive in the header (Codex review of
-            # #113, H2), after `:` and after `extends`
+            # a parent behind a directive in the header, after `:` and after `extends`
             "class FX_D\n#ifdef FX_X\n    : Mission\n#endif\n{\n}\n"
             "void F(FX_D d)\n{\n    Mission.Cast(d);\n}\n",
             "class FX_E extends\n#ifdef FX_X\n    Mission\n#else\n    Hud\n"
@@ -3990,7 +3988,7 @@ class TestCastUnrelatedTypes(unittest.TestCase):
 class TestFileScopes(unittest.TestCase):
     """The lookups of ES-CAST-UNRELATED-TYPES and ES-PROTECTED-METHOD-CROSS-CLASS.
 
-    Mods pass of #113, 2026-10-17: counting lines from the start of the file
+    Measured on 2026-10-17: counting lines from the start of the file
     and scanning every method and class body at each call kept the protected
     method rule running for more than 20 minutes on a 10 MB file. FileScopes
     reads them once; it must give what the scans gave.
@@ -4046,11 +4044,11 @@ class TestFileScopes(unittest.TestCase):
 class TestMethodSignatureCollection(unittest.TestCase):
     """find_method_regions, which FileScopes and nine other rules read.
 
-    Second mods pass of #113, 2026-10-17: it collected a signature at every
+    Measured on 2026-10-17: it collected a signature at every
     line, and from a "(" that never closes each one ran to the end of the
-    file, rebuilding the string at every line. Two recovered volumes (files
-    of up to 20 MB of binary data) still passed 20 minutes, and method headers
-    split by #ifdef branches took 21 s for 135 KB (second Codex review, J2).
+    file, rebuilding the string at every line. Two files
+    of up to 20 MB of binary data still passed 20 minutes, and method headers
+    split by #ifdef branches took 21 s for 135 KB.
     Only a line that can start a signature is read now, and each is read up
     to what METHOD_SIGNATURE_RE needs, from tables built once per file.
     """
@@ -4155,8 +4153,7 @@ def _static_member_errors(sources, external=(), vanilla=None):
 class TestUndeclaredStaticMember(unittest.TestCase):
     """ES-UNDECLARED-STATIC-MEMBER: `Class.Member` the addon's class lacks.
 
-    Inbox fb-20261006-002741-28fa (LFSkateboard): ANIM_SWAP_ENABLED deleted
-    from LFSK_Constants while seven call sites still read it; DayZ refused
+    ANIM_SWAP_ENABLED deleted from FX_Constants while seven call sites still read it; DayZ refused
     the World module on the first boot.
     """
 
@@ -4198,7 +4195,7 @@ class TestUndeclaredStaticMember(unittest.TestCase):
         )
 
     def test_template_arguments_after_a_space_declare_no_variable(self):
-        # Codex review of e6d6, E8: with a space or a tab before the `<`,
+        # With a space or a tab before the `<`,
         # `ref AuditEntry,` among template arguments over lines declared
         # AuditEntry, so a member its class lacks went unreported.
         for gap in (" ", "\t"):
@@ -4320,8 +4317,8 @@ _OWNER = (
 class TestProtectedMethodCrossClass(unittest.TestCase):
     """ES-PROTECTED-METHOD-CROSS-CLASS: a hidden method called from outside.
 
-    Inbox fb-20261006-002741-28fa: `cmd.LFSK_OnServerState(...)` from
-    PlayerBase.OnRPC on a local LFSK_RideCommand whose method is protected.
+    `cmd.FX_OnServerState(...)` from
+    PlayerBase.OnRPC on a local FX_RideCommand whose method is protected.
     WARN: the refusal is measured for fields, not for methods.
     """
 
@@ -4376,7 +4373,7 @@ class TestProtectedMethodCrossClass(unittest.TestCase):
             "#ifdef FX_X\nclass FX_U : FX_Cmd\n{\n}\n#endif\n" + call,
             _OWNER + "class FX_U : FX_V\n{\n}\nclass FX_V : FX_U\n{\n}\n" + call,
             # a parent that a directive in the header hides, in the caller
-            # and in its parent (Codex review of #113, H2)
+            # and in its parent
             _OWNER + "class FX_U\n#ifdef FX_X\n    : FX_Cmd\n#endif\n"
             "{\n    void F(FX_Cmd c)\n    {\n        c.FX_Hide();\n    }\n}\n",
             _OWNER + "class FX_P\n#ifdef FX_X\n    : FX_Cmd\n#endif\n{\n}\n"
@@ -4401,7 +4398,7 @@ class TestProtectedMethodCrossClass(unittest.TestCase):
         self.assertEqual([5 + 10], [w["line"] for w in _protected_method_warnings(_OWNER + call)])
 
     def test_a_receiver_declared_after_a_case_label_is_read(self):
-        # Codex review of #125, G3: the local on the line of its case label,
+        # The local on the line of its case label,
         # of a class whose FX_Hide is public, is the receiver, not the member
         # of that name.
         source = _OWNER + (
@@ -4451,7 +4448,7 @@ def _multiline_condition_lines(source):
 class TestMultilineConditionOperator(unittest.TestCase):
     """ES-MULTILINE-CONDITION-OPERATOR: `if (a ||` continued on the next line.
 
-    Inbox fb-20261006-030019-e074, DayZ 1.30.164014 server: "Invalid
+    DayZ 1.30.164014 server: "Invalid
     statement ')'" and "Syntax error" at the continuation. FAIL since the
     vanilla control found nothing for it on 1.29.0.163451 and 1.30.164078.
     """
@@ -4472,7 +4469,7 @@ class TestMultilineConditionOperator(unittest.TestCase):
         _code, result = script_validator.run([str(MULTILINE_CONDITION / "ok")])
 
         # bool locals, an operator in a comment and in a string, a call's
-        # argument list over two lines, and the ticket's shape under #if 0.
+        # argument list over two lines, and the failing shape under #if 0.
         self.assertEqual([], _errors_of(result, MULTILINE_CONDITION_RULE))
 
     def test_one_finding_per_header_and_its_line(self):
@@ -4528,9 +4525,9 @@ def _proto_lines(
 class TestProtoArgumentDowncast(unittest.TestCase):
     """ES-PROTO-ARGUMENT-DOWNCAST: a base-class name passed where a proto takes a derived class.
 
-    Inbox fb-20261006-030019-e074, DayZ 1.30.164014 server: an IEntity at the
+    DayZ 1.30.164014 server: an IEntity at the
     Object argument 6 of DayZPhysics.RaycastRV, "Cannot convert 'IEntity' to
-    'Object' for argument '6' to method 'RaycastRV'". Pipeline inbox e074,
+    'Object' for argument '6' to method 'RaycastRV'".
     DayZDiag 1.30.164289: an Object at the EntityAI argument 0 of
     ItemPreviewWidget.SetItem, "Cannot convert 'Object' to 'EntityAI' for
     argument '0' to method 'SetItem'".
@@ -4575,7 +4572,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         assert_standard_findings(self, result)
 
     def test_an_object_where_setitem_takes_an_entityai_fails(self):
-        # Pipeline inbox e074, case A: the shape the rule had found in a mod,
+        # Case A: the shape the rule had found in a mod,
         # refused by DayZDiag 1.30.164289 at the probe's line 9.
         _code, result = script_validator.run(
             [str(PROTO / "bad"), "--vanilla-root", str(PROTO / "vanilla")]
@@ -4918,7 +4915,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual([], _proto_lines(source, external))
 
     def test_a_declaration_under_another_block_leaves_the_name_unknown(self):
-        # Codex review of #125, N1: under #ifndef FX_MAYBE the call reaches
+        # Under #ifndef FX_MAYBE the call reaches
         # the Object of FX_B, so the IEntity under #ifdef FX_MAYBE is no type
         # of it, as a member of a class up the chain, of the enclosing body
         # or as a local; nor the Object where FX_Hold takes an EntityAI.
@@ -4981,7 +4978,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual([], _proto_lines(source, external))
 
     def test_a_member_of_a_later_module_is_not_seen(self):
-        # Codex review of #125, N3: World is compiled before the Mission
+        # World is compiled before the Mission
         # body that adds the member, so g_Hit is the global Object.
         base = ("scripts/3_Game/base.c", "Object g_Hit;\n\nclass FX_C\n{\n}\n")
         later = "modded class FX_C\n{\n    IEntity g_Hit;\n}\n"
@@ -5035,7 +5032,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
             )
 
     def test_a_proto_word_that_never_compiles_makes_no_proto(self):
-        # Codex review of #125, N2: with `proto native` under #if 0 Take is
+        # With `proto native` under #if 0 Take is
         # a script method. A word under #ifdef may compile, so the method is
         # unknown.
         source = (
@@ -5055,7 +5052,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual([9], _proto_lines(live))
 
     def test_a_member_of_a_template_class_is_read(self):
-        # Codex review of #125, N4: the member read in the class's own body
+        # The member read in the class's own body
         # was dropped for the lookup up a chain a template class has not.
         source = (
             "class FX_G<Class T>\n{\n    IEntity hit;\n    void F()\n    {\n"
@@ -5088,7 +5085,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual([("miss", ())], asked)
 
     def test_a_class_body_is_read_once_per_name(self):
-        # Third round of the review of #125: the class body was read again for
+        # The class body was read again for
         # each set of blocks around a call, so over the mods the rule took 21 %
         # longer than the second version. These 400 calls, each under a block
         # of its own, in a class of 20 000 members, took 12.4 s, and take 0.3 s.
@@ -5110,7 +5107,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual(400, len(lines))
 
     def test_a_loop_variable_named_as_a_member_leaves_the_name_unknown(self):
-        # Codex review of #125, E1: the `(` of a foreach closes before a call
+        # The `(` of a foreach closes before a call
         # in the loop, so the lookup passed over the loop's Object and took
         # the member IEntity of that name, a false FAIL. A foreach variable,
         # also as the receiver, a for variable and a local of a block closed
@@ -5144,7 +5141,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
             self.assertEqual(member_lines, _proto_lines(renamed), renamed)
 
     def test_a_member_on_a_line_that_never_compiles_is_no_second_type(self):
-        # Codex review of #125, E3: an Object member under #if 0 beside the
+        # An Object member under #if 0 beside the
         # IEntity one leaves the IEntity the name's one type.
         source = (
             "class FX_D\n{\n    IEntity hit;\n#if 0\n    Object hit;\n#endif\n"
@@ -5154,12 +5151,12 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual([9], _proto_lines(source))
 
     def test_a_declaration_after_a_case_label_is_read(self):
-        # Codex review of #125, F1: on the line of its `case` or `default`
+        # On the line of its `case` or `default`
         # label a declaration was none for the lookup, which took the member
         # of that name: an Object local beside an IEntity member was FAIL,
         # and an IEntity local beside an Object member passed. On a line of
         # its own the local was read. A case of an enum's value and a second
-        # label on the line count too (Codex review of #125, G3).
+        # label on the line count too.
         for local, member, fails in (
             ("Object", "IEntity", False), ("IEntity", "Object", True)
         ):
@@ -5181,7 +5178,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
                     )
 
     def test_a_for_variable_is_read_in_its_own_header(self):
-        # Codex review of #125, F2: the header of a for is still open at a call
+        # The header of a for is still open at a call
         # in its condition, so the variable is read there, not the member.
         source = (
             "class FX_F\n{\n    Object hit;\n    void F(IEntity e, vector a, int c)\n"
@@ -5193,7 +5190,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual([6], _proto_lines(source))
 
     def test_a_long_line_before_a_colon_is_read_once(self):
-        # Codex review of #125, G4: searched for, the label before a `:` took a
+        # Searched for, the label before a `:` took a
         # time that grew with the square of the text before it on the line.
         source = (
             "class FX_G\n{\n    IEntity hit;\n    void F()\n    {\n"
@@ -5207,7 +5204,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual([7], lines)
 
     def test_a_label_after_a_statement_on_its_line_is_read(self):
-        # Codex review of #125, H4: the label is read from the last `;`, `{`
+        # The label is read from the last `;`, `{`
         # or `}` before it on its line, so a statement, a `switch` head or a
         # closed block before the label leaves its declaration read; without
         # that boundary the lookup took the member of that name.
@@ -5234,7 +5231,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
                 )
 
     def test_a_label_indented_with_tabs_is_read(self):
-        # Codex review of #125, J1: a label indented with tabs is read like
+        # A label indented with tabs is read like
         # one indented with spaces, so the Object local after it is read, not
         # the IEntity member of that name.
         source = (
@@ -5248,7 +5245,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual([], _proto_lines(source))
 
     def test_a_name_that_begins_with_case_is_no_label(self):
-        # Codex review of #125, J2: `casework:` is no `case` label, so the
+        # `casework:` is no `case` label, so the
         # declaration after it is not read, as after `not_a_label:`, and the
         # IEntity member of that name is.
         source = (
@@ -5262,7 +5259,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual([9], _proto_lines(source))
 
     def test_a_template_with_a_comma_after_a_label_is_read(self):
-        # Codex review of #125, J3: the template part of a declaration after a
+        # The template part of a declaration after a
         # label runs past its comma, so the map local is read and the IEntity
         # member of that name is not.
         source = (
@@ -5276,7 +5273,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
         self.assertEqual([], _proto_lines(source))
 
     def test_a_long_line_of_template_or_array_parts_is_read_once(self):
-        # Codex review of #125, H2: from each `:` before a type the template
+        # From each `:` before a type the template
         # part of the declaration pattern, and its array part, ran on to the
         # end of the line, so a line of `: Object<` or `: Object[` took a time
         # that grew with its square.
@@ -5293,7 +5290,7 @@ class TestProtoArgumentDowncast(unittest.TestCase):
             self.assertEqual([], lines, part)
 
     def test_a_closed_declaration_leaves_the_open_and_the_compiled_ones(self):
-        # Codex review of #125, F3: an IEntity local open at the call beside
+        # An IEntity local open at the call beside
         # an Object one of a block closed in the other branch of an #ifdef,
         # and an IEntity member beside an Object foreach variable under #if 0,
         # are FAIL: neither the closed declaration nor the one that never
@@ -5345,7 +5342,7 @@ def _builtin_skips(result):
 class TestUndefinedBuiltinMethod(unittest.TestCase):
     """ES-UNDEFINED-BUILTIN-METHOD: a method the built-in type does not declare.
 
-    Inbox fb-20261103-150432-9f93, DayZDiag 1.30.164200 server: `gF.Cross(gR)`
+    DayZDiag 1.30.164200 server: `gF.Cross(gR)`
     with vector locals stopped the World module with "Undefined function
     'vector.Cross'"; the 1.30.164014 Exp and 1.30.164078 scripts declare it.
     """
@@ -5486,7 +5483,7 @@ class TestUndefinedBuiltinMethod(unittest.TestCase):
         )
 
     def test_a_template_list_read_across_parameters_is_unknown(self):
-        # Mods pass, 2026-11-03: the lookup read `map<string, int> refunds`
+        # Measured on 2026-11-03: the lookup read `map<string, int> refunds`
         # from array's `<` to map's `>` and reported GetKey on an array.
         source = (
             "void F(array<ref FX_Claim> timeline, array<int> values, bool dirty, "
@@ -5525,7 +5522,7 @@ class TestUndefinedBuiltinMethod(unittest.TestCase):
         self.assertEqual([6, 9, 14], [e["line"] for e in _builtin_errors(source)])
 
     def test_a_variable_that_never_compiles_hides_no_static_call(self):
-        # Grok review, 2026-11-03 (H5): `int vector` under `#if 0` left
+        # `int vector` under `#if 0` left
         # `vector.Cross(` unjudged in the whole file.
         source = (
             "void F()\n{\n    vector.Cross(\"0 0 1\", \"0 1 0\");\n}\n"
@@ -5535,7 +5532,7 @@ class TestUndefinedBuiltinMethod(unittest.TestCase):
         self.assertEqual([3], [e["line"] for e in _builtin_errors(source)])
 
     def test_a_variable_named_as_the_type_is_no_static_call(self):
-        # Mods pass, 2026-11-03: `Widget map = ...; map.ClearFlags(...)`. The
+        # Measured on 2026-11-03: `Widget map = ...; map.ClearFlags(...)`. The
         # name fails as a variable (ES-VARIABLE-NAMED-AS-TYPE), not the call.
         source = (
             "void F(Widget root)\n{\n    Widget map = root;\n"
@@ -5587,7 +5584,7 @@ needs_pbo_reader = unittest.skipUnless(
 class TestVanillaRootBuild(unittest.TestCase):
     """--game-root: the vanilla tree against the game's own dta/scripts.pbo.
 
-    Inbox fb-20261103-150432-9f93: the gate read the 1.30.164014 Exp extract
+    The gate read the 1.30.164014 Exp extract
     while the game was 1.30.164200, and vector.Cross, which only the extract
     declares, passed.
     """

@@ -2,7 +2,7 @@ Parent table of the player skeleton (OFP2_ManSkeleton): 148 bones, 1 root
 
 Source:  P:\DZ\characters\bodies\player_testing.xob, extracted by the user with
          DayZATool 1.3 (--extract-mdl) to player_testing.semodel (16,659 bytes)
-         and read with a bounded parser. Measured by the source pack; the .xob is
+         and read with a bounded parser. The .xob is
          binary, so this table is not checked line by line on P:\.
 Why:     P:\DZ\anims\cfg\skeletons.anim.xml has no parent attribute, and a SEAnim
          file carries no parents either. The bind pose model does.

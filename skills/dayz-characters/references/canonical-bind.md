@@ -2,7 +2,7 @@
 
 Covers what the engine binds a character mesh against, the three ways a mesh can miss that bind, the infected bind and its shorter bone list, why a Blender pose test proves nothing, the mirrored-mesh fault, and the offline checks that do hold.
 
-How to read the marks: a `P:\` path with a line number was opened and checked in vanilla. "LFInfectedBig" marks a result measured on that custom infected project, with the session date; those results cannot be checked on `P:\`.
+How to read the marks: a `P:\` path with a line number was opened and checked in vanilla. "Giant infected build" marks a result measured on a custom giant infected test build, with the date; those results cannot be checked on `P:\`.
 
 ## The invariant
 
@@ -46,15 +46,15 @@ Comparing the two name lists (case ignored), 81 player bones are missing from th
 
 What follows for a custom infected:
 
-- A mesh that carries weights on bones the infected bind lacks (face, finger bases, IK) is resolved wrong at run time and deforms, including at idle, because the infected graph's default pose is not your A-pose. Conform and weight the mesh to the 95-bone list. The other route is to override `skeletonName` and `meshObject` in `enfanimsys` to `player_testing.xob` to bring the missing bones back; this is a community fix for headgear and face stretch on infected (reported by the user Hoxdolum on the DayZ Modders Discord, 2024; the config mechanism is the block above, the result was not tested here).
-- Do not confuse the bone catalogs. The Enfusion `enfanimsys` bind (infected 95 bones, player 172) is a different layer from the skeleton a model's `model.cfg` declares (about 159 bones in a debinarized vanilla infected, as measured by LFInfectedBig). "Match the canonical bind" means the `.xob` the engine binds, not just the `model.cfg` skeleton. A mesh weighted to the full player bone list can still deform on an infected for this reason alone.
+- A mesh that carries weights on bones the infected bind lacks (face, finger bases, IK) is resolved wrong at run time and deforms, including at idle, because the infected graph's default pose is not your A-pose. Conform and weight the mesh to the 95-bone list. The other route is to override `skeletonName` and `meshObject` in `enfanimsys` to `player_testing.xob` to bring the missing bones back; this is a known fix for headgear and face stretch on infected (the config mechanism is the block above; the result is not checked on `P:\` and was not tested in game).
+- Do not confuse the bone catalogs. The Enfusion `enfanimsys` bind (infected 95 bones, player 172) is a different layer from the skeleton a model's `model.cfg` declares (about 159 bones in a debinarized vanilla infected, as measured for the giant infected build). "Match the canonical bind" means the `.xob` the engine binds, not just the `model.cfg` skeleton. A mesh weighted to the full player bone list can still deform on an infected for this reason alone.
 - Weights outside the 95 are a quick triage, not the whole answer. Compare the mesh's weighted bones with the 95 names parsed from `skeletons.anim.xml`. LFInfectedBig had all 42 of its weighted bones inside the 95 and still deformed: its fault was mesh against skeleton proportion (bone heads 0.10 to 0.22 m off the anatomy), not missing bones.
 
 Since 1.30 the infected bind is unchanged. `infected.agr` is still the graph the block names, now an index over `.agf` subgraphs (`references/dayz-1-30-characters.md`), and the bone index rule changed (`references/character-rigging.md`, last section).
 
 ## The Blender deform test is a false gate
 
-Only the game, or Buldozer, validates deformation (LFInfectedBig, 2026-06-24). This was the most expensive lesson of that project.
+Only the game, or Buldozer, validates deformation (giant infected build, 2026-06-24). This was the most expensive lesson of that build.
 
 Posing the imported rig FBX armature in Blender and measuring edge stretch does not reproduce the engine's deformation. Over three rebuilds (new weights, a thin-plate-spline conform, a depth-preserving conform) the Blender edge stretch fell from 34 times to 6 times while the in-game deformation stayed unchanged and broken, odd at idle and when animating. That was a false green three times over, and about 12 offline iterations that produced no in-game improvement.
 
@@ -68,7 +68,7 @@ Posing the imported rig FBX armature in Blender and measuring edge stretch does 
 
 The root cause behind about eight sessions of "arm bind" trouble on LFInfectedBig (2026-06-25).
 
-After the project made its `model.cfg` skeleton match a debinarized vanilla infected's byte for byte (159 bones, `isDiscrete=0`, exact parents and order, which restored the leg chain `leftupleg`, `propthighleft`, `leftleg`), the legs walked but the arms still flung back and up, the same at idle and when animating. The rest arms were a sane A-pose, so it was not pose or proportion. The whole mesh was reflected in X relative to the skeleton's left and right: the geometry of a `left*` selection sat where the canonical `right*` bone lives, so the inherited animation drove it about a pivot roughly two limb widths away, and the long lever swung the limb off even under tiny idle motion.
+After the build's `model.cfg` skeleton was made to match a debinarized vanilla infected's byte for byte (159 bones, `isDiscrete=0`, exact parents and order, which restored the leg chain `leftupleg`, `propthighleft`, `leftleg`), the legs walked but the arms still flung back and up, the same at idle and when animating. The rest arms were a sane A-pose, so it was not pose or proportion. The whole mesh was reflected in X relative to the skeleton's left and right: the geometry of a `left*` selection sat where the canonical `right*` bone lives, so the inherited animation drove it about a pivot roughly two limb widths away, and the long lever swung the limb off even under tiny idle motion.
 
 Root cause, found 2026-10-01: the reflection was the export map itself. Blender is right-handed and DayZ is left-handed, so every determinant +1 map (`(x, z, -y)`, `(-x, z, y)`) mirrors the mesh, and the face reversal it then needs hides the mirror. A generated or GLB mesh that went through a reflection and then had its winding reversed to render right side out is prone to this, and a 180 degree turn about Y can leave a reflection behind.
 
@@ -81,7 +81,7 @@ Root cause, found 2026-10-01: the reflection was the export map itself. Blender 
 
 ## When conform and new weights stall: the vanilla body route
 
-Case LFInfectedBig (a generated infected at about 1.2 times, added 2026-06-28): correct shape at rest, limbs overextend at the shoulders and arms when animated.
+Case: the giant infected build (a generated infected at about 1.2 times, added 2026-06-28): correct shape at rest, limbs overextend at the shoulders and arms when animated.
 
 1. When the mesh does not match the skeleton, conforming and weighting again have a ceiling. They cut the deformation by about 30 to 45 % and never remove it; the geometry stays far from the pivots.
 2. The robust way out is to rebuild on a vanilla, well-rigged body, which has zero deformation by construction, and graft only the distinctive parts onto it (the torso hole, the look and texture, the baked scale). Use this when conform and new weights stall.
@@ -105,4 +105,4 @@ Limits:
 - With the bind taken as bone head positions, the judge assumes a bind with identity rotation. It reproduced a wrongly proportioned mesh's deformation (checked against the game) but it is not faithful to a rig whose bind has real bone orientations, such as a vanilla body: the kinematic chain explodes (edge stretch above 400 times). To validate a well-rigged body offline, use forward kinematics with full bind matrices, or deform in Blender with the native armature after reconciling the bind matrix that the FBX import otherwise breaks.
 - It is an offline prefilter shown to tell good from bad (the negative control, and the false green case above). It is not validated in numbers against the engine. The final gate is still the user's eye in game, and the case that produced it had not been confirmed in game when this was written.
 
-The project's judge scripts (`judge_lbs.py`, `judge_control.py`, `judge_compare.py`, `judge_metric.py`, and the bone diff and FBX extraction helpers) are not part of this repo; the method above is what to rebuild. In the source project's own review log this method is item SP-030, the converter gap of the vanilla body route is SP-034, and the lesson is LL-169.
+This repo ships no judge script; build one from the method above.

@@ -1,14 +1,17 @@
 // ============================================================================
-// LF_UIProbe - source-only client probe for the B19/B20 layout questions.
+// LF_UIProbe - source-only client probe for two layout questions: does a leaf
+// widget with no child block load, and what text does a line continuation
+// between two quoted strings produce.
 //
 // Loads three first-party fixtures once per mission and reports what the engine
-// returns, with no expected value encoded: B20 can only be fixed after both the
-// LF and the CRLF continuation are observed in DayZDiag.
+// returns, with no expected value encoded: the continuation behaviour can only
+// be settled after both the LF and the CRLF continuation are observed in
+// DayZDiag.
 //
 // Every call argument list stays on ONE physical line. The Enforce compiler in
 // DayZDiag 1.29.163451 rejects an argument list split across lines with
 // "Expected ',' or ')'" followed by "Syntax error" for the whole file, which
-// drops the entire module. Same class as R11g.
+// drops the entire module.
 // ============================================================================
 
 class LF_UIProbe

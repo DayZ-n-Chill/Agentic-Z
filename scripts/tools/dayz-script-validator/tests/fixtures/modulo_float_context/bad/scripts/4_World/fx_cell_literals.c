@@ -1,4 +1,4 @@
-// Inbox d35a, case B: DayZDiag 1.30.164289 gave "Unknown operator '%'" at line 6.
+// Case B: DayZDiag 1.30.164289 gave "Unknown operator '%'" at line 6.
 class FX_CellLiterals
 {
     static float Run(int cell)

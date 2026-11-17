@@ -129,8 +129,8 @@ def view_charts(nfaces, normals, areas, adj, shell, ns, cone_fallback=math.radia
             cid = _grow_cone(faces, normals, areas, adj, chart, cid, cone_fallback)
             continue
         # Cap charts per shell at k: keep the largest component of each cluster as
-        # a core; every other component merges into the neighbor with the longest
-        # shared boundary (artist behavior: a fender's steep side patches belong
+        # a core; every other component merges into the neighbor it shares the most
+        # edges with (artist behavior: a fender's steep side patches belong
         # to the top view island, not to islands of their own).
         comp_faces = defaultdict(list)
         for fi in faces:

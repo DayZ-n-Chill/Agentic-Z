@@ -1,4 +1,4 @@
-// Inbox d35a, case A: case C with the '%' in an int local first. It compiled
+// Case A: case C with the '%' in an int local first. It compiled
 // and ran on DayZDiag 1.30.164289.
 class FX_CellIntLocal
 {

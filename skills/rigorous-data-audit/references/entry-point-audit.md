@@ -4,7 +4,7 @@ Catches the bug class where the canonical path enforces an invariant but an alte
 
 Reasoning agents miss this because they fixate on the canonical async flow and treat the shortcut as "obviously similar". The shortcut is rarely similar enough.
 
-The worked examples come from the source author's mods LF_VStorage and SecretRock (third-party; read in their code or measured in game, not checkable on `P:\`). Function names and `file:line` values in the tables are theirs and show the shape of each table. The vanilla hooks the procedure names are cited where they are listed. The search lines in the code blocks are recipes for the agent's search tool.
+The worked examples are the mods LF_VStorage and SecretRock (third-party mod behaviour, read in their code or measured in game, not checkable on `P:\`). Function names and `file:line` values in the tables are those mods' and show the shape of each table. The vanilla hooks the procedure names are cited where they are listed. The search lines in the code blocks are recipes for the agent's search tool.
 
 ## Worked examples
 
@@ -20,11 +20,11 @@ The worked examples come from the source author's mods LF_VStorage and SecretRoc
 
 `EEItemAttached` called `super.EEItemAttached(item, slot)` first, then checked `IsVirtualized()`. The vanilla super had already changed the cargo before the gate fired, leaving inconsistent state.
 
-### SecretRock data audit, finding F1: an unregister by proximity deletes a neighbour's entry
+### SecretRock data audit: an unregister by proximity deletes a neighbour's entry
 
 SecretRock keeps the rocks it placed in its own registry (`placed.json`: class, position and id per entry). The canonical removal went by id: `EEDelete` called `UnregisterEntity`, which looked the rock up by id. When the rock had no id it fell back to the nearest entry of the same class within 0.75 m and saved the file without it. Two entry points delete a rock that never got an id: the placement that creates the rock, checks the site and deletes it on refusal, and an admin who spawns one from the console and deletes it. Both removed the entry of a registered rock nearby, which did not come back after the next restart. Fix: removal needs a matching id, and an entity without one never touches the file. Found by reading the code (audit of 2026-10-03); with the fix, a console rock spawned 0.3 m from a registered one (horizontally) and then deleted left the file's SHA-256 unchanged in game (DayZDiag 1.29), and the registered rock came back after the restart.
 
-The same audit's finding F6 is the shutdown face of this invariant: a restore pass still in the `CALL_CATEGORY_SYSTEM` queue after `OnMissionFinish` cleared the shutdown flag again, so the deletions of the shutdown unregistered entries. `OnMissionFinish` now removes the pass before setting the flag (the shutdown order in game is not confirmed). Both rules, and the restore that binds by id before position, are in the `dayz-persistence` skill: hard stop 8 in its `SKILL.md`, and the section "A registry entry leaves by its id, never by proximity" in its `references/load-and-restore.md`.
+Another finding of the same audit is the shutdown face of this invariant: a restore pass still in the `CALL_CATEGORY_SYSTEM` queue after `OnMissionFinish` cleared the shutdown flag again, so the deletions of the shutdown unregistered entries. `OnMissionFinish` now removes the pass before setting the flag (the shutdown order in game is not confirmed). Both rules, and the restore that binds by id before position, are in the `dayz-persistence` skill: hard stop 8 in its `SKILL.md`, and the section "A registry entry leaves by its id, never by proximity" in its `references/load-and-restore.md`.
 
 ## Procedure
 

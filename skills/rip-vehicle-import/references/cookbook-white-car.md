@@ -2,7 +2,7 @@
 
 For a family B car that renders white or untextured on a dedicated server: the AddonBuilder include list that drops textures, which assets binarize does not track, and the two fixes.
 
-The AddonBuilder behaviour and the SUB_BRZ and LFQuad measurements were measured by the author and are not yet checked on `P:\`; the config keys named below cite a vanilla example on `P:\`. In this repo `/dayz-build-pbo` passes its own `include.lst`, which already lists `*.paa` and `*.rvmat`; the trap below is for a hand-written or scripts-only include list.
+The AddonBuilder behaviour and the SUB_BRZ and LFQuad measurements are not yet checked on `P:\`; the config keys named below cite a vanilla example on `P:\`. In this repo `/dayz-build-pbo` passes its own `include.lst`, which already lists `*.paa` and `*.rvmat`; the trap below is for a hand-written or scripts-only include list.
 
 ## AddonBuilder `-include` replaces its default copy list
 
@@ -12,7 +12,7 @@ A binarize build that has scripts and assets must list `*.paa;*.rvmat` too, or t
 
 Use `-include` with `*.c;*.asi;*.anm;*.paa;*.rvmat` for binarize builds. Then diff the entry list of the PBO that came out against the source tree by extension, with explicit allowances: `config.cpp` becoming `config.bin` is fine, a baked `model.cfg` is fine, and every `.p3d`, `.paa`, `.rvmat` and `.c` is required. The import project's wrapper with that diff is `<vehicle-import>\scripts\rip_binarize_experiment.ps1`.
 
-A related fact from the same experiment, verified by the author against the vanilla civiliansedan ODOL (`P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`): binarize drops the authored ShadowVolume LOD at resolution 1e4. An authored shadow LOD ships only through MLOD or a pack-only build. If you adopt ODOL, check the shadows in game again before trusting the budget.
+A related fact from the same experiment, verified against the vanilla civiliansedan ODOL (`P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`): binarize drops the authored ShadowVolume LOD at resolution 1e4. An authored shadow LOD ships only through MLOD or a pack-only build. If you adopt ODOL, check the shadows in game again before trusting the budget.
 
 ## Binarize drops config-only assets
 

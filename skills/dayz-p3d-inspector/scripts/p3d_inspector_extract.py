@@ -57,8 +57,8 @@ def load_py3d():
 
 
 # ── LOD Classification ─────────────────────────────────────────────
-# BIS MLOD resolution constants (Arma/DayZ). The "special" LOD types use
-# very large resolution values rather than detail levels:
+# Bohemia MLOD resolution values as DayZ uses them. Visual LODs are 0 to 999 and
+# shadow volumes 10000 to 19999; the "special" LOD types use very large values:
 #   1.0e13 = Geometry
 #   1.0e15 = Memory
 #   2.0e15 = LandContact
@@ -71,8 +71,8 @@ LOD_THRESHOLDS = {
     "visual_0":      (0.0, 0.5),
     "visual_1":      (0.5, 2.0),
     "visual_2":      (2.0, 6.0),
-    "visual_3":      (6.0, 10.0),
-    "shadow":        (1.0e4, 1.5e4),
+    "visual_3":      (6.0, 1.0e3),
+    "shadow":        (1.0e4, 2.0e4),
     "geometry":      (0.9e13, 1.1e13),
     "memory":        (0.9e15, 1.1e15),
     "landcontact":   (1.9e15, 2.1e15),
@@ -92,17 +92,18 @@ WIREFRAME_LOD_TYPES = (
 
 def classify_lod(resolution: float) -> str:
     """Classify a LOD by its resolution value. See LOD_THRESHOLDS for the map."""
-    # Visual LODs: small floating-point values
+    # Visual LODs: 0 to 999. visual_3 holds every level from 6 up; the builder
+    # writes each LOD back at its own resolution, so the levels stay apart.
     if resolution < 0.5:
         return "visual_0"
     elif resolution < 2.0:
         return "visual_1"
     elif resolution < 6.0:
         return "visual_2"
-    elif resolution < 10.0:
+    elif resolution < 1.0e3:
         return "visual_3"
-    # Shadow LODs: 1e3..1.5e4
-    elif resolution < 1.5e4:
+    # Shadow volumes: 10000 to 19999
+    elif 1.0e4 <= resolution < 2.0e4:
         return "shadow"
     # Geometry: 1.0e13
     elif abs(resolution - 1.0e13) < 1.0e11:
@@ -150,20 +151,29 @@ def classify_memory_point(selections: list) -> str:
 # ── Geometry Extraction ────────────────────────────────────────────
 
 def extract_visual_geometry(lod) -> dict:
-    """Extract full geometry from a visual LOD (positions, normals, UVs, material groups)."""
+    """Extract full geometry from a visual LOD (positions, normals, UVs, material groups).
+
+    A point used with two normals or two UVs becomes two entries, and a quad becomes
+    two triangles. point_of_vertex and face_of_triangle record which point and which
+    face of the LOD each entry and each triangle came from, so the builder can put
+    the LOD's selections back on the same geometry.
+    """
     vertex_map = {}
     positions = []
     normals = []
     uvs = []
     material_groups = {}
+    point_of_vertex = []
+    face_of_triangle = {}
 
-    for face in lod.faces:
+    for face_index, face in enumerate(lod.faces):
         tex = face.texture if face.texture else ""
         mat = face.material if face.material else ""
         key = f"{tex}|{mat}"
 
         if key not in material_groups:
             material_groups[key] = []
+            face_of_triangle[key] = []
 
         face_indices = []
         for vertex in face.vertices:
@@ -179,6 +189,7 @@ def extract_visual_geometry(lod) -> dict:
 
                 pt = lod.points[pt_idx]
                 positions.append(list(pt.coords))
+                point_of_vertex.append(pt_idx)
 
                 if norm_idx < len(lod.facenormals):
                     normals.append(list(lod.facenormals[norm_idx]))
@@ -202,12 +213,16 @@ def extract_visual_geometry(lod) -> dict:
                 material_groups[key].extend([
                     face_indices[0], face_indices[i], face_indices[i + 1]
                 ])
+        triangles = len(material_groups[key]) // 3 - len(face_of_triangle[key])
+        face_of_triangle[key].extend([face_index] * triangles)
 
     return {
         "positions": positions,
         "normals": normals,
         "uvs": uvs,
         "material_groups": material_groups,
+        "point_of_vertex": point_of_vertex,
+        "face_of_triangle": face_of_triangle,
     }
 
 

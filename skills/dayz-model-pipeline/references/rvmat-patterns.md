@@ -1,8 +1,8 @@
 # rvmat patterns for generated models
 
-Material recipes this skill reaches for after the basic Super material: flat colors without a texture bake, a damage overlay, an on and off pair for lit panels, glass, a six stage variant and a very bright emissive. The stage by stage reference for a `.rvmat` is `_shared/textures/rvmat-stages.md`; read that first. The damage overlay is read from vanilla files on `P:\`. The other patterns were read out of one third-party mod, LM_Planes, and are marked as such: they show what that mod ships, not what vanilla does.
+Material recipes this skill reaches for after the basic Super material: flat colors without a texture bake, a damage overlay, an on and off pair for lit panels, glass, a six stage variant and a very bright emissive. The stage by stage reference for a `.rvmat` is `_shared/textures/rvmat-stages.md`; read that first. The damage overlay is read from vanilla files on `P:\`. The other patterns are third-party mod behaviour, not vanilla, and are marked as such.
 
-## Flat color models: one .rvmat per material, not a UV atlas bake (lesson LL-021)
+## Flat color models: one .rvmat per material, not a UV atlas bake
 
 For monochrome models, or models with one flat color per piece, use one `.rvmat` per material with `diffuse[]` set to the
 base color and `texture=""` (no UVs needed, no gaps). A UV atlas bake of many flat materials yields
@@ -12,9 +12,9 @@ black holes and smudges. Atlas baking is for models with real texture detail.
 
 When damage shows only as a color tint, the `_damage.rvmat` has a procedural `color()` texture in `Stage3` instead of the vanilla overlay texture. Vanilla's wooden case uses `texture="dz\weapons\data\weapons_damage_wood_mc.paa"` in `Stage3` of its damage material (`P:\DZ\gear\camping\data\wooden_case_damage.rvmat:35`), tiled four times with the axes swapped: `aside[]={0,4,0}` and `up[]={4,0,0}` (`P:\DZ\gear\camping\data\wooden_case_damage.rvmat:39` to `:40`). Its destruct material uses `weapons_destruct_wood_mc.paa` the same way (`P:\DZ\gear\camping\data\wooden_case_destruct.rvmat:35`). For metal use `weapons_damage_metal_mc.paa` and `weapons_destruct_metal_mc.paa`, which sit in the same folder, `P:\DZ\weapons\data\`.
 
-## Patterns from the LM_Planes mod
+## Third-party mod patterns (not vanilla)
 
-Patterns read out of the LM_Planes mod (Steam Workshop 3730564764, by Llama and Itspete-Here), from its Tigermoth, Catalina, Patty Wagon, Z37 Bumblebee and Hangar1 data folders on 2026-05-23. They were applied to aircraft there but are reusable in general. They are a third-party mod's files, not vanilla.
+These patterns are third-party mod behaviour, not vanilla, read on aircraft, a car and a hangar on 2026-05-23. They were applied to aircraft there but are reusable in general.
 
 ### Toggle rvmat pattern (lights on/off without duplicating material)
 
@@ -37,14 +37,14 @@ Everything else identical.
 **Pattern**: only `forcedDiffuse` (controls overall brightness) + Stage5 SMDI texture (specular/material mask with glowing elements) differ. Toggle via script using vehicle-level `dashboardMatOn`/`dashboardMatOff` properties in CfgVehicles:
 
 ```cpp
-class LM_Catalina: CarScript {
-    dashboardMatOn  = "LM_Planes\LM_Tigermoth\data\Controls_on.rvmat";
-    dashboardMatOff = "LM_Planes\LM_Tigermoth\data\Controls.rvmat";
+class MyPlane: CarScript {
+    dashboardMatOn  = "MyMod\MyPlane\data\Controls_on.rvmat";
+    dashboardMatOff = "MyMod\MyPlane\data\Controls.rvmat";
     ...
 };
 ```
 
-(Plus: cross-aircraft material sharing — Catalina references Tigermoth's rvmats directly. DRY across related entities.)
+Related vehicles can share the pair: the config of one aircraft can name the rvmats of another directly.
 
 ### Glass rvmat distinctives
 
@@ -68,7 +68,7 @@ class Stage6 { texture = "#(ai,64,64,1)fresnel(1,0)"; uvSource = "tex1"; ... }; 
 class Stage7 { texture = "dz\data\data\env_land_chrome_co.paa"; ... };     // CHROME env map, not env_land
 ```
 
-Vanilla glass sets the same flag: `renderFlags[]` with `"noZwrite"` in `P:\DZ\characters\headgear\data\firehelmetvisor.rvmat:9` (its `specularPower` is 200, lower than this mod's 1320).
+Vanilla glass sets the same flag: `renderFlags[]` with `"noZwrite"` in `P:\DZ\characters\headgear\data\firehelmetvisor.rvmat:9` to `:12` (its `specularPower` is 200, lower than the 1320 above).
 
 Key points:
 - `renderFlags[] = {"noZwrite"}` — without this, glass fails to render transparent or causes z-fighting
@@ -112,20 +112,20 @@ healthLevels[] = {
 ```
 
 This example declares no `RefTexsMats[]`. Vanilla vehicle damage zones do declare that list (for example `RefTexsMats[]` at `P:\DZ\vehicles\wheeled\config.cpp:978`); what it is and which zones carry it is vehicle material, in the vehicles pack (`_shared/vehicles/damage.md` and `_shared/vehicles/vehicle-config-and-modelcfg.md`). Whether a swap reaches its faces is
-judged in game, not from the rvmats or the config (process gate SP-483 in `skills/_shared/vehicles/process-gates.md`). The same material records a glass section
+judged in game, not from the rvmats or the config (`skills/_shared/vehicles/process-gates.md`, "A config gate is not a visual gate"). That file records a glass section
 that never hid although config and ODOL
 matched the vanilla motorbike glass slot in the two respects checked (glass rvmat in its `RefTexsMats[]`
 slot, section inside `dmgzone_front`), with a zone of 67 sections against two to five in vanilla.
 
 ### 6-stage rvmat variant (omit env stage)
 
-A standard Super rvmat has 7 stages (NOHQ, DT, MC, AS, SMDI, Fresnel, env), the order of vanilla's `P:\DZ\gear\camping\data\wooden_case.rvmat`. For cosmetic materials that don't need world environment reflection, LM_Planes ships a variant that fits in 6 stages plus StageTI:
+A standard Super rvmat has 7 stages (NOHQ, DT, MC, AS, SMDI, Fresnel, env), the order of vanilla's `P:\DZ\gear\camping\data\wooden_case.rvmat`. For cosmetic materials that don't need world environment reflection, a third-party variant fits in 6 stages plus StageTI:
 
 ```
 Stage1=NOHQ, Stage2=DT, Stage3=MC, Stage4=SMDI, Stage5=Fresnel, Stage6=env (combined), StageTI=thermal
 ```
 
-The Pickle.rvmat (Patty_Wagon car body) uses this. Slightly cheaper, valid for simple opaque materials. **Don't use for aircraft canopies, mirrors, or anything reflective** — those need the full env Stage7.
+It was read on a car body material. Slightly cheaper, valid for simple opaque materials. **Don't use for aircraft canopies, mirrors, or anything reflective** — those need the full env Stage7.
 
 ### HDR emissive trick (super-bright lights)
 
@@ -141,6 +141,6 @@ specularPower   = 100;
 // Plus Stage5 SMDI uvTransform aside/up = {5,0,0}/{0,5,0} (texture scale 5x for finer detail)
 ```
 
-This produces a glowing material without needing point light objects: it is purely material based. Used in `houselightmat.rvmat` (the fluorescent lamps of the LM_Planes Hangar1). Tradeoff: no actual illumination on nearby surfaces (no dynamic light cast), just the material itself appears very bright. Combine with a real `CarLightBase` or `PointLightBase` if you need surfaces lit too.
+This produces a glowing material without needing point light objects: it is purely material based. It was read on the fluorescent lamps of a hangar model. Tradeoff: no actual illumination on nearby surfaces (no dynamic light cast), just the material itself appears very bright. Combine with a real `CarLightBase` or `PointLightBase` if you need surfaces lit too.
 
 For LED screens that need both a glow visible from far away and dynamic light, use this trick plus a script controlled `PointLightBase` to match.

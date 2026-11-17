@@ -1,8 +1,8 @@
 # QUARANTINED — not imported by script_validator.py and not executed.
 # The rule is sound (`!arr[i]` does not compile in Enforce Script; use
 # `arr[i] == 0`; `!arr[i].Method()` is excluded and compiles). The detector
-# has no tests and has not passed review. Wiring it would repeat BUG-014
-# (unreviewed detectors produced ~65% false positives).
+# has no tests and has not passed review. Wiring it would repeat an earlier
+# mistake (unreviewed detectors produced ~65% false positives).
 # To wire: add tests for tests/fixtures/es/*negate_array*, review the regex
 # against a real corpus, then import and call it from script_validator.py.
 

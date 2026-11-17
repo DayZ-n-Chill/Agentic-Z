@@ -1,10 +1,10 @@
 # py3d 1.0.0 write quirks (historical) and the frame check for a rebake script
 
-Notes on tool behaviour from the LFQuad project of the source pack, kept for anyone reading an older script. Nothing here is a vanilla fact and none of it was checked on `P:\`. The DayZ fork of py3d in `scripts/tools/py3d/` (1.6.0 or later) removes or guards every quirk below; the frame check at the end still applies to any script that writes memory points.
+Notes on tool behaviour seen on one vehicle mod, kept for anyone reading an older script. Nothing here is a vanilla fact and none of it was checked on `P:\`. The DayZ fork of py3d in `scripts/tools/py3d/` (1.6.0 or later) removes or guards every quirk below; the frame check at the end still applies to any script that writes memory points.
 
 ## Status
 
-A later check by the source pack found that several of these "quirks" described the project's own wrapper functions (`set_face_weight`, `add_memory_point`, `lod.materials`), not the real surface of upstream py3d 1.0.0. What the fork does for each case:
+A later check found that several of these "quirks" described that mod's own wrapper functions (`set_face_weight`, `add_memory_point`, `lod.materials`), not the real surface of py3d 1.0.0. What the fork does for each case:
 
 | Old quirk | In the fork |
 |---|---|
@@ -18,7 +18,7 @@ Whole file check: `python -m py3d validate model.p3d`, or `P3D.validate()`.
 
 ## The five quirks as first recorded
 
-If a script writes selections or memory points with an old py3d, or with wrappers like the project's, walk this list before trusting its output.
+If a script writes selections or memory points with an old py3d, or with wrappers like those, walk this list before trusting its output.
 
 ### 1. `Selection()` needs the LOD's points and faces
 
@@ -45,7 +45,7 @@ target = next(m for m in lod.materials if m.name == mat_name)                   
 target = next(m for m in lod.materials if m.name.lower() == mat_name.lower())    # right
 ```
 
-The library returns material names as the file stores them. The project's vanilla derived models used lower case names, while exporters, material libraries and the JSON written from them often use upper or mixed case. An exact match then finds nothing and the selection's face set ends up empty. Normalise when comparing, not in the JSON.
+The library returns material names as the file stores them. Vanilla derived models use lower case names, while exporters, material libraries and the JSON written from them often use upper or mixed case. An exact match then finds nothing and the selection's face set ends up empty. Normalise when comparing, not in the JSON.
 
 ### 4. Overwrite a memory point that already exists
 
@@ -59,7 +59,7 @@ else:
     mem_lod.add_memory_point("crewdriver", pos)
 ```
 
-A model extended from a vanilla one already has points such as `crewdriver` and `crewcodriver`. Appending a second point with the same name leaves two; the project saw the engine use the first, the old one, so the edit silently did nothing. This is what breaks the seat test in `dual-entry-action-pattern.md`.
+A model extended from a vanilla one already has points such as `crewdriver` and `crewcodriver`. Appending a second point with the same name leaves two; the engine was seen to use the first, the old one, so the edit silently did nothing. This is what breaks the seat test in `dual-entry-action-pattern.md`.
 
 ### 5. Take references after the last growth
 
@@ -73,7 +73,7 @@ A reference to the LOD's points or faces taken before more were added went stale
 
 ## Frame check when a script writes points into a production model
 
-A rebake script takes selections and memory points described in one frame (a viewer's, or a JSON file's) and writes them into the production `.p3d`. When the two frames differ in which way is forward, a hard coded flip mirrors the output for one of them, with no error. The project's authoring viewer had the front at +Z and its production model at −Z.
+A rebake script takes selections and memory points described in one frame (a viewer's, or a JSON file's) and writes them into the production `.p3d`. When the two frames differ in which way is forward, a hard coded flip mirrors the output for one of them, with no error. In one case the authoring viewer had the front at +Z and the production model at −Z.
 
 So the script takes an explicit frame argument and can detect the frame from the model:
 

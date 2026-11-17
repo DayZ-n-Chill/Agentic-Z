@@ -2,11 +2,11 @@
 
 The full body that change 1 removed from the critical path: the change 0 cutover, the legacy process rules, the smoke test notes, the recurring defects and the dated lessons on lift, doors, proxy frames, render gates, glass and winding lineage.
 
-History only, no authority. The active adapter is the skill's `SKILL.md`; no command or gate is executed from this file. It describes the import project (`<vehicle-import>`) and the author's cars (SUB_BRZ, MercedesAMGLF, LFHeli OH-1 and HH-60G) and is not yet checked on `P:\`, except where a vanilla file is cited.
+History only, no authority. The active adapter is the skill's `SKILL.md`; no command or gate is executed from this file. It describes the import project (`<vehicle-import>`) and its measured cars (SUB_BRZ, MercedesAMGLF, LFHeli OH-1 and HH-60G) and is not yet checked on `P:\`, except where a vanilla file is cited.
 
 ## rip to DayZ: runbook with the change 0 cutover (2026-08-05)
 
-Distilled from the SUB_BRZ build, sessions s2 to s32, plus the consolidated dual research (`<vehicle-import>\reviews\2026-07-11-research-metodo-import.md`). The rules are given only in their final verified state. The historical why (root cause analyses, red herrings, superseded rules) is in the rip import history of the vehicles pack (`skills/_shared/vehicles/rip-import.md`); read it as history, not as procedure. The workspace is `<vehicle-import>`, kept outside any cloud-synced folder. The orchestrator is `scripts\import_car.py --car profiles\<car>.json`, a legacy and in-flight orchestrator; it is not the runner of the new family B lane.
+The rules were measured on the SUB_BRZ build, sessions s2 to s32; the consolidated research is `<vehicle-import>\reviews\2026-07-11-research-metodo-import.md`. They are given only in their final verified state. The historical why (root cause analyses, red herrings, superseded rules) is in the rip import history of the vehicles pack (`skills/_shared/vehicles/rip-import.md`); read it as history, not as procedure. The workspace is `<vehicle-import>`, kept outside any cloud-synced folder. The orchestrator is `scripts\import_car.py --car profiles\<car>.json`, a legacy and in-flight orchestrator; it is not the runner of the new family B lane.
 
 ## Change 0: the family B cutover (new assets only)
 
@@ -72,8 +72,8 @@ This is a list of recurrence, not of mechanism: the user has seen each row in ga
 
 **The OH-1 precedent of a wrongly applied texture: two mechanisms, both measured.** They were confused with those of the HH-60G on 2026-08-02; they are written here so they can be found.
 
-1. **Stamping by selection instead of by piece.** `TEX_CO_MAP` assigned by selection, so `Cockpit` (13k triangles), which belongs to the selection `fuselage`, received `oh1_fuselage_co`. Fix: stamp by piece. (The author's session note of 2026-07-19, LFHeli OH-1 R2; not shipped.)
-2. **UV collision in a single atlas.** 97.6% of the cells of one group lay inside the footprint of another (rotor 92.9%, tail 100%). The visual giveaway: a fuselage registration ("G-263") painted over the blades. (The author's session note of 2026-07-27, LFHeli OH-1 R21; not shipped.)
+1. **Stamping by selection instead of by piece.** `TEX_CO_MAP` assigned by selection, so `Cockpit` (13k triangles), which belongs to the selection `fuselage`, received `oh1_fuselage_co`. Fix: stamp by piece. (LFHeli OH-1 R2, 2026-07-19.)
+2. **UV collision in a single atlas.** 97.6% of the cells of one group lay inside the footprint of another (rotor 92.9%, tail 100%). The visual giveaway: a fuselage registration ("G-263") painted over the blades. (LFHeli OH-1 R21, 2026-07-27.)
 
 Two method traps from that case, which apply to any texture fix:
 
@@ -93,7 +93,7 @@ The process corollary: when the user says "this already happened on the previous
 
 Added 2026-07-14, session s34.
 
-When you raise or move the geometry of a car whose chunks are instanced in the shell (`sub_brz.p3d`) through proxies (`proxy:\<MOD>\proxies\brz_chunk_*`), the effective displacement of each chunk is the delta of the proxy anchor in the shell plus the delta of the chunk's local geometry. Raising both doubles it. Origin, s34: "raise the car 7 cm" raised the chunk proxies in `sub_brz` by 0.07 and the geometry of each chunk by 0.07, an effective 0.14. The bodywork came out misaligned with gaps, the brake discs floated (the proxy of chunk_03 moved 0.07 while the discs inside stayed at their original Y) and the car floated (the chassis Geometry was raised). The diagnosis was confirmed three times (Claude and two Codex runs).
+When you raise or move the geometry of a car whose chunks are instanced in the shell (`sub_brz.p3d`) through proxies (`proxy:\<MOD>\proxies\brz_chunk_*`), the effective displacement of each chunk is the delta of the proxy anchor in the shell plus the delta of the chunk's local geometry. Raising both doubles it. Origin, s34: "raise the car 7 cm" raised the chunk proxies in `sub_brz` by 0.07 and the geometry of each chunk by 0.07, an effective 0.14. The bodywork came out misaligned with gaps, the brake discs floated (the proxy of chunk_03 moved 0.07 while the discs inside stayed at their original Y) and the car floated (the chassis Geometry was raised). The diagnosis was confirmed three times, independently.
 
 Rules:
 
@@ -104,7 +104,7 @@ Rules:
 5. The mandatory gate is the effective delta (parent delta plus local delta) per instance, not the local delta per file. Negative fixture: parent +d plus child +d (so +2d) must fail. In s34 the census verified each file at +0.07 but not the effective value, so it passed the gate and broke the car.
 6. Ride height through config (suspension stiffness and travel) gives no exact offset that can be verified, and it changes the handling. For an exact lift use geometry. Floating after a lift is `NEEDS_INGAME`: measure root, contact and suspension in Diag; do not patch it by lowering the Geometry.
 
-Reference: `<vehicle-import>\work\s34_stance_audit_A.md` (the full spec) and the author's session note of 2026-07-14 for SUB_BRZ s34 (not shipped).
+Reference: `<vehicle-import>\work\s34_stance_audit_A.md` (the full spec).
 
 ## Doors and movable parts: the rip already ships them cut
 
@@ -138,7 +138,7 @@ Rules:
 1. A mandatory gate before deploying any new or edited visual piece: render the complete container before and after, not only the piece that was touched. Reusable pipeline: `<vehicle-import>\work\s39_f0_audit\render_all_chunks.py`.
 2. A diagnosis of "files healthy" issued from censuses alone does not authorize blaming the runtime: render before you rule out the data.
 3. Never match coverage against a reference derived from the very artifact being validated. The "lod0 recipe" for the doors described the broken item, a tautological gate that cost a whole round: the "unmatched" faces were exactly the holes.
-4. Pane and glass materials: read the real alpha of the rvmat before porting faces to it. The vanilla `glass_i.rvmat` has alpha 0 in ambient, diffuse, emissive and specular, invisible by design (`P:\DZ\vehicles\wheeled\civiliansedan\data\glass_i.rvmat:1-5`); a "fix" that adds geometry with that material adds invisible glass.
+4. Pane and glass materials: read the real alpha of the rvmat before moving faces to it. The vanilla `glass_i.rvmat` has alpha 0 in ambient, diffuse, emissive and specular, invisible by design (`P:\DZ\vehicles\wheeled\civiliansedan\data\glass_i.rvmat:1-5`); a "fix" that adds geometry with that material adds invisible glass.
 
 ## The glass of the rip is single-sided and wound inward
 
@@ -153,15 +153,11 @@ Two premises of a research note can fall at the first attempt once the render ga
 
 ## Winding lineage gate
 
-Exact claim `CLAIM-R21-RIP-WINDING-LINEAGE` in the import project's records.
-
 `<vehicle-import>\scripts\winding_lineage_gate.py` compares the winding per face of the target against the sealed `source_face_id` and derives the expected relation from the determinant: positive is `PRESERVE`, negative is `REVERSE`. It emits `SOLID`, `INVERTED` or `MIXED` with exit codes 0, 1 and 2. A manifest, lineage or determinant that is missing, not finite or zero fails closed as `MIXED`.
 
 This gate proves that lineage is preserved, not that visuals or collision are correct. The in-game A/B test and the View Geometry controls are still the final gate. The focused lineage suite passed 16 of 16 on 2026-07-24; no global test total is frozen because the source tree keeps changing.
 
 ## Material type override by exact identity
-
-Exact claim `CLAIM-R21-RIP-MATERIAL-OVERRIDE` in the import project's records.
 
 A material exception may be declared in `source.material_type_overrides`, but only by the exact identity `part + mat_name + mat_path`. It must match exactly one visible mesh or the map fails closed; it keeps the earlier type in `source_type` and records `override=source.material_type_overrides`.
 

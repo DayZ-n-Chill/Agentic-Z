@@ -1,17 +1,9 @@
 # Server-Side Performance Patterns
 
-The server-tick performance techniques used across DayZ mods. The evidence is third party, not vanilla, and was not re-run here; it comes from two places:
+The techniques for keeping many entities inside one server tick: a budget per frame, intervals that follow load, staggered scans, backoff, compile-time against run-time side checks, and an event bus against polling. Two kinds of evidence are used and neither is vanilla:
 
-1. **Expansion eAI** (the DayZ Expansion scripts, repository `salutesh/DayZ-Expansion-Scripts`
-   at commit `8f75d554`): the budget-per-frame scheduler, backoff, staggered scan,
-   FPS-adaptive throttling and rolling-average patterns, also written up in the
-   `dayz-ai-patterns` skill (PC-2 / PC-7 / PC-9b) and its
-   `references/eai-pathfinding-groups.md`. Those PC-* entries are the eAI-specific
-   instances of the generic principles written up here.
-2. **The LFPowerGrid mod's performance audit** (2026-06-17, a read-only static pass that
-   cites each finding at a file and line of that mod): the server-side
-   budget/backoff/staggered-scan and side-check (`#ifdef SERVER` vs `IsServer`) evidence
-   in a real production mod, plus the ScriptInvoker-vs-polling bus contrast.
+1. **DayZ Expansion's AI module (eAI)**: third-party mod behaviour, not vanilla. Its snippets below were read in the Expansion scripts as they were before 1.30 and are not on `P:\`; read the current Expansion scripts before relying on a detail. The same patterns are written up per pattern in the `dayz-ai-patterns` skill, `references/eai-pathfinding-groups.md`.
+2. **Measurements on a production mod's dedicated server** (a large mod with a device registry, wire propagation and per-device diagnostics): not re-run here and not checkable on `P:\`.
 
 The generic `#ifdef SERVER` / `IsServer()` / `IsDedicatedServer()` side-check rules and
 the ScriptInvoker lifecycle rule are **rules 17-20 and 28** in `hard-rules.md`;
@@ -19,8 +11,7 @@ sections (f) and (g) below point at them rather than restating them. The vanilla
 checks are declared at `P:\scripts\3_game\global\game.c:1120` (`IsServer`) and `:1125`
 (`IsDedicatedServer`).
 
-`[EXACT]` = the snippet is copied from the third-party source file named beside it (an Expansion or LFPowerGrid path, not a `P:\` path).
-`[DESIGN]` = the snippet is a distilled/parameterized pattern, not a byte-for-byte quote.
+A snippet headed "Expansion eAI" shows that mod's code. A snippet headed "Pattern" is a general skeleton to adapt.
 
 ---
 
@@ -31,20 +22,18 @@ that wants periodic work (self-heal, target scans, LOS, visual sync, wire propag
 competes for the **same tick**. Two failure shapes dominate, and both are server-side and
 event/tick-shaped, **not** per-frame UI:
 
-- **O(n²)-per-event work that fires often.** LFPowerGrid's `ValidateAllWiresAndPropagate`
-  ran **5 `GetAll()` passes per self-heal**, each O(n²) in registry size, reached via
-  `DoGlobalSelfHeal` on a 500 ms debounce after any device move/cut
-  (`LFPG_NetworkManager.c:2605,2631` + `LFPG_DeviceRegistry.c:81-104`, audit §B row 1).
-  The fix is structural: fetch the device list **once** and pass it by-ref into the rebuild
-  helpers (kills 3 of 5 passes), and replace `outArr.Find(ent)` O(n²) dedup with a seen-map.
+- **O(n²)-per-event work that fires often.** Measured case: a "validate all wires and
+  propagate" routine ran **five full registry `GetAll()` passes per self-heal**, each O(n²)
+  in registry size, and the self-heal ran on a 500 ms debounce after any device move or cut.
+  The fix is structural: fetch the device list **once** and pass it by reference into the
+  rebuild helpers (this removes three of the five passes), and replace the
+  `outArr.Find(ent)` O(n²) dedup with a seen-map.
 
-- **Ungated always-on diagnostics.** Per-node `SetPowered` diagnostic string builds
-  (`LFPG_MemoryCell.c:188-208`, `LFPG_ElectronicCounter.c:286-300`, `LFPG_LogicGate.c:178-191`)
-  and a per-validation-tick charger log (`LFPG_ElecGraph.c:2844-2854`) built and `Print`ed a
-  multi-part string on every dirty node at production `LFPG_LOG_LEVEL=2` — always-on RPT spam
-  with zero LoC payoff to remove but real per-tick cost (audit §B rows 3-4). Rule of thumb:
+- **Ungated always-on diagnostics.** Measured case: per-node `SetPowered` diagnostic
+  strings and a log line per validation tick were built and `Print`ed for every dirty node
+  at the production log level: constant RPT spam with a real cost per tick. Rule of thumb:
   a log string that is **concatenated unconditionally** costs even when the log level would
-  discard it — gate the *concat*, not just the print.
+  discard it. Gate the *concat*, not just the print.
 
 The techniques below are the vocabulary for keeping many entities inside one tick budget.
 
@@ -54,19 +43,18 @@ The techniques below are the vocabulary for keeping many entities inside one tic
 
 Instead of "every entity does its full work every tick", a central scheduler gives each
 tick a **budget** and advances only as many entities as fit, resuming where it left off on
-the next tick. Expansion eAI runs exactly this: a global `s_eAI_FTO` (frame-time-offset /
-scheduler mode) flag flips the whole AI population from "update every entity every frame"
-into scheduler mode once the population crosses a threshold.
+the next tick. Expansion eAI runs exactly this: a global `s_eAI_FTO` scheduler-mode flag
+flips the whole AI population from "update every entity every frame" into scheduler mode
+once the population crosses a threshold.
 
-`ExpansionWorld.c:247-250` (`Scripts/4_World/DayZExpansion_AI/Classes/ExpansionWorld.c`) —
-the scheduler is the thing that reads `s_eAI_FTO >= 2` to decide each AI's per-tick interval
-(see backoff in (e)). Timer **rule 23** in `hard-rules.md` (run all periodic ticks from one
-manager with a register and unregister pattern) has the same shape: a
-budget scheduler is that manager plus a per-tick work cap.
+In Expansion's `ExpansionWorld.c` the scheduler reads `s_eAI_FTO >= 2` to decide each AI's
+interval per tick (see backoff in (e)). Timer **rule 23** in `hard-rules.md` (run all
+periodic ticks from one manager with a register and unregister pattern) has the same
+shape: a budget scheduler is that manager plus a work cap per tick.
 
 ```c
-// [DESIGN] Budget scheduler skeleton — one manager owns the tick, caps work/tick.
-class LFPG_TickScheduler
+// Pattern: budget scheduler skeleton. One manager owns the tick and caps the work per tick.
+class MyTickScheduler
 {
     protected ref array<EntityAI> m_Registered;   // rule 8: reuse, never `new` in tick
     protected int m_Cursor;                        // resume point across ticks
@@ -94,7 +82,7 @@ The scheduler's payoff is that the **worst-case tick cost is bounded by `WORK_BU
 independent of population. It trades latency (an entity may wait a few ticks for its turn)
 for a flat frame time.
 
-### Fairness inside a priority budget (SP-088, added 2026-08-31)
+### Fairness inside a priority budget
 
 A budget limits cost but does not guarantee coverage. A deadline/near-first pass that restarts from the same end every tick can consume the whole budget repeatedly and starve later items forever.
 
@@ -112,9 +100,9 @@ For every independently scheduled group:
 
 When the server has headroom, do work at the base rate; when it's under load (frame time /
 `pDt` grows), stretch the interval so the *per-real-second* work stays constant. Expansion
-eAI does this for LOS checks: this is **PC-9b**.
+eAI does this for its line of sight checks.
 
-`eAIBase.c:8089-8097` (`Scripts/4_World/DayZExpansion_AI/Entities/AI/eAIBase.c`) — [EXACT]:
+Expansion eAI, `eAIBase.c` (third-party mod behaviour, not vanilla):
 
 ```c
 if (s_eAI_FTO < 2)
@@ -140,7 +128,7 @@ window instead of reacting to a single spike. Expansion's `pDt` is already the s
 smoothed step; the pattern generalizes to any adaptive interval:
 
 ```c
-// [DESIGN] Rolling average of frame time to drive an adaptive interval.
+// Pattern: rolling average of frame time to drive an adaptive interval.
 protected float m_DtAvg;
 protected const float DT_SMOOTH = 0.1;   // EMA weight; smaller = smoother/slower
 void AccumulateDt(float dt) { m_DtAvg = m_DtAvg * (1.0 - DT_SMOOTH) + dt * DT_SMOOTH; }
@@ -153,13 +141,12 @@ float AdaptiveInterval(float baseInterval, float refDt)
 }
 ```
 
-(The knowledge pack wrote this helper with a ternary and an undeclared `refInterval`; Enforce Script has no ternary operator, rule 1 in `hard-rules.md`, so it is written out here.)
+(The clamp is an `if` because Enforce Script has no ternary operator, rule 1 in `hard-rules.md`.)
 
-Same shape appears mod-side as a fixed (non-adaptive) throttle for cosmetic work — the
-"adaptive update rate" pattern in `references/llama-extraction-patterns.md` (LM_Planes):
-physics runs every tick, dials/HUD throttle to 10 Hz (`DIAL_UPDATE_INTERVAL = 0.1`) because
-the human eye doesn't perceive UI refresh above ~10-15 Hz. FPS-adaptive is that same throttle
-with the interval *driven by measured load* instead of a constant.
+The same shape appears as a fixed (non-adaptive) throttle for cosmetic work: physics runs
+every tick while dials and HUD throttle to 10 Hz (`DIAL_UPDATE_INTERVAL = 0.1`), because
+the eye does not perceive a UI refresh above about 10-15 Hz. FPS-adaptive is that same
+throttle with the interval *driven by measured load* instead of a constant.
 
 ---
 
@@ -169,9 +156,9 @@ Two distinct sub-techniques, both aimed at never letting the whole population do
 expensive thing on the same tick.
 
 **Persistent-index staggered scan** — advance one item per tick, full refresh only when the
-index is exhausted. Expansion eAI's target scan is **PC-7**:
+index is exhausted. Expansion eAI's target scan does this.
 
-`eAIBase.c:2962-2966` (`Scripts/4_World/DayZExpansion_AI/Entities/AI/eAIBase.c`) — [EXACT]:
+Expansion eAI, `eAIBase.c` (third-party mod behaviour, not vanilla):
 
 ```c
 m_eAI_UpdateTargetsTick += pDt;
@@ -186,15 +173,15 @@ if (m_eAI_CurrentPotentialTargetIndex >= m_eAI_PotentialTargetEntities.Count()
 refresh happens only when the index is exhausted **and** the random interval elapsed. The
 `Math.RandomFloat(0.1, 0.2)` jitter is the de-sync: without it, every AI that spawned on the
 same frame would finish its scan on the same later frame, re-clustering the cost. The same
-jitter idea recurs at `eAITargetInformationState.c:58-67` (PC-14, threat cache,
-`Math.RandomIntInclusive(250, 300)`) and `eAIGroup.c:822-830` (PC-18, formation cache,
+jitter idea recurs in Expansion's `eAITargetInformationState.c` (threat cache,
+`Math.RandomIntInclusive(250, 300)`) and `eAIGroup.c` (formation cache,
 `Math.RandomFloat(2.0, 4.0)`).
 
 **Modulo-gated scan** — process `entity[i]` only when `(tick + i) % N == 0`, so 1/N of the
 population runs each tick, and offsets by index so they don't all land together:
 
 ```c
-// [DESIGN] Modulo-gating: each entity runs once every N ticks, staggered by index.
+// Pattern: modulo-gating. Each entity runs once every N ticks, staggered by index.
 protected int m_TickCounter;
 void OnTick()
 {
@@ -207,10 +194,10 @@ void OnTick()
 
 Modulo-gating gives a deterministic 1/N spread (good when you want a guaranteed cadence);
 random jitter gives a statistical spread (good when deterministic phase would still cluster,
-e.g. entities that all register on server boot). LFPowerGrid uses the *event-driven* variant
-of "don't do it every tick" — its self-heal is **500 ms debounced** on the triggering event
-(`DoGlobalSelfHeal`) rather than polled, which is the strongest form of staggering: do the
-work zero times until something actually changes (see (g)).
+e.g. entities that all register on server boot). The *event-driven* variant of "don't do it
+every tick" is a self-heal that is **debounced 500 ms** on the triggering event rather than
+polled, which is the strongest form of staggering: do the work zero times until something
+actually changes (see (g)).
 
 ---
 
@@ -218,9 +205,9 @@ work zero times until something actually changes (see (g)).
 
 When an entity has nothing nearby worth reacting to, **stretch its interval** instead of
 disabling it — logic still runs, just less often, and re-arms instantly when relevance
-returns. Expansion eAI's is **PC-2**, a flat 5× backoff gated on player proximity:
+returns. Expansion eAI uses a flat 5× backoff gated on player proximity.
 
-`ExpansionWorld.c:247-250` (`Scripts/4_World/DayZExpansion_AI/Classes/ExpansionWorld.c`) — [EXACT]:
+Expansion eAI, `ExpansionWorld.c` (third-party mod behaviour, not vanilla):
 
 ```c
 if (eAIBase.s_eAI_FTO >= 2 && ai.m_eAI_PlayersWithinVisibilityDistanceLimit.Count() == 0)
@@ -236,7 +223,7 @@ a server with 200 idle bots and 3 engaged bots pays full rate for 3 and one-fift
 case uses a fixed 5× factor rather than a growing exponential, but the shape generalizes:
 
 ```c
-// [DESIGN] Exponential backoff with a cap — grows while idle, snaps back on activity.
+// Pattern: exponential backoff with a cap. Grows while idle, snaps back on activity.
 protected float m_Backoff = 1.0;
 protected const float BACKOFF_MAX = 8.0;
 float NextInterval(float baseInterval, bool sawSomethingRelevant)
@@ -264,24 +251,24 @@ a correctness bug.
   all. Use it to keep server-only work (SyncVar writes per rule 17, heavy propagation, disk
   I/O, diagnostics) out of the client binary entirely — zero runtime cost on the client
   because the code doesn't exist there. This is the right tool for **whole subsystems** that
-  never run client-side. LFPowerGrid gates its self-heal/propagation and per-node diagnostics
-  this way; the audit's recommended fix for the ungated diagnostic strings (§B rows 3-4) is
-  precisely to `#ifdef`-guard or delete them so they never build on either side at ship level.
+  never run client-side, such as self-heal, propagation and per-node diagnostics; the fix
+  for the ungated diagnostic strings in (a) is to `#ifdef`-guard or delete them so they
+  never build at ship level.
   `skills/_shared/enscript/references/language_compile.md` lists the defines vanilla uses.
 
-    - **`#ifndef SERVER` erases the type from the dedicated-server build** — `SERVER` is defined ONLY in the dedicated-server executable (absent in offline/listen). Wrapping a class in `#ifndef SERVER … #endif` removes it from the server type surface; any third-party mod or server-side RPC handler referencing it then fails with `Unknown type 'X'` → `Can't compile "World" script module!` → server does not start. An internal-consistency verifier ("0 client symbols in the server view") will NOT catch this: the break is in the EXTERNAL contract. Gate before guarding a symbol: "does any external mod or server-side handler reference it?" If integrable, keep the type declared in both builds — empty stub under `#ifdef SERVER` with the signatures the consumer touches (body no-op if logic is client-only); pure data classes (fields only) cost nothing to leave unguarded. Smoke test: **compile the module with `SERVER` defined (dedicated server)**, not just offline/client: offline does NOT define `SERVER`, so it passes locally and breaks on dedicated (same failure mode as binarize packaging failures). Measured in LFPowerGrid 1.2.2 (2026-07-20): `LFPG_CameraViewport` inside `#ifndef SERVER` broke the third-party `JBLightSwitch` mod with `Unknown type 'LFPG_CameraViewport'`.
+    - **`#ifndef SERVER` erases the type from the dedicated-server build.** `SERVER` is defined only in the dedicated-server executable (absent in offline and listen). Wrapping a class in `#ifndef SERVER … #endif` removes it from the server type surface; any other mod or server-side RPC handler that references it then fails with `Unknown type 'X'`, then `Can't compile "World" script module!`, and the server does not start. A check of your own mod ("0 client symbols in the server view") does not catch this: the break is in the contract with other mods. Before guarding a symbol, ask "does any other mod or server-side handler reference it?" If it does, keep the type declared in both builds: an empty stub under `#ifdef SERVER` with the signatures the consumer touches (a no-op body if the logic is client-only); pure data classes (fields only) cost nothing to leave unguarded. Smoke test: **compile the module with `SERVER` defined (a dedicated server)**, not just offline or client: offline does not define `SERVER`, so it passes locally and breaks on dedicated. Measured in game (2026-07-20): a viewport class inside `#ifndef SERVER` broke another mod that referenced it, with `Unknown type` on the dedicated server.
 
 - **`IsServer()` / `IsDedicatedServer()` — runtime.** A branch taken at execution time in a
   build that contains *both* paths. Use it inside code that legitimately runs on both sides
   and must fork behavior per-call (e.g. an `OnRPC` handler that validates on server and
   applies on client). **The load-time trap (rules 19-20):** `GetGame().IsServer()`
-  returns TRUE on a client *during load*, and `IsClient()` is not reliably true on a client during
+  returns true on a client *during load*, and `IsClient()` is not reliably true on a client during
   load — so at constructor / module-init / `OnInit` time you must use `IsDedicatedServer()` /
   `!IsDedicatedServer()`, not `IsServer()`/`IsClient()`. After load (post-load callbacks:
   `OnRPC`, `EEContact`, per-tick), `IsServer()`/`IsClient()` are safe and are the standard
-  vanilla pattern (rule 20 scope note). The LM_Planes client-only-resource guard in
-  `references/llama-extraction-patterns.md` (`!IsClient() && IsMultiplayer()` called *lazily*,
-  never at load) is the concrete "skip if MP server" instance of this.
+  vanilla pattern (rule 20 scope note). A guard for a client-only resource
+  (`!IsClient() && IsMultiplayer()`, called *lazily*, never at load) is the concrete
+  "skip if MP server" instance of this.
 
 **Perf decision rule:** if the work is server-only for an entire subsystem, prefer
 `#ifdef SERVER` — it removes the cost from the client build outright. If the work is one
@@ -295,9 +282,9 @@ compile-time gate on the enclosing subsystem would remove the branch entirely.
 
 The cheapest scan is the one you never run. Polling asks "did anything change?" every tick;
 an event bus (`ScriptInvoker`) is *told* when something changed and does zero work otherwise.
-LFPowerGrid's self-heal is the canonical win: it is **500 ms-debounced on the device
-move/cut event** (`DoGlobalSelfHeal`) rather than polled every tick — the expensive
-O(n²) validation runs only in response to an actual topology change (audit §B row 1).
+The self-heal in (a) is the canonical win: it is **debounced 500 ms on the device move/cut
+event** rather than polled every tick, so the expensive O(n²) validation runs only in
+response to an actual topology change.
 
 `ScriptInvoker` is the DayZ event-bus primitive (`P:\scripts\2_gamelib\tools.c:115`; `Invoke` at `:118`, `Insert` at `:120`, `Remove` at `:122`): an entity/manager exposes an invoker,
 consumers `Insert(callback)`, and the producer `Invoke(...)` fans out on the event. This
@@ -305,7 +292,7 @@ replaces "N consumers each polling the producer's state every tick" with "produc
 N consumers once, when the state changes".
 
 ```c
-// [DESIGN] Event bus instead of per-tick polling.
+// Pattern: event bus instead of per-tick polling.
 // Producer:
 static ref ScriptInvoker Event_TopologyChanged = new ScriptInvoker();
 void OnDeviceMovedOrCut() { Event_TopologyChanged.Invoke(this); }   // fire once, on change
@@ -328,46 +315,26 @@ tick anyway (a moving position you sample each frame), a direct read is simpler 
 an invoker every tick — the bus adds fan-out overhead without saving a scan. Choose the bus
 when `event_rate << tick_rate`; keep the poll when `event_rate ≈ tick_rate`.
 
-## Server-side script memory (World kB) — measured levers and non-levers (SP-173, added 2026-08-05)
+## Server-side script memory (World kB) — measured levers and non-levers
 
-Measured in the LFPowerGrid mod's server-footprint campaign (July to August 2026), re-verified 2026-08-05. The operational question: which lever actually lowers static script memory (World kB) on a dedicated server.
+Measured on a dedicated server with a large mod loaded (about 2,380 script files and 6,140 classes; July to August 2026), not re-run here. The operational question: which lever actually lowers static script memory (World kB) on a dedicated server.
 
 **Measured 0 kB (does not move World):**
-- File merging/packaging under `4_World`: A1 (6 rows E/B/C, 2 reps) — files 2383→2367, classes 6141→6141, World 13483→13483 kB.
-- Comments/whitespace removal: A4-S2 ≈ 0 kB.
+- Merging or repackaging files under `4_World`: files 2383 to 2367, classes 6141 to 6141, World 13483 to 13483 kB (two repetitions).
+- Removing comments and whitespace: about 0 kB.
 
 **Measured non-zero (does move World):**
-- Bytecode-level cleaning: A7/A10 (2026-07-30) — World drops 28/29 and 19/18 kB with classes unchanged (6110→6110). The relationship is NOT a simple "class count → kB" law.
+- Bytecode-level cleaning (2026-07-30): World dropped by 28 to 29 kB in one run and 18 to 19 kB in another with the class count unchanged (6110 to 6110). The relationship is not a simple "class count to kB" law.
 - `#ifndef SERVER` around client-only code (excluded from the dedicated-server compile entirely).
-- Collapsing engine generic specializations (`array<T>` → `array<EntityAI>` + cast).
+- Collapsing engine generic specializations (`array<T>` to `array<EntityAI>` plus a cast).
 - Managed-class aliases for types used inside generics.
 
 **Measured 0 kB at small scale (do not budget on this assumption):**
-- Removing a few classes: K3 (6140→6137, 0 kB), A9 (6110→6109, 0 kB). A "purge dead classes" pass is not a reliable kB lever at this granularity.
+- Removing a few classes: 6140 to 6137 classes gave 0 kB, and 6110 to 6109 gave 0 kB. A "purge dead classes" pass is not a reliable kB lever at this granularity.
 
 **Before budgeting any "purge dead code" pass, measure existing `#ifndef SERVER` coverage.**
-Real case: a duplicated UI fork of 182.4 KB source looked like the obvious cheap lever. Nesting-aware preprocessor count showed ~97% already inside `#ifndef SERVER`; only ~5.5 KB compiled on the server. Purging yields ~3–4 kB, not the ~118 kB a byte-ratio suggests. Without that measurement it would have been prioritized over a real ~140 kB lever.
+Real case: a duplicated UI fork of 182.4 KB source looked like the obvious cheap lever. A nesting-aware preprocessor count showed about 97% of it already inside `#ifndef SERVER`; only about 5.5 KB compiled on the server. Purging yields about 3 to 4 kB, not the roughly 118 kB a byte ratio suggests. Without that measurement it would have been prioritized over a real lever of about 140 kB.
 
-**Order-of-magnitude heuristic** (from that mod author's own measuring script, which is not part of this repo): ~0.65 kB static memory per KB of compiled `4_World` source on the server. LFPowerGrid cross-check: 1522 kB World causal / ~1429 KB server-side source ≈ 1.06. Use to DISCARD levers, never to promise a number.
+**Order-of-magnitude heuristic:** about 0.65 kB of static memory per KB of compiled `4_World` source on the server. Cross-check on the same mod: 1522 kB of World attributable to the mod over about 1429 KB of server-side source gives about 1.06. Use it to discard levers, never to promise a number.
 
-**Causal measurement protocol:** adjacent triplets E (without mod) / B (baseline) / C (candidate), same boot, two repetitions. Observed noise ±1 kB integer — any success criterion below that does not discriminate and will PASS a 0 kB campaign.
-
-Unmeasured or inconclusive: A4-S1 (did not compile), A4-S3 (not measured in-engine), A4-S4 (1 kB). A8/A9 appear among the refuted ablations; A9 is class removal, not minification.
-
----
-
-## Which mod each fact comes from
-
-- **Expansion eAI patterns** (budget scheduler, FPS-adaptive interval + rolling average,
-  staggered/jittered scan, multiplicative backoff): the DayZ Expansion scripts at commit
-  `8f75d554`. Snippets marked `[EXACT]` are quoted through the `dayz-ai-patterns` skill's
-  `references/eai-pathfinding-groups.md`, which cites full repository paths
-  (`Scripts/4_World/DayZExpansion_AI/...`) at that commit. The eAI-specific
-  instances are PC-2 / PC-7 / PC-9b (+ PC-14 / PC-18 jitter) in that skill.
-- **Production server-side evidence** (5× `GetAll()` self-heal, event-debounced self-heal,
-  ungated diagnostic-string cost, `#ifdef SERVER` gating): sections A and B of the
-  LFPowerGrid mod's audit of 2026-06-17, a read-only static pass. The LFPowerGrid rows
-  in `review-and-troubleshooting.md` come from the same audit window.
-- **Fixed-rate throttle contrast** (adaptive update rate, dial/HUD 10 Hz): the LM_Planes mod,
-  `llama-extraction-patterns.md` (workshop 3730564764).
-- **Side-check + ScriptInvoker lifecycle rules**: rules 17-20, 23 and 28 in `hard-rules.md`.
+**Causal measurement protocol:** adjacent triplets of runs (without the mod, baseline, candidate), same boot, two repetitions. The observed noise is ±1 kB (the value is an integer): a success criterion below that does not discriminate and will pass a 0 kB change.

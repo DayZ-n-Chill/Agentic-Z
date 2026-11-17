@@ -2,7 +2,7 @@
 
 The three verdicts of `binarize.exe` on a model, the real vertex ceiling in resolved triples, how thin the headroom of a deployed model can be, and which log lines do not discriminate.
 
-> Status: field notes measured on third-party mods: the HH-60G of LFHeli (cross-checked against 25 in-game verdicts), the OH-1, the H2R import and two building cases. Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. Tags such as SP-205 or LL-464 are the notes' own lesson numbers, and `[EXACT]`, `[DESIGN]` and `[CLAIM-...]` are the notes' own evidence labels. Paths such as `<vehicle-import>\...` point into those mods' work folders, which are not part of this repo. "Invariant N", "preflight #N" and "#N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. The short rule this file develops is invariant 24 in `invariants-lods-and-vertex-budget.md`.
+> Status: field notes. The results below were measured on mod models (an HH-60G helicopter, cross-checked against 25 in-game verdicts, an OH-1 helicopter, a vehicle called H2R and two buildings) and are mod behaviour, not vanilla; they were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo. "Invariant N", "preflight #N" and "#N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. The short rule this file develops is invariant 24 in `invariants-lods-and-vertex-budget.md`.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -18,7 +18,7 @@ spawn, or when you need to know your headroom before adding geometry.
 
 Everything below is measured on the HH-60G, cross-checked against 25 in-game verdicts, except the
 two building cases under item 3, which are binarize runs with no in-game verdict, and the H2R
-import's runs under item 2, another vehicle with `PASS` verdicts only.
+runs under item 2, another vehicle with `PASS` verdicts only.
 
 **1. `Too many vertices` and `Won't simulate, it has no geometry` are the SAME defect.**
 The rejection happens while **loading the MLOD**, before conversion, so the engine aborts the
@@ -32,19 +32,19 @@ basename in the source dir (undeclared basenames fall back to Default and change
 path). Validated on 28 variants against the in-game verdicts of the previous cycle:
 **13 PASS/PASS, 12 FAIL/FAIL, zero false greens, zero false reds.** This turns a model
 bisection from ~6 min per variant into ~90 s per batch.
-[DESIGN] Give the call `-addon=<bench>` as well, `<bench>` being a dedicated folder that holds the
-source dir (binarize parses every `config.cpp` under `-addon`: SP-155 rule 1 of the `/dayz-build-pbo` references).
-The validation above ran without it, and so does the HH-60G project's copy of the bench named
-under Tool (read 2026-10-24), which also stops on a source outside `P:\`. In the H2R import
-(2026-10), a call of that form with its source outside `P:\` and no `-addon` waited about 5 min
+
+Recommended, not part of that validation: give the call `-addon=<bench>` as well, `<bench>` being
+a dedicated folder that holds the source dir (binarize parses every `config.cpp` under `-addon`:
+`skills/dayz-build-pbo/references/addonbuilder-rules.md`). The validation above ran without it.
+On the H2R (2026-10), a call with its source outside `P:\` and no `-addon` waited about 5 min
 before loading its first model, and three days later, other processes busy, gave no ODOL in
 30 min; with `-addon` the first model loaded within a second, all 8 read `PASS` as they had
 without it, and the kits built from them spawned in game. No `CAPACITY_FAIL` has been run with
 `-addon`, and the stall was seen only with the source outside `P:\` (a source under `P:\` was not
 timed). The `Material not loaded` lines listed under "Noise that does NOT discriminate" are
 noise for the verdict, not for the ODOL: every material entry of the H2R bench's 8 ODOLs came
-out empty, with `-addon` and without (SP-155 rule 5 of the `/dayz-build-pbo` references), so run rule 5's control
-before shipping a bench ODOL (claim: CLAIM-BINARIZE-DIRECT-ADDON-STALL-REF).
+out empty, with `-addon` and without, so run the empty-material control of
+`skills/dayz-build-pbo/references/addonbuilder-rules.md` before shipping a bench ODOL.
 
 **3. The verdict has THREE states. Using two is a bug in your bench.**
 - `PASS` - a **new**, non-empty ODOL for the basename under test, in an output dir that did
@@ -57,7 +57,7 @@ before shipping a bench ODOL (claim: CLAIM-BINARIZE-DIRECT-ADDON-STALL-REF).
 - `OTHER_FAIL` - any other absence: bad `model.cfg`, undeclared basename, malformed MLOD, I/O,
   aborted tool. **It blocks and does NOT authorize touching geometry.** Without this state you
   decimate a mesh because your bench was misconfigured.
-  One cause measured since prints nothing of its own (SP-458, 2026-10-03, on a building, not a
+  One cause prints nothing of its own (measured 2026-10-03, on a building, not a
   vehicle): with too many pieces in its collision LODs, `binarize.exe` wrote no ODOL and no
   capacity line, and the bench read `OTHER_FAIL` while the bench was fine. Rule it in only once
   the MLOD walks to `#EndOfFile#` in every LOD (a truncated MLOD gave the same verdict) and the
@@ -90,7 +90,7 @@ adds more than 114 resolved vertices kills it: a normal tweak, a UV seam, a text
 another split. Measure resolved before and after **every** visual edit.
 
 **6. When you mint a normal, you are spending budget; when you reverse a corner order, you are not.**
-The defect that cost this project a week: a winding-flip block negated the stored normal **per
+The defect that cost the HH-60G a week: a winding-flip block negated the stored normal **per
 corner** for the 151 faces (0.43 %) whose source normal disagreed with the source winding. Those
 453 corners minted 630 pool entries and +886 resolved. Re-reversing the corner order of those
 151 faces reaches **identical** coherence at zero cost. A face's corner order is free; a new
@@ -109,10 +109,11 @@ and the ceiling would have been reported 7 units too high. Use a step that is un
 above the quantum (>= 3 deg for normals) and include a sample past the known-failing value as
 a self-check.
 
-Tool: `<vehicle-import>\scripts\p3d_vertex_gate.py` - `count` reports resolved per LOD
-as `INFORMATIVE_ONLY`; only `binarize` runs the authoritative three-state adjudication.
+Tooling: a resolved-triple counter (py3d, one count per LOD) is informative only; only a
+`binarize` run gives the authoritative three-state verdict. No such bench script ships in this
+repo: write it from the three states above.
 
-## Qualify a capacity warning on the deployed artifact first (SP-182, added 2026-08-31)
+## Qualify a capacity warning on the deployed artifact first
 
 Before changing geometry for a numerical warning, run the same counter on the
 known-good model extracted from the deployed PBO. If that artifact already exceeds
@@ -127,10 +128,11 @@ angular merge rather than only component-wise rounding. The refined instrument m
 first reproduce every previously published sample before any new intermediate point
 is accepted.
 
-## Read the verdict artifact, not the wrapper exit code (SP-220, added 2026-08-31)
+## Read the verdict artifact, not the wrapper exit code
 
-`p3d_vertex_gate.py binarize` and a Python import failure can both exit `1`. Read the
-per-model state from a newly written `_verdicts.json`; a missing report or missing
+A bench script's `binarize` run and a Python import failure can both exit `1`. Have the
+bench write a per-model verdict report (for example `_verdicts.json`) and read the state
+from a newly written one; a missing report or missing
 row is `OTHER_FAIL`, never PASS or `CAPACITY_FAIL`. The child process needs the
 required module on `PYTHONPATH`, because an in-process `sys.path` edit is not
 inherited. Allow for the measured startup cost (about 68 s even for a four-point
@@ -145,7 +147,7 @@ units and adjudicate with the three-state binarize result. Count after host prox
 are present; each proxy contributes three points, one face normal, one face and
 three resolved entries.
 
-## Source geometry census is a planning bound, not engine authorization (SP-157, added 2026-08-31)
+## Source geometry census is a planning bound, not engine authorization
 
 Before sacrificing artist normals, decimating, or repartitioning, compose the source
 node world transforms and count `POSITION` accessor vertices per final frozen owner

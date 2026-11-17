@@ -7,7 +7,9 @@ import tempfile
 import unittest
 import warnings
 
-import numpy as np
+import pytest
+
+np = pytest.importorskip("numpy")
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]

@@ -253,8 +253,7 @@ def vanilla_declares_construction_hook(vanilla_root):
     method of EntityAI counts, read with strings stripped as well as comments:
     a field or a string of that name does not, and a brace in a string does
     not hide the method. Without a usable vanilla tree the answer is False, so
-    the rule keeps the behaviour it has on 1.29, the build the pack is
-    anchored on.
+    the rule keeps the behaviour it has on 1.29.
     """
     vanilla_key = usable_vanilla_key(vanilla_root)
     if vanilla_key is None:

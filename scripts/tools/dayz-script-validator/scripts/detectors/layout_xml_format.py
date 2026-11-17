@@ -1,10 +1,9 @@
-# CANDIDATE-37 LAYOUT-XML-FORMAT.
+# LAYOUT-XML-FORMAT.
 # A .layout authored in XML instead of the Enfusion brace format
 # (`WidgetClass Name { props { children } }`) crashes when the native
 # CreateWidgets parses it. The widget-name/#STR reconciliation passes with the
 # wrong format, so the format must be checked on its own.
-# Source: origin: production mod bug ledger (BUG-004 UPDATE) — the crashing files were
-# `<?xml ...?>` + `<GUI><class type=...>`. Corroborated by
+# The crashing files were `<?xml ...?>` + `<GUI><class type=...>`. See
 # dayz-ui-development/references/layout-format.md:5 (".layout files use
 # Enfusion format (NOT XML)").
 #
@@ -21,7 +20,7 @@ MESSAGE = (
     "[FAIL] {rel_path} line {line}: .layout in XML format (starts with "
     "'{signature}'); DayZ CreateWidgets expects Enfusion brace format "
     "(WidgetClass Name {{ ... }}), not XML. An XML layout crashes on load "
-    "(origin: production mod bug ledger; layout-format.md:5 'NOT XML'). Re-author "
+    "(layout-format.md:5 'NOT XML'). Re-author "
     "the layout in Enfusion brace format."
 )
 

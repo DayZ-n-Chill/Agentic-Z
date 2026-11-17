@@ -1,4 +1,4 @@
-class LFTest_RefAutoptrOk
+class FX_RefAutoptrOk
 {
     ref ItemBase m_Item;
     autoptr PlayerBase m_Player;

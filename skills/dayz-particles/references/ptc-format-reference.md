@@ -270,7 +270,7 @@ Emitter roles:
 
 Key insight: complex effects are built by layering simple emitters.
 Each emitter handles one visual aspect independently.
-Larger layered examples (a 4, a 7 and a 12 emitter effect from a third-party mod), the `Mast` curves in use and script that turns single emitters on and off are in `standalone-particle-reference.md`.
+Larger layered examples (a 4, a 7 and a 12 emitter effect), the `Mast` curves in use and script that turns single emitters on and off are in `standalone-particle-reference.md`.
 
 ---
 

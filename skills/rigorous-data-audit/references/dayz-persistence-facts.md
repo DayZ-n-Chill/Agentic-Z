@@ -4,7 +4,7 @@ Two engine properties that any DayZ mod with saved data inherits: there is no re
 
 ## The two facts
 
-Both were read on 1.29.0.163451 by the source pack and again on `P:\` (game storage version 144) for this file. They are engine properties, not project quirks, so any DayZ mod that persists data inherits them.
+Both were read on 1.29.0.163451 and again on `P:\` (game storage version 144). They are engine properties, not project quirks, so any DayZ mod that persists data inherits them.
 
 - **DayZ exposes no rename and no move, so "temp -> verify -> replace" is NOT atomic.** The file primitives stop at `FileExist`, `OpenFile`, `ReadFile`, `CloseFile`, `FPrint`, `FGets`, `MakeDirectory`, `DeleteFile` and `CopyFile` (`P:\scripts\1_core\proto\ensystem.c:397-531`); a grep for `Rename|MoveFile` over `1_core` returns zero. The real replace is `DeleteFile(dest)` followed by `CopyFile(tmp, dest)`, leaving a window in which the destination does not exist. Audit consequence: back up BEFORE that window, verify AFTER the copy, and delete the `.tmp` only once the post-copy verify passes. Treat any code or comment claiming an atomic replace as a finding, not as documentation.
 

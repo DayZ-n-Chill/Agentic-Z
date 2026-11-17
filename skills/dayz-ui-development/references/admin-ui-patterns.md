@@ -2,7 +2,7 @@
 
 Patterns for admin style tools: resizable floating windows, world to screen labels, skeleton drawing on a `CanvasWidget`, box selection, runtime scaling to the screen, a numpad menu, an orbit camera preview and looking around with a menu open.
 
-**Where these facts come from.** The patterns are reported from the LBmaster Admin Tools and LBmaster Garage mods (third party, closed source). They are vendored, not yet checked on `P:\`: treat each code block as a sketch and check every call before you copy it. Names that start with `LB` (`LBWidgetUtils`, `LBAdminMenuFrame`, `LBGapHandler`) are that mod's own classes, not vanilla. The vanilla calls the sketches lean on were checked on `P:\` (DayZ 1.30):
+**How facts are marked here.** The patterns are not yet checked on `P:\` or in game: treat each code block as a sketch and check every call before you copy it. Names that start with `LB` (`LBWidgetUtils`, `LBAdminMenuFrame`, `LBGapHandler`) are helper classes of the sketches that you write yourself, not vanilla. The vanilla calls the sketches lean on were checked on `P:\` (DayZ 1.30):
 
 - `SetSort(int sort, bool immedUpdate = true)` is at `P:\scripts\1_core\proto\enwidgets.c:130`, `SetScreenPos` and `SetScreenSize` at `P:\scripts\1_core\proto\enwidgets.c:142-143`, and `SetRotation(float roll, float pitch, float yaw, ...)` at `P:\scripts\1_core\proto\enwidgets.c:146`.
 - `GetWidgetUnderCursor()`, `CancelWidgetDragging()` and `GetDragWidget()` are global functions at `P:\scripts\1_core\proto\enwidgets.c:184-186`. `GetMousePos(out int x, out int y)` and the global `GetScreenSize(out int x, out int y)` are at `P:\scripts\1_core\proto\ensystem.c:329-331`, and `GetMouseState(MouseState index)` at `P:\scripts\1_core\proto\ensystem.c:326`.
@@ -59,7 +59,7 @@ if (resizeBottom) {
 - 9 preset slots: each stores all window positions/sizes → hotkey switch
 
 **Z-priority:** `frame.SetSort(120)` for focused, `frame.SetSort(0)` for unfocused.
-Exception: frames that hold a `MapWidget` or an `ItemPreviewWidget` get a lower sort (reported workaround for a render bug).
+Exception: frames that hold a `MapWidget` or an `ItemPreviewWidget` get a lower sort (a workaround for a render bug; not checked in game).
 
 ---
 
@@ -229,7 +229,7 @@ m_CharacterPanelWidget.Refresh()                // Force refresh
 
 ## 6. Scaling to the screen resolution
 
-Design base: **1920x1080**. Everything scales proportionally at runtime. This is the LBmaster approach for values set from script in screen pixels; it is not needed for exact values written in a `.layout` (see "What does not need scaling" below).
+Design base: **1920x1080**. Everything scales proportionally at runtime. This approach is for values set from script in screen pixels; it is not needed for exact values written in a `.layout` (see "What does not need scaling" below).
 
 ### Core variables
 
@@ -377,7 +377,7 @@ float sin = Math.Sin(Math.DEG2RAD * rotation) * distance;
 vector cameraPos = center + Vector(sin, height, cos);
 ```
 
-Blackbox pattern (reported from the garage mod): spawn an invisible building at y=109, show the items inside it, and set the world time to noon every frame.
+Blackbox pattern for a garage style preview (not checked in game): spawn an invisible building at y=109, show the items inside it, and set the world time to noon every frame.
 
 ---
 

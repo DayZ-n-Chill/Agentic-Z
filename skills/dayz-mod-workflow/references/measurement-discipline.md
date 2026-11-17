@@ -2,11 +2,11 @@
 
 Rules for reading numbers out of a DayZ test session without fooling yourself: aligning client and server series, what the shape of a divergence means, and three statistical traps (a fitted clock offset that absorbs the defect, a range that measures the length of the observation, a defect rate averaged over deliberately broken variants). `dayz-mod-workflow` points here; the probe rules that come first are in `debug-protocol.md`.
 
-Everything here is method plus measured results from the knowledge pack author's projects (named per section). None of it can be read in a vanilla file, so it is not yet checked on `P:\`; the script calls the probes use are (`GetTickTime` is `proto native float GetTickTime()` on `CGame`, `P:\scripts\3_game\global\game.c:914`).
+Everything here is method plus measured results from a helicopter mod's test campaign. None of it can be read in a vanilla file, so it is not yet checked on `P:\`; the script calls the probes use are (`GetTickTime` is `proto native float GetTickTime()` on `CGame`, `P:\scripts\3_game\global\game.c:914`).
 
 ## The shape of a cross-process divergence
 
-The probe rules already fix the payload length, `t=GetTickTime()` on every line, clock-offset calibration, interpolation and gap rejection (`debug-protocol.md`, lessons LL-199 and LL-200). After that alignment, use the shape of the divergence series as a diagnostic:
+The probe rules already fix the payload length, `t=GetTickTime()` on every line, clock-offset calibration, interpolation and gap rejection (`debug-protocol.md`, "Probe rules"). After that alignment, use the shape of the divergence series as a diagnostic:
 
 - a **sawtooth** means a correction arrives and the system then diverges again, which points at replay determinism;
 - a **monotonic rise or a plateau with no reset** means the transform is not receiving correction, which points at the mechanism being gated off.
@@ -19,7 +19,7 @@ The offset rule says to estimate the server-to-client offset and interpolate one
 
 Restrict the fit to the axes that are not under investigation, and leave the axis in question as a measurement, not a fit parameter.
 
-Measured on 2026-09-04 on the LFHeli project: fitting horizontal X and Z only gave a 6 mm median residual over 405 cells and left a post-landing height divergence of 0.169 m at the median, 0.833 m at most, standing. A full 3D fit would have spent that height on the offset.
+Measured on 2026-09-04 on a helicopter mod: fitting horizontal X and Z only gave a 6 mm median residual over 405 cells and left a post-landing height divergence of 0.169 m at the median, 0.833 m at most, standing. A full 3D fit would have spent that height on the offset.
 
 Two corollaries:
 
@@ -30,7 +30,7 @@ Two corollaries:
 
 Peak to peak (maximum minus minimum), a maximum, and any other extreme grow with the number of samples. A gate written on one of them scores, without saying so, **how long the window lasted**, and a variant that simply shortens the cells passes it without fixing anything.
 
-Measured on 2026-09-10 on 405 archived LFHeli cells. Inside one group (upright cells, one process), the height peak to peak by number of samples at rest:
+Measured on 2026-09-10 on 405 archived landing cells. Inside one group (upright cells, one process), the height peak to peak by number of samples at rest:
 
 | Samples at rest | Median peak to peak |
 |---|---|
@@ -55,7 +55,7 @@ The general signal: before comparing two groups with a statistic, ask whether th
 
 A tuning campaign's corpus contains, on purpose, configurations that are broken. Averaging a defect over the whole corpus gives a number that does not describe what the product does, and that number ends up quoted as if it did.
 
-Measured on 2026-09-10, the same run. LFHeli landing rollover:
+Measured on 2026-09-10, the same run. Landing rollover:
 
 | Configuration | Cells | Upright | Tilted | On its side |
 |---|---|---|---|---|

@@ -1,4 +1,4 @@
-// Inbox fb-20261005-233046-89d1, DayZDiag 1.29.163709, on the file this
+// DayZDiag 1.29.163709, on the file this
 // one stands for:
 //   Can't compile "Game" script module!
 //   lfpg_moddedtransport.c(9): Engine class 'Transport' cannot be modded.

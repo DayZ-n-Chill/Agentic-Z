@@ -19,7 +19,7 @@ Measured 2026-09-07 (LFPowerGrid). For an action with a progress bar, `action_us
 
 - **Without `door_index`, a door does not open** (measured 2026-09-07 on a building mod). `action_use(ActionOpenDoors, classname=<door>)` returns `condition_failed` even with the player 1.4 m away, because the bridge builds the `ActionTarget` with `componentIndex=-1`, and the vanilla `GetDoorIndex(int componentIndex)` resolves the door from the View Geometry component index (`P:\scripts\3_game\entities\building.c:28`; `ActionOpenDoors` calls it with the target's component at `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:40`), so -1 resolves no door.
 - **`object_anim` cannot hold a door open.** `object_anim(source=<door source>, phase=1.0)` answers `phase=1`, but the engine's door controller returns the door to its wanted phase (a re-read gives `phase=0`) and `IsDoorOpen(index)` (`P:\scripts\3_game\entities\building.c:34`) stays false, so every action that needs an open door also returns `condition_failed`. Without `door_index`, opening, closing, sound and sync were a manual test and MCP could only verify "starts closed" (`object_anim` reads `phase=0`).
-- **With `door_index` the action works** [EXACT] (measured 2026-10-01, DayZDiag 1.29.163709, on a test building whose door component is a button on a moving piece): `action_use` with `ActionOpenDoors` or `ActionCloseDoors` and `door_index` does open and close the door even there. `object_anim` (`SetAnimationPhaseNow`) on the door's source still cannot hold a static pose: the door settles at `ajar` with phase 0.07 instead of the requested phase. For the verdict use `object_doors` and rays.
+- **With `door_index` the action works** (measured 2026-10-01, DayZDiag 1.29.163709, on a test building whose door component is a button on a moving piece): `action_use` with `ActionOpenDoors` or `ActionCloseDoors` and `door_index` does open and close the door even there. `object_anim` (`SetAnimationPhaseNow`) on the door's source still cannot hold a static pose: the door settles at `ajar` with phase 0.07 instead of the requested phase. For the verdict use `object_doors` and rays.
 
 ## `setup_failed` is a false negative for instant actions
 
@@ -27,22 +27,22 @@ Measured 2026-09-07 with `ActionTogglePlaceObject` and `ActionDropItemSimple`: t
 
 Vanilla side: `PerformActionStart` is at `P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:804` and `GetRunningAction` at `P:\scripts\4_world\classes\useractionscomponent\actionmanagerbase.c:91`. `ActionTogglePlaceObject` overrides both `IsLocal()` and `IsInstant()` to true (`P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actiontoggleplaceobject.c:19`). `ActionDropItemSimple` overrides only `IsInstant()` (`P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actiondropitemsimple.c:5`) and inherits `UseAcknowledgment()` returning false from `ActionDropItem` (`P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actiondropitem.c:74`). The vanilla test that covers both is `(IsLocal() || !UseAcknowledgment()) && IsInstant()` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:1064`).
 
-## Opening a mod's UI without a keyboard (SP-292, added 2026-08-18)
+## Opening a mod's UI without a keyboard (added 2026-08-18)
 
 The whole chain was verified in game on 2026-08-17 (run `28f2e26f`). The measured recipe, on an ATM device of the LFPowerGrid mod with `@DayZ_MCP`; adapt the names to your mod:
 
 1. `dayz_test_run(project="LFPowerGrid", mode="all", extra_mods=["@DayZ_MCP"])`, then `wait_for(log_matches, "OnStoreLoad SUCCESS")` (77 s, 26 probes), then `session_acquire_wait(purpose=...)` (it adopts the run: check `adopted_run`), then `wait_for(players_at_least, 1)`. Revised 2026-09-06: the earlier order probed `players_at_least` before adopting; that probe crosses the bridge and the idle-run fence rejects it with `run_not_owned` (`run-lifecycle.md`).
 2. `world_spawn(type="LFPG_BTCAtmAdmin", pos=[x,0,z])` about 3 m from the player, then `action_use(action="LFPG_ActionOpenBTCAtm", classname="LFPG_BTCAtmAdmin", radius=5)` returns `started:1` (the lookup by `Type().ToString()` works at runtime).
-3. `wait_for(log_matches, "[BTCOpenResponse]", lookback_lines=200)`, with the lookback: the response lands about 200 ms after the trigger, and with a "from now" cursor it is always lost (BUG-086, 2 of 2 timeouts with the line already in the log).
+3. `wait_for(log_matches, "[BTCOpenResponse]", lookback_lines=200)`, with the lookback: the response lands about 200 ms after the trigger, and with a "from now" cursor it is always lost (2 of 2 timeouts with the line already in the log).
 4. `ui_tree(path="BTCAtmRoot")`. With an empty path it returns `no_menu` although the UI is open: a Dabs or `ScriptView` panel is a pre-created host, not a `UIScriptedMenu`. Pass the root name of the `.layout`, which is the first `FrameWidgetClass <name>` in the layout file.
 5. `ui_set_text("EditBtcAmount", "1")` with an integer (the mod's getter is an int: "0.001" becomes 0 and the panel shows a status with no RPC), then `ui_click("BtnBuyBtc")` returns `clicked:1 handler=LFPG_BTCAtmView user_id=100` (the `#ifdef DabsFramework` branch of the bridge's `InvokeUiClick` fires when another mod loads Dabs), then `wait_for(log_matches, "[BTCTxResult]", lookback_lines=200)` and read `err=`.
 6. `session_release`, then `dayz_test_stop`.
 
 Check that the machine is really yours before the first mutation (`run-lifecycle.md`, "A machine that looks free can be taken seconds later").
 
-## Driving a client: three traps (SP-450, added 2026-10-01)
+## Driving a client: three traps (added 2026-10-01)
 
-[EXACT] Measured on DayZDiag 1.29.163709 with one client on localhost:
+Measured on DayZDiag 1.29.163709 with one client on localhost:
 
 - With the CF, Dabs Framework and VPPAdminTools stack loaded, a mod's `MissionGameplay.OnKeyPress` does not receive the keys sent by `input_trigger`; without that stack it does.
 - The client can come up in the pause menu: Escape does not close it, `ui_click` on `continuebtn` does.
@@ -50,7 +50,7 @@ Check that the machine is really yours before the first mutation (`run-lifecycle
 
 ## Real inventory moves: what the verbs reach, and a key-driven test addon
 
-[EXACT][CLAIM-MCPV-INVENTORY-MOVES-130] Added 2026-10-24, measured on DayZDiag 1.30.164200 (managed runs of project `DayZ_MCP` with a server-side logger as an extra mod, all but the first also with a test-only driver):
+Added 2026-10-24, measured on DayZDiag 1.30.164200 (managed runs of project `DayZ_MCP` with a server-side logger as an extra mod, all but the first also with a test-only driver):
 
 - `hands_take` answered `not_reachable` for an item in the cargo of a world container (`WoodenCrate`, `Barrel_Blue`, open, player 1.5 m away) and for an item in the `RB_LvL1_Plank` slot of a `Land_House_1M1` (player 6.5 m and 12.7 m from its origin); other buildings were not tried. It worked for an attachment of an item lying on the ground (`SparkPlug` in a `PowerGenerator`) and for a container on the ground (`WoodenCrate` into the hands).
 - `action_use(action="ActionAttach", classname="Land_House_1M1")` with a plank in the hands returned `condition_failed`; on a `PowerGenerator` it attached the spark plug.
@@ -63,19 +63,19 @@ Check that the machine is really yours before the first mutation (`run-lifecycle
 
 ## Comparing worn items, and getting an infected to attack (added 2026-10-02)
 
-[EXACT][CLAIM-MCPV-WORN-MANNEQUIN] Measured in one run (DayZDiag 1.29.163709, in-game checks of the character and clothing import routes):
+Measured in one run (DayZDiag 1.29.163709, in-game checks of the character and clothing import routes):
 
 - **No verb takes a worn item off the player.** A second garment cannot go into an occupied slot, `player_respawn` on a living player does nothing even after `player_godmode(on=false)` (`verb-gotchas.md`), and `player_teleport` to y=160 left the player hanging in the air with no fall. To compare two garments, wear the second on a survivor spawned with `world_spawn(type="SurvivorM_<name>")`: `inventory_attach(object_id=<its id>, dest="attachment", slot=...)` works on it, and it stands facing north. It cannot be given an item to hold (`slot="Hands"` returns `attachment_create_failed`), so read its sides from its facing.
 - **An infected attacks only once it notices the player.** One spawned with AI (`flags=8391716`, the living-infected value 3108 plus `ECE_NOPERSISTENCY_WORLD`) behind a player standing still walked away. Spawned 2.4 m in front of the player, it attacked after a short `player_move` (jog, 1.2 s): wind-up and swings, again and again. Godmode does not hide the player from AI: in the diag build `m_CanBeTargetedDebug` starts true (`P:\scripts\4_world\entities\manbase\playerbase.c:408`).
 - **In this run, infected spawned without AI did not stay healthy.** With `flags=8389668` three of them idled in place, but about 12 minutes later one custom and one vanilla `ZmbM_SoldierNormal` read `health01 = 0` in `telemetry_read(mode="object_at")` and lay on the ground, and the third read 0.75. No log line explains it and the cause was not found; it is one observation with no AI against no-AI control. Capture static infected early, and read their health again before a late capture.
 
-## A mission driver for logic that has no verb (SP-074, added 2026-08-31)
+## A mission driver for logic that has no verb (added 2026-08-31)
 
-When the test needs mod APIs that no MCP verb reaches, put an Enforce Script driver in the `init.c` of the test mission instead of using `exec_enforce`. In the source's layout that is the mission under the mod's own dev folder (`<Mod>_dev\_server\mpmissions\<mission>\`), which its launcher script prefers over the template mission; the launch side of this pattern belongs to the `dayz-test-ingame` skill. `/dayz-gate behavior` injects a driver of the same kind (`AZ_BehaviorTest`) into a copy of the instance's mission; for its five built-in actions use the gate. The pattern validated with dayz-mcp runs:
+When the test needs mod APIs that no MCP verb reaches, put an Enforce Script driver in the `init.c` of the test mission instead of using `exec_enforce`. Use a mission kept with the mod's own test files (for example `<Mod>_dev\_server\mpmissions\<mission>\`) and boot the test server on it instead of the template mission; the launch side of this pattern belongs to the `dayz-test-ingame` skill. `/dayz-gate behavior` injects a driver of the same kind (`AZ_BehaviorTest`) into a copy of the instance's mission; for its five built-in actions use the gate. The pattern validated with dayz-mcp runs:
 
 1. A server-only driver class, started with `CallLater` at 250 ms.
 2. A file protocol that is written once per sequence number: `$profile:<case>\cmd_<seq>.json` in, `res_<seq>.json` out, read and written with `JsonFileLoader`. Never rewrite a `seq`.
 3. One boot per run: the sequence lives in memory and resets to 1 on restart. Between runs, archive the whole directory with a rename; do not move its contents with a wildcard.
 4. Print a `MARK` line in the script log to delimit each window. Every failure of an operation is serialized inside its `res_<seq>.json`; the driver's poll loop does not die from a failed case.
 5. Mission scripts see the classes of every loaded mod and compile on the server with `#ifdef SERVER` visible. The host runner only writes commands, reads results and cuts the log between marks.
-6. [EXACT] Archive the case directory on completion, always and not only between runs, and never run a command that already has its `res_<seq>.json`. Measured failure (2026-09-27, LFPowerGrid; DayZ 1.30.164014 Experimental): a driver whose sequence reset to 1 on a stale `cmd_1.json` re-ran a mounting command every 1.5 s or so; half an hour later the world held thousands of duplicate objects and the user aborted the next session for performance. The log lines dismissed as harness noise were the signal: a repeated `OP seq=1` means the command is running again, and duplicated live device ids mean two entities share one id. Before filing a repeated line or an `ERR` line as noise, write in one sentence what it would mean if it were true; if that sentence describes damage, it is signal.
+6. Archive the case directory on completion, always and not only between runs, and never run a command that already has its `res_<seq>.json`. Measured failure (2026-09-27, LFPowerGrid; DayZ 1.30.164014 Experimental): a driver whose sequence reset to 1 on a stale `cmd_1.json` re-ran a mounting command every 1.5 s or so; half an hour later the world held thousands of duplicate objects and the user aborted the next session for performance. The log lines dismissed as harness noise were the signal: a repeated `OP seq=1` means the command is running again, and duplicated live device ids mean two entities share one id. Before filing a repeated line or an `ERR` line as noise, write in one sentence what it would mean if it were true; if that sentence describes damage, it is signal.

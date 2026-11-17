@@ -1,7 +1,7 @@
 """Whether the vanilla tree is the scripts of the game the addon runs on.
 
 The rules that read the vanilla tree judge an addon against that tree, not
-against the game. Pipeline inbox fb-20261103-150432-9f93: a gate read the
+against the game. A gate read the
 1.30.164014 Exp extract while the game was 1.30.164200, and a call to
 vector.Cross, which only the extract declares, passed; the game refused it.
 
@@ -9,7 +9,7 @@ The game compiles its own dta/scripts.pbo, so the tree is compared with that
 archive by content, file by file (.c only). A folder carries no build number,
 and the PBO header's version or the exe's version only name a build: they do
 not say which build a folder was extracted from. Read-only. The PBO is read
-with the Pack's fail-closed reader,
+with the fail-closed reader of the vehicle proxy contract tool,
 scripts/tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy/pbo.py, which refuses
 a compressed entry: what it cannot read is reported as not compared, never as
 a match.
@@ -36,8 +36,8 @@ VANILLA_ROOT_BUILD_MESSAGE = (
     "differ from the tree and {missing} are not in it, and the tree has "
     "{extra} .c files the game does not ({examples}). The rules that read the "
     "vanilla tree judge the addon against the tree, so a method or a class "
-    "that only the tree declares passes, and the game refuses it (pipeline "
-    "inbox fb-20261103-150432-9f93: vector.Cross). Extract that scripts.pbo "
+    "that only the tree declares passes, and the game refuses it (as it did "
+    "vector.Cross). Extract that scripts.pbo "
     "and pass it as --vanilla-root."
 )
 
@@ -55,7 +55,7 @@ def _scripts_pbo(game_root):
 
 
 def _reader():
-    """(PboFormatError, digest_pbo) of the Pack's reader, or None."""
+    """(PboFormatError, digest_pbo) of the PBO reader, or None."""
     if str(_READER_ROOT) not in sys.path:
         sys.path.insert(0, str(_READER_ROOT))
     try:
@@ -101,7 +101,7 @@ def compare_vanilla_build(vanilla_root, game_root):
     reader = _reader()
     if reader is None:
         return [], [_skip(
-            "the Pack's PBO reader is not at %s, so the vanilla tree is not "
+            "the PBO reader is not at %s, so the vanilla tree is not "
             "compared with %s" % (_READER_ROOT, pbo)
         )], None
     pbo_format_error, digest_pbo = reader

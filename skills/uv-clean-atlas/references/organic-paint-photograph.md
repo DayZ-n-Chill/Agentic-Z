@@ -2,7 +2,7 @@
 
 How to build a paintable atlas for a statue, a coat or a one-shell character by projecting it orthographically ("photographing" it) instead of unwrapping it. The method was accepted by its user on 2026-09-02 on a statue mesh generated with Tripo (run `g12_arm` below). The script output labels it G12; the projection and packing stages it reuses are labelled G9 and G10.
 
-The engine is `<skill-dir>\scripts\project_atlas.py`, the projector first written for the LFQuad vehicle body (LFQuad is the source author's quad-bike mod). The script is a copy; the LFQuad project keeps its own, along with the shell classification and the paint groups the vehicle method was developed on, none of which are in this repo. The driver that peels the statue's limbs was run live against that one mesh and is not shipped, because it holds paths and thresholds for that statue only. The steps below are enough to drive the engine on another mesh.
+The engine is `<skill-dir>\scripts\project_atlas.py`, the projector first written for a quad-bike vehicle body. The shell classification and the paint groups of that vehicle are not in this repo. The driver that peels the statue's limbs is not shipped, because it holds paths and thresholds for that statue only. The steps below are enough to drive the engine on another mesh.
 
 Do not run `uv_view_charts.py` plus the SLIM unwrap on a one-shell organic mesh. That clustering is for vehicle panels. On the statue it produced 25 charts, the dust merge took them to 5 with density from 0.00 to 3.95, and the attempts to repair that (k=6 clustering, a Voronoi split, absorbing small charts) all deformed the result. The `smart_project` fallback gave 215 islands and was rejected: not few, and not by views.
 
@@ -44,9 +44,9 @@ blender -b <file.blend> --python <skill-dir>\scripts\project_atlas.py -- <assign
 
 The script never saves the `.blend`. It writes `atlas_metrics.json`, the island files (`atlas_a_islands.json`, `atlas_b_islands.json`, `island_visibility.json`) and the frozen `assignment_REAL.json` into `<outdir>`, prints one `SUMMARY` line, and exits with code 3 when a gate fails.
 
-It is the projector exactly as it ran on the LFQuad body, so these parts must be changed before it accepts another mesh:
+It is the projector exactly as it ran on the quad-bike body, so these parts must be changed before it accepts another mesh:
 
-| In the script | What it holds for LFQuad | Effect on another mesh |
+| In the script | What it holds for the quad bike | Effect on another mesh |
 |---|---|---|
 | `EXPECTED_BLEND_SHA256` | The SHA-256 of that one `.blend` | `main()` logs `ERROR blend sha256` and exits with code 2 |
 | `EXPECTED_FACE_COUNT` | 10,502 faces | The face invariant gate fails |
@@ -77,7 +77,7 @@ The leftover 0.033 is the thickness of the sleeve tube plus folds of fewer than 
 
 - Unwrap (SLIM, angle based or `smart_project`) a paint atlas for an organic mesh.
 - Run the `uv_view_charts.py` k-means clustering or its cone fallback on a one-shell coat.
-- Let the texturing tool (Modddif in the source project) recreate the UVs. Generate only on this atlas.
+- Let the texturing tool recreate the UVs. Generate only on this atlas.
 - Graph-color left and right into extra elevations to force SAT = 0.
 - Normalize density per island; it deforms the photograph.
 - Hand UV work to a 3D generation model (Hunyuan3D on a local GPU was ruled out for this job).

@@ -2,9 +2,9 @@
 
 What goes in each LOD of a model this skill writes, the limits that make Binarize or the game reject a LOD, how face winding ties in, the Blender object names that Object Builder's FBX import turns into LODs, and one project's full record of keeping a very large building's collision inside Binarize's limits.
 
-What is checked and what is not: lines that cite `P:\` were opened and confirmed against vanilla. The limits (vertex normals, Roadway distance, LOD count), the decimation figures and the whole building section are format knowledge or the source author's measurements on named third-party mods (LFQuad, the SecretRock building, a GLB car import); vanilla models on `P:\` are binarized, so those cannot be checked there. What vanilla models carry, with counts, is in `_shared/models/lods.md`; the resolution values are in the Tier 2 table in `_shared/conventions/assets.md`.
+What is checked and what is not: lines that cite `P:\` were opened and confirmed against vanilla. The limits (vertex normals, Roadway distance, LOD count), the decimation figures and the whole building section are format knowledge or measurements on third-party mods (a quad vehicle, a large rock building, a GLB car import); vanilla models on `P:\` are binarized, so those cannot be checked there. What vanilla models carry, with counts, is in `_shared/models/lods.md`; the resolution values are in the Tier 2 table in `_shared/conventions/assets.md`.
 
-Evidence labels: `[OFFLINE MEASURED]` measured without the game, `[IN-GAME VERIFIED]` measured in game. Codes such as SP-453 and LL-024 are the source author's ticket and lesson numbers. Rule numbers (Rule 12, Rule 18) are the rules in `critical-rules.md`.
+Evidence labels: `[OFFLINE MEASURED]` measured without the game, `[IN-GAME VERIFIED]` measured in game. Rule numbers (Rule 12, Rule 18) are the rules in `critical-rules.md`.
 
 ## Contents
 
@@ -19,7 +19,7 @@ Evidence labels: `[OFFLINE MEASURED]` measured without the game, `[IN-GAME VERIF
 
 ### Resolution LODs (visual)
 
-These are what the player sees. Several LODs at rising distances reduce the rendering cost. This file does not give the distance at which the game switches visual LODs: before tuning the material of a far LOD, find out in game which LOD is drawn at that distance (`skills/_shared/vehicles/process-gates.md`, SP-483).
+These are what the player sees. Several LODs at rising distances reduce the rendering cost. This file does not give the distance at which the game switches visual LODs: before tuning the material of a far LOD, find out in game which LOD is drawn at that distance (`skills/_shared/vehicles/process-gates.md`).
 
 | LOD | Resolution value | Purpose |
 |---|---|---|
@@ -39,9 +39,9 @@ Rules:
 
 ### LOD reduction: planar dissolve does not reduce a curved surface (added 2026-05-23)
 
-Decimate of type DISSOLVE merges coplanar faces into n-gons, but a `.p3d` stores only triangles and quads, so the n-gons have to be triangulated. On a curved body, which has few coplanar faces, the dissolve merges almost nothing, and triangulating the n-gons it does produce raises the count again. Measured on the LFQuad vehicle mod: LOD1 through planar dissolve had 122k triangles, more than the 60k of LOD0. Planar dissolve does not reduce the triangle count of curved bodywork.
+Decimate of type DISSOLVE merges coplanar faces into n-gons, but a `.p3d` stores only triangles and quads, so the n-gons have to be triangulated. On a curved body, which has few coplanar faces, the dissolve merges almost nothing, and triangulating the n-gons it does produce raises the count again. Measured on a third-party quad vehicle mod: LOD1 through planar dissolve had 122k triangles, more than the 60k of LOD0. Planar dissolve does not reduce the triangle count of curved bodywork.
 
-To reduce a LOD while keeping a specific feature (a radiator grille, a logo, a badge), use **Decimate COLLAPSE with a protected vertex group**: build a vertex group from the feature (often it can be picked by material) and set `vertex_group=<group>`, `invert_vertex_group=True`, `vertex_group_factor=1.0`. This reduces exactly like plain collapse but keeps the feature whole. Measured on LFQuad at ratios 0.5, 0.25 and 0.1: 78k, 39k and 15.6k triangles, with the grille (material B_GRAY, 37 faces) kept at 37, 37 and 37, whereas plain collapse cut it to 26, 9 and 3. Always check the triangle count of each LOD again after decimating. (Origin: LFQuad phase B, LL-024.)
+To reduce a LOD while keeping a specific feature (a radiator grille, a logo, a badge), use **Decimate COLLAPSE with a protected vertex group**: build a vertex group from the feature (often it can be picked by material) and set `vertex_group=<group>`, `invert_vertex_group=True`, `vertex_group_factor=1.0`. This reduces exactly like plain collapse but keeps the feature whole. Measured on the same mod at ratios 0.5, 0.25 and 0.1: 78k, 39k and 15.6k triangles, with the grille (material B_GRAY, 37 faces) kept at 37, 37 and 37, whereas plain collapse cut it to 26, 9 and 3. Always check the triangle count of each LOD again after decimating.
 
 Decimating a LOD the player sees needs the user's approval first (the decimation gate in `SKILL.md`).
 
@@ -125,7 +125,7 @@ Defines where characters can walk and what sound their footsteps make. Vanilla b
 
 ### Geometry PhysX LOD
 
-A copy of the Geometry or Fire Geometry LOD for PhysX interactions (the source lists it as "Arma 3 / DayZ SA"). In DayZ it is the GeoPhys LOD at `4.0e+13`, carried by 8 vanilla models such as `P:\DZ\structures\furniture\beds\pillow_grey.p3d` (`_shared/models/lods.md`).
+A copy of the Geometry or Fire Geometry LOD for PhysX interactions. In DayZ it is the GeoPhys LOD at `4.0e+13`, carried by 8 vanilla models such as `P:\DZ\structures\furniture\beds\pillow_grey.p3d` (`_shared/models/lods.md`).
 
 - Thrown objects (grenades and the like) interact with this LOD and with the Roadway LOD.
 - Keep it as simple as possible: PhysX collisions are expensive.
@@ -146,7 +146,7 @@ Traps when trimming to fit:
 - **Merge by distance before decimating.** A triangle soup has three times as many vertices as faces; welding coincident vertices first collapses the count for free before any decimation.
 - **A LOD ladder with a duplicate resolution.** Two LODs at the same resolution value are an invalid LOD set; each lower LOD needs a strictly larger resolution value.
 
-(Origin: SP-009, LL-026, bug 011 of the kt_roadkill_armed vehicle import.)
+(Measured on a third-party armed vehicle import.)
 
 ## Face normals and winding order (texture visibility)
 
@@ -161,7 +161,7 @@ Symptoms of a wrong winding order:
 **Rule (`critical-rules.md`, Rule 12).** Geometry authored in Blender and GLB or glTF geometry brought through Blender take the same det=-1 map, and neither is reversed (for a glTF read without Blender see `axes-and-winding.md`, "GLB and glTF imports"):
 
 - **Blender authored geometry** goes through the reflection `x'=x, y'=z, z'=y` (det=-1): apply it to all vertices and normals in all LODs, keep the vertex order (it comes out inward, the MLOD convention) and negate the normals. The old det=+1 rotation `z'=-y` ships a mirrored model (measured in game 2026-10-01).
-- **GLB or glTF geometry** brought through Blender is Blender geometry: glTF front faces are counter clockwise like Blender's, and Blender's glTF importer keeps them so. The same map, order and normals apply. Reversing the faces after the det=-1 map turns them outward, which rendered inside out in game (the MercedesAMGLF vehicle mod, 2026-06-24; `axes-and-winding.md`, "GLB and glTF imports").
+- **GLB or glTF geometry** brought through Blender is Blender geometry: glTF front faces are counter clockwise like Blender's, and Blender's glTF importer keeps them so. The same map, order and normals apply. Reversing the faces after the det=-1 map turns them outward, which rendered inside out in game (a third-party car mod, 2026-06-24; `axes-and-winding.md`, "GLB and glTF imports").
 
 Never assume. `check_face_winding` (`py3d-direct-generation.md`, "Face Winding Verification") must read about 0 % flipped, but it only shows that the vertex order and the normals agree: an inside out export with both pointing outward reads the same.
 
@@ -205,19 +205,19 @@ FBX import settings in Object Builder:
 
 ## Total LOD count ceiling (added 2026-07-14)
 
-Keep the total number of LODs per model under about 30. Bohemia's LOD wiki page warns that **30 or more LODs in total can crash the binarizer**. This counts all LOD types together (resolution, Geometry, Fire, View, shadow, Memory, Roadway and the rest), not just the resolution LODs. (Source: the Bohemia LOD wiki page, as cited in a 2026 video tutorial on LOD authoring.) The rest of what those tutorials show (copy LOD0, decimate to about 50 %, 25 % and 12 %, set textures and sections before cutting LODs so they carry over) is already covered above and in `blender-headless.md`; this ceiling is the one extra hard limit.
+Keep the total number of LODs per model under about 30: **30 or more LODs in total can crash the binarizer** (Bohemia tool documentation; not checked on `P:\`). This counts all LOD types together (resolution, Geometry, Fire, View, shadow, Memory, Roadway and the rest), not just the resolution LODs. The usual LOD ladder (copy LOD0, decimate to about 50 %, 25 % and 12 %, set textures and sections before cutting LODs so they carry over) is covered above and in `blender-headless.md`; this ceiling is the one extra hard limit.
 
 ## Collision of a large building with an interior
 
-(SP-453, SP-457, SP-458, added 2026-10-03.)
+(Added 2026-10-03.)
 
-Measured on one project: a rock shaped building generated from Blender, with a hangar, an attic, a ground floor room and a lift inside (the SecretRock mod's rock helipad, rounds R7.1 to R7.4, 2026-10-01 to 2026-10-03). Its collision is hundreds of convex pieces per model. Every figure below comes from that project; none was measured again on another model, and none can be checked on `P:\`. For scale, the vanilla barn `P:\DZ\structures\industrial\farms\barn_wood1.p3d` stores 564 components in its largest collision LOD (`_shared/models/lods.md`, "Geometry").
+Measured on one project: a rock shaped building generated from Blender, with a hangar, an attic, a ground floor room and a lift inside (a third-party mod's rock helipad, build rounds R7.1 to R7.4, 2026-10-01 to 2026-10-03). Its collision is hundreds of convex pieces per model. Every figure below comes from that project; none was measured again on another model, and none can be checked on `P:\`. For scale, the vanilla barn `P:\DZ\structures\industrial\farms\barn_wood1.p3d` stores 564 components in its largest collision LOD (`_shared/models/lods.md`, "Geometry").
 
 ### MLOD size grows with the square of the piece count
 
 `[OFFLINE MEASURED]` With 1,150 pieces in Geometry, View and Fire, the rock's MLOD weighed 478 MB; with 827 to 997 pieces of 6 points each and a separate, coarser View Geometry that kept the functional pieces (doors, buttons), 55 to 75 MB. The binarized ODOL does not carry the cost (78.4 MB of MLOD became 2.1 MB of ODOL); the MLOD does, and in a Git repository it needs LFS past GitHub's 100 MB. The separate View did not last: in R7.3 its own set of pieces left 28 % of the skin open to the project's ray test and went past 2,048 components, so the View went back to the Geometry's pieces.
 
-Why it grows that way, from the format rather than from a measurement: an MLOD stores each named selection as one byte per point and one byte per face of its LOD (py3d writes `len(all_points) + len(all_faces)` bytes per selection: `py3d/__init__.py:1968-1974` of the fork in `scripts/tools/py3d`, version 1.10.1), and every `ComponentNN` is a selection. N pieces of k points and f faces each make a LOD of about N·k points and N·f faces, so their selections take about N²·(k + f) bytes in each collision LOD.
+Why it grows that way, from the format rather than from a measurement: an MLOD stores each named selection as one byte per point and one byte per face of its LOD (py3d writes `len(all_points) + len(all_faces)` bytes per selection: `py3d/__init__.py:1968-1974` of py3d in `scripts/tools/py3d`, version 1.10.1), and every `ComponentNN` is a selection. N pieces of k points and f faces each make a LOD of about N·k points and N·f faces, so their selections take about N²·(k + f) bytes in each collision LOD.
 
 Before assembling, clean the source meshes and check the hulls: zero area faces, orphan points, faces wound against their normals and `bmesh.ops.convex_hull` hulls that are not exactly convex are in `dayz-p3d-audit/references/killers-detail.md`, "Source meshes for collision".
 
@@ -239,7 +239,7 @@ Before assembling, clean the source meshes and check the hulls: zero area faces,
 
 ### Binarize: a silent limit on the collision LODs
 
-1. `[OFFLINE MEASURED]` With 1,843 convex pieces in Geometry, View and Fire, `binarize.exe` wrote no ODOL and printed no capacity line: the project's three state bench read `OTHER_FAIL`, and no message explained it (claim CLAIM-BINARIZE-COLLISION-LOD-SILENT).
+1. `[OFFLINE MEASURED]` With 1,843 convex pieces in Geometry, View and Fire, `binarize.exe` wrote no ODOL and printed no capacity line: the project's three state bench read `OTHER_FAIL`, and no message explained it.
 2. `[OFFLINE MEASURED]` It is not the file size: a 247.8 MB MLOD failed and a 264.4 MB one passed. Without its collision LODs, the same model passed.
 3. `[OFFLINE MEASURED, variable not isolated]` The boundary over 9 variants, read per collision LOD (a variant without its View LOD failed like the full one):
 
@@ -254,7 +254,7 @@ Before assembling, clean the source meshes and check the hulls: zero area faces,
    The first three separate the passes from the failures equally well (2^25 = 33,554,432 lies between the two products); the piece count and the point count alone do not. A cap at 32,768 faces cannot be the only limit, since 32,766 already failed; one alongside another limit is not ruled out. A variant with few faces and many selections would help decide it; it was not run.
 4. `[OFFLINE MEASURED]` A truncated MLOD gives the same `OTHER_FAIL`: one variant was cut off while being written, inside its Geometry LOD. Before reading an `OTHER_FAIL` as this limit, walk the MLOD to the `#EndOfFile#` TAGG of every LOD.
 5. Rule (the project's, applied to the models it shipped): before binarizing, measure each collision LOD with a header reader. Points and faces are in each LOD's `P3DM` header, and the named selections and their bytes in its TAGG list, which a reader skips through by each TAGG's size without loading the file (seconds for 350 MB). Where any of the three measures is above the largest value seen to pass (the first column of the table, exact), move pieces to another model with the same transform, created and deleted with the main one. Do not merge or decimate pieces to fit. Those values are one project's conservative bounds, not a PASS threshold: `binarize` still decides for every resulting model.
-6. `[IN-GAME VERIFIED, DayZDiag 1.29, 2026-10-03]` The separate model works: a collision only `House` class of 602 pieces, spawned with the rock at its transform. A `geom` ray cast from 30 m out toward the rock stopped on one of its pieces, and the project's battery of 1,188 rays per LOD from outside found 0 holes in Geometry, Fire and View. No Fire or View ray was checked against that model's pieces on their own (claim CLAIM-COLLISION-ONLY-MODEL-INGAME).
+6. `[IN-GAME VERIFIED, DayZDiag 1.29, 2026-10-03]` The separate model works: a collision only `House` class of 602 pieces, spawned with the rock at its transform. A `geom` ray cast from 30 m out toward the rock stopped on one of its pieces, and the project's battery of 1,188 rays per LOD from outside found 0 holes in Geometry, Fire and View. No Fire or View ray was checked against that model's pieces on their own.
 
 ### Binarize: `Too many vertices` from the collision LODs (R7.4)
 
@@ -268,6 +268,6 @@ Before assembling, clean the source meshes and check the hulls: zero area faces,
 | The failing build, visual LOD 0 put back | 1,263 | 16,582 | 94,750 | 25,232 | `CAPACITY_FAIL` |
 | The failing build without its last 33 exterior pieces | 1,230 | 16,094 | 93,286 | | PASS |
 
-So, for this model, the limit lies between 1,240 and 1,263 pieces per collision LOD, or between 94,091 and 94,750 points over all LODs; these builds cannot tell which. Named selections × points in one collision LOD do not explain it alone: the interior model of the same addon passes with about 1,800 selections of 17,641 points in its one collision LOD. Nor is it the silent limit above, since binarize printed `Too many vertices` for this MLOD. The project caps the rock at 1,230 pieces and moves the rest to its collision only model (item 6 above), and binarize passed 6 of 6 (claim CLAIM-BINARIZE-COLLISION-TOO-MANY-VERTICES).
+So, for this model, the limit lies between 1,240 and 1,263 pieces per collision LOD, or between 94,091 and 94,750 points over all LODs; these builds cannot tell which. Named selections × points in one collision LOD do not explain it alone: the interior model of the same addon passes with about 1,800 selections of 17,641 points in its one collision LOD. Nor is it the silent limit above, since binarize printed `Too many vertices` for this MLOD. The project caps the rock at 1,230 pieces and moves the rest to its collision only model (item 6 above), and binarize passed 6 of 6.
 
 Rule: on a `CAPACITY_FAIL`, compare every LOD of the last build that passed with the failing one before blaming the change just made. Here the visual LOD had changed in the same round and took the blame for one round; put back as it passed, the model still failed.

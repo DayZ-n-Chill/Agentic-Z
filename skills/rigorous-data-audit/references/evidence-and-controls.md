@@ -2,25 +2,23 @@
 
 How to tell real evidence from evidence that only looks real: the deployed build against the source, which code path wrote a log line, positive and negative controls that can actually fail, inventories that are complete, and store constructors that write while they read. Open this in steps 1 and 3 and whenever a check comes back clean.
 
-These are audit lessons from third-party projects; the DayZ facts in the last section were measured in game by the source pack and cannot be checked on `P:\`. The vanilla storage version they refer to is `GAME_STORAGE_VERSION` (`P:\scripts\3_game\global\game.c:5`).
+These are audit lessons from third-party projects; the DayZ facts in the last section were measured in game and cannot be checked on `P:\`. The vanilla storage version they refer to is `GAME_STORAGE_VERSION` (`P:\scripts\3_game\global\game.c:5`).
 
 ## Production triage: deployed artifact, path attribution, gates whose name lies, starting auditors
 
-Origin: the LF_VStorage mod, five production bugs and a dual audit (lessons LL-143 and LL-144).
+Case: the LF_VStorage mod, five production bugs and a dual audit.
 
 - **The deployed artifact is not the source (before step 1 when the trigger is a production bug)**: if audited code is distributed packaged (PBO/build), compare artifact mtime vs relevant fix files mtime AND probe INSIDE artifact (string-probe classnames on binary, without unpacking) BEFORE root-causing against source. Declare drift as its own finding. Case: PBO 28-May without 01-Jun CodeLockBridge, 2 of 5 bugs were partially deployment drift.
 - **Path attribution in log evidence**: a log line that "proves X works" is attributed to emitting path (synchronous shutdown vs action hook vs periodic scan) before classifying partial-vs-broken. Case: "MMG virtualizes" came ONLY from OnMissionFinish; zero runtime path activity in entire session.
 - **Lying-named gates (add to auditor prompts)**: for each trigger gate function (HasX/CanY/IsZ), paste and read BODY, do not accept name as evidence of coverage. Case: `HasCargoOrAttachments` without any attachments check → all slot storage invisible to all 4 triggers; missed by 9 auditors + cross-actor and uncovered by user pushback.
 - **Starting auditors (step 2)**: background agents automatically deny permission prompts outside the working folder, so start auditors in the foreground, all in a single turn (parallel). Case: mechanical checks agent bounced in background with PERMISSION-FAIL.
 
-## Rules promoted from the lessons log
+## Four standing rules for claims, fakes, locks and verifiers
 
-Rules promoted from the source pack's lessons log; each keeps its `LL` entry number.
-
-- **LL-045**: Bound every claim of non-causality to the size, version, fixture, and conditions where verified. Do not promote "X does not matter" as a universal conclusion if the corpus does not cover other regimes.
-- **LL-139**: Make every remote fake/stub emit the same types as the real wire, not just equivalent values. Do not use `is True`/`is False` with serialized data; explicitly test `0/1`, bool, and missing values according to contract. The fixture composes request as producer composes it, never the most complete one "for convenience" (LL-469): facing in-game defect with green suite, first look for test that already covered case and compare inputs field by field.
-- **LL-140**: Verify every resource exclusion with two real acquisitions on target OS and require the second to fail. Inspect socket, file-sharing, and stdlib mutex defaults; configure lock fail-closed.
-- **LL-190**: For every verifier asserting deleted/moved/repaired/restored, require an affected count greater than zero or an independent pre-check proving there was no work. Do not accept `{ok:true, count:0}` as proof on its own.
+- **Scope of a non-causality claim**: Bound every claim of non-causality to the size, version, fixture, and conditions where verified. Do not promote "X does not matter" as a universal conclusion if the corpus does not cover other regimes.
+- **Fakes and fixtures**: Make every remote fake/stub emit the same types as the real wire, not just equivalent values. Do not use `is True`/`is False` with serialized data; explicitly test `0/1`, bool, and missing values according to contract. The fixture composes request as producer composes it, never the most complete one "for convenience": facing in-game defect with green suite, first look for test that already covered case and compare inputs field by field.
+- **Resource exclusion**: Verify every resource exclusion with two real acquisitions on target OS and require the second to fail. Inspect socket, file-sharing, and stdlib mutex defaults; configure lock fail-closed.
+- **Verifiers that report zero work**: For every verifier asserting deleted/moved/repaired/restored, require an affected count greater than zero or an independent pre-check proving there was no work. Do not accept `{ok:true, count:0}` as proof on its own.
 
 ## A correct citation may not prove what is asked of it (step 3a)
 
@@ -28,7 +26,7 @@ An auditor cited an official vanilla test as proof that an API was synchronous: 
 
 **Rule**: before accepting a third-party test, assert, or invariant as proof of property P, locate case that DOES NOT have P and verify that same assert fails. If negative control passes, evidence does not discriminate, it is compatible with conclusion, does not support it. It is same axis as "a gate that cannot be turned red is not a gate", applied to third-party evidence instead of own gates. Verifying that the citation exists is the first rung; verifying citation DISCRIMINATES is second, and is the one skipped.
 
-## A control is calibrated to the worst real case, not a convenient one (lesson LL-348)
+## A control is calibrated to the worst real case, not a convenient one
 
 Previous corollary covers control that does not discriminate. This one covers one that discriminates but in the wrong range.
 
@@ -40,7 +38,7 @@ Lowering threshold was not answer either: at 25 there were 27 hits, nearly all l
 
 **Cheap signal**: if you wrote positive control and someone else found defect, check whether your control would have caught theirs.
 
-## A control that inherits the instrument's convention is born blind (lesson LL-347)
+## A control that inherits the instrument's convention is born blind
 
 Previous two cover control that does not discriminate and one discriminating out of range. This one covers one that discriminates perfectly **inside the blind spot intended to be measured**.
 
@@ -52,7 +50,7 @@ Cause: control generator applied `R_new = Ry(180) * R_old`, multiplying from the
 
 **Cheap signal**: if control and instrument share function, module, or formula, it is not an independent control. And if gate comes out green and observable result comes out wrong, suspect convention before threshold.
 
-## (SP-196 + SP-200) Repair-on-load constructors turn every reader into a writer
+## Repair-on-load constructors turn every reader into a writer
 
 A store constructor that prunes, migrates, compacts, normalizes, or repairs while loading is not read-only. Every call site that constructs it can write the same file, even when the caller's help text or docstring says "read-only". Treat that claim as unverified until the constructor and its callees have been read.
 

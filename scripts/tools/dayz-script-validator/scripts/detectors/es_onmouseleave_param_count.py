@@ -13,8 +13,8 @@ ES_ONMOUSELEAVE_PARAM_COUNT_RULE_ID = "ES-ONMOUSELEAVE-PARAM-COUNT"
 #
 # Scope: only classes declaring `extends ScriptedWidgetEventHandler` are
 # checked. Delegate/page classes legitimately re-implement a 3-param
-# OnMouseLeave invoked manually from the real handler (LBmaster production:
-# LBGroupUI.c:293 forwards to plain-class LBGroupPage.c:110) -- flagging
+# OnMouseLeave invoked manually from the real handler (a group UI handler
+# that forwards to a plain page class) -- flagging
 # those is a false positive, so classes without the handler base are
 # skipped. Known FN: handlers extending an intermediate base class, and
 # declarations with a non-bool return type.

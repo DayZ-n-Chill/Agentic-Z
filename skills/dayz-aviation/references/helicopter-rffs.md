@@ -1,14 +1,14 @@
 # RFFS helicopter: the kinematic reference
 
-How the RedFalcon Flight System (RFFS) helicopter framework (author `RedFalcon`, credits `GumbyMN`; `RFFSHeli_Core` version 1.0) flies a `CarScript` child with `SetVelocity` and `SetOrientation`: class layout, the `FlightSimulation()` integrator, the typed JSON config, rotor animation, memory points, crew, damage zones, actions, aviation attachments, HUD and sync. Open it when building or debugging a kinematic helicopter.
+How the RFFS helicopter framework (`RFFSHeli_Core` version 1.0) flies a `CarScript` child with `SetVelocity` and `SetOrientation`: class layout, the `FlightSimulation()` integrator, the typed JSON config, rotor animation, memory points, crew, damage zones, actions, aviation attachments, HUD and sync. Open it when building or debugging a kinematic helicopter.
 
-Third-party material, not yet checked on `P:\`. The mod is not obfuscated: every claim below was read from its own de-rapified `config.cpp` files and scripts (`Core_config.cpp`, `S76_config.cpp`, `Core_scripts\{3_Game,4_World,5_Mission}\...`, `S76_scripts\4_world\RFFSHeli_S76.c`), which are not in this repo. Citations are `file:line` into those files; `Core.c` is short for `Core_scripts\4_World\RFFSHeli_Core.c`. Tags: `[VERIFIED-RFFS]` read from that source, `[UNVERIFIED]` not in the copies that were read, so do not invent it. Learn the pattern from it and write the mod's own code; `skills/_shared/vehicles/helicopters.md` says which model to build from.
+Third-party mod behaviour, not vanilla, and not yet checked on `P:\`. The mod is not obfuscated: every claim below was read in its own de-rapified `config.cpp` files and scripts (`Core_config.cpp`, `S76_config.cpp`, `Core_scripts\{3_Game,4_World,5_Mission}\...`, `S76_scripts\4_world\RFFSHeli_S76.c`), which are not in this repo. Citations are `file:line` into those files; `Core.c` is short for `Core_scripts\4_World\RFFSHeli_Core.c`. Tags: `[VERIFIED-RFFS]` read in the mod's files, `[UNVERIFIED]` not read, so do not invent it. Learn the pattern from it and write the mod's own code; `skills/_shared/vehicles/helicopters.md` says which model to build from.
 
 **This is the recommended kinematic reference.** Unlike SIB (`helicopter-sib.md`), nothing here is
 DRM-gated or missing: the full flight integrator is legible. It is a *far* more physically-grounded flight
 model than SIB's (real thrust-vector rotation by attitude, ground effect, translational lift, speed/climb
 governors, aerodynamic drag, weathervaning), while still being **kinematic** (`SetVelocity`-based, no
-`dBodyApplyForce`) — confirming SIB's core lesson across a second independent author.
+`dBodyApplyForce`) — the same choice SIB makes.
 
 ## 1. Architecture — `RFFSHeli_S76 : RFFSHeli_base : CarScript`
 
@@ -35,8 +35,7 @@ overrides **`EOnSimulate`** (`Core.c:1027`) to fly itself with `SetVelocity`/`Se
 (`Core.c:1008-1016`), but that re-entry never reaches pose: `FlightSimulation()` stays behind the
 server gate, so the client pump only advances `ExecuteAnimations()` + `KeyboardInputClient()`
 (`Core.c:1143-1145`). It is not a smoothing mechanism — proxy pose smoothness comes from native
-CarScript replication [corrected 2026-08-03, LFHeli SF-8b: an earlier draft called this "for
-smoothing"].
+CarScript replication.
 
 ### 2a. Controls → state (per tick)
 
@@ -44,8 +43,8 @@ Inputs are read server-side in `KeyboardInput()` (`Core.c:510-544`) from pilot `
 copilot `CrewMember(1)`, each via `player.GetInputInterface().SyncedValue("UARFFS...")`. The client
 also *reads* the same synced values in `KeyboardInputClient()` (`Core.c:475-507`) purely to keep them
 network-synced (it discards the result). Custom UA inputs (declared in
-`inputs="RFFSHeli_Core/modded_Inputs.xml"`, `Core_config.cpp:30`; XML not in the research copy but the
-names are confirmed from the script reads):
+`inputs="RFFSHeli_Core/modded_Inputs.xml"`, `Core_config.cpp:30`; the names are confirmed from
+the script reads, and section 7 says what the XML holds):
 
 | Input | State written | Meaning | Cite |
 |---|---|---|---|
@@ -159,7 +158,7 @@ constant, so servers tune "±X %" without knowing the raw physics coefficient.
 [VERIFIED-RFFS] **Config-boolean sync trick**: server packs ~12 config booleans into a single
 `RegisterNetSyncVariableInt("c_encoded_config_bool")` bitfield (`Core.c:334-345`) and the client
 un-bit-shifts it in `EOnSimulate` (`Core.c:1030-1081`). Reusable when you have many small client-visible
-config flags and don't want a sync var per flag. (SIB used the same idea; independent reinvention.)
+config flags and don't want a sync var per flag. (SIB uses the same idea.)
 
 ## 4. AnimationSources, rotors, memory points, Crew, DamageZones (config)
 
@@ -189,7 +188,7 @@ low hydraulics also degrade cyclic authority via `m_cyclic_modifier` (`Core.c:14
 `dmgZone_chassis/avionics/engine/hydraulics/fuelTank/rotor1/rotor2/lights_1_1`
 (`S76_config.cpp:561-665`), `ptcExhaust_start` (engine smoke, `Core.c:1332/1343`), crew
 `crewDriver/crewCoDriver/crewCargo1-4` + `pos_*`/`pos_*_dir` (`S76_config.cpp:125-171`), headlight
-points via CarScript. **The `.p3d` itself is not in the research copy** — memory points are
+points via CarScript. **The `.p3d` itself was not read** — memory points are
 [VERIFIED-RFFS] from config/script text, [UNVERIFIED] as actual model selections.
 
 [VERIFIED-RFFS] **Crew** (`S76_config.cpp:125-171`): Driver + CoDriver + Cargo1-4 (6 seats), each with
@@ -245,17 +244,16 @@ bullet-strike sound flags, `m_pilot_in_command`, and the packed `c_encoded_confi
 mutation calls `SetSynchDirty()`. The client pump `EOnFrame`→`EOnSimulate` (`Core.c:1008-1016`)
 does not mirror physics or interpolate pose — `FlightSimulation()` is server-gated (`Core.c:1151`)
 and the client re-entry only runs animations + input sync (`Core.c:1143-1145`); proxy pose
-presentation is native CarScript replication, and the client never owns the authoritative velocity
-[corrected 2026-08-03, LFHeli SF-8b: an earlier draft here claimed "smooth interpolation"].
+presentation is native CarScript replication, and the client never owns the authoritative velocity.
 
-## 7. Not in the research copy / [UNVERIFIED]
+## 7. Not read / [UNVERIFIED]
 
 - **`modded_Inputs.xml`** — referenced (`Core_config.cpp:30`); the `UARFFS*` input *names* are confirmed
-  from script reads (`Core.c:491-501,549-554,563-583`), but the XML bindings/defaults were not in the
-  copies read for this file. A later pass found the file inside the shipped `RFFSHeli_Core.pbo`
-  (`mod-sources.md`): it holds only `<actions>`, `<sorting>` and `<preset>`, with no input `<context>`.
-- **`.p3d` models + `model.cfg`** — not in the copy. Memory points, rotor/gauge selections, and the
+  from script reads (`Core.c:491-501,549-554,563-583`). The file ships inside `RFFSHeli_Core.pbo`
+  (`mod-sources.md`) and holds only `<actions>`, `<sorting>` and `<preset>`, with no input `<context>`;
+  the individual key bindings in its `<preset>` are not recorded here.
+- **`.p3d` models + `model.cfg`** — not read. Memory points, rotor/gauge selections, and the
   skeleton bone graph are [VERIFIED-RFFS] as *names* (config/script), [UNVERIFIED] as actual model data.
-- **`RFFSHelicopterGUI.layout`** and the sound `.p3d`/wave assets — referenced, not present.
-- **`config.bin`** — the copies are Mikero-de-rapified `config.cpp`; treat as authoritative for
+- **`RFFSHelicopterGUI.layout`** and the sound `.p3d`/wave assets — referenced, not read.
+- **`config.bin`** — the config files read are de-rapified `config.cpp`; treat as authoritative for
   classes/inheritance but verify exact numerics against the live PBO before shipping.

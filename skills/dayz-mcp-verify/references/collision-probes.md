@@ -7,19 +7,19 @@ The verbs are dayz-mcp's; their behaviour and every measurement here are third-p
 ## What `scene_raycast` casts
 
 - The default `method="rvproxy"` intersects the LODs, in the mode given by `intersect`: `geom`, `view` or `fire`. These are the vanilla intersection types `ObjIntersectGeom`, `ObjIntersectView` and `ObjIntersectFire` (`P:\scripts\3_game\global\dayzphysics.c:67-69`).
-- [EXACT][CLAIM-MCPV-COLLISION-PROBES] `method="bullet"` with `radius=0` casts `DayZPhysics.RayCastBullet` (vanilla: `P:\scripts\3_game\global\dayzphysics.c:211`) in the server's physics world, restricted to the layers BUILDING, DOOR, VEHICLE, ROADWAY, TERRAIN, ITEM_SMALL, ITEM_LARGE and FENCE (`MCPBridge.c:2983-3004`; added 2026-10-02). Count a hit only when `object_type` is the target and the position is where its face should be: a vertical ray through a box without collision returns `hit=1` on the terrain. A miss alone does not prove the object has no physics shape (its layer can be outside the mask), and a hit does not mean the player collides (the `WoodenCrate` below).
+- `method="bullet"` with `radius=0` casts `DayZPhysics.RayCastBullet` (vanilla: `P:\scripts\3_game\global\dayzphysics.c:211`) in the server's physics world, restricted to the layers BUILDING, DOOR, VEHICLE, ROADWAY, TERRAIN, ITEM_SMALL, ITEM_LARGE and FENCE (`MCPBridge.c:2983-3004`; added 2026-10-02). Count a hit only when `object_type` is the target and the position is where its face should be: a vertical ray through a box without collision returns `hit=1` on the terrain. A miss alone does not prove the object has no physics shape (its layer can be outside the mask), and a hit does not mean the player collides (the `WoodenCrate` below).
 - With `intersect="view"` the ray uses the cursor's mode, but the bridge casts a 0.05 m sphere when the radius is 0 (`MCPBridge.c:2496`, `:2528-2531`), where the vanilla ray has none.
 
 ## Reading the reply
 
 - **`entry=0` is terrain, or a ray that started inside an object** (measured 2026-09-07 with `intersect=fire` and `geom`). A vertical ray against the ground returns `hit=1`, `object_type=""`, `surface_type=cp_grass|cp_concrete2`, `entry=0`, `exit=0`; against an object from outside it returns `entry=1`. Qualified 2026-10-03: a ray that starts inside an object also reads `entry=0` (the inside rays of run 606a5dbb read `entry 0, exit 1` at distance 0 on the controls). Tell terrain by its empty `object_type`, not by `entry=0` alone. A mod that filters `!hit.entry` discards natural ground (a placement hologram that never snaps to the ground was traced to this).
-- **The `normal` of an `rvproxy` reply is not a face normal.** [EXACT][CLAIM-MCPV-RVPROXY-NORMAL] The bridge copies the engine's `RaycastRVResult.dir` (`MCPBridge.c:2958`), which vanilla documents for a line-object collision as the "direction and size of the intersection" (`P:\scripts\3_game\global\dayzphysics.c:104`), as the enforce-script-reference skill ("Surface normals") found on house walls. Measured magnitudes on the ground were 0.16 to 0.42. In two runs (the first and run cf2d6bb3) it lay along the ray in all 190 `rvproxy` hits on an object, a box yawed about 10 degrees included ((-1.963, 0, 0) and (-1.966, 0, 0)), and its length is the ray's path through the object: (-2.1, 0, 0) across a 2 m box is its width plus the 0.05 m sphere at each side. So it says nothing about the face: never read it as a normal and never use it as a threshold (`dot >= 0.9` is never reached). Corrected 2026-10-02: earlier versions said to use it for direction only, and read the pose from it lying along the axis; with the default method it always does.
+- **The `normal` of an `rvproxy` reply is not a face normal.** The bridge copies the engine's `RaycastRVResult.dir` (`MCPBridge.c:2958`), which vanilla documents for a line-object collision as the "direction and size of the intersection" (`P:\scripts\3_game\global\dayzphysics.c:104`), as the enforce-script-reference skill ("Surface normals") found on house walls. Measured magnitudes on the ground were 0.16 to 0.42. In two runs (the first and run cf2d6bb3) it lay along the ray in all 190 `rvproxy` hits on an object, a box yawed about 10 degrees included ((-1.963, 0, 0) and (-1.966, 0, 0)), and its length is the ray's path through the object: (-2.1, 0, 0) across a 2 m box is its width plus the 0.05 m sphere at each side. So it says nothing about the face: never read it as a normal and never use it as a threshold (`dot >= 0.9` is never reached). Corrected 2026-10-02: earlier versions said to use it for direction only, and read the pose from it lying along the axis; with the default method it always does.
 - **A face normal comes from `method="bullet"`** (`MCPBridge.c:2998`): a unit vector in all 40 of its hits, up to 0.31 degrees off the axis on `HouseNoDestruct` statics and on the axis on items.
 - **`component`** is filled on `rvproxy` hits (`geom`, `view` or `fire`); the bridge leaves it 0 on `bullet` hits (`MCPBridge.c:2983-3004`).
 
 ## The ray battery and its controls
 
-[EXACT][CLAIM-MCPV-COLLISION-BATTERY] Added 2026-10-03; it is the battery of the `dayz-p3d-audit` skill's "Absolute winding check" rule 6, fired on DayZDiag 1.29.163709 on 2026-10-02 (dayz-mcp run 606a5dbb). An earlier version of this playbook asked for rays "from at least two angles", which cannot tell the causes below apart.
+Added 2026-10-03; it is the battery of the `dayz-p3d-audit` skill's "Absolute winding check" rule 6, fired on DayZDiag 1.29.163709 on 2026-10-02 (dayz-mcp run 606a5dbb). An earlier version of this playbook asked for rays "from at least two angles", which cannot tell the causes below apart.
 
 Nine rays per mode (`geom`, `view`, `fire`):
 
@@ -45,7 +45,7 @@ With the source winding restored the same ray gave the front face at +0.079 m an
 
 ## Picking an item up proves nothing about its collision
 
-[EXACT][CLAIM-MCPV-PICKUP-NO-RAY] Added 2026-10-03; vanilla source read on 1.29 and rechecked on `P:\`, bridge source read, the pickup seen in the same run.
+Added 2026-10-03; vanilla source read on 1.29 and rechecked on `P:\`, bridge source read, the pickup seen in the same run.
 
 - Vanilla targeting casts `RaycastRVProxy` from the camera over `c_RayDistance` 5 m (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:241-255`, `:840`) with the default type `ObjIntersectView` (`P:\scripts\3_game\global\dayzphysics.c:88`).
 - At a camera pitch of -45 degrees or lower it also takes the objects of a cone, `c_ConeAngle` 30 degrees and `c_MaxTargetDistance` 3 m (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:324-325`, `:841-843`), and scores them by their distance to that ray with `DistSqrPoint2Line`, with no hit on them needed (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:528-529`).
@@ -65,7 +65,7 @@ Added 2026-10-02. The run teleported the player 4 m from the object's centre and
 
 ## Standing on top: move the player before reading its height
 
-[EXACT][CLAIM-MCPV-STAND-PROBE] Added 2026-10-02, measured in a later run on 2 m boxes. This is a second reading of the object's physics body, on its top instead of a side face.
+Added 2026-10-02, measured in a later run on 2 m boxes. This is a second reading of the object's physics body, on its top instead of a side face.
 
 An idle player is not a probe. After `player_teleport(pos=[x, <top + 0.07>, z], skip_clearance_check=true)` the player kept the teleport height (y 340.6000) and did not fall, on a box top and above open ground alike: the server read it twice over 3 to 4 s (`query_player_state`), and above open ground the client's physics position (the `start_pos` that `player_move` reports) still read it 15 s after the teleport (the worn-items run in `actions-ui-and-inventory.md` saw the same after a teleport to y=160). Every `query_player_state` of these probes read godmode on, the dayz-mcp default; the run did not separate the bridge, godmode and the engine as the cause.
 
@@ -87,7 +87,7 @@ Added 2026-10-02, same run as the walk-into probe.
 
 ### An item can come out with its sides swapped, and none of these checks shows it
 
-[EXACT][CLAIM-MCPV-ITEM-YAW] Measured 2026-10-02 on DayZDiag 1.29.163709 (dayz-mcp run cf2d6bb3). One source model held two 2 m boxes, A (x -3 to -1) in `Component01` and B (x 1 to 3) in `Component02`, and a twin had B in no component. Each model was spawned, binarized and as source, with `flags=8389668` and `rotation=64`, as `HouseNoDestruct` and as `Inventory_Base` (`item_large`).
+Measured 2026-10-02 on DayZDiag 1.29.163709 (dayz-mcp run cf2d6bb3). One source model held two 2 m boxes, A (x -3 to -1) in `Component01` and B (x 1 to 3) in `Component02`, and a twin had B in no component. Each model was spawned, binarized and as source, with `flags=8389668` and `rotation=64`, as `HouseNoDestruct` and as `Inventory_Base` (`item_large`).
 
 - On the four statics the west box was A, as modelled: it answered as component 0 (`Component01`; `Component02` reads 1), and on the twins it was the only box that took rays.
 - On the four items the boxes had swapped sides, as a turn of 180 degrees about Y leaves them: the west box answered as component 1, and on the twins every hit was component 0 on the east box while the west box took no ray.

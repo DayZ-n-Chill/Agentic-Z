@@ -1,4 +1,4 @@
-// Inbox fb-20261006-030019-e074, DayZ 1.30.164014 server, on the source this
+// DayZ 1.30.164014 server, on the source this
 // one stands for: "Unsafe down-casting, use 'Object.Cast'", "Types 'IEntity'
 // and 'Object' are unrelated" and "Cannot convert 'IEntity' to 'Object' for
 // argument '6' to method 'RaycastRV'", and the World module did not compile.

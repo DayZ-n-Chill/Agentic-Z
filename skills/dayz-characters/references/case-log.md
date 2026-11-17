@@ -2,9 +2,9 @@
 
 Covers the real character imports this skill's rules were learned on, one entry per import, session by session, so a worker can see which rule came from which failure. Append one entry per real import.
 
-How to read the marks: everything here was measured on a mod project, in Blender or in game, on the date given. None of it can be checked on `P:\`. The project's scripts, session notes and handoff files named here are not part of this repo.
+How to read the marks: everything here was measured on a test build, in Blender or in game, on the date given. None of it can be checked on `P:\`.
 
-## LFInfectedBig: a giant infected with a see-through torso hole (2026-06-23 onward)
+## The giant infected build: a giant infected with a see-through torso hole (2026-06-23 onward)
 
 The first character imported. An infected at about 1.2 times, with a chest hole one can see through (ribs and spine inside), as a reskin of `ZombieMaleBase`.
 
@@ -25,7 +25,7 @@ The first character imported. An infected at about 1.2 times, with a chest hole 
 - Both landed: it faces forward, is vanilla sized, and the camo is gone. py3d carried the weights fine; Object Builder was not needed.
 - A later texture fault on the same build (green, grey and brown patches that survived six replacements of the colour texture and the removal of the normal map) was fixed in the `.rvmat`, not in the texture. See the triage table in `SKILL.md` for what that does and does not prove.
 
-**New rig attempt and the false gate wall (2026-06-24; deformation still broken in game).** The project tried to fix the proportion deformation offline.
+**New rig attempt and the false gate wall (2026-06-24; deformation still broken in game).** An attempt to fix the proportion deformation offline.
 
 - Diagnosis of the shipped deformation: asymmetric automatic weights (`LeftUpLeg` 37 vertices against `RightUpLeg` 166), 19 % of weight across the midline, and the cross-side cleanup had amplified it to 21 to 34 times stretch (it keeps the dominant side per vertex; on bled, asymmetric weights it reassigns whole regions to the opposite limb).
 - The bind was replaced by **envelope weighting**: distance to the bone segment, a fade by side, and a column from pelvis to crotch. It is robust for a see-through cavity; a data transfer from a solid `Male_body` weighted the tunnel interior wrong and gave 100 times spikes.
@@ -41,6 +41,6 @@ The first character imported. An infected at about 1.2 times, with a chest hole 
 
 **Rule 12 check on the character (in game, 2026-10-02).** Three builds from one dump with an "F" marker on the chest; the Rule 12 build is solid, reads correctly, is lit like vanilla, walks and attacks with its limbs in place. Full result in `references/character-rigging.md` section 6.
 
-## ArmorHneck: worn armour that floated above the player (2026-08-03)
+## The worn armour build: worn armour that floated above the player (2026-08-03)
 
-A third-party worn model that rendered as a rigid block above the player. About six in-game cycles and research on debinarized vanilla clothing isolated the cause: the skeleton name. The result, the worn frame and the diagnosis ladder are in `references/worn-clothing-skeleton.md`.
+A worn armour model that rendered as a rigid block above the player. About six in-game cycles and research on debinarized vanilla clothing isolated the cause: the skeleton name. The result, the worn frame and the diagnosis ladder are in `references/worn-clothing-skeleton.md`.

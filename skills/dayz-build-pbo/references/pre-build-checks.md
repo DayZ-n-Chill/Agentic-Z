@@ -5,8 +5,7 @@ material paths, `.p3d` LODs, the stringtable, scripts and vehicle wheel slots, w
 `$PBOPREFIX$` rules and a manual checklist.
 
 Not yet checked on `P:\`: unless a line cites a vanilla file, what follows is measured tool and build
-behaviour (AddonBuilder, binarize, the game's loader) and project findings from the mods named in the text,
-kept as the knowledge pack's author recorded them. This repo has not repeated those measurements.
+behaviour (AddonBuilder, binarize, the game's loader) and findings from mod projects, not vanilla data.
 
 ## What `/dayz-build-pbo` already runs
 
@@ -55,17 +54,17 @@ Each check reports **PASS**, **WARN**, or **FAIL** status. The final summary sho
 - **WARN:** Large asset files > 10MB (texture atlases, unoptimized meshes)
 - **Release package (manual; the checks above do not run it):** every class a player places, or that otherwise
   persists in the world, has an entry with an explicit lifetime in the `types.xml` the release ships. Without
-  one it runs out after 30 to 60 minutes of server time (the dayz-persistence skill, SP-459).
+  one it runs out after 30 to 60 minutes of server time (the dayz-persistence skill,
+  `references/lifetime-and-storage.md`).
 - **Publishing to the Workshop (manual):** signing with DsUtils, the item folder, the Publisher or SteamCMD,
   and why a SteamCMD login with the Steam client's account kicks that client off: `workshop-publish.md`.
   On Linux (dayzmake, `meta.cpp`, Workshop tags, the `workshop` uploader): `dayzmake-linux.md`.
 - **REQUIRED (the mod folder, after the build):** every PBO sits in `@Mod/addons/`. A PBO at the mod folder root
   (`@MyMod/MyMod.pbo`) is silently ignored: no config, no scripts, no error, while the folder still shows in the
   boot log's `ANIMATION (E): Can't load @MyMod/...` pass, which is not loading. Its `modded class` overrides then
-  silently never run, and an A/B test of a fix reads as "the fix did not work". Measured by bzed on the native
-  Linux 1.30 server (`bzed/dayz-dev-plugin@6112ac5` `systems/mod-structure.md`, PBO Packaging); the probe that
-  proves it is in `dayz-test-ingame/references/linux-native-server.md`, section 4. The Workshop Publisher also
-  refuses an upload with PBOs outside `addons/`.
+  silently never run, and an A/B test of a fix reads as "the fix did not work". Measured on the native
+  Linux 1.30 server; the probe that proves it is in `dayz-test-ingame/references/linux-native-server.md`,
+  section 4. The Workshop Publisher also refuses an upload with PBOs outside `addons/`.
 
 **Example output:**
 ```
@@ -97,7 +96,7 @@ This check is critical—most DayZ mod failures start here.
 - **AnimationSources reference check:**
   - Any AnimationSource defined here must be referenced in model.cfg (if model.cfg exists)
 - **Duplicate class names:** Same class cannot be defined twice
-- **Duplicate members (since 1.30 [CHANGELOG]):** Same member cannot be defined twice inside one class body — binarizer **stops** (the 1.30 experimental modding changelog). Not the same as `class Foo;` forward + `class Foo: Bar {}` definition. See `common-validation-failures.md` and `dayz-1-30-pbo-build.md`.
+- **Duplicate members (since 1.30):** Same member cannot be defined twice inside one class body — binarizer **stops**. Not the same as `class Foo;` forward + `class Foo: Bar {}` definition. See `common-validation-failures.md` and `dayz-1-30-pbo-build.md`.
 - **No syntax helpers:** Reject obvious Python/macro syntax in .cpp (these get missed at compile time)
 
 **Example output:**
@@ -123,13 +122,12 @@ Only checked if `model.cfg` exists in the addon.
   - Check that bone names follow DayZ naming conventions (lowercase with underscores)
   - Verify no circular parent references
 - **CfgModels section:**
-  - Class name must match the .p3d filename (case-sensitive: `Item_Compass` class → `Item_Compass.p3d`). **Mismatch is silent and severe:** the engine falls back to `CfgModels.Default` (no skeleton/sections) for that model, so a WEAPON's attachment proxies stop rendering — attachments still attach (visible in slots) and the standalone item still renders in the world, but are INVISIBLE on the weapon (in-hands, inventory preview, ground), with NO RPT error. Common trigger: renaming a model `.p3d` (e.g. `body.p3d`→`body_raised.p3d` for a grip tweak) without updating CfgModels. Fix: `class <new>: <old> {};`. Re-run this check after ANY model rename. (Origin: A6_SR2M 2026-06-25.)
-  - Type must be valid: `ArmaModel`, `BaseMiliHeliModel`, etc.
+  - Class name must match the .p3d filename (case-sensitive: `Item_Compass` class → `Item_Compass.p3d`). **Mismatch is silent and severe:** the engine falls back to `CfgModels.Default` (no skeleton/sections) for that model, so a WEAPON's attachment proxies stop rendering — attachments still attach (visible in slots) and the standalone item still renders in the world, but are INVISIBLE on the weapon (in-hands, inventory preview, ground), with NO RPT error. Common trigger: renaming a model `.p3d` (e.g. `body.p3d`→`body_raised.p3d` for a grip tweak) without updating CfgModels. Fix: `class <new>: <old> {};`. Re-run this check after ANY model rename.
+  - Each class inherits `Default` or another class declared in the same `CfgModels`
 - **Animations within CfgModels:**
   - `selection` must exist as a named selection in the corresponding .p3d
   - `axis` must exist as a memory point pair in the p3d (e.g., `axis_lever`, `axis_lever_end`)
   - `source` must match an AnimationSource name from config.cpp
-  - `speed` values should be reasonable (1.0 = 1 second)
 - **Memory point pairs:** Any animation with `axis` requires matching memory points in p3d
 
 **Example output:**
@@ -188,7 +186,7 @@ Only checked if py3d is available and .p3d files exist.
   - Faces must not be zero-area (degenerate triangles)
   - Warn if geometry LOD vertices > 3000 for small items (performance impact)
 - **Memory LOD:**
-  - Should have the `ce_center` memory point (the object's centre for actions and the vicinity list, read by `GetCenter` at `P:\scripts\3_game\entities\object.c:1363`; the source skill called it the centre of mass, which the vanilla script does not support)
+  - Should have the `ce_center` memory point (the object's centre for actions and the vicinity list, read by `GetCenter` at `P:\scripts\3_game\entities\object.c:1363`; it is not the centre of mass)
   - Warn if missing `ce_geom` or `ca_` collision points
 - **Named selections:**
   - Consistent across LODs (if named_sel exists in LOD0, should exist in LOD2)
@@ -212,28 +210,26 @@ Only checked if py3d is available and .p3d files exist.
 
 ### 6. Stringtable Validation
 
-DayZ uses **`stringtable.csv`**, not the `stringtable.xml` of Arma 3. Corrected
-2026-08-21 after measuring this workspace: zero `stringtable.xml` anywhere in the DayZ
-project tree, 38 `stringtable.csv`, and the two deployed PBOs checked (`LFPowerGrid`,
-`LFGungame`) each carry `stringtable.csv` and no XML. Following the XML form produces a
+DayZ uses **`stringtable.csv`**, not the `stringtable.xml` of Arma 3. Measured on a DayZ
+mod project tree: zero `stringtable.xml`, 38 `stringtable.csv`, and the two deployed PBOs
+checked each carry `stringtable.csv` and no XML. Following the XML form produces a
 file the engine never reads, and the engine does not complain — an unresolved key prints
 its own name and logs **nothing** (measured: zero RPT lines for a missing key across a
 49,340-byte client log), so this fails silently all the way to the player's screen.
 
-**Format**, verified against two shipping mods (`AP_equipment_PUBLIC/stringtable.csv:1`,
-`lfhelicore/stringtable.csv:1`): a header row `"Language","original","english",…` followed
+**Format**, as two shipping mods carry it: a header row `"Language","original","english",…` followed
 by one row per key. The key sits in column 1 **without the leading `#`** — the `#` belongs
 only to the reference in code, config or `.layout`. UTF-8, no BOM, LF.
 
-**An unresolved stringtable is a CSV-header problem, not an addon-size problem.** Two
-in-game bisection ladders (measured 2026-08-21) closed this: a three-file addon
+**An unresolved stringtable is a CSV-header problem, not an addon-size problem.** Measured
+in game on 2026-08-21 with two bisection ladders: a three-file addon
 (`$PBOPREFIX$` + minimal config.cpp + stringtable.csv) resolves its keys, and two data
 rows are enough — provided the CSV carries the full 7-column reference header
 (`"Language","original","english","spanish","german","russian","chinesesimp"`). With a
 4-column header (no german/russian/chinesesimp) every key stays unresolved at any corpus
 size, even though the PBO mounts and serves files and the client's own language column is
-present with text. Fill untranslated columns with the english text. Earlier same-day probes
-that blamed addon minimality were measuring a degenerate CSV. Full rule and evidence:
+present with text. Fill untranslated columns with the english text. The size of the addon
+is not the cause. Full rule and evidence:
 `skills/dayz-ui-development/references/localization.md`.
 
 Vanilla's own header, for comparison, starts with `"Language","original","english"` and carries 15 columns, the
@@ -301,8 +297,7 @@ Checked if scripts exist in `scripts/` folder.
 [PASS] Script syntax valid (no orphaned braces or quotes)
 ```
 
-Ternary, `++` and `foreach`: the source skill said all three are supported and "appear throughout vanilla", and
-its checklist said none of the three is. On `P:\scripts` a search of every `.c` file finds no ternary, which
+Ternary, `++` and `foreach`: on `P:\scripts` a search of every `.c` file finds no ternary, which
 matches `skills/_shared/enscript/patterns/language_workarounds.md` ("No vanilla script uses `cond ? a : b`").
 `foreach` and `++` are vanilla: `foreach` at `P:\scripts\3_game\tools\cameratools.c:14`, `last_index++` at `P:\scripts\3_game\tools\tools.c:200`.
 So a check flags ternary and must not flag `++`, `--` or `foreach`.
@@ -315,9 +310,10 @@ Vehicles only. For PhysX to seat a wheel (`WheelCountPresent() > 0`), the select
 named by `config.cpp > CfgSlots > <wheel-slot>.selection` MUST exist in the body's
 **FireGeometry LOD**. A selection present only in visual LODs binds the slot as
 inventory but the wheel never simulates: `WheelCountPresent()=0`, no traction, no
-spin, NO RPT error - a silent killer (see the wheel-attachment rule of the enforce-script-reference skill and Rule 20 of the dayz-model-pipeline skill).
+spin, NO RPT error - a silent killer (see `references/vehicle-scripting.md` of the enforce-script-reference
+skill and rule 20 in `references/critical-rules.md` of the dayz-model-pipeline skill).
 
-This check lives in the `dayz-p3d-audit` validator (SP-017). Run it pre-build and
+This check lives in the `dayz-p3d-audit` validator. Run it pre-build and
 treat a CRITICAL as release-blocking:
 
 ```
@@ -326,16 +322,17 @@ python "<skill-dir>\..\dayz-p3d-audit\scripts\audit_p3d.py" --scan-dir P:\<Mod>
 
 `--scan-dir` auto-discovers the mod's `config.cpp` and cross-checks every wheel
 slot's selection against the body FireGeometry. Outcomes:
-- `CRITICAL: SP-017: wheel-slot selection '<n>' ... ABSENT from the FireGeometry`
-  -> the wheel will not simulate. **BLOCK the release**; apply the additive py3d fix
-  (alias the FireGeo wheel-proxy face into selection `<n>`) before packing.
-- `NOTE: SP-017 ... mapping unresolved (no CfgSlots ...)` -> verify manually
-  (vanilla auto-registration configs that omit `CfgSlots`).
+- CRITICAL `Wheel-slot selection '<n>' (from CfgSlots) is missing from Fire Geometry LOD[<i>]`
+  -> the wheel will not simulate. **BLOCK the release**; add the Fire Geometry wheel proxy
+  face to a selection named `<n>` with py3d, keeping its other selections, before packing.
+- NOTE `Wheel-slot check not run: ...` -> the mapping could not be read (a config that
+  reuses the vanilla wheel slots has no `CfgSlots` of its own); verify by hand.
 
 `audit_p3d.py` exits 1 on any CRITICAL, so wiring `--scan-dir` into the pre-build
 gate (alongside the config/texture/LOD checks above) blocks a silently-broken
-vehicle from being packed. PARITY note: `class=vehicle` on the Geometry LOD (SP-027)
-is also reported, but it is parity only - NOT the wheel-sim gate.
+vehicle from being packed. A wheeled body whose Geometry LOD lacks the named property
+`class=vehicle` is reported as CRITICAL too; that is parity with vanilla, not what makes
+the wheels simulate.
 
 ---
 ## Output Format
@@ -530,11 +527,10 @@ the first five blocks.
 - [ ] No endless loop without a `break`
 - [ ] All strings are closed; no stray tokens or unclosed braces
 
-The source checklist also listed "no `++`/`--`" and "no `foreach`". Both are wrong: vanilla uses them
-(`foreach` at `P:\scripts\3_game\tools\cameratools.c:14`, `last_index++` at `P:\scripts\3_game\tools\tools.c:200`),
-so they are not on this list.
+`++`/`--` and `foreach` are not on this list: vanilla uses them
+(`foreach` at `P:\scripts\3_game\tools\cameratools.c:14`, `last_index++` at `P:\scripts\3_game\tools\tools.c:200`).
 
-**After the build (SP-177)**
+**After the build**
 
 - [ ] List, count and name the entries of the built PBO; do not infer them from `include.lst`
 - [ ] `config.cpp`, `.p3d` and face-referenced `.rvmat` may enter without a matching `-include` suffix

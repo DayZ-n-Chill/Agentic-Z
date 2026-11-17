@@ -1,4 +1,4 @@
-class LFTest_OnMouseLeavePage
+class FX_OnMouseLeavePage
 {
     bool OnMouseLeave(Widget w, int x, int y)
     {
@@ -6,9 +6,9 @@ class LFTest_OnMouseLeavePage
     }
 }
 
-class LFTest_OnMouseLeaveHost extends ScriptedWidgetEventHandler
+class FX_OnMouseLeaveHost extends ScriptedWidgetEventHandler
 {
-    ref LFTest_OnMouseLeavePage m_Page;
+    ref FX_OnMouseLeavePage m_Page;
 
     override bool OnMouseLeave(Widget w, Widget enterW, int x, int y)
     {

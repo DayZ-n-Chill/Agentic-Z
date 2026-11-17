@@ -2,7 +2,7 @@
 
 Fixed-wing flight in script: lift, drag and stall, the ISA atmosphere helper, PID self levelling, forces guarded against NaN, seaplane `Buoyancy` and the active water physics on top of it, runtime optimisation, and the per-aircraft parameter presets (Cessna180, Spitfire, Catalina, Tigermoth family).
 
-Third-party material: patterns read from the LM_Planes mod (Workshop `3730564764`, by Llama and Itspete-Here), whose files are not in this repo. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
+Third-party mod behaviour (LM_Planes, Workshop `3730564764`), not vanilla. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
 
 ## Aerodynamics & Physics (in script)
 
@@ -217,7 +217,7 @@ class LM_Catalina: CarScript {
 
 All damping/drag coefficients at `1e-08` (basically zero), `falloffPower=1e-06`, `sinkRate=0.01`. This lets the aircraft float and move freely on water without engine drag. Applied to: Catalina (flying boat), Tigermoth_MK3 (seaplane variant), Patty_Wagon (amphibious car).
 
-Vanilla declares `class Buoyancy` on `BoatScript` at `P:\DZ\vehicles\water\config.cpp:32` with six keys: `linearDampeningCoefficient`, `angularDampeningCoefficient`, `linearDragCoefficient`, `quadraticDragCoefficient`, `falloffPower` and `sinkRate`. The other two keys in the block above, `waterResistanceCoef` and `waterAngularDampingCoef`, appear in no vanilla config under `P:\DZ\vehicles\` or in `P:\bin\config.cpp`, so whether the engine reads them is unverified. Whether the car simulation honours `class Buoyancy` on a `CarScript` child at all is an LM_Planes result, not checked in game here.
+Vanilla declares `class Buoyancy` on `BoatScript` at `P:\DZ\vehicles\water\config.cpp:32` with six keys: `linearDampeningCoefficient`, `angularDampeningCoefficient`, `linearDragCoefficient`, `quadraticDragCoefficient`, `falloffPower` and `sinkRate`. The other two keys in the block above, `waterResistanceCoef` and `waterAngularDampingCoef`, appear in no vanilla config under `P:\DZ\vehicles\` or in `P:\bin\config.cpp`, so whether the engine reads them is unverified. That the car simulation honours `class Buoyancy` on a `CarScript` child is LM_Planes behaviour, not yet checked in game.
 
 ## Optimization Patterns
 
@@ -272,7 +272,7 @@ override void OnInput(float dt)
 }
 ```
 
-Lookup `UAInput` references once in `OnInit`, cache. Avoids string-keyed lookup every input frame.
+Look up the `UAInput` references once, on the first `OnInput`, and cache them. This avoids a string-keyed lookup every input frame.
 
 ## Detail Proxy LOD Pattern
 
@@ -284,7 +284,7 @@ Each aircraft can have `proxy/*_details.p3d` or `proxy/*_detail_<part>.p3d` file
 
 LOD-aware loading: high-poly proxies only load at close camera distance. Lets you have detailed cockpits without paying the polygon cost from far away.
 
-## Multi-aircraft Variation Patterns Observed in Llama's Catalogue
+## Multi-aircraft variation patterns in LM_Planes
 
 | Aircraft | Variants | Buoyancy | Crew | Combat |
 |---|---|---|---|---|
@@ -529,7 +529,7 @@ override protected bool HasRetractableGear()       { return false; }
 override protected float GetEngineMaxPower()      { return 3200.0; }
 override protected float GetStallBaseSpeedKmph()  { return 18.0; }  // can lift off if accelerated
 override protected float GetMinFlightSpeedKmph()  { return 32.0; }
-override protected float GetCameraOffset()        { return "0 2.5 0"; }
+override protected vector GetCameraOffset()       { return "0 2.5 0"; }
 // + ApplyWaterPhysics SMALL template for amphibious behavior
 ```
 

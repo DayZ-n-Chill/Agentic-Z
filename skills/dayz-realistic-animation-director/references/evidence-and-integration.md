@@ -1,6 +1,6 @@
 # Evidence and integration
 
-The evidence ladder from contract to in-game proof, the visual review set, what to hand the DayZ pipeline, and what each output state means. Vanilla facts cite `P:\`. Lines marked "1.30 changelog" come from the 1.30 experimental modding changelog and are not yet checked on `P:\`.
+The evidence ladder from contract to in-game proof, the visual review set, what to hand the DayZ pipeline, and what each output state means. Vanilla facts cite `P:\`. Lines marked "1.30 changelog" state 1.30 engine changes that are not yet checked on `P:\`.
 
 ## Evidence ladder
 

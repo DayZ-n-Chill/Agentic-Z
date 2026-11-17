@@ -29,19 +29,17 @@ from shared.dead_branches import (
 ES_VARIABLE_NAMED_AS_TYPE_RULE_ID = "ES-VARIABLE-NAMED-AS-TYPE"
 
 
-# claim: CLAIM-ENFORCE-VARIABLE-NAMED-AS-TYPE
 # A variable, member or parameter whose name is already a type name stops the
 # whole script module from compiling. Measured twice:
 #
 #   member  `bool Debug;` in a settings class (scripts/4_World), DayZDiag
-#           1.29, 2026-09-28, pipeline inbox fb-20260928-025254-35c1
-#           (corrected by 7ce1): the client refused the module with
+#           1.29, 2026-09-28: the client refused the module with
 #           `Variable name 'Debug' already used as type name`. Debug is a
 #           vanilla class (3_game/tools/debug.c).
 #   local   `Widget map = root.FindAnyWidget("mapWidget")`:
 #           `Variable name 'map' already used as type name`, then
 #           `Can't compile "Mission" script module!`
-#           (enforce-script-reference pitfalls-advanced.md, SP-317).
+#           (enforce-script-reference pitfalls-advanced.md).
 #
 # Parameters, and names that are an enum or a typedef rather than a class,
 # have no failure on record; they are judged the same way because the error
@@ -56,7 +54,7 @@ ES_VARIABLE_NAMED_AS_TYPE_RULE_ID = "ES-VARIABLE-NAMED-AS-TYPE"
 # file's. A file outside any N_Module folder may compile in any module, so
 # it is judged only against the types of 1_Core, which every module sees, and
 # those of its own file; a type outside any N_Module folder counts only in
-# its own file. (Mods pass of #113, 2026-10-17: in a mod recovered without
+# its own file. (Measured on 2026-10-17: in a mod laid out without
 # its module folders, the rule reported a member `Attachments`, against the
 # 5_Mission class Attachments, in a class that 4_World code uses.) Without a
 # usable vanilla tree only the addon and the external roots are judged, and
@@ -267,7 +265,7 @@ def check_es_variable_named_as_type(
         dead = branches = tests = None
         # Offsets come in order, so lines are counted on from the last one:
         # counting from the start for each name grew with the square of the
-        # names (fourth Codex review of #113, L2).
+        # names.
         line, counted = 1, 0
         for offset, name in sorted(_declared_names(stripped)):
             candidates = [

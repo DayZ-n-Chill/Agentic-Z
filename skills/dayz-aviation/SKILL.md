@@ -14,12 +14,12 @@ The `dayz-vehicle-specialist` agent owns aircraft classes and reads this skill w
 
 ## The pattern
 
-Vanilla ships no flyable aircraft. The native helicopter classes exist but hold no flight code in script, and there is no fixed-wing class. Every shipped community aircraft read for this skill inherits `CarScript`, keeps a full ground `SimulationModule` as the taxi fallback, and flies in script: LM_Planes for planes and seaplanes, and RFFS, MH6, SIB and DayZ Expansion for helicopters. Those mods are patterns to learn from. Write the aircraft's own code and never copy theirs.
+Vanilla ships no flyable aircraft. The native helicopter classes exist but hold no flight code in script, and there is no fixed-wing class. Every shipped community aircraft this skill covers inherits `CarScript`, keeps a full ground `SimulationModule` as the taxi fallback, and flies in script: LM_Planes for planes and seaplanes, and RFFS, MH6, SIB and DayZ Expansion for helicopters. Those mods are patterns to learn from. Write the aircraft's own code and never copy theirs.
 
 Two kinds of fact sit side by side, and each file says which is which:
 
 - **Vanilla facts** cite the file on `P:\` as `path:line` and were opened there.
-- **Third-party facts** name the mod they were read from, or the LFHeli helicopter project they were measured in, and are not checked on `P:\`. Treat them as leads to confirm in game.
+- **Third-party facts** name the mod whose behaviour they describe, or say they were measured in game on a scripted `CarScript` helicopter, and are not checked on `P:\`. Treat them as leads to confirm in game.
 
 ## Before the first boot
 
@@ -59,7 +59,7 @@ Open only the file the task needs. Pack files are under `skills/_shared/vehicles
 | What 1.30 changed under a `CarScript` aircraft, line drift, the migration checklist | `references/dayz-1-30-aviation.md` |
 | RFFS in depth: the kinematic integrator, typed JSON config, damage zones, actions, HUD, sync | `references/helicopter-rffs.md` |
 | MH6 in depth: the PD force controller, Pawn replication, auto hover and auto land | `references/helicopter-mh6.md` |
-| SIB in depth: the simple kinematic loop, the JSON store, what was not recovered | `references/helicopter-sib.md` |
+| SIB in depth: the simple kinematic loop, the JSON store, what is not readable | `references/helicopter-sib.md` |
 | DayZ Expansion in depth: module system, force accumulator, aerofoil and rotor modules | `references/helicopter-expansion.md` |
 | All five models compared: one loop or modules, kinematic or forces, differences, player feel | `references/helicopter-model-comparison.md` |
 | Which Workshop PBO holds readable flight scripts, and which mods are a dead end | `references/mod-sources.md` |
@@ -79,7 +79,7 @@ Open only the file the task needs. Pack files are under `skills/_shared/vehicles
 
 Everything above is the Windows workflow and stays valid there. The Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`skills/_shared/linux-proton.md`); this section says only what changes for this skill.
 
-- Pack, sign and binarize with dayzmake 1.0.0 or later, bzed's DayZ fork of armake2 (https://github.com/bzed/dayzmake), pinned to `v1.0.0`: the release binary `dayzmake-v1.0.0-debian-trixie-x86_64.tar.gz` from https://github.com/bzed/dayzmake/releases/tag/v1.0.0, or `cargo install --git https://github.com/bzed/dayzmake --tag v1.0.0`. Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Upstream armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake v1.0.0 includes them), and it lacks the DayZ only functions dayzmake keeps adding. The shared script `skills/_shared/scripts/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`). A textured cube packed this way on 2026-11-03 matched Bohemia's Binarize from a `P:` root byte for byte; that is a file comparison, not an in-game check of a binarized model.
+- Pack, sign and binarize with dayzmake 1.0.0 or later, the DayZ build of armake2, pinned to `v1.0.0` (release binary `dayzmake-v1.0.0-debian-trixie-x86_64.tar.gz`); the shared Linux notes say how to install it. Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Plain armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake v1.0.0 includes them), and it lacks the DayZ only functions dayzmake keeps adding. The shared script `skills/_shared/scripts/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`). A textured cube packed this way on 2026-11-03 matched Bohemia's Binarize from a `P:` root byte for byte; that is a file comparison, not an in-game check of a binarized model.
 - `P:\` is a plain directory mapped by `dayz-proton.sh init <dir>` (the script is `skills/_shared/scripts/dayz-proton.sh`); a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
 - Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>` and `gui TexView <paa>`. Object Builder opened and displayed a model; editing in it was not exercised. The offline checks (`scripts/tools/py3d/`, `scripts/tools/dayz-model-preflight/`, `scripts/tools/dayz-3d-viewer/`) are Python and run natively.
 - In-game checks: the Linux notes of the dayz-test-ingame skill.
@@ -87,5 +87,5 @@ Everything above is the Windows workflow and stays valid there. The Proton setup
 ## Do not
 
 - Don't copy code from another mod. Read the references for the pattern and write the aircraft's own classes.
-- Don't invent what a reference marks `[UNVERIFIED]`: a `.p3d` memory point set, a `model.cfg` skeleton, input bindings or a config value that was not read from source.
+- Don't invent what a reference marks `[UNVERIFIED]`: a `.p3d` memory point set, a `model.cfg` skeleton, input bindings or a config value that is not confirmed.
 - Don't report a flight behaviour as working from a clean compile. Flight, inputs and replication are only confirmed by a piloted test in game.

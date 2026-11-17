@@ -72,14 +72,14 @@ class CfgModels
 
 | Key | Note |
 |---|---|
-| `source = "steeringwheel"` | No `AnimationSources` entry. Reported by the LFQuad project (not checked on `P:\`): the engine feeds it only when the model also has the standard steering chain of bones, `wheel_X_X_damper` then `wheel_X_X_steering` then `wheel_X_X`, and a second animation cannot be fed from a wheel source. |
+| `source = "steeringwheel"` | No `AnimationSources` entry. Seen in game on a quad mod (not checked on `P:\`): the engine feeds it only when the model also has the standard steering chain of bones, `wheel_X_X_damper` then `wheel_X_X_steering` then `wheel_X_X`, and a second animation cannot be fed from a wheel source. |
 | `selection` | The whole steering assembly: bar, grips, levers, mirrors. |
 | `axis` | A selection of exactly two points in the Memory LOD. Their order sets the direction of a positive angle. |
-| `angle0`, `angle1` | The angle at `minValue` and `maxValue`. `"rad 30"` means 30 degrees, converted to radians; a bare number is radians. The LFQuad project first wrote `rad 0.39`, meaning to give radians, and got 0.39 degrees: a throw too small to see. Start around 25 to 35 degrees for a handlebar and tune in game. |
+| `angle0`, `angle1` | The angle at `minValue` and `maxValue`. `"rad 30"` means 30 degrees, converted to radians; a bare number is radians. Writing `rad 0.39` to mean radians gives 0.39 degrees: a throw too small to see. Start around 25 to 35 degrees for a handlebar and tune in game. |
 
 ## The axis
 
-Place the two memory points on the steering stem or column, so the line between them is the real pivot. The LFQuad project's quad (a Yamaha Banshee model) used `(0, 0.748, -0.298)` and `(0, 1.139, -0.384)`: direction about `(0, 0.977, -0.214)`, tilted slightly back like a quad's stem, and on the centre line (`x = 0`) so the steering stays centred.
+Place the two memory points on the steering stem or column, so the line between them is the real pivot. One sport quad used `(0, 0.748, -0.298)` and `(0, 1.139, -0.384)`: direction about `(0, 0.977, -0.214)`, tilted slightly back like a quad's stem, and on the centre line (`x = 0`) so the steering stays centred.
 
 Add the two points and the selection with the dayz-p3d-inspector or dayz-model-pipeline skills; do not send the user to Object Builder for it.
 
@@ -106,4 +106,4 @@ If they drift apart, at full lock the part turns to its angle while the hands st
 
 ## Multiplayer: use the engine source, not a script source
 
-Reported by the LFQuad project (not checked on `P:\`): `GetSteering()` (`P:\scripts\3_game\vehicles\car.c:182`) returned 0 on the dedicated server, and a steering animation driven from the client through a `user` source was overwritten by server sync and snapped back to 0 in multiplayer. For anything tied to steering use the engine's own `steeringwheel` source, which already reaches every client. Keep `user` sources for what the engine does not drive, such as doors.
+Seen in multiplayer on a quad mod (not checked on `P:\`): `GetSteering()` (`P:\scripts\3_game\vehicles\car.c:182`) returned 0 on the dedicated server, and a steering animation driven from the client through a `user` source was overwritten by server sync and snapped back to 0 in multiplayer. For anything tied to steering use the engine's own `steeringwheel` source, which already reaches every client. Keep `user` sources for what the engine does not drive, such as doors.

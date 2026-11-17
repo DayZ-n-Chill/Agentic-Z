@@ -1,14 +1,15 @@
-"""Reproducible corpus gate for `dayz-ui-lab` (C1) plus the C5 provenance audit.
+"""Reproducible corpus gate for `dayz-ui-lab` plus the redistribution audit.
 
-The corpora are licence-restricted and none of them is redistributed here. This
-module carries identity only -- URL, pin, hashes, licence -- and reads the actual
-bytes from wherever `sources/local-roots.json` points (looked for under the root,
-then under `scripts/dev/knowledge-pack/`), which is machine-local and untracked. A corpus whose root is missing is reported as such and fails the gate;
-it is never silently skipped, because "not measured" and "passed" must not look
-alike.
+The corpora may not be redistributed and none of them is kept here. This
+module carries identity only -- pin, hashes, redistribution status -- and reads
+the actual bytes from wherever `sources/local-roots.json` points (looked for
+under the root, then under `scripts/dev/knowledge-pack/`), which is
+machine-local and untracked. A corpus whose root is missing is reported as such
+and fails the gate; it is never silently skipped, because "not measured" and
+"passed" must not look alike.
 
 Exit codes: 0 when every configured corpus meets its expectations and the
-provenance audit is clean, 1 otherwise. Findings carry stable codes so a caller
+redistribution audit is clean, 1 otherwise. Findings carry stable codes so a caller
 can tell a missing root from a parse regression.
 """
 
@@ -68,7 +69,7 @@ def resolve_roots(
     """
     path = pack_root / "sources" / "local-roots.json"
     if not path.is_file():
-        # In this repository the pack's `sources/` folder lives under scripts/dev/knowledge-pack/.
+        # In this repository the `sources/` folder lives under scripts/dev/knowledge-pack/.
         moved = pack_root / "scripts" / "dev" / "knowledge-pack" / "sources" / "local-roots.json"
         if moved.is_file():
             path = moved
@@ -211,11 +212,11 @@ def measure_corpus(
         try:
             document = parse.parse_file(path)
             result["parse_ok"] += 1
-            # C1 also demands zero false missing-child-block. B19 removed the
-            # branch that emitted it, but "the code cannot emit it" is an
-            # argument; counting what the parser actually emitted is a
-            # measurement, and it stays honest if a later change reintroduces
-            # a diagnostic.
+            # The gate also demands zero false missing-child-block diagnostics.
+            # The parser no longer has the branch that emitted it, but "the
+            # code cannot emit it" is an argument; counting what the parser
+            # actually emitted is a measurement, and it stays honest if a
+            # later change reintroduces a diagnostic.
             for diagnostic in getattr(document, "diagnostics", []) or []:
                 result["diagnostics"] += 1
                 code = str(diagnostic.get("code", diagnostic))
@@ -251,7 +252,7 @@ def measure_corpus(
             finding(
                 "CORPUS-DIAGNOSTICS-EMITTED",
                 corpus_id,
-                "a valid layout produced parser diagnostics; B19 requires zero.",
+                "a valid layout produced parser diagnostics; the gate requires zero.",
                 json.dumps(result["diagnostic_codes"], sort_keys=True),
             )
         )
@@ -261,13 +262,14 @@ def measure_corpus(
 def audit_redistribution(
     pack_root: Path, entries: list[dict[str, Any]], roots: dict[str, Path]
 ) -> tuple[dict[str, Any], list[dict[str, str]]]:
-    """C5: no third-party layout may live inside the pack.
+    """No third-party layout may live inside the repository.
 
     Compared by content hash rather than by path, so moving or renaming a leaked
     file does not hide it.
     """
-    # Exclude on the path RELATIVE to the pack root. Filtering on absolute parts
-    # silently matched everything when the pack itself lives under .worktrees,
+    # Exclude on the path RELATIVE to the root. Filtering on absolute parts
+    # silently matched everything when the root itself lives under a folder
+    # named like an exclusion,
     # which made this audit measure zero files while reporting success.
     excluded_top = {"reports", "dist", "build", ".git"}
     tracked = []
@@ -385,7 +387,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Measure the dayz-ui-lab layout corpora against their pinned manifest.",
     )
-    parser.add_argument("--root", default=".", help="pack repository root")
+    parser.add_argument("--root", default=".", help="repository root")
     parser.add_argument("--manifest", default=None, help="corpus manifest path")
     parser.add_argument("--report", default=None, help="write the JSON report here")
     return parser

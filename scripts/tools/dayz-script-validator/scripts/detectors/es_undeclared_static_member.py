@@ -9,13 +9,11 @@ from shared.dead_branches import dead_lines
 ES_UNDECLARED_STATIC_MEMBER_RULE_ID = "ES-UNDECLARED-STATIC-MEMBER"
 
 
-# claim: CLAIM-ENFORCE-UNDECLARED-STATIC-MEMBER
 # `ClassName.Member` naming a member that the class no longer declares stops
-# the whole script module from compiling. Pipeline inbox
-# fb-20261006-002741-28fa (LFSkateboard): a lane deleted the static consts
-# ANIM_SWAP_ENABLED and its siblings from its own class LFSK_Constants while
-# seven call sites still read `LFSK_Constants.ANIM_SWAP_ENABLED`, and DayZ
-# refused the World module on the first boot. The ticket gives the refusal of
+# the whole script module from compiling. A change deleted the static consts
+# ANIM_SWAP_ENABLED and its siblings from its own class FX_Constants while
+# seven call sites still read `FX_Constants.ANIM_SWAP_ENABLED`, and DayZ
+# refused the World module on the first boot. On record is the refusal of
 # the module, not the compiler's line for the missing member.
 #
 # The lookup is complete only for a class the addon owns end to end, so the

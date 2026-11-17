@@ -2,7 +2,7 @@
 
 The `CfgSoundShaders` and `CfgSoundSets` layout LM_Planes uses for engines: the RPM band crossfade formula, volume modulation by thrust, speed, doors and camera, offload variants, ranges, and which aircraft own their sounds. The general sound config keys are in `skills/_shared/audio-fx/sound-config.md`.
 
-Third-party material: patterns read from the LM_Planes mod (Workshop `3730564764`, by Llama and Itspete-Here), whose files are not in this repo. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
+Third-party mod behaviour, not vanilla: patterns read in the LM_Planes mod (Workshop `3730564764`), whose files are not in this repo. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
 
 ## Two-tier architecture
 

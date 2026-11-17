@@ -2,7 +2,7 @@
 
 Where wheel hubs live in the model, how wheel proxies line up with them, hub height against tyre radius, wheel facing, and the axle classes the engine counts.
 
-> Status: field notes measured on third-party mods, each named in its entry (SUB_BRZ, SUB_WRXSTI, MercedesAMGLF, LFQuad, LFQuad2, LFQuad3, Arma2Quad, LFHeli). Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. Where they were opened, the `carscript.c` numbers matched this repo's `P:\` (a 1.30 build), the `transport.c` numbers sat 3 to 9 lines lower than written, and the `DZ\vehicles\wheeled\config.cpp` numbers differed. Tags such as SP-205 or LL-244 are the notes' own lesson numbers. Paths such as `<vehicle-import>\...` or `SUB_BRZ_dev\...` point into those mods' work folders, which are not part of this repo. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -10,12 +10,12 @@ Where wheel hubs live in the model, how wheel proxies line up with them, hub hei
 - `CivSedanWheel` has `radius=0.34` (`P:\DZ\vehicles\wheeled\config.cpp:4762-4778`).
 - Vanilla lists both `Front` and `Rear` inside every `Axles` override: the `RearDrive` template (`P:\DZ\vehicles\wheeled\config.cpp:494` to `:510`) and `OffroadHatchback` (`P:\DZ\vehicles\wheeled\config.cpp:1431` to `:1466`).
 
-## A faithful import does not mean the pieces line up (INV-ALIGN, added 2026-07-27)
+## A faithful import does not mean the pieces line up (added 2026-07-27)
 
 **A bit-exact import and correctly-fitting pieces are different properties.** When a model is
 assembled by script, each piece is placed at a **procedurally computed anchor** (centroid, bbox
 centre, a reference point). If that anchor diverges from the real reference, the pieces sit wrong
-while every import check passes. Paid three times (MercedesAMGLF, SUB_BRZ, LFHeli):
+while every import check passes. Seen on three vehicles (MercedesAMGLF, SUB_BRZ, LFHeli):
 
 - MercedesAMGLF: the 28 wheel proxies sat **-0.240 m in X** from their Memory hubs. Fix: measure
   the offset with py3d and shift only those triangles (max error 0.0 m afterwards).
@@ -53,7 +53,7 @@ as 1 face too). Consequences, each of which cost a session:
   0.000745 m for py3d's canonical `scale=0.001`. Against the real hub both artifacts read
   **0.000000 m**. Point the gate at `wheel_X_Y_damper_land`.
 - **Proxy triangle size bakes NO scale.** The frame is derived from UNIT vectors
-  (`py3d/__init__.py:174-179`, port of `proxy_frame.derive_frame`), and vanilla's binarised proxy
+  (`derive_proxy_frame` in `scripts/tools/py3d/py3d/__init__.py`), and vanilla's binarised proxy
   matrix is orthonormal (`|aside|=|up|=|dir|=1.000000` on `civiliansedan.p3d` ODOL v54). A 1 mm
   canonical triangle and a 0.34 m one place the same wheel; SUB_BRZ shipped on `scale=0.001`.
   Do not "fix" a small triangle.
@@ -69,10 +69,10 @@ as 1 face too). Consequences, each of which cost a session:
   deliberate reds (yaw-180 families, stripped companions) interleave with the product rows and
   read as product failures.
 
-## Invariant 5c: owner-only driving hitch, hub clearance and LandContact (SP-355)
+## Invariant 5c: owner-only driving hitch, hub clearance and LandContact
 
 **Owner-only driving hitch: audit hub-ground clearance and remove `LandContact`
-before blaming scripts (SP-355, added 2026-08-31).** The driver owns the physics
+before blaming scripts (added 2026-08-31).** The driver owns the physics
 solve while a passenger interpolates, so smooth passenger motion does not clear
 collision geometry. Working DayZ car controls use the tyre's PhysX sphere plus a
 small `wheel_*_damper_land` Geometry box (about 0.20×0.22×0.22 m) and no
@@ -90,7 +90,7 @@ reversed spin without an in-game cycle. → `build-packaging-and-debug.md` §2-3
 ## Invariant 15: hub level uses the radius of the wheel you mount
 
 **Hub level must use the radius of the wheel you actually MOUNT, not the rip's rim.**
-[HYPOTHESIS with numbers → day-1 coherence check; in-game pending] (added 2026-07-07, SUB_BRZ s25)
+Hypothesis with numbers, not yet confirmed in game. (added 2026-07-07, SUB_BRZ)
 SUB_BRZ profile `WHEEL_R=0.3637` (source-game rim) while the mounted wheel is `CivSedanWheel` radius 0.34
 (`P:\DZ\vehicles\wheeled\config.cpp:4762-4778`) → 2.4 cm hub-vs-radius mismatch, same order as the
 observed damper rest −4.3/−5.6 cm ("wheels slightly up"). Day-1 check: `WHEEL_R == mounted-wheel
@@ -100,7 +100,7 @@ radius` or document why not.
 
 **The symptom of a wrong hub level is "it spawns sunk and corrects itself once a player
 mounts" — and vanilla parks the hub ABOVE the tyre radius, not level with it (measured
-2026-09-09, Arma2Quad ex-LFQuad2; offline, in-game pending).** Invariant 15 says to match the
+2026-09-09, Arma2Quad; offline, in-game pending).** Invariant 15 says to match the
 mounted wheel's radius but gives no control value and no way to recognise the defect from a
 user report. Both, measured: the quad's four `wheel_*_damper_land` sat at `cy=+0.3231` with a
 mounted wheel of `radius=0.350149`, i.e. **hub_y − radius = −0.0271**; the control
@@ -119,10 +119,9 @@ lacking `autocenter=0` did NOT apply here — 10 of 12 LODs lacked it, with bbox
 off origin, and the model renders aligned in-game, so a global translation survives. If it were
 re-centring, those LODs would already be scattered by up to a metre relative to Geometry.
 
-## Invariant 15b: wheel mesh facing needs an asymmetric witness (SP-254)
+## Invariant 15b: wheel mesh facing needs an asymmetric witness
 
-**Wheel-mesh facing needs an asymmetric witness, not a symmetric bbox (SP-254,
-added 2026-08-31).** Split wheel points by the sign of the mesh's shortest axis
+**Wheel-mesh facing needs an asymmetric witness, not a symmetric bbox (added 2026-08-31).** Split wheel points by the sign of the mesh's shortest axis
 and compare minimum radius in the perpendicular plane. The closed exterior face
 reaches the hub (`rmin≈0`); the open interior begins near the rim. A negated bbox
 range passes before and after a 180° turn and is therefore tautological. For
@@ -135,9 +134,9 @@ the wheel blob extracted from the deployed PBO.
 
 Invariant 4 (`invariants-get-in-and-seats.md`) requires seats and hubs to carry the dual-tag `componentNN`. It states
 WHAT tag, not WHERE. The other half --that selection must live in **Geometry** LOD-- is
-what failed today, and what a port inherits from donor unknowingly.
+what failed on this port, and what a port inherits from donor unknowingly.
 
-Engine signature, identical to 2026-07-17:
+Engine signature:
 
     ENTITY       : Load entity type '<Class>'
     PHYSICS   (E): Won't simulate, wheel wheel_1_1_damper_land has no proper selection in geometry
@@ -148,9 +147,9 @@ Consequence: `CreateObjectEx` returns **null**. Vehicle **fails to spawn**; it i
 
 | model | `*_damper_land` in Geometry | LandContact LOD |
 |---|---|---|
-| LFQuad (living reference) | 4, with faces and dual-tag `componentNN` | **does not exist** |
+| LFQuad (working reference) | 4, with faces and dual-tag `componentNN` | **does not exist** |
 | `civiliansedan_mlod.p3d` (vanilla) | 4 | **does not exist** |
-| Crocodoc quadbike | 4 | **does not exist** |
+| a second working quad bike mod | 4 | **does not exist** |
 | LFQuad2 (port, failed to spawn) | **0** | exists, and there all 4 were, with 1 point and 0 faces |
 
 **The port trap:** an Arma 2 MLOD includes LandContact LOD, and porter leaves contact
@@ -164,9 +163,9 @@ config, that name must exist in Geometry LOD, with faces, and dual-tagged. In
 complementary non-enumerated form: derive it from model's own config, which names the
 hubs, not from a hand-written list.
 
-And process warning, which is expensive half of this entry: signature of this error **was already
-written**, in `history/superseded-family-b-rules.md` (its Invariant 23 block), a file whose header says
-**HISTORY ONLY - NO AUTHORITY**. Bit again six weeks later. When archiving a rule,
+And process warning, which is expensive half of this entry: signature of this error is also
+written in `history/superseded-family-b-rules.md` (its Invariant 23 block), a history file that carries
+no authority, so nobody reads it as a rule. When archiving a rule,
 check that living half preserves BOTH questions: what, and where.
 
 **CONFIRMED IN-GAME same day.** After moving the four selections to Geometry LOD
@@ -200,7 +199,7 @@ The discriminator, which is what makes this reusable: in the SAME override `Clut
 gearbox and steering. Inheritance works for children the engine looks up BY NAME; it does not
 for children the engine ENUMERATES because their names are free - the axles under `Axles`.
 Vanilla never exercises the hole: every vanilla car lists both `Front` and `Rear` in every
-override (`DZ\vehicles\wheeled\config.cpp:494-530`, `:1424-1489`), so copying vanilla hides it.
+override (`DZ\vehicles\wheeled\config.cpp:494-530`, `:1431-1466`), so copying vanilla hides it.
 
 Nothing offline catches it: CfgConvert parses the config without a complaint and the script
 linter says nothing. The cheap tell is to count in the engine what should be there -

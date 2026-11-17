@@ -1,8 +1,9 @@
-"""Make the tests import the py3d fork that ships in this repo.
+"""Make the tests import the py3d copy in scripts/tools/py3d.
 
-A different py3d may be installed in site-packages (the upstream release
-lacks the fork's API, for example LOD.new_selection), so the repo copy is put
-first on sys.path and any already imported py3d from elsewhere is dropped.
+A different py3d may be installed in site-packages (the PyPI release lacks
+parts of the API used here, for example LOD.new_selection), so the repo copy
+is put first on sys.path and any already imported py3d from elsewhere is
+dropped.
 """
 import os
 from pathlib import Path

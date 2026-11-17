@@ -2,7 +2,7 @@
 
 How texture coordinates are stored in a `.p3d`, which UV set each material stage reads, what binarizing does to them, and how to trace an in-game texture fault back to the UVs. For making a new unwrap, use the `uv-clean-atlas` skill; this file is the DayZ side.
 
-What is checked and what is not: the material and config facts cite vanilla files on `P:\`. The file format details come from the Bohemia wiki and the armake source, the measured numbers come from LFQuad (the source author's quad-bike mod) and one infected model, and both are marked "not checked on `P:\`" where they appear, because vanilla models are binarized and no vanilla file shows them.
+What is checked and what is not: the material and config facts cite vanilla files on `P:\`. The file format details are Bohemia format knowledge, the measured numbers were taken on a quad-bike mod and one infected model, and both are marked "not checked on `P:\`" where they appear, because vanilla models are binarized and no vanilla file shows them.
 
 ## Contents
 
@@ -46,23 +46,23 @@ What is checked and what is not: the material and config facts cite vanilla file
 
 ### MLOD, the editable format
 
-Format knowledge from the Bohemia wiki's MLOD page and from reading py3d; not checked on `P:\`, where every model is binarized (`P:\DZ\gear\camping\barbed_wire.p3d` starts with `ODOL`, version 56).
+MLOD format knowledge, matched by how py3d reads the file; not checked on `P:\`, where every model is binarized (`P:\DZ\gear\camping\barbed_wire.p3d` starts with `ODOL`, version 56).
 
 - Each face-vertex record holds a point index, a normal index and one UV as two 32-bit floats, uncompressed. A new vertex defaults to (0,0). In py3d that is `Vertex.read` in `scripts/tools/py3d/py3d/__init__.py`.
 - A face has 3 or 4 vertices and carries its own texture path and material path.
 - The LOD also carries `#UVSet#` tags. The format allows up to 8 UV sets per LOD. Set 0 is mandatory and repeats the UVs stored on the faces.
-- **Which reader keeps a second set.** The py3d fork in `scripts/tools/py3d/` keeps every set above 0 through a read and write cycle, as `Vertex.uv_sets` (`LOD._read_uv_set` reads them, `LOD.uv_set_ids` lists them). The original upstream py3d (not used in this repo: `/dayz-p3d-audit` and its `requirements.txt` use the fork too) ignores the tag on read and writes only set 0, so a model saved through it loses its second set. A converter from ODOL back to MLOD that the source author used also keeps the first set only.
+- **Which reader keeps a second set.** The py3d in `scripts/tools/py3d/` keeps every set above 0 through a read and write cycle, as `Vertex.uv_sets` (`LOD._read_uv_set` reads them, `LOD.uv_set_ids` lists them). The py3d package from PyPI (not used in this repo: `/dayz-p3d-audit` and its `requirements.txt` use the repo's copy too) ignores the tag on read and writes only set 0, so a model saved through it loses its second set. A converter from ODOL back to MLOD can also keep the first set only.
 - Whatever the reader, a tool that builds the model from one UV layer (an OBJ import, a glTF round trip) produces one set. A model that needs a second set gets it in Object Builder or through `Vertex.uv_sets`.
 
 ### ODOL, the binarized format
 
-Format knowledge from the Bohemia wiki's ODOL page and the armake source (`src/p3d.c`); not checked on `P:\`.
+ODOL format knowledge; not checked on `P:\`.
 
 - Each UV set stores four floats, `UVScale` (min U, min V, max U, max V), followed by compressed pairs.
 - Each axis is normalized against the minimum and maximum over the **whole LOD** and stored as a 16-bit integer, about 65,534 steps. So one face with a huge UV value lowers UV precision for the entire LOD.
 - Binarize warns about it in the RPT: `UV coordinate on point N is too big UV(153.36, 0.99) - the UV compression may produce inaccurate results`.
 - A working limit, derived from the step count and not an official figure: the error stays under half a texel while the total UV range of the LOD is at most about 64 for a 1024 texture, **about 32 for 2048** and about 16 for 4096.
-- armake also wraps UVs per vertex and sets tiling flags when UVs leave 0 to 1. That is read from its code; Bohemia's Binarize may differ.
+- The open-source packer armake also wraps UVs per vertex and sets tiling flags when UVs leave 0 to 1. Bohemia's Binarize may differ.
 - The ODOL header has a count of UV sets. An off-by-3 error in reading that field corrupted a custom parser's output once; check it first when a home-made ODOL reader returns garbage UVs.
 
 An unwrap that keeps everything inside 0 to 1 is safe from all of this. Put tiling in the material (`uvTransform`, below) instead of in the UVs.
@@ -73,12 +73,12 @@ The most common source of import bugs. Not checked on `P:\`; the py3d rows are r
 
 | Route | Flip | Where |
 |---|---|---|
-| OBJ to `.p3d` | `v_p3d = 1 - v_obj` | The source author's assembly script writes `(u, 1.0 - v)` |
+| OBJ to `.p3d` | `v_p3d = 1 - v_obj` | The assembly script writes `(u, 1.0 - v)` |
 | `.p3d` to glTF and back | `1 - v` on export, undone on import | `_recipe_visual_geometry` and `_recipe_build_visual` in `scripts/tools/py3d/py3d/__init__.py`; the 3D viewer relies on it |
 | Inside Blender | V = 0 at the bottom (the OpenGL convention) | Blender's OBJ exporter already writes the OBJ convention |
 
 - Every converter must state its convention. Verify with an **asymmetric checker texture**, never with a flat one, which looks the same either way and hides the flip.
-- Models taken from another game can carry several UV layers. One source game's model format (`.modelbin`) had five (`TEXCOORD0` to `TEXCOORD4`): `TEXCOORD2` was the 0 to 1 per-part channel (swatches and ambient occlusion) and layers 0, 1 and 4 were tiling channels with values up to about 30. Blender's active layer picked the wrong one. Fetch the layer by name (`bm.loops.layers.uv.get("TEXCOORD2")`).
+- Models taken from another game can carry several UV layers. One other game's model format (`.modelbin`) had five (`TEXCOORD0` to `TEXCOORD4`): `TEXCOORD2` was the 0 to 1 per-part channel (swatches and ambient occlusion) and layers 0, 1 and 4 were tiling channels with values up to about 30. Blender's active layer picked the wrong one. Fetch the layer by name (`bm.loops.layers.uv.get("TEXCOORD2")`).
 - When a face is mirrored, its UV corners must be reversed together with its winding.
 
 ## Which UV set a material stage reads
@@ -94,21 +94,21 @@ Each stage of a `.rvmat` names the coordinates it samples with `uvSource` and ca
 | `tex1` | 6,278 | The **second** UV set | `uvSource="tex1"` at `P:\DZ\characters\belts\data\civ_belt.rvmat:52` |
 | `none` | 3,166 | No coordinates; fresnel and other procedural stages | `uvSource="none"` at `P:\DZ\characters\belts\data\civ_belt.rvmat:76` |
 
-The Bohemia wiki also lists `pos`, `norm`, `worldNorm`, `texShoreAnim`, `texCollimator` and `texCollimatorInv`, with `tex` as the default. None of those appears in a vanilla DayZ material, so treat them as untested here.
+The format also defines `pos`, `norm`, `worldNorm`, `texShoreAnim`, `texCollimator` and `texCollimatorInv`, with `tex` as the default. None of those appears in a vanilla DayZ material, so treat them as untested here.
 
 **The second UV set is ordinary in vanilla Super materials.** Of the 5,841 Super materials (5,838 spelled `Super` and 3 spelled `super`), 1,020 have at least one stage on `tex1`. By stage: `Stage4` (ambient shadow `_as`) 913, `Stage3` (macro `_mc`) 671, `Stage2` (detail) 265, `Stage1` (normal) 44, `Stage5` (specular) 20.
 
 - The usual case is a baked ambient shadow map with no overlap on a model whose color UVs are tiled or mirrored: `civ_belt.rvmat` puts `civ_belt_as.paa` on `tex1` (`:51` to `:52`) and leaves every other texture on `tex`.
 - A few models use the second set for everything: `P:\DZ\gear\camping\data\large_tent.rvmat` has `uvSource="tex1"` on stages 1 to 5 (`:12`, `:24`, `:36`, `:48`, `:60`).
-- This is what the wiki's Super shader page calls "use texture coords 2". The Multi shader reads its mask from the second set too (1,960 vanilla Multi materials; 3,251 of their stages use `tex1`).
+- Bohemia's name for this is "use texture coords 2". The Multi shader reads its mask from the second set too (1,960 vanilla Multi materials; 3,251 of their stages use `tex1`).
 - A mod model that wants this needs a real second UV set in the `.p3d`. See "Which reader keeps a second set" above before sending such a model through a script.
 
 **`uvTransform` tiles, rotates and offsets.** `aside[]` and `up[]` are the two rows of a 2D matrix, `pos[]` is the offset. The identity is `aside[]={1,0,0}` and `up[]={0,1,0}`. 1,564 vanilla Super materials have at least one stage that is not the identity, most often `Stage2` (972) and `Stage3` (665).
 
 - Plain tiling: the rubber boat's damage material repeats its detail map 5 by 5 with `aside[]={5,0,0}` and `up[]={0,5,0}` (`P:\DZ\vehicles\water\boat_01\data\boat_01_damage.rvmat:27` to `:28`).
 - Tiling with a rotation: `aside[]={3,1,0}` and `up[]={-1,3,0}` at `P:\DZ\weapons\pistols\mkii\data\ruger_metal_1.rvmat:39` to `:40`.
-- Third-party examples of the same thing, not checked on `P:\`: an ACE3 mine detector material tiles its `_dt` 6 by 3 with `aside={6,0,0}` and `up={0,3,0}`, and the FC_Uaz body material uses `aside={16,0,0}` on `Stage2`.
-- The wiki also describes `texGen=N`, which lets a stage reuse another stage's coordinate setup.
+- Third-party mod materials do the same, not checked on `P:\`: one tiles its `_dt` 6 by 3 with `aside={6,0,0}` and `up={0,3,0}`, and one vehicle body material uses `aside={16,0,0}` on `Stage2`.
+- A stage can name `texGen=N` instead, which points it at a shared coordinate setup. The `Multi` materials work this way (`multi-rvmat-texturing.md`).
 
 For an unwrap this means: keep the islands inside 0 to 1 at one even density, and let the material repeat the detail map. Tiling written into the UVs costs precision at binarize time; tiling written into the material costs nothing.
 
@@ -116,7 +116,7 @@ For an unwrap this means: keep the islands inside 0 to 1 at one even density, an
 
 - A solid color `_co`, procedural glass, and any procedural color texture. Vanilla does this for the bare torso: `hiddenSelectionsTextures[]` at `P:\DZ\characters\tops\config.cpp:41` holds `#(argb,8,8,3)color(0.843137,0.768627,0.658824,1.0,CO)` instead of a file.
 - A flat-color material: a `.rvmat` with `diffuse[]` set and no color texture. On a model that is one color per material this is the right answer, and a bake is wasted effort (see "Baking").
-- Retexturing through config or script. `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` swap the texture or material on a named selection without touching UVs, and script does the same with `SetObjectTexture` (`P:\scripts\3_game\entities\entityai.c:2881`) and `SetObjectMaterial` (`:2884`). That is why flat color variants of a model keep working on bad UVs. Measured on LFQuad: its color variants are flat textures on a selection and looked right on an atomized unwrap.
+- Retexturing through config or script. `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` swap the texture or material on a named selection without touching UVs, and script does the same with `SetObjectTexture` (`P:\scripts\3_game\entities\entityai.c:2881`) and `SetObjectMaterial` (`:2884`). That is why flat color variants of a model keep working on bad UVs. Measured on a quad-bike mod: its color variants are flat textures on a selection and looked right on an atomized unwrap.
 
 The other side of this: a retexture that has detail must follow the UV layout the model already has.
 
@@ -131,7 +131,7 @@ Two consequences:
 
 ## Normal maps and UVs
 
-Not checked on `P:\`: the channel direction was measured by the source author against vanilla textures and agrees with the community texturing guides.
+Not checked on `P:\` by a citation: the channel direction was measured against vanilla textures.
 
 - `_nohq` is the DirectX convention: Y negative, green pointing **down**. A Cycles bake is Y positive, so invert green (`G' = 255 - G`) before converting, every time.
 - The `.paa` stores the channels swizzled (how ImageToPAA does it is in `_shared/textures/suffixes-and-sizes.md`; the `.paa` file layout and a writer that needs no DayZ Tools are in `skills/_shared/vehicles/png-to-paa-encoding.md`). To inspect a `_nohq` converted back to PNG, undo the swizzle first.
@@ -141,14 +141,14 @@ Not checked on `P:\`: the channel direction was measured by the source author ag
 
 ## Baking in Blender for DayZ
 
-A recipe that worked on the source author's models (LFQuad and an infected character). Not checked on `P:\`.
+A recipe that worked on two mod models (a quad bike and an infected character). Not checked on `P:\`.
 
 - **Retopology invalidates the UVs that came before it.** Any retopology (QuadriFlow, Voxel Remesh, Quad Remesher, Tencent's topology model, any AI retopology service) throws away the UVs of the source mesh. The order is fixed: generate, retopologize, **unwrap again**, finish the UVs, bake, then build the LODs. Never bake against UVs from before the retopology; the maps come out badly projected. A high-to-low texture bake (the `bake-texture` step of an AI 3D toolchain) therefore stops being optional in any chain that retopologizes.
 - A hard edge (a smoothing split) almost always needs a UV seam in the same place. A seam without a hard edge is fine. A hard edge without a seam is the most common cause of visible seams in a normal bake.
-- **Unwrap by sections, not by loose parts.** Lay the atlas out by logical sections of the model (tank, chassis, seat, mudguards), ideally matching the named selections and materials, each section with contiguous islands a person can recognize. An automatic unwrap by loose parts or faces (Smart UV Project with no manual seams) atomizes the model into thousands of anonymous islands that nobody can paint or debug: the LFQuad body had a median of 2 to 4 faces per island. Smart UV Project is fine for the ambient occlusion and normal bake of an organic mesh that is already in sections; it is not an authoring unwrap for a vehicle made of many parts.
+- **Unwrap by sections, not by loose parts.** Lay the atlas out by logical sections of the model (tank, chassis, seat, mudguards), ideally matching the named selections and materials, each section with contiguous islands a person can recognize. An automatic unwrap by loose parts or faces (Smart UV Project with no manual seams) atomizes the model into thousands of anonymous islands that nobody can paint or debug: one quad-bike body had a median of 2 to 4 faces per island. Smart UV Project is fine for the ambient occlusion and normal bake of an organic mesh that is already in sections; it is not an authoring unwrap for a vehicle made of many parts.
 - Unwrap settings that worked on the infected model: seams in hidden areas, Smart UV Project with margin 0.003, then `pack_islands(rotate=True, margin=0.008)`. Result: 96.8% of the bounding box filled, stretch from 0.82 to 1.13 between the 10th and 90th percentile.
 - Normal bake, high to low: selected to active, Cycles, extrusion and ray distance set from the gap between the meshes, a margin of 8 px or more, a Non-Color image. **Fill the image with neutral (128,128,255) first and bake with `use_clear=False`**, so a ray that misses leaves neutral instead of black or an inverted normal.
-- If the low mesh was posed again after retopology, bake against a proxy (the source notes call it BakeProxy) that has the final low mesh's topology and UVs at its positions from before the pose change. Tangent space does not depend on the pose.
+- If the low mesh was posed again after retopology, bake against a proxy mesh that has the final low mesh's topology and UVs at its positions from before the pose change. Tangent space does not depend on the pose.
 - Ambient occlusion: hide the high mesh and everything except the low one, so it occludes only itself. The mean value went from 64 to 202 when this was done.
 - A model that is one color per material and has no real texture: do not bake an atlas. Use a flat-color `.rvmat` per material with `diffuse[]` and no color texture.
 - Padding for an atlas: 16 px at 2048, and a gutter of at least twice that between islands.
@@ -175,25 +175,14 @@ A recipe that worked on the source author's models (LFQuad and an infected chara
 
 Not checked on `P:\`. Vanilla texture sizes per folder are in `_shared/textures/suffixes-and-sizes.md`.
 
-| Metric | Value | From |
+| Metric | Value | Basis |
 |---|---|---|
-| Edge padding | 8 px at 1024, 16 px at 2048; gutter at least twice that | Polycount wiki, Edge padding |
-| Texel density, props | about 512 px/m | Beyond Extent, texel density deep dive |
-| Texel density, first-person weapons | about 1024 px/m or more | Beyond Extent and Polycount |
-| A density that shipped and was accepted | LFQuad wheels, 134 to 147 px/m (a 1024 `_co`, UV density 0.1307 to 0.1438) | Measured 2026-09-01 by decoding the shipped `.paa` |
-| Largest UV range per LOD before binarizing costs half a texel | about 32 for a 2048 texture | Derived from the armake source and the RPT warning |
-| Acceptable stretch in Blender | 10th to 90th percentile within 0.8 to 1.2 | The infected model, 2026-06-25 |
-| Smart UV Project and pack | margin 0.003, pack margin 0.008, `rotate=True` | The infected model, 2026-06-25 |
+| Edge padding | 8 px at 1024, 16 px at 2048; gutter at least twice that | Common game-art practice |
+| Texel density, props | about 512 px/m | Common game-art practice |
+| Texel density, first-person weapons | about 1024 px/m or more | Common game-art practice |
+| A density that shipped and was accepted | The wheels of a quad-bike mod, 134 to 147 px/m (a 1024 `_co`, UV density 0.1307 to 0.1438) | Measured by decoding the shipped `.paa` |
+| Largest UV range per LOD before binarizing costs half a texel | about 32 for a 2048 texture | Derived from the 16-bit step count and the RPT warning |
+| Acceptable stretch in Blender | 10th to 90th percentile within 0.8 to 1.2 | Measured on the infected model |
+| Smart UV Project and pack | margin 0.003, pack margin 0.008, `rotate=True` | Measured on the infected model |
 
 The wheel density was first written down as about 292 px/m. That was the same UV density read against a 2048 texture the wheels do not use. When you derive a floor from shipped work, measure both halves: the density from the model and the texture size from the file.
-
-## Sources outside `P:\`
-
-- Bohemia wiki: [P3D File Format - MLOD](https://community.bistudio.com/wiki/P3D_File_Format_-_MLOD), [P3D File Format - ODOLV4x](https://community.bistudio.com/wiki/P3D_File_Format_-_ODOLV4x), [RVMAT basics](https://community.bistudio.com/wiki/RVMAT_basics), [Rvmat File Format](https://community.bistudio.com/wiki/Rvmat_File_Format), [Super shader](https://community.bistudio.com/wiki/Super_shader), [Mondkalb's MultiMaterial Tutorial](https://community.bistudio.com/wiki/Mondkalb%27s_MultiMaterial_Tutorial).
-- [armake `src/p3d.c`](https://github.com/KoffeinFlummi/armake/blob/master/src/p3d.c) for the UV quantization.
-- PMC Editing Wiki: [arma.rpt](https://pmc.editing.wiki/doku.php?id=arma:arma.rpt) for the UV warning, [normal maps](https://pmc.editing.wiki/doku.php?id=arma:texturing:normal_maps) for the green direction.
-- Polycount: [the mirrored seam problem](https://polycount.com/discussion/118218/the-dreaded-mirrored-seam-problem), [Edge padding](http://wiki.polycount.com/wiki/Edge_padding).
-- [Beyond Extent, texel density](https://www.beyondextent.com/deep-dives/deepdive-texeldensity).
-- [DayZ-Samples](https://github.com/BohemiaInteractive/DayZ-Samples): `Test_ClothingRetexture/data/gorka_normal_g_destruct.rvmat` is a destruct material with every stage on `tex` and the identity transform.
-- ACE3: [ace_vmh3.rvmat](https://github.com/acemod/ACE3/blob/master/addons/minedetector/data/ace_vmh3.rvmat) for the tiled detail stage.
-- A Steam guide on [vehicle retexturing](https://steamcommunity.com/sharedfiles/filedetails/?id=238437456) for mirrored vehicle sides.

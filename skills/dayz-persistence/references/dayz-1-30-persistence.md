@@ -54,7 +54,7 @@ Until 1.29 `GAME_STORAGE_VERSION` was 142. Since 1.30 it is 144. CombinationLock
 			ctx.Write( m_EM.IsPlugged() );
 ```
 
-(until 1.29: `OnStoreSave` began at the `m_EM` block; 1.29 `3_game\entities\entityai.c:2930-2933`. No construction handle.) (since 1.30: `HandleStoreSave` is a no-op on `ConstructionBasic` (`P:\scripts\3_game\systems\construction_basic.c:29-35`, `HandleStorageEvents` returns `false`). Only `Rebuilding` overrides it and writes. Load:
+(until 1.29: `OnStoreSave` began at the `m_EM` block; 1.29 `3_game\entities\entityai.c:2930-2933`. No construction handle.) Since 1.30 `HandleStoreSave` is a no-op on `ConstructionBasic` (`P:\scripts\3_game\systems\construction_basic.c:29-35`, `HandleStorageEvents` returns `false`). Only `Rebuilding` overrides it and writes. Load:
 
 ```
 // P:\scripts\3_game\entities\entityai.c:2978

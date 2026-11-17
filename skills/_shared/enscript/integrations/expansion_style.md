@@ -4,7 +4,7 @@ Naming and structure rules for a mod that extends DayZ Expansion or runs beside 
 
 > **Read this only for Expansion targeted work.** The default style for every script task is `_shared/enscript-style.md`, which uses vanilla examples. This file adds the points where a mod that touches Expansion must follow Expansion's own conventions, or must keep clear of them. Where the two disagree, this file wins for Expansion targeted code only.
 >
-> The examples below are original and short. They show the shape of each convention, not Expansion's code. Expansion ships packed and under its own license, so never paste its scripts into a mod. Check every class and method name you rely on against the Expansion version the mod declares in `requiredAddons[]`, because Expansion renames things between releases.
+> The examples below are original and short. They show the shape of each convention, not Expansion's code. Expansion ships packed and its scripts are not yours to redistribute, so never paste them into a mod. Check every class and method name you rely on against the Expansion version the mod declares in `requiredAddons[]`, because Expansion renames things between releases.
 >
 > **Where the names were checked.** Expansion and Community Framework (CF) are not vanilla, so their names are not under `P:\scripts\`. Every Expansion name below was checked in the shipped Expansion PBOs under `P:\Mods\`: mostly `P:\Mods\@DayZ-Expansion-Core\Addons\core_scripts.pbo`, with the defines in the `0_*_preload.pbo` files and the keybinds in `P:\Mods\@DayZ-Expansion\Addons\scripts.pbo`. A source line gives the PBO and the file inside it. CF names were checked in `P:\Mods\@CF\Addons\scripts.pbo`, the same PBO `community_framework.md` cites. Expansion renames things between releases, so recheck against the version the mod declares after an Expansion update.
 
@@ -131,14 +131,14 @@ class YourMod_BountyModule : CF_ModuleWorld
 
 - **Input actions.** Expansion names its keybinds `UAExpansion<Action>`, for example `UAExpansionAutoRunToggle` (`P:\Mods\@DayZ-Expansion\Addons\scripts.pbo`, `5_Mission\DayZExpansion\Mission\MissionGameplay.c:40`; Expansion Core has none). Name yours `UAYourMod<Action>` in your own `inputs.xml`, so the two sets never clash in the controls menu.
 - **Tracing and errors.** Expansion has its own helpers, `EXTrace` for traces and `EXError` for errors (`core_scripts.pbo`, `3_Game\DayZExpansion_Core\ExpansionTracing.c:30` and `3_Game\DayZExpansion_Core\ExpansionStatic.c:139`). Code written inside Expansion's classes may use them when the mod requires Expansion. A mod that also runs without Expansion uses the vanilla `Print` (`P:\scripts\1_core\proto\endebug.c:96`) and `ErrorEx` (`P:\scripts\1_core\proto\endebug.c:83`) calls from the vanilla guide, so it does not depend on Expansion for logging. Do not use `Debug.Log` for messages you must see: it writes only when `LogManager.IsLogsEnable()` is true (`P:\scripts\3_game\tools\debug.c:595`; see `_shared/enscript/references/api_game.md`).
-- **Call shapes from the style guide.** The upstream style guide and the knowledge pack's copy of it show these Expansion calls. They are quoted as written there and are not yet checked against the Expansion PBOs line by line, so open the class named above before you copy one:
+- **Call shapes.** Expansion's own code makes the calls below. Each name was found in the shipped Expansion PBOs under `P:\Mods\` (`EXTrace.Start`, `EXTrace.Print`, `EXError.Error` and `CF_Trace_0(ExpansionTracing...` in `core_scripts.pbo`; `SI_Garage` in `garage_scripts.pbo`, `UAExpansionMapToggle` in `navigation_scripts.pbo` and `Expansion_OnUpdate` in `scripts.pbo`), but the argument lists are not yet checked line by line, so open the class before you copy one:
 
 ```c
-// Trace: the guide's preferred form. It reports that this costs almost nothing while tracing is off,
-// so it needs no #ifdef outside performance-critical code.
+// Trace: the preferred form. Expansion treats it as costing almost nothing while tracing is off
+// (not measured here), so it needs no #ifdef outside performance-critical code.
 auto trace = EXTrace.Start(EXTrace.GENERAL, this, "MethodName");
 
-// Older trace form, behind the define (which is commented out by default, see debugging-and-errors.md)
+// Older trace form, behind the define (which is commented out by default, see _shared/enscript-style/debugging-and-errors.md)
 #ifdef EXPANSIONTRACE
     auto trace = CF_Trace_0(ExpansionTracing.SETTINGS, this, "MethodName");
 #endif
@@ -173,6 +173,6 @@ Every Expansion and CF name in this table is cited in the sections above.
 
 ## References
 
-- [DayZ Expansion Scripts](https://github.com/salutesh/DayZ-Expansion-Scripts): read for names and signatures only; do not copy code.
+- The shipped Expansion PBOs under `P:\Mods\` (listed under "Where the names were checked"): read for names and signatures only; do not copy code.
 - `_shared/enscript/integrations/community_framework.md`: the CF module API.
 - `/dayz-conflict-check`: finds class name and path collisions between a mod and Expansion, CF or COT.

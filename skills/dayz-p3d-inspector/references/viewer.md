@@ -34,7 +34,7 @@ Each layer has a toggle in the toolbar. The seven wireframe LOD layers start off
 | Interaction | red | `actionPos` and other action points |
 | Axis | purple | the two end points of an animation axis |
 | Placing | orange | `box_placing_min`, `box_placing_max` |
-| Port | deep orange | `port_*`, `cable_*` (the electrical ports of the LFPowerGrid mod) |
+| Port | deep orange | `port_*`, `cable_*` (electrical port points of power grid mods; third-party mod names, not vanilla) |
 | Proxy | gray | proxy attachment points |
 | Other | light gray | everything else |
 
@@ -57,7 +57,7 @@ Each layer has a toggle in the toolbar. The seven wireframe LOD layers start off
 | Snap to the grid | hold Shift while dragging |
 | Grid size | press `1` for 1 cm, `2` for 5 cm |
 | Focus | click a point in the Points panel |
-| Export | press Export Recipe, then Select All and Ctrl+C in the box |
+| Export | press Export Recipe, then Select All and Ctrl+C in the box. The text holds `meta`, `memory_points`, `axes` and `bbox` only; copy `memory_points` and `axes` into the extracted Recipe before building |
 
 While a point is dragged the page updates, live: the sphere, its label, the axis line and arrow when the point is an axis end, the placing box when it is `box_placing_min` or `box_placing_max`, the coordinates in the side panel and the info panel, and the Recipe held in memory. A floating readout shows X, Y and Z, and the snap size while Shift is held.
 
@@ -72,6 +72,6 @@ While a point is dragged the page updates, live: the sphere, its label, the axis
 - **Dragging.** Hovering a sphere turns orbit control off before the button goes down, so the press starts a drag instead of an orbit; moving off the sphere turns it back on. The drag begins after the pointer has moved more than 5 pixels, on a plane through the point that faces the camera, and ends on release.
 - **Export uses a text box**, because the clipboard API is blocked for a page opened from disk.
 
-## Measuring visibility: sample the area, not the centroid (SP-446)
+## Measuring visibility: sample the area, not the centroid
 
 To decide whether a selection can be seen from outside, cast rays from random points spread over each face (about 3,000 per LOD) and report the share of free area. One ray from the centroid lies. Measured on a heater model: centroid rays reported 48 of 48 faces blocked in all six directions, while area sampling showed 84 to 86 % free, because every face was a long thin triangle whose centroid sat behind a 1 to 2 mm wire. The false reading nearly led to rebuilding the model's glowing grid when the fault was in the config.

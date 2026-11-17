@@ -147,8 +147,7 @@ or never detect terrain collision).
 **Note (empirical, vanilla 1.x)**: This memory-point pair is a *fallback*. Vanilla
 `hologram.c::GetProjectionCollisionBox` first calls `m_Projection.GetCollisionBox(min_max)`,
 which returns the bbox derived from the Geometry LOD; only if that fails does it fall
-back to `box_placing_*`. Vanilla deployables (`55galdrum`, `wooden_case`, `sea_chest`,
-`MilitaryCrate` from a6_base_storage) ship `boundingbox_min/max` as Memory LOD selection
+back to `box_placing_*`. Vanilla deployables (`55galdrum`, `wooden_case`, `sea_chest`) ship `boundingbox_min/max` as Memory LOD selection
 names (not `box_placing_*`) and rely on the Geometry LOD bbox. So this rule fires only
 for items without a proper Geometry LOD or with broken `GetCollisionBox()` data.
 
@@ -188,7 +187,6 @@ Vanilla items always ship this: verifiable via `strings <p3d> | grep penetration
 | `55galdrum`      | `dz\data\data\penetration\metalplate.rvmat` + `metalPlate.bisurf` |
 | `wooden_case`    | `dz\data\data\penetration\wood_desk.rvmat` + `wood_desk.bisurf` |
 | `sea_chest`      | `dz\data\data\penetration\wood_desk.rvmat` + `wood_desk.bisurf` |
-| `MilitaryCrate` (a6_base_storage) | `dz\data\data\penetration\plastic.rvmat` + `plastic.bisurf` |
 
 `audit_p3d.py` runs this check on the Geometry, GeoPhys, FireGeo and ViewGeo LODs. A
 face with no material is CRITICAL in Geometry, GeoPhys and FireGeo, but only a WARNING

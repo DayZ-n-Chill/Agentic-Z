@@ -213,7 +213,7 @@ All paths are prefixed with `Graphics/Particles/materials/`.
 |---|---|---|
 | `{CB7AF4FD8ACBFDFC}` | glow/glow1.emat | Soft glow dot |
 | `{009C2EBAACD2D72A}` | fire/sparks1.emat | Bright spark point |
-| `{0B829A150C6A13E5}` | fire/sparks_06.emat | Spark strip (8-tile) |
+| `{A1C2A33044F4946D}` | fire/sparks_06.emat | Spark strip (8-tile) |
 | `{853257EDA4B1E35D}` | fire/fire_flame_01.emat | Fire flame billboard |
 | `{3E6CE4D61F8AC71F}` | fire/fire_medium_camp_02.emat | Medium fire anim |
 | `{83BCB6516091DB01}` | fire/fire_medium_camp_04.emat | Fire burst anim |

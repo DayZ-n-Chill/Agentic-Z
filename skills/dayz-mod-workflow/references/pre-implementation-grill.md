@@ -1,6 +1,6 @@
 # Pre-implementation grill: the DayZ questions to settle first
 
-The questions to go through with the user before writing the `config.cpp`, `model.cfg` or scripts of a placeable or usable DayZ object. `dayz-mod-workflow` runs it in its activation check. It is opt-out, not opt-in: a generic "any questions?" pass does not reach the DayZ-specific axes, and skipping this list brings back silent assumptions (the knowledge pack author's lesson LL-043).
+The questions to go through with the user before writing the `config.cpp`, `model.cfg` or scripts of a placeable or usable DayZ object. `dayz-mod-workflow` runs it in its activation check. It is opt-out, not opt-in: a generic "any questions?" pass does not reach the DayZ-specific axes, and skipping this list brings back silent assumptions.
 
 In this repo `dayz-mod-architect` asks these while it plans, and `/dayz-recipe` drafts a plan from a one-line request; the answers belong in `output/<ModName>-plan/plan.md`.
 
@@ -23,7 +23,7 @@ For each axis, offer **closed options with a recommended default** (AskUserQuest
 
 ## The mistake to avoid
 
-"The user chose X, so by implication they also want Y and Z." No. Each decision is confirmed. If an option's label bundles several features ("is placed, has health, can be picked up"), treat each feature as a separate confirmation before implementing it. Measured on the knowledge pack author's Mannequin project: the label "deployable base-building" included "can be picked up", and the user had to cut it out by hand during implementation.
+"The user chose X, so by implication they also want Y and Z." No. Each decision is confirmed. If an option's label bundles several features ("is placed, has health, can be picked up"), treat each feature as a separate confirmation before implementing it. Measured on a mannequin mod: the label "deployable base-building" included "can be picked up", and the user had to cut it out by hand during implementation.
 
 A real case with a default and a question per point makes a good template for the next one; keep yours with the plan.
 

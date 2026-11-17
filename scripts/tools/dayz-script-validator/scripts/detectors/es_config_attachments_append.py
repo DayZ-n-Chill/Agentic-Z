@@ -6,7 +6,7 @@ from shared.method_recognition import find_block_end_line
 ES_ATTACHMENTS_APPEND_CROSSPBO_RULE_ID = "ES-ATTACHMENTS-COMPOUND-APPEND-CROSSPBO"
 
 
-# kt_roadkill_armed bug-007 (verified with CfgConvert -xml). `attachments[] +=`
+# Verified with CfgConvert -xml. `attachments[] +=`
 # in a class whose parent is defined in ANOTHER PBO (external / forward-only)
 # does not reliably inherit the base list -> the effective config keeps only the
 # appended items and ALL vehicle slots break. Materialize the full list instead.

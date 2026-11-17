@@ -28,7 +28,7 @@ _index_loaded = False
 _index_data = None
 
 # Member variables declared in a vanilla base class. Used by
-# ES-MEMBER-REDECLARE-BASE (CANDIDATE-13): a mod class extending one of these
+# ES-MEMBER-REDECLARE-BASE: a mod class extending one of these
 # (or `modded class <base>`) must not re-declare these names.
 # Keyed by the base class name. Inheritance is NOT expanded — list the member
 # under the class that actually declares it.
@@ -39,7 +39,7 @@ VANILLA_BASE_MEMBERS = {
 }
 
 # Positional parameter names of common override targets in the vanilla tree.
-# Used by ES-OVERRIDE-PARAM-NAME-MISMATCH (CANDIDATE-15): Enforce requires an
+# Used by ES-OVERRIDE-PARAM-NAME-MISMATCH: Enforce requires an
 # override's parameter NAMES to match the base signature exactly. Keyed by
 # method name -> list of parameter names in order.
 VANILLA_OVERRIDE_PARAMS = {
@@ -137,7 +137,7 @@ def override_param_names(method_name):
 # Global class names from the vanilla tree that BREAK when reused as a method
 # name: the compiler reads `Name(args)` as a cast/constructor (not a call) and
 # fails "Too many parameters for 'Name' method". Used by
-# ES-METHOD-NAME-COLLIDES-VANILLA-CLASS (CANDIDATE-38). Curated; partial
+# ES-METHOD-NAME-COLLIDES-VANILLA-CLASS. Curated; partial
 # coverage -> false negatives, never false positives. Keyed by class name.
 VANILLA_GLOBAL_CLASS_NAMES = {
     "LogManager": "scripts/3_game/tools/debug.c:702",  # class LogManager
@@ -171,10 +171,8 @@ def vanilla_global_class_citation(name):
 
 # Method names verified ABSENT from the entire vanilla script tree (0
 # occurrences each; host-side grep over P:\scripts, 2026-06-10). Calling one
-# compile-fails with `Undefined function`. Used by ES-NONEXISTENT-METHOD
-# (CANDIDATE-43). Value = fix message with the verified alternative.
-# Source claims: enforce-script-reference SKILL.md:1599/:1605/:1630-1631
-# ("Deep-dive verified additions", added 2026-06-06).
+# compile-fails with `Undefined function`. Used by ES-NONEXISTENT-METHOD.
+# Value = fix message with the verified alternative.
 VANILLA_NONEXISTENT_METHODS = {
     # Real API: recipebase.c:159 `void InsertIngredient(int index, string ingredient, ...)`
     "AddIngredient": "use `InsertIngredient(index, classname)` (recipebase.c:159)",

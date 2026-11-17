@@ -2,12 +2,12 @@
 
 Checks for a vehicle body that comes from an OBJ, a glTF or a game rip: mesh and UV health, mirror against rotation, winding, the nose direction, cabin alignment and what offline visual gates cannot see.
 
-> Status: field notes measured on third-party mods, each named in its entry (SUB_BRZ, SUB_WRXSTI, MercedesAMGLF, LFQuad, LFQuad2, LFQuad3, Arma2Quad, LFHeli). Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. Where they were opened, the `carscript.c` numbers matched this repo's `P:\` (a 1.30 build), the `transport.c` numbers sat 3 to 9 lines lower than written, and the `DZ\vehicles\wheeled\config.cpp` numbers differed. Tags such as SP-205 or LL-244 are the notes' own lesson numbers. Paths such as `<vehicle-import>\...` or `SUB_BRZ_dev\...` point into those mods' work folders, which are not part of this repo. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 
 - The third person vehicle camera sets `m_fIgnoreParentYaw` to `0.0` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:189`), which is why the seated player's yaw decides what reads as forward.
-- The vanilla control these notes measure against is `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`. It is a binarized ODOL, which py3d cannot read, so the nose, hub and proxy numbers quoted from it were not measured again here.
+- The vanilla control these notes measure against is `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`. It is a binarized ODOL, which py3d cannot read, so the nose, hub and proxy numbers quoted from it are not checked on `P:\`.
 
 ## Mirror or rotation: check all three axes before declaring a model mirrored (added 2026-08-02, LFHeli HH-60G)
 
@@ -63,10 +63,10 @@ causes, and auditing the texture pipeline is the **most expensive** way to find 
 this ladder first; each rung is minutes, the full audit is sessions.
 
 1. **Audit the UVs, not the textures.** Exact SAT overlap + island count + density
-   (`uv-clean-atlas`, `uv_audit.py`). Overlap > 0, atomised islands (2-4 faces each) or wildly
+   (the uv-clean-atlas skill). Overlap > 0, atomised islands (2-4 faces each) or wildly
    uneven density means the problem is upstream of any `.rvmat` — no material wiring fixes it.
 
-   **No-overlap means an exact `SAT=0` (SP-214, added 2026-08-31).** A Monte-Carlo
+   **No-overlap means an exact `SAT=0` (added 2026-08-31).** A Monte-Carlo
    estimate has a measured nonzero floor, so its displayed `0%` is not proof. Route
    vehicle UV repair to `uv-clean-atlas` and use its current chart/SLIM/fold/SAT and
    semantic-packing contract; `PartUV` is not the vehicle default. One anti-fold
@@ -122,19 +122,18 @@ numbers and camo stamped across the whole fuselage. The symptom reads as "the UV
 - Status honesty: the diagnosis is measured; the flat-colour fix was **not yet confirmed in-game** at
   the time of writing — treat the fix direction as unverified until a cycle closes it.
 
-## Invariant 0: mesh and UV health before anything else (SP-052)
+## Invariant 0: mesh and UV health before anything else
 
-**Gate #0 — mesh + UV health BEFORE anything else (SP-052).** For ANY imported model (ripped or not),
+**Gate #0 — mesh + UV health BEFORE anything else.** For ANY imported model (ripped or not),
 the FIRST step is a mesh+UV audit, because a broken mesh produces false downstream diagnostics (a
 "double wall" that was mirrored UV on a single wall; a "convexity" issue that was open design-boundary
-edges). (a) audit `mesh_health.py` (boundary / non-manifold / dup-verts / dup-faces / winding per
-piece) + `uv_audit.py` (islands / overlap / density / mirrored); (b) sanitize with an ADAPTIVE weld
+edges). (a) audit the mesh (boundary / non-manifold / dup-verts / dup-faces / winding per
+piece) and the UVs (islands / overlap / density / mirrored); (b) sanitize with an ADAPTIVE weld
 (ladder 0.5→0.01 mm; gates: NM must NOT grow + UVs preserved — a blind 0.5 mm weld FUSES
 legitimately-touching pieces and CREATES non-manifold); (c) unwrap BY SECTIONS per
-the UV mapping note of the models pack (`skills/_shared/models/uv-mapping.md`; sections 0.5 and 5 of the source note `uv-mapping-dayz.md`); (d) gates: overlap ~0% for bake, uniform density, atlas
+the UV mapping note of the models pack (`skills/_shared/models/uv-mapping.md`); (d) gates: overlap ~0% for bake, uniform density, atlas
 legible by a human, checker render with SMOOTH shading (flat shading + grid raster read as a false
-"low-poly/blurry"). Tools in `LFQuad_dev\tools\` (mesh_health.py, mesh_sanitize.py bpy-headless;
-uv_audit.py py3d) — portable to any vehicle. → the same UV mapping note, and winding #10(f).
+"low-poly/blurry"). → the same UV mapping note, and winding #10(f).
 
 ## Invariant 0b: when LOD1 and LOD2 come from a decimate modifier, audit its output
 
@@ -166,9 +165,9 @@ Mixed together, a p99 of `90.00°` hid a real defect AND hid that untouched geom
 one side. Match survivors on a ~1e-4 m grid, not 1e-6 — positions are written as float32 and a 1e-6
 grid drops about a third of the untouched vertices at random, which is why the samples looked tiny.
 
-## Position is a candidate bucket, not identity (SP-163)
+## Position is a candidate bucket, not identity
 
-**Position is a candidate bucket, not identity (SP-163, added 2026-08-31).**
+**Position is a candidate bucket, not identity (added 2026-08-31).**
 The grid above may find candidates, but a seam can place distinct normal/UV corners
 at the same coordinate. Pair intact data by a carried source vertex/corner and
 primitive ID. If that identity was lost and a bucket is non-unique, return
@@ -179,30 +178,30 @@ and require approximately zero residual before trusting any product comparison.
 
 **Imported-model winding: keep the RAW glTF winding VERBATIM — NEVER orient to a normal oracle
 (authored/`__N`) nor to a radial/centroid heuristic (see #10j).** The pipeline's `__N` was never
-authored (`rip_p2_group.py:110,131` — smooth normals of the pre-mirror winding) and `orient_authored`
+authored (it holds smooth normals of the pre-mirror winding) and `orient_authored`
 inverted EVERY piece; repair only the ~0.5% source-inconsistent FACES by MAJORITY flood-fill per
 connected component, AFTER de-dup (#10e). Blender backface-cull render = HINT only (its convention
 false-greened once — it shows the +cross side, the engine renders the ANTI-cross side); in-game render
-is the gate. → #10(j) + `SUB_BRZ_dev\reviews\2026-07-02-s20-plan-reimport-unico-v2.md`.
+is the gate. → #10(j).
 
 ## Invariant 10: offline visual gates that lie, and the one winding rule
 
-**Imported-car offline VISUAL gates that LIE — the #7 family (offline geometry heuristic != in-game truth).** The per-session changelog of sub-entries #10(a)-#10(o) (steering-axis fit, single-sided see-through, debug fluids, raycast oracle, rip duplicate faces, per-piece winding uniformity, ViewPilot interior, bright-triangle shading seams, the import-orientation saga, glass occluder twins, foreign-LOD material transfer, gap skirts, hub-lift decoupling, get-in-preserving patches) lives in **`visual-gates-and-winding.md`** (s14->s23, SUPERSEDED entries archived there). The single operative winding rule stays here:
+**Imported-car offline VISUAL gates that LIE — the #7 family (offline geometry heuristic != in-game truth).** The per-session changelog of sub-entries #10(a)-#10(o) (steering-axis fit, single-sided see-through, debug fluids, raycast oracle, rip duplicate faces, per-piece winding uniformity, ViewPilot interior, bright-triangle shading seams, the import-orientation saga, glass occluder twins, foreign-LOD material transfer, gap skirts, hub-lift decoupling, get-in-preserving patches) lives in **`visual-gates-and-winding.md`** (SUPERSEDED entries archived there). The single operative winding rule stays here:
 - **THE RULE (import orientation, #10j):** keep the raw glTF winding VERBATIM for ALL pieces (net rip→DayZ = `(-Fx, Fy+Y0, -Fz)`, det=+1, preserves the authored visible side end-to-end); stored MLOD normals = smooth(+cross) of the FINAL winding. NEVER orient winding to a normal oracle or to outward-of-centre. Repair ONLY source-inconsistent components by MAJORITY flood-fill per connected component (never minority-area). `glass*int_a` panes are legitimate cabin-side glass (do not delete as z-fight). Full mechanism, measurements, and the SUPERSEDED (h)/(i) history: `visual-gates-and-winding.md` #10(j)/(f).
-- **Winding is per profile (SP-217).** rip/vehicle with measured transform det=+1: preserve (`#10j`). Generic DCC import with no profile: dayz-model-pipeline Rule 12 (det=-1 map, face order kept, normals negated; no face reversed). The in-game A/B (SP-070) adjudicates correction; a lineage gate adjudicates preservation. Do not apply generic dayz-model-pipeline Smart UV / decimation / flip defaults to a vehicle. *(Aligned 2026-10-03 with Rule 12, measured in game 2026-10-01: the generic case read "Generic DCC import with no profile: flip visual by default (SP-071; proxies exempt).")*
+- **Winding is per profile.** rip/vehicle with measured transform det=+1: preserve (`#10j`). Generic DCC import with no profile: dayz-model-pipeline Rule 12 (det=-1 map, face order kept, normals negated; no face reversed). The in-game A/B test adjudicates correction; a lineage gate adjudicates preservation. Do not apply generic dayz-model-pipeline Smart UV / decimation / flip defaults to a vehicle. *(Rule 12 was measured in game on 2026-10-01; it replaces the older default "flip visual, proxies exempt".)*
 
 ## Invariant 11: vanilla forward is nose at minus Z, and the visual side of an imported car is not one block
 
 **Vanilla forward convention is nose = −Z (ENGINE-NATIVE), and the "visual side" of an imported car
 is NOT one homogeneous block — measure EVERY body proxy separately before any bulk rotation
-(MERCEDES_AMGLF review 2026-07-03; convention verified offline on native data, the yaw-180 fix's
+(MercedesAMGLF, 2026-07-03; convention verified offline on native data, the yaw-180 fix's
 in-game gate pending).**
 - Convention measured on the raw vanilla ODOL (NOT a debinarized MLOD, so no converter-flip doubt):
   sedan `light_1_1` Z=−2.387, `dmgzone_front` −2.355, front axle −1.655, exhaust at +Z (tail).
   Nose=−Z is engine data. (Side-finding: the debinarized sedan MLOD is sign-faithful to the ODOL.)
 - Perceived-"forward" chain: the 3PP vehicle camera inherits the SEATED PLAYER's yaw (crew-proxy
   orientation, sim side) + an MS offset — `dayzplayercameravehicles.c:39-49,93-105`
-  (`m_fIgnoreParentYaw` set to `0.0` at `:189`; on 1.29 the line was commented out, 1.29 `:194`), defaults `transport.c:652-663`. Headlights and
+  (`m_fIgnoreParentYaw` set to `0.0` at `:189`; on 1.29 the line was commented out, 1.29 `:194`), defaults `transport.c:649-660`. Headlights and
   hubs play NO role in what the player sees as forward. Traction sign is C++
   (`car.c:199-274` proto native) — inferred −Z from the working sedan; not script-readable.
 - Symptom map: shell visual yaw-180 vs sim ⇒ 1st gear reads as "drives backwards" AND wheel
@@ -219,30 +218,28 @@ in-game gate pending).**
   `pre-cabin-align-2026-07-07\`: shell rotated, cabin still old), after a first shell-only pass
   per the 07-03 scope left the cockpit 180° off the body. The sim-aligned claim came from
   content-bbox reading plus validating `mb_steering` against a memory point of the SAME
-  misaligned cluster (self-validation — the SP-132 "gate shares the producer's frame" shape).
+  misaligned cluster (self-validation — the "gate shares the producer's frame" shape of `method-and-gate-calibration.md`).
   Rules that survive: (a) still measure each proxy separately, but adjudicate cabin orientation
   with ANATOMICAL PAIRS (seat↔steering-wheel↔column-rake↔driver side) against untouched sim
   anchors (hubs, dmgZones, engine memory) — never with mixed-content bbox or the cluster's own
   memory points; (b) the correct rotation unit is EVERYTHING that defines the visual+pose
   experience: shell + body proxies + crew proxies + `pos_*`/`drivewheel*` cockpit points.
   Post-fix coherence verified offline (anchors exact on hubs, LHD seat side, wheel 0.34 m ahead
-  of seat, rake (0,0.516,0.857) vanilla-parallel) and live (Task 9 v64 PASS + manual drive
-  2026-07-23, no inverted-drive or backwards-pose reports). Full adjudication:
-  `MERCEDES_AMGLF_dev\reviews\2026-07-02-fable-review-plan-OUTPUT.md`.
-  **R22 refinement (2026-08-01, a second agent session re-measured the same backups — narrows the rule above):**
+  of seat, rake (0,0.516,0.857) vanilla-parallel) and live (automated verifier PASS + manual drive
+  2026-07-23, no inverted-drive or backwards-pose reports).
+  **Refinement (2026-08-01, re-measured on the same backups; narrows the rule above):**
   the "rotate the entire cabin cluster" adjudication is Mercedes-SPECIFIC; the durable rule is
   two-sided — (1) adjudicate cabin orientation with the anatomical pairs against untouched sim
   anchors, then (2) rotate exactly the adjudicated cluster IN EVERY FILE/LOD THE HOST
   REFERENCES, measuring each file, never presuming: the applied 07-07 fix itself MISSED the 12
   `mb_*_lod1/_lod2.p3d` referenced by the host's visual LODs 1-2 (byte-identical to pre-fix,
-  hash-verified by two independent reviewers) — so mid-distance LODs still draw the body
+  hash-verified twice) — so mid-distance LODs still draw the body
   proxies in the OLD orientation. The original warning to measure every proxy separately
   SURVIVES; what was wrong was its Mercedes factual claim, not its method.
 
 - Cheap steering-wheel check: if the `drivewheel_axis` memory pair is near-VERTICAL (Y-dominant
   direction), the wheel sweeps left-right like a wiper instead of rotating in its plane. The axis
   must be ~perpendicular to the rim plane (Z-dominant, some Y).
-Evidence + probes: `MERCEDES_AMGLF_dev\reviews\2026-07-03-fable-review-b1b6-plan.md`.
 
 ## Invariant 12: white car (moved)
 
@@ -252,19 +249,19 @@ For family B this item now lives in the rip-vehicle-import skill, in its family 
 
 **Steering wheel vs hands: measure rim-center delta AND plane tilt vs the control BEFORE moving
 anything — the seat anim is the control's, so hands land on ITS wheel plane.** (added 2026-07-07,
-SUB_BRZ s25 measured) SUB_BRZ: rim-center delta vs crew anchor already in parity (1-1.6 cm) but rim
+measured on SUB_BRZ) SUB_BRZ: rim-center delta vs crew anchor already in parity (1-1.6 cm) but rim
 tilt 15.8° vs sedan 31.0° → ±r·sin(Δ) = ±2.1 cm at r=0.159 = exactly the user's "top hand 2 cm
 behind, bottom hand 2 cm in front". Fix = rotate the wheel PIECE about its own rim center to the
 control's tilt and re-author `drivewheel`/`drivewheel_axis` memory points parallel to the new rim
 normal (SUB_BRZ's axis was 38° off its own rim; the sedan's is exactly parallel — a misaligned axis
-also wobbles the G5 wheel animation). Do NOT recline the crew proxy when the positional delta is in
-parity. Reusable tool: `<vehicle-import>\s25_plan\measure_wheel_vs_crew.py` (fits rim by
-outer-radial PCA; handles debinarized selections whose point-membership is lost via faces, LL-018).
-Same open symptom on MercedesAMGLF — apply there.
+also wobbles the steering wheel animation). Do NOT recline the crew proxy when the positional delta is in
+parity. To measure, fit the rim by outer-radial PCA; on a debinarized model, recover selections whose
+point membership is lost through their faces.
+Same open symptom on MercedesAMGLF.
 
 ## Invariant 29: a rig threshold on a measured axis needs its source declared for both members of a pair
 
-**A rig threshold on a MEASURED axis must have its source declared for EVERY member of a symmetric pair — declaring it on one side leaves the other on raw measurement, and the build refuses months later (added 2026-08-16, SUB_WRXSTI T8.3 blocker).** The detachable-door rig requires `dir_y > 0.999` (`rip_p3_structural.py`), and a rip's placement tilt lands a door hinge just under it. The WRX profile fixed that for ONE door by declaring `hinge.axis_source.declared = assembly.alignment_build.doorRF`, an axis projected to vertical with its XZ midpoint kept — and the other door, declaring no `axis_source`, kept riding its raw PCA axis. Measured when the whole structural build refused: codriver `|dir_y| = 1.0000`, driver `|dir_y| = 0.998575` = **3.059°**, i.e. one door 3 degrees from a threshold the other met exactly. This is `DZ-R7` (trace the invariant to all call-sites) applied to profile DATA rather than code, and it is invisible until the gate fires, because both doors look declared and only one is. Two riders paid the same day: (a) project each side keeping **its own** XZ midpoint, never mirror the other door's — the two sides of a rip are not symmetric, and mirroring here would have moved the hinge 3.7 cm (driver x +0.849278 vs codriver x −0.811827); (b) relaxing the threshold to admit the one bad case is the tempting fix and the wrong one — the threshold exists so a door does not open tilted, and lowering it for one car lowers it for all.
+**A rig threshold on a MEASURED axis must have its source declared for EVERY member of a symmetric pair — declaring it on one side leaves the other on raw measurement, and the build refuses months later (added 2026-08-16, SUB_WRXSTI).** The detachable-door rig requires `dir_y > 0.999`, and a rip's placement tilt lands a door hinge just under it. The WRX profile fixed that for ONE door by declaring `hinge.axis_source.declared = assembly.alignment_build.doorRF`, an axis projected to vertical with its XZ midpoint kept — and the other door, declaring no `axis_source`, kept riding its raw PCA axis. Measured when the whole structural build refused: codriver `|dir_y| = 1.0000`, driver `|dir_y| = 0.998575` = **3.059°**, i.e. one door 3 degrees from a threshold the other met exactly. This is the rule "trace the invariant to all call-sites" applied to profile DATA rather than code, and it is invisible until the gate fires, because both doors look declared and only one is. Two riders paid the same day: (a) project each side keeping **its own** XZ midpoint, never mirror the other door's — the two sides of a rip are not symmetric, and mirroring here would have moved the hinge 3.7 cm (driver x +0.849278 vs codriver x −0.811827); (b) relaxing the threshold to admit the one bad case is the tempting fix and the wrong one — the threshold exists so a door does not open tilted, and lowering it for one car lowers it for all.
 
 ## Invariant 33: numbers cannot see proxy colour or orientation
 

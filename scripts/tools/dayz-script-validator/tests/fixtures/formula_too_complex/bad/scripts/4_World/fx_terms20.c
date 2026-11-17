@@ -1,4 +1,4 @@
-// Inbox 7b9e, 20 terms: DayZDiag 1.30.164289 gave "Formula too complex" at line 6.
+// 20 terms: DayZDiag 1.30.164289 gave "Formula too complex" at line 6.
 class FX_Terms20
 {
     static string Run(int i0, float f0)

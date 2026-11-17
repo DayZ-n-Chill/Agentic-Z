@@ -19,7 +19,7 @@ which is a 4_World class.
 - [Cleanup checklist (apply to every device with particles)](#cleanup-checklist-apply-to-every-device-with-particles)
 - [Vanilla particles for placed devices](#vanilla-particles-for-placed-devices)
 - [Pattern D with a synced bool instead of the energy manager](#pattern-d-with-a-synced-bool-instead-of-the-energy-manager)
-- [LFPowerGrid: where these patterns come from](#lfpowergrid-where-these-patterns-come-from)
+- [LFPowerGrid: reading and updating its device code](#lfpowergrid-reading-and-updating-its-device-code)
 
 ---
 
@@ -522,9 +522,9 @@ class MyMod_SyncedFurnace extends MyMod_DeviceBase
 
 ---
 
-## LFPowerGrid: where these patterns come from
+## LFPowerGrid: reading and updating its device code
 
-Patterns A to E were first written for LFPowerGrid (LFPG), a third-party mod of powered devices: a sprinkler, a furnace, overload sparks, a searchlight. Nothing about LFPG is on `P:\`; the notes below record how its own code differs from the patterns above, so LFPG code can be read and brought up to date.
+LFPowerGrid (LFPG) is a mod of powered devices: a sprinkler, a furnace, overload sparks, a searchlight. Its devices use Patterns A to E under the mod's own names. This is third-party mod behaviour, not vanilla, and nothing about LFPG is on `P:\`; the notes below record how its code differs from the patterns above, so LFPG code can be read and brought up to date.
 
 How LFPG names map onto this file:
 

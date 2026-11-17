@@ -39,7 +39,7 @@ Why this is a gate and not a preference: with the user present, their manual cyc
 
 What does not change: MCP is still required for what a person cannot measure by eye (telemetry, numeric raycasts, exact placement, repeatable series). Do not ask for those, use it.
 
-The measurement behind the gate (2026-08-07, the pack author's corpus of 276 sessions): 63 % of the wall-clock time of a full cycle fell on the user's side, and 71 % of their real checks could be automated with today's tools. That a check can be automated does not mean it should be: with the user present, their cycle rules.
+The measurement behind the gate (2026-08-07, across 276 recorded sessions): 63 % of the wall-clock time of a full cycle fell on the user's side, and 71 % of their real checks could be automated with today's tools. That a check can be automated does not mean it should be: with the user present, their cycle rules.
 
 ## Before driving
 

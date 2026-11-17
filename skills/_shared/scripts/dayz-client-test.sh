@@ -1,5 +1,4 @@
 #!/bin/sh
-# Source: bzed/dayz-dev-plugin 6112ac5, contributed to this Pack under its MIT licence by its author.
 # Run one automated client+server test: start a local server, start the DayZ client headless,
 # wait until the mod's tests print a final line, report, tear everything down.
 #
@@ -28,10 +27,10 @@ while getopts et:s:c:w:d:o:k:m: o; do
     case $o in
         e) eflag=-e;; t) tree=$OPTARG;; s) smods=$OPTARG;; c) cmods=$OPTARG;; w) wait_s=$OPTARG;;
         d) done_re=$OPTARG;; o) out=$OPTARG;; k) prefix=$OPTARG;; m) mission=$OPTARG;;
-        *) sed -n '2,18p' "$0" >&2; exit 2;;
+        *) sed -n '2,17p' "$0" >&2; exit 2;;
     esac
 done
-[ -n "$tree" ] && [ -n "$smods" ] && [ -n "$cmods" ] || { sed -n '2,18p' "$0" >&2; exit 2; }
+[ -n "$tree" ] && [ -n "$smods" ] && [ -n "$cmods" ] || { sed -n '2,17p' "$0" >&2; exit 2; }
 [ -x "$tree/DayZServer" ] || { echo "no DayZServer in $tree (make-server-tree.sh first)" >&2; exit 2; }
 tree=$(cd "$tree" && pwd -P)
 # One game at a time: check before spending a server start on a client that would be refused.

@@ -3,9 +3,9 @@
 Convert DayZ MLOD `.p3d` models, `.paa` textures and `.rvmat` materials
 into a binary glTF (`.glb`) and a standalone Three.js HTML viewer.
 
-The converter is the pack form of the `dayz-3d-viewer` skill. It reads
-the DayZ py3d fork from `scripts/tools/py3d` (1.6.0 or later). It does not vendor a
-wheel and it does not talk to the game.
+The converter is the command-line tool behind the `dayz-3d-viewer` skill.
+It reads models with the DayZ py3d fork in `scripts/tools/py3d` (1.6.0 or
+later). It does not bundle a wheel and it does not talk to the game.
 
 ## Requirements and install
 
@@ -63,11 +63,13 @@ sandboxed iframe can render without `fetch`.
 | `2` | Usage error or a declared extra is missing |
 
 Missing Pillow or LZO is reported as a one-line message on stderr, not
-as a traceback.
+as a traceback. `build-viewer` is the exception: it keeps going, lists
+each failed step (a missing extra included) under `errors` in the JSON
+it prints, and exits `1` when that list is not empty.
 
 ## Library API
 
-Public names match the original skill scripts:
+The main public names:
 
 ```python
 from dayz_3d_viewer import (
@@ -82,15 +84,14 @@ from dayz_3d_viewer import (
 
 ## three.js (CDN, not bundled)
 
-Generated HTML loads **three.js 0.160.0** and its `OrbitControls` /
-`GLTFLoader` addons from jsDelivr:
+Generated HTML loads **three.js 0.185.1** as ES modules through an
+import map, with its `OrbitControls` addon (and `GLTFLoader` in web
+mode), from jsDelivr:
 
-`https://cdn.jsdelivr.net/npm/three@0.160.0/`
+`https://cdn.jsdelivr.net/npm/three@0.185.1/`
 
 The tool does not embed three.js source. Opening the HTML without a
-network will show a blank page. The classify viewer under
-`skills/rip-vehicle-import` does the same for r128; see
-`THIRD_PARTY_NOTICES.md`.
+network will show a blank page.
 
 ## Determinism
 

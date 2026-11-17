@@ -25,7 +25,7 @@ The script reads .p3d files with py3d. It uses the DayZ fork of py3d kept in thi
 python -m pip install -r skills\dayz-p3d-audit\requirements.txt
 ```
 
-Only the fork has `P3D.validate()`. With it the audit adds the fork's findings, the winding checks among them, in a `--- py3d validate() ---` section. When `scripts/tools/py3d/` is missing the script falls back to whatever py3d is installed; if that is the plain upstream library, the section says the checks did not run, and winding has to be checked by hand (`references/winding-methodology.md`).
+Only the fork has `P3D.validate()`. With it the audit adds the fork's findings, the winding checks among them, in a `--- py3d validate() ---` section. When `scripts/tools/py3d/` is missing the script falls back to whatever py3d is installed; if that is the stock py3d library, which has no `validate()`, the section says the checks did not run, and winding has to be checked by hand (`references/winding-methodology.md`).
 
 **Audit one or more models** (MLOD source, not binarized ODOL):
 ```cmd

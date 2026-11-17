@@ -17,7 +17,7 @@ MODULE_DIR = TOOL_DIR / "dayz_ui_lab"
 THREE_CARDS = TOOL_DIR / "fixtures" / "scenarios" / "three-cards" / "scenario.json"
 DEFECT_SCENARIO = TOOL_DIR / "fixtures" / "scenarios" / "defect-overlays" / "scenario.json"
 DEFECT_RENDER = DEFECT_SCENARIO.parent / "observed.json"
-EXPECTED_SC009_CODES = {
+EXPECTED_DEFECT_CODES = {
     "DIFF-CLIPPING",
     "DIFF-OVERLAP",
     "DIFF-REFERENCE-MISSING",
@@ -61,16 +61,16 @@ class DiffTests(unittest.TestCase):
     def codes(findings: list[dict]) -> set[str]:
         return {finding["code"] for finding in findings}
 
-    def test_sc009_negative_fixture_has_exactly_four_expected_findings(self) -> None:
+    def test_negative_fixture_has_exactly_four_expected_findings(self) -> None:
         findings = self.diff.analyze_document(self.defect_document(), DEFECT_SCENARIO)
         self.assertEqual(4, len(findings))
-        self.assertEqual(EXPECTED_SC009_CODES, self.codes(findings))
+        self.assertEqual(EXPECTED_DEFECT_CODES, self.codes(findings))
 
     def test_three_cards_control_has_zero_findings(self) -> None:
         findings = self.diff.analyze_document(self.positive_document(), THREE_CARDS)
         self.assertEqual([], findings)
 
-    def test_each_sc009_finding_is_actionable_and_repo_relative(self) -> None:
+    def test_each_negative_fixture_finding_is_actionable_and_repo_relative(self) -> None:
         findings = self.diff.analyze_document(self.defect_document(), DEFECT_SCENARIO)
         required = {"scenario", "widget_id", "property", "expected", "observed", "source"}
         for finding in findings:
@@ -138,7 +138,7 @@ class DiffTests(unittest.TestCase):
 
     def test_overlays_still_accept_a_viewport_the_scenario_does_not_declare(self) -> None:
         # The guard must not be wider than the defect: composing one scenario at
-        # two resolutions is what SC-005 requires, and an overflow that appears
+        # two resolutions is a supported use, and an overflow that appears
         # only at 3440x1440 is a real responsive defect, not an artefact.
         observed = self.render.render_document(THREE_CARDS, "populated", viewport=(3440, 1440))
         self.assertNotEqual(observed["viewport"], self.positive_document()["viewport"])

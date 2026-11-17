@@ -16,17 +16,15 @@ from shared.method_recognition import find_method_regions
 ES_CAST_UNRELATED_TYPES_RULE_ID = "ES-CAST-UNRELATED-TYPES"
 
 
-# claim: CLAIM-ENFORCE-CAST-UNRELATED-TYPES
 # `X.Cast(y)` where neither X nor the declared type of y derives from the
-# other stops the whole script module from compiling. Pipeline inbox
-# fb-20261009-122148-c852, DayZDiag 1.29:
+# other stops the whole script module from compiling. On DayZDiag 1.29:
 #
 #   Mission mission = GetGame().GetMission();
 #   hud = IngameHud.Cast(mission);
 #
 # refused the Mission module with `Types 'IngameHud' and 'Mission' are not
 # related`. The message is the evidence that neither class derives from the
-# other; that IngameHud derives from Hud is the ticket's word, not re-read on
+# other; that IngameHud derives from Hud was not re-read on
 # a vanilla tree for this rule.
 #
 # Judged only when everything is known, otherwise skipped without a word:
@@ -151,11 +149,11 @@ class Hierarchy:
 
 
 # A declaration may follow a `case` or `default` label on its line, `case 0:
-# Object hit;` (Codex review of #125, F1): a `:` before the type counts only
+# Object hit;`: a `:` before the type counts only
 # there, where the text after the last `;`, `{`, `}` or `:` before it on its
 # line is a label, so a second label (`case 0: case 1:`) counts too. Checked
 # in the pattern, the label made it a third slower; searched for, a long line
-# took a time that grew with its square (Codex review of #125, G4).
+# took a time that grew with its square.
 _LABEL_RE = re.compile(r"[ \t]*(?:case\b[^;{}:\n]*|default[ \t]*)")
 
 
@@ -169,8 +167,7 @@ def _after_a_label(text, colon):
 
 # Neither a template's arguments nor an array's size hold a `:`, so neither
 # part runs past one: from each `:` before a type they ran on to the end of
-# the line, and a line of `: Object<` took a time that grew with its square
-# (Codex review of #125, H2).
+# the line, and a line of `: Object<` took a time that grew with its square.
 def _declaration_re(name):
     return re.compile(
         r"(?:^|[;{}(,:])[ \t]*" + _MODIFIERS
@@ -242,7 +239,7 @@ class FileScopes:
     _argument_type() asks for them at every cast or call. Counting the lines
     from the start of the file and going through every method and class body
     each time kept ES-PROTECTED-METHOD-CROSS-CLASS running for more than 20
-    minutes on a 10 MB file (mods pass of #113, 2026-10-17).
+    minutes on a 10 MB file (measured on 2026-10-17).
     """
 
     def __init__(self, stripped):
@@ -341,8 +338,7 @@ def _argument_type(
         if found:
             return found.pop() if len(found) == 1 and "" not in found else None
         # `foreach (Object hit : list)` closes its `(` before a call in the
-        # loop, which then took the type of a member `IEntity hit` (Codex
-        # review of #125, E1).
+        # loop, which then took the type of a member `IEntity hit`.
         if closed and around is not None:
             return None
     enclosing = scopes.class_body(cast_at)
@@ -356,7 +352,7 @@ def _argument_type(
         return scopes.members[key]
     # The body is scanned once per name, whatever the blocks: scanning it
     # for each set of blocks around the calls made the rule 21 % slower than
-    # the second version over the mods (third round of the review of #125).
+    # the second version over the mods.
     body_key = (open_brace, arg, declared_type)
     if body_key not in scopes.declarations:
         declarations = []

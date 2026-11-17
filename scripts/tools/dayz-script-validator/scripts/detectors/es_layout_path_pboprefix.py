@@ -110,7 +110,7 @@ def _extract_string_literals(source):
 # `.layout` path detector. Permissive on the prefix portion (anything but `"`
 # and whitespace) and requires the suffix `.layout` immediately before the
 # closing quote. A literal with whitespace is a message that names a layout,
-# such as a Print after a failed CreateWidgets (inbox 22f2), not a path; a
+# such as a Print after a failed CreateWidgets, not a path; a
 # path with a space in it is a known false negative.
 _LAYOUT_PATH_RE = re.compile(r"^[^\"\s]*\.layout$")
 

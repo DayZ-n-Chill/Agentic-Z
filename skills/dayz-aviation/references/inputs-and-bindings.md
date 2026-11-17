@@ -1,8 +1,8 @@
 # Flight input bindings
 
-How LM_Planes registers its flight inputs in `Inputs.xml`, its keyboard and Xbox scheme, the stringtable and `config.cpp` tie-in, and aircraft variants in one config. The traps that make a custom vehicle input read zero are in `skills/_shared/vehicles/aviation-inputs-and-actions.md`; the `inputs.xml` format itself is in `skills/_shared/enscript/integrations/input_bindings.md`.
+How LM_Planes registers its flight inputs in `Inputs.xml` (shown with a `MyPlane` placeholder tag), its keyboard and Xbox scheme, the stringtable and `config.cpp` tie-in, and aircraft variants in one config. The traps that make a custom vehicle input read zero are in `skills/_shared/vehicles/aviation-inputs-and-actions.md`; the `inputs.xml` format itself is in `skills/_shared/enscript/integrations/input_bindings.md`.
 
-Third-party material: patterns read from the LM_Planes mod (Workshop `3730564764`, by Llama and Itspete-Here), whose files are not in this repo. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
+Third-party mod behaviour, not vanilla: patterns read in the LM_Planes mod (Workshop `3730564764`), whose files are not in this repo. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
 
 ## XML registration
 
@@ -12,19 +12,19 @@ In `scripts/data/Inputs.xml`:
 <modded_inputs>
     <inputs>
         <actions>
-            <input name="UALlamaPlanePitchForward" loc="llama_plane_pitch_forward"/>
+            <input name="UAMyPlanePitchForward" loc="myplane_pitch_forward"/>
             <!-- ... 11 actions total -->
         </actions>
-        <sorting name="llama_plane" loc="llama_plane_controls">
-            <input name="UALlamaPlanePitchForward"/>
-            <!-- groups inputs in keybind menu under "llama_plane_controls" category -->
+        <sorting name="myplane" loc="myplane_controls">
+            <input name="UAMyPlanePitchForward"/>
+            <!-- groups inputs in keybind menu under "myplane_controls" category -->
         </sorting>
-        <exclude name="LlamaPlane_Controls">
+        <exclude name="MyPlane_Controls">
             <!-- excludes these inputs from default vanilla binding conflicts -->
         </exclude>
     </inputs>
     <preset>
-        <input name="UALlamaPlanePitchForward">
+        <input name="UAMyPlanePitchForward">
             <btn name="kW"/>
             <btn name="x1LeftThumbUp"/>
         </input>
@@ -53,7 +53,7 @@ Key prefix convention: `k` for keyboard (`kW`, `kSpace`, `kLShift`, `kLControl`,
 
 ## Stringtable + config.cpp tie-in
 
-`Stringtable.csv` defines display strings for each `loc="..."` key. Llama sets all 13 locales to identical English (no real i18n) — pragmatic, leaves the structure ready for translation later.
+`Stringtable.csv` defines display strings for each `loc="..."` key. LM_Planes sets all 13 locales to identical English (no real i18n) — pragmatic, leaves the structure ready for translation later.
 
 `config.cpp` root references the XML:
 

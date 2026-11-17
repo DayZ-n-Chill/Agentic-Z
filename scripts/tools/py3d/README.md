@@ -3,21 +3,16 @@
 Read and write Arma / DayZ `.p3d` models in their unbinarized **MLOD** form,
 from Python. No dependencies, pure stdlib.
 
-This is a maintained fork of [KoffeinFlummi/py3d](https://github.com/KoffeinFlummi/py3d)
-by Felix "KoffeinFlummi" Wiegand (MIT, last released in 2018). The original is a
-compact, correct MLOD codec and it is still the foundation of this code — its
-copyright notice is preserved verbatim in [LICENSE](LICENSE).
-
 > **The importable module is still `py3d`.** Only the *distribution* name
 > differs, because `py3d` on PyPI is an unrelated 3D library. So `import py3d`
 > keeps working, and `py3d.IS_DAYZ_FORK` lets a script assert it got this one.
 
-## Why a fork
+## Why guards and a validator
 
-Upstream is a minimal codec: it assumes well-formed input and trusts the caller.
-That is a reasonable design, but in a modding pipeline the input is frequently
+At its core this is a minimal MLOD codec, and a bare codec assumes well-formed
+input and trusts the caller. In a modding pipeline the input is frequently
 *not* well formed — a half-written export, a mesh straight out of Blender, a
-selection rebuilt by hand. This fork adds two things on top:
+selection rebuilt by hand. So the library adds two things on top of the codec:
 
 1. **Guards.** Paths that used to corrupt a `.p3d` silently, or blow up much
    later with an unrelated error, now fail early with a message that names the
@@ -27,8 +22,10 @@ selection rebuilt by hand. This fork adds two things on top:
 
 ## Install
 
+From the repository root:
+
 ```bash
-pip install git+https://github.com/willy92wins/py3d-dayz
+python -m pip install -e scripts/tools/py3d
 ```
 
 Verify you imported the right library:
@@ -63,7 +60,7 @@ python -m py3d validate model.p3d    # validator findings; exit 1 if any ERROR
 python -m py3d diff     a.p3d b.p3d  # structural comparison
 ```
 
-## What this fork adds
+## What it adds to the bare codec
 
 **Correctness guards**
 - Selection weights validated on write, naming the selection that is wrong.
@@ -100,13 +97,14 @@ python -m py3d diff     a.p3d b.p3d  # structural comparison
 
 **Format fidelity**
 - Every `#UVSet#` beyond the first is read into `Vertex.uv_sets` and written
-  back in id order. Upstream dropped them on save: a skinned body that carried
-  two UV sets lost the second one (4,761,261 → 4,409,836 bytes).
+  back in id order. The bare codec drops them on save: a skinned body that
+  carried two UV sets lost the second one (4,761,261 → 4,409,836 bytes).
 - A LOD without faces (Memory, LandContact) gets the empty `#UVSet#` tag that
-  Object Builder writes and BI-authored files carry; upstream omitted it.
+  Object Builder writes and Bohemia Interactive's own files carry; the bare
+  codec omits it.
 - The editor's current selection (`#Selected#`) is read into `LOD.selected` and
   written back with its payload intact, in the slot Object Builder writes it in
-  (after `#SharpEdges#`, before the named selections). Upstream dropped it:
+  (after `#SharpEdges#`, before the named selections). The bare codec drops it:
   re-saving `WeaponSpecialLODs.p3d` lost 202 bytes and `InfectedSpecialLODs.p3d`
   863. It is editor state, not model data -- `binarize.exe` discards it
   (measured; see KNOWN-ISSUES) -- but Object Builder preserves it verbatim, so
@@ -115,10 +113,11 @@ python -m py3d diff     a.p3d b.p3d  # structural comparison
   the presence and membership of `#Selected#`.
 
 **Write contract.** For valid canonical input the bytes written are identical to
-what upstream writes, with two deliberate exceptions: a LOD without faces gets
-the empty `#UVSet#` tag (17 bytes) that upstream omits, and `#Selected#` is
-written back where upstream dropped it. Where upstream would have corrupted the
-file or crashed later, this fork raises instead. A file written by Object
+what the bare codec (no guards, no DayZ additions) writes, with two deliberate
+exceptions: a LOD without faces gets the empty `#UVSet#` tag (17 bytes) that the
+bare codec omits, and `#Selected#` is written back where the bare codec drops
+it. Where the bare codec would corrupt the file or crash later, this library
+raises instead. A file written by Object
 Builder survives a read/write cycle byte for byte; a file written by BI may not,
 because tags are written in this library's order -- which is the order Object
 Builder itself writes, and not always the source file's.
@@ -196,7 +195,7 @@ shade it wrong (lit inverted, measured on a character). (The other common way,
 a mirrored model, is invisible to every check below; see
 [Blender → DayZ](#blender--dayz).)
 
-This fork checks winding two ways:
+The validator checks winding two ways:
 
 - **Absolute** (`ERR_WINDING_VS_NORMALS`): does each face's winding agree with
   its own declared normal? Both vectors live in the same space, so this is
@@ -306,8 +305,9 @@ instead, which this finding used to recommend, trades it for
 
 ## Status and known issues
 
-The library is used in a real modding pipeline. On a plain `pytest` run 391
-tests pass and 11 skip: the 7 CANON tests, which need a local clone of upstream
+The library is used in a real modding pipeline. On a plain run of
+`python -m pytest -q scripts/tools/py3d` from the repository root 399 tests
+pass and 11 skip: the 7 CANON tests, which need a checkout of the bare codec
 (see [Tests](#tests)), and 4 that need the companion scripts. It has also been
 through a deliberately adversarial audit, and **not every problem it found is
 fixed yet**. Before
@@ -318,17 +318,25 @@ are weaker than their names suggest.
 
 ## Tests
 
-```bash
-python -m pytest -q
+From the repository root:
 
-# The CANON tests compare byte-for-byte output against upstream and are
-# skipped unless you point them at a local clone of it:
-PY3D_UPSTREAM_PATH=/path/to/KoffeinFlummi/py3d python -m pytest -q
+```bash
+python -m pytest -q scripts/tools/py3d
+
+# The CANON tests compare byte-for-byte output against the bare codec (plain
+# py3d at revision 7acd58b, without the guards and DayZ additions) and are
+# skipped unless you point them at a checkout of it:
+PY3D_REFERENCE_PATH=/path/to/bare/py3d python -m pytest -q scripts/tools/py3d
+
+# The four integration tests run the companion scripts of the skills and are
+# skipped unless you point them at the skills folder:
+SKILLS_DIR=skills python -m pytest -q scripts/tools/py3d/tests/test_s2_integ.py
 ```
+
+The rollout tests under `rollout/tests/` need Windows PowerShell.
 
 Fixtures are synthetic — no Bohemia Interactive assets are included or required.
 
 ## License
 
-MIT, same as upstream. Copyright (c) 2017 Felix Wiegand for the original work;
-see [LICENSE](LICENSE). Fork maintained by [@willy92wins](https://github.com/willy92wins).
+MIT; see [LICENSE](LICENSE).

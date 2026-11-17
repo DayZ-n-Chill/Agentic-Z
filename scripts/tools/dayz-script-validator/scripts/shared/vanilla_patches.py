@@ -4,7 +4,7 @@ ES-UNDEFINED-CLASS-REF treats a requiredAddons[] entry as vanilla, and so as
 covered by the vanilla scripts tree, only when it is one of these names. A
 prefix test is not enough: mods name their own patches DZ_* too (four found
 in the config.cpp files under P:\ on 2026-10-03, among them
-DZ_Expansion_AI_Weapons_Debug and DZ_ZenDiscordAPI_Preload).
+DZ_Expansion_AI_Weapons_Debug).
 
 Measured on 2026-10-03 with declared_patches() over every config.cpp: 206
 names in P:\DZ (DayZ 1.29.0.163451), DZ_Scripts from the scripts tree's own

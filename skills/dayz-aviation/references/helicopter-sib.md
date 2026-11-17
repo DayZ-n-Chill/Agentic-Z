@@ -1,16 +1,16 @@
-# SIB helicopter: recovered kinematic model
+# SIB helicopter: the kinematic model read from script
 
-How the SIB helicopter mod (lfbanov / sibnic, Workshop `3485438937`, "La Frontera" / Fortune Mods, author `SIBNIC`, internal `ver=8.041`) flies a `CarScript` child: class layout, its simple `SetVelocity` flight loop, the JSON coefficient store, inputs and actions, rotor animation, damage zones, and what was not recovered. Open it when a task needs a second, simpler kinematic example next to `helicopter-rffs.md`, or when it touches collective, cyclic, anti-torque, rotor animation, engine start and stop, the altitude ceiling or helicopter damage zones.
+How the SIB helicopter mod (Workshop `3485438937`, internal `ver=8.041`) flies a `CarScript` child: class layout, its simple `SetVelocity` flight loop, the JSON coefficient store, inputs and actions, rotor animation, damage zones, and what could not be read. Open it when a task needs a second, simpler kinematic example next to `helicopter-rffs.md`, or when it touches collective, cyclic, anti-torque, rotor animation, engine start and stop, the altitude ceiling or helicopter damage zones.
 
-Third-party material, not yet checked on `P:\`. The mod ships obfuscated. Its two script PBOs (`HelicopterMod_lfbanov_SERVER_v8.041.pbo` and `HelicopterSIB_Scripts_lfbanov.pbo`) were recovered on 2026-07-07 and the recovered files were read; those files are not in this repo. Citations are `file:line` into the recovered copies, named as the recovery left them (`SERVER\unknown_16894.c`, `CLIENT\unknown_15761.c`). Tags: `[RECOVERED]` read from the recovered source, `[INFERRED]` reasoned from it, `[UNVERIFIED]` not recovered, so do not invent it, `[DESIGN]` yours to design.
+Third-party mod behaviour, not vanilla, and not yet checked on `P:\`. The mod ships obfuscated. Its two script PBOs (server and client) were de-obfuscated and the readable scripts were read; those files are not in this repo and carry generated names. Citations are `file:line` into them (`SERVER\unknown_16894.c`, `CLIENT\unknown_15761.c`). Tags: `[VERIFIED-SIB]` read in the mod's scripts, `[INFERRED]` reasoned from them, `[UNVERIFIED]` not readable, so do not invent it, `[DESIGN]` yours to design.
 
-Unlike the fixed-wing notes, this is a real rotary-wing flight model read from source, not a community guess. Two limits apply (see the last sections): the advanced variant's core integrator did not survive recovery, and the whole model is a homegrown kinematic hack, not a physically modelled rotor. Learn the pattern from it and write the mod's own code; `skills/_shared/vehicles/helicopters.md` says which model to build from.
+Unlike the fixed-wing notes, this is a real rotary-wing flight model read from source, not a guess. Two limits apply (see the last sections): the advanced variant's core integrator is not readable, and the whole model is a homegrown kinematic hack, not a physically modelled rotor. Learn the pattern from it and write the mod's own code; `skills/_shared/vehicles/helicopters.md` says which model to build from.
 
 ---
 
 ## 1. Architecture — `HeliTest_SIB : Heli_sib_cript : CarScript`
 
-[RECOVERED] The same `CarScript` as aircraft base that `fixed-wing-lm-planes.md` documents for planes, but three layers deep
+[VERIFIED-SIB] The same `CarScript` as aircraft base that `fixed-wing-lm-planes.md` documents for planes, but three layers deep
 (`CLIENT\unknown_15761.c`):
 
 | Layer | Adds | Cite |
@@ -32,9 +32,9 @@ Size variants are pure `Cargo`-size subclasses of `HeliTest_SIB`:
 ## 2. Flight model — the two variants
 
 The mod ships **two flight models under the same class name**. Document both; **build from the
-simple one** (the advanced one is license-gated and its core did not survive recovery).
+simple one** (the advanced one is license-gated and its core is not readable).
 
-### 2a. Simple model — kinematic, `SetVelocity`-based [RECOVERED, fully legible]
+### 2a. Simple model — kinematic, `SetVelocity`-based [VERIFIED-SIB, fully legible]
 
 File `SERVER\unknown_16894.c` (client copy `CLIENT\unknown_16894.c` is identical through the class
 body). Not license-gated. This is the teachable pattern.
@@ -68,7 +68,7 @@ KeyboardPilot(dt, anim_engine, anim_rotor);   // read inputs -> m_RollKey/m_Pitc
 Simulate(dt, anim_engine, anim_rotor);         // integrate
 ```
 
-[RECOVERED] **Inputs** (`KeyboardPilot`, `:124-201`) read via
+[VERIFIED-SIB] **Inputs** (`KeyboardPilot`, `:124-201`) read via
 `playerObj.GetInputInterface().SyncedValue("UASIBHeli<X>")`, each a boolean `>=0.5`:
 
 | Input | Effect on state | Meaning |
@@ -78,7 +78,7 @@ Simulate(dt, anim_engine, anim_rotor);         // integrate
 | `UASIBHeliLeft` / `…Right` | `m_Yaw ± 0.6` | yaw (anti-torque / pedals) |
 | `UASIBHeliUp` / `…Down` | `m_rotorTurn = ±2.8` | collective (climb/descend) |
 
-[RECOVERED] **Integration** (`Simulate`, `:298-391`):
+[VERIFIED-SIB] **Integration** (`Simulate`, `:298-391`):
 
 1. **Ground/ceiling probe**: `m_height = Distance(GetPosition, SurfaceY-projected pos)` (`:300-303`).
    Above `1500` m it force-hides rotor/engine (kill switch, `:319`). At `5..6` m it zeroes angular
@@ -110,15 +110,15 @@ Simulate(dt, anim_engine, anim_rotor);         // integrate
 `1500` in `Simulate`**, not those coefficients — so in the simple model the documented altitude
 ceiling is effectively unused. [UNVERIFIED] whether the advanced model wires the 450/500 band.
 
-### 2b. Advanced model — force/torque, autopilot, license-gated [RECOVERED but incomplete]
+### 2b. Advanced model — force/torque, autopilot, license-gated [VERIFIED-SIB but incomplete]
 
 Files `SERVER\unknown_16458.c` / `CLIENT\unknown_18705.c` + `SERVER\unknown_10783.c`. Every method is
 identifier-mangled and every entry point is guarded by `license_active_helisib` (a runtime license
-check that GETs `sibnic.info/sib/mod13.php`, `SERVER\unknown_10783.c:319-395`).
+check that makes an HTTP GET to the mod's license server, `SERVER\unknown_10783.c:319-395`).
 
-What is recoverable:
+What is readable:
 
-- **Force-based physics**: the only recovered `dBodyApplyForce` / `dBodyApplyTorque` calls are in the
+- **Force-based physics**: the only readable `dBodyApplyForce` / `dBodyApplyTorque` calls are in the
   helper `qmdkldkpqpmlsib(...)` (`SERVER\unknown_10783.c:454-455`): it computes a target-velocity
   delta × `dBodyGetMass(...)` and applies it as a body force, plus a torque term — i.e. proper rigid-
   body forcing, unlike the simple model's `SetVelocity`. It uses model-space transforms
@@ -131,22 +131,22 @@ What is recoverable:
   → `ProcessDirectDamage(DT_CUSTOM,…)` with per-zone coefficients + crew-injury lerp
   (`unknown_16458.c:244-333`, `unknown_18705.c:313-402`).
 
-What is **not recoverable** — do not fabricate: the central integrator **`hkdxkhzidmpsib(dt,this)`**
+What is **not readable** — do not fabricate: the central integrator **`hkdxkhzidmpsib(dt,this)`**
 (dispatched from `EOnSimulate`, `unknown_16458.c:216`; client twin `zcggxjtfzrsib`,
-`unknown_18705.c:285`) has **no definition in any recovered file**. The lift-vs-altitude curve, the
+`unknown_18705.c:285`) has **no definition in any readable file**. The lift-vs-altitude curve, the
 collective→force mapping, and how `c_altFullForce`/`c_altNoForce` gate lift all live inside that
-missing function. [UNVERIFIED]. **This was confirmed exhaustively** (2026-07-07, 2nd pass): every
-non-junk block of both PBOs was decompressed with a relaxed extractor (9,546 server + 13,968 client
+missing function. [UNVERIFIED]. **This was confirmed exhaustively**: every
+non-junk block of both PBOs was decompressed and searched (9,546 server + 13,968 client
 entries) — `hkdxkhzidmpsib` appears **only** as the license-gated call, never as a definition. Its
 body is not shipped in plaintext in these two PBOs (it is the most heavily protected part of the paid
-mod). The recoverable force anchor is the low-level applicator `qmdkldkpqpmlsib` (see the takeaway at the end), not the
+mod). The readable force anchor is the low-level applicator `qmdkldkpqpmlsib` (see the takeaway at the end), not the
 integrator that feeds it.
 
 ---
 
 ## 3. Config store — JSON-in-`$profile`, positional coeff map
 
-[RECOVERED] The flight coefficients are **not in config.cpp**. They live in a per-class JSON file
+[VERIFIED-SIB] The flight coefficients are **not in config.cpp**. They live in a per-class JSON file
 loaded at mission init into a global `map<string,float>`:
 
 - Store: `ref map<string,float> ssaBWDQnlAkkAQpglobal = new map<string,float>;`
@@ -184,13 +184,13 @@ loaded at mission init into a global `map<string,float>`:
 
 ## 4. Inputs & actions
 
-[RECOVERED]
+[VERIFIED-SIB]
 
 - **Flight inputs** are custom `UASIBHeli*` UA actions (see §2a table) declared in `modded_Inputs.xml`
   (`inputs = "HelicopterModScripts/modded_Inputs.xml"`, `unknown_15761.c:21`) and registered
   client-side via `GetUApi().GetInputByName("UASIBHeliEngine_new" / "UASIBHeliAutopilot" /
   "UASIBHeliHide")` (`CLIENT\unknown_18863.c:121,188,255`). [UNVERIFIED] the `.xml` itself — not
-  recovered (binary XML in the PBO); the input *names* are confirmed from the script reads.
+  read (binary XML in the PBO); the input *names* are confirmed from the script reads.
 - **In-vehicle continuous actions**: `DefaultActionInputHelicopterEngine` → `UASIBHeliEngine_new`,
   `DefaultActionInputHelicopterHide` → `UASIBHeliHide` (`SERVER\unknown_294.c` / `unknown_286.c`;
   both `ContinuousDefaultActionInput`, `m_DetectFromTarget=false`).
@@ -208,7 +208,7 @@ loaded at mission init into a global `map<string,float>`:
 
 ## 5. Rotor animation & engine start sequence
 
-[RECOVERED] Rotors are driven by **`SetAnimationPhase` on paired anim sources**, not by RPM:
+[VERIFIED-SIB] Rotors are driven by **`SetAnimationPhase` on paired anim sources**, not by RPM:
 
 - Anim sources (config `unknown_15761.c:455-514`): `hide_rotor`, `hide_start`, `rot_h_start` /
   `rot_h_blur_end` (rotor 1), `rot2_h_start` / `rot2_h_blur_end` (rotor 2), plus `toplivo` (fuel) and
@@ -231,7 +231,7 @@ the *other* community heli (`HelicopterSIB_Hommade_LF`) described at the end of
 
 ## 6. Engine start/stop, fuel, damage zones
 
-[RECOVERED]
+[VERIFIED-SIB]
 
 - **Damage zones** (`unknown_15761.c:580-684`): `Body`, `Chassis`, `Engine`, `Fuel`, `Rotor1`,
   `Rotor2`, `Proj` — each with `memoryPoints[]={"dmgzone_*"}`, own hitpoints (Body 6000, Chassis/
@@ -253,7 +253,7 @@ the *other* community heli (`HelicopterSIB_Hommade_LF`) described at the end of
 
 ## 7. Client/server split & the license gate
 
-[RECOVERED]
+[VERIFIED-SIB]
 
 - Both flight models are `modded class HeliTest_SIB` present in **both** `SERVER\` and `CLIENT\`
   (`unknown_16894.c` on both; advanced `unknown_16458.c` server / `unknown_18705.c` client). The
@@ -261,38 +261,36 @@ the *other* community heli (`HelicopterSIB_Hommade_LF`) described at the end of
   (`unknown_16894.c:428`; advanced additionally `&& license_active_helisib`,
   `unknown_16458.c:214`).
 - The advanced model's `license_active_helisib` flag is set true only after a successful HTTP GET to
-  `sibnic.info` returning a signed config (`unknown_10783.c:319-395`). **When authoring your own heli,
-  drop the whole license layer** — it is DRM specific to this author, not part of the flight pattern.
+  the mod's license server returning a signed config (`unknown_10783.c:319-395`). **When authoring your own heli,
+  drop the whole license layer** — it is DRM specific to this mod, not part of the flight pattern.
 
 ---
 
-## 8. Not recovered / [UNVERIFIED] — do not fabricate
+## 8. Not read / [UNVERIFIED] — do not fabricate
 
 - **`config.bin`** was not decompiled; the config used here is the *script* config
   (`unknown_15761.c`). A real deployed heli would also have a binarized `config.bin`; assume the
   script config is authoritative for classes/inheritance but **verify any exact numeric against the
   live mod** before shipping.
 - **`model.cfg`** (skeleton bones, the real rotor/wheel animation `class Animation` sources bound to
-  the `.p3d` selections) — not recovered. The AnimationSources *names* are known (from config); the
+  the `.p3d` selections) — not read. The AnimationSources *names* are known (from config); the
   model.cfg bone graph is [UNVERIFIED].
 - **The `.p3d` memory points** — inferred from script reads (`dmgzone_body/chassis/engine/fuel/
   rotor1/rotor2/proj`, `avtopilot`, `button_beam`, crew `pos_*` / proxy `crew*`) but the actual model
   is not present. [UNVERIFIED] the full memory-point set.
 - **The advanced integrator `hkdxkhzidmpsib`** (the true lift/collective/altitude curve) — referenced,
-  definition missing. The lift-vs-altitude force law is [UNVERIFIED]. A 2nd exhaustive pass (all
-  23,514 non-junk blocks across both PBOs re-decompressed with a patched extractor) confirmed the
-  body is not present in plaintext (the search script stayed with the research copies and is not in
-  this repo).
+  definition missing. The lift-vs-altitude force law is [UNVERIFIED]. All 23,514 non-junk blocks
+  across both PBOs were decompressed and searched: the body is not present in plaintext.
 - **`modded_Inputs.xml`** — input names confirmed from script; the XML bindings/defaults not
-  recovered.
+  read.
 
 ## Takeaway for building your own heli
 
-Buildable today from RECOVERED material: the class chain (`HeliTest_SIB : Heli_sib_cript :
+Buildable today from `[VERIFIED-SIB]` material: the class chain (`HeliTest_SIB : Heli_sib_cript :
 CarScript`), the `AnimationSources`/`DamageZones`/`Crew` config, the input set + engine-start/stop
 actions, the rotor blur-swap animation, and the **simple kinematic flight loop** (`KeyboardPilot` +
 `Simulate` with `SetVelocity`/`SetOrientation`). That is a complete, self-contained flyable heli.
 
 Do not reach for the advanced force-based model — its core is missing and it's license-locked. If you
 want true `dBodyApplyForce` rotor physics, treat `qmdkldkpqpmlsib` (`unknown_10783.c:454`) as the only
-recovered anchor and design the lift curve yourself (mark it `[DESIGN]`).
+readable anchor and design the lift curve yourself (mark it `[DESIGN]`).

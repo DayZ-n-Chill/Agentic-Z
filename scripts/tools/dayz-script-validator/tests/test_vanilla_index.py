@@ -94,7 +94,7 @@ class TestGenerator(unittest.TestCase):
             )
 
     def test_a_byte_that_is_not_utf8_does_not_stop_the_build(self):
-        # Inbox 4c83: DayZ 1.30's 3_game/global/world.c has a cp1252 TRADE
+        # DayZ 1.30's 3_game/global/world.c has a cp1252 TRADE
         # MARK SIGN (0x99) in a comment. The generator reads the tree as the
         # detectors do, UTF-8 with replacement, and still indexes that file.
         with tempfile.TemporaryDirectory() as temp_dir:

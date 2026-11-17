@@ -33,7 +33,7 @@ Action ActionMyMod_DrinkContaminate dosn't exist!
 
 (`dosn't` is vanilla's spelling, `itembase.c:261`.)
 
-Two more registration facts, from the knowledge pack and checked on `P:\`:
+Two more registration facts, checked on `P:\`:
 
 - To change what an existing action does, write a `modded class` of that action. A new class that `extends` it changes nothing, because the game still creates the vanilla class that `RegisterActions` inserted.
 - Since 1.30 the bottle fill action that is registered is `ActionObtainLiquidBase` (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:156`). `ActionFillBottleBase` is marked `[Obsolete]` and is no longer inserted, so `AddAction(ActionFillBottleBase)` from a 1.29 mod adds nothing. The other 1.30 action changes are in `skills/enforce-script-reference/references/dayz-1-30-enforce-script.md`.
@@ -89,7 +89,7 @@ override bool CanPutIntoHands(EntityAI parent) { return false; }      // drag in
 
 To hide an action from the wheel for another reason, `ItemBase.RemoveAction(typename)` removes one that a parent class added (`P:\scripts\4_world\entities\itembase.c:295`); call it in `SetActions()` after `super.SetActions()`.
 
-The knowledge pack's version of this pattern has four steps: the `IsTakeable()` and `CanPutInCargo` overrides above, plus `RemoveAction(ActionTakeItem)` and `RemoveAction(ActionTakeItemToHands)` in `SetActions()`. `ItemBase.SetActions` adds both take actions (`P:\scripts\4_world\entities\itembase.c:248` and `:249`), so removing them is valid and takes them off the item for good; with `IsTakeable()` false their conditions already fail, so it is optional. It does not replace `CanPutIntoHands`, which is what stops a drag into the hands slot.
+A fuller version of this pattern has four steps: the `IsTakeable()` and `CanPutInCargo` overrides above, plus `RemoveAction(ActionTakeItem)` and `RemoveAction(ActionTakeItemToHands)` in `SetActions()`. `ItemBase.SetActions` adds both take actions (`P:\scripts\4_world\entities\itembase.c:248` and `:249`), so removing them is valid and takes them off the item for good; with `IsTakeable()` false their conditions already fail, so it is optional. It does not replace `CanPutIntoHands`, which is what stops a drag into the hands slot.
 
 ---
 

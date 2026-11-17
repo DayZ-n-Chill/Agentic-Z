@@ -1,6 +1,6 @@
 # model.cfg animations for generated objects
 
-A worked reference for the `model.cfg` side of an object this skill generates: skeleton, animation types, config sources, script control, memory axes and complete examples. The facts checked against vanilla live in the animation pack (`_shared/animation/README.md`): open `model-cfg-animations.md` there for what shipped models store (the fence gate runs 0 to 100, the barrel lids hide at 0.6) and `script-hooks.md` for the script calls. Where this file cites `P:\`, the line was opened and confirmed; the rest is `model.cfg` format knowledge and measurements from the source mods, which no vanilla text file on `P:\` shows (vanilla ships `model.cfg` only inside its binarized models).
+A worked reference for the `model.cfg` side of an object this skill generates: skeleton, animation types, config sources, script control, memory axes and complete examples. The facts checked against vanilla live in the animation pack (`_shared/animation/README.md`): open `model-cfg-animations.md` there for what shipped models store (the fence gate runs 0 to 100, the barrel lids hide at 0.6) and `script-hooks.md` for the script calls. Where this file cites `P:\`, the line was opened and confirmed; the rest is `model.cfg` format knowledge and measurements on mod models, which no vanilla text file on `P:\` shows (vanilla ships `model.cfg` only inside its binarized models).
 
 ## 1. Model.cfg Structure Overview
 
@@ -139,12 +139,13 @@ class hide_cover {
 ```cpp
 class hide_battery_missing {
     type = "hide";
-    source = "battery_installed";
+    source = "battery_missing";
+    selection = "battery";
     hideValue = 0.5;
     minValue = 0;
     maxValue = 1;
-    // Hidden when source >= 0.5 (battery NOT installed = source 0)
-    // Visible when source < 0.5 (battery installed = source 1)
+    // Script sets the source to 1 while no battery is installed: source >= 0.5, the battery mesh is hidden
+    // Script sets the source to 0 once a battery is installed: source < 0.5, the battery mesh is visible
 };
 ```
 
@@ -224,7 +225,7 @@ class CfgVehicles {
 
 `animPeriod` is not the duration of a single `SetAnimationPhase` call. It is the time per unit of phase: with a 0 to 1 range it is the time the animation takes to play from phase 0 to phase 1. If you call `SetAnimationPhase("switch_state", 1.0)` with `animPeriod = 0.5`, the animation visually plays over 0.5 seconds. Vanilla's fence gate runs 0 to 100 with `animPeriod=0.018`, about 1.8 seconds for the full swing (`_shared/animation/animation-sources.md`).
 
-`sound` in a source is taken from the source mod's configs and was not found in the vanilla sources read for the animation pack; treat it as unverified.
+`sound` in a source was not found in the vanilla sources read for the animation pack; treat it as unverified.
 
 ---
 
@@ -247,7 +248,7 @@ if (GetAnimationPhase("switch_state") < 0.5) {
 }
 ```
 
-Change the state on the server, then make every client end on the same phase. The phase is not synced for you: vanilla's barrel keeps its open state in a net synced variable and calls `SetAnimationPhase` on each client from `OnVariablesSynchronized` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:158`, which calls `UpdateVisualState` at `:144`). The source said the call was server only and that the phase synced by itself; the screen pattern at the end of this file already follows the vanilla way. The two vanilla patterns are in `_shared/animation/script-hooks.md`.
+Change the state on the server, then make every client end on the same phase. The phase is not synced for you: vanilla's barrel keeps its open state in a net synced variable and calls `SetAnimationPhase` on each client from `OnVariablesSynchronized` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:158`, which calls `UpdateVisualState` at `:144`). The screen pattern at the end of this file follows the vanilla way. The two vanilla patterns are in `_shared/animation/script-hooks.md`.
 
 ### Complete Example: Toggle Switch (EventHandler)
 
@@ -300,7 +301,7 @@ The axis vector is: Point2 - Point1 = direction of rotation/translation.
    "door_axis"
    P1: (-0.5, 0, 0)     [bottom of hinge]
    P2: (-0.5, 1, 0)     [top of hinge, axis = Y direction]
-   Rotation: Y axis (pitch) opens/closes door
+   Rotation: Y axis (yaw) opens/closes door
    ```
 
 2. **Translation Axis:**
@@ -317,7 +318,7 @@ The axis vector is: Point2 - Point1 = direction of rotation/translation.
 3. **Scale:**
    - Rotation: only the direction matters; (0,0,0)→(0,0,1) and (0,0,0)→(0,0,100) are the same Z axis.
    - Translation: the length matters (inferred from vanilla data, not measured in game; next bullet). `offset0`/`offset1` count lengths of the axis, so the selection moves `offset × |P2 − P1|`. To move `d` metres, make the axis `d` long with `offset1 = 1`, or 1 m long with `offset1 = d`. A short axis with an offset written in metres barely moves: 0.003 on a 1 cm axis is 0.03 mm.
-   - [EXACT][CLAIM-MODEL-TRANSLATION-AXIS-LENGTH] What was read on 2026-10-03, and what is inferred from it. Read: Binarize stores a translation's offsets as `model.cfg` writes them and its axis at its own length. CocaLab's `model.cfg` writes `offset1 = 1` on twelve drift axes 12.1 to 16.2 mm long, and the binarized tray of the same build (ODOL v55) stores 1.0, with each axis at its source length; a compiler that converted metres to axis lengths would have stored 62 to 83. The binarized vanilla `DZ\weapons\firearms\m249\m249.p3d` (ODOL v54, from an older binarizer, assumed to keep offsets the same way) therefore carries the offsets its authors wrote: `bulletMove000` to `bulletMove011` and the `linkMove*` classes run from −1 to 0 on axes 1.11 to 1.15 cm long, about the pitch of a belt link; `bolt_pull_1` runs from 0 to +1 on an 8.34 cm axis; `magazine_reload_move_1` runs from 0 to +1.45 on a 10 cm axis. Its rotation axes, in contrast, are stored as unit vectors, as wheel axes are (the animation sign and axis notes in the vehicles pack, `_shared/vehicles/README.md`). Inferred, not measured in game: the engine moves a selection by the offset times that stored axis; read as metres, the m249's belt would jump a metre per round. The `dayz-3d-viewer` skill plans the same formula for its animation preview, not yet implemented. A 1 m axis gives the same travel under either reading, which is why the vehicles material recommends making a translation's memory axis exactly 1 m long. The animation pack states the same unit: offsets are in axis lengths (`_shared/animation/model-cfg-animations.md`).
+   - [EXACT] What was read on 2026-10-03, and what is inferred from it. Read: Binarize stores a translation's offsets as `model.cfg` writes them and its axis at its own length. One mod's `model.cfg` (a tray) writes `offset1 = 1` on twelve drift axes 12.1 to 16.2 mm long, and the binarized tray of the same build (ODOL v55) stores 1.0, with each axis at its source length; a compiler that converted metres to axis lengths would have stored 62 to 83. The binarized vanilla `DZ\weapons\firearms\m249\m249.p3d` (ODOL v54, from an older binarizer, assumed to keep offsets the same way) therefore carries the offsets its authors wrote: `bulletMove000` to `bulletMove011` and the `linkMove*` classes run from −1 to 0 on axes 1.11 to 1.15 cm long, about the pitch of a belt link; `bolt_pull_1` runs from 0 to +1 on an 8.34 cm axis; `magazine_reload_move_1` runs from 0 to +1.45 on a 10 cm axis. Its rotation axes, in contrast, are stored as unit vectors, as wheel axes are (the animation sign and axis notes in the vehicles pack, `_shared/vehicles/README.md`). Inferred, not measured in game: the engine moves a selection by the offset times that stored axis; read as metres, the m249's belt would jump a metre per round. The `dayz-3d-viewer` skill plans the same formula for its animation preview, not yet implemented. A 1 m axis gives the same travel under either reading, which is why the vehicles material recommends making a translation's memory axis exactly 1 m long. The animation pack states the same unit: offsets are in axis lengths (`_shared/animation/model-cfg-animations.md`).
 
    *(Corrected 2026-10-03: this rule read "Axis vector doesn't define scale; only direction matters." and "Can use (0,0,0)→(0,0,1) or (0,0,0)→(0,0,100) — both are Z axis." for every axis, and rule 2's example called its 1 m axis "[normalized to -X direction]".)*
 
@@ -386,7 +387,7 @@ DayZ p3d files use multiple LODs: Resolution, Geometry, Fire, View, etc.
 
 ### Named Selection Best Practice
 
-The LOD names stand for the resolution values in `_shared/conventions/assets.md` (the source drew this tree with made up values, 1000 and 5000, which are not DayZ LOD types).
+The LOD names stand for the resolution values in `_shared/conventions/assets.md`.
 
 ```
 MyObject.p3d
@@ -409,7 +410,7 @@ MyObject.p3d
 
 ### Selection Priority
 
-If a vertex is in multiple named selections (source mod experience, not measured against vanilla):
+If a vertex is in multiple named selections (third-party mod behaviour, not measured against vanilla):
 - The LAST animation in the Animations class wins.
 - Example: If "button" vertex is in both "button" and "housing", and both have animations, the button animation takes precedence.
 
@@ -472,7 +473,7 @@ void ReleaseButton() {
 }
 ```
 
-`CallLater` takes the function itself, then the delay in milliseconds (`P:\scripts\2_gamelib\tools.c:61`); the form with an object and a function name is `CallLaterByName` (`:63`). The source passed `this, "ReleaseButton"` to `CallLater`, which does not match either signature.
+`CallLater` takes the function itself, then the delay in milliseconds (`P:\scripts\2_gamelib\tools.c:61`); the form with an object and a function name is `CallLaterByName` (`:63`). Passing `this, "ReleaseButton"` to `CallLater` matches neither signature.
 
 ### Hinged Door/Lid (90° Swing)
 
@@ -735,7 +736,7 @@ class CfgVehicles {
 
 ### Usage (Enforce Script)
 
-The methods below belong in the object's own script class, so the calls run on the object itself. The source wrote this block with a ternary, a three argument `SetObjectTexture` and `CallLater(this, "name", ...)`, none of which compile in Enforce Script; this is the same logic in calls that exist. `SetObjectTexture(int index, string texture_name)` is a method of the object and takes the hidden selection index (`P:\scripts\3_game\entities\entityai.c:2881`), `CreateObjectEx` needs its flags argument and returns an `Object` to cast (`P:\scripts\3_game\global\game.c:703`), and Enforce Script has no ternary operator (`_shared/enscript/patterns/language_workarounds.md`). The full script is script work (`dayz-script-specialist`).
+The methods below belong in the object's own script class, so the calls run on the object itself. A ternary, a three argument `SetObjectTexture` and `CallLater(this, "name", ...)` do not compile in Enforce Script; the block uses calls that exist. `SetObjectTexture(int index, string texture_name)` is a method of the object and takes the hidden selection index (`P:\scripts\3_game\entities\entityai.c:2881`), `CreateObjectEx` needs its flags argument and returns an `Object` to cast (`P:\scripts\3_game\global\game.c:703`), and Enforce Script has no ternary operator (`_shared/enscript/patterns/language_workarounds.md`). The full script is script work (`dayz-script-specialist`).
 
 ```cpp
 // Spawning one (server side)

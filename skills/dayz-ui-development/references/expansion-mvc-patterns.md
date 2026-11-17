@@ -2,7 +2,7 @@
 
 How DayZ Expansion structures a menu: its own MVC classes, the menu lifecycle, observable collections, subviews, dialogs and HUD panels. Read it before writing or changing a menu that extends Expansion, or to copy one of its patterns.
 
-Everything here is a DayZ Expansion fact, not a vanilla fact. Expansion is a third-party mod, so none of it is checked on `P:\`. The facts come from the public repository `salutesh/DayZ-Expansion-Scripts`, branch `release`, commit `8f75d554fda209b257c00deb8f01c181e67c980a`; every path below is a path inside that repository, and the source author checked every `path:line` against that commit in two independent passes. One vanilla fact is cited on `P:\`: the `PPEffects` class Expansion uses for menu blur is marked deprecated in vanilla (section 2).
+Everything here is a DayZ Expansion fact, not a vanilla fact. Expansion is a third-party mod, so none of it is checked on `P:\`. Every path below is a path inside the DayZ Expansion scripts tree, and every `path:line` is for its `release` branch at commit `8f75d554fda209b257c00deb8f01c181e67c980a`; a newer Expansion build can move the lines. One vanilla fact is cited on `P:\`: the `PPEffects` class Expansion uses for menu blur is marked deprecated in vanilla (section 2).
 
 ---
 
@@ -25,7 +25,7 @@ but not interchangeable. Do not mix Dabs `ScriptView` and `ExpansionScriptView` 
 ## 2. ExpansionScriptViewMenu — OnShow/OnHide with blur + ForceDisable loop
 
 **Path:line**: `DayZExpansion/Core/Scripts/5_Mission/DayZExpansion_Core/MVC/ScriptViews/Bases/ExpansionScriptViewMenu.c:43`
-**Confidence**: high (both verification passes).
+**Confidence**: high.
 
 ```
 override void OnShow()
@@ -60,7 +60,7 @@ Rules:
 ## 3. ExpansionScriptView — Tick update opt-in (CALL_CATEGORY_GUI timer)
 
 **Path:line**: `DayZExpansion/Core/Scripts/5_Mission/DayZExpansion_Core/MVC/ScriptViews/Bases/ExpansionScriptView.c:48`
-**Confidence**: high (one verification pass).
+**Confidence**: high.
 
 ```
 float GetUpdateTickRate()
@@ -86,7 +86,7 @@ Menu subclasses recreate the timer in `OnShow`/`OnHide`. Example: `ExpansionQues
 ## 4. ExpansionUIManager — Singleton menu lifecycle
 
 **Path:line**: `DayZExpansion/Core/Scripts/3_Game/DayZExpansion_Core/ExpansionUIManager.c:101`
-**Confidence**: high (one verification pass).
+**Confidence**: high.
 
 ```
 ExpansionScriptViewMenuBase CreateSVMenu(string viewName)
@@ -125,7 +125,7 @@ Never call `CreateSVMenu` from RPC handler context — workspace may be null mid
 **Path:line (controller)**: `Scripts/5_Mission/DayZExpansion_Market/Market/ExpansionMarketMenu.c:3620`
 **Path:line (layout root)**: `GUI/layouts/market/expansion_market_menu.layout:12`
 **Path:line (widget binding)**: `GUI/layouts/market/expansion_market_menu.layout:77`
-**Confidence**: high (both verification passes).
+**Confidence**: high.
 
 ```
 class ExpansionMarketMenuController: ExpansionViewController
@@ -160,7 +160,7 @@ Rules:
 
 **Path:line**: `Scripts/5_Mission/DayZExpansion_Market/Market/ExpansionMarketMenuItem.c:13` and `:119-126`
 **Path:line**: `Scripts/5_Mission/DayZExpansion_Market/Market/ExpansionMarketMenuCategory.c:652`
-**Confidence**: high (one verification pass).
+**Confidence**: high.
 
 ```
 class ExpansionMarketMenuItem: ExpansionScriptView
@@ -180,7 +180,7 @@ instances as data changes. Of the patterns here, this is the one most worth copy
 ## 7. Intermediate model filter before touching ObservableCollection
 
 **Path:line**: `Scripts/5_Mission/DayZExpansion_Market/Market/ExpansionMarketMenu.c:436-452` and `:644-663`
-**Confidence**: high (one verification pass).
+**Confidence**: high.
 
 ```
 if (!m_TraderMarket.ItemExists(currentItem.ClassName) || m_TraderMarket.IsAttachmentBuySell(...))
@@ -200,7 +200,7 @@ Avoids partial re-renders mid-collection.
 ## 8. ExpansionDialogBase — Composable dialogs via ObservableCollection
 
 **Path:line**: `DayZExpansion/Core/Scripts/5_Mission/DayZExpansion_Core/MVC/ScriptViews/Dialogs/ExpansionDialogBase.c:118`
-**Confidence**: high (both verification passes).
+**Confidence**: high.
 
 ```
 class ExpansionDialogBaseController: ExpansionViewController
@@ -222,7 +222,7 @@ by virtuals `HasHeader()`, `HasFooter()`, `HasCloseButton()`. Layout uses
 ## 9. Client settings UI — reflection via EnScript.GetClassVar with dot-path
 
 **Path:line**: `DayZExpansion/Core/Scripts/3_Game/DayZExpansion_Core/Serialization/ExpansionSettingSerializationBase.c:53`
-**Confidence**: high (one verification pass).
+**Confidence**: high.
 
 ```
 protected bool FindClassInstanceAndVariable()
@@ -246,7 +246,7 @@ settings panels that bind UI controls to nested config objects without hardcoded
 **Path:line**: `DayZExpansion/Vehicles/Scripts/5_Mission/DayZExpansion_Vehicles/GUI/IngameHud.c:13`
 **Path:line**: `DayZExpansion/Vehicles/Scripts/5_Mission/DayZExpansion_Vehicles/GUI/expansionboathud.c:39` and `:169`
 **Path:line**: `DayZExpansion/Vehicles/GUI/layouts/hud/hud_boats.layout:170`
-**Confidence**: high (one verification pass).
+**Confidence**: high.
 
 `modded class IngameHud` registers additional HUD panels keyed by a vehicle/entity type enum.
 Each panel is a self-contained `ExpansionScriptView` subclass. The panel reads synced NetVar state

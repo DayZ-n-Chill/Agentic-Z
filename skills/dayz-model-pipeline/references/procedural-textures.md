@@ -2,7 +2,7 @@
 
 How to generate the `_co`, `_nohq` and `_smdi` maps of a generated model in Python with coherent noise: the map formats, OpenSimplex and FBM, compositing in layers, material recipes, the normal map from a height map, specular values per material, and the mistakes that make a texture look procedural.
 
-What is checked and what is not: this is tool knowledge (Pillow, numpy, OpenSimplex) and the source author's recipes for the LF_PowerGrid mod's electrical objects; a pixel recipe cannot be checked on `P:\`. The map formats were compared with the textures pack, which is read from the vanilla TexConvert settings and vanilla files: suffixes, channel packing and sizes are in `_shared/textures/suffixes-and-sizes.md`, the `.rvmat` stages the maps go into are in `_shared/textures/rvmat-stages.md`, and values per surface are in `_shared/textures/surface-recipes.md`. Where this file and that pack differ, the pack wins. The code blocks were run once with numpy 2.4 and Pillow 12, at a small image size and with a stand-in for the OpenSimplex noise function, to confirm that they execute and that the normal map signs are as described.
+What is checked and what is not: this is tool knowledge (Pillow, numpy, OpenSimplex) with recipes for electrical objects; a pixel recipe cannot be checked on `P:\`. The map formats agree with the textures pack, which is read from the vanilla TexConvert settings and vanilla files: suffixes, channel packing and sizes are in `_shared/textures/suffixes-and-sizes.md`, the `.rvmat` stages the maps go into are in `_shared/textures/rvmat-stages.md`, and values per surface are in `_shared/textures/surface-recipes.md`. Where this file and that pack differ, the pack wins. The code blocks were run once with numpy 2.4 and Pillow 12, at a small image size and with a stand-in for the OpenSimplex noise function, to confirm that they execute and that the normal map signs are as described.
 
 The textures are generated as `.png` and converted to `.paa` with `/dayz-pack-texture`. Faces in the `.p3d` name the `.paa` (`critical-rules.md`, rule 8).
 
@@ -28,7 +28,7 @@ All procedural generation targets these maps.
 
 - **Purpose:** the RGB diffuse color that sets the base appearance.
 - **Resolution:** 512x512 for small objects (switches, boxes), 1024x1024 for large objects.
-- **Format:** PNG in RGB mode. A `_co` has no alpha; a surface that needs transparency is a `_ca` instead, which keeps its alpha channel (`_shared/textures/suffixes-and-sizes.md`). The source's wording, "DayZ tools ignore alpha", holds for `_co` only.
+- **Format:** PNG in RGB mode. A `_co` has no alpha; a surface that needs transparency is a `_ca` instead, which keeps its alpha channel (`_shared/textures/suffixes-and-sizes.md`). The alpha is dropped for a `_co` only.
 - **Value range:** 0 to 255 per channel.
 - **Use:** what you see in game, before lighting.
 
@@ -36,7 +36,7 @@ All procedural generation targets these maps.
 
 - **Purpose:** encodes surface detail without adding geometry.
 - **Format:** PNG, RGB (red is X, green is Y, blue is Z).
-- **Convention:** DirectX, with Y pointing down the image (green down), the same as 3ds Max and the Unreal default. A normal map from an OpenGL tool (Y up) needs its green channel inverted before packing. This is tool knowledge from the source's texture pipeline, which measures it; the source's own text in this file said "OpenGL standard (Y+ is up)", and its other files and its test say DirectX. In game, bumps that look pushed in mean the green channel is flipped (`_shared/textures/checking-the-look.md`).
+- **Convention:** DirectX, with Y pointing down the image (green down), the same as 3ds Max and the Unreal default. A normal map from an OpenGL tool (Y up) needs its green channel inverted before packing. This is tool knowledge, not stated by a file on `P:\`; `skills/dayz-texture-pipeline/references/map-conventions.md` shows how to measure the convention of a map. In game, bumps that look pushed in mean the green channel is flipped (`_shared/textures/checking-the-look.md`).
 - **Strength:** typical range 0.5 to 2.0.
 - **Generation:** derived from a height map with Sobel filtering (section 6).
 - **Key fact:** it removes the need for high polygon detail.
@@ -45,7 +45,7 @@ All procedural generation targets these maps.
 
 - **Purpose:** controls the highlight in the Super shader.
 - **Format:** PNG in RGB mode.
-- **Packing:** red is unused and kept at 255, green is the specular strength, blue is the gloss. Vanilla's TexConvert settings force red to 1 for this suffix and keep green and blue (`_shared/textures/suffixes-and-sizes.md`), and the source measured red at 255 on four LF_PowerGrid `_smdi` textures. The channel meanings in full are in `skills/dayz-texture-pipeline/references/map-conventions.md`; this file keeps its generator presets aligned to that packing.
+- **Packing:** red is unused and kept at 255, green is the specular strength, blue is the gloss. Vanilla's TexConvert settings force red to 1 for this suffix and keep green and blue (`_shared/textures/suffixes-and-sizes.md`), and red measured 255 on four `_smdi` textures made this way. The channel meanings in full are in `skills/dayz-texture-pipeline/references/map-conventions.md`; this file keeps its generator presets aligned to that packing.
 - **R channel (about 255, fixed):** keep it near white unless cloning a vanilla exception.
 - **G channel (specular strength):** 0 is matte, 255 is mirror like.
   - Painted metal: about 80 to 100
@@ -634,13 +634,13 @@ def generate_normal_from_texture(diffuse_path, strength=1.0):
 - **strength:** 0.5 gives subtle bumps, 1.0 moderate, 2.0 pronounced detail.
 - **DayZ convention:** the green channel encodes Y pointing down the image (DirectX).
 
-The source's function stored `+grad_x` and `+grad_y`. That leaned red toward the rising slope and gave green the OpenGL sign, a mix of neither convention; the signs above follow the texture pipeline's convention test. A height map taken from luminance is a guess at relief anyway (bright is treated as high), so check the result in game.
+Storing `+grad_x` and `+grad_y` instead leans red toward the rising slope and gives green the OpenGL sign, a mix of neither convention; the signs above follow the convention check of `/dayz-texture-pipeline`. A height map taken from luminance is a guess at relief anyway (bright is treated as high), so check the result in game.
 
 ---
 
 ## 7. SMDI map generation and values
 
-The `_smdi` map controls the highlight. The packing is R about 255, G specular, B gloss (section 1). Generate values per material with that packing. The presets below were rebuilt by the source from an older, wrong packing (R as specular, B as "detail index") by moving the old R to G and the old G to B, after it measured vanilla style `_smdi` textures.
+The `_smdi` map controls the highlight. The packing is R about 255, G specular, B gloss (section 1). Generate values per material with that packing. A packing with R as the specular and B as a "detail index" is wrong; the presets below hold the specular in G and the gloss in B, as vanilla style `_smdi` textures measure.
 
 ```python
 def generate_smdi_map(width, height, material='painted_metal'):

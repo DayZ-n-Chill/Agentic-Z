@@ -9,7 +9,7 @@ Everything here is behaviour of the third-party dayz-mcp server and its `@DayZ_M
 - Building the PBO is `/dayz-build-pbo` (or `/dayz-gate build`). This skill starts after a PBO is deployed.
 - Starting and stopping the game for an MCP run belongs to dayz-mcp's public test tools, `dayz_test_run` and `dayz_test_stop`. The bridge verbs (`world_spawn`, `scene_raycast`, `camera_set` and the rest) never start or stop a process.
 - Read dayz-mcp's own agent session protocol (the runbook that ships with the tool) before the first run.
-- [EXACT][CLAIM-R21-MCP-ORCHESTRATED-TEST] Run the lifecycle with `dayz_test_run` and stop it with `dayz_test_stop` on the exact `run_id`. Both tools have their own FIFO queue, lease, heartbeat and release, so do not wrap them in a second `session_acquire`. Keep the `session_*` primitives for low-level mutations that those tools do not already cover. Every lifecycle is identified by its `run_id`: loading the same mod as another run gives no ownership of it. Under retail quarantine only reads are allowed; if whoever opened the retail game cannot close it through its UI, declare `manual_cleanup_required`.
+- Run the lifecycle with `dayz_test_run` and stop it with `dayz_test_stop` on the exact `run_id`. Both tools have their own FIFO queue, lease, heartbeat and release, so do not wrap them in a second `session_acquire`. Keep the `session_*` primitives for low-level mutations that those tools do not already cover. Every lifecycle is identified by its `run_id`: loading the same mod as another run gives no ownership of it. Under retail quarantine only reads are allowed; if whoever opened the retail game cannot close it through its UI, declare `manual_cleanup_required`.
 
 ## What the run request must ask for
 
@@ -35,15 +35,15 @@ With an MCP client older than dayz-mcp commit `8f5727f` (2026-09-06) the rejecti
 
 ## Leases expire on their own
 
-- [EXACT] The adopted lease lasts 120 s and is not renewed internally, whether the MCP client is fresh or not (added 2026-09-27, LFPowerGrid, three runs; measured in game, DayZ 1.30.164014 Experimental). Send `session_heartbeat` at least every 90 s or so for the whole run, also while a human plays. Past the deadline the run is ownerless again (`grace.remaining_s` counts down) and the daemon stops it (`lifecycle_stop_outcome: stopped`), even with the user in front of the game.
-- [EXACT] Two lease failures around long waits (measured in game sessions, 2026-09-28): (1) `wait_for` over the log does not renew the lease, and a wait longer than about 2 minutes expired with `lease_expired`, so put `session_heartbeat` between waits; (2) when a user message interrupts a call in flight (a long `wait_for`), the next `session_heartbeat` answers `lease_invalid: token was never valid for this client`. If the run is still alive, `session_acquire_wait` adopts it again.
+- The adopted lease lasts 120 s and is not renewed internally, whether the MCP client is fresh or not (added 2026-09-27, LFPowerGrid, three runs; measured in game, DayZ 1.30.164014 Experimental). Send `session_heartbeat` at least every 90 s or so for the whole run, also while a human plays. Past the deadline the run is ownerless again (`grace.remaining_s` counts down) and the daemon stops it (`lifecycle_stop_outcome: stopped`), even with the user in front of the game.
+- Two lease failures around long waits (measured in game sessions, 2026-09-28): (1) `wait_for` over the log does not renew the lease, and a wait longer than about 2 minutes expired with `lease_expired`, so put `session_heartbeat` between waits; (2) when a user message interrupts a call in flight (a long `wait_for`), the next `session_heartbeat` answers `lease_invalid: token was never valid for this client`. If the run is still alive, `session_acquire_wait` adopts it again.
 - `dayz_test_close` shuts the run down in order, with a termination line on both sides.
-- `query_*`, telemetry, raycast and captures cross the bridge and need `session_acquire`. Only `dayz_test_run` and `dayz_test_stop` manage their own lease; do not assume that for other verbs (SP-152, added 2026-08-31). Since the 2026-09-06 revision, "need `session_acquire`" includes adopting the run that the launch left `RUNNING_IDLE`: the grant of `session_acquire_wait` does that and reports it in `adopted_run`.
+- `query_*`, telemetry, raycast and captures cross the bridge and need `session_acquire`. Only `dayz_test_run` and `dayz_test_stop` manage their own lease; do not assume that for other verbs (added 2026-08-31). Since the 2026-09-06 revision, "need `session_acquire`" includes adopting the run that the launch left `RUNNING_IDLE`: the grant of `session_acquire_wait` does that and reports it in `adopted_run`.
 - Long sessions: the diag client dies after about 6 minutes without commands (`client_not_polling`). Run a keepalive, for example `vehicle_telemetry` every 45 s or so, for the length of the session (added 2026-08-24).
 
 ## One process lifetime for the whole run (added 2026-08-24)
 
-In the agent harness of that session, the spawned daemon and its sequence died with the command tree that spawned them: a "broke away" child did not survive, and adopting an external daemon was broken too (LL-358). So the whole sequence of run, verbs and teardown goes inside one process: preventive stop, run, wait for bridge ready, wait for the player, teleport with a lease, work, `dayz_test_stop`.
+In the agent harness of that session, the spawned daemon and its sequence died with the command tree that spawned them: a "broke away" child did not survive, and adopting an external daemon was broken too. So the whole sequence of run, verbs and teardown goes inside one process: preventive stop, run, wait for bridge ready, wait for the player, teleport with a lease, work, `dayz_test_stop`.
 
 ## The test machine is one shared resource
 
@@ -51,7 +51,7 @@ In the agent harness of that session, the spawned daemon and its sequence died w
 - Historical pattern, superseded 2026-07-15: starting the game with `cmd start` or a `.bat` kept a background job from losing its child, but it created a process outside the registered lifecycle. For any current smoke test use only `dayz_test_run`, keep its `run_id` and end only that run with `dayz_test_stop`. There is no unmanaged fallback that goes around the lifecycle guard.
 - In this repo that means: do not start an MCP run with `/dayz-launch-test`, and do not end one with `/dayz-stop-test`, which kills every `DayZDiag_x64.exe` on the machine. `/dayz-gate build`, `ingame`, `behavior` and `visual` also stop a running session before they start (they ask first, or need `--yes`), so do not run a gate while an MCP run is alive. A game started by hand was measured to poll as `LEGACY_UNBOUND`, reads only (see `linux.md`; measured on Linux, not re-measured on Windows).
 
-### `blocked_on` in `session_status` is an instruction (SP-351, added 2026-08-29)
+### `blocked_on` in `session_status` is an instruction (added 2026-08-29)
 
 With the machine occupied, `session_status` returns:
 
@@ -64,7 +64,7 @@ Measured on 2026-08-29: an autonomous night session read that line on every quer
 1. If a tool tells you how to unblock yourself, do it before waiting for anyone.
 2. An autonomous session has no "wait for notice". Either join the resource queue or give whoever holds it a deadline. Waiting without a horizon is giving up the task. "When the user finishes" is not a horizon, it is an open dependency: whoever offers it should release the resource and ask for it again (a relaunch takes minutes, a fixture is rebuilt in two verbs).
 
-### A free lease does not mean a free machine (SP-124)
+### A free lease does not mean a free machine
 
 `session_status` can return `owner: null`, an empty queue and `claimable: true` while a DayZ server and client are alive, launched outside the managed lifecycle by another line of work and holding port 2302. The lease describes the lease, not the machine. Before treating the machine as free, read the `-mod=` of the living processes:
 
@@ -87,6 +87,6 @@ If a server is polling that is not yours, do not mutate.
 
 ## External companion: dayz-labs
 
-[EXACT][CLAIM-R21-MCP-COMPANION-AUTHORITY] `external_companion_no_lifecycle_authority`. Release v0.1.35 of the dayz-labs tool, reviewed at pinned commit `dbd6ad3e54e30c81a9aeb88fcb9f60f007804c2a`, can serve as a reference or an optional companion. Its `start`, `stop` and `restart` verbs are excluded while dayz-mcp holds a run: only `dayz_test_run` and `dayz_test_stop` on the exact `run_id` govern that lifecycle. Do not install or update the companion as part of a gate, and always record the `pinned_version` you examined.
+`external_companion_no_lifecycle_authority`. Release v0.1.35 of the dayz-labs tool, reviewed at pinned commit `dbd6ad3e54e30c81a9aeb88fcb9f60f007804c2a`, can serve as a reference or an optional companion. Its `start`, `stop` and `restart` verbs are excluded while dayz-mcp holds a run: only `dayz_test_run` and `dayz_test_stop` on the exact `run_id` govern that lifecycle. Do not install or update the companion as part of a gate, and always record the `pinned_version` you examined.
 
 Its interface is WPF and it captures its own application: `wpf_not_layout_evidence`. A correct capture from dayz-labs does not validate the parser, proportions, clipping or meaning of a DayZ `.layout`; a UI viewer needs its own render and a comparison against in-game evidence.

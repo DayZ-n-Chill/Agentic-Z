@@ -5,10 +5,9 @@ from shared.dead_branches import dead_lines, line_branches
 ES_FORMULA_TOO_COMPLEX_RULE_ID = "ES-FORMULA-TOO-COMPLEX"
 
 
-# claim: CLAIM-ENFORCE-FORMULA-TOO-COMPLEX
 # One statement that joins many terms with `+` stops the script module with
 # "Formula too complex". Measured on DayZDiag 1.30.164289, 2026-11-09, in a
-# mod's 4_World script (pipeline inbox 7b9e/7ce1), with one statement on one
+# mod's 4_World script, with one statement on one
 # line that alternates a string literal, an int, a string literal and a
 # float's ToString():
 #

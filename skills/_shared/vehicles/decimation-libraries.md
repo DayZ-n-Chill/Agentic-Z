@@ -2,7 +2,7 @@
 
 Which Python library to reduce a high-poly import with (`pymeshlab`, `fast_simplification`, Blender headless, `trimesh`), a working `pymeshlab` recipe that keeps UV seams, and face targets for a LOD ladder.
 
-> Status: tool behaviour measured by the notes' author on a third-party mod (the LFPG wall lamp of LF PowerGrid, a 94k-face OBJ), not repeated here and not yet checked on `P:\`. The libraries are optional third-party Python packages and are not installed by this repo. The fixed vertex ceilings under "Choosing LOD targets" are planning figures: `binarize-vertex-budget.md` holds the measured rule (the ceiling is per model, and the verdict of `binarize` decides), and `invariants-lods-and-vertex-budget.md` holds the vehicle LOD invariants.
+> Status: tool behaviour measured on a 94k-face OBJ of a wall lamp (third-party mod content, not vanilla), and not yet checked on `P:\`. The libraries are optional third-party Python packages and are not installed by this repo. The fixed vertex ceilings under "Choosing LOD targets" are planning figures: `binarize-vertex-budget.md` holds the measured rule (the ceiling is per model, and the verdict of `binarize` decides), and `invariants-lods-and-vertex-budget.md` holds the vehicle LOD invariants.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -13,8 +13,8 @@ Which Python library to reduce a high-poly import with (`pymeshlab`, `fast_simpl
 Decimation is how you drop a dense artist-authored mesh (say 90k triangles from
 Maya) down to a LOD-appropriate count (under the engine's vertex-normal limits,
 and useful visual LOD tiers at LOD1/LOD2/LOD3). **The choice of decimation
-library matters a lot.** This page documents three options tried in practice
-and which to reach for.
+library matters a lot.** This page compares the options and says
+which to reach for.
 
 ## TL;DR
 
@@ -46,7 +46,7 @@ hard in ways that are easy to miss until you render the output.
 
 **What goes wrong:**
 
-1. **Hard floor on collapse count.** On a 94k-triangle input we saw it refuse
+1. **Hard floor on collapse count.** On a 94k-triangle input it refused
    to reduce below ~22k regardless of `target_count=1000` or `agg=15`. The
    same `agg` values work fine on clean synthetic meshes, so the bug is
    topology-dependent (non-manifold edges, duplicated vertices, degenerate
@@ -237,7 +237,7 @@ wrong — two face-vertices that share a position may need different UVs.
 
 When `blender` is installed, it produces the highest-quality LODs because it
 can re-UV-unwrap after Decimate, Shade Smooth cleanly, and bake AO. The
-pipeline is covered in the Blender headless notes of the dayz-model-pipeline skill
+pipeline is covered in the Blender headless reference of the dayz-model-pipeline skill
 (`skills/dayz-model-pipeline/references/blender-headless.md`). Prefer Blender when building
 a full object from scratch; prefer pymeshlab when adapting a delivered mesh
 and Blender isn't available.
@@ -258,7 +258,7 @@ For a typical 90k-face artist mesh, these targets give a clean LOD ladder:
 | 2 | 3 000 | ~1 900 |
 | 3 | 1 200 | ~800 |
 
-Reference (the LFPG mod, not vanilla DayZ): `lf_searchlight.p3d` LOD0 = 7007 verts / 12430
+Reference (a searchlight model of a third-party mod, not vanilla): LOD0 = 7007 verts / 12430
 faces. That's a good anchor for "complex placed item."
 
 ## Pre-processing input meshes
@@ -276,7 +276,7 @@ mesh itself may be the issue. Worth checking:
   how many islands the mesh has. A pendant lamp with a shade + arm + mount
   is legitimately 3 components; a mesh with 50+ components often has errors.
 
-For LFPG-style devices where a mesh contains multiple named parts
+For devices where a mesh contains multiple named parts
 (e.g. bulb vs housing), decimate each part separately so the solver can
-apply different targets. Our lamp pipeline splits by material name from the
+apply different targets. Split by material name from the
 OBJ's `usemtl` lines — see `external-obj-import.md`.

@@ -2,9 +2,9 @@
 
 The py3d API for building a model in Python: creating LODs, points, faces, selections and named properties, the LOD resolution values, the build order, the Blender to DayZ axis map, proxies, reading and inspecting an existing file, a set of diagnostic checks with their repairs, checking mass offline with `binarize.exe`, and building a collision LOD from a convex hull.
 
-What is checked and what is not: this is tool knowledge about the py3d fork in `scripts/tools/py3d` (version 1.10.1 when this file was written; the code blocks were run against it) and the source author's measurements on his own mods (LF_PowerGrid, LFQuad, LFDucati, SecretRock), in game or offline. Vanilla models on `P:\` are binarized and py3d reads only the unbinarized MLOD format, so almost nothing here can be checked on `P:\`; the few lines that cite `P:\` were opened. What vanilla models carry is in the model pack (`_shared/models/README.md`), and reading notes for the upstream library are in `_shared/py3d-mlod-notes.md`.
+What is checked and what is not: this is tool knowledge about the py3d in `scripts/tools/py3d` (version 1.10.1 when this file was written; the code blocks were run against it) and measurements on generated models (electrical props, a quad, a motorbike, a rock building), in game or offline. Vanilla models on `P:\` are binarized and py3d reads only the unbinarized MLOD format, so almost nothing here can be checked on `P:\`; the few lines that cite `P:\` were opened. What vanilla models carry is in the model pack (`_shared/models/README.md`), and notes on reading an MLOD with py3d are in `_shared/py3d-mlod-notes.md`.
 
-Evidence labels: `[EXACT]` is measured or read from a file. Codes such as SP-025 and LL-080 are the source author's ticket and lesson numbers. Rule numbers (Rule 12, Rule 16, Rule 17, Rule 18) are the rules in `critical-rules.md`.
+Evidence labels: `[EXACT]` is measured or read from a file. Rule numbers (Rule 12, Rule 16, Rule 17, Rule 18) are the rules in `critical-rules.md`.
 
 ## Contents
 
@@ -24,17 +24,17 @@ Evidence labels: `[EXACT]` is measured or read from a file. Codes such as SP-025
 - [Repair patterns](#repair-patterns)
 - [The LOD resolution values are the DayZ ones](#the-lod-resolution-values-are-the-dayz-ones)
 - [Check mass and centre of mass offline with `binarize.exe`](#check-mass-and-centre-of-mass-offline-with-binarizeexe)
-- [Building a collision LOD from scratch](#building-a-collision-lod-from-scratch-sp-025)
+- [Building a collision LOD from scratch](#building-a-collision-lod-from-scratch)
 
 ## Overview
 
-The `py3d` library (the DayZ fork, version 1.6.0 or later, built on KoffeinFlummi's codec) reads and writes Arma and DayZ `.p3d` files in MLOD (unbinarized) format directly from Python. No Blender, no Object Builder and no other tool is needed.
+The `py3d` library (version 1.6.0 or later) reads and writes Arma and DayZ `.p3d` files in MLOD (unbinarized) format directly from Python. No Blender, no Object Builder and no other tool is needed.
 
-- **Where it is:** the fork ships in this repo at `scripts/tools/py3d` (1.10.1). The upstream library (github.com/KoffeinFlummi/py3d) is no longer maintained.
+- **Where it is:** it ships in this repo at `scripts/tools/py3d` (1.10.1).
 - **Install and check:** `py3d-assembly-rules.md`, "Which py3d". In short: `python -m pip install -e scripts\tools\py3d`, then assert `py3d.IS_DAYZ_FORK`.
 - **Other packages:** numpy, pillow and opensimplex (`python -m pip install numpy pillow opensimplex`); scipy for the convex hull pattern at the end.
 
-> **Do not run `pip install py3d`.** That installs a completely different library (a 3D visualization package, py3d 0.1.x), not the MLOD parser. The right package is the DayZ fork. It provides `P3D`, `LOD`, `Face`, `Point`, `Selection` and `Vertex`, plus the fork's own API: `get_lod` and `kind`, `bbox`, `triangulate`, `set_selection`, `set_total_mass`, `add_proxy` and `get_proxies`, `to_dict` and `from_dict`, `validate()` and `save(verify=True)`.
+> **Do not run `pip install py3d`.** That installs a completely different library (an unrelated point cloud package, py3d 0.1.x), not the MLOD parser. The right package is the one in `scripts/tools/py3d`. It provides `P3D`, `LOD`, `Face`, `Point`, `Selection` and `Vertex`, plus `get_lod` and `kind`, `bbox`, `triangulate`, `set_selection`, `set_total_mass`, `add_proxy` and `get_proxies`, `to_dict` and `from_dict`, `validate()` and `save(verify=True)`.
 > Check: `python -c "import py3d; assert py3d.IS_DAYZ_FORK"`
 
 ## Core API
@@ -96,7 +96,7 @@ with open("output.p3d", "rb") as f:
     print(f"LODs: {len(verify.lods)}")
 ```
 
-Mass: `point.mass` is `None` by default. Set a number only on the points of the Geometry LOD, and then on all of them: the fork raises a `TypeError` when it writes a LOD in which some points have a mass and others have `None`. Any number, `0.0` included, on another LOD writes a mass entry there and breaks the binarized centre of mass (`py3d-assembly-rules.md`, "Mass only on the Geometry LOD"). The source's example set `point.mass = 10.0` on this visual LOD with the comment "only needed for Geometry/Fire LODs"; its own later measurement corrects both.
+Mass: `point.mass` is `None` by default. Set a number only on the points of the Geometry LOD, and then on all of them: py3d raises a `TypeError` when it writes a LOD in which some points have a mass and others have `None`. Any number, `0.0` included, on another LOD writes a mass entry there and breaks the binarized centre of mass (`py3d-assembly-rules.md`, "Mass only on the Geometry LOD").
 
 ## LOD resolution values
 
@@ -181,7 +181,7 @@ for lod in [visual_lod0, visual_lod1, geometry_lod, fire_lod, view_lod, shadow_l
     lod.selections["button_push"] = selection_covering_button_points
 ```
 
-Each LOD needs its own `Selection`, built from that LOD's own points and faces: the fork refuses to write a selection that holds a point or face of another LOD.
+Each LOD needs its own `Selection`, built from that LOD's own points and faces: py3d refuses to write a selection that holds a point or face of another LOD.
 
 ### Material swap selection (for hiddenSelections)
 
@@ -285,15 +285,15 @@ for lod in model.lods:
 
 With py3d itself: `model.transform(((1, 0, 0), (0, 0, 1), (0, 1, 0)))` maps points and normals and, because det<0, reverses every face; reverse them back and negate the normals, and the result equals the loop above. `py3d.BLENDER_TO_DAYZ` is the old det=+1 rotation: `model.transform(py3d.BLENDER_TO_DAYZ)` on its own renders inside out **and** mirrored in game (2026-10-01).
 
-From py3d 1.8.0, `py3d.blender_to_dayz(model)` does the whole conversion in one call and keeps the vertex order of every face, proxy triangles included. Measured the same day: its collision LODs register raycasts in `geom`, `view` and `fire`, and static proxies drawn in Blender as py3d canonical raw triangles come out with the same ODOL frames as `add_proxy(space="engine")` (the binarized files are byte identical) and render in the pose drawn. A crew or wheel proxy drawn that way with the identity frame therefore gets the frame of the engine space path the LFDucati mod was driven with (LL-505, LL-506; claim CLAIM-B2D-PROXY-FRAME-EQUIV-REF): the frame only, not a drive, and the rest of the vehicle must still match a working model. `py3d.BLENDER_TO_DAYZ` is deprecated; the same value is now `py3d.ROT_X_NEG90`.
+From py3d 1.8.0, `py3d.blender_to_dayz(model)` does the whole conversion in one call and keeps the vertex order of every face, proxy triangles included. Measured the same day: its collision LODs register raycasts in `geom`, `view` and `fire`, and static proxies drawn in Blender as py3d canonical raw triangles come out with the same ODOL frames as `add_proxy(space="engine")` (the binarized files are byte identical) and render in the pose drawn. A crew or wheel proxy drawn that way with the identity frame therefore gets the frame of the engine space path a driven motorbike was built with: the frame only, not a drive, and the rest of the vehicle must still match a working model. `py3d.BLENDER_TO_DAYZ` is deprecated; the same value is now `py3d.ROT_X_NEG90`.
 
-**History `[EXACT]` (superseded 2026-10-01).** 2026-07-06: "det=+1, never reverse" rendered inside out. 2026-09-26 (SP-432): "det=+1, reverse and negate" rendered solid but mirrored (its five validation models are symmetric). LL-504 (2026-09-22) and the in-game test of 2026-10-01 settled the det=-1 reflection above. The winding gates passed at every step: only an asymmetric model shows a mirror. The longer account is `axes-and-winding.md`.
+**History `[EXACT]` (superseded 2026-10-01).** 2026-07-06: "det=+1, never reverse" rendered inside out. 2026-09-26: "det=+1, reverse and negate" rendered solid but mirrored (its five validation models are symmetric). A measurement of 2026-09-22 and the in-game test of 2026-10-01 settled the det=-1 reflection above. The winding gates passed at every step: only an asymmetric model shows a mirror. The longer account is `axes-and-winding.md`.
 
 ## Face Winding Order Fix
 
 Per source path; see Rule 12.
 
-Geometry authored in Blender or FBX and mapped with Rule 12's det=-1 reflection keeps its vertex order: no reversal. Reverse faces only to repair a mesh whose cross product points **outward**, for example after `P3D.transform()` with a det<0 map, which reverses on its own, and never proxy triangles on their own account (they carry the attachment frame). The one case where proxy triangles are reversed too is undoing that `P3D.transform()` reversal, which hit them as well: reversing everything back leaves them in their authored order, as Rule 12 and `py3d.blender_to_dayz()` do (measured 2026-10-01 for py3d canonical triangles: they then render in the pose drawn in Blender; for other conventions, check the ODOL against a working model, LL-505). For glTF and GLB see `axes-and-winding.md`, "GLB and glTF imports".
+Geometry authored in Blender or FBX and mapped with Rule 12's det=-1 reflection keeps its vertex order: no reversal. Reverse faces only to repair a mesh whose cross product points **outward**, for example after `P3D.transform()` with a det<0 map, which reverses on its own, and never proxy triangles on their own account (they carry the attachment frame). The one case where proxy triangles are reversed too is undoing that `P3D.transform()` reversal, which hit them as well: reversing everything back leaves them in their authored order, as Rule 12 and `py3d.blender_to_dayz()` do (measured 2026-10-01 for py3d canonical triangles: they then render in the pose drawn in Blender; for other conventions, check the ODOL against a working model). For glTF and GLB see `axes-and-winding.md`, "GLB and glTF imports".
 
 The loop below is that undo and nothing else: it reverses every face of every LOD, proxy triangles included, so run it only on a model that `P3D.transform()` reversed whole. A collision LOD wound outward is repaired face by face instead (Rule 18; `dayz-p3d-audit/references/p3d-killers.md` section 1): reverse only the non proxy faces that Rule 18's per component check reads outward, set their stored normals as that section's fix says, and leave every other face and LOD alone. Run as a collision repair, the loop also turns a healthy Visual LOD inside out and alters the proxies' frames.
 
@@ -326,11 +326,11 @@ When an item accepts attachments (for example a cradle that holds a battery), th
 4. A minimal proxy `.p3d` must exist at the path the selection names.
 5. A `CfgNonAIVehicles` class must map the `inventorySlot` to the proxy model.
 
-The path is written without `.p3d` (`memory-and-selections.md`, "Naming convention"). The source's examples kept the extension; the fork's `add_proxy` refuses a path that ends in `.p3d`.
+The path is written without `.p3d` (`memory-and-selections.md`, "Naming convention"). `add_proxy` refuses a path that ends in `.p3d`.
 
 ### Creating a proxy with py3d
 
-The short way, with the fork: `LOD.add_proxy` writes the triangle, the selection and its name, and returns the name.
+The short way: `LOD.add_proxy` writes the triangle, the selection and its name, and returns the name.
 
 ```python
 for lod in [lod0, lod1, lod2, view_lod]:
@@ -397,7 +397,7 @@ for lod in [lod0, lod1, lod2]:
     lod.selections[proxy_sel_name] = proxy_sel
 ```
 
-The source's triangle had two legs of the same length (0.001 along +Z and along +Y) and described the frame by vertex order. The frame is read from the triangle's angles, and a triangle with two equal legs is ambiguous: the attached model can come out turned (`_shared/models/proxy-frames.md`, "Ambiguous triangles"). The legs above are unequal for that reason. Checked with the fork: `LOD.get_proxies` reads the triangle above as not ambiguous, with the same anchor and the same identity raw frame as the one `add_proxy` writes.
+The frame is read from the triangle's angles, not from the vertex order, and a triangle with two equal legs (0.001 along +Z and along +Y, say) is ambiguous: the attached model can come out turned (`_shared/models/proxy-frames.md`, "Ambiguous triangles"). The legs above are unequal for that reason. Checked with py3d: `LOD.get_proxies` reads the triangle above as not ambiguous, with the same anchor and the same identity raw frame as the one `add_proxy` writes.
 
 ### Creating a minimal proxy `.p3d`
 
@@ -688,7 +688,7 @@ It finds the visual LOD by the resolution value `0.0`; a model whose visual LODs
 
 DayZ uses V=0 at the top. If textures were generated with the OpenGL convention (V=0 at the bottom), they appear flipped vertically.
 
-A measurement on a file, not in game (LF_PowerGrid, 2026-09-21; claim CLAIM-P3D-UV-V-TOP-SAMPLED): sampling the texture on the faces of a selection that has its own color (the `light_emit` bulb of a wall lamp) with both readings of V gave a difference of 177.6 against the rest of the model with V=0 at the top and 10.6 with V=0 at the bottom, which agrees with the `(u, 1.0 - v)` of Fix 2. The report gives no unit for the difference, and it was not measured again here.
+A measurement on a file, not in game (a wall lamp model, 2026-09-21): sampling the texture on the faces of a selection that has its own color (the `light_emit` bulb of a wall lamp) with both readings of V gave a difference of 177.6 against the rest of the model with V=0 at the top and 10.6 with V=0 at the bottom, which agrees with the `(u, 1.0 - v)` of Fix 2. The unit of the difference was not recorded.
 
 ```python
 def check_uv_range(model):
@@ -723,7 +723,7 @@ def check_uv_range(model):
     return issues
 ```
 
-> `check_uv_range` only catches out-of-range and degenerate UVs on LOD0, and it does not itself detect a V flip. For the full UV audit (overlap, islands, texel density, mirrored islands) see the UV step in `dayz-p3d-audit/references/manual-checks.md` (SP-051) and `_shared/models/uv-mapping.md`.
+> `check_uv_range` only catches out-of-range and degenerate UVs on LOD0, and it does not itself detect a V flip. For the full UV audit (overlap, islands, texel density, mirrored islands) see the UV step in `dayz-p3d-audit/references/manual-checks.md` and `_shared/models/uv-mapping.md`.
 
 ### 4. Face Winding Verification
 
@@ -824,7 +824,7 @@ def check_proxy_system(model):
     return issues
 ```
 
-The source's version required the name to end in `.p3d.NNN`; it was changed here to the form without `.p3d`, which vanilla stores in 17,744 of its 17,891 proxy names (`_shared/models/proxies.md`) and which the fork's `add_proxy` writes.
+The check asks for the form without `.p3d`, which vanilla stores in 17,744 of its 17,891 proxy names (`_shared/models/proxies.md`) and which `add_proxy` writes.
 
 ### 6. Named selection consistency
 
@@ -928,7 +928,7 @@ def check_geometry_properties(model):
     return issues
 ```
 
-Two notes on what it asks for. The `class` property is for buildings and placed statics: 821 vanilla models store `class` = `house`, and most vanilla gear stores no `class` at all (`_shared/models/named-properties.md`), so on an item that finding can be ignored. The mass check counts a point whose mass is `None`, the fork's default, as having none; the source's line compared `None` with a number and raised an error on such a point.
+Two notes on what it asks for. The `class` property is for buildings and placed statics: 821 vanilla models store `class` = `house`, and most vanilla gear stores no `class` at all (`_shared/models/named-properties.md`), so on an item that finding can be ignored. The mass check counts a point whose mass is `None`, the py3d default, as having none.
 
 ### Full validation runner
 
@@ -956,7 +956,7 @@ def validate_p3d(filepath):
     return all_issues
 ```
 
-The fork has its own validator as well, `model.validate()`, and `save(verify=True)` reads the file back after writing; what its findings mean is in `py3d-assembly-rules.md`.
+py3d has its own validator as well, `model.validate()`, and `save(verify=True)` reads the file back after writing; what its findings mean is in `py3d-assembly-rules.md`.
 
 ---
 
@@ -1034,7 +1034,7 @@ def fix_ce_center(model):
                     print(f"Updated ce_center to {center}")
 ```
 
-The source's `check_centering` and `fix_ce_center` picked the Memory LOD with `lod.resolution > 1e14`, which is also true of LandContact, Roadway, Paths, Hit points, View Geometry and Fire Geometry. On a model without a Memory LOD, or with one of those stored before it, they read or moved a `ce_center` in the wrong LOD or found none; the test above matches the Memory value only.
+`check_centering` and `fix_ce_center` match the Memory value only. A looser test such as `lod.resolution > 1e14` is also true of LandContact, Roadway, Paths, Hit points, View Geometry and Fire Geometry: on a model without a Memory LOD, or with one of those stored before it, it reads or moves a `ce_center` in the wrong LOD or finds none.
 
 ---
 
@@ -1046,7 +1046,7 @@ The source's `check_centering` and `fix_ce_center` picked the Memory LOD with `l
 
 ## Check mass and centre of mass offline with `binarize.exe`
 
-(No PBO, no deploy. Added 2026-06-05, LL-080 and LL-081.)
+(No PBO, no deploy. Added 2026-06-05.)
 
 Mass and centre of mass are **not** in config for a vehicle: they are baked from the vertex weights of the Geometry LOD when the model is binarized (`skills/_shared/vehicles/vehicle-config-and-modelcfg.md`). So to verify what mass and centre of mass the engine will use, the model has to be binarized, but that does not need a full PBO build, deploy and in-game cycle (about 5 minutes each). Addon Builder calls `binarize.exe` with the same bake, so calling it alone gives the identical result in about 30 seconds:
 
@@ -1056,13 +1056,13 @@ Mass and centre of mass are **not** in config for a vehicle: they are baked from
 
 `<DayZ Tools>` is the DayZ Tools install folder, which `/dayz-preflight` finds. Then read `ModelInfo.CoM` (and the inertia) straight from the resulting ODOL.
 
-A gotcha, confirmed in game on LFQuad: the source **must live under `P:\`** for binarize to resolve the model's material paths (`lfquad\...`). From a folder outside `P:\` the materials fail to load **but the mass bake still works** (validated against a control), so a run from outside `P:\` is fine when all that is needed is the baked centre of mass and mass, not the textures. *(2026-10-24)* Direct calls on another vehicle import, all from outside `P:\`, did not load their materials with or without `-addon`; the location is one lead among several there, and Addon Builder builds staged outside `P:\` resolved theirs (`skills/dayz-build-pbo/references/addonbuilder-rules.md`, SP-155 rules 1 and 5).
+A gotcha, confirmed on a quad vehicle: the source **must live under `P:\`** for binarize to resolve the model's material paths (`<mod>\...`). From a folder outside `P:\` the materials fail to load **but the mass bake still works** (validated against a control), so a run from outside `P:\` is fine when all that is needed is the baked centre of mass and mass, not the textures. *(2026-10-24)* Direct calls on another vehicle import, all from outside `P:\`, did not load their materials with or without `-addon`; the location is one lead among several there, and Addon Builder builds staged outside `P:\` resolved theirs (`skills/dayz-build-pbo/references/addonbuilder-rules.md`, binarized-build preflight rules 1 and 5).
 
-This turns a build, deploy and spawn loop of 5 minutes into an offline loop of 30 seconds for any iteration on mass, centre of mass, ride height or placement of a vehicle. Use it together with the per LOD `#Mass#` check (`py3d-assembly-rules.md`, "Mass only on the Geometry LOD") and the `ECE_PLACE_ON_SURFACE` placement rule: the spawn height is governed by the **baked centre of mass**, not by the lowest Geometry point, LandContact or the bounding box. Empirically `h_origin ≈ CoM.y − Geometry_Ymin`. So a model whose mass never bakes (centre of mass 0) spawns with its origin at ground level, underground, and is thrown out, and no geometry change fixes that until the mass bakes. See also `dayz-p3d-audit/references/vehicle-checks.md`, LL-079 (bisecting the LODs isolated the bug), LL-080 and LL-081.
+This turns a build, deploy and spawn loop of 5 minutes into an offline loop of 30 seconds for any iteration on mass, centre of mass, ride height or placement of a vehicle. Use it together with the per LOD `#Mass#` check (`py3d-assembly-rules.md`, "Mass only on the Geometry LOD") and the `ECE_PLACE_ON_SURFACE` placement rule: the spawn height is governed by the **baked centre of mass**, not by the lowest Geometry point, LandContact or the bounding box. Empirically `h_origin ≈ CoM.y − Geometry_Ymin`. So a model whose mass never bakes (centre of mass 0) spawns with its origin at ground level, underground, and is thrown out, and no geometry change fixes that until the mass bakes. See also `dayz-p3d-audit/references/vehicle-checks.md`; bisecting the LODs is what isolates this bug.
 
-> Reference tooling in the LFQuad project (specific to it, but the pattern generalizes): a raw reader of the ODOL `ModelInfo` block that prints whether the mass was baked without a full ODOL reader, and a script that strips the mass entry from the Fire Geometry LOD. Neither file is in the imported material.
+> Two small scripts cover this loop: a raw reader of the ODOL `ModelInfo` block, which prints whether the mass was baked without a full ODOL reader, and a script that strips the mass entry from the Fire Geometry LOD. Neither ships with this skill.
 
-## Building a collision LOD from scratch (SP-025)
+## Building a collision LOD from scratch
 
 (Added 2026-06-05.) py3d can **construct** collision geometry, not only read it. The object model:
 
@@ -1074,16 +1074,16 @@ This turns a build, deploy and spawn loop of 5 minutes into an offline loop of 3
 
 Faces reference normals by `normal_index` into the LOD's `facenormals` pool, not inline per face.
 
-Cylinder pattern (for example a wheel collider): build an N-gon ring in the Y-Z plane, pass the points to `scipy.spatial.ConvexHull`; its `simplices` are the faces and its `equations` give the outward normals. After construction, read every face of the hull with Rule 18's per component check (`dot(outward, cross_n) < 0` on every face) and `face.vertices.reverse()` the faces that read outward: the `simplices` come in no consistent order. Then store the **negated** `hull.equations[i, :3]` as the normal of **every** face, reversed or not: the equations point outward on every face, and Rule 12 and SP-169 want winding and normals both inward. (Measured offline 2026-10-02, scipy 1.17.1, a 12-gon cylinder: 22 of 44 faces came wound outward; reversing them and keeping the outward normals on the other 22 left py3d at 50 % agreement and `WARN_WINDING_NORMAL_MISMATCH`, while every normal negated read 100 % with no finding.) The relative comparison against the Visual LOD (`ERR_WINDING_INVERTED`) only triggers that check, and a collider is never reversed to match the Visual LOD (SP-003). Add one selection `component01` over all points and faces; add View Geometry (`6e15`) and Fire Geometry (`7e15`) copies as needed.
+Cylinder pattern (for example a wheel collider): build an N-gon ring in the Y-Z plane, pass the points to `scipy.spatial.ConvexHull`; its `simplices` are the faces and its `equations` give the outward normals. After construction, read every face of the hull with Rule 18's per component check (`dot(outward, cross_n) < 0` on every face) and `face.vertices.reverse()` the faces that read outward: the `simplices` come in no consistent order. Then store the **negated** `hull.equations[i, :3]` as the normal of **every** face, reversed or not: the equations point outward on every face, and Rule 12 wants winding and normals both inward. (Measured offline 2026-10-02, scipy 1.17.1, a 12-gon cylinder: 22 of 44 faces came wound outward; reversing them and keeping the outward normals on the other 22 left py3d at 50 % agreement and `WARN_WINDING_NORMAL_MISMATCH`, while every normal negated read 100 % with no finding.) The relative comparison against the Visual LOD (`ERR_WINDING_INVERTED`) only triggers that check, and a collider is never reversed to match the Visual LOD. Add one selection `component01` over all points and faces; add View Geometry (`6e15`) and Fire Geometry (`7e15`) copies as needed.
 
-*(Aligned 2026-10-02 with SP-003 and the audit's winding killer: this paragraph used to say to compare the collider's winding sign against the Visual LOD of the same model and make the signs match, calling that relative comparison the operational gate.)*
+*(Aligned 2026-10-02 with Rule 18 and the audit's winding killer: this paragraph used to say to compare the collider's winding sign against the Visual LOD of the same model and make the signs match, calling that relative comparison the operational gate.)*
 
 ### Needle triangles
 
-(Added 2026-10-24.) Qhull can leave a needle where it triangulates a flat face of the hull with nearly collinear points on its border: a triangle whose area over the square of its longest edge is about 1e-7. A filter of degenerate faces that reads the polygons before they are triangulated does not see it. Measured in game (DayZ 1.29.163709, the SecretRock building, 2026-10-02, hulls built with py3d and `scipy.spatial.ConvexHull`): two components of a lid, with needles of 4.6e-7 and 1.6e-7 and areas of about 3e-8 m², took no `scene_raycast` ray in `geom`, `view` or `fire` all around their outline, while the lid's other two components (1.8e-4 and 8e-4) were hit. Each hull was closed and convex, had mass and was wound inward, and binarize printed nothing about it. Dropping from each component the vertex opposite the longest edge of its needle (one point per component; the hull shrank by less than 0.3 µm) and building the hull again made both components take the rays, with the lid at rest and closed, in the three LODs.
+(Added 2026-10-24.) Qhull can leave a needle where it triangulates a flat face of the hull with nearly collinear points on its border: a triangle whose area over the square of its longest edge is about 1e-7. A filter of degenerate faces that reads the polygons before they are triangulated does not see it. Measured in game (DayZ 1.29.163709, a rock building, 2026-10-02, hulls built with py3d and `scipy.spatial.ConvexHull`): two components of a lid, with needles of 4.6e-7 and 1.6e-7 and areas of about 3e-8 m², took no `scene_raycast` ray in `geom`, `view` or `fire` all around their outline, while the lid's other two components (1.8e-4 and 8e-4) were hit. Each hull was closed and convex, had mass and was wound inward, and binarize printed nothing about it. Dropping from each component the vertex opposite the longest edge of its needle (one point per component; the hull shrank by less than 0.3 µm) and building the hull again made both components take the rays, with the lid at rest and closed, in the three LODs.
 
-`/dayz-p3d-audit` reads every triangle of the components of the Geometry, View and Fire LODs (a quad as two) and fails one under 1e-6 m², or under 1e-4 of the square of its longest edge, naming the point to drop (`dayz-p3d-audit/references/killers-detail.md`, "Needle triangles in a collision component"). Those are the project's thresholds: the engine's limit lies between 4.6e-7, which failed, and 1.19e-4, which worked (claim CLAIM-P3D-NEEDLE-TRIANGLE-INGAME).
+`/dayz-p3d-audit` reads every triangle of the components of the Geometry, View and Fire LODs (a quad as two) and fails one under 1e-6 m², or under 1e-4 of the square of its longest edge, naming the point to drop (`dayz-p3d-audit/references/killers-detail.md`, "Needle triangles in a collision component"). Those are the audit's thresholds: the engine's limit lies between 4.6e-7, which failed, and 1.19e-4, which worked.
 
 ### A script that adds LODs is not idempotent
 
-Running it again over output it already processed **duplicates** the LODs, which is an invalid model. Guard it (skip when a LOD of that resolution already exists) or run it only over the original or a backup. Origin: SP-025, a wheel rebuild script of the LFQuad project, 2026-06-01.
+Running it again over output it already processed **duplicates** the LODs, which is an invalid model. Guard it (skip when a LOD of that resolution already exists) or run it only over the original or a backup. Seen 2026-06-01 on a wheel rebuild script.

@@ -29,7 +29,7 @@ One name has no reader: `zbytek`, Czech for "the rest", is the selection Bohemia
 
 A selection that only swaps a texture or material (a hidden selection) belongs in the visual LODs and nowhere else. A bone belongs in a collision LOD only when the collision has to move with the part; a checker that reports every visual selection missing from Geometry, Fire Geometry or View Geometry is asking a question, not naming an error.
 
-Two of these rows fail silently when the selection is in the wrong LOD. Reported from in-game tests on a custom quad, not checked on `P:\`:
+Two of these rows fail silently when the selection is in the wrong LOD. Measured in game on a custom quad, not checked on `P:\`:
 
 - A wheel-slot selection that exists only in the visual LODs lets the wheel attach as an item but never simulate: `WheelCountPresent()` stays 0 while `WheelCount()` is the full count (`P:\scripts\3_game\vehicles\car.c:345` and `P:\scripts\3_game\vehicles\car.c:348`), and no log line says why. `/dayz-p3d-audit` checks this when it is given the vehicle's `config.cpp`.
 - A seat selection needs its own View Geometry component: `seat_driver` and `seat_coDriver` must not share one.

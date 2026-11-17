@@ -1,6 +1,6 @@
 # Helicopters
 
-What vanilla gives you for helicopters, what it does not, and how to build a flyable one on the native base classes with your own code. The later sections cover the second route, `CarScript` as the base, which every shipped community helicopter read for this pack takes, and which of their flight models to learn from.
+What vanilla gives you for helicopters, what it does not, and how to build a flyable one on the native base classes with your own code. The later sections cover the second route, `CarScript` as the base, which every shipped community helicopter examined takes, and which of their flight models to learn from.
 
 ## What vanilla ships
 
@@ -75,7 +75,7 @@ Unverified until tested in game: that the `helicopter` simulation on this config
 
 The native route above is unproven in game. The script side of it is empty in 1.29 and in 1.30: the `HelicopterScript` constructor sets only the `POSTSIMULATE` mask (`P:\scripts\4_world\entities\vehicles\helicopterscript.c:8`) and its `EOnPostSimulate` and engine hooks have no body, so whatever flies would have to come from the native `helicopter` simulation, which nothing in vanilla exercises.
 
-Every shipped community helicopter read for this pack takes another route: it inherits `CarScript` (config parent `class CarScript: Car`, `P:\DZ\vehicles\wheeled\config.cpp:236`), keeps a complete ground `SimulationModule` with wheels, axles and a gearbox as the taxi fallback, and flies entirely in script. Planes do the same. The facts in the rest of this file come from those mods' own sources and from the LFHeli project's in-game tests; they are third-party and not checked on `P:\`.
+Every shipped community helicopter examined takes another route: it inherits `CarScript` (config parent `class CarScript: Car`, `P:\DZ\vehicles\wheeled\config.cpp:236`), keeps a complete ground `SimulationModule` with wheels, axles and a gearbox as the taxi fallback, and flies entirely in script. Planes do the same. The facts in the rest of this file are third-party mod behaviour, not vanilla, and are not checked on `P:\`.
 
 | | Native classes (sections above) | `CarScript` as the base |
 |---|---|---|
@@ -91,9 +91,9 @@ Pick one base and stay on it. Do not move a flying `CarScript` child onto `Helic
 
 | Mod | Class chain | Integration | Replication | Tuning store | Use it as |
 |---|---|---|---|---|---|
-| RFFS (RedFalcon) | `RFFSHeli_S76 : RFFSHeli_base : CarScript` | Kinematic: `SetVelocity` and `SetOrientation` | Net sync variables, solver on the server only | Typed JSON: a server wide `MasterConfig` and a `HeliConfig` per model, loaded with `JsonFileLoader<T>`, values as percentages of a baseline | The kinematic reference: not obfuscated, complete, physically grounded |
-| MH6 (Llama) | `MH6 : CarScript` | Forces: `dBodyApplyForce` and `dBodyApplyTorque` every tick | Custom Pawn state and move with owner prediction | Constants in the class | The force based reference: a PD flight controller in one legible script |
-| SIB (SIBNIC) | `HeliTest_SIB : Heli_sib_cript : CarScript` | Kinematic (simple model); forces in an advanced model that is licence locked and incomplete | Net sync variables, solver on the server only | A positional `map<string,float>` read from a `$profile` JSON | A corroborating example only; do not build from it |
+| RFFS | `RFFSHeli_S76 : RFFSHeli_base : CarScript` | Kinematic: `SetVelocity` and `SetOrientation` | Net sync variables, solver on the server only | Typed JSON: a server wide `MasterConfig` and a `HeliConfig` per model, loaded with `JsonFileLoader<T>`, values as percentages of a baseline | The kinematic reference: not obfuscated, complete, physically grounded |
+| MH6 | `MH6 : CarScript` | Forces: `dBodyApplyForce` and `dBodyApplyTorque` every tick | Custom Pawn state and move with owner prediction | Constants in the class | The force based reference: a PD flight controller in one legible script |
+| SIB | `HeliTest_SIB : Heli_sib_cript : CarScript` | Kinematic (simple model); forces in an advanced model that is licence locked and incomplete | Net sync variables, solver on the server only | A positional `map<string,float>` read from a `$profile` JSON | A corroborating example only; do not build from it |
 | DayZ Expansion | `ExpansionHelicopterScript : CarScript` plus a rotor module | Forces, summed by a module system and committed once | Custom Pawn state and move | Config driven modules (`SimulationModule` aerofoils, rotor) | The framework reference: many aircraft on one data driven core |
 
 What all four share:
@@ -120,7 +120,7 @@ A separate choice is one flight loop against a module system. RFFS, MH6 and SIB 
 3. **Fixed-wing with real aerodynamics:** LM_Planes (one loop, custom Pawn) or Expansion aerofoils.
 4. **Not SIB.** Its simple model is a minimal kinematic hack (a constant 0.25 m/s lift term and a hard 1500 m ceiling) and its force model is licence locked with the core integrator missing.
 
-Players who flew these on a live server (secondhand opinion, not a measurement) called RFFS the easiest and most stabilised, SIB the most fluid, MH6 neither fluid nor easy to recover, and Expansion complex. Fluidity and recoverability both come from the stabiliser and pull against each other; none of the four separates them. Pick for the audience, not for "strongest".
+Handling on a live server (opinion, not a measurement): RFFS is the easiest and most stabilised, SIB the most fluid, MH6 neither fluid nor easy to recover, and Expansion complex. Fluidity and recoverability both come from the stabiliser and pull against each other; none of the four separates them. Pick for the audience, not for "strongest".
 
 ## Where the depth is
 

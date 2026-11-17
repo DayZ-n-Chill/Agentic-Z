@@ -149,7 +149,7 @@ def _load_viewer_core():
             break
         d = parent
     raise ImportError(
-        "viewer_core.py not found within pack/workspace root walking parents of %s"
+        "viewer_core.py not found within repo/workspace root walking parents of %s"
         % os.path.abspath(__file__)
     )
 

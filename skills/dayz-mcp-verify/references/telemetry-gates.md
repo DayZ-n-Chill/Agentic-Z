@@ -2,18 +2,18 @@
 
 How to set a threshold on telemetry read from the game (a drive ladder, a flight spike, any later harness) so that real physics can pass it and an incomplete trace cannot.
 
-Everything here is measured results from game sessions with dayz-mcp on a helicopter mod's flight gates (2026-07-11), not yet checked on `P:\`; none of it is a vanilla fact. It applies to the drive ladder of `acceptance-ladder.md` and to the vehicle pack's own gates. The `dayz-mod-workflow` skill has the matching rule for a first real run: retune the gate, do not call a no-go.
+Everything here is measured results from game sessions with dayz-mcp on a helicopter mod's flight gates (2026-07-11), not yet checked on `P:\`; none of it is a vanilla fact. It applies to the drive ladder of `acceptance-ladder.md` and to the vehicle pack's own gates.
 
-## Calibrate against the measured physical floor, not ideal fixtures (SP-061, added 2026-07-14)
+## Calibrate against the measured physical floor, not ideal fixtures (added 2026-07-14)
 
 1. **A threshold calibrated with ideal mathematical fixtures is a gate that no real physics passes.** The engine has a native noise floor (the body dithers between `SetVelocity` and the read; the client's network interpolator). Before setting a threshold, measure the floor in a real run (the 95th percentile of the metric on real data), set the threshold to the floor times a margin of at least 2, and write the measured numbers next to the constant. Two independent measurements that agree within 20 % (the implementer's and the receiver's) validate the number. Case: a jitter gate at 0.5 m/s against a real floor of 4.3 to 5.1 m/s gave a false no-go that cost a whole corrective pass; recalibrated, it gave a go with a 2.2 times margin.
 2. **The smoothness a player perceives is the frame-to-frame zigzag in metres** (the second difference, the change in implied velocity times dt). It is not the residual against the ideal per frame, which is autocorrelated and reads twice the real zigzag, and it is not the implied velocity in m/s, which scales with 1/dt: the same process gives different floors at 30 and 60 FPS and breaks any comparison between FPS cells.
 3. **Start-up transients** (the setup teleport and the interpolator chasing it) are excluded with a bounded warm-up in the client's scoring window: a real transient of 0.25 s against a warm-up of 1.0 s is a 4 times margin. Everything else fails closed.
 4. **Relative structural checks need an absolute floor too, and the median frame time misleads on a bimodal distribution.** A run at 250 FPS with a bimodal frame time (4 ms bursts plus a population near 50 ms) broke three relative thresholds: maximum gap at 3 times the median, dt tolerance at 30 % of dt, and coverage as span over median dt. The fixes: absolute floors with a physical basis (gap 0.150 s, dt tolerance 0.015 s), and coverage by the mean of the dt column. The mean of the differences of the time column is a tautology (span divided by n-1, so the ratio is always about 1) and checks nothing.
 
-Origin: a double converging measurement and a 31 of 31 self-test.
+Checked by two converging measurements and a 31 of 31 self-test.
 
-## Float epsilon at boundaries, and an aggregated time balance (SP-063, added 2026-07-14)
+## Float epsilon at boundaries, and an aggregated time balance (added 2026-07-14)
 
 Two adversarial defects, reproduced on a gate that had already been sealed twice:
 

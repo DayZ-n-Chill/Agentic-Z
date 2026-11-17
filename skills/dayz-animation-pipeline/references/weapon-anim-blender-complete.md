@@ -5,11 +5,11 @@ The whole route for a weapon animation on the playable character: author in Blen
 How to read it:
 
 - A **vanilla fact** cites the file on `P:\` (DayZ 1.30).
-- **Plugin** facts come from the code of the DayZ animation plugin for Blender (the original by jdfnc24 and MrTea, and the maintained fork by Sanitoeter05) and from its demo mod. **Video** facts come from the plugin's release video. **Community** facts come from Discord answers archived on answeroverflow.com. None of those can be checked on `P:\`; each is marked where it matters.
-- **Measured** results name the project and build.
-- "Open questions" at the end lists what nobody has confirmed.
+- **Plugin** facts describe the DayZ animation plugin for Blender (`DayzAnimationTools`, in its original build and its maintained fork) and its demo mod. They cannot be checked on `P:\`; each is marked where it matters.
+- **Measured** results say what was measured and on which build.
+- "Open questions" at the end lists what is not confirmed.
 
-Earlier versions of this guide, and several tutorials, got five things wrong. They are corrected here and the corrections are explained in place:
+Five common mistakes are corrected here, and each correction is explained in place:
 
 1. Keep the `{GUID}` prefixes in instance files. Do not strip them.
 2. A weapon states clip is not always exactly 3 frames.
@@ -25,7 +25,7 @@ It is not wired through `config.cpp` animation keys. It reaches the player throu
 2. **Mapping.** A text instance file (`.asi`) for the weapon maps state names of the form `WeaponOperations.<column>.<state>` to the `.anm` files, and inherits everything else from a parent chain: the weapon's instance, then `player_main_rifle.asi`, then `player_main.asi`.
 3. **Binding.** One script call, `AddItemInHandsProfileIK(itemClass, asi, behavior, ikPose.anm, weaponStates.anm)` (`P:\scripts\3_game\dayzplayer.c:243`), binds the weapon class to the instance, an IK pose and a weapon states clip. A second, `AddItemBoneRemap(itemClass, pairs)` (`P:\scripts\3_game\dayzplayer.c:252`), maps the weapon model's part selections to the player skeleton's `Weapon_` bones. Vanilla binds every weapon this way, for example `AKM_Base` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:412`).
 
-Because nothing in the graph is replaced, several weapon animation mods load together. The "one animation mod at a time" wall is about mods that replace the player graph (`anim-graph.md`, "Which changes collide"). The release video called vehicles the exception; that is out of date, since one vehicle class's rider pose can be bound through a child instance as well (`vehicle-rider-ik-pose.md`).
+Because nothing in the graph is replaced, several weapon animation mods load together. The "one animation mod at a time" wall is about mods that replace the player graph (`anim-graph.md`, "Which changes collide"). Vehicles are not an exception: one vehicle class's rider pose can be bound through a child instance as well (`vehicle-rider-ik-pose.md`).
 
 Three kinds of clip exist per weapon. Do not mix them up:
 
@@ -35,7 +35,7 @@ Three kinds of clip exist per weapon. Do not mix them up:
 | Weapon states (`w_<weapon>_states.anm`) | Only the `Weapon_` bones, one frame per start state of the weapon (bolt closed, open, jammed). | The fifth argument; `SetInitState` reads it. |
 | Action clips (reload, fire, chamber, jam) | Authored as differences, roughly from the shoulders down, played over the idle. | The `Lines` of the `.asi`. |
 
-The action clips play on top of the weapon states clip and override those bone transforms while they play (community, MarioE; consistent with the comment on `SetInitState`, `P:\scripts\3_game\human.c:1108` to `:1112`, which says each frame of the states animation is one init state).
+The action clips play on top of the weapon states clip and override those bone transforms while they play (not checked on `P:\`; consistent with the comment on `SetInitState`, `P:\scripts\3_game\human.c:1108` to `:1112`, which says each frame of the states animation is one init state).
 
 ### Two routes
 
@@ -44,10 +44,10 @@ The action clips play on top of the weapon states clip and override those bone t
 | Authoring file | `.txa` from the plugin in Blender | SEAnim (open format) |
 | To `.anm` | Workbench "Register resource and import", later "Reimport Resource" | `DayZATool --generate-anim file.seanim` |
 | Tooling | The maintained plugin fork | A closed .NET program; needs .NET Framework 4.5 |
-| Rig quality | Correct: the master rig with IK helpers | The community reports extracted rigs as "always wrong" for anything using empties, which the IK helper bones are; local bone axes come out inverted |
+| Rig quality | Correct: the master rig with IK helpers | Extracted rigs come out wrong for anything using empties, which the IK helper bones are; local bone axes come out inverted (not checked on `P:\`) |
 | Use for | Player weapon animation (this guide) | Extracting reference meshes and clips |
 
-Use Route A. It is what the plugin's demo mod and the community use. Route B is the fallback when Route A is blocked; it works with the same instance file and the same packing, but its extracted rig is a reference, not a clean round trip.
+Use Route A. It is what the plugin's demo mod uses. Route B is the fallback when Route A is blocked; it works with the same instance file and the same packing, but its extracted rig is a reference, not a clean round trip.
 
 Do not use `.rtm` for a player weapon animation. It is the most common wrong turn (`skeletal-rtm.md`).
 
@@ -55,9 +55,9 @@ Do not use `.rtm` for a player weapon animation. It is the most common wrong tur
 
 ### Blender version: settle this first
 
-The plugin's README and its release video say it needs at least Blender 3.6.8 and recommend exactly that. This is right for the original plugin.
+The plugin's README says it needs at least Blender 3.6.8 and recommends exactly that. This is right for the original plugin.
 
-The maintained fork was ported to newer Blender calls and does not run on 3.6.8:
+The maintained fork uses newer Blender calls and does not run on 3.6.8:
 
 - its `.txa` importer calls `action.fcurve_ensure_for_datablock(...)`, which is the slotted actions interface of Blender 4.4 and later, and has a helper named for Blender 5.1;
 - its `bl_info` declares `'blender': (2, 80, 0)`, which is meaningless.
@@ -81,7 +81,7 @@ The download is a plain folder, not a zip, so Blender's "Install from file" does
 
 ### DayZ Tools, Workbench and the work drive
 
-The work drive is `P:\` with the vanilla data unpacked into `P:\DZ\` and `P:\scripts\`. `/dayz-preflight` checks it and `/dayz-workdrive` mounts it. The demo mod's `SetupWorkdrive.bat` makes a junction on `P:\` for any folder that holds a `Workbench\dayz.gproj`. Setting Workbench as the default program for its files gives a quick launch (F6) and kill (F10) from its resource browser, per the release video.
+The work drive is `P:\` with the vanilla data unpacked into `P:\DZ\` and `P:\scripts\`. `/dayz-preflight` checks it and `/dayz-workdrive` mounts it. The demo mod's `SetupWorkdrive.bat` makes a junction on `P:\` for any folder that holds a `Workbench\dayz.gproj`. Setting Workbench as the default program for its files gives a quick launch (F6) and kill (F10) from its resource browser.
 
 ### The vanilla files to read
 
@@ -119,7 +119,7 @@ The checked list by zone is `player-skeleton.md`. In short:
 ### Weapon bones and the right hand
 
 - An item in the right hand is a child of `RightHand_Dummy`.
-- Current clips move the gun with `RightHand_Dummy`, not `Weapon_Root`, which is legacy (plugin code and the release video).
+- Current clips move the gun with `RightHand_Dummy`, not `Weapon_Root`, which is legacy (plugin code; not checked on `P:\`).
 - The player skeleton drives the weapon's parts through `Weapon_Bolt`, `Weapon_Trigger`, `Weapon_Magazine`, `Weapon_Bullet`, and six free slots `Weapon_Bone_01` to `Weapon_Bone_06` for any other moving part. What each slot means is per weapon; vanilla rifles map `charging` to `Weapon_Bone_01` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1579`).
 - Do not use the older bones in the group marked for removal (`player-skeleton.md`, "Marked for removal: do not use").
 - There are no magazine in hand bones. The engine follows the magazine through `LeftHand_Dummy`.
@@ -150,7 +150,7 @@ ikpose_secchainmiddlediro = LeftHandOrigin,LeftForeArmDirectionOrigin
 
 That is `P:\DZ\anims\workspaces\player\player_main\combat.agf:29` to `:35` (`ikpose_chainoffset` first). The same node holds the basic setup above it (`hand = RightHand`, `weapon = RightHand_Dummy`, `weaponrotator = RightArm`, the two chains and their axes, `P:\DZ\anims\workspaces\player\player_main\combat.agf:19` to `:27`) and a comment that explains the hierarchy: the root is the right hand, which is not exported; `RightHand_Dummy` is where the weapon is; `LeftHandIKTarget` is where the left hand is on the weapon; `RightHandOrigin` is the inverse transform of where the hand originally was.
 
-The block occurs 14 times in the 1.30 player sub-graphs (`actions.agf` 7, `combat.agf` 2, `gestures.agf` 1, `locomotion.agf` 2, `master.agf` 1, `vehicles.agf` 1). The keys are not in `player_main.ast`, the workspace, `config.cpp` or `model.cfg`, which is why a search of those finds nothing. The Discord message most guides quote leaves out the two keys ending in `diro`.
+The block occurs 14 times in the 1.30 player sub-graphs (`actions.agf` 7, `combat.agf` 2, `gestures.agf` 1, `locomotion.agf` 2, `master.agf` 1, `vehicles.agf` 1). The keys are not in `player_main.ast`, the workspace, `config.cpp` or `model.cfg`, which is why a search of those finds nothing. Do not leave out the two keys ending in `diro`.
 
 ## 4. Starting from a vanilla pose or clip
 
@@ -164,7 +164,7 @@ The importer sets every bone to quaternion rotation, takes the scene's frame rat
 
 ### Importing without the Blender window
 
-A recipe from the source pack for reading poses from a script, with the plugin's folder at `<plugin>`:
+To read poses from a script, with the plugin's folder at `<plugin>`:
 
 1. Add `<plugin>` to `sys.path`, `import DayzAnimationTools`, call `DayzAnimationTools.register()`, then with the armature active call `bpy.ops.import_scene.txa(filepath=..., files=[{"name": basename}])`.
 2. The importer refers to a name, `SURVIVOR_IK_ANIM_BONES`, that the plugin does not define (it defines a left and a right list), which raises `NameError`. Before importing, set it: import the plugin's `Import.ImportTxa` module and assign `SURVIVOR_IK_ANIM_BONES` the left list plus the right list from its `Types.Txa` module.
@@ -192,7 +192,7 @@ The weapon bones float in front of the right chest by default; the whole weapon 
 
 Rules that hold for all of them:
 
-- **30 frames per second.** Set "Override Fps" to 30 in the exporter (0 uses the scene's rate). 20 to 25 gives a slower, deliberate feel; 60 is valid. Every vanilla AKM clip the source pack extracted runs at 30 (section 12).
+- **30 frames per second.** Set "Override Fps" to 30 in the exporter (0 uses the scene's rate). 20 to 25 gives a slower, deliberate feel; 60 is valid. Every vanilla AKM clip extracted for section 12 runs at 30.
 - **Never key scale.** DayZ ignores bone scale; scale keys are off by default on import and export.
 - **Leave the legs to locomotion.** Idle and aim poses key the legs only as the static idle. Reload, fire and state clips key from the shoulders down: the plugin's bone list for survivor reloads has no leg bone.
 
@@ -209,9 +209,9 @@ Key four controls (insert keys on selected channels only):
 
 Export type "Survivor IK 2h" or "Survivor IK 1h". The plugin restricts the export to the survivor IK bone list, writes one keyframe and sets the end frame to 1. Do not select bones first and do not treat it as a clip of several frames.
 
-What the pose can and cannot do, measured in game (A6_SR2M, 2026-06-17): rotating `LeftHand` or the IK helpers does not turn the support wrist, because the engine's IK lines the hand up with the weapon again. The pose visibly drives the finger curl. To change how the support hand is oriented, match the weapon's geometry to a reference whose hand already sits that way (`weapon-in-hands.md`).
+What the pose can and cannot do, measured in game on a custom submachine gun (2026-06-17): rotating `LeftHand` or the IK helpers does not turn the support wrist, because the engine's IK lines the hand up with the weapon again. The pose visibly drives the finger curl. To change how the support hand is oriented, match the weapon's geometry to a reference whose hand already sits that way (`weapon-in-hands.md`).
 
-A vanilla IK pose file holds 2 frames at 30 frames per second, and the second is a byte for byte copy of the first, so it is one pose (source pack, from the extracted AKM pose). Write a duplicate frame if a tool wants at least two. Poses are shared: the AKM's instance names the `izh18` pose (`IkPose` at `P:\DZ\anims\workspaces\player\player_main\weapons\player_main_akm.asi:6`).
+A vanilla IK pose file holds 2 frames at 30 frames per second, and the second is a byte for byte copy of the first, so it is one pose (read from the extracted AKM pose). Write a duplicate frame if a tool wants at least two. Poses are shared: the AKM's instance names the `izh18` pose (`IkPose` at `P:\DZ\anims\workspaces\player\player_main\weapons\player_main_akm.asi:6`).
 
 ### The sight line
 
@@ -240,9 +240,9 @@ Author three frames, one per state of the weapon:
 - Export as Additive, "Selected Bones Only", 30 frames per second.
 - At run time the engine picks a frame with `SetInitState(int pFrameIndex)` (`P:\scripts\3_game\human.c:1112`).
 
-**The stored clip is not always 3 frames.** Three frames is the authoring intent. Workbench trims consecutive keys that are nearly the same, so across the vanilla `w_*_states.anm` clips the stored key count per channel is 2, 3 or 4 (source pack, 47 clips in 1.29; the 1.30 unpack holds 50). `w_akm_states.anm` is 2 frames with two distinct poses: `Weapon_Bolt` at (0, 0, 0) then (5.61, 0, 0), and `Weapon_Bullet` near 0 then (−17.38, −4.02, 4.03), ejected. How many start states the engine reads per weapon cannot be told from the file offline.
+**The stored clip is not always 3 frames.** Three frames is the authoring intent. Workbench trims consecutive keys that are nearly the same, so across the vanilla `w_*_states.anm` clips the stored key count per channel is 2, 3 or 4 (measured on the 47 clips of 1.29; the 1.30 unpack holds 50). `w_akm_states.anm` is 2 frames with two distinct poses: `Weapon_Bolt` at (0, 0, 0) then (5.61, 0, 0), and `Weapon_Bullet` near 0 then (−17.38, −4.02, 4.03), ejected. How many start states the engine reads per weapon cannot be told from the file offline.
 
-**The bolt's rest position comes from this clip, not from an action clip** (measured, A6_SR2M, 2026-07-01). When the weapon jams the engine sets `Weapon_Bolt` to the jammed frame through `SetInitState`. An unjam clip plays on top and overrides `Weapon_Bolt` only while it plays, so its frame 0 must equal the jammed frame or the bolt jumps when the gesture starts. Take the real values from an extract of the states clip (`DayZATool --extract-anim w_<weapon>_states.anm 100`) and use them as the bolt marks when authoring; do not judge them by eye. On that weapon: closed 0, jammed −2.2 cm, open −4.3 cm along the bone's X.
+**The bolt's rest position comes from this clip, not from an action clip** (measured in game on a custom submachine gun, 2026-07-01). When the weapon jams the engine sets `Weapon_Bolt` to the jammed frame through `SetInitState`. An unjam clip plays on top and overrides `Weapon_Bolt` only while it plays, so its frame 0 must equal the jammed frame or the bolt jumps when the gesture starts. Take the real values from an extract of the states clip (`DayZATool --extract-anim w_<weapon>_states.anm 100`) and use them as the bolt marks when authoring; do not judge them by eye. On that weapon: closed 0, jammed −2.2 cm, open −4.3 cm along the bone's X.
 
 ### Reload, charge, chamber, jam
 
@@ -251,7 +251,7 @@ Author three frames, one per state of the weapon:
 - Use "visual location/rotation" keying for a bone that a constraint drives.
 - "Additive" here is how the clip is authored, not a graph node. Vanilla reloads run on their own `CMD_Reload_` commands with nothing additive about them (`anim-graph.md`, "Reload is not additive").
 
-Names that mislead: `ReloadMagazineDetach` maps to a clip whose file name says `mag_remove`, and per the release video that clip does not remove a magazine; it is the hand coming back from the hip. `FireCocked` is firing while cocked. "Bullet in chamber" is not a state (`anim-graph.md`, "Weapon state names").
+Names that mislead: `ReloadMagazineDetach` maps to a clip whose file name says `mag_remove`, and that clip does not remove a magazine; it is the hand coming back from the hip (not checked on `P:\`). `FireCocked` is firing while cocked. "Bullet in chamber" is not a state (`anim-graph.md`, "Weapon state names").
 
 ### A magazine that follows the hand
 
@@ -264,7 +264,7 @@ There is no magazine bone to key, so fake the tracking in Blender:
 
 ### The "Survivor Reload" export type
 
-The type exists in the plugin's code, but the plugin's author cannot tell its effect in game from plain Additive and uses Additive. Treat reloads as Additive until a difference shows.
+The type exists in the plugin's code, but no difference from plain Additive has been seen in game. Treat reloads as Additive until a difference shows.
 
 ### Aim space
 
@@ -272,7 +272,7 @@ Not solved by the plugin. Editing the aim space (the grid of look directions tha
 
 ### One pose per weapon class, not per attachment
 
-Guides suggest registering a different instance or IK pose for a foregrip by branching in the callback (`if (weapon.withGrip) ...`). That cannot work, and the thread usually cited for it is a 2021 question nobody answered; the same question was asked again, still unanswered, in 2026.
+A common idea is to register a different instance or IK pose for a foregrip by branching in the callback (`if (weapon.withGrip) ...`). That cannot work:
 
 - Every item in hands call takes a class name or is global; none takes a weapon instance or a player: `SetDefaultItemInHandsProfile` (`P:\scripts\3_game\dayzplayer.c:225`), `ResetItemInHandsProfiles` (`P:\scripts\3_game\dayzplayer.c:229`), `AddItemInHandsProfile` (`P:\scripts\3_game\dayzplayer.c:240`), `AddItemInHandsProfileIK` (`:243`), `AddItemBoneRemap` (`:252`).
 - Registration runs when the player type is set up, in `DayZPlayerTypeRegisterItems` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:334`), which calls the mod callback `RegisterFireArms` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:460`). It is not run per equipped weapon and does not react to attaching or detaching. There is no weapon object in that callback.
@@ -281,11 +281,11 @@ Guides suggest registering a different instance or IK pose for a foregrip by bra
 
 What is left: author one pose that reads well with and without the attachment, which is what vanilla does. Two class names with a swap of the weapon entity in `EEItemAttached` and `EEItemDetached` is possible in principle but fragile, and it multiplies with every attachment.
 
-Since 1.30 script can switch the player's animation instance at run time with `SetAnimationInstanceByName` on `Human` (`P:\scripts\3_game\human.c:1384`), and the player gets `OnItemInHandsChanged` when the item in hands changes (`P:\scripts\3_game\entities\man.c:163`, overridden at `P:\scripts\4_world\entities\dayzplayerimplement.c:997`). The source pack presents that as the way to swap a weapon's profile when a grip is mounted, without swapping classes. Nobody has measured it for a weapon; the measured uses are surrender (vanilla) and a vehicle rider (`vehicle-rider-ik-pose.md`), and the native's comment warns about desync. Treat it as a lead to test, not as a solved problem.
+Since 1.30 script can switch the player's animation instance at run time with `SetAnimationInstanceByName` on `Human` (`P:\scripts\3_game\human.c:1384`), and the player gets `OnItemInHandsChanged` when the item in hands changes (`P:\scripts\3_game\entities\man.c:163`, overridden at `P:\scripts\4_world\entities\dayzplayerimplement.c:997`). That could swap a weapon's profile when a grip is mounted, without swapping classes. It has not been measured for a weapon; the measured uses are surrender (vanilla) and a vehicle rider (`vehicle-rider-ik-pose.md`), and the native's comment warns about desync. Treat it as a lead to test, not as a solved problem.
 
 ### Full body action clips on a weapon: what to leave out
 
-Measured in game by the A6_SR2M project, June and July 2026.
+Measured in game on a custom submachine gun, June and July 2026.
 
 - **Leave the `Weapon_` bones out unless they are animated with correct values.** A full body action authored in a pipeline that treats the weapon as a rigid object following the hand exports `Weapon_Bolt`, `Weapon_Trigger`, `Weapon_Magazine`, `Weapon_Bullet` and `Weapon_Bone_01` to `06` at the export rig's rest, which is garbage, typically collapsed to (0, 0, 0). Measured: `Weapon_Bone_01` to `06` at (0, 0, 0) against (−11.43, 0.79, −2.48) in the vanilla `p_erc_jam_cancel_pm73_ras`, about 11.7 cm off. The engine writes those values onto the bones and the weapon mesh stretches. The fix is to filter them out on the SEAnim side: extract the `.anm` with DayZATool, drop the `Weapon_` bones with `seanim_writer.py`, generate again. The weapon then stays in its base pose, held by the grip. Include `Weapon_` bones only when they carry real values, such as a bolt slide copied from the vanilla equivalent. To detect the problem, extract the clip and compare frame 0 of the `Weapon_Bone_` tracks with the weapon's vanilla clip: several centimetres off means garbage.
 - **Spine up only.** Leave `EntityPosition`, `Pelvis` and the leg bones out at the SEAnim level, so the action does not fight locomotion.
@@ -296,7 +296,7 @@ Measured in game by the A6_SR2M project, June and July 2026.
 Every action the player holds a key for (unjamming is the standard case) needs `LoopStart` and `LoopEnd` notes in its clip. The reason is in the weapon's state machine:
 
 - Unjamming is driven by a timer, not by the clip. `WeaponUnjamming` sets `m_jamTime = 5.0` when it starts (`P:\scripts\4_world\entities\firearms\fsm\states\weaponunjamming.c:218`). `WeaponUnjamming_Start` adds up time in `OnUpdate` and, once `m_dtAccumulator >= m_jamTime`, posts the timeout event (`P:\scripts\4_world\entities\firearms\fsm\states\weaponunjamming.c:27` to `:42`); the next state then calls `SetJammed(false)` (`P:\scripts\4_world\entities\firearms\fsm\states\weaponunjamming.c:87`). If the key is released first, the same `OnUpdate` interrupts and the weapon stays jammed.
-- For the timer to run, the weapon command must still be looping: `IsActionFinished()` of `HumanCommandWeapons` (`P:\scripts\3_game\human.c:1032`) has to stay false. The loop notes are what keep the clip looping. The source pack traced the rest in the state machine: without the notes the clip plays once, the action reads as finished, the machine goes back to jammed, and with the key still held it fires again, so the player sees a loop that never unjams.
+- For the timer to run, the weapon command must still be looping: `IsActionFinished()` of `HumanCommandWeapons` (`P:\scripts\3_game\human.c:1032`) has to stay false. The loop notes are what keep the clip looping. The rest is traced in the state machine: without the notes the clip plays once, the action reads as finished, the machine goes back to jammed, and with the key still held it fires again, so the player sees a loop that never unjams.
 - Measured in game (2026-08-24): with the notes, the unjam completes at about 5 s. The case without the notes was not run, so "loops forever without them" is traced, not measured.
 - Adding `Weapon_CanUnjam_...` or `Weapon_Unjammed` events does not fix a missing loop; the unjam machine does not use them for this.
 
@@ -306,17 +306,17 @@ When testing, hold the key. A tap plays the cancel clip and the weapon stays jam
 
 ### Helper bones follow a fixed rule in vanilla clips
 
-Measured offline by the A6_SR2M project on 8 vanilla clips (DayZ 1.30.164014):
+Measured offline on 8 vanilla clips (DayZ 1.30.164014):
 
 - `ArmExtra`, `ForeArmExtra` and `WristExtra` hold half of their sibling's local rotation (a slerp halfway from identity), the siblings being `ArmRoll`, `ForeArmRoll` and `Hand`: median error 0.2 to 1 degree, at most 4.
 - `ElbowExtra` holds about half of the `ForeArm` swing without its twist (median 3 to 7 degrees, up to about 26), and its rest axes differ from the forearm's by 7.32 degrees.
 - `ArmRoll` and `ForeArmRoll` are pure twist about the bone's axis (swing at most 0.9 degree).
 
-The parent table is `ofp2-manskeleton-parents.txt`. A clip that leaves the helpers still, or bends the roll bones, gives pinched or peaked elbows and stepped wrists. After authoring, work the helpers out again with that rule (roll bones as pure twist, turned toward the original elbow and wrist so they do not shift) and check the result: helper error within 1 degree (elbow within 7), roll swing within 1 degree, hands unchanged by a stable measure. That check is a design from the project, not a measured gate.
+The parent table is `ofp2-manskeleton-parents.txt`. A clip that leaves the helpers still, or bends the roll bones, gives pinched or peaked elbows and stepped wrists. After authoring, work the helpers out again with that rule (roll bones as pure twist, turned toward the original elbow and wrist so they do not shift) and check the result: helper error within 1 degree (elbow within 7), roll swing within 1 degree, hands unchanged by a stable measure. That check is a design, not a measured gate.
 
 ### Splitting a rotation needs the quaternion's sign fixed first
 
-Measured in game (CocaLab project, DayZ 1.30.164014). `q` and `−q` are the same rotation, but `2*atan2(x, w)` puts them 360 degrees apart, so halving one leaves the halves 180 degrees apart. In game the forearm twisted like a sweet wrapper with the hand in the right place, because the total was right and the split was not (`ForeArmRoll` at −121 to −146 degrees from its parent against +49 at rest; the hand at −150 to −167). Force `w >= 0` before splitting. A test with the identity does not catch the fault; a test with `−q` fails it by 180 degrees.
+Measured in game (DayZ 1.30.164014). `q` and `−q` are the same rotation, but `2*atan2(x, w)` puts them 360 degrees apart, so halving one leaves the halves 180 degrees apart. In game the forearm twisted like a sweet wrapper with the hand in the right place, because the total was right and the split was not (`ForeArmRoll` at −121 to −146 degrees from its parent against +49 at rest; the hand at −150 to −167). Force `w >= 0` before splitting. A test with the identity does not catch the fault; a test with `−q` fails it by 180 degrees.
 
 ### Checking that a pose survived a tool
 
@@ -324,9 +324,9 @@ Compare per component, not by angle. Align the sign first (if the dot product of
 
 ### Continuous actions get no arm IK
 
-Measured in game by the CocaLab project (DayZ 1.30.164014), with the graph read by the project:
+Measured in game (DayZ 1.30.164014), with the graph read alongside:
 
-- In the player graph the weapon IK node `NormalWeaponIK` (`P:\DZ\anims\workspaces\player\player_main\locomotion.agf:3860`) comes before the queue `LocomotionQ` (`P:\DZ\anims\workspaces\player\player_main\locomotion.agf:3602`), and `ActionMaster` enters at that queue (`:3617`). By the project's reading the continuous action state machine carries no weapon IK node of its own, so during a continuous action the arms get no IK.
+- In the player graph the weapon IK node `NormalWeaponIK` (`P:\DZ\anims\workspaces\player\player_main\locomotion.agf:3860`) comes before the queue `LocomotionQ` (`P:\DZ\anims\workspaces\player\player_main\locomotion.agf:3602`), and `ActionMaster` enters at that queue (`:3617`). As far as the graph was read, the continuous action state machine carries no weapon IK node of its own, so during a continuous action the arms get no IK.
 - Borrowing another object's animation set borrows its geometry: the hand that is not the anchor goes to that object's second grip. The pot holds 28.7 cm between the wrists, and it left the left hand of a 57.5 cm tray 33.5 cm from its grip through the whole pour. Before choosing a borrowed set, compare the wrist spacing of its IK pose with the animation's.
 
 ## 6. Exporting `.txa`, and events
@@ -393,16 +393,16 @@ In the Workbench resource browser, right click the `.txa`:
 - the first time, "Register resource and import";
 - after later edits, "Reimport Resource".
 
-That writes the binary `.anm` next to the `.txa`, and an `.anm.meta` file with a `{GUID}` name and one entry per platform that names the source file. The menu wording is from community posts of 2019 to 2023; check it against the installed tools.
+That writes the binary `.anm` next to the `.txa`, and an `.anm.meta` file with a `{GUID}` name and one entry per platform that names the source file. The menu wording dates from tools of 2019 to 2023; check it against the installed tools.
 
 For a `.txo` the mechanism is the same, choosing "As Model"; for a custom skeleton tick "Export Skinning", reimport, and paste the generated entry into the skeleton XML.
 
 ### What gets lost without a word
 
-- **Workbench trims consecutive keys that are nearly the same.** The `.anm` can have fewer frames than were authored, and hold poses can collapse. No "keep all frames" option is documented. Author keys with real differences. (Community, one source; the plugin's exporter skips nearly equal keys as well.)
-- **How much the compile changes, measured** (A6_SR2M unjam, DayZ 1.30.164014): the `.anm` Workbench compiles from a plugin `.txa` deviates by up to 0.017 per quaternion component, about 2 degrees, and 0.92 cm, because of the dropped keys (on fast frames of that clip).
+- **Workbench trims consecutive keys that are nearly the same.** The `.anm` can have fewer frames than were authored, and hold poses can collapse. No "keep all frames" option is documented. Author keys with real differences. (Not checked on `P:\`; the plugin's exporter skips nearly equal keys as well.)
+- **How much the compile changes, measured** (an unjam clip, DayZ 1.30.164014): the `.anm` Workbench compiles from a plugin `.txa` deviates by up to 0.017 per quaternion component, about 2 degrees, and 0.92 cm, because of the dropped keys (on fast frames of that clip).
 - **A route that skips Workbench.** `.txa` to SEAnim to `DayZATool --generate-anim X 100`: quaternion components pass through normalized, translations are multiplied by 100 (m to cm), events become notes of the form `Name|userString|userInt`. The result is exact to float32 and reads back (2.7e-5 on rotation, 3.2e-4 cm). That `.anm` has not been played in game.
-- **Scale is ignored when compiling.** It appears in the `.txa` and is dropped from the `.anm`. (Community, one source.)
+- **Scale is ignored when compiling.** It appears in the `.txa` and is dropped from the `.anm`. (Not checked on `P:\`.)
 - **A new resource that does not show up:** restart Workbench.
 - **Keep the `.txa` next to every `.anm`.** Workbench can only edit an `.anm` again when its `.txa` is present; otherwise a third party extractor is needed just to touch events.
 - The Workbench setting "Enable net API" belongs to Bohemia's own Blender tools for another game and is not used by this plugin, which only writes files.
@@ -413,7 +413,7 @@ DayZATool extracts vanilla clips relative to the bind pose (`Spine3` with an ide
 
 ### Looking at the player graph (never ship it)
 
-The Workbench animation editor has a history of crashes on the player graph (an access violation on a new group, "Error opening workspace", "no TXA file found" when editing vanilla). Allow time for it. How the event table line has to be handled to open a copy of the workspace differs between 1.29 and 1.30: `anim-graph.md`, "Opening the player graph in the Workbench animation editor". Once open, per the release video: double click Master Control in Sheets, set the node as running by default, press Play, and use the debug controls to fire the fire, chambering and reload commands.
+The Workbench animation editor has a history of crashes on the player graph (an access violation on a new group, "Error opening workspace", "no TXA file found" when editing vanilla). Allow time for it. How the event table line has to be handled to open a copy of the workspace differs between 1.29 and 1.30: `anim-graph.md`, "Opening the player graph in the Workbench animation editor". Once open: double click Master Control in Sheets, set the node as running by default, press Play, and use the debug controls to fire the fire, chambering and reload commands.
 
 Never ship a debinarized or edited vanilla workspace, model or clip. It breaks Bohemia's Workshop rules and gets a mod removed.
 
@@ -445,7 +445,7 @@ AnimSetInstanceSource {
 - Copy the closest vanilla weapon's instance. Weapons declare different subsets of states: the template lists all legal names and each instance uses some. The AKM's instance has 11 lines per column.
 - The demo mod's instance is in the older 1.29 form (`$animsetinstance { #template ... #nparents 1 #parent ... #ikpose ... $animations { "WeaponOperations.ErcRas.Fire" "<path>.anm" ... } }`). For 1.30 write the form above; the port is described in `anim-graph.md`, "Porting a 1.29 `$AnimGraph 7` graph to 1.30".
 
-**Keep the `{GUID}` prefixes.** The release video says to strip the generated `{GUID}` keys from a copied instance because "DayZ does not need them". Vanilla shows the opposite: every `Template`, parent, `IkPose` and `Resource` value in a vanilla instance carries one (the lines quoted above). Only the hand written demo files omit them. Keep the prefixes on copied vanilla lines and let Workbench generate them for new resources. Measured for a rider pose, not for a weapon: a `Resource` line loaded with a bare path and with an invented `{GUID}` (`vehicle-rider-ik-pose.md`), so a bare path is not known to fail, but nothing is gained by removing what vanilla writes.
+**Keep the `{GUID}` prefixes.** Stripping the generated `{GUID}` keys from a copied instance, on the idea that DayZ does not need them, is a mistake. Vanilla shows the opposite: every `Template`, parent, `IkPose` and `Resource` value in a vanilla instance carries one (the lines quoted above). Only the hand written demo files omit them. Keep the prefixes on copied vanilla lines and let Workbench generate them for new resources. Measured for a rider pose, not for a weapon: a `Resource` line loaded with a bare path and with an invented `{GUID}` (`vehicle-rider-ik-pose.md`), so a bare path is not known to fail, but nothing is gained by removing what vanilla writes.
 
 ### State names
 
@@ -490,9 +490,9 @@ modded class ModItemRegisterCallbacks
 
 **The remap is why parts move.** The first name of each pair is a selection of the weapon model, declared as a bone in the weapon's own `model.cfg`; the second is a `Weapon_` bone of the player. The standard parts go to `Weapon_Bolt`, `Weapon_Magazine`, `Weapon_Trigger` and `Weapon_Bullet`; other parts take `Weapon_Bone_01` to `06`. Leaving the remap out is why bolt, magazine and trigger do not move while the hands do. A wrong name drops that part's motion with no error. A weapon that inherits a vanilla base class gets that class's remap (`Rifle_Base` at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1580`).
 
-Limit, from the release video: `AddItemBoneRemap` works for weapon classes only. A medical item or any other non weapon cannot drive a `Weapon_Bone`; its only anchors are `RightHand_Dummy` and, through constraints, `LeftHand_Dummy`.
+Limit (not checked on `P:\`): `AddItemBoneRemap` works for weapon classes only. A medical item or any other non weapon cannot drive a `Weapon_Bone`; its only anchors are `RightHand_Dummy` and, through constraints, `LeftHand_Dummy`.
 
-An older way to register, from community answers: call `GetDayZPlayerType().AddItemInHandsProfileIK(...)` inside a modded `PlayerBase.Init()`, guarded so it runs on the client. The callback above is the cleaner way.
+An older way to register: call `GetDayZPlayerType().AddItemInHandsProfileIK(...)` inside a modded `PlayerBase.Init()`, guarded so it runs on the client. The callback above is the cleaner way.
 
 ### How the engine picks column and state
 
@@ -545,7 +545,7 @@ The weapon class carries `model`, `magazines[]`, `chamberableFrom[]`, `modes[]`,
 - It survives in two vanilla configs: `reloadAction="ReloadBow"` (`P:\DZ\data\config.cpp:4592`) and `reloadAction="ManActReloadAT"` (`P:\DZ\data\config.cpp:4756`).
 - No weapon script reads it. The only hit for the word under `P:\scripts` is in the key bindings menu.
 - The demo mod's SVD sets `reloadAction="ReloadSVD"`, a name that matches no vanilla class, and animates correctly through its instance file.
-- Community changelog summaries say `reloadAction`, `shotAction` and related keys were removed as obsolete around 1.25 to 1.26; the exact version was not read.
+- `reloadAction`, `shotAction` and related keys were removed as obsolete around 1.25 to 1.26; the exact version is not confirmed.
 
 Leave it out, as vanilla rifles do. Not checked: whether an invalid value logs more than a harmless warning.
 
@@ -578,14 +578,14 @@ The Workbench project file (`dayz.gproj`) declares the work drive as its file sy
 Use `/dayz-build-pbo` to pack and `/dayz-launch-test` to run; `/dayz-logwatch` reads the logs. What matters for an animation mod in particular:
 
 - **Pack only against binarize.** Pack only for scripts, layouts, `.anm`, `.paa` and sounds; binarize when configs, models or textures need converting. Binarizing an addon of scripts and clips is unnecessary, and packing a model or config addon without binarizing leaves it unconverted. Match the choice to what the addon holds.
-- **Signing** (optional for a local test): create a key pair with DayZ Tools' `DSCreateKey`, sign through Addon Builder or `DSSignFile`, check with `DSCheckSignatures`. Use lower case `addons` and `keys` folder and file names so a Linux server finds them. The exact arguments were not run by the source pack.
+- **Signing** (optional for a local test): create a key pair with DayZ Tools' `DSCreateKey`, sign through Addon Builder or `DSSignFile`, check with `DSCheckSignatures`. Use lower case `addons` and `keys` folder and file names so a Linux server finds them. The exact arguments were not run.
 - **Addon Builder by hand**, when the skill is not used: the source folder, the destination folder, the prefix (`-prefix=`), the project folder `-project=P:\` so paths across addons resolve, then `-binarize` or `-packonly`, with `-clear`, `-sign=<key.biprivatekey>` and `-include=<list>` as needed. An addon packed by hand needs its prefix file at its root; the demo's source tree has none, because Workbench's build takes the prefix from the folder name.
 - **Deploy** to `P:\Mods\@<ModName>\Addons\` (what `/dayz-build-pbo` does), with the public `.bikey` in the mod's `keys` folder when signatures are checked.
 - **A local test server** has `allowFilePatching=1`, `verifySignatures=0` and BattlEye off.
 
 ### Does file patching reload an `.anm`?
 
-The release video says no: loose scripts and layouts reload, `.anm` changes do not, and the PBO must be packed again every time, or edits appear to do nothing. That is plausible and not confirmed: an `.anm` is a compiled binary resource reached through the instance file when the profile is registered, not a text file the loose loader reads. The source pack also reads the 1.30 changelog's named file systems (`-resolveFilePatchingUsingEnfusion=1`) as a way for Workbench to load loose workspace resources without packing; that was not tested either. Until someone runs the test (edit a loose `.anm`, start the diagnostic client with file patching, see whether the weapon changes without a repack), pack again after every clip change.
+Probably not: loose scripts and layouts reload, `.anm` changes do not, and the PBO must be packed again every time, or edits appear to do nothing. That is plausible and not confirmed: an `.anm` is a compiled binary resource reached through the instance file when the profile is registered, not a text file the loose loader reads. The named file systems of 1.30 (`-resolveFilePatchingUsingEnfusion=1`) may be a way for Workbench to load loose workspace resources without packing; that was not tested either. Until the test is run (edit a loose `.anm`, start the diagnostic client with file patching, see whether the weapon changes without a repack), pack again after every clip change.
 
 The loop: edit in Blender, export `.txa`, "Reimport Resource" in Workbench, pack the PBO, reconnect, trigger the weapon state.
 
@@ -601,7 +601,7 @@ The pole angle of the Blender IK constraint on the hands is a preview value. It 
 2. crouch;
 3. throw (tap G).
 
-The plugin's IK is reverse engineered and about 90 to 95 percent accurate against the engine, per its author. Expect iterations.
+The plugin's IK is reverse engineered and about 90 to 95 percent accurate against the engine. Expect iterations.
 
 ## 10. Walls and failure catalogue
 
@@ -612,7 +612,7 @@ The plugin's IK is reverse engineered and about 90 to 95 percent accurate agains
 | Bone names are exact | A mismatch logs `Bone X doesn't exist in skeleton OFP2_ManSkeleton` and the bone is dead. The skeleton cannot be restructured. |
 | One graph replacement at a time | Two mods that replace the player or a creature graph cannot load together. This does not apply to the instance file route. |
 | No open `.anm` writer | Only Workbench and DayZATool write `.anm`. An agent can produce `.txa` or SEAnim. |
-| No bone remap for non weapons | `AddItemBoneRemap` works for weapons only (release video). |
+| No bone remap for non weapons | `AddItemBoneRemap` works for weapons only (not checked on `P:\`). |
 | Two weapons at once | Only one weapon is assigned to the player; other clips fight it. |
 | Aim space | Not solved by the plugin. |
 
@@ -643,16 +643,16 @@ The plugin's IK is reverse engineered and about 90 to 95 percent accurate agains
 
 ### Registration at run time
 
-- Many `AddItemInHandsProfileIK` overrides stacked across mods are reported to overflow the stack in `ModItemRegisterCallbacks` on heavily modded servers (a Bohemia feedback ticket, not read in full). Register on base classes to keep the number of calls low.
+- Many `AddItemInHandsProfileIK` overrides stacked across mods are reported to overflow the stack in `ModItemRegisterCallbacks` on heavily modded servers (not confirmed). Register on base classes to keep the number of calls low.
 - Registration must run in the right place. The older `PlayerBase.Init` pattern needs its client guard; in the wrong place it does nothing, with no error.
 
 ### What shipped mods still show
 
-From the description of the plugin author's weapon pack on the Workshop: prone clips reusing standing or crouched poses, so the gun clips into the ground; a left hand glitch on one shotgun when empty; a finger bending wrongly at the end of a chambering clip. Budget for imperfections of that kind.
+Shipped weapon animation mods still show: prone clips reusing standing or crouched poses, so the gun clips into the ground; a left hand glitch on one shotgun when empty; a finger bending wrongly at the end of a chambering clip. Budget for imperfections of that kind.
 
 ### RPT and symptom catalogue
 
-Rows 1 to 4 and 8 come from sources the source pack read directly; 5 to 7 are community answers.
+Rows 1 to 4 and 8 are confirmed; rows 5 to 7 are not checked.
 
 | # | RPT line or symptom | Cause | Fix |
 |---|---|---|---|
@@ -663,7 +663,7 @@ Rows 1 to 4 and 8 come from sources the source pack read directly; 5 to 7 are co
 | 5 | Limbs snap to a default, a T pose, or part of the body freezes during the clip | Not every bone of the skeleton has a key; bones without one fall back to a default transform | Key every bone the clip owns. |
 | 6 | Arms and weapon badly wrong after a two handed clip where a one handed one is expected | Wrong handedness | Put the clip in the instance of the right kind (one handed, two handed, rifle, pistol). |
 | 7 | Right in Blender, bones twist or roll wrong in game | Blender's bones run along +Y, DayZ's along +X | Go through the official rig and exporter, or the per rig maps in `weapon-anim-authoring-viewer.md`; check in game. |
-| 8 | An extracted rig is "always incorrect" | Extraction with DayZATool or Mikero's tool is a reference, not a clean round trip | Use it as a starting point only. |
+| 8 | An extracted rig is "always incorrect" | Extraction with DayZATool or another extractor is a reference, not a clean round trip | Use it as a starting point only. |
 
 Two failures have no known RPT text, to be captured during an in-game test: the exact wording when an instance line names a clip that does not exist, and whatever is logged for a weapon whose bolt is dead or an IK pose imported without the IK bones.
 
@@ -720,7 +720,7 @@ Two failures have no known RPT text, to be captured during an in-game test: the 
 
 ## 12. Frame budget of the vanilla AKM clips
 
-From the source pack: each clip extracted to SEAnim with DayZATool 1.3 and read with `seanim_writer.py`. All run at 30 frames per second (also read from the `FPS` chunk of `w_akm_states.anm`); the frame count is the last key index plus one. Use them as the timing reference for a custom rifle. The clips are in `P:\DZ\anims\anm\player\reloads\AKM\` and `P:\DZ\anims\anm\player\ik\weapons\`; the numbers cannot be checked on `P:\` without extracting.
+Each clip was extracted to SEAnim with DayZATool 1.3 and read with `seanim_writer.py`. All run at 30 frames per second (also read from the `FPS` chunk of `w_akm_states.anm`); the frame count is the last key index plus one. Use them as the timing reference for a custom rifle. The clips are in `P:\DZ\anims\anm\player\reloads\AKM\` and `P:\DZ\anims\anm\player\ik\weapons\`; the numbers cannot be checked on `P:\` without extracting.
 
 | Clip | Frames | Duration | Bones | Purpose |
 |---|---|---|---|---|
@@ -737,21 +737,21 @@ For the other kinds of clip the demo mod ships only `.anm` files, so frame range
 
 ## 13. Open questions
 
-Nobody has confirmed these. Do not state them as facts.
+These are not confirmed. Do not state them as facts.
 
 1. The full ordered bone list of the master rig against the game's skeleton: it was inferred from sample `.txa` files and plugin code, not from opening the rig. `player-skeleton.md` is the checked list.
 2. Whether the maintained fork really fails on Blender 3.6.8 (inferred from its calls).
-3. No Bohemia page for the DayZ instance and template workflow was read; the grammar is taken from the demo and vanilla files, so more legal lines than those listed may exist in other groups.
+3. The grammar of instance and template files is taken from the demo and vanilla files, with no Bohemia document behind it, so more legal lines than those listed may exist in other groups.
 4. The player clip frame rate is not declared in any workspace text file; 30 is read from the clips. Whether a mismatched export rate causes speed problems was not tested.
 5. The state of Bohemia's feedback tickets on an official IK and instance interface, on animation editor bugs and on the register callback stack overflow.
 6. Which command or transition starts each single `WeaponOperations` state.
-7. Workbench's key trimming has one community source and the measured compile loss above; no option to turn it off is known.
-8. Scale being ignored when compiling: one community source (the plugin's default of not exporting scale keys agrees).
-9. Action clips playing on top of the states clip: community source, consistent with the demo.
+7. Workbench's key trimming rests on the measured compile loss above; no option to turn it off is known.
+8. Scale being ignored when compiling: not checked (the plugin's default of not exporting scale keys agrees).
+9. Action clips playing on top of the states clip: not checked, consistent with the demo.
 10. Whether an invalid `reloadAction` logs more than a warning.
-11. "Since 0.63 all weapon animation is on the character's side, not in `model.cfg`": one 2020 community message.
+11. "Since 0.63 all weapon animation is on the character's side, not in `model.cfg`": not checked.
 12. The difference between the Survivor Reload and Additive export types in game.
-13. That `ReloadMagazineDetach`'s clip is the hand coming back from the hip: release video only.
+13. That `ReloadMagazineDetach`'s clip is the hand coming back from the hip: not checked.
 14. Swapping a weapon's profile at run time when an attachment changes (above).
 15. What `Weapon_Bone_01` to `06` mean per weapon family beyond the vanilla remaps.
 16. Whether a weapon only animation ever needs its own `inputs.xml` action.

@@ -2,7 +2,7 @@
 
 The brace syntax of a DayZ `.layout` file, every widget class and attribute seen in shipped layouts, the script API that goes with them, copyable layout patterns, and the arithmetic that turns a layout into screen rectangles.
 
-Engine facts cite the vanilla file on `P:\`; those lines were re-read on a `P:\` holding 1.30. Counts over layout corpora, in-game measurements and patterns taken from third-party mods (Dabs Framework, Expansion, TraderPlus, LBmaster, COT) are the source author's and are not checked on `P:\`. The dated "corrected" notes are kept on purpose: they record claims that were measured and withdrawn, so nobody reintroduces them.
+Engine facts cite the vanilla file on `P:\`; those lines were re-read on a `P:\` holding 1.30. Counts over layout corpora, in-game measurements and third-party mod behaviour (Dabs Framework, DayZ Expansion, Community Online Tools and other mods) are not checked on `P:\`. The dated "corrected" notes are kept on purpose: they record claims that were measured and withdrawn, so nobody reintroduces them.
 
 ## Format Overview
 
@@ -21,28 +21,22 @@ The grammar above is the common authored shape. Three syntax facts are
 missing from it; a new parser or tool that only implements the overview
 will mis-read real files.
 
-### A file may have more than one top-level widget (B9)
+### A file may have more than one top-level widget
 
 A `.layout` is a **sequence** of widget declarations, not a single root.
 A parser that calls `parse_widget()` once and stops drops every sibling
-after the first — silent degradation, no exception. That was the v1
-renderer (`parse_layout` did one `parse_widget()`). The replacement
-collects roots until EOF (`LayoutDoc.roots`).
-
-How this was established: entry B9 of the source author's UI research bug
-ledger (2026-05-14, not in this repo); his phase 1 parser review of the same
-day confirmed the loop-until-EOF fix.
-The published pack parser still loops
-(`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`, `Parser.parse_layout`) and
+after the first — silent degradation, no exception. The parser in this
+repo collects roots until EOF (`LayoutDoc.roots`;
+`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`, `Parser.parse_layout`) and
 its fixture asserts `rootCount == 2`
 (`scripts/tools/dayz-ui-lab/tests/test_parser.py`,
 `test_multiroot_bom_block_comments_and_float_edges`).
 
-This is a **parser / file-format** contract. The in-game LF_UIProbe
-fixtures are each a single root — `CreateWidgets` on a multi-root file
+This is a **parser / file-format** contract. The in-game probe fixtures
+(`scripts/tools/dayz-ui-lab/probe/LF_UIProbe/`) are each a single root — `CreateWidgets` on a multi-root file
 was not probed.
 
-### Line continuation: `\` + newline inserts exactly one LF (B20)
+### Line continuation: `\` + newline inserts exactly one LF
 
 Measured **in-game**, DayZDiag `1.29.163451`, 2026-07-28.
 
@@ -62,9 +56,8 @@ concatenation would be 9. The same length and the same value come back
 from an LF source and from a CRLF source: the engine normalizes the
 source EOL before the join.
 
-Primary evidence: an RPT segment kept in the source author's research notes
-(not in this repo), the two `LF_UI_PROBE_RESULT` lines between `[LF_UI_PROBE_BEGIN]` and
-`[LF_UI_PROBE_END]`:
+Evidence: the two `LF_UI_PROBE_RESULT` lines the probe wrote to the RPT between
+`[LF_UI_PROBE_BEGIN]` and `[LF_UI_PROBE_END]` (the RPT itself is not kept in this repo):
 
 - `case=continuation-lf|status=loaded|len=10|value=<Alpha` / `Beta>`
 - `case=continuation-crlf|status=loaded|len=10|value=<Alpha` / `Beta>`
@@ -77,14 +70,14 @@ lone LF nor a lone CR, so a literal CR in the string would have shown
 up as a bare CR and a literal CRLF would have been `len=11`. The
 logical value is therefore one LF, identical for both sources.
 
-The published parser implements this join
+The parser implements this join
 (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`, `_scan_continuation`). A
 parser that treats `\` as an unexpected character cannot read the
-TraderX tooltip layouts that use the form (ledger B20:
-`BuyTooltip.layout`, `CustomizeTooltip.layout`, `SellTooltip.layout`,
-`testTooltip.layout`).
+TraderX tooltip layouts that use the form (`BuyTooltip.layout`,
+`CustomizeTooltip.layout`, `SellTooltip.layout`, `testTooltip.layout`;
+third-party mod files, not vanilla).
 
-### Block comments and leading/trailing-dot floats (B12)
+### Block comments and leading/trailing-dot floats
 
 Gotcha 8 below documents `//` line comments. That is not the whole
 lexer. A tokenizer that only matches `//` and `-?\d+\.\d+` mis-reads:
@@ -92,17 +85,15 @@ lexer. A tokenizer that only matches `//` and `-?\d+\.\d+` mis-reads:
 - block comments `/* … */`
 - floats with no digit before or after the point: `.5`, `1.`
 
-The published tokenizer accepts both (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`,
-`NUMBER_RE` and the `/*` branch in `tokenize`). Phase-1 tests cover them
+The tokenizer accepts both (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`,
+`NUMBER_RE` and the `/*` branch in `tokenize`). Its tests cover them
 (`scripts/tools/dayz-ui-lab/tests/test_parser.py`,
-`test_multiroot_bom_block_comments_and_float_edges`). A pack fixture
-already authors a leading-dot float:
+`test_multiroot_bom_block_comments_and_float_edges`). A validator fixture
+already uses a leading-dot float:
 `scripts/tools/dayz-script-validator/tests/fixtures/layout_braces/ok_inline_widget.layout`
 (`size .5 -0.5`).
 
-How this was established: entry B12 of the same bug ledger (2026-05-14) — the v1
-regex could not tokenize these forms. This is **offline syntax**, not
-an in-game measurement.
+This is **offline syntax**, not an in-game measurement.
 
 ### Widget names: in the header, or a `Name` line
 
@@ -127,7 +118,7 @@ The other vanilla layouts this skill cites are the same files on 1.30.164014 and
 on 1.29 where 1.29 has them (it has neither `action_info_spacer.layout` nor
 `SimpleIconTemplate.layout`).
 
-The pack parser takes the token after the class as the name, so on a layout in the second form it
+The parser in `scripts/tools/dayz-ui-lab` takes the token after the class as the name, so on a layout in the second form it
 reports the ID string, or an empty name, and keeps the real name as a `Name` attribute
 (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`, `Parser.parse_widget`; run on `day_z_hud.layout` of
 both builds on 2026-10-28).
@@ -246,12 +237,12 @@ resolution-independent UI: e.g. `day_z_hud.layout` roots use `halign center_ref`
 background the same way. Misunderstood anchors are a classic source of "looks
 right in the mockup, lands elsewhere in-game".
 
-**Offset sign of `halign right_ref` / `valign bottom_ref` (B5) — closed
+**Offset sign of `halign right_ref` / `valign bottom_ref` — settled
 2026-08-19, read back from the engine.** The offset is **subtracted**: it is a
 distance measured inward from the reference edge, not a displacement added to
-it. The published resolver (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`,
-`resolve_geometry`) had the right form and can drop its `status: "assumed"`;
-the earlier research dossier's `parent_right - width + px` was wrong.
+it. The resolver (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`,
+`resolve_geometry`) uses that form; the additive form
+`parent_right - width + px` is wrong.
 
 Measured with `ui_tree` over `HudFrameWidget` on a live client (DayZ
 1.29.163709, 1920x1080), comparing each anchored widget's drawn edge against
@@ -291,12 +282,12 @@ clipchildren 0|1           // 1=children clipped to parent bounds (overflow hidd
 **Critical**: `ignorepointer 1` on all background ImageWidgets.
 Without it, backgrounds steal mouse events from interactive children.
 
-**Tooling trap (B1 / B17), not a layout-semantics change.** `visible 0`
+**Tooling trap, not a layout-semantics change.** `visible 0`
 is a legal authored value (hidden). In Python, `int(attr(...) or 1)`
-turns that 0 into 1 because 0 is falsy — the v1 renderer showed every
-hidden widget (bug ledger entries B1 and B17, 2026-05-14). Any reader of integer flags (`visible`, and the same
+turns that 0 into 1 because 0 is falsy — a renderer written that way shows every
+hidden widget. Any reader of integer flags (`visible`, and the same
 pattern on any other 0-is-valid attribute) must use an explicit
-missing-value sentinel, not `x or default`. The published parser's
+missing-value sentinel, not `x or default`. The parser's
 `attr_int` does this (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`).
 
 ### Visual Properties
@@ -404,7 +395,7 @@ Widget found = root.FindAnyWidget("WidgetName");
 
 // Find by path. The vanilla comment writes the path with dots:
 // FindWidget("widget1.widget2.widget3.mywidget")  (P:\scripts\1_core\proto\enwidgets.c:168)
-// The source of this file wrote it with slashes ("Parent/Child/Grandchild"); neither form is tested in game here.
+// A slash form ("Parent/Child/Grandchild") is also seen in mod code; neither form is tested in game here.
 Widget found2 = root.FindWidget("Parent.Child.Grandchild");
 
 // Find by integer ID
@@ -727,17 +718,15 @@ ImageWidgetClass ClickBlocker {
 8. **Comments are // style** (C++ line comments), not `<!-- -->` XML comments
 9. **No semicolons** after property values (unlike config.cpp)
 10. **Inline format is valid** but hard to verify: `ImageWidgetClass Bg { position 0 0 size 1 1 ... { } }`
-    **Parser contract (F1, fixed in the pack parser).** Grouping
+    **Parser contract.** Grouping
     values by physical line collapsed that example into a single attribute
     `position: [0, 0, "size", 1, 1, "stretch", 1, "ignorepointer", 1]`.
     Grouping by key arity (`position` / `size` take two numbers; flags
     take one) keeps `position`, `size`, `stretch` and `ignorepointer`
-    apart. Finding F1 of the source author's phase 1 parser review
-    (2026-05-14) described this against the v2 parser. The
-    published pack parser used to group by `peek().line == line`
+    apart. The parser in this repo used to group by `peek().line == line`
     (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`, `Parser.parse_values`) and,
     on that exact input, emitted only `position` with the collapsed
-    list (reproduced 2026-08-19 against this tree, then fixed the same
+    list (reproduced 2026-08-19, then fixed the same
     day). It now consumes `ATTRIBUTE_ARITY` tokens per key, which
     fixes the 131 attributes that table lists and no others: a key absent
     from it still falls back to the physical line, so two unknown keys
@@ -747,17 +736,17 @@ ImageWidgetClass ClickBlocker {
     `P:\scripts\1_core\proto\enwidgets.c:128` belongs to `SetFlags`, not `SetSort` at `:130`)*. `SetFlags` adds and
     `ClearFlags` substracts; `SetSort` replaces. Layout-side z-order = the `priority` attribute.
 12. **`GetPos` returns relative-to-parent**, `GetScreenPos` returns absolute — critical for drag
-13. **JSON file > 64KB causes truncation** in DayZ file I/O (BI tracker T148095). Split large data across multiple files or compress.
+13. **JSON file > 64KB causes truncation** in DayZ file I/O (not checked on `P:\`). Split large data across multiple files or compress.
 14. **ImageSets** (`set:dayz_gui image:icon_name`) only work with `LoadImageFile` on ImageWidget or inline in RichTextWidget — not in layout `color` property.
 
 ---
 
-## Production Patterns — Extracted from Popular Mods
+## Production Patterns
 
-Patterns used by Expansion Market, TraderPlus, LBmaster, COT/VPP, and
-other production DayZ mods with polished UIs.
+Patterns common in shipped DayZ mods with polished UIs. They are mod
+practice, not vanilla behaviour, and are not checked on `P:\`.
 
-### Pattern: Imageset Icons (Expansion, LBmaster, Vanilla)
+### Pattern: Imageset Icons
 
 DayZ ships with built-in icon imagesets. No .edds needed.
 
@@ -782,9 +771,9 @@ if (rtw)
 Common vanilla imagesets: `dayz_gui`, `dayz_inventory`, `dayz_crosshairs`.
 Custom imagesets can be registered via `config.cpp` → `CfgMods` → `defs` → `imageSets`.
 
-### Pattern: Tabbed Category Navigation (TraderPlus, Expansion Market)
+### Pattern: Tabbed Category Navigation
 
-Both TraderPlus and Expansion use tab bars for item categories.
+Trader and market menus use tab bars for item categories.
 Pattern: ButtonWidget per tab → shared content panel → swap visibility.
 
 ```
@@ -820,7 +809,7 @@ void SelectTab(int idx)
 }
 ```
 
-### Pattern: Scrollable Item List with Dynamic Rows (TraderPlus, Expansion)
+### Pattern: Scrollable Item List with Dynamic Rows
 
 ```
 // Layout structure:
@@ -863,10 +852,10 @@ void PopulateItems(array<ItemData> items)
 ```
 
 **Performance note**: For lists > 50 items, consider virtual scrolling —
-only create visible rows + buffer, recycle on scroll. TraderPlus V1 creates
-all rows upfront which causes lag on servers with 1000+ items.
+only create visible rows + buffer, recycle on scroll. Creating
+all rows upfront causes lag on servers with 1000+ items.
 
-### Pattern: Search/Filter Bar (TraderPlus, Expansion Market)
+### Pattern: Search/Filter Bar
 
 ```
 // EditBox for search input
@@ -902,7 +891,7 @@ void OnSearchChanged()
 }
 ```
 
-### Pattern: Confirmation Dialog (TraderPlus, Expansion, LBmaster)
+### Pattern: Confirmation Dialog
 
 Two-phase button: first press → "Confirm?" state + timer → second press → execute.
 
@@ -947,7 +936,7 @@ if (m_ConfirmActive)
 }
 ```
 
-### Pattern: Status Feedback Toast (TraderPlus, LBmaster)
+### Pattern: Status Feedback Toast
 
 Temporary status message that auto-fades.
 
@@ -983,9 +972,9 @@ if (m_FeedbackTimer > 0.0)
 }
 ```
 
-### Pattern: Server-Configurable UI Colors (Expansion Market)
+### Pattern: Server-Configurable UI Colors
 
-Expansion Market allows server owners to configure menu colors via JSON.
+The DayZ Expansion market menu lets server owners configure menu colors via JSON.
 Pattern: load color config from server settings, apply at menu open.
 
 ```
@@ -1024,9 +1013,9 @@ void ApplyColorScheme(MyMenuColors scheme)
 }
 ```
 
-### Pattern: RTTextureWidget for 3D Item Preview (Expansion Market)
+### Pattern: RTTextureWidget for 3D Item Preview
 
-Expansion Market shows 3D item previews in the UI using RTTextureWidget.
+The DayZ Expansion market menu shows 3D item previews in the UI using RTTextureWidget.
 
 ```
 // In layout:
@@ -1039,13 +1028,13 @@ Expansion Market shows 3D item previews in the UI using RTTextureWidget.
 
 // In script — set up 3D preview
 // Note: requires entity creation for the preview object
-// and camera setup — complex pattern, see Expansion source
-// for full implementation. Key API:
+// and camera setup — complex pattern; the DayZ Expansion market
+// menu is a full implementation. Key API:
 // RTTextureWidget has SetRTTextureWidget() on EntityAI
 // for rendering entity to UI texture.
 ```
 
-### Pattern: HUD Overlay (LBmaster, Expansion Notifications)
+### Pattern: HUD Overlay
 
 For HUD elements that persist across menus:
 
@@ -1064,7 +1053,7 @@ if (m_HudWidget && m_HudWidget.IsVisible())
 }
 ```
 
-### Pattern: Sound Feedback (All polished mods)
+### Pattern: Sound Feedback
 
 ```
 // UI click sound (vanilla)
@@ -1093,7 +1082,7 @@ The engine instantiates it and calls `OnWidgetScriptInit`:
 Layout:
 ```
 EditBoxWidgetClass myInput {
-    scriptclass "LBValidator_Number"
+    scriptclass "MyValidator_Number"
     position 10 10
     size 200 30
     hexactpos 1
@@ -1107,7 +1096,7 @@ EditBoxWidgetClass myInput {
 
 Script:
 ```
-class LBValidator_Number : ScriptedWidgetEventHandler {
+class MyValidator_Number : ScriptedWidgetEventHandler {
     Widget root;
 
     void OnWidgetScriptInit(Widget w) {
@@ -1130,7 +1119,7 @@ from the layout's ScriptParamsClass block:
 
 Script:
 ```
-class LBGapHandler : ScriptedWidgetEventHandler {
+class MyGapHandler : ScriptedWidgetEventHandler {
     reference int gapHorizontal;    // populated from layout
     reference int gapVertical;      // populated from layout
     Widget root;
@@ -1146,7 +1135,7 @@ class LBGapHandler : ScriptedWidgetEventHandler {
 Layout:
 ```
 PanelWidgetClass myPanel {
-    scriptclass "LBGapHandler"
+    scriptclass "MyGapHandler"
     position 0 0
     size 1 1
     hexactpos 1
@@ -1182,7 +1171,7 @@ The first `{ }` is for child widgets, the second `{ ScriptParamsClass { ... } }`
 Reference a registered style in layout:
 ```
 PanelWidgetClass myBorder {
-    style LB_Clean_outline
+    style MyMod_Clean_outline
     color 1 1 1 1
     ...
 }
@@ -1287,7 +1276,7 @@ over the whole corpus (vanilla + third-party + ours):
 
 Do not collapse these with `layout-empirical-corpus.md` section 2 (2026-05-13, 300
 layouts): that sample lists `text_proportion` 437 and `wrap` 505. Same
-attributes, smaller population — resolved 2026-08-19 by re-counting the full
+attributes, smaller population — settled 2026-08-19 by re-counting the full
 corpus with two independent instruments, which agree that `wrap` hosts are text
 widgets and that **no spacer widget carries it**; section 2's "WrapSpacer wrap mode"
 label was wrong and is corrected there. Restricting the new census to the `gui\`
@@ -1305,7 +1294,7 @@ Two consequences worth holding on to:
 - **`text_proportion` sizes the text as a fraction of the widget's height.** It
   does not make a long single-line string fit horizontally. Nothing does: the
   only ways out are wrapping onto more lines (needs Multiline/RichText) or
-  capping the string length upstream.
+  capping the string length before it reaches the widget.
 - Vanilla's own dialog text is a `RichTextWidgetClass` combining
   `"exact text" 1` + `"exact text size" 20` + `"size to text h" 1` +
   `"size to text v" 1` + `wrap 1` + `clipchildren 1`

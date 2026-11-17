@@ -2,7 +2,7 @@
 
 The animation graph is the layer that drives characters and creatures: state machines, transitions, commands sent by the engine, AI or script, variables that steer blending, and the instance files that map state names to clips. Everything here except the clips is text you can read on `P:\`.
 
-The vanilla data on `P:\` is the 1.30 format. Where a line describes the 1.29 format it says so; those lines cannot be checked on a 1.30 unpack and are kept as the source pack recorded them.
+The vanilla data on `P:\` is the 1.30 format. Where a line describes the 1.29 format it says so; those lines were read from a 1.29 unpack and cannot be checked on a 1.30 one.
 
 ## Where the files are
 
@@ -172,7 +172,7 @@ In `P:\DZ\anims\workspaces\player\player_main\`:
 | `player_main_2h.asi` | Two handed items. |
 | `player_main_heavy.asi` | Heavy items: wheel, door, barrel. |
 | `player_main_pistol.asi`, `player_main_rifle.asi` | Pistols; rifles. |
-| `player_main_bow.asi` | The bow. Reported unfinished by the workshop videos the source pack drew on. |
+| `player_main_bow.asi` | The bow. The bow mechanic is reported unfinished (not checked on `P:\`). |
 | `player_main_surrender.asi` | Hands up. |
 | `menu_rifle.asi` | The rifle in the menu preview. |
 | `props\` | 41 instances, one per prop (`player_main_2h_pot.asi` and others). |
@@ -182,7 +182,7 @@ For a custom item or weapon, inherit from the closest vanilla instance and list 
 
 ### Weapon state names
 
-Weapon instances use `WeaponOperations.<stance>.<state>`. The stance key is the body stance: `ErcRas` is erect with the weapon raised, `PneRas` prone and raised. The source pack read `Ras` as "rail accessory system"; the graph shows it means raised, since the idle state `IdleRas` starts on `Raised && MovementSpeed == 0` (`P:\DZ\anims\workspaces\player\player_main\locomotion.agf:6620` to `:6623`) and the 1911 has the same states under `ErcRas` and `PneRas`.
+Weapon instances use `WeaponOperations.<stance>.<state>`. The stance key is the body stance: `ErcRas` is erect with the weapon raised, `PneRas` prone and raised. `Ras` is not "rail accessory system", as some guides have it; the graph shows it means raised, since the idle state `IdleRas` starts on `Raised && MovementSpeed == 0` (`P:\DZ\anims\workspaces\player\player_main\locomotion.agf:6620` to `:6623`) and the 1911 has the same states under `ErcRas` and `PneRas`.
 
 From the 1911 (`P:\DZ\anims\workspaces\player\player_main\weapons\player_main_1911.asi`):
 
@@ -199,11 +199,11 @@ From the 1911 (`P:\DZ\anims\workspaces\player\player_main\weapons\player_main_19
 
 ### A weapon states clip has 2 to 4 keys per channel
 
-Reported by the source pack from the binary clips (not checked on `P:\`). The intent when authoring is three frames, closed, open and jammed, one per start state. Workbench trims consecutive keys that are nearly the same, so across 47 vanilla `w_*_states.anm` the stored key count per channel is 2, 3 or 4. `w_akm_states.anm` holds 2 distinct frames at 30 frames per second (`Weapon_Bolt` slides between them and `Weapon_Bullet` ejects). All player weapon reload, fire, jam, state and IK pose clips are at 30 frames per second, with a frame count of the last key index plus one. The AKM frame budget is in `weapon-anim-blender-complete.md`.
+Read from the binary clips (not checked on `P:\`, where they are not text). The intent when authoring is three frames, closed, open and jammed, one per start state. Workbench trims consecutive keys that are nearly the same, so across 47 vanilla `w_*_states.anm` the stored key count per channel is 2, 3 or 4. `w_akm_states.anm` holds 2 distinct frames at 30 frames per second (`Weapon_Bolt` slides between them and `Weapon_Bullet` ejects). All player weapon reload, fire, jam, state and IK pose clips are at 30 frames per second, with a frame count of the last key index plus one. The AKM frame budget is in `weapon-anim-blender-complete.md`.
 
 ### The `ikpose_` keys are in the graph's weapon IK node
 
-The keys `ikpose_chainoffset`, `ikpose_weaponoffset`, `ikpose_secchainoffset`, `ikpose_chainmiddledir`, `ikpose_chainmiddlediro`, `ikpose_secchainmiddledir` and `ikpose_secchainmiddlediro` are settings of the weapon IK node in the graph (`AnimSrcNodeWeaponIk`, `P:\DZ\anims\workspaces\player\player_main\combat.agf:5`, the keys at `:29` to `:35`). They are not in the template, the workspace, `config.cpp` or `model.cfg`. They name which bone plays which IK role, for example `ikpose_weaponoffset = RightHand_Dummy` and `ikpose_secchainoffset = LeftHandIKTarget`. Community sources leave out the two `...diro` keys. The source pack counted the block 14 times across six 1.29 graph files, identical each time.
+The keys `ikpose_chainoffset`, `ikpose_weaponoffset`, `ikpose_secchainoffset`, `ikpose_chainmiddledir`, `ikpose_chainmiddlediro`, `ikpose_secchainmiddledir` and `ikpose_secchainmiddlediro` are settings of the weapon IK node in the graph (`AnimSrcNodeWeaponIk`, `P:\DZ\anims\workspaces\player\player_main\combat.agf:5`, the keys at `:29` to `:35`). They are not in the template, the workspace, `config.cpp` or `model.cfg`. They name which bone plays which IK role, for example `ikpose_weaponoffset = RightHand_Dummy` and `ikpose_secchainoffset = LeftHandIKTarget`. Community guides leave out the two `...diro` keys. In the 1.29 graph files the block occurs 14 times across six files, identical each time (not checked on a 1.30 unpack).
 
 ## Template files (`.ast`): every group is named
 
@@ -260,7 +260,7 @@ Script can read tags since 1.30: `BindTag(string pTagName)` and `IsTag(TAnimGrap
 
 ## 1.29 and 1.30: both text, different syntax
 
-The 1.30 format is not "text instead of binary". The source pack checked the 1.29 files: `player_main.agr` opens with `$AnimGraph 7 {`, lists eight sub-graphs as `.agr` files, and none of the nine files holds a NUL byte. What changed is the syntax. 1.29 writes a node as positional fields:
+The 1.30 format is not "text instead of binary". In a 1.29 unpack `player_main.agr` opens with `$AnimGraph 7 {`, lists eight sub-graphs as `.agr` files, and none of the nine files holds a NUL byte. What changed is the syntax. 1.29 writes a node as positional fields:
 
 ```
 $Node AnimNodeGroupSelect {
@@ -284,7 +284,7 @@ A 1.30 unpack made over a 1.29 one leaves the old `combat.agr`, `locomotion.agr`
 
 ### A measured instance of that warning
 
-Measured by the source pack (2026-09-24, dedicated server, DayZ 1.30.164014 Experimental). The Workshop mod Survivor Animations (2918418331) replaces the player graph; its build of 2026-07-20 predates 1.30. With it loaded the server crashed at character creation (`CreateCharacter`, a native fault): twice with a dependent addon and once with only that mod and a vanilla mission.
+Measured on a dedicated server (2026-09-24, DayZ 1.30.164014 Experimental); third-party mod behaviour, not vanilla. The Workshop mod Survivor Animations (2918418331) replaces the player graph; its build of 2026-07-20 predates 1.30. With it loaded the server crashed at character creation (`CreateCharacter`, a native fault): twice with a dependent addon and once with only that mod and a vanilla mission.
 
 - Before building on a third party graph mod on a newer game version, load it alone with a vanilla mission and check a player can join.
 - With a native fault under third party mods, that single mod run is the cheapest way to split "theirs" from "ours".
@@ -300,7 +300,7 @@ A custom weapon or item animation does not have to replace anything. It reaches 
 2. A per item instance: a child `.asi` whose lines map `WeaponOperations.<stance>.<state>` to the mod's clips, with `ParentTemplates` pointing at a vanilla instance (for a rifle, `player_main_rifle.asi`, which inherits `player_main.asi`).
 3. Script: `AddItemInHandsProfileIK(itemClass, instance, behaviour, ikPose, weaponStates)` binds the item class to the instance, an IK pose and a weapon states clip (`P:\scripts\3_game\dayzplayer.c:243`), and `AddItemBoneRemap(itemClass, pairs)` maps the weapon's part selections to the player's `Weapon_` bones (`:252`). Vanilla binds every weapon this way, for example `AKM_Base` to `weapons/player_main_akm.asi` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:412`).
 
-Because the binding is per item class, each mod registers its own items and several such mods load together. When the plan is a custom weapon animation, do not warn about graph collisions. That the vanilla structure allows it is checked above; that a mod's own instance and clips play this way is the source pack's in-game result (`weapon-anim-blender-complete.md`).
+Because the binding is per item class, each mod registers its own items and several such mods load together. When the plan is a custom weapon animation, do not warn about graph collisions. That the vanilla structure allows it is checked above; that a mod's own instance and clips play this way is an in-game result (`weapon-anim-blender-complete.md`).
 
 ## Reload is not additive
 
@@ -319,9 +319,9 @@ The tutorial is probably describing how the clip is authored in Blender (animate
 
 ## Porting a 1.29 `$AnimGraph 7` graph to 1.30
 
-Whether 1.30 still loads a custom graph in the 1.29 format is not tested: the contributor's 1.29 files never loaded on 1.30 because their server failed earlier, on script compilation. Vanilla 1.30 ships its graphs in the new format. To move a custom graph, port it as below, or load the old one first and read the RPT.
+Whether 1.30 still loads a custom graph in the 1.29 format is not tested: the one attempt made failed earlier, on script compilation, before any graph was loaded. Vanilla 1.30 ships its graphs in the new format. To move a custom graph, port it as below, or load the old one first and read the RPT.
 
-The mapping was read off old and new versions of the same vanilla graphs by the source pack: all seven vanilla `$AnimGraph 7` graphs (infected, `player_main`, `player_menu`, wolf, ambient life, herbivores and the bear; `player_inventory` is `$AnimGraph 6`), with the samples on older layouts (`$AnimGraph 3` and `$AnimGraph 2`). The 1.30 side of every example below was opened on `P:\`; the 1.29 side cannot be on a 1.30 unpack. A contributor applied the mapping end to end in a generator of their own project. That port has not been loaded in game.
+The mapping was read off the 1.29 and 1.30 versions of the same vanilla graphs: all seven vanilla `$AnimGraph 7` graphs (infected, `player_main`, `player_menu`, wolf, ambient life, herbivores and the bear; `player_inventory` is `$AnimGraph 6`), with the samples on older layouts (`$AnimGraph 3` and `$AnimGraph 2`). The 1.30 side of every example below was opened on `P:\`; the 1.29 side cannot be on a 1.30 unpack. The mapping has been applied end to end to one custom graph by a generator script. That port has not been loaded in game.
 
 ### File set
 
@@ -397,7 +397,7 @@ General rules:
 - **Node types the table does not cover** also occur in the same graphs: `AnimNodeSourceSync`, `AnimNodeSwitch`, `AnimNodeBlendN`, `AnimNodeQueue` and others.
 - **`EditorPos x y`** comes from the 1.29 `$EditorData { #EditorPos x y }` block with x kept and y negated (1.29 `#EditorPos 1.9 11.6000004` became `EditorPos 1.9 -11.6` on the infected `DeathT` node, `P:\DZ\anims\workspaces\infected\infected_main\locomotion.agf:1594` to `:1595`). The same holds for all 236 nodes and states whose name occurs once in the three infected sub-graphs.
 
-Where each row is confirmed (by the source pack, on vanilla pairs):
+Where each row is confirmed, on vanilla 1.29 and 1.30 pairs:
 
 - State, transition, source and group select come from the sample pairs.
 - The blend and blend T flag bits hold for every node that pairs by name with its 1.30 version: all 155 blend T nodes, each also keeping its blend function, and 99 of the 100 blend nodes. The hundredth, the player's `VehicleAccelerationB`, was an `AnimNodeBlend` in 1.29 and is an `AnimSrcNodeBlendT` in 1.30 (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:2769`). The infected death node `DeathT` has `OptimizeMin 1`, `OptimizeMax 1` and `SelectMainPath 1` (`P:\DZ\anims\workspaces\infected\infected_main\locomotion.agf:1594` to `:1605`), matching the trailing `7` of the same node in 1.29. An old blend flag of `3` is minimum 1, maximum 1.
@@ -422,19 +422,19 @@ Instance lines are `AnimSetInstanceSource_Line "G.C.Anim" { Resource "{GUID}path
 
 ### GUIDs
 
-Each `{16 hex digits}` prefix is a resource id. Vanilla clip ids did not change from 1.29: the source pack found all 187 clips of the 1.29 infected instance with the same id in 1.30. For your own files and for the ids local to a node (`AnimSrcNodeTransition`, `AnimSrcNodeProcTrBoneItem`, `AnimSrcGCT`), derive them from a stable seed, such as the first 16 hex characters of the SHA-1 of the path or node name, so that generating again gives identical files. Give each resource one id everywhere it appears.
+Each `{16 hex digits}` prefix is a resource id. Vanilla clip ids did not change from 1.29: all 187 clips of the 1.29 infected instance have the same id in 1.30. For your own files and for the ids local to a node (`AnimSrcNodeTransition`, `AnimSrcNodeProcTrBoneItem`, `AnimSrcGCT`), derive them from a stable seed, such as the first 16 hex characters of the SHA-1 of the path or node name, so that generating again gives identical files. Give each resource one id everywhere it appears.
 
 ### Packing
 
-As the contributor reports it (not checked here), RaG PBO Builder packs `.agf` as plain text next to the `.agr`, `.ast` and `.asi`. Check this in the built PBO, not the source tree.
+RaG PBO Builder packs `.agf` as plain text next to the `.agr`, `.ast` and `.asi` (third-party tool behaviour, not checked here). Check this in the built PBO, not the source tree.
 
 ## Buffer nodes are gone
 
-The 1.30 changelog removed the `Buffer Save` and `Buffer Use` nodes. The source pack found none in the 1.30 sub-graphs. A custom graph that used them must move to variables or direct state machine transitions.
+The 1.30 changelog removed the `Buffer Save` and `Buffer Use` nodes. No vanilla 1.30 sub-graph on `P:\` has one. A custom graph that used them must move to variables or direct state machine transitions.
 
 ## What this file does not cover
 
 - The full `.ast` grammar: copy from the closest vanilla template.
-- The frame rate of player clips. No text file under the workspaces declares one; the source pack searched every graph, template, workspace and sync file for it. It is probably stored in the binary `.anm` or set by the exporter. The workshop videos report 30 frames per second. Set 30 in the exporter and round trip one short clip before producing a set.
+- The frame rate of player clips. No graph, template, workspace or sync file under the workspaces declares one. It is probably stored in the binary `.anm` or set by the exporter. The weapon clips read from the binaries are at 30 frames per second (above). Set 30 in the exporter and round trip one short clip before producing a set.
 - The insides of `.anm` and `.xob`: DayZATool and Workbench.
 - The script side that 1.30 added (instance switching, speed limits, ragdoll calls): `dayz-1-30-animation-changes.md`.

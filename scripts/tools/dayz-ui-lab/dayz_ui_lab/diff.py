@@ -222,8 +222,8 @@ def compare_documents(
     #
     # Only the pairwise comparison is guarded. Analysing a single render at a
     # viewport the scenario does not declare stays valid, because the overlay
-    # detectors read that render's own geometry and SC-005 requires composing one
-    # scenario at two resolutions.
+    # detectors read that render's own geometry and composing one scenario at
+    # two resolutions is a supported use.
     if expected["viewport"] != observed["viewport"]:
         raise DiffError(
             "expected and observed renders declare different viewports: "

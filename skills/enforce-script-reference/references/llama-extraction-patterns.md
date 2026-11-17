@@ -1,12 +1,12 @@
-# Llama Mod Extraction Patterns
+# Mod structure, input, RPC and performance patterns
 
-Enforce Script and config patterns read out of the third-party LM_Planes mod (Steam Workshop item 3730564764, by Llama and Itspete-Here). Pass 1 covers `CfgMods`, custom inputs, the `CfgSoundSets` parameters, buildings and performance. Pass 2 covers custom RPC enums, server-authoritative input, broadcast, cleanup hooks, vanilla helpers, the vehicle anim instance and the parent and child mod architecture. These are that mod's patterns, not yet checked on `P:\` unless a line cites a vanilla file. The aviation uses are in the `dayz-aviation` skill.
+Enforce Script and config patterns for structuring a mod and scripting vehicles. The first part covers `CfgMods`, custom inputs, the `CfgSoundSets` parameters, buildings and performance. The second part covers custom RPC enums, server-authoritative input, broadcast, cleanup hooks, vanilla helpers, the vehicle anim instance and the parent and child mod architecture. These are third-party mod patterns, not vanilla code, and are not yet checked on `P:\` unless a line cites a vanilla file. The aviation uses are in the `dayz-aviation` skill.
 
 ---
 
-## Llama Mod Extraction Patterns
+## Config, input, building and performance patterns
 
-General Enforce Script and DayZ patterns from LM_Planes that apply beyond aviation.
+General Enforce Script and DayZ patterns that apply beyond aviation.
 
 ### CfgMods config patterns
 
@@ -37,20 +37,20 @@ class CfgMods {
 ```cpp
 // Root mod (parent): script modules directly under CfgMods.<Mod>
 class CfgMods {
-    class LM_Planes {
+    class MyParentMod {
         ...
-        class gameScriptModule { files[] = {"LM_Planes/scripts/3_Game"}; };
-        class worldScriptModule { files[] = {"LM_Planes/scripts/4_World"}; };
+        class gameScriptModule { files[] = {"MyParentMod/scripts/3_Game"}; };
+        class worldScriptModule { files[] = {"MyParentMod/scripts/4_World"}; };
     };
 };
 
 // Sub-mod (child): wrapped in class defs
 class CfgMods {
-    class LM_Tigermoth {
+    class MyParentMod_FeatureX {
         ...
         class defs {
-            class gameScriptModule { files[] = {"LM_Planes/scripts/3_Game"}; };
-            class worldScriptModule { files[] = {"LM_Planes/scripts/4_World"}; };
+            class gameScriptModule { files[] = {"MyParentMod/scripts/3_Game"}; };
+            class worldScriptModule { files[] = {"MyParentMod/scripts/4_World"}; };
         };
     };
 };
@@ -288,9 +288,7 @@ override void OnInput(float dt)
 
 `GetInputByName` does a string-keyed lookup. Doing it every input frame is wasteful. Cache once, reuse refs. Pattern applies to any hot path that does string-keyed lookups.
 
-## Llama Mod Extraction Patterns — Pass 2
-
-More patterns, from a second read of the scripts of each aircraft in LM_Planes.
+## RPC, cleanup, vehicle and mod architecture patterns
 
 ### Custom RPC enum with magic constants
 
@@ -312,13 +310,11 @@ override void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)
         if (ctx.Read(fx)) PlayClientEffect(fx);
     }
 }
-
-bool CanReceiveRPC(int rpc_type) { return true; }  // allow all
 ```
 
 **Magic constants in 6-7 digit range** (like `937081`) avoid collision with vanilla DayZ's lower-numbered RPCs and other mods. Pick a unique number prefix per mod. Group by direction (`_RPCserver` for client→server, `_RPCclient` for server→client) — explicit which way each RPC flows.
 
-`GetGame().IsServer()` inside `OnRPC` is safe: the load-time caveat in hard rules 19-20 applies only during init, not to post-load callbacks.
+`GetGame().IsServer()` inside `OnRPC` is safe: the load-time caveat of rules 19 and 20 in `hard-rules.md` applies only during init, not to post-load callbacks.
 
 ### Server-authoritative input pattern (client predicts, server validates)
 
@@ -425,7 +421,7 @@ protected void InitClientEffects()
 
 The condition `!IsClient() && IsMultiplayer()` is the standard "skip if MP server" check. In SP, `IsClient()` returns true so the check passes.
 
-Call this guard lazily (first tick/event), not from a constructor or load-time init: during load `IsClient()` is still false on the client (hard rules 19-20) and the guard would mis-skip.
+Call this guard lazily (first tick/event), not from a constructor or load-time init: during load `IsClient()` is not reliable on the client (rules 19 and 20 in `hard-rules.md`) and the guard would mis-skip.
 
 ### Vanilla DayZ helpers reference
 
@@ -509,7 +505,7 @@ Where `<TYPE>` ∈ `{GOLF, SEDAN, V3S, ...}`. Determines the player sit/getin an
 - `GOLF` — small/compact cockpit (sport cars, small planes)
 - `SEDAN` — standard car cockpit (most use cases)
 - `V3S` — truck cabin (large vehicles, transport planes)
-- Other vanilla instances exist for specific vanilla vehicles — check engine source
+- The other vanilla instances (`CIVVAN`, `HATCHBACK`, `BUS`, `S120`, `MULTICAR`, `HMMWV`, `ZODIAC`, `MOTO1`, `MOTO2`) are in the enum at `P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:1`
 
 ### Mod parent/child architecture (asymmetric dependency)
 

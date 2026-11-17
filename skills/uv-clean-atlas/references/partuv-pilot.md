@@ -2,7 +2,7 @@
 
 How to install and run PartUV, what went wrong on the way, and how it scored against this skill's pipeline on the same meshes. Piloted on 2026-07-16 on WSL2 Ubuntu 22.04 with an RTX 3090.
 
-PartUV (SIGGRAPH Asia 2025, github.com/EricWang12/PartUV) combines the PartField hierarchical part tree with a recursive chart extraction that bounds distortion. Its native core does ABF and LSCM and ships as prebuilt pip wheels. In 2025 and 2026 it is the only "UV AI" with public code and weights.
+PartUV (SIGGRAPH Asia 2025; its GitHub repository is named PartUV) combines the PartField hierarchical part tree with a recursive chart extraction that bounds distortion. Its native core does ABF and LSCM and ships as prebuilt pip wheels. In 2025 and 2026 it is the only "UV AI" with public code and weights.
 
 ## Environment that worked
 
@@ -63,7 +63,7 @@ Failure mode on vehicle content: PartField splits helicoids (springs) and junk m
 
 ## The reusable idea
 
-PartUV or PartField can serve as an alternative **chart source** (semantic parts) that feeds the stages of `uv_clean_atlas.py` that come after charting (SLIM unwrap, guards, SAT finisher and the shelf pack; the source notes call these stages 4 to 7). Audit any such experiment with `audit_partuv.py`, which imports a PartUV `final_packed.obj`, scores it with `uv_metrics.py`, re-packs it with the semantic shelf packer and scores it again:
+PartUV or PartField can serve as an alternative **chart source** (semantic parts) that feeds the stages of `uv_clean_atlas.py` that come after charting (stages 3 to 7 in `SKILL.md`: SLIM unwrap and fold guard, SAT finisher, straightening, shelf pack and metrics). Audit any such experiment with `audit_partuv.py`, which imports a PartUV `final_packed.obj`, scores it with `uv_metrics.py`, re-packs it with the semantic shelf packer and scores it again:
 
 ```cmd
 blender -b -P "<skill-dir>\scripts\audit_partuv.py" -- <in.obj> <out_dir> <tag> <out.blend>

@@ -75,8 +75,8 @@ class ProbePreparationTests(unittest.TestCase):
 
     def test_probe_reports_the_observed_value_between_delimiters(self) -> None:
         # An empty result and a missing field are indistinguishable in the RPT
-        # unless the value is bounded, and B20 cannot be fixed from an ambiguous
-        # observation.
+        # unless the value is bounded, and the continuation behaviour cannot be
+        # settled from an ambiguous observation.
         with tempfile.TemporaryDirectory() as temp_dir:
             destination = Path(temp_dir) / "LF_UIProbe"
             prepare_probe.build_probe(destination)

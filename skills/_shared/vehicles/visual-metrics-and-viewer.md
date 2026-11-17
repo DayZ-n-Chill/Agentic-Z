@@ -2,7 +2,7 @@
 
 When a pose complaint is a perspective artifact, where a HUD marker ray must be anchored, and how to validate a visual metric on a control before trusting it.
 
-> Status: field notes measured on third-party mods and tutorials, each named in its entry (LFHeli OH-1, LFHeli B-4, SUB_BRZ, LFQuad). Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build). A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\` unless the text says so: Grep for the symbol before relying on the number. Tags such as SP-130 or LL-090 are the notes' own lesson numbers, and R22, R31 or R35 are the author's process rules. Paths such as `<vehicle-import>\...`, `SUB_BRZ_dev\...`, `AI/10_Projects/...` or `30_Sessions/...` point into those mods' work folders and the author's notes, which are not part of this repo; a file name in Spanish there is the name of such a file. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: field notes measured in game and offline on third-party mods, each named in its entry (LFHeli OH-1, LFHeli B-4, SUB_BRZ). This is third-party mod behaviour, not vanilla, and the measurements were not repeated on `P:\`. Every vanilla citation is written with its full `P:\` path and was opened on the vanilla data on `P:\` (a 1.30 build). Labels such as s42 number the work sessions in date order.
 
 Nothing in this file is repealed: these are active lessons, ordered by topic and not by date.
 
@@ -10,20 +10,22 @@ Nothing in this file is repealed: these are active lessons, ordered by topic and
 
 - The third-person vehicle camera `DayZPlayerCamera3rdPersonVehicle` is declared at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:18`.
 - It reads `GetTransportCameraOffset` at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:49`.
-- The default `GetTransportCameraOffset` returns `"0 1.3 0"` at `P:\scripts\3_game\vehicles\transport.c:657`.
+- The default `GetTransportCameraOffset` is declared at `P:\scripts\3_game\vehicles\transport.c:657` and returns `"0 1.3 0"` two lines below.
+- `GetCurrentCameraPosition` is declared at `P:\scripts\3_game\global\game.c:731`.
+- `GetScreenPos` is declared at `P:\scripts\3_game\global\game.c:963`.
 
 ---
-## An in-game GEOMETRIC POSE complaint can be a PERSPECTIVE artifact - measure the DEPLOYED ODOL before applying any offset (SP-076, added 2026-07-20)
+## An in-game GEOMETRIC POSE complaint can be a PERSPECTIVE artifact - measure the DEPLOYED ODOL before applying any offset (added 2026-07-20)
 
 When the user reports "piece X sits N cm off / tilted" on an imported model (rotor vs its housing ring, wheel vs arch, part vs socket), do NOT author a corrective offset/rotation from the capture:
 
-1. **Measure the DEPLOYED artifact, not the source**: debinarize the deployed ODOL (an external ODOL→MLOD converter, not distributed with this pack) and measure the piece against its geometric reference in engine frame - circle-fit (least-squares) of the ring/arch rim, plane-fit (PCA) of a blade/wheel disc, bbox of the socket. Compare piece center / disc normal against the fitted reference.
+1. **Measure the DEPLOYED artifact, not the source**: debinarize the deployed ODOL (an external ODOL→MLOD converter, not part of this repo) and measure the piece against its geometric reference in engine frame - circle-fit (least-squares) of the ring/arch rim, plane-fit (PCA) of a blade/wheel disc, bbox of the socket. Compare piece center / disc normal against the fitted reference.
 2. **If the measurement says centered (offset ~mm, tilt ~0 deg), the complaint is PERSPECTIVE**: a ring/aperture with depth along its axis projects obliquely, so a geometrically centered piece LOOKS off-center from an angle - and the apparent offset direction changes with camera angle. Confirm by reproducing the illusion: flat-color render (piece magenta / hull grey) from the user's capture angle vs an orthographic front-on render.
 3. **Apply an offset ONLY if the deployed-artifact measurement demands it.** An eyeballed offset on an already-centered model is a REGRESSION (it moves what was right) and burns an in-game cycle to discover it.
 
-Measured case (LFHeli OH-1 round 3, AMENDED same day): user reported tail rotor "10 cm low" + interior "10 cm high, pokes through the canopy". First pass measured global bboxes and called it all perspective - WRONG on two counts: (a) "interior inside the glass" by global bbox missed a REAL 7.25 cm LOCAL protrusion through the canopy roof (per-cell interior-maxY vs glass-surface-Y grid found it; the user's eye was right); (b) the ring fit gave 9.7 mm misreported as 0.9 mm (units slip). CAVEAT the rule accordingly: bbox-vs-bbox NEVER proves containment - protrusion is LOCAL, measure per-cell surface-vs-surface before declaring a pose complaint perceptual. Complements the feel rule (subjective feel -> player data; measurable pose -> deployed-artifact measurement). Origin: LFHeli_dev/reviews/2026-07-20-LA-medicion-pose-fina.md.
+Measured case (LFHeli OH-1 round 3, AMENDED same day): user reported tail rotor "10 cm low" + interior "10 cm high, pokes through the canopy". First pass measured global bboxes and called it all perspective - WRONG on two counts: (a) "interior inside the glass" by global bbox missed a REAL 7.25 cm LOCAL protrusion through the canopy roof (per-cell interior-maxY vs glass-surface-Y grid found it; the user's eye was right); (b) the ring fit gave 9.7 mm misreported as 0.9 mm (units slip). CAVEAT the rule accordingly: bbox-vs-bbox NEVER proves containment - protrusion is LOCAL, measure per-cell surface-vs-surface before declaring a pose complaint perceptual. Complements the feel rule (subjective feel -> player data; measurable pose -> deployed-artifact measurement).
 
-## HUD reticle/marker: anchor the ray at the CAMERA, never at the vehicle (SP-365, added 2026-08-07, LFHeli B-4)
+## HUD reticle/marker: anchor the ray at the CAMERA, never at the vehicle (added 2026-08-07, LFHeli B-4)
 
 A direction reticle drawn by projecting vehicle_origin + GetDirection()*D reads laterally skewed
 against the airframe from any 3PP camera sitting off the symmetry plane: at D=300 the world point
@@ -45,7 +47,7 @@ Two measurement traps that produced that dead fix, worth one line each:
   them (LFHeli glass carried 357 such points on one side). Any per-side point count over a
   selection must count only face-referenced points or the asymmetry measurement lies.
 
-## Diagnose before re-authoring, and validate every visual metric on an in-game-verified control (SP-193, added 2026-08-07, SUB_BRZ E-1/E-2)
+## Diagnose before re-authoring, and validate every visual metric on an in-game-verified control (added 2026-08-07, SUB_BRZ)
 
 SUB_BRZ was one session away from re-assembling both doors from the raw rip, on
 the premise that the s42-cut mesh was rotten (five winding passes, 74.7% orphan
@@ -69,7 +71,8 @@ Day-0 check before any re-import/re-assembly of a ripped part:
 question had cost five in-game cycles):
 
 - A face is DRAWN when its MLOD normal points AWAY from the camera. This is
-  SP-191's rule stated per-camera; calibrate it, do not assume it.
+  the rule of `rip-geometry-and-winding.md` ("Game winding is the INVERSE of MLOD
+  geometric winding") stated per camera; calibrate it, do not assume it.
 - Occlusion counts only DRAWN opaque triangles. A culled face cannot occlude, so
   a plain ray test overstates occlusion badly (mirror glass: 0/315 "visible" with
   raw rays, 238/315 once culling is applied to the occluders).
@@ -92,7 +95,7 @@ on a body panel and read as green while measuring nothing: the panel is
 mirror-symmetric about x=0, so flipping X maps it onto itself. Report each
 control's SELF-MIRROR score and make symmetric pieces ABSTAIN explicitly. Here
 only the steering wheel could witness (23.6% vs 0.0%), and it settled that the
-pipeline transform is a REFLECTION (det=-1), confirming SP-191/LL-236. Corollary:
+pipeline transform is a REFLECTION (det=-1), as `rip-geometry-and-winding.md` states. Corollary:
 never take a part's side from its NAME - adjudicate it against an asymmetric
 piece whose in-game position is already measured.
 
@@ -109,6 +112,6 @@ to skip - and separately excluded from the component census by material. When a
 defect outlives several passes, first check whether its faces are even in the set
 those passes adjudicate; rim/enclosed are blind spots, not clean bills of health.
 
-Toolkit, parametrised and reusable: `<vehicle-import>\work\s47_doors\` - p12 face
-completeness, p18 exact surface gap, p17/p20 self-validating visibility oracle,
-p21 culling-correct seam raster, p7/p8 transform fit with abstention.
+The checks above were each a small parametrised script on the SUB_BRZ build, not part of
+this repo: face completeness, exact surface gap, the self-validating visibility oracle,
+the culling-correct seam raster, and the transform fit with abstention.

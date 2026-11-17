@@ -5,13 +5,12 @@ Compares two renders of the SAME object taken with the SAME camera, framing
 and resolution (before/after an edit, or iteration N vs N-1) and reports
 pixel-math agreement signals.
 
-REPORT-ONLY (LL-153): these numbers are a change filter — proof that a fix
+REPORT-ONLY: these numbers are a change filter — proof that a fix
 actually landed, or that something outside the edited region drifted — NEVER
 a correctness verdict. Correctness is decided by eyes on the renders. This
 tool is NOT calibrated for render-vs-reference-photo scoring: framing and
-background mismatch invalidate every signal (upstream divine_eye.py needs an
-explicit reconstruction-rescue mode for exactly that pair type; this tool
-deliberately refuses to pretend otherwise).
+background mismatch invalidate every signal (that pair type needs an explicit
+reconstruction step this tool does not have, and it does not pretend otherwise).
 
 Environment assumptions:
 - Uniform render background (Workbench default) — the foreground mask is
@@ -29,7 +28,7 @@ Apache-2.0 — see THIRD_PARTY_NOTICES.md at the repo root. Function origins:
   - luma / SSIM / Sobel edge / blowout / flat / tonal:
     forge/stage4_review/divine_eye.py
 Deliberately omitted: pHash, objectness, CIEDE2000 colour metrics — colour is
-judged on native-res crops by eye (LL-153). Pure stdlib, Python 3.10+.
+judged on native-res crops by eye. Pure stdlib, Python 3.10+.
 
 Usage:
     python vr_delta.py before.png after.png --json
@@ -48,12 +47,12 @@ from pathlib import Path
 from typing import Any
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
-MASK_GRID_SIZE = 224   # diagnose_render.py MASK_GRID_SIZE
-LUMA_SIZE = 64         # divine_eye.py LUMA_SIZE
-EDGE_SIZE = 96         # divine_eye.py EDGE_SIZE
+MASK_GRID_SIZE = 224   # side of the square grid the foreground mask is resampled to
+LUMA_SIZE = 64         # side of the luma grid for SSIM, tonal, blowout and flat
+EDGE_SIZE = 96         # side of the luma grid for Sobel edges
 
 # Heuristic "this signal moved" thresholds for same-camera pairs. Pointers for
-# the reviewer's attention, not gates (LL-153).
+# the reviewer's attention, not gates.
 MOVED_THRESHOLDS = {
     "silhouetteIoU": 0.99,
     "ssim": 0.98,
@@ -69,7 +68,7 @@ MOVED_DELTA_THRESHOLDS = {
 }
 
 
-# --- PNG codec (extract_pbr_evidence.py:84-186, sips fallback dropped) -------
+# --- PNG codec ---------------------------------------------------------------
 
 def paeth_predictor(a: int, b: int, c: int) -> int:
     p = a + b - c
@@ -176,7 +175,7 @@ def write_png_rgb(path: Path, width: int, height: int, rgb: bytes) -> None:
     )
 
 
-# --- foreground mask (extract_pbr_evidence.py:52-81, 210-271) ---------------
+# --- foreground mask ---------------------------------------------------------
 
 def srgb_luma(rgb: tuple[int, int, int]) -> float:
     r, g, b = rgb
@@ -274,7 +273,7 @@ def build_foreground_mask(
     )
 
 
-# --- mask geometry (diagnose_render.py:66-129) -------------------------------
+# --- mask geometry -----------------------------------------------------------
 
 def load_mask(png_path: Path, size: int = MASK_GRID_SIZE) -> tuple[list[bool], dict[str, Any]]:
     width, height, pixels = read_png(png_path)
@@ -341,7 +340,7 @@ def bilateral_symmetry_error(mask: list[bool], size: int = MASK_GRID_SIZE) -> fl
     return mismatches / total if total else 0.0
 
 
-# --- luma signals (divine_eye.py:180-272) ------------------------------------
+# --- luma signals ------------------------------------------------------------
 
 def load_luma(png_path: Path, size: int) -> list[float]:
     width, height, pixels = read_png(png_path)
@@ -439,7 +438,7 @@ def tonal_parity(ref: list[float], ren: list[float], bins: int = 16) -> float:
 
 def evaluate_pair(path_a: Path, path_b: Path) -> dict[str, Any]:
     """Compare two same-camera renders. Returns signals + attention pointers.
-    No verdict field on purpose: report-only (LL-153)."""
+    No verdict field on purpose: report-only."""
     bytes_a = path_a.read_bytes()
     bytes_b = path_b.read_bytes()
     identical = hashlib.sha256(bytes_a).hexdigest() == hashlib.sha256(bytes_b).hexdigest()
@@ -482,7 +481,7 @@ def evaluate_pair(path_a: Path, path_b: Path) -> dict[str, Any]:
         "foreground": {"a": diag_a, "b": diag_b},
         "a": str(path_a.resolve()),
         "b": str(path_b.resolve()),
-        "note": "report-only change filter (LL-153): moved signals point the eye, "
+        "note": "report-only change filter: moved signals point the eye, "
                 "they never pass or fail an iteration. identicalImages=true after an "
                 "intended edit means the old scene was re-rendered.",
     }

@@ -1,8 +1,6 @@
 # Winding-flip detection in Blender
 
-How to catch a reversed face winding in Blender before an export to an engine that culls by winding, why a lit render hides it, and the measurements that show a vision model cannot answer the question either. Everything here was measured by the source author in Blender and in game on the dates given; none of it can be checked against files on `P:\` (not yet checked on `P:\`). The final authority on an exported `.p3d` stays `/dayz-p3d-audit` and an in-game look.
-
-Added 2026-07-30 from a note of 2026-06-24 (LL-162).
+How to catch a reversed face winding in Blender before an export to an engine that culls by winding, why a lit render hides it, and the measurements that show a vision model cannot answer the question either. Everything here was measured in Blender and in game on the dates given; none of it can be checked against files on `P:\`. The final authority on an exported `.p3d` stays `/dayz-p3d-audit` and an in-game look.
 
 ## Why a lit render cannot show it
 
@@ -11,7 +9,7 @@ Blender's standard shading lights a surface by the declared normals of its verti
 - In Blender: silhouettes, shadows and color all look right.
 - In game: the front faces are invisible and the back faces are textured, so the texture appears on the inside of the object.
 
-**Reproduced case (MercedesAMGLF phase 2, 2026-06-24).** The car's shell passed all 4 views of this skill. In game only the back faces of the body were textured. Cause: the glTF to DayZ transform had det = -1 (a mirror), and `reverse_winding=True` was chosen to compensate and leave the normals pointing outward, but the winding ended up reversed. DayZ culls by winding, so the front faces vanished (LL-162).
+**Reproduced case (a car imported from glTF, 2026-06-24).** The car's shell passed all 4 views of this skill. In game only the back faces of the body were textured. Cause: the glTF to DayZ transform had det = -1 (a mirror), and `reverse_winding=True` was chosen to compensate and leave the normals pointing outward, but the winding ended up reversed. DayZ culls by winding, so the front faces vanished.
 
 ## Two mechanisms that read the winding
 
@@ -37,7 +35,7 @@ with `"verdict": "FLIPPED_LIKELY"`, a failed check, when the silhouette changes 
 
 ## Do not verify with a normals recalculation
 
-Do not "verify" a suspected flip by running `normals_make_consistent` and rendering again. The recalculation rewrites the winding itself, so the new render comes back clean and the check gives a false negative. (The 2026-06-24 note proposed exactly that step; it was dropped for this reason.) Recalculation is a repair tool. The repair decision for a DayZ export belongs to the import-transform rules of `dayz-model-pipeline` (LL-504 and its Rule 12): the Blender to DayZ map is the det = -1 reflection `(x,y,z) -> (x,z,y)` with the face order kept and the normals negated; the older `(x,z,-y)` rotation renders solid but mirrored.
+Do not "verify" a suspected flip by running `normals_make_consistent` and rendering again. The recalculation rewrites the winding itself, so the new render comes back clean and the check gives a false negative. Recalculation is a repair tool. The repair decision for a DayZ export belongs to the import-transform rules of `dayz-model-pipeline` (its Rule 12): the Blender to DayZ map is the det = -1 reflection `(x,y,z) -> (x,z,y)` with the face order kept and the normals negated; the older `(x,z,-y)` rotation renders solid but mirrored.
 
 ## When to run
 

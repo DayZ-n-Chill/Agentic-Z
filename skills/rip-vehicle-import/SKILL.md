@@ -16,8 +16,8 @@ Follow `skills/_shared/dayz-conventions.md`.
 
 - **Ships:** this adapter, the classification viewer (`export_car_glb.py` and `classify-viewer\index.html`) and the reference files listed at the end.
 - **Expects:** the import project, written `<vehicle-import>` below. Its scripts, contracts, profiles and goldens are not in this repo. Every gate and primitive named here runs from that project. When a canonical path is missing, stop; never substitute a copy or another tool.
-- **Evidence status:** the facts about the import project, its gates and its measured cars (SUB_BRZ, sub_wrxsti_04, MercedesAMGLF, LFQuad, LFQuad3, LFHeli) come from that project and are not yet checked on `P:\`. Facts about the vanilla game cite the file on `P:\`; those citations are in the cookbooks.
-- **Scope:** if the asset is already in flight, use its frozen runbook. If an entry that applies is missing, STOP. The previous runbook is in `references/history-family-b-runbook.md` and is not executable. A ForzaTech or ForzaDayZ rip belongs to the author's `forza-to-dayz` skill, which uses the same family B template and is not shipped here. A vanilla-style `CarScript` car that is not a rip belongs to `dayz-vehicles`.
+- **Evidence status:** the facts about the import project, its gates and its measured cars (SUB_BRZ, sub_wrxsti_04, MercedesAMGLF, LFQuad, LFQuad3, LFHeli) are not yet checked on `P:\`. Facts about the vanilla game cite the file on `P:\`; those citations are in the cookbooks.
+- **Scope:** if the asset is already in flight, use its frozen runbook. If an entry that applies is missing, STOP. The previous runbook is in `references/history-family-b-runbook.md` and is not executable. A ForzaTech or ForzaDayZ rip is out of scope: it uses the same family B template, but its adapter is not shipped here. A vanilla-style `CarScript` car that is not a rip belongs to `dayz-vehicles`.
 
 ## Six mandatory deltas
 
@@ -134,7 +134,7 @@ This is the only index. Do not create an `INDEX.yaml`, a cookbook router or anot
 
 ## Step 5 conversion rail
 
-Work item SP-363; first used on sub_wrxsti_04 on 2026-08-06.
+First used on sub_wrxsti_04 on 2026-08-06.
 
 The car profile declares `source.asset_contract` (the path to the ledger entry). That turns on the contract mode of `rip_p2_import.py`: the INCLUDE and SHADOW lists are projected from the ledger entry by `scripts\rip_contract_source.py` (fail-closed on homogeneity per container), never from `manifest_decisions.json`; the far shell is deferred to the human classification; the G0 anchors come from the profile (`source.g0_anchors`, pairs of `[part, locator]`). `rip_p2_import.py` and `rip_contract_source.py` are scripts of the import project and are not shipped here. The three commands, in order:
 
@@ -153,7 +153,7 @@ python scripts\asset_contract_checkpoint.py check --contract <ledger-entry>
 
 Everything above is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`skills/_shared/linux-proton.md`); this section only says what changes for this skill.
 
-- Pack, sign and binarize with dayzmake 1.0.0 or later, bzed's DayZ fork of armake2 (https://github.com/bzed/dayzmake), pinned to `v1.0.0`: the release binary `dayzmake-v1.0.0-debian-trixie-x86_64.tar.gz` from https://github.com/bzed/dayzmake/releases/tag/v1.0.0, or `cargo install --git https://github.com/bzed/dayzmake --tag v1.0.0`. Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Upstream armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake v1.0.0 includes them) and it lacks the DayZ-only functions dayzmake keeps adding. The `skills/_shared/scripts/dayz-mod-pack.sh` wrapper wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`); its notes are in `skills/dayz-build-pbo/references/dayzmake-linux.md`. The author's 2026-11-03 comparison of a textured cube against Bohemia's binarize from a `P:` root matched byte for byte (fork commit `7dcb3cf`, then still named armake2; `v1.0.0` contains it). That is not an in-game ODOL check.
+- Pack, sign and binarize with dayzmake 1.0.0 or later, the DayZ fork of armake2, pinned to a release tag; where to get it and how to install it are in `skills/dayz-build-pbo/references/dayzmake-linux.md`. Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. The original armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake v1.0.0 includes them) and it lacks the DayZ-only functions dayzmake keeps adding. The `skills/_shared/scripts/dayz-mod-pack.sh` wrapper wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`); its notes are in the same reference file. A 2026-11-03 comparison of a textured cube against Bohemia's binarize from a `P:` root matched byte for byte (fork commit `7dcb3cf`, then still named armake2; `v1.0.0` contains it). That is not an in-game ODOL check.
 - `P:\` is a plain directory mapped by `dayz-proton.sh init <dir>` (the script is `skills/_shared/scripts/dayz-proton.sh`); a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
 - Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>` and `gui TexView <paa>`. Object Builder opened and displayed a model; editing in it was not exercised. The offline checks (the tools under `scripts/tools/py3d/`, `scripts/tools/dayz-model-preflight/` and `scripts/tools/dayz-3d-viewer/`) are Python and run natively.
 - In-game checks: the Linux notes of `dayz-test-ingame`.

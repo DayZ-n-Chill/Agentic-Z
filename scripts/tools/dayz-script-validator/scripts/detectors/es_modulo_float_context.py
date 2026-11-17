@@ -6,27 +6,26 @@ from shared.dead_branches import compatible, dead_lines, line_branches
 ES_MODULO_FLOAT_CONTEXT_RULE_ID = "ES-MODULO-FLOAT-CONTEXT"
 
 
-# claim: CLAIM-ENFORCE-MODULO-FLOAT-CONTEXT
 # `%` compiles between integers, but not inside an arithmetic expression that
 # also holds a float literal, even when both operands of `%` are integers:
 #
 #   `((g % 5) - 2) * 7.0`, DayZDiag 1.29, 2026-09-28:
-#     SCRIPT (E): lfpg_probe3d.c,255: Unknown operator '%'
+#     SCRIPT (E): fx_probe3d.c,255: Unknown operator '%'
 #     SCRIPT (E): Can't compile "Mission" script module!
 #   `float ox = (n % 4) * 0.7 - 1.05;`, DayZ 1.30 (Exp), 2026-09-24: the
 #     same error, and the mission did not compile.
-#   `float x = (cell % 103) * 150 + 150 * 0.5;` and the ticket's
+#   `float x = (cell % 103) * 150 + 150 * 0.5;` and
 #     `float x = (cell % SIDE) * STEP + STEP * 0.5;` (static const float STEP,
 #     static const int SIDE), DayZDiag 1.30.164289, 2026-11-09, each in a
-#     mod's 4_World script (pipeline inbox d35a):
+#     mod's 4_World script:
 #     SCRIPT (E): @"MCPProbeD35aB/scripts/4_World/mcpprobed35ab.c,6": Unknown operator '%'
 #     SCRIPT (E): Can't compile "World" script module!
 #     and the same at mcpprobed35ac.c,10. Both hold the literal 0.5, so
 #     whether a static const float with no literal beside it fails is not
-#     isolated. The ticket saw "Unknown operator ''" in a mission's init.c.
+#     isolated. A mission's init.c gave "Unknown operator ''".
 #
 # The first two compiled once the `%` went into an int local first, and so
-# did the ticket's on 1.30.164289:
+# did the last on 1.30.164289:
 #   `int col = cell % SIDE; float x = col * STEP; x = x + STEP * 0.5;`
 # Vanilla 1.29 holds 69 `%` operators and none shares an expression with a
 # float literal.

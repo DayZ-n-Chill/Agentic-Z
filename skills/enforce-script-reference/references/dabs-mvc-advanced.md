@@ -1,6 +1,6 @@
 # Dabs Framework MVC — Advanced Patterns & Gotchas
 
-Patterns and traps for the third-party Dabs Framework's MVC classes, as met in the knowledge pack's own mods. They describe that framework and those mods and are not yet checked on `P:\` or against the Dabs source. What was read in the Dabs source is in `skills/_shared/enscript/integrations/dabs_framework.md`; the full UI material is in the `dayz-ui-development` skill.
+Patterns and traps for the third-party Dabs Framework's MVC classes, as met in shipped mods. They describe that framework and are not yet checked on `P:\` or against the Dabs source. What was read in the Dabs source is in `skills/_shared/enscript/integrations/dabs_framework.md`; the full UI material is in the `dayz-ui-development` skill.
 
 ## Architecture Overview
 
@@ -44,13 +44,13 @@ This gotcha disagrees with the rest of the material and is kept as a report only
 // CRASH
 void OnRPC(...)
 {
-    m_View = new LFPG_SorterView();  // CreateWidgets fails → crash
+    m_View = new MyMod_SorterView();  // CreateWidgets fails → crash
 }
 
 // CORRECT
 override void OnInit()
 {
-    m_View = new LFPG_SorterView();  // workspace available here
+    m_View = new MyMod_SorterView();  // workspace available here
 }
 ```
 
@@ -134,7 +134,7 @@ override bool OnClick(Widget w, int x, int y, int button)
         return super.OnClick(w, x, y, button);
 
     string bName = btn.GetName();
-    LFPG_SorterController ctrl = LFPG_SorterController.Cast(GetController());
+    MyMod_SorterController ctrl = MyMod_SorterController.Cast(GetController());
     if (!ctrl)
         return super.OnClick(w, x, y, button);
 
@@ -159,9 +159,9 @@ When ObservableCollection items (ScriptView) hold a back-reference to the parent
 //     → TagController → m_OwnerController → Controller  ← CYCLE
 
 // SOLUTION — break in item destructor
-void ~LFPG_SorterTagView()
+void ~MyMod_SorterTagView()
 {
-    LFPG_SorterTagController ctrl = LFPG_SorterTagController.Cast(GetController());
+    MyMod_SorterTagController ctrl = MyMod_SorterTagController.Cast(GetController());
     if (ctrl)
     {
         ctrl.m_OwnerController = null;  // break cycle
@@ -182,7 +182,7 @@ void OnItemClick()
 }
 
 // CORRECT — direct reference passed at creation
-void SetData(..., LFPG_SorterController ownerCtrl)
+void SetData(..., MyMod_SorterController ownerCtrl)
 {
     ctrl.m_OwnerController = ownerCtrl;  // direct ref
 }
@@ -322,7 +322,7 @@ if (m_Dragging)
 Always release input in destructor — view can be destroyed while open:
 
 ```
-void ~LFPG_SorterView()
+void ~MyMod_SorterView()
 {
     if (GetGame())
     {
@@ -454,7 +454,7 @@ override bool OnMouseLeave(Widget w, Widget enterW, int x, int y)
 DayZ UI is designed for 1080p. For other resolutions, scale dynamically:
 
 ```
-class LFPG_UIScaler
+class MyMod_UIScaler
 {
     static float ComputeScale()
     {

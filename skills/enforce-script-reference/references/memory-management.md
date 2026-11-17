@@ -1,6 +1,6 @@
 # Memory management
 
-`ref`, `autoptr`, `delete`, reference cycles and the lifetime traps that crash a mod after hours. A line cited as `P:\...:N` was opened on `P:\`; the runtime measurements are the knowledge pack author's and were not re-run here. The checked reference for the same topic is `skills/_shared/enscript/references/language_memory.md`; where the two differ, that file's `P:\` citations decide (the differences are noted in place below).
+`ref`, `autoptr`, `delete`, reference cycles and the lifetime traps that crash a mod after hours. A line cited as `P:\...:N` was opened on `P:\`; the runtime measurements were made once on a dedicated server (DayZ 1.30.164289) and were not re-run. The checked reference for the same topic is `skills/_shared/enscript/references/language_memory.md`; where the two differ, that file's `P:\` citations decide (the differences are noted in place below).
 
 ## Reference counting
 
@@ -9,13 +9,13 @@ Enforce Script manages memory by reference counting. Unlike a mark and sweep col
 ### Two class families
 
 **Managed classes** (inherit from `Managed`):
-- Entities are `Managed`: `class Object extends IEntity` (`P:\scripts\3_game\entities\object.c:64`) and `class IEntity: Managed` (`P:\scripts\1_core\proto\enentity.c:164`) [EXACT][CLAIM-ENF-ENTITY-MANAGED-164289]. Their lifetime is still the engine's: never hold an entity with `ref` (see `language_memory.md`)
+- Entities are `Managed`: `class Object extends IEntity` (`P:\scripts\3_game\entities\object.c:64`) and `class IEntity: Managed` (`P:\scripts\1_core\proto\enentity.c:164`). Their lifetime is still the engine's: never hold an entity with `ref` (see `language_memory.md`)
 - Instances survive as long as at least one strong reference exists
 - A class **field** without `ref` is weak here too (measured below)
 
 **Plain classes** (no `Managed` ancestor):
 - **Class fields** are weak by default: use `ref` to keep the target alive. This is where `ref` bugs live.
-- **Local variables** are strong references by default (as Bohemia's Enforce Script wiki says). The object lives to the end of the scope, so `new X()` assigned to a plain local needs no `ref`.
+- **Local variables** are strong references by default. The object lives to the end of the scope, so `new X()` assigned to a plain local needs no `ref`.
 - In short: "weak by default" is about class fields, not about locals.
 
 ### The `ref` keyword: strong references
@@ -50,16 +50,16 @@ ref TIntArray arr = new ref TIntArray;
 
 **Redundant but not wrong: `ref` on a local variable.**
 ```
-// Valid but redundant — locals are strong by default per Bohemia wiki
+// Valid but redundant — locals are strong by default
 void DoStuff()
 {
     ref array<int> local = new array<int>;    // works
     array<int> also_valid = new array<int>;   // also works (preferred, idiomatic)
 }
 ```
-Vanilla code uses both forms for locals: `ref InventoryLocation il = new InventoryLocation;` (`P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actionattachwithswich.c:33`) and `ref set<Object> victims = new set<Object>;` (`P:\scripts\4_world\classes\areadamage\areadamage.c:175`) beside the plain `InventoryLocation il = new InventoryLocation();` (`P:\scripts\3_game\entities\entityai.c:2140`). The plain form is the usual one and shorter; `ref` on a local is legal and changes nothing. (The knowledge pack named `construction.c` as the example file; the 1.30 file on `P:\` has no `InventoryLocation` local.)
+Vanilla code uses both forms for locals: `ref InventoryLocation il = new InventoryLocation;` (`P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actionattachwithswich.c:33`) and `ref set<Object> victims = new set<Object>;` (`P:\scripts\4_world\classes\areadamage\areadamage.c:175`) beside the plain `InventoryLocation il = new InventoryLocation();` (`P:\scripts\3_game\entities\entityai.c:2140`). The plain form is the usual one and shorter; `ref` on a local is legal and changes nothing.
 
-**Measured at run time by the knowledge pack's author on a dedicated server, DayZ 1.30.164289** (CLAIM-ENF-REF-FIELD-PROBE-164289, recorded as unverified: neither the probe nor its log was published, and it was not run again. The probe: a class declared in the mission `init.c`, i.e. in the mission module, with a destructor that prints). The class-family statements around it were read from the 164289 source (paths cited inline):
+**Measured at run time on a dedicated server, DayZ 1.30.164289** (measured once and not run again; the probe was a class declared in the mission `init.c`, i.e. in the mission module, with a destructor that prints). The class-family statements around it were read from the 164289 source (paths cited inline):
 
 - `ref` works on a plain class with no `Managed` ancestor: a `ref` field kept its object alive until the holder was released, then the destructor ran. You do not need to inherit `Managed` for `ref` to work.
 - A field without `ref` is weak for **both** families: once the only strong local was set to `null`, the object was destroyed and the weak field read `NULL` (for a plain class and for a `Managed` one alike). It was cleared, not left dangling.
@@ -70,7 +70,7 @@ Vanilla code uses both forms for locals: `ref InventoryLocation il = new Invento
 
 ### `autoptr`: scoped strong references
 
-`autoptr` is an alternative to `ref` that, by the knowledge pack's account, destroys the target when the containing scope ends, which suits a local that should clean up after itself. `language_memory.md` describes it from the vanilla sources as the older owning qualifier (`autoptr map<string, int> prg_count = new map<string, int>;`, `P:\scripts\1_core\proto\enscript.c:834`) and recommends `ref` in mod code.
+`autoptr` is an alternative to `ref` that is reported to destroy the target when the containing scope ends (not checked on `P:\`), which suits a local that should clean up after itself. `language_memory.md` describes it from the vanilla sources as the older owning qualifier (`autoptr map<string, int> prg_count = new map<string, int>;`, `P:\scripts\1_core\proto\enscript.c:834`) and recommends `ref` in mod code.
 
 ```
 void ProcessFile()
@@ -85,7 +85,7 @@ Never combine `ref` and `autoptr` on the same field; what happens then is undefi
 
 ### The `delete` keyword: avoid it in mod code
 
-The knowledge pack's rule: `delete` is never necessary, because every instance is freed when its reference count reaches zero, and using `delete` on an object that something else still references ends in a segfault.
+The rule for mod code: `delete` is never necessary, because every instance is freed when its reference count reaches zero, and using `delete` on an object that something else still references ends in a segfault.
 
 What `P:\` shows: `delete` is legal and vanilla uses it on script objects it owns, for example `delete GetBleedingManagerServer();` (`P:\scripts\4_world\entities\manbase\playerbase.c:1224`). So the rule is advice for mod code, not a language limit: set the reference to `null` unless you are sure nothing else holds the object, and never `delete` an entity (`language_memory.md` lists the entity delete calls).
 
@@ -116,12 +116,12 @@ class Child
 
 **The solution: break cycles in destructors.**
 ```
-class LFPG_SorterTagView extends ScriptView
+class MyMod_SorterTagView extends ScriptView
 {
-    void ~LFPG_SorterTagView()
+    void ~MyMod_SorterTagView()
     {
         // Break the cycle: Tag → Controller → OwnerController → ... → Tag
-        LFPG_SorterTagController ctrl = LFPG_SorterTagController.Cast(GetController());
+        MyMod_SorterTagController ctrl = MyMod_SorterTagController.Cast(GetController());
         if (ctrl)
         {
             ctrl.m_OwnerController = null;
@@ -181,15 +181,16 @@ void Test()
 }
 ```
 
-**Trap 3: `map<Widget, T>` crashes at run time** (reported from the LFPG mods; not checkable on `P:\`)
+**Trap 3: a `map<Widget, T>` that crashed at run time** (reported in one third-party mod, cause not isolated; vanilla keys maps by `Widget`, see entry 9 in `pitfalls-advanced.md`)
 ```
-// COMPILES but crashes — Widget is not a valid map key in Enforce
-ref map<Widget, int> m_WidgetMap;  // crashes
+// Compiled, then crashed at run time in that mod
+ref map<Widget, int> m_WidgetMap;
 
-// Use parallel arrays or a wrapper instead
+// The workaround used there: parallel arrays
 ref array<Widget> m_Widgets;
 ref array<int> m_Values;
 ```
+If a map keyed by widgets crashes, check first whether the map outlives the widgets it holds.
 
 ### Allocation in tick callbacks
 

@@ -273,8 +273,8 @@ class ContinuationTests(unittest.TestCase):
 
 
 class InlineAttributeTests(unittest.TestCase):
-    # TOOLS.md and layout-format.md F1: grouping values by physical line
-    # collapsed this one-line widget into a single `position` attribute.
+    # Grouping values by physical line collapsed this one-line widget into a
+    # single `position` attribute.
 
     def test_inline_attributes_are_split_by_arity_not_by_physical_line(self) -> None:
         text = (
@@ -314,7 +314,7 @@ class InlineAttributeTests(unittest.TestCase):
         # Not an aspiration: the arity split covers ATTRIBUTE_ARITY and nothing
         # else. A key the table does not list falls back to physical-line
         # grouping, so two unknown keys on one line still merge. Pinned here so
-        # the bound stated in TOOLS.md cannot drift away from the code.
+        # the documented bound cannot drift away from the code.
         text = "ImageWidgetClass Bg { zzz_custom 0 0 yyy_other 1 1 { } }"
         doc = parse.parse_text(text, source_path="unknown-inline.layout")
         attrs = doc.roots[0].attrs

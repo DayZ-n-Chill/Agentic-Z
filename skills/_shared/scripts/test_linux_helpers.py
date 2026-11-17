@@ -1,4 +1,4 @@
-"""The local-server, client and packaging helpers from bzed/dayz-dev-plugin, without Steam or DayZ.
+"""The Linux local-server, client and packaging helper scripts, without Steam or DayZ.
 
 What needs a Steam install, a game or Proton was measured by hand (see
 skills/dayz-test-ingame/references/linux-native-server.md); these tests cover the scripts
@@ -186,7 +186,7 @@ def _is_dayzmake(tool: str | None) -> bool:
     return "--proton-binarize" in out.stdout + out.stderr
 
 
-# --- S1-S9 negative tests ---------------------------------------------------
+# --- negative tests ---------------------------------------------------------
 
 requires_x86 = pytest.mark.skipif(platform.machine() not in ("x86_64", "AMD64"), reason="needs the x86_64 ELF pause fixture")
 
@@ -1124,7 +1124,7 @@ def test_static_private_key_aborts_before_any_copy(tmp_path: Path) -> None:
     project, env = _valid_mod_project(tmp_path, "MyMod")
     content = project / "build" / "@MyMod"
     content.mkdir(parents=True)
-    # Item 18: stale key in content must be cleaned BEFORE static/ scan aborts.
+    # A stale key in content must be cleaned BEFORE the static/ scan aborts.
     (content / "old.biprivatekey").write_text("stale")
     (project / "static").mkdir(parents=True)
     (project / "static" / "leak.biprivatekey").write_text("secret")
@@ -1157,7 +1157,7 @@ def test_build_removes_stale_private_key_from_content(tmp_path: Path) -> None:
     content = project / "build" / "@MyMod"
     content.mkdir(parents=True)
     (content / "old.biprivatekey").write_text("stale")
-    # Item 1: path containing an embedded newline whose second line is the absolute path of 'victim'.
+    # A path containing an embedded newline whose second line is the absolute path of 'victim'.
     tricky = content.joinpath("split\n", *victim.parts[1:])
     tricky.parent.mkdir(parents=True, exist_ok=True)
     tricky.write_text("stale-nl")
@@ -1286,7 +1286,7 @@ def test_free_ports_impossible_count_fails_at_once() -> None:
     assert "maximum" in done.stderr
 
 
-@pytest.mark.skipif(not _is_dayzmake(shutil.which("dayzmake")), reason="dayzmake (bzed's fork) is not installed")
+@pytest.mark.skipif(not _is_dayzmake(shutil.which("dayzmake")), reason="dayzmake (with --proton-binarize) is not installed")
 @requires_autotest
 def test_autotest_mod_builds_signs_and_verifies(tmp_path: Path) -> None:
     project = tmp_path / "autotest"

@@ -5,8 +5,8 @@ source-to-assembly geometric fit, engine properties, animation overlaps and
 deployed-PBO byte closure. It turns silent proxy misalignment and stale PBO
 payloads into a JSON report before a build is launched.
 
-This is the pack OFFLINE layer. It does not launch DayZ. In-game verification
-belongs to DayZ-MCP.
+This is an offline check. It does not launch DayZ. In-game verification
+belongs to DayZ-MCP (`skills/dayz-mcp-verify/`).
 
 Its fail-closed PBO reader, `scripts/vehicle_proxy/pbo.py`, is also the reader
 of [`scripts/tools/dayz-pbo-diff`](../dayz-pbo-diff/README.md), through `digest_pbo`.
@@ -18,14 +18,17 @@ python -m pip install -e scripts/tools/dayz-vehicle-proxy-contract
 ```
 
 Python 3.10 or newer is required. Runtime dependencies: `numpy`, `scipy`,
-`matplotlib`, and the pack py3d fork (`py3d-dayz`, import name `py3d`).
+`matplotlib`, and the py3d copy in `scripts/tools/py3d` (import name `py3d`).
+`pip install` brings in the first three; py3d is not a declared dependency, so
+install it with `python -m pip install -e scripts/tools/py3d` or put
+`scripts/tools/py3d` on `PYTHONPATH`.
 
 `CfgConvert` is not bundled. The manifest must point at a real converter
 binary (or a test shim). There is no default machine path.
 
 ## Invoke
 
-From the pack root, without installing:
+From the repo root, without installing:
 
 ```powershell
 python scripts/tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy_contract.py audit --manifest <manifest.json> --out <outdir>
@@ -66,7 +69,7 @@ python -m pytest tests -q
 ```
 
 Run from `scripts/tools/dayz-vehicle-proxy-contract/`, or point pytest at that
-`tests/` directory from the pack root. Test files resolve `scripts/` from
+`tests/` directory from the repo root. Test files resolve `scripts/` from
 their own path, not from the current working directory.
 
 ## What a green run does not guarantee
@@ -79,10 +82,10 @@ Out of scope, deliberately:
 
 - In-game look, animation, IK, damage zones, get-in points or physics.
 - Runtime confirmation of deferred host-axis findings (`P3D-AXIS-SELECTION-DEFERRED`
-  is a warning; steering/damper motion is an online gate).
+  is a warning; steering/damper motion has to be checked in game).
 - That `CfgConvert` XML equals what the engine will play.
 - That a staged repair is packed, binarized or deployed.
 - That preview PNGs are a visual likeness of the vehicle. They are sampled
   point-cloud scatter plots for fit diagnosis.
 
-Behaviour is the online layer's job.
+Behaviour has to be checked in game.

@@ -4,7 +4,7 @@
   DayZ local test launcher - build + deploy + filepatching launch on DayZDiag_x64.exe.
 
 .DESCRIPTION
-  Puts the DayZ infrastructure note of the knowledge pack (skills/_shared/knowledge/environment-and-infra.md) into practice. Optionally builds the mod PBO with AddonBuilder,
+  Puts the DayZ infrastructure note (skills/_shared/knowledge/environment-and-infra.md) into practice. Optionally builds the mod PBO with AddonBuilder,
   deploys it to the P:\Mods junction (-> DayZ\!Workshop), and launches DayZDiag in
   offline / server / client / all modes with -filePatching.
 
@@ -84,7 +84,7 @@ $ModsDir       = Join-Path $WorkDrive 'Mods'
 $Exe = if ($Retail) { $RetailExe } else { $DiagExe }
 # Retail game exe cannot run headless: DayZ_x64 -server dies loading GFX resources
 # (Water/*.edds) after CE boot. Retail server = the dedicated binary.
-# (verified 2026-06-11, A6_MK47 session)
+# (measured in game, 2026-06-11)
 $DedicatedExe = Join-Path $ServerInstall 'DayZServer_x64.exe'
 $ServerExe = if ($Retail -and (Test-Path $DedicatedExe)) { $DedicatedExe } else { $Exe }
 
@@ -132,7 +132,6 @@ $script:RunId = $RunId
 $script:LifecycleClientIdentityJson = $null
 $script:LifecycleLeaseToken = $null
 
-# claim: CLAIM-R21-TEST-CREDENTIAL-SCOPE-TEMPLATE
 function Initialize-LifecycleCredentials {
     $identity = [Environment]::GetEnvironmentVariable('DAYZ_MCP_CLIENT_ID_JSON', 'Process')
     $lease = [Environment]::GetEnvironmentVariable('DAYZ_MCP_LEASE_TOKEN', 'Process')
@@ -171,7 +170,7 @@ function Invoke-LifecycleCli {
     if ($Command -eq 'start' -and -not (Test-Path -LiteralPath $RequestPath -PathType Leaf)) {
         Die 'Managed lifecycle start requires the finalized request file.'
     }
-    # lifecycle_cli contract (lifecycle_cli.py:53-67): --daemon-policy is mandatory and
+    # lifecycle_cli contract (dayz-mcp's lifecycle_cli.py, third-party, not in this repo): --daemon-policy is mandatory and
     # the daemon endpoint/keyfile resolve inside load_daemon_policy('normal'); start
     # reads its request from STDIN (--request-stdin), stop/adopt take --run-id.
     $cliArgs = @('-m', 'dayz_mcp.lifecycle_cli', '--daemon-policy', 'normal', $Command)
@@ -254,7 +253,7 @@ function Invoke-ManagedStart {
         mission = $MissionValue
     }
     if ($ExtendRunId) { $request.run_id = $ExtendRunId }
-    # Launch identity contract (lifecycle_cli.py:81-116, process_lifecycle.py:1017-1044):
+    # Launch identity contract (dayz-mcp's lifecycle_cli.py and process_lifecycle.py, third-party, not in this repo):
     # a NEW run carries new_run_id + launch_operation_id (distinct UUID4) plus
     # launch_request_sha256 = sha256 of the canonical JSON (sorted keys, compact
     # separators, utf-8) without the sha field; the CLI then performs the /lifecycle/ack
@@ -402,7 +401,6 @@ function Initialize-VppSuperadmin {
     Set-Content -Path $saTxt -Value ($merged -join "`r`n") -Encoding ASCII
     Ok "VPP superadmin(s) -> $saTxt ($($merged -join ', '))"
 
-    # claim: CLAIM-R21-TEST-VPP-SECRET-TEMPLATE
     # credentials.txt: login password on line 1, hashed by VPP at first boot. Seed only when not
     # already set, so an existing hash or user-chosen password is never clobbered.
     $cred = Join-Path $vppDir 'Permissions\credentials.txt'
@@ -552,7 +550,7 @@ function Invoke-Build {
     }
 
     # AddonBuilder's incremental sync to $temp can serve STALE source: a changed .c may
-    # silently not be re-copied (observed 2026-06-18: a deviceinspector.c months out of date
+    # silently not be re-copied (observed 2026-06-18: a script file months out of date
     # was packed into the PBO, so script edits never reached the build and the diag kept
     # compiling old code - a fix appeared to "not take" across several rebuilds). Wipe the
     # temp staging before every build so the sync is always fresh. Costs incremental reuse
@@ -571,8 +569,8 @@ function Invoke-Build {
     if ($Clean) { $abArgs += '-clear' }
     if ($usePackOnly) { $abArgs += '-packonly' }
     # Capture AddonBuilder's own log: its exit code lies on some error paths (infrastructure
-    # note, section on verified build gotchas: "exit 0 on some error paths - the log is the
-    # truth, not the exit code"). The log is echoed back so the console still shows the build.
+    # note, section on the canonical invocation commands: exit 0 on some error paths - the log
+    # is the truth, not the exit code). The log is echoed back so the console still shows the build.
     $buildLogDir = Join-Path $DevRoot '_build'
     if (-not (Test-Path $buildLogDir)) { New-Item -ItemType Directory -Force -Path $buildLogDir | Out-Null }
     $abOut = Join-Path $buildLogDir 'addonbuilder.log'
@@ -630,7 +628,7 @@ function Resolve-ModToken {
     # <DayZ>\@Name - which does NOT exist; deployed mods live under <DayZ>\!Workshop\@Name.
     # The engine then silently fails to mount that addon (its CfgPatches/CfgVehicles never
     # register, so CreateObjectEx returns null with NO error). Verified 2026-06-01 via an
-    # in-mission ConfigIsExisting probe: '@LFQuad' relative -> CfgPatches absent; the same
+    # in-mission ConfigIsExisting probe: a bare '@Name' relative -> CfgPatches absent; the same
     # mod as an absolute !Workshop path -> present. So: rewrite each bare '@Name' to its
     # absolute !Workshop path when that folder exists. Absolute/rooted tokens pass through.
     param([string]$Token)

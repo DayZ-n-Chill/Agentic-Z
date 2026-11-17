@@ -2,17 +2,17 @@
 
 How a custom weapon sits in the player's hands is decided by three things, and only one of them is in the weapon's `.p3d`:
 
-1. **The player's clips.** The weapon's instance file (`player_main_rifle.asi`, `weapons\player_main_akm.asi` and so on) and its IK pose place the hands. A weapon `.p3d` carries no hand points: the source pack read the Memory LOD of a debinarized vanilla `akm.p3d` (2026-06-11) and found no hand or grip selection in it. The bones involved are in `player-skeleton.md` (`RightHand_Dummy`, the IK helpers); the instance files are in `anim-graph.md`.
+1. **The player's clips.** The weapon's instance file (`player_main_rifle.asi`, `weapons\player_main_akm.asi` and so on) and its IK pose place the hands. A weapon `.p3d` carries no hand points: the Memory LOD of a debinarized vanilla `akm.p3d` (read 2026-06-11) has no hand or grip selection. The bones involved are in `player-skeleton.md` (`RightHand_Dummy`, the IK helpers); the instance files are in `anim-graph.md`.
 2. **The weapon's frame.** The engine hangs the model's origin on the hand (the `RightHand_Dummy` and `Weapon_Root` chain). How the grip and the handguard lie relative to the origin, on the vanilla weapon whose clips the custom weapon inherits, is the grip contract. If the custom weapon's grip and handguard occupy the same region of model space as the reference's, the inherited hands land correctly.
 3. **The weapon's memory points:** muzzle, ejection, axes, sight.
 
 So checking a grip means comparing geometry with the reference weapon in the same model space. That is what `weapon_grip_viewer.py` draws and checks.
 
-The short, checked version of the grip findings is in `skills/_shared/weapons/hand-animation-and-grip.md`. Results below marked with a project name were measured in game by that project and are not checked on `P:\`.
+The short, checked version of the grip findings is in `skills/_shared/weapons/hand-animation-and-grip.md`. Results below marked as measured in game are not checked on `P:\`.
 
 ## Memory points of a vanilla rifle (AKM)
 
-Read by the source pack from the Memory LOD of a debinarized `akm.p3d`; coordinates rounded, model space, muzzle toward −X, Y up. The point names all occur in the binarized `P:\DZ\weapons\firearms\akm\akm.p3d`; the coordinates cannot be checked there without converting the model. Where the meaning is marked "not checked" it fits the pattern but was not confirmed: keep the vanilla shape.
+Read from the Memory LOD of a debinarized `akm.p3d`; coordinates rounded, model space, muzzle toward −X, Y up. The point names all occur in the binarized `P:\DZ\weapons\firearms\akm\akm.p3d`; the coordinates cannot be checked there without converting the model. Where the meaning is marked "not checked" it fits the pattern but was not confirmed: keep the vanilla shape.
 
 | Name | Points | On the AKM | Meaning |
 |---|---|---|---|
@@ -31,7 +31,7 @@ Read by the source pack from the Memory LOD of a debinarized `akm.p3d`; coordina
 
 What script and config read from these names is in `skills/_shared/weapons/model-selections.md`.
 
-Rules worth enforcing on any custom rifle. Each was broken by a real generated build (the MK47 project, 2026-06-11) and caught by the checker:
+Rules worth enforcing on any custom rifle. Each was broken by a real generated build of an MK47 (2026-06-11) and caught by the checker:
 
 - `usti hlavne` and `konec hlavne` share Y and Z, a level bore. The MK47 had the rear point 4.6 cm high, which tilted the line of fire 6.3 degrees.
 - `bolt_axis` is parallel to the bore.
@@ -56,11 +56,11 @@ python <skill-dir>\scripts\weapon_grip_viewer.py --weapon MyRifle.p3d --ref akm_
 
 When the custom weapon inherits a vanilla base (for example the AKM's clips), parity comes from moving the whole model, geometry, memory points and proxies together, by one offset, so that its bore and grip have the reference's relation to the origin. Never move the grip alone.
 
-Worked example, the MK47 project: its assembler applies one global offset (+0.0326 on Y, −0.0102 on Z, taken from matching `usti hlavne` with the AKM's) exactly once when the model is assembled. Check that an offset is applied once; applying it twice is the classic failure. Then run the grip viewer again on the final `.p3d` taken out of the PBO.
+Worked example, an MK47 build: its assembler applies one global offset (+0.0326 on Y, −0.0102 on Z, taken from matching `usti hlavne` with the AKM's) exactly once when the model is assembled. Check that an offset is applied once; applying it twice is the classic failure. Then run the grip viewer again on the final `.p3d` taken out of the PBO.
 
 ## Turning the wrist in the IK pose does not turn the hand
 
-Measured in game by the A6_SR2M project (a custom submachine gun with no hand memory points, inheriting the AKS-74U clips), 2026-06-17.
+Measured in game on a custom submachine gun with no hand memory points, inheriting the AKS-74U clips, 2026-06-17.
 
 Rotating the `LeftHand` bone in the IK pose did not reorient the support hand. The engine's IK lines the hand up with the weapon again and absorbs the wrist rotation. Four variants of the IK pose with `LeftHand` turned 90 degrees about different local axes (120 to 180 degrees apart) all rendered the same. A pixel difference of the hand region gave RMS 7.8 for a 180 degree wrist roll, less than a change of finger curl (RMS 11). What the IK pose does drive visibly is the finger curl (the `LeftHand` thumb, index, middle, ring and pinky bones).
 
@@ -70,7 +70,7 @@ Do not over-read a difference between two vanilla IK poses. Two poses of one wea
 
 ## Testing pose and grip variants in game without fooling yourself
 
-From the A6_SR2M project, 2026-06-17:
+From the same tests, 2026-06-17:
 
 - **Compare on the same weapon.** Make one `CfgWeapons` class deriving from the real weapon per IK pose variant and register each clone with its own clip through `AddItemInHandsProfileIK`. Comparing variants across different weapons mixes in each weapon's balance and handguard, which swamps the difference being read.
 - **When the difference is small, measure it.** Take the RMS difference of the hand region between variants and against a change known to be visible (a finger curl), to separate signal from capture noise such as lighting and timing.
@@ -79,21 +79,21 @@ From the A6_SR2M project, 2026-06-17:
 
 ## The fix that worked: raise the weapon to the hand
 
-Measured in game by the A6_SR2M project, 2026-06-23. After every lever on the player's side had been shown to do nothing in game (the IK target's position and rotation in the IK pose, the behaviour flag, forward kinematics on `LeftHand`), the grip was fixed by the geometry. The weapon's bore sat 2.4 cm lower over the weapon's origin than on a working reference (bore at Y 0.090 on KarmaKrew's SR-2M against 0.066), so the support hand, which lands at a fixed point in skeleton space, came down on top of the barrel. Moving the whole model up 0.024 on Y raised the weapon into the hand and the hand closed on the foregrip. The idle grip was right in game.
+Measured in game on the same submachine gun, 2026-06-23. After every lever on the player's side had been shown to do nothing in game (the IK target's position and rotation in the IK pose, the behaviour flag, forward kinematics on `LeftHand`), the grip was fixed by the geometry. The weapon's bore sat 2.4 cm lower over the weapon's origin than on a working reference (bore at Y 0.090 on the reference against 0.066), so the support hand, which lands at a fixed point in skeleton space, came down on top of the barrel. Moving the whole model up 0.024 on Y raised the weapon into the hand and the hand closed on the foregrip. The idle grip was right in game.
 
 The rule: when moving the IK targets does nothing, stop tuning the animation. Move the weapon to the hand, not the hand to the weapon.
 
 ### Working mods use vanilla IK poses and matching geometry
 
-The source pack took apart a server pack (Workshop 2864245850, KarmaKrew) that shows a closed foregrip grip. The whole technique is the plain call `AddItemInHandsProfileIK(class, a rifle parent .asi, the firearms behaviour, a vanilla IK pose, states)`. The lever is choosing a vanilla IK pose whose `LeftHandIKTarget` lands where the weapon really has a handguard; it used the poses vanilla registers for the `Vikhr` and `PM73Rak_Base` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:434`, `:425`). There is no custom player animation mod, no changed base pose and no scripted bone work.
+A third-party weapon pack that shows a closed foregrip grip was taken apart (third-party mod behaviour, not vanilla). The whole technique is the plain call `AddItemInHandsProfileIK(class, a rifle parent .asi, the firearms behaviour, a vanilla IK pose, states)`. The lever is choosing a vanilla IK pose whose `LeftHandIKTarget` lands where the weapon really has a handguard; it used the poses vanilla registers for the `Vikhr` and `PM73Rak_Base` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:434`, `:425`). There is no custom player animation mod, no changed base pose and no scripted bone work.
 
 So a custom weapon gets its grip from three things: the firearms behaviour, a stock vanilla IK pose, and geometry where that pose lands. It does not need a full player animation mod.
 
 ### The IK pose is shared by all stances
 
-The IK pose (the fourth argument) applies to every stance. The base raised pose differs per stance (the `Locomotion.<stance>Ras` idle, aim and sight lines), and the aim lines add the aim space clip, which opens the support hand. So a geometry and IK pose pair that closes the idle grip can still leave the aim grip open, with the hand off the weapon and the front "floating". Rolling the wrist in the shared IK pose cannot close only the aim. The fix per stance is to override the weapon's aim and sight `Locomotion` lines in a child `.asi`: the parent rifle instance maps them, and the source pack saw third party weapon packs override them.
+The IK pose (the fourth argument) applies to every stance. The base raised pose differs per stance (the `Locomotion.<stance>Ras` idle, aim and sight lines), and the aim lines add the aim space clip, which opens the support hand. So a geometry and IK pose pair that closes the idle grip can still leave the aim grip open, with the hand off the weapon and the front "floating". Rolling the wrist in the shared IK pose cannot close only the aim. The fix per stance is to override the weapon's aim and sight `Locomotion` lines in a child `.asi`: the parent rifle instance maps them, and third-party weapon packs override them.
 
-On the A6_SR2M that worry did not come true (check of 2026-06-23): the same raise that closed the idle also closed the aim in third person, comparable to the reference and confirmed by the user. Lifting the weapon into the hand served both stances, because both base poses anchor the support hand to the same zone relative to the weapon. Keep the per stance override as the fallback for a weapon that still shows an open aim grip after the idle is closed.
+On the measured submachine gun that worry did not come true (check of 2026-06-23): the same raise that closed the idle also closed the aim in third person, comparable to the reference. Lifting the weapon into the hand served both stances, because both base poses anchor the support hand to the same zone relative to the weapon. Keep the per stance override as the fallback for a weapon that still shows an open aim grip after the idle is closed.
 
 ### Forcing the aim stance for a capture: on the client
 
@@ -114,7 +114,7 @@ A custom weapon animation reaches the player through three separate artifacts, b
 - `AddItemInHandsProfileIK(itemClass, asi, behavior, ikPose.anm, weaponStates.anm)` (`P:\scripts\3_game\dayzplayer.c:243`) binds the weapon class to its instance file, an IK pose and a weapon states clip.
 - `AddItemBoneRemap(itemClass, pairs)` (`P:\scripts\3_game\dayzplayer.c:252`) maps the weapon's part selections to the player skeleton's `Weapon_` bones.
 
-Do not mix up the three kinds of clip. The frame counts are the source pack's, from DayZATool extracts of the vanilla AKM clips:
+Do not mix up the three kinds of clip. The frame counts are from DayZATool extracts of the vanilla AKM clips:
 
 | Artifact | What it is | Vanilla AKM | Where it is named |
 |---|---|---|---|
@@ -126,14 +126,14 @@ The action clips play on top of the weapon states clip and override those bones 
 
 ## Reproducing the grip in an offline viewer
 
-From the source pack's weapon animation pipeline work, 2026-06-28: what decides the grip, and how far it can be reproduced offline without guessing.
+What decides the grip, and how far it can be reproduced offline without guessing (worked out 2026-06-28).
 
 ### What sets the grip, the complete list
 
 1. **Attachment.** The weapon mounts by its model origin on `Weapon_Root` and `RightHand_Dummy`. The weapon `.p3d` has no hand points.
-2. **The hands are the weapon's IK pose**, the fourth argument of `AddItemInHandsProfileIK`. Checked by extracting the project's `sr2m_grip.anm` with DayZATool: 43 bones, keying the IK helpers (`RightHandOrigin`, `LeftHandOrigin`, `LeftHandIKTarget`, the `ForeArmDirection` bones) and the fingers, not the raw `LeftHand` and `RightHand`. That clip inherits the AKS-74U pose.
+2. **The hands are the weapon's IK pose**, the fourth argument of `AddItemInHandsProfileIK`. Checked by extracting a custom grip clip with DayZATool: 43 bones, keying the IK helpers (`RightHandOrigin`, `LeftHandOrigin`, `LeftHandIKTarget`, the `ForeArmDirection` bones) and the fingers, not the raw `LeftHand` and `RightHand`. That clip inherits the AKS-74U pose.
 3. **Where the weapon lies relative to its origin.** The hand falls at a fixed point of the IK pose; the weapon's geometry is moved (one global offset) so its grip falls there. A short submachine gun, with about 0.18 m between pistol grip and foregrip, has no parity with a rifle hand spacing of about 0.33 m, so the support hand does not grip until parity is reached.
-4. **Stance and aim.** The aim space clip (`P:\DZ\anims\anm\player\layered\aim\2handed\p_2hd_erc_aimspace.anm`, 39 frames forming a two dimensional grid of directions, per the source pack's extract) is neutral at its centre frame, index 19: at most 0.7 degrees, mostly 0.0. So there is no separate sight pose to add at the centre. The plugin's sample base pose `Rifle_Erect_Idle_Ras (Soft_Aim).txa` already is the raised aim at centre; the aim space only deflects when aiming up, down or to the sides.
+4. **Stance and aim.** The aim space clip (`P:\DZ\anims\anm\player\layered\aim\2handed\p_2hd_erc_aimspace.anm`, 39 frames forming a two dimensional grid of directions, per its DayZATool extract) is neutral at its centre frame, index 19: at most 0.7 degrees, mostly 0.0. So there is no separate sight pose to add at the centre. The plugin's sample base pose `Rifle_Erect_Idle_Ras (Soft_Aim).txa` already is the raised aim at centre; the aim space only deflects when aiming up, down or to the sides.
 
 ### A Blender pipeline that reads the real grip offline
 
@@ -146,7 +146,7 @@ Applying a specific weapon's IK pose (its `.anm` or SEAnim) directly offline run
 ### Tools and the reference capture
 
 - DayZATool: `--extract-anim <input.anm> <scale=100>` takes no output path and writes the `.seanim` next to the input; `--generate-anim` is the reverse. The vanilla aim and IK pose clips are under `P:\DZ\anims\anm\player\layered\aim\` and `P:\DZ\anims\anm\player\ik\weapons\`.
-- The A6_SR2M project keeps its in-game reference captures (the grip closed on the foregrip, confirmed by the user). A capture run on the retail client took 10 to 15 minutes, so reuse captures instead of repeating them lightly.
+- Keep in-game reference captures (the grip closed on the foregrip). A capture run on the retail client took 10 to 15 minutes, so reuse captures instead of repeating them lightly.
 
 ### Starting the viewer from the right pose
 
@@ -154,7 +154,7 @@ Model: the base pose (the raised aim), the weapon on `Weapon_Root` with its pari
 
 ## The elbow cannot be derived offline: read it from the live skeleton
 
-A6_SR2M project, 2026-06-28. Offline resolution of the IK pose gets the hands right, because the IK target positions are static data. The elbow is resolved by the engine's IK at run time from the forearm direction pole and does not come out cleanly offline: the plugin's Blender pole gave a winged elbow, and a plain swivel guess went the opposite way (the right elbow guessed tucked, measured 81.7 degrees open; the left 50.4). Do not iterate on it by eye.
+Measured in game, 2026-06-28. Offline resolution of the IK pose gets the hands right, because the IK target positions are static data. The elbow is resolved by the engine's IK at run time from the forearm direction pole and does not come out cleanly offline: the plugin's Blender pole gave a winged elbow, and a plain swivel guess went the opposite way (the right elbow guessed tucked, measured 81.7 degrees open; the left 50.4). Do not iterate on it by eye.
 
 The reliable source is a dump of the live player skeleton in model space:
 
@@ -167,7 +167,7 @@ The same method serves any pose the engine's IK resolves (a vehicle rider, a hea
 
 ## An IK pose keys helper targets, not the arm
 
-A real IK pose keys eight IK bones (`LeftHandIKTarget`, `RightHandIKTarget`, `LeftHandOrigin`, `RightHandOrigin`, `LeftForeArmDirection`, `RightForeArmDirection` and the two `ForeArmDirectionOrigin` bones) together with every finger and the `_Dummy` bones. Checked by the source pack on its extracted grip clip (43 bones). It does not key the raw arm, forearm and hand bones: the hand is placed by the IK target and the elbow by the forearm direction.
+A real IK pose keys eight IK bones (`LeftHandIKTarget`, `RightHandIKTarget`, `LeftHandOrigin`, `RightHandOrigin`, `LeftForeArmDirection`, `RightForeArmDirection` and the two `ForeArmDirectionOrigin` bones) together with every finger and the `_Dummy` bones. Checked on an extracted grip clip (43 bones). It does not key the raw arm, forearm and hand bones: the hand is placed by the IK target and the elbow by the forearm direction.
 
 The weapon viewer's rig without IK bones lacks those eight, so exporting a native IK pose from it would mean synthesizing them, which is not trivial. Prefer a vanilla IK pose plus geometric parity. The viewer's part in grip work is in `weapon-anim-authoring-viewer.md`, "Authoring a grip with the viewer".
 

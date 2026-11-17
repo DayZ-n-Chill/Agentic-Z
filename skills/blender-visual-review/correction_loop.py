@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded stop-policy state machine for the Eye-driven correction loop.
-
-Plan 1.3 Phase 4, §3.6 — bounded correction-loop stop policy.
+"""Bounded stop-policy state machine for the visual correction loop.
 
 This is a PURE-LOGIC module: no images, no repo imports, stdlib only. It decides,
 after each iteration of an expensive VLM-driven correction loop, whether to stop
@@ -101,7 +99,7 @@ def decide(history, target_fidelity=0.85, max_iter=6, min_delta=0.02):
         return {
             "stop": True,
             "action": "request-input",
-            "reason": "progress plateaued below target (Δ<min_delta)",
+            "reason": "progress plateaued below target (gain < min_delta)",
         }
 
     # 6. HARD_CEILING — non-bypassable termination guarantee.
@@ -121,7 +119,7 @@ def decide(history, target_fidelity=0.85, max_iter=6, min_delta=0.02):
 
 
 def budget_exceeded(spent_tokens, budget):
-    """§3.6 budget circuit-breaker.
+    """Budget circuit-breaker.
 
     Returns True when the token budget is spent. The caller uses this to
     HALT-and-ask-the-user; it never silently continues.
@@ -131,7 +129,7 @@ def budget_exceeded(spent_tokens, budget):
 
 def main(argv):
     parser = argparse.ArgumentParser(
-        description="Bounded correction-loop stop policy (§3.6)."
+        description="Bounded correction-loop stop policy."
     )
     parser.add_argument("--history", required=True, help="path to JSON list of iterations")
     parser.add_argument("--target", type=float, default=0.85, help="target fidelity")

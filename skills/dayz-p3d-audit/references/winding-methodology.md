@@ -95,10 +95,10 @@ compare the wrong things.
 
 ## Known traps (lessons learned)
 
-- **A winding flip applied twice** returns the model to its original state
-  (idempotent modulo 2). Always write a backup (e.g. `.p3d.bak_pre_winding_flip`)
+- **A winding flip applied twice** returns the model to its original state.
+  Always write a backup (e.g. `.p3d.bak_pre_winding_flip`)
   before flipping; if the backup exists, the flip was applied at least once.
-  Note: the flip helper scripts referenced by the original project are NOT bundled
+  Note: no flip helper script is bundled
   with this skill: the operation is `face.vertices.reverse()` on every face via py3d.
   (This note once said to swap `vertices[1]`/`vertices[2]`. That is the same for a
   triangle but turns a quad `[0,1,2,3]` into `[0,2,1,3]`, a crossed face.)
@@ -108,9 +108,10 @@ compare the wrong things.
 - **One field-verified crate model has mixed winding in its Visual LOD** (~38.6% bad
   edges under Check B) yet **DayZ tolerates it in rendering** (verified in-game:
   visual, ballistics, cursor, and collision all OK). Its collision LODs
-  (Geometry/LandContact/ViewGeo/FireGeo) are internally consistent. Check B marking
-  this CRITICAL is fine as a preventive signal even though the engine tolerated it
-  in that particular case. Do not re-flip such a model unless a concrete in-game
+  (Geometry/LandContact/ViewGeo/FireGeo) are internally consistent. Treat such a
+  Check B reading as a preventive signal even though the engine tolerated it in that
+  particular case (where py3d's `validate()` reports it, the audit prints
+  `WARN_WINDING_EDGE_INCOHERENT` as a WARNING). Do not re-flip such a model unless a concrete in-game
   symptom appears.
 - **`face.flags |= 0x20000` (`NoBackfaceCulling`) does not work.** It was once listed
   here as a way round the problem in the Visual LOD. Measured since: the faces stayed

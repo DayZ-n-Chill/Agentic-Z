@@ -1,5 +1,4 @@
 #!/bin/sh
-# Source: bzed/dayz-dev-plugin 6112ac5, contributed to this Pack under its MIT licence by its author.
 # Run the DayZ *client* in a headless sway session: no monitor, nothing shown on your desktop.
 #
 #   dayz-client-headless.sh [-e] start <state-dir> [DayZ args...]   start sway + the game, return at once
@@ -180,7 +179,7 @@ if [ "$cmd" = status ]; then
     [ -z "$g" ] && { echo "no DayZ client running"; exit 0; }
     echo "$g" | cut -c1-120; exit 1
 fi
-[ -n "$cmd" ] && [ -n "$state" ] || { sed -n "2,13p" "$0" >&2; exit 2; }
+[ -n "$cmd" ] && [ -n "$state" ] || { sed -n "2,12p" "$0" >&2; exit 2; }
 case "$cmd" in start|shot|stop) ;; *) echo "unknown command: $cmd" >&2; exit 2 ;; esac
 # Whitelist first, before any side effect (before mkdir and before reading or writing any
 # file in the state dir): both the given path and the pwd -P resolved path must match.

@@ -3,8 +3,7 @@
 Signing a built PBO with DsUtils, the Workshop item folder, and publishing with the Publisher or SteamCMD.
 The release texts (description, changelog, classname list) come from `/dayz-release-pack`.
 
-Not yet checked on `P:\`: this is measured tool and Steam behaviour, recorded by the knowledge pack's author;
-this repo has not repeated it.
+Not yet checked on `P:\`: this is measured tool and Steam behaviour, not vanilla data.
 
 Measured on 2026-11-12 on one Windows PC with the Steam client signed in:
 signing a released PBO, creating a hidden Workshop item with SteamCMD, and what
@@ -21,7 +20,7 @@ and the subscriber's side (the download, the `!Workshop` junction and
 
 The `.biprivatekey` never goes into the item or the repository.
 
-[EXACT][CLAIM-WORKSHOP-SIGN-DSUTILS] Signing with the DsUtils of DayZ Tools
+Measured: signing with the DsUtils of DayZ Tools
 (`Bin\DsUtils`): `DSCreateKey <authority>` writes the key pair,
 `DSSignFile <authority>.biprivatekey <Mod>.pbo` writes the `.bisign` beside the
 PBO, and `DSCheckSignatures <addons folder> <keys folder>` printed
@@ -38,7 +37,7 @@ your own.
 | Command line | None in DayZ Tools | `+workshop_build_item <vdf>` |
 | On a machine where people play | No second login (inferred from its files, not measured) | Kicks the Steam client off if it logs in with the client's account (below) |
 
-[EXACT][CLAIM-WORKSHOP-PUBLISHER-FILES] `Bin\Publisher\Publisher.exe`
+`Bin\Publisher\Publisher.exe`
 (file version 1.0.240.639, signed by Bohemia Interactive) is a 32-bit WPF
 application that reaches Steam through `steam_api.dll`, with
 `steam_appid.txt` = 221100. Its strings include `SteamAPI_Init`,
@@ -47,7 +46,7 @@ DayZ Tools ships no `PublisherCmd` (the command-line publisher of Arma 3
 Tools), and no command-line option shows in the Publisher's strings. This was
 read from the installed files without running them.
 
-[INFERRED] From those strings, the Publisher publishes with the session of the
+Inferred from those strings: the Publisher publishes with the session of the
 running client instead of logging in. Not measured, and neither is whether it
 disturbs that session.
 
@@ -55,7 +54,7 @@ disturbs that session.
 
 ### Before any SteamCMD login on a machine where people play
 
-[EXACT][CLAIM-WORKSHOP-STEAMCMD-SESSION-REPLACED] A SteamCMD login with the
+Measured: a SteamCMD login with the
 account that the Steam client has signed in on the same machine replaces the
 client's session. In the same second as SteamCMD's `LogOnResponse` OK, the
 client's `logs\connection_log.txt` recorded
@@ -71,12 +70,12 @@ So, on a machine where people play: publish with the Publisher, or run
 SteamCMD with that account only while the Steam client is closed and no game
 is running, the first login included. A second account was not tried.
 
-[INFERRED] Any SteamCMD login with that account does the same,
-`workshop_download_item` included. Not measured.
+Inferred, not measured: any SteamCMD login with that account does the same,
+`workshop_download_item` included.
 
 ### Login
 
-[EXACT][CLAIM-WORKSHOP-STEAMCMD-LOGIN] Download
+Measured: download
 `https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip` and check that
 `Get-AuthenticodeSignature steamcmd.exe` reports `Valid` with a Valve signer
 before running it. The first run updates itself (about 43 MB) and relaunches,
@@ -99,7 +98,7 @@ tried. SteamCMD writes the account name and the SteamID in its own logs.
 
 ### Creating a hidden item
 
-[EXACT][CLAIM-WORKSHOP-STEAMCMD-CREATE] Creating a hidden DayZ item:
+Measured: creating a hidden DayZ item:
 
     "workshopitem"
     {

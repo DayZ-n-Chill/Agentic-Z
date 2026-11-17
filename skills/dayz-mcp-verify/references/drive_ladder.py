@@ -12,11 +12,11 @@ rungs (R2 render look, R6 turn confirmation) need capture_screenshot, which is a
 eyeball the PNG). This script flags them, it does not capture. The script's result is `objective_PASS`,
 NOT acceptance: acceptance also needs the agent's visual rungs (R2_visual, R6 calibration).
 
-On a FAIL it maps the symptom to a SUB_BRZ taxonomy fix (skill dayz-vehicles, references/) and writes
+On a FAIL it maps the symptom to a SUB_BRZ taxonomy fix (the vehicles pack, skills/_shared/vehicles/) and writes
 verdict.json. It does NOT apply fixes or rebuild - that is the agent/human loop (guardrail 1: a failure
 outside the known taxonomy STOPS and escalates; no blind rebuild).
 
-Hardening applied after R21 (Codex review 2026-06-28, DL-001..011): R3 gates on the DRIVER seat
+Hardening: R3 gates on the DRIVER seat
 (crew_index 0), not any seat; R4 is fail-closed on seated+is_owner+fixture_ready; a preflight aborts if
 the player is already in a vehicle (re-run would measure the old car); R5 requires engine_on+is_owner and
 emits needs_clear_ground_retest instead of a one-shot obstacle/drivetrain guess; every verb is checked for
@@ -41,11 +41,11 @@ from pathlib import Path
 
 DEF_KEYFILE = os.environ.get("DAYZ_MCP_KEYFILE", "")
 
-# first_block (MCPBridge.c:589-708) -> SUB_BRZ taxonomy fix anchor (skill dayz-vehicles, references/).
+# first_block (MCPBridge.c:589-708) -> SUB_BRZ taxonomy fix anchor (the vehicles pack, skills/_shared/vehicles/).
 FIRST_BLOCK_FIX = {
     "": "available",
-    "componentNN": "componentNN dual-tag - vehicle-structural-parity.md 'componentNN DUAL-TAG' + rip-import.md:385-388 (the DRIVER seat is not enumerated as a collision component)",
-    "crew_can_get_through": "bare 'class X: CarScript' inherits Transport.CrewCanGetThrough()=false - fix: extends CarScript override CrewCanGetThrough+GetSeatAnimationType+GetAnimInstance + worldScriptModule (rip-import.md:430-451)",
+    "componentNN": "componentNN dual-tag - vehicle-structural-parity.md 'componentNN DUAL-TAG' + rip-import.md (the DRIVER seat is not enumerated as a collision component)",
+    "crew_can_get_through": "bare 'class X: CarScript' inherits Transport.CrewCanGetThrough()=false - fix: extends CarScript override CrewCanGetThrough+GetSeatAnimationType+GetAnimInstance + worldScriptModule (rip-import.md)",
     "area_blocked": "IsAreaAtDoorFree false -> door-area obstruction / door selection",
     "unreachable": "CanReachSeatFromDoors false -> seat<->door geometry, OR car too far from player (move adjacent before concluding a model fix)",
     "occupied": "seat taken -> respawn fresh (harness state, not a model bug)",
@@ -56,7 +56,7 @@ FIRST_BLOCK_FIX = {
 
 
 def _truthy(v) -> bool:
-    """Wire bools may arrive as JSON true OR int 1 (bridge GATE4B-001). Treat both as true."""
+    """Wire bools may arrive as JSON true OR int 1. Treat both as true."""
     return v is True or v == 1
 
 
@@ -170,7 +170,7 @@ def run_ladder(d, args) -> dict:
 
     ppos = wait_ready(d)
 
-    # ---- Preflight (DL-003): abort if the player is ALREADY in a vehicle from a prior pass ----
+    # ---- Preflight: abort if the player is ALREADY in a vehicle from a prior pass ----
     # vehicle_telemetry resolves the owned car; not-seated -> error="not_seated". A valid pos here =
     # the player is still in some car, so R4 would seat in IT and R5 would measure the WRONG car.
     pre = d.run("vehicle_telemetry", {}, timeout=15)
@@ -184,7 +184,7 @@ def run_ladder(d, args) -> dict:
     print(f"[R1] world_spawn {args.vehicle} @ player {ppos} rot={args.rotation}", flush=True)
     spawn = d.run("world_spawn", {"type": args.vehicle, "pos": ppos, "rotation": args.rotation}, timeout=30)
     car = extract_pos(spawn) or ppos
-    # DL-010: `found` is fail-closed (absent -> R1 fails; the success path always posts found=true).
+    # `found` is fail-closed (absent -> R1 fails; the success path always posts found=true).
     if spawn.get("_timeout") or not _truthy(spawn.get("ok")) or not _truthy(spawn.get("found")):
         fail("R1", f"world_spawn returned {json.dumps(spawn)[:160]}",
              "unknown_type/spawn_failed -> mod not mounted / CfgPatches; OR spawned-but-invisible -> componentNN dual-tag (vehicle-structural-parity.md)", hard=True)
@@ -194,7 +194,7 @@ def run_ladder(d, args) -> dict:
     print(f"[R1] PASS car @ {car}", flush=True)
 
     # ---- R2 collision: raycast presence (objective). Winding/coverage/orient = AGENT visual. ----
-    # DL-007: solid>=6/12 is a COARSE "collision geometry responds at all" check (catches invisible /
+    # Solid>=6/12 is a COARSE "collision geometry responds at all" check (catches invisible /
     # no-ViewGeo). It does NOT verify winding or coverage - a half-missing car can still hit ~6. The
     # winding/orient/scale verdict is R2_visual (agent capture), which the script cannot close.
     cx, cy, cz = car
@@ -210,12 +210,12 @@ def run_ladder(d, args) -> dict:
     R["rungs"]["R2_visual"] = {"PASS": None, "note": "AGENT (not scriptable): camera_set(cam_mode='lookat') + capture_screenshot, N angles; judge winding/orient/scale by eye. Required to close acceptance."}
     if solid < 6:
         fail("R2_collision", f"only {solid}/12 raycasts hit the car (no/sparse collision geometry)",
-             "missing ViewGeo/FireGeo (vehicle-structural-parity.md) OR winding per-piece (rip-import.md:487-575); confirm winding with the visual rung", hard=False)
+             "missing ViewGeo/FireGeo (vehicle-structural-parity.md) OR winding per-piece (rip-import.md); confirm winding with the visual rung", hard=False)
     else:
         print(f"[R2] collision PASS {solid}/12 (winding/coverage = agent visual)", flush=True)
 
     # ---- R3 get-in diagnostic for the DRIVER seat (soft; does NOT block R4) ----
-    # DL-001: PASS only if the DRIVER seat (crew_index 0) is available. A car where only a PASSENGER
+    # PASS only if the DRIVER seat (crew_index 0) is available. A car where only a PASSENGER
     # seat is reachable but the driver is unreachable is NOT drivable by a human (the SUB_BRZ tramoB case).
     nc = d.run("query_get_in_condition", {"pos": car, "component": -1}, timeout=20).get("get_in") or {}
     partial_ok = bool(nc.get("partial")) and int(nc.get("crew_size", 0) or 0) > 0
@@ -249,7 +249,7 @@ def run_ladder(d, args) -> dict:
         print("[R3] PASS (driver seat is available)", flush=True)
 
     # ---- R4 seated through MCP (hard for R5/R6) ----
-    # DL-002: fail-closed on the full contract: not timeout, ok, seated, is_owner, vehicle_fixture_ready.
+    # Fail-closed on the full contract: not timeout, ok, seated, is_owner, vehicle_fixture_ready.
     gi = d.run("vehicle_get_in_client", {"pos": car}, timeout=40)
     r4_pass = (not gi.get("_timeout") and not _bad(gi)
                and _truthy(gi.get("seated")) and _truthy(gi.get("is_owner"))
@@ -275,7 +275,7 @@ def run_ladder(d, args) -> dict:
     t1 = d.run("vehicle_telemetry", {}, timeout=20)
     pos1 = extract_pos(t1)
 
-    # DL-006: a verb that timed out / returned ok:false is a HARNESS/bridge issue, NOT a model defect.
+    # A verb that timed out / returned ok:false is a HARNESS/bridge issue, NOT a model defect.
     if _bad(eng) or _bad(ctrl) or _bad(t0) or _bad(t1):
         R["rungs"]["R5"] = {"PASS": False, "inconclusive": True}
         fail("R5", "a drive verb timed out or returned ok:false (harness/bridge, NOT a model defect)",
@@ -283,7 +283,7 @@ def run_ladder(d, args) -> dict:
         d.run("vehicle_release", {}, timeout=20)
         return _finish(R, d, args)
 
-    # DL-003 defense: the seated car must BE the one we spawned (pos0 near car_pos), else we'd measure
+    # Defense: the seated car must BE the one we spawned (pos0 near car_pos), else we'd measure
     # the wrong car despite the preflight.
     if pos0 is not None and math.dist(pos0, car) > 8.0:
         R["rungs"]["R5"] = {"PASS": False, "inconclusive": True, "seated_pos": pos0, "spawn_pos": car}
@@ -297,7 +297,7 @@ def run_ladder(d, args) -> dict:
     engine_on = _truthy(t1.get("engine_on_server"))
     is_owner = _truthy(t1.get("is_owner"))
     pos_delta = math.dist(pos0, pos1) if (pos0 and pos1) else None
-    # DL-004: require engine_on + is_owner so gravity/inertia on a dead drivetrain cannot PASS.
+    # Require engine_on + is_owner so gravity/inertia on a dead drivetrain cannot PASS.
     r5_pass = (pos_delta is not None and pos_delta > 1.0 and speedo > 0.0 and engine_on and is_owner)
     R["rungs"]["R5"] = {"PASS": r5_pass, "pos_delta": pos_delta, "speedo_max": speedo, "gear": gear,
                         "engine_on_server": engine_on, "is_owner": is_owner}
@@ -306,12 +306,12 @@ def run_ladder(d, args) -> dict:
             fail("R5", f"precondition broke: engine_on={engine_on} is_owner={is_owner} (pos_delta={pos_delta}, speedo={speedo})",
                  "not a drivetrain defect: engine never started or ownership lost -> re-check R4/engine_set, not the model", hard=False)
         else:
-            # DL-005: engine on + owner but no motion is AMBIGUOUS (obstacle vs drivetrain). Do NOT emit a
+            # Engine on + owner but no motion is AMBIGUOUS (obstacle vs drivetrain). Do NOT emit a
             # one-shot drivetrain fix; require the clear-ground retest as ground-truth.
             R["rungs"]["R5"]["verdict"] = "needs_clear_ground_retest"
             hint = f"speedo={speedo} gear={gear}"
             fail("R5", f"engine_on+owner but pos_delta={pos_delta}, speedo={speedo} -> AMBIGUOUS (obstacle vs drivetrain); {hint}",
-                 "MANDATORY before any fix: re-run on CLEAR ground (relocate / --rotation into open space). If it then moves -> was an obstacle (false FAIL). If still ~0 with the engine revving -> wheel sim (FireGeo) rip-import.md:250-251 / drivetrain config. Do NOT apply a model fix on this single reading.", hard=False)
+                 "MANDATORY before any fix: re-run on CLEAR ground (relocate / --rotation into open space). If it then moves -> was an obstacle (false FAIL). If still ~0 with the engine revving -> wheel sim (FireGeo) rip-import.md / drivetrain config. Do NOT apply a model fix on this single reading.", hard=False)
     else:
         print(f"[R5] PASS pos_delta={pos_delta:.1f}m speedo={speedo} engine_on owner", flush=True)
 
@@ -331,7 +331,7 @@ def run_ladder(d, args) -> dict:
             cross = hx * dz - hz * dx  # signed turn in the XZ plane; sign->left/right is UNCALIBRATED
         R["rungs"]["R6"] = {"PASS": None, "steer_cmd": args.steer_left_sign, "signed_cross": cross,
                             "calibrated": False,
-                            "note": "UNCALIBRATED: the sign->left/right mapping is NOT verified against a vanilla ref. Report signed_cross; do NOT map to a model.cfg wheel `angle`/naming fix (rip-import.md:195) on this alone."}
+                            "note": "UNCALIBRATED: the sign->left/right mapping is NOT verified against a vanilla ref. Report signed_cross; do NOT map to a model.cfg wheel `angle`/naming fix (rip-import.md) on this alone."}
         print(f"[R6] INFO steer={args.steer_left_sign} signed_cross={cross} (UNCALIBRATED; visual=agent)", flush=True)
 
     d.run("vehicle_release", {}, timeout=20)
@@ -344,7 +344,7 @@ def _finish(R: dict, d, args) -> dict:
 
 def write_verdict(R: dict, args) -> int:
     stop = R.get("stop")
-    # DL-007: objective_PASS = the scriptable rungs only. Acceptance ALSO needs the agent visual rungs
+    # Objective_PASS = the scriptable rungs only. Acceptance ALSO needs the agent visual rungs
     # (R2_visual, R6 calibration), which this script cannot close -> acceptance_PASS stays None.
     objective = [v.get("PASS") for v in R["rungs"].values() if v.get("PASS") is not None]
     R["objective_PASS"] = bool(objective) and all(objective)
@@ -356,7 +356,7 @@ def write_verdict(R: dict, args) -> int:
     out.write_text(json.dumps(R, indent=2, default=str), encoding="utf-8")
     print(f"\n[ladder] verdict: {out.resolve()}  objective_PASS={R['objective_PASS']}  stop={stop}", flush=True)
     if R["fixes"]:
-        print("[ladder] batched fixes to apply (one rebuild, R5):", flush=True)
+        print("[ladder] batched fixes to apply (one rebuild):", flush=True)
         for f in R["fixes"]:
             print(f"  - {f['rung']}: {f['fix']}", flush=True)
     return 0 if R["objective_PASS"] else 2
@@ -378,7 +378,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_arg_parser().parse_args()
-    # DL-009: the held-state deadman must outlast the measured window, else the car stops mid-measure.
+    # The held-state deadman must outlast the measured window, else the car stops mid-measure.
     min_ttl = args.drive_s + 4.0
     if args.hold_ttl < min_ttl:
         print(f"[warn] hold_ttl {args.hold_ttl} < drive_s+margin {min_ttl}; raising hold_ttl to {min_ttl}", flush=True)

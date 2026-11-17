@@ -14,9 +14,7 @@
 # to whoever reads it.
 #
 # To re-wire: compile `Print("b=" + true);` in DayZDiag. If it fails, restore the
-# rule and cite the RPT line here. The claim's origin was a third-party tool's
-# guide (ZeripeDaniel/Lake-Dayz-MCP, GPLv3 - knowledge only, no code or text
-# adopted), adopted without a check.
+# rule and cite the RPT line here. The premise was taken up without a check.
 
 import re
 

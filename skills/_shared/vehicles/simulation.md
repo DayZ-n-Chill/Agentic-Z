@@ -45,7 +45,7 @@ Reference block: `Boat_01_ColorBase` (`P:\DZ\vehicles\water\config.cpp:124` to `
 
 Floating is set outside the module by `class Buoyancy` on `BoatScript`: `linearDampeningCoefficient`, `angularDampeningCoefficient`, `linearDragCoefficient`, `quadraticDragCoefficient`, `falloffPower`, `sinkRate` (`:32`). The native `Boat` class sets `canFloat=1`; `Car` sets `canFloat=0` (`P:\bin\config.cpp:1455`, `:1429`).
 
-What a boat does at run time (engine stop out of water, decay, water particles, its actions, get-in that is always free) and the truck's three axles and double wheels are in `vehicle-types-boat-truck.md`. A complete car module with every class filled in, taken from a working mod, is in `vehicle-config-and-modelcfg.md`, section 3.
+What a boat does at run time (engine stop out of water, decay, water particles, its actions, get-in that is always free) and the truck's three axles and double wheels are in `vehicle-types-boat-truck.md`. A complete car module with every class filled in is in `vehicle-config-and-modelcfg.md`, section 3.
 
 ## Reading the simulation from script
 
