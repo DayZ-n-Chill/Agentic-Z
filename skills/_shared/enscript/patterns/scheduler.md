@@ -23,6 +23,8 @@ m_Tick.Run(1.0, this, "Tick", null, true);
 
 The reported symptom is callbacks that fired correctly for hours and then skip, or fire many times back to back. If you see it, compare a `Timer` before you change anything else.
 
+The knowledge pack states this report as a fact and gives its source as "long-run production server logs"; those logs are not in this repo, so it stays unverified here. It also names a second way out for work that must keep time across many hours: have one manager object decide when work is due from the system clock, not from an accumulated delay. The clock calls are vanilla: `GetHourMinuteSecond(out int hour, out int minute, out int second)` (`P:\scripts\1_core\proto\ensystem.c:28`) and `GetYearMonthDay(out int year, out int month, out int day)` (`ensystem.c:52`).
+
 ---
 
 ## ⚠️ Per-tick allocation kills perf
@@ -52,6 +54,21 @@ override void OnUpdate(float dt)
 The engine's GC is aggressive on function-scope refs; high-frequency `new` inside ticks shows up as periodic frame-time spikes in the diag profiler.
 
 Rule of thumb: anything inside a function that fires more than once per second should own its working buffers as member fields and `.Clear()` them rather than reallocate.
+
+---
+
+## Reported traps with scheduled calls
+
+From the knowledge pack's mods (LFHeli, LFPowerGrid), measured in game by its author and not checked on `P:\`, because the call queue is native (`CallLater` is `proto`, `P:\scripts\2_gamelib\tools.c:61`):
+
+- **In a one-shot `CallLater`, the callback is the deadline.** A callback that checks the clock again (`GetTickTime() >= armTime`) can miss by a few milliseconds on the frame it fires, and a one-shot never runs again. Inside the callback check only state (armed, not started), not time.
+- **A sleeping entity gets no `EOnSimulate`.** An idle vehicle falls asleep within a few ticks, and a countdown that lives in `EOnSimulate` stops with it. Put timed logic for such an entity on the call queue.
+- **A manager's repeating call can outlive the manager.** When a singleton is reset on reconnect and its `Remove()` is in the destructor of the dropped instance, the queue keeps calling the dead object. For client maintenance ticks, count `timeslice` up in the mission's `OnUpdate` and fetch the singleton each frame, so nothing is registered. Set the counter to zero when it fires instead of subtracting the period, so a long hitch fires once.
+- **Give each fix its own log line.** Without one, "the fix was not compiled in" and "the fix was not enough" look the same after a rebuild.
+- **A `CallLater` that queues itself again from inside its own callback stopped after the first step on a 1.29 diag client**, with no error in the log; the same call made from outside the queue worked. A `Timer` with `loop` set, stopped with `Stop()` when the chain is done, ran every step. The same chain was not reproduced on a retail 1.30.164289 server, where both `CALL_CATEGORY_SYSTEM` and `CALL_CATEGORY_GAMEPLAY` chains ran all six steps. If a self re-queuing chain dies silently on a client, switch it to a `Timer`.
+- **One repeating `CallLater` per device does not scale.** The LFPowerGrid mod reports heap fragmentation and an "Illegal write" crash after hours with about a hundred devices each holding its own repeating call. Run one `Timer` in a manager and loop over a registered array of devices instead; `server_tick_budget.md` shows how to cap and spread that loop.
+
+Detail: `skills/enforce-script-reference/references/runtime-traps.md` and, for server load, `skills/enforce-script-reference/references/server-performance.md`.
 
 ---
 

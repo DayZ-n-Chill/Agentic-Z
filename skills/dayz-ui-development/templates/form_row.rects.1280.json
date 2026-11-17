@@ -1,0 +1,51 @@
+{
+  "layout": "skills/dayz-ui-development/templates/form_row.layout",
+  "screen": [
+    1280.0,
+    720.0
+  ],
+  "nodes": [
+    {
+      "name": "FormRow",
+      "type": "FrameWidget",
+      "parent": "",
+      "depth": 0,
+      "visible": 1,
+      "ignore_pointer": 0,
+      "clickable": false,
+      "source": "layout",
+      "screen_x": 0.0,
+      "screen_y": 0.0,
+      "screen_w": 1280.0,
+      "screen_h": 720.0
+    },
+    {
+      "name": "RowLabel",
+      "type": "TextWidget",
+      "parent": "FormRow",
+      "depth": 1,
+      "visible": 1,
+      "ignore_pointer": 1,
+      "clickable": false,
+      "source": "layout",
+      "screen_x": 0.0,
+      "screen_y": 0.0,
+      "screen_w": 435.2,
+      "screen_h": 720.0
+    },
+    {
+      "name": "RowEdit",
+      "type": "EditBoxWidget",
+      "parent": "FormRow",
+      "depth": 1,
+      "visible": 1,
+      "ignore_pointer": 0,
+      "clickable": true,
+      "source": "layout",
+      "screen_x": 460.8,
+      "screen_y": 72.0,
+      "screen_w": 819.2,
+      "screen_h": 576.0
+    }
+  ]
+}

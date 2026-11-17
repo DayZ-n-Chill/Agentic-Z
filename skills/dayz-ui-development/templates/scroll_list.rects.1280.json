@@ -1,0 +1,65 @@
+{
+  "layout": "skills/dayz-ui-development/templates/scroll_list.layout",
+  "screen": [
+    1280.0,
+    720.0
+  ],
+  "nodes": [
+    {
+      "name": "ScrollListRoot",
+      "type": "FrameWidget",
+      "parent": "",
+      "depth": 0,
+      "visible": 1,
+      "ignore_pointer": 1,
+      "clickable": false,
+      "source": "layout",
+      "screen_x": 0.0,
+      "screen_y": 0.0,
+      "screen_w": 1280.0,
+      "screen_h": 720.0
+    },
+    {
+      "name": "ScrollListPanel",
+      "type": "PanelWidget",
+      "parent": "ScrollListRoot",
+      "depth": 1,
+      "visible": 1,
+      "ignore_pointer": 0,
+      "clickable": false,
+      "source": "layout",
+      "screen_x": 409.6,
+      "screen_y": 144.0,
+      "screen_w": 460.8,
+      "screen_h": 432.0
+    },
+    {
+      "name": "ScrollList",
+      "type": "ScrollWidget",
+      "parent": "ScrollListPanel",
+      "depth": 2,
+      "visible": 1,
+      "ignore_pointer": 0,
+      "clickable": false,
+      "source": "layout",
+      "screen_x": 428.032,
+      "screen_y": 161.28,
+      "screen_w": 423.936,
+      "screen_h": 397.44
+    },
+    {
+      "name": "ScrollContent",
+      "type": "GridSpacerWidget",
+      "parent": "ScrollList",
+      "depth": 3,
+      "visible": 1,
+      "ignore_pointer": 1,
+      "clickable": false,
+      "source": "layout",
+      "screen_x": 428.032,
+      "screen_y": 161.28,
+      "screen_w": 423.936,
+      "screen_h": 0.0
+    }
+  ]
+}

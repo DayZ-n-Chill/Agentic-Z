@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -517,3 +518,15 @@ def test_absent_mods_with_game_but_no_workshop_names_the_folder(
     assert "DAYZ_GAME_PATH" not in err
     assert "mklink" not in err
     assert created == []
+
+
+# --- references ------------------------------------------------------------
+
+
+def test_skill_reference_table_lists_every_reference_file():
+    # The references hold checks preflight.py does not run (Object Builder viewer, 1.30, Linux);
+    # a file missing from SKILL.md's table is never opened, and a row without a file is a dead end.
+    listed = set(re.findall(r"`references/([\w.-]+\.md)`", (HERE / "SKILL.md").read_text(encoding="utf-8")))
+    on_disk = {p.name for p in (HERE / "references").glob("*.md")}
+    assert on_disk, "skills/dayz-preflight/references holds no .md file"
+    assert listed == on_disk

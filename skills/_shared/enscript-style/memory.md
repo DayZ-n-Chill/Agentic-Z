@@ -30,6 +30,8 @@ class MyClass : Managed
 
 **Note:** Entities (`Object`, `EntityAI`, `ItemBase`, `PlayerBase`) are owned by the engine. Give your own helper and data classes `Managed` (or a vanilla class that has it) as the root; see `../enscript/references/language_memory.md`, "The two roots".
 
+**Measured, not checked on `P:\`** (the knowledge pack's author, dedicated server, DayZ 1.30.164289, a class declared in the mission module): `ref` also keeps a plain class with no `Managed` ancestor alive, so inheriting `Managed` is not what makes `ref` work, and a member field without `ref` is weak for both kinds of class. `Managed` as the root stays the style rule here, because vanilla's own script-owned classes use it (`Param`, `TimerBase`, `Serializer`; cited in `language_memory.md`). The probe and its other results are in `skills/enforce-script-reference/references/memory-management.md`.
+
 ### Freeing objects
 
 A `Managed` object is freed when its last strong (`ref`) reference goes away; a plain reference does not keep it alive. This is engine behaviour, stated in `../enscript/references/language_memory.md`, "`ref` keeps an object alive".

@@ -1,6 +1,6 @@
 ---
 name: dayz-preflight
-description: "Checks the DayZ modding environment (P:\\ mounted, DayZ Tools, DayZ Diag and DayZ Server installed, vanilla data unpacked, P:\\Mods junction) and creates the junction if it is missing. Use when starting DayZ work, after a reboot or fresh clone, or when another DayZ skill reports an environment problem."
+description: "Checks the DayZ modding environment (P:\\ mounted, DayZ Tools, DayZ Diag and DayZ Server installed, vanilla data unpacked, P:\\Mods junction) and creates the junction if it is missing. Use when starting DayZ work, after a reboot or fresh clone, before a debug session, or when another DayZ skill reports an environment problem. Its references cover the Object Builder (Buldozer) viewer path, the DayZ 1.30 launch options (-cacheP3D, unpacked -mod folder) and the Linux equivalents."
 ---
 
 <!-- skill-dir-note -->
@@ -19,6 +19,8 @@ python "<skill-dir>\preflight.py"
 ```
 
 Run it before other DayZ skills, after a fresh clone, and after each reboot (`P:\` does not auto-mount). Build and deploy skills run it for you as a gate.
+
+One flow does not need a separate preflight run: the in-game test script `dayz-test.ps1` of the dayz-test-ingame skill starts with its own checks (game exe, work drive, the `P:\Mods` junction, `allowFilePatching` in `serverDZ.cfg`, the Steam session, AddonBuilder for a build) and creates the junction when it is missing. Preflight is the report-and-warn check for everything else.
 
 ## What it checks
 
@@ -80,8 +82,30 @@ DayZ preflight
 
 Exit 1; downstream DayZ skills refuse to run.
 
+## Before a debug or diagnosis session
+
+A build needs only the checks above. Diagnosing a bug also needs the files to compare against. Before a debug session, confirm these are on `P:\` and ask the user to mount or unpack whatever is missing:
+
+1. The unpacked vanilla scripts under `P:\scripts`. They are the authority on engine, action and vehicle behaviour: `CarScript`, for example, is declared at `P:\scripts\4_world\entities\vehicles\carscript.c:94`. Preflight already warns when this folder is missing or empty.
+2. The mod's own tree on `P:\` (`P:\<ModName>\`, the link `/dayz-new-mod` creates to `workspace/<ModName>/`) and, for a packed test, its PBOs under `P:\Mods\@<ModName>\Addons\`, to confirm what is actually in the build under test.
+3. The working reference mod the broken one is being compared with, when there is one.
+
+Without them a diagnosis falls back on memory and diffs. Preflight does not check items 2 and 3, because they depend on the mod. This rule comes from a vehicle mod debug session (the LFQuad quad bike, May 2026).
+
+## References
+
+These hold checks and notes that `preflight.py` does not run.
+
+| Question | File |
+|---|---|
+| Object Builder's Buldozer preview never opens. Is the external viewer path valid? | `references/object-builder-viewer.md` |
+| What does DayZ 1.30 change for the environment (`-cacheP3D`, an unpacked `-mod` folder, the new Workbench editors)? | `references/dayz-1-30.md` |
+| What replaces each check on Linux? | `references/linux.md` |
+
+When the work has to end in a mod that builds, loads and ships (`config.cpp` and `CfgMods`, `requiredAddons`, the PBO and its signature, a boot on a local server, the Workshop), follow `/dayz-mod-dev`, the entry point for mod development.
+
 ## Do not
 
-- Don't mount `P:\` from here. That is `/dayz-workdrive`'s job.
+- Don't mount `P:\` from here. That is `/dayz-workdrive`'s job; when DayZ Tools cannot mount the drive it falls back to `subst P: "<folder>"` itself.
 - Don't "fix" a wrong `P:\Mods\` automatically. A real folder may hold the user's files; the warning gives the manual fix.
 - Don't treat the Tools, Diag, Server, vanilla data or junction warnings as fatal in preflight itself. The user may have a custom layout; build skills enforce what they need.

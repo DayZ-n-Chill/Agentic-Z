@@ -7,6 +7,8 @@
 - [NEVER use `extends` on `modded class`](#-never-use-extends-on-modded-class)
 - [Basic Extension](#basic-extension)
 - [Mod Stack Ordering](#mod-stack-ordering)
+- [Server-only overrides need a stub in the base class](#server-only-overrides-need-a-stub-in-the-base-class)
+- [`MissionServer` overrides: call `super`, and spawn where vanilla spawns](#missionserver-overrides-call-super-and-spawn-where-vanilla-spawns)
 - [Adding Fields Safely](#adding-fields-safely)
 - [Adding Actions to an Item](#adding-actions-to-an-item)
 - [Constructor and Destructor](#constructor-and-destructor)
@@ -74,6 +76,79 @@ Multiple mods can each `modded class PlayerBase`. Each mod's layer sits on top o
 
 > **Warning: Never skip `super.*`** unless you deliberately intend to suppress all lower-layer behaviour. This is the most common source of mod incompatibility.
 
+Reported by the knowledge pack, not checked on `P:\` (load order is native): the order of the layers follows the `requiredAddons` compile order, not the order of the `-mod=` or `-servermod=` launch string (measured on a 1.30 server). Do not assume your layer is the outermost one. To undo what another mod's layer did, act in an event that runs after it, such as `EEInit()` after the constructor chain.
+
+A `modded class` in the wrong module fails in one of two ways:
+
+- The class is from a lower module than the file. `modded class Transport` written in `4_World` fails with `Unknown type 'Transport'` (reported); `Transport` is a `3_game` class (`P:\scripts\3_game\vehicles\transport.c:68`).
+- The class is from a higher module than the file. `modded class MissionServer`, `MissionGameplay` or `Chat` written in `4_World` may compile, depending on parse order, but the override is never bound to the live object, so `OnInit`, `OnMissionStart` and `InvokeOnConnect` never run from your code and nothing is logged (reported). `MissionServer` is declared in `5_mission` (`P:\scripts\5_mission\mission\missionserver.c:5`). Put the file in `Scripts/5_Mission/`.
+
+More on which code goes in which module: `skills/enforce-script-reference/references/script-layers.md`.
+
+---
+
+## Server-only overrides need a stub in the base class
+
+A mod can keep its heavy server logic out of the client by declaring a class with empty methods for both sides and overriding them in a `modded class` wrapped in `#ifdef SERVER`. `SERVER` is defined only on a dedicated server (`P:\scripts\1_core\defines.c:106`), so the client never compiles the second file. The class names below are placeholders; `CF_ModuleWorld` is Community Framework's module base (`../integrations/community_framework.md`).
+
+```c
+// Scripts/4_World/MyMod_Module.c: compiled on client and server
+class MyMod_Module : CF_ModuleWorld
+{
+    // Empty stubs the client can call without error
+    bool ShouldBlock(ItemBase item) { return false; }
+    void Notify(PlayerBase player) {}
+}
+
+// Scripts/4_World/MyMod_Module_Server.c: compiled on the server only
+#ifdef SERVER
+modded class MyMod_Module
+{
+    override bool ShouldBlock(ItemBase item) { /* validation, file access, RPC */ }
+    override void Notify(PlayerBase player) { /* admin messages */ }
+
+    // A new method added only here is the trap
+    bool NewServerMethod(ItemBase item) { return true; }
+}
+#endif
+```
+
+**The trap.** A method added only in the server file does not exist on the client. Any code the client compiles that calls it fails with `Undefined function 'MyMod_Module.NewServerMethod'`. The body of an `OnStartServer` override runs on the server, but its file is compiled on both sides, so a call there is enough:
+
+```c
+#ifdef SomeOtherMod          // active only where that mod is loaded
+modded class ActionX
+{
+    override void OnStartServer(ActionData action_data)
+    {
+        MyMod_Module module = MyMod_Module.GetModule();
+        if (module.NewServerMethod(null)) { }   // fails to compile on a client that loads this block
+    }
+}
+#endif
+```
+
+When the caller sits inside an `#ifdef` for another mod, only clients that have that mod see the error, so the fault can stay hidden for months. Reported from the LF_VStorage mod (2026-05-11), where two methods existed only in the server file; this is mod behaviour and no vanilla file shows it.
+
+**Fix.** Add an empty stub to the base class in the same commit as the server method, with the same parameter list and the same parameter names as the server version:
+
+```c
+bool NewServerMethod(ItemBase item) { return false; }
+```
+
+**Check before a commit.** List the method names declared in the server file, then confirm each one also appears in the base file. Any name found only in the server file is a missing stub. The same check works from the other side: list every `MyMod_Module.` call in the mod and compare it with what the base class declares.
+
+---
+
+## `MissionServer` overrides: call `super`, and spawn where vanilla spawns
+
+Two `MissionServer` methods look like empty hooks and are not. A `modded class MissionServer` override of either one that leaves out `super` breaks the server without an error:
+
+- `OnGameplayDataHandlerLoad` sets `m_RespawnMode`, sets up the debug monitor and calls `InitialiseWorldData()` (`P:\scripts\5_mission\mission\missionserver.c:161-167`). Without `super`, world data is never initialised.
+- `OnClientPrepareEvent` decides `useDB` from `GetHive()` (`P:\scripts\5_mission\mission\missionserver.c:449-463`). Without `super`, characters stop loading.
+
+`OnGameplayDataHandlerLoad` is also too early to spawn items that the Central Economy must know. It runs from `CfgGameplayHandler.LoadData()`, which `MissionServer.OnInit` calls (`P:\scripts\5_mission\mission\missionserver.c:88`). Vanilla's own Central Economy dependent spawn is later, in `GlobalsInit()`, which opens with `if (GetCEApi())` and carries the comment about objects that depend on the CE being initialized (`P:\scripts\3_game\dayzgame.c:1160`, `:1173-1174`); `GlobalsInit` is queued as a separate call (`P:\scripts\3_game\dayzgame.c:1096`). The rule is not "always spawn late": vanilla spawns the underground trigger carriers in `OnInit` with `UndergroundAreaLoader.SpawnAllTriggerCarriers()` (`P:\scripts\5_mission\mission\missionserver.c:91`), because they do not touch the CE. Spawn where vanilla spawns the kind of object you create; items with a CE lifetime go through the object spawner route (`../integrations/central_economy.md`).
+
 ---
 
 ## Adding Fields Safely
@@ -87,6 +162,24 @@ modded class ItemBase
     protected float m_MyMod_Cooldown = 0.0;
 }
 ```
+
+### Reported: many added fields on entity classes
+
+Reported by the knowledge pack, not checked on `P:\` (it is about engine behaviour, and no vanilla file shows it):
+
+- Member fields added to `modded class DayZGame` are safe: it is one script-side object with a stable lifetime.
+- Member fields added to `modded class PlayerBase` or `modded class ItemBase` are safe in almost every mod. The report is that some entity classes can go wrong on the engine side when many mods add fields and their order shifts, and that the sign is a strange crash at player connect or item spawn that goes away when one added field is removed.
+- Default to member fields. Only when you can reproduce such a crash, keep the state outside the entity in a static map keyed by an id of the entity:
+
+```c
+// Fallback only for a reproduced crash: state kept outside the entity
+class MyMod_StateMap
+{
+    static ref map<int, ref MyMod_State> s_StateByEntId = new map<int, ref MyMod_State>;
+}
+```
+
+Remove the entry when the entity is deleted, or the map keeps the state object alive (`ref` element type, `../references/language_memory.md` rule 2). What is checked is the save stream: fields you write in `OnStoreSave` on a modded vanilla class must be read back in the same order, and that is covered in `../../persistence/versioning-and-migration.md` ("Adding saved fields to a vanilla class").
 
 ---
 

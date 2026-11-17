@@ -30,6 +30,10 @@ Use `IsServer()` for authority work so it also runs in single player. Use `IsDed
 | `GetTime()` | Mission time in milliseconds, as `int`. | `P:\scripts\3_game\global\game.c:1533` to `:1534` |
 | `GetTickTime()` | Seconds since the game started, as `float`. | `:911` to `:914` |
 
+Both clocks start again at every boot, so neither is a timestamp you can save or use to order events across restarts. For a saved timestamp use the UTC wall clock: `GetYearMonthDayUTC(out int year, out int month, out int day)` (`P:\scripts\1_core\proto\ensystem.c:100`) and `GetHourMinuteSecondUTC(out int hour, out int minute, out int second)` (`P:\scripts\1_core\proto\ensystem.c:76`).
+
+The `Math` class has no `Exp`. Write an exponential as `Math.Pow(Math.EULER, x)`: `Pow` is at `P:\scripts\1_core\proto\enmath.c:183` and `EULER` at `P:\scripts\1_core\proto\enmath.c:11`, and vanilla writes `Pow(EULER,-mean)` itself (`P:\scripts\1_core\proto\enmath.c:710`).
+
 ## Mission and world
 
 - `GetMission()` returns `Mission` (`P:\scripts\3_game\global\game.c:1093`). Cast it to `MissionServer` on the server or `MissionGameplay` on the client; both extend `MissionBase` (`P:\scripts\5_mission\mission\missionserver.c:5`, `P:\scripts\5_mission\mission\missiongameplay.c:1`). Those types live in `5_mission`, so only `5_mission` code can name them.
@@ -38,6 +42,8 @@ Use `IsServer()` for authority work so it also runs in single player. Use `IsDed
 - `SurfaceY(x, z)` is the terrain height and `SurfaceRoadY(x, z)` includes roads and surfaces on top (`:1176`, `:1177`).
 - `GetObjectsAtPosition(pos, radius, out objects, out proxyCargos)` and its 3D form find nearby objects (`:923`, `:930`). They are slow; the style guide says to avoid them (`_shared/enscript-style.md`).
 - `GetObjectByNetworkId(low, high)` finds an object from its two network ID halves (`:356`).
+- `GetWeather()` returns the `Weather` object (`P:\scripts\3_game\global\game.c:1370`). `GetOvercast()`, `GetFog()`, `GetRain()`, `GetSnowfall()` and `GetWindDirection()` each return a phenomenon (`P:\scripts\3_game\weather.c:183-199`) with `GetActual()` and `GetForecast()` (`P:\scripts\3_game\weather.c:38-41`) and `Set(forecast, time, minDuration)`, where `time` is the seconds taken to reach the value and `minDuration` the seconds it then holds (`P:\scripts\3_game\weather.c:43-49`). Wind speed is a plain float, `GetWindSpeed()` and `SetWindSpeed()` (`P:\scripts\3_game\weather.c:248-269`), and `SetStorm(density, threshold, timeOut)` sets lightning (`P:\scripts\3_game\weather.c:211-219`).
+- To show a popup on a client from the server with no client mod, call `NotificationSystem.SendNotificationToPlayerIdentityExtended(identity, show_time, title, detail, icon)` (`P:\scripts\3_game\client\notifications\notificationsystem.c:141-151`); it sends `RPC_SEND_NOTIFICATION_EXTENDED` and the vanilla client draws it. `AddNotificationExtended` (`P:\scripts\3_game\client\notifications\notificationsystem.c:215`) is the local, client side call and shows nothing when the server calls it.
 
 ## World to screen
 
@@ -54,6 +60,8 @@ if (screen[2] > 0)
 
 `GetPlayer()` is the player this machine controls, `GetPlayers(out array<Man>)` fills every player, and `GetPlayerByIndex(i)` wraps it (`P:\scripts\3_game\global\game.c:944` to `:952`). A dedicated server controls no player, so server code finds players with `GetPlayers` or from a `PlayerIdentity`. More in `api_player.md`.
 
+On a client `GetPlayer()` is also `null` while the game is still loading. Reported by the knowledge pack, not checked on `P:\` (the crash is native): during that time the camera getters `GetCurrentCameraPosition()` and `GetCurrentCameraDirection()` (`P:\scripts\3_game\global\game.c:731`, `:732`) crash the client with a native crash that no script null check catches. In a client handler that can run early (an RPC, a polled command), return when `GetGame().GetPlayer()` is `null` before you call anything that reads the camera or the world. Detail: `skills/enforce-script-reference/references/runtime-traps.md`.
+
 ## Reading config
 
 Paths are class names separated by spaces, not dots: `"CfgSurfaces " + surface + " isDigable"` (`P:\scripts\3_game\global\game.c:1248`). The first word may also be `configFile` or `missionConfigFile` (`:445`).
@@ -69,6 +77,8 @@ Paths are class names separated by spaces, not dots: `"CfgSurfaces " + surface +
 
 An object builds its own path from `GetType()`, for example `"CfgVehicles " + GetType() + " "` (`P:\scripts\3_game\entities\object.c:424`).
 
+`IsKindOf(string cfg_class_name, string cfg_parent_name)` follows the parents written in config, not the parents written in script (`P:\scripts\3_game\global\game.c:1436`). A class can be `class X : Y` in script and `class X : Z` in `CfgVehicles`; the test then answers for `Z`. When a check that should match through inheritance does not, read the class's config parent (for a packed mod, turn its `config.bin` back into text with `CfgConvert.exe -txt`) and compare the two chains. The reported case is in `skills/enforce-script-reference/references/api-patterns.md`.
+
 ## Logging
 
 | Call | Writes | Source |
@@ -81,3 +91,5 @@ An object builds its own path from `GetType()`, for example `"CfgVehicles " + Ge
 | `Debug.Log(msg, plugin)` | Only when `LogManager.IsLogsEnable()` is true; otherwise it writes nothing. | `P:\scripts\3_game\tools\debug.c:183`, `:595` |
 
 Use `Print` or `ErrorEx` for messages you must see in a normal test session; `Debug.Log` is silent unless logs are enabled.
+
+Reported by the knowledge pack, not checked on `P:\` (the log writer is native): the script log cuts every `Print` line at 255 characters (172 of 193 diagnostic lines were cut at exactly 255 in one measured session). Write a long diagnostic as several short lines that share a tag, and print a stack line by line.

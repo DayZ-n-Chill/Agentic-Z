@@ -66,3 +66,13 @@ Register fields in the constructor of an `EntityAI` child, as `EntityAI` itself 
 The name is the field name as a string, and may reach into a member object: `RegisterNetSyncVariableBool("m_EM.m_IsSwichedOn")` (`:218`). Pass ranges that cover every value: vanilla registers temperature with `GetTemperatureMin()` and `GetTemperatureMax()` (`:261`) and wetness with precision 2 (`P:\scripts\4_world\entities\itembase.c:190`).
 
 Flow: the server changes the field, calls `SetSynchDirty()`, and each client gets `OnVariablesSynchronized()`. Never set a synced field on a client to change game state; only the server's value counts.
+
+## Native getters that do not answer on every client
+
+Reported by the knowledge pack from in game measurements on DayZDiag 1.29 (the LFHeli mod); the calls are native, so only their declarations were checked on `P:\`.
+
+- `EngineIsOn()` (`P:\scripts\3_game\vehicles\car.c:230`) returns `false` on a client that does not own the vehicle, such as a passenger, while the engine runs on the server. Sync your own bool, written in `OnEngineStart` and `OnEngineStop`, and have client code read "native or synced".
+- `GetHealth01(zone, type)` (`P:\scripts\3_game\entities\object.c:1001`) threw `cannot be called on client` and returned 0.
+- `SetPosition` done on the server did not reach the client copy of a physics vehicle whose driver had just left. With no crew, the server can rebuild the client copies with `RemoteObjectTreeDelete(obj)` then `RemoteObjectTreeCreate(obj)` (`P:\scripts\3_game\global\game.c:708`, `:710`).
+
+The full list, with the vehicle cases, is in `skills/enforce-script-reference/references/vehicle-scripting.md`; the RPC and persistence depth is in `skills/enforce-script-reference/references/networking.md`.

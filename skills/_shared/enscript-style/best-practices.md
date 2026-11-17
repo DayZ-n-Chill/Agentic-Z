@@ -159,6 +159,7 @@ Are reported to **NOT** show the correct filename and line number, but the last 
 1. **Complex array assignments** (unverified, see Best Practice 8): Use intermediate variables
 2. **Misused `delete` keyword** (unverified as a segfault cause): `delete` on a script object is valid and vanilla does it (`P:\scripts\4_world\entities\manbase\playerbase.c:1224`), but never `delete` an entity; use `Delete()` or `DeleteSafe()` (`_shared/enscript/references/language_memory.md`, "Deleting entities")
 3. **Over-specified `ref` usage** (unverified as a segfault cause): put `ref` on members and on container element types (`ref array<ref MyData>`, `language_memory.md` rule 2); two `ref`s pointing at each other leak both (`language_memory.md` rule 3)
+4. **Empty preprocessor blocks** (on the original guide's list, not reproduced): vanilla ships a comment-only `#ifdef` block (`P:\scripts\4_world\classes\environment\environment.c:1-3`) and one compiled and ran in a measurement on DayZDiag 1.30.164289; see `control-flow-and-preprocessor.md`, "Empty Preprocessor Blocks"
 
 ### Performance Considerations
 

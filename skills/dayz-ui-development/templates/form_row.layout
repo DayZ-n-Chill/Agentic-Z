@@ -1,0 +1,51 @@
+// One label + EditBox row. Prefab: CreateWidgets(this, parent) where parent is
+// a slice ~0.07 of the panel tall. Stack by parenting another copy underneath
+// (mcp_dialog.layout Row0 at y=0.285, Row1 at 0.36, step 0.075; not in this
+// repo). Internals copied from mcp_dialog.layout:61-97 (on-screen
+// 2026-08-19; not distributed). Vanilla gui/layouts/dialog_input_text.layout is
+// the same pair in exact units (PrimaryLabel + PrimaryEditBox); this file keeps the
+// proportional contract.
+FrameWidgetClass FormRow {
+	name "FormRow"
+	position 0 0
+	size 1 1
+	hexactpos 0
+	vexactpos 0
+	hexactsize 0
+	vexactsize 0
+	{
+		TextWidgetClass RowLabel {
+			name "RowLabel"
+			// Decorative. The EditBox must keep the pointer.
+			ignorepointer 1
+			position 0 0
+			size 0.34 1
+			hexactpos 0
+			vexactpos 0
+			hexactsize 0
+			vexactsize 0
+			text "#STR_UI_FORM_LABEL"
+			font "gui/fonts/sdf_MetronBook24"
+			"text color" 1 1 1 1
+			"text halign" left
+			"text valign" center
+		}
+		EditBoxWidgetClass RowEdit {
+			name "RowEdit"
+			// 0.36 leaves a 0.02 gap after the 0.34 label. size 0.64 0.8 + y 0.1
+			// is mcp_dialog.layout:88-93 (not distributed). Do NOT set ignorepointer.
+			position 0.36 0.1
+			size 0.64 0.8
+			hexactpos 0
+			vexactpos 0
+			hexactsize 0
+			vexactsize 0
+			// EditBoxWidget/Default: gui/looknfeel/dayzwidgets.styles:1243.
+			// Normal Center="" (no fill). Focus Center=area_focus (the ring).
+			// Top named EditBox style in vanilla (26x). mcp_dialog Edit0:94
+			// (not distributed).
+			style Default
+			font "gui/fonts/sdf_MetronLight24"
+		}
+	}
+}

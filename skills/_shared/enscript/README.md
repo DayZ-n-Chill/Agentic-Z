@@ -14,7 +14,7 @@ This folder fills the gap between those: the recurring patterns themselves (nets
 
 Most of this folder started as a vendored mirror (see Attribution). Files are now in one of two states:
 
-- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md` (which marks its two native compiler reports as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md` and `scheduler.md` (which marks its one unverified report as such); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `01` to `10`, the three layouts and `layouts.md`.
+- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md` (which marks its two native compiler reports as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md`, `scheduler.md` (which marks its one unverified report as such) and `server_tick_budget.md` (which cites the vanilla calls and marks the third-party techniques as reported); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `01` to `10`, the three layouts and `layouts.md`.
 - **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`) and `integrations/dabs_framework.md` (the Dabs scripts PBO).
 
 ## Layout
@@ -41,6 +41,7 @@ enscript/
 | `physics_items.md` | `ThrowPhysically` vs manual `CreateDynamicPhysics`, `SetDynamicPhysicsLifeTime` mandatory call |
 | `json_config_migration.md` | `SCHEMA_VERSION` + forward-migration, `LoadFile` parse-failure handling for admin-edited JSON |
 | `language_workarounds.md` | No ternary, `auto` inference, no lambdas, no exceptions; overloading and `foreach` with an index do work |
+| `server_tick_budget.md` | Keeping periodic server work inside the tick: one manager with a work budget, staggering, backoff, events in place of polling, compile-time side gates, what lowers server script memory. The techniques are reported from third-party mods (Expansion AI, LFPowerGrid); the vanilla calls they use are cited |
 
 ### integrations/
 
@@ -67,6 +68,8 @@ Every file below cites the vanilla file and line on `P:\` for its facts. Start w
 | `api_network.md` | `RPCSingleParam`, `RPC`, `ScriptRPC`, `OnRPC` dispatch, reading payloads, net sync registration and flow |
 | `api_entities_inventory.md` | `CreateObjectEx` and `ECE_*` flags, creating in inventory, reading and moving inventory, inventory modes |
 | `api_player.md` | Finding players, `PlayerIdentity`, `MissionServer` connect hooks, health zones and types, stats, state checks |
+| `api_recipes_energy_damage.md` | Crafting recipes (`RecipeBase`, `PluginRecipesManager`), `ComponentEnergyManager`, and how damage reaches an entity |
+| `api_reflection_profiler.md` | Reading and writing fields by name, calling methods by name, creating a class from a string, timing script with `EnProfiler`, the debugging globals |
 | `types_collections.md` | Primitive types, string methods, array/map/set API, vector math, `Math` |
 | `item_api.md` | `ItemBase` quantity/health/flags, action registration, spawning, `config.cpp` properties |
 | `erpc_defines.md` | Vanilla `ERPCs`/`eAgents`/`eModifiers` tables, `ActivateModifier` and `InsertAgent`, custom ID range convention |

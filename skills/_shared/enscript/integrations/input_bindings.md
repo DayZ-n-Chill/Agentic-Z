@@ -174,6 +174,15 @@ bool MyMod_ShouldProcessInput()
 
 `MENU_*` constants are in `P:\scripts\3_game\constants.c` (for example `MENU_INGAME = 9` at :184). There is no `MenuID` enum in vanilla.
 
+### An exclude group that reaches `aiming` kills mouse look
+
+Exclude groups include each other. In `P:\bin\specific.xml` the group `aiming` is the four look inputs `UAAimLeft`, `UAAimRight`, `UAAimUp` and `UAAimDown` (lines 149 to 154), `inventory` includes `aiming` (lines 242 to 244), and `menu` includes `inventory` (lines 277 to 278). A custom camera, sight or scripted view that applies `inventory` or `menu` as an input exclude therefore reads 0.0 from every look axis, with no error. The sign: the view still answers keys read with raw `KeyState`, but ignores the mouse (measured by the knowledge pack in the LFHeli mod).
+
+- Pass only groups that do not reach `aiming`: open each group you pass in `specific.xml` and follow its `<include>` lines.
+- Read the look axes as the vanilla spectator does: `GetUApi().GetInputByID(UAAimLeft).LocalValue()` (`P:\scripts\4_world\entities\dayzspectator.c:39`).
+
+For a sight used from a vehicle seat, do not take the camera away from the player at all; `skills/enforce-script-reference/references/hard-rules.md` (rules 37b to 37d) has the measured reasons and the vehicle camera method.
+
 ---
 
 ## Silent-fail traps: "my keybind does nothing"

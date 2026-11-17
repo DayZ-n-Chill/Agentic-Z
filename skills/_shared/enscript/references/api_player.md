@@ -45,6 +45,16 @@ All on `MissionServer` in `P:\scripts\5_mission\mission\missionserver.c`. Mod it
 
 `PlayerBase.OnConnect()` and `OnDisconnect()` are the per player forms (`P:\scripts\4_world\entities\manbase\playerbase.c:7623`, `:7647`). `InvokeOnConnect` is the one place that runs for both new and loaded characters.
 
+### Asking for a respawn from script
+
+`GetGame().RespawnPlayer()` (`P:\scripts\3_game\global\game.c:1107`) sends the request, and the server's `OnClientRespawnEvent` kills the character only when it is unconscious or restrained (`player.IsUnconscious() || player.IsRestrained()`, `P:\scripts\5_mission\mission\missionserver.c:615`). For a living, conscious, unrestrained player nothing happens on the server. The vanilla menu's `GameRespawn` calls `RespawnPlayer()` and then runs the death screen on the client without waiting for an answer (`P:\scripts\5_mission\gui\ingamemenu.c:345` to `:348`), so copying it for a living player reports success while nothing changed (measured by the knowledge pack with a 1.30 diag build). Before the call, refuse on the client when the player exists, `IsAlive()`, is not unconscious and is not restrained; to give a living player a new body, kill it first. Detail: `skills/enforce-script-reference/references/api-patterns.md`.
+
+### Seated players
+
+`GetCommand_Vehicle()` returns a command that exists only on the machine that started it. The get in action creates it with `StartCommand_Vehicle` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:104`); nothing creates it from the replicated crew list. A player that server script put in a seat is in the crew on the client, yet `GetCommand_Vehicle()` is `null` there, so any client check written as "is seated" fails (reported by the knowledge pack from the LFHeli mod). The other vehicle traps are in `skills/enforce-script-reference/references/vehicle-scripting.md`.
+
+To move a seated player from server script, move the vehicle: `GetCommand_Vehicle()` (`P:\scripts\3_game\human.c:1528`) gives the `HumanCommandVehicle`, its `GetTransport()` (`P:\scripts\3_game\human.c:716`) the vehicle, and `GetTransform` and `SetTransform` on the vehicle carry the occupant along. Reported by the knowledge pack: the occupant's own position lags one frame, so read the vehicle's `GetPosition()` when you report where it went. A player on foot moves with `SetPosition(pos)`.
+
 ## Health
 
 Health lives in zones and types. An empty zone means the global zone and an empty type means the main health (`P:\scripts\3_game\entities\object.c:989` to `:994`).
@@ -61,6 +71,12 @@ Players use the types `"Health"`, `"Blood"` and `"Shock"`: `m_Player.GetHealth("
 ## Stats
 
 `PlayerBase` returns typed stats such as `GetStatWater()` and `GetStatEnergy()` (`P:\scripts\4_world\entities\manbase\playerbase.c:8197`, `:8215`). Each is a `PlayerStat<float>` with `Get()`, `Set(value)`, `Add(value)`, `GetMin()`, `GetMax()` and `GetNormalized()` (`P:\scripts\4_world\classes\playerstats\playerstatbase.c:32`, `:85`, `:129`, `:134`). Vanilla drains energy with `m_Player.GetStatEnergy().Add(-1 * ENERGY_DRAIN_FROM_VOMIT);` (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\poisoning.c:88`).
+
+Three limits on adding your own player state, all read on `P:\`:
+
+- **A custom stat needs an index above 11.** `PlayerStatsPCO` registers stats by position. 1.30 added `THERMAL_BIAS` as index 11 of `EPlayerStats_v130` (`P:\scripts\4_world\classes\playerstats\playerstatspco.c:312-326`; `EPlayerStats_current` extends it at `:356`), so a stat a 1.29 mod placed at 11 now collides with it and corrupts the saved stats.
+- **Synced modifier IDs are bits, and nine are taken.** `eModifierSyncIDs` uses `0x1` to `0x100` (`P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c:2-12`; at most 32 synced modifiers), so a custom synced modifier takes a bit from `0x200` up. The modifier list itself is filled in `ModifiersManager.Init()` (`P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c:90`); add yours from a `modded class ModifiersManager`.
+- **Stamina does not sync through `SetSynchDirty`.** The server sends it with a sync juncture, `SJ_STAMINA`, in `SyncStamina` (`P:\scripts\4_world\classes\staminahandler.c:831-839`). For a custom stamina cost call `DepleteStaminaEx` with an `EStaminaModifiers` value (`P:\scripts\4_world\classes\staminahandler.c:1144`); `PUSH_CAR` already exists (`P:\scripts\3_game\enums\estaminamodifiers.c:13`).
 
 ## State checks
 

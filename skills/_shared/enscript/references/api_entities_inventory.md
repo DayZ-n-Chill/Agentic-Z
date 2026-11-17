@@ -36,6 +36,13 @@ Source: `P:\scripts\4_world\classes\constructionbase.c:1319`.
 
 Rotation flags are `RF_*` (`centraleconomy.c:46` to `:66`); `RF_DEFAULT` (512) uses the placement set in the object's config.
 
+Two flag sets from the knowledge pack (the flags were checked on `P:\`; the behaviour was measured in game by its author and not re-run here):
+
+- **Infected and animals need `ECE_INITAI`** (`P:\scripts\3_game\ce\centraleconomy.c:18`). `ECE_PLACE_ON_SURFACE | ECE_INITAI | ECE_CREATEPHYSICS` gives a creature that walks and attacks; without `ECE_INITAI` it stands like a statue. Add `ECE_NOPERSISTENCY_WORLD` (`P:\scripts\3_game\ce\centraleconomy.c:31`) so a restart removes it. The surface placement of an AI is deferred: `GetPosition()` right after the call still returns the height you asked for.
+- **A client can create a preview only with `ECE_LOCAL`** (`P:\scripts\3_game\ce\centraleconomy.c:25`); without it the client's `CreateObjectEx` returns `null`. The preview has no network ID and the server never sees it. To make it inert, cast to `EntityAI` before `DisableSimulation(true)`: the method is declared on `Entity` (`P:\scripts\3_game\entities\entity.c:3`), not on `Object`. Do not do this to a local infected or animal: making it inert crashed the client, and so did leaving it simulating for a second or two.
+
+More creation and placement traps (raycasts, surface normals, scaled local segments): `skills/enforce-script-reference/references/api-patterns.md`.
+
 ## Creating inside an inventory
 
 | Call | Behaviour | Source |
@@ -49,6 +56,8 @@ Rotation flags are `RF_*` (`centraleconomy.c:46` to `:66`); `RF_DEFAULT` (512) u
 | `entity.SpawnInInventoryOrGroundPos(type, inv, pos)` | Inventory first, ground if full. | `P:\scripts\3_game\entities\entityai.c:2122` |
 
 Always null check the result: a full inventory returns `null`.
+
+Reported by the knowledge pack (measured on DayZDiag 1.29, not checked on `P:\`): an attachment made with `CreateAttachmentEx` inside the parent's `EEInit`, or in the same tick as the parent's `CreateObjectEx`, exists on the server but never reaches clients. Created one second later through `GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(fn, 1000, false)` it shows at once. Stock a new entity from the code that created it, with a delayed call and a saved "stocked" flag.
 
 ## Reading an inventory
 
@@ -65,6 +74,19 @@ Always null check the result: a full inventory returns `null`.
 | `GetInventory().GetInventoryOwner()` | The entity that owns this inventory. | `:92` |
 | `player.GetHumanInventory().GetEntityInHands()` | The item in the hands. `Man.GetEntityInHands()` is the same. | `P:\scripts\3_game\systems\inventory\humaninventory.c:16`, `P:\scripts\3_game\entities\man.c:83` |
 | `item.GetHierarchyRoot()`, `GetHierarchyParent()`, `GetHierarchyRootPlayer()` | Who holds an item. | `P:\scripts\3_game\entities\entityai.c:879`, `:885`, `:882` |
+
+Check each entry of the array `EnumerateInventory` fills before you use it. Vanilla does: after `EnumerateInventory(InventoryTraversalType.LEVELORDER, children)` (`P:\scripts\4_world\static\miscgameplayfunctions.c:131`) it tests `if (child)` (`P:\scripts\4_world\static\miscgameplayfunctions.c:136`). The knowledge pack measured a `NULL pointer to instance` exception on a 1.30 diag server when an unchecked entry was passed to `HasInventoryJunctureItem`, whose parameter is `notnull` (`P:\scripts\3_game\global\game.c:757`).
+
+Two pairs of slot calls on `GameInventory` look alike and answer opposite questions:
+
+| Pair | What it answers | Source |
+|---|---|---|
+| `GetAttachmentSlotsCount()` / `GetAttachmentSlotId(i)` | Which attachment slots this entity declares, for its own attachments. | `P:\scripts\3_game\systems\inventory\inventory.c:176-184` |
+| `GetSlotIdCount()` / `GetSlotId(i)` | Which slots this item can itself go into on some other parent. | `P:\scripts\3_game\systems\inventory\inventory.c:167-175` |
+
+To list the slots of a container or a vehicle, use the first pair. The second pair on such an entity does not fail: the knowledge pack measured a `CivilianSedan` returning a count of 1 with an invalid ID, for which `InventorySlots.GetSlotName(id)` (`P:\scripts\3_game\systems\inventory\inventoryslots.c:48`) gives `""`. A list holding one empty slot name on an entity that clearly has attachments means the wrong pair was used.
+
+`GetObjectsAtPosition3D` (`P:\scripts\3_game\global\game.c:930`) returns terrain objects such as bushes, whose `GetType()` is empty, mixed in with players, items, vehicles and infected (measured by the knowledge pack: 38 objects in a 30 m radius on open ground). Filter by type when you want entities only.
 
 ## Moving items
 
@@ -88,6 +110,12 @@ The `EntityAI` wrappers pick the mode for you. Since 1.30 vanilla comments mark 
 | `PredictiveTakeEntityToTargetInventory(...)` uses `JUNCTURE` in multiplayer and `PREDICTIVE` offline | `:1972` to `:1978` |
 
 `FindInventoryLocationType` is `ATTACHMENT`, `CARGO`, `HANDS`, `PROXYCARGO`, `ANY_CARGO` or `ANY` (`P:\scripts\3_game\systems\inventory\inventorylocation.c:17`). An `InventoryLocation` names one exact place (ground, attachment slot, cargo cell or hands); `GetInventory().FindFreeLocationFor(item, flags, out loc)` finds one (`inventory.c:276`).
+
+The return value of a take call is not proof that the item moved. When the target slot is already occupied, `TakeEntityAsTargetAttachmentEx` combines the items and returns `true` without attaching the new one: it reads the slot with `FindAttachment(slot)` first (`P:\scripts\3_game\systems\inventory\inventory.c:1106` to `:1118`). After a scripted attach, confirm with `FindAttachment(slot) == item`, comparing the entity and not its type. The knowledge pack's trace of the local take path on a live player, which returns `true` in every case, is in `skills/enforce-script-reference/references/api-patterns.md`.
+
+### Merging stacks in a loop: skip a stack that is already emptied
+
+`ItemBase.CombineItems` (`P:\scripts\4_world\entities\itembase.c:2243`) empties the donor through `SetQuantity`, and for an item with `varQuantityDestroyOnMin` that call ends in `this.Delete()` (`P:\scripts\4_world\entities\itembase.c:3333-3338`). `EntityAI.Delete()` only sets `m_PendingDelete` and the object is removed on the next frame (`P:\scripts\3_game\entities\entityai.c:779-782`). Until then the empty stack is still in the cargo, and `CanBeCombined` (`P:\scripts\4_world\entities\itembase.c:2137`) has no check for a pending delete, so a loop that merges several stacks in one call can pick the empty stack as its next target and pour live quantity into an object that is about to disappear. Three rag stacks of 2, 2 and 5 can end as 6 rags instead of 9. In such a loop skip, as target and as donor, any item for which `IsSetForDeletion()` is true (`P:\scripts\3_game\entities\entityai.c:812-814`), and any `Magazine` pile whose `GetAmmoCount()` is 0. This is a static trace by the knowledge pack through the vanilla scripts, not reproduced in game.
 
 ## Position and orientation
 
