@@ -472,7 +472,7 @@ Each one notes whether it was checked against vanilla on `P:\`.
   the call site, prefer `GetWaterDepth`.
 
   Over water objects (the vanilla river and stream pieces, the streambed kit, a roadway
-  `water_ext` face of your own), see the knowledge pack's engine water note (merged by the world workstream): on vanilla
+  `water_ext` face of your own), see `skills/_shared/physics/water-queries.md`: on vanilla
   Chernarus, `SurfaceIsPond` read false at the centre of most river and stream pieces above 50 m.
 
 - **Surface Y position fast pattern**:

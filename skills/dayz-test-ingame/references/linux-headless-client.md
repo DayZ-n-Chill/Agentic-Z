@@ -14,7 +14,7 @@ cited inline and was re-opened on `P:\scripts\`.
 Scripts: `skills/_shared/scripts/dayz-client-headless.sh`, `dayz-client-test.sh`, `dayz-mod-pack.sh`. Test mod:
 `../assets/autotest-mod/`. This pairs the **retail** client with the **native** server. A `DayZDiag` client only
 joins a `DayZDiag` server (`0x00020017`); that pairing, and the managed dayz-mcp cycle, are in
-`skills/_shared/linux-proton.md` and the "On Linux" section of `../SKILL.md`.
+`skills/_shared/linux-proton.md` and in `linux.md` in this folder.
 
 ## What you need, and the ground rules
 

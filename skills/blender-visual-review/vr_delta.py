@@ -22,7 +22,7 @@ Environment assumptions:
 
 Provenance: adapted from img2threejs
 https://github.com/img2threejs/img2threejs commit 9a8ecf12 (v1.4.3),
-Apache-2.0. Function origins:
+Apache-2.0 — see THIRD_PARTY_NOTICES.md at the repo root. Function origins:
   - PNG codec + foreground mask: forge/stage1_intake/extract_pbr_evidence.py
   - mask resample / IoU / bbox / proportion / symmetry:
     forge/stage4_review/diagnose_render.py

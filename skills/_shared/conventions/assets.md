@@ -24,9 +24,16 @@ DayZ inherits Bohemia's `.p3d` scheme where a LOD's resolution value is its type
 | Memory | `1.0e+15` | Named memory points |
 | GeoPhys | `4.0e+13` | PhysX geometry. Only 8 vanilla models carry one (pillows, stretchers, two cylinders, a wall); the audit classifies it but never asks for it |
 | LandContact | `2.0e+15` | Foot/wheel contact |
+| Roadway | `3.0e+15` | Surface characters walk on (buildings, rocks, the base building fence). A new item never needs one |
+| Paths | `4.0e+15` | Walking routes inside buildings |
+| HitPoints | `5.0e+15` | Hit points of vehicles and wrecks |
 | ViewGeometry | `6.0e+15` | Cursor / action raycast. Recommended: vanilla interactive gear carries one; proxies and clutter cutters don't |
 | FireGeometry | `7.0e+15` | Bullet / projectile collision |
 
 Verified by reading the LOD resolution list in the file header of vanilla `P:\DZ\gear\camping\wooden_case.p3d`: 9 LODs, with Visual(1..4), Geometry(`1e13`), Memory(`1e15`), LandContact(`2e15`), ViewGeo(`6e15`), FireGeo(`7e15`). `classify_lod()` in `skills/dayz-p3d-audit/scripts/audit_p3d.py` uses these values. A header scan of 4,000 vanilla binarized models under `P:\DZ\` found `1e13` in 3,758, `6e15` in 2,569, `7e15` in 2,627; a later scan of all 8,256 found `4e13` in 8 (for example `P:\DZ\structures\furniture\beds\pillow_grey.p3d`) and `2e13` only in `P:\DZ\vehicles\water\boat_01\boat_01.p3d`, as its buoyancy geometry; among `gear\` models with a Geometry LOD, 531 also have ViewGeo and 32 (proxies, clutter cutters, a bonfire) don't. The audit therefore treats Visual, Geometry and Memory as required (CRITICAL when missing), ViewGeo and FireGeo as recommended (NOTE when missing), and GeoPhys as optional (not reported).
 
+The Roadway, Paths and HitPoints values were read the same way: the header of `P:\DZ\structures\specific\churches\chapel.p3d` lists `3e15`, `4e15` and `5e15` between Memory and ViewGeo, `P:\DZ\vehicles\wheeled\transitbus\transitbus.p3d` lists `5e15`, and `P:\DZ\gear\camping\fence.p3d` lists `3e15`. How many vanilla models carry each, and what they hold, is in `skills/_shared/models/lods.md`. The audit names these three and runs no check on them.
+
 A `classify_lod()` that uses those values (a grep for `7e13` or `3e13` finds them) reports ViewGeo and FireGeo as unknown. The engine is unaffected, but the audit then reports "missing FireGeo / ViewGeo" on models that have them and skips its FireGeo checks, so real collision problems (bullets passing through, no action cursor) go undiagnosed.
+
+Classify a LOD by a band around its value, never by equality: the header stores each value as a 32-bit float, and `classify_lod()` tests `5.9e15..6.1e15` for ViewGeo and the matching band for every other special LOD.

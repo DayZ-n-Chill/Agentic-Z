@@ -51,7 +51,7 @@ Format knowledge from the Bohemia wiki's MLOD page and from reading py3d; not ch
 - Each face-vertex record holds a point index, a normal index and one UV as two 32-bit floats, uncompressed. A new vertex defaults to (0,0). In py3d that is `Vertex.read` in `scripts/tools/py3d/py3d/__init__.py`.
 - A face has 3 or 4 vertices and carries its own texture path and material path.
 - The LOD also carries `#UVSet#` tags. The format allows up to 8 UV sets per LOD. Set 0 is mandatory and repeats the UVs stored on the faces.
-- **Which reader keeps a second set.** The py3d fork in `scripts/tools/py3d/` keeps every set above 0 through a read and write cycle, as `Vertex.uv_sets` (`LOD._read_uv_set` reads them, `LOD.uv_set_ids` lists them). The original upstream py3d, which `/dayz-p3d-audit` installs from `skills/dayz-p3d-audit/requirements.txt`, ignores the tag on read and writes only set 0, so a model saved through it loses its second set. A converter from ODOL back to MLOD that the source author used also keeps the first set only.
+- **Which reader keeps a second set.** The py3d fork in `scripts/tools/py3d/` keeps every set above 0 through a read and write cycle, as `Vertex.uv_sets` (`LOD._read_uv_set` reads them, `LOD.uv_set_ids` lists them). The original upstream py3d (not used in this repo: `/dayz-p3d-audit` and its `requirements.txt` use the fork too) ignores the tag on read and writes only set 0, so a model saved through it loses its second set. A converter from ODOL back to MLOD that the source author used also keeps the first set only.
 - Whatever the reader, a tool that builds the model from one UV layer (an OBJ import, a glTF round trip) produces one set. A model that needs a second set gets it in Object Builder or through `Vertex.uv_sets`.
 
 ### ODOL, the binarized format
@@ -134,7 +134,7 @@ Two consequences:
 Not checked on `P:\`: the channel direction was measured by the source author against vanilla textures and agrees with the community texturing guides.
 
 - `_nohq` is the DirectX convention: Y negative, green pointing **down**. A Cycles bake is Y positive, so invert green (`G' = 255 - G`) before converting, every time.
-- The `.paa` stores the channels swizzled (how ImageToPAA does it is in `_shared/textures/suffixes-and-sizes.md`). To inspect a `_nohq` converted back to PNG, undo the swizzle first.
+- The `.paa` stores the channels swizzled (how ImageToPAA does it is in `_shared/textures/suffixes-and-sizes.md`; the `.paa` file layout and a writer that needs no DayZ Tools are in `skills/_shared/vehicles/png-to-paa-encoding.md`). To inspect a `_nohq` converted back to PNG, undo the swizzle first.
 - Mirrored islands with a `_nohq` give a lighting seam on the mirror axis and relief that looks sunken on the mirrored side. Vanilla vehicles mirror whole sides and accept it. The cost: logos and text cannot go on a mirrored side.
 - To verify the green direction, light the model from straight above and look at a feature with **horizontal** relief that exists only in the map. A correlation over the whole frame is noise.
 - An overlap score between the UV layout and the texture (IoU) is confounded by mirrored islands and partial coverage: it read 0.28 to 0.81 on layouts that were aligned. The reliable gate is a render, not the number.

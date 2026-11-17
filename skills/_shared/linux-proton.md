@@ -43,7 +43,7 @@ marker are labelled "not claimed".
 | `P:` drive (WorkDrive, `subst`) | a plain directory, mapped by `dayz-proton.sh init <dir>` | works (section 3) |
 | PowerShell scripts (`*.ps1`) | rewrite the steps in sh; `pwsh` exists on Linux but the scripts call Windows programs, the registry and `subst` | translate, do not run |
 | `%LOCALAPPDATA%\DayZ` logs | `<prefix>/pfx/drive_c/users/steamuser/AppData/Local/DayZ` (section 5) | |
-| dayz-mcp in-game bridge | Linux host support merged into dayz-mcp `main` on 2026-11-14 in https://github.com/willy92wins/dayz-mcp/pull/411 (successor to closed PR #353): `dayz_test_run` (`mode=all/server/client`, `build=true`), `dayz_test_close`, `dayz_test_stop`, bound polls | observations here were measured on `linux-port` on 2026-11-06 before #411 merged (not re-measured on `main`); managed binarization with assets unverified; section 9 of the knowledge pack's `linux-proton-findings-2026-11.md` note |
+| dayz-mcp in-game bridge | Linux host support merged into dayz-mcp `main` on 2026-11-14 in https://github.com/willy92wins/dayz-mcp/pull/411 (successor to closed PR #353): `dayz_test_run` (`mode=all/server/client`, `build=true`), `dayz_test_close`, `dayz_test_stop`, bound polls | observations here were measured on `linux-port` on 2026-11-06 before #411 merged (not re-measured on `main`); managed binarization with assets unverified; section 9 of `skills/_shared/knowledge/linux-proton-findings.md` |
 
 Build, sign, binarize and publish with dayzmake and `workshop`; they are what the Linux route
 is built on. AddonBuilder and Publisher are not needed on Linux. Use the Proton route when the question

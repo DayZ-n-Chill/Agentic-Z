@@ -33,6 +33,8 @@ A slot can sit inside a slot. In a third-party SMG project of the knowledge pack
 - `OnWasAttached` and `OnWasDetached` tell the weapon with `SetBayonetAttached` when the parent `IsWeapon()` (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:28-46`); `Weapon_Base` stores it and answers `HasBayonetAttached()` (`P:\scripts\4_world\entities\firearms\weapon_base.c:2089`, `:2095`).
 - Its slot is `weaponBayonetLeeEnfield` (`P:\scripts\config.cpp:243`). No config class under `P:\DZ` uses that slot or defines `P1907_Bayonet`; the knowledge pack reports both in `weapons_nasdara.pbo` of game build 1.30.164200 (not yet checked on `P:\`). Copy the pattern, not the class, on data that lacks it.
 
+How the proxy triangle on the weapon model places each attachment is in `skills/_shared/models/proxy-frames.md` ("Weapon attachment proxies").
+
 ## How attachments change the weapon
 
 `PropertyModifiers` (`P:\scripts\4_world\classes\propertymodifiers.c`) reads `recoilModifier`, `swayModifier` and `sightMisalignmentModifier` from the weapon and then multiplies each by the same key on every attachment (`:38` to `:63`). A missing key counts as `1 1 1` (`:65` to `:72`). So `AK_Suppressor` with `recoilModifier[]={0.89999998,0.89999998,0.89999998}` (`muzzle\config.cpp:1084`) cuts recoil by about ten percent.

@@ -880,8 +880,8 @@ procedural `#(argb,…)color(...)` stages — the engine renders black.
 
 **Choosing:** if the "on" look needs a real texture (logo, gradient, UI
 bitmap) → use Pattern A. If it's a single emissive color dot → use
-`hiddenSelections` with Normal/Basic shader rvmats (see the emissive LED and dynamic
-light notes in the vehicles pack, `_shared/vehicles/README.md`, Pattern A there).
+`hiddenSelections` with Normal/Basic shader rvmats (see
+`skills/_shared/vehicles/emissive-leds-and-dynamic-lights.md`, Pattern A there).
 
 **Pitfall — don't combine them:** if you register the screen selection
 in `hiddenSelections[]` AND drive it with a translation animation, the

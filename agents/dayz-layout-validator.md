@@ -10,6 +10,8 @@ You validate DayZ `.layout` files so they open in Workbench and behave at any re
 
 Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/conventions/ui.md`).
 
+Background only, for a property or style name the rules doc does not cover: `skills/dayz-ui-development/references/layout-format.md` and `skills/dayz-ui-development/references/styles-format.md`. The rules doc still wins, and a FAIL still cites it or vanilla.
+
 ## Workflow
 
 1. **Gate mode only.** You always run in gate mode: report only and never write or edit any file. The preview PNGs under `output/layout-preview/` are written by the `/dayz-layout-preview` script, not by you. Use Bash only for three things: the size check in step 3, `hooks/edit_check.py`, and the commands the `/dayz-layout-preview` skill gives you. Never install anything. If a brief asks you to repair a file, say so in the report and name `figma-to-dayz-layout` in repair mode as the fixer.

@@ -10,6 +10,8 @@ Reference for computer controlled characters: infected, animals, and patrols or 
 | How do I make creatures walk a route or hold a post? Does vanilla have human AI? | `patrols-and-guards.md` |
 | How do I spawn AI from script, what does the server lead need for the economy, and how do I keep it cheap? | `spawning-and-performance.md` |
 | Where do animals live in the mission: `cfgenvironment.xml`, the `env\*_territories.xml` zone files, behaviour names and the group templates they select? | `animal-territories.md` |
+| How is a creature tied to its animation graph, and which commands, variables and bones does the graph use? | `creature-animation.md` |
+| What does a custom infected inherit, what must its model keep for the AI, and what did 1.30 change for infected? | `custom-infected.md` |
 
 Deeper material is in the `dayz-ai-patterns` skill (`dayz-ai-patterns/SKILL.md`): twelve patterns studied in the DayZ Expansion AI module, described in our own words, and the vanilla 1.30 AI changes (native noise reduction, `MINDSTATE_COWER`, `AIParams`, animal group templates).
 

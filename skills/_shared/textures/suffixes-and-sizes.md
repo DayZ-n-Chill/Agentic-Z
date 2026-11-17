@@ -71,6 +71,10 @@ Two of these slots have more than one vanilla value, counted over the `.rvmat` f
 - **Detail.** `color(0.5,0.5,0.5,1,DT)` appears 3,843 times and `color(0.5,0.5,0.5,0.5,DT)` 1,299 times, for example at `P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:27`. Copy the one in the material you started from.
 - **Specular.** There is no single neutral value. Of 1,007 procedural `SMDI` textures, the most common is `color(0,0,1,1,SMDI)` (297 times, for example `P:\DZ\characters\bodies\data\jeans_f_grd.rvmat:59`), which has green at 0 and so no highlight at all; `color(1,1,1,1,SMDI)` comes second with 153. The first number (red) is 0 in 566 of them and 1 in 384, so a white red looks conventional, not required; what red does in the shader is not verified. Pick the value by the highlight you want: green is its strength and blue its tightness.
 
+## Without DayZ Tools
+
+On a machine with no ImageToPAA (Linux, macOS, a clean Windows), `skills/_shared/vehicles/png-to-paa-encoding.md` holds a pure Python DXT1 writer for opaque `_co` textures and describes the `.paa` file layout. It is tool notes that were not run here; `/dayz-pack-texture` stays the normal route.
+
 ## Images ImageToPAA refuses
 
 `/dayz-pack-texture` checks the suffix, the extension and the size from the file header. These pass a header check and still fail in ImageToPAA with `Error (Loading of img failed)`:

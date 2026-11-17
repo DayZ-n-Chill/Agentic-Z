@@ -19,7 +19,7 @@ Evidence labels: `[OFFLINE MEASURED]` measured without the game, `[IN-GAME VERIF
 
 ### Resolution LODs (visual)
 
-These are what the player sees. Several LODs at rising distances reduce the rendering cost. This file does not give the distance at which the game switches visual LODs: before tuning the material of a far LOD, find out in game which LOD is drawn at that distance (the process gates in the vehicles pack, SP-483).
+These are what the player sees. Several LODs at rising distances reduce the rendering cost. This file does not give the distance at which the game switches visual LODs: before tuning the material of a far LOD, find out in game which LOD is drawn at that distance (`skills/_shared/vehicles/process-gates.md`, SP-483).
 
 | LOD | Resolution value | Purpose |
 |---|---|---|

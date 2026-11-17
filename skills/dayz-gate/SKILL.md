@@ -72,7 +72,7 @@ Every `PASS` or `FAIL` is stored for `/dayz-health` under `.server/!Health/<ModN
 
 ## What `build` does
 
-1. Runs `/dayz-lint <ModName>` first. Any lint error is a FAIL (category `lint`, file and line from the lint finding, triaged by its `lint-<rule>` entry) and the gate stops there, leaving a running session alone. Lint warnings join the report's warnings, and the report gains `"lint": {"verdict", "errors", "warnings"}`.
+1. Runs `/dayz-lint <ModName>` first, both of its stages: the mod setup checks (`config.cpp`, `CfgPatches`, `$PBOPREFIX$`, script modules, files) and the code rules of the script validator (Enforce Script, `.layout`, `inputs.xml`, `.rvmat`). Any lint error, from either stage, is a FAIL (category `lint`, file and line from the lint finding) and the gate stops there, leaving a running session alone. A setup finding is triaged by its `lint-<rule>` entry in `known-errors.json`. A code finding keeps the triage lint gave it (id `lint-<rule id in lower case>`, with the owner and fix from lint's own table, unless a catalog or learned entry matches it), so it is never reported as `new`. Lint warnings join the report's warnings, and the report gains `"lint": {"verdict", "errors", "warnings"}`. The gate passes no `--external-scripts`, so for a mod that depends on another mod the rule `ES-UNDEFINED-CLASS-REF` is not checked here; run `/dayz-lint <ModName> --external-scripts <folder>` for its verdict.
 2. Stops any running `DayZDiag_x64.exe` with `/dayz-stop-test` (a session holds the PBO open), only after `--yes` or a yes at the prompt (see `--yes`).
 3. Runs `/dayz-build-pbo <ModName>`. FAIL on a non-zero exit (every `[FAIL]` line is quoted with its hint), or on any AddonBuilder line after the command echo that reports an error, or a warning about missing files, textures or unknown classes.
 4. Bundles ("Bundle / umbrella mods" in `skills/_shared/conventions/config.md`): with no `config.cpp` and a payload in `workspace/<ModName>/Addons/*.pbo`, the build is skipped and `/dayz-deploy-pbo <ModName>` runs instead; it must exit 0, and every `[FAIL]` and every `[WARN]` about a missing `.bisign` fails the gate. A bundle with a linker `config.cpp` gets both, build first.
@@ -82,7 +82,7 @@ Every `PASS` or `FAIL` is stored for `/dayz-health` under `.server/!Health/<ModN
 1. Stops any running session, records the size of every log in `.server/<instance>/Profiles/` and `.server/!ClientDiagLogs/`, then runs `/dayz-launch-test <deps...> <ModName> --server <instance>`. A launch refusal is a FAIL with its `[FAIL]` lines.
 2. Polls the new log lines every 2 s until the ready line appears in the client script log plus `--settle` seconds, or `--timeout` (FAIL: no ready signal). It stops early on a `Can't compile ... script module` line, a new `crash*.log`, or a server or client process exiting (FAIL: crash).
 3. Always stops the session with `/dayz-stop-test`, then judges only the lines written after step 1, with the `dayz-ingame-tester` rules:
-   - Fail: script compile errors, missing config entries, textures or models, crashes; `NULL pointer` and `Can't find` errors only when they name the mod.
+   - Fail: script compile errors, missing config entries, textures or models, crashes, a refused join (`0x00020005`, `0x00020017`, `0x00020013`, `0x00010002`), persistence storage the server cannot read (`Serious stream damage`, `Failed to read modstorage`, `Scripted variables corrupted`) and a server that shuts itself down (`[Server] :: termination in:`, `BattlEye initialization failed`); `NULL pointer` and `Can't find` errors only when they name the mod. The category of each line is listed in [triage.md](triage.md).
    - A line names the mod when it, or its stack trace, mentions the mod's folder, its `$PBOPREFIX$` root, or a class the mod declares (top-level classes in `config.cpp`'s `Cfg*` blocks and non-modded script classes).
    - Vanilla noise: a line that names nothing of the mod and also appears in a vanilla-only run, meaning one of the two newest older sessions in the same folder whose RPT `CLI params:` line has no `@<ModName>` (plus the script logs created within 30 s after that RPT). Noise is listed, not failed. With no such run the line is a warning.
 
@@ -147,7 +147,17 @@ python "<skill-dir>\triage.py" --stdin --json < pasted.txt
 python "<skill-dir>\triage.py" --learn <id> --fingerprint "<fingerprint or raw log line>" [--meaning "..." --fix "..." --owner <agent>]
 ```
 
-How lines are fingerprinted, what to do with each result of a pasted log, and the rules for `--learn` are in [triage.md](triage.md); read it before triaging a pasted log or recording a diagnosis.
+How lines are fingerprinted, which lines count as errors and which vanilla lines never do, what to do with each result of a pasted log, and the rules for `--learn` are in [triage.md](triage.md); read it before triaging a pasted log or recording a diagnosis.
+
+## When a run fails for a reason that is not the mod
+
+The gate judges log lines; it cannot tell that the run itself was not a valid test. The measured cases are in the `dayz-test-ingame` skill:
+
+| The gate shows | Read |
+|---|---|
+| The server or client does not start or connect, a client that dies before it logs, a kick code | `skills/dayz-test-ingame/references/troubleshooting.md` |
+| A `storage` failure, a PASS that did not test the change (stale or locked PBO, an old signature, storage written by another mod set) | `skills/dayz-test-ingame/references/build-and-storage-traps.md` |
+| A scripted check that cannot fail, or a verdict from a run whose `-mod=` line is not what you meant | `skills/dayz-test-ingame/references/automated-cells.md` |
 
 ## Limits
 
@@ -165,4 +175,5 @@ How lines are fingerprinted, what to do with each result of a pasted log, and th
 
 - Don't pass `--yes` for the user: a running `DayZDiag_x64.exe` the gate did not start may be their play session. On that `ERROR`, ask them to close it or to agree to the gate stopping it.
 - Don't edit `known-errors.json` from `--learn`; learned fingerprints are per project.
+- Don't rename or delete a mission's `storage_1` to clear a `storage` failure without asking the user: it resets their world and characters.
 - Don't `--accept` a capture nobody has looked at, and don't pass `--replace-failed` for the user; the baseline is the expected look.

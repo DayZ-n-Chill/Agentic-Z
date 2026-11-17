@@ -16,6 +16,7 @@ Every fact cites the vanilla file on `P:\` it came from as `path:line`. Line num
 | Muzzle flash, barrel smoke and shot sounds. | `muzzle-effects.md` |
 | What memory points, selections and bones must the model have? | `model-selections.md` |
 | Script calls: spawning a loaded weapon, reading its state, the state machine, firearm actions, the 1.30 explosion effect calls. | `weapon-script-api.md` |
+| How does a weapon get its hand pose and clips, what can a custom weapon change without replacing the player graph, and how do I make the support hand close? | `hand-animation-and-grip.md` |
 
 Deeper material is in the `dayz-weapons` skill (`dayz-weapons/SKILL.md`): the `.p3d` selection contract, the bone remap, the `CfgWeapons` contract, the import rule and the DayZ 1.30 firearm changes.
 

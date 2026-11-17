@@ -17,9 +17,9 @@ The Geometry LOD autocenter property is only checked when the config.cpp
 The same config.cpp feeds the wheel-slot check of a wheeled vehicle body.
 
 Gates on /dayz-preflight. Reads .p3d files with py3d: the DayZ fork kept in
-this repo at scripts/tools/py3d when that folder is there, otherwise the
-installed py3d (python -m pip install -r ../requirements.txt); exits 2 when
-neither is found. With the fork (1.6.0 or later) its P3D.validate() findings,
+this repo at scripts/tools/py3d when that folder is there, otherwise an
+installed py3d (../requirements.txt installs that same repo copy as a package,
+run from the repo root); exits 2 when neither is found. With the fork (1.6.0 or later) its P3D.validate() findings,
 the winding checks among them, are added to this script's own.
 """
 
@@ -31,8 +31,8 @@ import skill_helpers as h  # noqa: E402
 
 
 REQUIREMENTS = Path(__file__).resolve().parents[1] / "requirements.txt"
-# The DayZ fork of py3d kept in this repo. A plugin install that ships only
-# skills/ has no such folder and falls back to the installed py3d.
+# The DayZ fork of py3d kept in this repo: the one py3d copy every skill uses.
+# A checkout without that folder falls back to an installed py3d.
 REPO_FORK = Path(__file__).resolve().parents[3] / "scripts" / "tools" / "py3d" / "py3d" / "__init__.py"
 FORK_MIN_VERSION = (1, 6, 0)
 _fork_module = None
@@ -53,8 +53,10 @@ def load_py3d():
     try:
         import py3d
     except ImportError:
-        print(f"{h.FAIL} py3d not installed.", file=sys.stderr)
-        print(f'Run: python -m pip install -r "{REQUIREMENTS}"', file=sys.stderr)
+        print(f"{h.FAIL} py3d not found: the repo copy at {REPO_FORK.parents[1]} is missing "
+              "and no py3d is installed.", file=sys.stderr)
+        print("Restore that folder from the repo. To install it as a package, run from the repo root: "
+              f'python -m pip install -r "{REQUIREMENTS}"', file=sys.stderr)
         sys.exit(2)
     return py3d
 

@@ -2,6 +2,8 @@
 
 How to give one mesh region two to four tiling detail textures with the `Multi` shader: the mask, the stage and texGen layout, the two UV sets, the `uvTransform` values, an annotated template and the pitfalls.
 
+The same shader from the material side (when Multi is worth it, painting the mask, the checks before accepting a Multi material) is in `skills/dayz-texture-pipeline/references/multi-rvmat-section-texturing.md`. Read that file for the `.rvmat` work and this one for the model side and the annotated template.
+
 What is checked and what is not: the stage layout, the texGen numbers and the `uvTransform` forms were compared with the 1,960 vanilla `Multi` materials under `P:\DZ\`, and the lines that cite `P:\` were opened; the counts are in `_shared/models/multi-rvmat-texturing.md`. The workflow, the costs, the UV advice and the pitfalls come from a DayZ Modders Discord thread on multi material rvmats (2026-06), a community template `multimat_template.rvmat` and [Mondkalb's MultiMaterial Tutorial](https://community.bistudio.com/wiki/Mondkalb%27s_MultiMaterial_Tutorial) on the Bohemia wiki; they are community and tool knowledge, not checked on `P:\`.
 
 ## When to use which technique

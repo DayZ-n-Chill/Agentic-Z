@@ -226,7 +226,7 @@ this probe (Chernarus, 2026-10-15 to 24), though, every textured run's client RP
 flat run's had all three: `MatMulti` on `atcbig_multi_5metal_plates_old_co.paa`, and `No components in` on
 `cl_rock1.p3d` and on `muzzle_flash_pistol_fnp.p3d`; two mostly flat runs had one or two of them (other maps
 not checked). Flat clients were also seen on 1.30.164014 (in part) and 1.29.163709 (dayz-characters
-`references/character-rigging.md`). Cause unknown; window focus was not recorded (`SKILL.md`, SP-391), so it
+`references/character-rigging.md`). Cause unknown; window focus was not recorded (`automated-cells.md`, SP-391), so it
 is not ruled out. One observation from another project points at it (historical, not reproduced here): on
 2026-10-23 a client launched by the managed launcher stayed flat for about 3 min and loaded its textures as
 soon as the owner clicked into its window, and the managed tools do not give that window focus. Until focus is
@@ -236,7 +236,7 @@ ruled out, log the foreground window, or have a human click the client window, b
   the 13 textured runs whose view filled the window. The last four runs of 2026-10-24 drew the view in about
   72% of the window's width and height, and the textured one among them read 0.63 MB: compare runs with the
   same framing. Single frames overlap (night, late textures).
-- For anything judged on its frames such a run is `SETUP_FAIL` (`SKILL.md`, "Validity of an automated run"):
+- For anything judged on its frames such a run is `SETUP_FAIL` (`automated-cells.md`, "Validity of an automated run"):
   relaunch; do not tune a material, LOD or closure on it, nor fail a model for missing textures
   (`dayz-mcp-verify`) while the vanilla terrain and sky in the frame are flat too. Its script-side readings
   still count: two of the Lewis eye readings below come from flat runs.
@@ -264,8 +264,8 @@ within 0.6 mm, with the bars at rest and the same rider clips swapped in, and th
 - Across classes: SurvivorF_Judy read Lewis's eye to 0.2 mm on 2026-10-19 and 3.7 cm lower on 2026-10-16.
 
 Why the head moves, and what held Keiko at 1.401 m (not reproduced), is not established. It is not the
-missing-mod case either (`SKILL.md`, the `-mod=` line check, point 2): the mod set and the pose swap were the
-same in every run. Window focus, which changed client-side readings in SP-391 (`SKILL.md`), was not logged
+missing-mod case either (`automated-cells.md`, the `-mod=` line check, point 2): the mod set and the pose swap were the
+same in every run. Window focus, which changed client-side readings in SP-391 (`automated-cells.md`), was not logged
 in these runs either.
 
 - Log the eye at every look of every run: `GetCurrentCameraTransform` (`P:\scripts\3_game\dayzplayer.c:1237`) through
@@ -276,6 +276,6 @@ in these runs either.
   [EXACT][CLAIM-TEST-PIN-CHARACTER-CREATECHARACTER] In a `modded class MissionServer`, override
   `PlayerBase CreateCharacter(PlayerIdentity identity, vector pos, ParamsReadContext ctx, string characterName)`
   (`P:\scripts\5_mission\mission\missionserver.c:499`, 1.29 `:486`; both spawn paths of `OnClientNewEvent` call it, `:573` and `:589`), set `characterName` from
-  `CommandlineGetParam` (`P:\scripts\3_game\global\game.c:661`, 1.29 `:660`) behind the test flag (`SKILL.md`, "AUTOMATED in-game cell
+  `CommandlineGetParam` (`P:\scripts\3_game\global\game.c:661`, 1.29 `:660`) behind the test flag (`automated-cells.md`, "AUTOMATED in-game cell
   without pilot", point 1) and call `super`: all 7 runs that passed a class spawned it, and 17 runs without
   it drew 14 classes.

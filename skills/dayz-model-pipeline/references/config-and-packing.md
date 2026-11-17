@@ -373,8 +373,8 @@ in config.cpp to swap materials at runtime (e.g., LED on vs LED off).
 ### Before binarizing: measure each collision LOD (SP-458, added 2026-10-03)
 
 A collision LOD with many pieces can make `binarize` write no ODOL and print no capacity line, so
-a three-state bench reads `OTHER_FAIL` (the binarize vertex budget notes in the vehicles pack,
-`_shared/vehicles/README.md`, item 3 there). Before Addon Builder or `binarize`, read the points, faces, named selections and
+a three-state bench reads `OTHER_FAIL` (`skills/_shared/vehicles/binarize-vertex-budget.md`,
+item 3 there). Before Addon Builder or `binarize`, read the points, faces, named selections and
 selection bytes of each Geometry, View and Fire LOD with a header reader, and check that every
 LOD walks to its `#EndOfFile#` TAGG: a truncated MLOD gives the same `OTHER_FAIL`. The values
 known to pass, the boundary and the fix (pieces moved to a second model, none merged or
@@ -416,4 +416,4 @@ In Agentic-Z, `/dayz-launch-test` starts the local server and client with the bu
 3. Use the in-game admin tools or script to spawn the object
 4. Verify: visual appearance, collision, bullet interaction, animations, sounds
 
-Since 1.30 (official changelog) `-mod` also accepts an unpacked source folder, not only a packed `@Mod` with PBOs. Pair it with `-cacheP3D=0` or `-cacheP3D=1` and `-resolveFilePatchingUsingEnfusion=0` or `-resolveFilePatchingUsingEnfusion=1`. The 1.30 notes on the build and in-game test side come in with the PBO build and in-game test material of the same import.
+Since 1.30 (official changelog) `-mod` also accepts an unpacked source folder, not only a packed `@Mod` with PBOs. Pair it with `-cacheP3D=0` or `-cacheP3D=1` and `-resolveFilePatchingUsingEnfusion=0` or `-resolveFilePatchingUsingEnfusion=1`. The 1.30 notes on the build and in-game test side are in `skills/dayz-build-pbo/references/dayz-1-30-pbo-build.md` and `skills/dayz-test-ingame/references/dayz-1-30-test-ingame.md`.

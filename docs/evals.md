@@ -11,6 +11,13 @@ Answer tests check what an agent actually says. Each agent has a set of question
 | `scripts/dev/run_evals.py` | The runner. |
 | `scripts/dev/evals.bat` | The no-token wrapper for the runner. |
 | `output/evals/` | Results files, one per run. Not committed. |
+| `evals/fixtures/<agent>/` | Small files a question tells the agent to read. The question's `unchanged` list guards them. |
+| `evals/cases/` and `evals/schema.json` | The ten mechanical cases that came with the DayZ Modding Knowledge Pack. Each one carries its own canned answers and the verdict each must get, so they test a grader, not an agent. The imported `packctl` tool under `scripts/dev/knowledge-pack/` runs them (its `gate` and `eval` commands), not the runner above. |
+| `evals/live/cases/`, `evals/live/schema.json` | Five live cases from the Knowledge Pack. Each asks a model the same question several times with and without one skill mounted and passes only when the skill makes the difference. The runner above cannot do that: it asks one agent once and has no arm without the skill. `packctl`'s live eval command runs them. |
+| `evals/live/runners/claude-code.py` | The adapter the live eval command calls for each run. It reads one JSON request on stdin, runs `claude -p --bare` in the given workspace and prints the answer as JSON. It needs `PACKCTL_LIVE_EVAL_MODEL` and `PACKCTL_LIVE_EVAL_EFFORT` set and costs tokens. |
+| `scripts/dev/test_kp_evals.py` | Checks the imported case files, the adapter and that every imported case still has its question in `evals/questions/`. It never calls `claude`. |
+
+Twenty of the questions in `evals/questions/` were converted from the Knowledge Pack's cases; `evals/README.md` lists them by agent and says which are not in the baseline yet.
 
 ## Question file format
 

@@ -1,8 +1,8 @@
 # The checks on Linux
 
-Everything in `SKILL.md` is the Windows workflow and stays valid there. `preflight.py` looks for `P:\` and reads the Windows registry, so on Linux it stops at the first check with `[FAIL]  P:\ is NOT mounted`. This file says what replaces each check. The Proton setup, the measured tool matrix and the pitfalls are in the pack's Linux note, linux-proton.md.
+Everything in `SKILL.md` is the Windows workflow and stays valid there. `preflight.py` looks for `P:\` and reads the Windows registry, so on Linux it stops at the first check with `[FAIL]  P:\ is NOT mounted`. This file says what replaces each check. The Proton setup, the measured tool matrix and the pitfalls are in the pack's Linux note, `skills/_shared/linux-proton.md`.
 
-Not yet checked on `P:\`: the table below was measured by the knowledge pack author on Debian with Steam and Proton in November 2026 and has not been reproduced for Agentic-Z. `dayz-proton.sh` is the helper script that the Linux note documents.
+Not yet checked on `P:\`: the table below was measured by the knowledge pack author on Debian with Steam and Proton in November 2026 and has not been reproduced for Agentic-Z. `dayz-proton.sh` is the helper script that the Linux note documents; it is `skills/_shared/scripts/dayz-proton.sh`.
 
 | Windows check | Linux equivalent |
 |---|---|

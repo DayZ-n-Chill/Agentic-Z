@@ -210,7 +210,7 @@ mass), and when the radius/reduction terms cancel (as above) the mass-equivalent
 fT x m_yours/m_donor; adopt the donor value for its cruise character but pre-compute that fallback
 before the in-game cycle.
 
-Which project settled each of these, with links to the three: the cross-project vehicle note of the knowledge notes (source note `vehicles-crossproject`).
+Which project settled each of these, with links to the three: the cross-project vehicle note, `skills/_shared/knowledge/vehicles-crossproject.md`.
 
 ## Invariant 35: missing damage zone memory points do not explain collision jerks or driving stutters
 

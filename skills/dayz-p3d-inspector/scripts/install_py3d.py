@@ -11,7 +11,7 @@ it). Neither folder ships a wheel, so the script stops when none was built.
 
 It refuses to guess: no wheel, more than one wheel, or an old py3d-*.whl beside the
 new one all stop it. An installed py3d is replaced only when its own files say it is
-the DayZ fork; any other py3d (the upstream library /dayz-p3d-audit can install, or
+the DayZ fork; any other py3d (the upstream library, or
 the unrelated PyPI package of the same name) is left alone and the script stops.
 Every pip call runs under the interpreter that runs this script.
 

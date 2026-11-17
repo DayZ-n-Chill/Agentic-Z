@@ -94,7 +94,7 @@ Measured by the source pack on generated rifles checked against a debinarized AK
 - `bolt_axis` is parallel to the bore.
 - `eye` sits about as high over the bore as on the reference weapon (5.2 cm on the AKM).
 - The ejection direction (`nabojnicestart` to `nabojniceend`) is within about 25 degrees of the reference.
-- The weapon model has no hand points. The hands come from the player's clips, so a custom weapon is fitted by moving the whole model with one offset until its bore and grip have the reference's relation to the origin. The checker for this is `weapon_grip_viewer.py` in the dayz-animation-pipeline skill.
+- The weapon model has no hand points. The hands come from the player's clips, so a custom weapon is fitted by moving the whole model with one offset until its bore and grip have the reference's relation to the origin. The checker for this is `skills/dayz-animation-pipeline/scripts/weapon_grip_viewer.py`.
 
 ## Authoring notes for the hands
 

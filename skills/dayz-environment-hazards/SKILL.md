@@ -115,7 +115,7 @@ A new environmental hazard should copy a vanilla pattern: an `EffectArea` with a
 
 ## How to verify
 
-1. **Offline.** Run `/dayz-lint` on the mod. The script validator brought in with the knowledge pack checks the Enforce Script itself:
+1. **Offline.** Run `/dayz-lint` on the mod. The script validator under `scripts/tools/dayz-script-validator/` checks the Enforce Script itself:
 
    ```cmd
    python scripts\tools\dayz-script-validator\scripts\script_validator.py <addon_root>

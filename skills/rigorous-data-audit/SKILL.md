@@ -234,6 +234,6 @@ Watching for these saves rounds:
 
 ## On Linux
 
-Everything above is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`linux-proton.md`, brought in with the source pack's shared files); this section only says what changes for this skill.
+Everything above is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`skills/_shared/linux-proton.md`); this section only says what changes for this skill.
 
 - The PowerShell snippets in `references/` are search-and-tabulate recipes; the audit method does not depend on them. Use `rg`/`grep -rn` for `Select-String`, `find` for `Get-ChildItem -Recurse`, and Python for the tables. Paths: forward slashes, case-sensitive file system (see the guide).

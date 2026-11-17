@@ -12,10 +12,10 @@ checked on `P:\`; the vanilla script symbols named in sections 4 and 5 are cited
 `P:\scripts\`. The Windows server
 (`DayZServer_x64.exe`) takes the same parameters, but where Linux and Windows differ the Windows rules in
 `../SKILL.md` and `/dayz-launch-test` win on Windows (mod paths, mission path). This is the route without dayz-mcp; the managed
-route is the "On Linux" section of `../SKILL.md`.
+route is in `linux.md` in this folder.
 
 Scripts: `skills/_shared/scripts/` (`find-dayzserver.sh`, `make-server-tree.sh`, `free-ports.sh`),
-tested by `test_linux_helpers.py`, which comes with those scripts.
+tested by `skills/_shared/scripts/test_linux_helpers.py`.
 
 ## 1. Use the server Steam already installed
 
@@ -239,4 +239,4 @@ both directions) see `linux-headless-client.md`.
 The Steam root is `HKCU\Software\Valve\Steam` `SteamPath`; `libraryfolders.vdf` and the manifests have the same
 format; the binary is `DayZServer_x64.exe`; stop it with `Stop-Process`. `make-server-tree.sh` is POSIX sh; the
 same tree on Windows would use `New-Item -ItemType SymbolicLink` or `mklink /J`. On Windows the
-managed route in `../SKILL.md` is the measured one.
+managed route in `managed-launcher.md` is the measured one.

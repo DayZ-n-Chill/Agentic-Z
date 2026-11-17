@@ -2,7 +2,7 @@
 
 Tier 3 pack: a map of one pass through making a DayZ mod (understand, write, lint, pack, deploy, test, debug) and a route table from "I want X" to the skill or tool. It came in with the DayZ Modding Knowledge Pack import. It is an index, not a tutorial: the procedures live in the skills it names.
 
-Skill names written plain (dayz-vehicles, enforce-script-reference) are the Knowledge Pack's; a name with a leading slash is an existing Agentic-Z skill. Where the import merged a Knowledge Pack skill into an existing Agentic-Z skill, use ours: `/dayz-preflight` for the environment check, `/dayz-lint` and `/dayz-gate` for the offline checks, `/dayz-build-pbo` for packing, `/dayz-launch-test` and `/dayz-stop-test` for the local server and client, `/dayz-logwatch` for the logs. Tool behaviour and exit codes below are the Knowledge Pack's own statements about its tools, not yet checked on `P:\`.
+Skill names written plain (dayz-vehicles, enforce-script-reference) are the skills imported from the Knowledge Pack; each is a folder under `skills/` in this repo with that name (`skills/dayz-vehicles/`, `skills/enforce-script-reference/`). A name with a leading slash is a skill Agentic-Z already had. Where the import merged a Knowledge Pack skill into an existing Agentic-Z skill, use ours: `/dayz-preflight` for the environment check, `/dayz-lint` and `/dayz-gate` for the offline checks, `/dayz-build-pbo` for packing, `/dayz-launch-test` and `/dayz-stop-test` for the local server and client, `/dayz-logwatch` for the logs. Tool behaviour and exit codes below are the Knowledge Pack's own statements about its tools, not yet checked on `P:\`.
 
 ## What has to be on the machine
 
@@ -93,7 +93,7 @@ There is no separate deploy step. AddonBuilder's destination is the deploy (`P:\
 
 ### 6. Test in game
 
-- The Knowledge Pack's dayz-test-ingame does not ship a launcher to run from the repo root. It ships a PowerShell template (`dayz-test.ps1`) and three `.bat` wrappers that are copied into `<Mod>_dev\tools\` with `__MODNAME__` replaced. The template assumes a `P:\` work-drive layout and has to be re-pointed for any other.
+- The Knowledge Pack's dayz-test-ingame does not ship a launcher to run from the repo root. It ships a PowerShell template (`skills/dayz-test-ingame/templates/dayz-test.ps1`) and three `.bat` wrappers that are copied into `<Mod>_dev\tools\` with `__MODNAME__` replaced. The template assumes a `P:\` work-drive layout and has to be re-pointed for any other.
 - `-Mod` is required (the CfgPatches name, no dashes). `-Mode all` starts the server and then the client on DayZDiag. `-Build` drives AddonBuilder first. `-Preflight` only checks.
 - Offline (single exe) mode is marked `[DESIGN]` in that skill: validate it in game before trusting it.
 - File patching: script and config edits are the general case for hot reload; `.p3d`, `.paa` and `.rvmat` need a rebuild. On some installs the PBO wins even for scripts, and the skill documents a `srcprobe` test to tell which is loaded.
@@ -149,7 +149,7 @@ There is no separate deploy step. AddonBuilder's destination is the deploy (`P:\
 | Expansion eAI | dayz-ai-patterns |
 | Learn from someone else's PBO | dayz-pbo-reverse-engineering |
 | Pack, "is this addon ready" | `/dayz-build-pbo` plus the linter above |
-| Launch DayZDiag with the mod | dayz-test-ingame |
+| Launch DayZDiag with the mod | `/dayz-launch-test`, stopped with `/dayz-stop-test`; dayz-test-ingame is the reference for what goes wrong |
 | Test in game through MCP | dayz-mcp-verify plus `docs/dayz-mcp.md` |
 | Audit persistence or data-loss risk | rigorous-data-audit |
 | Find the root cause of a bug | systematic-debugging |

@@ -39,6 +39,30 @@ Use the slash command instead when you want Claude to run the step as part of a 
 | `clean-workspace.bat` | Delete managed mod folders under `workspace\` with their `P:\<ModName>\` junctions and deployed `P:\Mods\@<ModName>\` copies (a mod folder holding `.git` is skipped; a deployed copy is removed only when it carries the toolkit's `.agentic-z-scaffold` ownership marker, so a hand-copied or subscribed one stays and the run prints a warning naming it); `--dry-run` lists them first | `clean-workspace.bat --mod MyVest --dry-run` |
 | `upgrade-guard.bat` | Snapshot vanilla classes before a DayZ update, then list the mod classes it affects | `upgrade-guard.bat check MyVest` |
 | `p3d-audit.bat` | Audit a `.p3d` model and its config | `p3d-audit.bat --help` |
+| `p3d-inspector-extract.bat` | Read a source `.p3d` (MLOD) into one Recipe JSON | `p3d-inspector-extract.bat model.p3d -o recipe.json` |
+| `p3d-inspector-viewer.bat` | Write the HTML viewer page for a Recipe JSON | See `skills\dayz-p3d-inspector\SKILL.md` |
+| `p3d-inspector-build.bat` | Build a source `.p3d` (MLOD) from a Recipe JSON | See `skills\dayz-p3d-inspector\SKILL.md` |
+| `proxy-extract.bat` | Read every proxy of a host `.p3d` (MLOD) into a recipe JSON | See `skills\dayz-proxy-align\SKILL.md` |
+| `proxy-worn-overlay.bat` | Add the worn clothing reference meshes to a proxy recipe JSON | `proxy-worn-overlay.bat --help` |
+| `proxy-canon.bat` | Write an edits JSON that gives every proxy an unambiguous triangle | `proxy-canon.bat --help` |
+| `proxy-viewer.bat` | Write the HTML page for aligning proxies from a recipe JSON | See `skills\dayz-proxy-align\SKILL.md` |
+| `proxy-apply.bat` | Write the aligned proxy triangles from an edits JSON back into the `.p3d` (MLOD) | See `skills\dayz-proxy-align\SKILL.md` |
+| `check-winding.bat` | Check face winding and normals in the visual LODs of a source `.p3d` (MLOD) | `check-winding.bat --help` |
+| `vehicle-getin-wheels.bat` | Audit a vehicle `.p3d` (MLOD): get-in points, seat selections and wheel axis direction | `vehicle-getin-wheels.bat car.p3d` |
+| `vehicle-odol-sections.bat` | Check the sections of a binarized vehicle `.p3d` (ODOL) per named selection | `vehicle-odol-sections.bat --help` |
+| `vehicle-odol-bones.bat` | Show which skeleton bone a section's vertices bind to in a binarized vehicle `.p3d` (ODOL) | `vehicle-odol-bones.bat --help` |
+| `anim-model-cfg.bat` | Print a `model.cfg` from one JSON description file | `anim-model-cfg.bat --self-test` |
+| `motion-contract.bat` | Check sampled animation motion against a motion contract | `motion-contract.bat --help` |
+| `motion-regression.bat` | Run the animation regression checks | `motion-regression.bat --help` |
+| `clothing-viewer-extract.bat` | Clothing alignment viewer, step 1: read a worn `.p3d` (MLOD) into `align_data.json` | `clothing-viewer-extract.bat --help` |
+| `clothing-viewer-build.bat` | Clothing alignment viewer, step 2: build the HTML page from `align_data.json` | `clothing-viewer-build.bat --help` |
+| `clothing-viewer-apply.bat` | Clothing alignment viewer, step 3: apply the exported adjustments JSON to the worn `.p3d` files | `clothing-viewer-apply.bat --help` |
+| `rvmat-lint.bat` | Check `.rvmat` files for common mistakes | `rvmat-lint.bat --help` |
+| `rvmat-template.bat` | Print or write a starter `.rvmat` template | `rvmat-template.bat --help` |
+| `normal-convention.bat` | Measure whether a normal map is OpenGL (Y+) or DirectX (Y-); needs numpy and Pillow | `normal-convention.bat --help` |
+| `render-delta.bat` | Compare two renders taken with the same camera and report what changed | `render-delta.bat --help` |
+| `ui-gen-panel.bat` | Generate a `.layout` file for a UI panel | `ui-gen-panel.bat --help` |
+| `pbo-inventory.bat` | Classify `.pbo` files from their headers, without extracting them | `pbo-inventory.bat --help` |
 | `types-edit.bat` | Add, change or remove a `types.xml` entry, or merge a pasted chunk (`--merge`) | `types-edit.bat --help` |
 | `types-split.bat` | Split one big `types.xml` into category files | `types-split.bat --help` |
 | `release-pack.bat` | Write the Workshop text, changelog, classname list and install notes | `release-pack.bat MyVest --version 1.0.0` |

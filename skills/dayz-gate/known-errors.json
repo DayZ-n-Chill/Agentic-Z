@@ -250,6 +250,70 @@
     "source": "docs/dayz-modding.md Troubleshooting"
   },
   {
+    "id": "connection-diag-mismatch",
+    "pattern": "0x00020017|Client is using Diag exe while the server is not",
+    "meaning": "A DayZDiag client tried to join a server that is not DayZDiag; a diag client only joins a diag server. The client shows it as a modal and its RPT may not carry the line.",
+    "fix": "Start both sides from DayZDiag_x64.exe with /dayz-launch-test; do not point the diag client at a retail DayZServer.",
+    "owner_agent": "dayz-orchestrator",
+    "source": "dayz-test-ingame references/linux.md and references/linux-headless-client.md (measured, not on P:\\); dayz-launch-test SKILL.md (diag client resolution)"
+  },
+  {
+    "id": "connection-version-mismatch",
+    "pattern": "0x00020013|Client is a newer build than the server",
+    "meaning": "Client and server are different game builds, usually because Steam updated one app and not the other.",
+    "fix": "Update DayZ and DayZ Server in Steam until both report the same build, then launch again.",
+    "owner_agent": "user",
+    "source": "skills/_shared/knowledge/linux-proton-findings.md section 1 (measured, not on P:\\); dayz-test-ingame references/linux.md"
+  },
+  {
+    "id": "connection-signature-mismatch",
+    "pattern": "0x00010002",
+    "meaning": "The server checked mod signatures and the client's PBOs did not match its keys.",
+    "fix": "Build the mod again with /dayz-gate build <ModName> so both sides load the same PBO, and check that .server/<instance>/serverDZ.cfg still has verifySignatures = 0; as /dayz-add-server writes it for local tests.",
+    "owner_agent": "dayz-orchestrator",
+    "source": "skills/_shared/knowledge/environment-and-infra.md (BattlEye, most common kick codes); dayz-test-ingame references/troubleshooting.md"
+  },
+  {
+    "id": "storage-stream-damage",
+    "pattern": "Serious stream damage detected during load",
+    "meaning": "The mission's persistence storage is half written, usually after a server was killed while saving. The server dies before it binds its port, which looks like a mod bug and is not one.",
+    "fix": "Tell the user the world and characters will reset. With the server stopped, rename .server/<instance>/mission/storage_1 (for example to storage_1_corrupt-<date>); the server writes a fresh one on the next start.",
+    "owner_agent": "dayz-server-admin",
+    "source": "dayz-test-ingame references/troubleshooting.md and references/session-findings.md (measured, not on P:\\)"
+  },
+  {
+    "id": "storage-modstorage-unreadable",
+    "pattern": "Failed to read modstorage for entity",
+    "meaning": "Community Framework could not read its data on a persisted entity: the storage was written by a server that ran without CF and is now loaded with it. The entity named on the line is a random vanilla one, not the cause.",
+    "fix": "Tell the user the world and characters will reset. With the server stopped, rename .server/<instance>/mission/storage_1 (for example to storage_1_corrupt-modstorage-<date>) and start again; keep one mod set per instance from then on.",
+    "owner_agent": "dayz-server-admin",
+    "source": "dayz-test-ingame references/build-and-storage-traps.md (measured, not on P:\\)"
+  },
+  {
+    "id": "storage-scripted-variables-corrupted",
+    "pattern": "Scripted variables corrupted",
+    "meaning": "A persisted entity was saved by a different mod set than the one loading it, for example storage written with Community Framework and loaded without it. The server keeps running and prints the line once per entity; saving in this state damages the storage further.",
+    "fix": "Stop the server. Launch with the mod set that wrote the storage (name the missing mods first: /dayz-launch-test CF <ModName>, or --deps CF on the gate), or, after telling the user the world will reset, rename .server/<instance>/mission/storage_1 with the server stopped.",
+    "owner_agent": "dayz-server-admin",
+    "source": "dayz-test-ingame references/build-and-storage-traps.md and references/linux-native-server.md (measured, not on P:\\)"
+  },
+  {
+    "id": "server-termination-countdown",
+    "pattern": "\\[Server\\] :: termination in:",
+    "meaning": "The server counts down and exits before the mission loads. Measured cause: serverDZ.cfg has no class Missions block or no instanceId.",
+    "fix": "Compare .server/<instance>/serverDZ.cfg with the one /dayz-add-server writes: it needs instanceId = 1; and class Missions { class DayZ { template = \"<mission>\"; }; };. Add what is missing, or re-run /dayz-add-server <instance>.",
+    "owner_agent": "dayz-server-admin",
+    "source": "dayz-test-ingame references/windows-launch-cycle.md (measured on 1.30, not on P:\\); dayz-add-server add_server.py (the generated serverDZ.cfg)"
+  },
+  {
+    "id": "battleye-init-failed",
+    "pattern": "BattlEye initialization failed",
+    "meaning": "A retail DayZ server could not start BattlEye and shuts down about a minute after binding its port; measured when BEServer_x64.dll was missing or renamed.",
+    "fix": "Verify the DayZ Server files in Steam. Local mod tests do not need the retail server: /dayz-launch-test runs server and client from DayZDiag_x64.exe.",
+    "owner_agent": "user",
+    "source": "dayz-test-ingame references/troubleshooting.md (historical observation on 1.29, not on P:\\)"
+  },
+  {
     "id": "script-module-compile",
     "pattern": "Can't compile \"\\w+\" script module",
     "meaning": "A script error earlier in the same log stopped this script module from compiling; nothing in it runs.",

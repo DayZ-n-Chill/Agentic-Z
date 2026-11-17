@@ -12,6 +12,8 @@ Follow Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions
 
 In a plugin install, every repo path in this file (`.claude/CLAUDE.md` and everything under `agents/` and `skills/`) sits under the plugin root: find it once with Glob, as `agents/dayz-lead.md` describes, and read those files by full path under it. `workspace/<ModName>/` stays in the user's checkout.
 
+Deeper references, each Read only when the review calls for it; the checks and severities below stay the gate: when to escalate a review into a full audit (`skills/dayz-mod-workflow/references/audit-escalation.md`); a change to saved data, a state machine or a recovery path (`skills/rigorous-data-audit/SKILL.md`, whose audit dayz-persistence-specialist runs); which DayZ build a skill's material was checked on, before a finding rests on that skill alone (`docs/compatibility-matrix.md`).
+
 ## Run lint first
 
 - Run `py skills/dayz-lint/lint.py --mod-dir workspace/<ModName> --json` from the checkout under review. `--mod-dir` lints that exact folder; never pass a bare `<ModName>`, which lints the project `/dayz-init` cached and can be another clone. Each lint error is a CRITICAL finding with lint's owner (`triage.owner_agent`) and each warning is a WARN, except `script-module-unlisted`: the engine ignores a scripts folder no `CfgMods` module lists, so report it as CRITICAL under check 2, once. Use Bash only to run lint.

@@ -42,7 +42,7 @@ All return −1 on error (source comment at `human.c:307`). The command then use
 
 The names to bind are the ones the master graph declares: variables such as `MovementSpeed`, `MovementDirection`, `Stance`, `TurnAmount`, `Look`, `LookDirX` and `Lean` (`P:\DZ\anims\workspaces\player\player_main\player_main.agr:6`, `:11`, `:16`, `:21`, `:26`, `:34`, `:88`), and commands from the `Commands` block that starts at `:211` (`CMD_Action` at `:218`, `CMD_Jump` at `:245`, `CMD_Land` at `:263`).
 
-A shipped third party command does this on the vanilla graph: the SIBNIC gunner binds `Stance` with `BindVariableInt` and forces it with `PreAnim_SetInt` in `OnActivate` (described in the dayz-vehicles skill, `references/gunner-shoot-from-vehicle.md`). `PreAnim_CallCommand` has no caller in vanilla script, which only means vanilla shows no example.
+A shipped third party command does this on the vanilla graph: the SIBNIC gunner binds `Stance` with `BindVariableInt` and forces it with `PreAnim_SetInt` in `OnActivate` (described in `skills/_shared/vehicles/gunner-shoot-from-vehicle.md`). `PreAnim_CallCommand` has no caller in vanilla script, which only means vanilla shows no example.
 
 These APIs also work with a custom graph that defines its own variables; Bohemia's scripted swim sample brings its own.
 
@@ -104,4 +104,4 @@ A test verdict that reads only its own log lines misses these exceptions: 241 of
 
 Measured (LFSkateboard, 2026-10-07, DayZDiag 1.30.164014 Experimental), cause unknown and still open: a `HumanCommandScript` subclass declared in `4_World` and started two or more times crashed every orderly exit of client and server. This held for the project's ride command and for an empty class alike. The same empty class declared in `3_Game`, or started only once, exited cleanly.
 
-The workaround the project adopted, still being verified when reported: a thin class in `3_Game` that forwards to a `Managed` logic object in `4_World`. The measurements are recorded in the source pack's error catalogue as entry E23 (the dayz-mod-workflow skill, `references/error-catalog.md`).
+The workaround the project adopted, still being verified when reported: a thin class in `3_Game` that forwards to a `Managed` logic object in `4_World`. The measurements are recorded in the source pack's error catalogue as entry E23 (`skills/dayz-mod-workflow/references/error-catalog.md`).

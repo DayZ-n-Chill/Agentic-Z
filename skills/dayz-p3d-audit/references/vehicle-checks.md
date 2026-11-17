@@ -1,6 +1,6 @@
 # Vehicle checks: wheel slots, wheel anatomy, mass and crew
 
-What `/dayz-p3d-audit` checks on a wheeled vehicle body, and the vehicle faults it does not check that an auditor has to measure by hand. Killers 11 to 13 continue the numbering of `p3d-killers.md`. The full vehicle build rules (config, `model.cfg`, structural parity with vanilla, the wider list of vehicle killers) belong to the vehicles pack, `_shared/vehicles/`; this file covers only what an audit of the `.p3d` can see.
+What `/dayz-p3d-audit` checks on a wheeled vehicle body, and the vehicle faults it does not check that an auditor has to measure by hand. Killers 11 to 13 continue the numbering of `p3d-killers.md`. The full vehicle build rules (config, `model.cfg`, structural parity with vanilla, the wider list of vehicle killers) belong to the vehicles pack, `_shared/vehicles/` (the measured field notes on these killers are `skills/_shared/vehicles/p3d-vehicle-killers.md`, and structural parity is `skills/_shared/vehicles/vehicle-structural-parity.md`); this file covers only what an audit of the `.p3d` can see.
 
 **Not yet checked on `P:\`**, except where a vanilla file is cited: the faults below were measured in game on custom vehicles (a quad bike built against a third-party "Croco" quad, the SUB_BRZ car, an HH-60G helicopter) and their fixes confirmed there.
 
@@ -91,7 +91,7 @@ for lod in p.lods:
 
 **Fix**: bake the 4 missing mem-points using the Croco-vanilla convention (Y vertical,
 X axial, Z with intentional min/max inversion). Reference values + scaling rules in
-the vehicle structural parity reference of the vehicles pack §"Addendum (2026-05-29)
+`skills/_shared/vehicles/vehicle-structural-parity.md` §"Addendum (2026-05-29)
 — Wheel proxy `.p3d` Memory anatomy (T1-D)". Bake with py3d 1.0.0 — observe the
 6 quirks in the py3d 1.0.0 quirks reference of the dayz-animation-pipeline skill (constructor
 with args, weight `int` not `float`, rebind after grow, etc.). The 5 mem-points
@@ -133,7 +133,7 @@ if chassis_floor < wheel_center_Y - 0.05:
     flag_critical(f"chassis floor {chassis_floor:.3f} below wheel-center line {wheel_center_Y:.3f}")
 ```
 
-**Coupling (do not create a new anomaly):** the fix raises BOTH the wheel/hub system AND the chassis floor to the reference triple -- raising only the wheels worsens resting clearance. See the vehicle structural parity reference of the vehicles pack "Addendum 2026-05-29 -- ride-height triple" + LL-062. Causal link to `contact=0` is `[verify in-game]` (R31); the parity divergence itself is verified vs 3 references.
+**Coupling (do not create a new anomaly):** the fix raises BOTH the wheel/hub system AND the chassis floor to the reference triple -- raising only the wheels worsens resting clearance. See `skills/_shared/vehicles/vehicle-structural-parity.md` "Addendum 2026-05-29 -- ride-height triple" + LL-062. Causal link to `contact=0` is `[verify in-game]` (R31); the parity divergence itself is verified vs 3 references.
 
 
 ## Killer 13. Vehicle Geometry built as ONE monolithic component / mass concentrated / missing per-component `autocenter=0` (CRITICAL for wheeled vehicles) (added 2026-05-30)
@@ -142,7 +142,7 @@ A working DayZ car's Geometry LOD is a **compound of several closed convex compo
 
 Mechanism (documented): PhysX resolves spawn interpenetration in a single step → large separating impulse (NVIDIA PhysX Best Practices, "Overlapping objects explode"); sharp edges of a tight monolithic hull "impart a large moment … sending it up into the air" (Arma Anti-Bounce community). Mass concentrated in one component → low/pathological inertia tensor → the impulse becomes a runaway tumble (LOD wiki: "the Mass distribution is critically important … Inertia/Moment of Inertia"). Anti-example: LFQuad shipped with **1** chassis component (`component01`) holding ~90% of mass, Izz 128.5 vs the Croco reference 350.7 (37%); the working Croco quad has **23 chassis components + 4 hubs**.
 
-Working references converge: Bohemia `DayZ:Vehicle_Configuration` ("convex components. Every component's vertex should have weight assigned. From these weights the total mass of vehicle and its center of mass is computed. Wheel hubs should have their own components"); the Tyson89/Landrover tutorial Object-Builder checklist ("Convex Components / autocenter value 0 / Applied a Mass on **ALL** components / Wheel hubs present / Center of Mass"). See the vehicle structural parity reference of the vehicles pack Addendum 2026-05-30 + external refs there.
+Working references converge: Bohemia `DayZ:Vehicle_Configuration` ("convex components. Every component's vertex should have weight assigned. From these weights the total mass of vehicle and its center of mass is computed. Wheel hubs should have their own components"); the Tyson89/Landrover tutorial Object-Builder checklist ("Convex Components / autocenter value 0 / Applied a Mass on **ALL** components / Wheel hubs present / Center of Mass"). See `skills/_shared/vehicles/vehicle-structural-parity.md` Addendum 2026-05-30 + external refs there.
 
 **Check** (measure, don't eyeball; compare to a debinarized working reference):
 ```python
@@ -166,7 +166,7 @@ if abs(com.x) > 0.05:
 
 Note `autocenter=0` is already Killer #3 but only for `Inventory_Base`; on a **vehicle** it must be present on **every** Geometry component (per the Landrover checklist), or the engine recomputes the origin and shifts the CoM relative to the mass you assigned. The fix couples with Killer #12 (ride-height): rebuild the chassis as multiple convex components with distributed mass AND correct vertical placement together — raising one without the other creates a new anomaly (LL-030). Causal link to the launch is `[verify in-game]` (R31); the construction divergence vs 3 references is verified.
 
-> **Correction (2026-06-02, verified in-game):** the `[verify in-game]` above was settled and the causal attribution did NOT hold. The CONFIRMED root cause of the LFQuad spawn-launch/bounce was a spurious `#Mass#` tagg (all zeros) on a non-Geometry LOD (FireGeometry) → AddonBuilder/binarize baked the mass of THAT LOD → deployed ODOL with `CoM=(0,0,0)` and zero inertia → `ECE_PLACE_ON_SURFACE` spawned the vehicle ~0.48 m below ground → PhysX ejection. It was **not** the monolithic Geometry nor the low inertia tensor. Multi-component Geometry with distributed mass remains **best-practice** (ride-height, collision, convex-component correctness per the Landrover/Bohemia checklist), but it is NOT the cause of the spawn-launch — keep this Killer as a recommended construction practice, not as the spawn-launch diagnosis. Fix = strip `#Mass#` from every LOD that is not the Geometry LOD (set `point.mass = None`, not `0.0`). See "`#Mass#` must live only in the Geometry LOD" below (LL-079, LL-080, LL-081), and the mirrored correction in the vehicle structural parity reference of the vehicles pack Addendum (2026-05-30). First diagnose with the mass-only-Geometry check (it catches the real cause in seconds) before suspecting the chassis-component count.
+> **Correction (2026-06-02, verified in-game):** the `[verify in-game]` above was settled and the causal attribution did NOT hold. The CONFIRMED root cause of the LFQuad spawn-launch/bounce was a spurious `#Mass#` tagg (all zeros) on a non-Geometry LOD (FireGeometry) → AddonBuilder/binarize baked the mass of THAT LOD → deployed ODOL with `CoM=(0,0,0)` and zero inertia → `ECE_PLACE_ON_SURFACE` spawned the vehicle ~0.48 m below ground → PhysX ejection. It was **not** the monolithic Geometry nor the low inertia tensor. Multi-component Geometry with distributed mass remains **best-practice** (ride-height, collision, convex-component correctness per the Landrover/Bohemia checklist), but it is NOT the cause of the spawn-launch — keep this Killer as a recommended construction practice, not as the spawn-launch diagnosis. Fix = strip `#Mass#` from every LOD that is not the Geometry LOD (set `point.mass = None`, not `0.0`). See "`#Mass#` must live only in the Geometry LOD" below (LL-079, LL-080, LL-081), and the mirrored correction in `skills/_shared/vehicles/vehicle-structural-parity.md` Addendum (2026-05-30). First diagnose with the mass-only-Geometry check (it catches the real cause in seconds) before suspecting the chassis-component count.
 
 ## Checks the script does not run (measure by hand)
 

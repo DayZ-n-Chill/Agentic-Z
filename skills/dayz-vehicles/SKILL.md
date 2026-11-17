@@ -32,10 +32,10 @@ Before re-importing or re-assembling any piece, measure whether the piece is com
 
 ## How to run
 
-The scripts read `.p3d` files with py3d. Install it once:
+`audit_getin_wheels.py` reads `.p3d` files with py3d. It uses the DayZ fork of py3d kept in this repo under `scripts/tools/py3d/`, the one py3d copy every skill shares (`/dayz-p3d-audit` loads the same folder), with nothing to install. `requirements.txt` names that same folder. Use it only where `import py3d` must work as an installed package, and run it from the repo root, because pip reads the path in it against the current folder:
 
 ```cmd
-python -m pip install -r "<skill-dir>\requirements.txt"
+python -m pip install -r skills\dayz-vehicles\requirements.txt
 ```
 
 | Script | What it checks | Input |
@@ -65,7 +65,7 @@ Exit codes:
 
 - **0**: every anchor, every wheel axis (two points or more) and every seat selection is present. A seat selection counts when it is in the Geometry or the View Geometry LOD.
 - **1**: a model defect. Each one is a `FAIL:` line on stderr after the report.
-- **2**: no input, a missing file or a file py3d cannot parse (an `INPUT_ERROR:` line, and no report is printed for any model), or py3d is not installed.
+- **2**: no input, a missing file or a file py3d cannot parse (an `INPUT_ERROR:` line, and no report is printed for any model), or py3d was not found (no `scripts/tools/py3d/` folder and no installed py3d).
 
 The required names are the two-seat roster of the reference quad the check was written against. A four-seat car passes or fails on its front pair only, and a car with no seat-back selections gets a `FAIL:` line for each; read those lines against the car's own `Crew` config before acting on them. The rules behind each line are in `invariants-get-in-and-seats.md` and `invariants-wheels-and-hubs.md`.
 
@@ -218,12 +218,12 @@ Vehicle config and model values are easy to half-remember. Before writing a clas
 
 ## On Linux
 
-Everything above is the Windows workflow. On Linux the Proton setup, the measured tool matrix and the pitfalls are in the Linux and Proton notes of the shared material (source file `linux-proton.md`); this section only says what changes for vehicle work.
+Everything above is the Windows workflow. On Linux the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`skills/_shared/linux-proton.md`); this section only says what changes for vehicle work.
 
-- Pack, sign and binarize with dayzmake 1.0.0 or later, a DayZ fork of armake2 (https://github.com/bzed/dayzmake), pinned to `v1.0.0`: `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Upstream armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake v1.0.0 includes them) and it lacks the DayZ-only functions dayzmake keeps adding. The shared script `dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`). A textured cube built this way on 2026-11-03 matched BI binarize from a `P:` root byte for byte; that is not an in-game ODOL check.
-- `P:\` is a plain directory mapped by the shared script `dayz-proton.sh init <dir>`; a `P:\<Mod>\...` path in the pack is `<dir>/<Mod>/...`.
+- Pack, sign and binarize with dayzmake 1.0.0 or later, a DayZ fork of armake2 (https://github.com/bzed/dayzmake), pinned to `v1.0.0`: `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Upstream armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake v1.0.0 includes them) and it lacks the DayZ-only functions dayzmake keeps adding. The shared script `skills/_shared/scripts/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`). A textured cube built this way on 2026-11-03 matched BI binarize from a `P:` root byte for byte; that is not an in-game ODOL check.
+- `P:\` is a plain directory mapped by the shared script `dayz-proton.sh init <dir>` (`skills/_shared/scripts/dayz-proton.sh`); a `P:\<Mod>\...` path in the pack is `<dir>/<Mod>/...`.
 - Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>` and `gui TexView <paa>`. Object Builder opened and displayed a model; editing in it was not exercised. The offline checks are Python and run natively: py3d (`scripts/tools/py3d/`), the model preflight (`scripts/tools/dayz-model-preflight/`) and the 3D viewer (`scripts/tools/dayz-3d-viewer/`).
-- In-game checks: the Linux notes of the in-game test skill.
+- In-game checks: the Linux notes of the `dayz-test-ingame` skill (`skills/dayz-test-ingame/references/linux.md`).
 
 ## Building, testing and publishing the mod
 

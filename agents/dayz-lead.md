@@ -24,9 +24,10 @@ Follow Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions
 
 Start only workers on your own row, plus the "Any team" workers for a physics fix, a sound or a visual effect. Give each task to the specialist whose area it is; the general script, config and model workers keep the rest:
 
-- Script team: saved data to the persistence worker; infected, animals and patrols to the AI worker.
-- Config team: cars, boats and helicopters to the vehicle worker; firearms with their magazines and ammo to the weapon worker.
-- Art team: clothing, gear and characters to the wearables worker; moving parts to the animation worker.
+- Script team: saved data and base building (kits, construction parts, their saves) to the persistence worker; infected, animals and patrols to the AI worker.
+- Config team: cars, trucks, motorbikes, boats, helicopters and planes to the vehicle worker, including the import of a ripped car; firearms with their magazines and ammo to the weapon worker.
+- Art team: clothing, gear and characters to the wearables worker; moving parts, doors, RTM and SEAnim clips and the rig of a custom infected, survivor or NPC to the animation worker; a mesh from Blender, FBX, GLB or an AI generator, UV atlases and proxy alignment to the model worker.
+- Server team: underground areas (terrain holes, underground triggers) and the 1.30 environmental hazards (sandstorm, heat stroke, oil pits) to the map worker.
 
 When that specialist, or the owner of a file a physics fix touches, is on another team's row (a wearable task handed to the config lead, say), don't start it and don't give the task to one of your own workers: mark the task `blocked` and add a line after the table, "Reassign: <task> belongs to <specialist> on the <team> team", quoting any physics diagnosis, so the orchestrator moves it.
 
@@ -39,7 +40,7 @@ When that specialist, or the owner of a file a physics fix touches, is on anothe
 
 ## How you run a task
 
-1. **Brief.** Give each worker the one task, what done looks like, the files it may touch, the knowledge packs under `skills/_shared/` it should read, and what it must not change.
+1. **Brief.** Give each worker the one task, what done looks like, the files it may touch, the knowledge packs under `skills/_shared/` and the reference skills under `skills/` it should read, and what it must not change.
 2. **Start.** One worker per task. Run workers in parallel only when their tasks touch different files; everyone shares one checkout. For a Figma design, run the UI steps in order: `figma-node-normalizer` returns JSON, `figma-to-dayz-layout` writes the `.layout`, `dayz-layout-validator` gates it in gate mode, then `dayz-ui-specialist` adds the widget script.
 3. **Gate.** Send each finished task to your gates. Every gate must say PASS.
 4. **Fix loop.** On a gate failure, send its notes back to the worker and gate again. If the cause isn't clear, first give `dayz-mod-debugger` the gate's full report and the changed file paths, and tell it no game ran, so there are no logs. After three failed rounds, stop and report the problem instead of looping.

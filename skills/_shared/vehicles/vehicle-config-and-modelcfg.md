@@ -250,7 +250,7 @@ TailReflectorMatOn   ="Landrover\data\landrover110_tail_lights_on.rvmat"; TailRe
 ReverseReflectorMatOn="Landrover\data\landrover_reverse_lights_on.rvmat"; ReverseReflectorMatOff="Landrover\data\lr_base.rvmat";
 dashboardMatOn       ="Landrover\data\landrover_dashboard_lights_on.rvmat"; dashboardMatOff    ="Landrover\data\lr_base.rvmat";
 ```
-The `_on.rvmat` is an **emissive** material (see `emissive-leds-and-dynamic-lights.md`, and the emissive section of `config-and-packing.md` in the dayz-model-pipeline material); the `_off` is
+The `_on.rvmat` is an **emissive** material (see `emissive-leds-and-dynamic-lights.md`, and the emissive section of `skills/dayz-model-pipeline/references/config-and-packing.md`); the `_off` is
 the plain body material. Without the selections + memory points + these properties, headlights mount but
 never illuminate (`vehicle-structural-parity.md` "Lights").
 
@@ -949,7 +949,7 @@ the same value, or the inherited healthy curve resolves the ruined wheel to its 
 **Geometry inherited from the healthy wheel is single-sided, and the tear exposes its back.**
 The rim lives sealed inside an intact tyre, so nothing ever sees its reverse; open the tyre and
 the player looks straight through the wheel. Do not reach for `face.flags` - `binarize.exe`
-discards the MLOD per-face flags entirely (the winding diagnostics reference of the `dayz-p3d-audit` skill, source file `winding-diagnostics.md`).
+discards the MLOD per-face flags entirely (`skills/dayz-p3d-audit/references/winding-diagnostics.md`).
 Double-side only the exposed component: on LFQuad2, `radius < 0.18` isolated exactly 302 faces in
 BOTH the healthy and the ruined mesh, which is what made the cut a boundary of the mesh instead
 of a guess. `py3d.LOD.make_double_sided()` duplicates the whole LOD; copy its normal-pool dedup

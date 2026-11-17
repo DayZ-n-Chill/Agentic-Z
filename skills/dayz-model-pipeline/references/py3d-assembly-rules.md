@@ -14,7 +14,7 @@ python -c "import py3d; assert getattr(py3d,'IS_DAYZ_FORK',False) and tuple(map(
 ```
 
 - Do not run `pip install py3d`: the package of that name on PyPI is an unrelated point cloud library.
-- Do not install the upstream repository for this skill: it has none of the guards or helpers named above. `/dayz-p3d-audit` pins the upstream library in its own `requirements.txt`; both import as `py3d`, so one environment holds one of them. The fork reads and writes the same format, and the assert above tells you which one is active.
+- Do not install the upstream repository for this skill: it has none of the guards or helpers named above. `/dayz-p3d-audit` uses this same fork (its `requirements.txt` names `scripts/tools/py3d`). The upstream library and the fork both import as `py3d`, so one environment holds one of them; uninstall an upstream copy before installing the fork. The fork reads and writes the same format, and the assert above tells you which one is active.
 
 ## Mass only on the Geometry LOD: `point.mass = None`, never `0.0` (added 2026-06-02)
 

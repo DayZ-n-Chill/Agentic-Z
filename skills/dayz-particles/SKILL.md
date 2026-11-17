@@ -142,7 +142,7 @@ The table of what breaks in a 1.29 mod and the migration checklist are at the en
 
 ## On Linux
 
-Everything above is written for Windows and stays valid there. `.ptc` and `.emat` are text files written without Workbench, so nothing in this skill needs Windows. The notes this skill was built from report that Workbench starts under Proton (`dayz-proton.sh gui Workbench`) and that its particle editor was not tried there; neither statement is checked here. The Proton setup and its limits are in the Linux notes of the shared pack (`_shared/linux-proton.md`).
+Everything above is written for Windows and stays valid there. `.ptc` and `.emat` are text files written without Workbench, so nothing in this skill needs Windows. The notes this skill was built from report that Workbench starts under Proton (`dayz-proton.sh gui Workbench`; the script is `skills/_shared/scripts/dayz-proton.sh`) and that its particle editor was not tried there; neither statement is checked here. The Proton setup and its limits are in the Linux notes of the shared pack (`_shared/linux-proton.md`).
 
 ## Building, testing and publishing the mod
 

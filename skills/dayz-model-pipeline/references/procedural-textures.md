@@ -45,7 +45,7 @@ All procedural generation targets these maps.
 
 - **Purpose:** controls the highlight in the Super shader.
 - **Format:** PNG in RGB mode.
-- **Packing:** red is unused and kept at 255, green is the specular strength, blue is the gloss. Vanilla's TexConvert settings force red to 1 for this suffix and keep green and blue (`_shared/textures/suffixes-and-sizes.md`), and the source measured red at 255 on four LF_PowerGrid `_smdi` textures. The channel meanings in full are in the texture pipeline skill's `map-conventions.md`; this file keeps its generator presets aligned to that packing.
+- **Packing:** red is unused and kept at 255, green is the specular strength, blue is the gloss. Vanilla's TexConvert settings force red to 1 for this suffix and keep green and blue (`_shared/textures/suffixes-and-sizes.md`), and the source measured red at 255 on four LF_PowerGrid `_smdi` textures. The channel meanings in full are in `skills/dayz-texture-pipeline/references/map-conventions.md`; this file keeps its generator presets aligned to that packing.
 - **R channel (about 255, fixed):** keep it near white unless cloning a vanilla exception.
 - **G channel (specular strength):** 0 is matte, 255 is mirror like.
   - Painted metal: about 80 to 100

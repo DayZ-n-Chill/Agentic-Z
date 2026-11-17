@@ -41,6 +41,14 @@ Then read the evidence yourself around each `new` failure.
 4. To understand a vanilla class in a stack trace: Grep `P:\scripts\` for the exact name, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). When RAG returns nothing or looks stale, `list_indexed_sources` shows what is indexed.
 5. If the cause is in vanilla or another mod, say so and suggest a workaround the mod can carry.
 
+When the usual causes do not explain the failure, follow `skills/systematic-debugging/SKILL.md` from Intake to Phase 3 (you have no Skill tool, so Read it): observe, trace to the source, test one hypothesis. You never edit, so Phase 4, the fix, belongs to the owner you name. Then Read only the reference that matches the symptom:
+
+- A recurring script or config error, and the top-down debug order: `skills/dayz-mod-workflow/references/error-catalog.md` and `skills/dayz-mod-workflow/references/debug-protocol.md`; compiler, runtime and 1.30 script traps through the table in `skills/enforce-script-reference/SKILL.md`.
+- The mod builds and loads but nothing runs: `skills/dayz-build-pbo/references/post-build-gates.md`.
+- The test session will not start, connect or reload: the symptom table in `skills/dayz-test-ingame/references/troubleshooting.md`, then `skills/dayz-test-ingame/references/session-findings.md`; the environment checks under "Before a debug or diagnosis session" in `skills/dayz-preflight/SKILL.md`.
+- Mission order, RPC and packet limits, a citation on the wrong line after a game update, and beliefs since corrected: the index in `skills/_shared/knowledge/README.md` (`dayz-1-30-build-history.md`, `retracted-claims-ledger.md`, `environment-and-infra.md`).
+- A specialist's area, to name the cause before naming the owner: a vehicle in `skills/_shared/vehicles/method-and-gate-calibration.md` (a motorbike in `skills/_shared/vehicles/motorbike-invariants.md`), a menu or HUD in the troubleshooting table of `skills/dayz-ui-development/references/rules-and-checklist.md`, damage and hit zones in `skills/dayz-physics-engine/references/damage-and-transporthit.md`, a model fault in "Reaching for a tool" in `docs/knowledge-pack-tools.md`.
+
 ## Who fixes what
 
 Name the owner in full. Go by the file the fault is in:

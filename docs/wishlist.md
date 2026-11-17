@@ -4,3 +4,72 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 
 | Idea | Where it came up | Date |
 | --- | --- | --- |
+| Derive the seat roster in `skills/dayz-vehicles/scripts/audit_getin_wheels.py` from the car's `Crew` config, so it is right for four-seat cars and cars with no seat-back selections. | Knowledge pack import, vehicles report | 2026-11-17 |
+| A census script for the hidden-selection face ownership check and the light selection preflight the vehicle pack describes by hand. | Knowledge pack import, vehicles report | 2026-11-17 |
+| A PBO reader for the checks in section 5 of `skills/_shared/vehicles/build-packaging-and-debug.md` (completeness, build mode, baked wheel angle, stray drive letters); `scripts/tools/dayz-pbo-diff/` may cover part of it. | Knowledge pack import, vehicles report | 2026-11-17 |
+| An override resolver for the 1.30 migration checklist: flag an `override` of a method DayZ 1.30 deleted, which the script validator passes today. | Knowledge pack import, vehicles report | 2026-11-17 |
+| Turn the DXT1 PAA encoder printed in `skills/_shared/vehicles/png-to-paa-encoding.md` into a tested script with a DXT5 path. | Knowledge pack import, vehicles report | 2026-11-17 |
+| A `/dayz-p3d-audit` check for a vehicle sub-model whose visual LOD lacks `autocenter=0`. | Knowledge pack import, vehicles report | 2026-11-17 |
+| A `/dayz-p3d-audit` check built from a negative fixture that swaps the proxy frame sides and must fail. | Knowledge pack import, vehicles report | 2026-11-17 |
+| A script that finds each un-prefixed `file.c:N` citation in the vehicle field-note files on `P:\` and rewrites it with the `P:\` prefix, so the citation tests cover them. | Knowledge pack import, vehicles report | 2026-11-17 |
+| A short "Boats at run time" section in `skills/_shared/vehicles/class-hierarchy.md` (engine stop out of water, decay timer, water particle points). | Knowledge pack import, vehicles report | 2026-11-17 |
+| A `/dayz-lint` warning for a class that extends `CarScript`, defines `EOnSimulate` and never calls `SetEventMask(EntityEvent.SIMULATE)`. | Knowledge pack import, vehicles report | 2026-11-17 |
+| A `/dayz-lint` check that every `UA*` string read in script is declared in the mod's `inputs.xml`. | Knowledge pack import, vehicles report | 2026-11-17 |
+| A line in the pack index on the tag vocabulary for third-party references (`[VERIFIED-<mod>]`, `[RECOVERED]`, `[INFERRED]`, `[UNVERIFIED]`, `[DESIGN]`). | Knowledge pack import, vehicles report | 2026-11-17 |
+| A fixed phrase for facts reported for a newer game build than the one on `P:\`, as a convention. | Knowledge pack import, vehicles report | 2026-11-17 |
+| Eval questions for `dayz-vehicle-specialist` on aviation (event mask, `OnDriverExit` gear stop, `SyncedValue` priming) and motorbikes (brake `input` channels, `Wheels` without `Axles`, the battery override, the directional get-in pair). | Knowledge pack import, vehicles report | 2026-11-17 |
+| `/dayz-p3d-audit`: print a per-LOD resolved-vertex count, with a warning at 90 % of a ceiling the user gives. | Knowledge pack import, models report | 2026-11-17 |
+| `/dayz-p3d-audit`: script the checks its references describe by hand (wheel model memory points, ride height, component count and mass share on a vehicle, `#Mass#` outside Geometry, the per-component inward winding check, the get-in contract gate). | Knowledge pack import, models report | 2026-11-17 |
+| A UV audit script for MLOD models (`uv_audit.py`), and a `/dayz-p3d-audit` report of the share of zero and degenerate UVs per visual LOD. | Knowledge pack import, models report | 2026-11-17 |
+| Scripts for the parts of `uv-clean-atlas` that have none: Track B (`smart_project` plus the exact fold loop) and the shared-sheet recipe for LODs. | Knowledge pack import, models report | 2026-11-17 |
+| `uv-clean-atlas` engine: take the expected `.blend` hash, face count and shell lists from command-line options or the assignment JSON, pick the stage with a `--stage` option, and replace `render_atlas_pngs` with a small PNG writer. | Knowledge pack import, models report | 2026-11-17 |
+| `sat_gate.py`: print evaluated, skipped and total triangle counts, and stop cleanly when every triangle is collapsed. Share one module for the SAT check and the island finder, which exist two and three times. | Knowledge pack import, models report | 2026-11-17 |
+| A Blender-gated end-to-end test for `uv-clean-atlas` (unwrap a small generated mesh, assert zero overlapping pairs). | Knowledge pack import, models report | 2026-11-17 |
+| Write `probe_truth.py` and `facet_report.py`, which `blender-visual-review` documents but does not ship. | Knowledge pack import, models report | 2026-11-17 |
+| A plain-ASCII output mode for `correction_loop.py`, to remove its crash on cp1252 consoles (the file is third-party). | Knowledge pack import, models report | 2026-11-17 |
+| A checker for shorthand citations (`file.c:123`, a bare `:123` after a path), which the integrity test skips. | Knowledge pack import, animation report | 2026-11-17 |
+| Name the graph layer in the opening sentence of `skills/_shared/animation/README.md`. | Knowledge pack import, animation report | 2026-11-17 |
+| A pytest for `gen_model_cfg.py` (it has only `--self-test`), one that builds the animation viewer page against `viewer_core.py`, and tests for `ik_pose_to_seanim.py` and `weapon_grip_viewer.py --data`. | Knowledge pack import, animation report | 2026-11-17 |
+| Finish `ik_pose_to_seanim.py`: write the step that turns joint positions into bone rotations, and drop its free text notes. | Knowledge pack import, animation report | 2026-11-17 |
+| A guard in `weapon_grip_viewer.py` that refuses a py3d without `IS_DAYZ_FORK`. | Knowledge pack import, animation report | 2026-11-17 |
+| `skills/mixamo-retarget/scripts/retargeting.py`: reject an empty bone map, strip the `mixamorig:` prefix, register the three scene properties, fix the `KeyError` in `auto_map_bones`, and replace the emoji in its `print` calls with plain text. | Knowledge pack import, animation report | 2026-11-17 |
+| A filled-in `production` contract template for `dayz-realistic-animation-director`, with provenance blocks, to copy per task. | Knowledge pack import, animation report | 2026-11-17 |
+| Run `run_regression_tests.py` of the animation director once on a machine with Blender and record the result. | Knowledge pack import, animation report | 2026-11-17 |
+| An in-game test of a `.txa` exported with the ring and pinky chains and their carpal bones, to settle an open disagreement. | Knowledge pack import, animation report | 2026-11-17 |
+| Run the two `get_fcurves` variants on a real Blender 4.3 and 4.4, to settle an open disagreement. | Knowledge pack import, animation report | 2026-11-17 |
+| Run the character winding gate as a step of `/dayz-gate build` or `/dayz-p3d-audit` for any mod with a skinned model. | Knowledge pack import, animation report | 2026-11-17 |
+| Rebuild the offline deform judge and the bone-list diff for characters as scripts, and add a script that reads the skeleton name out of a binarized model. | Knowledge pack import, animation report | 2026-11-17 |
+| An offline check script for a worn clothing model (skeleton name byte scan, anatomical facing test), and have the alignment viewer export its own cross-check samples. | Knowledge pack import, animation report | 2026-11-17 |
+| An offline check that every part `id` in a `Construction` block is unique and between 1 and 93, as part of `/dayz-lint`. | Knowledge pack import, world report | 2026-11-17 |
+| A `types.xml` entry check against the public classes of `config.cpp`, as part of `/dayz-lint`. | Knowledge pack import, world report | 2026-11-17 |
+| An offline script that builds the sidecar cleanup table (every file suffix written against every `DeleteFile` site) and the path helper table from a mod's scripts, for `/dayz-lint` or `rigorous-data-audit`. | Knowledge pack import, world report | 2026-11-17 |
+| An eval question set for `dayz-physics-specialist` drawn from the engine truths in `dayz-physics-engine`. | Knowledge pack import, world report | 2026-11-17 |
+| `rvmat_lint.py`: warn when a Stage4 `_as` reads `uvSource="tex1"` in a material borrowed from vanilla, and when a `_nohq` source name lacks the suffix. | Knowledge pack import, world report | 2026-11-17 |
+| A script that prints per channel statistics of an `_as` or `_smdi` `.paa`, and one under `scripts/dev/` that regenerates the procedural SMDI and `dir[]` counts after a game update. | Knowledge pack import, world report | 2026-11-17 |
+| A `/dayz-p3d-audit` mode that compares the centre of each remapped weapon selection with the reference weapon. | Knowledge pack import, world report | 2026-11-17 |
+| `scripts/dayz/` wrappers that build the API index from `P:\scripts` and query it, so Windows users get every inherited member of a class in one command. | Knowledge pack import, scripting report | 2026-11-17 |
+| Check each Expansion call shape in `expansion_style.md` against the Expansion PBOs and add file and line. | Knowledge pack import, scripting report | 2026-11-17 |
+| Move `skills/_shared/skill-resolution.md` to `docs/`, since it is repo process and not DayZ knowledge. | Knowledge pack import, scripting report | 2026-11-17 |
+| A script validator rule for `ChangeGameFocus(0)`. | Knowledge pack import, scripting report | 2026-11-17 |
+| A test that every file named in a `SKILL.md` reference table exists. | Knowledge pack import, scripting report | 2026-11-17 |
+| A script that prints, for one widget type, the vanilla styles whose `Normal` state has a non-empty `Center`. | Knowledge pack import, scripting report | 2026-11-17 |
+| A test that runs `scripts/tools/dayz-ui-lab` `parse.py --check` on the four UI layout templates. | Knowledge pack import, scripting report | 2026-11-17 |
+| A `SessionStart` hook under `hooks/` for the `task-observer` review reminder. | Knowledge pack import, scripting report | 2026-11-17 |
+| A CSV stringtable check (keys used against column 1, header columns). | Knowledge pack import, scripting report | 2026-11-17 |
+| A build check that every `.rvmat` named in `config.cpp` is an entry of the PBO. | Knowledge pack import, scripting report | 2026-11-17 |
+| Compare the entries of two PBOs from `/dayz-build-pbo` with `scripts/tools/dayz-pbo-diff`. | Knowledge pack import, scripting report | 2026-11-17 |
+| `/dayz-setup-objectbuilder`: offer to set the external viewer to the game's `-buldozer` command line. | Knowledge pack import, scripting report | 2026-11-17 |
+| A `/dayz-gate` guard that refuses to stop a session whose command line loads `@DayZ_MCP` without `--yes`. | Knowledge pack import, scripting report | 2026-11-17 |
+| `/dayz-stop-test`: list each DayZ process command line before killing, and cover `DayZServer_x64.exe`. | Knowledge pack import, scripting report | 2026-11-17 |
+| A `--game-root` option on `/dayz-lint` for the `VANILLA-ROOT-BUILD-MISMATCH` rule. | Knowledge pack import, tools report | 2026-11-17 |
+| Let `/dayz-gate build` and `/dayz-build-pbo` find dependency folders from `requiredAddons[]` and pass them to the lint code stage. | Knowledge pack import, tools report | 2026-11-17 |
+| A thin skill for `scripts/tools/dayz-layout-viewer`, next to `/dayz-layout-preview`. | Knowledge pack import, tools report | 2026-11-17 |
+| Move the unique lines of `skills/_shared/knowledge/technical-notes.md` into the checked packs it overlaps, and shrink it. | Knowledge pack import, knowledge report | 2026-11-17 |
+| After `P:\` is re-extracted from the current game build, replace each "not yet checked on `P:\`" cell of `skills/_shared/knowledge/dayz-1-30-build-history.md` with the cited line. | Knowledge pack import, knowledge report | 2026-11-17 |
+| A `.mcp.example.json` at the repo root for DayZ-MCP; the wiring is described in `docs/dayz-mcp.md` today. | Knowledge pack import, knowledge report | 2026-11-17 |
+| Short `.cursorrules` and `.github/copilot-instructions.md` entry files that point at `AGENTS.md`. | Knowledge pack import, knowledge report | 2026-11-17 |
+| Adopt the labels `[EXACT]` and `[DESIGN]` for examples in pack files, and the six verification levels of `skills/_shared/knowledge/working-rules.md`, as written conventions. | Knowledge pack import, knowledge report | 2026-11-17 |
+| A `Status:` line under the title of every vendored pack file, saying what was checked on `P:\` and when. | Knowledge pack import, knowledge report | 2026-11-17 |
+| A wrapper that runs the five live eval cases through `packctl` against Agentic-Z skills. | Knowledge pack import, knowledge report | 2026-11-17 |
+| An eval question for `dayz-ui-specialist` on Dabs MVC. | Knowledge pack import, knowledge report | 2026-11-17 |
+| A thin `.bat` wrapper for `packctl validate`. | Knowledge pack import, knowledge report | 2026-11-17 |

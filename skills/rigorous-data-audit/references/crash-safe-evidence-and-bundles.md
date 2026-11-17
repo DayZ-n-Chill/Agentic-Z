@@ -61,4 +61,4 @@ Verification level: the mechanism was cross-checked against its source contract 
 The anchors were:
 
 - two plans of the source author's private Utopia PC Suite project (the phase 0a foundation plan and the phase 0b dedicated persistence plan, both dated 2026-07-22), which are not part of this repo;
-- the source pack's own promotion tool, `packctl` (its `common` and `promotion` modules and its promotion tests). Workstream 7 of the import brings that tool into this repo; the rules above are the audit invariants its recovery code was written against.
+- the source pack's own promotion tool, `packctl` (its `common` and `promotion` modules and its promotion tests). That tool is in this repo under `scripts/dev/knowledge-pack/packctl/`; the rules above are the audit invariants its recovery code was written against.

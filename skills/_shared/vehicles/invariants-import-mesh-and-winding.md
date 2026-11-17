@@ -82,7 +82,7 @@ this ladder first; each rung is minutes, the full audit is sessions.
    with the same route, the pipeline is exonerated and the defect is in this asset.
 4. **Only now** audit `.rvmat` stages, `_co/_nohq/_smdi` paths, `.paa` conversion and
    `hiddenSelections` — see dayz-texture-pipeline, and its
-   vehicle materials and colour variants reference for the vehicle-specific shader choice
+   `skills/dayz-texture-pipeline/references/vehicle-materials-and-color-variants.md` for the vehicle-specific shader choice
    (Super where faces carry a `_co`, NormalMapSpecularMap for constant-colour parts, tiled detail
    for overlapping or un-baked UVs).
 
@@ -131,7 +131,7 @@ edges). (a) audit `mesh_health.py` (boundary / non-manifold / dup-verts / dup-fa
 piece) + `uv_audit.py` (islands / overlap / density / mirrored); (b) sanitize with an ADAPTIVE weld
 (ladder 0.5→0.01 mm; gates: NM must NOT grow + UVs preserved — a blind 0.5 mm weld FUSES
 legitimately-touching pieces and CREATES non-manifold); (c) unwrap BY SECTIONS per
-the UV mapping note of the model material (source note `uv-mapping-dayz.md`, sections 0.5 and 5); (d) gates: overlap ~0% for bake, uniform density, atlas
+the UV mapping note of the models pack (`skills/_shared/models/uv-mapping.md`; sections 0.5 and 5 of the source note `uv-mapping-dayz.md`); (d) gates: overlap ~0% for bake, uniform density, atlas
 legible by a human, checker render with SMOOTH shading (flat shading + grid raster read as a false
 "low-poly/blurry"). Tools in `LFQuad_dev\tools\` (mesh_health.py, mesh_sanitize.py bpy-headless;
 uv_audit.py py3d) — portable to any vehicle. → the same UV mapping note, and winding #10(f).

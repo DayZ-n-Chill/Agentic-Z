@@ -90,7 +90,7 @@ Every door needs an `AnimationSources` class with `source="user"`. `CarScript` d
 
 ## What the model must provide
 
-Hand this list to the art lead. Each name comes from a vanilla config key or script call above.
+Hand this list to the art lead. Each name comes from a vanilla config key or script call above. How a crew proxy triangle encodes the seat frame is in `skills/_shared/models/proxy-frames.md` ("Crew proxies").
 
 - Selections: one per door (`doors_driver`), seat selections (`seat_driver`, `seat_cargo1`), the `dmgZone_*` selections used in `DamageSystem`, light selections (`light_left`, `light_right`, `light_dashboard`, `P:\DZ\vehicles\wheeled\config.cpp:260` to `:263` in `CarScript`).
 - Proxies: `crewDriver`, `crewCoDriver`, `crewCargo1` and so on.

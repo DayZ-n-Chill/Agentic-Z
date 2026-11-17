@@ -277,6 +277,22 @@ def test_build_runs_lint_first_and_stops_on_errors(project, capsys):
     assert [w["rule"] for w in data["warnings"]] == ["p-not-mounted"]
 
 
+def test_build_keeps_lint_triage_for_a_code_stage_finding(project, capsys):
+    # The code rules have no known-errors.json entry; lint's own table names the owner and the fix.
+    script = project / "workspace" / "MyMod" / "scripts" / "4_World" / "vest.c"
+    script.write_text("modded class PlayerBase\n{\n\tvoid MyModTick()\n\t{\n\t\tvector local;\n\t}\n}\n", encoding="utf-8")
+    rc, first, data = run_main(["build", "MyMod", "--json"], FakeRuntime({"build.py": (0, BUILD_OK)}), capsys)
+    assert (rc, first) == (1, "FAIL")
+    [f] = data["failures"]
+    assert (f["category"], f["rule"], f["line"]) == ("lint", "ES-RESERVED-WORD-IDENTIFIER", 5)
+    t = f["triage"]
+    assert (t["status"], t["id"], t["owner_agent"]) == ("known", "lint-es-reserved-word-identifier", "dayz-script-specialist")
+    assert t["fix"] == "Rename the variable, member or parameter."
+    assert gate.main(["build", "MyMod"], rt=FakeRuntime().runtime()) == 1
+    assert "    known lint-es-reserved-word-identifier -> dayz-script-specialist: Rename the variable, member or parameter." \
+        in capsys.readouterr().out.splitlines()
+
+
 def test_build_stores_lint_and_build_results_for_health(project, capsys):
     fake = FakeRuntime({"build.py": (0, BUILD_OK)})
     rc, _, data = run_main(["build", "MyMod", "--json"], fake, capsys)

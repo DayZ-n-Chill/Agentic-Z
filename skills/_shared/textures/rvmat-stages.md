@@ -32,7 +32,7 @@ Three of them do reach item and vehicle work, and each is covered in the `/dayz-
 
 - **A part with a constant color and no color texture on its faces** uses `PixelShaderID="NormalMapSpecularMap"` with `VertexShaderID="NormalMap"`, as the Sakhal road does (`P:\DZ\structures_sakhal\roads\parts\data\asf2_sakhal.rvmat:7-8`): a `_nohq` in Stage1, an `_sm` in Stage2, and the color from `diffuse[]`. See `dayz-texture-pipeline/references/vehicle-materials-and-color-variants.md`.
 - **Collision faces** take a penetration material: `surfaceInfo` naming a `.bisurf`, then `PixelShaderID="Normal"` and `VertexShaderID="Basic"` (`P:\DZ\data\data\penetration\wood_desk.rvmat:1-9`). See `dayz-texture-pipeline/references/rvmat-cookbook.md`.
-- **Multi** blends four tiled material families through a mask on the second UV set, for example `PixelShaderID="Multi"` at `P:\DZ\rocks\data\rock_apart1\rock_apart1.rvmat:7`. See `dayz-texture-pipeline/references/multi-rvmat-section-texturing.md`.
+- **Multi** blends four tiled material families through a mask on the second UV set, for example `PixelShaderID="Multi"` at `P:\DZ\rocks\data\rock_apart1\rock_apart1.rvmat:7`. See `dayz-texture-pipeline/references/multi-rvmat-section-texturing.md`. The `Multi` shader's vanilla counts, and what the model has to carry for it (a mask, two UV sets, faces with no texture), are in `_shared/models/multi-rvmat-texturing.md`.
 
 ## The keys above the stages
 
@@ -65,7 +65,7 @@ More on two of these keys:
 
 ## Super stages
 
-Every stage is a `class StageN` with a `texture` and a `uvSource`. Stages 1 to 5 and 7 use `uvSource="tex"` with this identity `uvTransform`:
+Every stage is a `class StageN` with a `texture` and a `uvSource`. Stages 1 to 5 and 7 use `uvSource="tex"` with this identity `uvTransform`. This is the template for a new material; vanilla also reads the second UV set with `uvSource="tex1"`, most often for `_as` and `_mc`, and uses tiled transforms (`_shared/models/uv-mapping.md`):
 
 ```cpp
 class Stage1

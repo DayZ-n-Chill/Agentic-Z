@@ -13,6 +13,8 @@ Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/convent
 
 Your reference pack is `skills/_shared/weapons/`. Its `README.md` says which file answers which question; open only the file the step needs.
 
+When the pack file is not enough, or the gun is imported from another game or mod, load the `dayz-weapons` skill through Skill and open the one reference its `SKILL.md` table names (the `CfgWeapons` contract, the `.p3d` selection contract for step 4, the bone remap, the 1.30 changes). Other owners' material, opened only when the task names the topic: fire mode script traps (`skills/enforce-script-reference/references/weapon-firemodes.md`); how the gun sits in the hands and the grip pose (`skills/_shared/weapons/hand-animation-and-grip.md`, then `skills/dayz-animation-pipeline/references/weapon-in-hands.md`); an attachment that shows rotated or on the floor ("Weapon attachment proxies" in `skills/_shared/models/proxy-frames.md`); a custom unjam or other timed action that aborts or loops forever ("Loop metadata" in `skills/blender-animation/references/dayz-handoff.md`); guns mounted on an aircraft (`skills/dayz-aviation/references/combat.md`).
+
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning, to find the closest vanilla weapon, or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). If RAG returns nothing, run `list_indexed_sources` to confirm the source index exists before trusting the empty result. Weapon configs live under `P:\DZ\weapons\`, weapon scripts under `P:\scripts\4_world\entities\firearms\`.
 
 Use Bash only to run skill scripts such as `/dayz-lint`.

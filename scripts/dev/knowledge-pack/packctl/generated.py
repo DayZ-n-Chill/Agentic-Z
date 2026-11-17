@@ -4,7 +4,7 @@ Same idea as the MOVED-EXACT seals, applied to whole files instead of Markdown b
 the sha256 is over the RAW BYTES of the source, with no normalization, no BOM and no CRLF
 variant. This module owns both halves -- writing a copy and checking one -- so the rule
 that decides "in sync" cannot drift between the writer and the checker. `packctl validate`
-and `tools/sync_generated.py` both call in here.
+and `scripts/tools/sync_generated.py` both call in here.
 
 Why a sealed copy rather than one file everyone reads: `dayz_3d_viewer` ships as an
 installed package. Measured 2026-09-02, it installs NON-editable (a real copy under
@@ -24,13 +24,13 @@ from pathlib import Path
 MARK = "# GENERATED FILE - DO NOT EDIT."
 SOURCE_PREFIX = "# Source: "
 SHA_PREFIX = "# source-sha256: "
-REGEN_LINE = "# Regenerate: python tools/sync_generated.py sync --root ."
+REGEN_LINE = "# Regenerate: python scripts/tools/sync_generated.py sync --root ."
 
 SKIP_PARTS = {".git", ".worktrees", "__pycache__", "build", "dist", ".venv", "node_modules"}
 
 # (edited source, generated copy) -- repo-relative, POSIX separators.
 PAIRS: list[tuple[str, str]] = [
-    ("skills/_shared/viewer_core.py", "tools/dayz-3d-viewer/dayz_3d_viewer/viewer_core.py"),
+    ("skills/_shared/viewer_core.py", "scripts/tools/dayz-3d-viewer/dayz_3d_viewer/viewer_core.py"),
 ]
 
 

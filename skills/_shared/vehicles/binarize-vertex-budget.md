@@ -51,7 +51,7 @@ before shipping a bench ODOL (claim: CLAIM-BINARIZE-DIRECT-ADDON-STALL-REF).
   not already contain it. Skip the "new" requirement and a residual ODOL gives you a false green.
 - `CAPACITY_FAIL` - no new ODOL **and** a `Too many vertices` line attributed to that MLOD.
   The line names the MLOD, not the LOD: on a building it came from collision LODs that had grown,
-  with the visual LOD as it passed (dayz-model-pipeline skill, `references/lods-and-geometry.md`,
+  with the visual LOD as it passed (dayz-model-pipeline skill, `skills/dayz-model-pipeline/references/lods-and-geometry.md`,
   "Binarize: `Too many vertices` from the collision LODs"). Before blaming the change just made,
   compare every LOD with the last build that passed.
 - `OTHER_FAIL` - any other absence: bad `model.cfg`, undeclared basename, malformed MLOD, I/O,
@@ -65,7 +65,7 @@ before shipping a bench ODOL (claim: CLAIM-BINARIZE-DIRECT-ADDON-STALL-REF).
   collision LODs, they do not measure the limit. The fix then moves pieces to another model with
   the same transform and leaves every piece as it is (none is merged or decimated), and each
   resulting model still has to PASS. Boundary and figures: dayz-model-pipeline skill,
-  `references/lods-and-geometry.md`, "Collision of a large building with an interior".
+  `skills/dayz-model-pipeline/references/lods-and-geometry.md`, "Collision of a large building with an interior".
 
 **The verdict is reproducible; the ODOL bytes are NOT.** The same `.p3d` produced 1,725,025 and
 1,726,689 bytes with different hashes in two clean consecutive runs. Never gate on the ODOL SHA.

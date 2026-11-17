@@ -34,7 +34,7 @@ The source pack's LFQuad project added these to the three layers in `SKILL.md`:
 
 ## On Linux
 
-Everything in this skill is the Windows workflow. What changes on Linux, as measured by the source pack (not checked here; the Proton setup and tool matrix are in that pack's Linux notes, brought over by the scripting workstream):
+Everything in this skill is the Windows workflow. What changes on Linux, as measured by the source pack (not checked here; the Proton setup and tool matrix are in `skills/_shared/linux-proton.md`):
 
 - `.rtm` and `.p3d` binarize through `dayzmake build --proton-binarize` with dayzmake 1.0.0 or later.
 - Workbench starts under Proton and compiles its bundled scripts. Its animation editor, `.agr` and `.asi` editing, and the `.txa` to `.anm` import were not verified there. Without `P:\dz` extracted it logs missing vanilla config entries.

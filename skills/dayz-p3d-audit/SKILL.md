@@ -19,13 +19,13 @@ It reports and never edits a file. To look inside a model or move its memory poi
 
 ## How to run
 
-The script reads .p3d files with py3d. It uses the DayZ fork of py3d kept in this repo under `scripts/tools/py3d/` when that folder is there, with nothing to install. Where it is not (a plugin install that ships only the skills), install the plain library once:
+The script reads .p3d files with py3d. It uses the DayZ fork of py3d kept in this repo under `scripts/tools/py3d/`, the one py3d copy every skill in this repo shares, and loads it from that folder with nothing to install. `requirements.txt` names that same folder. Use it only where `import py3d` must work as an installed package, and run it from the repo root, because pip reads the path in it against the current folder:
 
 ```cmd
-python -m pip install -r "<skill-dir>\requirements.txt"
+python -m pip install -r skills\dayz-p3d-audit\requirements.txt
 ```
 
-Only the fork has `P3D.validate()`. With it the audit adds the fork's findings, the winding checks among them, in a `--- py3d validate() ---` section. With the plain library that section says the checks did not run, and winding has to be checked by hand (`references/winding-methodology.md`).
+Only the fork has `P3D.validate()`. With it the audit adds the fork's findings, the winding checks among them, in a `--- py3d validate() ---` section. When `scripts/tools/py3d/` is missing the script falls back to whatever py3d is installed; if that is the plain upstream library, the section says the checks did not run, and winding has to be checked by hand (`references/winding-methodology.md`).
 
 **Audit one or more models** (MLOD source, not binarized ODOL):
 ```cmd
@@ -107,7 +107,8 @@ Exit codes:
   a .p3d that cannot be read also give exit 1, with a `[FAIL]` line on stderr naming why. When
   the only failures are ODOL files, the last line is `OVERALL: NOT AUDITED` (the file was
   never checked) instead of `OVERALL: ISSUES FOUND`.
-- **2**: no input was given, or py3d is not installed. The second case prints the
+- **2**: no input was given, or py3d was not found (no `scripts/tools/py3d/` folder and
+  no installed py3d). The second case names the missing folder and prints the
   `python -m pip install -r` line above.
 
 Only MLOD source files can be audited; binarized ODOL files are rejected. Audit the
@@ -208,6 +209,7 @@ Deep material lives in `<skill-dir>\references\`. Open only the file the questio
 | How does each winding state read on measured models, and how do I turn a Check B result into a safe fix? Where do offline checks stop (the in-game spawn gate)? | `references/winding-diagnostics.md` |
 | What do `ERR_WINDING_INVERTED` and `ERR_WINDING_VS_NORMALS` mean, which side do I fix, and why is a clean py3d result not proof? How does the winding sign change in the binarized model? | `references/winding-absolute-check.md` |
 | What does the audit check on a vehicle body, and which vehicle faults (wheel memory points, ride height, mass, crew, the get-in contract) must be measured by hand? | `references/vehicle-checks.md` |
+| What did the vehicle killers look like on real mods (mass tagged in the wrong LOD, wheel-well clearance, crew seat components, crew proxy triangles, the vertex ceiling), with the measurements? | `skills/_shared/vehicles/p3d-vehicle-killers.md` (vehicles pack) |
 | The audit passes and the model still misbehaves: which faults can it not see (frame parity between sibling models, UVs, LOD count, face indices, the vertex budget), and how do I trust a new gate? What changes on Linux? | `references/manual-checks.md` |
 
 Model facts that are not faults (LODs, memory points, selections, named properties,

@@ -87,7 +87,7 @@ use `PixelShaderID="Super"` / `VertexShaderID="Super"` with `Stage1` to `Stage7`
 | `Stage3` | Macro map | `#(argb,8,8,3)color(0,0,0,0,MC)` placeholder, or a `_mc.paa` (akm) |
 | `Stage4` | Ambient shadow | `#(argb,8,8,3)color(1,1,1,1,AS)` placeholder, or an `_as.paa` (wooden_case) |
 | `Stage5` | Specular | the item's `_smdi.paa` |
-| `Stage6` | Fresnel, `uvSource="none"` | `#(ai,64,64,1)fresnel(...)` |
+| `Stage6` | Fresnel, `uvSource="none"` or `uvSource="tex"` (vanilla writes both; counts in `_shared/textures/rvmat-stages.md`) | `#(ai,64,64,1)fresnel(...)` |
 | `Stage7` | Environment map | `dz\data\data\env_land_co.paa` |
 
 Keep every stage, using the procedural placeholder when there is no texture,

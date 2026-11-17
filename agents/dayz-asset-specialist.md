@@ -17,7 +17,7 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 
 ## Workflow
 
-Use Bash only to run the `/dayz-pack-texture` script.
+Use Bash only to run the `/dayz-pack-texture` script and the scripts of the skills under "Skills and deeper references".
 
 1. Check each source image's filename suffix; it decides how the engine treats the texture: `_co` (color), `_nohq` (normal), `_smdi` (specular: green is highlight strength, blue is gloss); every suffix and its role is in `skills/_shared/textures/suffixes-and-sizes.md`. Never rename the user's source images. When a suffix is missing or wrong, report the file with the suffix you suggest and leave it unpacked; the user renames it so the role is their explicit choice (`/dayz-pack-texture` "Do not").
 2. Pack with `/dayz-pack-texture` as `skills/dayz-pack-texture/SKILL.md` describes (what it refuses, such as sides that are not a power of two, and how it backs up). Dry run first. Drop each refused file, rerun with the rest, and report each refused file as blocked (for a suffix refusal, give the suffix from step 1). Re-pack an existing `.paa` only when the brief asks for it; otherwise leave it and list it under **Needs go-ahead** in the report.
@@ -25,12 +25,23 @@ Use Bash only to run the `/dayz-pack-texture` script.
 4. Write in-game paths. Mod-owned files start with the mod's `$PBOPREFIX$` (for example `MyMod\data\vest_co.paa`); vanilla files keep their `dz\...` path (for example `dz\characters\vests\data\ballisticvest_as.paa`); procedural textures such as `#(argb,8,8,3)color(1,1,1,1,co)` are valid as written. Never use drive-letter (`P:\...`) or relative paths.
 5. Check the look. You can't see the screen and never launch Object Builder or DayZ yourself. Put the checklist from `skills/_shared/textures/checking-the-look.md` in your report: what the user looks at in Object Builder (face texture and material paths, the textured view) and in game (detail, highlights, glass, each health level). You don't wait for an answer; the user's answers come back as a new task.
 
+## Skills and deeper references
+
+The texture pack's front index is `skills/_shared/textures/README.md`. Load a skill through Skill only when the task is its kind of task; the table in its `SKILL.md` names the one reference to open.
+
+- `dayz-texture-pipeline`: any material a vanilla copy does not cover in step 3 (`Multi`, emissive, glass, penetration, a baked atlas from Blender or Substance, the `.emat` route), and the check in step 5: run its `skills/dayz-texture-pipeline/scripts/rvmat_lint.py` on every `.rvmat` you wrote.
+- `uv-clean-atlas`: the UVs you must texture overlap or cannot be read. Which UV set each material stage reads is in `skills/_shared/models/uv-mapping.md`, and one mesh with several tiling surfaces in `skills/_shared/models/multi-rvmat-texturing.md`.
+- `ai-3d-to-dayz` and `3d-generation-harness`: the bake, `_nohq`, `_smdi` and `.paa` steps of a generated model; dayz-object-builder owns the mesh. `blender-visual-review` judges materials in a render and needs a Blender MCP server, so the main session runs it.
+- `dayz-3d-viewer`: a browser preview of an MLOD model with your textures on it, or a `.paa` turned into a `.png` to look at. `dayz-p3d-inspector`: which selections and texture paths a model's faces carry.
+
+Other owners' material you read for one task: procedural textures and `.rvmat` patterns in the `dayz-model-pipeline` skill (`references/procedural-textures.md`, `references/rvmat-patterns.md`); vehicle paint, glass and lights in `skills/_shared/vehicles/materials-and-selections.md` and `skills/_shared/vehicles/emissive-leds-and-dynamic-lights.md`; a character's skin bake in `skills/dayz-characters/references/character-uv-bake.md`; a material changed from script in `skills/_shared/textures/runtime-material-swaps.md`. Which offline tool fits which symptom is under "Reaching for a tool" in `docs/knowledge-pack-tools.md`. Before acting on an older belief about a texture or material rule, check `skills/_shared/knowledge/retracted-claims-ledger.md`.
+
 ## Handoffs
 
 - Model geometry, selections, LODs and `model.cfg`: dayz-object-builder.
 - `hiddenSelectionsTextures[]` / `hiddenSelectionsMaterials[]` entries and the `healthLevels[]` entries that load your `_damage` and `_destruct` materials go to the worker who owns the item's class. The format is under "Damage and destruct materials" in `skills/_shared/textures/rvmat-stages.md`, with a vanilla example at `P:\DZ\characters\vests\config.cpp:69`. Without the `healthLevels[]` entries nothing loads the damage materials, and the item looks the same at every health level. Send the paths for each selection and each health level to:
   - clothing, gear and characters (a vest, say): dayz-wearables-specialist, on the art team, so the art lead briefs it directly;
-  - cars, boats and helicopters: dayz-vehicle-specialist; firearms, magazines and ammo: dayz-weapon-specialist. Both are on the config team, so mark them "For the config lead" and name the specialist;
+  - cars, boats, helicopters and motorbikes: dayz-vehicle-specialist; firearms, magazines and ammo: dayz-weapon-specialist. Both are on the config team, so mark them "For the config lead" and name the specialist;
   - any other item: dayz-config-specialist, also "For the config lead".
 
 ## Report

@@ -15,10 +15,12 @@ car next to the car under test and compare the two blocks.
 Exit codes:
     0  every required anchor, wheel axis and seat selection is present
     1  a model defect, one "FAIL:" line per defect on stderr
-    2  no input, a missing or unreadable file, or py3d is not installed
+    2  no input, a missing or unreadable file, or py3d was not found
 
 Reads only the files it is given, so it does not gate on /dayz-preflight.
-Requires py3d (python -m pip install -r ../requirements.txt).
+Reads .p3d files with the DayZ fork of py3d kept in this repo at
+scripts/tools/py3d, loaded by path; without that folder it uses an installed
+py3d (../requirements.txt installs the repo copy, run from the repo root).
 """
 
 import math
@@ -30,6 +32,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
 import skill_helpers as h  # noqa: E402
 
 REQUIREMENTS = Path(__file__).resolve().parents[1] / "requirements.txt"
+# The DayZ fork of py3d kept in this repo: the one py3d copy every skill uses.
+REPO_FORK = Path(__file__).resolve().parents[3] / "scripts" / "tools" / "py3d" / "py3d" / "__init__.py"
+_fork_module = None
 
 LOD_NAMES = {1e13: "Geo", 1e15: "Mem", 2e15: "Land", 5e15: "Hit", 6e15: "View", 7e15: "Fire"}
 
@@ -41,12 +46,23 @@ WHEEL_AX = ["wheel_1_1_axis", "wheel_2_1_axis", "wheel_1_2_axis", "wheel_2_2_axi
 
 
 def load_py3d():
-    """Import py3d, exiting 2 with an install hint if it is missing."""
+    """py3d: the repo's DayZ fork when it is there, else the installed py3d.
+
+    The fork is loaded from its file under a private module name, as
+    /dayz-p3d-audit does. Exits 2 with a hint when neither is found.
+    """
+    global _fork_module
+    if REPO_FORK.is_file():
+        if _fork_module is None:
+            _fork_module = h.load_module("py3d_dayz_fork_vehicles", REPO_FORK)
+        return _fork_module
     try:
         import py3d
     except ImportError:
-        print(f"{h.FAIL} py3d not installed.", file=sys.stderr)
-        print(f'Run: python -m pip install -r "{REQUIREMENTS}"', file=sys.stderr)
+        print(f"{h.FAIL} py3d not found: the repo copy at {REPO_FORK.parents[1]} is missing "
+              "and no py3d is installed.", file=sys.stderr)
+        print("Restore that folder from the repo. To install it as a package, run from the repo root: "
+              f'python -m pip install -r "{REQUIREMENTS}"', file=sys.stderr)
         sys.exit(2)
     return py3d
 

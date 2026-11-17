@@ -47,8 +47,38 @@ Most skills gate on `/dayz-preflight` first per the L2 convention `skills/_share
 - `/dayz-health` and `/dayz-logwatch` (they only read gate results and logs).
 - `/dayz-route` (it only classifies the text of a request).
 - `/dayz-statusline` (it only edits a settings file).
+- `/dayz-vehicles`, `/dayz-p3d-inspector`, `/dayz-characters`, `/dayz-clothing`, `/dayz-animation-pipeline`, `/dayz-realistic-animation-director`, `/dayz-texture-pipeline`, `/dayz-ui-development` and `/dayz-pbo-reverse-engineering` (their scripts only read and write the model, image, JSON, `.layout` or `.pbo` files named on the command line; none needs DayZ Tools or the game).
+- `/dayz-persistence` (its scripts are offline models of the save contracts and read nothing on `P:\`).
+- `/dayz-mcp-verify` (its script only talks to the local dayz-mcp server over HTTP).
 
-Reference-only skills such as `/dayz-particles` run no scripts, so they have no gate.
+Reference-only skills such as `/dayz-particles`, `/dayz-aviation` or `/dayz-weapons` run no scripts, so they have no gate.
+
+## Knowledge pack skills
+
+Beside the workflow skills above, the repo carries reference and tool skills for single areas of modding. A specialist agent reads the ones for its area; you can also open any of them yourself, and `/dayz-route` sends a request for the reference or the tool to the skill and a request to build or fix something to the specialist.
+
+| Area | Skills | Specialist that reads them |
+|---|---|---|
+| Planning a feature | `/dayz-feature-spec` | `dayz-mod-architect` |
+| Whole mod, implementing and debugging | `/dayz-mod-dev`, `/dayz-mod-workflow`, `/systematic-debugging` | `dayz-script-specialist`, `dayz-mod-debugger` |
+| Improving the skills from a work session | `/task-observer` | none; you run it yourself |
+| Enforce Script | `/enforce-script-reference` | `dayz-script-specialist` |
+| UI | `/dayz-ui-development` | `dayz-ui-specialist` |
+| Vehicles | `/dayz-vehicles`, `/dayz-motorbikes`, `/dayz-aviation`, `/rip-vehicle-import` | `dayz-vehicle-specialist` |
+| Weapons | `/dayz-weapons` | `dayz-weapon-specialist` |
+| Clothing | `/dayz-clothing`, `/dayz-proxy-align` | `dayz-wearables-specialist`, `dayz-object-builder` |
+| Models | `/dayz-model-pipeline`, `/dayz-p3d-inspector`, `/dayz-3d-viewer`, `/ai-3d-to-dayz`, `/3d-generation-harness`, `/blender-assembly`, `/blender-visual-review`, `/uv-clean-atlas` | `dayz-object-builder`, `dayz-asset-specialist` |
+| Textures and materials | `/dayz-texture-pipeline` | `dayz-asset-specialist` |
+| Animation and characters | `/dayz-animation-pipeline`, `/dayz-realistic-animation-director`, `/dayz-characters`, `/blender-animation`, `/mixamo-retarget`, `/ardy-motion-generation` | `dayz-animation-specialist` |
+| Doors | `/dayz-doors` | `dayz-object-builder`, `dayz-animation-specialist` |
+| Base building and saved data | `/dayz-basebuilding`, `/dayz-persistence`, `/rigorous-data-audit` | `dayz-persistence-specialist` |
+| Underground and hazards | `/dayz-underground`, `/dayz-environment-hazards` | `dayz-map-specialist` |
+| Physics | `/dayz-physics-engine` | `dayz-physics-specialist` |
+| Sound | `/dayz-sound-system` | `dayz-audio-fx-specialist` |
+| AI | `/dayz-ai-patterns` | `dayz-ai-specialist` |
+| Build and test | `/dayz-test-ingame`, `/dayz-mcp-verify`, `/dayz-pbo-reverse-engineering` | `dayz-build-engineer`, `dayz-ingame-tester` |
+
+The deep material behind them is in the packs under `skills/_shared/` (index in `skills/_shared/README.md`) and each skill's own `references/` folder. Standalone tools the skills call live in `scripts/tools/`.
 
 ---
 
@@ -217,17 +247,19 @@ python skills\dayz-build-pbo\build.py <ModName> [--clean]
 **Steps performed:**
 
 1. Validate `<ModName>`.
-2. `/dayz-lint` gate: any lint error refuses the build; warnings are printed.
-3. Preflight gate.
-4. Verify the `P:\Mods\` junction is valid (hard fail).
-5. Verify `workspace/<ModName>/config.cpp` and `workspace/<ModName>/$PBOPREFIX$` exist, and that `$PBOPREFIX$` contains exactly `<ModName>`.
+2. Preflight gate.
+3. Verify `workspace/<ModName>/config.cpp` and `workspace/<ModName>/$PBOPREFIX$` exist, and that `$PBOPREFIX$` contains exactly `<ModName>`.
+4. `/dayz-lint` gate, in two stages run by the one command. The setup stage checks what stops a mod loading: `config.cpp` syntax, `CfgPatches`, `requiredAddons`, `$PBOPREFIX$`, script modules and missing files. The code stage then runs the script validator in `scripts/tools/dayz-script-validator/` over the mod's Enforce Script, `.layout`, `config.cpp`, `inputs.xml` and `.rvmat` files, reading the vanilla scripts on `P:\scripts\` when they are there. Any error from either stage refuses the build; warnings are printed. A code rule that could not judge the mod is listed as `not checked`; for a mod that depends on another mod, run `/dayz-lint <ModName> --external-scripts <folder>` yourself to get the class-reference verdict. The code stage is a set of rules, not a compiler, so other compile errors still surface in `/dayz-gate ingame`.
+5. Verify the `P:\Mods\` junction is valid (hard fail).
 6. Verify `P:\<ModName>\` is a link pointing at `workspace/<ModName>/`.
 7. Resolve `AddonBuilder.exe` via `find_dayz_tools()`.
 8. Ownership-marker gate: refuse to build into a `P:\Mods\@<ModName>\` that Agentic-Z did not create. With `--clean`, also refuse while `Addons\` holds PBOs other than `<ModName>.pbo`.
-9. Ensure `P:\Mods\@<ModName>\Addons\` and `P:\temp\<ModName>\` exist, writing the marker when this run created `@<ModName>`.
+9. Ensure `P:\Mods\@<ModName>\Addons\` exists, writing the marker when this run created `@<ModName>`, and remove a `P:\temp\<ModName>\` left by an earlier build (hard fail if it cannot be emptied, because AddonBuilder would pack the stale files).
 10. Copy the mod to `P:\temp\_stage\<ModName>\` without the files `exclude.lst` names, then invoke `AddonBuilder.exe P:\temp\_stage\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill>\include.lst [-clear]`. It passes no `-exclude=`, because AddonBuilder 1.0.240639 crashes on that flag. AddonBuilder's stdout/stderr stream live so you see binarization progress and config errors as they happen.
-11. Verify `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and was refreshed by this build.
-12. Remove the temp dir on success (kept on failure for debugging).
+11. Read the last `[ResultCode]` in DayZ Tools' `Bin\Logs\AddonBuilder.rpt`: AddonBuilder exits 0 when CfgConvert or binarize fails, so a result other than 0 fails the build.
+12. Verify `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and was refreshed by this build.
+13. Content check: compare the PBO's entry table with the staged source. A staged `.c` or `.p3d` missing from the PBO, a PBO with no config, or a wrong prefix fails the build.
+14. Remove the temp dir on success (kept on failure for debugging).
 
 **`--clean` flag** passes `-clear` to AddonBuilder, wiping `P:\Mods\@<ModName>\Addons\` before building. Useful after large refactors or when chasing stale-asset bugs. Refused while `Addons\` holds any `.pbo` other than `<ModName>.pbo` (deployed payload from `/dayz-deploy-pbo`), since `-clear` would wipe it; build without `--clean`, or remove those PBOs first and re-deploy afterwards.
 
@@ -359,7 +391,7 @@ Override the author handle: `python skills\dayz-new-mod\new_mod.py MyMod --autho
 
 The core L2 rules live at `skills/_shared/dayz-conventions.md`; topic rules (config, assets, scripts, UI, server) live in `skills/_shared/conventions/`. The high-level rules:
 
-- **Every DayZ skill MUST gate on `/dayz-preflight`** at the start of execution and halt on non-zero exit, even offline scaffolding skills. The exceptions are the emergency stop (`/dayz-stop-test`), meta-skills that edit settings or rule files rather than DayZ content (`/dayz-scope-mod`, `/dayz-record-correction`), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (mounts `P:\`), the gate itself (`/dayz-preflight`), `/dayz-search-download`, `/dayz-ask`, `/dayz-gate` (gates through the skills it runs), the read-only and report skills (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route` and `/dayz-statusline`. The reason for each is in `skills/_shared/dayz-conventions.md`. The discipline of "preflight first" keeps the workflow uniform and catches a dismounted drive at the first action of a session.
+- **Every DayZ skill MUST gate on `/dayz-preflight`** at the start of execution and halt on non-zero exit, even offline scaffolding skills. The exceptions are the emergency stop (`/dayz-stop-test`), meta-skills that edit settings or rule files rather than DayZ content (`/dayz-scope-mod`, `/dayz-record-correction`), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (mounts `P:\`), the gate itself (`/dayz-preflight`), `/dayz-search-download`, `/dayz-ask`, `/dayz-gate` (gates through the skills it runs), the read-only and report skills (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route`, `/dayz-statusline`, and the knowledge pack skills whose scripts work offline on the files they are given (`/dayz-vehicles`, `/dayz-p3d-inspector`, `/dayz-characters`, `/dayz-clothing`, `/dayz-animation-pipeline`, `/dayz-realistic-animation-director`, `/dayz-texture-pipeline`, `/dayz-ui-development`, `/dayz-pbo-reverse-engineering`, `/dayz-persistence`, `/dayz-mcp-verify`). The reason for each is in `skills/_shared/dayz-conventions.md`. The discipline of "preflight first" keeps the workflow uniform and catches a dismounted drive at the first action of a session.
 - **`P:\` must be mounted** by DayZ Tools before any DayZ work. Preflight enforces.
 - **DayZ cannot be tested standalone.** A local server MUST be loaded with the same mod set as the client. `/dayz-launch-test` enforces; never launch the client alone for mod testing.
 - **Mod source under `workspace/<ModName>/`**. Built `.pbo` deploys to `P:\Mods\@<ModName>\Addons\`. Scaffold owns the `P:\<ModName>\` junction; build/test skills only verify it.
@@ -381,19 +413,19 @@ When a Superpowers workflow (`/brainstorming`, `/writing-plans`, `/executing-pla
 | scripting (Enforce Script) | `dayz-script-specialist` |
 | config / data (config.cpp, CfgVehicles, etc.) | `dayz-config-specialist` |
 | UI (`.layout`, widgets, HUD, menus, color theme) | `dayz-ui-specialist` |
-| 3D model (`.p3d`, LODs, named selections) | `dayz-object-builder` |
+| 3D model (`.p3d`, LODs, named selections, memory points, proxies, UV atlases, a Blender, FBX, GLB or AI-generated mesh) | `dayz-object-builder` |
 | textures / materials (`.paa`, `.rvmat`) | `dayz-asset-specialist` |
-| terrain / map / clutter | `dayz-map-specialist` |
+| terrain / map / clutter, underground areas, environmental hazards (sandstorm, heat stroke) | `dayz-map-specialist` |
 | server / Central Economy / `types.xml` / `init.c` | `dayz-server-admin` |
 | Workbench plugin (editor-time tooling) | `dayz-workbench-specialist` |
-| saving data across restarts, save versions, base building saves | `dayz-persistence-specialist` |
+| saving data across restarts, save versions, base building parts and saves | `dayz-persistence-specialist` |
 | infected, animals, patrols and guards | `dayz-ai-specialist` |
-| cars, boats and helicopters | `dayz-vehicle-specialist` |
+| cars, trucks, motorbikes, boats, helicopters and planes, importing a ripped car | `dayz-vehicle-specialist` |
 | weapons, magazines, ammo, attachments | `dayz-weapon-specialist` |
 | clothing, gear and characters | `dayz-wearables-specialist` |
-| moving parts, `model.cfg` animations, RTM | `dayz-animation-specialist` |
+| moving parts, doors, `model.cfg` animations, RTM and SEAnim, rigging a custom infected or survivor, Mixamo retargeting | `dayz-animation-specialist` |
 | sound sets, sound shaders, particles | `dayz-audio-fx-specialist` |
-| weight, collision, dropping and throwing | `dayz-physics-specialist` |
+| weight, collision, dropping, throwing and ragdolls | `dayz-physics-specialist` |
 | log / crash forensics (RPT, script.log, BattlEye) | `dayz-mod-debugger` |
 | README, changelog, Workshop text, server owner kit | `dayz-docs-writer` |
 | Figma → `.layout` conversion | `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator` (gate mode), then `dayz-ui-specialist` for the widget script (in order) |

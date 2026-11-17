@@ -2,8 +2,8 @@
 
 The corpora are licence-restricted and none of them is redistributed here. This
 module carries identity only -- URL, pin, hashes, licence -- and reads the actual
-bytes from wherever `sources/local-roots.json` points, which is machine-local and
-untracked. A corpus whose root is missing is reported as such and fails the gate;
+bytes from wherever `sources/local-roots.json` points (looked for under the root,
+then under `scripts/dev/knowledge-pack/`), which is machine-local and untracked. A corpus whose root is missing is reported as such and fails the gate;
 it is never silently skipped, because "not measured" and "passed" must not look
 alike.
 
@@ -67,6 +67,11 @@ def resolve_roots(
     corpora, and reporting those as findings would bury the ones that matter.
     """
     path = pack_root / "sources" / "local-roots.json"
+    if not path.is_file():
+        # In this repository the pack's `sources/` folder lives under scripts/dev/knowledge-pack/.
+        moved = pack_root / "scripts" / "dev" / "knowledge-pack" / "sources" / "local-roots.json"
+        if moved.is_file():
+            path = moved
     if not path.is_file():
         return {}, [
             finding(

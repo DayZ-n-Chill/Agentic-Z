@@ -64,6 +64,16 @@ SAMPLES = [
     ("Connection failed 0x00020005", "filepatching-0x00020005"),
     ("The server does not support the client's current filePatching setting", "filepatching-0x00020005"),
     ("Mission script has no main function. PlayerConnect will stay disabled", "mission-no-main"),
+    ("CONNECTING FAILED (0x00020017): Client is using Diag exe while the server is not", "connection-diag-mismatch"),
+    ("CONNECTING FAILED (0x00020013) Client is a newer build than the server", "connection-version-mismatch"),
+    # No log line was recorded for this code, only the code itself; the wording around it is a stand-in.
+    ("Warning Message: You were kicked off the game. (0x00010002)", "connection-signature-mismatch"),
+    ("!!! Serious stream damage detected during load", "storage-stream-damage"),
+    ("Reason: Failed to read modstorage for entity Type=Rangefinder, Position=<4521.3, 318.2, 9876.5>", "storage-modstorage-unreadable"),
+    ('[EntityAI::OnStoreLoad] :: [WARNING] :: Scripted variables corrupted upon "PileOfWoodenPlanks". Entity will not be loaded correctly.',
+     "storage-scripted-variables-corrupted"),
+    ("[Server] :: termination in: 10", "server-termination-countdown"),
+    ("BattlEye initialization failed", "battleye-init-failed"),
     ('SCRIPT    (E): Can\'t compile "World" script module!', "script-module-compile"),
     ('SCRIPT    (E): @"MyMod/scripts/4_World/Vest.c,12": Unknown type \'CCConfig\'', "script-unknown-type"),
     ("MyMod/scripts/4_World/Vest.c(12): Unknown type 'CCConfig'", "script-unknown-type"),
@@ -134,11 +144,40 @@ def test_fix_placeholders_are_filled_from_context():
     ("Warning Message: Cannot load texture 'x_co.paa'", "missing_texture"),
     ("Warning Message: Cannot open object x.p3d", "missing_model"),
     ("[FAIL] whatever", "script_fail"),
+    ("Connection failed 0x00020005", "connection"),
+    ("CONNECTING FAILED (0x00020017): Client is using Diag exe while the server is not", "connection"),
+    ("CONNECTING FAILED (0x00020013) Client is a newer build than the server", "connection"),
+    ("Warning Message: You were kicked off the game. (0x00010002)", "connection"),
+    ("!!! Serious stream damage detected during load", "storage"),
+    ("Reason: Failed to read modstorage for entity Type=Rangefinder, Position=<1, 2, 3>", "storage"),
+    ('[EntityAI::OnStoreLoad] :: [WARNING] :: Scripted variables corrupted upon "PileOfWoodenPlanks". Entity will not be loaded correctly.',
+     "storage"),
+    ("[Server] :: termination in: 10", "server_exit"),
+    ("BattlEye initialization failed", "server_exit"),
     ("RENDER    (E):   Shader compile failed, can't load shader source 'system/shaders/x.hlsl'.", None),
     ("SCRIPT       : Creating Mission: mpmissions\\__cur_mp.chernarusplus\\mission.c", None),
 ])
 def test_classify(line, category):
     assert triage.classify(line) == category
+
+
+# Lines every DayZDiag session prints with or without a mod (dayz-test-ingame references/troubleshooting.md
+# and references/session-findings.md). They must stay out of the error categories and out of the catalog,
+# or every watch and every pasted log would report them.
+@pytest.mark.parametrize("line", [
+    # P:\scripts\4_world\plugins\pluginmanager.c:339 prints this under DIAG_DEVELOPER, then dumps a stack.
+    "SCRIPT       : Module PluginConfigDebugProfile is not Registred in PluginManager.c!",
+    "SCRIPT    (E): -- Stack trace --",
+    "SCRIPT    (E): GetPlugin() scripts/4_World/plugins\\pluginmanager.c : 340",
+    "SCRIPT    (E): OnInit() scripts/4_World/plugins\\pluginbase\\pluginitemdiagnostic.c : 94",
+    "SCRIPT    (E): -----------------",
+    # Printed once for every loaded mod.
+    "Can't load @MyMod/Anims/cfg/skeletons.anim.xml",
+])
+def test_vanilla_diag_noise_is_not_an_error(line):
+    assert triage.classify(line) is None
+    assert triage.match_line(line, KNOWN)["status"] == "new"
+    assert triage.triage_text(line, KNOWN) == []
 
 
 # --- triage_files ------------------------------------------------------------------

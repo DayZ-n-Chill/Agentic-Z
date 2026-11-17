@@ -13,12 +13,14 @@ Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/convent
 
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla configs live under `P:\DZ\`; RAG with `file_type="cpp"` finds classes by meaning.
 
+Deeper references, each Read only when the task is its topic: `config.cpp` traps in `skills/enforce-script-reference/references/config-cpp.md`; the per-file checklist in section 1 of `skills/dayz-mod-workflow/references/checklists.md`; `healthLevels[]`, hidden selection materials and damage wiring in `skills/dayz-texture-pipeline/references/config-and-damage.md`; proxy and building classes in `skills/dayz-model-pipeline/references/config-and-packing.md`; a buildable structure's `Construction` block and kit in `skills/dayz-basebuilding/references/config-contract.md`; `class Doors` on a building in `skills/dayz-doors/SKILL.md`.
+
 ## Handoffs
 
 Don't write these; list each one in your report under its owner:
 
 - `CfgWeapons` firearms and their `CfgMagazines` and `CfgAmmo` classes: dayz-weapon-specialist (config team).
-- Classes that descend from `Transport` (cars, boats, helicopters) and parts made only for them: dayz-vehicle-specialist (config team).
+- Classes that descend from `Transport` (cars, boats, helicopters, motorbikes) and parts made only for them: dayz-vehicle-specialist (config team).
 - `CfgSoundShaders` and `CfgSoundSets`: dayz-audio-fx-specialist (any team).
 - Clothing, gear and survivor characters: dayz-wearables-specialist (art team).
 - Terrain configs under `workspace/<ModName>/worlds/` (`CfgWorlds`, `CfgSurfaceCharacters`, `CfgSurfaces`; vanilla at `P:\DZ\surfaces\config.cpp:14`, `:257`, `:613`): dayz-map-specialist (server team). You still write that addon's `CfgPatches` from the entries it sends.

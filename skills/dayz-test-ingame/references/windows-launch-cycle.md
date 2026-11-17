@@ -4,7 +4,7 @@ The loop this skill runs on one Windows machine: prerequisites, the build and la
 
 How the pieces map to this repo: the build step (`dayz-test.ps1 -Build`, `Invoke-Build`) is `/dayz-build-pbo`; launching server and client (`-Mode all`) is `/dayz-launch-test`; stopping is `/dayz-stop-test`; reading the logs is `/dayz-logwatch`; the pass or fail verdict is `/dayz-gate`. The mod source that the text calls `P:\<Mod>` is the junction to `workspace/<ModName>/`, and the profile folders it calls `<Mod>_dev\_server\profiles` and `<Mod>_dev\_client\profiles` are `.server/<instance>/Profiles` and `.server/!ClientDiagLogs` here.
 
-Terms used below: "this box" and "this install" in dated findings mean the Windows test machine the measurement was taken on, not yours. `[EXACT]` marks a flag, path or behaviour that was verified in a real run; `[DESIGN]` marks something plausible that was not verified, so check it in game before relying on it. Tags such as `SP-078`, `LL-196` and `CLAIM-...` are the finding numbers of the knowledge pack this material came from; they are kept so that cross-references between files stay searchable. `DAYZ_INFRA.md` is that pack's infrastructure note (in this repo under `skills/_shared/knowledge/`); a tag like `[EXACT - DAYZ_INFRA.md §Section]` names the section of it that records the fact.
+Terms used below: "this box" and "this install" in dated findings mean the Windows test machine the measurement was taken on, not yours. `[EXACT]` marks a flag, path or behaviour that was verified in a real run; `[DESIGN]` marks something plausible that was not verified, so check it in game before relying on it. Tags such as `SP-078`, `LL-196` and `CLAIM-...` are the finding numbers of the knowledge pack this material came from; they are kept so that cross-references between files stay searchable. `DAYZ_INFRA.md` is that pack's infrastructure note (in this repo `skills/_shared/knowledge/environment-and-infra.md`); a tag like `[EXACT - DAYZ_INFRA.md §Section]` names the section of it that records the fact.
 
 Measured results, tool behaviour and third-party mod behaviour (Community Framework, Dabs Framework, VPPAdminTools, dayz-mcp) in this file are not yet checked on `P:\` and most cannot be, because they are not vanilla script facts.
 
@@ -348,7 +348,7 @@ AddonBuilder and records their required handoff contract; it does not re-impleme
 
 ## REFERENCES
 
-- `DAYZ_INFRA.md` - canonical paths/flags/gotchas (the source this skill serves).
+- `skills/_shared/knowledge/environment-and-infra.md` (the pack's `DAYZ_INFRA.md`) - canonical paths/flags/gotchas (the source this skill serves).
 - `/dayz-build-pbo` - pre-build validation + packaging.
 - `dayz-mod-workflow` - debug protocol when a launch surfaces script/engine errors.
 - `templates\dayz-test.ps1`, `server.bat`, `client.bat`, `offline.bat` - the generated tooling.

@@ -52,7 +52,7 @@ Comparison of the knowledge from three cars against the skills. Confirmed: this 
 
 - `verified-capabilities.md` — DayZ feasibility verdicts plus Enforce Script and config gotchas.
 - The `dayz-vehicles` skill — the destination for every new vehicle invariant.
-- The model pipeline note (merged by the models workstream) — LOD, proxy and named property assembly, where invariants 3 to 5 originate.
+- The model pipeline note, now in `skills/dayz-model-pipeline/references/critical-rules.md` and `skills/_shared/models/proxies.md` — LOD, proxy and named property assembly, where invariants 3 to 5 originate.
 - The author's "evidence-led memory" rule, section "Cross-project promotion" — the process rule this note embodies (not in this repo).
 - The author's pending patch queue — patches for read-only skills (SP-017 and SP-027 are vehicle related; not in this repo).
 - The author's lessons learned from the LFQuad, SUB_BRZ and Mercedes projects cited above (not in this repo).

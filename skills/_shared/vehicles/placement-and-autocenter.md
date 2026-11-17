@@ -2,7 +2,7 @@
 
 Where `autocenter=0` belongs on a placed item and on a vehicle, why adding it to every LOD of one placed item made it float at knee height, and the LOD resolution bands to use when reading or writing LOD properties.
 
-> Status: a field note measured on one third-party mod item (LFPG_PressurePad, April 2026) and on debinarized copies of the vanilla CivilianSedan and of a quad bike mod. Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. Skills of other parts of this import are named without a path (dayz-p3d-inspector, enforce-script-reference).
+> Status: a field note measured on one third-party mod item (LFPG_PressurePad, April 2026) and on debinarized copies of the vanilla CivilianSedan and of a quad bike mod. Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. Other skills are named by skill name, each a folder under `skills/` (dayz-p3d-inspector, enforce-script-reference).
 
 ## Vanilla anchors checked on `P:\`
 

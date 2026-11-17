@@ -500,6 +500,93 @@ def test_every_user_facing_dayz_skill_is_a_target():
     assert sorted(skills - not_targets - set(CFG["targets"])) == []
 
 
+# The tool skills of the knowledge pack: a request for the tool itself goes to the skill.
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("make a 3D viewer for my crate.p3d", "dayz-3d-viewer"),
+        ("convert this paa to png", "dayz-3d-viewer"),
+        ("export my truck model to glb", "dayz-3d-viewer"),
+        ("inspect my vest.p3d", "dayz-p3d-inspector"),
+        ("show me the memory points of the door", "dayz-p3d-inspector"),
+        ("build a p3d from this recipe json", "dayz-p3d-inspector"),
+        ("reverse engineer this Workshop mod", "dayz-pbo-reverse-engineering"),
+        ("extract the pbos of that trader mod and look for patterns", "dayz-pbo-reverse-engineering"),
+        ("align the proxies on my mannequin", "dayz-proxy-align"),
+        ("the vest proxy comes out rotated", "dayz-proxy-align"),
+        ("verify MyVest in game with MCP", "dayz-mcp-verify"),
+        ("run the vehicle acceptance ladder", "dayz-mcp-verify"),
+        ("lint my rvmat", "dayz-texture-pipeline"),
+        ("is my normal map OpenGL or DirectX?", "dayz-texture-pipeline"),
+        ("check the get-in points on my truck", "dayz-vehicles"),
+        ("audit my car model before I pack it", "dayz-vehicles"),
+        ("run the winding gate on my zombie", "dayz-characters"),
+        ("write a motion contract for the reload", "dayz-realistic-animation-director"),
+        ("write a feature spec for the trader", "dayz-feature-spec"),
+        ("open the alignment viewer for my vest", "dayz-clothing"),
+        ("port my mod to 1.30", "dayz-mod-dev"),
+        ("show me the error catalog", "dayz-mod-workflow"),
+        ("what hot-reloads with file patching?", "dayz-test-ingame"),
+        ("how do I run a headless client under Proton", "dayz-test-ingame"),
+    ],
+)
+def test_knowledge_pack_tool_skills_route_confidently(text, expected):
+    _assert_confident(text, expected, None)
+
+
+# The reference skills: asking for the reference goes to the skill, as with dayz-particles.
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("use dayz-animation-pipeline", "dayz-animation-pipeline"),
+        ("open the model pipeline", "dayz-model-pipeline"),
+        ("show me the AI patterns", "dayz-ai-patterns"),
+        ("open the aviation reference", "dayz-aviation"),
+        ("where is the base building reference?", "dayz-basebuilding"),
+        ("show me the doors reference", "dayz-doors"),
+        ("open the sandstorm reference", "dayz-environment-hazards"),
+        ("open the motorbike reference", "dayz-motorbikes"),
+        ("open the persistence reference", "dayz-persistence"),
+        ("open the physics engine reference", "dayz-physics-engine"),
+        ("open the sound system reference", "dayz-sound-system"),
+        ("open the UI development reference", "dayz-ui-development"),
+        ("open the underground reference", "dayz-underground"),
+        ("open the weapons reference", "dayz-weapons"),
+    ],
+)
+def test_knowledge_pack_reference_skills_route_confidently(text, expected):
+    _assert_confident(text, expected, None)
+
+
+# Doing the work a knowledge pack describes still goes to the specialist that reads it.
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("add a dirt bike with a kickstand", "dayz-vehicle-specialist"),
+        ("my plane stalls on takeoff", "dayz-vehicle-specialist"),
+        ("my helicopter rotor does not spin", "dayz-vehicle-specialist"),
+        ("import a Grub rip of a racing car", "dayz-vehicle-specialist"),
+        ("my watchtower loses its walls, base building is broken", "dayz-persistence-specialist"),
+        ("add an underground trigger to my bunker", "dayz-map-specialist"),
+        ("make the sandstorm less frequent", "dayz-map-specialist"),
+        ("rig a custom zombie mesh to the vanilla skeleton", "dayz-animation-specialist"),
+        ("retarget a Mixamo clip to the survivor", "dayz-animation-specialist"),
+        ("turn this GLB into a game ready model", "dayz-object-builder"),
+        ("unwrap my crate into a clean UV atlas", "dayz-object-builder"),
+    ],
+)
+def test_knowledge_pack_work_goes_to_the_specialist(text, expected):
+    d = decide(text)
+    assert d["route"] == expected
+    assert d["kind"] == "agent"
+    assert d["confidence"] >= CFG["threshold"]
+
+
+def test_naming_a_specialist_is_not_its_reference_skill():
+    # "dayz-persistence" is the start of "dayz-persistence-specialist".
+    assert decide("ask the dayz-persistence-specialist to fix my safe")["route"] == "dayz-persistence-specialist"
+
+
 def test_cli_json_and_text(monkeypatch):
     env = {k: v for k, v in __import__("os").environ.items() if k != "TYPESAFE_API_KEY"}
     out = subprocess.run([sys.executable, str(HERE / "route.py"), "build MyVest", "--json"],

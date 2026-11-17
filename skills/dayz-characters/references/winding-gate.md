@@ -13,7 +13,7 @@ python "<skill-dir>\check_dayz_winding.py" path\to\model.p3d
 python "<skill-dir>\check_dayz_winding.py" path\to\model.p3d --py3d path\to\py3d
 ```
 
-It needs the py3d DayZ fork (1.6.0 or newer), which it looks for at `--py3d`, then at `scripts/tools/py3d/` in this repo, then among the installed packages. The upstream py3d that `/dayz-p3d-audit` installs is not the fork; the gate says so and exits 2.
+It needs the py3d DayZ fork (1.6.0 or newer), which it looks for at `--py3d`, then at `scripts/tools/py3d/` in this repo, then among the installed packages. An upstream py3d installed on the machine is not the fork (`/dayz-p3d-audit` uses the same `scripts/tools/py3d/` copy); the gate says so and exits 2.
 
 ## The convention it checks
 
@@ -35,7 +35,7 @@ It reads every visual LOD in the MLOD convention of Rule 12 of the dayz-model-pi
 
 The fixes come in a fixed order: the winding first with the normals untouched, then the normals against the settled winding.
 
-**Not scored.** An open part (a sheet, an open tube) or a flat one (a face welded to its reversed twin) has no volume sign. Its faces are counted as not scored; check them with the visibility battery of dayz-p3d-audit (its winding diagnostics reference, section "From Check B to fix", under `skills/dayz-p3d-audit/references/`). A visual LOD with no closed shell is not measurable.
+**Not scored.** An open part (a sheet, an open tube) or a flat one (a face welded to its reversed twin) has no volume sign. Its faces are counted as not scored; check them with the visibility battery of dayz-p3d-audit (`skills/dayz-p3d-audit/references/winding-diagnostics.md`, section "From Check B to fix"). A visual LOD with no closed shell is not measurable.
 
 ## Exit codes
 

@@ -72,7 +72,7 @@ python scripts\tools\dayz-script-validator\scripts\script_validator.py <addon_ro
 python scripts\tools\dayz-script-validator\scripts\ui_reconcile.py <addon_root>
 ```
 
-Run both from the repo root; the paths do not exist from inside a mod folder.
+Run both from the repo root; the paths do not exist from inside a mod folder. `/dayz-lint <ModName>` runs `script_validator.py` as its second stage, after the mod setup checks, and prints the findings as `file:line` with an owner and a fix, so for a mod under `workspace/` one lint run covers the first command. `ui_reconcile.py` is not part of lint; run it by hand.
 
 - `script_validator.py` prints JSON on stdout and exits 0 for PASS, 1 for FAIL and 2 for WARN. A clean tree with warnings exits 2, so a caller that tests "not 0" rejects it: count the errors in the JSON, or accept 2.
 - `ui_reconcile.py` matches `FindAnyWidget` names against layouts and `#STR` keys against the stringtable, which no compiler checks. `--strict` turns its warnings into a failure.

@@ -297,6 +297,10 @@ def run_lint(report: dict, mod: str, mod_dir: Path, project_dir: Path) -> bool:
     report["lint"] = {key: result[key] for key in ("verdict", "errors", "warnings")}
     for f in result["findings"]:
         finding = {**_finding("lint", f["text"], f["file"], f["line"]), "rule": f["rule"]}
+        if f.get("stage") == "code":
+            # Code rules have no known-errors.json entry: lint's own table names the owner and the fix,
+            # and finish() keeps that instead of reporting the finding as new.
+            finding["triage"] = f["triage"]
         report["failures" if f["severity"] == lint.ERROR else "warnings"].append(finding)
     return result["verdict"] == "PASS"
 
@@ -854,7 +858,8 @@ def finish(report: dict, project_dir: Path, extra_context: Optional[dict] = None
     mod_dir = project_dir / "workspace" / report["mod"]
     report["failures"] = dedupe(report["failures"])
     for f in report["failures"]:
-        f["triage"] = triage.match_line(f["text"], known, context)
+        if "triage" not in f:  # a code-stage lint finding arrives with lint's triage (run_lint)
+            f["triage"] = triage.match_line(f["text"], known, context)
     for key in ("warnings", "noise"):
         report[key], report[f"{key}_not_listed"] = capped(dedupe(report[key]))
     report["verdict"] = "FAIL" if report["failures"] else "PASS"

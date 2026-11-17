@@ -117,7 +117,7 @@ Three rules (`ES-UNDEFINED-CLASS-REF`, `ES-VARIABLE-NAMED-AS-TYPE`, `ES-UNDEFINE
 
 ## Inside the build check
 
-- `/dayz-gate build` lints first, both stages. On an error it reports FAIL with the lint findings as failures (category `lint`, triaged against `known-errors.json`) and does not stop a running session or build. The JSON report gains `"lint": {"verdict", "errors", "warnings"}`; lint warnings join the report's warnings.
+- `/dayz-gate build` lints first, both stages. On an error it reports FAIL with the lint findings as failures (category `lint`; a setup finding is triaged against `known-errors.json`, a code finding keeps the triage lint gave it) and does not stop a running session or build. The JSON report gains `"lint": {"verdict", "errors", "warnings"}`; lint warnings join the report's warnings.
 - `/dayz-build-pbo` lints, both stages, after its preflight and workspace checks. On an error it prints `[FAIL]` with each `file:line` and exits 1. It leaves the `P:\<ModName>\` link to its own junction check.
 - Neither passes `--external-scripts`, so for a mod that depends on another mod `ES-UNDEFINED-CLASS-REF` is not checked there. Run `/dayz-lint <ModName> --external-scripts <folder>` to get its verdict.
 

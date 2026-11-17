@@ -1,0 +1,3 @@
+# Model fixtures are pinned by SHA-256 in tests (skills/dayz-characters/winding_fixtures),
+# so git must never convert line endings inside them.
+*.p3d binary

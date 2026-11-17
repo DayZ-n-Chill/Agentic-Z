@@ -29,6 +29,10 @@ All Enforce Script (`.c`) work follows `skills/_shared/enscript-style.md` (namin
   - `/dayz-health` and `/dayz-logwatch` only read gate results and logs.
   - `/dayz-route` only classifies the text of a request.
   - `/dayz-statusline` only edits a settings file, and the status line exists to show a broken environment.
+  - `/dayz-vehicles`, `/dayz-p3d-inspector`, `/dayz-characters`, `/dayz-clothing`, `/dayz-animation-pipeline`, `/dayz-texture-pipeline`, `/dayz-ui-development` and `/dayz-pbo-reverse-engineering` only read and write the files named on their command line (models, images, `.rvmat`, `.layout`, `.pbo`, JSON) and print a report or build a viewer page; `install_py3d.py` in two of them only runs pip on the wheel inside the repo. None needs DayZ Tools or the game, and one that is handed a `P:\` path says so itself when it is not mounted.
+  - `/dayz-realistic-animation-director` only reads JSON reports and motion contracts, or samples a Blender scene, and writes an audit file.
+  - `/dayz-persistence` has no tool script: its only Python files are offline models of the save contracts under `tests/`.
+  - `/dayz-mcp-verify` only talks over HTTP to a dayz-mcp daemon that is already running. It never starts the game and never reads `P:\`.
 
   Every other skill that does work gates on preflight, including `/dayz-search-index` (it reads vanilla source on `P:\`). A new exception needs a stated reason here.
 - DayZ Tools is installed via Steam (Tools section).
@@ -78,6 +82,7 @@ The RAG layer (`/dayz-search-index` plus the `dayz-rag` MCP server) embeds vanil
 - Both client and server MUST be `DayZDiag_x64.exe`, not the retail binaries. Retail `DayZ_x64.exe` and `DayZServer_x64.exe` both block past the loading screen when `-filePatching` is on, and `-filePatching` is what lets the engine read raw `.cpp`/`.c` from the `P:\<ModName>\` junction. The same `DayZDiag_x64.exe` runs either end; pass `-server` for server mode.
 - DayZ Diag lives in the DayZ game install next to the retail exe; resolve it with `find_dayz_diag()` in `dayz-preflight/preflight.py`. The DayZ Server Steam install (appid 223350) is only needed to copy mission templates.
 - The server's `serverDZ.cfg` needs `allowFilePatching = 1;` for `-filePatching` clients to connect. Without it the connection fails with `0x00020005` ("The server does not support the client's current filePatching setting"). `/dayz-add-server` writes it into the default cfg, treating a missing, commented-out or non-1 `allowFilePatching` as missing and setting it to `allowFilePatching = 1;`. `/dayz-launch-test` and `/dayz-cot-bootstrap` refuse to launch without it.
+- Before any in-game test, run `/dayz-lint` on the mod. Its second stage is the offline script validator (`.c`, `.layout`, `config.cpp`, `inputs.xml`, `.rvmat`), which catches a dangling reference a symbol grep misses. It checks form and is not a compiler: zero errors does not replace a boot.
 - Automated in-game tests run in the background. They never move the user's mouse, press keys, or bring a window to the front. To control the game during a test (time, weather, camera, menus), load a helper mod for that session only and remove it afterwards, as `/dayz-gate visual` does with `AZ_VisualHelper`. Read the game's picture with a background capture (`PrintWindow`), never a screen grab.
 
 The `.server/<instance>/` layout and setup/run split are in `conventions/server.md`.
@@ -109,6 +114,8 @@ A search hit is a hint, not a fact. Before grounding a claim on one:
 3. If the file disagrees with the snippet, trust the file and suggest re-running `/dayz-search-index --full`.
 4. Cite vanilla as `path:line_start-line_end` so the user can check it.
 
+The same holds for an audit or review finding: open the file it names and confirm the line before acting on it, because audits report details that are not there too (worked case in `docs/prompt-conventions.md`).
+
 A single search used only to navigate does not need verifying. A single chunk treated as ground truth is the most common RAG failure.
 
 Format answers grounded in vanilla source per `skills/_shared/answer-formatting.md`.
@@ -126,7 +133,7 @@ The core above is what every DayZ agent and skill reads. Topic rules live in `sk
 | `conventions/config.md` | Config conventions, `inventorySlot` string vs array (`T148506`), Bundle / umbrella mods | config-specialist, build-checker, build-engineer, mod-reviewer, audio-fx-specialist, ai-specialist, docs-writer, ingame-tester, mod-debugger, vehicle-specialist, mod-architect, weapon-specialist, wearables-specialist |
 | `conventions/assets.md` | Asset conventions (texture suffixes, `.rvmat`, `.p3d`), LOD canonical resolutions | asset-specialist, object-builder, animation-specialist, physics-specialist, mod-reviewer, mod-architect |
 | `conventions/scripts.md` | Script conventions (`scripts/` layers, `modded class` with no `extends`), Client and server ownership (which side runs what, who owns state, RPC direction, server validation) | script-specialist, workbench-specialist, mod-debugger, mod-reviewer, mod-architect, audio-fx-specialist, ai-specialist, persistence-specialist, vehicle-specialist, weapon-specialist |
-| `conventions/ui.md` | UI scripting realities (read before any "change the X color" task) | ui-specialist, figma-to-dayz-layout, layout-validator |
+| `conventions/ui.md` | UI scripting realities (read before any "change the X color" task), Layout and widget rules | ui-specialist, figma-to-dayz-layout, layout-validator |
 | `conventions/server.md` | Server / economy, Test server instances (`.server/`), Mission and DayZ Server install notes | server-admin, map-specialist, ingame-tester, mod-debugger, mod-architect |
 
 ## How agents and skills reference this file

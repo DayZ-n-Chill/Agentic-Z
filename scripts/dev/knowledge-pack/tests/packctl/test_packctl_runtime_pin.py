@@ -14,7 +14,7 @@ from packctl_testlib import locate_tree_file, run_git
 
 PACK_ROOT = Path(__file__).resolve().parents[2]
 # The runtime pin tool lives at scripts/tools/skill-runtime-pin/ in this repo.
-SCRIPT = locate_tree_file("tools/skill-runtime-pin/runtime_pin.py")
+SCRIPT = locate_tree_file("scripts/tools/skill-runtime-pin/runtime_pin.py")
 if SCRIPT is None:
     pytest.skip(
         "scripts/tools/skill-runtime-pin/runtime_pin.py is not in this checkout",

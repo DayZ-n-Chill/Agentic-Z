@@ -70,6 +70,7 @@ Every file below cites the vanilla file and line on `P:\` for its facts. Start w
 | `api_player.md` | Finding players, `PlayerIdentity`, `MissionServer` connect hooks, health zones and types, stats, state checks |
 | `api_recipes_energy_damage.md` | Crafting recipes (`RecipeBase`, `PluginRecipesManager`), `ComponentEnergyManager`, and how damage reaches an entity |
 | `api_reflection_profiler.md` | Reading and writing fields by name, calling methods by name, creating a class from a string, timing script with `EnProfiler`, the debugging globals |
+| `script_module_arena.md` | How much memory the compiler charges a script module (the `4_World` arena), what does and does not shrink it, and how to measure it. Declarations checked on `P:\`; the measurements are reported from one mod on 1.29 |
 | `types_collections.md` | Primitive types, string methods, array/map/set API, vector math, `Math` |
 | `item_api.md` | `ItemBase` quantity/health/flags, action registration, spawning, `config.cpp` properties |
 | `erpc_defines.md` | Vanilla `ERPCs`/`eAgents`/`eModifiers` tables, `ActivateModifier` and `InsertAgent`, custom ID range convention |

@@ -1,6 +1,6 @@
 # DayZ 1.30 — launch / session-test deltas
 
-Companion to the 1.30 notes in `../SKILL.md`. Diag-only managed lifecycle, absolute
+Companion to the rules in `../SKILL.md` ("Rules that hold on every route"). Diag-only managed lifecycle, absolute
 `-mod` paths, and the filepatching-vs-PBO caveats still hold. This file is the
 1.30 launch-flag and action-injection delta.
 

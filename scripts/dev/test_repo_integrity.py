@@ -746,6 +746,42 @@ def test_readme_ask_note_names_the_free_grep_fallback():
 # dayz-particles is reference-only (no script). dayz-record-correction ships check.py, but only
 # the agent running the skill calls it (root, baseline, compare steps in its SKILL.md), never a user.
 RUNNABLE_WITHOUT_BAT = {"dayz-particles", "dayz-record-correction"}
+# Reference-only skills: a SKILL.md and reference files, no script.
+RUNNABLE_WITHOUT_BAT |= {
+    "3d-generation-harness",
+    "ai-3d-to-dayz",
+    "ardy-motion-generation",
+    "blender-animation",
+    "dayz-ai-patterns",
+    "dayz-aviation",
+    "dayz-basebuilding",
+    "dayz-doors",
+    "dayz-environment-hazards",
+    "dayz-feature-spec",
+    "dayz-mod-dev",
+    "dayz-mod-workflow",
+    "dayz-model-pipeline",
+    "dayz-motorbikes",
+    "dayz-physics-engine",
+    "dayz-sound-system",
+    "dayz-test-ingame",
+    "dayz-underground",
+    "dayz-weapons",
+    "enforce-script-reference",
+    "rigorous-data-audit",
+    "systematic-debugging",
+    "task-observer",
+}
+# Skills whose scripts a user never starts from a terminal with python.
+RUNNABLE_WITHOUT_BAT |= {
+    "blender-assembly",    # blender_helpers.py runs inside Blender (import bpy), through the Blender MCP
+    "mixamo-retarget",     # its modules run inside Blender, through the Blender MCP
+    "rip-vehicle-import",  # export_car_glb.py runs inside Blender (blender --background --python)
+    "uv-clean-atlas",      # its scripts run inside Blender (blender -b <file> -P <script>)
+    "dayz-3d-viewer",      # no script of its own; it runs the tool in scripts/tools/dayz-3d-viewer
+    "dayz-mcp-verify",     # references/drive_ladder.py talks to a running dayz-mcp daemon; the agent runs it
+    "dayz-persistence",    # its .py files are the offline models under tests/ that its own tests import
+}
 
 
 def test_every_runnable_skill_has_a_bat_wrapper():
@@ -802,6 +838,8 @@ CITATION_EXEMPT = {
     "conventions/server.md",          # the .server/ test-server layout of this repo
     "dayz-conventions.md",            # environment and workflow rules; facts live in the topic files
     "textures/checking-the-look.md",  # what to look at in Object Builder and in game
+    "linux-proton.md",                # measured Linux, Proton and tool behaviour; no vanilla fact
+    "skill-resolution.md",            # which copy of a skill an agent uses; a tooling rule, not the game
 }
 CITATION_EXEMPT_FOLDERS = {"enscript-style"}  # the style guide's section files
 # A citation names a vanilla file, not just the drive: a path with a line

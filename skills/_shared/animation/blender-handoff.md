@@ -22,7 +22,7 @@ A short list, one line per moving part:
 3. **Hinges come from memory points, not from Blender pivots.** Object origins and pivots in Blender do not carry into the game. The axis is the two point selection in the Memory LOD, placed by the user or by `dayz-object-builder`.
 4. **One part, one selection group.** Every face of the door, the handle and its geometry component sit in that part's selection. Faces left out stay behind when the part moves.
 5. **Do not rely on exported armatures.** For `model.cfg` animations the skeleton is the bone list in `model.cfg`; the `.p3d` only needs the matching named selections.
-6. **Character clips are a different job.** A rig meant for player animation follows the bone list in `P:\DZ\anims\cfg\skeletons.anim.xml` and goes through Workbench, which is out of scope (see `rtm-and-character-animation.md`).
+6. **Character clips are a different job.** A rig meant for player animation follows the bone list in `P:\DZ\anims\cfg\skeletons.anim.xml` and goes through Workbench, which is out of scope (see `rtm-and-character-animation.md`). The skills that author such clips are named in the last section.
 
 ## After the import
 

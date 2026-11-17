@@ -14,7 +14,7 @@ Every agent works from three tiers. When two disagree, the more specific tier wi
 |---|---|---|---|
 | 1 · Repo rules (L1) | How every agent works here: communication, tooling, memory, routing, file locations. | This file (`.claude/CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) | Every agent, every task |
 | 2 · DayZ rules (L2) | Enforce Script style, config patterns, asset rules, environment, vanilla search. | `skills/_shared/dayz-conventions.md` (core) + `skills/_shared/conventions/*.md` (topics) | All DayZ work |
-| 3 · Agents and knowledge packs | The agents in `agents/`, the skills, and the packs under `skills/_shared/` (EnScript patterns, Figma-to-DayZ rules). | Their own files | Only what the task needs |
+| 3 · Agents and knowledge packs | The agents in `agents/`, the skills, and the knowledge packs under `skills/_shared/` (EnScript patterns, Figma-to-DayZ rules and one pack per topic, indexed in `skills/_shared/README.md`). | Their own files | Only what the task needs |
 
 Corrections from the user go into the right tier through `/dayz-record-correction`.
 
@@ -78,6 +78,9 @@ For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generi
 - `workspace/` is for **in-progress mod projects** — anything you're actively iterating on across sessions. Each mod gets its own subfolder (`workspace/<ModName>/`).
 - `.server/` (project root) holds **DayZ test-server runtime**: one folder per instance (`.server/<instance>/{mission, serverDZ.cfg, Profiles}`) plus a shared top-level `.server/!ClientDiagLogs/` for the client `-profiles=` dir. Created by `/dayz-add-server`. Multiple instances allowed (e.g. chernarus, chernarus-hardcore). Gitignored as a whole: every machine's test server is its own, and `/dayz-add-server` recreates it.
 - `scripts/` is for **helper automation** — Python, PowerShell, batch, etc. that *produces* content elsewhere. Tools, not products.
+- `scripts/tools/` holds the **offline Python tools** that came with the DayZ Modding Knowledge Pack (the script validator behind the second stage of `/dayz-lint`, the DayZ fork of py3d, model, layout and animation checkers, viewers), one folder per tool with its tests. Skills call a tool by its `scripts/tools/<name>/` path. `docs/knowledge-pack-tools.md` says what each one does.
+- `scripts/dev/knowledge-pack/` holds the Knowledge Pack's own validation and packaging tooling (`packctl`) with its tests. It is not part of the Agentic-Z workflow; `docs/knowledge-pack-maintenance.md` explains it.
+- `evals/` holds the **answer tests**: `evals/questions/<agent>.json` is what `scripts/dev/run_evals.py` asks each agent (see `docs/evals.md`). `evals/cases/` and `evals/live/` are the Knowledge Pack's own cases, run by `packctl`.
 - Exceptions to the `output/` rule, none of which move:
   - Agent memory stays in `.claude/agent-memory/`.
   - Skill-bundled helper scripts (e.g. `preflight.py` next to its `SKILL.md`) stay inside their skill folder under `skills/` or `.claude/skills/`.
@@ -94,9 +97,10 @@ For non-DayZ work (Python skills, scripts, infra, the wiki), Superpowers' generi
 - Do not create new root-level helper scripts; use `scripts/` for ad hoc automation.
 - When an agent or skill creates a deliverable, write it under `output/<descriptive-folder>/` by default. Only deviate when the user names a specific destination, or when the destination is inherent to the task (e.g. deploying to a real server path, editing in-place inside an existing project).
 - Treat generated files and local settings as workflow artifacts unless a change is intentionally meant to be versioned.
+- Material brought in from another project is listed in `THIRD_PARTY_NOTICES.md` at the repo root, with its upstream, license, copyright line and the paths it lives at. Add an entry there when you bring one in. Keep the license and copyright lines that are already inside a third-party file, and add no per-file license headers of your own.
 
 ## Environment Notes
 
 - This is a Windows workspace.
-- There is no app source tree. Tests are pytest files placed next to the code they cover. Validate changes with `python -m pytest -q .claude skills scripts/dev hooks`, which is what CI runs in `.github/workflows/tests.yml`, and after agent or skill changes also run `python .claude/skills/docs-sync/sync.py --check`, which checks the React wiki under `wiki/` against the repo.
+- There is no app source tree. Tests are pytest files placed next to the code they cover, or in a `tests/` folder beside it. Validate changes with `python -m pytest -q .claude skills scripts/dev hooks scripts/tools`, which is what CI runs in `.github/workflows/tests.yml`, and after agent or skill changes also run `python .claude/skills/docs-sync/sync.py --check`, which checks the React wiki under `wiki/` against the repo.
 - Slash skill discovery is agent-specific. Claude Code reads the repo's `.claude/skills/` plus `$CLAUDE_CONFIG_DIR/skills` or `$HOME/.claude/skills`. Codex reads the repo's `.agents/skills/` and `$HOME/.agents/skills`. Gemini reads the workspace's `.gemini/skills/` or `.agents/skills/` and `$HOME/.gemini/skills` or `$HOME/.agents/skills`. To make the repo's `skills/` and `.claude/skills/` appear in Codex and Gemini too, run `/sync-skills` (or `python .claude/skills/sync-skills/sync.py`). It symlinks each repo skill into each agent's skills directory (Claude Code's only with `--agents claude`; `--unlink` removes the links) without moving the source files; falls back to junctions on Windows when symlinks need elevation. Afterward, restart/reload the agent session; in Gemini CLI, run `/skills reload` before `/skills list`.

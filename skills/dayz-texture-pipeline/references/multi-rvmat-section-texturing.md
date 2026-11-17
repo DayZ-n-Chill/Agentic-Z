@@ -2,6 +2,8 @@
 
 When to use the Multi shader, its stage layout, the two UV sets it needs, how to paint the mask, and the checks before accepting a Multi material.
 
+The model side of the same shader (the two UV sets on the mesh, faces without a texture, an annotated template) is in `skills/dayz-model-pipeline/references/multi-rvmat-section-texturing.md`, and the vanilla counts are in `skills/_shared/models/multi-rvmat-texturing.md`.
+
 How to read it: a `P:\` citation was checked on the vanilla files. The skeleton with `MyMod` paths is a shape to adapt. Community sources are named where they are used.
 
 ## When Multi is worth it

@@ -2,7 +2,7 @@
 
 A DXT1 `.paa` writer of about 200 lines that needs only Pillow and NumPy, the file layout it writes, how to check its output, and what it cannot do.
 
-> Status: tool notes from the author's own pipeline. The encoder was not run here, and its output was not loaded in the game here. On a machine with DayZ Tools, `/dayz-pack-texture` (ImageToPAA) is this repo's normal route and handles every texture suffix; use this encoder on machines without Bohemia's tools (Linux, macOS, a clean Windows), for opaque `_co` textures only. The header layout it writes was compared with vanilla files on `P:\` (anchors below).
+> Status: tool notes from the author's own pipeline. The encoder was not run here, and its output was not loaded in the game here. On a machine with DayZ Tools, `/dayz-pack-texture` (ImageToPAA) is this repo's normal route and handles every texture suffix (the suffix and size rules are in `skills/_shared/textures/suffixes-and-sizes.md`); use this encoder on machines without Bohemia's tools (Linux, macOS, a clean Windows), for opaque `_co` textures only. The header layout it writes was compared with vanilla files on `P:\` (anchors below).
 
 ## Vanilla anchors checked on `P:\`
 

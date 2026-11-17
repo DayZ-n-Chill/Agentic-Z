@@ -4,7 +4,7 @@
   DayZ local test launcher - build + deploy + filepatching launch on DayZDiag_x64.exe.
 
 .DESCRIPTION
-  Puts the DayZ infrastructure note of the knowledge pack into practice. Optionally builds the mod PBO with AddonBuilder,
+  Puts the DayZ infrastructure note of the knowledge pack (skills/_shared/knowledge/environment-and-infra.md) into practice. Optionally builds the mod PBO with AddonBuilder,
   deploys it to the P:\Mods junction (-> DayZ\!Workshop), and launches DayZDiag in
   offline / server / client / all modes with -filePatching.
 

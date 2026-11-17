@@ -10,6 +10,13 @@ You are the mod architect for the Agentic-Z team. You design the structure of a 
 
 Follow Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions.md` plus the topic files in `skills/_shared/conventions/`: `config.md`, `scripts.md`, `assets.md`, `ui.md` and `server.md`).
 
+References, each Read only at the step that needs it (you have no Skill tool):
+
+- Step 1, for a non-trivial feature: `skills/dayz-feature-spec/SKILL.md`. Take from it the measurable success criteria, the Given/When/Then scenarios and the forward contract (every classname, selection, proxy and layout key a later task reads), and write them into the plan's done checks and open questions.
+- Step 2, before promising something DayZ may not allow: `skills/_shared/knowledge/verified-capabilities.md`. For a mod written for 1.29: `skills/_shared/knowledge/dayz-1-30-build-history.md`.
+- Step 3, when the mod extends or forks somebody else's mod: the pattern sweep of `skills/dayz-pbo-reverse-engineering/SKILL.md`, which needs Bash, so list it as a task for the main session before the first wave.
+- Step 4: the pass through a mod's life in `skills/_shared/knowledge/mod-cycle.md` and the evidence rules in `skills/_shared/knowledge/working-rules.md`.
+
 ## How you plan
 
 1. Read `workspace/<ModName>/spec.md` first if it exists. `/dayz-init` writes it from the user's own words: the goal, the items, the behaviors and the done checks. Plan to it, and list anything the request adds or changes as an open question. Then read the request and the rest of `workspace/<ModName>/`.

@@ -20,7 +20,7 @@ Then walk through [`docs/dayz-modding.md`](dayz-modding.md) for prerequisites (D
 |---|---|---|
 | **L1 — Default rules** | Apply to every clone, every agent, every skill. | `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (three filenames so each CLI finds its own; same content in each) |
 | **L2 — DayZ conventions** | Apply when working inside the DayZ domain. | `skills/_shared/dayz-conventions.md` (core, read by every DayZ agent) plus topic files in `skills/_shared/conventions/` (config, assets, scripts, ui, server) loaded per task |
-| **L3 — Agents and knowledge packs** | Loaded only when the task needs them. | `agents/<name>.md`, `skills/<name>/SKILL.md` plus its scripts, and the packs under `skills/_shared/` (EnScript patterns, Figma-to-DayZ rules) |
+| **L3 — Agents and knowledge packs** | Loaded only when the task needs them. | `agents/<name>.md`, `skills/<name>/SKILL.md` plus its scripts, and the knowledge packs under `skills/_shared/` (EnScript patterns, Figma-to-DayZ rules and one pack per topic, indexed in `skills/_shared/README.md`) |
 
 L3 files that do DayZ modding work include a one-line reference to L2: *"Follow `skills/_shared/dayz-conventions.md`."* Routing and utility files (for example `dayz-router`, `/dayz-route`, `/dayz-statusline`, `/sync-skills`) do not.
 
@@ -41,8 +41,12 @@ When invoked on a task, an agent should:
 ├── skills/                             # skill definitions (L3) + L2 shared
 │   ├── _shared/
 │   │   ├── dayz-conventions.md         # L2 core rules for the DayZ domain
-│   │   └── conventions/                # L2 topic files (config, assets, scripts, ui, server)
-│   └── dayz-*/                         # one folder per DayZ skill
+│   │   ├── conventions/                # L2 topic files (config, assets, scripts, ui, server)
+│   │   ├── README.md                   # index of every knowledge pack file
+│   │   ├── <topic>/                    # knowledge packs: vehicles, models, animation, ... (L3)
+│   │   ├── knowledge/                  # cross-cutting DayZ notes pack (L3)
+│   │   └── scripts/                    # shared helper scripts (Linux and API index helpers)
+│   └── <skill>/                        # one folder per skill (most are dayz-*)
 │       ├── SKILL.md
 │       └── *.py                        # helper scripts, when the skill has any
 ├── .claude/
@@ -58,9 +62,13 @@ When invoked on a task, an agent should:
 ├── AGENTS.md                           # L1 rules (Codex reads this)
 ├── GEMINI.md                           # L1 rules (Gemini reads this)
 ├── docs/                               # this folder
-├── evals/                              # answer tests per agent (see docs/evals.md)
+├── evals/                              # answer tests per agent, plus the imported cases/ and live/ cases (see docs/evals.md)
 ├── mods/agentic-z-panel/               # Claude Code panel plugin (one-click DayZ buttons)
 ├── scripts/                            # ad-hoc helper scripts
+│   ├── setup/, dayz/, dev/             # .bat wrappers around the skills, grouped by audience
+│   ├── tools/                          # offline Python tools from the knowledge pack (see docs/knowledge-pack-tools.md)
+│   └── dev/knowledge-pack/             # the knowledge pack's own tooling, packctl (see docs/knowledge-pack-maintenance.md)
+├── THIRD_PARTY_NOTICES.md              # licenses of the material brought in from other projects
 ├── workspace/                          # in-progress mods (workspace/<ModName>/)
 ├── .server/                            # local test-server instances (.server/<instance>/)
 └── output/                             # one-shot deliverables
@@ -203,6 +211,76 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/dayz-p3d-audit`](../skills/dayz-p3d-audit/SKILL.md) | Audit `.p3d` models for collision, action targeting, physics, animation issues |
 | [`/dayz-particles`](../skills/dayz-particles/SKILL.md) | Particle effect creation (`.ptc` / `.emat`) without Workbench |
 
+### Knowledge pack skills
+
+These 41 skills came in with the DayZ Modding Knowledge Pack. Most are reference skills: the agent loads one when a task touches its topic, and reads the reference file the skill points at. Some also ship offline scripts. [`compatibility-matrix.md`](compatibility-matrix.md) says which DayZ build each one was checked on and how.
+
+#### Vehicles
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-vehicles`](../skills/dayz-vehicles/SKILL.md) | Check a ground or water vehicle model offline (get-in memory points, seat selections, wheel axis, drawn sections and bone references in a binarized model) and find the right file of the vehicle pack |
+| [`/dayz-motorbikes`](../skills/dayz-motorbikes/SKILL.md) | Reference for motorbikes in DayZ 1.30: `MotorbikeScript`, the two-wheel simulation, kickstand, kickstart and pick-up actions and the motorbike HUD |
+| [`/dayz-aviation`](../skills/dayz-aviation/SKILL.md) | Reference for planes, seaplanes and helicopters on a `CarScript` base: flight physics in script, flight inputs, rotor and control surface animation, cockpit dials and buoyancy |
+| [`/rip-vehicle-import`](../skills/rip-vehicle-import/SKILL.md) | Guide for importing a ripped racing-game car with moving doors, hood and trunk into a drivable DayZ car: contract deltas, check allowlist, visual signoff and a classification viewer |
+
+#### Models, textures and 3D
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-model-pipeline`](../skills/dayz-model-pipeline/SKILL.md) | Build a complete DayZ object from scratch or from an outside mesh: geometry in headless Blender, a `.p3d` assembled with py3d, textures, `.rvmat`, `model.cfg` and the config entries |
+| [`/dayz-p3d-inspector`](../skills/dayz-p3d-inspector/SKILL.md) | Extract every LOD, memory point, selection and named property of a `.p3d` into one JSON, edit memory points in a 3D viewer, and build a new `.p3d` from it |
+| [`/dayz-3d-viewer`](../skills/dayz-3d-viewer/SKILL.md) | Turn an MLOD `.p3d` with its `.paa` and `.rvmat` files into a `.glb` and a standalone HTML viewer; convert `.paa` to `.png` |
+| [`/dayz-proxy-align`](../skills/dayz-proxy-align/SKILL.md) | Read the proxies of an MLOD `.p3d`, align them in a browser editor against the worn clothing, and write them back with py3d |
+| [`/dayz-texture-pipeline`](../skills/dayz-texture-pipeline/SKILL.md) | Plan, write and check texture and material work: which map each suffix needs, `.rvmat` authoring, hidden selection wiring and damage materials |
+| [`/uv-clean-atlas`](../skills/uv-clean-atlas/SKILL.md) | Build clean UV atlases for hard-surface meshes with headless Blender, and audit any UV set for overlap, island count and density |
+| [`/3d-generation-harness`](../skills/3d-generation-harness/SKILL.md) | Run a 3D model build as a gated pipeline: intake, research, plan with tests, build per component, adversarial review, fix loop and ship gate |
+| [`/ai-3d-to-dayz`](../skills/ai-3d-to-dayz/SKILL.md) | Front end for AI-generated props: image or text to 3D, cleanup, retopology, UVs, normal bake, PBR maps and the handoff to `.p3d`, `.paa` and `.rvmat` |
+| [`/blender-assembly`](../skills/blender-assembly/SKILL.md) | Rules and a helper library for building models in Blender through Blender MCP tools |
+| [`/blender-visual-review`](../skills/blender-visual-review/SKILL.md) | Render a Blender model from several angles, check the images against a defect checklist, and confirm each fix by rendering the same angles again |
+
+#### Animation, characters and clothing
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-animation-pipeline`](../skills/dayz-animation-pipeline/SKILL.md) | Produce and change DayZ animations end to end: `model.cfg` skeletons, `AnimationSources`, RTM and SEAnim files, the animation graphs, rider poses and weapons in hands |
+| [`/blender-animation`](../skills/blender-animation/SKILL.md) | Author motion in a live Blender through the Blender MCP server: keyframes, poses, IK, cycles, physics bakes, preview renders and the `.txa` export for DayZ |
+| [`/dayz-realistic-animation-director`](../skills/dayz-realistic-animation-director/SKILL.md) | Direct realistic DayZ animation from creation to in-game verification, with measurable motion contracts and stated evidence levels |
+| [`/mixamo-retarget`](../skills/mixamo-retarget/SKILL.md) | Experimental: retarget Mixamo or any FBX or DAE animation onto a custom Blender rig, including the DayZ skeleton |
+| [`/ardy-motion-generation`](../skills/ardy-motion-generation/SKILL.md) | Install and run NVIDIA ARDY locally under WSL2 to generate full-body locomotion for the DayZ survivor |
+| [`/dayz-characters`](../skills/dayz-characters/SKILL.md) | Import and author humanoids on the vanilla character bases (infected, survivors, NPCs): rigging, weights, LODs, config and ragdoll, plus an offline winding gate |
+| [`/dayz-clothing`](../skills/dayz-clothing/SKILL.md) | Build, fix and diagnose worn clothing (the `_m` and `_f` models): the worn model and `model.cfg` contract, a staged build, an alignment viewer and an FBX handoff |
+
+#### World and game systems
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-basebuilding`](../skills/dayz-basebuilding/SKILL.md) | Reference for buildable structures on `BaseBuildingBase`: kits, the `Construction` config block, build and dismantle actions, the bit mask save and damage zones |
+| [`/dayz-persistence`](../skills/dayz-persistence/SKILL.md) | Reference for persistence: `OnStoreSave` and `OnStoreLoad` streams, Community Framework ModStorage, format changes and rollback, sidecar JSON files |
+| [`/rigorous-data-audit`](../skills/rigorous-data-audit/SKILL.md) | Audit procedure for mods where a bug loses player progression: mechanical checks, eight audit angles, and every finding verified against the real file |
+| [`/dayz-doors`](../skills/dayz-doors/SKILL.md) | Reference for doors on buildings and static props: `class Doors`, the `model.cfg` skeleton and rotations, doors opened by a button, and the 1.30 lock rules |
+| [`/dayz-underground`](../skills/dayz-underground/SKILL.md) | Reference for underground areas in DayZ 1.30: terrain holes, underground triggers and the player's underground state |
+| [`/dayz-environment-hazards`](../skills/dayz-environment-hazards/SKILL.md) | Reference for the DayZ 1.30 hazards: sandstorm, heat stroke, dust agents and protective gear |
+| [`/dayz-physics-engine`](../skills/dayz-physics-engine/SKILL.md) | Reference for engine physics in script: the `dBody` API, collision layers, raycasts, contact damage, thrown objects, ragdoll and fall damage |
+| [`/dayz-sound-system`](../skills/dayz-sound-system/SKILL.md) | Reference for mod audio: `CfgSoundShaders` and `CfgSoundSets`, playing sound sets from script, sounds the server starts and the `NoiseSystem` |
+| [`/dayz-weapons`](../skills/dayz-weapons/SKILL.md) | Reference for the entity side of a firearm: `.p3d` selections and memory points, the player bone remap, `CfgWeapons` inheritance, magazines and fire modes |
+| [`/dayz-ai-patterns`](../skills/dayz-ai-patterns/SKILL.md) | Reference for AI behaviour patterns studied in the DayZ Expansion AI module: state machine, threat and targeting, pathfinding and groups, and the vanilla `NoiseSystem` |
+
+#### Scripting, UI and workflow
+
+| Command | Purpose |
+|---|---|
+| [`/enforce-script-reference`](../skills/enforce-script-reference/SKILL.md) | Deep reference for writing and reviewing Enforce Script: hard rules, compiler and runtime traps, script layers, memory, RPC, synced variables and timers |
+| [`/dayz-ui-development`](../skills/dayz-ui-development/SKILL.md) | Reference for building UI: menus, HUD overlays, `.layout` files, widgets, `.styles`, imagesets, stringtables, Dabs Framework MVC and the 1.30 UI changes |
+| [`/dayz-mod-dev`](../skills/dayz-mod-dev/SKILL.md) | Reading guide and rule set for developing a mod as a whole on DayZ 1.30 or later (vanilla, Community Framework, Expansion), on Windows or Linux |
+| [`/dayz-mod-workflow`](../skills/dayz-mod-workflow/SKILL.md) | Protocol for implementing and debugging a mod: the client and server data map, API checks, a checklist per file type, the error catalog and the debug order |
+| [`/dayz-feature-spec`](../skills/dayz-feature-spec/SKILL.md) | Define and quality-gate a feature before it is implemented: success criteria, Given/When/Then scenarios and a forward contract for every name the next phase uses |
+| [`/dayz-test-ingame`](../skills/dayz-test-ingame/SKILL.md) | Reference for testing in the running game: the build, deploy and launch cycle with `-filePatching`, server and mission config, scripted test cells and the AutoTest mod |
+| [`/dayz-mcp-verify`](../skills/dayz-mcp-verify/SKILL.md) | Test a mod in the running game through the dayz-mcp MCP server: spawn, capture, raycast and read telemetry, then write a PASS or FAIL report. Needs DayZ-MCP, which is optional and installed separately ([`dayz-mcp.md`](dayz-mcp.md)) |
+| [`/dayz-pbo-reverse-engineering`](../skills/dayz-pbo-reverse-engineering/SKILL.md) | Study a mod somebody else built: classify its PBOs from their headers, extract them with Mikero ExtractPbo, and sweep for patterns with a `path:line` ledger |
+| [`/systematic-debugging`](../skills/systematic-debugging/SKILL.md) | Find the root cause of a failure before any fix is proposed: observe, trace, test one hypothesis, make one change |
+| [`/task-observer`](../skills/task-observer/SKILL.md) | Watch a work session for ways to improve skills: log corrections and repeated workflows as observations, and review them into staged skill updates |
+
 ### Search / RAG
 
 | Command | Purpose |
@@ -251,6 +329,42 @@ L2 conventions: [`skills/_shared/dayz-conventions.md`](../skills/_shared/dayz-co
 
 **Full walkthrough — prerequisites, quick start, env vars, troubleshooting:** [`docs/dayz-modding.md`](dayz-modding.md).
 
+## Knowledge packs
+
+Tier 3 reference files under `skills/_shared/`, loaded one file at a time when a task needs it. [`skills/_shared/README.md`](../skills/_shared/README.md) is the index of every pack file; each pack folder's own `README.md` says which file answers which question. Facts about the game cite the vanilla file on `P:\` by path and line.
+
+| Pack | Covers |
+|---|---|
+| `_shared/enscript-style.md` and `_shared/enscript-style/` | Enforce Script code style |
+| `_shared/enscript/` | Enforce Script patterns, API notes and worked examples |
+| `_shared/vehicles/` | Cars, boats, helicopters, planes and motorbikes: import, config, `model.cfg`, doors, lights, get-in, build and debug |
+| `_shared/models/` | LODs, memory points, selections, proxies, named properties, UV mapping and texturing with several `.rvmat` files |
+| `_shared/animation/` | `model.cfg` animations, RTM files and the animation graph |
+| `_shared/wearables/` | Clothing, characters, slots and proxies |
+| `_shared/weapons/` | Weapon config and classes, magazines and ammo, attachments, recoil and fire modes, muzzle effects |
+| `_shared/persistence/` | Save and load, versioning and migration, base building, the data audit |
+| `_shared/physics/` | Weight, collision, dropping, throwing and contact |
+| `_shared/audio-fx/` | Sound config, the sound engine API and effects |
+| `_shared/textures/` | Texture suffixes, `.rvmat` materials and checking the look |
+| `_shared/ai/` | Infected, animals and human AI |
+| `_shared/knowledge/` | Cross-cutting notes: mission lifecycle, script networking, the native surface, Workbench scripting, DayZ 1.30 build history, working rules |
+| Single files in `_shared/` | Answer formatting, `Container_Base`, Figma to DayZ rules, py3d MLOD notes, Linux and Proton, skill resolution |
+
+Skills also carry their own packs in `<skill>/references/`.
+
+## Tools, evals and other docs
+
+| Path | What it holds |
+|---|---|
+| `scripts/tools/` | The offline Python tools that came with the knowledge pack: the script validator `/dayz-lint` runs as its second stage, the DayZ fork of py3d, model, layout and animation-format checkers, and viewers. [`knowledge-pack-tools.md`](knowledge-pack-tools.md) says what each does and picks one by symptom or task |
+| `scripts/dev/knowledge-pack/` | The knowledge pack's own validation, packaging and promotion tooling (`packctl`) with its tests. [`knowledge-pack-maintenance.md`](knowledge-pack-maintenance.md) explains it |
+| `evals/` | Answer tests per agent, plus the knowledge pack's `cases/` and `live/` cases. See [`evals.md`](evals.md) |
+| [`compatibility-matrix.md`](compatibility-matrix.md) | Which DayZ build each imported skill was checked on and how |
+| [`dayz-mcp.md`](dayz-mcp.md) | The optional DayZ-MCP server for in-game automation, installed separately |
+| [`knowledge-pack-product-spec.md`](knowledge-pack-product-spec.md) | The product definition the knowledge pack was built against, with what is finished and what is open |
+| [`knowledge-pack-authoring-lessons.md`](knowledge-pack-authoring-lessons.md) | Rules for writing skills, helper scripts and tests, each from a defect the knowledge pack shipped and fixed |
+| [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) | The licenses of the material brought in from other projects, with upstream, copyright line and paths |
+
 ## DayZ agents
 
 The 30 agents live under `agents/`. The mod team runs a whole mod; the specialists also take single tasks directly.
@@ -277,7 +391,7 @@ The 30 agents live under `agents/`. The mod team runs a whole mod; the specialis
 | `dayz-workbench-specialist` | Workbench plugin development (editor-time tooling) |
 | `dayz-persistence-specialist` | Data that survives a server restart: save and load code, save versions, base building, the data audit before release |
 | `dayz-ai-specialist` | Infected, animals and human AI such as patrols and guards |
-| `dayz-vehicle-specialist` | Cars, boats and helicopters |
+| `dayz-vehicle-specialist` | Cars, boats, helicopters and motorbikes |
 | `dayz-weapon-specialist` | Weapons, magazines, ammo, attachments, recoil and fire modes |
 | `dayz-wearables-specialist` | Clothing, characters, inventory slots, protection, color variants and proxies |
 | `dayz-animation-specialist` | `model.cfg` animations, RTM files and the Blender handoff |

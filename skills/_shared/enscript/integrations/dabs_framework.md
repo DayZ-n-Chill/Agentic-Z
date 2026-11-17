@@ -156,10 +156,16 @@ When a bound `ButtonWidget` is clicked or a bound `CheckBoxWidget` changes, the 
 - A `RelayCommand` subclass: `Execute(Class sender, CommandArgs args)` runs when `CanExecute()` is true. Return `true` when handled.
 - Otherwise a method of that name, called with the arguments object: `void OnRefreshExecute(ButtonCommandArgs args)`, as the DayZ Editor does (`4_World\DayZEditor\gui\Controllers\EditorHudController.c`).
 - Not handled goes on to the parent controller.
-- "Handled" is the method's return value. `ViewBinding.InvokeCommand` (`3_Game\DabsFramework\MVC\ViewBinding.c`) calls the method through `g_Script.CallFunction` and, when the result is not true, calls the same method name on each parent in turn. A handler declared `void`, or one that returns false, can therefore run again on a parent that has a method of that name. Declare handlers `bool` and return `true` when the click was handled: `bool OnRefreshExecute(ButtonCommandArgs args)`.
 - Only a `ButtonWidget` (in `OnClick`) and a `CheckBoxWidget` (in `OnChange`) run a command; a `Relay_Command` on any other widget type never fires (`ViewController.c`).
 
 `ButtonCommandArgs` has `GetMouseButton()` and `GetButtonState()`. `CheckBoxCommandArgs` has `GetCheckBoxState()`. Both have `Source`, the widget.
+
+#### A command that runs twice
+
+One click can run a command twice, in two ways. The symptom is the same for both: a toggle cancels itself and seems to do nothing.
+
+1. **The handler does not return `true`** (read from the Dabs source). "Handled" is the method's return value. `ViewBinding.InvokeCommand` (`3_Game\DabsFramework\MVC\ViewBinding.c`) calls the method through `g_Script.CallFunction` and, when the result is not true, calls the same method name on each parent in turn. A handler declared `void`, or one that returns false, can therefore run again on a parent that has a method of that name. Declare handlers `bool` and return `true` when the click was handled: `bool OnRefreshExecute(ButtonCommandArgs args)`.
+2. **The view overrides `OnClick` and calls `super.OnClick()` while the widget also has a `Relay_Command`** (reported by the knowledge pack from its own mods, not checked against the Dabs source; code in `skills/enforce-script-reference/references/dabs-mvc-advanced.md`). The override and the command both run. Use the command or the override, not both.
 
 ### Which widgets bind
 
@@ -214,7 +220,7 @@ class MyMod_Menu: ScriptViewMenuTemplate<MyMod_StatusController>
 - **Do not mix with a vanilla `ActionConstructor` mod for the same action.** Registering one action type both ways adds it twice.
 - **Hot reload exists only in diag builds.** `ScriptView.ReloadAll()` is compiled only under `DIAG_DEVELOPER`.
 - **A controller named as `scriptclass` on the layout root does not get its widget fields filled.** `LoadWidgetsAsVariables` runs on the controller only in the branch where `ScriptView` creates it from `GetControllerType()`. Use bindings, or look the widgets up yourself.
-- **A collection item that holds a `ref` back to its controller leaks.** `ObservableCollection` stores `ref array<ref TValue>`, and nothing breaks the cycle. Set the back reference to null in the item's destructor.
+- **A collection item that holds a `ref` back to its controller leaks.** `ObservableCollection` stores `ref array<ref TValue>`, and nothing breaks the cycle. Set the back reference to null in the item's destructor. Reported by the knowledge pack from its own mods, not checked against the Dabs source: `Clear()` on the collection does not break the cycle either, so null the back reference in each row view before clearing, and do not walk the parent chain from a row; pass the controller in.
 - **Do not use `ObservableSet`.** It raises `NotifyCollectionChangedAction.Add` and `.Set`, which the enum (`MVC\Types\NotifyCollectionChangedAction.c`) does not have.
 - **`WidgetAnimator` times are milliseconds, but the `TimeSpan` helpers count seconds.** `TimeSpan` is `typedef int` (`1_Core\DabsFramework\TimeSpan.c`), so `TimeSpan.FromMinutes(1)` is 60 and animates for 60 ms. Pass plain millisecond ints: `WidgetAnimator.Animate(widget, WidgetAnimatorProperty.COLOR_A, 1.0, 300);`.
 - **Detect the framework from script with `#ifdef DABSFRAMEWORK_1_51`**, defined at the top of `MVC\ScriptedViewBase.c`. The mod has no release tags.
@@ -225,6 +231,5 @@ Reported by the knowledge pack from its own mods (LFPowerGrid and others), not c
 
 - **Do not create a `ScriptView` from an RPC handler or during early init.** The constructor creates widgets and needs a workspace. Queue the creation on `CALL_CATEGORY_GUI` instead.
 - **Widgets inside a `ButtonWidget` can bind to the wrong widget.** Auto binding and `FindAnyWidget` returned wrong, non null references for children of a button. Fetch those children yourself from the button after the view is created.
-- **Overriding `OnClick` and calling `super.OnClick()` runs a `Relay_Command` twice.** A toggle then cancels itself and seems to do nothing. Use the command or the override, not both. This is a second way to get a double run; the first, a handler that does not return `true` and is called again on a parent, is under "Commands" above and is read from the Dabs source.
-- **Row views that point back at the controller leak** (the same cycle as the `ObservableCollection` back reference above, seen from the mod's side). `Clear()` on the collection does not break the cycle; null the back reference in each row first. Do not walk the parent chain from a row either: pass the controller in.
+- **A `Relay_Command` that runs twice** has two causes, a handler that does not return `true` and an `OnClick` override that calls `super.OnClick()`; both are under "A command that runs twice" above.
 - **`scriptclass "ViewBinding"` on the root widget plus `GetControllerType()` makes two controllers.** Leave the root widget without a script class.

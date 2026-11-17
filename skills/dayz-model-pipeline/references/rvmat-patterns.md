@@ -111,8 +111,8 @@ healthLevels[] = {
 };
 ```
 
-This example declares no `RefTexsMats[]`. Vanilla vehicle damage zones do declare that list (for example `RefTexsMats[]` at `P:\DZ\vehicles\wheeled\config.cpp:978`); what it is and which zones carry it is vehicle material, in the vehicles pack (`_shared/vehicles/damage.md` and the vehicle config notes the import adds there). Whether a swap reaches its faces is
-judged in game, not from the rvmats or the config (process gate SP-483 in the vehicles material). The same material records a glass section
+This example declares no `RefTexsMats[]`. Vanilla vehicle damage zones do declare that list (for example `RefTexsMats[]` at `P:\DZ\vehicles\wheeled\config.cpp:978`); what it is and which zones carry it is vehicle material, in the vehicles pack (`_shared/vehicles/damage.md` and `_shared/vehicles/vehicle-config-and-modelcfg.md`). Whether a swap reaches its faces is
+judged in game, not from the rvmats or the config (process gate SP-483 in `skills/_shared/vehicles/process-gates.md`). The same material records a glass section
 that never hid although config and ODOL
 matched the vanilla motorbike glass slot in the two respects checked (glass rvmat in its `RefTexsMats[]`
 slot, section inside `dmgzone_front`), with a zone of 67 sections against two to five in vanilla.

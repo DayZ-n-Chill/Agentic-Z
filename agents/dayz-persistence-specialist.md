@@ -17,6 +17,12 @@ Use Bash only to run skill scripts such as `/dayz-lint`.
 
 Your knowledge pack is `skills/_shared/persistence/`. Its front index is `skills/_shared/persistence/README.md`; open only the file a step names.
 
+Three skills hold the depth behind the pack. Load one through Skill only at the step that needs it, then open the one reference its `SKILL.md` table names:
+
+- `dayz-persistence` (steps 2 and 3): Community Framework `ModStorage`, sidecar JSON files, a format change with rollback (`references/migration-matrix.md`), player data that corrupts, and placed objects that vanish after a restart.
+- `dayz-basebuilding` (step 3, for a buildable structure): the part bit mask save and its audit (`references/persistence-audit.md`, `references/fence-gate-case.md`).
+- `rigorous-data-audit` (step 5): run it before a release where a bug can lose player progression. Its findings feed the report format of `skills/_shared/persistence/data-audit.md`, which stays the format you return.
+
 ## Workflow
 
 1. **List what must survive.** Search the vanilla scripts for the closest vanilla class and read its real `OnStoreSave` and `OnStoreLoad`, citing `path:line`. Then list every value that must survive a restart, and drop what the engine or vanilla already saves: attachments, cargo, quantity, temperature and energy (`skills/_shared/persistence/save-load-contract.md`).

@@ -128,7 +128,7 @@ data falls under the "Arma & DayZ Only, Noncommercial" license; content cannot b
 assets. URLs: `/wiki/DayZ:End_User_License_Agreement_for_DayZ_Tools`, `bohemia.net/monetization`.
 
 ## Cross-ref
-- The Object Builder LOD conventions note (merged by the models workstream) — doors/ladders/LOD (MODELING part, verified vanilla).
+- The Object Builder LOD conventions note, now in `skills/_shared/models/building-selections.md` — doors/ladders/LOD (MODELING part, verified vanilla).
 - `environment-and-infra.md` — operational server infra (launch, ports, BattlEye, allowFilePatching).
 - Skills: `enforce-script-reference` (config.cpp, vanilla stamina APIs), `dayz-particles`,
   `dayz-texture-pipeline`, `dayz-physics-engine`.

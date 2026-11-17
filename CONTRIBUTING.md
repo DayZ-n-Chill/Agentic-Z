@@ -37,6 +37,10 @@ python .claude\skills\sync-skills\sync.py
   - `scripts/setup/` — pre-Claude bootstrap (workdrive, sync-skills, agentic-z-update, preflight, setup-objectbuilder)
   - `scripts/dayz/` — daily DayZ workflow (build, launch, scaffold, types, search, etc.)
   - `scripts/dev/` — template-author tools (clean-repo, docs-sync, wiki-cleaning + WCAG audit Python helpers)
+  - `scripts/tools/` — the offline Python tools that came with the DayZ Modding Knowledge Pack, one folder per tool with its tests (see `docs/knowledge-pack-tools.md`)
+  - `scripts/dev/knowledge-pack/` — the Knowledge Pack's own validation and packaging tooling, `packctl` (see `docs/knowledge-pack-maintenance.md`)
+- `skills/_shared/` — the L2 DayZ rules and the knowledge packs. A new pack file gets a row in `skills/_shared/README.md` in the same change, and cites the vanilla file on `P:\` for each fact about the game.
+- `evals/` — answer tests per agent (see `docs/evals.md`).
 - `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` — L1 rules (edit all three together; same content in each).
 
 ## What does NOT belong here
@@ -50,7 +54,12 @@ python .claude\skills\sync-skills\sync.py
 1. Place your skill folder at `skills/<my-skill>/` with `SKILL.md` and your script.
 2. Add it to the `skills` list in `.claude-plugin/plugin.json`, then run `sync-skills` so Codex and Gemini pick it up. To test it in Claude Code before it is published, run `sync-skills --agents claude`, which links it into Claude Code's home too.
 3. Run the script directly: `python skills\<my-skill>\<script>.py [args]`.
-4. Fix issues, commit, open PR.
+4. Run the tests CI runs: `python -m pytest -q .claude skills scripts/dev hooks scripts/tools`.
+5. Fix issues, commit, open PR.
+
+## Third-party material
+
+Parts of this repo came from other projects, and `THIRD_PARTY_NOTICES.md` at the repo root lists each one with its upstream, license, copyright line and paths. If your change brings in code or text from another project, check that its license allows it, add an entry to that file, and say there which files you changed. Keep any license or copyright line that is already inside a third-party file. Do not add per-file license headers of your own.
 
 ## Docs
 

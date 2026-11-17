@@ -20,7 +20,7 @@ Once the user has packed the mod with `/dayz-build-pbo` and started it with `/da
 | Look at | Good | If not |
 |---|---|---|
 | The item on the ground, in hands, worn (clothing) and in the inventory preview | Same textures everywhere | A view with the wrong texture uses another model or hidden selection; send it to dayz-config-specialist or dayz-object-builder |
-| Surface detail as the light moves over it | Bumps and seams look raised | Flat: `Stage1` path wrong or still the placeholder. Pushed in: the normal map's green channel is likely flipped (**tool knowledge**); the user exports it again |
+| Surface detail as the light moves over it | Bumps and seams look raised | Flat: `Stage1` path wrong or still the placeholder. Pushed in: the normal map's green channel is likely flipped (**tool knowledge**; `_nohq` is DirectX style, see `suffixes-and-sizes.md`); the user exports it again |
 | Highlights in sun and in shade | Cloth stays matte, metal shines, glass glints | Change `_smdi`, `specular[]` and `specularPower` toward the values in `surface-recipes.md` |
 | Glass | See-through, with the frame behind it visible | Opaque: the color texture is `_co`, or its alpha is white (`surface-recipes.md`) |
 | Each health level (the user damages the item) | Worn, then damaged, then ruined look | No change: `healthLevels[]` points every level at one material (`rvmat-stages.md`) |

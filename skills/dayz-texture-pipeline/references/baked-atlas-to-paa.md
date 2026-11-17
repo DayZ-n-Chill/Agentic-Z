@@ -77,7 +77,7 @@ ImageToPAA picks the treatment from the end of the file name. A normal map sourc
 
 Everything above is the Windows workflow. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux notes (`_shared/linux-proton.md`). What changes for this skill, as measured there:
 
-- PNG or TGA to `.paa`: `dayzmake img2paa` natively, or Bohemia's converter under Proton with `dayz-proton.sh tool ImageToPAA <in.png> <out.paa>`. The suffix rules apply as on Windows; a `_ca` PNG became DXT5. `.paa` to PNG: `dayzmake paa2img`.
+- PNG or TGA to `.paa`: `dayzmake img2paa` natively, or Bohemia's converter under Proton with `dayz-proton.sh tool ImageToPAA <in.png> <out.paa>` (the script is `skills/_shared/scripts/dayz-proton.sh`). The suffix rules apply as on Windows; a `_ca` PNG became DXT5. `.paa` to PNG: `dayzmake paa2img`.
 - TexView: `dayz-proton.sh gui TexView <paa>` opened a DXT5 `.paa` and showed its format, size and average color.
 - Workbench (the `.edds` and `.emat` import of `matpbr-emat-pipeline.md`) starts under Proton; the import steps were not verified there.
 - `P:\` paths in a `.rvmat` are paths under the folder that `dayz-proton.sh init` maps.

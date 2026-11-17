@@ -81,7 +81,7 @@ Failure patterns that keep coming back:
 | **Member variables of a modded class are unstable** | Some entity classes may have trouble with added member variables | Safe for `DayZGame`. For `ItemBase` and `PlayerBase` use an external static map if unsure (rule 25) |
 | **Widget colour stays black or invisible** | The widget is not in the scene tree, or a parent is hidden | Call `FindAnyWidget` from the root and check every parent is `Show(true)` |
 | **`ScriptInvoker` crash on shutdown** | `Remove()` is called on a null invoker during cleanup | Null check first: `if (MyClass.Event_X) MyClass.Event_X.Remove(cb);` |
-| **`Math.Clamp` not found** | An outdated reference; it exists (`P:\scripts\1_core\proto\enmath.c:531`) | Use `Math.Clamp(val, min, max)`. `Math.Min`, `Math.Max` and `Math.Sqrt` exist too |
+| **`Math.Clamp` not found** | An outdated reference; it exists (`P:\scripts\1_core\proto\enmath.c:540`) | Use `Math.Clamp(val, min, max)`. `Math.Min`, `Math.Max` and `Math.Sqrt` exist too |
 | **`IndexOfFrom` not found** | An outdated reference; it exists (`P:\scripts\1_core\proto\enstring.c:271`) | Use `str.IndexOfFrom(startPos, searchStr)`. `LastIndexOf` (`:253`), `Hash` (`:223`) and `Replace` (`:156`) exist too |
 | **A string copy changes with the original** | `ToLower` changes the string in place (`P:\scripts\1_core\proto\enstring.c:171`) | Copy first: `string lower = original + ""; lower.ToLower();` The `+ ""` forces a copy |
 | **RPC collision with other mods** | Low RPC IDs | Use a high unique base (`START_RPC = 25416533`) and let the enum count up from it; see `networking.md` |

@@ -192,14 +192,14 @@ clarification above.
   supplement to what was verified in projects and is not in them.
 - Skill draft `dayz-animation-pipeline` — complete animation pipeline
   (config-driven + skeletal), pending evals + packaging.
-- The modded class server stub pattern note (merged by the scripting workstream) — stub pattern
+- The modded class server stub pattern note, now in `skills/_shared/enscript/patterns/modded_class.md` ("Server-only overrides need a stub in the base class") — stub pattern
   server-only (bug pattern related to `#ifdef SERVER`).
 - Projects where verified: LF-COM, Crate, LF_VStorage, LF_PowerGrid,
   LF_Transfer.
-- The Enforce Script reference note (merged by the scripting workstream) — Enforce hard rules supplementing the build/script gotchas here.
-- The mod implementation checklists note (merged by the scripting workstream) — recurring error catalog (E01–E31) and anti-crash engine minimums.
-- The animations, creatures and weapons note (merged by the animation workstream) — expands animation verdict with VERIFIED identifiers against vanilla.
-- The p3d inspector memory and selection bugs note (merged by the models workstream) — RE gap detail in ODOL v55 reader mentioned below.
+- The Enforce Script reference note, now in `skills/enforce-script-reference/references/review-and-troubleshooting.md` and `hard-rules.md` in the same folder — Enforce hard rules supplementing the build/script gotchas here.
+- The mod implementation checklists note, now in `skills/dayz-mod-workflow/references/checklists.md` and `error-catalog.md` in the same folder (the note's E20 to E31 are E24 to E35 there) — recurring error catalog (E01–E31) and anti-crash engine minimums.
+- The animations, creatures and weapons note, now in `skills/dayz-animation-pipeline/references/creature-animation.md` and `skills/_shared/ai/creature-animation.md` — expands animation verdict with VERIFIED identifiers against vanilla.
+- The p3d inspector memory and selection bugs note, now in `skills/dayz-p3d-inspector/references/round-trip-caveats.md` and `skills/_shared/models/selections.md` ("Membership lost by tools") — RE gap detail in ODOL v55 reader mentioned below.
 
 ## Verified limitation — ODOL v55 reader: anims section does not parse (added 2026-05-25)
 

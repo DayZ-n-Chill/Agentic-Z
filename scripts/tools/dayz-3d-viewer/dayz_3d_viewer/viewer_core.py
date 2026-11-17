@@ -1,7 +1,7 @@
 # GENERATED FILE - DO NOT EDIT.
 # Source: skills/_shared/viewer_core.py
 # source-sha256: 7C59F1CC5DCAF8CF33CE54D17D17BFC8272EA12899ED2F6AC0665B431F2D153D
-# Regenerate: python tools/sync_generated.py sync --root .
+# Regenerate: python scripts/tools/sync_generated.py sync --root .
 """Emit the shared Three.js viewer scaffold (ESM + importmap, three 0.185.1).
 
 This module is a string emitter. Generators splice the returned HTML/JS into

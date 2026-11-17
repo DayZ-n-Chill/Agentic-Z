@@ -2,7 +2,7 @@
 
 The state of the dayz-mcp bridge on a Linux host, measured 2026-11-06. Everything else in this skill is the Windows workflow and stays valid there.
 
-All of it is third-party tool behaviour measured in game sessions, not yet checked on `P:\`; none of it is a vanilla fact. The Linux setup for the game and DayZ Tools is in `skills/_shared/linux-proton.md`. The longer findings note behind this page (the knowledge pack's Linux and Proton findings of 2026-11, section 9) lands in the `skills/_shared/knowledge/` pack.
+All of it is third-party tool behaviour measured in game sessions, not yet checked on `P:\`; none of it is a vanilla fact. The Linux setup for the game and DayZ Tools is in `skills/_shared/linux-proton.md`. The longer findings note behind this page is `skills/_shared/knowledge/linux-proton-findings.md`, section 9.
 
 ## What works
 

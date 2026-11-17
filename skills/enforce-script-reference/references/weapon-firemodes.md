@@ -1,6 +1,6 @@
 # Weapon fire modes (single / burst / full-auto)
 
-Config-side fire-mode inheritance for DayZ weapons: when to inherit vs override `class SemiAuto`/`FullAuto`, and the `Mode_*` root-scope forward-declaration trap (SP-031). A line cited as `P:\...:N` was opened on `P:\`; the in-game results come from the A6 weapon pack named beside them. Cross-ref: SP-038 in the PBO build troubleshooting notes.
+Config-side fire-mode inheritance for DayZ weapons: when to inherit vs override `class SemiAuto`/`FullAuto`, and the `Mode_*` root-scope forward-declaration trap (SP-031). A line cited as `P:\...:N` was opened on `P:\`; the in-game results come from the A6 weapon pack named beside them. Cross-ref: the config contract in `skills/dayz-weapons/references/cfgweapons-contract.md` ("W-CFG1: fire mode classes live at the root of the config").
 
 ---
 
@@ -27,4 +27,4 @@ Failure case distinct from the previous one (not redeclaring the subclass, but m
 - **How to recognize it**: weapon with correct `modes[]={"SemiAuto","FullAuto"}` that in-game ONLY fires semi, despite byte-identical config to another that does cycle. Deceiving: CfgConvert/binarize DOES NOT complain (a forward-decl is a valid external) and de-rap looks perfect. Truth is in vanilla source (`bin.pbo`), not in comparing mod configs.
 - **Fix**: forward-declare `class Mode_SemiAuto;` / `class Mode_FullAuto;` in **ROOT scope** (above `class CfgWeapons`, just like `class OpticsInfoRifle;`). Then `class FullAuto: Mode_FullAuto` resolves to the real one (`autoFire=1`). Diagnostic discriminator: a clone inheriting from an ALREADY-resolved base weapon cycles, while your base referencing `Mode_*` does not → isolates the cause to `Mode_*` resolution (NOT to the model).
 
-Origin: the A6_SR2M weapon of the A6 pack, 2026-06-28, confirmed in game (about 12 build cycles were spent before the cause was found). Cross-ref: SP-038 in the PBO build troubleshooting notes, LL-174, and invariant INV-W1 of the knowledge pack's cross-project weapon config note (merged into the weapons pack, `skills/_shared/weapons/`).
+Origin: the A6_SR2M weapon of the A6 pack, 2026-06-28, confirmed in game (about 12 build cycles were spent before the cause was found). Cross-ref: the knowledge pack's findings SP-038 and LL-174 (not in this repo), and the knowledge pack's invariant INV-W1, which is W-CFG1 in `skills/dayz-weapons/references/cfgweapons-contract.md`; the forward declarations are also in `skills/_shared/weapons/weapon-config.md`.

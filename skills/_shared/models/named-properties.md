@@ -63,7 +63,7 @@ The rule above comes from mod debugging. What the vanilla files show, so a revie
 - 2,169 of those models store it exactly once. In `P:\DZ\gear\camping\wooden_case.p3d` and `book_kniga.p3d` the one copy sits in the Geometry LOD, next to the `mass` property on the wooden case, and not in the View or Fire Geometry LOD. 561 models store it more than once; `P:\DZ\gear\camping\fence.p3d` stores it seven times, once for each of its seven LODs.
 - In vanilla `config.cpp` files the key `autocenter=0` appears only in proxy classes under `CfgNonAIVehicles`, such as `ProxyPart` (`P:\DZ\gear\camping\config.cpp:13396`), never in an item's `CfgVehicles` class.
 
-So the named property on the Geometry LOD is common in vanilla, handheld items included. The float on drop recorded in `p3d-killers.md` was seen on a kit whose config class set `autocenter = 0`, a key no vanilla item class sets.
+So the named property on the Geometry LOD is common in vanilla, handheld items included. The float on drop recorded in `p3d-killers.md` was seen on a kit whose config class set `autocenter = 0`, a key no vanilla item class sets. One measured case where the property on every LOD plus the config line made a placed item float at knee height is in `skills/_shared/vehicles/placement-and-autocenter.md`; that note also covers where `autocenter=0` sits on a vehicle.
 
 ### On every collision LOD (reported)
 

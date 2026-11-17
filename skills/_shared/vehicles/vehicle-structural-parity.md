@@ -212,7 +212,7 @@ with `factor_radial = wheel_radius / 0.38587` and X with `factor_axial = width /
 
 All 6 quirks of py3d 1.0.0 apply (constructor with args, int weight, rebind after grow,
 lowercase matname, overwrite-in-place for `ce_center` if it already exists, +Z/-Z frame if
-wheel comes from Blender). See `py3d-1.0.0-quirks.md` of the dayz-animation-pipeline
+wheel comes from Blender). See `skills/dayz-animation-pipeline/references/py3d-1.0.0-quirks.md` of the dayz-animation-pipeline
 skill and `skills/_shared/py3d-mlod-notes.md`. DO NOT duplicate pattern here — animation pipeline skill
 is canonical source for writing Memory LODs via py3d.
 

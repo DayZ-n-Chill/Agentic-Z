@@ -4,7 +4,7 @@ How a 1.30 mod hides, changes or adds widgets in a vanilla layout through a layo
 
 Measured by the source author on DayZ 1.30.164200 (stable, DayZDiag), 2026-10-27 and 2026-11-05, and on 1.30.164289 with variants
 written by hand, 2026-11-10 and 2026-11-12. Each `CLAIM-...` tag below is the id of a claim in the knowledge pack's
-`sources/claims.json`, which holds its evidence; the review notes and probe plans behind them are not in this repo. The runs
+claim registry, `scripts/dev/knowledge-pack/sources/claims.json`, which holds its evidence; the review notes and probe plans behind them are not in this repo. The runs
 are not repeated here. Target:
 `P:\gui\layouts\day_z_ingamemenu.layout`, the Esc menu, created by
 `P:\scripts\5_mission\gui\ingamemenu.c:38`.
